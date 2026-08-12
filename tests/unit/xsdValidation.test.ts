@@ -4,21 +4,21 @@ import type { Band, ReportProperties, DesignElement } from '@/types'
 import fs from 'fs'
 import path from 'path'
 
-// 直接从xsdValidator.ts导入验证逻辑
+// Import validation logic directly from xsdValidator.ts
 function parseXsdSchema(xsdContent: string): Map<string, Set<string>> {
   const elementAttributes = new Map<string, Set<string>>()
   const parser = new DOMParser()
   const xsdDoc = parser.parseFromString(xsdContent, 'text/xml')
-  
-  // 查找所有xs:element定义
+
+  // Find all xs:element definitions
   const elements = xsdDoc.querySelectorAll('xs:element')
   elements.forEach(element => {
     const elementName = element.getAttribute('name')
     if (!elementName) return
-    
+
     const allowedAttrs = new Set<string>()
-    
-    // 查找complexType定义
+
+    // Look for a complexType definition
     let complexType = element.querySelector('xs:complexType')
     if (!complexType) {
       const complexTypeName = element.getAttribute('type')
@@ -26,16 +26,16 @@ function parseXsdSchema(xsdContent: string): Map<string, Set<string>> {
         complexType = xsdDoc.querySelector(`xs:complexType[name="${complexTypeName}"]`)
       }
     }
-    
+
     if (complexType) {
-      // 查找直接属性定义
+      // Look for direct attribute definitions
       const attrs = complexType.querySelectorAll('xs:attribute')
       attrs.forEach(attr => {
         const attrName = attr.getAttribute('name')
         if (attrName) allowedAttrs.add(attrName)
       })
-      
-      // 查找属性组引用
+
+      // Look for attribute group references
       const attrGroupRefs = complexType.querySelectorAll('xs:attributeGroup')
       attrGroupRefs.forEach(attrGroupRef => {
         const refName = attrGroupRef.getAttribute('ref')
@@ -50,95 +50,95 @@ function parseXsdSchema(xsdContent: string): Map<string, Set<string>> {
           }
         }
       })
-      
-      // 检查是否有anyAttribute
+
+      // Check for anyAttribute
       const anyAttr = complexType.querySelector('xs:anyAttribute')
       if (anyAttr) {
-        allowedAttrs.add('*') // 允许任何属性
+        allowedAttrs.add('*') // allow any attribute
       }
     }
-    
+
     elementAttributes.set(elementName, allowedAttrs)
   })
-  
+
   return elementAttributes
 }
 
 function validateAgainstXSD(xmlContent: string, xsdContent: string): { valid: boolean; errors: { message: string; elementName?: string; attributeName?: string }[] } {
   const errors: { message: string; elementName?: string; attributeName?: string }[] = []
   const elementAttributes = parseXsdSchema(xsdContent)
-  
+
   const parser = new DOMParser()
   const xmlDoc = parser.parseFromString(xmlContent, 'text/xml')
-  
-  // 检查XML解析错误
+
+  // Check for XML parse errors
   const xmlParseError = xmlDoc.querySelector('parsererror')
   if (xmlParseError) {
-    errors.push({ message: `XML解析错误: ${xmlParseError.textContent || '未知错误'}` })
+    errors.push({ message: `XML parse error: ${xmlParseError.textContent || 'unknown error'}` })
     return { valid: false, errors }
   }
-  
-  // 获取所有元素
+
+  // Get all elements
   const allElements = xmlDoc.querySelectorAll('*')
-  
+
   allElements.forEach(element => {
     const elementName = element.localName
-    
-    // 跳过jasperReport根元素和一些特殊元素
+
+    // Skip the jasperReport root element and a few special elements
     if (elementName === 'jasperReport' || elementName === 'import' || elementName === 'template') {
       return
     }
-    
-    // 检查元素是否在XSD中定义
+
+    // Check whether the element is defined in the XSD
     const allowedAttrs = elementAttributes.get(elementName)
     if (!allowedAttrs) {
-      // 检查是否在jr命名空间中
+      // Check whether it's in the jr namespace
       const jrAllowedAttrs = elementAttributes.get(elementName)
       if (!jrAllowedAttrs) {
-        // 某些元素可能在XSD中没有明确定义，但仍然有效
+        // Some elements may not be explicitly defined in the XSD, but are still valid
         return
       }
     }
-    
-    // 检查属性
+
+    // Check attributes
     const attributes = element.attributes
     for (let i = 0; i < attributes.length; i++) {
       const attr = attributes[i]
       const attrName = attr.localName
-      
-      // 跳过命名空间属性
+
+      // Skip namespace attributes
       if (attrName === 'xmlns' || attrName.startsWith('xmlns:') || attrName === 'xsi:schemaLocation') {
         continue
       }
-      
-      // 如果允许任何属性，跳过检查
+
+      // If any attribute is allowed, skip the check
       if (allowedAttrs && allowedAttrs.has('*')) {
         continue
       }
-      
-      // 检查属性是否允许
+
+      // Check whether the attribute is allowed
       if (allowedAttrs && !allowedAttrs.has(attrName)) {
         errors.push({
-          message: `元素 ${elementName} 不允许属性 ${attrName}`,
+          message: `Element ${elementName} does not allow the attribute ${attrName}`,
           elementName,
           attributeName: attrName
         })
       }
     }
   })
-  
+
   return { valid: errors.length === 0, errors }
 }
 
 describe('jrxmlGenerator XSD Validation', () => {
   let xsdContent: string
-  
+
   beforeAll(() => {
-    // 加载XSD文件
+    // Load the XSD file
     const xsdPath = path.resolve(__dirname, '../../jasperreport.xsd')
     xsdContent = fs.readFileSync(xsdPath, 'utf-8')
   })
-  
+
   const mockReportProperties: ReportProperties = {
     name: 'Test Report',
     pageWidth: 595,
@@ -156,9 +156,9 @@ describe('jrxmlGenerator XSD Validation', () => {
     },
     orientation: 'portrait'
   }
-  
-  // 测试静态文本元素
-  it('staticText元素生成的JRXML应通过XSD校验', () => {
+
+  // Test the static text element
+  it('JRXML generated for a staticText element should pass XSD validation', () => {
     const bands: Band[] = [
       {
         type: 'detail',
@@ -170,7 +170,7 @@ describe('jrxmlGenerator XSD Validation', () => {
             y: 10,
             width: 200,
             height: 30,
-            text: '静态文本',
+            text: 'Static Text',
             fontFamily: 'Arial',
             fontSize: 12,
             isBold: true,
@@ -184,19 +184,19 @@ describe('jrxmlGenerator XSD Validation', () => {
         ]
       }
     ]
-    
+
     const jrxml = generateJRXMLContent(mockReportProperties, bands, [], [])
     const result = validateAgainstXSD(jrxml, xsdContent)
-    
+
     if (!result.valid) {
-      console.error('staticText验证错误:', result.errors)
+      console.error('staticText validation errors:', result.errors)
     }
-    
+
     expect(result.valid).toBe(true)
   })
-  
-  // 测试文本字段元素
-  it('textField元素生成的JRXML应通过XSD校验', () => {
+
+  // Test the text field element
+  it('JRXML generated for a textField element should pass XSD validation', () => {
     const bands: Band[] = [
       {
         type: 'detail',
@@ -222,20 +222,20 @@ describe('jrxmlGenerator XSD Validation', () => {
         ]
       }
     ]
-    
+
     const fields = [{ name: 'field_name', class: 'java.lang.String' }]
     const jrxml = generateJRXMLContent(mockReportProperties, bands, fields, [])
     const result = validateAgainstXSD(jrxml, xsdContent)
-    
+
     if (!result.valid) {
-      console.error('textField验证错误:', result.errors)
+      console.error('textField validation errors:', result.errors)
     }
-    
+
     expect(result.valid).toBe(true)
   })
-  
-  // 测试图像元素
-  it('image元素生成的JRXML应通过XSD校验', () => {
+
+  // Test the image element
+  it('JRXML generated for an image element should pass XSD validation', () => {
     const bands: Band[] = [
       {
         type: 'detail',
@@ -252,19 +252,19 @@ describe('jrxmlGenerator XSD Validation', () => {
         ]
       }
     ]
-    
+
     const jrxml = generateJRXMLContent(mockReportProperties, bands, [], [])
     const result = validateAgainstXSD(jrxml, xsdContent)
-    
+
     if (!result.valid) {
-      console.error('image验证错误:', result.errors)
+      console.error('image validation errors:', result.errors)
     }
-    
+
     expect(result.valid).toBe(true)
   })
-  
-  // 测试线条元素
-  it('line元素生成的JRXML应通过XSD校验', () => {
+
+  // Test the line element
+  it('JRXML generated for a line element should pass XSD validation', () => {
     const bands: Band[] = [
       {
         type: 'detail',
@@ -281,19 +281,19 @@ describe('jrxmlGenerator XSD Validation', () => {
         ]
       }
     ]
-    
+
     const jrxml = generateJRXMLContent(mockReportProperties, bands, [], [])
     const result = validateAgainstXSD(jrxml, xsdContent)
-    
+
     if (!result.valid) {
-      console.error('line验证错误:', result.errors)
+      console.error('line validation errors:', result.errors)
     }
-    
+
     expect(result.valid).toBe(true)
   })
-  
-  // 测试矩形元素
-  it('rectangle元素生成的JRXML应通过XSD校验', () => {
+
+  // Test the rectangle element
+  it('JRXML generated for a rectangle element should pass XSD validation', () => {
     const bands: Band[] = [
       {
         type: 'detail',
@@ -310,19 +310,19 @@ describe('jrxmlGenerator XSD Validation', () => {
         ]
       }
     ]
-    
+
     const jrxml = generateJRXMLContent(mockReportProperties, bands, [], [])
     const result = validateAgainstXSD(jrxml, xsdContent)
-    
+
     if (!result.valid) {
-      console.error('rectangle验证错误:', result.errors)
+      console.error('rectangle validation errors:', result.errors)
     }
-    
+
     expect(result.valid).toBe(true)
   })
-  
-  // 测试椭圆元素
-  it('ellipse元素生成的JRXML应通过XSD校验', () => {
+
+  // Test the ellipse element
+  it('JRXML generated for an ellipse element should pass XSD validation', () => {
     const bands: Band[] = [
       {
         type: 'detail',
@@ -338,19 +338,19 @@ describe('jrxmlGenerator XSD Validation', () => {
         ]
       }
     ]
-    
+
     const jrxml = generateJRXMLContent(mockReportProperties, bands, [], [])
     const result = validateAgainstXSD(jrxml, xsdContent)
-    
+
     if (!result.valid) {
-      console.error('ellipse验证错误:', result.errors)
+      console.error('ellipse validation errors:', result.errors)
     }
-    
+
     expect(result.valid).toBe(true)
   })
-  
-  // 测试框架元素
-  it('frame元素生成的JRXML应通过XSD校验', () => {
+
+  // Test the frame element
+  it('JRXML generated for a frame element should pass XSD validation', () => {
     const bands: Band[] = [
       {
         type: 'detail',
@@ -369,7 +369,7 @@ describe('jrxmlGenerator XSD Validation', () => {
                 y: 10,
                 width: 130,
                 height: 30,
-                text: '框架内文本',
+                text: 'Text inside frame',
                 fontFamily: 'Arial',
                 fontSize: 12
               } as DesignElement
@@ -378,19 +378,19 @@ describe('jrxmlGenerator XSD Validation', () => {
         ]
       }
     ]
-    
+
     const jrxml = generateJRXMLContent(mockReportProperties, bands, [], [])
     const result = validateAgainstXSD(jrxml, xsdContent)
-    
+
     if (!result.valid) {
-      console.error('frame验证错误:', result.errors)
+      console.error('frame validation errors:', result.errors)
     }
-    
+
     expect(result.valid).toBe(true)
   })
-  
-  // 测试分页元素
-  it('break元素生成的JRXML应通过XSD校验', () => {
+
+  // Test the page-break element
+  it('JRXML generated for a break element should pass XSD validation', () => {
     const bands: Band[] = [
       {
         type: 'detail',
@@ -407,19 +407,19 @@ describe('jrxmlGenerator XSD Validation', () => {
         ]
       }
     ]
-    
+
     const jrxml = generateJRXMLContent(mockReportProperties, bands, [], [])
     const result = validateAgainstXSD(jrxml, xsdContent)
-    
+
     if (!result.valid) {
-      console.error('break验证错误:', result.errors)
+      console.error('break validation errors:', result.errors)
     }
-    
+
     expect(result.valid).toBe(true)
   })
-  
-  // 测试带边框的元素
-  it('带边框的元素生成的JRXML应通过XSD校验', () => {
+
+  // Test an element with a border
+  it('JRXML generated for an element with a border should pass XSD validation', () => {
     const bands: Band[] = [
       {
         type: 'detail',
@@ -431,7 +431,7 @@ describe('jrxmlGenerator XSD Validation', () => {
             y: 10,
             width: 100,
             height: 20,
-            text: '带边框文本',
+            text: 'Text with border',
             fontFamily: 'Arial',
             fontSize: 12,
             box: {
@@ -470,19 +470,19 @@ describe('jrxmlGenerator XSD Validation', () => {
         ]
       }
     ]
-    
+
     const jrxml = generateJRXMLContent(mockReportProperties, bands, [], [])
     const result = validateAgainstXSD(jrxml, xsdContent)
-    
+
     if (!result.valid) {
-      console.error('box验证错误:', result.errors)
+      console.error('box validation errors:', result.errors)
     }
-    
+
     expect(result.valid).toBe(true)
   })
-  
-  // 测试表格元素
-  it('table元素生成的JRXML应通过XSD校验', () => {
+
+  // Test the table element
+  it('JRXML generated for a table element should pass XSD validation', () => {
     const tableElement: any = {
       type: 'table',
       x: 0,
@@ -503,7 +503,7 @@ describe('jrxmlGenerator XSD Validation', () => {
             enable: true,
             element: {
               type: 'staticText',
-              text: '列标题',
+              text: 'Column Header',
               x: 0,
               y: 0,
               width: 100,
@@ -524,7 +524,7 @@ describe('jrxmlGenerator XSD Validation', () => {
         }
       ]
     }
-    
+
     const bands: Band[] = [
       {
         type: 'detail',
@@ -532,7 +532,7 @@ describe('jrxmlGenerator XSD Validation', () => {
         elements: [tableElement as DesignElement]
       }
     ]
-    
+
     const fields = [{ name: 'field1', class: 'java.lang.String' }]
     const subDatasets = [
       {
@@ -544,44 +544,44 @@ describe('jrxmlGenerator XSD Validation', () => {
         }
       }
     ]
-    
+
     const jrxml = generateJRXMLContent(mockReportProperties, bands, fields, [], subDatasets)
     const result = validateAgainstXSD(jrxml, xsdContent)
-    
+
     if (!result.valid) {
-      console.error('table验证错误:', result.errors)
+      console.error('table validation errors:', result.errors)
     }
-    
+
     expect(result.valid).toBe(true)
   })
-  
-  // 测试所有Band类型
-  it('所有Band类型生成的JRXML应通过XSD校验', () => {
+
+  // Test all Band types
+  it('JRXML generated for all Band types should pass XSD validation', () => {
     const allBandTypes: Band[] = [
-      { type: 'title', height: 80, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: '标题', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
-      { type: 'pageHeader', height: 50, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: '页头', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
-      { type: 'columnHeader', height: 30, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: '列头', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
+      { type: 'title', height: 80, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: 'Title', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
+      { type: 'pageHeader', height: 50, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: 'Page Header', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
+      { type: 'columnHeader', height: 30, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: 'Column Header', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
       { type: 'detail', height: 100, elements: [{ type: 'textField', x: 0, y: 0, width: 100, height: 30, expression: '$F{field}', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
-      { type: 'columnFooter', height: 30, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: '列脚', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
-      { type: 'pageFooter', height: 40, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: '页脚', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
-      { type: 'summary', height: 60, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: '汇总', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
+      { type: 'columnFooter', height: 30, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: 'Column Footer', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
+      { type: 'pageFooter', height: 40, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: 'Page Footer', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
+      { type: 'summary', height: 60, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: 'Summary', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
       { type: 'background', height: 100, elements: [{ type: 'rectangle', x: 0, y: 0, width: 100, height: 100 } as DesignElement] },
-      { type: 'noData', height: 50, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: '无数据', fontFamily: 'Arial', fontSize: 12 } as DesignElement] }
+      { type: 'noData', height: 50, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: 'No Data', fontFamily: 'Arial', fontSize: 12 } as DesignElement] }
     ]
-    
+
     const fields = [{ name: 'field', class: 'java.lang.String' }]
     const jrxml = generateJRXMLContent(mockReportProperties, allBandTypes, fields, [])
     const result = validateAgainstXSD(jrxml, xsdContent)
-    
+
     if (!result.valid) {
-      console.error('Band类型验证错误:', result.errors)
+      console.error('Band type validation errors:', result.errors)
     }
-    
+
     expect(result.valid).toBe(true)
   })
-  
-  // 测试样式定义
-  it('样式定义生成的JRXML应通过XSD校验', () => {
+
+  // Test style definitions
+  it('JRXML generated for a style definition should pass XSD validation', () => {
     const bands: Band[] = [
       {
         type: 'detail',
@@ -593,7 +593,7 @@ describe('jrxmlGenerator XSD Validation', () => {
             y: 10,
             width: 100,
             height: 20,
-            text: '样式文本',
+            text: 'Styled text',
             fontFamily: 'Arial',
             fontSize: 12,
             style: 'CustomStyle'
@@ -601,19 +601,19 @@ describe('jrxmlGenerator XSD Validation', () => {
         ]
       }
     ]
-    
+
     const jrxml = generateJRXMLContent(mockReportProperties, bands, [], [])
     const result = validateAgainstXSD(jrxml, xsdContent)
-    
+
     if (!result.valid) {
-      console.error('style验证错误:', result.errors)
+      console.error('style validation errors:', result.errors)
     }
-    
+
     expect(result.valid).toBe(true)
   })
-  
-  // 测试参数和字段
-  it('参数和字段定义生成的JRXML应通过XSD校验', () => {
+
+  // Test parameters and fields
+  it('JRXML generated for parameter and field definitions should pass XSD validation', () => {
     const bands: Band[] = [
       {
         type: 'detail',
@@ -642,29 +642,29 @@ describe('jrxmlGenerator XSD Validation', () => {
         ]
       }
     ]
-    
+
     const fields = [
       { name: 'field1', class: 'java.lang.String' },
       { name: 'field2', class: 'java.lang.Integer' }
     ]
-    
+
     const parameters = [
       { name: 'param1', class: 'java.lang.String', defaultValue: 'default_value' },
       { name: 'param2', class: 'java.util.Date' }
     ]
-    
+
     const jrxml = generateJRXMLContent(mockReportProperties, bands, fields, parameters)
     const result = validateAgainstXSD(jrxml, xsdContent)
-    
+
     if (!result.valid) {
-      console.error('参数字段验证错误:', result.errors)
+      console.error('parameter/field validation errors:', result.errors)
     }
-    
+
     expect(result.valid).toBe(true)
   })
-  
-  // 测试查询字符串
-  it('查询字符串生成的JRXML应通过XSD校验', () => {
+
+  // Test the query string
+  it('JRXML generated for a query string should pass XSD validation', () => {
     const propertiesWithQuery = {
       ...mockReportProperties,
       query: {
@@ -672,7 +672,7 @@ describe('jrxmlGenerator XSD Validation', () => {
         text: 'SELECT * FROM main_table'
       }
     }
-    
+
     const bands: Band[] = [
       {
         type: 'detail',
@@ -691,20 +691,20 @@ describe('jrxmlGenerator XSD Validation', () => {
         ]
       }
     ]
-    
+
     const fields = [{ name: 'id', class: 'java.lang.Integer' }]
     const jrxml = generateJRXMLContent(propertiesWithQuery, bands, fields, [])
     const result = validateAgainstXSD(jrxml, xsdContent)
-    
+
     if (!result.valid) {
-      console.error('queryString验证错误:', result.errors)
+      console.error('queryString validation errors:', result.errors)
     }
-    
+
     expect(result.valid).toBe(true)
   })
-  
-  // 测试复杂组合
-  it('复杂组合元素生成的JRXML应通过XSD校验', () => {
+
+  // Test a complex combination
+  it('JRXML generated for a complex combination of elements should pass XSD validation', () => {
     const complexBands: Band[] = [
       {
         type: 'title',
@@ -716,7 +716,7 @@ describe('jrxmlGenerator XSD Validation', () => {
             y: 10,
             width: 200,
             height: 30,
-            text: '报表标题',
+            text: 'Report Title',
             fontFamily: 'Arial',
             fontSize: 16,
             isBold: true,
@@ -774,23 +774,23 @@ describe('jrxmlGenerator XSD Validation', () => {
         ]
       }
     ]
-    
+
     const fields = [
       { name: 'name', class: 'java.lang.String' },
       { name: 'value', class: 'java.lang.Integer' }
     ]
-    
+
     const parameters = [
-      { name: 'reportTitle', class: 'java.lang.String', defaultValue: '默认标题' }
+      { name: 'reportTitle', class: 'java.lang.String', defaultValue: 'Default Title' }
     ]
-    
+
     const jrxml = generateJRXMLContent(mockReportProperties, complexBands, fields, parameters)
     const result = validateAgainstXSD(jrxml, xsdContent)
-    
+
     if (!result.valid) {
-      console.error('复杂组合验证错误:', result.errors)
+      console.error('Complex combination validation errors:', result.errors)
     }
-    
+
     expect(result.valid).toBe(true)
   })
 })

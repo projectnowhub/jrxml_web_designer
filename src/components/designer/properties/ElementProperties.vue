@@ -2,21 +2,21 @@
     <div class="element-properties">
         <h3>{{ t("properties.title") }}</h3>
 
-        <!-- 样式管理按钮 -->
+        <!-- Style management button -->
         <div class="style-management-section">
             <n-button type="primary" @click="showStyleManagerModal = true">
                 {{ t("properties.styleManagement") }}
             </n-button>
         </div>
 
-        <!-- 报表属性 -->
+        <!-- Report properties -->
         <div
             v-if="!selectedBandIndex && !selectedElement"
             class="property-section"
         >
             <h4>{{ t("properties.reportProperties") }}</h4>
 
-            <!-- Band高度设置 -->
+            <!-- Band height settings -->
             <div class="form-group">
                 <h4>{{ t("properties.bandHeightSettings") }}</h4>
                 <div class="band-heights-grid">
@@ -49,14 +49,14 @@
             </div>
         </div>
 
-        <!-- 元素属性 -->
+        <!-- Element properties -->
         <div
             v-else-if="selectedElement && currentElement"
             class="property-section"
         >
-            <!-- 元素属性标签页 -->
+            <!-- Element properties tabs -->
             <n-tabs type="segment">
-                <!-- 基本属性标签页 -->
+                <!-- Basic properties tab -->
                 <n-tab-pane name="basic" :tab="t('properties.basicProperties')">
                     <h4>{{ t("properties.basicProperties") }}</h4>
                     <div class="basic-properties-grid">
@@ -106,7 +106,7 @@
                         </div>
                     </div>
 
-                    <!-- 通用条件打印表达式（所有元素类型，break和table除外） -->
+                    <!-- Common print-when expression (all element types except break and table) -->
                     <div
                         class="form-group"
                         v-if="
@@ -117,7 +117,7 @@
                     >
                         <label>{{
                             t("properties.printWhenExpression") ||
-                            "条件打印表达式"
+                            "Print When Expression"
                         }}</label>
                         <ExpressionEditor
                             :model-value="
@@ -132,20 +132,20 @@
                         />
                     </div>
 
-                    <!-- 样式引用 -->
+                    <!-- Style reference -->
                     <div
                         class="form-group"
                         v-if="reportStyles && reportStyles.length > 0"
                     >
                         <label>{{
-                            t("properties.styleReference") || "样式引用"
+                            t("properties.styleReference") || "Style Reference"
                         }}</label>
                         <select
                             v-model="currentElement.style"
                             class="form-select"
                         >
                             <option value="">
-                                {{ t("properties.noStyle") || "无样式" }}
+                                {{ t("properties.noStyle") || "No Style" }}
                             </option>
                             <option
                                 v-for="s in reportStyles"
@@ -157,7 +157,7 @@
                         </select>
                     </div>
 
-                    <!-- 根据元素类型显示特定属性 -->
+                    <!-- Show specific properties based on element type -->
                     <template v-if="currentElement.type === 'staticText'">
                         <div class="form-group">
                             <label>{{ t("properties.textContent") }}</label>
@@ -167,28 +167,28 @@
                             ></textarea>
                         </div>
                         <div class="form-group">
-                            <label>文本调整</label>
+                            <label>Text Adjust</label>
                             <select v-model="currentElement.textAdjust">
-                                <option value="">默认</option>
-                                <option value="StretchHeight">StretchHeight - 拉伸高度</option>
-                                <option value="CutText">CutText - 截断文本</option>
-                                <option value="ShrinkToFit">ShrinkToFit - 缩小适应</option>
+                                <option value="">Default</option>
+                                <option value="StretchHeight">StretchHeight - Stretch Height</option>
+                                <option value="CutText">CutText - Cut Text</option>
+                                <option value="ShrinkToFit">ShrinkToFit - Shrink to Fit</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>旋转</label>
+                            <label>Rotation</label>
                             <select v-model="currentElement.rotation">
-                                <option value="">默认</option>
-                                <option value="None">None - 不旋转</option>
-                                <option value="Left">Left - 左旋90°</option>
-                                <option value="Right">Right - 右旋90°</option>
-                                <option value="UpsideDown">UpsideDown - 倒置</option>
+                                <option value="">Default</option>
+                                <option value="None">None - No Rotation</option>
+                                <option value="Left">Left - Rotate Left 90°</option>
+                                <option value="Right">Right - Rotate Right 90°</option>
+                                <option value="UpsideDown">UpsideDown - Upside Down</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>标记类型</label>
+                            <label>Markup Type</label>
                             <select v-model="currentElement.markup">
-                                <option value="none">无</option>
+                                <option value="none">None</option>
                                 <option value="html">HTML</option>
                                 <option value="rtf">RTF</option>
                                 <option value="styledtext">Styled Text</option>
@@ -230,7 +230,7 @@
                         </div>
                     </template>
 
-                    <!-- Image属性 -->
+                    <!-- Image properties -->
                     <template
                         v-if="
                             currentElement &&
@@ -238,74 +238,74 @@
                         "
                     >
                         <div class="form-group">
-                            <label>图片表达式</label>
+                            <label>Image Expression</label>
                             <ExpressionEditor
                                 :model-value="currentElement.imageExpression || ''"
                                 @update:model-value="currentElement.imageExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder='例如: $P{imagePath} 或 "logo.png"'
+                                placeholder='e.g.: $P{imagePath} or "logo.png"'
                             />
                         </div>
                         <div class="form-group">
-                            <label>缩放类型</label>
+                            <label>Scale Type</label>
                             <select v-model="currentElement.scaleType">
-                                <option value="">默认</option>
-                                <option value="Clip">Clip - 裁剪</option>
-                                <option value="FillFrame">FillFrame - 填充框架</option>
-                                <option value="RetainShape">RetainShape - 保持形状</option>
-                                <option value="RealHeight">RealHeight - 实际高度</option>
-                                <option value="RealSize">RealSize - 实际大小</option>
+                                <option value="">Default</option>
+                                <option value="Clip">Clip - Clip</option>
+                                <option value="FillFrame">FillFrame - Fill Frame</option>
+                                <option value="RetainShape">RetainShape - Retain Shape</option>
+                                <option value="RealHeight">RealHeight - Real Height</option>
+                                <option value="RealSize">RealSize - Real Size</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>旋转</label>
+                            <label>Rotation</label>
                             <select v-model="currentElement.rotation">
-                                <option value="">默认</option>
-                                <option value="None">None - 不旋转</option>
-                                <option value="Left">Left - 左旋90°</option>
-                                <option value="Right">Right - 右旋90°</option>
-                                <option value="UpsideDown">UpsideDown - 倒置</option>
+                                <option value="">Default</option>
+                                <option value="None">None - No Rotation</option>
+                                <option value="Left">Left - Rotate Left 90°</option>
+                                <option value="Right">Right - Rotate Right 90°</option>
+                                <option value="UpsideDown">UpsideDown - Upside Down</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>水平对齐</label>
+                            <label>Horizontal Alignment</label>
                             <select v-model="currentElement.hAlign">
-                                <option value="">默认</option>
-                                <option value="Left">Left - 左对齐</option>
-                                <option value="Center">Center - 居中</option>
-                                <option value="Right">Right - 右对齐</option>
+                                <option value="">Default</option>
+                                <option value="Left">Left - Align Left</option>
+                                <option value="Center">Center - Center</option>
+                                <option value="Right">Right - Align Right</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>垂直对齐</label>
+                            <label>Vertical Alignment</label>
                             <select v-model="currentElement.vAlign">
-                                <option value="">默认</option>
-                                <option value="Top">Top - 顶部对齐</option>
-                                <option value="Middle">Middle - 居中</option>
-                                <option value="Bottom">Bottom - 底部对齐</option>
+                                <option value="">Default</option>
+                                <option value="Top">Top - Align Top</option>
+                                <option value="Middle">Middle - Center</option>
+                                <option value="Bottom">Bottom - Align Bottom</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>错误处理</label>
+                            <label>Error Handling</label>
                             <select v-model="currentElement.onErrorType">
-                                <option value="">默认</option>
-                                <option value="Error">Error - 报错</option>
-                                <option value="Blank">Blank - 空白</option>
-                                <option value="Icon">Icon - 图标</option>
+                                <option value="">Default</option>
+                                <option value="Error">Error - Throw Error</option>
+                                <option value="Blank">Blank - Blank</option>
+                                <option value="Icon">Icon - Icon</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <SwitchControl
                                 :model-value="currentElement.isUsingCache !== false"
                                 @update:model-value="currentElement.isUsingCache = $event"
-                                label="使用缓存"
+                                label="Use Cache"
                             />
                         </div>
                     </template>
 
-                    <!-- Rectangle属性 -->
+                    <!-- Rectangle properties -->
                     <template
                         v-if="
                             currentElement &&
@@ -313,7 +313,7 @@
                         "
                     >
                         <div class="form-group">
-                            <label>圆角半径</label>
+                            <label>Corner Radius</label>
                             <input
                                 v-model.number="currentElement.radius"
                                 type="number"
@@ -331,12 +331,12 @@
                                     currentElement.isPrintRepeatedValues =
                                         $event
                                 "
-                                label="打印重复值"
+                                label="Print Repeated Values"
                             />
                         </div>
                     </template>
 
-                    <!-- Ellipse属性 -->
+                    <!-- Ellipse properties -->
                     <template
                         v-if="
                             currentElement && currentElement.type === 'ellipse'
@@ -352,21 +352,21 @@
                                     currentElement.isPrintRepeatedValues =
                                         $event
                                 "
-                                label="打印重复值"
+                                label="Print Repeated Values"
                             />
                         </div>
                     </template>
 
-                    <!-- Line属性 -->
+                    <!-- Line properties -->
                     <template
                         v-if="currentElement && currentElement.type === 'line'"
                     >
                         <div class="form-group">
-                            <label>线条方向</label>
+                            <label>Line Direction</label>
                             <select v-model="currentElement.lineDirection">
-                                <option value="">默认（TopDown）</option>
-                                <option value="TopDown">TopDown - 从上到下</option>
-                                <option value="BottomUp">BottomUp - 从下到上</option>
+                                <option value="">Default (TopDown)</option>
+                                <option value="TopDown">TopDown - Top to Bottom</option>
+                                <option value="BottomUp">BottomUp - Bottom to Top</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -379,20 +379,20 @@
                                     currentElement.isPrintRepeatedValues =
                                         $event
                                 "
-                                label="打印重复值"
+                                label="Print Repeated Values"
                             />
                         </div>
                     </template>
 
-                    <!-- Break属性 -->
+                    <!-- Break properties -->
                     <template
                         v-if="currentElement && currentElement.type === 'break'"
                     >
                         <div class="form-group">
-                            <label>分隔类型</label>
+                            <label>Break Type</label>
                             <select v-model="currentElement.breakType">
-                                <option value="Page">Page - 页面分隔</option>
-                                <option value="Column">Column - 列分隔</option>
+                                <option value="Page">Page - Page Break</option>
+                                <option value="Column">Column - Column Break</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -403,7 +403,7 @@
                                 @update:model-value="
                                     currentElement.isResetPageNumber = $event
                                 "
-                                label="重置页码"
+                                label="Reset Page Number"
                             />
                         </div>
                         <div class="form-group">
@@ -414,7 +414,7 @@
                                 @update:model-value="
                                     currentElement.isResetPageOverflow = $event
                                 "
-                                label="重置页溢出"
+                                label="Reset Page Overflow"
                             />
                         </div>
                     </template>
@@ -452,82 +452,82 @@
                             <small>{{ t("properties.patternHint") }}</small>
                         </div>
 
-                        <!-- 新增：求值时间 -->
+                        <!-- Added: Evaluation Time -->
                         <div class="form-group">
-                            <label>求值时间</label>
+                            <label>Evaluation Time</label>
                             <select
                                 v-if="currentElement"
                                 v-model="currentElement.evaluationTime"
                             >
-                                <option value="Now">Now - 立即求值</option>
-                                <option value="Report">Report - 报表结束时</option>
-                                <option value="Page">Page - 页面结束时</option>
-                                <option value="Column">Column - 列结束时</option>
-                                <option value="Group">Group - 组结束时</option>
-                                <option value="Band">Band - 区域结束时</option>
-                                <option value="Auto">Auto - 引擎决定</option>
-                                <option value="Master">Master - 主报表结束时</option>
+                                <option value="Now">Now - Evaluate Immediately</option>
+                                <option value="Report">Report - At Report End</option>
+                                <option value="Page">Page - At Page End</option>
+                                <option value="Column">Column - At Column End</option>
+                                <option value="Group">Group - At Group End</option>
+                                <option value="Band">Band - At Band End</option>
+                                <option value="Auto">Auto - Engine Decides</option>
+                                <option value="Master">Master - At Master Report End</option>
                             </select>
                         </div>
 
-                        <!-- 新增：超链接类型 -->
+                        <!-- Added: Hyperlink Type -->
                         <div class="form-group">
-                            <label>超链接类型</label>
+                            <label>Hyperlink Type</label>
                             <select
                                 v-if="currentElement"
                                 v-model="currentElement.hyperlinkType"
                             >
-                                <option value="None">无</option>
-                                <option value="Reference">Reference - URL引用</option>
-                                <option value="Anchor">Anchor - 锚点</option>
-                                <option value="LocalAnchor">LocalAnchor - 本地锚点</option>
-                                <option value="LocalPage">LocalPage - 本地页码</option>
-                                <option value="RemotePage">RemotePage - 远程页码</option>
-                                <option value="RemoteAnchor">RemoteAnchor - 远程锚点</option>
-                                <option value="mailto">mailto - 邮件</option>
+                                <option value="None">None</option>
+                                <option value="Reference">Reference - URL Reference</option>
+                                <option value="Anchor">Anchor - Anchor</option>
+                                <option value="LocalAnchor">LocalAnchor - Local Anchor</option>
+                                <option value="LocalPage">LocalPage - Local Page</option>
+                                <option value="RemotePage">RemotePage - Remote Page</option>
+                                <option value="RemoteAnchor">RemoteAnchor - Remote Anchor</option>
+                                <option value="mailto">mailto - Email</option>
                             </select>
                         </div>
 
-                        <!-- 新增：超链接引用表达式 -->
+                        <!-- Added: Hyperlink Reference Expression -->
                         <div class="form-group" v-if="currentElement.hyperlinkType === 'Reference'">
-                            <label>超链接引用表达式</label>
+                            <label>Hyperlink Reference Expression</label>
                             <ExpressionEditor
                                 :model-value="currentElement.hyperlinkReferenceExpression || ''"
                                 @update:model-value="currentElement.hyperlinkReferenceExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: &quot;https://example.com&quot;"
+                                placeholder="e.g.: &quot;https://example.com&quot;"
                             />
                         </div>
 
-                        <!-- 新增：超链接工具提示表达式 -->
+                        <!-- Added: Hyperlink Tooltip Expression -->
                         <div class="form-group" v-if="currentElement.hyperlinkType && currentElement.hyperlinkType !== 'None'">
-                            <label>超链接工具提示</label>
+                            <label>Hyperlink Tooltip</label>
                             <ExpressionEditor
                                 :model-value="currentElement.hyperlinkTooltipExpression || ''"
                                 @update:model-value="currentElement.hyperlinkTooltipExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: &quot;Click to view&quot;"
+                                placeholder="e.g.: &quot;Click to view&quot;"
                             />
                         </div>
 
-                        <!-- 新增：锚点名称表达式 -->
+                        <!-- Added: Anchor Name Expression -->
                         <div class="form-group" v-if="currentElement.hyperlinkType === 'Anchor' || currentElement.hyperlinkType === 'LocalAnchor'">
-                            <label>锚点名称表达式</label>
+                            <label>Anchor Name Expression</label>
                             <ExpressionEditor
                                 :model-value="currentElement.anchorNameExpression || ''"
                                 @update:model-value="currentElement.anchorNameExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: &quot;anchor1&quot;"
+                                placeholder="e.g.: &quot;anchor1&quot;"
                             />
                         </div>
 
-                        <!-- 新增：空值时显示空白 -->
+                        <!-- Added: Blank When Null -->
                         <div class="form-group">
                             <SwitchControl
                                 :model-value="
@@ -536,13 +536,13 @@
                                 @update:model-value="
                                     currentElement.isBlankWhenNull = $event
                                 "
-                                label="空值时显示空白"
+                                label="Blank When Null"
                             />
                         </div>
 
-                        <!-- 新增：书签层级 -->
+                        <!-- Added: Bookmark Level -->
                         <div class="form-group">
-                            <label>书签层级</label>
+                            <label>Bookmark Level</label>
                             <input
                                 v-if="currentElement"
                                 v-model.number="currentElement.bookmarkLevel"
@@ -553,68 +553,68 @@
                     </template>
                 </n-tab-pane>
 
-                <!-- 元素通用设置标签页 -->
+                <!-- Element general settings tab -->
                 <n-tab-pane
                     v-if="currentElement && currentElement.type !== 'sort'"
                     name="elementSettings"
-                    :tab="'元素设置'"
+                    :tab="'Element Settings'"
                 >
                     <div class="form-group">
-                        <label>元素键（Key）</label>
-                        <input v-model="currentElement.key" type="text" placeholder="用于运行时标识元素" />
+                        <label>Element Key</label>
+                        <input v-model="currentElement.key" type="text" placeholder="Used to identify the element at runtime" />
                     </div>
                     <div class="form-group">
-                        <label>位置类型</label>
+                        <label>Position Type</label>
                         <select v-model="currentElement.positionType">
-                            <option value="">默认（FixRelativeToTop）</option>
-                            <option value="FixRelativeToTop">FixRelativeToTop - 固定相对于顶部</option>
-                            <option value="FixRelativeToBottom">FixRelativeToBottom - 固定相对于底部</option>
-                            <option value="Float">Float - 浮动</option>
+                            <option value="">Default (FixRelativeToTop)</option>
+                            <option value="FixRelativeToTop">FixRelativeToTop - Fixed Relative to Top</option>
+                            <option value="FixRelativeToBottom">FixRelativeToBottom - Fixed Relative to Bottom</option>
+                            <option value="Float">Float - Float</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>拉伸类型</label>
+                        <label>Stretch Type</label>
                         <select v-model="currentElement.stretchType">
-                            <option value="">默认（NoStretch）</option>
-                            <option value="NoStretch">NoStretch - 不拉伸</option>
-                            <option value="ElementGroupBottom">ElementGroupBottom - 拉伸到组底部</option>
-                            <option value="ElementGroupHeight">ElementGroupHeight - 拉伸到组高度</option>
-                            <option value="ContainerBottom">ContainerBottom - 拉伸到容器底部</option>
-                            <option value="ContainerHeight">ContainerHeight - 拉伸到容器高度</option>
+                            <option value="">Default (NoStretch)</option>
+                            <option value="NoStretch">NoStretch - No Stretch</option>
+                            <option value="ElementGroupBottom">ElementGroupBottom - Stretch to Group Bottom</option>
+                            <option value="ElementGroupHeight">ElementGroupHeight - Stretch to Group Height</option>
+                            <option value="ContainerBottom">ContainerBottom - Stretch to Container Bottom</option>
+                            <option value="ContainerHeight">ContainerHeight - Stretch to Container Height</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>条件样式表达式</label>
+                        <label>Conditional Style Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.styleExpression || ''"
                             @update:model-value="currentElement.styleExpression = $event"
                             :report-fields="reportFields"
                             :report-parameters="reportParameters"
                             :report-variables="reportVariables"
-                            placeholder="例如: $V{rowNumber} % 2 == 0 ? &quot;evenRow&quot; : &quot;&quot;"
+                            placeholder="e.g.: $V{rowNumber} % 2 == 0 ? &quot;evenRow&quot; : &quot;&quot;"
                         />
                     </div>
 
-                    <!-- 自定义属性 -->
+                    <!-- Custom properties -->
                     <div class="form-group">
-                        <label>自定义属性</label>
+                        <label>Custom Properties</label>
                         <div v-if="currentElement.properties && currentElement.properties.length > 0" style="margin-bottom: 8px;">
                             <div v-for="(prop, index) in currentElement.properties" :key="index" style="display: flex; gap: 4px; margin-bottom: 4px;">
-                                <input v-model="prop.name" type="text" placeholder="属性名" style="flex: 1;" />
-                                <input v-model="prop.value" type="text" placeholder="属性值" style="flex: 1;" />
+                                <input v-model="prop.name" type="text" placeholder="Property Name" style="flex: 1;" />
+                                <input v-model="prop.value" type="text" placeholder="Property Value" style="flex: 1;" />
                                 <button @click="currentElement.properties.splice(index, 1)" type="button" class="prop-btn-danger" style="padding: 2px 6px;">×</button>
                             </div>
                         </div>
-                        <button @click="addProperty" type="button" class="prop-btn-primary" style="font-size: 12px;">+ 添加属性</button>
+                        <button @click="addProperty" type="button" class="prop-btn-primary" style="font-size: 12px;">+ Add Property</button>
                     </div>
 
-                    <!-- 自定义属性表达式 -->
+                    <!-- Custom property expressions -->
                     <div class="form-group">
-                        <label>自定义属性表达式</label>
+                        <label>Custom Property Expressions</label>
                         <div v-if="currentElement.propertyExpressions && currentElement.propertyExpressions.length > 0" style="margin-bottom: 8px;">
                             <div v-for="(prop, index) in currentElement.propertyExpressions" :key="index" style="margin-bottom: 4px;">
                                 <div style="display: flex; gap: 4px; margin-bottom: 2px;">
-                                    <input v-model="prop.name" type="text" placeholder="属性名" style="flex: 1;" />
+                                    <input v-model="prop.name" type="text" placeholder="Property Name" style="flex: 1;" />
                                     <button @click="currentElement.propertyExpressions.splice(index, 1)" type="button" class="prop-btn-danger" style="padding: 2px 6px;">×</button>
                                 </div>
                                 <ExpressionEditor
@@ -623,21 +623,21 @@
                                     :report-fields="reportFields"
                                     :report-parameters="reportParameters"
                                     :report-variables="reportVariables"
-                                    placeholder="属性值表达式"
+                                    placeholder="Property Value Expression"
                                 />
                             </div>
                         </div>
-                        <button @click="addPropertyExpression" type="button" class="prop-btn-primary" style="font-size: 12px;">+ 添加属性表达式</button>
+                        <button @click="addPropertyExpression" type="button" class="prop-btn-primary" style="font-size: 12px;">+ Add Property Expression</button>
                     </div>
                 </n-tab-pane>
 
-                <!-- 表格属性标签页 -->
+                <!-- Table properties tab -->
                 <n-tab-pane
                     v-if="currentElement && currentElement.type === 'table'"
                     name="table"
                     :tab="t('properties.tableProperties')"
                 >
-                    <!-- 表格基本属性 -->
+                    <!-- Table basic properties -->
                     <TableProperties
                         :element="currentElement"
                         :available-styles="reportStyles.map((s) => s.name)"
@@ -647,37 +647,37 @@
                         @update:element="handleTablePropertyUpdate"
                     />
 
-                    <!-- 分隔线 -->
+                    <!-- Divider -->
                     <div class="prop-divider"></div>
 
-                    <!-- 列管理 -->
+                    <!-- Column management -->
                     <div class="form-group">
-                        <h5>列管理</h5>
+                        <h5>Column Management</h5>
                         <div class="column-tree-toolbar">
                             <button
                                 class="prop-btn-primary"
                                 @click="handleAddRootColumn"
-                                title="添加列"
+                                title="Add Column"
                             >
-                                + 列
+                                + Column
                             </button>
                             <button
                                 class="prop-btn-primary"
                                 @click="handleAddRootGroup"
-                                title="添加分组"
+                                title="Add Group"
                             >
-                                + 分组
+                                + Group
                             </button>
                             <button
                                 class="prop-btn-default"
                                 @click="addColumnGroup"
-                                title="选择列组合"
+                                title="Select Column Combination"
                             >
-                                组合列
+                                Combine Columns
                             </button>
                         </div>
 
-                        <!-- 列树 -->
+                        <!-- Column tree -->
                         <div class="column-tree">
                             <ColumnTreeNode
                                 v-for="(child, index) in tableChildren"
@@ -702,20 +702,20 @@
                                 v-if="tableChildren.length === 0"
                                 class="column-tree-empty-hint"
                             >
-                                点击上方按钮添加列
+                                Click the button above to add a column
                             </div>
                         </div>
                     </div>
 
-                    <!-- 行高设置 -->
+                    <!-- Row height settings -->
                     <div
                         class="form-group"
                         v-if="currentElement && currentElement.type === 'table'"
                     >
-                        <h5>行高设置</h5>
+                        <h5>Row Height Settings</h5>
                         <div class="prop-table-column-props">
                             <div class="form-group">
-                                <label>表头行高</label>
+                                <label>Header Row Height</label>
                                 <input
                                     v-model.number="tableRowHeights.tableHeader"
                                     type="number"
@@ -724,7 +724,7 @@
                                 />
                             </div>
                             <div class="form-group">
-                                <label>列头行高</label>
+                                <label>Column Header Row Height</label>
                                 <input
                                     v-model.number="
                                         tableRowHeights.columnHeader
@@ -735,7 +735,7 @@
                                 />
                             </div>
                             <div class="form-group">
-                                <label>数据行高</label>
+                                <label>Data Row Height</label>
                                 <input
                                     v-model.number="tableRowHeights.detailCell"
                                     type="number"
@@ -744,7 +744,7 @@
                                 />
                             </div>
                             <div class="form-group">
-                                <label>列尾行高</label>
+                                <label>Column Footer Row Height</label>
                                 <input
                                     v-model.number="
                                         tableRowHeights.columnFooter
@@ -755,7 +755,7 @@
                                 />
                             </div>
                             <div class="form-group">
-                                <label>表尾行高</label>
+                                <label>Table Footer Row Height</label>
                                 <input
                                     v-model.number="tableRowHeights.tableFooter"
                                     type="number"
@@ -769,7 +769,7 @@
                 <n-tab-pane
                     v-if="currentElement && currentElement.type === 'frame'"
                     name="frame"
-                    :tab="'Frame属性'"
+                    :tab="'Frame Properties'"
                 >
                     <FrameProperties
                         :element="currentElement"
@@ -780,7 +780,7 @@
                     />
                 </n-tab-pane>
 
-                <!-- 样式设置标签页 -->
+                <!-- Style settings tab -->
                 <n-tab-pane name="style" :tab="t('properties.styleSettings')">
                     <template
                         v-if="currentElement && currentElement.type === 'break'"
@@ -794,9 +794,9 @@
                     <template v-else>
                         <h4>{{ t("properties.styleSettings") }}</h4>
 
-                        <!-- 边框设置 (表格元素不支持) -->
+                        <!-- Border settings (not supported for table elements) -->
                         <template v-if="currentElement.type !== 'table'">
-                            <!-- 矩形/椭圆元素的边框设置 (统一设置) -->
+                            <!-- Border settings for rectangle/ellipse elements (unified) -->
                             <template
                                 v-if="
                                     currentElement &&
@@ -908,14 +908,14 @@
                                 </div>
                             </template>
 
-                            <!-- 其他元素的边框设置 (支持各边独立设置) -->
+                            <!-- Border settings for other elements (each side configurable independently) -->
                             <template v-else>
-                                <!-- 各边边框设置 -->
+                                <!-- Per-side border settings -->
                                 <div class="box-section compact">
                                     <h5>{{ t("properties.sideBorders") }}</h5>
 
                                     <div class="border-sides-grid">
-                                        <!-- 四边统一设置 -->
+                                        <!-- Unified setting for all four sides -->
                                         <div class="border-side-item">
                                             <label class="side-label">{{
                                                 t("properties.all")
@@ -1017,7 +1017,7 @@
                                             </div>
                                         </div>
 
-                                        <!-- 上边 -->
+                                        <!-- Top -->
                                         <div class="border-side-item">
                                             <label class="side-label">{{
                                                 t("properties.topSide")
@@ -1128,7 +1128,7 @@
                                             </div>
                                         </div>
 
-                                        <!-- 左边 -->
+                                        <!-- Left -->
                                         <div class="border-side-item">
                                             <label class="side-label">{{
                                                 t("properties.leftSide")
@@ -1239,7 +1239,7 @@
                                             </div>
                                         </div>
 
-                                        <!-- 下边 -->
+                                        <!-- Bottom -->
                                         <div class="border-side-item">
                                             <label class="side-label">{{
                                                 t("properties.bottomSide")
@@ -1350,7 +1350,7 @@
                                             </div>
                                         </div>
 
-                                        <!-- 右边 -->
+                                        <!-- Right -->
                                         <div class="border-side-item">
                                             <label class="side-label">{{
                                                 t("properties.rightSide")
@@ -1463,7 +1463,7 @@
                                     </div>
                                 </div>
 
-                                <!-- 边距设置 -->
+                                <!-- Padding settings -->
                                 <div class="box-section compact">
                                     <h5>
                                         {{ t("properties.marginSettings") }}
@@ -1607,7 +1607,7 @@
                             </select>
                         </div>
 
-                        <!-- 表格特定样式设置 -->
+                        <!-- Table-specific style settings -->
                         <template
                             v-if="
                                 currentElement &&
@@ -1619,7 +1619,7 @@
                                     {{ t("properties.tableStyleSettings") }}
                                 </h5>
                                 <div class="table-style-settings">
-                                    <!-- 表头样式选择 -->
+                                    <!-- Table header style selection -->
                                     <div class="table-style-section">
                                         <h6>
                                             {{ t("properties.tableHeader") }}
@@ -1653,7 +1653,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- 列头样式选择 -->
+                                    <!-- Column header style selection -->
                                     <div class="table-style-section">
                                         <h6>
                                             {{ t("properties.columnHeader") }}
@@ -1687,7 +1687,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- 列尾样式选择 -->
+                                    <!-- Column footer style selection -->
                                     <div class="table-style-section">
                                         <h6>
                                             {{ t("properties.columnFooter") }}
@@ -1721,7 +1721,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- 详情单元格样式选择 -->
+                                    <!-- Detail cell style selection -->
                                     <div class="table-style-section">
                                         <h6>
                                             {{ t("properties.detailCell") }}
@@ -1758,7 +1758,7 @@
                             </div>
                         </template>
 
-                        <!-- 其他元素的样式设置 -->
+                        <!-- Style settings for other elements -->
                         <template
                             v-else-if="
                                 currentElement &&
@@ -1914,132 +1914,132 @@
                     </template>
                 </n-tab-pane>
 
-                <!-- 子报表属性标签页 -->
+                <!-- Subreport properties tab -->
                 <n-tab-pane
                     v-if="currentElement && currentElement.type === 'subreport'"
                     name="subreport"
-                    :tab="'子报表属性'"
+                    :tab="'Subreport Properties'"
                 >
                     <div class="form-group">
-                        <label>子报表表达式</label>
+                        <label>Subreport Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.subreportExpression || ''"
                             @update:model-value="currentElement.subreportExpression = $event"
                             :report-fields="reportFields"
                             :report-parameters="reportParameters"
                             :report-variables="reportVariables"
-                            placeholder="例如: $P{SUBREPORT_DIR} + 'subreport.jasper'"
+                            placeholder="e.g.: $P{SUBREPORT_DIR} + 'subreport.jasper'"
                         />
                     </div>
                     <div class="form-group">
-                        <label>连接表达式</label>
+                        <label>Connection Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.connectionExpression || ''"
                             @update:model-value="currentElement.connectionExpression = $event"
                             :report-fields="reportFields"
                             :report-parameters="reportParameters"
                             :report-variables="reportVariables"
-                            placeholder="例如: $P{REPORT_CONNECTION}"
+                            placeholder="e.g.: $P{REPORT_CONNECTION}"
                         />
                     </div>
                     <div class="form-group">
-                        <label>数据源表达式</label>
+                        <label>Data Source Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.dataSourceExpression || ''"
                             @update:model-value="currentElement.dataSourceExpression = $event"
                             :report-fields="reportFields"
                             :report-parameters="reportParameters"
                             :report-variables="reportVariables"
-                            placeholder="例如: $P{REPORT_DATA_SOURCE}"
+                            placeholder="e.g.: $P{REPORT_DATA_SOURCE}"
                         />
                     </div>
                     <div class="form-group">
-                        <label>参数映射表达式</label>
+                        <label>Parameters Map Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.parametersMapExpression || ''"
                             @update:model-value="currentElement.parametersMapExpression = $event"
                             :report-fields="reportFields"
                             :report-parameters="reportParameters"
                             :report-variables="reportVariables"
-                            placeholder="例如: $P{REPORT_PARAMETERS_MAP}"
+                            placeholder="e.g.: $P{REPORT_PARAMETERS_MAP}"
                         />
                     </div>
                     <div class="form-group">
-                        <label>求值时间</label>
+                        <label>Evaluation Time</label>
                         <select v-model="currentElement.evaluationTime">
-                            <option value="Now">Now - 立即求值</option>
-                            <option value="Report">Report - 报表结束时</option>
-                            <option value="Page">Page - 页面结束时</option>
-                            <option value="Column">Column - 列结束时</option>
-                            <option value="Group">Group - 组结束时</option>
-                            <option value="Band">Band - 区域结束时</option>
-                            <option value="Auto">Auto - 引擎决定</option>
-                            <option value="Master">Master - 主报表结束时</option>
+                            <option value="Now">Now - Evaluate Immediately</option>
+                            <option value="Report">Report - At Report End</option>
+                            <option value="Page">Page - At Page End</option>
+                            <option value="Column">Column - At Column End</option>
+                            <option value="Group">Group - At Group End</option>
+                            <option value="Band">Band - At Band End</option>
+                            <option value="Auto">Auto - Engine Decides</option>
+                            <option value="Master">Master - At Master Report End</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <SwitchControl
                             :model-value="currentElement.isUsingCache || false"
                             @update:model-value="currentElement.isUsingCache = $event"
-                            label="使用缓存"
+                            label="Use Cache"
                         />
                     </div>
                     <div class="form-group">
                         <SwitchControl
                             :model-value="currentElement.isIgnorePagination || false"
                             @update:model-value="currentElement.isIgnorePagination = $event"
-                            label="忽略分页"
+                            label="Ignore Pagination"
                         />
                     </div>
                 </n-tab-pane>
 
-                <!-- 图表属性标签页 -->
+                <!-- Chart properties tab -->
                 <n-tab-pane
                     v-if="currentElement && currentElement.type === 'chart'"
                     name="chart"
-                    :tab="'图表属性'"
+                    :tab="'Chart Properties'"
                 >
                     <div class="form-group">
-                        <label>图表类型</label>
+                        <label>Chart Type</label>
                         <select v-model="currentElement.chartType">
-                            <optgroup label="分类图表">
-                                <option value="pie">饼图</option>
-                                <option value="pie3D">3D饼图</option>
-                                <option value="bar">柱状图</option>
-                                <option value="bar3D">3D柱状图</option>
-                                <option value="stackedBar">堆叠柱状图</option>
-                                <option value="stackedBar3D">3D堆叠柱状图</option>
-                                <option value="line">折线图</option>
-                                <option value="area">面积图</option>
-                                <option value="stackedArea">堆叠面积图</option>
+                            <optgroup label="Category Charts">
+                                <option value="pie">Pie Chart</option>
+                                <option value="pie3D">3D Pie Chart</option>
+                                <option value="bar">Bar Chart</option>
+                                <option value="bar3D">3D Bar Chart</option>
+                                <option value="stackedBar">Stacked Bar Chart</option>
+                                <option value="stackedBar3D">3D Stacked Bar Chart</option>
+                                <option value="line">Line Chart</option>
+                                <option value="area">Area Chart</option>
+                                <option value="stackedArea">Stacked Area Chart</option>
                             </optgroup>
-                            <optgroup label="XY图表">
-                                <option value="xyBar">XY柱状图</option>
-                                <option value="xyLine">XY折线图</option>
-                                <option value="xyArea">XY面积图</option>
-                                <option value="scatter">散点图</option>
-                                <option value="bubble">气泡图</option>
-                                <option value="timeSeries">时间序列</option>
+                            <optgroup label="XY Charts">
+                                <option value="xyBar">XY Bar Chart</option>
+                                <option value="xyLine">XY Line Chart</option>
+                                <option value="xyArea">XY Area Chart</option>
+                                <option value="scatter">Scatter Chart</option>
+                                <option value="bubble">Bubble Chart</option>
+                                <option value="timeSeries">Time Series</option>
                             </optgroup>
-                            <optgroup label="金融图表">
-                                <option value="highLow">高低图</option>
-                                <option value="candlestick">K线图</option>
+                            <optgroup label="Financial Charts">
+                                <option value="highLow">High-Low Chart</option>
+                                <option value="candlestick">Candlestick Chart</option>
                             </optgroup>
-                            <optgroup label="特殊图表">
-                                <option value="meter">仪表盘</option>
-                                <option value="thermometer">温度计</option>
-                                <option value="multiAxis">多轴图</option>
-                                <option value="gantt">甘特图</option>
-                                <option value="spider">蛛网图</option>
+                            <optgroup label="Special Charts">
+                                <option value="meter">Meter</option>
+                                <option value="thermometer">Thermometer</option>
+                                <option value="multiAxis">Multi-Axis Chart</option>
+                                <option value="gantt">Gantt Chart</option>
+                                <option value="spider">Spider Chart</option>
                             </optgroup>
                         </select>
                     </div>
 
-                    <!-- 图表设置 -->
+                    <!-- Chart settings -->
                     <div class="form-group">
-                        <label>渲染类型</label>
+                        <label>Render Type</label>
                         <select v-model="currentElement.renderType">
-                            <option value="">默认</option>
+                            <option value="">Default</option>
                             <option value="svg">SVG</option>
                             <option value="draw">Draw</option>
                             <option value="image">Image</option>
@@ -2048,25 +2048,25 @@
                     <div class="form-group" style="display: flex; gap: 16px;">
                         <label style="display: flex; align-items: center; gap: 4px; white-space: nowrap;">
                             <input type="checkbox" v-model="currentElement.isShowTitle" />
-                            显示标题
+                            Show Title
                         </label>
                         <label style="display: flex; align-items: center; gap: 4px; white-space: nowrap;">
                             <input type="checkbox" v-model="currentElement.isShowSubtitle" />
-                            显示副标题
+                            Show Subtitle
                         </label>
                         <label style="display: flex; align-items: center; gap: 4px; white-space: nowrap;">
                             <input type="checkbox" v-model="currentElement.isShowLegend" />
-                            显示图例
+                            Show Legend
                         </label>
                     </div>
                     <div class="form-group">
-                        <label>自定义类</label>
+                        <label>Customizer Class</label>
                         <input v-model="currentElement.customizerClass" type="text" placeholder="com.example.MyChartCustomizer" />
                     </div>
 
-                    <!-- 标题表达式 -->
+                    <!-- Title expression -->
                     <div class="form-group">
-                        <label>标题表达式</label>
+                        <label>Title Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.titleExpression || ''"
                             @update:model-value="currentElement.titleExpression = $event"
@@ -2076,11 +2076,11 @@
                         />
                     </div>
                     <div class="form-group">
-                        <label>标题文本</label>
+                        <label>Title Text</label>
                         <input v-model="currentElement.title" type="text" />
                     </div>
                     <div class="form-group">
-                        <label>副标题表达式</label>
+                        <label>Subtitle Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.subtitleExpression || ''"
                             @update:model-value="currentElement.subtitleExpression = $event"
@@ -2090,7 +2090,7 @@
                         />
                     </div>
                     <div class="form-group">
-                        <label>图例表达式</label>
+                        <label>Legend Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.legendExpression || ''"
                             @update:model-value="currentElement.legendExpression = $event"
@@ -2100,29 +2100,29 @@
                         />
                     </div>
 
-                    <!-- 数据集设置 -->
+                    <!-- Dataset settings -->
                     <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                        <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">数据集</label>
+                        <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">Dataset</label>
                     </div>
                     <div class="form-group">
-                        <label>子数据集名称</label>
-                        <input v-model="currentElement.subDataset" type="text" placeholder="例如: pieDataset" />
+                        <label>Sub-Dataset Name</label>
+                        <input v-model="currentElement.subDataset" type="text" placeholder="e.g.: pieDataset" />
                     </div>
                     <div class="form-group">
-                        <label>数据源表达式</label>
+                        <label>Data Source Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.dataSourceExpression || ''"
                             @update:model-value="currentElement.dataSourceExpression = $event"
                             :report-fields="reportFields"
                             :report-parameters="reportParameters"
                             :report-variables="reportVariables"
-                            placeholder="例如: $P{myDatasource}"
+                            placeholder="e.g.: $P{myDatasource}"
                         />
                     </div>
                     <div class="form-group">
-                        <label>增量类型</label>
+                        <label>Increment Type</label>
                         <select v-model="currentElement.incrementType">
-                            <option value="">无</option>
+                            <option value="">None</option>
                             <option value="None">None</option>
                             <option value="Group">Group</option>
                             <option value="Page">Page</option>
@@ -2131,139 +2131,139 @@
                         </select>
                     </div>
                     <div class="form-group" v-if="currentElement.incrementType === 'Group'">
-                        <label>增量分组</label>
+                        <label>Increment Group</label>
                         <input v-model="currentElement.incrementGroup" type="text" />
                     </div>
 
-                    <!-- 系列表达式（分类图表） -->
+                    <!-- Series expression (category charts) -->
                     <template v-if="['bar','bar3D','stackedBar','stackedBar3D','line','area','stackedArea'].includes(currentElement.chartType)">
                         <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">系列表达式</label>
+                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">Series Expression</label>
                         </div>
                         <div class="form-group">
-                            <label>系列</label>
+                            <label>Series</label>
                             <ExpressionEditor
                                 :model-value="currentElement.seriesExpression || ''"
                                 @update:model-value="currentElement.seriesExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: $F{sales_state}"
+                                placeholder="e.g.: $F{sales_state}"
                             />
                         </div>
                         <div class="form-group">
-                            <label>分类</label>
+                            <label>Category</label>
                             <ExpressionEditor
                                 :model-value="currentElement.categoryExpression || ''"
                                 @update:model-value="currentElement.categoryExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: $F{full_name}"
+                                placeholder="e.g.: $F{full_name}"
                             />
                         </div>
                         <div class="form-group">
-                            <label>值</label>
+                            <label>Value</label>
                             <ExpressionEditor
                                 :model-value="currentElement.valueExpression || ''"
                                 @update:model-value="currentElement.valueExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: $V{amount}"
+                                placeholder="e.g.: $V{amount}"
                             />
                         </div>
                     </template>
 
-                    <!-- 饼图表达式 -->
+                    <!-- Pie chart expression -->
                     <template v-if="['pie','pie3D'].includes(currentElement.chartType)">
                         <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">饼图表达式</label>
+                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">Pie Chart Expression</label>
                         </div>
                         <div class="form-group">
-                            <label>键（Key）</label>
+                            <label>Key</label>
                             <ExpressionEditor
                                 :model-value="currentElement.keyExpression || ''"
                                 @update:model-value="currentElement.keyExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: $F{category}"
+                                placeholder="e.g.: $F{category}"
                             />
                         </div>
                         <div class="form-group">
-                            <label>值（Value）</label>
+                            <label>Value</label>
                             <ExpressionEditor
                                 :model-value="currentElement.valueExpression || ''"
                                 @update:model-value="currentElement.valueExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: $V{amount}"
+                                placeholder="e.g.: $V{amount}"
                             />
                         </div>
                     </template>
 
-                    <!-- XY图表表达式 -->
+                    <!-- XY chart expression -->
                     <template v-if="['scatter','bubble','xyLine','xyArea','xyBar','timeSeries','highLow','candlestick'].includes(currentElement.chartType)">
                         <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">XY系列表达式</label>
+                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">XY Series Expression</label>
                         </div>
                         <div class="form-group">
-                            <label>系列</label>
+                            <label>Series</label>
                             <ExpressionEditor
                                 :model-value="currentElement.seriesExpression || ''"
                                 @update:model-value="currentElement.seriesExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: $F{series}"
+                                placeholder="e.g.: $F{series}"
                             />
                         </div>
                         <div class="form-group">
-                            <label>X值</label>
+                            <label>X Value</label>
                             <ExpressionEditor
                                 :model-value="currentElement.xValueExpression || ''"
                                 @update:model-value="currentElement.xValueExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: $F{x_value}"
+                                placeholder="e.g.: $F{x_value}"
                             />
                         </div>
                         <div class="form-group">
-                            <label>Y值</label>
+                            <label>Y Value</label>
                             <ExpressionEditor
                                 :model-value="currentElement.yValueExpression || ''"
                                 @update:model-value="currentElement.yValueExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: $F{y_value}"
+                                placeholder="e.g.: $F{y_value}"
                             />
                         </div>
                     </template>
 
-                    <!-- 仪表盘/温度计表达式 -->
+                    <!-- Meter/thermometer expression -->
                     <template v-if="['meter','thermometer'].includes(currentElement.chartType)">
                         <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">仪表盘设置</label>
+                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">Meter Settings</label>
                         </div>
                         <div class="form-group">
-                            <label>数据表达式</label>
+                            <label>Data Expression</label>
                             <ExpressionEditor
                                 :model-value="currentElement.dataExpression || ''"
                                 @update:model-value="currentElement.dataExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: $V{value}"
+                                placeholder="e.g.: $V{value}"
                             />
                         </div>
                         <div class="form-group" v-if="currentElement.chartType === 'meter'">
-                            <label>形状</label>
+                            <label>Shape</label>
                             <select v-model="currentElement.shape">
-                                <option value="">默认</option>
+                                <option value="">Default</option>
                                 <option value="chord">Chord</option>
                                 <option value="pie">Pie</option>
                                 <option value="circle">Circle</option>
@@ -2273,114 +2273,114 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>单位</label>
-                            <input v-model="currentElement.units" type="text" placeholder="例如: %" />
+                            <label>Units</label>
+                            <input v-model="currentElement.units" type="text" placeholder="e.g.: %" />
                         </div>
                         <div class="form-group">
-                            <label>低阈值</label>
+                            <label>Low Threshold</label>
                             <ExpressionEditor
                                 :model-value="currentElement.lowExpression || ''"
                                 @update:model-value="currentElement.lowExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: 0"
+                                placeholder="e.g.: 0"
                             />
                         </div>
                         <div class="form-group">
-                            <label>中阈值</label>
+                            <label>Medium Threshold</label>
                             <ExpressionEditor
                                 :model-value="currentElement.mediumExpression || ''"
                                 @update:model-value="currentElement.mediumExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: 50"
+                                placeholder="e.g.: 50"
                             />
                         </div>
                         <div class="form-group">
-                            <label>高阈值</label>
+                            <label>High Threshold</label>
                             <ExpressionEditor
                                 :model-value="currentElement.highExpression || ''"
                                 @update:model-value="currentElement.highExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: 100"
+                                placeholder="e.g.: 100"
                             />
                         </div>
                     </template>
 
-                    <!-- 绘图设置（分类图表） -->
+                    <!-- Plot settings (category charts) -->
                     <template v-if="['bar','bar3D','stackedBar','stackedBar3D','line','area','stackedArea'].includes(currentElement.chartType)">
                         <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">绘图设置</label>
+                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">Plot Settings</label>
                         </div>
                         <div class="form-group" v-if="['line'].includes(currentElement.chartType)">
                             <label style="display: flex; align-items: center; gap: 4px;">
                                 <input type="checkbox" v-model="currentElement.isShowShapes" />
-                                显示数据点形状
+                                Show Data Point Shapes
                             </label>
                         </div>
                         <div class="form-group">
-                            <label>标签颜色</label>
+                            <label>Label Color</label>
                             <input v-model="currentElement.itemLabelColor" type="color" style="width: 60px; height: 30px;" />
                         </div>
                         <div class="form-group">
-                            <label>标签背景色</label>
+                            <label>Label Background Color</label>
                             <input v-model="currentElement.itemLabelBackgroundColor" type="color" style="width: 60px; height: 30px;" />
                         </div>
                         <div class="form-group">
-                            <label>分类轴标签</label>
+                            <label>Category Axis Label</label>
                             <ExpressionEditor
                                 :model-value="currentElement.categoryAxisLabelExpression || ''"
                                 @update:model-value="currentElement.categoryAxisLabelExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: $F{axis_label}"
+                                placeholder="e.g.: $F{axis_label}"
                             />
                         </div>
                         <div class="form-group">
-                            <label>值轴标签</label>
+                            <label>Value Axis Label</label>
                             <ExpressionEditor
                                 :model-value="currentElement.valueAxisLabelExpression || ''"
                                 @update:model-value="currentElement.valueAxisLabelExpression = $event"
                                 :report-fields="reportFields"
                                 :report-parameters="reportParameters"
                                 :report-variables="reportVariables"
-                                placeholder="例如: Amount"
+                                placeholder="e.g.: Amount"
                             />
                         </div>
                     </template>
 
-                    <!-- 饼图绘图设置 -->
+                    <!-- Pie chart plot settings -->
                     <template v-if="['pie','pie3D'].includes(currentElement.chartType)">
                         <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">绘图设置</label>
+                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">Plot Settings</label>
                         </div>
                         <div class="form-group">
                             <label style="display: flex; align-items: center; gap: 4px;">
                                 <input type="checkbox" v-model="currentElement.isCircular" />
-                                圆形显示
+                                Circular Display
                             </label>
                         </div>
                         <div class="form-group">
-                            <label>标签颜色</label>
+                            <label>Label Color</label>
                             <input v-model="currentElement.itemLabelColor" type="color" style="width: 60px; height: 30px;" />
                         </div>
                         <div class="form-group">
-                            <label>标签背景色</label>
+                            <label>Label Background Color</label>
                             <input v-model="currentElement.itemLabelBackgroundColor" type="color" style="width: 60px; height: 30px;" />
                         </div>
                     </template>
 
-                    <!-- 超链接设置 -->
+                    <!-- Hyperlink settings -->
                     <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                        <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">超链接</label>
+                        <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">Hyperlink</label>
                     </div>
                     <div class="form-group">
-                        <label>工具提示表达式</label>
+                        <label>Tooltip Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.hyperlinkTooltipExpression || ''"
                             @update:model-value="currentElement.hyperlinkTooltipExpression = $event"
@@ -2390,9 +2390,9 @@
                         />
                     </div>
                     <div class="form-group">
-                        <label>超链接类型</label>
+                        <label>Hyperlink Type</label>
                         <select v-model="currentElement.hyperlinkType">
-                            <option value="">无</option>
+                            <option value="">None</option>
                             <option value="Reference">Reference</option>
                             <option value="LocalAnchor">LocalAnchor</option>
                             <option value="LocalPage">LocalPage</option>
@@ -2402,9 +2402,9 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>超链接目标</label>
+                        <label>Hyperlink Target</label>
                         <select v-model="currentElement.hyperlinkTarget">
-                            <option value="">默认</option>
+                            <option value="">Default</option>
                             <option value="Self">Self</option>
                             <option value="Blank">Blank</option>
                             <option value="Top">Top</option>
@@ -2412,7 +2412,7 @@
                         </select>
                     </div>
                     <div class="form-group" v-if="currentElement.hyperlinkType">
-                        <label>超链接表达式</label>
+                        <label>Hyperlink Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.hyperlinkExpression || ''"
                             @update:model-value="currentElement.hyperlinkExpression = $event"
@@ -2422,19 +2422,19 @@
                         />
                     </div>
                     <div class="form-group">
-                        <label>书签级别</label>
+                        <label>Bookmark Level</label>
                         <input v-model.number="currentElement.bookmarkLevel" type="number" min="0" max="10" />
                     </div>
                 </n-tab-pane>
 
-                <!-- 条码属性标签页 -->
+                <!-- Barcode properties tab -->
                 <n-tab-pane
                     v-if="currentElement && currentElement.type === 'barcode'"
                     name="barcode"
-                    :tab="'条码属性'"
+                    :tab="'Barcode Properties'"
                 >
                     <div class="form-group">
-                        <label>条码类型</label>
+                        <label>Barcode Type</label>
                         <select v-model="currentElement.barcodeType">
                             <option value="Code128">Code128</option>
                             <option value="Code39">Code39</option>
@@ -2451,34 +2451,34 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>条码表达式</label>
+                        <label>Barcode Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.codeExpression || ''"
                             @update:model-value="currentElement.codeExpression = $event"
                             :report-fields="reportFields"
                             :report-parameters="reportParameters"
                             :report-variables="reportVariables"
-                            placeholder='例如: "1234567890"'
+                            placeholder='e.g.: "1234567890"'
                         />
                     </div>
                 </n-tab-pane>
 
-                <!-- 地图属性标签页 -->
+                <!-- Map properties tab -->
                 <n-tab-pane
                     v-if="currentElement && currentElement.type === 'map'"
                     name="map"
-                    :tab="'地图属性'"
+                    :tab="'Map Properties'"
                 >
                     <div class="form-group">
-                        <label>地图类型</label>
+                        <label>Map Type</label>
                         <select v-model="currentElement.mapType">
                             <option value="html">HTML</option>
-                            <option value="image">图片</option>
+                            <option value="image">Image</option>
                             <option value="pdf">PDF</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>纬度表达式</label>
+                        <label>Latitude Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.latExpression || ''"
                             @update:model-value="currentElement.latExpression = $event"
@@ -2488,7 +2488,7 @@
                         />
                     </div>
                     <div class="form-group">
-                        <label>经度表达式</label>
+                        <label>Longitude Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.lngExpression || ''"
                             @update:model-value="currentElement.lngExpression = $event"
@@ -2498,7 +2498,7 @@
                         />
                     </div>
                     <div class="form-group">
-                        <label>缩放级别表达式</label>
+                        <label>Zoom Level Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.zoomExpression || ''"
                             @update:model-value="currentElement.zoomExpression = $event"
@@ -2508,7 +2508,7 @@
                         />
                     </div>
                     <div class="form-group">
-                        <label>语言表达式</label>
+                        <label>Language Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.languageExpression || ''"
                             @update:model-value="currentElement.languageExpression = $event"
@@ -2519,78 +2519,78 @@
                     </div>
                 </n-tab-pane>
 
-                <!-- 交叉表属性标签页 -->
+                <!-- Crosstab properties tab -->
                 <n-tab-pane
                     v-if="currentElement && currentElement.type === 'crosstab'"
                     name="crosstab"
-                    :tab="'交叉表属性'"
+                    :tab="'Crosstab Properties'"
                 >
                     <div class="form-group">
-                        <label>交叉表宽度</label>
+                        <label>Crosstab Width</label>
                         <input
                             v-model.number="currentElement.crosstabWidth"
                             type="number"
                             min="0"
-                            placeholder="像素"
+                            placeholder="Pixels"
                         />
                     </div>
                     <div class="form-group">
-                        <label>交叉表高度</label>
+                        <label>Crosstab Height</label>
                         <input
                             v-model.number="currentElement.crosstabHeight"
                             type="number"
                             min="0"
-                            placeholder="像素"
+                            placeholder="Pixels"
                         />
                     </div>
                     <div class="form-group">
-                        <label>无数据时显示</label>
+                        <label>When No Data</label>
                         <select v-model="currentElement.whenNoDataType">
-                            <option value="AllSectionsNoDetail">所有区域无详情</option>
-                            <option value="AllSectionsWithDetail">所有区域包含详情</option>
-                            <option value="NoDataCell">无数据单元格</option>
-                            <option value="Blank">空白</option>
+                            <option value="AllSectionsNoDetail">All Sections, No Detail</option>
+                            <option value="AllSectionsWithDetail">All Sections With Detail</option>
+                            <option value="NoDataCell">No Data Cell</option>
+                            <option value="Blank">Blank</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>求值时间</label>
+                        <label>Evaluation Time</label>
                         <select v-model="currentElement.evaluationTime">
-                            <option value="Now">Now - 立即求值</option>
-                            <option value="Report">Report - 报表结束时</option>
-                            <option value="Page">Page - 页面结束时</option>
-                            <option value="Column">Column - 列结束时</option>
-                            <option value="Group">Group - 组结束时</option>
-                            <option value="Band">Band - 区域结束时</option>
-                            <option value="Auto">Auto - 引擎决定</option>
-                            <option value="Master">Master - 主报表结束时</option>
+                            <option value="Now">Now - Evaluate Immediately</option>
+                            <option value="Report">Report - At Report End</option>
+                            <option value="Page">Page - At Page End</option>
+                            <option value="Column">Column - At Column End</option>
+                            <option value="Group">Group - At Group End</option>
+                            <option value="Band">Band - At Band End</option>
+                            <option value="Auto">Auto - Engine Decides</option>
+                            <option value="Master">Master - At Master Report End</option>
                         </select>
                     </div>
                 </n-tab-pane>
 
-                <!-- 图标标签属性标签页 -->
+                <!-- Icon label properties tab -->
                 <n-tab-pane
                     v-if="currentElement && currentElement.type === 'iconLabel'"
                     name="iconLabel"
-                    :tab="'图标标签属性'"
+                    :tab="'Icon Label Properties'"
                 >
                     <div class="form-group">
-                        <label>图标</label>
+                        <label>Icon</label>
                         <input
                             v-model="currentElement.icon"
                             type="text"
-                            placeholder="输入图标名称或 emoji，例如: 📊、📊"
+                            placeholder="Enter an icon name or emoji, e.g.: 📊, 📊"
                         />
                     </div>
                     <div class="form-group">
-                        <label>静态标签</label>
+                        <label>Static Label</label>
                         <input
                             v-model="currentElement.label"
                             type="text"
-                            placeholder="输入固定标签文本"
+                            placeholder="Enter fixed label text"
                         />
                     </div>
                     <div class="form-group">
-                        <label>标签表达式</label>
+                        <label>Label Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.labelExpression || ''"
                             @update:model-value="currentElement.labelExpression = $event"
@@ -2600,177 +2600,177 @@
                         />
                     </div>
                     <div class="form-group">
-                        <label>求值时间</label>
+                        <label>Evaluation Time</label>
                         <select v-model="currentElement.evaluationTime">
-                            <option value="Now">Now - 立即求值</option>
-                            <option value="Report">Report - 报表结束时</option>
-                            <option value="Page">Page - 页面结束时</option>
-                            <option value="Column">Column - 列结束时</option>
-                            <option value="Group">Group - 组结束时</option>
-                            <option value="Band">Band - 区域结束时</option>
-                            <option value="Auto">Auto - 引擎决定</option>
-                            <option value="Master">Master - 主报表结束时</option>
+                            <option value="Now">Now - Evaluate Immediately</option>
+                            <option value="Report">Report - At Report End</option>
+                            <option value="Page">Page - At Page End</option>
+                            <option value="Column">Column - At Column End</option>
+                            <option value="Group">Group - At Group End</option>
+                            <option value="Band">Band - At Band End</option>
+                            <option value="Auto">Auto - Engine Decides</option>
+                            <option value="Master">Master - At Master Report End</option>
                         </select>
                     </div>
                 </n-tab-pane>
 
-                <!-- 通用元素属性标签页 -->
+                <!-- Generic element properties tab -->
                 <n-tab-pane
                     v-if="currentElement && currentElement.type === 'genericElement'"
                     name="genericElement"
-                    :tab="'通用元素属性'"
+                    :tab="'Generic Element Properties'"
                 >
                     <div class="form-group">
-                        <label>命名空间</label>
-                        <input v-model="currentElement.namespace" type="text" placeholder="例如: http://example.com/namespace" />
+                        <label>Namespace</label>
+                        <input v-model="currentElement.namespace" type="text" placeholder="e.g.: http://example.com/namespace" />
                     </div>
                     <div class="form-group">
-                        <label>求值时间</label>
+                        <label>Evaluation Time</label>
                         <select v-model="currentElement.evaluationTime">
-                            <option value="Now">Now - 立即求值</option>
-                            <option value="Report">Report - 报表结束时</option>
-                            <option value="Page">Page - 页面结束时</option>
-                            <option value="Column">Column - 列结束时</option>
-                            <option value="Group">Group - 组结束时</option>
-                            <option value="Band">Band - 区域结束时</option>
-                            <option value="Auto">Auto - 引擎决定</option>
-                            <option value="Master">Master - 主报表结束时</option>
+                            <option value="Now">Now - Evaluate Immediately</option>
+                            <option value="Report">Report - At Report End</option>
+                            <option value="Page">Page - At Page End</option>
+                            <option value="Column">Column - At Column End</option>
+                            <option value="Group">Group - At Group End</option>
+                            <option value="Band">Band - At Band End</option>
+                            <option value="Auto">Auto - Engine Decides</option>
+                            <option value="Master">Master - At Master Report End</option>
                         </select>
                     </div>
                 </n-tab-pane>
 
-                <!-- 排序属性标签页 -->
+                <!-- Sort properties tab -->
                 <n-tab-pane
                     v-if="currentElement && currentElement.type === 'sort'"
                     name="sort"
-                    :tab="'排序属性'"
+                    :tab="'Sort Properties'"
                 >
                     <div class="form-group">
-                        <label>排序字段</label>
+                        <label>Sort Fields</label>
                         <div v-if="currentElement.sortFields && currentElement.sortFields.length > 0">
                             <div v-for="(field, index) in currentElement.sortFields" :key="index" class="sort-field-item">
-                                <input v-model="field.name" type="text" placeholder="字段名" class="sort-field-name" />
+                                <input v-model="field.name" type="text" placeholder="Field Name" class="sort-field-name" />
                                 <select v-model="field.order" class="sort-field-order">
-                                    <option value="Ascending">升序</option>
-                                    <option value="Descending">降序</option>
+                                    <option value="Ascending">Ascending</option>
+                                    <option value="Descending">Descending</option>
                                 </select>
-                                <button @click="removeSortField(index)" class="sort-field-remove">删除</button>
+                                <button @click="removeSortField(index)" class="sort-field-remove">Delete</button>
                             </div>
                         </div>
-                        <button @click="addSortField" class="add-sort-field">添加排序字段</button>
+                        <button @click="addSortField" class="add-sort-field">Add Sort Field</button>
                     </div>
                     <div class="form-group">
-                        <label>求值时间</label>
+                        <label>Evaluation Time</label>
                         <select v-model="currentElement.evaluationTime">
-                            <option value="Now">Now - 立即求值</option>
-                            <option value="Report">Report - 报表结束时</option>
-                            <option value="Page">Page - 页面结束时</option>
-                            <option value="Column">Column - 列结束时</option>
-                            <option value="Group">Group - 组结束时</option>
-                            <option value="Band">Band - 区域结束时</option>
-                            <option value="Auto">Auto - 引擎决定</option>
-                            <option value="Master">Master - 主报表结束时</option>
+                            <option value="Now">Now - Evaluate Immediately</option>
+                            <option value="Report">Report - At Report End</option>
+                            <option value="Page">Page - At Page End</option>
+                            <option value="Column">Column - At Column End</option>
+                            <option value="Group">Group - At Group End</option>
+                            <option value="Band">Band - At Band End</option>
+                            <option value="Auto">Auto - Engine Decides</option>
+                            <option value="Master">Master - At Master Report End</option>
                         </select>
                     </div>
                 </n-tab-pane>
 
-                <!-- 列表属性标签页 -->
+                <!-- List properties tab -->
                 <n-tab-pane
                     v-if="currentElement && currentElement.type === 'list'"
                     name="list"
-                    :tab="'列表属性'"
+                    :tab="'List Properties'"
                 >
                     <div class="form-group">
-                        <label>打印顺序</label>
+                        <label>Print Order</label>
                         <select v-model="currentElement.printOrder">
-                            <option value="Vertical">Vertical - 垂直</option>
-                            <option value="Horizontal">Horizontal - 水平</option>
+                            <option value="Vertical">Vertical - Vertical</option>
+                            <option value="Horizontal">Horizontal - Horizontal</option>
                         </select>
                     </div>
                     <div class="form-group" v-if="currentElement.printOrder === 'Horizontal'">
                         <label style="display: flex; align-items: center; gap: 4px;">
                             <input type="checkbox" v-model="currentElement.ignoreWidth" />
-                            忽略宽度（继续渲染）
+                            Ignore Width (Continue Rendering)
                         </label>
                     </div>
                     <div class="form-group">
-                        <label>子数据集名称</label>
-                        <input v-model="currentElement.subDataset" type="text" placeholder="例如: Addresses" />
+                        <label>Sub-Dataset Name</label>
+                        <input v-model="currentElement.subDataset" type="text" placeholder="e.g.: Addresses" />
                     </div>
                     <div class="form-group">
-                        <label>数据源表达式</label>
+                        <label>Data Source Expression</label>
                         <ExpressionEditor
                             :model-value="currentElement.dataSourceExpression || ''"
                             @update:model-value="currentElement.dataSourceExpression = $event"
                             :report-fields="reportFields"
                             :report-parameters="reportParameters"
                             :report-variables="reportVariables"
-                            placeholder='例如: $P{myDatasource}'
+                            placeholder='e.g.: $P{myDatasource}'
                         />
                     </div>
                     <div class="form-group">
-                        <label>连接表达式（可选）</label>
+                        <label>Connection Expression (Optional)</label>
                         <ExpressionEditor
                             :model-value="currentElement.connectionExpression || ''"
                             @update:model-value="currentElement.connectionExpression = $event"
                             :report-fields="reportFields"
                             :report-parameters="reportParameters"
                             :report-variables="reportVariables"
-                            placeholder='例如: $P{connection}'
+                            placeholder='e.g.: $P{connection}'
                         />
                     </div>
                     <div class="form-group">
-                        <label>列表内容高度</label>
+                        <label>List Contents Height</label>
                         <input
                             v-model.number="listContentsHeight"
                             type="number"
                             min="0"
-                            placeholder="像素"
+                            placeholder="Pixels"
                             @change="updateListContentsHeight"
                         />
                     </div>
                     <div class="form-group">
-                        <label>列表内容宽度</label>
+                        <label>List Contents Width</label>
                         <input
                             v-model.number="listContentsWidth"
                             type="number"
                             min="0"
-                            placeholder="像素"
+                            placeholder="Pixels"
                             @change="updateListContentsWidth"
                         />
                     </div>
                     <div class="form-group">
-                        <label>分页类型</label>
+                        <label>Split Type</label>
                         <select v-model="currentElement.splitType">
-                            <option value="Stretch">Stretch - 拉伸</option>
-                            <option value="Prevent">Prevent - 防止分割</option>
-                            <option value="Immediate">Immediate - 立即分割</option>
+                            <option value="Stretch">Stretch - Stretch</option>
+                            <option value="Prevent">Prevent - Prevent Split</option>
+                            <option value="Immediate">Immediate - Split Immediately</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>求值时间</label>
+                        <label>Evaluation Time</label>
                         <select v-model="currentElement.evaluationTime">
-                            <option value="Now">Now - 立即求值</option>
-                            <option value="Report">Report - 报表结束时</option>
-                            <option value="Page">Page - 页面结束时</option>
-                            <option value="Column">Column - 列结束时</option>
-                            <option value="Group">Group - 组结束时</option>
-                            <option value="Band">Band - 区域结束时</option>
-                            <option value="Auto">Auto - 引擎决定</option>
+                            <option value="Now">Now - Evaluate Immediately</option>
+                            <option value="Report">Report - At Report End</option>
+                            <option value="Page">Page - At Page End</option>
+                            <option value="Column">Column - At Column End</option>
+                            <option value="Group">Group - At Group End</option>
+                            <option value="Band">Band - At Band End</option>
+                            <option value="Auto">Auto - Engine Decides</option>
                         </select>
                     </div>
                     <div
                         class="form-group"
                         v-if="currentElement.evaluationTime === 'Group'"
                     >
-                        <label>求值组</label>
+                        <label>Evaluation Group</label>
                         <ExpressionEditor
                             :model-value="currentElement.evaluationGroup || ''"
                             @update:model-value="currentElement.evaluationGroup = $event"
                             :report-fields="reportFields"
                             :report-parameters="reportParameters"
                             :report-variables="reportVariables"
-                            placeholder="输入组名称"
+                            placeholder="Enter group name"
                         />
                     </div>
                 </n-tab-pane>
@@ -2785,7 +2785,7 @@
         </div>
     </div>
 
-    <!-- 样式管理模态框 -->
+    <!-- Style management modal -->
     <BaseModal
         :visible="showStyleManagerModal"
         :title="t('properties.styleManagement')"
@@ -2801,7 +2801,7 @@
             >
                 <h4>{{ style.name }}</h4>
                 <div class="style-properties">
-                    <!-- 背景模式设置 -->
+                    <!-- Background mode settings -->
                     <div class="form-group">
                         <label>{{ t("properties.backgroundMode") }}</label>
                         <select
@@ -2820,7 +2820,7 @@
                         </select>
                     </div>
 
-                    <!-- 前景颜色设置 -->
+                    <!-- Foreground color settings -->
                     <div class="form-group">
                         <label>{{ t("properties.forecolor") }}</label>
                         <ColorPickerWithOpacity
@@ -2831,7 +2831,7 @@
                         />
                     </div>
 
-                    <!-- 背景颜色设置 -->
+                    <!-- Background color settings -->
                     <div class="form-group">
                         <label>{{ t("properties.backgroundColor") }}</label>
                         <ColorPickerWithOpacity
@@ -2842,7 +2842,7 @@
                         />
                     </div>
 
-                    <!-- 水平文本对齐 -->
+                    <!-- Horizontal text alignment -->
                     <div class="form-group">
                         <label>{{ t("properties.hTextAlign") }}</label>
                         <select
@@ -2867,7 +2867,7 @@
                         </select>
                     </div>
 
-                    <!-- 水平图片对齐 -->
+                    <!-- Horizontal image alignment -->
                     <div class="form-group">
                         <label>{{ t("properties.hImageAlign") }}</label>
                         <select
@@ -2889,7 +2889,7 @@
                         </select>
                     </div>
 
-                    <!-- 垂直文本对齐 -->
+                    <!-- Vertical text alignment -->
                     <div class="form-group">
                         <label>{{ t("properties.vTextAlign") }}</label>
                         <select
@@ -2911,7 +2911,7 @@
                         </select>
                     </div>
 
-                    <!-- 垂直图片对齐 -->
+                    <!-- Vertical image alignment -->
                     <div class="form-group">
                         <label>{{ t("properties.vImageAlign") }}</label>
                         <select
@@ -3004,26 +3004,26 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-// 实时预览（用于过渡动画）
+// Live preview (used for transition animation)
 const { previewConfig, startPreview, stopPreview, confirmPreview } =
     useLivePreview({
         animated: true,
         animationDuration: 150,
     });
 
-// 可用字体列表
+// List of available fonts
 const availableFonts = ref<string[]>([]);
 
 onMounted(async () => {
     availableFonts.value = await getAvailableFonts();
 });
 
-// 计算属性
+// Computed properties
 const currentElement = computed(() => {
     if (props.selectedElement && props.bands && Array.isArray(props.bands)) {
         const band = props.bands[props.selectedElement.bandIndex];
         if (band && band.elements && Array.isArray(band.elements)) {
-            // 检查是否是嵌套在Frame中的元素
+            // Check whether this is an element nested inside a Frame
             if (props.selectedElement.parentFrameIndex !== undefined) {
                 const frame =
                     band.elements[props.selectedElement.parentFrameIndex];
@@ -3038,12 +3038,12 @@ const currentElement = computed(() => {
     return null;
 });
 
-// 计算当前元素类型
+// Compute the current element type
 const elementType = computed(() => {
     return currentElement.value?.type || "";
 });
 
-// 表格行高设置
+// Table row height settings
 const tableRowHeights = ref({
     tableHeader: 30,
     columnHeader: 30,
@@ -3052,7 +3052,7 @@ const tableRowHeights = ref({
     tableFooter: 30,
 });
 
-// 表格样式选择
+// Table style selection
 const tableStyles = ref({
     tableHeader: "Table_TH",
     columnHeader: "Table_CH",
@@ -3060,10 +3060,10 @@ const tableStyles = ref({
     detailCell: "Table_TD",
 });
 
-// 样式管理模态框控制
+// Style management modal control
 const showStyleManagerModal = ref(false);
 
-// Frame属性更新处理
+// Frame property update handler
 const handleFramePropertyUpdate = (updatedElement: any) => {
     if (currentElement.value && props.selectedElement) {
         const band = props.bands[props.selectedElement.bandIndex];
@@ -3085,7 +3085,7 @@ const handleFramePropertyUpdate = (updatedElement: any) => {
     }
 };
 
-// Table属性更新处理
+// Table property update handler
 const handleTablePropertyUpdate = (updatedElement: any) => {
     if (currentElement.value && props.selectedElement) {
         const band = props.bands[props.selectedElement.bandIndex];
@@ -3107,7 +3107,7 @@ const handleTablePropertyUpdate = (updatedElement: any) => {
     }
 };
 
-// 添加列
+// Add column
 const addColumn = () => {
     if (currentElement.value && currentElement.value.type === "table") {
         if (!currentElement.value.columns) {
@@ -3115,7 +3115,7 @@ const addColumn = () => {
         }
         const newColumn = {
             uuid: crypto.randomUUID(),
-            name: `列 ${currentElement.value.columns.length + 1}`,
+            name: `Column ${currentElement.value.columns.length + 1}`,
             width: 100,
             columnHeader: {
                 enable: true,
@@ -3125,7 +3125,7 @@ const addColumn = () => {
                     y: 0,
                     width: 100,
                     height: 30,
-                    text: `列 ${currentElement.value.columns.length + 1}`,
+                    text: `Column ${currentElement.value.columns.length + 1}`,
                     textAlignment: "Center",
                     verticalAlignment: "Middle",
                 },
@@ -3149,7 +3149,7 @@ const addColumn = () => {
     }
 };
 
-// 删除列
+// Delete column
 const removeColumn = (index: number) => {
     if (
         currentElement.value &&
@@ -3161,21 +3161,21 @@ const removeColumn = (index: number) => {
     }
 };
 
-// ==================== 列组合树管理 ====================
+// ==================== Column combination tree management ====================
 
 const tableChildren = computed<(Column | ColumnGroup)[]>(() => {
     if (!currentElement.value || currentElement.value.type !== "table")
         return [];
     const el = currentElement.value as TableElement;
     if (el.children && el.children.length > 0) return el.children;
-    // 没有 children 时从 columns 初始化
+    // Initialize from columns when there are no children
     return el.columns || [];
 });
 
 function syncAndEmit() {
     if (!currentElement.value || currentElement.value.type !== "table") return;
     const el = currentElement.value as TableElement;
-    // 确保 children 存在
+    // Ensure children exists
     if (!el.children) {
         el.children = [...(el.columns || [])];
     }
@@ -3197,7 +3197,7 @@ function handleAddRootColumn() {
     ensureChildren();
     const el = currentElement.value as TableElement;
     const count = (el.children || []).length;
-    const newCol = createDefaultColumn(`列 ${count + 1}`);
+    const newCol = createDefaultColumn(`Column ${count + 1}`);
     el.children!.push(newCol);
     syncAndEmit();
 }
@@ -3208,7 +3208,7 @@ function handleAddRootGroup() {
     ensureChildren();
     const el = currentElement.value as TableElement;
     const count = (el.children || []).filter((c) => "children" in c).length;
-    const newGroup = createDefaultColumnGroup(`分组 ${count + 1}`);
+    const newGroup = createDefaultColumnGroup(`Group ${count + 1}`);
     el.children!.push(newGroup);
     syncAndEmit();
 }
@@ -3222,11 +3222,11 @@ function handleColumnNodeUpdate(uuid: string, updates: Partial<BaseColumn>) {
         const node = result.parent[result.index];
         if (node) {
             Object.assign(node, updates);
-            // 如果更新了宽度，需要同步
+            // If the width was updated, it needs to be synced
             if (updates.width !== undefined) {
                 TableUtils.updateAllColumnGroupWidths(el.children!);
             }
-            // 如果更新了名称，同步到单元格
+            // If the name was updated, sync it to the cell
             if (updates.name !== undefined) {
                 if (node.columnHeader?.element) {
                     node.columnHeader.element.text = updates.name;
@@ -3254,7 +3254,7 @@ function handleAddColumnAfter(afterUuid: string) {
     const el = currentElement.value as TableElement;
     const result = findInParentArray(el.children!, afterUuid);
     if (result) {
-        const newCol = createDefaultColumn(`列 ${result.parent.length + 1}`);
+        const newCol = createDefaultColumn(`Column ${result.parent.length + 1}`);
         result.parent.splice(result.index + 1, 0, newCol);
     }
     syncAndEmit();
@@ -3269,7 +3269,7 @@ function handleAddColumnChild(groupUuid: string) {
         const group = result.parent[result.index] as ColumnGroup;
         if (group && "children" in group) {
             const newCol = createDefaultColumn(
-                `列 ${group.children.length + 1}`,
+                `Column ${group.children.length + 1}`,
             );
             group.children.push(newCol);
         }
@@ -3284,7 +3284,7 @@ function handleAddColumnGroupAfter(afterUuid: string) {
     const result = findInParentArray(el.children!, afterUuid);
     if (result) {
         const newGroup = createDefaultColumnGroup(
-            `分组 ${result.parent.length + 1}`,
+            `Group ${result.parent.length + 1}`,
         );
         result.parent.splice(result.index + 1, 0, newGroup);
     }
@@ -3317,7 +3317,7 @@ function handleMoveNode(uuid: string, direction: "up" | "down") {
     syncAndEmit();
 }
 
-// 报表样式管理
+// Report style management
 const reportStyles = ref<any[]>(
     props.reportStyles || [
         {
@@ -3422,16 +3422,16 @@ const reportStyles = ref<any[]>(
     ],
 );
 
-// 保存样式更改
+// Save style changes
 function saveStyleChanges() {
     emit("update:reportStyles", reportStyles.value);
     emit("update-jrxml");
     showStyleManagerModal.value = false;
 }
 
-// 取消样式更改
+// Cancel style changes
 function cancelStyleChanges() {
-    // 重置样式为原始状态
+    // Reset styles to their original state
     reportStyles.value = props.reportStyles || [
         {
             name: "Table_TH",
@@ -3536,18 +3536,18 @@ function cancelStyleChanges() {
     showStyleManagerModal.value = false;
 }
 
-// 当表格元素变化时，更新行高设置和样式选择
+// When the table element changes, update the row height settings and style selection
 watch(
     () => currentElement.value,
     (newElement) => {
         if (newElement && newElement.type === "table") {
-            // 从列中获取当前行高值（除以 rowSpan 还原单行高度）
-            // 优先从 columns 数组获取，如果为空则从 children 数组获取
+            // Get the current row height value from the column (divide by rowSpan to restore the single-row height)
+            // Prefer reading from the columns array; fall back to the children array if empty
             let firstColumn: any = null;
             if (newElement.columns && newElement.columns.length > 0) {
                 firstColumn = newElement.columns[0];
             } else if (newElement.children && newElement.children.length > 0) {
-                // 从 children 中找到第一个普通列
+                // Find the first plain column within children
                 for (const item of newElement.children) {
                     if ('detailCell' in item) {
                         firstColumn = item;
@@ -3557,7 +3557,7 @@ watch(
             }
 
             if (firstColumn) {
-                console.log("Watch触发! firstColumn.columnHeader:", {
+                console.log("Watch triggered! firstColumn.columnHeader:", {
                     height: firstColumn.columnHeader?.height,
                     rowSpan: firstColumn.columnHeader?.rowSpan,
                     elementHeight: firstColumn.columnHeader?.element?.height,
@@ -3573,21 +3573,21 @@ watch(
                     console.log("getBaseHeight:", { inputHeight: h, rowSpan: rs, result });
                     return result;
                 };
-                console.log("Watch更新tableRowHeights前的firstColumn.columnHeader:", firstColumn.columnHeader);
+                console.log("Watch: firstColumn.columnHeader before updating tableRowHeights:", firstColumn.columnHeader);
                 const headerHeight = getBaseHeight(firstColumn.tableHeader);
                 const colHeaderHeight = getBaseHeight(firstColumn.columnHeader);
                 const detailHeight = getBaseHeight(firstColumn.detailCell);
                 const footerHeight = getBaseHeight(firstColumn.columnFooter);
                 const tableFooterHeight = getBaseHeight(firstColumn.tableFooter);
 
-                console.log("Watch计算出的高度:", { headerHeight, colHeaderHeight, detailHeight, footerHeight, tableFooterHeight });
+                console.log("Watch: computed heights:", { headerHeight, colHeaderHeight, detailHeight, footerHeight, tableFooterHeight });
 
-                // 只有当获取到有效值时才更新，避免覆盖用户输入的值
+                // Only update when a valid value was obtained, to avoid overwriting user input
                 if (headerHeight !== undefined) {
                     tableRowHeights.value.tableHeader = headerHeight;
                 }
                 if (colHeaderHeight !== undefined) {
-                    console.log("Watch更新tableRowHeights.columnHeader:", colHeaderHeight);
+                    console.log("Watch: updating tableRowHeights.columnHeader:", colHeaderHeight);
                     tableRowHeights.value.columnHeader = colHeaderHeight;
                 }
                 if (detailHeight !== undefined) {
@@ -3600,7 +3600,7 @@ watch(
                     tableRowHeights.value.tableFooter = tableFooterHeight;
                 }
 
-                // 更新表格样式选择
+                // Update the table style selection
                 tableStyles.value.tableHeader =
                     (firstColumn.tableHeader as any)?.style ?? "Table_TH";
                 tableStyles.value.columnHeader =
@@ -3615,14 +3615,14 @@ watch(
     { deep: true, immediate: true },
 );
 
-// 更新所有列的行高
+// Update the row height for all columns
 function updateAllColumnRowHeights() {
     if (!currentElement.value || currentElement.value.type !== "table") return;
 
-    // 收集所有要处理的列，避免重复
+    // Collect all columns to process, avoiding duplicates
     const processedColumns = new Set<string>();
 
-    console.log("开始更新所有列的行高:", {
+    console.log("Starting to update row heights for all columns:", {
         tableRowHeights: tableRowHeights.value,
         columnCount: currentElement.value.columns
             ? currentElement.value.columns.length
@@ -3632,44 +3632,44 @@ function updateAllColumnRowHeights() {
             : 0,
     });
 
-    // 处理普通列
+    // Process plain columns
     if (currentElement.value.columns) {
         currentElement.value.columns.forEach((column) => {
             if (!processedColumns.has(column.uuid)) {
                 processedColumns.add(column.uuid);
                 updateColumnRowHeights(column);
             } else {
-                console.log("跳过重复列:", column.name || column.uuid);
+                console.log("Skipping duplicate column:", column.name || column.uuid);
             }
         });
-        console.log("普通列行高更新完成");
+        console.log("Plain column row height update complete");
     }
 
-    // 处理分组列
+    // Process grouped columns
     if (currentElement.value.children) {
         currentElement.value.children.forEach((item) => {
-            // 检查是分组还是普通列
+            // Check whether this is a group or a plain column
             if ('children' in item && item.children && item.children.length > 0) {
-                // 是ColumnGroup，递归处理
+                // It's a ColumnGroup, process recursively
                 updateGroupRowHeights(item);
             } else if ('detailCell' in item) {
-                // 是TableColumn（普通列），直接更新detailCell
-                console.log("更新顶层普通列detailCell:", item.name || item.uuid);
+                // It's a TableColumn (plain column), update detailCell directly
+                console.log("Updating top-level plain column detailCell:", item.name || item.uuid);
                 updateColumnRowHeights(item);
             }
         });
-        console.log("分组列行高更新完成");
+        console.log("Grouped column row height update complete");
     }
 
-    console.log("所有列行高更新完成，表格元素:", currentElement.value);
+    console.log("All column row heights updated, table element:", currentElement.value);
 
-    // 在 emit 前检查合并列的高度
+    // Check merged column heights before emitting
     const tableElement = currentElement.value as any;
     if (tableElement?.columns) {
         tableElement.columns.forEach((col: any) => {
             if (col.columnHeader && col.columnHeader.rowSpan && col.columnHeader.rowSpan > 1) {
-                console.log("emit前检查合并列:", {
-                    列名: col.name,
+                console.log("Checking merged column before emit:", {
+                    columnName: col.name,
                     columnHeaderHeight: col.columnHeader.height,
                     elementHeight: col.columnHeader.element?.height,
                     rowSpan: col.columnHeader.rowSpan,
@@ -3678,16 +3678,16 @@ function updateAllColumnRowHeights() {
         });
     }
 
-    // 使用nextTick确保Vue完成更新后再触发事件，避免嵌套响应式属性追踪不及时的问题
+    // Use nextTick to ensure Vue finishes updating before firing the event, avoiding delayed tracking of nested reactive properties
     nextTick(() => {
-        console.log("nextTick: 触发更新事件");
+        console.log("nextTick: firing update event");
 
-        // 在 nextTick 中再次检查高度
+        // Check the heights again within nextTick
         if (tableElement?.columns) {
             tableElement.columns.forEach((col: any) => {
                 if (col.columnHeader && col.columnHeader.rowSpan && col.columnHeader.rowSpan > 1) {
-                    console.log("nextTick中检查合并列:", {
-                        列名: col.name,
+                    console.log("Checking merged column in nextTick:", {
+                        columnName: col.name,
                         columnHeaderHeight: col.columnHeader.height,
                         elementHeight: col.columnHeader.element?.height,
                         rowSpan: col.columnHeader.rowSpan,
@@ -3698,13 +3698,13 @@ function updateAllColumnRowHeights() {
 
         emit("update:bands", props.bands);
 
-        // emit后立即检查
-        console.log("emit后立即检查合并列:");
+        // Check immediately after emit
+        console.log("Checking merged column immediately after emit:");
         if (tableElement?.columns) {
             tableElement.columns.forEach((col: any) => {
                 if (col.columnHeader && col.columnHeader.rowSpan && col.columnHeader.rowSpan > 1) {
-                    console.log("emit后检查合并列:", {
-                        列名: col.name,
+                    console.log("Checking merged column after emit:", {
+                        columnName: col.name,
                         columnHeaderHeight: col.columnHeader.height,
                         elementHeight: col.columnHeader.element?.height,
                         rowSpan: col.columnHeader.rowSpan,
@@ -3713,14 +3713,14 @@ function updateAllColumnRowHeights() {
             });
         }
 
-        // 检查Vue是否在下一tick中修改了高度
+        // Check whether Vue modified the height on the next tick
         nextTick(() => {
-            console.log("第二个nextTick检查合并列:");
+            console.log("Checking merged column on the second nextTick:");
             if (tableElement?.columns) {
                 tableElement.columns.forEach((col: any) => {
                     if (col.columnHeader && col.columnHeader.rowSpan && col.columnHeader.rowSpan > 1) {
-                        console.log("第二个nextTick检查:", {
-                            列名: col.name,
+                        console.log("Second nextTick check:", {
+                            columnName: col.name,
                             columnHeaderHeight: col.columnHeader.height,
                             elementHeight: col.columnHeader.element?.height,
                             rowSpan: col.columnHeader.rowSpan,
@@ -3734,31 +3734,31 @@ function updateAllColumnRowHeights() {
     });
 }
 
-// 更新单个列的行高
+// Update the row height for a single column
 function updateColumnRowHeights(column: any) {
-    console.log("开始更新列的行高:", column);
+    console.log("Starting to update column row height:", column);
 
     if (column.tableHeader) {
-        // 更新tableHeader本身的高度
+        // Update the tableHeader's own height
         const tableHeaderHeight = tableRowHeights.value.tableHeader;
         column.tableHeader.height = tableHeaderHeight;
-        console.log("更新tableHeader高度:", tableHeaderHeight);
+        console.log("Updating tableHeader height:", tableHeaderHeight);
 
-        // 直接更新内部元素的高度，因为这些元素直接包含textField或staticText，而不是通过elements数组
-        // 检查并更新reportElement的高度
+        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+        // Check and update the reportElement's height
         if (column.tableHeader.reportElement) {
             column.tableHeader.reportElement.height = tableHeaderHeight;
         } else if (column.tableHeader.element) {
-            // 更新内部元素的height属性，确保设计区域渲染同步更新
+            // Update the inner element's height property to keep the design area rendering in sync
             column.tableHeader.element.height = tableHeaderHeight;
         }
 
-        // 如果是合并列，更新高度为行高乘以行跨度
+        // If this is a merged column, update the height to the row height times the row span
         if (column.tableHeader.rowSpan && column.tableHeader.rowSpan > 1) {
             const mergedHeight = tableHeaderHeight * column.tableHeader.rowSpan;
             column.tableHeader.height = mergedHeight;
 
-            // 内部元素高度也需要相应调整
+            // The inner element's height needs to be adjusted accordingly
             if (column.tableHeader.reportElement) {
                 column.tableHeader.reportElement.height = mergedHeight;
             } else if (column.tableHeader.element) {
@@ -3768,40 +3768,40 @@ function updateColumnRowHeights(column: any) {
     }
 
     if (column.columnHeader) {
-        // 更新columnHeader本身的高度
+        // Update the columnHeader's own height
         const columnHeaderHeight = tableRowHeights.value.columnHeader;
-        console.log("更新columnHeader高度前:", {
-            当前值: column.columnHeader.height,
-            新值: columnHeaderHeight,
+        console.log("Before updating columnHeader height:", {
+            currentValue: column.columnHeader.height,
+            newValue: columnHeaderHeight,
             rowSpan: column.columnHeader.rowSpan,
-            element当前值: column.columnHeader.element?.height,
+            elementCurrentValue: column.columnHeader.element?.height,
         });
         column.columnHeader.height = columnHeaderHeight;
-        console.log("更新columnHeader.height后:", {
-            新值: column.columnHeader.height,
+        console.log("After updating columnHeader.height:", {
+            newValue: column.columnHeader.height,
             rowSpan: column.columnHeader.rowSpan,
         });
 
-        // 直接更新内部元素的高度，因为这些元素直接包含textField或staticText，而不是通过elements数组
-        // 检查并更新reportElement的高度
+        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+        // Check and update the reportElement's height
         if (column.columnHeader.reportElement) {
             column.columnHeader.reportElement.height = columnHeaderHeight;
         } else if (column.columnHeader.element) {
-            // 更新内部元素的height属性，确保设计区域渲染同步更新
+            // Update the inner element's height property to keep the design area rendering in sync
             column.columnHeader.element.height = columnHeaderHeight;
         }
 
-        // 如果是合并列，更新高度为行高乘以行跨度
+        // If this is a merged column, update the height to the row height times the row span
         if (column.columnHeader.rowSpan && column.columnHeader.rowSpan > 1) {
             const mergedHeight = columnHeaderHeight * column.columnHeader.rowSpan;
-            console.log("合并列columnHeader高度计算:", {
-                行高: columnHeaderHeight,
+            console.log("Merged column columnHeader height calculation:", {
+                rowHeight: columnHeaderHeight,
                 rowSpan: column.columnHeader.rowSpan,
                 mergedHeight,
             });
             column.columnHeader.height = mergedHeight;
 
-            // 内部元素高度也需要相应调整
+            // The inner element's height needs to be adjusted accordingly
             if (column.columnHeader.reportElement) {
                 column.columnHeader.reportElement.height = mergedHeight;
             } else if (column.columnHeader.element) {
@@ -3811,42 +3811,42 @@ function updateColumnRowHeights(column: any) {
     }
 
     if (column.detailCell) {
-        // 更新detailCell本身的高度
+        // Update the detailCell's own height
         column.detailCell.height = tableRowHeights.value.detailCell;
-        console.log("更新detailCell高度:", tableRowHeights.value.detailCell, "列:", column);
-        // 直接更新内部元素的高度，因为detailCell直接包含textField或staticText，而不是通过elements数组
-        // 检查并更新reportElement的高度
+        console.log("Updating detailCell height:", tableRowHeights.value.detailCell, "column:", column);
+        // Update the inner element's height directly, since detailCell directly contains a textField or staticText rather than going through an elements array
+        // Check and update the reportElement's height
         if (column.detailCell.reportElement) {
             column.detailCell.reportElement.height =
                 tableRowHeights.value.detailCell;
         } else if (column.detailCell.element) {
-            // 更新内部元素的height属性，确保设计区域渲染同步更新
+            // Update the inner element's height property to keep the design area rendering in sync
             column.detailCell.element.height = tableRowHeights.value.detailCell;
         }
     }
 
-    // 更新columnFooter的高度
+    // Update columnFooter's height
     if (column.columnFooter) {
-        // 更新columnFooter本身的高度
+        // Update the columnFooter's own height
         const columnFooterHeight = tableRowHeights.value.columnFooter;
         column.columnFooter.height = columnFooterHeight;
 
-        // 直接更新内部元素的高度，因为这些元素直接包含textField或staticText，而不是通过elements数组
-        // 检查并更新reportElement的高度
+        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+        // Check and update the reportElement's height
         if (column.columnFooter.reportElement) {
             column.columnFooter.reportElement.height = columnFooterHeight;
         } else if (column.columnFooter.element) {
-            // 更新内部元素的height属性，确保设计区域渲染同步更新
+            // Update the inner element's height property to keep the design area rendering in sync
             column.columnFooter.element.height = columnFooterHeight;
         }
 
-        // 如果是合并列，更新高度为行高乘以行跨度
+        // If this is a merged column, update the height to the row height times the row span
         if (column.columnFooter.rowSpan && column.columnFooter.rowSpan > 1) {
             const mergedHeight =
                 columnFooterHeight * column.columnFooter.rowSpan;
             column.columnFooter.height = mergedHeight;
 
-            // 内部元素高度也需要相应调整
+            // The inner element's height needs to be adjusted accordingly
             if (column.columnFooter.reportElement) {
                 column.columnFooter.reportElement.height = mergedHeight;
             } else if (column.columnFooter.element) {
@@ -3855,27 +3855,27 @@ function updateColumnRowHeights(column: any) {
         }
     }
 
-    // 更新tableFooter的高度
+    // Update tableFooter's height
     if (column.tableFooter) {
-        // 更新tableFooter本身的高度
+        // Update the tableFooter's own height
         const tableFooterHeight = tableRowHeights.value.tableFooter;
         column.tableFooter.height = tableFooterHeight;
 
-        // 直接更新内部元素的高度，因为这些元素直接包含textField或staticText，而不是通过elements数组
-        // 检查并更新reportElement的高度
+        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+        // Check and update the reportElement's height
         if (column.tableFooter.reportElement) {
             column.tableFooter.reportElement.height = tableFooterHeight;
         } else if (column.tableFooter.element) {
-            // 更新内部元素的height属性，确保设计区域渲染同步更新
+            // Update the inner element's height property to keep the design area rendering in sync
             column.tableFooter.element.height = tableFooterHeight;
         }
 
-        // 如果是合并列，更新高度为行高乘以行跨度
+        // If this is a merged column, update the height to the row height times the row span
         if (column.tableFooter.rowSpan && column.tableFooter.rowSpan > 1) {
             const mergedHeight = tableFooterHeight * column.tableFooter.rowSpan;
             column.tableFooter.height = mergedHeight;
 
-            // 内部元素高度也需要相应调整
+            // The inner element's height needs to be adjusted accordingly
             if (column.tableFooter.reportElement) {
                 column.tableFooter.reportElement.height = mergedHeight;
             } else if (column.tableFooter.element) {
@@ -3885,77 +3885,77 @@ function updateColumnRowHeights(column: any) {
     }
 }
 
-// 更新组合列的表头高度，确保与组合列高度一致
+// Update the combined column's header height so it matches the combined column's height
 function updateGroupHeaderHeights(group: any) {
-    // 获取组合列的高度
+    // Get the combined column's height
     const groupHeight = group.height;
 
-    console.log("开始更新组合列表头高度:", {
+    console.log("Starting to update combined column header height:", {
         groupName: group.name,
         groupHeight,
         hasTableHeader: !!group.tableHeader,
         hasColumnHeader: !!group.columnHeader,
     });
 
-    // 更新分组的tableHeader高度
+    // Update the group's tableHeader height
     if (group.tableHeader) {
-        // 更新tableHeader本身的高度
+        // Update the tableHeader's own height
         group.tableHeader.height = groupHeight;
 
-        // 直接更新内部元素的高度，因为这些元素直接包含textField或staticText，而不是通过elements数组
-        // 检查并更新reportElement的高度
+        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+        // Check and update the reportElement's height
         if (group.tableHeader.reportElement) {
             group.tableHeader.reportElement.height = groupHeight;
         } else if (group.tableHeader.element) {
-            // 更新内部元素的height属性，确保设计区域渲染同步更新
+            // Update the inner element's height property to keep the design area rendering in sync
             group.tableHeader.element.height = groupHeight;
         }
-        console.log("更新后的tableHeader:", group.tableHeader);
+        console.log("Updated tableHeader:", group.tableHeader);
     }
 
-    // 更新分组的columnHeader高度
+    // Update the group's columnHeader height
     if (group.columnHeader) {
-        // 更新columnHeader本身的高度
+        // Update the columnHeader's own height
         group.columnHeader.height = groupHeight;
 
-        // 直接更新内部元素的高度，因为这些元素直接包含textField或staticText，而不是通过elements数组
-        // 检查并更新reportElement的高度
+        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+        // Check and update the reportElement's height
         if (group.columnHeader.reportElement) {
             group.columnHeader.reportElement.height = groupHeight;
         } else if (group.columnHeader.element) {
-            // 更新内部元素的height属性，确保设计区域渲染同步更新
+            // Update the inner element's height property to keep the design area rendering in sync
             group.columnHeader.element.height = groupHeight;
         }
-        console.log("更新后的columnHeader:", group.columnHeader);
+        console.log("Updated columnHeader:", group.columnHeader);
     }
 
-    console.log("组合列表头高度更新完成，更新后的组合列:", group);
+    console.log("Combined column header height update complete, updated combined column:", group);
 }
 
-// 递归更新分组的行高
+// Recursively update the row heights of a group
 function updateGroupRowHeights(group: any) {
-    // 更新分组的tableHeader高度
+    // Update the group's tableHeader height
     if (group.tableHeader) {
-        // 更新tableHeader本身的高度
+        // Update the tableHeader's own height
         const tableHeaderHeight = tableRowHeights.value.tableHeader;
         group.tableHeader.height = tableHeaderHeight;
 
-        // 直接更新内部元素的高度，因为这些元素直接包含textField或staticText，而不是通过elements数组
-        // 检查并更新reportElement的高度
+        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+        // Check and update the reportElement's height
         if (group.tableHeader.reportElement) {
             group.tableHeader.reportElement.height = tableHeaderHeight;
         } else if (group.tableHeader.element) {
-            // 更新内部元素的height属性，确保设计区域渲染同步更新
+            // Update the inner element's height property to keep the design area rendering in sync
             group.tableHeader.element.height = tableHeaderHeight;
         }
-        console.log("更新后的tableHeader:", group.tableHeader);
+        console.log("Updated tableHeader:", group.tableHeader);
 
-        // 如果是合并列，更新高度为行高乘以行跨度
+        // If this is a merged column, update the height to the row height times the row span
         if (group.tableHeader.rowSpan && group.tableHeader.rowSpan > 1) {
             const mergedHeight = tableHeaderHeight * group.tableHeader.rowSpan;
             group.tableHeader.height = mergedHeight;
 
-            // 内部元素高度也需要相应调整
+            // The inner element's height needs to be adjusted accordingly
             if (group.tableHeader.reportElement) {
                 group.tableHeader.reportElement.height = mergedHeight;
             } else if (group.tableHeader.element) {
@@ -3964,28 +3964,28 @@ function updateGroupRowHeights(group: any) {
         }
     }
 
-    // 更新分组的columnHeader高度
+    // Update the group's columnHeader height
     if (group.columnHeader) {
-        // 更新columnHeader本身的高度
+        // Update the columnHeader's own height
         const columnHeaderHeight = tableRowHeights.value.columnHeader;
         group.columnHeader.height = columnHeaderHeight;
 
-        // 直接更新内部元素的高度，因为这些元素直接包含textField或staticText，而不是通过elements数组
-        // 检查并更新reportElement的高度
+        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+        // Check and update the reportElement's height
         if (group.columnHeader.reportElement) {
             group.columnHeader.reportElement.height = columnHeaderHeight;
         } else if (group.columnHeader.element) {
-            // 更新内部元素的height属性，确保设计区域渲染同步更新
+            // Update the inner element's height property to keep the design area rendering in sync
             group.columnHeader.element.height = columnHeaderHeight;
         }
 
-        // 如果是合并列，更新高度为行高乘以行跨度
+        // If this is a merged column, update the height to the row height times the row span
         if (group.columnHeader.rowSpan && group.columnHeader.rowSpan > 1) {
             const mergedHeight =
                 columnHeaderHeight * group.columnHeader.rowSpan;
             group.columnHeader.height = mergedHeight;
 
-            // 内部元素高度也需要相应调整
+            // The inner element's height needs to be adjusted accordingly
             if (group.columnHeader.reportElement) {
                 group.columnHeader.reportElement.height = mergedHeight;
             } else if (group.columnHeader.element) {
@@ -3994,28 +3994,28 @@ function updateGroupRowHeights(group: any) {
         }
     }
 
-    // 更新分组的columnFooter高度
+    // Update the group's columnFooter height
     if (group.columnFooter) {
-        // 更新columnFooter本身的高度
+        // Update the columnFooter's own height
         const columnFooterHeight = tableRowHeights.value.columnFooter;
         group.columnFooter.height = columnFooterHeight;
 
-        // 直接更新内部元素的高度，因为这些元素直接包含textField或staticText，而不是通过elements数组
-        // 检查并更新reportElement的高度
+        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+        // Check and update the reportElement's height
         if (group.columnFooter.reportElement) {
             group.columnFooter.reportElement.height = columnFooterHeight;
         } else if (group.columnFooter.element) {
-            // 更新内部元素的height属性，确保设计区域渲染同步更新
+            // Update the inner element's height property to keep the design area rendering in sync
             group.columnFooter.element.height = columnFooterHeight;
         }
 
-        // 如果是合并列，更新高度为行高乘以行跨度
+        // If this is a merged column, update the height to the row height times the row span
         if (group.columnFooter.rowSpan && group.columnFooter.rowSpan > 1) {
             const mergedHeight =
                 columnFooterHeight * group.columnFooter.rowSpan;
             group.columnFooter.height = mergedHeight;
 
-            // 内部元素高度也需要相应调整
+            // The inner element's height needs to be adjusted accordingly
             if (group.columnFooter.reportElement) {
                 group.columnFooter.reportElement.height = mergedHeight;
             } else if (group.columnFooter.element) {
@@ -4024,27 +4024,27 @@ function updateGroupRowHeights(group: any) {
         }
     }
 
-    // 更新分组的tableFooter高度
+    // Update the group's tableFooter height
     if (group.tableFooter) {
-        // 更新tableFooter本身的高度
+        // Update the tableFooter's own height
         const tableFooterHeight = tableRowHeights.value.tableFooter;
         group.tableFooter.height = tableFooterHeight;
 
-        // 直接更新内部元素的高度，因为这些元素直接包含textField或staticText，而不是通过elements数组
-        // 检查并更新reportElement的高度
+        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+        // Check and update the reportElement's height
         if (group.tableFooter.reportElement) {
             group.tableFooter.reportElement.height = tableFooterHeight;
         } else if (group.tableFooter.element) {
-            // 更新内部元素的height属性，确保设计区域渲染同步更新
+            // Update the inner element's height property to keep the design area rendering in sync
             group.tableFooter.element.height = tableFooterHeight;
         }
 
-        // 如果是合并列，更新高度为行高乘以行跨度
+        // If this is a merged column, update the height to the row height times the row span
         if (group.tableFooter.rowSpan && group.tableFooter.rowSpan > 1) {
             const mergedHeight = tableFooterHeight * group.tableFooter.rowSpan;
             group.tableFooter.height = mergedHeight;
 
-            // 内部元素高度也需要相应调整
+            // The inner element's height needs to be adjusted accordingly
             if (group.tableFooter.reportElement) {
                 group.tableFooter.reportElement.height = mergedHeight;
             } else if (group.tableFooter.element) {
@@ -4053,11 +4053,11 @@ function updateGroupRowHeights(group: any) {
         }
     }
 
-    // 递归更新子分组或列
+    // Recursively update child groups or columns
     if (group.children) {
-        console.log("分组内子项数量:", group.children.length);
+        console.log("Number of child items in group:", group.children.length);
         group.children.forEach((child: any, index: number) => {
-            console.log(`处理子项[${index}]:`, {
+            console.log(`Processing child item [${index}]:`, {
                 name: child.name,
                 uuid: child.uuid,
                 hasDetailCell: !!child.detailCell,
@@ -4065,17 +4065,17 @@ function updateGroupRowHeights(group: any) {
                 childType: child.children ? 'group' : 'column'
             });
             if (child.children) {
-                // 子分组
+                // Child group
                 updateGroupRowHeights(child);
             } else {
-                // 普通列
+                // Plain column
                 updateColumnRowHeights(child);
             }
         });
     }
 }
 
-// 矩形边框样式计算属性
+// Rectangle border style computed property
 const rectangleBorderStyle = computed({
     get: () => {
         return getRectangleBorderStyle();
@@ -4085,14 +4085,14 @@ const rectangleBorderStyle = computed({
     },
 });
 
-// 获取Band显示名称
+// Get the Band's display name
 function getBandDisplayName(bandType: string): string {
     // Use t() with dynamic key.
     // Assuming keys exist in bandNames section of locale files.
     return t(`bandNames.${bandType}`);
 }
 
-// 更新Band高度
+// Update Band height
 function updateBandHeight(_index: number) {
     const updatedBands = [...props.bands];
     emit("save-state");
@@ -4100,7 +4100,7 @@ function updateBandHeight(_index: number) {
     emit("update-jrxml");
 }
 
-// 确保坐标值为整数
+// Ensure the coordinate value is an integer
 function ensureIntegerValue(element: any, property: string) {
     if (element[property] !== undefined) {
         element[property] = Math.round(element[property]);
@@ -4108,7 +4108,7 @@ function ensureIntegerValue(element: any, property: string) {
     emit("save-state");
 }
 
-// 设置水平对齐方式
+// Set horizontal alignment
 function setHorizontalAlignment(alignment: "Left" | "Center" | "Right") {
     if (currentElement.value) {
         emit("save-state");
@@ -4117,7 +4117,7 @@ function setHorizontalAlignment(alignment: "Left" | "Center" | "Right") {
     }
 }
 
-// 设置垂直对齐方式
+// Set vertical alignment
 function setVerticalAlignment(alignment: "Top" | "Middle" | "Bottom") {
     if (currentElement.value) {
         emit("save-state");
@@ -4126,7 +4126,7 @@ function setVerticalAlignment(alignment: "Top" | "Middle" | "Bottom") {
     }
 }
 
-// 获取文本字段的表达式
+// Get the text field's expression
 function getTextFieldExpression(element: any) {
     if (element.expression) {
         return element.expression;
@@ -4136,7 +4136,7 @@ function getTextFieldExpression(element: any) {
     return "";
 }
 
-// 更新文本字段的表达式
+// Update the text field's expression
 function updateTextFieldExpression(newExpression: string) {
     if (!currentElement.value || currentElement.value.type !== "textField")
         return;
@@ -4147,7 +4147,7 @@ function updateTextFieldExpression(newExpression: string) {
     emit("update-jrxml");
 }
 
-// 各边边框属性访问函数
+// Per-side border property accessor functions
 function getSideBorderWidth(side: string): number {
     if (!currentElement.value?.box) return 0;
     const box = currentElement.value.box;
@@ -4193,23 +4193,23 @@ function setSideBorderStyle(side: string, value: string) {
     const penKey = `${side}Pen`;
     emit("save-state");
 
-    // 设置边框样式
+    // Set the border style
     box[styleKey] = value;
     if (!box[penKey]) {
         box[penKey] = {};
     }
     box[penKey].lineStyle = value;
 
-    // 根据样式自动调整边框宽度
+    // Automatically adjust the border width based on the style
     if (value && value !== "") {
-        // 非"无"样式，宽度为0则自动设为1
+        // Not the "None" style; if the width is 0, default it to 1
         if (!box[penKey].lineWidth || box[penKey].lineWidth <= 0) {
             box[penKey].lineWidth = 1;
             const widthKey = `${side}BorderWidth`;
             box[widthKey] = 1;
         }
     } else {
-        // "无"样式，宽度自动设为0
+        // The "None" style; default the width to 0
         box[penKey].lineWidth = 0;
         const widthKey = `${side}BorderWidth`;
         box[widthKey] = 0;
@@ -4244,10 +4244,10 @@ function setSideBorderColor(side: string, value: string) {
     emit("update-jrxml");
 }
 
-// 四边统一设置相关函数
+// Functions related to the unified four-side setting
 function getUnifiedBorderStyle(): string {
     if (!currentElement.value?.box) return "";
-    // 检查是否所有边的样式都相同
+    // Check whether all sides have the same style
     const sides = ["top", "left", "bottom", "right"];
     const styles = sides.map((side) => getSideBorderStyle(side));
     const firstStyle = styles[0];
@@ -4269,7 +4269,7 @@ function setUnifiedBorderStyle(value: string) {
 
 function getUnifiedBorderWidth(): number {
     if (!currentElement.value?.box) return 0;
-    // 检查是否所有边的宽度都相同
+    // Check whether all sides have the same width
     const sides = ["top", "left", "bottom", "right"];
     const widths = sides.map((side) => getSideBorderWidth(side));
     const firstWidth = widths[0];
@@ -4292,7 +4292,7 @@ function setUnifiedBorderWidth(value: string) {
 
 function getUnifiedBorderColor(): string {
     if (!currentElement.value?.box) return "#000000";
-    // 检查是否所有边的颜色都相同
+    // Check whether all sides have the same color
     const sides = ["top", "left", "bottom", "right"];
     const colors = sides.map((side) => getSideBorderColor(side));
     const firstColor = colors[0];
@@ -4312,7 +4312,7 @@ function setUnifiedBorderColor(value: string) {
     emit("update-jrxml");
 }
 
-// 初始化表格单元格
+// Initialize the table cell
 function initTableCell(column: any, cellType: "tableFooter" | "columnFooter") {
     if (!column[cellType]) {
         column[cellType] = {
@@ -4331,13 +4331,13 @@ function initTableCell(column: any, cellType: "tableFooter" | "columnFooter") {
     }
 }
 
-// 更新列宽度，同时更新所有相关单元格的宽度，并重新计算表格总宽度
+// Update the column width, also updating the width of all related cells, and recalculate the table's total width
 function updateColumnWidth(column: any, index: number) {
     if (!column || !currentElement) return;
 
     const newWidth = column.width;
 
-    // 更新所有相关单元格的宽度
+    // Update the width of all related cells
     if (column.tableHeader) {
         if (column.tableHeader.element) {
             column.tableHeader.element.width = newWidth;
@@ -4374,22 +4374,22 @@ function updateColumnWidth(column: any, index: number) {
         }
     }
 
-    // 如果表格有children属性，同时更新children属性中对应列的宽度
+    // If the table has a children property, also update the corresponding column's width within children
     if (
         currentElement.value &&
         currentElement.value.type === "table" &&
         currentElement.value.children
     ) {
-        // 查找children中对应的列（通过uuid或索引）
+        // Find the corresponding column in children (by uuid or index)
         const childColumn = findColumnInChildren(
             currentElement.value.children,
             column,
         );
         if (childColumn) {
-            // 更新childColumn的宽度
+            // Update childColumn's width
             childColumn.width = newWidth;
 
-            // 同时更新childColumn中所有相关单元格的宽度
+            // Also update the width of all related cells within childColumn
             if (childColumn.tableHeader) {
                 if (childColumn.tableHeader.element) {
                     childColumn.tableHeader.element.width = newWidth;
@@ -4428,7 +4428,7 @@ function updateColumnWidth(column: any, index: number) {
         }
     }
 
-    // 重新计算表格总宽度：所有列宽度之和
+    // Recalculate the table's total width: the sum of all column widths
     if (
         currentElement.value &&
         currentElement.value.type === "table" &&
@@ -4442,7 +4442,7 @@ function updateColumnWidth(column: any, index: number) {
     }
 }
 
-// 在children数组中查找对应的列（递归查找）
+// Find the corresponding column in the children array (recursive search)
 function findColumnInChildren(children: any[], targetColumn: any): any | null {
     for (const child of children) {
         if (child.uuid === targetColumn.uuid) {
@@ -4458,28 +4458,28 @@ function findColumnInChildren(children: any[], targetColumn: any): any | null {
     return null;
 }
 
-// 更新列名，同时更新children属性中对应列的名称
+// Update the column name, also updating the corresponding column's name within children
 function updateColumnName(column: any, index: number) {
     if (!column || !currentElement) return;
 
     const newName = column.name;
 
-    // 如果表格有children属性，同时更新children属性中对应列的名称
+    // If the table has a children property, also update the corresponding column's name within children
     if (
         currentElement.value &&
         currentElement.value.type === "table" &&
         currentElement.value.children
     ) {
-        // 查找children中对应的列（通过uuid或索引）
+        // Find the corresponding column in children (by uuid or index)
         const childColumn = findColumnInChildren(
             currentElement.value.children,
             column,
         );
         if (childColumn) {
-            // 更新childColumn的名称
+            // Update childColumn's name
             childColumn.name = newName;
 
-            // 如果childColumn有columnHeader且是staticText类型，同时更新其文本内容
+            // If childColumn has a columnHeader and it is of type staticText, also update its text content
             if (
                 childColumn.columnHeader &&
                 childColumn.columnHeader.type === "staticText"
@@ -4490,7 +4490,7 @@ function updateColumnName(column: any, index: number) {
     }
 }
 
-// 更新表格表头文本，同时更新children属性中对应列的表格表头文本
+// Update the table header text, also updating the corresponding column's table header text within children
 function updateTableHeaderText(column: any, index: number) {
     if (
         !column ||
@@ -4502,13 +4502,13 @@ function updateTableHeaderText(column: any, index: number) {
 
     const newText = column.tableHeader.text;
 
-    // 如果表格有children属性，同时更新children属性中对应列的表格表头文本
+    // If the table has a children property, also update the corresponding column's table header text within children
     if (
         currentElement.value &&
         currentElement.value.type === "table" &&
         currentElement.value.children
     ) {
-        // 查找children中对应的列（通过uuid或索引）
+        // Find the corresponding column in children (by uuid or index)
         const childColumn = findColumnInChildren(
             currentElement.value.children,
             column,
@@ -4518,21 +4518,21 @@ function updateTableHeaderText(column: any, index: number) {
             childColumn.hasTableHeader &&
             childColumn.tableHeader
         ) {
-            // 更新childColumn的表格表头文本
+            // Update childColumn's table header text
             childColumn.tableHeader.text = newText;
         }
     }
 }
 
-// 更新字段表达式，同时更新children属性中对应列的字段表达式
+// Update the field expression, also updating the corresponding column's field expression within children
 function updateFieldExpression(column: any, index: number) {
     if (!column || !currentElement || !column.detailCell) return;
 
     const newExpression = column.detailCell.expression;
 
-    // 如果detailCell是staticText类型，将其转换为textField类型
+    // If detailCell is of type staticText, convert it to a textField type
     if (column.detailCell.type === "staticText") {
-        // 保存原有属性
+        // Preserve the original properties
         const {
             x,
             y,
@@ -4549,7 +4549,7 @@ function updateFieldExpression(column: any, index: number) {
             mode,
             box,
         } = column.detailCell;
-        // 转换为textField类型
+        // Convert to a textField type
         column.detailCell = {
             type: "textField",
             x,
@@ -4572,21 +4572,21 @@ function updateFieldExpression(column: any, index: number) {
         };
     }
 
-    // 如果表格有children属性，同时更新children属性中对应列的字段表达式
+    // If the table has a children property, also update the corresponding column's field expression within children
     if (
         currentElement.value &&
         currentElement.value.type === "table" &&
         currentElement.value.children
     ) {
-        // 查找children中对应的列（通过uuid或索引）
+        // Find the corresponding column in children (by uuid or index)
         const childColumn = findColumnInChildren(
             currentElement.value.children,
             column,
         );
         if (childColumn && childColumn.detailCell) {
-            // 如果childColumn的detailCell是staticText类型，将其转换为textField类型
+            // If childColumn's detailCell is of type staticText, convert it to a textField type
             if (childColumn.detailCell.type === "staticText") {
-                // 保存原有属性
+                // Preserve the original properties
                 const {
                     x,
                     y,
@@ -4603,7 +4603,7 @@ function updateFieldExpression(column: any, index: number) {
                     mode,
                     box,
                 } = childColumn.detailCell;
-                // 转换为textField类型
+                // Convert to a textField type
                 childColumn.detailCell = {
                     type: "textField",
                     x,
@@ -4625,23 +4625,23 @@ function updateFieldExpression(column: any, index: number) {
                     isBlankWhenNull: true,
                 };
             } else {
-                // 更新childColumn的字段表达式
+                // Update childColumn's field expression
                 childColumn.detailCell.expression = newExpression;
             }
         }
     }
 }
 
-// 切换是否包含Table Header
+// Toggle whether the Table Header is included
 function toggleTableHeader(column: any, event: Event) {
     const checkbox = event.target as HTMLInputElement;
     const hasTableHeader = checkbox.checked;
 
     if (!hasTableHeader) {
-        // 清空已有的Table Header数据
+        // Clear the existing Table Header data
         delete column.tableHeader;
     } else {
-        // 生成新的默认Table Header数据
+        // Generate new default Table Header data
         if (!column.tableHeader) {
             column.tableHeader = {
                 type: "staticText",
@@ -4664,7 +4664,7 @@ function toggleTableHeader(column: any, event: Event) {
     emit("update-jrxml");
 }
 
-// 字段选择模态框相关
+// Field selection modal related
 const showFieldSelectionModal = ref(false);
 const selectedFields = ref<string[]>([]);
 const availableFields = computed(() => {
@@ -4680,14 +4680,14 @@ const availableFields = computed(() => {
 
     if (!datasetName) return [];
 
-    // 在subDatasets中查找匹配的数据集
+    // Find the matching dataset within subDatasets
     const matchingDataset = props.subDatasets.find(
         (dataset) => dataset.name === datasetName,
     );
     return matchingDataset?.fields || [];
 });
 
-// 计算属性：获取所有组合列，包括子级组，返回扁平化的列表
+// Computed property: get all combined columns, including child groups, returned as a flattened list
 const allColumnGroups = computed(() => {
     if (
         !currentElement.value ||
@@ -4699,7 +4699,7 @@ const allColumnGroups = computed(() => {
     return getAllColumnGroups(currentElement.value.children);
 });
 
-// 打开字段选择模态框
+// Open the field selection modal
 function openFieldSelectionModal() {
     if (!currentElement.value || currentElement.value.type !== "table") return;
 
@@ -4729,7 +4729,7 @@ function openFieldSelectionModal() {
     showFieldSelectionModal.value = true;
 }
 
-// 切换字段选择状态
+// Toggle the field selection state
 function toggleFieldSelection(fieldName: string) {
     const index = selectedFields.value.indexOf(fieldName);
     if (index === -1) {
@@ -4739,7 +4739,7 @@ function toggleFieldSelection(fieldName: string) {
     }
 }
 
-// 将选中的字段添加为列
+// Add the selected fields as columns
 function addSelectedFieldsAsColumns() {
     if (!currentElement.value || currentElement.value.type !== "table") return;
 
@@ -4861,7 +4861,7 @@ function addSelectedFieldsAsColumns() {
     emit("update-jrxml");
 }
 
-// 表格列操作方法
+// Table column operation methods
 function addTableColumn() {
     if (!currentElement.value || currentElement.value.type !== "table") return;
 
@@ -4931,7 +4931,7 @@ function addTableColumn() {
 
     currentElement.value.columns.push(newColumn);
 
-    // 重新计算表格总宽度：所有列宽度之和
+    // Recalculate the table's total width: the sum of all column widths
     const totalWidth = currentElement.value.columns.reduce(
         (sum: number, col: any) => sum + (col.width || 0),
         0,
@@ -4941,7 +4941,7 @@ function addTableColumn() {
     emit("update-jrxml");
 }
 
-// 添加列分组
+// Add a column group
 function addColumnGroup() {
     if (
         !currentElement.value ||
@@ -4951,7 +4951,7 @@ function addColumnGroup() {
         return;
 
     const { elementIndex, bandIndex, parentFrameIndex } = props.selectedElement;
-    // 修复TypeScript错误：使用正确的参数格式
+    // Fix TypeScript error: use the correct argument format
     emit("add-columns-to-group", {
         elementIndex,
         columnIndices: [],
@@ -4969,14 +4969,14 @@ function removeTableColumn(index: number) {
         return;
 
     if (currentElement.value.columns.length <= 1) {
-        // 至少保留一列
+        // Keep at least one column
         return;
     }
 
     emit("save-state");
     currentElement.value.columns.splice(index, 1);
 
-    // 重新计算表格总宽度：所有列宽度之和
+    // Recalculate the table's total width: the sum of all column widths
     const totalWidth = currentElement.value.columns.reduce(
         (sum: number, col: any) => sum + (col.width || 0),
         0,
@@ -4986,12 +4986,12 @@ function removeTableColumn(index: number) {
     emit("update-jrxml");
 }
 
-// 获取所有组合列，包括子级组，返回扁平化的列表
+// Get all combined columns, including child groups, returned as a flattened list
 function getAllColumnGroups(groups: any[]): any[] {
     const result: any[] = [];
 
     function traverse(group: any, path: number[] = []) {
-        // 直接修改原始对象，添加path属性
+        // Modify the original object directly, adding a path property
         group.path = path;
         result.push(group);
         if (group.children && group.children.length > 0) {
@@ -5005,29 +5005,29 @@ function getAllColumnGroups(groups: any[]): any[] {
     return result;
 }
 
-// 计算组合列的最大允许宽度（所有子列和子组合列宽度之和）
+// Compute the maximum allowed width for a combined column (the sum of the widths of all child columns and sub-groups)
 function calculateMaxGroupWidth(groupInfo: any): number {
-    // 递归计算所有叶子节点（普通列）的宽度之和
+    // Recursively compute the sum of the widths of all leaf nodes (plain columns)
     function calculateLeafColumnsWidth(node: any): number {
-        // 如果节点有children，递归计算所有子节点
+        // If the node has children, recursively compute all child nodes
         if (node.children && node.children.length > 0) {
             return node.children.reduce((sum: number, child: any) => {
                 return sum + calculateLeafColumnsWidth(child);
             }, 0);
         }
-        // 如果节点没有children，说明是普通列，返回其宽度
+        // If the node has no children, it's a plain column, so return its width
         return node.width || 0;
     }
 
     return calculateLeafColumnsWidth(groupInfo);
 }
 
-// 删除元素
+// Delete element
 function deleteElement() {
     emit("delete-element");
 }
 
-// 矩形边框相关辅助函数
+// Rectangle border related helper functions
 function getRectangleBorderWidth(): number {
     const el = currentElement.value as any;
     if (!el?.pen) return 1;
@@ -5080,7 +5080,7 @@ function setRectangleBorderColor(value: string) {
     emit("update-jrxml");
 }
 
-// 获取表格中第一个出现的指定类型的单元格样式
+// Get the style of the first cell of the given type found in the table
 function getFirstTableCellStyle(
     cellType: "tableHeader" | "columnHeader" | "columnFooter" | "detailCell",
 ) {
@@ -5099,7 +5099,7 @@ function getFirstTableCellStyle(
             mode: "Opaque",
         };
 
-    // 递归查找函数
+    // Recursive search function
     function findCellStyle(node: any): any {
         if (node[cellType]) {
             return node[cellType];
@@ -5115,7 +5115,7 @@ function getFirstTableCellStyle(
         return null;
     }
 
-    // 首先检查直接子列
+    // First check the direct child columns
     if (tableElement.columns) {
         for (const column of tableElement.columns) {
             const style = findCellStyle(column);
@@ -5125,7 +5125,7 @@ function getFirstTableCellStyle(
         }
     }
 
-    // 然后检查列分组
+    // Then check the column groups
     if (tableElement.children) {
         for (const group of tableElement.children) {
             const style = findCellStyle(group);
@@ -5135,7 +5135,7 @@ function getFirstTableCellStyle(
         }
     }
 
-    // 如果没有找到样式，返回默认样式
+    // If no style was found, return the default style
     return {
         textAlignment: "Center",
         verticalAlignment: "Middle",
@@ -5150,7 +5150,7 @@ function getFirstTableCellStyle(
     };
 }
 
-// 更新表格中所有指定类型的单元格样式
+// Update the style of all cells of the given type in the table
 function updateAllTableCellStyles(
     cellType: "tableHeader" | "columnHeader" | "columnFooter" | "detailCell",
     style: any,
@@ -5158,10 +5158,10 @@ function updateAllTableCellStyles(
     const tableElement = currentElement.value;
     if (!tableElement || tableElement.type !== "table") return;
 
-    // 递归更新函数
+    // Recursive update function
     function updateCellStyle(node: any) {
         if (node[cellType]) {
-            // 深拷贝样式对象，避免引用问题
+            // Deep-clone the style object to avoid reference issues
             node[cellType] = { ...style };
         }
         if (node.children) {
@@ -5171,14 +5171,14 @@ function updateAllTableCellStyles(
         }
     }
 
-    // 更新所有直接子列
+    // Update all direct child columns
     if (tableElement.columns) {
         for (const column of tableElement.columns) {
             updateCellStyle(column);
         }
     }
 
-    // 更新所有列分组
+    // Update all column groups
     if (tableElement.children) {
         for (const group of tableElement.children) {
             updateCellStyle(group);
@@ -5186,30 +5186,30 @@ function updateAllTableCellStyles(
     }
 }
 
-// 更新表格所有单元格的样式属性
+// Update the style property of all cells in the table
 function updateTableStyles() {
     const tableElement = currentElement.value;
     if (!tableElement || tableElement.type !== "table") return;
 
-    // 递归更新函数
+    // Recursive update function
     function updateCellStyle(node: any) {
-        // 更新tableHeader样式
+        // Update the tableHeader style
         if (node.tableHeader) {
             node.tableHeader.style = tableStyles.value.tableHeader;
         }
-        // 更新columnHeader样式
+        // Update the columnHeader style
         if (node.columnHeader) {
             node.columnHeader.style = tableStyles.value.columnHeader;
         }
-        // 更新columnFooter样式
+        // Update the columnFooter style
         if (node.columnFooter) {
             node.columnFooter.style = tableStyles.value.columnFooter;
         }
-        // 更新detailCell样式
+        // Update the detailCell style
         if (node.detailCell) {
             node.detailCell.style = tableStyles.value.detailCell;
         }
-        // 递归更新子节点
+        // Recursively update child nodes
         if (node.children) {
             for (const child of node.children) {
                 updateCellStyle(child);
@@ -5217,14 +5217,14 @@ function updateTableStyles() {
         }
     }
 
-    // 更新所有直接子列
+    // Update all direct child columns
     if (tableElement.columns) {
         for (const column of tableElement.columns) {
             updateCellStyle(column);
         }
     }
 
-    // 更新所有列分组
+    // Update all column groups
     if (tableElement.children) {
         for (const group of tableElement.children) {
             updateCellStyle(group);
@@ -5232,7 +5232,7 @@ function updateTableStyles() {
     }
 }
 
-// 排序字段管理
+// Sort field management
 function addSortField() {
     if (!currentElement.value || currentElement.value.type !== "sort") return;
     if (!currentElement.value.sortFields) {
@@ -5252,11 +5252,11 @@ function removeSortField(index: number) {
     emit("update-jrxml");
 }
 
-// 列表内容高度
+// List contents height
 const listContentsHeight = ref(0);
 const listContentsWidth = ref(0);
 
-// 同步列表内容高度到currentElement
+// Sync the list contents height to currentElement
 watch(
     () => currentElement.value,
     (el) => {
@@ -5614,7 +5614,7 @@ function addPropertyExpression() {
     margin: 0;
 }
 
-/* 调整radio按钮组的样式，使其更紧凑 */
+/* Adjust the radio button group's style to make it more compact */
 :deep(.n-radio-group--button-type) {
     flex-wrap: wrap;
     gap: 4px;
@@ -5677,7 +5677,7 @@ function addPropertyExpression() {
     color: var(--prop-text-tertiary);
 }
 
-/* 表格属性样式 */
+/* Table properties styles */
 .table-column-actions {
     display: flex;
     gap: var(--prop-spacing-xs);
@@ -5815,13 +5815,13 @@ function addPropertyExpression() {
     margin-right: var(--prop-spacing-sm);
 }
 
-/* 无效宽度样式 */
+/* Invalid width style */
 .invalid-width {
     border-color: var(--prop-danger-color) !important;
     background-color: #fff0f0;
 }
 
-/* 只读输入框样式 */
+/* Read-only input style */
 .readonly-input {
     display: block;
     padding: 2px 6px;
@@ -5833,7 +5833,7 @@ function addPropertyExpression() {
     cursor: default;
 }
 
-/* 宽度提示样式 */
+/* Width hint style */
 .width-hint {
     font-size: var(--prop-font-size-xs);
     color: var(--prop-text-tertiary);
@@ -5852,7 +5852,7 @@ function addPropertyExpression() {
     margin-left: var(--prop-spacing-sm);
 }
 
-/* 组合列样式 */
+/* Combined column style */
 .table-column-groups {
     margin-top: var(--prop-spacing-md);
     background-color: var(--prop-bg-secondary);
@@ -5923,7 +5923,7 @@ function addPropertyExpression() {
     color: var(--prop-text-primary);
 }
 
-/* 样式管理部分 */
+/* Style management section */
 .style-management-section {
     margin-bottom: var(--prop-spacing-lg);
 }

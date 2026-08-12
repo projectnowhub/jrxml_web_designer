@@ -1,57 +1,57 @@
 import { ref, computed, watch, onUnmounted } from 'vue';
 
 export interface PreviewConfig {
-  // 启用实时预览
+  // Enable live preview
   enabled: boolean;
-  // 预览延迟（毫秒）
+  // Preview delay (ms)
   debounceDelay: number;
-  // 预览范围
+  // Preview scope
   previewScope: 'element' | 'band' | 'page';
-  // 预览动画
+  // Preview animation
   animated: boolean;
-  // 动画持续时间（毫秒）
+  // Animation duration (ms)
   animationDuration: number;
 }
 
 export interface PreviewState {
-  // 是否正在预览
+  // Whether a preview is in progress
   isPreviewing: boolean;
-  // 预览的属性
+  // Property being previewed
   previewedProperty: string | null;
-  // 预览的原始值
+  // Original value being previewed
   originalValue: any;
-  // 预览的新值
+  // New value being previewed
   previewValue: any;
-  // 预览开始时间
+  // Preview start time
   previewStartTime: number;
 }
 
 export interface PreviewStyle {
-  // 字体相关
+  // Font related
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
   fontStyle?: string;
   textDecoration?: string;
-  // 颜色相关
+  // Color related
   color?: string;
   backgroundColor?: string;
-  // 尺寸相关
+  // Size related
   width?: number;
   height?: number;
-  // 位置相关
+  // Position related
   x?: number;
   y?: number;
-  // 对齐相关
+  // Alignment related
   textAlign?: string;
   verticalAlign?: string;
-  // 边框相关
+  // Border related
   border?: string;
   borderColor?: string;
   borderWidth?: number;
   borderStyle?: string;
   borderRadius?: number;
-  // 边距相关
+  // Padding related
   padding?: number;
   paddingTop?: number;
   paddingRight?: number;
@@ -60,7 +60,7 @@ export interface PreviewStyle {
 }
 
 export function useLivePreview(config?: Partial<PreviewConfig>) {
-  // 配置
+  // Config
   const previewConfig = ref<PreviewConfig>({
     enabled: true,
     debounceDelay: 100,
@@ -70,7 +70,7 @@ export function useLivePreview(config?: Partial<PreviewConfig>) {
     ...config,
   });
 
-  // 预览状态
+  // Preview state
   const previewState = ref<PreviewState>({
     isPreviewing: false,
     previewedProperty: null,
@@ -79,16 +79,16 @@ export function useLivePreview(config?: Partial<PreviewConfig>) {
     previewStartTime: 0,
   });
 
-  // 防抖定时器
+  // Debounce timer
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // 动画帧ID
+  // Animation frame ID
   let animationFrameId: number | null = null;
 
-  // 预览元素缓存
+  // Preview element cache
   const previewElementCache = new Map<HTMLElement, PreviewStyle>();
 
-  // 应用预览样式
+  // Apply the preview style
   const applyPreviewStyle = (
     element: HTMLElement,
     property: string,
@@ -97,13 +97,13 @@ export function useLivePreview(config?: Partial<PreviewConfig>) {
   ) => {
     if (!previewConfig.value.enabled) return;
 
-    // 保存原始值
+    // Save the original value
     if (!previewElementCache.has(element)) {
       previewElementCache.set(element, {});
     }
     const cache = previewElementCache.get(element)!;
 
-    // 应用新值
+    // Apply the new value
     switch (property) {
       case 'fontFamily':
         cache.fontFamily = element.style.fontFamily;
@@ -202,12 +202,12 @@ export function useLivePreview(config?: Partial<PreviewConfig>) {
         return;
     }
 
-    // 添加过渡动画
+    // Add a transition animation
     if (previewConfig.value.animated) {
       element.style.transition = `all ${previewConfig.value.animationDuration}ms ease`;
     }
 
-    // 更新预览状态
+    // Update the preview state
     previewState.value = {
       isPreviewing: true,
       previewedProperty: property,
@@ -217,25 +217,25 @@ export function useLivePreview(config?: Partial<PreviewConfig>) {
     };
   };
 
-  // 恢复原始样式
+  // Restore the original style
   const restoreOriginalStyle = (element: HTMLElement) => {
     const cache = previewElementCache.get(element);
     if (!cache) return;
 
-    // 恢复所有缓存的原始值
+    // Restore all cached original values
     Object.entries(cache).forEach(([property, value]) => {
       if (value !== undefined) {
         (element.style as any)[property] = value;
       }
     });
 
-    // 清除过渡动画
+    // Clear the transition animation
     element.style.transition = '';
 
-    // 清除缓存
+    // Clear the cache
     previewElementCache.delete(element);
 
-    // 更新预览状态
+    // Update the preview state
     previewState.value = {
       isPreviewing: false,
       previewedProperty: null,
@@ -245,7 +245,7 @@ export function useLivePreview(config?: Partial<PreviewConfig>) {
     };
   };
 
-  // 防抖预览
+  // Debounced preview
   const debouncedPreview = (
     element: HTMLElement,
     property: string,
@@ -261,7 +261,7 @@ export function useLivePreview(config?: Partial<PreviewConfig>) {
     }, previewConfig.value.debounceDelay);
   };
 
-  // 开始预览
+  // Start the preview
   const startPreview = (
     element: HTMLElement,
     property: string,
@@ -270,20 +270,20 @@ export function useLivePreview(config?: Partial<PreviewConfig>) {
   ) => {
     if (!previewConfig.value.enabled) return;
 
-    // 如果已经在预览同一个属性，直接更新
+    // If already previewing the same property, update directly
     if (previewState.value.isPreviewing && previewState.value.previewedProperty === property) {
       applyPreviewStyle(element, property, value, originalValue);
     } else {
-      // 否则，先停止之前的预览
+      // Otherwise, stop the previous preview first
       if (previewState.value.isPreviewing) {
         stopPreview(element);
       }
-      // 开始新的预览
+      // Start the new preview
       debouncedPreview(element, property, value, originalValue);
     }
   };
 
-  // 停止预览
+  // Stop the preview
   const stopPreview = (element: HTMLElement) => {
     if (debounceTimer) {
       clearTimeout(debounceTimer);
@@ -293,15 +293,15 @@ export function useLivePreview(config?: Partial<PreviewConfig>) {
     restoreOriginalStyle(element);
   };
 
-  // 确认预览（应用为最终值）
+  // Confirm the preview (apply it as the final value)
   const confirmPreview = (element: HTMLElement) => {
-    // 清除缓存，保留当前样式
+    // Clear the cache, keeping the current style
     previewElementCache.delete(element);
 
-    // 清除过渡动画
+    // Clear the transition animation
     element.style.transition = '';
 
-    // 更新状态
+    // Update the state
     previewState.value = {
       isPreviewing: false,
       previewedProperty: null,
@@ -311,11 +311,11 @@ export function useLivePreview(config?: Partial<PreviewConfig>) {
     };
   };
 
-  // 切换预览状态
+  // Toggle the preview state
   const togglePreview = () => {
     previewConfig.value.enabled = !previewConfig.value.enabled;
 
-    // 如果禁用预览，恢复所有正在预览的元素
+    // If preview is disabled, restore all elements currently being previewed
     if (!previewConfig.value.enabled) {
       previewElementCache.forEach((_, element) => {
         restoreOriginalStyle(element);
@@ -323,18 +323,18 @@ export function useLivePreview(config?: Partial<PreviewConfig>) {
     }
   };
 
-  // 更新预览配置
+  // Update the preview config
   const updateConfig = (newConfig: Partial<PreviewConfig>) => {
     previewConfig.value = { ...previewConfig.value, ...newConfig };
   };
 
-  // 获取预览持续时间
+  // Get the preview duration
   const getPreviewDuration = computed(() => {
     if (!previewState.value.isPreviewing) return 0;
     return Date.now() - previewState.value.previewStartTime;
   });
 
-  // 清理
+  // Cleanup
   onUnmounted(() => {
     if (debounceTimer) {
       clearTimeout(debounceTimer);
@@ -342,7 +342,7 @@ export function useLivePreview(config?: Partial<PreviewConfig>) {
     if (animationFrameId) {
       cancelAnimationFrame(animationFrameId);
     }
-    // 恢复所有正在预览的元素
+    // Restore all elements currently being previewed
     previewElementCache.forEach((_, element) => {
       restoreOriginalStyle(element);
     });

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# JRXML编译验证脚本
-# 验证生成的JRXML能否成功编译成jasper文件
+# JRXML compilation validation script
+# Validates that generated JRXML can be successfully compiled into a jasper file
 
 set -e
 
@@ -9,17 +9,17 @@ REPORT_DIR="/Users/yan.yang/open/jrxml_web_designer/test-reports"
 OUTPUT_DIR="/Users/yan.yang/open/jrxml_web_designer/test-compiled"
 JASPERREPORT_JAR="jasperreports-6.20.0.jar"
 
-# 创建测试目录
+# Create test directories
 mkdir -p "$REPORT_DIR"
 mkdir -p "$OUTPUT_DIR"
 
-# 颜色定义
+# Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# 测试用例1：基础TextField
+# Test case 1: Basic TextField
 cat > "$REPORT_DIR/test_textfield.jrxml" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
@@ -52,7 +52,7 @@ cat > "$REPORT_DIR/test_textfield.jrxml" << 'EOF'
 </jasperReport>
 EOF
 
-# 测试用例2：带样式的TextField
+# Test case 2: TextField with styling
 cat > "$REPORT_DIR/test_textfield_styled.jrxml" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
@@ -91,7 +91,7 @@ cat > "$REPORT_DIR/test_textfield_styled.jrxml" << 'EOF'
 </jasperReport>
 EOF
 
-# 测试用例3：StaticText
+# Test case 3: StaticText
 cat > "$REPORT_DIR/test_statictext.jrxml" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
@@ -115,7 +115,7 @@ cat > "$REPORT_DIR/test_statictext.jrxml" << 'EOF'
                 <textElement textAlignment="Center" verticalAlignment="Middle">
                     <font fontName="Arial" size="16" isBold="true"/>
                 </textElement>
-                <text><![CDATA[报表标题]]></text>
+                <text><![CDATA[Report Title]]></text>
             </staticText>
         </band>
     </title>
@@ -127,14 +127,14 @@ cat > "$REPORT_DIR/test_statictext.jrxml" << 'EOF'
                 <textElement textAlignment="Left" verticalAlignment="Top">
                     <font fontName="SansSerif" size="12" isItalic="true"/>
                 </textElement>
-                <text><![CDATA[静态文本示例]]></text>
+                <text><![CDATA[Static text example]]></text>
             </staticText>
         </band>
     </detail>
 </jasperReport>
 EOF
 
-# 测试用例4：Image
+# Test case 4: Image
 cat > "$REPORT_DIR/test_image.jrxml" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
@@ -163,7 +163,7 @@ cat > "$REPORT_DIR/test_image.jrxml" << 'EOF'
 </jasperReport>
 EOF
 
-# 测试用例5：Rectangle
+# Test case 5: Rectangle
 cat > "$REPORT_DIR/test_rectangle.jrxml" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
@@ -193,7 +193,7 @@ cat > "$REPORT_DIR/test_rectangle.jrxml" << 'EOF'
 </jasperReport>
 EOF
 
-# 测试用例6：带Box的TextField（边框样式）
+# Test case 6: TextField with Box (border styling)
 cat > "$REPORT_DIR/test_textfield_box.jrxml" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
@@ -235,4 +235,4 @@ cat > "$REPORT_DIR/test_textfield_box.jrxml" << 'EOF'
 </jasperReport>
 EOF
 
-echo -e "${GREEN}✓ 测试用例已生成${NC}"
+echo -e "${GREEN}✓ Test cases generated${NC}"

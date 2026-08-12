@@ -1,7 +1,7 @@
 /**
- * JRXML验证器（使用Maven管理依赖）
+ * JRXML validator (dependencies managed with Maven)
  *
- * 这个类使用JasperReports官方库进行JRXML编译验证
+ * This class uses the official JasperReports library to perform JRXML compilation validation
  */
 
 import net.sf.jasperreports.engine.*;
@@ -12,45 +12,45 @@ import java.io.*;
 public class JRXMLValidator {
 
     /**
-     * 编译JRXML文件
+     * Compiles a JRXML file
      */
     public static boolean compile(String inputPath, String outputPath) {
         try {
-            System.out.println("正在编译: " + inputPath);
+            System.out.println("Compiling: " + inputPath);
 
-            // 加载JRXML
+            // Load the JRXML
             InputStream is = new FileInputStream(inputPath);
             JasperDesign jasperDesign = JRXmlLoader.load(is);
             is.close();
 
-            System.out.println("✓ JRXML加载成功");
-            System.out.println("  报表名称: " + jasperDesign.getName());
-            System.out.println("  页面大小: " + jasperDesign.getPageWidth() + " x " + jasperDesign.getPageHeight());
-            System.out.println("  列宽: " + jasperDesign.getColumnWidth());
+            System.out.println("✓ JRXML loaded successfully");
+            System.out.println("  Report name: " + jasperDesign.getName());
+            System.out.println("  Page size: " + jasperDesign.getPageWidth() + " x " + jasperDesign.getPageHeight());
+            System.out.println("  Column width: " + jasperDesign.getColumnWidth());
 
-            // 编译JRXML
+            // Compile the JRXML
             JasperReport jasperReport = JasperCompileManager.compileReport(jasperDesign);
 
-            System.out.println("✓ JRXML编译成功");
+            System.out.println("✓ JRXML compiled successfully");
 
-            // 保存jasper文件
+            // Save the jasper file
             ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(outputPath));
             oos.writeObject(jasperReport);
             oos.close();
 
-            System.out.println("✓ jasper文件已保存: " + outputPath);
+            System.out.println("✓ jasper file saved: " + outputPath);
 
             return true;
 
         } catch (JRException e) {
-            System.err.println("✗ 编译失败: " + e.getMessage());
+            System.err.println("✗ Compilation failed: " + e.getMessage());
             e.printStackTrace();
             return false;
         } catch (FileNotFoundException e) {
-            System.err.println("✗ 文件未找到: " + inputPath);
+            System.err.println("✗ File not found: " + inputPath);
             return false;
         } catch (Exception e) {
-            System.err.println("✗ 未知错误: " + e.getMessage());
+            System.err.println("✗ Unknown error: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -58,10 +58,10 @@ public class JRXMLValidator {
 
     public static void main(String[] args) {
         if (args.length < 1) {
-            System.out.println("用法:");
+            System.out.println("Usage:");
             System.out.println("  java JRXMLValidator <input.jrxml> [output.jasper]");
             System.out.println("");
-            System.out.println("示例:");
+            System.out.println("Examples:");
             System.out.println("  java JRXMLValidator report.jrxml");
             System.out.println("  java JRXMLValidator report.jrxml report.jasper");
             System.exit(1);

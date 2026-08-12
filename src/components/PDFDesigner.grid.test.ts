@@ -126,14 +126,14 @@ describe('PDFDesigner - Grid Snapping and Alignment Lines', () => {
       // Mock the alignment detection logic
       detectAlignmentLines: (currentElement: any, bandIndex: number) => {
         // Use the actual implementation from PDFDesigner.vue
-        const threshold = 3; // 对齐阈值，像素
-        const verticalAlignmentLines: number[] = []; // 垂直对齐线（X坐标）
-        const horizontalAlignmentLines: number[] = []; // 水平对齐线（Y坐标）
-        
-        // 获取页边距
+        const threshold = 3; // Alignment threshold, in pixels
+        const verticalAlignmentLines: number[] = []; // Vertical alignment lines (X coordinates)
+        const horizontalAlignmentLines: number[] = []; // Horizontal alignment lines (Y coordinates)
+
+        // Get page margins
         const { leftMargin = 0, topMargin = 0 } = mockVm.reportProperties.value || {};
-        
-        // 计算当前band的Y坐标偏移
+
+        // Calculate the Y offset of the current band
         let currentBandY = 0;
         const bandSpacing = mockVm.bandSpacing;
         for (let i = 0; i < bandIndex; i++) {
@@ -142,164 +142,164 @@ describe('PDFDesigner - Grid Snapping and Alignment Lines', () => {
             currentBandY += bandSpacing;
           }
         }
-        
-        // 获取当前元素的边界
+
+        // Get the bounds of the current element
         const currentLeft = currentElement.x;
         const currentRight = currentElement.x + currentElement.width;
         const currentTop = currentElement.y;
         const currentBottom = currentElement.y + currentElement.height;
         const currentCenterX = currentElement.x + currentElement.width / 2;
         const currentCenterY = currentElement.y + currentElement.height / 2;
-        
-        // 遍历所有band和元素，检测对齐关系
+
+        // Iterate over all bands and elements, detecting alignment relationships
         let bandOffsetY = 0;
         mockBands.value.forEach((band: any, currentBandIndex: number) => {
           band.elements.forEach((element: any, _elementIndex: number) => {
-            // 跳过当前元素
+            // Skip the current element
             if (currentBandIndex === bandIndex && element === currentElement) return;
-            
-            // 获取其他元素的边界
+
+            // Get the bounds of the other element
             const otherLeft = element.x;
             const otherRight = element.x + element.width;
             const otherTop = element.y;
             const otherBottom = element.y + element.height;
             const otherCenterX = element.x + element.width / 2;
             const otherCenterY = element.y + element.height / 2;
-            
-            // 检测垂直对齐线（左右对齐）
-            // 左边对齐
+
+            // Detect vertical alignment lines (left/right alignment)
+            // Left edge alignment
             if (Math.abs(currentLeft - otherLeft) < threshold) {
               const linePosition = otherLeft + leftMargin;
               verticalAlignmentLines.push(linePosition);
             }
-            // 右边对齐
+            // Right edge alignment
             if (Math.abs(currentRight - otherRight) < threshold) {
               const linePosition = otherRight + leftMargin;
               verticalAlignmentLines.push(linePosition);
             }
-            // 中心对齐
+            // Center alignment
             if (Math.abs(currentCenterX - otherCenterX) < threshold) {
               const linePosition = otherCenterX + leftMargin;
               verticalAlignmentLines.push(linePosition);
             }
-            // 左边对齐到其他元素的右边
+            // Left edge aligns to the other element's right edge
             if (Math.abs(currentLeft - otherRight) < threshold) {
               const linePosition = otherRight + leftMargin;
               verticalAlignmentLines.push(linePosition);
             }
-            // 右边对齐到其他元素的左边
+            // Right edge aligns to the other element's left edge
             if (Math.abs(currentRight - otherLeft) < threshold) {
               const linePosition = otherLeft + leftMargin;
               verticalAlignmentLines.push(linePosition);
             }
-            
-            // 检测水平对齐线（上下对齐）
-            // 对于相同band中的元素，进行完整的对齐检测和吸附
+
+            // Detect horizontal alignment lines (top/bottom alignment)
+            // For elements in the same band, perform full alignment detection and snapping
             if (currentBandIndex === bandIndex) {
-              // 顶部对齐
+              // Top alignment
               if (Math.abs(currentTop - otherTop) < threshold) {
-                // 添加当前band的Y坐标偏移到参考线位置
+                // Add the current band's Y offset to the guide line position
                 const linePosition = otherTop + topMargin + bandOffsetY;
                 horizontalAlignmentLines.push(linePosition);
               }
-              // 底部对齐
+              // Bottom alignment
               if (Math.abs(currentBottom - otherBottom) < threshold) {
-                // 添加当前band的Y坐标偏移到参考线位置
+                // Add the current band's Y offset to the guide line position
                 const linePosition = otherBottom + topMargin + bandOffsetY;
                 horizontalAlignmentLines.push(linePosition);
               }
-              // 中心对齐
+              // Center alignment
               if (Math.abs(currentCenterY - otherCenterY) < threshold) {
-                // 添加当前band的Y坐标偏移到参考线位置
+                // Add the current band's Y offset to the guide line position
                 const linePosition = otherCenterY + topMargin + bandOffsetY;
                 horizontalAlignmentLines.push(linePosition);
               }
-              // 顶部对齐到其他元素的底部
+              // Top aligns to the other element's bottom
               if (Math.abs(currentTop - otherBottom) < threshold) {
-                // 添加当前band的Y坐标偏移到参考线位置
+                // Add the current band's Y offset to the guide line position
                 const linePosition = otherBottom + topMargin + bandOffsetY;
                 horizontalAlignmentLines.push(linePosition);
               }
-              // 底部对齐到其他元素的顶部
+              // Bottom aligns to the other element's top
               if (Math.abs(currentBottom - otherTop) < threshold) {
-                // 添加当前band的Y坐标偏移到参考线位置
+                // Add the current band's Y offset to the guide line position
                 const linePosition = otherTop + topMargin + bandOffsetY;
                 horizontalAlignmentLines.push(linePosition);
               }
             }
-            // 对于不同band中的元素，只显示参考线但不进行吸附
+            // For elements in different bands, only show guide lines but don't snap
             else {
-              // 只有当鼠标悬浮在目标band中时，才检测横向对齐线
-                 // 使用highlightedBandIndex来判断当前鼠标悬浮的band
+              // Only detect horizontal alignment lines when the mouse is hovering over the target band
+                 // Use highlightedBandIndex to determine which band the mouse is currently hovering over
                  if (mockVm.highlightedBandIndex.value === bandIndex) {
-                // 计算当前元素相对于目标band的Y坐标
-                // 获取当前元素所在band和目标band的Y坐标偏移差
+                // Calculate the current element's Y coordinate relative to the target band
+                // Get the Y offset difference between the current element's band and the target band
                 let sourceBandOffsetY = 0;
                 let targetBandOffsetY = 0;
-                
-                // 计算源band的Y坐标偏移
+
+                // Calculate the Y offset of the source band
                 for (let i = 0; i < currentBandIndex; i++) {
                   sourceBandOffsetY += mockBands.value[i]?.height || 0;
                   if (i < currentBandIndex - 1) {
                     sourceBandOffsetY += bandSpacing;
                   }
                 }
-                
-                // 计算目标band的Y坐标偏移
+
+                // Calculate the Y offset of the target band
                  for (let i = 0; i < bandIndex; i++) {
                    targetBandOffsetY += mockBands.value[i]?.height || 0;
                    if (i < bandIndex - 1) {
                      targetBandOffsetY += bandSpacing;
                    }
                  }
-                
-                // 计算当前元素相对于目标band的Y坐标
+
+                // Calculate the current element's Y coordinate relative to the target band
                 const relativeY = currentTop + (sourceBandOffsetY - targetBandOffsetY);
                 const relativeBottom = currentBottom + (sourceBandOffsetY - targetBandOffsetY);
                 const relativeCenterY = currentCenterY + (sourceBandOffsetY - targetBandOffsetY);
-                
-                // 顶部对齐
+
+                // Top alignment
                 if (Math.abs(relativeY - otherTop) < threshold) {
-                  // 添加目标band的Y坐标偏移到参考线位置
+                  // Add the target band's Y offset to the guide line position
                   const linePosition = otherTop + topMargin + targetBandOffsetY;
                   horizontalAlignmentLines.push(linePosition);
                 }
-                // 底部对齐
+                // Bottom alignment
                 if (Math.abs(relativeBottom - otherBottom) < threshold) {
-                  // 添加目标band的Y坐标偏移到参考线位置
+                  // Add the target band's Y offset to the guide line position
                   const linePosition = otherBottom + topMargin + targetBandOffsetY;
                   horizontalAlignmentLines.push(linePosition);
                 }
-                // 中心对齐
+                // Center alignment
                 if (Math.abs(relativeCenterY - otherCenterY) < threshold) {
-                  // 添加目标band的Y坐标偏移到参考线位置
+                  // Add the target band's Y offset to the guide line position
                   const linePosition = otherCenterY + topMargin + targetBandOffsetY;
                   horizontalAlignmentLines.push(linePosition);
                 }
-                // 顶部对齐到其他元素的底部
+                // Top aligns to the other element's bottom
                 if (Math.abs(relativeY - otherBottom) < threshold) {
-                  // 添加目标band的Y坐标偏移到参考线位置
+                  // Add the target band's Y offset to the guide line position
                   const linePosition = otherBottom + topMargin + targetBandOffsetY;
                   horizontalAlignmentLines.push(linePosition);
                 }
-                // 底部对齐到其他元素的顶部
+                // Bottom aligns to the other element's top
                 if (Math.abs(relativeBottom - otherTop) < threshold) {
-                  // 添加目标band的Y坐标偏移到参考线位置
+                  // Add the target band's Y offset to the guide line position
                   const linePosition = otherTop + topMargin + targetBandOffsetY;
                   horizontalAlignmentLines.push(linePosition);
                 }
               }
             }
           });
-          
-          // 更新band的Y坐标偏移，考虑band之间的间距
+
+          // Update the band's Y offset, accounting for spacing between bands
           bandOffsetY += band.height + bandSpacing;
         });
-        
-        // 更新对齐线状态
+
+        // Update alignment line state
         mockAlignmentLines.value = {
-          horizontal: [...new Set(horizontalAlignmentLines)], // 水平对齐线（Y坐标）
-          vertical: [...new Set(verticalAlignmentLines)] // 垂直对齐线（X坐标）
+          horizontal: [...new Set(horizontalAlignmentLines)], // Horizontal alignment lines (Y coordinates)
+          vertical: [...new Set(verticalAlignmentLines)] // Vertical alignment lines (X coordinates)
         };
       },
       // Mock the coordinate update with grid snapping and alignment detection

@@ -38,7 +38,7 @@ const props = defineProps({
   },
   duration: {
     type: Number,
-    default: 3000 // 默认3秒后自动关闭
+    default: 3000 // Automatically closes after 3 seconds by default
   }
 });
 

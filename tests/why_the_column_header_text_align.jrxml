@@ -11,7 +11,7 @@
     topMargin="20"
     bottomMargin="20">
 
-  <!-- 子数据集定义 -->
+  <!-- Sub-dataset definition -->
   <subDataset name="tableDataset" uuid="05745569-39c8-4b77-b24a-739a31b3346f">
     <queryString language="sql"><![CDATA[select * from  "ORDERS" limit 10]]></queryString>
     <field name="ORDERID" class="java.lang.Integer">
@@ -254,7 +254,7 @@
                   <textElement textAlignment="Center" verticalAlignment="Middle">
                     <font fontName="Noto Serif SC" isUnderline="true"/>
                   </textElement>
-                  <text><![CDATA[时间字段]]></text>
+                  <text><![CDATA[Time Field]]></text>
                 </staticText>
             </jr:tableHeader>
             <jr:tableFooter height="30" rowSpan="1">

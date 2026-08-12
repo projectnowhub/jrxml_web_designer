@@ -99,8 +99,8 @@ describe('fileUtils', () => {
       }
       
       const blob = exportToJSON(reportData)
-      
-      // 在测试环境中使用FileReader读取Blob内容
+
+      // Use FileReader to read the Blob content in the test environment
       const text = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = () => resolve(reader.result as string)
@@ -181,8 +181,8 @@ describe('fileUtils', () => {
     it('should include the JRXML content', async () => {
       const jrxmlContent = '<jasperReport><title>Test</title></jasperReport>'
       const blob = exportToJRXML(jrxmlContent)
-      
-      // 在测试环境中使用FileReader读取Blob内容
+
+      // Use FileReader to read the Blob content in the test environment
       const text = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = () => resolve(reader.result as string)

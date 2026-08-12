@@ -72,15 +72,15 @@ const emit = defineEmits<{
 // Refs
 const editInput = ref<HTMLInputElement | null>(null);
 
-// 是否正在编辑
+// Whether currently editing
 const isEditing = computed(() => {
-  return props.editingElement && 
-         props.editingElement.bandIndex === props.bandIndex && 
+  return props.editingElement &&
+         props.editingElement.bandIndex === props.bandIndex &&
          props.editingElement.elementIndex === props.elementIndex &&
          props.editingElement.parentFrameIndex === props.parentFrameIndex;
 });
 
-// 当进入编辑状态时，聚焦输入框
+// Focus the input when entering edit mode
 watch(() => isEditing.value, (newVal) => {
   if (newVal && editInput.value) {
     setTimeout(() => {
@@ -90,34 +90,34 @@ watch(() => isEditing.value, (newVal) => {
   }
 });
 
-// 处理选择
+// Handle selection
 const handleSelect = (bandIndex: number, elementIndex: number, isMultiSelect?: boolean) => {
   emit('select', bandIndex, elementIndex, isMultiSelect, props.parentFrameIndex);
 };
 
-// 处理拖拽开始
+// Handle drag start
 const handleDragStart = (event: MouseEvent, bandIndex: number, elementIndex: number) => {
   emit('dragStart', event, bandIndex, elementIndex, props.parentFrameIndex);
 };
 
-// 处理调整大小开始
+// Handle resize start
 const handleResizeStart = (event: MouseEvent, bandIndex: number, elementIndex: number) => {
   emit('resizeStart', event, bandIndex, elementIndex, props.parentFrameIndex);
 };
 
-// 开始编辑
+// Start editing
 const handleStartEditing = () => {
-  // 触发开始编辑事件，由父组件控制进入编辑状态
+  // Emit the start-editing event; the parent component controls entering edit mode
   emit('startEditing', props.bandIndex, props.elementIndex, props.parentFrameIndex);
 };
 
-// 完成编辑
+// Finish editing
 const handleFinishEditing = () => {
-  // 只有在文本发生变化时才触发更新（如果需要额外的校验逻辑可以在这里添加）
+  // Only trigger an update when the text has actually changed (extra validation logic can be added here if needed)
   emit('finishEditing');
 };
 
-// 取消编辑
+// Cancel editing
 const handleCancelEditing = () => {
   emit('cancelEditing');
 };

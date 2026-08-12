@@ -29,22 +29,22 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-// 缩放常量
+// Zoom constants
 const ZOOM_LEVELS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3];
 const DEFAULT_ZOOM = 1;
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 3;
 const OPTIMAL_ZOOM_MARGIN = 0.9;
 
-// 本地缩放级别
+// Local zoom level
 const localZoomLevel = ref(props.zoomLevel);
 
-// 监听props变化
+// Watch for prop changes
 watch(() => props.zoomLevel, (newLevel) => {
   localZoomLevel.value = newLevel;
 });
 
-// 放大
+// Zoom in
 function zoomIn() {
   const currentIndex = ZOOM_LEVELS.findIndex(level => level === localZoomLevel.value);
   if (currentIndex !== -1 && currentIndex < ZOOM_LEVELS.length - 1) {
@@ -60,7 +60,7 @@ function zoomIn() {
   }
 }
 
-// 缩小
+// Zoom out
 function zoomOut() {
   const currentIndex = ZOOM_LEVELS.findIndex(level => level === localZoomLevel.value);
   if (currentIndex !== -1 && currentIndex > 0) {
@@ -79,42 +79,42 @@ function zoomOut() {
   }
 }
 
-// 重置缩放
+// Reset zoom
 function resetZoom() {
   updateZoomLevel(DEFAULT_ZOOM);
 }
 
-// 应用缩放
+// Apply zoom
 function applyZoom() {
   updateZoomLevel(localZoomLevel.value);
 }
 
-// 更新缩放级别
+// Update the zoom level
 function updateZoomLevel(level: number) {
   const clampedLevel = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, level));
   localZoomLevel.value = clampedLevel;
   emit('update:zoomLevel', clampedLevel);
 }
 
-// 根据报表大小自动计算最佳缩放比例
+// Automatically calculate the optimal zoom ratio based on the report size
 function calculateOptimalZoom() {
-  // 获取设计区域的可用大小
+  // Get the available size of the design area
   const designerContainer = document.querySelector('.designer-canvas') || document.querySelector('.pdf-designer');
   if (!designerContainer) return;
-  
-  // 获取设计区域的实际可用宽度
-  const availableWidth = designerContainer.clientWidth - 20; // 减去边距
-  
-  // 计算宽度的缩放比例
+
+  // Get the actual available width of the design area
+  const availableWidth = designerContainer.clientWidth - 20; // Subtract the margin
+
+  // Compute the width scale ratio
   const widthRatio = availableWidth / props.paperWidth;
-  
-  // 使用宽度缩放比例，确保报表宽度适应设计区域
+
+  // Use the width scale ratio to ensure the report width fits the design area
   const optimalZoom = widthRatio * OPTIMAL_ZOOM_MARGIN;
-  
-  // 从预设的缩放级别中选择最接近的
+
+  // Pick the closest value from the preset zoom levels
   let closestZoom = ZOOM_LEVELS[0] || DEFAULT_ZOOM;
   let minDiff = Math.abs((ZOOM_LEVELS[0] || DEFAULT_ZOOM) - optimalZoom);
-  
+
   for (let i = 1; i < ZOOM_LEVELS.length; i++) {
     const level = ZOOM_LEVELS[i];
     if (level !== undefined) {
@@ -125,8 +125,8 @@ function calculateOptimalZoom() {
       }
     }
   }
-  
-  // 设置计算出的最佳缩放比例
+
+  // Apply the computed optimal zoom ratio
   updateZoomLevel(closestZoom);
 }
 </script>

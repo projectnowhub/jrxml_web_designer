@@ -1,10 +1,10 @@
-// API 配置
+// API configuration
 export const API_CONFIG = {
-  // PDF 预览接口
+  // PDF preview endpoint
   PDF_PREVIEW_API: 'https://jrxml-pdf-preview.firegod.cn/api/pdf/generateForm',
-  
-  // 其他 API 配置可以在此添加
+
+  // Other API configuration can be added here
 };
 
-// 导出单独的 PDF 预览 API 常量，方便直接导入
+// Export the PDF preview API constant separately for convenient direct import
 export const PDF_PREVIEW_API = API_CONFIG.PDF_PREVIEW_API;

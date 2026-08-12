@@ -1,6 +1,6 @@
 /**
- * JRXML HTML渲染器 - TypeScript实现
- * 将设计器内部数据模型渲染为HTML预览
+ * JRXML HTML Renderer - TypeScript implementation
+ * Renders the designer's internal data model into an HTML preview
  */
 
 import type {
@@ -28,16 +28,16 @@ export interface HtmlRendererOptions {
 }
 
 const BAND_DISPLAY_NAMES: Record<string, string> = {
-  title: "标题",
-  pageHeader: "页头",
-  columnHeader: "列头",
-  detail: "明细",
-  columnFooter: "列尾",
-  pageFooter: "页脚",
-  summary: "汇总",
-  background: "背景",
-  lastPageFooter: "末页页脚",
-  noData: "无数据",
+  title: "Title",
+  pageHeader: "Page Header",
+  columnHeader: "Column Header",
+  detail: "Detail",
+  columnFooter: "Column Footer",
+  pageFooter: "Page Footer",
+  summary: "Summary",
+  background: "Background",
+  lastPageFooter: "Last Page Footer",
+  noData: "No Data",
 };
 
 const BAND_ORDER = [
@@ -215,7 +215,7 @@ function renderTextField(
 ): string {
   const fontStyle = buildFontStyle(element, scale);
   const textStyle = buildTextStyle(element);
-  const displayText = element.expression || "[空表达式]";
+  const displayText = element.expression || "[Empty Expression]";
   const patternHtml = element.pattern
     ? `<span style="font-size:10px;color:#999;"> [${escapeHtml(element.pattern)}]</span>`
     : "";
@@ -259,8 +259,8 @@ function renderImage(
   const expr =
     ("imageExpression" in element && element.imageExpression) ||
     ("expression" in element && (element as any).expression) ||
-    "未指定";
-  return `<div class="element image" style="${baseStyle}display:flex;${alignStyle}"><div style="width:100%;height:100%;background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#999;font-size:${12 * scale}px;${scaleStyle}">[图片: ${escapeHtml(expr)}]</div></div>`;
+    "Not specified";
+  return `<div class="element image" style="${baseStyle}display:flex;${alignStyle}"><div style="width:100%;height:100%;background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#999;font-size:${12 * scale}px;${scaleStyle}">[Image: ${escapeHtml(expr)}]</div></div>`;
 }
 
 function renderLine(element: LineElement, scale: number): string {
@@ -357,7 +357,7 @@ function renderBand(
 }
 
 /**
- * 将内部数据模型渲染为完整HTML页面
+ * Renders the internal data model into a complete HTML page
  */
 export function renderToHtml(
   bands: Band[],
@@ -425,7 +425,7 @@ export function renderToHtml(
 }
 
 /**
- * 从JRXML字符串直接渲染为HTML
+ * Renders an HTML page directly from a JRXML string
  */
 export function renderJRXMLToHtml(
   jrxmlContent: string,
@@ -440,8 +440,8 @@ export function renderJRXMLToHtml(
 }
 
 /**
- * 渲染为多页HTML预览
- * 将内容分页显示，带页面导航
+ * Renders a multi-page HTML preview
+ * Paginates the content and includes page navigation
  */
 export function renderToMultiPageHtml(
   bands: Band[],
@@ -714,16 +714,16 @@ function generateMockRows(
 ): string[][] {
   const rows: string[][] = [];
   const names = [
-    "张三",
-    "李四",
-    "王五",
-    "赵六",
-    "孙七",
-    "周八",
-    "吴九",
-    "郑十",
+    "John Doe",
+    "Jane Smith",
+    "Robert Brown",
+    "Emily Davis",
+    "Michael Wilson",
+    "Sarah Miller",
+    "David Garcia",
+    "Laura Martinez",
   ];
-  const statuses = ["已完成", "进行中", "待处理"];
+  const statuses = ["Completed", "In Progress", "Pending"];
   for (let i = 0; i < count; i++) {
     const row: string[] = [];
     for (const field of fields) {
@@ -745,12 +745,12 @@ function generateMockRows(
       else if (/status|状态/.test(lower))
         row.push(statuses[i % statuses.length]!);
       else if (/city|城市/.test(lower))
-        row.push(["北京", "上海", "广州", "深圳", "杭州"][i % 5]!);
+        row.push(["New York", "Los Angeles", "Chicago", "Houston", "Phoenix"][i % 5]!);
       else if (/sex|gender|性别/.test(lower))
-        row.push(i % 2 === 0 ? "男" : "女");
+        row.push(i % 2 === 0 ? "Male" : "Female");
       else if (/age|年龄/.test(lower))
         row.push(String(20 + Math.floor(Math.random() * 40)));
-      else row.push(`数据${i + 1}`);
+      else row.push(`Data${i + 1}`);
     }
     rows.push(row);
   }
@@ -800,7 +800,7 @@ function renderDetailTablePage(
 <body>
 <div class="jasper-report">
   <div class="page-content">
-    <div style="margin-bottom:12px;font-size:${14 * scale}px;font-weight:600;color:#333;">数据预览</div>
+    <div style="margin-bottom:12px;font-size:${14 * scale}px;font-weight:600;color:#333;">Data Preview</div>
     <div style="overflow-x:auto;">
       <table style="border-collapse:collapse;width:100%;">
         <thead><tr>${headerCells}</tr></thead>

@@ -10,7 +10,7 @@
     rightMargin="20"
     topMargin="20"
     bottomMargin="20">
-  <!-- 表格样式 -->
+  <!-- Table style -->
   <style name="Table_TH" mode="Opaque" backcolor="#F0F8FF">
       <box>
         <pen lineWidth="0.5" lineColor="#000000"/>
@@ -39,7 +39,7 @@
       </box>
   </style>
 
-  <!-- 子数据集定义 -->
+  <!-- Sub-dataset definition -->
   <subDataset name="tableDataset" uuid="c2c2d84d-9810-4501-928f-d7dfb99062f7">
     <field name="FIELD_NAME" class="java.lang.String">
     </field>

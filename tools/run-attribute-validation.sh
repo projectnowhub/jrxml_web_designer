@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# JRXML属性验证编译测试
-# 使用本地JasperReports 6.21.5库验证每个属性是否被允许
+# JRXML attribute validation compilation test
+# Uses the local JasperReports 6.21.5 library to validate whether each attribute is allowed
 
 set -e
 
@@ -10,71 +10,71 @@ TEST_DIR="/Users/yan.yang/open/jrxml_web_designer/test-attribute-validation"
 OUTPUT_DIR="$TEST_DIR/compiled"
 COMPILER_CLASSPATH=".:$JASPERREPORT_JAR"
 
-# 创建测试目录
+# Create test directories
 mkdir -p "$TEST_DIR" "$OUTPUT_DIR"
 
-# 颜色定义
+# Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-# 测试计数器
+# Test counters
 PASSED=0
 FAILED=0
 TOTAL=0
 
-# 测试函数
+# Test function
 test_jrxml() {
     local name="$1"
     local jrxml_content="$2"
     local expected_result="$3"  # "pass" or "fail"
 
     TOTAL=$((TOTAL + 1))
-    echo -e "\n${YELLOW}测试 $TOTAL: $name${NC}"
+    echo -e "\n${YELLOW}Test $TOTAL: $name${NC}"
     echo "─────────────────────────────────────────"
 
-    # 保存JRXML文件
+    # Save the JRXML file
     local jrxml_file="$TEST_DIR/$name.jrxml"
     echo "$jrxml_content" > "$jrxml_file"
 
-    # 尝试编译
+    # Attempt compilation
     if java -cp "$COMPILER_CLASSPATH" JRXMLCompiler "$jrxml_file" "$OUTPUT_DIR/$name.jasper" 2>&1 | tee "$OUTPUT_DIR/$name.output"; then
-        # 编译成功
+        # Compilation succeeded
         if [ "$expected_result" = "pass" ]; then
-            echo -e "${GREEN}✅ PASS: 编译成功（预期行为）${NC}"
+            echo -e "${GREEN}✅ PASS: compilation succeeded (expected behavior)${NC}"
             PASSED=$((PASSED + 1))
         else
-            echo -e "${RED}❌ FAIL: 编译成功，但预期应该失败${NC}"
+            echo -e "${RED}❌ FAIL: compilation succeeded, but was expected to fail${NC}"
             FAILED=$((FAILED + 1))
         fi
     else
-        # 编译失败
+        # Compilation failed
         local error_output=$(cat "$OUTPUT_DIR/$name.output")
         if [ "$expected_result" = "fail" ]; then
-            echo -e "${GREEN}✅ PASS: 编译失败（预期行为）${NC}"
-            echo -e "错误信息: $(echo "$error_output" | grep -E "错误|Exception|error" | head -1)"
+            echo -e "${GREEN}✅ PASS: compilation failed (expected behavior)${NC}"
+            echo -e "Error message: $(echo "$error_output" | grep -E "Error|Exception|error" | head -1)"
             PASSED=$((PASSED + 1))
         else
-            echo -e "${RED}❌ FAIL: 编译失败，但预期应该成功${NC}"
-            echo -e "错误信息: $(echo "$error_output" | grep -E "错误|Exception|error" | head -1)"
+            echo -e "${RED}❌ FAIL: compilation failed, but was expected to succeed${NC}"
+            echo -e "Error message: $(echo "$error_output" | grep -E "Error|Exception|error" | head -1)"
             FAILED=$((FAILED + 1))
         fi
     fi
 }
 
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}JRXML属性验证编译测试${NC}"
-echo -e "${GREEN}使用JasperReports: $JASPERREPORT_JAR${NC}"
+echo -e "${GREEN}JRXML attribute validation compilation test${NC}"
+echo -e "${GREEN}Using JasperReports: $JASPERREPORT_JAR${NC}"
 echo -e "${GREEN}========================================${NC}"
 
 # ============================================================================
-# 测试1: uuid属性验证
+# Test 1: uuid attribute validation
 # ============================================================================
 
-echo -e "\n${YELLOW}========== 1. uuid属性验证 ==========${NC}"
+echo -e "\n${YELLOW}========== 1. uuid attribute validation ==========${NC}"
 
-# 测试1.1: field带uuid（预期失败）
+# Test 1.1: field with uuid (expected to fail)
 test_jrxml "field_with_uuid" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -92,7 +92,7 @@ test_jrxml "field_with_uuid" '<?xml version="1.0" encoding="UTF-8"?>
   </detail>
 </jasperReport>' "fail"
 
-# 测试1.2: field不带uuid（预期通过）
+# Test 1.2: field without uuid (expected to pass)
 test_jrxml "field_without_uuid" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -110,7 +110,7 @@ test_jrxml "field_without_uuid" '<?xml version="1.0" encoding="UTF-8"?>
   </detail>
 </jasperReport>' "pass"
 
-# 测试1.3: variable带uuid（预期失败）
+# Test 1.3: variable with uuid (expected to fail)
 test_jrxml "variable_with_uuid" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -128,7 +128,7 @@ test_jrxml "variable_with_uuid" '<?xml version="1.0" encoding="UTF-8"?>
   </detail>
 </jasperReport>' "fail"
 
-# 测试1.4: variable不带uuid（预期通过）
+# Test 1.4: variable without uuid (expected to pass)
 test_jrxml "variable_without_uuid" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -146,7 +146,7 @@ test_jrxml "variable_without_uuid" '<?xml version="1.0" encoding="UTF-8"?>
   </detail>
 </jasperReport>' "pass"
 
-# 测试1.5: parameter带uuid（预期通过）
+# Test 1.5: parameter with uuid (expected to pass)
 test_jrxml "parameter_with_uuid" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -164,7 +164,7 @@ test_jrxml "parameter_with_uuid" '<?xml version="1.0" encoding="UTF-8"?>
   </detail>
 </jasperReport>' "pass"
 
-# 测试1.6: parameter不带uuid（预期通过）
+# Test 1.6: parameter without uuid (expected to pass)
 test_jrxml "parameter_without_uuid" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -182,7 +182,7 @@ test_jrxml "parameter_without_uuid" '<?xml version="1.0" encoding="UTF-8"?>
   </detail>
 </jasperReport>' "pass"
 
-# 测试1.7: sortField带uuid（预期失败）
+# Test 1.7: sortField with uuid (expected to fail)
 test_jrxml "sortField_with_uuid" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -200,7 +200,7 @@ test_jrxml "sortField_with_uuid" '<?xml version="1.0" encoding="UTF-8"?>
   </detail>
 </jasperReport>' "fail"
 
-# 测试1.8: sortField不带uuid（预期通过）
+# Test 1.8: sortField without uuid (expected to pass)
 test_jrxml "sortField_without_uuid" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -218,7 +218,7 @@ test_jrxml "sortField_without_uuid" '<?xml version="1.0" encoding="UTF-8"?>
   </detail>
 </jasperReport>' "pass"
 
-# 测试1.9: group带uuid（预期失败）
+# Test 1.9: group with uuid (expected to fail)
 test_jrxml "group_with_uuid" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -236,7 +236,7 @@ test_jrxml "group_with_uuid" '<?xml version="1.0" encoding="UTF-8"?>
   </detail>
 </jasperReport>' "fail"
 
-# 测试1.10: group不带uuid（预期通过）
+# Test 1.10: group without uuid (expected to pass)
 test_jrxml "group_without_uuid" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -254,7 +254,7 @@ test_jrxml "group_without_uuid" '<?xml version="1.0" encoding="UTF-8"?>
   </detail>
 </jasperReport>' "pass"
 
-# 测试1.11: band带uuid（预期失败）
+# Test 1.11: band with uuid (expected to fail)
 test_jrxml "band_with_uuid" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -271,7 +271,7 @@ test_jrxml "band_with_uuid" '<?xml version="1.0" encoding="UTF-8"?>
   </detail>
 </jasperReport>' "fail"
 
-# 测试1.12: band不带uuid（预期通过）
+# Test 1.12: band without uuid (expected to pass)
 test_jrxml "band_without_uuid" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -289,12 +289,12 @@ test_jrxml "band_without_uuid" '<?xml version="1.0" encoding="UTF-8"?>
 </jasperReport>' "pass"
 
 # ============================================================================
-# 测试2: positionType枚举值验证
+# Test 2: positionType enum value validation
 # ============================================================================
 
-echo -e "\n${YELLOW}========== 2. positionType枚举值验证 ==========${NC}"
+echo -e "\n${YELLOW}========== 2. positionType enum value validation ==========${NC}"
 
-# 测试2.1: positionType=FixRelativeToTop（预期通过）
+# Test 2.1: positionType=FixRelativeToTop (expected to pass)
 test_jrxml "positionType_FixRelativeToTop" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -311,7 +311,7 @@ test_jrxml "positionType_FixRelativeToTop" '<?xml version="1.0" encoding="UTF-8"
   </detail>
 </jasperReport>' "pass"
 
-# 测试2.2: positionType=FixRelativeToBottom（预期通过）
+# Test 2.2: positionType=FixRelativeToBottom (expected to pass)
 test_jrxml "positionType_FixRelativeToBottom" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -328,7 +328,7 @@ test_jrxml "positionType_FixRelativeToBottom" '<?xml version="1.0" encoding="UTF
   </detail>
 </jasperReport>' "pass"
 
-# 测试2.3: positionType=Float（预期通过）
+# Test 2.3: positionType=Float (expected to pass)
 test_jrxml "positionType_Float" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -345,7 +345,7 @@ test_jrxml "positionType_Float" '<?xml version="1.0" encoding="UTF-8"?>
   </detail>
 </jasperReport>' "pass"
 
-# 测试2.4: positionType=FixRelativeToBand（预期失败）
+# Test 2.4: positionType=FixRelativeToBand (expected to fail)
 test_jrxml "positionType_FixRelativeToBand" '<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -363,20 +363,20 @@ test_jrxml "positionType_FixRelativeToBand" '<?xml version="1.0" encoding="UTF-8
 </jasperReport>' "fail"
 
 # ============================================================================
-# 测试总结
+# Test summary
 # ============================================================================
 
 echo -e "\n${GREEN}========================================${NC}"
-echo -e "${GREEN}测试完成${NC}"
+echo -e "${GREEN}Test complete${NC}"
 echo -e "${GREEN}========================================${NC}"
-echo -e "通过: ${GREEN}$PASSED${NC}"
-echo -e "失败: ${RED}$FAILED${NC}"
-echo -e "总计: $TOTAL"
+echo -e "Passed: ${GREEN}$PASSED${NC}"
+echo -e "Failed: ${RED}$FAILED${NC}"
+echo -e "Total: $TOTAL"
 
-# 输出详细结果到文件
-echo -e "\n========== 详细测试结果 ==========" > "$TEST_DIR/test-results.txt"
-echo "测试时间: $(date)" >> "$TEST_DIR/test-results.txt"
-echo "总计: $TOTAL, 通过: $PASSED, 失败: $FAILED" >> "$TEST_DIR/test-results.txt"
+# Write detailed results to a file
+echo -e "\n========== Detailed Test Results ==========" > "$TEST_DIR/test-results.txt"
+echo "Test time: $(date)" >> "$TEST_DIR/test-results.txt"
+echo "Total: $TOTAL, Passed: $PASSED, Failed: $FAILED" >> "$TEST_DIR/test-results.txt"
 echo "" >> "$TEST_DIR/test-results.txt"
 for file in "$OUTPUT_DIR"/*.output; do
     if [ -f "$file" ]; then
@@ -386,4 +386,4 @@ for file in "$OUTPUT_DIR"/*.output; do
     fi
 done
 
-echo -e "\n详细结果已保存到: $TEST_DIR/test-results.txt"
+echo -e "\nDetailed results saved to: $TEST_DIR/test-results.txt"

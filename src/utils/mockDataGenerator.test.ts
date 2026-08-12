@@ -73,14 +73,14 @@ describe('mockDataGenerator', () => {
     });
 
     it('generates status from predefined options', () => {
-      const validStatuses = ['已完成', '进行中', '待处理', '已取消'];
+      const validStatuses = ['Completed', 'In Progress', 'Pending', 'Cancelled'];
       const value = generateMockValue('status', 'java.lang.String');
       expect(validStatuses).toContain(value);
     });
 
     it('generates male/female for gender fields', () => {
       const value = generateMockValue('gender', 'java.lang.String');
-      expect(['男', '女']).toContain(value);
+      expect(['Male', 'Female']).toContain(value);
     });
 
     it('generates age as integer between 18-65', () => {
@@ -122,10 +122,10 @@ describe('mockDataGenerator', () => {
 
     it('uses defaultValue when present', () => {
       const params: ReportParameter[] = [
-        { name: 'title', class: 'java.lang.String', defaultValue: '自定义标题' },
+        { name: 'title', class: 'java.lang.String', defaultValue: 'Custom Title' },
       ];
       const result = generateMockParameters(params);
-      expect(result['title']).toBe('自定义标题');
+      expect(result['title']).toBe('Custom Title');
     });
 
     it('returns empty object for empty params', () => {

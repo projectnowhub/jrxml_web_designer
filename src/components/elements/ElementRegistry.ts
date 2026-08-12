@@ -1,6 +1,6 @@
 import type { DesignElement } from '../../types';
 
-// 元素配置接口
+// Element configuration interface
 export interface ElementConfig {
   type: string;
   name: string;
@@ -14,7 +14,7 @@ export interface ElementConfig {
   deserializer?: (data: any) => DesignElement;
 }
 
-// 元素注册器类
+// Element registry class
 export class ElementRegistry {
   private static instance: ElementRegistry;
   private elements: Map<string, ElementConfig> = new Map();
@@ -30,7 +30,7 @@ export class ElementRegistry {
     return ElementRegistry.instance;
   }
 
-  // 注册默认元素
+  // Register default elements
   private registerDefaultElements(): void {
     this.registerElement({
       type: 'staticText',
@@ -48,7 +48,7 @@ export class ElementRegistry {
         markup: 'none',
         textAdjust: 'CutText',
         rotation: 'None',
-        // 样式属性
+        // Style properties
         fontFamily: 'SansSerif',
         fontSize: 12,
         isBold: false,
@@ -71,16 +71,16 @@ export class ElementRegistry {
         y: 0,
         width: 100,
         height: 20,
-        expression: '"文本域"',
+        expression: '"Text Field"',
         evaluationTime: 'Now',
         evaluationGroup: '',
         pattern: '',
         isBlankWhenNull: false,
         hyperlinkType: 'None',
         bookmarkLevel: 0,
-        // 过时属性（向后兼容）
+        // Deprecated property (kept for backward compatibility)
         isStretchWithOverflow: false,
-        // 样式属性
+        // Style properties
         fontFamily: 'SansSerif',
         fontSize: 12,
         isBold: false,
@@ -128,7 +128,7 @@ export class ElementRegistry {
         height: 2,
         lineDirection: 'TopDown',
         lineWidth: 1,
-        // 新增属性
+        // New properties
         isPrintRepeatedValues: true,
         printWhenExpression: ''
       }
@@ -147,7 +147,7 @@ export class ElementRegistry {
         width: 100,
         height: 100,
         mode: 'Transparent',
-        // 新增属性
+        // New properties
         isPrintRepeatedValues: true,
         isRemoveLineWhenBlank: false,
         printWhenExpression: ''
@@ -167,7 +167,7 @@ export class ElementRegistry {
         width: 100,
         height: 100,
         mode: 'Transparent',
-        // 新增属性
+        // New properties
         isPrintRepeatedValues: true,
         isRemoveLineWhenBlank: false,
         printWhenExpression: ''
@@ -185,9 +185,9 @@ export class ElementRegistry {
         x: 0,
         y: 0,
         width: 100,
-        height: 1, // Break通常很扁
+        height: 1, // Breaks are usually thin
         breakType: 'Page',
-        // 新增属性
+        // New properties
         isResetPageNumber: false
       }
     });
@@ -205,10 +205,10 @@ export class ElementRegistry {
         width: 200,
         height: 100,
         backcolor: '#FFFFFF',
-        mode: 'Transparent', // 默认为透明
+        mode: 'Transparent', // Default to transparent
         elements: [],
         layout: 'FreeLayout',
-        // 新增属性
+        // New properties
         printWhenExpression: '',
         isIgnorePagination: false,
         isSplitAllowed: true,
@@ -343,7 +343,7 @@ export class ElementRegistry {
       }
     });
 
-    // 子报表元素
+    // Subreport element
     this.registerElement({
       type: 'subreport',
       name: 'elementNames.subreport',
@@ -367,7 +367,7 @@ export class ElementRegistry {
       }
     });
 
-    // 列表元素
+    // List element
     this.registerElement({
       type: 'list',
       name: 'elementNames.list',
@@ -397,7 +397,7 @@ export class ElementRegistry {
       }
     });
 
-    // 图表元素
+    // Chart element
     this.registerElement({
       type: 'chart',
       name: 'elementNames.chart',
@@ -420,7 +420,7 @@ export class ElementRegistry {
       }
     });
 
-    // 条码元素
+    // Barcode element
     this.registerElement({
       type: 'barcode',
       name: 'elementNames.barcode',
@@ -440,7 +440,7 @@ export class ElementRegistry {
       }
     });
 
-    // 地图元素
+    // Map element
     this.registerElement({
       type: 'map',
       name: 'elementNames.map',
@@ -463,7 +463,7 @@ export class ElementRegistry {
       }
     });
 
-    // 交叉表元素
+    // Crosstab element
     this.registerElement({
       type: 'crosstab',
       name: 'elementNames.crosstab',
@@ -483,7 +483,7 @@ export class ElementRegistry {
       }
     });
 
-    // 图标标签元素
+    // Icon label element
     this.registerElement({
       type: 'iconLabel',
       name: 'elementNames.iconLabel',
@@ -504,7 +504,7 @@ export class ElementRegistry {
       }
     });
 
-    // 通用元素
+    // Generic element
     this.registerElement({
       type: 'genericElement',
       name: 'elementNames.genericElement',
@@ -621,44 +621,44 @@ export class ElementRegistry {
     });
   }
 
-  // 注册元素
+  // Register an element
   public registerElement(config: ElementConfig): void {
     this.elements.set(config.type, config);
   }
 
-  // 注册多个元素
+  // Register multiple elements
   public registerElements(configs: ElementConfig[]): void {
     configs.forEach(config => this.registerElement(config));
   }
 
-  // 获取元素配置
+  // Get an element's config
   public getElementConfig(type: string): ElementConfig | undefined {
     return this.elements.get(type);
   }
 
-  // 获取所有元素配置
+  // Get all element configs
   public getAllElements(): ElementConfig[] {
     return Array.from(this.elements.values());
   }
 
-  // 按分类获取元素配置
+  // Get element configs by category
   public getByCategory(category: string): ElementConfig[] {
     return Array.from(this.elements.values()).filter(e => e.category === category);
   }
 
-  // 获取元素类型列表
+  // Get the list of element types
   public getElementTypes(): string[] {
     return Array.from(this.elements.keys());
   }
 
-  // 创建元素实例
+  // Create an element instance
   public createElement(type: string, overrides: Partial<DesignElement> = {}): DesignElement {
     const config = this.getElementConfig(type);
     if (!config) {
       throw new Error(`Unknown element type: ${type}`);
     }
 
-    // composite 元素使用 defaultProps 中的实际类型（如 textField）
+    // Composite elements use the actual type from defaultProps (e.g. textField)
     const actualType = config.defaultProps.type || type;
 
     return {
@@ -668,7 +668,7 @@ export class ElementRegistry {
     } as DesignElement;
   }
 
-  // 验证元素
+  // Validate an element
   public validateElement(element: DesignElement): boolean {
     const config = this.getElementConfig(element.type);
     if (!config) {
@@ -679,7 +679,7 @@ export class ElementRegistry {
       return config.validator(element);
     }
 
-    // 默认验证：检查必要属性
+    // Default validation: check required properties
     return typeof element.x === 'number' &&
            typeof element.y === 'number' &&
            typeof element.width === 'number' &&
@@ -688,18 +688,18 @@ export class ElementRegistry {
            element.height >= 0;
   }
 
-  // 序列化元素
+  // Serialize an element
   public serializeElement(element: DesignElement): any {
     const config = this.getElementConfig(element.type);
     if (config?.serializer) {
       return config.serializer(element);
     }
 
-    // 默认序列化
+    // Default serialization
     return { ...element };
   }
 
-  // 反序列化元素
+  // Deserialize an element
   public deserializeElement(type: string, data: any): DesignElement {
     const config = this.getElementConfig(type);
     if (!config) {
@@ -710,7 +710,7 @@ export class ElementRegistry {
       return config.deserializer(data);
     }
 
-    // 默认反序列化
+    // Default deserialization
     return {
       ...config.defaultProps,
       ...data,
@@ -718,7 +718,7 @@ export class ElementRegistry {
     } as DesignElement;
   }
 
-  // 加载元素组件
+  // Load an element component
   public async loadElementComponent(type: string): Promise<any> {
     const config = this.getElementConfig(type);
     if (!config) {
@@ -729,7 +729,7 @@ export class ElementRegistry {
       return config.component;
     }
 
-    // 动态加载组件
+    // Dynamically load the component
     try {
       const componentMap: Record<string, string> = {
         staticText: './StaticTextElement.vue',
@@ -756,26 +756,26 @@ export class ElementRegistry {
     return null;
   }
 
-  // 检查元素类型是否存在
+  // Check whether an element type exists
   public hasElement(type: string): boolean {
     return this.elements.has(type);
   }
 
-  // 移除元素类型
+  // Remove an element type
   public removeElement(type: string): boolean {
     return this.elements.delete(type);
   }
 
-  // 清空所有元素
+  // Clear all elements
   public clearElements(): void {
     this.elements.clear();
   }
 }
 
-// 导出默认实例
+// Export the default instance
 export const elementRegistry = ElementRegistry.getInstance();
 
-// 导出注册辅助函数
+// Export registration helper functions
 export function registerElement(config: ElementConfig): void {
   elementRegistry.registerElement(config);
 }

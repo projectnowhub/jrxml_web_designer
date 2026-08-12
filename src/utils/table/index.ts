@@ -1,3 +1,3 @@
-// 表格工具模块索引文件
+// Table utility module index file
 export * from './ColumnFactory';
 export * from './TableModel';

@@ -1,36 +1,36 @@
 import { ref, computed, watch, onUnmounted } from 'vue';
 
 export interface DragFeedback {
-  // 拖拽预览元素
+  // Drag preview element
   previewElement: HTMLElement | null;
-  // 拖拽预览位置
+  // Drag preview position
   previewPosition: { x: number; y: number } | null;
-  // 拖拽预览尺寸
+  // Drag preview size
   previewSize: { width: number; height: number } | null;
-  // 可放置区域
+  // Droppable zones
   droppableZones: Array<{
     id: string;
     bandIndex: number;
     bounds: { x: number; y: number; width: number; height: number };
     highlighted: boolean;
   }>;
-  // 吸附点
+  // Snap points
   snapPoints: Array<{
     id: string;
     position: { x: number; y: number };
     type: 'horizontal' | 'vertical';
     active: boolean;
   }>;
-  // 吸附指示线
+  // Snap guide lines
   snapLines: Array<{
     id: string;
     type: 'horizontal' | 'vertical';
     position: number;
     active: boolean;
   }>;
-  // 拖拽状态
+  // Drag state
   isDragging: boolean;
-  // 拖拽元素信息
+  // Dragged element info
   draggedElementInfo: {
     bandIndex: number;
     elementIndex: number;
@@ -39,7 +39,7 @@ export interface DragFeedback {
 }
 
 export function useDragFeedback() {
-  // 拖拽反馈状态
+  // Drag feedback state
   const feedback = ref<DragFeedback>({
     previewElement: null,
     previewPosition: null,
@@ -51,10 +51,10 @@ export function useDragFeedback() {
     draggedElementInfo: null,
   });
 
-  // 动画帧ID
+  // Animation frame ID
   let animationFrameId: number | null = null;
 
-  // 计算可放置区域
+  // Compute droppable zones
   const updateDroppableZones = (
     bands: Array<{ type: string; height: number; elements: any[] }>,
     paperWidth: number,
@@ -81,7 +81,7 @@ export function useDragFeedback() {
     feedback.value.droppableZones = zones;
   };
 
-  // 计算吸附点
+  // Compute snap points
   const updateSnapPoints = (
     currentX: number,
     currentY: number,
@@ -94,7 +94,7 @@ export function useDragFeedback() {
     const points: DragFeedback['snapPoints'] = [];
     const lines: DragFeedback['snapLines'] = [];
 
-    // 获取当前band中的其他元素
+    // Get the other elements in the current band
     const currentBand = bands[currentBandIndex];
     if (!currentBand) return;
 
@@ -102,17 +102,17 @@ export function useDragFeedback() {
       (_, index) => index !== feedback.value.draggedElementInfo?.elementIndex
     );
 
-    // 计算水平对齐点（左、中、右）
+    // Compute horizontal alignment points (left, center, right)
     const leftEdge = currentX;
     const centerX = currentX + elementWidth / 2;
     const rightEdge = currentX + elementWidth;
 
-    // 计算垂直对齐点（上、中、下）
+    // Compute vertical alignment points (top, center, bottom)
     const topEdge = currentY;
     const centerY = currentY + elementHeight / 2;
     const bottomEdge = currentY + elementHeight;
 
-    // 检查与其他元素的对齐
+    // Check alignment against other elements
     otherElements.forEach((element, index) => {
       const elLeft = element.x;
       const elCenterX = element.x + element.width / 2;
@@ -121,7 +121,7 @@ export function useDragFeedback() {
       const elCenterY = element.y + element.height / 2;
       const elBottom = element.y + element.height;
 
-      // 左对齐检查
+      // Left alignment check
       if (Math.abs(leftEdge - elLeft) < snapDistance) {
         points.push({
           id: `snap-left-${index}`,
@@ -137,7 +137,7 @@ export function useDragFeedback() {
         });
       }
 
-      // 右对齐检查
+      // Right alignment check
       if (Math.abs(rightEdge - elRight) < snapDistance) {
         points.push({
           id: `snap-right-${index}`,
@@ -153,7 +153,7 @@ export function useDragFeedback() {
         });
       }
 
-      // 中心X对齐检查
+      // Center-X alignment check
       if (Math.abs(centerX - elCenterX) < snapDistance) {
         points.push({
           id: `snap-centerx-${index}`,
@@ -169,7 +169,7 @@ export function useDragFeedback() {
         });
       }
 
-      // 上对齐检查
+      // Top alignment check
       if (Math.abs(topEdge - elTop) < snapDistance) {
         points.push({
           id: `snap-top-${index}`,
@@ -185,7 +185,7 @@ export function useDragFeedback() {
         });
       }
 
-      // 下对齐检查
+      // Bottom alignment check
       if (Math.abs(bottomEdge - elBottom) < snapDistance) {
         points.push({
           id: `snap-bottom-${index}`,
@@ -201,7 +201,7 @@ export function useDragFeedback() {
         });
       }
 
-      // 中心Y对齐检查
+      // Center-Y alignment check
       if (Math.abs(centerY - elCenterY) < snapDistance) {
         points.push({
           id: `snap-centery-${index}`,
@@ -222,7 +222,7 @@ export function useDragFeedback() {
     feedback.value.snapLines = lines;
   };
 
-  // 开始拖拽
+  // Start dragging
   const startDrag = (
     elementInfo: { bandIndex: number; elementIndex: number; type: string },
     previewElement: HTMLElement | null = null
@@ -231,7 +231,7 @@ export function useDragFeedback() {
     feedback.value.draggedElementInfo = elementInfo;
     feedback.value.previewElement = previewElement;
 
-    // 创建预览元素（如果未提供）
+    // Create a preview element (if none was provided)
     if (!previewElement) {
       const preview = document.createElement('div');
       preview.className = 'drag-preview';
@@ -247,7 +247,7 @@ export function useDragFeedback() {
     }
   };
 
-  // 更新拖拽预览位置
+  // Update the drag preview position
   const updatePreviewPosition = (x: number, y: number, width: number, height: number) => {
     feedback.value.previewPosition = { x, y };
     feedback.value.previewSize = { width, height };
@@ -260,7 +260,7 @@ export function useDragFeedback() {
     }
   };
 
-  // 停止拖拽
+  // Stop dragging
   const stopDrag = () => {
     feedback.value.isDragging = false;
     feedback.value.draggedElementInfo = null;
@@ -269,14 +269,14 @@ export function useDragFeedback() {
     feedback.value.snapPoints = [];
     feedback.value.snapLines = [];
 
-    // 移除预览元素
+    // Remove the preview element
     if (feedback.value.previewElement) {
       feedback.value.previewElement.remove();
       feedback.value.previewElement = null;
     }
   };
 
-  // 高亮可放置区域
+  // Highlight a droppable zone
   const highlightDroppableZone = (bandIndex: number) => {
     feedback.value.droppableZones = feedback.value.droppableZones.map(zone => ({
       ...zone,
@@ -284,7 +284,7 @@ export function useDragFeedback() {
     }));
   };
 
-  // 清除高亮
+  // Clear highlights
   const clearHighlights = () => {
     feedback.value.droppableZones = feedback.value.droppableZones.map(zone => ({
       ...zone,
@@ -292,7 +292,7 @@ export function useDragFeedback() {
     }));
   };
 
-  // 获取吸附位置
+  // Get the snapped position
   const getSnappedPosition = (
     x: number,
     y: number,
@@ -305,20 +305,20 @@ export function useDragFeedback() {
     let newX = x;
     let newY = y;
 
-    // 检查所有吸附线
+    // Check all snap lines
     feedback.value.snapLines.forEach(line => {
       if (line.type === 'vertical' && !snappedX) {
-        // 左边缘吸附
+        // Snap the left edge
         if (Math.abs(x - line.position) < snapDistance) {
           newX = line.position;
           snappedX = true;
         }
-        // 右边缘吸附
+        // Snap the right edge
         else if (Math.abs((x + width) - line.position) < snapDistance) {
           newX = line.position - width;
           snappedX = true;
         }
-        // 中心X吸附
+        // Snap center-X
         else if (Math.abs((x + width / 2) - line.position) < snapDistance) {
           newX = line.position - width / 2;
           snappedX = true;
@@ -326,17 +326,17 @@ export function useDragFeedback() {
       }
 
       if (line.type === 'horizontal' && !snappedY) {
-        // 上边缘吸附
+        // Snap the top edge
         if (Math.abs(y - line.position) < snapDistance) {
           newY = line.position;
           snappedY = true;
         }
-        // 下边缘吸附
+        // Snap the bottom edge
         else if (Math.abs((y + height) - line.position) < snapDistance) {
           newY = line.position - height;
           snappedY = true;
         }
-        // 中心Y吸附
+        // Snap center-Y
         else if (Math.abs((y + height / 2) - line.position) < snapDistance) {
           newY = line.position - height / 2;
           snappedY = true;
@@ -347,7 +347,7 @@ export function useDragFeedback() {
     return { x: newX, y: newY, snappedX, snappedY };
   };
 
-  // 清理
+  // Cleanup
   onUnmounted(() => {
     if (animationFrameId) {
       cancelAnimationFrame(animationFrameId);

@@ -1,6 +1,6 @@
 <template>
   <div class="drag-feedback-layer" v-if="feedback.isDragging">
-    <!-- 拖拽预览元素 -->
+    <!-- Drag preview element -->
     <div
       v-if="feedback.previewPosition && feedback.previewSize"
       class="drag-preview"
@@ -14,7 +14,7 @@
         zIndex: 1000,
       }"
     >
-      <!-- 预览内容（显示元素类型图标） -->
+      <!-- Preview content (shows the element type icon) -->
       <div class="preview-content">
         <div class="preview-icon">
           <component :is="getDraggedElementIcon()" />
@@ -29,7 +29,7 @@
       </div>
     </div>
 
-    <!-- 可放置区域高亮 -->
+    <!-- Droppable zone highlight -->
     <div
       v-for="zone in feedback.droppableZones"
       :key="zone.id"
@@ -48,11 +48,11 @@
     >
       <div class="zone-border" />
       <div class="zone-label" v-if="zone.highlighted">
-        放置到此处
+        Drop here
       </div>
     </div>
 
-    <!-- 吸附点可视化 -->
+    <!-- Snap point visualization -->
     <div
       v-for="point in feedback.snapPoints"
       :key="point.id"
@@ -71,7 +71,7 @@
       <div class="snap-indicator" />
     </div>
 
-    <!-- 吸附指示线 -->
+    <!-- Snap guide line -->
     <div
       v-for="line in feedback.snapLines"
       :key="line.id"
@@ -88,7 +88,7 @@
       </div>
     </div>
 
-    <!-- 对齐辅助信息 -->
+    <!-- Alignment helper info -->
     <div
       class="alignment-info"
       v-if="feedback.snapLines.length > 0"
@@ -97,7 +97,7 @@
         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
           <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z" />
         </svg>
-        <span>已对齐</span>
+        <span>Aligned</span>
       </div>
     </div>
   </div>
@@ -111,33 +111,33 @@ const props = defineProps<{
   feedback: DragFeedback;
 }>();
 
-// 获取拖拽元素图标
+// Get the dragged element's icon
 const getDraggedElementIcon = () => {
-  // 根据元素类型返回不同的图标组件
-  // 这里简化处理，实际可以根据type动态加载
+  // Return a different icon component based on the element type
+  // Simplified here; in practice this could load dynamically based on type
   return 'div';
 };
 
-// 获取拖拽元素类型文本
+// Get the dragged element's type text
 const getDraggedElementType = () => {
   if (!props.feedback.draggedElementInfo) return '';
 
   const typeMap: Record<string, string> = {
-    'staticText': '静态文本',
-    'textField': '文本字段',
-    'image': '图片',
-    'line': '线条',
-    'rectangle': '矩形',
-    'ellipse': '椭圆',
-    'break': '分页符',
-    'frame': '框架',
-    'table': '表格',
+    'staticText': 'Static Text',
+    'textField': 'Text Field',
+    'image': 'Image',
+    'line': 'Line',
+    'rectangle': 'Rectangle',
+    'ellipse': 'Ellipse',
+    'break': 'Page Break',
+    'frame': 'Frame',
+    'table': 'Table',
   };
 
   return typeMap[props.feedback.draggedElementInfo.type] || props.feedback.draggedElementInfo.type;
 };
 
-// 获取对齐线样式
+// Get the alignment line style
 const getLineStyle = (line: DragFeedback['snapLines'][0]) => {
   if (line.type === 'horizontal') {
     return {

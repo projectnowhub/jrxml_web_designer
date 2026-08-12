@@ -2,6 +2,9 @@ import type { ReportParameter, ReportField } from '../types';
 
 // --- Data Pools ---
 
+// NOTE: These surname/given-name pools intentionally generate Chinese-style names
+// (short, 2-4 characters). Kept as-is because generateMockValue's output length
+// (2-4 chars) is asserted directly in mockDataGenerator.test.ts.
 const CHINESE_SURNAMES = [
   '王', '李', '张', '刘', '陈', '杨', '赵', '黄', '周', '吴',
   '徐', '孙', '胡', '朱', '高', '林', '何', '郭', '马', '罗',
@@ -10,60 +13,64 @@ const CHINESE_SURNAMES = [
   '苏', '卢', '蒋', '蔡', '贾', '丁', '魏', '薛', '叶', '阎',
 ];
 
+// NOTE: This pool is currently unused (superseded by GIVEN_NAME_CHARS below),
+// but its content is translated for consistency since it holds no functional
+// (regex-matching) role and no test depends on its exact values.
 const CHINESE_GIVEN_CHARS = [
-  '伟', '芳', '娜', '秀英', '敏', '静', '丽', '强', '磊', '洋',
-  '艳', '勇', '军', '杰', '娟', '涛', '超', '明', '秀兰', '霞',
-  '平', '刚', '桂英', '文', '华', '飞', '玲', '小红', '志强', '建国',
-  '建华', '建国', '建军', '秀珍', '玉兰', '慧', '丽华', '国强', '国华', '建军',
-  '志强', '志明', '志伟', '思远', '浩然', '子轩', '子涵', '雨萱', '欣怡', '紫萱',
-  '梓萱', '语嫣', '若曦', '诗涵', '可欣', '美琪', '雅琪', '佳琪', '梦琪', '晓峰',
-  '天宇', '俊杰', '嘉豪', '宇轩', '泽宇', '浩宇', '锦程', '嘉诚', '逸飞', '晨曦',
+  'James', 'Mary', 'Anna', 'Grace', 'Amy', 'Claire', 'Lily', 'Frank', 'Leo', 'Owen',
+  'Ivy', 'Victor', 'George', 'Jack', 'Jenny', 'Toby', 'Chad', 'Marcus', 'Rose', 'Hazel',
+  'Peter', 'Gary', 'Rita', 'Wendy', 'Howard', 'Felix', 'Lena', 'Rachel', 'Vincent', 'Nathan',
+  'Henry', 'Nolan', 'Miles', 'Jasmine', 'Olive', 'Faith', 'Lila', 'Bruce', 'Derek', 'Miles',
+  'Vincent', 'Simon', 'Wesley', 'Sean', 'Alan', 'Caleb', 'Adrian', 'Ruby', 'Chloe', 'Violet',
+  'Iris', 'Elena', 'Nadia', 'Sophia', 'Kayla', 'Megan', 'Erica', 'Kayla', 'Mia', 'Skylar',
+  'Skyler', 'Justin', 'Hunter', 'Dylan', 'Zane', 'Logan', 'Colton', 'Elliot', 'Ashton', 'Dawn',
 ];
 
 const CHINESE_PROVINCES = [
-  '北京市', '上海市', '广东省', '江苏省', '浙江省', '山东省', '河南省',
-  '四川省', '湖北省', '湖南省', '福建省', '安徽省', '江西省', '辽宁省',
-  '陕西省', '重庆市', '天津市', '河北省', '山西省', '吉林省', '黑龙江省',
-  '海南省', '贵州省', '云南省', '甘肃省', '青海省', '台湾省',
-  '内蒙古自治区', '广西壮族自治区', '西藏自治区', '宁夏回族自治区', '新疆维吾尔自治区',
+  'New York', 'California', 'Texas', 'Florida', 'Illinois', 'Pennsylvania', 'Ohio',
+  'Georgia', 'North Carolina', 'Michigan', 'New Jersey', 'Virginia', 'Washington', 'Arizona',
+  'Massachusetts', 'Tennessee', 'Indiana', 'Missouri', 'Maryland', 'Wisconsin', 'Colorado',
+  'Minnesota', 'South Carolina', 'Alabama', 'Louisiana', 'Kentucky', 'Oregon',
+  'Oklahoma', 'Connecticut', 'Utah', 'Nevada', 'Iowa',
 ];
 
 const CHINESE_CITIES: Record<string, string[]> = {
-  '北京市': ['朝阳区', '海淀区', '东城区', '西城区', '丰台区'],
-  '上海市': ['浦东新区', '黄浦区', '徐汇区', '静安区', '长宁区'],
-  '广东省': ['广州市', '深圳市', '东莞市', '佛山市', '珠海市'],
-  '江苏省': ['南京市', '苏州市', '无锡市', '常州市', '南通市'],
-  '浙江省': ['杭州市', '宁波市', '温州市', '嘉兴市', '湖州市'],
-  '山东省': ['济南市', '青岛市', '烟台市', '潍坊市', '临沂市'],
-  '河南省': ['郑州市', '洛阳市', '开封市', '新乡市', '南阳市'],
-  '四川省': ['成都市', '绵阳市', '德阳市', '宜宾市', '泸州市'],
-  '湖北省': ['武汉市', '宜昌市', '襄阳市', '荆州市', '黄冈市'],
-  '湖南省': ['长沙市', '株洲市', '湘潭市', '衡阳市', '岳阳市'],
+  'New York': ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'],
+  'California': ['Los Angeles', 'San Francisco', 'San Diego', 'Sacramento', 'Oakland'],
+  'Texas': ['Houston', 'Dallas', 'Austin', 'San Antonio', 'Fort Worth'],
+  'Florida': ['Miami', 'Orlando', 'Tampa', 'Jacksonville', 'Tallahassee'],
+  'Illinois': ['Chicago', 'Springfield', 'Naperville', 'Peoria', 'Rockford'],
+  'Pennsylvania': ['Philadelphia', 'Pittsburgh', 'Allentown', 'Erie', 'Reading'],
+  'Ohio': ['Columbus', 'Cleveland', 'Cincinnati', 'Toledo', 'Akron'],
+  'Georgia': ['Atlanta', 'Savannah', 'Augusta', 'Macon', 'Athens'],
+  'North Carolina': ['Charlotte', 'Raleigh', 'Durham', 'Greensboro', 'Asheville'],
+  'Michigan': ['Detroit', 'Grand Rapids', 'Ann Arbor', 'Lansing', 'Flint'],
 };
 
-const STATUS_OPTIONS = ['已完成', '进行中', '待处理', '已取消'];
+const STATUS_OPTIONS = ['Completed', 'In Progress', 'Pending', 'Cancelled'];
 
 const COMPANY_NAMES = [
-  '华信科技', '星辰贸易', '远东信息', '天成文化', '博雅教育',
-  '仁和医疗', '金鼎金融', '宏达制造', '瑞丰电子', '盛通物流',
-  '恒达实业', '创想科技', '鑫源贸易', '正泰电器', '中联重科',
+  'Summit Technologies', 'Vertex Trading', 'Horizon Information', 'Meridian Culture', 'Beacon Education',
+  'Harmony Healthcare', 'Pinnacle Finance', 'Grandview Manufacturing', 'Radiant Electronics', 'Momentum Logistics',
+  'Steadfast Industries', 'Visionary Technologies', 'Origin Trading', 'Everbright Appliances', 'United Heavy Industries',
 ];
 
-const STREET_NAMES = ['中山路', '人民路', '解放路', '建设路', '和平路', '幸福路', '文化路', '科技路'];
+const STREET_NAMES = ['Main Street', 'Park Avenue', 'Oak Street', 'Maple Avenue', 'Elm Street', 'Cedar Road', 'Washington Street', 'Lincoln Avenue'];
 
 const DESCRIPTIONS = [
-  '项目进展顺利，各项工作按计划推进',
-  '需要进一步优化方案，提高工作效率',
-  '已完成初步审核，等待最终确认',
-  '数据已整理完毕，准备提交审批',
-  '本季度业绩表现良好，超出预期目标',
-  '建议加强团队协作，提升项目管理水平',
-  '已完成需求分析，进入开发阶段',
-  '各项指标均达到预期标准',
+  'The project is progressing smoothly, with all tasks moving forward as planned',
+  'The plan needs further optimization to improve efficiency',
+  'The initial review has been completed and is awaiting final confirmation',
+  'The data has been organized and is ready for approval submission',
+  'Performance this quarter has been strong, exceeding the expected targets',
+  'It is recommended to strengthen team collaboration and improve project management',
+  'Requirements analysis has been completed and development has begun',
+  'All metrics have met the expected standards',
 ];
 
 const EMAIL_DOMAINS = ['example.com', 'test.cn', 'demo.com', 'sample.org'];
 
+// NOTE: Kept as Chinese characters — see note above on CHINESE_SURNAMES/CHINESE_GIVEN_CHARS.
 const GIVEN_NAME_CHARS = '伟芳娜敏静丽强磊洋艳勇军杰涛超明霞文华飞玲红远宁安怡乐康泰瑞祥福禄寿喜春晓晨旭阳辉昊辰宇帆睿哲';
 
 // --- Helper Functions ---
@@ -111,10 +118,10 @@ function randomEmail(): string {
 
 function randomAddress(): string {
   const province = randomPick(Object.keys(CHINESE_CITIES));
-  const city = randomPick(CHINESE_CITIES[province] || ['市区']);
+  const city = randomPick(CHINESE_CITIES[province] || ['Downtown']);
   const street = randomPick(STREET_NAMES);
   const num = randomInt(1, 200);
-  return `${province}${city}${street}${num}号`;
+  return `${num} ${street}, ${city}, ${province}`;
 }
 
 function randomDate(): string {
@@ -129,10 +136,10 @@ function randomDate(): string {
 }
 
 function randomCompanyName(): string {
-  const prefix = randomPick(['华', '中', '东', '新', '大', '盛', '恒', '金', '瑞', '鑫']);
+  const prefix = randomPick(['Global', 'National', 'Eastern', 'New', 'Grand', 'Prime', 'Everlasting', 'Golden', 'Rich', 'Bright']);
   const name = randomPick(COMPANY_NAMES);
-  const suffix = randomPick(['有限公司', '股份有限公司', '集团', '科技有限公司']);
-  return `${prefix}${name.substring(0, 2)}${suffix}`;
+  const suffix = randomPick(['Ltd.', 'Co., Ltd.', 'Group', 'Technologies Ltd.']);
+  return `${prefix} ${name} ${suffix}`;
 }
 
 let seqId = 1;
@@ -148,6 +155,11 @@ interface NameRule {
   generator: () => any;
 }
 
+// NOTE: The Chinese keywords in these regex patterns (姓名, 电话, 邮箱, ...) are
+// intentionally left untranslated. They match against actual field/parameter
+// names that come from a user's real (often Chinese-language) JRXML report
+// definitions, so removing them would break mock-data heuristics for those
+// reports. This is functional matching logic, not display text.
 const NAME_RULES: NameRule[] = [
   { patterns: /name|姓名|名称|员工|用户|客户|人名/i, generator: randomChineseName },
   { patterns: /phone|tel|电话|手机|联系方式/i, generator: randomPhone },
@@ -158,11 +170,11 @@ const NAME_RULES: NameRule[] = [
   { patterns: /quantity|数量|数目|件数|个数|数量/i, generator: () => randomInt(1, 999) },
   { patterns: /^id$|编号|序号|流水号/i, generator: () => seqId++ },
   { patterns: /status|状态/i, generator: () => randomPick(STATUS_OPTIONS) },
-  { patterns: /city|城市/i, generator: () => { const cities = ['北京', '上海', '广州', '深圳', '杭州', '南京', '成都', '武汉', '西安', '重庆']; return randomPick(cities); } },
+  { patterns: /city|城市/i, generator: () => { const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'Austin']; return randomPick(cities); } },
   { patterns: /province|省份/i, generator: () => randomPick(CHINESE_PROVINCES) },
   { patterns: /company|公司|企业|单位|部门/i, generator: randomCompanyName },
   { patterns: /description|描述|备注|说明|摘要|内容|信息/i, generator: () => randomPick(DESCRIPTIONS) },
-  { patterns: /sex|gender|性别/i, generator: () => randomPick(['男', '女']) },
+  { patterns: /sex|gender|性别/i, generator: () => randomPick(['Male', 'Female']) },
   { patterns: /age|年龄/i, generator: () => randomInt(18, 65) },
 ];
 
@@ -171,7 +183,7 @@ const NAME_RULES: NameRule[] = [
 function generateByType(className: string): any {
   switch (className) {
     case 'java.lang.String':
-      return `数据${randomInt(1000, 9999)}`;
+      return `Data${randomInt(1000, 9999)}`;
     case 'java.lang.Integer':
     case 'java.lang.Long':
       return randomInt(1, 9999);
@@ -183,7 +195,7 @@ function generateByType(className: string): any {
     case 'java.util.Date':
       return randomDate();
     default:
-      return `值${randomInt(1, 999)}`;
+      return `Value${randomInt(1, 999)}`;
   }
 }
 

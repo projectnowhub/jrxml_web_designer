@@ -1,13 +1,13 @@
 import type { Column, ColumnGroup, BaseColumn } from '../../types/table';
 
 /**
- * 列工厂实现类，用于创建表格列相关对象
+ * Column factory implementation class, used to create table column-related objects
  */
 export class ColumnFactoryImpl {
   /**
-   * 创建普通列
-   * @param column 列配置对象
-   * @returns 创建的列对象
+   * Create a regular column
+   * @param column Column configuration object
+   * @returns The created column object
    */
   createColumn(column: any): Column {
     return {
@@ -29,9 +29,9 @@ export class ColumnFactoryImpl {
   }
 
   /**
-   * 创建列组合
-   * @param group 列组合配置对象
-   * @returns 创建的列组合对象
+   * Create a column group
+   * @param group Column group configuration object
+   * @returns The created column group object
    */
   createColumnGroup(group: any): ColumnGroup {
     const columnGroup: ColumnGroup = {
@@ -51,7 +51,7 @@ export class ColumnFactoryImpl {
       children: []
     };
 
-    // 递归创建子列
+    // Recursively create child columns
     if (group.children) {
       columnGroup.children = this.createColumns(group.children);
     }
@@ -60,9 +60,9 @@ export class ColumnFactoryImpl {
   }
 
   /**
-   * 批量创建列
-   * @param columns 列配置对象数组
-   * @returns 创建的列对象数组
+   * Create multiple columns in bulk
+   * @param columns Array of column configuration objects
+   * @returns Array of created column objects
    */
   createColumns(columns: any[]): (Column | ColumnGroup)[] {
     return columns.map(item => {
@@ -75,9 +75,9 @@ export class ColumnFactoryImpl {
   }
 
   /**
-   * 计算列组合的宽度
-   * @param children 子列数组
-   * @returns 计算后的宽度
+   * Compute the width of a column group
+   * @param children Array of child columns
+   * @returns The computed width
    */
   private calculateGroupWidth(children: any[]): number {
     if (!children || children.length === 0) {
@@ -95,15 +95,15 @@ export class ColumnFactoryImpl {
 }
 
 /**
- * 表格工具类，提供表格相关的操作方法
+ * Table utility class, providing table-related operation methods
  */
 export class TableUtils {
   private static columnFactory = new ColumnFactoryImpl();
 
   /**
-   * 计算列组合的宽度
-   * @param columnGroup 列组合
-   * @returns 计算后的宽度
+   * Compute the width of a column group
+   * @param columnGroup The column group
+   * @returns The computed width
    */
   static calculateColumnGroupWidth(columnGroup: ColumnGroup): number {
     return columnGroup.children.reduce((sum, child) => {
@@ -116,16 +116,16 @@ export class TableUtils {
   }
 
   /**
-   * 更新列组合的宽度
-   * @param columnGroup 列组合
+   * Update the width of a column group
+   * @param columnGroup The column group
    */
   static updateColumnGroupWidth(columnGroup: ColumnGroup): void {
     columnGroup.width = this.calculateColumnGroupWidth(columnGroup);
   }
 
   /**
-   * 递归更新所有列组合的宽度
-   * @param columns 列数组
+   * Recursively update the widths of all column groups
+   * @param columns Array of columns
    */
   static updateAllColumnGroupWidths(columns: (Column | ColumnGroup)[]): void {
     columns.forEach(column => {
@@ -137,9 +137,9 @@ export class TableUtils {
   }
 
   /**
-   * 计算列组合包含的叶子列数量
-   * @param columnGroup 列组合
-   * @returns 叶子列数量
+   * Compute the number of leaf columns contained in a column group
+   * @param columnGroup The column group
+   * @returns The number of leaf columns
    */
   static countLeafColumns(columnGroup: ColumnGroup): number {
     return columnGroup.children.reduce((count, child) => {
@@ -152,9 +152,9 @@ export class TableUtils {
   }
 
   /**
-   * 获取所有叶子列
-   * @param columns 列数组
-   * @returns 叶子列数组
+   * Get all leaf columns
+   * @param columns Array of columns
+   * @returns Array of leaf columns
    */
   static getLeafColumns(columns: (Column | ColumnGroup)[]): Column[] {
     const leafColumns: Column[] = [];
@@ -174,9 +174,9 @@ export class TableUtils {
   }
 
   /**
-   * 深度优先遍历列结构
-   * @param columns 列数组
-   * @param callback 回调函数
+   * Depth-first traversal of the column structure
+   * @param columns Array of columns
+   * @param callback Callback function
    */
   static traverseColumns(columns: (Column | ColumnGroup)[], callback: (column: Column | ColumnGroup) => void): void {
     columns.forEach(column => {
@@ -188,10 +188,10 @@ export class TableUtils {
   }
 
   /**
-   * 查找列 by UUID
-   * @param columns 列数组
-   * @param uuid 列的UUID
-   * @returns 找到的列，未找到则返回null
+   * Find a column by UUID
+   * @param columns Array of columns
+   * @param uuid The column's UUID
+   * @returns The found column, or null if not found
    */
   static findColumnByUuid(columns: (Column | ColumnGroup)[], uuid: string): Column | ColumnGroup | null {
     let found: Column | ColumnGroup | null = null;
@@ -206,11 +206,11 @@ export class TableUtils {
   }
 
   /**
-   * 移动列
-   * @param columns 列数组
-   * @param fromIndex 原索引
-   * @param toIndex 目标索引
-   * @returns 移动后的列数组
+   * Move a column
+   * @param columns Array of columns
+   * @param fromIndex The original index
+   * @param toIndex The target index
+   * @returns The array of columns after moving
    */
   static moveColumn(columns: (Column | ColumnGroup)[], fromIndex: number, toIndex: number): (Column | ColumnGroup)[] {
     if (fromIndex < 0 || fromIndex >= columns.length || toIndex < 0 || toIndex >= columns.length) {
@@ -222,7 +222,7 @@ export class TableUtils {
     if (movedColumn) {
       newColumns.splice(toIndex, 0, movedColumn);
 
-      // 更新列组合的宽度
+      // Update the widths of the column groups
       this.updateAllColumnGroupWidths(newColumns);
     }
 
@@ -230,11 +230,11 @@ export class TableUtils {
   }
 
   /**
-   * 添加列
-   * @param columns 列数组
-   * @param column 要添加的列
-   * @param index 插入位置，默认为末尾
-   * @returns 添加后的列数组
+   * Add a column
+   * @param columns Array of columns
+   * @param column The column to add
+   * @param index The insertion position, defaults to the end
+   * @returns The array of columns after adding
    */
   static addColumn(columns: (Column | ColumnGroup)[], column: Column | ColumnGroup, index?: number): (Column | ColumnGroup)[] {
     const newColumns = [...columns];
@@ -244,17 +244,17 @@ export class TableUtils {
       newColumns.push(column);
     }
 
-    // 更新列组合的宽度
+    // Update the widths of the column groups
     this.updateAllColumnGroupWidths(newColumns);
 
     return newColumns;
   }
 
   /**
-   * 删除列
-   * @param columns 列数组
-   * @param uuid 要删除的列的UUID
-   * @returns 删除后的列数组
+   * Remove a column
+   * @param columns Array of columns
+   * @param uuid The UUID of the column to remove
+   * @returns The array of columns after removal
    */
   static removeColumn(columns: (Column | ColumnGroup)[], uuid: string): (Column | ColumnGroup)[] {
     const newColumns = [...columns];
@@ -262,16 +262,16 @@ export class TableUtils {
 
     if (index !== -1) {
       newColumns.splice(index, 1);
-      // 更新列组合的宽度
+      // Update the widths of the column groups
       this.updateAllColumnGroupWidths(newColumns);
     } else {
-      // 递归查找并删除子列
+      // Recursively find and remove the child column
       newColumns.forEach(column => {
         if ('children' in column) {
           column.children = this.removeColumn(column.children, uuid);
         }
       });
-      // 更新列组合的宽度
+      // Update the widths of the column groups
       this.updateAllColumnGroupWidths(newColumns);
     }
 

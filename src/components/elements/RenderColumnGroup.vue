@@ -1,7 +1,7 @@
 <template>
-    <!-- 渲染所有分组行 -->
+    <!-- Render all group rows -->
     <template v-for="(row, rowIndex) in groupRows" :key="rowIndex">
-        <!-- 只有当行高大于0时才渲染该行 -->
+        <!-- Only render this row when the row height is greater than 0 -->
         <template v-if="calculateRowHeight(row) > 0">
             <tr
                 :class="['column-group-row', type]"
@@ -12,7 +12,7 @@
                 @mousedown="(e) => handleRowMouseDown(e, rowIndex, row)"
             >
                 <template v-for="(cell, cellIndex) in row" :key="cell.key">
-                    <!-- 根据类型选择使用th还是td -->
+                    <!-- Choose th or td based on the type -->
                     <template v-if="type === 'tableHeader'">
                         <th
                             :class="[
@@ -287,7 +287,7 @@ const emit = defineEmits<{
     ];
 }>();
 
-// 计算每个分组包含的叶子节点数量（用于计算colspan）
+// Count the number of leaf nodes contained in each group (used to compute colspan)
 function countLeafColumns(node: any): number {
     if (!node.children || node.children.length === 0) {
         return 1;
@@ -298,20 +298,20 @@ function countLeafColumns(node: any): number {
     );
 }
 
-// 计算节点的总宽度（用于设置单元格宽度）
+// Compute the node's total width (used to set the cell width)
 function calculateNodeWidth(node: any): number {
     if (!node.children || node.children.length === 0) {
-        // 叶子节点，返回自身宽度
+        // Leaf node, return its own width
         return node.width || 0;
     }
-    // 分组节点，计算所有子节点宽度总和
+    // Group node, sum the widths of all child nodes
     return node.children.reduce(
         (sum: number, child: any) => sum + calculateNodeWidth(child),
         0,
     );
 }
 
-// 计算节点的深度
+// Compute the node's depth
 function calculateNodeDepth(node: any, depth: number = 0): number {
     if (!node.children || node.children.length === 0) {
         return depth;
@@ -326,7 +326,7 @@ function calculateNodeDepth(node: any, depth: number = 0): number {
     return maxDepth;
 }
 
-// 获取所有叶子节点
+// Get all leaf nodes
 function getLeafNodes(node: any): any[] {
     const leaves: any[] = [];
     if (!node.children || node.children.length === 0) {
@@ -339,14 +339,14 @@ function getLeafNodes(node: any): any[] {
     return leaves;
 }
 
-// 构建分组行数据，正确处理colspan和rowspan
+// Build the group row data, correctly handling colspan and rowspan
 function buildGroupRows(group: any): any[][] {
     console.log("group", group);
-    // 获取所有叶子节点
+    // Get all leaf nodes
     const allLeaves = getLeafNodes(group);
     const totalColumns = allLeaves.length;
 
-    // 计算所有节点的最大深度
+    // Compute the maximum depth across all nodes
     function getMaxDepth(nodes: any[]): number {
         let max = 0;
         for (const node of nodes) {
@@ -360,32 +360,32 @@ function buildGroupRows(group: any): any[][] {
 
     const maxDepth = getMaxDepth(group.children);
 
-    // 创建行数组
+    // Create the row array
     const rows: any[][] = [];
     for (let i = 0; i <= maxDepth; i++) {
         rows[i] = [];
     }
 
-    // 递归构建表格
+    // Recursively build the table
     function buildTable(node: any, startColumn: number, depth: number) {
-        // 计算该节点应该跨越的列数（colspan）
+        // Compute the number of columns this node should span (colspan)
         const colspan = countLeafColumns(node);
 
-        // 检查节点是否定义了对应的 header
+        // Check whether the node has a corresponding header defined
         const hasHeader = node[props.type];
 
-        // 计算该节点应该跨越的行数（rowspan）
+        // Compute the number of rows this node should span (rowspan)
         let rowspan: number;
 
-        // 根据类型调整渲染逻辑
+        // Adjust the rendering logic based on the type
         if (props.type === "columnHeader") {
-            // 对于Column Header，检查是否实际定义了columnHeader
+            // For Column Header, check whether columnHeader is actually defined
             if (node.children && node.children.length > 0) {
                 if (hasHeader) {
-                    // 有子节点且定义了columnHeader，渲染为组合单元格
+                    // Has children and columnHeader is defined, render as a combined cell
                     rowspan = 1;
                 } else {
-                    // 有子节点但没有定义columnHeader，不创建单元格，直接递归子节点
+                    // Has children but columnHeader isn't defined, don't create a cell, recurse into children directly
                     let currentColumn = startColumn;
                     for (const child of node.children) {
                         buildTable(child, currentColumn, depth);
@@ -394,11 +394,11 @@ function buildGroupRows(group: any): any[][] {
                     return;
                 }
             } else {
-                // 叶子节点，rowspan为从当前深度到最大深度的行数
+                // Leaf node, rowspan is the number of rows from the current depth to the max depth
                 rowspan = maxDepth - depth + 1;
             }
         } else if (props.type === "columnFooter") {
-            // 对于Column Footer，检查是否实际定义了columnFooter
+            // For Column Footer, check whether columnFooter is actually defined
             if (node.children && node.children.length > 0) {
                 if (hasHeader) {
                     rowspan = 1;
@@ -414,7 +414,7 @@ function buildGroupRows(group: any): any[][] {
                 rowspan = maxDepth - depth + 1;
             }
         } else if (props.type === "tableFooter") {
-            // 对于Table Footer，检查是否实际定义了tableFooter
+            // For Table Footer, check whether tableFooter is actually defined
             if (node.children && node.children.length > 0) {
                 if (hasHeader) {
                     rowspan = 1;
@@ -430,7 +430,7 @@ function buildGroupRows(group: any): any[][] {
                 rowspan = maxDepth - depth + 1;
             }
         } else {
-            // 对于Table Header，检查是否实际定义了tableHeader
+            // For Table Header, check whether tableHeader is actually defined
             if (node.children && node.children.length > 0) {
                 if (hasHeader) {
                     rowspan = 1;
@@ -447,7 +447,7 @@ function buildGroupRows(group: any): any[][] {
             }
         }
 
-        // 创建单元格
+        // Create the cell
         const cell = {
             key: `${node.uuid || Math.random()}-${depth}-${startColumn}`,
             content: node,
@@ -455,15 +455,15 @@ function buildGroupRows(group: any): any[][] {
             rowspan,
         };
 
-        // 确保当前行存在
+        // Ensure the current row exists
         if (!rows[depth]) {
             rows[depth] = [];
         }
 
-        // 添加到当前行
+        // Add to the current row
         rows[depth].push(cell);
 
-        // 如果有子节点，继续递归构建
+        // If there are children, continue recursing
         if (node.children && node.children.length > 0) {
             let currentColumn = startColumn;
             for (const child of node.children) {
@@ -473,30 +473,30 @@ function buildGroupRows(group: any): any[][] {
         }
     }
 
-    // 开始构建表格，处理根分组的所有子节点
+    // Start building the table, processing all children of the root group
     let currentColumn = 0;
     for (const child of group.children) {
         buildTable(child, currentColumn, 0);
         currentColumn += countLeafColumns(child);
     }
 
-    // 移除空行
+    // Remove empty rows
     return rows.filter((row) => row.length > 0);
 }
 
-// 计算所有分组行
+// Compute all group rows
 const groupRows = computed(() => buildGroupRows(props.group));
 
-// 计算行高
+// Compute the row height
 function calculateRowHeight(row: any[]) {
-    // 默认行高
+    // Default row height
     let defaultHeight = 30;
 
     if (row && row.length > 0) {
         const firstCell = row[0];
         const cellContent = firstCell.content;
 
-        // 根据类型获取对应的高度
+        // Get the corresponding height based on the type
         if (cellContent && cellContent[props.type]) {
             const cellHeight = cellContent[props.type].height || defaultHeight;
             const rowSpan = cellContent[props.type].rowSpan || 1;
@@ -505,7 +505,7 @@ function calculateRowHeight(row: any[]) {
         }
     }
 
-    // 根据类型设置默认行高
+    // Set the default row height based on the type
     if (props.type === "tableHeader") {
         defaultHeight = 30;
     } else if (props.type === "columnHeader") {
@@ -515,7 +515,7 @@ function calculateRowHeight(row: any[]) {
     return defaultHeight;
 }
 
-// 获取单元格容器样式（应用到th元素）
+// Get the cell container style (applied to the th element)
 function getCellContainerStyle(cell: any, type: string) {
     const content = cell.content;
     let element;
@@ -531,19 +531,19 @@ function getCellContainerStyle(cell: any, type: string) {
         boxSizing: "border-box",
     };
 
-    // 计算并设置宽度，基于JRXML中定义的宽度
+    // Compute and set the width based on the width defined in the JRXML
     const width = calculateNodeWidth(content);
     if (width > 0) {
         styles.width = `${width}px`;
     }
 
     if (element) {
-        // 背景颜色
+        // Background color
         if (element.mode === "Opaque" && element.backcolor) {
             styles.backgroundColor = element.backcolor;
         }
 
-        // 边框样式
+        // Border style
         if (element.box && element.box.pen) {
             const pen = element.box.pen;
             if (pen.lineWidth && pen.lineWidth > 0) {
@@ -555,7 +555,7 @@ function getCellContainerStyle(cell: any, type: string) {
             styles.border = "1px solid #ccc";
         }
     } else {
-        // 默认样式
+        // Default style
         styles.backgroundColor = type === "tableHeader" ? "#FFFFFF" : "#FFFFFF";
         styles.border = "1px solid #ccc";
     }
@@ -563,7 +563,7 @@ function getCellContainerStyle(cell: any, type: string) {
     return styles;
 }
 
-// 根据style名称获取样式对象
+// Get a style object by style name
 function getStyleByName(styleName: string) {
     if (!props.reportStyles || !styleName) return null;
     return (
@@ -572,13 +572,13 @@ function getStyleByName(styleName: string) {
     );
 }
 
-// 从JRXML style转换为CSS样式
+// Convert a JRXML style to CSS style
 function convertStyleToCSS(style: any) {
     if (!style) return {};
 
     const styles: any = {};
 
-    // 文本样式
+    // Text style
     if (style.fontSize) {
         styles.fontSize = `${style.fontSize}px`;
     }
@@ -598,7 +598,7 @@ function convertStyleToCSS(style: any) {
         styles.backgroundColor = style.backcolor;
     }
 
-    // 文本对齐方式
+    // Text alignment
     if (style.textAlignment) {
         const align = style.textAlignment.toLowerCase();
         switch (align) {
@@ -618,7 +618,7 @@ function convertStyleToCSS(style: any) {
                 styles.justifyContent = "center";
         }
     }
-    // 垂直对齐方式
+    // Vertical alignment
     if (style.verticalAlignment) {
         const align = style.verticalAlignment.toLowerCase();
         switch (align) {
@@ -636,7 +636,7 @@ function convertStyleToCSS(style: any) {
         }
     }
 
-    // 边框样式
+    // Border style
     let borderWidth = 0;
     let borderStyle = "solid";
     let borderColor = "#000000";
@@ -654,9 +654,9 @@ function convertStyleToCSS(style: any) {
     return styles;
 }
 
-// 获取行样式
+// Get the row style
 function getRowStyle(rowType: string) {
-    // 从tableStyles中获取样式
+    // Get the style from tableStyles
     if (props.tableStyles) {
         let styleName = "";
         switch (rowType) {
@@ -678,7 +678,7 @@ function getRowStyle(rowType: string) {
     return {};
 }
 
-// 获取单元格内容样式（应用到.cell-content元素）
+// Get the cell content style (applied to the .cell-content element)
 function getCellContentStyle(cell: any, type: string) {
     const content = cell.content;
     let element;
@@ -700,7 +700,7 @@ function getCellContentStyle(cell: any, type: string) {
     };
 
     if (element) {
-        // 字体样式
+        // Font style
         if (element.font) {
             if (element.font.isBold) {
                 styles.fontWeight = "bold";
@@ -714,15 +714,15 @@ function getCellContentStyle(cell: any, type: string) {
             if (element.font.size) {
                 styles.fontSize = `${element.font.size}pt`;
             } else {
-                // 默认字体大小10，与JasperReport Studio一致
+                // Default font size 10, consistent with JasperReport Studio
                 styles.fontSize = "10px";
             }
         } else {
-            // 兼容旧格式
+            // Compatible with the old format
             if (element.fontSize) {
                 styles.fontSize = `${element.fontSize}px`;
             } else {
-                // 默认字体大小10，与JasperReport Studio一致
+                // Default font size 10, consistent with JasperReport Studio
                 styles.fontSize = "10px";
             }
             if (element.isBold) {
@@ -736,16 +736,16 @@ function getCellContentStyle(cell: any, type: string) {
             }
         }
 
-        // 文字颜色
+        // Text color
         if (element.forecolor) {
             styles.color = element.forecolor;
         }
-        // 背景颜色
+        // Background color
         if (element.mode === "Opaque" && element.backcolor) {
             styles.backgroundColor = element.backcolor;
         }
 
-        // 水平对齐方式
+        // Horizontal alignment
         if (element.textAlignment) {
             const align = element.textAlignment.toLowerCase();
             switch (align) {
@@ -762,14 +762,14 @@ function getCellContentStyle(cell: any, type: string) {
                     styles.justifyContent = "space-between";
                     break;
                 default:
-                    console.log("未知的水平对齐方式:", align);
+                    console.log("Unknown horizontal alignment:", align);
                     styles.justifyContent = "center";
             }
         } else {
             styles.justifyContent = "center";
         }
 
-        // 垂直对齐方式
+        // Vertical alignment
         if (element.verticalAlignment) {
             const align = element.verticalAlignment.toLowerCase();
             switch (align) {
@@ -789,7 +789,7 @@ function getCellContentStyle(cell: any, type: string) {
             styles.alignItems = "center";
         }
     } else {
-        // 默认样式
+        // Default style
         styles.fontWeight = "600";
         styles.color = "#333";
         styles.justifyContent = "center";
@@ -807,7 +807,7 @@ function handleCellClick(cell: any, event: MouseEvent) {
     if (!cell.content.children) {
         emit("columnClick", cell.content, event);
     }
-    // 不阻止事件冒泡，让事件传递到父组件
+    // Don't stop event propagation, let the event bubble up to the parent component
 }
 
 function handleCellContextMenu(cell: any, event: MouseEvent) {
@@ -816,10 +816,10 @@ function handleCellContextMenu(cell: any, event: MouseEvent) {
     }
 }
 
-// ===== 行高拖拽调整 =====
+// ===== Row height drag resize =====
 function handleRowMouseDown(event: MouseEvent, rowIndex: number, row: any[]) {
-    // 只在点击 ::after 伪元素（即 tr 自身）时触发行高拖拽，
-    // 点击 th/td 子元素时由元素拖动处理，不冲突
+    // Only trigger row-height dragging when clicking the ::after pseudo-element (i.e. the tr itself);
+    // clicking th/td children is handled by element dragging and doesn't conflict
     if (event.target !== event.currentTarget) return;
 
     const tr = event.currentTarget as HTMLElement;
@@ -843,7 +843,7 @@ function handleRowMouseDown(event: MouseEvent, rowIndex: number, row: any[]) {
 
 <style scoped>
 .column-group-row {
-    /* 行高由动态计算确定，不使用硬编码值 */
+    /* Row height is determined by dynamic calculation; no hardcoded values are used */
     position: relative;
 }
 

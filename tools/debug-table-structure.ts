@@ -1,6 +1,6 @@
 import { generateJRXMLContent } from '../src/utils/jrxmlGenerator';
 
-// 模拟一个从元素库拖入的表格元素
+// Simulate a table element dragged in from the element library
 const mockTableElement = {
   type: 'table',
   x: 0,
@@ -11,7 +11,7 @@ const mockTableElement = {
     uuid: 'test-dataset-uuid',
     name: 'tableDataset'
   },
-  // 注意：这里只设置了 columns 属性，没有 children 属性
+  // Note: only the columns property is set here, no children property
   columns: [
     {
       uuid: 'test-column-1',
@@ -56,7 +56,7 @@ const mockTableElement = {
   ]
 };
 
-// 模拟报表属性
+// Simulate report properties
 const mockProperties = {
   name: 'TestReport',
   pageWidth: 595,
@@ -73,7 +73,7 @@ const mockProperties = {
   isSummaryNewPage: false
 };
 
-// 模拟bands
+// Simulate bands
 const mockBands = [
   {
     type: 'detail',
@@ -82,7 +82,7 @@ const mockBands = [
   }
 ];
 
-// 模拟fields
+// Simulate fields
 const mockFields = [
   {
     name: 'FIELD_NAME',
@@ -90,30 +90,30 @@ const mockFields = [
   }
 ];
 
-// 生成JRXML
-console.log('=== 测试 1: 只有 columns 属性的表格 ===');
-console.log('表格元素结构:', JSON.stringify(mockTableElement, null, 2));
+// Generate JRXML
+console.log('=== Test 1: table with only the columns property ===');
+console.log('Table element structure:', JSON.stringify(mockTableElement, null, 2));
 
 const jrxmlContent1 = generateJRXMLContent(mockProperties, mockBands, mockFields);
-console.log('\n生成的JRXML:');
+console.log('\nGenerated JRXML:');
 console.log(jrxmlContent1);
 
-// 检查是否包含 jr:columnHeader 标签
-console.log('\n=== 检查结果 ===');
+// Check whether the jr:columnHeader tag is included
+console.log('\n=== Check result ===');
 if (jrxmlContent1.includes('<jr:columnHeader')) {
-  console.log('✅ 成功: 生成了 jr:columnHeader 标签');
+  console.log('✅ Success: jr:columnHeader tag was generated');
 } else {
-  console.log('❌ 失败: 没有生成 jr:columnHeader 标签');
+  console.log('❌ Failure: jr:columnHeader tag was not generated');
 }
 
-// 测试 2: 添加一个空的 children 属性
+// Test 2: add an empty children property
 const mockTableElementWithEmptyChildren = {
   ...mockTableElement,
-  children: [] // 空的 children 数组
+  children: [] // empty children array
 };
 
-console.log('\n\n=== 测试 2: 有 columns 属性和空 children 属性的表格 ===');
-console.log('表格元素结构:', JSON.stringify(mockTableElementWithEmptyChildren, null, 2));
+console.log('\n\n=== Test 2: table with columns property and an empty children property ===');
+console.log('Table element structure:', JSON.stringify(mockTableElementWithEmptyChildren, null, 2));
 
 const jrxmlContent2 = generateJRXMLContent(mockProperties, [
   {
@@ -123,18 +123,18 @@ const jrxmlContent2 = generateJRXMLContent(mockProperties, [
   }
 ], mockFields);
 
-console.log('\n生成的JRXML:');
+console.log('\nGenerated JRXML:');
 console.log(jrxmlContent2);
 
-// 检查是否包含 jr:columnHeader 标签
-console.log('\n=== 检查结果 ===');
+// Check whether the jr:columnHeader tag is included
+console.log('\n=== Check result ===');
 if (jrxmlContent2.includes('<jr:columnHeader')) {
-  console.log('✅ 成功: 生成了 jr:columnHeader 标签');
+  console.log('✅ Success: jr:columnHeader tag was generated');
 } else {
-  console.log('❌ 失败: 没有生成 jr:columnHeader 标签');
+  console.log('❌ Failure: jr:columnHeader tag was not generated');
 }
 
-// 测试 3: 有 children 属性但不包含列分组的表格
+// Test 3: table with a children property but no column groups
 const mockTableElementWithChildren = {
   ...mockTableElement,
   children: [
@@ -181,8 +181,8 @@ const mockTableElementWithChildren = {
   ]
 };
 
-console.log('\n\n=== 测试 3: 有 children 属性但不包含列分组的表格 ===');
-console.log('表格元素结构:', JSON.stringify(mockTableElementWithChildren, null, 2));
+console.log('\n\n=== Test 3: table with a children property but no column groups ===');
+console.log('Table element structure:', JSON.stringify(mockTableElementWithChildren, null, 2));
 
 const jrxmlContent3 = generateJRXMLContent(mockProperties, [
   {
@@ -192,13 +192,13 @@ const jrxmlContent3 = generateJRXMLContent(mockProperties, [
   }
 ], mockFields);
 
-console.log('\n生成的JRXML:');
+console.log('\nGenerated JRXML:');
 console.log(jrxmlContent3);
 
-// 检查是否包含 jr:columnHeader 标签
-console.log('\n=== 检查结果 ===');
+// Check whether the jr:columnHeader tag is included
+console.log('\n=== Check result ===');
 if (jrxmlContent3.includes('<jr:columnHeader')) {
-  console.log('✅ 成功: 生成了 jr:columnHeader 标签');
+  console.log('✅ Success: jr:columnHeader tag was generated');
 } else {
-  console.log('❌ 失败: 没有生成 jr:columnHeader 标签');
+  console.log('❌ Failure: jr:columnHeader tag was not generated');
 }

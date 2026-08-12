@@ -5,19 +5,19 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// 获取当前文件的目录
+// Get the directory of the current file
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..');
 
-console.log('测试git提交检查逻辑...');
+console.log('Testing the git commit check logic...');
 console.log('='.repeat(50));
 
-// 测试1: 当没有需要提交的文件时
-console.log('\n测试1: 当没有需要提交的文件时');
+// Test 1: when there are no files to commit
+console.log('\nTest 1: when there are no files to commit');
 try {
   execSync('git add .', { cwd: projectRoot, stdio: 'ignore' });
-  
+
   let hasChanges = false;
   try {
     execSync('git diff --staged --exit-code', { cwd: projectRoot, stdio: 'ignore' });
@@ -28,25 +28,25 @@ try {
       throw error;
     }
   }
-  
+
   if (hasChanges) {
-    console.log('❌ 预期: 没有需要提交的文件, 实际: 检测到需要提交的文件');
+    console.log('❌ Expected: no files to commit, actual: files to commit were detected');
   } else {
-    console.log('✅ 预期: 没有需要提交的文件, 实际: 没有检测到需要提交的文件');
+    console.log('✅ Expected: no files to commit, actual: no files to commit were detected');
   }
 } catch (error) {
-  console.error('❌ 测试1失败:', error.message);
+  console.error('❌ Test 1 failed:', error.message);
 }
 
-// 测试2: 当有需要提交的文件时
-console.log('\n测试2: 当有需要提交的文件时');
+// Test 2: when there are files to commit
+console.log('\nTest 2: when there are files to commit');
 try {
-  // 创建一个临时文件
+  // Create a temporary file
   const tempFilePath = path.resolve(projectRoot, 'temp-test-file.txt');
   fs.writeFileSync(tempFilePath, 'test content');
-  
+
   execSync('git add .', { cwd: projectRoot, stdio: 'ignore' });
-  
+
   let hasChanges = false;
   try {
     execSync('git diff --staged --exit-code', { cwd: projectRoot, stdio: 'ignore' });
@@ -57,19 +57,19 @@ try {
       throw error;
     }
   }
-  
+
   if (hasChanges) {
-    console.log('✅ 预期: 有需要提交的文件, 实际: 检测到需要提交的文件');
+    console.log('✅ Expected: files to commit, actual: files to commit were detected');
   } else {
-    console.log('❌ 预期: 有需要提交的文件, 实际: 没有检测到需要提交的文件');
+    console.log('❌ Expected: files to commit, actual: no files to commit were detected');
   }
-  
-  // 清理临时文件
+
+  // Clean up the temporary file
   fs.unlinkSync(tempFilePath);
   execSync('git restore --staged .', { cwd: projectRoot, stdio: 'ignore' });
 } catch (error) {
-  console.error('❌ 测试2失败:', error.message);
-  // 尝试清理临时文件
+  console.error('❌ Test 2 failed:', error.message);
+  // Attempt to clean up the temporary file
   try {
     const tempFilePath = path.resolve(projectRoot, 'temp-test-file.txt');
     if (fs.existsSync(tempFilePath)) {
@@ -77,9 +77,9 @@ try {
       execSync('git restore --staged .', { cwd: projectRoot, stdio: 'ignore' });
     }
   } catch (cleanupError) {
-    console.error('❌ 清理临时文件失败:', cleanupError.message);
+    console.error('❌ Failed to clean up the temporary file:', cleanupError.message);
   }
 }
 
 console.log('\n' + '='.repeat(50));
-console.log('测试完成!');
+console.log('Testing complete!');

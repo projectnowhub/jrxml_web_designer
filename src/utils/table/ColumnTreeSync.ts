@@ -7,19 +7,19 @@ import type {
 import { TableUtils } from "./ColumnFactory";
 
 /**
- * 同步表格的 columns 平层数组与 children 层级结构。
- * children 为数据源，columns 从 children 重建。
+ * Sync the table's flat `columns` array with the `children` hierarchical structure.
+ * `children` is the data source; `columns` is rebuilt from `children`.
  */
 export function syncTableColumns(tableElement: TableElement): void {
   const children = tableElement.children || [];
 
-  // 递归更新所有列组合的宽度
+  // Recursively update the widths of all column groups
   TableUtils.updateAllColumnGroupWidths(children);
 
-  // 从 children 重建 columns
+  // Rebuild columns from children
   tableElement.columns = TableUtils.getLeafColumns(children);
 
-  // 计算最大嵌套层级并更新未分组根级列的 rowSpan
+  // Compute the maximum nesting depth and update the rowSpan of ungrouped root-level columns
   const maxDepth = calculateMaxDepth({ children });
   const requiredRowSpan = maxDepth;
 
@@ -69,15 +69,15 @@ export function syncTableColumns(tableElement: TableElement): void {
     }
   });
 
-  // 递归处理分组内嵌套的独立叶子列的 rowSpan 和高度
+  // Recursively process the rowSpan and height of standalone leaf columns nested inside groups
   inflateNestedStandaloneHeights(children, maxDepth, 0);
 
-  // 更新表格总宽度
+  // Update the table's total width
   tableElement.width = children.reduce((sum, c) => sum + c.width, 0);
 }
 
 /**
- * 递归计算树的最大深度
+ * Recursively compute the maximum depth of the tree
  */
 function calculateMaxDepth(
   node: { children?: (Column | ColumnGroup)[] },
@@ -95,7 +95,7 @@ function calculateMaxDepth(
 }
 
 /**
- * 创建一个默认的叶子列
+ * Create a default leaf column
  */
 export function createDefaultColumn(name: string, width: number = 100): Column {
   return {
@@ -132,7 +132,7 @@ export function createDefaultColumn(name: string, width: number = 100): Column {
 }
 
 /**
- * 创建一个空的列组合（无子列）
+ * Create an empty column group (with no child columns)
  */
 export function createDefaultColumnGroup(name: string): ColumnGroup {
   return {
@@ -157,7 +157,7 @@ export function createDefaultColumnGroup(name: string): ColumnGroup {
 }
 
 /**
- * 在父级 children 数组中查找包含目标 uuid 的数组，并返回该数组和目标索引。
+ * Find the array in the parent `children` structure that contains the target uuid, and return that array along with the target index.
  */
 export function findInParentArray(
   children: (Column | ColumnGroup)[],
@@ -181,7 +181,7 @@ export function findInParentArray(
 }
 
 /**
- * 解散列组合：将组的子列提升到父级数组中组所在的位置
+ * Ungroup a column group: promote the group's child columns to the position the group occupied in the parent array
  */
 export function ungroupColumnGroup(
   children: (Column | ColumnGroup)[],
@@ -194,24 +194,24 @@ export function ungroupColumnGroup(
   const group = parent[index] as ColumnGroup;
   if (!("children" in group)) return;
 
-  // 替换组为它的子列
+  // Replace the group with its child columns
   parent.splice(index, 1, ...group.children);
 }
 
 /**
- * 从单元格中提取单行高度（如果已 inflate 过则除以 rowSpan 还原，否则返回默认值）
+ * Extract the single-row height from a cell (if already inflated, divide by rowSpan to restore it; otherwise return the default value)
  */
 function getSingleRowHeight(cell: Cell): number {
   const h = cell.height || (cell as any).element?.height || 30;
   const rs = cell.rowSpan || 1;
   if (rs <= 1) return h;
-  // 如果高度等于默认值，说明从未 inflate 过，直接返回默认值
+  // If the height equals the default value, it was never inflated, so return the default value directly
   if (h === 30) return 30;
   return Math.round(h / rs);
 }
 
 /**
- * 递归处理分组内嵌套的独立叶子列，设置 rowSpan 并 inflate 高度
+ * Recursively process standalone leaf columns nested inside groups, setting rowSpan and inflating the height
  */
 function inflateNestedStandaloneHeights(
   children: (Column | ColumnGroup)[],
@@ -226,7 +226,7 @@ function inflateNestedStandaloneHeights(
         depth + 1,
       );
     } else {
-      // 独立叶子列
+      // Standalone leaf column
       const rowSpan = Math.max(1, maxDepth - depth + 1);
       if (child.tableHeader && rowSpan > 1) {
         child.tableHeader.rowSpan = rowSpan;

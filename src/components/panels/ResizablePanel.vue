@@ -7,7 +7,7 @@
     ]"
     :style="panelStyle"
   >
-    <!-- 折叠按钮 -->
+    <!-- Collapse button -->
     <div 
       v-if="collapsible"
       class="panel-collapse-button"
@@ -17,7 +17,7 @@
       <span class="collapse-icon">{{ isCollapsed ? expandIcon : collapseIcon }}</span>
     </div>
     
-    <!-- 调整手柄 -->
+    <!-- Resize handle -->
     <div 
       v-if="resizable && !isCollapsed"
       class="panel-resize-handle"
@@ -25,7 +25,7 @@
       @mousedown.stop="startResizing"
     ></div>
     
-    <!-- 面板内容 -->
+    <!-- Panel content -->
     <div v-if="!isCollapsed" class="panel-content">
       <slot></slot>
     </div>
@@ -35,33 +35,33 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted } from 'vue';
 
-// 定义组件属性
+// Define component props
 interface Props {
-  // 面板位置：left, right, bottom
+  // Panel position: left, right, bottom
   position: 'left' | 'right' | 'bottom';
-  // 初始尺寸（宽度或高度，取决于位置）
+  // Initial size (width or height, depending on position)
   initialSize: number;
-  // 最小尺寸
+  // Minimum size
   minSize?: number;
-  // 最大尺寸
+  // Maximum size
   maxSize?: number;
-  // 是否可调整大小
+  // Whether the panel is resizable
   resizable?: boolean;
-  // 是否可折叠
+  // Whether the panel is collapsible
   collapsible?: boolean;
-  // 折叠后的尺寸
+  // Size when collapsed
   collapsedSize?: number;
-  // 是否使用自动宽度（占满剩余空间）
+  // Whether to use auto width (fill the remaining space)
   autoWidth?: boolean;
 }
 
-// 定义组件事件
+// Define component events
 interface Emits {
   (e: 'size-change', size: number): void;
   (e: 'collapse-change', isCollapsed: boolean): void;
 }
 
-// 使用默认值
+// Use default values
 const props = withDefaults(defineProps<Props>(), {
   minSize: 200,
   maxSize: 600,
@@ -73,17 +73,17 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 
-// 响应式数据
+// Reactive data
 const currentSize = ref(props.initialSize);
 const isCollapsed = ref(false);
 const isResizing = ref(false);
 
-// 计算面板样式
+// Compute panel style
 const panelStyle = computed(() => {
   const size = isCollapsed.value ? props.collapsedSize : currentSize.value;
 
   if (props.position === 'left' || props.position === 'right') {
-    // 如果启用了autoWidth且未折叠，使用100%宽度
+    // If autoWidth is enabled and not collapsed, use 100% width
     if (props.autoWidth && !isCollapsed.value) {
       return {
         width: '100%',
@@ -101,7 +101,7 @@ const panelStyle = computed(() => {
   }
 });
 
-// 折叠图标
+// Collapse icon
 const collapseIcon = computed(() => {
   switch (props.position) {
     case 'left': return '◀';
@@ -111,7 +111,7 @@ const collapseIcon = computed(() => {
   }
 });
 
-// 展开图标
+// Expand icon
 const expandIcon = computed(() => {
   switch (props.position) {
     case 'left': return '▶';
@@ -121,59 +121,59 @@ const expandIcon = computed(() => {
   }
 });
 
-// 切换折叠状态
+// Toggle collapse state
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value;
   emit('collapse-change', isCollapsed.value);
 };
 
-// 开始调整大小
+// Start resizing
 const startResizing = (event: MouseEvent) => {
   if (!props.resizable || isCollapsed.value) return;
-  
+
   event.preventDefault();
   isResizing.value = true;
-  
-  const startPos = props.position === 'left' || props.position === 'right' 
-    ? event.clientX 
+
+  const startPos = props.position === 'left' || props.position === 'right'
+    ? event.clientX
     : event.clientY;
   const startSize = currentSize.value;
-  
+
   const handleMouseMove = (e: MouseEvent) => {
     if (!isResizing.value) return;
-    
+
     let delta: number;
-    
+
     if (props.position === 'left') {
-      // 左侧面板：向右拖动增加宽度
+      // Left panel: dragging right increases width
       delta = e.clientX - startPos;
     } else if (props.position === 'right') {
-      // 右侧面板：向左拖动增加宽度
+      // Right panel: dragging left increases width
       delta = startPos - e.clientX;
     } else {
-      // 底部面板：向上拖动增加高度
+      // Bottom panel: dragging up increases height
       delta = startPos - e.clientY;
     }
-    
-    // 计算新尺寸并限制在最小/最大值之间
+
+    // Compute the new size and clamp it between min/max
     const newSize = Math.max(props.minSize!, Math.min(props.maxSize!, startSize + delta));
     currentSize.value = newSize;
     emit('size-change', newSize);
   };
-  
+
   const handleMouseUp = () => {
     isResizing.value = false;
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
   };
-  
+
   document.addEventListener('mousemove', handleMouseMove);
   document.addEventListener('mouseup', handleMouseUp);
 };
 
-// 清理事件监听器
+// Clean up event listeners
 onUnmounted(() => {
-  // 确保在组件卸载时移除所有事件监听器
+  // Ensure all event listeners are removed when the component is unmounted
   document.removeEventListener('mousemove', () => {});
   document.removeEventListener('mouseup', () => {});
 });
@@ -188,28 +188,28 @@ onUnmounted(() => {
   height: 100%;
 }
 
-/* 左侧面板 */
+/* Left panel */
 .resizable-panel--left {
   border-right: 1px solid #ddd;
 }
 
-/* 右侧面板 */
+/* Right panel */
 .resizable-panel--right {
   border-left: 1px solid #ddd;
 }
 
-/* 底部面板 */
+/* Bottom panel */
 .resizable-panel--bottom {
   border-top: 1px solid #ddd;
 }
 
-/* 折叠状态 */
+/* Collapsed state */
 .resizable-panel--collapsed {
   min-width: auto !important;
   min-height: auto !important;
 }
 
-/* 折叠按钮 */
+/* Collapse button */
 .panel-collapse-button {
   position: absolute;
   top: 0;
@@ -248,7 +248,7 @@ onUnmounted(() => {
   user-select: none;
 }
 
-/* 调整手柄 */
+/* Resize handle */
 .panel-resize-handle {
   position: absolute;
   background-color: transparent;
@@ -259,7 +259,7 @@ onUnmounted(() => {
   background-color: rgba(0, 0, 0, 0.1);
 }
 
-/* 左侧面板调整手柄 */
+/* Left panel resize handle */
 .panel-resize-handle--left {
   top: 0;
   right: 0;
@@ -268,7 +268,7 @@ onUnmounted(() => {
   cursor: ew-resize;
 }
 
-/* 右侧面板调整手柄 */
+/* Right panel resize handle */
 .panel-resize-handle--right {
   top: 0;
   left: 0;
@@ -277,7 +277,7 @@ onUnmounted(() => {
   cursor: ew-resize;
 }
 
-/* 底部面板调整手柄 */
+/* Bottom panel resize handle */
 .panel-resize-handle--bottom {
   top: 0;
   left: 0;
@@ -286,7 +286,7 @@ onUnmounted(() => {
   cursor: ns-resize;
 }
 
-/* 面板内容 */
+/* Panel content */
 .panel-content {
   width: 100%;
   height: 100%;

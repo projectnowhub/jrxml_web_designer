@@ -17,7 +17,7 @@
     @resize-start="handleResizeStart"
     @contextmenu="handleContextMenu"
   >
-    <!-- Break 元素内容 -->
+    <!-- Break element content -->
     <div class="break-content" :class="{ 'column-break': element.breakType === 'Column' }">
       <div class="break-line"></div>
       <div class="break-label">{{ element.breakType === 'Column' ? 'Column Break' : 'Page Break' }}</div>
@@ -53,22 +53,22 @@ const emit = defineEmits<{
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
-// 处理选择
+// Handle selection
 const handleSelect = (bandIndex: number, elementIndex: number, isMultiSelect?: boolean) => {
   emit('select', bandIndex, elementIndex, isMultiSelect, props.parentFrameIndex);
 };
 
-// 处理拖拽开始
+// Handle drag start
 const handleDragStart = (event: MouseEvent, bandIndex: number, elementIndex: number) => {
   emit('dragStart', event, bandIndex, elementIndex, props.parentFrameIndex);
 };
 
-// 处理调整大小开始
+// Handle resize start
 const handleResizeStart = (event: MouseEvent, bandIndex: number, elementIndex: number) => {
   emit('resizeStart', event, bandIndex, elementIndex, props.parentFrameIndex);
 };
 
-// 处理上下文菜单
+// Handle context menu
 const handleContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: number) => {
   emit('contextmenu', event, bandIndex, elementIndex, props.parentFrameIndex);
 };

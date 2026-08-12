@@ -18,7 +18,7 @@ export function buildJasperReportOpenTag(properties: ReportProperties): string {
     topMargin="${safeProperties.topMargin}"
     bottomMargin="${safeProperties.bottomMargin}"`;
 
-  // 添加可选属性（如果不是默认值）
+  // Add optional attributes (if not the default value)
   if (safeProperties.language && safeProperties.language !== "java") {
     attrs += `\n    language="${safeProperties.language}"`;
   }

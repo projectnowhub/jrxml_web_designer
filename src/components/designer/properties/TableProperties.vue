@@ -1,10 +1,10 @@
 <template>
   <div class="prop-panel table-properties">
-    <h4 class="prop-heading-md">Table属性</h4>
+    <h4 class="prop-heading-md">Table Properties</h4>
 
-    <!-- 数据集 -->
+    <!-- Dataset -->
     <div class="prop-form-group">
-      <label class="prop-label">数据集名称</label>
+      <label class="prop-label">Dataset name</label>
       <input
         :value="element.dataset?.name || ''"
         @input="updateDatasetProperty('name', ($event.target as HTMLInputElement).value)"
@@ -14,9 +14,9 @@
       />
     </div>
 
-    <!-- 连接表达式 -->
+    <!-- Connection expression -->
     <div class="prop-form-group">
-      <label class="prop-label">连接表达式</label>
+      <label class="prop-label">Connection expression</label>
       <ExpressionEditor
         :model-value="element.dataset?.connectionExpression || ''"
         @update:model-value="updateDatasetProperty('connectionExpression', $event)"
@@ -27,9 +27,9 @@
       />
     </div>
 
-    <!-- 查询语句 -->
+    <!-- Query text -->
     <div class="prop-form-group">
-      <label class="prop-label">查询语句</label>
+      <label class="prop-label">Query text</label>
       <textarea
         :value="element.dataset?.query?.text || ''"
         @input="updateQueryProperty('text', ($event.target as HTMLTextAreaElement).value)"
@@ -39,27 +39,27 @@
       ></textarea>
     </div>
 
-    <!-- 查询语言 -->
+    <!-- Query language -->
     <div class="prop-form-group">
       <SelectControl
         :model-value="element.dataset?.query?.language || 'sql'"
         @update:model-value="updateQueryProperty('language', $event)"
         :options="queryLanguageOptions"
-        label="查询语言"
+        label="Query language"
       />
     </div>
 
-    <!-- 分隔线 -->
+    <!-- Divider -->
     <div class="prop-divider"></div>
 
-    <!-- 表格样式 -->
+    <!-- Table styles -->
     <div class="prop-form-group">
-      <h5 class="prop-heading-sm">表格样式</h5>
+      <h5 class="prop-heading-sm">Table styles</h5>
 
       <div class="prop-style-select">
-        <!-- 表头样式 -->
+        <!-- Table header style -->
         <div>
-          <label>表头样式</label>
+          <label>Table header style</label>
           <select
             :value="element.styles?.tableHeader || 'Table_TH'"
             @input="updateStyleProperty('tableHeader', ($event.target as HTMLSelectElement).value)"
@@ -69,9 +69,9 @@
           </select>
         </div>
 
-        <!-- 列头样式 -->
+        <!-- Column header style -->
         <div>
-          <label>列头样式</label>
+          <label>Column header style</label>
           <select
             :value="element.styles?.columnHeader || 'Table_CH'"
             @input="updateStyleProperty('columnHeader', ($event.target as HTMLSelectElement).value)"
@@ -81,9 +81,9 @@
           </select>
         </div>
 
-        <!-- 详情样式 -->
+        <!-- Detail style -->
         <div>
-          <label>详情样式</label>
+          <label>Detail style</label>
           <select
             :value="element.styles?.detail || 'Table_TD'"
             @input="updateStyleProperty('detail', ($event.target as HTMLSelectElement).value)"
@@ -93,9 +93,9 @@
           </select>
         </div>
 
-        <!-- 列脚样式 -->
+        <!-- Column footer style -->
         <div>
-          <label>列脚样式</label>
+          <label>Column footer style</label>
           <select
             :value="element.styles?.columnFooter || 'Table_CH'"
             @input="updateStyleProperty('columnFooter', ($event.target as HTMLSelectElement).value)"
@@ -105,9 +105,9 @@
           </select>
         </div>
 
-        <!-- 表脚样式 -->
+        <!-- Table footer style -->
         <div>
-          <label>表脚样式</label>
+          <label>Table footer style</label>
           <select
             :value="element.styles?.tableFooter || 'Table_TH'"
             @input="updateStyleProperty('tableFooter', ($event.target as HTMLSelectElement).value)"
@@ -119,84 +119,84 @@
       </div>
     </div>
 
-    <!-- 分隔线 -->
+    <!-- Divider -->
     <div class="prop-divider"></div>
 
-    <!-- 无数据类型 -->
+    <!-- When-no-data type -->
     <div class="prop-form-group">
       <SelectControl
         :model-value="element.whenNoDataType || 'AllSectionsNoDetail'"
         @update:model-value="updateProperty('whenNoDataType', $event)"
         :options="whenNoDataTypeOptions"
-        label="无数据类型"
-        description="当没有数据时的处理方式"
+        label="When no data"
+        description="How to handle the table when there is no data"
       />
     </div>
 
-    <!-- 打印表头 -->
+    <!-- Print headers -->
     <div class="prop-form-group">
       <SwitchControl
         :model-value="element.printHeaders !== false"
         @update:model-value="updateProperty('printHeaders', $event)"
-        label="打印表头"
-        description="是否打印表格表头"
+        label="Print headers"
+        description="Whether to print the table headers"
       />
     </div>
 
-    <!-- 忽略宽度 -->
+    <!-- Ignore width -->
     <div class="prop-form-group">
       <SwitchControl
         :model-value="element.ignoreWidth || false"
         @update:model-value="updateProperty('ignoreWidth', $event)"
-        label="忽略宽度"
-        description="忽略表格宽度限制"
+        label="Ignore width"
+        description="Ignore the table width constraint"
       />
     </div>
 
-    <!-- 忽略分页 -->
+    <!-- Ignore pagination -->
     <div class="prop-form-group">
       <SwitchControl
         :model-value="element.isIgnorePagination || false"
         @update:model-value="updateProperty('isIgnorePagination', $event)"
-        label="忽略分页"
-        description="表格内容不会被分页打断"
+        label="Ignore pagination"
+        description="Table content will not be split across pages"
       />
     </div>
 
-    <!-- 分隔线 -->
+    <!-- Divider -->
     <div class="prop-divider"></div>
 
-    <!-- 行分组管理 -->
+    <!-- Row group management -->
     <div class="prop-form-group">
-      <h5 class="prop-heading-sm">行分组</h5>
+      <h5 class="prop-heading-sm">Row groups</h5>
       <div class="prop-list">
         <div
           v-for="(group, index) in element.rowGroups || []"
           :key="index"
           class="prop-list-item"
         >
-          <span class="prop-list-item-name">{{ group.name || `分组 ${Number(index) + 1}` }}</span>
+          <span class="prop-list-item-name">{{ group.name || `Group ${Number(index) + 1}` }}</span>
           <div class="prop-list-item-actions">
-            <button @click="removeRowGroup(Number(index))" class="prop-btn-danger prop-btn-sm">删除</button>
+            <button @click="removeRowGroup(Number(index))" class="prop-btn-danger prop-btn-sm">Delete</button>
           </div>
         </div>
-        <div v-if="!element.rowGroups || element.rowGroups.length === 0" class="prop-hint" style="padding: 8px 12px;">暂无行分组</div>
+        <div v-if="!element.rowGroups || element.rowGroups.length === 0" class="prop-hint" style="padding: 8px 12px;">No row groups yet</div>
       </div>
-      <button @click="addRowGroup" class="prop-btn-default" style="width: 100%; margin-top: 8px;">添加行分组</button>
+      <button @click="addRowGroup" class="prop-btn-default" style="width: 100%; margin-top: 8px;">Add row group</button>
     </div>
 
-    <!-- 分隔线 -->
+    <!-- Divider -->
     <div class="prop-divider"></div>
 
-    <!-- 样式继承 -->
+    <!-- Style inheritance -->
     <div class="prop-form-group">
-      <label class="prop-label">样式继承</label>
+      <label class="prop-label">Parent style</label>
       <select
         :value="element.parentStyle || ''"
         @input="updateProperty('parentStyle', ($event.target as HTMLSelectElement).value)"
         class="prop-select"
       >
-        <option value="">无</option>
+        <option value="">None</option>
         <option v-for="style in availableStyles" :key="style" :value="style">{{ style }}</option>
       </select>
     </div>
@@ -230,10 +230,10 @@ const queryLanguageOptions = [
 ];
 
 const whenNoDataTypeOptions = [
-  { value: 'Blank', label: '空白' },
-  { value: 'NoDataCell', label: '无数据单元格' },
-  { value: 'AllSectionsNoDetail', label: '所有区域无详情' },
-  { value: 'AllSectionsWithDetail', label: '所有区域包含详情' }
+  { value: 'Blank', label: 'Blank' },
+  { value: 'NoDataCell', label: 'No-data cell' },
+  { value: 'AllSectionsNoDetail', label: 'All sections, no detail' },
+  { value: 'AllSectionsWithDetail', label: 'All sections, with detail' }
 ];
 
 const updateProperty = (property: string, value: any) => {
@@ -279,7 +279,7 @@ const addRowGroup = () => {
   }
   updatedElement.rowGroups.push({
     uuid: crypto.randomUUID(),
-    name: `分组 ${updatedElement.rowGroups.length + 1}`,
+    name: `Group ${updatedElement.rowGroups.length + 1}`,
     height: 30,
     isStartNewPage: false,
     isRepeatHeader: false,

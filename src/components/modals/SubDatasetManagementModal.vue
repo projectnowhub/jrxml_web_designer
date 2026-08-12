@@ -9,9 +9,9 @@
     :contentClass="'subdataset-modal'"
   >
     <form @submit.prevent="handleSubmit" style="display: flex; width: 100%;">
-      <!-- 左侧：主要表单内容 -->
+      <!-- Left: main form content -->
       <div class="form-main">
-        <!-- 常用设置 -->
+        <!-- Common settings -->
         <div class="form-group">
           <label for="datasetName">{{ t('elementLibrary.subDatasetName') }} *</label>
           <input 
@@ -51,7 +51,7 @@
           </div>
         </div>
         
-        <!-- 不常用设置 -->
+        <!-- Advanced settings -->
         <div class="form-section">
           <h4>{{ t('elementLibrary.advancedSettings') }}</h4>
           <div class="form-group">
@@ -90,7 +90,7 @@
         </div>
       </div>
       
-      <!-- 右侧：字段管理 -->
+      <!-- Right: field management -->
       <div class="fields-section">
         <div class="section-header">
           <h4>{{ t('elementLibrary.fieldsManagement') }}</h4>
@@ -381,14 +381,14 @@ watch(
         fields: []
       }
     }
-    // 确保query和fields总是存在
+    // Ensure query and fields always exist
     if (!localDataset.value.query) {
       localDataset.value.query = { language: 'sql', text: '' };
     }
     if (!localDataset.value.fields) {
       localDataset.value.fields = [];
     }
-    // 重置错误信息
+    // Reset error messages
     errors.value = {};
   },
   { immediate: true }

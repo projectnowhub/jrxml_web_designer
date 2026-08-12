@@ -1,28 +1,28 @@
 <template>
   <div class="designer-canvas" @click="setDesignAreaFocused">
-    <!-- 拖拽反馈层 -->
+    <!-- Drag feedback layer -->
     <DragFeedbackLayer :feedback="dragFeedback" />
 
-    <!-- 顶部标尺容器 -->
+    <!-- Top ruler container -->
     <div class="top-ruler-container">
-      <!-- 左上角空白区域 -->
+      <!-- Top-left corner blank area -->
       <div class="corner-space">
         <div class="unit-label">px</div>
       </div>
-      <!-- 水平标尺 -->
+      <!-- Horizontal ruler -->
       <div class="horizontal-ruler" ref="horizontalRulerRef">
         <div class="ruler-content" :style="{ width: (paperWidth * zoomLevel) + 'px' }">
-          <div 
-            v-for="tick in horizontalRulerTicks" 
-            :key="tick.position" 
-            class="tick" 
+          <div
+            v-for="tick in horizontalRulerTicks"
+            :key="tick.position"
+            class="tick"
             :class="{ 'major': tick.major, 'minor': !tick.major }"
             :style="{ left: (tick.position * zoomLevel) + 'px' }"
           ></div>
-          <div 
-            v-for="label in horizontalRulerLabels" 
-            :key="label.position" 
-            class="label" 
+          <div
+            v-for="label in horizontalRulerLabels"
+            :key="label.position"
+            class="label"
             :style="{ left: (label.position * zoomLevel) + 'px' }"
           >
             {{ label.value }}
@@ -30,24 +30,24 @@
         </div>
       </div>
     </div>
-    
-    <!-- 左侧标尺和纸张容器 -->
+
+    <!-- Left ruler and paper container -->
     <div class="main-content">
-      <!-- 垂直标尺 -->
+      <!-- Vertical ruler -->
       <div class="vertical-ruler-container">
         <div class="vertical-ruler" ref="verticalRulerRef">
           <div class="ruler-content" :style="{ height: (paperHeight * zoomLevel) + 'px' }">
-            <div 
-              v-for="tick in verticalRulerTicks" 
-              :key="tick.position" 
-              class="tick" 
+            <div
+              v-for="tick in verticalRulerTicks"
+              :key="tick.position"
+              class="tick"
               :class="{ 'major': tick.major, 'minor': !tick.major }"
               :style="{ top: (tick.position * zoomLevel) + 'px' }"
             ></div>
-            <div 
-              v-for="label in verticalRulerLabels" 
-              :key="label.position" 
-              class="label" 
+            <div
+              v-for="label in verticalRulerLabels"
+              :key="label.position"
+              class="label"
               :style="{ top: (label.position * zoomLevel) + 'px' }"
             >
               {{ label.value }}
@@ -55,13 +55,13 @@
           </div>
         </div>
       </div>
-      
-      <!-- 纸张容器 -->
+
+      <!-- Paper container -->
       <div class="paper-container" ref="paperContainerRef" @contextmenu="handleCanvasContextMenu">
-        <!-- 纸张 -->
-        <div class="paper" 
-             :style="{ 
-               width: paperWidth + 'px', 
+        <!-- Paper -->
+        <div class="paper"
+             :style="{
+               width: paperWidth + 'px',
                height: paperHeight + 'px',
                transform: `scale(${zoomLevel})`,
                transformOrigin: 'top left'
@@ -72,28 +72,28 @@
              @dragleave="handleDragLeave"
              @mousedown="startSelection"
         >
-        <!-- 报表边距容器 -->
+        <!-- Report margin container -->
         <div class="pager"
              :style="{
                padding: reportProperties.topMargin + 'px ' + reportProperties.rightMargin + 'px ' + reportProperties.bottomMargin + 'px ' + reportProperties.leftMargin + 'px',
                width: '100%',
                height: '100%',
                position: 'relative',
-               backgroundImage: showGrid ? 
+               backgroundImage: showGrid ?
                  'linear-gradient(to right, #e0e0e0 1px, transparent 1px), linear-gradient(to bottom, #e0e0e0 1px, transparent 1px)' : 'none',
-               backgroundSize: showGrid ? 
+               backgroundSize: showGrid ?
                  (uiConstants.GRID_SIZE + 'px ' + uiConstants.GRID_SIZE + 'px') : 'auto'
              }"
         >
-        
-        <!-- 报表区域 -->
-        <div 
-          v-for="(band, bandIndex) in bands" 
+
+        <!-- Report area -->
+        <div
+          v-for="(band, bandIndex) in bands"
           :key="band.type"
           class="band"
           :style="{ height: band.height + 'px' }"
           @click="selectBand(bandIndex)"
-          :class="{ 
+          :class="{
             'selected': selectedBandIndex === bandIndex,
             'dragging-target': highlightedBandIndex === bandIndex,
             'drag-over': highlightedBandIndex === bandIndex
@@ -136,25 +136,25 @@
             @update-jrxml="emit('update-jrxml')"
           />
             <div v-if="band.elements.length === 0 && band.type === 'detail'" class="canvas-empty-state">
-              <div class="empty-state-text">从左侧拖拽元素到画布</div>
+              <div class="empty-state-text">Drag elements from the left panel onto the canvas</div>
             </div>
           </div>
-          <!-- 区域高度调整手柄 -->
+          <!-- Band height resize handle -->
           <div class="band-resize-handle" @mousedown.stop="startResizingBand($event, bandIndex)"></div>
         </div>
-        
-        <!-- 对齐线 -->
+
+        <!-- Alignment lines -->
         <div v-if="isDraggingOrResizing" class="alignment-lines">
-          <!-- 水平对齐线 -->
-          <div 
-            v-for="(line, index) in alignmentLines.horizontal" 
+          <!-- Horizontal alignment lines -->
+          <div
+            v-for="(line, index) in alignmentLines.horizontal"
             :key="'h-' + index"
             class="alignment-line horizontal"
             :style="{ top: line + 'px' }"
           ></div>
-          <!-- 垂直对齐线 -->
-          <div 
-            v-for="(line, index) in alignmentLines.vertical" 
+          <!-- Vertical alignment lines -->
+          <div
+            v-for="(line, index) in alignmentLines.vertical"
             :key="'v-' + index"
             class="alignment-line vertical"
             :style="{ left: line + 'px' }"
@@ -163,8 +163,8 @@
         </div>
         </div>
       </div>
-      
-      <!-- 框选框 -->
+
+      <!-- Selection box -->
       <SelectionBox
         :start-x="selectionBox.startX"
         :start-y="selectionBox.startY"
@@ -200,7 +200,7 @@ interface Props {
   selectedBandIndex: number | null;
   highlightedBandIndex: number | null;
   selectedElement: any;
-  selectedElements: {bandIndex: number, elementIndex: number, parentFrameIndex?: number}[]; // 添加多选支持
+  selectedElements: {bandIndex: number, elementIndex: number, parentFrameIndex?: number}[]; // Added multi-select support
   editingElement: any;
   isDraggingOrResizing: boolean;
   horizontalRulerTicks: any[];
@@ -221,7 +221,7 @@ interface Props {
     columnFooter: string;
     detailCell: string;
   };
-  dragFeedback?: DragFeedback; // 新增：拖拽反馈
+  dragFeedback?: DragFeedback; // New: drag feedback
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -233,7 +233,7 @@ const props = withDefaults(defineProps<Props>(), {
   selectedBandIndex: null,
   highlightedBandIndex: null,
   selectedElement: null,
-  selectedElements: () => [], // 添加多选支持的默认值
+  selectedElements: () => [], // Default value for multi-select support
   editingElement: null,
   isDraggingOrResizing: false,
   horizontalRulerTicks: () => [],
@@ -263,7 +263,7 @@ const props = withDefaults(defineProps<Props>(), {
     snapLines: [],
     isDragging: false,
     draggedElementInfo: null,
-  }), // 新增：拖拽反馈默认值
+  }), // New: default value for drag feedback
 });
 
 // Emits
@@ -281,23 +281,23 @@ const emit = defineEmits([
   'cancel-editing',
   'start-resizing-band',
   'zoom-change',
-  'select-elements-in-rect', // 添加框选事件
-  'clear-selection', // 添加清空选择事件
-  'check-fields', // 添加字段检查事件
-  'contextmenu', // 添加上下文菜单事件
-  'move-column', // 添加列移动事件
-  'add-columns-to-group', // 添加列分组事件
-  'join-columns-to-existing-group', // 添加将列加入现有组事件
-  'update:enableSnapToGrid', // 添加自动吸附到网格事件
-  'update:enableSnapToAlignment', // 添加自动吸附对齐事件
-  'update:showGrid', // 添加显示/隐藏网格事件
-  'update:table-styles', // 添加表格样式更新事件
-  'reset-zoom', // 添加重置缩放事件
-  'update-jrxml', // 添加JRXML更新事件
-  'canvas-contextmenu' // 添加画布上下文菜单事件
+  'select-elements-in-rect', // Added rect-selection event
+  'clear-selection', // Added clear-selection event
+  'check-fields', // Added field-check event
+  'contextmenu', // Added context menu event
+  'move-column', // Added column-move event
+  'add-columns-to-group', // Added column-grouping event
+  'join-columns-to-existing-group', // Added join-column-to-existing-group event
+  'update:enableSnapToGrid', // Added snap-to-grid toggle event
+  'update:enableSnapToAlignment', // Added snap-to-alignment toggle event
+  'update:showGrid', // Added show/hide grid event
+  'update:table-styles', // Added table style update event
+  'reset-zoom', // Added reset zoom event
+  'update-jrxml', // Added JRXML update event
+  'canvas-contextmenu' // Added canvas context menu event
 ]);
 
-// 框选状态
+// Selection box state
 const selectionBox = ref({
   startX: 0,
   startY: 0,
@@ -342,7 +342,7 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
 };
 
 const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
-  emit('start-resizing-element', event, bandIndex, elementIndex, 'se', parentFrameIndex); // 默认方向为'se'
+  emit('start-resizing-element', event, bandIndex, elementIndex, 'se', parentFrameIndex); // Default direction is 'se'
 };
 
 const startEditing = (bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
@@ -350,14 +350,14 @@ const startEditing = (bandIndex: number, elementIndex: number, parentFrameIndex?
 };
 
 const finishEditing = () => {
-  // 由于ElementFactory的finishEditing事件不传递参数，我们需要从editingElement中获取信息
+  // Since ElementFactory's finishEditing event doesn't pass parameters, we need to get the info from editingElement
   if (props.editingElement) {
     emit('finish-editing');
   }
 };
 
 const cancelEditing = () => {
-  // 由于ElementFactory的cancelEditing事件不传递参数，我们需要从editingElement中获取信息
+  // Since ElementFactory's cancelEditing event doesn't pass parameters, we need to get the info from editingElement
   if (props.editingElement) {
     emit('cancel-editing');
   }
@@ -367,27 +367,27 @@ const checkFields = (fields: string[]) => {
   emit('check-fields', fields);
 };
 
-// 处理列移动事件
+// Handle column move event
 const handleMoveColumn = (elementIndex: number, fromIndex: number, toIndex: number, bandIndex: number, parentFrameIndex?: number) => {
   emit('move-column', elementIndex, fromIndex, toIndex, bandIndex, parentFrameIndex);
 };
 
-// 处理将选中的列加入组
+// Handle adding selected columns to a group
 const handleAddColumnsToGroup = (elementIndex: number, columnIndices: number[], bandIndex: number, parentFrameIndex?: number) => {
   emit('add-columns-to-group', elementIndex, columnIndices, bandIndex, parentFrameIndex);
 };
 
-// 处理将选中的列加入现有组
+// Handle adding selected columns to an existing group
 const handleJoinColumnsToExistingGroup = (elementIndex: number, columnIndices: number[], bandIndex: number, parentFrameIndex?: number) => {
   emit('join-columns-to-existing-group', elementIndex, columnIndices, bandIndex, parentFrameIndex);
 };
 
-// 处理元素上下文菜单
+// Handle element context menu
 const handleElementContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
   emit('contextmenu', event, bandIndex, elementIndex, parentFrameIndex);
 };
 
-// 处理画布上下文菜单
+// Handle canvas context menu
 const handleCanvasContextMenu = (event: MouseEvent) => {
   emit('canvas-contextmenu', event);
 };
@@ -396,25 +396,25 @@ const startResizingBand = (event: MouseEvent, bandIndex: number) => {
   emit('start-resizing-band', event, bandIndex);
 };
 
-// 检查元素是否超出边界
+// Check whether the element is out of bounds
 const isElementOutOfBounds = (bandIndex: number, elementIndex: number) => {
   return props.outOfBoundsElements.some(
     item => item.bandIndex === bandIndex && item.elementIndex === elementIndex
   );
 };
 
-// 键盘事件处理
+// Keyboard event handling
 const handleKeyDown = (event: KeyboardEvent) => {
-  // CTRL+0 重置缩放
+  // CTRL+0 resets zoom
   if (event.ctrlKey && event.key === '0') {
     event.preventDefault();
     emit('reset-zoom');
   }
 };
 
-// 滚动事件处理
+// Scroll event handling
 const handleWheel = (event: WheelEvent) => {
-  // 如果按住Ctrl键，则进行缩放
+  // If the Ctrl key is held, zoom
   if (event.ctrlKey) {
     event.preventDefault();
     const delta = event.deltaY > 0 ? -0.1 : 0.1;
@@ -422,45 +422,45 @@ const handleWheel = (event: WheelEvent) => {
   }
 };
 
-// 框选功能
+// Rectangle selection feature
 const startSelection = (event: MouseEvent) => {
-  // 只允许左键触发框选
+  // Only the left mouse button can trigger rectangle selection
   if (event.button !== 0) {
     return;
   }
-  
-  // 只有点击空白区域才开始框选
+
+  // Only start rectangle selection when clicking a blank area
   if (event.target === event.currentTarget || (event.target as HTMLElement).classList.contains('pager')) {
     isSelecting.value = true;
-    
-    // 获取纸张元素的位置信息
+
+    // Get the position info of the paper element
     const paperEl = document.querySelector('.paper') as HTMLElement;
     const paperContainer = document.querySelector('.paper-container') as HTMLElement;
     if (paperEl && paperContainer) {
       const containerRect = paperContainer.getBoundingClientRect();
       const currentZoom = props.zoomLevel;
-      
-      // 获取滚动位置
+
+      // Get the scroll position
       const scrollLeft = paperContainer.scrollLeft;
       const scrollTop = paperContainer.scrollTop;
-      
-      // 计算相对于纸张的坐标，考虑缩放比例和滚动位置
-      // 鼠标位置 - 容器位置 + 滚动位置 = 相对于未缩放纸张的位置
+
+      // Calculate coordinates relative to the paper, accounting for zoom and scroll position
+      // Mouse position - container position + scroll position = position relative to the unscaled paper
       const paperStartX = (event.clientX - containerRect.left + scrollLeft) / currentZoom;
       const paperStartY = (event.clientY - containerRect.top + scrollTop) / currentZoom;
-      
-      // 设置框选框的坐标，需要考虑缩放因子，因为SelectionBox现在在paper-container外
+
+      // Set the selection box coordinates, accounting for the zoom factor since SelectionBox now sits outside paper-container
       selectionBox.value.startX = paperStartX * currentZoom;
       selectionBox.value.startY = paperStartY * currentZoom;
       selectionBox.value.endX = selectionBox.value.startX;
       selectionBox.value.endY = selectionBox.value.startY;
       selectionBox.value.visible = true;
-      
-      // 添加全局鼠标移动和释放事件监听器
+
+      // Add global mousemove and mouseup event listeners
       document.addEventListener('mousemove', updateSelection);
       document.addEventListener('mouseup', endSelection);
-      
-      // 阻止默认行为和冒泡
+
+      // Prevent default behavior and stop propagation
       event.preventDefault();
       event.stopPropagation();
     }
@@ -469,23 +469,23 @@ const startSelection = (event: MouseEvent) => {
 
 const updateSelection = (event: MouseEvent) => {
   if (!isSelecting.value) return;
-  
-  // 获取纸张元素的位置信息
+
+  // Get the position info of the paper element
   const paperEl = document.querySelector('.paper') as HTMLElement;
   const paperContainer = document.querySelector('.paper-container') as HTMLElement;
   if (paperEl && paperContainer) {
     const containerRect = paperContainer.getBoundingClientRect();
     const currentZoom = props.zoomLevel;
-    
-    // 获取滚动位置
+
+    // Get the scroll position
     const scrollLeft = paperContainer.scrollLeft;
     const scrollTop = paperContainer.scrollTop;
-    
-    // 计算相对于纸张的坐标，考虑缩放比例和滚动位置
+
+    // Calculate coordinates relative to the paper, accounting for zoom and scroll position
     const paperEndX = (event.clientX - containerRect.left + scrollLeft) / currentZoom;
     const paperEndY = (event.clientY - containerRect.top + scrollTop) / currentZoom;
-    
-    // 更新框选框的终点坐标，需要考虑缩放因子，因为SelectionBox现在在paper-container外
+
+    // Update the selection box end coordinates, accounting for the zoom factor since SelectionBox now sits outside paper-container
     selectionBox.value.endX = paperEndX * currentZoom;
     selectionBox.value.endY = paperEndY * currentZoom;
   }
@@ -493,60 +493,60 @@ const updateSelection = (event: MouseEvent) => {
 
 const endSelection = () => {
   if (!isSelecting.value) return;
-  
-  // 移除全局事件监听器
+
+  // Remove global event listeners
   document.removeEventListener('mousemove', updateSelection);
   document.removeEventListener('mouseup', endSelection);
-  
-  // 计算框选区域（缩放后的坐标）
+
+  // Calculate the selection area (scaled coordinates)
   const scaledLeft = Math.min(selectionBox.value.startX, selectionBox.value.endX);
   const scaledTop = Math.min(selectionBox.value.startY, selectionBox.value.endY);
   const scaledRight = Math.max(selectionBox.value.startX, selectionBox.value.endX);
   const scaledBottom = Math.max(selectionBox.value.startY, selectionBox.value.endY);
-  
-  // 如果框选区域太小（小于5像素），则不进行框选，而是清空选择
+
+  // If the selection area is too small (less than 5 pixels), skip selection and clear it instead
   if (Math.abs(scaledRight - scaledLeft) < 5 || Math.abs(scaledBottom - scaledTop) < 5) {
     selectionBox.value.visible = false;
     isSelecting.value = false;
-    // 触发清空选择事件
+    // Emit the clear-selection event
     emit('clear-selection');
     return;
   }
-  
-  // 将缩放后的坐标转换为相对于纸张的坐标
+
+  // Convert the scaled coordinates to coordinates relative to the paper
   const currentZoom = props.zoomLevel;
   const left = scaledLeft / currentZoom;
   const top = scaledTop / currentZoom;
   const right = scaledRight / currentZoom;
   const bottom = scaledBottom / currentZoom;
-  
-  // 触发框选事件，传递框选区域的坐标（相对于纸张）
+
+  // Emit the rect-selection event, passing the selection area coordinates (relative to the paper)
   emit('select-elements-in-rect', {
     left,
     top,
     right,
     bottom
   });
-  
-  // 隐藏框选框
+
+  // Hide the selection box
   selectionBox.value.visible = false;
   isSelecting.value = false;
 };
 
-// 生命周期钩子
+// Lifecycle hooks
 onMounted(() => {
-  // 添加鼠标滚轮事件监听器
+  // Add mouse wheel event listener
   const designerCanvas = document.querySelector('.designer-canvas');
   if (designerCanvas) {
     designerCanvas.addEventListener('wheel', handleWheel as EventListener, { passive: false });
     (window as any).designerCanvasWheelListener = handleWheel;
-    
-    // 添加键盘事件监听器
+
+    // Add keyboard event listener
     document.addEventListener('keydown', handleKeyDown as EventListener);
     (window as any).designerCanvasKeyDownListener = handleKeyDown;
   }
-  
-  // 添加滚动事件监听器
+
+  // Add scroll event listener
     if (paperContainerRef.value) {
       const handleScroll = () => {
         if (horizontalRulerRef.value && verticalRulerRef.value && paperContainerRef.value) {
@@ -554,51 +554,51 @@ onMounted(() => {
           verticalRulerRef.value.scrollTop = paperContainerRef.value.scrollTop;
         }
       };
-      
+
       paperContainerRef.value.addEventListener('scroll', handleScroll);
       (window as any).paperContainerScrollListener = handleScroll;
     }
-  
-  // 添加paper点击事件监听器
+
+  // Add paper click event listener
   const paper = document.querySelector('.paper');
   if (paper) {
     const handlePaperClick = () => {
       emit('set-design-area-focused');
     };
-    
+
     paper.addEventListener('click', handlePaperClick);
     (window as any).paperClickListener = handlePaperClick;
   }
 });
 
 onBeforeUnmount(() => {
-  // 移除滚动事件监听器
+  // Remove scroll event listener
   const scrollListener = (window as any).paperContainerScrollListener;
   if (scrollListener && paperContainerRef.value) {
     paperContainerRef.value.removeEventListener('scroll', scrollListener);
   }
-  
-  // 移除鼠标滚轮事件监听器
+
+  // Remove mouse wheel event listener
   const wheelListener = (window as any).designerCanvasWheelListener;
   const designerCanvas = document.querySelector('.designer-canvas');
   if (wheelListener && designerCanvas) {
     designerCanvas.removeEventListener('wheel', wheelListener as EventListener);
   }
-  
-  // 移除键盘事件监听器
+
+  // Remove keyboard event listener
   const keyDownListener = (window as any).designerCanvasKeyDownListener;
   if (keyDownListener) {
     document.removeEventListener('keydown', keyDownListener as EventListener);
   }
-  
-  // 移除paper点击事件监听器
+
+  // Remove paper click event listener
   const paperClickListener = (window as any).paperClickListener;
   const paper = document.querySelector('.paper');
   if (paperClickListener && paper) {
     paper.removeEventListener('click', paperClickListener);
   }
 
-  // 清理全局引用
+  // Clean up global references
   delete (window as any).paperContainerScrollListener;
   delete (window as any).designerCanvasWheelListener;
   delete (window as any).designerCanvasKeyDownListener;
@@ -651,7 +651,7 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid #ccc;
   overflow-x: auto;
   overflow-y: hidden;
-  /* 隐藏滚动条 */
+  /* Hide scrollbar */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
   flex-shrink: 0;
@@ -690,7 +690,7 @@ onBeforeUnmount(() => {
   border-top: 1px solid #ccc;
   overflow-x: hidden;
   overflow-y: auto;
-  /* 隐藏滚动条 */
+  /* Hide scrollbar */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
   flex-shrink: 0;
@@ -724,7 +724,7 @@ onBeforeUnmount(() => {
 
 .pager {
   position: relative;
-  background-image: 
+  background-image:
     linear-gradient(to right, #e0e0e0 1px, transparent 1px),
     linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
 }
@@ -885,7 +885,7 @@ onBeforeUnmount(() => {
   transform: translateY(-50%);
 }
 
-/* 右侧控制面板容器 */
+/* Right-side control panel container */
 .right-side-controls {
   position: fixed;
   bottom: 20px;
@@ -900,14 +900,14 @@ onBeforeUnmount(() => {
   gap: 16px;
 }
 
-/* 自动吸附控制样式 */
+/* Snap control styles */
 .snap-controls {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-/* 缩放控制组件样式重置 */
+/* Zoom control component style reset */
 :deep(.zoom-controls) {
   position: static !important;
   box-shadow: none !important;

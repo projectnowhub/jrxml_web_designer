@@ -2,7 +2,7 @@
   <BaseModal
     v-bind:visible="localVisible"
     @update:visible="updateVisible"
-    title="选择要分组的列"
+    title="Select the columns to group"
     :contentClass="'column-selection-dialog'"
     :useVShow="true"
     @confirm="handleConfirm"
@@ -10,22 +10,22 @@
   >
     <div class="column-selection-content">
       <div class="form-group">
-        <label>选择要分组的区域：</label>
+        <label>Select the region to group:</label>
         <n-radio-group v-model:value="selectedRegion" name="region">
-          <n-radio-button value="tableHeader">表格头部</n-radio-button>
-          <n-radio-button value="columnHeader">列头部</n-radio-button>
-          <n-radio-button value="columnFooter">列尾部</n-radio-button>
-          <n-radio-button value="tableFooter">表格尾部</n-radio-button>
+          <n-radio-button value="tableHeader">Table Header</n-radio-button>
+          <n-radio-button value="columnHeader">Column Header</n-radio-button>
+          <n-radio-button value="columnFooter">Column Footer</n-radio-button>
+          <n-radio-button value="tableFooter">Table Footer</n-radio-button>
         </n-radio-group>
       </div>
       <div class="form-group">
-        <label>组合列文字内容：</label>
-        <n-input v-model:value="groupText" placeholder="请输入组合列的文字内容" />
+        <label>Combined column text:</label>
+        <n-input v-model:value="groupText" placeholder="Enter the text content for the combined column" />
       </div>
       <div class="form-group">
-        <label>选择要分组的列（只能选择相邻的列）：</label>
+        <label>Select the columns to group (only adjacent columns can be selected):</label>
         <div class="column-list">
-          <!-- 递归显示列和组 -->
+          <!-- Recursively display columns and groups -->
           <template v-for="(item, index) in renderItems" :key="index">
             <div 
               v-if="!item.children" 
@@ -44,7 +44,7 @@
                   @update:checked="(checked) => handleItemCheckboxChange(checked, item, index)"
                 />
               </div>
-              <div class="column-name">{{ item.name || `列 ${index + 1}` }}</div>
+              <div class="column-name">{{ item.name || `Column ${index + 1}` }}</div>
             </div>
             <div 
               v-else 
@@ -63,9 +63,9 @@
                   @update:checked="(checked) => handleItemCheckboxChange(checked, item, index)"
                 />
               </div>
-              <div class="column-name group-name">{{ item.name || `组 ${index + 1}` }}</div>
+              <div class="column-name group-name">{{ item.name || `Group ${index + 1}` }}</div>
               <div class="group-children">
-                <!-- 递归显示子组和列 -->
+                <!-- Recursively display subgroups and columns -->
                 <template v-for="(child, childIndex) in item.children" :key="child.uuid || childIndex">
                   <div 
                     v-if="!child.children" 
@@ -78,7 +78,7 @@
                         :disabled="true"
                       />
                     </div>
-                    <div class="child-name">{{ child.name || ('列 ' + (Number(childIndex) + 1)) }}</div>
+                    <div class="child-name">{{ child.name || ('Column ' + (Number(childIndex) + 1)) }}</div>
                   </div>
                   <div 
                     v-else 
@@ -92,8 +92,8 @@
                           :disabled="true"
                         />
                       </div>
-                      <div class="child-name group-name">{{ child.name || ('组 ' + (Number(childIndex) + 1)) }}</div>
-                      <div class="group-count">({{ child.children.length }} 项)</div>
+                      <div class="child-name group-name">{{ child.name || ('Group ' + (Number(childIndex) + 1)) }}</div>
+                      <div class="group-count">({{ child.children.length }} items)</div>
                     </div>
                     <div class="nested-group-children">
                       <template v-for="(nestedChild, nestedIndex) in child.children" :key="nestedChild.uuid || nestedIndex">
@@ -108,7 +108,7 @@
                               :disabled="true"
                             />
                           </div>
-                          <div class="child-name">{{ nestedChild.name || ('列 ' + (Number(nestedIndex) + 1)) }}</div>
+                          <div class="child-name">{{ nestedChild.name || ('Column ' + (Number(nestedIndex) + 1)) }}</div>
                         </div>
                         <div 
                           v-else 
@@ -122,11 +122,11 @@
                                 :disabled="true"
                               />
                             </div>
-                            <div class="child-name group-name">{{ nestedChild.name || ('组 ' + (Number(nestedIndex) + 1)) }}</div>
-                            <div class="group-count">({{ nestedChild.children.length }} 项)</div>
+                            <div class="child-name group-name">{{ nestedChild.name || ('Group ' + (Number(nestedIndex) + 1)) }}</div>
+                            <div class="group-count">({{ nestedChild.children.length }} items)</div>
                           </div>
                           <div class="nested-group-children">
-                            <!-- 继续递归显示更深层级的子项 -->
+                            <!-- Continue recursively displaying deeper nested items -->
                             <template v-for="(deepChild, deepIndex) in nestedChild.children" :key="deepChild.uuid || deepIndex">
                               <div 
                                 class="group-child-item"
@@ -138,7 +138,7 @@
                                     :disabled="true"
                                   />
                                 </div>
-                                <div class="child-name">{{ deepChild.name || ('列 ' + (Number(deepIndex) + 1)) }}</div>
+                                <div class="child-name">{{ deepChild.name || ('Column ' + (Number(deepIndex) + 1)) }}</div>
                               </div>
                             </template>
                           </div>
@@ -158,7 +158,7 @@
       </div>
       
       <div class="selected-info" v-if="selectedColumns.length > 0">
-        已选择 {{ selectedColumns.length }} 列
+        {{ selectedColumns.length }} column(s) selected
       </div>
     </div>
   </BaseModal>
@@ -169,7 +169,7 @@ import { ref, computed, watch, defineComponent } from 'vue';
 import BaseModal from './BaseModal.vue';
 import { NCheckbox, NRadioGroup, NRadio, NRadioButton, NInput } from 'naive-ui';
 
-// 递归组件定义
+// Recursive component definition
 const RecursiveColumnItem = defineComponent({
   name: 'RecursiveColumnItem',
   props: {
@@ -194,7 +194,7 @@ const RecursiveColumnItem = defineComponent({
           :disabled="true"
         />
       </div>
-      <div class="child-name">{{ item.name || '列' }}</div>
+      <div class="child-name">{{ item.name || 'Column' }}</div>
     </div>
     <div 
       v-else 
@@ -210,8 +210,8 @@ const RecursiveColumnItem = defineComponent({
             :disabled="true"
           />
         </div>
-        <div class="child-name group-name">{{ item.name || '组' }}</div>
-        <div class="group-count">({{ item.children.length }} 项)</div>
+        <div class="child-name group-name">{{ item.name || 'Group' }}</div>
+        <div class="group-count">({{ item.children.length }} items)</div>
       </div>
       <div class="nested-group-children">
         <RecursiveColumnItem 
@@ -262,14 +262,14 @@ function updateVisible(value: boolean) {
   emit('update:visible', value);
 }
 
-// 计算要渲染的项目列表（包括列和组）
+// Compute the list of items to render (including columns and groups)
 const renderItems = computed(() => {
   return props.children || props.columns || [];
 });
 
 // Check if an item is disabled (already in a nested group)
 function isItemDisabled(item: any, index: number): boolean {
-  // 顶级组和列都可以选择
+  // Both top-level groups and columns can be selected
   return false;
 }
 
@@ -304,7 +304,7 @@ function toggleItemSelection(item: any, index: number): void {
       selectedColumns.value.sort((a, b) => a - b);
       errorMessage.value = '';
     } else {
-      errorMessage.value = '只能选择相邻的列或组';
+      errorMessage.value = 'Only adjacent columns or groups can be selected';
     }
   }
 }
@@ -321,7 +321,7 @@ function handleItemCheckboxChange(checked: boolean, item: any, index: number): v
 // Handle confirm
 function handleConfirm(): void {
   if (selectedColumns.value.length < 2) {
-    errorMessage.value = '至少需要选择两个项目进行分组';
+    errorMessage.value = 'At least two items must be selected to group';
     return;
   }
   
@@ -331,7 +331,7 @@ function handleConfirm(): void {
     const current = sortedItems[i];
     const previous = sortedItems[i - 1];
     if (current !== undefined && previous !== undefined && current - previous !== 1) {
-      errorMessage.value = '只能选择相邻的列或组';
+      errorMessage.value = 'Only adjacent columns or groups can be selected';
       return;
     }
   }

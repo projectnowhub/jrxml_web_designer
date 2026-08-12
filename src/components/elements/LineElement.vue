@@ -51,19 +51,19 @@ const emit = defineEmits<{
   resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
-// 线条样式
+// Line style
 const lineStyle = computed(() => {
   const direction = props.element.lineDirection || 'TopDown';
   const width = props.element.lineWidth || 1;
   const color = props.element.lineColor || '#000000';
-  
-  // 根据XSD规范，线条是对角线
-  // TopDown: 从左上角到右下角的对角线
-  // BottomUp: 从左下角到右上角的对角线
+
+  // Per the XSD spec, the line is a diagonal
+  // TopDown: diagonal from top-left to bottom-right
+  // BottomUp: diagonal from bottom-left to top-right
   const diagonalLength = Math.sqrt(props.element.width ** 2 + props.element.height ** 2);
-  
+
   if (direction === 'TopDown') {
-    // 从左上角到右下角的对角线
+    // Diagonal from top-left to bottom-right
     return {
       position: 'absolute' as const,
       top: '0',
@@ -75,7 +75,7 @@ const lineStyle = computed(() => {
       transform: `rotate(${Math.atan2(props.element.height, props.element.width)}rad)`
     };
   } else {
-    // BottomUp - 从左下角到右上角的对角线
+    // BottomUp - diagonal from bottom-left to top-right
     return {
       position: 'absolute' as const,
       bottom: '0',
@@ -89,17 +89,17 @@ const lineStyle = computed(() => {
   }
 });
 
-// 处理选择
+// Handle selection
 const handleSelect = (bandIndex: number, elementIndex: number, isMultiSelect?: boolean) => {
   emit('select', bandIndex, elementIndex, isMultiSelect, props.parentFrameIndex);
 };
 
-// 处理拖拽开始
+// Handle drag start
 const handleDragStart = (event: MouseEvent, bandIndex: number, elementIndex: number) => {
   emit('dragStart', event, bandIndex, elementIndex, props.parentFrameIndex);
 };
 
-// 处理调整大小开始
+// Handle resize start
 const handleResizeStart = (event: MouseEvent, bandIndex: number, elementIndex: number) => {
   emit('resizeStart', event, bandIndex, elementIndex, props.parentFrameIndex);
 };

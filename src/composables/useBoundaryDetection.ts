@@ -1,20 +1,20 @@
 import { ref, computed, watch } from 'vue';
 
 export interface BoundaryConfig {
-  // 检测模式
+  // Detection mode
   realtime: boolean;
   onDrop: boolean;
   onResize: boolean;
-  // 检测行为
+  // Detection behavior
   autoCorrect: boolean;
   showWarning: boolean;
   preventOutOfBounds: boolean;
   suggestFix: boolean;
-  // 视觉反馈
+  // Visual feedback
   highlightOutOfBounds: boolean;
   showBoundaryLines: boolean;
   animateCorrection: boolean;
-  // 边界容差
+  // Boundary tolerance
   tolerance: number;
 }
 
@@ -41,23 +41,23 @@ export interface BoundaryFix {
 }
 
 export interface BoundaryState {
-  // 越界元素列表
+  // List of out-of-bounds elements
   outOfBoundsElements: BoundaryViolation[];
-  // 是否显示边界线
+  // Whether to show boundary lines
   showBoundaryLines: boolean;
-  // 边界线位置
+  // Boundary line positions
   boundaryLines: {
     left: number;
     right: number;
     top: number;
     bottom: number;
   };
-  // 是否正在检测
+  // Whether a check is in progress
   isChecking: boolean;
 }
 
 export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
-  // 配置
+  // Config
   const boundaryConfig = ref<BoundaryConfig>({
     realtime: true,
     onDrop: true,
@@ -73,7 +73,7 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
     ...config,
   });
 
-  // 状态
+  // State
   const boundaryState = ref<BoundaryState>({
     outOfBoundsElements: [],
     showBoundaryLines: false,
@@ -86,22 +86,22 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
     isChecking: false,
   });
 
-  // 计算属性：是否有越界元素
+  // Computed: whether there are any out-of-bounds elements
   const hasOutOfBoundsElements = computed(() =>
     boundaryState.value.outOfBoundsElements.length > 0
   );
 
-  // 计算属性：越界元素数量
+  // Computed: number of out-of-bounds elements
   const outOfBoundsCount = computed(() =>
     boundaryState.value.outOfBoundsElements.length
   );
 
-  // 计算属性：严重越界元素数量
+  // Computed: number of critically out-of-bounds elements
   const criticalOutOfBoundsCount = computed(() =>
     boundaryState.value.outOfBoundsElements.filter(v => v.severity === 'error').length
   );
 
-  // 检查元素是否越界
+  // Check whether an element is out of bounds
   const checkElementBounds = (
     element: { x: number; y: number; width: number; height: number },
     bounds: { left: number; right: number; top: number; bottom: number },
@@ -112,7 +112,7 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
     const violations: BoundaryViolation[] = [];
     const tolerance = boundaryConfig.value.tolerance;
 
-    // 检查左边界
+    // Check the left boundary
     if (element.x < bounds.left - tolerance) {
       violations.push({
         id: `${elementId}-left`,
@@ -127,12 +127,12 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
         suggestion: {
           action: 'move',
           newX: bounds.left,
-          description: '向右移动元素',
+          description: 'Move the element right',
         },
       });
     }
 
-    // 检查右边界
+    // Check the right boundary
     if (element.x + element.width > bounds.right + tolerance) {
       violations.push({
         id: `${elementId}-right`,
@@ -147,12 +147,12 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
         suggestion: {
           action: 'move',
           newX: bounds.right - element.width,
-          description: '向左移动元素',
+          description: 'Move the element left',
         },
       });
     }
 
-    // 检查上边界
+    // Check the top boundary
     if (element.y < bounds.top - tolerance) {
       violations.push({
         id: `${elementId}-top`,
@@ -167,12 +167,12 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
         suggestion: {
           action: 'move',
           newY: bounds.top,
-          description: '向下移动元素',
+          description: 'Move the element down',
         },
       });
     }
 
-    // 检查下边界
+    // Check the bottom boundary
     if (element.y + element.height > bounds.bottom + tolerance) {
       violations.push({
         id: `${elementId}-bottom`,
@@ -187,7 +187,7 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
         suggestion: {
           action: 'move',
           newY: bounds.bottom - element.height,
-          description: '向上移动元素',
+          description: 'Move the element up',
         },
       });
     }
@@ -195,7 +195,7 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
     return violations;
   };
 
-  // 检查所有元素
+  // Check all elements
   const checkAllElements = (
     bands: Array<{
       type: string;
@@ -248,7 +248,7 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
     return allViolations;
   };
 
-  // 检查单个元素
+  // Check a single element
   const checkSingleElement = (
     element: { x: number; y: number; width: number; height: number },
     bandHeight: number,
@@ -272,7 +272,7 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
       elementIndex
     );
 
-    // 更新该元素的违规状态
+    // Update the violation state for this element
     boundaryState.value.outOfBoundsElements = [
       ...boundaryState.value.outOfBoundsElements.filter(v => v.elementId !== elementId),
       ...violations,
@@ -281,7 +281,7 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
     return violations;
   };
 
-  // 获取元素的修复建议
+  // Get a fix suggestion for an element
   const getFixSuggestion = (
     element: { x: number; y: number; width: number; height: number },
     bandHeight: number,
@@ -300,32 +300,32 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
         return {
           action: 'move',
           newX: bounds.left,
-          description: '移动到左边界内',
+          description: 'Move inside the left boundary',
         };
       case 'right':
         return {
           action: 'move',
           newX: bounds.right - element.width,
-          description: '移动到右边界内',
+          description: 'Move inside the right boundary',
         };
       case 'top':
         return {
           action: 'move',
           newY: bounds.top,
-          description: '移动到上边界内',
+          description: 'Move inside the top boundary',
         };
       case 'bottom':
         return {
           action: 'move',
           newY: bounds.bottom - element.height,
-          description: '移动到下边界内',
+          description: 'Move inside the bottom boundary',
         };
       default:
         return null;
     }
   };
 
-  // 自动修复越界元素
+  // Auto-fix an out-of-bounds element
   const autoFixElement = (
     element: { x: number; y: number; width: number; height: number },
     violations: BoundaryViolation[]
@@ -356,7 +356,7 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
     return { x: newX, y: newY, width: newWidth, height: newHeight };
   };
 
-  // 批量修复所有越界元素
+  // Batch-fix all out-of-bounds elements
   const autoFixAllElements = (
     bands: Array<{
       type: string;
@@ -390,13 +390,13 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
       }),
     }));
 
-    // 清除已修复的违规
+    // Clear the fixed violations
     boundaryState.value.outOfBoundsElements = [];
 
     return fixedBands;
   };
 
-  // 高亮越界元素
+  // Highlight an out-of-bounds element
   const highlightElement = (elementId: string) => {
     const element = document.querySelector(`[data-element-id="${elementId}"]`);
     if (element) {
@@ -407,7 +407,7 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
     }
   };
 
-  // 显示边界线
+  // Show boundary lines
   const showBoundaryLines = (
     paperWidth: number,
     reportProperties: { leftMargin: number; rightMargin: number; topMargin: number; bottomMargin: number }
@@ -419,21 +419,21 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
       left: 0,
       right: contentWidth,
       top: 0,
-      bottom: 0, // 需要根据实际band高度计算
+      bottom: 0, // Needs to be calculated based on the actual band height
     };
   };
 
-  // 隐藏边界线
+  // Hide boundary lines
   const hideBoundaryLines = () => {
     boundaryState.value.showBoundaryLines = false;
   };
 
-  // 清除所有违规记录
+  // Clear all recorded violations
   const clearViolations = () => {
     boundaryState.value.outOfBoundsElements = [];
   };
 
-  // 获取违规摘要
+  // Get a violation summary
   const getViolationSummary = computed(() => {
     const violations = boundaryState.value.outOfBoundsElements;
     if (violations.length === 0) return null;
@@ -446,12 +446,12 @@ export function useBoundaryDetection(config?: Partial<BoundaryConfig>) {
       errors: errorCount,
       warnings: warningCount,
       message: errorCount > 0
-        ? `有 ${errorCount} 个元素严重越界，${warningCount} 个轻微越界`
-        : `有 ${warningCount} 个元素轻微越界`,
+        ? `${errorCount} element(s) are critically out of bounds, ${warningCount} slightly out of bounds`
+        : `${warningCount} element(s) are slightly out of bounds`,
     };
   });
 
-  // 更新配置
+  // Update the config
   const updateConfig = (newConfig: Partial<BoundaryConfig>) => {
     boundaryConfig.value = { ...boundaryConfig.value, ...newConfig };
   };

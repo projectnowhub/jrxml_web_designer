@@ -1,23 +1,23 @@
 /**
- * MCP Server - 主入口
+ * MCP Server - Main entry point
  *
- * 统一导出所有MCP相关工具、处理器和接口
+ * Unified export of all MCP-related tools, handlers, and interfaces
  */
 
-// Schema定义
+// Schema definitions
 export * from './schemas/toolSchemas';
 
-// 工具处理器
+// Tool handlers
 export * from './handlers';
 
-// AI服务
+// AI service
 export * from './aiService';
 
-// 确认处理器
+// Confirmation handler
 export * from './confirmHandler';
 
 // ============================================
-// 统一API接口
+// Unified API interface
 // ============================================
 
 import { MCPToolHandlers, executeMCPTool, type MCPContext, type MCPToolCall, type MCPToolResult } from './handlers';
@@ -27,7 +27,7 @@ import { ALL_MCP_TOOL_SCHEMAS, generateAIToolDefinitions } from './schemas/toolS
 import { useAIConfigManager } from '@/composables/useAIConfigManager';
 
 /**
- * MCP Server 主接口
+ * MCP Server main interface
  */
 export class MCPServer {
   private context: MCPContext;
@@ -39,14 +39,14 @@ export class MCPServer {
   }
 
   /**
-   * 更新上下文
+   * Update the context
    */
   updateContext(context: Partial<MCPContext>) {
     this.context = { ...this.context, ...context };
   }
 
   /**
-   * 处理用户输入
+   * Process user input
    */
   async processUserInput(userInput: string): Promise<{
     response: string;
@@ -54,10 +54,10 @@ export class MCPServer {
     error?: string;
   }> {
     try {
-      // 获取AI配置
+      // Get the AI configuration
       const { config } = useAIConfigManager();
 
-      // 调用AI服务
+      // Call the AI service
       const aiResponse = await processUserInput(
         userInput,
         this.conversationHistory,
@@ -73,24 +73,24 @@ export class MCPServer {
         };
       }
 
-      // 执行工具调用
+      // Execute tool calls
       const toolResults: MCPToolResult[] = [];
 
       for (const toolCall of aiResponse.toolCalls) {
-        // 检查是否需要确认
+        // Check whether confirmation is required
         if (shouldConfirm(toolCall)) {
           const confirmResponse = await this.confirmManager.requestConfirm(toolCall);
 
           if (!confirmResponse.confirmed) {
             toolResults.push({
               success: false,
-              error: `操作被用户拒绝: ${confirmResponse.reason || '未指定原因'}`
+              error: `Operation rejected by user: ${confirmResponse.reason || 'no reason specified'}`
             });
             continue;
           }
         }
 
-        // 执行工具
+        // Execute the tool
         const result = await executeMCPTool(toolCall, this.context);
         toolResults.push(result);
       }
@@ -110,17 +110,17 @@ export class MCPServer {
   }
 
   /**
-   * 直接执行工具（跳过AI解析）
+   * Execute a tool directly (skipping AI parsing)
    */
   async executeToolDirectly(toolCall: MCPToolCall): Promise<MCPToolResult> {
-    // 检查是否需要确认
+    // Check whether confirmation is required
     if (shouldConfirm(toolCall)) {
       const confirmResponse = await this.confirmManager.requestConfirm(toolCall);
 
       if (!confirmResponse.confirmed) {
         return {
           success: false,
-          error: `操作被用户拒绝: ${confirmResponse.reason || '未指定原因'}`
+          error: `Operation rejected by user: ${confirmResponse.reason || 'no reason specified'}`
         };
       }
     }
@@ -129,35 +129,35 @@ export class MCPServer {
   }
 
   /**
-   * 获取工具列表
+   * Get the list of tools
    */
   getAvailableTools() {
     return ALL_MCP_TOOL_SCHEMAS;
   }
 
   /**
-   * 获取AI模型可理解的工具定义
+   * Get tool definitions understandable by the AI model
    */
   getAIToolDefinitions() {
     return generateAIToolDefinitions();
   }
 
   /**
-   * 清空对话历史
+   * Clear the conversation history
    */
   clearHistory() {
     this.conversationHistory = [];
   }
 
   /**
-   * 获取对话历史
+   * Get the conversation history
    */
   getHistory(): Message[] {
     return [...this.conversationHistory];
   }
 
   /**
-   * 获取确认管理器
+   * Get the confirmation manager
    */
   getConfirmManager() {
     return this.confirmManager;
@@ -165,18 +165,18 @@ export class MCPServer {
 }
 
 // ============================================
-// 工厂函数
+// Factory functions
 // ============================================
 
 /**
- * 创建MCP Server实例
+ * Create an MCP Server instance
  */
 export function createMCPServer(context: MCPContext): MCPServer {
   return new MCPServer(context);
 }
 
 /**
- * 创建独立的MCP上下文（用于测试）
+ * Create a standalone MCP context (for testing)
  */
 export function createMockMCPContext(overrides: Partial<MCPContext> = {}): MCPContext {
   return {

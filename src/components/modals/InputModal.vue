@@ -12,8 +12,8 @@
         @keyup.esc="handleCancel"
       />
       <div class="input-actions">
-        <n-button type="default" @click="handleCancel">取消</n-button>
-        <n-button type="primary" @click="handleConfirm">确定</n-button>
+        <n-button type="default" @click="handleCancel">Cancel</n-button>
+        <n-button type="primary" @click="handleConfirm">OK</n-button>
       </div>
     </div>
   </div>
@@ -30,7 +30,7 @@ const props = defineProps({
   },
   title: {
     type: String,
-    default: '输入'
+    default: 'Input'
   },
   message: {
     type: String,

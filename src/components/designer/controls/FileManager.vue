@@ -81,7 +81,7 @@
       </div>
     </div>
 
-    <!-- 重命名弹窗 -->
+    <!-- Rename dialog -->
     <InputModal
       v-model:visible="showRenameModal"
       :title="t('fileManager.renameFile')"
@@ -90,7 +90,7 @@
       @confirm="handleConfirmRename"
     />
 
-    <!-- 删除确认弹窗 -->
+    <!-- Delete confirmation dialog -->
     <ConfirmModal
       v-model:visible="showDeleteModal"
       :title="t('fileManager.deleteFile')"
@@ -139,7 +139,7 @@ const currentFileIdRef = computed({
   set: (value: string | null) => emit('update:currentFileId', value)
 });
 
-// 文件管理相关状态
+// File management related state
 const showFileMenu = ref(false);
 const showFileSubmenu = ref(false);
 const fileMenuContainer = ref<HTMLElement | null>(null);
@@ -158,7 +158,7 @@ const {
   currentFileId: currentFileIdRef
 });
 
-// 计算属性：过滤后的文件列表
+// Computed property: filtered file list
 const filteredFiles = computed(() => {
   if (!fileFilterText.value) {
     return files.value;
@@ -168,20 +168,20 @@ const filteredFiles = computed(() => {
   );
 });
 
-// 格式化日期
+// Format the date
 function formatDate(date: Date | string | undefined) {
   if (!date) return '';
   const d = new Date(date);
   return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
 }
 
-// 切换文件菜单
+// Toggle the file menu
 function toggleFileMenu() {
   showFileMenu.value = !showFileMenu.value;
   showFileSubmenu.value = false;
 }
 
-// 切换文件列表子菜单
+// Toggle the file list submenu
 function toggleFileSubmenu() {
   showFileSubmenu.value = !showFileSubmenu.value;
   if (showFileSubmenu.value) {
@@ -189,20 +189,20 @@ function toggleFileSubmenu() {
   }
 }
 
-// 从子菜单选择文件
+// Select a file from the submenu
 function selectFileFromSubmenu(file: DesignerFile) {
   showFileSubmenu.value = false;
   showFileMenu.value = false;
   emit('load-file', file);
 }
 
-// 从子菜单重命名文件
+// Rename a file from the submenu
 function renameFileFromSubmenu(file: DesignerFile) {
   pendingFile.value = file;
   showRenameModal.value = true;
 }
 
-// 确认重命名
+// Confirm rename
 function handleConfirmRename(newName: string) {
   if (pendingFile.value && newName && newName !== pendingFile.value.name) {
     renameFile(pendingFile.value.id, newName);
@@ -210,13 +210,13 @@ function handleConfirmRename(newName: string) {
   pendingFile.value = null;
 }
 
-// 从子菜单删除文件
+// Delete a file from the submenu
 function deleteFileFromSubmenu(file: DesignerFile) {
   pendingFile.value = file;
   showDeleteModal.value = true;
 }
 
-// 确认删除
+// Confirm delete
 function handleConfirmDelete() {
   if (pendingFile.value) {
     deleteFile(pendingFile.value.id);
@@ -224,13 +224,13 @@ function handleConfirmDelete() {
   pendingFile.value = null;
 }
 
-// 创建新文件
+// Create a new file
 function createNewFile() {
   showFileMenu.value = false;
   emit('create-new-file');
 }
 
-// 打开本地文件
+// Open a local file
 function openLocalFile() {
   showFileMenu.value = false;
   const input = document.createElement('input');
@@ -243,14 +243,14 @@ function openLocalFile() {
       reader.onload = (e) => {
         try {
           const content = e.target?.result as string;
-          JSON.parse(content); // 验证JSON格式
+          JSON.parse(content); // Validate JSON format
           loadFile({
             id: null,
             name: file.name,
             content: content
           });
         } catch (error) {
-          console.error('加载文件失败:', error);
+          console.error('Failed to load file:', error);
           notification.error(t('fileManager.invalidFileFormat'));
         }
       };
@@ -260,24 +260,24 @@ function openLocalFile() {
   input.click();
 }
 
-// 保存当前文件到存储
+// Save the current file to storage
 function saveCurrentFileToStorage() {
   showFileMenu.value = false;
   emit('save-current-file');
 }
 
-// 另存为本地文件
+// Save as a local file
 function saveAsLocalFile() {
   showFileMenu.value = false;
   emit('save-as-file');
 }
 
-// 加载文件
+// Load a file
 function loadFile(fileData: any) {
   emit('load-file', fileData);
 }
 
-// 点击外部关闭菜单
+// Close the menu when clicking outside
 function handleClickOutside(event: MouseEvent) {
   if (fileMenuContainer.value && !fileMenuContainer.value.contains(event.target as Node)) {
     showFileMenu.value = false;
@@ -285,7 +285,7 @@ function handleClickOutside(event: MouseEvent) {
   }
 }
 
-// 监听点击事件
+// Listen for click events
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
   loadFilesFromStorage();

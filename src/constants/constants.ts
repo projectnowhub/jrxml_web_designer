@@ -1,27 +1,27 @@
-// 设计器常量定义
+// Designer constant definitions
 
-// 缩放相关常量
+// Zoom-related constants
 export const ZOOM_CONSTANTS = {
   DEFAULT_ZOOM: 1,
   ZOOM_LEVELS: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2],
   MIN_ZOOM: 0.25,
   MAX_ZOOM: 2,
-  OPTIMAL_ZOOM_MARGIN: 0.9, // 计算最佳缩放比例时的边距系数
+  OPTIMAL_ZOOM_MARGIN: 0.9, // margin coefficient used when calculating the optimal zoom ratio
 };
 
-// 面板尺寸常量
+// Panel size constants
 export const PANEL_CONSTANTS = {
   DEFAULT_BOTTOM_PANEL_HEIGHT: 320,
   DEFAULT_PROPERTY_PANEL_WIDTH: 320,
-  DEFAULT_LEFT_PANEL_WIDTH: 240, // 左侧面板默认宽度
-  LEFT_PANEL_MIN_WIDTH: 150, // 左侧面板最小宽度
-  LEFT_PANEL_MAX_WIDTH: 400, // 左侧面板最大宽度
+  DEFAULT_LEFT_PANEL_WIDTH: 240, // default width of the left panel
+  LEFT_PANEL_MIN_WIDTH: 150, // minimum width of the left panel
+  LEFT_PANEL_MAX_WIDTH: 400, // maximum width of the left panel
 };
 
-// 报表属性常量
+// Report property constants
 export const REPORT_CONSTANTS = {
-  DEFAULT_PAGE_WIDTH: 595, // A4宽度（像素）
-  DEFAULT_PAGE_HEIGHT: 842, // A4高度（像素）
+  DEFAULT_PAGE_WIDTH: 595, // A4 width (pixels)
+  DEFAULT_PAGE_HEIGHT: 842, // A4 height (pixels)
   DEFAULT_MARGIN: 20,
   DEFAULT_FONT_SIZE: 12,
   MIN_ELEMENT_WIDTH: 20,
@@ -30,24 +30,24 @@ export const REPORT_CONSTANTS = {
   MAX_BAND_HEIGHT: 800,
 };
 
-// 历史记录常量
+// History constants
 export const HISTORY_CONSTANTS = {
   MAX_HISTORY_SIZE: 50,
 };
 
-// 键盘导航常量
+// Keyboard navigation constants
 export const KEYBOARD_CONSTANTS = {
   ELEMENT_PASTE_OFFSET: 10,
   SECONDARY_AXIS_WEIGHT: 0.1,
 };
 
-// DOM操作常量
+// DOM operation constants
 export const DOM_CONSTANTS = {
-  CALCULATE_ZOOM_DELAY: 100, // 计算缩放比例的延迟时间（毫秒）
-  SCROLL_BAR_WIDTH: 40, // 滚动条宽度估算值
+  CALCULATE_ZOOM_DELAY: 100, // delay before calculating the zoom ratio (milliseconds)
+  SCROLL_BAR_WIDTH: 40, // estimated scrollbar width
 };
 
-// 边框样式常量
+// Border style constants
 export const BORDER_CONSTANTS = {
   THIN: 'Thin',
   MEDIUM: 'Medium',
@@ -55,13 +55,13 @@ export const BORDER_CONSTANTS = {
   DASHED: 'Dashed',
   DOTTED: 'Dotted',
   DOUBLE: 'Double',
-  // 边框宽度常量
+  // Border width constants
   THIN_WIDTH: 1,
   MEDIUM_WIDTH: 2,
   THICK_WIDTH: 4,
 };
 
-// 文本对齐常量
+// Text alignment constants
 export const TEXT_ALIGN_CONSTANTS = {
   LEFT: 'Left',
   CENTER: 'Center',
@@ -69,17 +69,17 @@ export const TEXT_ALIGN_CONSTANTS = {
   JUSTIFIED: 'Justified',
 };
 
-// 垂直对齐常量
+// Vertical alignment constants
 export const VERTICAL_ALIGN_CONSTANTS = {
   TOP: 'Top',
   MIDDLE: 'Middle',
   BOTTOM: 'Bottom',
 };
 
-// 字体常量
+// Font constants
 export const FONT_CONSTANTS = {
   DEFAULT_FONT_FAMILY: 'Noto Serif SC',
-  // 字体大小常量
+  // Font size constants
   DEFAULT_SIZE: 12,
   MIN_SIZE: 8,
   MAX_SIZE: 72,
@@ -89,7 +89,7 @@ export const FONT_CONSTANTS = {
   TINY_SIZE: 8,
 };
 
-// 元素类型常量
+// Element type constants
 export const ELEMENT_TYPE_CONSTANTS = {
   STATIC_TEXT: 'staticText',
   TEXT_FIELD: 'textField',
@@ -101,13 +101,13 @@ export const ELEMENT_TYPE_CONSTANTS = {
   FRAME: 'frame',
 };
 
-// 元素尺寸常量
+// Element size constants
 export const ELEMENT_CONSTANTS = {
   MIN_WIDTH: 20,
   MIN_HEIGHT: 10,
 };
 
-// Band类型常量
+// Band type constants
 export const BAND_TYPE_CONSTANTS = {
   TITLE: 'title',
   PAGE_HEADER: 'pageHeader',
@@ -121,7 +121,7 @@ export const BAND_TYPE_CONSTANTS = {
   NO_DATA: 'noData',
 };
 
-// Band默认高度常量
+// Band default height constants
 export const BAND_HEIGHT_CONSTANTS = {
   [BAND_TYPE_CONSTANTS.TITLE]: 80,
   [BAND_TYPE_CONSTANTS.PAGE_HEADER]: 50,
@@ -135,15 +135,15 @@ export const BAND_HEIGHT_CONSTANTS = {
   [BAND_TYPE_CONSTANTS.NO_DATA]: 50,
 };
 
-// Band相关常量
+// Band-related constants
 export const BAND_CONSTANTS = {
   MIN_HEIGHT: 20,
   DEFAULT_ADDITIONAL_MARGIN: 10,
   DETAIL_ADDITIONAL_MARGIN: 15,
-  SPACING: 0, // band之间的间距
+  SPACING: 0, // spacing between bands
 };
 
-// 评估时间常量
+// Evaluation time constants
 export const EVALUATION_TIME_CONSTANTS = {
   NOW: 'Now',
   REPORT: 'Report',
@@ -154,42 +154,42 @@ export const EVALUATION_TIME_CONSTANTS = {
   AUTO: 'Auto',
 };
 
-// 标尺相关常量
+// Ruler-related constants
 export const RULER_CONSTANTS = {
-  UNIT_SIZE: 5, // 基本单位，5px
-  MAJOR_TICK_INTERVAL: 25, // 主要刻度间隔，25px
-  LABEL_INTERVAL: 25, // 标签间隔，25px
+  UNIT_SIZE: 5, // base unit, 5px
+  MAJOR_TICK_INTERVAL: 25, // major tick interval, 25px
+  LABEL_INTERVAL: 25, // label interval, 25px
 };
 
-// UI尺寸常量
+// UI size constants
 export const UI_CONSTANTS = {
-  // 元素尺寸
+  // Element size
   DEFAULT_ELEMENT_WIDTH: 100,
   DEFAULT_ELEMENT_HEIGHT: 30,
   MIN_ELEMENT_SIZE: 20,
-  // 边框宽度
+  // Border width
   BORDER_THIN: 1,
   BORDER_MEDIUM: 2,
   BORDER_THICK: 4,
-  // 面板尺寸
+  // Panel size
   BOTTOM_PANEL_MIN_HEIGHT: 100,
   BOTTOM_PANEL_MAX_HEIGHT: 800,
   PROPERTY_PANEL_MIN_WIDTH: 200,
   PROPERTY_PANEL_MAX_WIDTH: 500,
-  // 标尺尺寸
+  // Ruler size
   RULER_WIDTH: 40,
   RULER_HEIGHT: 40,
   RULER_LABEL_SIZE: 10,
-  // 模态框尺寸
+  // Modal size
   MODAL_MAX_WIDTH: 800,
   MODAL_MAX_HEIGHT: 80,
   MODAL_PADDING: 20,
-  // 按钮尺寸
+  // Button size
   BUTTON_SMALL_HEIGHT: 30,
   BUTTON_SMALL_WIDTH: 30,
-  // 其他UI尺寸
+  // Other UI sizes
   LINE_HEIGHT: 1,
-  LINE_HEIGHT_PX: 20, // 行高像素值
+  LINE_HEIGHT_PX: 20, // line height in pixels
   TAB_BUTTON_HEIGHT: 40,
   RESIZE_HANDLE_SIZE: 10,
   RESIZE_HANDLE_WIDTH: 4,
@@ -198,9 +198,9 @@ export const UI_CONSTANTS = {
   BORDER_RADIUS_SMALL: 4,
   BORDER_RADIUS_MEDIUM: 6,
   BORDER_RADIUS_LARGE: 8,
-  // 网格大小
+  // Grid size
   GRID_SIZE: 10,
-  // 字体大小
+  // Font size
   FONT_SIZE_DEFAULT: 14,
   FONT_SIZE_SMALL: 13,
   FONT_SIZE_TINY: 12,
@@ -208,20 +208,20 @@ export const UI_CONSTANTS = {
   FONT_SIZE_MEDIUM: 15,
   FONT_SIZE_LABEL: 14,
   FONT_SIZE_HEADER: 16,
-  // 间距
+  // Spacing
   SMALL_MARGIN: 8,
   MEDIUM_MARGIN: 12,
   LARGE_MARGIN: 20,
   SMALL_GAP: 5,
   MEDIUM_GAP: 15,
-  // 输入框内边距
+  // Input field padding
   INPUT_PADDING_SMALL: '6px 12px',
   INPUT_PADDING_MEDIUM: '8px 16px',
-  // 面板内边距
+  // Panel padding
   PANEL_PADDING: 16,
-  // DOM操作延迟
+  // DOM operation delay
   DOM_RENDER_DELAY: 100,
-  // 键盘操作偏移量
+  // Keyboard operation offset
   ELEMENT_PASTE_OFFSET: 10,
   SECONDARY_AXIS_WEIGHT: 0.1,
 };

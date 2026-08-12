@@ -249,7 +249,7 @@
 										<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
 									</box>
 									<textElement textAlignment="Center" verticalAlignment="Middle"/>
-									<text><![CDATA[时间字段]]></text>
+									<text><![CDATA[Time Field]]></text>
 								</staticText>
 							</jr:tableHeader>
 							<jr:tableFooter height="30" rowSpan="1"/>

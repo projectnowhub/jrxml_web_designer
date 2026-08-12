@@ -23,12 +23,12 @@ export async function loadXsdSchema(): Promise<string> {
   try {
     const response = await fetch('./jasperreport.xsd');
     if (!response.ok) {
-      throw new Error(`无法加载XSD文件: ${response.status}`);
+      throw new Error(`Failed to load XSD file: ${response.status}`);
     }
     xsdContent = await response.text();
     return xsdContent;
   } catch (error) {
-    console.error('加载XSD Schema失败:', error);
+    console.error('Failed to load XSD schema:', error);
     throw error;
   }
 }
@@ -81,7 +81,7 @@ function parseXmlLocal(xmlText: string): { document: Document | null; error: str
     const doc = parser.parseFromString(xmlText, 'application/xml');
     const parserError = doc.querySelector('parsererror');
     if (parserError) {
-      return { document: null, error: parserError.textContent || 'XML解析错误' };
+      return { document: null, error: parserError.textContent || 'XML parse error' };
     }
     return { document: doc, error: null };
   } catch (error) {
@@ -161,13 +161,13 @@ function validateElementRecursive(
 
       const attrLocalName = attr.localName || attr.name.split(':')[1] || attr.name;
 
-      // 如果属性不在允许列表中，也不在已知有效属性白名单中，则报告错误
+      // If the attribute is neither in the allowed list nor in the known-valid attribute whitelist, report an error
       if (!allowedAttributes.has(attrLocalName) && !knownValidAttrs.includes(attrLocalName)) {
         const position = findElementPositionInXml(xmlText, nodeName, thisElementOccurrence);
         errors.push({
           line: position.line,
           column: position.column,
-          message: `元素 '${nodeName}' 包含未知属性 '${attrLocalName}'`,
+          message: `Element '${nodeName}' contains unknown attribute '${attrLocalName}'`,
           severity: 'error',
           code: 'XML_UNEXPECTED_ATTRIBUTE',
           elementName: nodeName,
@@ -197,7 +197,7 @@ export async function validateJRXML(xmlContent: string): Promise<ValidationResul
         errors: [{
           line: 0,
           column: 0,
-          message: `XML解析错误: ${parseResult.error}`,
+          message: `XML parse error: ${parseResult.error}`,
           severity: 'fatal',
           code: 'XML_PARSE_ERROR'
         }]
@@ -215,13 +215,13 @@ export async function validateJRXML(xmlContent: string): Promise<ValidationResul
       errors
     };
   } catch (error) {
-    console.error('XSD验证失败:', error);
+    console.error('XSD validation failed:', error);
     return {
       valid: false,
       errors: [{
         line: 0,
         column: 0,
-        message: `验证过程发生错误: ${String(error)}`,
+        message: `An error occurred during validation: ${String(error)}`,
         severity: 'fatal',
         code: 'VALIDATION_ERROR'
       }]
@@ -234,15 +234,15 @@ export function clearXsdCache(): void {
 }
 
 /**
- * 允许的属性信息
+ * Information about an allowed attribute
  */
 export interface AllowedAttributeInfo {
   required: boolean;
 }
 
 /**
- * 已知有效的属性白名单
- * 这些属性虽然在 XSD 规范中未声明，但在实际使用中是有效的
+ * Whitelist of known-valid attributes
+ * These attributes are not declared in the XSD spec, but are valid in practice
  */
 const KNOWN_VALID_ATTRIBUTES: Record<string, string[]> = {
   'columnGroup': ['width'],
@@ -250,7 +250,7 @@ const KNOWN_VALID_ATTRIBUTES: Record<string, string[]> = {
 };
 
 /**
- * 从 XSD 中收集指定元素允许的属性集合（包含是否必需的信息）
+ * Collect the set of attributes allowed for a given element from the XSD (including whether each is required)
  */
 export async function getAllowedAttributesFromXsd(elementName: string): Promise<Map<string, AllowedAttributeInfo>> {
   const xsdText = await loadXsdSchema();
@@ -258,7 +258,7 @@ export async function getAllowedAttributesFromXsd(elementName: string): Promise<
 }
 
 /**
- * 自动修复结果
+ * Auto-fix result
  */
 export interface AutoFixResult {
   fixed: boolean;
@@ -276,7 +276,7 @@ export interface AutoFixResult {
 }
 
 /**
- * 自动修复 JRXML，删除不符合 XSD 规范的属性
+ * Auto-fix a JRXML by removing attributes that don't conform to the XSD spec
  */
 export async function autoFixJRXML(xmlContent: string): Promise<AutoFixResult> {
   const fixes: AutoFixResult['fixes'] = [];
@@ -299,7 +299,7 @@ export async function autoFixJRXML(xmlContent: string): Promise<AutoFixResult> {
     const doc = parseResult.document;
     const root = doc.documentElement;
 
-    // 递归遍历并删除不合法的属性
+    // Recursively traverse and remove invalid attributes
     const removeInvalidAttributes = (xmlNode: Element, depth: number = 0): void => {
       if (depth > 20) return;
 
@@ -320,19 +320,19 @@ export async function autoFixJRXML(xmlContent: string): Promise<AutoFixResult> {
           const attrInfo = allowedAttributes.get(attrLocalName);
           const isKnownValid = knownValidAttrs.includes(attrLocalName);
 
-          // 如果属性不在允许列表中，且不在已知有效属性白名单中
+          // If the attribute is neither in the allowed list nor in the known-valid attribute whitelist
           if (!attrInfo && !isKnownValid) {
             const lineNumber = getLineNumber(xmlForValidation, xmlForValidation.indexOf(` ${attrLocalName}="`) !== -1
               ? xmlForValidation.indexOf(` ${attrLocalName}="`)
               : xmlForValidation.indexOf(`\n${attrLocalName}="`));
 
-            // 对于某些已知的必须属性，添加警告而不是删除
+            // For certain known-required attributes, add a warning instead of removing them
             const knownRequiredAttrs = ['width', 'height', 'x', 'y'];
             if (knownRequiredAttrs.includes(attrLocalName)) {
               warnings.push({
                 elementName: nodeName,
                 attributeName: attrLocalName,
-                message: `属性 '${attrLocalName}' 不在XSD规范中，但可能是必需的。请手动检查。`
+                message: `Attribute '${attrLocalName}' is not in the XSD spec, but may be required. Please check manually.`
               });
             } else {
               attributesToRemove.push(attr.name);
@@ -345,13 +345,13 @@ export async function autoFixJRXML(xmlContent: string): Promise<AutoFixResult> {
           }
         }
 
-        // 删除不合法的属性
+        // Remove invalid attributes
         for (const attrName of attributesToRemove) {
           xmlNode.removeAttribute(attrName);
         }
       }
 
-      // 递归处理子元素
+      // Recursively process child elements
       for (const child of Array.from(xmlNode.children)) {
         removeInvalidAttributes(child, depth + 1);
       }
@@ -359,11 +359,11 @@ export async function autoFixJRXML(xmlContent: string): Promise<AutoFixResult> {
 
     removeInvalidAttributes(root);
 
-    // 序列化修复后的 XML
+    // Serialize the fixed XML
     const serializer = new XMLSerializer();
     let fixedContent = serializer.serializeToString(doc);
 
-    // 添加 XML 声明（如果缺失）
+    // Add the XML declaration (if missing)
     if (!fixedContent.startsWith('<?xml')) {
       fixedContent = '<?xml version="1.0" encoding="UTF-8"?>\n' + fixedContent;
     }
@@ -375,7 +375,7 @@ export async function autoFixJRXML(xmlContent: string): Promise<AutoFixResult> {
       warnings
     };
   } catch (error) {
-    console.error('自动修复失败:', error);
+    console.error('Auto-fix failed:', error);
     return {
       fixed: false,
       fixedContent: xmlContent,

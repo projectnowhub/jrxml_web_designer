@@ -10,9 +10,9 @@ interface NotificationItem {
 const notifications = ref<NotificationItem[]>([]);
 let nextId = 1;
 
-// 创建通知容器
+// Create the notification container
 const createNotificationContainer = () => {
-  // 检查是否已存在通知容器
+  // Check whether a notification container already exists
   let container = document.getElementById('notification-container');
   if (!container) {
     container = document.createElement('div');
@@ -26,7 +26,7 @@ const createNotificationContainer = () => {
   return container;
 };
 
-// 创建通知元素
+// Create the notification element
 const createNotificationElement = (notification: NotificationItem) => {
   const container = createNotificationContainer();
   
@@ -95,7 +95,7 @@ const createNotificationElement = (notification: NotificationItem) => {
   
   container.appendChild(notificationElement);
   
-  // 自动关闭
+  // Auto-close
   if (notification.duration && notification.duration > 0) {
     setTimeout(() => {
       if (container.contains(notificationElement)) {
@@ -108,7 +108,7 @@ const createNotificationElement = (notification: NotificationItem) => {
   return notificationElement;
 };
 
-// 移除通知
+// Remove a notification
 const removeNotification = (id: number) => {
   const index = notifications.value.findIndex(n => n.id === id);
   if (index !== -1) {
@@ -116,7 +116,7 @@ const removeNotification = (id: number) => {
   }
 };
 
-// 显示通知
+// Show a notification
 const showNotification = (
   message: string, 
   type: 'success' | 'error' | 'info' = 'info',
@@ -135,17 +135,17 @@ const showNotification = (
   return notification.id;
 };
 
-// 成功通知
+// Success notification
 const success = (message: string, duration?: number) => {
   return showNotification(message, 'success', duration);
 };
 
-// 错误通知
+// Error notification
 const error = (message: string, duration?: number) => {
   return showNotification(message, 'error', duration);
 };
 
-// 信息通知
+// Info notification
 const info = (message: string, duration?: number) => {
   return showNotification(message, 'info', duration);
 };

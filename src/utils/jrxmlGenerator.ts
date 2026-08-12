@@ -1,4 +1,4 @@
-// 导入类型定义
+// Import type definitions
 import type { DesignElement, BandType, Band, ReportGroup } from "../types";
 import type { ReportProperties, Field, Parameter } from "./jrxml/types";
 import { buildJasperReportOpenTag } from "./jrxml/xmlBuilder";
@@ -7,15 +7,15 @@ import { generateUUID } from "./jrxml/uuidGenerator";
 
 export type { ReportProperties, Field, Parameter } from "./jrxml/types";
 
-// 默认字体名称
+// Default font name
 const DEFAULT_FONT = "Noto Sans SC";
 
-// 辅助函数：确保坐标值为整数
+// Helper function: ensure a coordinate value is an integer
 function toInt(value: any): number {
   return parseInt(value as string) || 0;
 }
 
-// 生成reportElement通用属性
+// Generate the common reportElement attributes
 function generateReportElementAttrs(element: any): string {
   let attrs = ` x="${toInt(element.x)}" y="${toInt(element.y)}" width="${toInt(element.width)}" height="${toInt(element.height)}"`;
   if (element.uuid) attrs += ` uuid="${element.uuid}"`;
@@ -31,7 +31,7 @@ function generateReportElementAttrs(element: any): string {
   return attrs;
 }
 
-// 生成reportElement子元素（printWhenExpression, styleExpression, property, propertyExpression）
+// Generate reportElement child elements (printWhenExpression, styleExpression, property, propertyExpression)
 function generateReportElementChildren(element: any): string {
   let xml = '';
   if (element.printWhenExpression) {
@@ -40,7 +40,7 @@ function generateReportElementChildren(element: any): string {
   if (element.styleExpression) {
     xml += `<styleExpression><![CDATA[${element.styleExpression}]]></styleExpression>`;
   }
-  // 生成property元素
+  // Generate property elements
   if (element.properties && element.properties.length > 0) {
     element.properties.forEach((prop: any) => {
       if (prop.name) {
@@ -48,7 +48,7 @@ function generateReportElementChildren(element: any): string {
       }
     });
   }
-  // 生成propertyExpression元素
+  // Generate propertyExpression elements
   if (element.propertyExpressions && element.propertyExpressions.length > 0) {
     element.propertyExpressions.forEach((prop: any) => {
       if (prop.name) {
@@ -59,7 +59,7 @@ function generateReportElementChildren(element: any): string {
   return xml;
 }
 
-// 生成JRXML内容
+// Generate JRXML content
 export function generateJRXMLContent(
   properties: ReportProperties,
   bands: Band[],
@@ -71,7 +71,7 @@ export function generateJRXMLContent(
   reportProperties: any[] = [],
   groups: ReportGroup[] = [],
 ): string {
-  // 确保页边距有默认值，如果没有设置则使用0
+  // Ensure the page margins have default values; use 0 if not set
   const safeProperties = {
     ...properties,
     leftMargin: properties.leftMargin || 0,
@@ -80,7 +80,7 @@ export function generateJRXMLContent(
     bottomMargin: properties.bottomMargin || 0,
   };
 
-  // 创建字段名称的映射，用于快速查找
+  // Build a map of field names for quick lookup
   const fieldMap = new Map<string, Field>();
   fields.forEach((field) => {
     if (field.name) {
@@ -88,16 +88,16 @@ export function generateJRXMLContent(
     }
   });
 
-  // 遍历所有元素，收集使用的字段名
+  // Walk all elements and collect the field names in use
   const usedFieldNames = new Set<string>();
   bands.forEach((band) => {
     band.elements.forEach((element) => {
-      // 也检查表达式中是否包含字段引用
+      // Also check whether expressions contain field references
       if (element.type === "textField" && element.expression) {
         const fieldMatches = element.expression.match(/\$F\{([^}]+)\}/g);
         if (fieldMatches) {
           fieldMatches.forEach((match) => {
-            const fieldName = match.substring(3, match.length - 1); // 去掉 $F{ 和 }
+            const fieldName = match.substring(3, match.length - 1); // Strip the $F{ and }
             usedFieldNames.add(fieldName);
           });
         }
@@ -105,24 +105,24 @@ export function generateJRXMLContent(
     });
   });
 
-  // 添加缺失的字段到字段列表
+  // Add any missing fields to the field list
   usedFieldNames.forEach((fieldName) => {
     if (!fieldMap.has(fieldName)) {
       fieldMap.set(fieldName, { name: fieldName, class: "java.lang.String" });
     }
   });
 
-  // 获取更新后的字段列表
+  // Get the updated field list
   const updatedFields = Array.from(fieldMap.values());
 
-  // 构建JRXML，按照XSD规范的严格顺序
+  // Build the JRXML, following the strict ordering required by the XSD spec
   let jrxml = buildJasperReportOpenTag(safeProperties);
 
   // ============================================================
-  // 顺序1: properties (报表属性)
+  // Order 1: properties (report properties)
   // ============================================================
   if (reportProperties && reportProperties.length > 0) {
-    jrxml += "<!-- 报表属性 -->";
+    jrxml += "<!-- Report properties -->";
     reportProperties.forEach((prop) => {
       if (prop.name && prop.value) {
         jrxml += `<property name="${prop.name}" value="${prop.value}"/>`;
@@ -131,27 +131,27 @@ export function generateJRXMLContent(
   }
 
   // ============================================================
-  // 顺序5: reportFonts (报表字体定义)
+  // Order 5: reportFonts (report font definitions)
   // ============================================================
-  jrxml += "<!-- 报表字体定义 -->";
+  jrxml += "<!-- Report font definitions -->";
   jrxml += `<reportFont name="reportFont" fontName="${DEFAULT_FONT}"/>`;
 
   // ============================================================
-  // 顺序6: styles (样式定义)
+  // Order 6: styles (style definitions)
   // ============================================================
   if (styles && styles.length > 0) {
-    jrxml += "<!-- 表格样式 -->";
+    jrxml += "<!-- Table styles -->";
     styles.forEach((style) => {
       jrxml += generateStyleXML(style);
     });
   } else {
-    // 如果没有提供样式，使用默认样式
+    // Use default styles if none were provided
     jrxml += generateDefaultTableStylesXML();
   }
 
-  // 添加参数定义
+  // Add parameter definitions
   if (parameters.length > 0) {
-    jrxml += "<!-- 报表参数定义 -->";
+    jrxml += "<!-- Report parameter definitions -->";
     parameters.forEach((param) => {
       if (param.name && param.class) {
         jrxml += `<parameter name="${param.name}" class="${param.class}">`;
@@ -163,14 +163,14 @@ export function generateJRXMLContent(
     });
   }
 
-  // 添加主报表查询语句
+  // Add the main report's query statement
   if (properties.query && properties.query.text) {
     jrxml += `<queryString language="${properties.query.language || "sql"}"><![CDATA[${properties.query.text}]]></queryString>`;
   }
 
-  // 添加子数据集定义
+  // Add sub-dataset definitions
   if (subDatasets.length > 0) {
-    jrxml += "<!-- 子数据集定义 -->";
+    jrxml += "<!-- Sub-dataset definitions -->";
     subDatasets.forEach((dataset) => {
       if (dataset.name) {
         let subDatasetAttrs = `name="${dataset.name}" uuid="${dataset.uuid || generateUUID()}"`;
@@ -185,25 +185,25 @@ export function generateJRXMLContent(
         }
         jrxml += `<subDataset ${subDatasetAttrs}>
 `;
-        // 添加数据集属性
+        // Add dataset properties
         if (dataset.properties) {
           Object.entries(dataset.properties).forEach(([key, value]) => {
             jrxml += `<property name="${key}" value="${value}"/>`;
           });
         }
 
-        // 添加查询语句
+        // Add the query statement
         if (dataset.query && dataset.query.text) {
           jrxml += `<queryString language="${dataset.query.language || "sql"}"><![CDATA[${dataset.query.text}]]></queryString>`;
         }
 
-        // 添加字段定义
+        // Add field definitions
         if (dataset.fields && dataset.fields.length > 0) {
           dataset.fields.forEach((field: any) => {
             if (field.name && field.class) {
               jrxml += `<field name="${field.name}" class="${field.class}">`;
 
-              // 添加字段属性
+              // Add field properties
               if (field.properties) {
                 Object.entries(field.properties).forEach(([key, value]) => {
                   jrxml += `<property name="${key}" value="${value}"/>`;
@@ -219,12 +219,12 @@ export function generateJRXMLContent(
     });
   }
 
-  // 添加字段定义
+  // Add field definitions
   if (updatedFields.length > 0) {
-    jrxml += "<!-- 数据字段定义 -->";
+    jrxml += "<!-- Data field definitions -->";
     updatedFields.forEach((field) => {
       if (field.name && field.class) {
-        // 检查是否有字段属性需要生成
+        // Check whether there are field properties to generate
         if (
           field.properties &&
           typeof field.properties === "object" &&
@@ -244,9 +244,9 @@ export function generateJRXMLContent(
     });
   }
 
-  // 添加报表变量定义
+  // Add report variable definitions
   if (variables.length > 0) {
-    jrxml += "<!-- 报表变量定义 -->";
+    jrxml += "<!-- Report variable definitions -->";
     variables.forEach((variable) => {
       if (variable.name && variable.class) {
         let attrs = `name="${variable.name}" class="${variable.class}" uuid="${generateUUID()}"`;
@@ -256,15 +256,15 @@ export function generateJRXMLContent(
         ) {
           attrs += ` calculation="${variable.calculationType}"`;
         }
-        // 添加incrementType属性（如果不是默认值"None"）
+        // Add the incrementType attribute (if not the default value "None")
         if (variable.incrementType && variable.incrementType !== "None") {
           attrs += ` incrementType="${variable.incrementType}"`;
         }
-        // 添加incrementGroup属性（如果存在）
+        // Add the incrementGroup attribute (if present)
         if (variable.incrementGroup) {
           attrs += ` incrementGroup="${variable.incrementGroup}"`;
         }
-        // 添加calculationGroup属性（如果存在）
+        // Add the calculationGroup attribute (if present)
         if (variable.calculationGroup) {
           attrs += ` calculationGroup="${variable.calculationGroup}"`;
         }
@@ -274,7 +274,7 @@ export function generateJRXMLContent(
         if (variable.resetGroup) {
           attrs += ` resetGroup="${variable.resetGroup}"`;
         }
-        // 添加isInitialized属性（如果不是默认值false）
+        // Add the isInitialized attribute (if not the default value false)
         if (variable.isInitialized) {
           attrs += ` isInitialized="true"`;
         }
@@ -290,26 +290,26 @@ export function generateJRXMLContent(
     });
   }
 
-  // 添加报表分组定义
+  // Add report group definitions
   if (groups.length > 0) {
-    jrxml += "<!-- 报表分组定义 -->";
+    jrxml += "<!-- Report group definitions -->";
     groups.forEach((group) => {
       if (group.name) {
         let groupAttrs = `name="${group.name}" uuid="${generateUUID()}"`;
         if (group.isStartNewPage) groupAttrs += ' isStartNewPage="true"';
-        // 添加isStartNewColumn属性（如果不是默认值false）
+        // Add the isStartNewColumn attribute (if not the default value false)
         if (group.isStartNewColumn) groupAttrs += ' isStartNewColumn="true"';
         if (group.isRepeatHeader) groupAttrs += ' isRepeatHeader="true"';
-        // 添加isReprintHeaderOnEachPage属性（如果不是默认值false）
+        // Add the isReprintHeaderOnEachPage attribute (if not the default value false)
         if (group.isReprintHeaderOnEachPage) groupAttrs += ' isReprintHeaderOnEachPage="true"';
         if (group.isResetPageNumber) groupAttrs += ' isResetPageNumber="true"';
-        // 添加isHideColumnHeader属性（如果不是默认值false）
+        // Add the isHideColumnHeader attribute (if not the default value false)
         if (group.isHideColumnHeader) groupAttrs += ' isHideColumnHeader="true"';
-        // 添加isKeepTogether属性（如果不是默认值false）
+        // Add the isKeepTogether attribute (if not the default value false)
         if (group.isKeepTogether) groupAttrs += ' isKeepTogether="true"';
-        // 添加isKeepFooterTogether属性（如果不是默认值false）
+        // Add the isKeepFooterTogether attribute (if not the default value false)
         if (group.isKeepFooterTogether) groupAttrs += ' isKeepFooterTogether="true"';
-        // 添加minHeightToStartNewPage属性（如果不是默认值0）
+        // Add the minHeightToStartNewPage attribute (if not the default value 0)
         if (group.minHeightToStartNewPage && group.minHeightToStartNewPage > 0) {
           groupAttrs += ` minHeightToStartNewPage="${group.minHeightToStartNewPage}"`;
         }
@@ -348,29 +348,29 @@ export function generateJRXMLContent(
     });
   }
 
-  // 添加报表区域
+  // Add report bands
   bands.forEach((band) => {
     if (band.elements.length > 0 || band.height > 0) {
       jrxml += `<${band.type}>`;
 
-      // 根据XSD规范，height属性应该在band元素上，但band不允许uuid属性
+      // Per the XSD spec, the height attribute belongs on the band element, but band does not allow a uuid attribute
       let bandAttributes = `height="${band.height}"`;
 
-      // 优先使用非过时的splitType属性，只有在没有splitType属性时才使用过时的isSplitAllowed属性作为fallback
+      // Prefer the non-deprecated splitType attribute; only fall back to the deprecated isSplitAllowed attribute if splitType is absent
       if (band.splitType) {
-        // 如果已经指定了splitType属性，直接使用
+        // If splitType is already specified, use it directly
         bandAttributes += ` splitType="${band.splitType}"`;
       } else if (band.isSplitAllowed !== undefined) {
-        // 只有在没有splitType属性时才使用过时的isSplitAllowed属性
+        // Only use the deprecated isSplitAllowed attribute if splitType is absent
         const splitTypeValue = band.isSplitAllowed ? "Stretch" : "Prevent";
         bandAttributes += ` splitType="${splitTypeValue}"`;
       }
 
       jrxml += `<band ${bandAttributes}>`;
 
-      // 添加区域内的元素，根据band类型验证元素位置
+      // Add the elements within the band, validating element positions per the band type
       band.elements.forEach((element) => {
-        // 为每个元素验证位置，使用当前band类型的高度限制
+        // Validate the position of each element using the current band type's height limit
         const validatedElement = validateElementPosition(element);
         jrxml += generateElementXML(validatedElement);
       });
@@ -383,50 +383,50 @@ export function generateJRXMLContent(
   return jrxml;
 }
 
-// 生成默认表格样式XML
+// Generate the default table styles XML
 function generateDefaultTableStylesXML(): string {
-  return `<!-- 默认表格样式 --><style name="Table_TH" mode="Opaque" backcolor="#F0F8FF"><box><pen lineWidth="0.5" lineColor="#000000"/><topPen lineWidth="0.5" lineColor="#000000"/><leftPen lineWidth="0.5" lineColor="#000000"/><bottomPen lineWidth="0.5" lineColor="#000000"/><rightPen lineWidth="0.5" lineColor="#000000"/></box></style><style name="Table_CH" mode="Opaque" backcolor="#BFE1FF"><box><pen lineWidth="0.5" lineColor="#000000"/><topPen lineWidth="0.5" lineColor="#000000"/><leftPen lineWidth="0.5" lineColor="#000000"/><bottomPen lineWidth="0.5" lineColor="#000000"/><rightPen lineWidth="0.5" lineColor="#000000"/></box></style><style name="Table_TD" mode="Opaque" backcolor="#FFFFFF"><box><pen lineWidth="0.5" lineColor="#000000"/><topPen lineWidth="0.5" lineColor="#000000"/><leftPen lineWidth="0.5" lineColor="#000000"/><bottomPen lineWidth="0.5" lineColor="#000000"/><rightPen lineWidth="0.5" lineColor="#000000"/></box></style>`;
+  return `<!-- Default table styles --><style name="Table_TH" mode="Opaque" backcolor="#F0F8FF"><box><pen lineWidth="0.5" lineColor="#000000"/><topPen lineWidth="0.5" lineColor="#000000"/><leftPen lineWidth="0.5" lineColor="#000000"/><bottomPen lineWidth="0.5" lineColor="#000000"/><rightPen lineWidth="0.5" lineColor="#000000"/></box></style><style name="Table_CH" mode="Opaque" backcolor="#BFE1FF"><box><pen lineWidth="0.5" lineColor="#000000"/><topPen lineWidth="0.5" lineColor="#000000"/><leftPen lineWidth="0.5" lineColor="#000000"/><bottomPen lineWidth="0.5" lineColor="#000000"/><rightPen lineWidth="0.5" lineColor="#000000"/></box></style><style name="Table_TD" mode="Opaque" backcolor="#FFFFFF"><box><pen lineWidth="0.5" lineColor="#000000"/><topPen lineWidth="0.5" lineColor="#000000"/><leftPen lineWidth="0.5" lineColor="#000000"/><bottomPen lineWidth="0.5" lineColor="#000000"/><rightPen lineWidth="0.5" lineColor="#000000"/></box></style>`;
 }
 
-// 生成样式XML
+// Generate style XML
 function generateStyleXML(style: any): string {
   if (!style.name) return "";
 
   let xml = `<style name="${style.name}"`;
 
-  // 添加parentStyle属性（样式继承）
+  // Add the parentStyle attribute (style inheritance)
   if (style.parentStyle) {
     xml += ` parentStyle="${style.parentStyle}"`;
   }
 
-  // 添加模式属性
+  // Add the mode attribute
   if (style.mode) {
     xml += ` mode="${style.mode}"`;
   }
 
-  // 添加背景颜色属性
+  // Add the background color attribute
   if (style.backcolor) {
     xml += ` backcolor="${style.backcolor}"`;
   }
 
-  // 添加前景颜色属性
+  // Add the foreground color attribute
   if (style.forecolor) {
     xml += ` forecolor="${style.forecolor}"`;
   }
 
   xml += `>`;
 
-  // 添加条件样式表达式
+  // Add the conditional style expression
   if (style.conditionExpression) {
     xml += `<conditionExpression><![CDATA[${style.conditionExpression}]]></conditionExpression>`;
   }
 
-  // 添加box元素
+  // Add the box element
   if (style.box) {
     xml += generateBoxXML(style.box, style);
   }
 
-  // 添加textElement元素（如果有文本对齐或垂直对齐设置）
+  // Add the textElement element (if text alignment or vertical alignment is set)
   if (style.textAlignment || style.verticalAlignment) {
     xml += `<textElement`;
     if (style.textAlignment) {
@@ -437,7 +437,7 @@ function generateStyleXML(style: any): string {
     }
     xml += `>`;
 
-    // 添加font元素
+    // Add the font element
     if (
       style.fontFamily ||
       style.fontSize ||
@@ -465,7 +465,7 @@ function generateStyleXML(style: any): string {
     xml += `</textElement>`;
   }
 
-  // 添加条件样式
+  // Add conditional styles
   if (style.conditionalStyles && style.conditionalStyles.length > 0) {
     style.conditionalStyles.forEach((cs: any) => {
       let csAttrs = "";
@@ -514,7 +514,7 @@ function generateStyleXML(style: any): string {
   return xml;
 }
 
-// 生成元素XML
+// Generate element XML
 function generateElementXML(element: any): string {
   switch (element.type) {
     case "empty":
@@ -560,12 +560,12 @@ function generateElementXML(element: any): string {
   }
 }
 
-// 生成box元素XML
+// Generate box element XML
 function generateBoxXML(box: any, element: any = {}): string {
-  // 如果没有box对象，创建一个临时对象
+  // If there's no box object, create a temporary one
   const boxData = box || {};
 
-  // 检查直接存储在元素根级别的边框属性（向后兼容）
+  // Check for border attributes stored directly at the element's root level (for backward compatibility)
   if (
     !boxData.pen &&
     (element.borderWidth || element.borderStyle || element.borderColor)
@@ -577,7 +577,7 @@ function generateBoxXML(box: any, element: any = {}): string {
     };
   }
 
-  // 检查是否有任何边距设置
+  // Check whether any padding is set
   const hasPadding =
     boxData.padding !== undefined &&
     boxData.padding !== "" &&
@@ -599,7 +599,7 @@ function generateBoxXML(box: any, element: any = {}): string {
     boxData.rightPadding !== "" &&
     boxData.rightPadding !== 0;
 
-  // 检查pen格式的边框数据（不过时）
+  // Check for pen-format border data (not deprecated)
   const hasTopPen =
     boxData.topPen &&
     boxData.topPen.lineWidth !== undefined &&
@@ -621,13 +621,13 @@ function generateBoxXML(box: any, element: any = {}): string {
     boxData.pen.lineWidth !== undefined &&
     boxData.pen.lineWidth > 0;
 
-  // 检查直接格式的边框数据（过时，但向后兼容）
+  // Check for direct-format border data (deprecated, but kept for backward compatibility)
   const hasGlobalBorderWidth =
     boxData.borderWidth !== undefined && boxData.borderWidth > 0;
   const hasGlobalBorderStyle =
     boxData.borderStyle !== undefined && boxData.borderStyle !== "";
 
-  // 如果没有任何边框和边距设置，则不生成box标签
+  // If there's no border or padding set at all, don't generate the box tag
   if (
     !hasPen &&
     !hasTopPen &&
@@ -647,7 +647,7 @@ function generateBoxXML(box: any, element: any = {}): string {
 
   let xml = "<box";
 
-  // 添加非过时的box属性（padding相关）
+  // Add non-deprecated box attributes (padding-related)
   if (boxData.padding !== undefined && boxData.padding !== "") {
     const paddingValue = boxData.padding === "" ? 0 : boxData.padding;
     xml += ` padding="${paddingValue}"`;
@@ -674,8 +674,8 @@ function generateBoxXML(box: any, element: any = {}): string {
 
   xml += ">";
 
-  // 优先使用pen格式（不过时），否则使用直接格式（过时，向后兼容）
-  // 1. 处理全局边框
+  // Prefer the pen format (not deprecated); otherwise fall back to the direct format (deprecated, for backward compatibility)
+  // 1. Handle the global border
   if (hasPen) {
     xml += "<pen";
     if (boxData.pen.lineWidth !== undefined && boxData.pen.lineWidth !== null) {
@@ -698,7 +698,7 @@ function generateBoxXML(box: any, element: any = {}): string {
       xml += ` lineColor="${boxData.pen.lineColor}"`;
     xml += "/>";
   } else if (hasGlobalBorderWidth || hasGlobalBorderStyle) {
-    // 回退到直接格式（过时）
+    // Fall back to the direct format (deprecated)
     xml += "<pen";
     if (
       boxData.borderWidth !== undefined &&
@@ -720,8 +720,8 @@ function generateBoxXML(box: any, element: any = {}): string {
     xml += "/>";
   }
 
-  // 2. 处理各边pen（不过时）
-  // 上边框
+  // 2. Handle the per-side pens (not deprecated)
+  // Top border
   if (hasTopPen) {
     xml += "<topPen";
     let lineWidth = boxData.topPen.lineWidth;
@@ -743,7 +743,7 @@ function generateBoxXML(box: any, element: any = {}): string {
     xml += "/>";
   }
 
-  // 左边框
+  // Left border
   if (hasLeftPen) {
     xml += "<leftPen";
     let lineWidth = boxData.leftPen.lineWidth;
@@ -765,7 +765,7 @@ function generateBoxXML(box: any, element: any = {}): string {
     xml += "/>";
   }
 
-  // 下边框
+  // Bottom border
   if (hasBottomPen) {
     xml += "<bottomPen";
     let lineWidth = boxData.bottomPen.lineWidth;
@@ -787,7 +787,7 @@ function generateBoxXML(box: any, element: any = {}): string {
     xml += "/>";
   }
 
-  // 右边框
+  // Right border
   if (hasRightPen) {
     xml += "<rightPen";
     let lineWidth = boxData.rightPen.lineWidth;
@@ -813,14 +813,14 @@ function generateBoxXML(box: any, element: any = {}): string {
   return xml;
 }
 
-// 验证并调整元素位置，确保在band范围内
+// Validate and adjust element position, ensuring it stays within the band bounds
 function validateElementPosition(element: any): any {
   if (!element) return element;
 
-  // 创建元素的副本以避免修改原始对象
+  // Create a copy of the element to avoid mutating the original object
   const validatedElement = { ...element };
 
-  // 确保元素有默认值
+  // Ensure the element has default values
   validatedElement.x = validatedElement.x || 0;
   validatedElement.y = validatedElement.y || 0;
   validatedElement.width = validatedElement.width || 100;
@@ -828,7 +828,7 @@ function validateElementPosition(element: any): any {
   return validatedElement;
 }
 
-// 根据band类型获取默认高度
+// Get the default height for a band type
 function getDefaultBandHeight(bandType: string): number {
   switch (bandType) {
     case "title":
@@ -838,7 +838,7 @@ function getDefaultBandHeight(bandType: string): number {
     case "columnHeader":
       return 30;
     case "detail":
-      return 353; // 默认detail band高度
+      return 353; // Default detail band height
     case "columnFooter":
       return 30;
     case "pageFooter":
@@ -850,26 +850,26 @@ function getDefaultBandHeight(bandType: string): number {
   }
 }
 
-// 生成静态文本XML
+// Generate static text XML
 function generateStaticTextXML(element: any): string {
   let xml = `<staticText`;
   xml += `><reportElement${generateReportElementAttrs(element)}>`;
   xml += `${generateReportElementChildren(element)}`;
 
-  // layout属性属于reportElement的子元素property
+  // The layout attribute belongs on the property child element of reportElement
   if (element.layout) {
     xml += `<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.${element.layout}"/>`;
   }
 
   xml += "</reportElement>";
 
-  // 生成box元素
+  // Generate the box element
   xml += generateBoxXML(element.box, element);
 
-  // 确保始终包含textElement和font元素，符合DTD结构
+  // Always include textElement and font elements, to conform to the DTD structure
   let textElementAttrs = "";
 
-  // rotation属性属于textElement，不属于reportElement
+  // The rotation attribute belongs on textElement, not on reportElement
   if (
     element.rotation &&
     ["None", "Left", "Right", "UpsideDown"].includes(element.rotation)
@@ -877,17 +877,17 @@ function generateStaticTextXML(element: any): string {
     textElementAttrs += ` rotation="${element.rotation}"`;
   }
 
-  // 优先使用非过时的markup属性，只有在没有markup属性时才使用过时的isStyledText属性作为fallback
+  // Prefer the non-deprecated markup attribute; only fall back to the deprecated isStyledText attribute if markup is absent
   if (element.markup) {
-    // 如果已经指定了markup属性，直接使用
+    // If markup is already specified, use it directly
     textElementAttrs += ` markup="${element.markup}"`;
   } else if (element.isStyledText !== undefined) {
-    // 只有在没有markup属性时才使用过时的isStyledText属性
+    // Only use the deprecated isStyledText attribute if markup is absent
     const markupValue = element.isStyledText ? "styled" : "none";
     textElementAttrs += ` markup="${markupValue}"`;
   }
 
-  // 只添加非过时的textAlignment属性，确保符合DTD
+  // Only add the non-deprecated textAlignment attribute, to conform to the DTD
   if (
     element.textAlignment &&
     ["Left", "Center", "Right", "Justified"].includes(element.textAlignment)
@@ -895,7 +895,7 @@ function generateStaticTextXML(element: any): string {
     textElementAttrs += ` textAlignment="${element.textAlignment}"`;
   }
 
-  // 只添加非过时的verticalAlignment属性，确保符合DTD
+  // Only add the non-deprecated verticalAlignment attribute, to conform to the DTD
   if (
     element.verticalAlignment &&
     ["Top", "Middle", "Bottom"].includes(element.verticalAlignment)
@@ -907,7 +907,7 @@ function generateStaticTextXML(element: any): string {
         <font`;
 
   let fontAttrs = "";
-  // 添加字体名称属性（默认Noto Sans SC）
+  // Add the font name attribute (defaults to Noto Sans SC)
   fontAttrs += ` fontName="${element.fontFamily || DEFAULT_FONT}"`;
   if (element.fontSize) {
     fontAttrs += ` size="${element.fontSize}"`;
@@ -931,17 +931,17 @@ function generateStaticTextXML(element: any): string {
   return xml;
 }
 
-// 生成动态文本XML
+// Generate text field XML
 function generateTextFieldXML(element: any): string {
   let xml = `<textField`;
 
-  // 添加textField的特有属性，确保符合XSD规范
-  // 优先使用非过时的textAdjust属性，只有在没有textAdjust属性时才使用过时的isStretchWithOverflow属性作为fallback
+  // Add textField-specific attributes, ensuring compliance with the XSD spec
+  // Prefer the non-deprecated textAdjust attribute; only fall back to the deprecated isStretchWithOverflow attribute if textAdjust is absent
   if (element.textAdjust) {
-    // 如果已经指定了textAdjust属性，直接使用
+    // If textAdjust is already specified, use it directly
     xml += ` textAdjust="${element.textAdjust}"`;
   } else if (element.isStretchWithOverflow !== undefined) {
-    // 只有在没有textAdjust属性时才使用过时的isStretchWithOverflow属性
+    // Only use the deprecated isStretchWithOverflow attribute if textAdjust is absent
     const textAdjustValue = element.isStretchWithOverflow
       ? "StretchHeight"
       : "CutText";
@@ -949,7 +949,7 @@ function generateTextFieldXML(element: any): string {
   }
 
   if (element.evaluationTime && element.evaluationTime !== "Now") {
-    // 确保evaluationTime符合DTD允许的值
+    // Ensure evaluationTime conforms to the values allowed by the DTD
     const validEvaluationTimes = [
       "Report",
       "Page",
@@ -974,12 +974,12 @@ function generateTextFieldXML(element: any): string {
     xml += ` isBlankWhenNull="${element.isBlankWhenNull}"`;
   }
 
-  // 新增：超链接属性
+  // New: hyperlink attribute
   if (element.hyperlinkType && element.hyperlinkType !== "None") {
     xml += ` hyperlinkType="${element.hyperlinkType}"`;
   }
 
-  // 新增：书签层级
+  // New: bookmark level
   if (element.bookmarkLevel !== undefined && element.bookmarkLevel > 0) {
     xml += ` bookmarkLevel="${element.bookmarkLevel}"`;
   }
@@ -989,13 +989,13 @@ function generateTextFieldXML(element: any): string {
 
   xml += "</reportElement>";
 
-  // 生成box元素
+  // Generate the box element
   xml += generateBoxXML(element.box, element);
 
-  // 添加文本元素配置，确保textAlignment符合DTD
+  // Add the text element configuration, ensuring textAlignment conforms to the DTD
   let textElementAttrs = "";
-  
-  // rotation属性属于textElement，不属于reportElement
+
+  // The rotation attribute belongs on textElement, not on reportElement
   if (
     element.rotation &&
     ["None", "Left", "Right", "UpsideDown"].includes(element.rotation)
@@ -1019,9 +1019,9 @@ function generateTextFieldXML(element: any): string {
 
   xml += `<textElement${textElementAttrs}>`;
 
-  // 添加字体配置
+  // Add the font configuration
   let fontAttrs = "";
-  // 添加字体名称属性（默认Noto Sans SC）
+  // Add the font name attribute (defaults to Noto Sans SC)
   fontAttrs += ` fontName="${element.fontFamily || DEFAULT_FONT}"`;
   if (element.fontSize) {
     fontAttrs += ` size="${element.fontSize}"`;
@@ -1050,42 +1050,42 @@ function generateTextFieldXML(element: any): string {
     xml += `<textFieldExpression><![CDATA[${expression}]]></textFieldExpression>`;
   }
 
-  // 新增：模式表达式
+  // New: pattern expression
   if (element.patternExpression) {
     xml += `<patternExpression><![CDATA[${element.patternExpression}]]></patternExpression>`;
   }
 
-  // 新增：锚点名称表达式
+  // New: anchor name expression
   if (element.anchorNameExpression) {
     xml += `<anchorNameExpression><![CDATA[${element.anchorNameExpression}]]></anchorNameExpression>`;
   }
 
-  // 新增：书签层级表达式
+  // New: bookmark level expression
   if (element.bookmarkLevelExpression) {
     xml += `<bookmarkLevelExpression><![CDATA[${element.bookmarkLevelExpression}]]></bookmarkLevelExpression>`;
   }
 
-  // 新增：超链接表达式
+  // New: hyperlink expression
   if (element.hyperlinkReferenceExpression) {
     xml += `<hyperlinkReferenceExpression><![CDATA[${element.hyperlinkReferenceExpression}]]></hyperlinkReferenceExpression>`;
   }
 
-  // 新增：超链接条件表达式
+  // New: hyperlink condition expression
   if (element.hyperlinkWhenExpression) {
     xml += `<hyperlinkWhenExpression><![CDATA[${element.hyperlinkWhenExpression}]]></hyperlinkWhenExpression>`;
   }
 
-  // 新增：超链接锚点表达式
+  // New: hyperlink anchor expression
   if (element.hyperlinkAnchorExpression) {
     xml += `<hyperlinkAnchorExpression><![CDATA[${element.hyperlinkAnchorExpression}]]></hyperlinkAnchorExpression>`;
   }
 
-  // 新增：超链接页码表达式
+  // New: hyperlink page expression
   if (element.hyperlinkPageExpression) {
     xml += `<hyperlinkPageExpression><![CDATA[${element.hyperlinkPageExpression}]]></hyperlinkPageExpression>`;
   }
 
-  // 新增：超链接工具提示表达式
+  // New: hyperlink tooltip expression
   if (element.hyperlinkTooltipExpression) {
     xml += `<hyperlinkTooltipExpression><![CDATA[${element.hyperlinkTooltipExpression}]]></hyperlinkTooltipExpression>`;
   }
@@ -1097,11 +1097,11 @@ function generateTextFieldXML(element: any): string {
   return xml;
 }
 
-// 生成图片XML
+// Generate image XML
 function generateImageXML(element: any): string {
   let xml = `<image`;
 
-  // 支持两种属性命名：scaleType（新）和scaleImage（过时，向后兼容）
+  // Support two attribute names: scaleType (new) and scaleImage (deprecated, for backward compatibility)
   const scaleValue = element.scaleType || element.scaleImage;
   if (
     scaleValue &&
@@ -1112,32 +1112,32 @@ function generateImageXML(element: any): string {
     xml += ` scaleImage="${scaleValue}"`;
   }
 
-  // 处理水平对齐
+  // Handle horizontal alignment
   if (element.hAlign && ["Left", "Center", "Right"].includes(element.hAlign)) {
     xml += ` hAlign="${element.hAlign}"`;
   }
 
-  // 处理垂直对齐
+  // Handle vertical alignment
   if (element.vAlign && ["Top", "Middle", "Bottom"].includes(element.vAlign)) {
     xml += ` vAlign="${element.vAlign}"`;
   }
 
-  // 旋转
+  // Rotation
   if (element.rotation && ["None", "Left", "Right", "UpsideDown"].includes(element.rotation)) {
     xml += ` rotation="${element.rotation}"`;
   }
 
-  // 新增：是否使用缓存
+  // New: whether to use caching
   if (element.isUsingCache !== undefined) {
     xml += ` isUsingCache="${element.isUsingCache}"`;
   }
 
-  // 新增：是否懒加载
+  // New: whether to lazy-load
   if (element.isLazy !== undefined && element.isLazy) {
     xml += ` isLazy="true"`;
   }
 
-  // 新增：错误处理类型
+  // New: error handling type
   if (
     element.onErrorType &&
     ["Error", "Blank", "Icon"].includes(element.onErrorType)
@@ -1145,7 +1145,7 @@ function generateImageXML(element: any): string {
     xml += ` onErrorType="${element.onErrorType}"`;
   }
 
-  // 新增：求值时间
+  // New: evaluation time
   if (element.evaluationTime && element.evaluationTime !== "Now") {
     const validEvaluationTimes = ["Report", "Page", "Column", "Band"];
     if (validEvaluationTimes.includes(element.evaluationTime)) {
@@ -1153,12 +1153,12 @@ function generateImageXML(element: any): string {
     }
   }
 
-  // 新增：超链接类型
+  // New: hyperlink type
   if (element.hyperlinkType && element.hyperlinkType !== "None") {
     xml += ` hyperlinkType="${element.hyperlinkType}"`;
   }
 
-  // 新增：书签层级
+  // New: bookmark level
   if (element.bookmarkLevel !== undefined && element.bookmarkLevel > 0) {
     xml += ` bookmarkLevel="${element.bookmarkLevel}"`;
   }
@@ -1168,43 +1168,43 @@ function generateImageXML(element: any): string {
   xml += `${generateReportElementChildren(element)}`;
   xml += "</reportElement>";
 
-  // 生成box元素
+  // Generate the box element
   xml += generateBoxXML(element.box, element);
 
   const imageExpressionValue = element.imageExpression || '""';
   xml += `<imageExpression><![CDATA[${imageExpressionValue}]]></imageExpression>`;
 
-  // 新增：锚点名称表达式
+  // New: anchor name expression
   if (element.anchorNameExpression) {
     xml += `<anchorNameExpression><![CDATA[${element.anchorNameExpression}]]></anchorNameExpression>`;
   }
 
-  // 新增：书签层级表达式
+  // New: bookmark level expression
   if (element.bookmarkLevelExpression) {
     xml += `<bookmarkLevelExpression><![CDATA[${element.bookmarkLevelExpression}]]></bookmarkLevelExpression>`;
   }
 
-  // 新增：超链接表达式
+  // New: hyperlink expression
   if (element.hyperlinkReferenceExpression) {
     xml += `<hyperlinkReferenceExpression><![CDATA[${element.hyperlinkReferenceExpression}]]></hyperlinkReferenceExpression>`;
   }
 
-  // 新增：超链接条件表达式
+  // New: hyperlink condition expression
   if (element.hyperlinkWhenExpression) {
     xml += `<hyperlinkWhenExpression><![CDATA[${element.hyperlinkWhenExpression}]]></hyperlinkWhenExpression>`;
   }
 
-  // 新增：超链接锚点表达式
+  // New: hyperlink anchor expression
   if (element.hyperlinkAnchorExpression) {
     xml += `<hyperlinkAnchorExpression><![CDATA[${element.hyperlinkAnchorExpression}]]></hyperlinkAnchorExpression>`;
   }
 
-  // 新增：超链接页码表达式
+  // New: hyperlink page expression
   if (element.hyperlinkPageExpression) {
     xml += `<hyperlinkPageExpression><![CDATA[${element.hyperlinkPageExpression}]]></hyperlinkPageExpression>`;
   }
 
-  // 新增：超链接工具提示表达式
+  // New: hyperlink tooltip expression
   if (element.hyperlinkTooltipExpression) {
     xml += `<hyperlinkTooltipExpression><![CDATA[${element.hyperlinkTooltipExpression}]]></hyperlinkTooltipExpression>`;
   }
@@ -1213,16 +1213,16 @@ function generateImageXML(element: any): string {
   return xml;
 }
 
-// 生成线条XML
+// Generate line XML
 function generateLineXML(element: any): string {
-  // 处理过时的direction属性，转换为direction属性
-  const direction = element.lineDirection || element.direction || "TopDown"; // XSD中默认是TopDown
+  // Handle the deprecated direction attribute, converting it to the direction attribute
+  const direction = element.lineDirection || element.direction || "TopDown"; // Defaults to TopDown per the XSD
   let xml = `<line direction="${direction}">`;
   xml += `<reportElement${generateReportElementAttrs(element)}>`;
   xml += `${generateReportElementChildren(element)}`;
   xml += "</reportElement>";
 
-  // 生成graphicElement（线条的笔设置）
+  // Generate the graphicElement (the line's pen settings)
   const hasLineWidth = element.lineWidth !== undefined && element.lineWidth > 0;
   const hasLineColor =
     element.lineColor !== undefined && element.lineColor !== "";
@@ -1242,7 +1242,7 @@ function generateLineXML(element: any): string {
     }
     xml += ">";
 
-    // 优先使用graphicElement的pen，否则从元素直接属性构建pen
+    // Prefer graphicElement's pen; otherwise build the pen from the element's direct attributes
     if (hasPen) {
       xml += "<pen";
       if (element.pen.lineWidth !== undefined)
@@ -1265,7 +1265,7 @@ function generateLineXML(element: any): string {
   return xml;
 }
 
-// 生成矩形XML
+// Generate rectangle XML
 function generateRectangleXML(element: any): string {
   let xml = "<rectangle";
 
@@ -1277,7 +1277,7 @@ function generateRectangleXML(element: any): string {
   xml += `${generateReportElementChildren(element)}`;
   xml += "</reportElement>";
 
-  // 生成graphicElement
+  // Generate graphicElement
   let hasGraphicElement = false;
   let graphicElementXml = "<graphicElement";
 
@@ -1288,7 +1288,7 @@ function generateRectangleXML(element: any): string {
 
   graphicElementXml += ">";
 
-  // 生成pen
+  // Generate pen
   if (
     element.pen &&
     (element.pen.lineWidth !== undefined ||
@@ -1316,13 +1316,13 @@ function generateRectangleXML(element: any): string {
   return xml;
 }
 
-// 生成椭圆XML
+// Generate ellipse XML
 function generateEllipseXML(element: any): string {
   let xml = `<ellipse><reportElement${generateReportElementAttrs(element)}>`;
   xml += `${generateReportElementChildren(element)}`;
   xml += "</reportElement>";
 
-  // 生成graphicElement
+  // Generate graphicElement
   let hasGraphicElement = false;
   let graphicElementXml = "<graphicElement";
 
@@ -1333,7 +1333,7 @@ function generateEllipseXML(element: any): string {
 
   graphicElementXml += ">";
 
-  // 生成pen
+  // Generate pen
   if (
     element.pen &&
     (element.pen.lineWidth !== undefined ||
@@ -1361,23 +1361,23 @@ function generateEllipseXML(element: any): string {
   return xml;
 }
 
-// 生成容器XML
+// Generate frame (container) XML
 function generateFrameXML(element: any): string {
   let xml = `<frame>`;
   xml += `<reportElement${generateReportElementAttrs(element)}>`;
   xml += `${generateReportElementChildren(element)}`;
 
-  // layout属性属于reportElement的子元素property
+  // The layout attribute belongs on the property child element of reportElement
   if (element.layout) {
     xml += `<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.${element.layout}"/>`;
   }
 
   xml += "</reportElement>";
 
-  // 生成box元素
+  // Generate the box element
   xml += generateBoxXML(element.box, element);
 
-  // 生成子元素
+  // Generate child elements
   if (element.elements && element.elements.length > 0) {
     element.elements.forEach((child: any) => {
       xml += generateElementXML(child);
@@ -1388,9 +1388,9 @@ function generateFrameXML(element: any): string {
   return xml;
 }
 
-// 生成分页符XML
+// Generate page break XML
 function generateBreakXML(element: any): string {
-  // 默认为Page类型
+  // Defaults to the Page type
   const type = element.breakType || "Page";
   let xml = `<break type="${type}">`;
   xml += `<reportElement${generateReportElementAttrs(element)}>`;
@@ -1400,11 +1400,11 @@ function generateBreakXML(element: any): string {
   return xml;
 }
 
-// 生成子报表XML
+// Generate subreport XML
 function generateSubreportXML(element: any): string {
   let xml = `<subreport`;
-  
-  // 子报表特有属性
+
+  // Subreport-specific attributes
   if (element.isUsingCache !== undefined) {
     xml += ` isUsingCache="${element.isUsingCache}"`;
   }
@@ -1417,19 +1417,19 @@ function generateSubreportXML(element: any): string {
   xml += `${generateReportElementChildren(element)}`;
   xml += "</reportElement>";
 
-  // 生成parametersMapExpression
+  // Generate parametersMapExpression
   if (element.parametersMapExpression) {
     xml += `<parametersMapExpression><![CDATA[${element.parametersMapExpression}]]></parametersMapExpression>`;
   }
 
-  // 生成connectionExpression或dataSourceExpression
+  // Generate connectionExpression or dataSourceExpression
   if (element.connectionExpression) {
     xml += `<connectionExpression><![CDATA[${element.connectionExpression}]]></connectionExpression>`;
   } else if (element.dataSourceExpression) {
     xml += `<dataSourceExpression><![CDATA[${element.dataSourceExpression}]]></dataSourceExpression>`;
   }
 
-  // 生成subreportExpression
+  // Generate subreportExpression
   if (element.subreportExpression) {
     xml += `<subreportExpression><![CDATA[${element.subreportExpression}]]></subreportExpression>`;
   }
@@ -1438,26 +1438,26 @@ function generateSubreportXML(element: any): string {
   return xml;
 }
 
-// 生成列表XML
+// Generate list XML
 function generateListXML(element: any): string {
   let xml = `<list`;
-  
-  // 生成printOrder属性
+
+  // Generate the printOrder attribute
   if (element.printOrder && element.printOrder !== 'Vertical') {
     xml += ` printOrder="${element.printOrder}"`;
   }
-  
-  // 生成ignoreWidth属性
+
+  // Generate the ignoreWidth attribute
   if (element.ignoreWidth !== undefined) {
     xml += ` ignoreWidth="${element.ignoreWidth}"`;
   }
-  
+
   xml += `>`;
   xml += `<reportElement${generateReportElementAttrs(element)}>`;
   xml += `${generateReportElementChildren(element)}`;
   xml += "</reportElement>";
 
-  // 生成datasetRun（数据集运行配置）
+  // Generate datasetRun (dataset run configuration)
   if (element.subDataset || element.dataSourceExpression || element.connectionExpression) {
     xml += `<datasetRun`;
     if (element.subDataset) {
@@ -1477,11 +1477,11 @@ function generateListXML(element: any): string {
     
     xml += `</datasetRun>`;
   } else if (element.dataSourceExpression) {
-    // 兼容旧格式：直接在list元素下的dataSourceExpression
+    // Backward compatibility with the old format: dataSourceExpression directly under the list element
     xml += `<dataSourceExpression><![CDATA[${element.dataSourceExpression}]]></dataSourceExpression>`;
   }
 
-  // 生成列表内容
+  // Generate the list contents
   if (element.listContents && element.listContents.elements && element.listContents.elements.length > 0) {
     const contentsHeight = element.listContents.height || element.height;
     const contentsWidth = element.listContents.width || element.width;
@@ -1496,7 +1496,7 @@ function generateListXML(element: any): string {
   return xml;
 }
 
-// 生成图表XML
+// Generate chart XML
 function generateChartXML(element: any): string {
   const chartType = element.chartType || 'pie';
   const chartTagMap: Record<string, string> = {
@@ -1514,7 +1514,7 @@ function generateChartXML(element: any): string {
 
   let xml = `<${chartTag}>`;
 
-  // <chart> 元素
+  // The <chart> element
   xml += `<chart`;
   if (element.evaluationTime && element.evaluationTime !== 'Now') {
     xml += ` evaluationTime="${element.evaluationTime}"`;
@@ -1581,7 +1581,7 @@ function generateChartXML(element: any): string {
 
   xml += `</chart>`;
 
-  // 数据集
+  // Dataset
   const datasetTag = getDatasetTag(chartType);
   const datasetItemTag = getDatasetItemTag(chartType);
 
@@ -1607,7 +1607,7 @@ function generateChartXML(element: any): string {
   }
   xml += `</dataset>`;
 
-  // 系列表达式
+  // Series expressions
   xml += generateDatasetSeries(chartType, element);
 
   xml += `</${datasetTag}>`;
@@ -1619,7 +1619,7 @@ function generateChartXML(element: any): string {
   return xml;
 }
 
-// 获取数据集标签
+// Get the dataset tag
 function getDatasetTag(chartType: string): string {
   const map: Record<string, string> = {
     pie: 'pieDataset', pie3D: 'pieDataset',
@@ -1634,7 +1634,7 @@ function getDatasetTag(chartType: string): string {
   return map[chartType] || 'categoryDataset';
 }
 
-// 获取数据系列标签
+// Get the data series tag
 function getDatasetItemTag(chartType: string): string {
   const map: Record<string, string> = {
     pie: 'keyExpression', pie3D: 'keyExpression',
@@ -1646,12 +1646,12 @@ function getDatasetItemTag(chartType: string): string {
   return map[chartType] || 'categorySeries';
 }
 
-// 生成系列表达式
+// Generate the series expressions
 function generateDatasetSeries(chartType: string, element: any): string {
   let xml = '';
 
   if (['pie', 'pie3D'].includes(chartType)) {
-    // 饼图: keyExpression + valueExpression
+    // Pie chart: keyExpression + valueExpression
     if (element.keyExpression) {
       xml += `<keyExpression><![CDATA[${element.keyExpression}]]></keyExpression>`;
     }
@@ -1659,7 +1659,7 @@ function generateDatasetSeries(chartType: string, element: any): string {
       xml += `<valueExpression><![CDATA[${element.valueExpression}]]></valueExpression>`;
     }
   } else if (['scatter', 'bubble', 'xyLine', 'xyArea', 'xyBar', 'timeSeries', 'highLow', 'candlestick'].includes(chartType)) {
-    // XY图表: xySeries
+    // XY chart: xySeries
     xml += `<xySeries>`;
     if (element.seriesExpression) {
       xml += `<seriesExpression><![CDATA[${element.seriesExpression}]]></seriesExpression>`;
@@ -1672,7 +1672,7 @@ function generateDatasetSeries(chartType: string, element: any): string {
     }
     xml += `</xySeries>`;
   } else {
-    // 分类图表: categorySeries
+    // Category chart: categorySeries
     xml += `<categorySeries>`;
     if (element.seriesExpression) {
       xml += `<seriesExpression><![CDATA[${element.seriesExpression}]]></seriesExpression>`;
@@ -1689,7 +1689,7 @@ function generateDatasetSeries(chartType: string, element: any): string {
   return xml;
 }
 
-// 生成Plot
+// Generate Plot
 function generatePlot(chartType: string, element: any): string {
   const plotTagMap: Record<string, string> = {
     pie: 'piePlot', pie3D: 'pie3DPlot',
@@ -1705,14 +1705,14 @@ function generatePlot(chartType: string, element: any): string {
 
   let xml = `<${plotTag}`;
 
-  // 饼图特有属性
+  // Pie-chart-specific attributes
   if (['pie', 'pie3D'].includes(chartType)) {
     if (element.isCircular !== undefined) {
       xml += ` isCircular="${element.isCircular}"`;
     }
   }
 
-  // 折线图特有属性
+  // Line-chart-specific attributes
   if (['line', 'xyLine', 'timeSeries'].includes(chartType)) {
     if (element.isShowShapes !== undefined) {
       xml += ` isShowShapes="${element.isShowShapes}"`;
@@ -1721,17 +1721,17 @@ function generatePlot(chartType: string, element: any): string {
 
   xml += `>`;
 
-  // plot子元素
+  // The plot child element
   xml += `<plot/>`;
 
-  // itemLabel（分类图表和饼图）
+  // itemLabel (category charts and pie charts)
   if (!['scatter', 'bubble', 'highLow', 'candlestick', 'meter', 'thermometer'].includes(chartType)) {
     const itemLabelColor = element.itemLabelColor || '#000000';
     const itemLabelBg = element.itemLabelBackgroundColor || '#FFFFFF';
     xml += `<itemLabel color="${itemLabelColor}" backgroundColor="${itemLabelBg}"/>`;
   }
 
-  // 分类轴标签（分类图表）
+  // Category axis label (category charts)
   if (['bar', 'bar3D', 'stackedBar', 'stackedBar3D', 'line', 'area', 'stackedArea', 'meter', 'thermometer'].includes(chartType)) {
     if (element.categoryAxisLabelExpression) {
       xml += `<categoryAxisLabelExpression><![CDATA[${element.categoryAxisLabelExpression}]]></categoryAxisLabelExpression>`;
@@ -1739,7 +1739,7 @@ function generatePlot(chartType: string, element: any): string {
     xml += `<categoryAxisFormat><axisFormat/></categoryAxisFormat>`;
   }
 
-  // 值轴标签（分类图表）
+  // Value axis label (category charts)
   if (['bar', 'bar3D', 'stackedBar', 'stackedBar3D', 'line', 'area', 'stackedArea'].includes(chartType)) {
     if (element.valueAxisLabelExpression) {
       xml += `<valueAxisLabelExpression><![CDATA[${element.valueAxisLabelExpression}]]></valueAxisLabelExpression>`;
@@ -1751,7 +1751,7 @@ function generatePlot(chartType: string, element: any): string {
   return xml;
 }
 
-// 生成条码XML
+// Generate barcode XML
 function generateBarcodeXML(element: any): string {
   const barcodeType = element.barcodeType || 'Code128';
   // Barcode4j elements are wrapped in componentElement
@@ -1770,7 +1770,7 @@ function generateBarcodeXML(element: any): string {
   return xml;
 }
 
-// 生成地图XML
+// Generate map XML
 function generateMapXML(element: any): string {
   // Map is a componentElement type that uses the map namespace
   let xml = `<componentElement>`;
@@ -1797,14 +1797,14 @@ function generateMapXML(element: any): string {
   return xml;
 }
 
-// 生成交叉表XML
+// Generate crosstab XML
 function generateCrosstabXML(element: any): string {
   let xml = `<crosstab>`;
   xml += `<reportElement${generateReportElementAttrs(element)}>`;
   xml += `${generateReportElementChildren(element)}`;
   xml += "</reportElement>";
 
-  // 当无数据时的显示方式
+  // How to display when there is no data
   if (element.whenNoDataType) {
     xml += `<crosstabDataset>`;
     xml += `<datasetRun subDataset="crosstabDataset">`;
@@ -1816,7 +1816,7 @@ function generateCrosstabXML(element: any): string {
   return xml;
 }
 
-// 生成图标标签XML
+// Generate icon label XML
 function generateIconLabelXML(element: any): string {
   // IconLabel is a componentElement type
   let xml = `<componentElement>`;
@@ -1840,7 +1840,7 @@ function generateIconLabelXML(element: any): string {
   return xml;
 }
 
-// 生成通用元素XML
+// Generate generic element XML
 function generateGenericElementXML(element: any): string {
   // GenericElement is a generic container for custom elements
   let xml = `<genericElement`;
@@ -1855,7 +1855,7 @@ function generateGenericElementXML(element: any): string {
   return xml;
 }
 
-// 生成排序XML
+// Generate sort XML
 function generateSortXML(element: any): string {
   // Sort is a componentElement type
   let xml = `<componentElement>`;
@@ -1876,20 +1876,20 @@ function generateSortXML(element: any): string {
   return xml;
 }
 
-// 生成列XML
+// Generate column XML
 function generateColumnXML(
   column: any,
   index: number,
   hasColumnGroups: boolean = false,
   maxDepth: number = 0,
 ): string {
-  // 确保column有uuid，如果没有则生成一个
+  // Ensure the column has a uuid; generate one if missing
   const columnUuid = column.uuid || crypto.randomUUID();
-  // 更新column的uuid，确保被保存
+  // Update the column's uuid so it gets persisted
   column.uuid = columnUuid;
   let xml = `<jr:column width="${toInt(column.width)}" uuid="${columnUuid}">
 `;
-  // 确保value属性值被正确转义，避免双重引用
+  // Ensure the value attribute is properly escaped, to avoid double-quoting issues
   const escapedColumnName = (column.name || `Column${index + 1}`).replace(
     /"/g,
     "&quot;",
@@ -1897,12 +1897,12 @@ function generateColumnXML(
   xml += `<property name="com.jaspersoft.studio.components.table.model.column.name" value="${escapedColumnName}"/>
 `;
 
-  // 生成tableHeader
+  // Generate tableHeader
   if (column.tableHeader && column.tableHeader.enable !== false) {
     if (column.tableHeader.element) {
-      // 如果有element对象，则生成包含元素的tableHeader
+      // If there's an element object, generate a tableHeader containing the element
       const tableHeaderElement = column.tableHeader.element;
-      // rowSpan 来自 cell 层级，不是 element 层级
+      // rowSpan comes from the cell level, not the element level
       const tableHeaderRowSpan = column.tableHeader.rowSpan || 1;
       xml += `<jr:tableHeader height="${toInt(tableHeaderElement.height || 30)}" rowSpan="${tableHeaderRowSpan}" style="Table_TH">
 `;
@@ -1913,16 +1913,16 @@ function generateColumnXML(
       xml += `</jr:tableHeader>
 `;
     } else {
-      // 如果没有element对象，则生成空的tableHeader（自闭合形式）
+      // If there's no element object, generate an empty tableHeader (self-closing form)
       xml += `<jr:tableHeader height="30" rowSpan="1" style="Table_TH"/>
 `;
     }
   }
 
-  // 生成tableFooter
+  // Generate tableFooter
   if (column.tableFooter) {
     if (column.tableFooter.element) {
-      // 如果有element对象，则生成包含元素的tableFooter
+      // If there's an element object, generate a tableFooter containing the element
       const tableFooterElement = column.tableFooter.element;
       const tableFooterRowSpan = column.tableFooter.rowSpan || 1;
       xml += `<jr:tableFooter height="${toInt(tableFooterElement.height || 30)}" rowSpan="${tableFooterRowSpan}">
@@ -1934,47 +1934,47 @@ function generateColumnXML(
       xml += `</jr:tableFooter>
 `;
     } else {
-      // 如果没有element对象，则生成空的tableFooter（自闭合形式）
+      // If there's no element object, generate an empty tableFooter (self-closing form)
       xml += `<jr:tableFooter height="30" rowSpan="1"/>
 `;
     }
   }
 
-  // 生成columnHeader
+  // Generate columnHeader
   if (!column.children) {
     if (column.columnHeader) {
       if (column.columnHeader.element) {
-        // 如果有element对象，则生成包含元素的columnHeader
+        // If there's an element object, generate a columnHeader containing the element
         const columnHeaderElement = column.columnHeader.element;
-        // 使用column.columnHeader的rowSpan，如果没有则使用columnHeaderElement的rowSpan，默认为1
+        // Use column.columnHeader's rowSpan; fall back to columnHeaderElement's rowSpan, defaulting to 1
         const rowSpan =
           column.columnHeader.rowSpan || columnHeaderElement.rowSpan || 1;
-        // 优先使用column.columnHeader.height（列头本身的高度），其次使用内部元素高度
+        // Prefer column.columnHeader.height (the column header's own height), falling back to the inner element's height
         const columnHeaderHeight = column.columnHeader.height || columnHeaderElement.height || 30;
 
-        // 检查原始列对象
-        console.log("JRXML生成前检查列对象:", {
-          列名: column.name,
-          原始columnHeader: column.columnHeader,
-          原始element: columnHeaderElement,
-          问题: rowSpan > 1 && columnHeaderHeight !== 15 * rowSpan ? "高度异常" : "正常",
+        // Check the original column object
+        console.log("Checking column object before JRXML generation:", {
+          columnName: column.name,
+          originalColumnHeader: column.columnHeader,
+          originalElement: columnHeaderElement,
+          issue: rowSpan > 1 && columnHeaderHeight !== 15 * rowSpan ? "Height anomaly" : "Normal",
         });
 
-        console.log("JRXML生成列头高度详情:", {
-          列名: column.name,
+        console.log("Column header height details during JRXML generation:", {
+          columnName: column.name,
           rowSpan,
           columnHeaderHeight,
           columnHeaderActualHeight: column.columnHeader.height,
           elementHeight: columnHeaderElement.height,
           columnHeaderElementRowSpan: columnHeaderElement.rowSpan,
-          是否合并列: rowSpan > 1,
-          expectedHeight: 15 * rowSpan, // 假设单行高度是15
+          isMergedColumn: rowSpan > 1,
+          expectedHeight: 15 * rowSpan, // Assuming a single row's height is 15
         });
 
-        // 检查是否有异常
+        // Check for anomalies
         if (rowSpan > 1 && columnHeaderHeight === 60 && rowSpan === 2) {
-          console.error("发现异常！高度60应该是30（15*2）而不是60（30*2）");
-          console.error("可能的原因：height被重复乘以了rowSpan");
+          console.error("Anomaly detected! Height 60 should be 30 (15*2), not 60 (30*2)");
+          console.error("Possible cause: height was multiplied by rowSpan twice");
         }
 
         xml += `<jr:columnHeader height="${toInt(columnHeaderHeight)}" rowSpan="${rowSpan}" style="Table_CH">
@@ -1986,16 +1986,16 @@ function generateColumnXML(
         xml += `</jr:columnHeader>
 `;
       } else {
-        // 如果没有element对象，则生成空的columnHeader（自闭合形式）
-        // 使用column.columnHeader的rowSpan，默认为1
+        // If there's no element object, generate an empty columnHeader (self-closing form)
+        // Use column.columnHeader's rowSpan, defaulting to 1
         const rowSpan = column.columnHeader.rowSpan || 1;
-        // 使用column columnHeader.height，如果为空则使用30
+        // Use column.columnHeader.height, falling back to 30 if empty
         const columnHeaderHeight = column.columnHeader.height || 30;
         xml += `<jr:columnHeader height="${toInt(columnHeaderHeight)}" rowSpan="${rowSpan}" style="Table_CH"/>
 `;
       }
     } else {
-      // 如果没有columnHeader对象，则生成默认的columnHeader
+      // If there's no columnHeader object, generate a default columnHeader
       xml += `<jr:columnHeader height="30" rowSpan="1" style="Table_CH">
 `;
       xml += `<staticText>
@@ -2017,10 +2017,10 @@ function generateColumnXML(
     }
   }
 
-  // 生成columnFooter
+  // Generate columnFooter
   if (column.columnFooter) {
     if (column.columnFooter.element) {
-      // 如果有element对象，则生成包含元素的columnFooter
+      // If there's an element object, generate a columnFooter containing the element
       const columnFooterElement = column.columnFooter.element;
       const columnFooterRowSpan = column.columnFooter.rowSpan || 1;
       xml += `<jr:columnFooter height="${toInt(columnFooterElement.height || 30)}" rowSpan="${columnFooterRowSpan}" style="Table_CH">
@@ -2032,16 +2032,16 @@ function generateColumnXML(
       xml += `</jr:columnFooter>
 `;
     } else {
-      // 如果没有element对象，则生成空的columnFooter（自闭合形式）
+      // If there's no element object, generate an empty columnFooter (self-closing form)
       xml += `<jr:columnFooter height="30" rowSpan="1" style="Table_CH"/>
 `;
     }
   }
 
-  // 生成detailCell
+  // Generate detailCell
   if (column.detailCell) {
     if (column.detailCell.element) {
-      // 如果有element对象，则生成包含元素的detailCell
+      // If there's an element object, generate a detailCell containing the element
       const detailCellElement = column.detailCell.element;
       xml += `<jr:detailCell height="${toInt(detailCellElement.height || 30)}" style="Table_TD">
 `;
@@ -2052,12 +2052,12 @@ function generateColumnXML(
       xml += `</jr:detailCell>
 `;
     } else {
-      // 如果没有element对象，则生成空的detailCell（自闭合形式）
+      // If there's no element object, generate an empty detailCell (self-closing form)
       xml += `<jr:detailCell height="30" style="Table_TD"/>
 `;
     }
   } else {
-    // 如果没有detailCell对象，则生成默认的detailCell
+    // If there's no detailCell object, generate a default detailCell
     xml += `<jr:detailCell height="30" style="Table_TD">
 `;
     xml += `<textField>
@@ -2083,7 +2083,7 @@ function generateColumnXML(
   return xml;
 }
 
-// 生成列分组XML，同时收集处理过的列的UUID
+// Generate column group XML, while also collecting the UUIDs of processed columns
 function generateColumnGroupXML(
   group: any,
   processedColumnUuids?: Set<string>,
@@ -2091,31 +2091,31 @@ function generateColumnGroupXML(
   maxDepth: number = 0,
   depth: number = 1,
 ): string {
-  // 检查 group 是否有有效的子元素
+  // Check whether the group has any valid child elements
   const children = group.children || [];
   const validChildren = children.filter((child: any) => {
-    // 过滤掉宽度为0或无效的子元素
+    // Filter out child elements with zero width or that are otherwise invalid
     if (child.width <= 0 && (!child.children || child.children.length === 0)) {
       return false;
     }
-    // 过滤掉无效的columnGroup（没有子元素）
+    // Filter out invalid columnGroups (ones with no child elements)
     if (child.children && child.children.length === 0) {
       return false;
     }
     return true;
   });
 
-  // 如果没有有效的子元素，不生成 columnGroup
+  // If there are no valid child elements, don't generate a columnGroup
   if (validChildren.length === 0 && (!group.columnHeader || group.width <= 0)) {
     return '';
   }
 
-  // 确保group有uuid，如果没有则生成一个
+  // Ensure the group has a uuid; generate one if missing
   const groupUuid = group.uuid || crypto.randomUUID();
-  // 更新group的uuid，确保被保存
+  // Update the group's uuid so it gets persisted
   group.uuid = groupUuid;
 
-  // 自动计算组合列宽度
+  // Automatically compute the combined column width
   function calculateGroupWidth(node: any): number {
     if (node.children && node.children.length > 0) {
       return node.children.reduce((sum: number, child: any) => {
@@ -2126,21 +2126,21 @@ function generateColumnGroupXML(
   }
 
   const groupWidth = calculateGroupWidth(group);
-  group.width = groupWidth; // 更新group的width属性，确保一致性
+  group.width = groupWidth; // Update the group's width attribute for consistency
 
   let xml = `<jr:columnGroup width="${toInt(groupWidth)}" uuid="${groupUuid}">
 `;
-  // 确保value属性值被正确转义，避免双重引用
+  // Ensure the value attribute is properly escaped, to avoid double-quoting issues
   const escapedGroupName = (group.name || `Group`).replace(/"/g, "&quot;");
   xml += `<property name="com.jaspersoft.studio.components.table.model.column.name" value="${escapedGroupName}"/>
 `;
 
-  // 生成tableHeader
+  // Generate tableHeader
   if (group.tableHeader && group.tableHeader.enable !== false) {
-    // 处理tableHeader结构，获取实际的元素（可能在element属性中）
+    // Resolve the tableHeader structure to get the actual element (which may live under the element property)
     const actualTableHeader = group.tableHeader.element || group.tableHeader;
 
-    // 如果没有边框设置，添加默认的边框
+    // If there's no border set, add a default border
     if (!actualTableHeader.box || !actualTableHeader.box.pen) {
       actualTableHeader.box = {
         ...actualTableHeader.box,
@@ -2161,9 +2161,9 @@ function generateColumnGroupXML(
 `;
   }
 
-  // 生成tableFooter - 只要存在就生成，即使是空的
+  // Generate tableFooter - generate it whenever it exists, even if empty
   if (group.hasTableFooter && group.tableFooter) {
-    // 处理tableFooter结构，获取实际的元素（可能在element属性中）
+    // Resolve the tableFooter structure to get the actual element (which may live under the element property)
     const actualTableFooter = group.tableFooter.element || group.tableFooter;
 
     xml += `<jr:tableFooter height="${toInt(actualTableFooter.height || 30)}" rowSpan="${group.tableFooter.rowSpan || actualTableFooter.rowSpan || 1}">
@@ -2178,13 +2178,13 @@ function generateColumnGroupXML(
 `;
   }
 
-  // 生成columnHeader
+  // Generate columnHeader
   let columnHeader = group.columnHeader;
   if (columnHeader) {
-    // 处理columnHeader结构，获取实际的元素（可能在element属性中）
+    // Resolve the columnHeader structure to get the actual element (which may live under the element property)
     const actualColumnHeader = columnHeader.element || columnHeader;
 
-    // 仅在没有明确设置text或expression时，才使用group.name作为默认值
+    // Only use group.name as the default when text or expression hasn't been explicitly set
     if (actualColumnHeader.type === "staticText" && !actualColumnHeader.text) {
       actualColumnHeader.text = group.name;
     } else if (
@@ -2193,7 +2193,7 @@ function generateColumnGroupXML(
     ) {
       actualColumnHeader.expression = group.name;
     }
-    // 如果没有边框设置，添加默认的边框
+    // If there's no border set, add a default border
     if (!actualColumnHeader.box || !actualColumnHeader.box.pen) {
       actualColumnHeader.box = {
         ...actualColumnHeader.box,
@@ -2205,7 +2205,7 @@ function generateColumnGroupXML(
       };
     }
 
-    // 对于组合列，使用设置的rowSpan值，如果没有则默认为1
+    // For combined columns, use the configured rowSpan value, defaulting to 1 if absent
     const rowSpan = columnHeader.rowSpan || actualColumnHeader.rowSpan || 1;
     xml += `<jr:columnHeader height="${toInt(actualColumnHeader.height || 30)}" rowSpan="${rowSpan}" style="Table_CH">
 `;
@@ -2217,9 +2217,9 @@ function generateColumnGroupXML(
 `;
   }
 
-  // 生成columnFooter - 只要存在就生成，即使是空的
+  // Generate columnFooter - generate it whenever it exists, even if empty
   if (group.hasColumnFooter && group.columnFooter) {
-    // 处理columnFooter结构，获取实际的元素（可能在element属性中）
+    // Resolve the columnFooter structure to get the actual element (which may live under the element property)
     const actualColumnFooter = group.columnFooter.element || group.columnFooter;
 
     xml += `<jr:columnFooter height="${toInt(actualColumnFooter.height || 30)}" rowSpan="${group.columnFooter.rowSpan || actualColumnFooter.rowSpan || 1}" style="Table_CH">
@@ -2234,10 +2234,10 @@ function generateColumnGroupXML(
 `;
   }
 
-  // 生成子分组或列（使用前面已定义的 validChildren）
+  // Generate child groups or columns (using validChildren defined earlier)
   validChildren.forEach((child: any, index: number) => {
     if (child.children) {
-      // 递归生成子分组，传递hasColumnGroups标志、maxDepth和depth
+      // Recursively generate the child group, passing along the hasColumnGroups flag, maxDepth, and depth
       xml += generateColumnGroupXML(
         child,
         processedColumnUuids,
@@ -2246,16 +2246,16 @@ function generateColumnGroupXML(
         depth + 1,
       );
     } else {
-      // 生成普通列，调整内部 column 的 rowSpan 以匹配 columnGroup
+      // Generate a regular column, adjusting the inner column's rowSpan to match the columnGroup
       if (group.columnHeader && child.columnHeader) {
         const groupHeaderRowSpan = group.columnHeader.rowSpan || 1;
 
-        // 如果 columnGroup 的 rowSpan 是 1，内部 column 的 rowSpan 也应该是 1
-        // 因为 columnGroup 已经占据了一行
+        // If the columnGroup's rowSpan is 1, the inner column's rowSpan should also be 1,
+        // since the columnGroup already occupies one row
         if (groupHeaderRowSpan === 1 && child.columnHeader.rowSpan && child.columnHeader.rowSpan > 1) {
-          // 将内部 column 的 rowSpan 重置为 1
+          // Reset the inner column's rowSpan to 1
           child.columnHeader.rowSpan = 1;
-          // 调整高度为单行高度
+          // Adjust the height to a single row's height
           child.columnHeader.height = group.columnHeader.height || 30;
           if (child.columnHeader.element) {
             child.columnHeader.element.height = child.columnHeader.height;
@@ -2274,11 +2274,11 @@ function generateColumnGroupXML(
   return xml;
 }
 
-// 预处理表格元素，确保单元格中的元素尺寸与单元格尺寸一致
+// Preprocess table elements, ensuring the elements within a cell match the cell's dimensions
 function preprocessTableElements(element: any) {
-  // 处理列分组
+  // Process column groups
   function processColumnGroup(group: any) {
-    // 首先确保group.width是最新计算的聚合宽度
+    // First, make sure group.width reflects the freshly-computed combined width
     function calculateGroupWidth(node: any): number {
       if (node.children && node.children.length > 0) {
         return node.children.reduce((sum: number, child: any) => {
@@ -2288,57 +2288,57 @@ function preprocessTableElements(element: any) {
       return node.width || 0;
     }
 
-    // 计算并更新聚合列的总宽度
+    // Compute and update the combined column's total width
     const totalWidth = calculateGroupWidth(group);
-    group.width = totalWidth; // 更新group的width属性，确保一致性
+    group.width = totalWidth; // Update the group's width attribute for consistency
 
-    // 确保group的tableHeader尺寸始终等于聚合列尺寸
+    // Ensure the group's tableHeader dimensions always match the combined column's dimensions
     if (group.tableHeader) {
       group.tableHeader.width = totalWidth;
       group.tableHeader.height = group.tableHeader.height || 30;
-      // 确保tableHeader中的元素尺寸等于tableHeader尺寸
+      // Ensure the element inside tableHeader matches the tableHeader's dimensions
       if (group.tableHeader.element) {
         group.tableHeader.element.width = totalWidth;
         group.tableHeader.element.height = group.tableHeader.height;
       }
     }
 
-    // 确保group的columnHeader尺寸始终等于聚合列尺寸
+    // Ensure the group's columnHeader dimensions always match the combined column's dimensions
     if (group.columnHeader) {
       group.columnHeader.width = totalWidth;
       group.columnHeader.height = group.columnHeader.height || 30;
-      // 确保columnHeader中的元素尺寸等于columnHeader尺寸
+      // Ensure the element inside columnHeader matches the columnHeader's dimensions
       if (group.columnHeader.element) {
         group.columnHeader.element.width = totalWidth;
         group.columnHeader.element.height = group.columnHeader.height;
       }
     }
 
-    // 确保group的columnFooter尺寸始终等于聚合列尺寸
+    // Ensure the group's columnFooter dimensions always match the combined column's dimensions
     if (group.columnFooter) {
       group.columnFooter.width = totalWidth;
       group.columnFooter.height = group.columnFooter.height || 30;
-      // 确保columnFooter中的元素尺寸等于columnFooter尺寸
+      // Ensure the element inside columnFooter matches the columnFooter's dimensions
       if (group.columnFooter.element) {
         group.columnFooter.element.width = totalWidth;
         group.columnFooter.element.height = group.columnFooter.height;
       }
     }
 
-    // 确保group的tableFooter尺寸始终等于聚合列尺寸
+    // Ensure the group's tableFooter dimensions always match the combined column's dimensions
     if (group.tableFooter) {
       group.tableFooter.width = totalWidth;
       group.tableFooter.height = group.tableFooter.height || 30;
-      // 确保tableFooter中的元素尺寸等于tableFooter尺寸
+      // Ensure the element inside tableFooter matches the tableFooter's dimensions
       if (group.tableFooter.element) {
         group.tableFooter.element.width = totalWidth;
         group.tableFooter.element.height = group.tableFooter.height;
       }
     }
 
-    // 递归处理子分组或列
+    // Recursively process child groups or columns
     if (group.children) {
-      // 计算子树中组的最大深度（用于独立列的 rowSpan）
+      // Compute the maximum group depth within the subtree (used for standalone columns' rowSpan)
       function subtreeMaxGroupDepth(node: any): number {
         if (!node.children || node.children.length === 0) return 0;
         let max = 0;
@@ -2354,10 +2354,10 @@ function preprocessTableElements(element: any) {
 
       group.children.forEach((child: any) => {
         if (child.children) {
-          // 子分组
+          // Child group
           processColumnGroup(child);
         } else {
-          // 独立叶子列：设置 rowSpan
+          // Standalone leaf column: set the rowSpan
           const standaloneRowSpan = Math.max(1, childMaxDepth + 1);
           if (standaloneRowSpan > 1) {
             if (child.tableHeader)
@@ -2373,24 +2373,24 @@ function preprocessTableElements(element: any) {
               child.tableFooter.rowSpan =
                 child.tableFooter.rowSpan || standaloneRowSpan;
           }
-          // 普通列，检查并调整列中的单元格元素
+          // Regular column: check and adjust the cell elements within the column
           processColumn(child);
         }
       });
     }
   }
 
-  // 处理普通列
+  // Process a regular column
   function processColumn(column: any) {
     const columnWidth = column.width;
     const defaultCellHeight = 30;
 
-    // 确保column的tableHeader尺寸始终等于列尺寸
+    // Ensure the column's tableHeader dimensions always match the column's dimensions
     if (column.tableHeader) {
       column.tableHeader.width = columnWidth;
       column.tableHeader.height =
         column.tableHeader.height || defaultCellHeight;
-      // 如果 rowSpan > 1，inflate 高度以覆盖合并的行
+      // If rowSpan > 1, inflate the height to cover the merged rows
       const thRowSpan = column.tableHeader.rowSpan || 1;
       if (thRowSpan > 1) {
         const baseH =
@@ -2399,80 +2399,80 @@ function preprocessTableElements(element: any) {
             : Math.round(column.tableHeader.height / thRowSpan);
         column.tableHeader.height = baseH * thRowSpan;
       }
-      // 确保tableHeader中的元素尺寸等于tableHeader尺寸
+      // Ensure the element inside tableHeader matches the tableHeader's dimensions
       if (column.tableHeader.element) {
         column.tableHeader.element.width = columnWidth;
         column.tableHeader.element.height = column.tableHeader.height;
       }
     }
 
-    // 确保column的columnHeader尺寸始终等于列尺寸
+    // Ensure the column's columnHeader dimensions always match the column's dimensions
     if (column.columnHeader) {
       column.columnHeader.width = columnWidth;
-      // 只有当height未设置时才使用默认值，否则使用已设置的值
+      // Only use the default value when height isn't set; otherwise use the configured value
       if (!column.columnHeader.height) {
         column.columnHeader.height = defaultCellHeight;
       }
-      // 如果 rowSpan > 1，inflate 高度以覆盖合并的行（仅当height是单行高度时）
+      // If rowSpan > 1, inflate the height to cover the merged rows (only when height is a single row's height)
       const chRowSpan = column.columnHeader.rowSpan || 1;
       if (chRowSpan > 1) {
-        // 检查高度是否能被rowSpan整除（说明已经是合并后的高度）
-        // 如果能整除，说明已经是正确的合并高度，不再重新计算
+        // Check whether the height divides evenly by rowSpan (indicating it's already the merged height)
+        // If it divides evenly, it's already the correct merged height, so don't recompute
         const isAlreadyMerged = column.columnHeader.height % chRowSpan === 0;
         if (!isAlreadyMerged) {
-          // 不能整除，说明还是单行高度，需要乘以rowSpan
+          // Doesn't divide evenly, meaning it's still a single row's height and needs to be multiplied by rowSpan
           column.columnHeader.height = column.columnHeader.height * chRowSpan;
         }
       }
-      // 确保columnHeader中的元素尺寸等于columnHeader尺寸
+      // Ensure the element inside columnHeader matches the columnHeader's dimensions
       if (column.columnHeader.element) {
         column.columnHeader.element.width = columnWidth;
         column.columnHeader.element.height = column.columnHeader.height;
       }
     }
 
-    // 确保column的detailCell尺寸始终等于列尺寸
+    // Ensure the column's detailCell dimensions always match the column's dimensions
     if (column.detailCell) {
       column.detailCell.width = columnWidth;
       column.detailCell.height = column.detailCell.height || defaultCellHeight;
-      // 确保detailCell中的元素尺寸等于detailCell尺寸
+      // Ensure the element inside detailCell matches the detailCell's dimensions
       if (column.detailCell.element) {
         column.detailCell.element.width = columnWidth;
         column.detailCell.element.height = column.detailCell.height;
       }
     }
 
-    // 确保column的columnFooter尺寸始终等于列尺寸
+    // Ensure the column's columnFooter dimensions always match the column's dimensions
     if (column.columnFooter) {
       column.columnFooter.width = columnWidth;
-      // 只有当height未设置时才使用默认值，否则使用已设置的值
+      // Only use the default value when height isn't set; otherwise use the configured value
       if (!column.columnFooter.height) {
         column.columnFooter.height = defaultCellHeight;
       }
-      // 如果 rowSpan > 1，inflate 高度以覆盖合并的行（仅当height是单行高度时）
+      // If rowSpan > 1, inflate the height to cover the merged rows (only when height is a single row's height)
       const cfRowSpan = column.columnFooter.rowSpan || 1;
       if (cfRowSpan > 1) {
-        // 检查高度是否能被rowSpan整除（说明已经是合并后的高度）
-        // 如果能整除，说明已经是正确的合并高度，不再重新计算
+        // Check whether the height divides evenly by rowSpan (indicating it's already the merged height)
+        // If it divides evenly, it's already the correct merged height, so don't recompute
         if (column.columnFooter.height % cfRowSpan !== 0) {
-          // 不能整除，说明还是单行高度，需要乘以rowSpan
+          // Doesn't divide evenly, meaning it's still a single row's height and needs to be multiplied by rowSpan
           column.columnFooter.height = column.columnFooter.height * cfRowSpan;
         }
-        // 否则保持不变（已经是正确的合并高度）
+        // Otherwise leave it unchanged (it's already the correct merged height)
       }
-      // 确保columnFooter中的元素尺寸等于columnFooter尺寸
+      // Ensure the element inside columnFooter matches the columnFooter's dimensions
       if (column.columnFooter.element) {
         column.columnFooter.element.width = columnWidth;
         column.columnFooter.element.height = column.columnFooter.height;
       }
     }
 
-    // 确保column的tableFooter尺寸始终等于列尺寸
+    // Ensure the column's tableFooter dimensions always match the column's dimensions
     if (column.tableFooter) {
       column.tableFooter.width = columnWidth;
       column.tableFooter.height =
         column.tableFooter.height || defaultCellHeight;
-      // 如果 rowSpan > 1，inflate 高度以覆盖合并的行
+      // If rowSpan > 1, inflate the height to cover the merged rows
       const tfRowSpan = column.tableFooter.rowSpan || 1;
       if (tfRowSpan > 1) {
         const baseH =
@@ -2481,7 +2481,7 @@ function preprocessTableElements(element: any) {
             : Math.round(column.tableFooter.height / tfRowSpan);
         column.tableFooter.height = baseH * tfRowSpan;
       }
-      // 确保tableFooter中的元素尺寸等于tableFooter尺寸
+      // Ensure the element inside tableFooter matches the tableFooter's dimensions
       if (column.tableFooter.element) {
         column.tableFooter.element.width = columnWidth;
         column.tableFooter.element.height = column.tableFooter.height;
@@ -2489,8 +2489,8 @@ function preprocessTableElements(element: any) {
     }
   }
 
-  // 开始处理
-  // 计算根级独立列的 rowSpan（group depth + 1）
+  // Begin processing
+  // Compute the rowSpan for root-level standalone columns (group depth + 1)
   function calcMaxGroupDepth(node: any): number {
     if (!node.children || node.children.length === 0) return 0;
     let max = 0;
@@ -2507,14 +2507,14 @@ function preprocessTableElements(element: any) {
   });
   const rootStandaloneRowSpan = Math.max(1, rootMaxGroupDepth + 1);
 
-  // 处理所有 children（包括列分组和普通列）
+  // Process all children (including column groups and regular columns)
   const groupChildren = element.children || [];
   groupChildren.forEach((child: any) => {
     if (child.children) {
-      // 处理列分组
+      // Process a column group
       processColumnGroup(child);
     } else {
-      // 根级独立列：设置 rowSpan
+      // Root-level standalone column: set the rowSpan
       if (rootStandaloneRowSpan > 1) {
         if (child.tableHeader)
           child.tableHeader.rowSpan =
@@ -2529,12 +2529,12 @@ function preprocessTableElements(element: any) {
           child.tableFooter.rowSpan =
             child.tableFooter.rowSpan || rootStandaloneRowSpan;
       }
-      // 处理普通列
+      // Process a regular column
       processColumn(child);
     }
   });
 
-  // 如果 children 中没有普通列，回退到 columns 数组
+  // If there are no regular columns among children, fall back to the columns array
   const hasPlainColumnsInChildren = groupChildren.some(
     (child: any) => !child.children,
   );
@@ -2548,16 +2548,16 @@ function preprocessTableElements(element: any) {
   }
 }
 
-// 生成表格XML
+// Generate table XML
 function generateTableXML(element: any): string {
-  // 预处理表格元素，确保多列组合的单元格中的元素宽度不超过聚合列的总宽度
+  // Preprocess the table element, ensuring the width of elements inside multi-column combined cells doesn't exceed the combined column's total width
   preprocessTableElements(element);
 
   let xml = `<componentElement>
       <reportElement${generateReportElementAttrs(element)}>`;
   xml += `${generateReportElementChildren(element)}`;
 
-  // 添加表格样式属性
+  // Add table style attributes
   let tableStyleProps = '';
   if (element.styles) {
     if (element.styles.tableHeader) {
@@ -2574,7 +2574,7 @@ function generateTableXML(element: any): string {
   xml += tableStyleProps;
   xml += "</reportElement>";
 
-  // 添加表格属性 - 只包含XSD允许的属性
+  // Add table attributes - only include attributes allowed by the XSD
   let tableAttrs = "";
   if (element.whenNoDataType) {
     tableAttrs += ` whenNoDataType="${element.whenNoDataType}"`;
@@ -2583,9 +2583,9 @@ function generateTableXML(element: any): string {
   xml += `<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd"${tableAttrs}>
 `;
 
-  // 生成datasetRun
+  // Generate datasetRun
   const dataset = element.dataset || {};
-  // 使用元素中已经存在的uuid，如果没有则生成一个新的
+  // Use the uuid already present on the element; generate a new one if missing
   const datasetUuid = dataset.uuid || crypto.randomUUID();
   xml += `<datasetRun subDataset="${dataset.name || "tableDataset"}" uuid="${datasetUuid}">
 `;
@@ -2594,16 +2594,16 @@ function generateTableXML(element: any): string {
   xml += `</datasetRun>
 `;
 
-  // 生成列和列分组
+  // Generate columns and column groups
 
-  // 检测表格是否有任何组合列
+  // Detect whether the table has any combined columns
   const hasColumnGroups =
     (element.children &&
       element.children.some((child: any) => child.children)) ||
     false;
 
-  // 计算表格中组合列的最大嵌套深度（只计算group节点，不包括叶子节点）
-  // 从virtual root (depth=0) 开始，group节点在 depth=1
+  // Compute the maximum nesting depth of combined columns in the table (counting only group nodes, not leaf nodes)
+  // Starting from the virtual root (depth=0); group nodes are at depth=1
   function calculateMaxGroupDepth(node: any, depth: number = 0): number {
     if (!node.children || node.children.length === 0) {
       return depth;
@@ -2620,9 +2620,9 @@ function generateTableXML(element: any): string {
     return maxDepth;
   }
 
-  // 计算从给定节点的children中，group节点的最大深度（相对于该节点的深度）
-  // 只考虑与standaloneColumn同级或更深层级的group节点
-  // 用于确定standaloneColumn的rowSpan
+  // Compute the maximum depth of group nodes within a given node's children (relative to that node's depth)
+  // Only considers group nodes at the same level as, or deeper than, standaloneColumn
+  // Used to determine standaloneColumn's rowSpan
   function getMaxGroupDepthInChildren(
     children: any[],
     baseDepth: number,
@@ -2630,7 +2630,7 @@ function generateTableXML(element: any): string {
     let maxDepth = baseDepth;
     for (const child of children) {
       if (child.children && child.children.length > 0) {
-        // 这是一个group节点
+        // This is a group node
         const childMaxDepth = getMaxGroupDepthInChildren(
           child.children,
           baseDepth + 1,
@@ -2643,7 +2643,7 @@ function generateTableXML(element: any): string {
     return maxDepth;
   }
 
-  // 计算表格中group节点的总数（用于确定顶层standaloneColumn的rowSpan）
+  // Compute the total number of group nodes in the table (used to determine the top-level standaloneColumn's rowSpan)
   function countGroups(node: any): number {
     if (!node.children || node.children.length === 0) {
       return 0;
@@ -2662,15 +2662,15 @@ function generateTableXML(element: any): string {
   });
   const totalGroups = countGroups({ children: element.children || [] });
 
-  // 1. 收集已经处理过的列的UUID
+  // 1. Collect the UUIDs of columns that have already been processed
   const processedColumnUuids = new Set<string>();
 
-  // 2. 处理element.children（包含列分组和直接列）
-  //    rowSpan 和 height 已在 preprocessTableElements 中设置
+  // 2. Process element.children (includes column groups and direct columns)
+  //    rowSpan and height have already been set in preprocessTableElements
   const children = element.children || [];
   children.forEach((child: any, index: number) => {
     if (child.children) {
-      // 列分组
+      // Column group
       xml += generateColumnGroupXML(
         child,
         processedColumnUuids,
@@ -2678,14 +2678,14 @@ function generateTableXML(element: any): string {
         maxGroupDepth,
       );
     } else {
-      // 直接列，是顶层直接列（rowSpan 和 height 已由 preprocessTableElements 处理）
+      // A direct column, i.e. a top-level direct column (rowSpan and height already handled by preprocessTableElements)
       xml += generateColumnXML(child, index, hasColumnGroups, maxGroupDepth);
       processedColumnUuids.add(child.uuid);
     }
   });
 
-  // 3. 处理element.columns，跳过已经在children中处理过的列
-  //    rowSpan 和 height 已在 preprocessTableElements 中设置
+  // 3. Process element.columns, skipping columns already processed within children
+  //    rowSpan and height have already been set in preprocessTableElements
   const normalColumns = element.columns || [];
   normalColumns.forEach((child: any, index: number) => {
     if (!child.children && !processedColumnUuids.has(child.uuid)) {
@@ -2694,8 +2694,8 @@ function generateTableXML(element: any): string {
     }
   });
 
-  // 生成表格的其他部分
-  // 生成tableHeader
+  // Generate the remaining parts of the table
+  // Generate tableHeader
   if (element.tableHeader) {
     xml += `<tableHeader height="${toInt(element.tableHeader.height || 30)}">
 `;
@@ -2707,7 +2707,7 @@ function generateTableXML(element: any): string {
 `;
   }
 
-  // 生成columnHeader
+  // Generate columnHeader
   if (element.columnHeader) {
     xml += `<columnHeader height="${toInt(element.columnHeader.height || 30)}">
 `;
@@ -2719,7 +2719,7 @@ function generateTableXML(element: any): string {
 `;
   }
 
-  // 生成groupHeader
+  // Generate groupHeader
   if (element.groupHeaders && element.groupHeaders.length > 0) {
     element.groupHeaders.forEach((groupHeader: any) => {
       xml += `<groupHeader groupName="${groupHeader.groupName}">
@@ -2737,7 +2737,7 @@ function generateTableXML(element: any): string {
     });
   }
 
-  // 生成detail
+  // Generate detail
   if (element.detail) {
     xml += `<detail height="${toInt(element.detail.height || 30)}">
 `;
@@ -2749,7 +2749,7 @@ function generateTableXML(element: any): string {
 `;
   }
 
-  // 生成groupFooter
+  // Generate groupFooter
   if (element.groupFooters && element.groupFooters.length > 0) {
     element.groupFooters.forEach((groupFooter: any) => {
       xml += `<groupFooter groupName="${groupFooter.groupName}">
@@ -2767,7 +2767,7 @@ function generateTableXML(element: any): string {
     });
   }
 
-  // 生成columnFooter
+  // Generate columnFooter
   if (element.columnFooter) {
     xml += `<columnFooter height="${toInt(element.columnFooter.height || 30)}">
 `;
@@ -2779,7 +2779,7 @@ function generateTableXML(element: any): string {
 `;
   }
 
-  // 生成tableFooter
+  // Generate tableFooter
   if (element.tableFooter) {
     xml += `<tableFooter height="${toInt(element.tableFooter.height || 30)}">
 `;
@@ -2791,7 +2791,7 @@ function generateTableXML(element: any): string {
 `;
   }
 
-  // 生成noData
+  // Generate noData
   if (element.noData) {
     xml += `<noData height="${toInt(element.noData.height || 30)}"`;
     if (element.noData.style) {
@@ -2817,20 +2817,20 @@ function generateTableXML(element: any): string {
   return xml;
 }
 
-// 不再需要UUID生成函数，已移除
+// A UUID generation function is no longer needed and has been removed
 
-// 解析JRXML内容为设计器数据结构
+// Parse JRXML content into the designer data structure
 function parseJRXMLContentLegacy(jrxmlContent: string): {
   properties: ReportProperties;
   bands: Band[];
   fields: Field[];
   parameters: Parameter[];
 } {
-  // 使用DOMParser解析XML
+  // Parse the XML using DOMParser
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(jrxmlContent, "text/xml");
 
-  // 解析报表属性
+  // Parse the report properties
   const jasperReportElem = xmlDoc.querySelector("jasperReport");
   if (!jasperReportElem) {
     throw new Error("Invalid JRXML: Missing jasperReport element");
@@ -2848,7 +2848,7 @@ function parseJRXMLContentLegacy(jrxmlContent: string): {
     ),
   };
 
-  // 解析字段
+  // Parse fields
   const fields: Field[] = [];
   xmlDoc.querySelectorAll("field").forEach((fieldElem) => {
     const name = fieldElem.getAttribute("name");
@@ -2858,7 +2858,7 @@ function parseJRXMLContentLegacy(jrxmlContent: string): {
     }
   });
 
-  // 解析参数
+  // Parse parameters
   const parameters: Parameter[] = [];
   xmlDoc.querySelectorAll("parameter").forEach((paramElem) => {
     const name = paramElem.getAttribute("name");
@@ -2866,7 +2866,7 @@ function parseJRXMLContentLegacy(jrxmlContent: string): {
     if (name) {
       const param: Parameter = { name, class: className };
 
-      // 解析默认值
+      // Parse the default value
       const defaultValueExpr = paramElem.querySelector(
         "defaultValueExpression",
       );
@@ -2878,7 +2878,7 @@ function parseJRXMLContentLegacy(jrxmlContent: string): {
     }
   });
 
-  // 解析bands
+  // Parse bands
   const bands: Band[] = [];
   const bandTypes = [
     "background",
@@ -2907,12 +2907,12 @@ function parseJRXMLContentLegacy(jrxmlContent: string): {
           elements,
         };
 
-        // 优先使用非过时的splitType属性，只有在没有splitType属性时才使用过时的isSplitAllowed属性作为fallback
+        // Prefer the non-deprecated splitType attribute; only fall back to the deprecated isSplitAllowed attribute if splitType is absent
         if (bandElem.hasAttribute("splitType")) {
-          // 如果已经指定了splitType属性，直接使用
+          // If splitType is already specified, use it directly
           band.splitType = bandElem.getAttribute("splitType");
         } else if (bandElem.hasAttribute("isSplitAllowed")) {
-          // 只有在没有splitType属性时才使用过时的isSplitAllowed属性
+          // Only use the deprecated isSplitAllowed attribute if splitType is absent
           const isSplitAllowed =
             bandElem.getAttribute("isSplitAllowed") === "true";
           band.splitType = isSplitAllowed ? "Stretch" : "Prevent";
@@ -2926,11 +2926,11 @@ function parseJRXMLContentLegacy(jrxmlContent: string): {
   return { properties, bands, fields, parameters };
 }
 
-// 解析band中的元素
+// Parse the elements within a band
 function parseBandElements(bandElem: Element): any[] {
   const elements: any[] = [];
 
-  // 处理各种元素类型
+  // Handle the various element types
   const elementTypes = [
     "staticText",
     "textField",
@@ -2951,12 +2951,12 @@ function parseBandElements(bandElem: Element): any[] {
   return elements;
 }
 
-// 解析单个元素
+// Parse a single element
 function parseElement(element: Element, type: string): any {
   const reportElement = element.querySelector("reportElement");
   if (!reportElement) return null;
 
-  // 确保type是有效的DesignElement类型（排除rectangle）
+  // Ensure type is a valid DesignElement type (excluding rectangle)
   const validElementTypes: Array<
     "staticText" | "textField" | "image" | "line"
   > = ["staticText", "textField", "image", "line"];
@@ -2974,19 +2974,19 @@ function parseElement(element: Element, type: string): any {
     height: parseInt(reportElement.getAttribute("height") || "30"),
   };
 
-  // 设置背景色
+  // Set the background color
   const backcolor = reportElement.getAttribute("backcolor");
   if (backcolor) {
     result.backcolor = backcolor;
   }
 
-  // 解析box元素
+  // Parse the box element
   const boxElement = element.querySelector("box");
   if (boxElement) {
     result.box = parseBoxElement(boxElement);
   }
 
-  // 解析特定类型的元素属性
+  // Parse type-specific element attributes
   switch (type) {
     case "staticText":
       parseStaticTextElement(element, result);
@@ -3008,16 +3008,16 @@ function parseElement(element: Element, type: string): any {
   return result;
 }
 
-// 解析box元素，重点处理边框和边距
+// Parse the box element, focusing on borders and padding
 function parseBoxElement(boxElement: Element): any {
   const box = {} as any;
 
-  // 解析padding属性
+  // Parse the padding attribute
   if (boxElement.hasAttribute("padding")) {
     box.padding = parseInt(boxElement.getAttribute("padding") || "0");
   }
 
-  // 解析各方向的padding属性
+  // Parse the per-side padding attributes
   if (boxElement.hasAttribute("topPadding")) {
     box.topPadding = parseInt(boxElement.getAttribute("topPadding") || "0");
   }
@@ -3033,80 +3033,80 @@ function parseBoxElement(boxElement: Element): any {
     box.rightPadding = parseInt(boxElement.getAttribute("rightPadding") || "0");
   }
 
-  // 解析过时的border属性，转换为pen子元素
+  // Parse the deprecated border attribute, converting it to the pen child element
   if (boxElement.hasAttribute("border")) {
     if (!box.pen) box.pen = {};
-    // 确保边框宽度为0时也被记录，而不是被忽略
+    // Ensure a border width of 0 is also recorded rather than ignored
     box.pen.lineWidth = parseInt(boxElement.getAttribute("border") || "0");
   }
 
-  // 解析过时的borderColor属性，转换为pen子元素
+  // Parse the deprecated borderColor attribute, converting it to the pen child element
   if (boxElement.hasAttribute("borderColor")) {
     if (!box.pen) box.pen = {};
     box.pen.lineColor = boxElement.getAttribute("borderColor");
   }
 
-  // 解析过时的topBorder属性，转换为topPen子元素
+  // Parse the deprecated topBorder attribute, converting it to the topPen child element
   if (boxElement.hasAttribute("topBorder")) {
     if (!box.topPen) box.topPen = {};
-    // 确保边框宽度为0时也被记录，而不是被忽略
+    // Ensure a border width of 0 is also recorded rather than ignored
     box.topPen.lineWidth = parseInt(
       boxElement.getAttribute("topBorder") || "0",
     );
   }
 
-  // 解析过时的topBorderColor属性，转换为topPen子元素
+  // Parse the deprecated topBorderColor attribute, converting it to the topPen child element
   if (boxElement.hasAttribute("topBorderColor")) {
     if (!box.topPen) box.topPen = {};
     box.topPen.lineColor = boxElement.getAttribute("topBorderColor");
   }
 
-  // 解析过时的leftBorder属性，转换为leftPen子元素
+  // Parse the deprecated leftBorder attribute, converting it to the leftPen child element
   if (boxElement.hasAttribute("leftBorder")) {
     if (!box.leftPen) box.leftPen = {};
-    // 确保边框宽度为0时也被记录，而不是被忽略
+    // Ensure a border width of 0 is also recorded rather than ignored
     box.leftPen.lineWidth = parseInt(
       boxElement.getAttribute("leftBorder") || "0",
     );
   }
 
-  // 解析过时的leftBorderColor属性，转换为leftPen子元素
+  // Parse the deprecated leftBorderColor attribute, converting it to the leftPen child element
   if (boxElement.hasAttribute("leftBorderColor")) {
     if (!box.leftPen) box.leftPen = {};
     box.leftPen.lineColor = boxElement.getAttribute("leftBorderColor");
   }
 
-  // 解析过时的bottomBorder属性，转换为bottomPen子元素
+  // Parse the deprecated bottomBorder attribute, converting it to the bottomPen child element
   if (boxElement.hasAttribute("bottomBorder")) {
     if (!box.bottomPen) box.bottomPen = {};
-    // 确保边框宽度为0时也被记录，而不是被忽略
+    // Ensure a border width of 0 is also recorded rather than ignored
     box.bottomPen.lineWidth = parseInt(
       boxElement.getAttribute("bottomBorder") || "0",
     );
   }
 
-  // 解析过时的bottomBorderColor属性，转换为bottomPen子元素
+  // Parse the deprecated bottomBorderColor attribute, converting it to the bottomPen child element
   if (boxElement.hasAttribute("bottomBorderColor")) {
     if (!box.bottomPen) box.bottomPen = {};
     box.bottomPen.lineColor = boxElement.getAttribute("bottomBorderColor");
   }
 
-  // 解析过时的rightBorder属性，转换为rightPen子元素
+  // Parse the deprecated rightBorder attribute, converting it to the rightPen child element
   if (boxElement.hasAttribute("rightBorder")) {
     if (!box.rightPen) box.rightPen = {};
-    // 确保边框宽度为0时也被记录，而不是被忽略
+    // Ensure a border width of 0 is also recorded rather than ignored
     box.rightPen.lineWidth = parseInt(
       boxElement.getAttribute("rightBorder") || "0",
     );
   }
 
-  // 解析过时的rightBorderColor属性，转换为rightPen子元素
+  // Parse the deprecated rightBorderColor attribute, converting it to the rightPen child element
   if (boxElement.hasAttribute("rightBorderColor")) {
     if (!box.rightPen) box.rightPen = {};
     box.rightPen.lineColor = boxElement.getAttribute("rightBorderColor");
   }
 
-  // 解析pen子元素
+  // Parse the pen child elements
   const topPen = boxElement.querySelector("topPen");
   if (topPen) box.topPen = parsePenElement(topPen);
 
@@ -3125,12 +3125,12 @@ function parseBoxElement(boxElement: Element): any {
   return box;
 }
 
-// 解析pen元素，处理边框粗细、样式和颜色
+// Parse the pen element, handling border width, style, and color
 function parsePenElement(penElement: Element): any {
   const pen = {} as any;
 
   if (penElement.hasAttribute("lineWidth")) {
-    // 确保lineWidth为0时也被记录，而不是被忽略
+    // Ensure a lineWidth of 0 is also recorded rather than ignored
     pen.lineWidth = parseFloat(penElement.getAttribute("lineWidth") || "0");
   }
   if (penElement.hasAttribute("lineStyle"))
@@ -3141,7 +3141,7 @@ function parsePenElement(penElement: Element): any {
   return pen;
 }
 
-// 解析静态文本元素
+// Parse a static text element
 function parseStaticTextElement(element: Element, result: any): void {
   const textElement = element.querySelector("textElement");
   if (textElement) {
@@ -3153,13 +3153,13 @@ function parseStaticTextElement(element: Element, result: any): void {
       result.verticalAlignment = textElement.getAttribute("verticalAlignment");
     }
 
-    // 处理过时的isStyledText属性，转换为markup属性
+    // Handle the deprecated isStyledText attribute, converting it to the markup attribute
     if (textElement.hasAttribute("isStyledText")) {
       const isStyledText = textElement.getAttribute("isStyledText") === "true";
       result.markup = isStyledText ? "styled" : "none";
     }
 
-    // 如果已经指定了markup属性，直接使用
+    // If markup is already specified, use it directly
     if (textElement.hasAttribute("markup")) {
       result.markup = textElement.getAttribute("markup");
     }
@@ -3182,16 +3182,16 @@ function parseStaticTextElement(element: Element, result: any): void {
   }
 }
 
-// 解析动态文本元素
+// Parse a text field element
 function parseTextFieldElement(element: Element, result: any): void {
-  // 处理过时的isStretchWithOverflow属性，转换为textAdjust属性
+  // Handle the deprecated isStretchWithOverflow attribute, converting it to the textAdjust attribute
   if (element.hasAttribute("isStretchWithOverflow")) {
     const isStretchWithOverflow =
       element.getAttribute("isStretchWithOverflow") === "true";
     result.textAdjust = isStretchWithOverflow ? "StretchHeight" : "CutText";
   }
 
-  // 如果已经指定了textAdjust属性，直接使用
+  // If textAdjust is already specified, use it directly
   if (element.hasAttribute("textAdjust")) {
     result.textAdjust = element.getAttribute("textAdjust");
   }
@@ -3209,7 +3209,7 @@ function parseTextFieldElement(element: Element, result: any): void {
     ? element.getAttribute("isBlankWhenNull") === "true"
     : true;
 
-  // 解析textElement和font
+  // Parse textElement and font
   const textElement = element.querySelector("textElement");
   if (textElement) {
     if (textElement.hasAttribute("textAlignment")) {
@@ -3232,11 +3232,11 @@ function parseTextFieldElement(element: Element, result: any): void {
     }
   }
 
-  // 解析表达式
+  // Parse the expression
   const expressionElem = element.querySelector("textFieldExpression");
   if (expressionElem) {
     result.expression = expressionElem.textContent || "";
-    // 尝试从表达式中提取字段名
+    // Try to extract the field name from the expression
     const fieldMatch = result.expression.match(/\$F\{([^}]+)\}/);
     if (fieldMatch) {
       result.fieldName = fieldMatch[1];
@@ -3244,7 +3244,7 @@ function parseTextFieldElement(element: Element, result: any): void {
   }
 }
 
-// 解析图片元素
+// Parse an image element
 function parseImageElement(element: Element, result: any): void {
   if (element.hasAttribute("scaleImage"))
     result.scaleImage = element.getAttribute("scaleImage");
@@ -3253,7 +3253,7 @@ function parseImageElement(element: Element, result: any): void {
   if (element.hasAttribute("vAlign"))
     result.vAlign = element.getAttribute("vAlign");
 
-  // 解析graphicElement
+  // Parse graphicElement
   const graphicElement = parseGraphicElement(element);
   if (Object.keys(graphicElement).length > 0) {
     Object.assign(result, graphicElement);
@@ -3265,28 +3265,28 @@ function parseImageElement(element: Element, result: any): void {
   }
 }
 
-// 解析线条元素
+// Parse a line element
 function parseLineElement(element: Element, result: any): void {
   if (element.hasAttribute("direction")) {
-    // 将XML中的direction属性映射到lineDirection
+    // Map the XML's direction attribute to lineDirection
     result.lineDirection = element.getAttribute("direction");
   }
 
-  // 解析graphicElement
+  // Parse graphicElement
   const graphicElement = parseGraphicElement(element);
   if (Object.keys(graphicElement).length > 0) {
     Object.assign(result, graphicElement);
   }
 }
 
-// 解析graphicElement
+// Parse graphicElement
 function parseGraphicElement(element: Element): any {
   const graphicElement: any = {};
 
-  // 解析graphicElement属性
+  // Parse the graphicElement attributes
   const graphicEl = element.querySelector("graphicElement");
   if (graphicEl) {
-    // 处理过时的stretchType属性，转换为reportElement的同名属性
+    // Handle the deprecated stretchType attribute, converting it to the same-named attribute on reportElement
     if (graphicEl.hasAttribute("stretchType")) {
       graphicElement.stretchType = graphicEl.getAttribute("stretchType");
     }
@@ -3295,7 +3295,7 @@ function parseGraphicElement(element: Element): any {
       graphicElement.fill = graphicEl.getAttribute("fill");
     }
 
-    // 处理过时的pen属性，转换为pen子元素
+    // Handle the deprecated pen attribute, converting it to the pen child element
     const penElement = graphicEl.querySelector("pen");
     if (penElement) {
       const pen: any = {};
@@ -3315,19 +3315,19 @@ function parseGraphicElement(element: Element): any {
   return graphicElement;
 }
 
-// 解析矩形元素
+// Parse a rectangle element
 function parseRectangleElement(element: Element, result: any): void {
-  // 解析graphicElement
+  // Parse graphicElement
   const graphicElement = parseGraphicElement(element);
   if (Object.keys(graphicElement).length > 0) {
     Object.assign(result, graphicElement);
   }
 }
 
-// 添加缺失的DOMParser定义，用于非浏览器环境
+// Add a fallback DOMParser definition for non-browser environments
 if (typeof window === "undefined" && typeof DOMParser === "undefined") {
-  // 在Node.js环境中，需要引入xmldom或类似的库
-  // 这里提供一个简单的兼容性提示
+  // In a Node.js environment, a library such as xmldom needs to be imported
+  // Provide a simple compatibility notice here
   console.warn(
     "DOMParser is not available. In Node.js environment, please use a library like xmldom.",
   );

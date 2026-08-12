@@ -1,7 +1,7 @@
 /**
- * useAIChat - AI对话Composable
+ * useAIChat - AI conversation composable
  *
- * 使用配置的AI服务与AI交互，并执行工具调用
+ * Interacts with the AI using the configured AI service, and executes tool calls
  */
 
 import { ref, computed } from 'vue';
@@ -11,7 +11,7 @@ import { useAIConfigManager } from '@/composables/useAIConfigManager';
 import type { MCPToolCall, MCPToolResult } from '@/mcp';
 
 // ============================================
-// 类型定义
+// Type definitions
 // ============================================
 
 export interface ChatMessage {
@@ -25,43 +25,43 @@ export interface ChatMessage {
 }
 
 export interface UseAIChatReturn {
-  // 状态
+  // State
   messages: ChatMessage[];
   isLoading: boolean;
 
-  // 操作
+  // Actions
   sendMessage: (content: string) => Promise<void>;
   clearHistory: () => void;
 
-  // 计算属性
+  // Computed properties
   messageCount: number;
   lastMessage: ChatMessage | null;
 }
 
 // ============================================
-// 实现
+// Implementation
 // ============================================
 
 export function useAIChat(getMcpContext?: () => MCPContext | undefined, onUpdate?: () => void): UseAIChatReturn {
-  // 状态
+  // State
   const messages = ref<ChatMessage[]>([]);
   const isLoading = ref(false);
 
-  // 对话历史
+  // Conversation history
   const conversationHistory: Message[] = [];
 
-  // 配置管理器
+  // Configuration manager
   const { config } = useAIConfigManager();
 
   /**
-   * 生成唯一消息ID
+   * Generate a unique message ID
    */
   function generateMessageId(): string {
     return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
   /**
-   * 添加消息
+   * Add a message
    */
   function addMessage(message: Omit<ChatMessage, 'id' | 'timestamp'>): ChatMessage {
     const newMessage: ChatMessage = {
@@ -74,7 +74,7 @@ export function useAIChat(getMcpContext?: () => MCPContext | undefined, onUpdate
   }
 
   /**
-   * 更新消息
+   * Update a message
    */
   function updateMessage(id: string, updates: Partial<ChatMessage>) {
     const messageIndex = messages.value.findIndex(m => m.id === id);
@@ -87,7 +87,7 @@ export function useAIChat(getMcpContext?: () => MCPContext | undefined, onUpdate
   }
 
   /**
-   * 执行MCP工具
+   * Execute an MCP tool
    */
   async function executeTool(toolCall: MCPToolCall): Promise<MCPToolResult> {
     const mcpContext = getMcpContext?.();
@@ -109,7 +109,7 @@ export function useAIChat(getMcpContext?: () => MCPContext | undefined, onUpdate
   }
 
   /**
-   * 获取选中元素的完整信息
+   * Get the full info of the selected element
    */
   function getSelectedElementInfo(context: MCPContext): any {
     if (!context.selectedElement) {
@@ -118,24 +118,24 @@ export function useAIChat(getMcpContext?: () => MCPContext | undefined, onUpdate
 
     const { bandIndex, elementIndex } = context.selectedElement;
 
-    // 确保索引有效
+    // Ensure the indices are valid
     if (bandIndex === undefined || elementIndex === undefined) {
       return undefined;
     }
 
-    // 获取band
+    // Get the band
     const band = context.bands[bandIndex];
     if (!band || !band.elements) {
       return undefined;
     }
 
-    // 获取元素
+    // Get the element
     const element = band.elements[elementIndex];
     if (!element) {
       return undefined;
     }
 
-    // 返回完整的元素信息
+    // Return the full element info
     return {
       uuid: element.uuid,
       type: element.type,
@@ -156,7 +156,7 @@ export function useAIChat(getMcpContext?: () => MCPContext | undefined, onUpdate
   }
 
   /**
-   * 发送消息
+   * Send a message
    */
   async function sendMessage(content: string) {
     if (isLoading.value || !content.trim()) {
@@ -166,68 +166,68 @@ export function useAIChat(getMcpContext?: () => MCPContext | undefined, onUpdate
     isLoading.value = true;
 
     try {
-      // 添加用户消息
+      // Add the user message
       addMessage({
         role: 'user',
         content
       });
 
-      // 添加加载提示
+      // Add a loading indicator
       const loadingMessage = addMessage({
         role: 'system',
-        content: 'AI 正在处理...',
+        content: 'AI is processing...',
         isLoading: true
       });
 
-      // 调用AI服务（使用配置的参数）
+      // Call the AI service (using configured parameters)
       const mcpContext = getMcpContext?.();
       const response = await processUserInput(
         content,
         conversationHistory,
         ALL_MCP_TOOL_SCHEMAS,
-        config,  // 传递配置
+        config,  // Pass the configuration
         mcpContext ? {
           bands: mcpContext.bands,
           fields: mcpContext.fields,
           parameters: mcpContext.parameters,
           selectedElement: mcpContext.selectedElement ? getSelectedElementInfo(mcpContext) : undefined,
           selectedElements: mcpContext.selectedElements
-        } : undefined  // 传递设计状态
+        } : undefined  // Pass the design state
       );
 
-      // 移除加载提示
+      // Remove the loading indicator
       updateMessage(loadingMessage.id, { isLoading: false });
 
-      // 如果有工具调用，执行它们
+      // If there are tool calls, execute them
       if (response.toolCalls && response.toolCalls.length > 0) {
         for (const toolCall of response.toolCalls) {
-          // 显示正在执行工具
+          // Show that a tool is executing
           addMessage({
             role: 'system',
-            content: `执行工具: ${toolCall.name}`
+            content: `Executing tool: ${toolCall.name}`
           });
 
-          // 真正执行工具
+          // Actually execute the tool
           const toolResult = await executeTool(toolCall);
 
-          // 触发UI更新
+          // Trigger a UI update
           if (onUpdate && toolResult.success) {
             onUpdate();
           }
 
-          // 显示工具执行结果
+          // Show the tool execution result
           addMessage({
             role: 'tool',
             content: toolResult.success
-              ? `✅ 工具 ${toolCall.name} 执行成功`
-              : `❌ 工具 ${toolCall.name} 执行失败: ${toolResult.error}`,
+              ? `✅ Tool ${toolCall.name} executed successfully`
+              : `❌ Tool ${toolCall.name} failed: ${toolResult.error}`,
             toolCall,
             toolResult
           });
         }
       }
 
-      // 添加AI响应
+      // Add the AI response
       if (response.content) {
         addMessage({
           role: 'assistant',
@@ -235,7 +235,7 @@ export function useAIChat(getMcpContext?: () => MCPContext | undefined, onUpdate
         });
       }
 
-      // 如果有错误
+      // If there is an error
       if (response.error) {
         addMessage({
           role: 'error',
@@ -246,7 +246,7 @@ export function useAIChat(getMcpContext?: () => MCPContext | undefined, onUpdate
     } catch (error) {
       addMessage({
         role: 'error',
-        content: error instanceof Error ? error.message : '未知错误'
+        content: error instanceof Error ? error.message : 'Unknown error'
       });
     } finally {
       isLoading.value = false;
@@ -254,28 +254,28 @@ export function useAIChat(getMcpContext?: () => MCPContext | undefined, onUpdate
   }
 
   /**
-   * 清空历史
+   * Clear history
    */
   function clearHistory() {
-    // 直接清空数组内容，而不是替换整个数组
+    // Clear the array contents directly, rather than replacing the whole array
     messages.value.splice(0, messages.value.length);
     conversationHistory.length = 0;
   }
 
-  // 计算属性
+  // Computed properties
   const messageCount = computed(() => messages.value.length);
   const lastMessage = computed(() => messages.value[messages.value.length - 1] || null);
 
   return {
-    // 状态
+    // State
     messages: messages.value,
     isLoading: isLoading.value,
 
-    // 操作
+    // Actions
     sendMessage,
     clearHistory,
 
-    // 计算属性
+    // Computed properties
     messageCount: messageCount.value,
     lastMessage: lastMessage.value
   } as UseAIChatReturn;

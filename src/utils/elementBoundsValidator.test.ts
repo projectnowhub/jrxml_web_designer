@@ -65,8 +65,8 @@ describe('elementBoundsValidator', () => {
     })
 
     it('should return false for element outside left margin', () => {
-      // 元素坐标是相对于band的，所以x=0对应的是band的左边界（即页面的leftMargin位置）
-      // 因此x=-10才是超出band左边界的情况
+      // Element coordinates are relative to the band, so x=0 corresponds to the band's left boundary (i.e. the page's leftMargin position)
+      // Therefore x=-10 is the case that exceeds the band's left boundary
       const element = { ...mockStaticTextElement, x: -10 }
       const band = mockBands[0]
       
@@ -76,8 +76,8 @@ describe('elementBoundsValidator', () => {
     })
 
     it('should return false for element outside right margin', () => {
-      // 元素坐标是相对于band的，可用宽度为pageWidth - leftMargin - rightMargin = 595 - 20 - 20 = 555
-      // 因此x=500, width=100时，元素右边界为600，超出了可用宽度555
+      // Element coordinates are relative to the band; the available width is pageWidth - leftMargin - rightMargin = 595 - 20 - 20 = 555
+      // So with x=500, width=100, the element's right edge is 600, which exceeds the available width of 555
       const element = { ...mockStaticTextElement, x: 500, width: 100 }
       const band = mockBands[0]
       
@@ -105,8 +105,8 @@ describe('elementBoundsValidator', () => {
     })
 
     it('should return true for element in first band exceeding page top', () => {
-      // 第一个band的元素超出页面顶部
-      const element = { ...mockStaticTextElement, y: -30 } // 元素在band内的y坐标为负值，会超出页面顶部
+      // An element in the first band exceeds the top of the page
+      const element = { ...mockStaticTextElement, y: -30 } // A negative y coordinate within the band will exceed the top of the page
       const band = mockBands[0]
       
       if (band) {
@@ -116,12 +116,12 @@ describe('elementBoundsValidator', () => {
     })
 
     it('should return true for element in last band exceeding page bottom', () => {
-      // 最后一个band的元素超出页面底部
-      // 第一个band高度80，第二个band高度100，总高度180
-      // 页面高度842，上下边距各20，可用高度802
-      // 第二个band的元素y=750，高度=50，实际位置是80+750=830，底部是830+50=880，超出页面底部842-20=822
+      // An element in the last band exceeds the bottom of the page
+      // First band height 80, second band height 100, total height 180
+      // Page height 842, top/bottom margins 20 each, available height 802
+      // The second band's element has y=750, height=50; its actual position is 80+750=830, bottom is 830+50=880, exceeding the page bottom boundary of 842-20=822
       const element = { ...mockStaticTextElement, y: 750, height: 50 }
-      const band = mockBands[1] // 使用第二个band（最后一个）
+      const band = mockBands[1] // Use the second band (the last one)
       
       if (band) {
         expect(validateElementBounds(element, band, 1, mockBands, mockReportProperties).exceedsBottom).toBe(true)
@@ -130,12 +130,12 @@ describe('elementBoundsValidator', () => {
     })
     
     it('should allow element in last band to touch page bottom', () => {
-      // 最后一个band的元素接触页面底部但不超出
-      // 第一个band高度80，第二个band高度100，总高度180
-      // 页面高度842，上下边距各20，可用高度802
-      // 第二个band的元素y=672，高度=50，实际位置是80+672=752，底部是752+50=802，正好接触页面底部842-20=822
+      // An element in the last band touches the bottom of the page but does not exceed it
+      // First band height 80, second band height 100, total height 180
+      // Page height 842, top/bottom margins 20 each, available height 802
+      // The second band's element has y=672, height=50; its actual position is 80+672=752, bottom is 752+50=802, exactly touching the page bottom boundary of 842-20=822
       const element = { ...mockStaticTextElement, y: 672, height: 50 }
-      const band = mockBands[1] // 使用第二个band（最后一个）
+      const band = mockBands[1] // Use the second band (the last one)
       
       if (band) {
         expect(validateElementBounds(element, band, 1, mockBands, mockReportProperties).exceedsBottom).toBe(false)
@@ -145,17 +145,17 @@ describe('elementBoundsValidator', () => {
     })
     
     it('should allow element in last band to exceed band height but not page bottom', () => {
-      // 最后一个band的元素超出band高度但不超出页面底部
-      // 第一个band高度80，第二个band高度100，总高度180
-      // 页面高度842，上下边距各20，可用高度802
-      // 第二个band的元素y=100，高度=602，实际位置是80+100=180，底部是180+602=782，不超出页面底部842-20=822
-      // 但是元素高度602 > band高度100，所以超出band底部
+      // An element in the last band exceeds the band's height but not the bottom of the page
+      // First band height 80, second band height 100, total height 180
+      // Page height 842, top/bottom margins 20 each, available height 802
+      // The second band's element has y=100, height=602; its actual position is 80+100=180, bottom is 180+602=782, not exceeding the page bottom boundary of 842-20=822
+      // However, the element's height 602 > band height 100, so it exceeds the band's bottom
       const element = { ...mockStaticTextElement, y: 100, height: 602 }
-      const band = mockBands[1] // 使用第二个band（最后一个）
-      
+      const band = mockBands[1] // Use the second band (the last one)
+
       if (band) {
         expect(validateElementBounds(element, band, 1, mockBands, mockReportProperties).exceedsBottom).toBe(false)
-        expect(validateElementBounds(element, band, 1, mockBands, mockReportProperties).exceedsBandBottom).toBe(false) // 修复后应该为false
+        expect(validateElementBounds(element, band, 1, mockBands, mockReportProperties).exceedsBandBottom).toBe(false) // Should be false after the fix
         expect(validateElementBounds(element, band, 1, mockBands, mockReportProperties).isOutOfBounds).toBe(false)
       }
     })
@@ -246,11 +246,11 @@ describe('elementBoundsValidator', () => {
     it('should return errors for invalid report design', () => {
       const result = getReportDesignValidationErrors(mockBands, mockReportProperties)
       expect(result).toHaveLength(1)
-      expect(result[0]).toContain('超出detail区域右边界')
+      expect(result[0]).toContain('exceeds the right boundary of the detail band')
     })
 
     it('should return error when total bands height exceeds page height', () => {
-      // 创建一个高度超出页面的bands数组，元素都在有效范围内
+      // Create a bands array whose total height exceeds the page, with all elements within their valid range
       const tallBands: Band[] = [
         {
           type: 'title',
@@ -265,8 +265,8 @@ describe('elementBoundsValidator', () => {
       ]
       
       const result = getReportDesignValidationErrors(tallBands, mockReportProperties)
-      // 可能会有多个错误，只需要检查是否包含总高度超出的错误
-      const hasTotalHeightError = result.some(error => error.includes('报表设计无效'))
+      // There may be multiple errors; we only need to check whether one reports the total height overflow
+      const hasTotalHeightError = result.some(error => error.includes('Invalid report design'))
       expect(hasTotalHeightError).toBe(true)
     })
 
@@ -278,11 +278,11 @@ describe('elementBoundsValidator', () => {
           elements: [
             {
               ...mockStaticTextElement,
-              x: -10 // 超出左边界
+              x: -10 // exceeds the left boundary
             },
             {
               ...mockStaticTextElement,
-              x: 500, // 超出右边界
+              x: 500, // exceeds the right boundary
               width: 100
             }
           ]

@@ -54,7 +54,7 @@ const emit = defineEmits<{
 
 const serverUrl = ref(props.currentUrl);
 
-// 监听currentUrl变化，更新输入框值
+// Watch for changes to currentUrl and update the input value
 watch(() => props.currentUrl, (newUrl) => {
   serverUrl.value = newUrl;
 });

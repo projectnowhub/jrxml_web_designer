@@ -38,14 +38,14 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-// 获取Band显示名称
+// Get the display name of the band
 function getBandDisplayName(bandType: string): string {
-  // Use t() with dynamic key. 
+  // Use t() with dynamic key.
   // Assuming keys exist in bandNames section of locale files.
   return t(`bandNames.${bandType}`);
 }
 
-// 更新Band高度
+// Update the band height
 function updateBandHeight(_index: number) {
   const updatedBands = [...props.bands];
   emit('update:bands', updatedBands);

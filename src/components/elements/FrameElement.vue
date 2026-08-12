@@ -17,11 +17,11 @@
     @resize-start="handleResizeStart"
     @contextmenu="handleContextMenu"
   >
-    <!-- Frame 元素内容 -->
+    <!-- Frame element content -->
     <div class="frame-content" :class="{ 'frame-empty': !element.elements || element.elements.length === 0 }">
-      <!-- 渲染子元素 -->
+      <!-- Render child elements -->
       <template v-if="element.elements && element.elements.length > 0">
-        <!-- 动态加载 ElementFactory 以避免循环引用 -->
+        <!-- Dynamically load ElementFactory to avoid circular reference -->
         <component 
           :is="ElementFactory"
           v-for="(childElement, childIndex) in element.elements"
@@ -51,7 +51,7 @@
         />
       </template>
       
-      <!-- 暂时为空，未来可以支持嵌套元素 -->
+      <!-- Currently empty; nested elements may be supported in the future -->
       <div v-else class="frame-placeholder">
         <span class="frame-label">Frame</span>
       </div>
@@ -64,7 +64,7 @@ import { defineAsyncComponent } from 'vue';
 import BaseElement from './BaseElement.vue';
 import type { FrameElement, SelectedElementInfo, EditingElementInfo } from '../../types';
 
-// 异步导入 ElementFactory 以避免循环依赖
+// Asynchronously import ElementFactory to avoid circular dependencies
 const ElementFactory = defineAsyncComponent(() => import('./ElementFactory.vue'));
 
 // Props
@@ -73,7 +73,7 @@ const props = defineProps<{
   bandIndex: number;
   elementIndex: number;
   selectedElement: SelectedElementInfo | null;
-  selectedElements?: {bandIndex: number, elementIndex: number, parentFrameIndex?: number}[]; // 添加多选支持
+  selectedElements?: {bandIndex: number, elementIndex: number, parentFrameIndex?: number}[]; // Add multi-select support
   editingElement?: EditingElementInfo | null;
   isDragging?: boolean;
   isOutOfBounds?: boolean;
@@ -82,7 +82,7 @@ const props = defineProps<{
   reportIsBold?: boolean;
   reportIsItalic?: boolean;
   reportIsUnderline?: boolean;
-  parentFrameIndex?: number; // 添加 parentFrameIndex prop
+  parentFrameIndex?: number; // Add the parentFrameIndex prop
 }>();
 
 // Emits
@@ -97,44 +97,44 @@ const emit = defineEmits<{
   checkFields: [fields: string[]];
 }>();
 
-// 处理选择
+// Handle selection
 const handleSelect = (bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number) => {
   emit('select', bandIndex, elementIndex, isMultiSelect, parentFrameIndex);
 };
 
-// 处理拖拽开始
+// Handle drag start
 const handleDragStart = (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
   emit('dragStart', event, bandIndex, elementIndex, parentFrameIndex);
 };
 
-// 处理调整大小开始
+// Handle resize start
 const handleResizeStart = (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
   emit('resizeStart', event, bandIndex, elementIndex, parentFrameIndex);
 };
 
-// 处理上下文菜单
+// Handle context menu
 const handleContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
   emit('contextmenu', event, bandIndex, elementIndex, parentFrameIndex);
 };
 
-// 处理子元素事件
+// Handle child element events
 const handleChildSelect = (bIndex: number, childIndex: number, isMultiSelect?: boolean) => {
-  // 当选中Frame内的子元素时，传递Frame的elementIndex作为parentFrameIndex
+  // When a child element inside the Frame is selected, pass the Frame's elementIndex as parentFrameIndex
   emit('select', props.bandIndex, childIndex, isMultiSelect, props.elementIndex);
 };
 
 const handleChildDragStart = (event: MouseEvent, bIndex: number, childIndex: number) => {
-  event.stopPropagation(); // 阻止事件冒泡到Frame
+  event.stopPropagation(); // Prevent the event from bubbling up to the Frame
   emit('dragStart', event, props.bandIndex, childIndex, props.elementIndex);
 };
 
 const handleChildResizeStart = (event: MouseEvent, bIndex: number, childIndex: number) => {
-  event.stopPropagation(); // 阻止事件冒泡到Frame
+  event.stopPropagation(); // Prevent the event from bubbling up to the Frame
   emit('resizeStart', event, props.bandIndex, childIndex, props.elementIndex);
 };
 
 const handleChildContextMenu = (event: MouseEvent, bIndex: number, childIndex: number) => {
-  event.stopPropagation(); // 阻止事件冒泡到Frame
+  event.stopPropagation(); // Prevent the event from bubbling up to the Frame
   emit('contextmenu', event, props.bandIndex, childIndex, props.elementIndex);
 };
 
@@ -163,12 +163,12 @@ const handleChildCheckFields = (fields: string[]) => {
 }
 
 .frame-empty {
-  /* 当为空时，显示一个淡灰色的背景和虚线边框，方便设计 */
+  /* When empty, show a light gray background and dashed border to make it easier to design */
   border: 1px dashed #e0e0e0;
   background-color: rgba(240, 240, 240, 0.2);
 }
 
-/* 如果选中了，边框颜色加深 */
+/* Deepen the border color when selected */
 :deep(.design-element.selected) .frame-empty {
   border-color: #a0a0a0;
 }

@@ -8,8 +8,8 @@ function parseJRXMLToDOM(jrxmlContent: string) {
   return dom.window.document;
 }
 
-describe('测试边框宽度为0时不生成box标签', () => {
-  test('全局边框宽度为0时不生成box标签', () => {
+describe('Test that no box tag is generated when the border width is 0', () => {
+  test('no box tag is generated when the global border width is 0', () => {
     const jrxmlWithZeroBorder = `
     <jasperReport>
       <detail>
@@ -20,7 +20,7 @@ describe('测试边框宽度为0时不生成box标签', () => {
                 <pen lineWidth="0"/>
               </box>
             </reportElement>
-            <text><![CDATA[测试文本]]></text>
+            <text><![CDATA[Test Text]]></text>
           </staticText>
         </band>
       </detail>
@@ -35,17 +35,17 @@ describe('测试边框宽度为0时不生成box标签', () => {
       parsedData.parameters || []
     );
 
-    // 验证生成的JRXML中不包含box标签
+    // Verify that the generated JRXML does not contain a box tag
     const doc = parseJRXMLToDOM(generatedJRXML);
     const staticTextElements = doc.querySelectorAll('staticText');
     expect(staticTextElements.length).toBeGreaterThan(0);
-    
-    // 检查是否没有生成box标签
+
+    // Check that no box tag was generated
     const boxElement = staticTextElements[0].querySelector('box');
     expect(boxElement).toBeNull();
   });
 
-  test('各边边框宽度为0时不生成对应的pen标签', () => {
+  test('no corresponding pen tag is generated when a side border width is 0', () => {
     const jrxmlWithZeroBorders = `
     <jasperReport>
       <detail>
@@ -59,7 +59,7 @@ describe('测试边框宽度为0时不生成box标签', () => {
                 <rightPen lineWidth="0"/>
               </box>
             </reportElement>
-            <text><![CDATA[测试文本]]></text>
+            <text><![CDATA[Test Text]]></text>
           </staticText>
         </band>
       </detail>
@@ -74,12 +74,12 @@ describe('测试边框宽度为0时不生成box标签', () => {
       parsedData.parameters || []
     );
 
-    // 验证生成的JRXML中不包含任何pen标签
+    // Verify that the generated JRXML does not contain any pen tags
     const doc = parseJRXMLToDOM(generatedJRXML);
     const staticTextElements = doc.querySelectorAll('staticText');
     expect(staticTextElements.length).toBeGreaterThan(0);
-    
-    // 检查是否没有生成box标签
+
+    // Check that no box tag was generated
     const boxElement = staticTextElements[0].querySelector('box');
     expect(boxElement).toBeNull();
   });

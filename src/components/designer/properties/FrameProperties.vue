@@ -1,86 +1,86 @@
 <template>
   <div class="frame-properties">
-    <h4>Frame属性</h4>
+    <h4>Frame Properties</h4>
 
-    <!-- 布局模式 -->
+    <!-- Layout mode -->
     <div class="form-group">
       <SelectControl
         :model-value="element.layout || 'FreeLayout'"
         @update:model-value="updateProperty('layout', $event)"
         :options="layoutOptions"
-        label="布局模式"
-        description="选择Frame的布局方式"
+        label="Layout mode"
+        description="Choose how the Frame lays out its content"
       />
     </div>
 
-    <!-- 条件打印表达式 -->
+    <!-- Print-when expression -->
     <div class="form-group">
-      <label>条件打印表达式</label>
+      <label>Print-when expression</label>
       <ExpressionEditor
         :model-value="element.printWhenExpression || ''"
         @update:model-value="updateProperty('printWhenExpression', $event)"
-        placeholder="例如: $F{status}.equals(&quot;active&quot;)"
+        placeholder="e.g.: $F{status}.equals(&quot;active&quot;)"
         :report-fields="reportFields"
         :report-parameters="reportParameters"
         :report-variables="reportVariables"
       />
-      <span class="form-hint">当表达式为true时打印此Frame</span>
+      <span class="form-hint">This Frame prints when the expression evaluates to true</span>
     </div>
 
-    <!-- 分页控制 -->
+    <!-- Pagination control -->
     <div class="form-group">
       <SwitchControl
         :model-value="element.isIgnorePagination || false"
         @update:model-value="updateProperty('isIgnorePagination', $event)"
-        label="忽略分页"
-        description="Frame内容不会被分页打断"
+        label="Ignore pagination"
+        description="Frame content will not be split across pages"
       />
     </div>
 
-    <!-- 分割控制 -->
+    <!-- Split control -->
     <div class="form-group">
       <SwitchControl
         :model-value="element.isSplitAllowed !== false"
         @update:model-value="updateProperty('isSplitAllowed', $event)"
-        label="允许分割"
-        description="允许Frame在分页时被分割"
+        label="Allow split"
+        description="Allow the Frame to be split across pages"
       />
     </div>
 
-    <!-- 分页类型 -->
+    <!-- Split type -->
     <div v-if="element.isSplitAllowed !== false" class="form-group">
       <SelectControl
         :model-value="element.splitType || 'Stretch'"
         @update:model-value="updateProperty('splitType', $event)"
         :options="splitTypeOptions"
-        label="分页类型"
-        description="选择分页时的处理方式"
+        label="Split type"
+        description="Choose how the Frame is handled when split"
       />
     </div>
 
-    <!-- 打印控制 -->
+    <!-- Print control -->
     <div class="form-group">
       <SwitchControl
         :model-value="element.isPrintRepeatedValues !== false"
         @update:model-value="updateProperty('isPrintRepeatedValues', $event)"
-        label="打印重复值"
-        description="是否打印重复的值"
+        label="Print repeated values"
+        description="Whether to print repeated values"
       />
     </div>
 
-    <!-- 移除空白行 -->
+    <!-- Remove blank line -->
     <div class="form-group">
       <SwitchControl
         :model-value="element.isRemoveLineWhenBlank || false"
         @update:model-value="updateProperty('isRemoveLineWhenBlank', $event)"
-        label="移除空白行"
-        description="当Frame内容为空时移除整行"
+        label="Remove line when blank"
+        description="Remove the entire row when the Frame content is empty"
       />
     </div>
 
-    <!-- 背景颜色 -->
+    <!-- Background color -->
     <div class="form-group">
-      <label>背景颜色</label>
+      <label>Background color</label>
       <div class="color-input-group">
         <input
           type="color"
@@ -98,14 +98,14 @@
       </div>
     </div>
 
-    <!-- 显示模式 -->
+    <!-- Display mode -->
     <div class="form-group">
       <SelectControl
         :model-value="element.mode || 'Transparent'"
         @update:model-value="updateProperty('mode', $event)"
         :options="modeOptions"
-        label="显示模式"
-        description="Opaque显示背景，Transparent透明"
+        label="Display mode"
+        description="Opaque shows the background, Transparent is see-through"
       />
     </div>
   </div>
@@ -128,20 +128,20 @@ const emit = defineEmits<{
 }>();
 
 const layoutOptions = [
-  { value: 'FreeLayout', label: '自由布局' },
-  { value: 'HorizontalLayout', label: '水平布局' },
-  { value: 'VerticalLayout', label: '垂直布局' }
+  { value: 'FreeLayout', label: 'Free layout' },
+  { value: 'HorizontalLayout', label: 'Horizontal layout' },
+  { value: 'VerticalLayout', label: 'Vertical layout' }
 ];
 
 const splitTypeOptions = [
-  { value: 'Stretch', label: '拉伸' },
-  { value: 'Prevent', label: '阻止' },
-  { value: 'Immediate', label: '立即' }
+  { value: 'Stretch', label: 'Stretch' },
+  { value: 'Prevent', label: 'Prevent' },
+  { value: 'Immediate', label: 'Immediate' }
 ];
 
 const modeOptions = [
-  { value: 'Opaque', label: '不透明' },
-  { value: 'Transparent', label: '透明' }
+  { value: 'Opaque', label: 'Opaque' },
+  { value: 'Transparent', label: 'Transparent' }
 ];
 
 const updateProperty = (property: string, value: any) => {

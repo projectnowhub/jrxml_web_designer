@@ -65,10 +65,10 @@ const emit = defineEmits<{
   resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
-// 图片加载错误标志
+// Flag for image load error
 const imageError = ref(false);
 
-// 图片样式 - 根据scaleType属性
+// Image style - based on the scaleType property
 const imageStyle = computed(() => {
   const scaleType = props.element.scaleType || 'FillFrame';
   const hAlign = props.element.hAlign || 'Center';
@@ -93,7 +93,7 @@ const imageStyle = computed(() => {
       break;
   }
   
-  // 处理对齐
+  // Handle alignment
   const hAlignMap: Record<string, string> = {
     'Left': 'left',
     'Center': 'center',
@@ -113,16 +113,16 @@ const imageStyle = computed(() => {
   };
 });
 
-// 解析图片表达式，提取URL
+// Parse the image expression and extract the URL
 const imageUrl = computed(() => {
   if (!props.element.imageExpression || imageError.value) return null;
-  
+
   const expr = props.element.imageExpression.trim();
-  // 检查是否是双引号包裹的字符串
+  // Check whether it's a string wrapped in double quotes
   if (expr.startsWith('"') && expr.endsWith('"')) {
-    // 移除双引号
+    // Remove the double quotes
     const url = expr.slice(1, -1).trim();
-    // 检查是否是有效的URL格式
+    // Check whether it's a valid URL format
     try {
       new URL(url);
       return url;
@@ -133,22 +133,22 @@ const imageUrl = computed(() => {
   return null;
 });
 
-// 处理图片加载错误
+// Handle image load error
 const handleImageError = () => {
   imageError.value = true;
 };
 
-// 处理选择
+// Handle selection
 const handleSelect = (bandIndex: number, elementIndex: number, isMultiSelect?: boolean) => {
   emit('select', bandIndex, elementIndex, isMultiSelect, props.parentFrameIndex);
 };
 
-// 处理拖拽开始
+// Handle drag start
 const handleDragStart = (event: MouseEvent, bandIndex: number, elementIndex: number) => {
   emit('dragStart', event, bandIndex, elementIndex, props.parentFrameIndex);
 };
 
-// 处理调整大小开始
+// Handle resize start
 const handleResizeStart = (event: MouseEvent, bandIndex: number, elementIndex: number) => {
   emit('resizeStart', event, bandIndex, elementIndex, props.parentFrameIndex);
 };

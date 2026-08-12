@@ -1,13 +1,13 @@
 /**
- * Confirm Handler - 智能确认机制
+ * Confirm Handler - Smart confirmation mechanism
  *
- * 根据操作风险等级自动决定是否需要用户确认
+ * Automatically decides whether user confirmation is required based on the operation's risk level
  */
 
 import type { MCPToolCall } from './handlers';
 
 // ============================================
-// 类型定义
+// Type definitions
 // ============================================
 
 export type OperationRisk = 'safe' | 'low' | 'medium' | 'high' | 'critical';
@@ -34,73 +34,73 @@ export interface ConfirmResponse {
 }
 
 // ============================================
-// 风险等级映射
+// Risk level mapping
 // ============================================
 
 const RISK_LEVELS: Record<string, OperationRisk> = {
-  // 查询工具 - 安全
+  // Query tools - safe
   'get_design_state': OperationRisk.SAFE,
   'get_element': OperationRisk.SAFE,
   'find_elements': OperationRisk.SAFE,
 
-  // 创建工具 - 低风险
+  // Create tools - low risk
   'create_static_text': OperationRisk.LOW,
   'create_text_field': OperationRisk.LOW,
   'create_rectangle': OperationRisk.LOW,
   'create_frame': OperationRisk.LOW,
 
-  // 修改工具 - 低风险
+  // Modify tools - low risk
   'update_element': OperationRisk.LOW,
   'move_element': OperationRisk.LOW,
 
-  // 删除工具 - 中/高风险
+  // Delete tools - medium/high risk
   'delete_element': OperationRisk.MEDIUM,
 
-  // Band操作工具 - 低风险
+  // Band operation tools - low risk
   'update_band_height': OperationRisk.LOW
 };
 
 // ============================================
-// 智能确认逻辑
+// Smart confirmation logic
 // ============================================
 
 /**
- * 获取操作的风险等级
+ * Get the risk level of an operation
  */
 export function getOperationRisk(toolName: string): OperationRisk {
   return (RISK_LEVELS as Record<string, OperationRisk>)[toolName] || OperationRisk.HIGH;
 }
 
 /**
- * 检查是否需要用户确认
+ * Check whether user confirmation is required
  */
 export function shouldConfirm(toolCall: MCPToolCall): boolean {
   const riskLevel = getOperationRisk(toolCall.name);
 
-  // 安全操作无需确认
+  // Safe operations don't require confirmation
   if (riskLevel === OperationRisk.SAFE) {
     return false;
   }
 
-  // 低风险操作无需确认
+  // Low-risk operations don't require confirmation
   if (riskLevel === OperationRisk.LOW) {
     return false;
   }
 
-  // 中等风险 - 批量操作需要确认
+  // Medium risk - batch operations require confirmation
   if (riskLevel === OperationRisk.MEDIUM) {
-    // 如果涉及多个元素（超过3个），需要确认
+    // If more than 3 elements are involved, confirmation is required
     if (toolCall.params.uuids && Array.isArray(toolCall.params.uuids)) {
       return toolCall.params.uuids.length > 3;
     }
-    // 单个删除操作需要确认
+    // A single delete operation requires confirmation
     if (toolCall.name === 'delete_element') {
       return true;
     }
     return false;
   }
 
-  // 高风险和极高风险 - 必须确认
+  // High and critical risk - confirmation is mandatory
   if (riskLevel === OperationRisk.HIGH || riskLevel === OperationRisk.CRITICAL) {
     return true;
   }
@@ -109,7 +109,7 @@ export function shouldConfirm(toolCall: MCPToolCall): boolean {
 }
 
 /**
- * 生成确认请求
+ * Generate a confirmation request
  */
 export function generateConfirmRequest(toolCall: MCPToolCall): ConfirmRequest {
   const riskLevel = getOperationRisk(toolCall.name);
@@ -117,7 +117,7 @@ export function generateConfirmRequest(toolCall: MCPToolCall): ConfirmRequest {
 
   let affectedCount: number | undefined;
 
-  // 计算受影响的元素数量
+  // Compute the number of affected elements
   if (toolCall.params.uuids && Array.isArray(toolCall.params.uuids)) {
     affectedCount = toolCall.params.uuids.length;
   }
@@ -132,83 +132,83 @@ export function generateConfirmRequest(toolCall: MCPToolCall): ConfirmRequest {
 }
 
 /**
- * 生成工具操作描述
+ * Generate a description of the tool operation
  */
 function generateToolDescription(toolCall: MCPToolCall): string {
   const { name, params } = toolCall;
 
   switch (name) {
     case 'create_static_text':
-      return `创建静态文本 "${params.text || '未命名'}" 在 ${params.bandType} band`;
+      return `Create static text "${params.text || 'unnamed'}" in the ${params.bandType} band`;
 
     case 'create_text_field':
-      return `创建动态文本框 "${params.expression || '未定义'}" 在 ${params.bandType} band`;
+      return `Create a dynamic text field "${params.expression || 'undefined'}" in the ${params.bandType} band`;
 
     case 'create_rectangle':
-      return `创建矩形在 ${params.bandType} band`;
+      return `Create a rectangle in the ${params.bandType} band`;
 
     case 'create_frame':
-      return `创建Frame容器在 ${params.bandType} band`;
+      return `Create a Frame container in the ${params.bandType} band`;
 
     case 'update_element':
-      return `更新元素 ${params.uuid} 的属性: ${Object.keys(params.properties || {}).join(', ')}`;
+      return `Update element ${params.uuid} properties: ${Object.keys(params.properties || {}).join(', ')}`;
 
     case 'move_element':
-      return `移动元素 ${params.uuid} 到位置 (${params.x}, ${params.y})`;
+      return `Move element ${params.uuid} to position (${params.x}, ${params.y})`;
 
     case 'delete_element':
-      return `删除元素 ${params.uuid}`;
+      return `Delete element ${params.uuid}`;
 
     case 'update_band_height':
-      return `调整 ${params.bandType} band 高度为 ${params.height}px`;
+      return `Adjust the ${params.bandType} band height to ${params.height}px`;
 
     default:
-      return `执行工具 ${name}`;
+      return `Execute tool ${name}`;
   }
 }
 
 /**
- * 获取风险等级描述
+ * Get a description of the risk level
  */
 export function getRiskLevelDescription(riskLevel: OperationRisk): string {
   switch (riskLevel) {
     case OperationRisk.SAFE:
-      return '安全操作 - 只读';
+      return 'Safe operation - read-only';
     case OperationRisk.LOW:
-      return '低风险 - 单个元素修改';
+      return 'Low risk - single element modification';
     case OperationRisk.MEDIUM:
-      return '中风险 - 多个元素修改或删除';
+      return 'Medium risk - multiple element modification or deletion';
     case OperationRisk.HIGH:
-      return '高风险 - 批量删除或不可逆操作';
+      return 'High risk - batch deletion or an irreversible operation';
     case OperationRisk.CRITICAL:
-      return '极高风险 - 需要立即确认';
+      return 'Critical risk - requires immediate confirmation';
     default:
-      return '未知风险';
+      return 'Unknown risk';
   }
 }
 
 /**
- * 获取风险等级颜色（用于UI显示）
+ * Get the risk level color (for UI display)
  */
 export function getRiskLevelColor(riskLevel: OperationRisk): string {
   switch (riskLevel) {
     case OperationRisk.SAFE:
-      return '#4CAF50'; // 绿色
+      return '#4CAF50'; // Green
     case OperationRisk.LOW:
-      return '#8BC34A'; // 浅绿色
+      return '#8BC34A'; // Light green
     case OperationRisk.MEDIUM:
-      return '#FFC107'; // 黄色
+      return '#FFC107'; // Yellow
     case OperationRisk.HIGH:
-      return '#FF9800'; // 橙色
+      return '#FF9800'; // Orange
     case OperationRisk.CRITICAL:
-      return '#F44336'; // 红色
+      return '#F44336'; // Red
     default:
-      return '#9E9E9E'; // 灰色
+      return '#9E9E9E'; // Gray
   }
 }
 
 // ============================================
-// 确认对话框接口
+// Confirmation dialog interface
 // ============================================
 
 export interface ConfirmDialogState {
@@ -218,7 +218,7 @@ export interface ConfirmDialogState {
 }
 
 /**
- * 创建确认对话框状态管理
+ * Create confirmation dialog state management
  */
 export function createConfirmDialogManager() {
   const state: ConfirmDialogState = {
@@ -228,15 +228,15 @@ export function createConfirmDialogManager() {
   };
 
   /**
-   * 请求用户确认
+   * Request user confirmation
    */
   function requestConfirm(toolCall: MCPToolCall): Promise<ConfirmResponse> {
     return new Promise((resolve) => {
       const request = generateConfirmRequest(toolCall);
 
-      // 如果不需要确认，直接通过
+      // If confirmation isn't needed, pass through directly
       if (!shouldConfirm(toolCall)) {
-        resolve({ confirmed: true, reason: '自动批准' });
+        resolve({ confirmed: true, reason: 'Auto-approved' });
         return;
       }
 
@@ -247,7 +247,7 @@ export function createConfirmDialogManager() {
   }
 
   /**
-   * 用户确认
+   * User confirms
    */
   function confirm(reason?: string) {
     if (state.resolve) {
@@ -259,7 +259,7 @@ export function createConfirmDialogManager() {
   }
 
   /**
-   * 用户拒绝
+   * User rejects
    */
   function reject(reason?: string) {
     if (state.resolve) {
@@ -279,7 +279,7 @@ export function createConfirmDialogManager() {
 }
 
 // ============================================
-// 工具风险等级映射表（用于文档和调试）
+// Tool risk level mapping table (for documentation and debugging)
 // ============================================
 
 export const TOOL_RISK_LEVELS_DOCUMENTATION = Object.entries(RISK_LEVELS).map(([toolName, riskLevel]) => ({

@@ -1,5 +1,5 @@
 /**
- * 测试自动修复 JRXML 功能
+ * Test the JRXML auto-fix functionality
  */
 
 import { validateJRXML, autoFixJRXML } from '../src/utils/jrxml/xsdValidator';
@@ -7,61 +7,61 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 async function testAutoFix() {
-  console.log('=== 测试自动修复功能 ===\n');
+  console.log('=== Testing the auto-fix functionality ===\n');
 
-  // 读取包含无效属性的测试文件
+  // Read the test file containing invalid attributes
   const testFile = path.join(__dirname, 'test_autofix_invalid_attrs.jrxml');
   const originalContent = fs.readFileSync(testFile, 'utf-8');
 
-  console.log('原始 JRXML 内容包含以下无效属性:');
+  console.log('The original JRXML content contains the following invalid attributes:');
   console.log('- jasperReport: invalidAttribute1, anotherInvalid');
   console.log('- reportElement: customBadAttr\n');
 
-  // 1. 验证原始内容是否符合规范
-  console.log('1. 验证原始内容...');
+  // 1. Validate whether the original content complies with the spec
+  console.log('1. Validating the original content...');
   const originalValidation = await validateJRXML(originalContent);
-  console.log(`   有效性: ${originalValidation.valid ? '✓' : '✗'}`);
+  console.log(`   Valid: ${originalValidation.valid ? '✓' : '✗'}`);
   if (!originalValidation.valid) {
-    console.log(`   错误数量: ${originalValidation.errors.length}`);
+    console.log(`   Error count: ${originalValidation.errors.length}`);
     originalValidation.errors.forEach((err, i) => {
-      console.log(`   ${i + 1}. 行${err.line}:${err.column} - ${err.message}`);
+      console.log(`   ${i + 1}. Line ${err.line}:${err.column} - ${err.message}`);
     });
   }
   console.log('');
 
-  // 2. 执行自动修复
-  console.log('2. 执行自动修复...');
+  // 2. Run the auto-fix
+  console.log('2. Running the auto-fix...');
   const fixResult = await autoFixJRXML(originalContent);
-  console.log(`   是否修复: ${fixResult.fixed ? '✓' : '✗'}`);
-  console.log(`   修复项数量: ${fixResult.fixes.length}`);
+  console.log(`   Fixed: ${fixResult.fixed ? '✓' : '✗'}`);
+  console.log(`   Number of fixes: ${fixResult.fixes.length}`);
   fixResult.fixes.forEach((fix, i) => {
-    console.log(`   ${i + 1}. 行${fix.lineNumber} - 从 <${fix.elementName}> 移除属性 '${fix.attributeName}'`);
+    console.log(`   ${i + 1}. Line ${fix.lineNumber} - removed attribute '${fix.attributeName}' from <${fix.elementName}>`);
   });
   console.log('');
 
-  // 3. 验证修复后的内容
-  console.log('3. 验证修复后的内容...');
+  // 3. Validate the fixed content
+  console.log('3. Validating the fixed content...');
   const fixedValidation = await validateJRXML(fixResult.fixedContent);
-  console.log(`   有效性: ${fixedValidation.valid ? '✓' : '✗'}`);
+  console.log(`   Valid: ${fixedValidation.valid ? '✓' : '✗'}`);
   if (fixedValidation.valid) {
-    console.log('   所有属性符合规范 ✓');
+    console.log('   All attributes comply with the spec ✓');
   } else {
-    console.log(`   仍存在 ${fixedValidation.errors.length} 个错误`);
+    console.log(`   Still has ${fixedValidation.errors.length} error(s)`);
   }
   console.log('');
 
-  // 4. 输出修复后的内容（用于对比）
-  console.log('4. 修复后的内容:');
+  // 4. Print the fixed content (for comparison)
+  console.log('4. Fixed content:');
   console.log('='.repeat(60));
   console.log(fixResult.fixedContent);
   console.log('='.repeat(60));
   console.log('');
 
-  // 写入修复后的文件
+  // Write the fixed content to a file
   const outputFile = path.join(__dirname, 'test_autofix_fixed.jrxml');
   fs.writeFileSync(outputFile, fixResult.fixedContent, 'utf-8');
-  console.log(`5. 修复后的内容已写入: ${outputFile}`);
+  console.log(`5. Fixed content written to: ${outputFile}`);
 }
 
-// 执行测试
+// Run the test
 testAutoFix().catch(console.error);

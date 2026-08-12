@@ -232,12 +232,12 @@ function initializeEditor() {
   let fields = props.reportFields || [];
   let subDatasets = props.subDatasets || [];
 
-  // 如果subDatasets为空，从JRXML中解析
+  // If subDatasets is empty, parse it from the JRXML
   if (subDatasets.length === 0 && props.jrxmlContent) {
     try {
       const parser = new DOMParser();
       const doc = parser.parseFromString(props.jrxmlContent, 'text/xml');
-      // JRXML使用subDataset标签定义子数据集
+      // JRXML uses the subDataset tag to define sub-datasets
       const subDatasetEls = doc.querySelectorAll('subDataset');
       for (const dsEl of subDatasetEls) {
         const dsName = dsEl.getAttribute('name') || 'unknown';
@@ -255,7 +255,7 @@ function initializeEditor() {
     }
   }
 
-  // 如果fields为空，从JRXML中解析
+  // If fields is empty, parse it from the JRXML
   if (fields.length === 0 && props.jrxmlContent) {
     try {
       const parser = new DOMParser();
@@ -275,7 +275,7 @@ function initializeEditor() {
   editableParams.value = generateMockParameters(params);
   editableDataSource.value = generateMockDataSource(fields, 1);
 
-  // 为每个表格数据集生成mock数据
+  // Generate mock data for each table dataset
   const subDataSources: Record<string, Record<string, any>[]> = {};
   for (const ds of subDatasets) {
     if (ds.fields && ds.fields.length > 0) {

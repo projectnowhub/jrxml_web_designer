@@ -1,10 +1,11 @@
 /**
- * JRXML属性远程验证测试套件
+ * JRXML attribute remote validation test suite
  *
- * 通过远程JasperReports编译服务器验证每个属性是否被允许。
- * 实测为准，验证schemas/jrxml-schema.json与实际XSD的一致性。
+ * Validates whether each attribute is allowed by sending requests to a remote
+ * JasperReports compilation server. Actual results are authoritative; this
+ * verifies the consistency of schemas/jrxml-schema.json against the real XSD.
  *
- * 远程服务器: https://jrxml-pdf-preview.firegod.cn
+ * Remote server: https://jrxml-pdf-preview.firegod.cn
  */
 
 import { describe, it, expect } from 'vitest';
@@ -15,7 +16,7 @@ const REQUEST_TIMEOUT = 30000;
 interface TestResult {
   name: string;
   passed: boolean;
-  allowed: boolean; // 属性是否被XSD允许
+  allowed: boolean; // whether the attribute is allowed by the XSD
   error?: string;
   details?: string;
 }
@@ -60,7 +61,7 @@ async function sendPreviewRequest(jrxml: string): Promise<{ success: boolean; re
   }
 }
 
-// 基础JRXML模板
+// Base JRXML template
 function createJRXML(content: string, attributes: string = ''): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
@@ -80,12 +81,12 @@ function createJRXML(content: string, attributes: string = ''): string {
 }
 
 // ============================================================================
-// 测试1: uuid属性验证
+// Test 1: uuid attribute validation
 // ============================================================================
 
-describe('uuid属性远程验证', () => {
+describe('uuid attribute remote validation', () => {
 
-  it('field带uuid属性', async () => {
+  it('field with uuid attribute', async () => {
     const jrxml = createJRXML(`
       <textField>
         <reportElement x="0" y="0" width="200" height="20"/>
@@ -96,11 +97,11 @@ describe('uuid属性远程验证', () => {
     </jasperReport>`);
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('field带uuid:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
-    // 记录结果但不失败测试
+    console.log('field with uuid:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
+    // Record the result without failing the test
   });
 
-  it('field不带uuid属性', async () => {
+  it('field without uuid attribute', async () => {
     const jrxml = createJRXML(`
       <textField>
         <reportElement x="0" y="0" width="200" height="20"/>
@@ -111,10 +112,10 @@ describe('uuid属性远程验证', () => {
     </jasperReport>`);
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('field不带uuid:', result.success ? '✅ 通过' : `❌ 失败: ${result.error}`);
+    console.log('field without uuid:', result.success ? '✅ Passed' : `❌ Failed: ${result.error}`);
   });
 
-  it('variable带uuid属性', async () => {
+  it('variable with uuid attribute', async () => {
     const jrxml = createJRXML(`
       <textField>
         <reportElement x="0" y="0" width="200" height="20"/>
@@ -125,10 +126,10 @@ describe('uuid属性远程验证', () => {
     </jasperReport>`);
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('variable带uuid:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('variable with uuid:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 
-  it('variable不带uuid属性', async () => {
+  it('variable without uuid attribute', async () => {
     const jrxml = createJRXML(`
       <textField>
         <reportElement x="0" y="0" width="200" height="20"/>
@@ -139,10 +140,10 @@ describe('uuid属性远程验证', () => {
     </jasperReport>`);
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('variable不带uuid:', result.success ? '✅ 通过' : `❌ 失败: ${result.error}`);
+    console.log('variable without uuid:', result.success ? '✅ Passed' : `❌ Failed: ${result.error}`);
   });
 
-  it('parameter带uuid属性', async () => {
+  it('parameter with uuid attribute', async () => {
     const jrxml = createJRXML(`
       <textField>
         <reportElement x="0" y="0" width="200" height="20"/>
@@ -153,10 +154,10 @@ describe('uuid属性远程验证', () => {
     </jasperReport>`);
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('parameter带uuid:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('parameter with uuid:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 
-  it('parameter不带uuid属性', async () => {
+  it('parameter without uuid attribute', async () => {
     const jrxml = createJRXML(`
       <textField>
         <reportElement x="0" y="0" width="200" height="20"/>
@@ -167,10 +168,10 @@ describe('uuid属性远程验证', () => {
     </jasperReport>`);
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('parameter不带uuid:', result.success ? '✅ 通过' : `❌ 失败: ${result.error}`);
+    console.log('parameter without uuid:', result.success ? '✅ Passed' : `❌ Failed: ${result.error}`);
   });
 
-  it('sortField带uuid属性', async () => {
+  it('sortField with uuid attribute', async () => {
     const jrxml = createJRXML(`
       <textField>
         <reportElement x="0" y="0" width="200" height="20"/>
@@ -181,10 +182,10 @@ describe('uuid属性远程验证', () => {
     </jasperReport>`);
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('sortField带uuid:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('sortField with uuid:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 
-  it('sortField不带uuid属性', async () => {
+  it('sortField without uuid attribute', async () => {
     const jrxml = createJRXML(`
       <textField>
         <reportElement x="0" y="0" width="200" height="20"/>
@@ -195,10 +196,10 @@ describe('uuid属性远程验证', () => {
     </jasperReport>`);
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('sortField不带uuid:', result.success ? '✅ 通过' : `❌ 失败: ${result.error}`);
+    console.log('sortField without uuid:', result.success ? '✅ Passed' : `❌ Failed: ${result.error}`);
   });
 
-  it('group带uuid属性', async () => {
+  it('group with uuid attribute', async () => {
     const jrxml = createJRXML(`
       <textField>
         <reportElement x="0" y="0" width="200" height="20"/>
@@ -209,10 +210,10 @@ describe('uuid属性远程验证', () => {
     </jasperReport>`);
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('group带uuid:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('group with uuid:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 
-  it('group不带uuid属性', async () => {
+  it('group without uuid attribute', async () => {
     const jrxml = createJRXML(`
       <textField>
         <reportElement x="0" y="0" width="200" height="20"/>
@@ -223,10 +224,10 @@ describe('uuid属性远程验证', () => {
     </jasperReport>`);
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('group不带uuid:', result.success ? '✅ 通过' : `❌ 失败: ${result.error}`);
+    console.log('group without uuid:', result.success ? '✅ Passed' : `❌ Failed: ${result.error}`);
   });
 
-  it('band带uuid属性', async () => {
+  it('band with uuid attribute', async () => {
     const jrxml = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -244,10 +245,10 @@ describe('uuid属性远程验证', () => {
 </jasperReport>`;
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('band带uuid:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('band with uuid:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 
-  it('band不带uuid属性', async () => {
+  it('band without uuid attribute', async () => {
     const jrxml = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               name="TestReport"
@@ -265,15 +266,15 @@ describe('uuid属性远程验证', () => {
 </jasperReport>`;
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('band不带uuid:', result.success ? '✅ 通过' : `❌ 失败: ${result.error}`);
+    console.log('band without uuid:', result.success ? '✅ Passed' : `❌ Failed: ${result.error}`);
   });
 });
 
 // ============================================================================
-// 测试2: positionType枚举值验证
+// Test 2: positionType enum value validation
 // ============================================================================
 
-describe('positionType枚举值远程验证', () => {
+describe('positionType enum value remote validation', () => {
 
   it('positionType=FixRelativeToTop', async () => {
     const jrxml = createJRXML(`
@@ -283,7 +284,7 @@ describe('positionType枚举值远程验证', () => {
       </staticText>
     `);
     const result = await sendPreviewRequest(jrxml);
-    console.log('positionType=FixRelativeToTop:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('positionType=FixRelativeToTop:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 
   it('positionType=FixRelativeToBottom', async () => {
@@ -294,7 +295,7 @@ describe('positionType枚举值远程验证', () => {
       </staticText>
     `);
     const result = await sendPreviewRequest(jrxml);
-    console.log('positionType=FixRelativeToBottom:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('positionType=FixRelativeToBottom:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 
   it('positionType=Float', async () => {
@@ -305,10 +306,10 @@ describe('positionType枚举值远程验证', () => {
       </staticText>
     `);
     const result = await sendPreviewRequest(jrxml);
-    console.log('positionType=Float:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('positionType=Float:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 
-  it('positionType=FixRelativeToBand (可能无效)', async () => {
+  it('positionType=FixRelativeToBand (may be invalid)', async () => {
     const jrxml = createJRXML(`
       <staticText>
         <reportElement x="0" y="0" width="200" height="20" positionType="FixRelativeToBand"/>
@@ -316,15 +317,15 @@ describe('positionType枚举值远程验证', () => {
       </staticText>
     `);
     const result = await sendPreviewRequest(jrxml);
-    console.log('positionType=FixRelativeToBand:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('positionType=FixRelativeToBand:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 });
 
 // ============================================================================
-// 测试3: scaleImage枚举值验证
+// Test 3: scaleImage enum value validation
 // ============================================================================
 
-describe('scaleImage枚举值远程验证', () => {
+describe('scaleImage enum value remote validation', () => {
 
   it('scaleImage=RetainShape', async () => {
     const jrxml = createJRXML(`
@@ -335,10 +336,10 @@ describe('scaleImage枚举值远程验证', () => {
       </image>
     `);
     const result = await sendPreviewRequest(jrxml);
-    console.log('scaleImage=RetainShape:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('scaleImage=RetainShape:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 
-  it('scaleImage=RetainImage (可能无效)', async () => {
+  it('scaleImage=RetainImage (may be invalid)', async () => {
     const jrxml = createJRXML(`
       <image>
         <reportElement x="0" y="0" width="100" height="100"/>
@@ -347,15 +348,15 @@ describe('scaleImage枚举值远程验证', () => {
       </image>
     `);
     const result = await sendPreviewRequest(jrxml);
-    console.log('scaleImage=RetainImage:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('scaleImage=RetainImage:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 });
 
 // ============================================================================
-// 测试4: resetType枚举值验证
+// Test 4: resetType enum value validation
 // ============================================================================
 
-describe('resetType枚举值远程验证', () => {
+describe('resetType enum value remote validation', () => {
 
   it('variable resetType=Master', async () => {
     const jrxml = createJRXML(`
@@ -368,7 +369,7 @@ describe('resetType枚举值远程验证', () => {
     </jasperReport>`);
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('resetType=Master:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('resetType=Master:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 
   it('variable resetType=Report', async () => {
@@ -382,15 +383,15 @@ describe('resetType枚举值远程验证', () => {
     </jasperReport>`);
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('resetType=Report:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('resetType=Report:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 });
 
 // ============================================================================
-// 测试5: 缺失属性验证
+// Test 5: missing attribute validation
 // ============================================================================
 
-describe('缺失属性远程验证', () => {
+describe('missing attribute remote validation', () => {
 
   it('group isReprintHeaderOnEachColumn', async () => {
     const jrxml = createJRXML(`
@@ -403,7 +404,7 @@ describe('缺失属性远程验证', () => {
     </jasperReport>`);
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('group isReprintHeaderOnEachColumn:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('group isReprintHeaderOnEachColumn:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 
   it('group isReprintHeaderOnEachPage', async () => {
@@ -417,7 +418,7 @@ describe('缺失属性远程验证', () => {
     </jasperReport>`);
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('group isReprintHeaderOnEachPage:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('group isReprintHeaderOnEachPage:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 
   it('group footerPosition=Normal', async () => {
@@ -431,15 +432,15 @@ describe('缺失属性远程验证', () => {
     </jasperReport>`);
 
     const result = await sendPreviewRequest(jrxml);
-    console.log('group footerPosition=Normal:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('group footerPosition=Normal:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 });
 
 // ============================================================================
-// 测试6: elementBase属性验证
+// Test 6: elementBase attribute validation
 // ============================================================================
 
-describe('elementBase属性远程验证', () => {
+describe('elementBase attribute remote validation', () => {
 
   it('stretchType=RelativeToBandHeight', async () => {
     const jrxml = createJRXML(`
@@ -449,7 +450,7 @@ describe('elementBase属性远程验证', () => {
       </staticText>
     `);
     const result = await sendPreviewRequest(jrxml);
-    console.log('stretchType=RelativeToBandHeight:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('stretchType=RelativeToBandHeight:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 
   it('stretchType=RelativeToTallestObject', async () => {
@@ -460,7 +461,7 @@ describe('elementBase属性远程验证', () => {
       </staticText>
     `);
     const result = await sendPreviewRequest(jrxml);
-    console.log('stretchType=RelativeToTallestObject:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('stretchType=RelativeToTallestObject:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 
   it('textAdjust=StretchHeight', async () => {
@@ -472,10 +473,10 @@ describe('elementBase属性远程验证', () => {
       </staticText>
     `);
     const result = await sendPreviewRequest(jrxml);
-    console.log('textAdjust=StretchHeight:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('textAdjust=StretchHeight:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 
-  it('textAdjust=CutText (默认)', async () => {
+  it('textAdjust=CutText (default)', async () => {
     const jrxml = createJRXML(`
       <staticText>
         <reportElement x="0" y="0" width="200" height="20"/>
@@ -484,22 +485,22 @@ describe('elementBase属性远程验证', () => {
       </staticText>
     `);
     const result = await sendPreviewRequest(jrxml);
-    console.log('textAdjust=CutText:', result.success ? '✅ 允许' : `❌ 拒绝: ${result.error}`);
+    console.log('textAdjust=CutText:', result.success ? '✅ Allowed' : `❌ Rejected: ${result.error}`);
   });
 });
 
 // ============================================================================
-// 测试总结
+// Test summary
 // ============================================================================
 
-describe('测试总结', () => {
-  it('所有属性验证完成', async () => {
+describe('Test summary', () => {
+  it('all attribute validation complete', async () => {
     console.log('\n========================================');
-    console.log('远程属性验证测试完成');
-    console.log('服务器: https://jrxml-pdf-preview.firegod.cn');
+    console.log('Remote attribute validation test complete');
+    console.log('Server: https://jrxml-pdf-preview.firegod.cn');
     console.log('========================================\n');
 
-    // 基础JRXML验证
+    // Basic JRXML validation
     const basicJrxml = createJRXML(`
       <staticText>
         <reportElement x="0" y="0" width="200" height="20"/>
@@ -509,9 +510,9 @@ describe('测试总结', () => {
 
     const result = await sendPreviewRequest(basicJrxml);
     if (result.success) {
-      console.log('✅ 远程编译服务器正常工作');
+      console.log('✅ Remote compilation server is working correctly');
     } else {
-      console.log('❌ 远程编译服务器无法访问:', result.error);
+      console.log('❌ Remote compilation server is unreachable:', result.error);
     }
 
     expect(true).toBe(true);

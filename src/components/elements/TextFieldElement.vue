@@ -26,7 +26,7 @@
         @keyup.enter="handleFinishEditing"
         @keyup.esc="handleCancelEditing"
         ref="editInput"
-        placeholder="请输入表达式"
+        placeholder="Enter expression"
       />
     </template>
     <template v-else>
@@ -75,15 +75,15 @@ const emit = defineEmits<{
 // Refs
 const editInput = ref<HTMLInputElement | null>(null);
 
-// 是否正在编辑
+// Whether currently editing
 const isEditing = computed(() => {
-  return props.editingElement && 
-         props.editingElement.bandIndex === props.bandIndex && 
+  return props.editingElement &&
+         props.editingElement.bandIndex === props.bandIndex &&
          props.editingElement.elementIndex === props.elementIndex &&
          props.editingElement.parentFrameIndex === props.parentFrameIndex;
 });
 
-// 当进入编辑状态时，聚焦输入框
+// Focus the input when entering edit mode
 watch(() => isEditing.value, (newVal) => {
   if (newVal && editInput.value) {
     setTimeout(() => {
@@ -93,37 +93,37 @@ watch(() => isEditing.value, (newVal) => {
   }
 });
 
-// 显示文本
+// Display text
 const displayText = computed(() => {
   if (props.element.expression) {
     return props.element.expression;
-  } 
+  }
   return `"${t('properties.defaultTextFieldExpression')}"`;
 });
 
-// 处理选择
+// Handle selection
 const handleSelect = (bandIndex: number, elementIndex: number, isMultiSelect?: boolean) => {
   emit('select', bandIndex, elementIndex, isMultiSelect, props.parentFrameIndex);
 };
 
-// 处理拖拽开始
+// Handle drag start
 const handleDragStart = (event: MouseEvent, bandIndex: number, elementIndex: number) => {
   emit('dragStart', event, bandIndex, elementIndex, props.parentFrameIndex);
 };
 
-// 处理调整大小开始
+// Handle resize start
 const handleResizeStart = (event: MouseEvent, bandIndex: number, elementIndex: number) => {
   emit('resizeStart', event, bandIndex, elementIndex, props.parentFrameIndex);
 };
 
-// 开始编辑表达式
+// Start editing the expression
 const handleStartEditing = () => {
   emit('startEditing', props.bandIndex, props.elementIndex, props.parentFrameIndex);
 };
 
-// 完成编辑
+// Finish editing
 const handleFinishEditing = () => {
-  // 提取表达式中的所有字段引用 $F{fieldName}
+  // Extract all field references $F{fieldName} from the expression
   const currentExpression = props.element.expression || '';
   const fieldReferences: string[] = [];
   const fieldRegex = /\$F\{([^}]+)\}/g;
@@ -133,18 +133,18 @@ const handleFinishEditing = () => {
       fieldReferences.push(match[1]);
     }
   }
-  
-  // 发送字段引用给父组件检查
+
+  // Send field references to the parent component for checking
   if (fieldReferences.length > 0) {
     emit('checkFields', fieldReferences);
   }
-  
-  // 触发父组件更新JRXML
+
+  // Trigger the parent component to update the JRXML
   emit('updateElement');
   emit('finishEditing');
 };
 
-// 取消编辑
+// Cancel editing
 const handleCancelEditing = () => {
   emit('cancelEditing');
 };

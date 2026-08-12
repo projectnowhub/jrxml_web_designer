@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { parseJRXMLContent } from '../../src/utils/jrxmlGenerator';
 
-describe('JRXML边框零宽度导入测试', () => {
-  it('当JRXML中所有方向的lineWidth为0时，解析后所有边框都应该不显示', () => {
+describe('JRXML zero-width border import test', () => {
+  it('when lineWidth is 0 on all sides in the JRXML, all borders should not be shown after parsing', () => {
     const jrxmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail">
   <detail>
@@ -18,25 +18,25 @@ describe('JRXML边框零宽度导入测试', () => {
         <textElement textAlignment="Center" verticalAlignment="Middle">
           <font fontName="Noto Serif SC" size="19"/>
         </textElement>
-        <text><![CDATA[客运中心核销凭证]]></text>
+        <text><![CDATA[Passenger Center Verification Receipt]]></text>
       </staticText>
     </band>
   </detail>
 </jasperReport>`;
 
     const result = parseJRXMLContent(jrxmlContent);
-    
-    // 获取detail band的第一个元素
+
+    // Get the first element of the detail band
     const detailBand = result.bands.find(band => band.type === 'detail');
     expect(detailBand).toBeDefined();
     expect(detailBand!.elements.length).toBeGreaterThan(0);
-    
+
     const element = detailBand!.elements[0];
-    
-    // 检查box属性是否存在
+
+    // Check whether the box property exists
     expect(element.box).toBeDefined();
-    
-    // 检查box中的pen属性
+
+    // Check the pen properties within box
     expect(element.box.topPen).toBeDefined();
     expect(element.box.topPen.lineWidth).toBe(0);
     expect(element.box.leftPen).toBeDefined();
@@ -47,7 +47,7 @@ describe('JRXML边框零宽度导入测试', () => {
     expect(element.box.rightPen.lineWidth).toBe(0);
   });
 
-  it('当JRXML中部分方向的lineWidth为0时，解析后只有lineWidth大于0的边框显示', () => {
+  it('when lineWidth is 0 on only some sides in the JRXML, only the borders with lineWidth greater than 0 should be shown after parsing', () => {
     const jrxmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail">
   <detail>
@@ -63,25 +63,25 @@ describe('JRXML边框零宽度导入测试', () => {
         <textElement textAlignment="Center" verticalAlignment="Middle">
           <font fontName="Noto Serif SC" size="19"/>
         </textElement>
-        <text><![CDATA[部分边框测试]]></text>
+        <text><![CDATA[Partial Border Test]]></text>
       </staticText>
     </band>
   </detail>
 </jasperReport>`;
 
     const result = parseJRXMLContent(jrxmlContent);
-    
-    // 获取detail band的第一个元素
+
+    // Get the first element of the detail band
     const detailBand = result.bands.find(band => band.type === 'detail');
     expect(detailBand).toBeDefined();
     expect(detailBand!.elements.length).toBeGreaterThan(0);
-    
+
     const element = detailBand!.elements[0];
-    
-    // 检查box属性是否存在
+
+    // Check whether the box property exists
     expect(element.box).toBeDefined();
-    
-    // 检查box中的pen属性
+
+    // Check the pen properties within box
     expect(element.box.topPen).toBeDefined();
     expect(element.box.topPen.lineWidth).toBe(1);
     expect(element.box.leftPen).toBeDefined();
@@ -92,7 +92,7 @@ describe('JRXML边框零宽度导入测试', () => {
     expect(element.box.rightPen.lineWidth).toBe(0);
   });
 
-  it('当JRXML中没有box元素时，边框属性应该为空', () => {
+  it('when there is no box element in the JRXML, the border property should be empty', () => {
     const jrxmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail">
   <detail>
@@ -102,22 +102,22 @@ describe('JRXML边框零宽度导入测试', () => {
         <textElement textAlignment="Center" verticalAlignment="Middle">
           <font fontName="Noto Serif SC" size="19"/>
         </textElement>
-        <text><![CDATA[无边框测试]]></text>
+        <text><![CDATA[No Border Test]]></text>
       </staticText>
     </band>
   </detail>
 </jasperReport>`;
 
     const result = parseJRXMLContent(jrxmlContent);
-    
-    // 获取detail band的第一个元素
+
+    // Get the first element of the detail band
     const detailBand = result.bands.find(band => band.type === 'detail');
     expect(detailBand).toBeDefined();
     expect(detailBand!.elements.length).toBeGreaterThan(0);
-    
+
     const element = detailBand!.elements[0];
-    
-    // 检查box属性是否不存在
+
+    // Check whether the box property is absent
     expect(element.box).toBeUndefined();
   });
 });

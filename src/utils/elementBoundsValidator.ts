@@ -2,13 +2,13 @@ import type { ReportProperties, Band, DesignElement } from '../types';
 import { BAND_CONSTANTS } from '@/constants/constants';
 
 /**
- * 验证元素是否超出页面边界
- * @param element 要验证的元素
- * @param band 元素所在的Band
- * @param bandIndex Band的索引
- * @param bands 所有Band的数组
- * @param reportProperties 报表属性
- * @returns 验证结果，包含是否超出边界和超出类型
+ * Validate whether an element exceeds the page boundaries
+ * @param element The element to validate
+ * @param band The Band that contains the element
+ * @param bandIndex The index of the Band
+ * @param bands The array of all Bands
+ * @param reportProperties The report properties
+ * @returns The validation result, including whether it is out of bounds and the type of overflow
  */
 export function validateElementBounds(
   element: DesignElement,
@@ -27,74 +27,74 @@ export function validateElementBounds(
   exceedsBand: boolean;
   bandOffsetY: number;
 } {
-  // 计算当前band在页面中的Y位置（考虑前面所有band的高度和间距）
-  let bandOffsetY = reportProperties.topMargin; // 从页面顶部边距开始
-  
-  // 累加前面所有band的高度和间距
+  // Calculate the Y position of the current band on the page (accounting for the height and spacing of all preceding bands)
+  let bandOffsetY = reportProperties.topMargin; // Start from the page's top margin
+
+  // Accumulate the height and spacing of all preceding bands
   for (let i = 0; i < bandIndex; i++) {
     const currentBand = bands[i];
     if (currentBand) {
-      const bandSpacing = BAND_CONSTANTS.SPACING; // band之间的间距
-      bandOffsetY += currentBand.height + bandSpacing; // 添加band高度和间距
+      const bandSpacing = BAND_CONSTANTS.SPACING; // spacing between bands
+      bandOffsetY += currentBand.height + bandSpacing; // Add the band's height and spacing
     }
   }
-  
-  // 计算可用区域（考虑边距）
-  // 元素坐标是相对于band的，所以band内的可用宽度就是整个页面宽度减去左右边距
+
+  // Calculate the available area (accounting for margins)
+  // Element coordinates are relative to the band, so the available width within the band is the full page width minus the left/right margins
   const availableWidth = reportProperties.pageWidth - reportProperties.leftMargin - reportProperties.rightMargin;
-  // const availableHeight = reportProperties.pageHeight - reportProperties.topMargin - reportProperties.bottomMargin; // 暂时不使用
-  
-  // 计算元素的实际位置和尺寸
+  // const availableHeight = reportProperties.pageHeight - reportProperties.topMargin - reportProperties.bottomMargin; // not currently used
+
+  // Calculate the actual position and size of the element
   const elementRight = element.x + element.width;
   const elementBottom = element.y + element.height;
-  
-  // 检查是否超出band左侧（元素坐标是相对于band的，所以左侧边界是0）
+
+  // Check whether it exceeds the left side of the band (element coordinates are relative to the band, so the left boundary is 0)
   const exceedsLeft = element.x < 0;
-  
-  // 检查是否超出band右侧（元素坐标是相对于band的，所以右侧边界是可用宽度）
+
+  // Check whether it exceeds the right side of the band (element coordinates are relative to the band, so the right boundary is the available width)
   const exceedsRight = elementRight > availableWidth;
-  
-  // 检查是否超出当前Band
+
+  // Check whether it exceeds the current Band
   const exceedsBandTop = element.y < 0;
   const exceedsBandBottom = elementBottom > band.height;
-  
-  // 检查是否超出页面顶部（仅对第一个band）
+
+  // Check whether it exceeds the top of the page (only for the first band)
   let exceedsTop = false;
   if (bandIndex === 0) {
-    // 第一个band的元素不能超出页面顶部
+    // Elements in the first band must not exceed the top of the page
     const elementActualTop = bandOffsetY + element.y;
     const pageTopBoundary = reportProperties.topMargin;
     exceedsTop = elementActualTop < pageTopBoundary;
   }
-  
-  // 检查是否超出页面底部（仅对最后一个band）
+
+  // Check whether it exceeds the bottom of the page (only for the last band)
   let exceedsPageBottom = false;
   if (bandIndex === bands.length - 1) {
-    // 最后一个band的元素不能超出页面底部
+    // Elements in the last band must not exceed the bottom of the page
     const elementActualBottom = bandOffsetY + elementBottom;
     const pageBottomBoundary = reportProperties.pageHeight - reportProperties.bottomMargin;
     exceedsPageBottom = elementActualBottom > pageBottomBoundary;
   }
-  
-  // 检查是否超出页面底部（对非最后一个band）
+
+  // Check whether it exceeds the bottom of the page (for bands other than the last one)
   let exceedsBottom = false;
   if (bandIndex < bands.length - 1) {
-    // 非最后一个band的元素不能超出页面底部
+    // Elements in bands other than the last one must not exceed the bottom of the page
     const elementActualBottom = bandOffsetY + elementBottom;
     const pageBottomBoundary = reportProperties.pageHeight - reportProperties.bottomMargin;
     exceedsBottom = elementActualBottom > pageBottomBoundary;
   } else {
-    // 最后一个band使用exceedsPageBottom的值
+    // For the last band, use the value of exceedsPageBottom
     exceedsBottom = exceedsPageBottom;
   }
-  
-  // 对于最后一个band，如果元素没有超出页面底部，则不应该因为超出band底部而被限制
+
+  // For the last band, if the element does not exceed the bottom of the page, it should not be restricted for exceeding the band's bottom
   let adjustedExceedsBandBottom = exceedsBandBottom;
   if (bandIndex === bands.length - 1 && !exceedsBottom) {
-    // 如果是最后一个band且元素没有超出页面底部，则允许元素超出band底部
+    // If this is the last band and the element does not exceed the bottom of the page, allow the element to exceed the band's bottom
     adjustedExceedsBandBottom = false;
   }
-  
+
   return {
     isOutOfBounds: exceedsLeft || exceedsRight || exceedsBottom || exceedsTop || adjustedExceedsBandBottom,
     exceedsLeft,
@@ -109,10 +109,10 @@ export function validateElementBounds(
 }
 
 /**
- * 获取所有超出边界的元素
- * @param bands 所有Band的数组
- * @param reportProperties 报表属性
- * @returns 超出边界的元素列表，包含元素信息和超出类型
+ * Get all elements that are out of bounds
+ * @param bands The array of all Bands
+ * @param reportProperties The report properties
+ * @returns A list of out-of-bounds elements, including element info and the type of overflow
  */
 export function getOutOfBoundsElements(
   bands: Band[],
@@ -141,11 +141,11 @@ export function getOutOfBoundsElements(
     exceedsBandBottom: boolean;
     exceedsBand: boolean;
   }> = [];
-  
+
   bands.forEach((band, bandIndex) => {
     band.elements.forEach((element, elementIndex) => {
       const validation = validateElementBounds(element, band, bandIndex, bands, reportProperties);
-      
+
       if (validation.isOutOfBounds) {
         outOfBoundsElements.push({
           bandIndex,
@@ -162,15 +162,15 @@ export function getOutOfBoundsElements(
       }
     });
   });
-  
+
   return outOfBoundsElements;
 }
 
 /**
- * 检查报表设计是否有效（所有元素都在边界内）
- * @param bands 所有Band的数组
- * @param reportProperties 报表属性
- * @returns 报表设计是否有效
+ * Check whether the report design is valid (all elements are within bounds)
+ * @param bands The array of all Bands
+ * @param reportProperties The report properties
+ * @returns Whether the report design is valid
  */
 export function isReportDesignValid(
   bands: Band[],
@@ -181,10 +181,10 @@ export function isReportDesignValid(
 }
 
 /**
- * 获取报表设计的验证错误信息
- * @param bands 所有Band的数组
- * @param reportProperties 报表属性
- * @returns 验证错误信息数组
+ * Get the validation error messages for the report design
+ * @param bands The array of all Bands
+ * @param reportProperties The report properties
+ * @returns An array of validation error messages
  */
 export function getReportDesignValidationErrors(
   bands: Band[],
@@ -192,53 +192,53 @@ export function getReportDesignValidationErrors(
 ): string[] {
   const errors: string[] = [];
   const outOfBoundsElements = getOutOfBoundsElements(bands, reportProperties);
-  
-  // 计算所有Band的总高度，考虑band之间的间距
+
+  // Calculate the total height of all Bands, accounting for the spacing between bands
   const totalBandsHeight = bands.reduce((total, band, index) => {
-    return total + band.height + (index < bands.length - 1 ? BAND_CONSTANTS.SPACING : 0); // 添加band间距，除了最后一个band
+    return total + band.height + (index < bands.length - 1 ? BAND_CONSTANTS.SPACING : 0); // Add band spacing, except after the last band
   }, 0);
   const availableHeight = reportProperties.pageHeight - reportProperties.topMargin - reportProperties.bottomMargin;
-  
-  // 检查Band总高度是否超出页面
+
+  // Check whether the total height of the bands exceeds the page
   if (totalBandsHeight > availableHeight) {
-    errors.push(`报表设计无效：详细区域、页面和列的页眉页脚及边距不适合页面高度。`);
+    errors.push(`Invalid report design: the detail area, page/column headers and footers, and margins do not fit within the page height.`);
   }
-  
-  // 检查每个超出边界的元素
+
+  // Check each out-of-bounds element
   outOfBoundsElements.forEach(({ bandIndex, elementIndex, exceedsLeft, exceedsRight, exceedsBottom, exceedsTop, exceedsBandTop, exceedsBandBottom, exceedsBand }) => {
     if (bands[bandIndex]) {
       const bandName = bands[bandIndex].type;
-      const elementInfo = `${bandName}区域中的元素${elementIndex + 1}`;
-      
+      const elementInfo = `Element ${elementIndex + 1} in the ${bandName} band`;
+
       if (exceedsTop) {
-        errors.push(`${elementInfo}超出页面顶部边界`);
+        errors.push(`${elementInfo} exceeds the top boundary of the page`);
       }
-      
+
       if (exceedsLeft) {
-        errors.push(`${elementInfo}超出${bandName}区域左边界`);
+        errors.push(`${elementInfo} exceeds the left boundary of the ${bandName} band`);
       }
-      
+
       if (exceedsRight) {
-        errors.push(`${elementInfo}超出${bandName}区域右边界`);
+        errors.push(`${elementInfo} exceeds the right boundary of the ${bandName} band`);
       }
-      
+
       if (exceedsBottom) {
-        errors.push(`${elementInfo}超出页面底部边界`);
+        errors.push(`${elementInfo} exceeds the bottom boundary of the page`);
       }
-      
+
       if (exceedsBandTop) {
-        errors.push(`${elementInfo}超出${bandName}区域顶部边界`);
+        errors.push(`${elementInfo} exceeds the top boundary of the ${bandName} band`);
       }
-      
+
       if (exceedsBandBottom) {
-        errors.push(`${elementInfo}超出${bandName}区域底部边界`);
+        errors.push(`${elementInfo} exceeds the bottom boundary of the ${bandName} band`);
       }
-      
+
       if (exceedsBand) {
-        errors.push(`${elementInfo}超出${bandName}区域边界`);
+        errors.push(`${elementInfo} exceeds the boundary of the ${bandName} band`);
       }
     }
   });
-  
+
   return errors;
 }

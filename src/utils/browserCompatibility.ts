@@ -1,7 +1,7 @@
 /**
- * Browser Compatibility Checker - 浏览器兼容性检查
+ * Browser Compatibility Checker
  *
- * 检测浏览器是否支持WebMCP特性
+ * Detects whether the browser supports WebMCP features
  */
 
 import { ref, onMounted } from 'vue';
@@ -19,7 +19,7 @@ export interface BrowserSupportResult {
 }
 
 /**
- * 检测浏览器是否支持WebMCP
+ * Detects whether the browser supports WebMCP
  */
 export function checkWebMCPSupport(): BrowserSupportResult {
   const features = {
@@ -48,9 +48,9 @@ export function checkWebMCPSupport(): BrowserSupportResult {
 
   let message: string;
   if (isSupported) {
-    message = '浏览器支持WebMCP，可以使用AI助手功能';
+    message = "The browser supports WebMCP, so the AI assistant feature can be used";
   } else {
-    message = `浏览器不支持以下特性，无法使用AI助手：${missingFeatures.join('、')}`;
+    message = `The browser does not support the following features, so the AI assistant cannot be used: ${missingFeatures.join(', ')}`;
   }
 
   return {
@@ -62,7 +62,7 @@ export function checkWebMCPSupport(): BrowserSupportResult {
 }
 
 /**
- * Vue Composable：检测WebMCP支持
+ * Vue Composable: detects WebMCP support
  */
 export function useWebMCPSupport() {
   const supportResult = ref<BrowserSupportResult | null>(null);
@@ -81,7 +81,7 @@ export function useWebMCPSupport() {
           bigUint64Array: false
         },
         missingFeatures: ['WebAssembly', 'Web Workers', 'Fetch API', 'BigUint64Array'],
-        message: '检测浏览器支持时出错'
+        message: 'An error occurred while detecting browser support'
       };
     } finally {
       isLoading.value = false;

@@ -1,4 +1,4 @@
-// 元素类型枚举
+// Element type enum
 export type ElementType =
   | "staticText"
   | "textField"
@@ -19,7 +19,7 @@ export type ElementType =
   | "genericElement"
   | "sort";
 
-// 列分组接口
+// Column group interface
 export interface ColumnGroup {
   uuid: string;
   name: string;
@@ -29,17 +29,17 @@ export interface ColumnGroup {
   columnHeader?: TableCell;
   columnFooter?: TableCell;
   tableFooter?: TableCell;
-  // 子分组或列
+  // Sub-groups or columns
   children: (ColumnGroup | TableColumn)[];
 }
 
-// 表格单元格接口
+// Table cell interface
 export interface TableCell {
   enable: boolean;
   element?: DesignElement;
 }
 
-// 表格列接口
+// Table column interface
 export interface TableColumn {
   uuid: string;
   width: number;
@@ -53,13 +53,13 @@ export interface TableColumn {
   children?: (ColumnGroup | TableColumn)[];
 }
 
-// 查询接口
+// Query interface
 export interface Query {
   language: string;
   text: string;
 }
 
-// 表格数据集接口
+// Table dataset interface
 export interface TableDataset {
   uuid: string;
   name: string;
@@ -67,26 +67,26 @@ export interface TableDataset {
   fields?: Field[];
 }
 
-// 字段属性接口
+// Field property interface
 export interface FieldProperty {
   name: string;
   value: string;
 }
 
-// 字段接口
+// Field interface
 export interface Field {
   name: string;
   class: string;
   properties?: FieldProperty[];
 }
 
-// 报表属性接口
+// Report property interface
 export interface ReportProperty {
   name: string;
   value: string;
 }
 
-// Band类型枚举
+// Band type enum
 export type BandType =
   | "detail"
   | "pageHeader"
@@ -99,60 +99,60 @@ export type BandType =
   | "lastPageFooter"
   | "noData";
 
-// 笔样式接口
+// Pen style interface
 export interface Pen {
   lineWidth?: number;
   lineStyle?: string;
   lineColor?: string;
 }
 
-// 边框样式接口
+// Border style interface
 export interface Box {
-  // 全局边框
-  border?: string; // 保持向后兼容
-  borderColor?: string; // 保持向后兼容
-  borderWidth?: number; // 全局边框宽度
-  borderStyle?: string; // 全局边框样式
+  // Global border
+  border?: string; // kept for backward compatibility
+  borderColor?: string; // kept for backward compatibility
+  borderWidth?: number; // global border width
+  borderStyle?: string; // global border style
 
-  // 各边边框
-  topBorder?: string; // 保持向后兼容
-  topBorderColor?: string; // 保持向后兼容
-  topBorderWidth?: number; // 上边框宽度
-  topBorderStyle?: string; // 上边框样式
+  // Per-side borders
+  topBorder?: string; // kept for backward compatibility
+  topBorderColor?: string; // kept for backward compatibility
+  topBorderWidth?: number; // top border width
+  topBorderStyle?: string; // top border style
 
-  leftBorder?: string; // 保持向后兼容
-  leftBorderColor?: string; // 保持向后兼容
-  leftBorderWidth?: number; // 左边框宽度
-  leftBorderStyle?: string; // 左边框样式
+  leftBorder?: string; // kept for backward compatibility
+  leftBorderColor?: string; // kept for backward compatibility
+  leftBorderWidth?: number; // left border width
+  leftBorderStyle?: string; // left border style
 
-  bottomBorder?: string; // 保持向后兼容
-  bottomBorderColor?: string; // 保持向后兼容
-  bottomBorderWidth?: number; // 下边框宽度
-  bottomBorderStyle?: string; // 下边框样式
+  bottomBorder?: string; // kept for backward compatibility
+  bottomBorderColor?: string; // kept for backward compatibility
+  bottomBorderWidth?: number; // bottom border width
+  bottomBorderStyle?: string; // bottom border style
 
-  rightBorder?: string; // 保持向后兼容
-  rightBorderColor?: string; // 保持向后兼容
-  rightBorderWidth?: number; // 右边框宽度
-  rightBorderStyle?: string; // 右边框样式
+  rightBorder?: string; // kept for backward compatibility
+  rightBorderColor?: string; // kept for backward compatibility
+  rightBorderWidth?: number; // right border width
+  rightBorderStyle?: string; // right border style
 
-  // 笔样式
+  // Pen styles
   topPen?: Pen;
   leftPen?: Pen;
   bottomPen?: Pen;
   rightPen?: Pen;
 
-  // 边距
+  // Padding
   padding?: number;
   topPadding?: number;
   leftPadding?: number;
   bottomPadding?: number;
   rightPadding?: number;
 
-  // 允许通过字符串索引访问属性
+  // Allow accessing properties via string index
   [key: string]: any;
 }
 
-// 分组接口
+// Group interface
 export interface ReportGroup {
   name: string;
   uuid?: string;
@@ -170,7 +170,7 @@ export interface ReportGroup {
   footer?: Band;
 }
 
-// 报表数据接口
+// Report data interface
 export interface ReportData {
   reportProperties: ReportProperties;
   bands: Band[];
@@ -181,20 +181,20 @@ export interface ReportData {
   jrxmlContent: string;
 }
 
-// 报表字段接口
+// Report field interface
 export interface ReportField {
   name: string;
   class: string;
 }
 
-// 报表参数接口
+// Report parameter interface
 export interface ReportParameter {
   name: string;
   class: string;
   defaultValue?: string;
 }
 
-// 报表变量接口
+// Report variable interface
 export interface ReportVariable {
   name: string;
   class: string;
@@ -215,13 +215,13 @@ export interface ReportVariable {
   initialValueExpression?: string;
 }
 
-// 条件样式接口
+// Conditional style interface
 export interface ConditionalStyle {
   conditionExpression: string;
   properties: Partial<ReportStyle>;
 }
 
-// 报表样式接口
+// Report style interface
 export interface ReportStyle {
   name: string;
   parentStyle?: string;
@@ -240,7 +240,7 @@ export interface ReportStyle {
   conditionalStyles?: ConditionalStyle[];
 }
 
-// 字体设置接口
+// Font settings interface
 export interface FontSettings {
   name: string;
   size: number;
@@ -249,7 +249,7 @@ export interface FontSettings {
   isUnderline: boolean;
 }
 
-// 报表属性接口
+// Report properties interface
 export interface ReportProperties {
   name: string;
   pageWidth: number;
@@ -262,7 +262,7 @@ export interface ReportProperties {
   orientation?: "portrait" | "landscape";
 }
 
-// 设计元素基础接口
+// Base design element interface
 export interface DesignElementBase {
   uuid?: string;
   type: ElementType;
@@ -289,7 +289,7 @@ export interface DesignElementBase {
   isStyledText?: boolean;
   isStretchWithOverflow?: boolean;
   style?: string;
-  // reportElement 通用属性
+  // Common reportElement attributes
   key?: string;
   positionType?: "Float" | "FixRelativeToTop" | "FixRelativeToBottom";
   stretchType?: "NoStretch" | "ElementGroupBottom" | "ElementGroupHeight" | "ContainerBottom" | "ContainerHeight";
@@ -297,12 +297,12 @@ export interface DesignElementBase {
   isRemoveLineWhenBlank?: boolean;
   printWhenExpression?: string;
   styleExpression?: string;
-  // 自定义属性
+  // Custom properties
   properties?: Array<{ name: string; value: string }>;
   propertyExpressions?: Array<{ name: string; valueExpression: string }>;
 }
 
-// 静态文本元素接口
+// Static text element interface
 export interface StaticTextElement extends DesignElementBase {
   type: "staticText";
   text?: string;
@@ -314,7 +314,7 @@ export interface StaticTextElement extends DesignElementBase {
   printWhenExpression?: string;
 }
 
-// 文本字段元素接口
+// Text field element interface
 export interface TextFieldElement extends DesignElementBase {
   type: "textField";
   expression?: string;
@@ -352,12 +352,12 @@ export interface TextFieldElement extends DesignElementBase {
   bookmarkLevel?: number;
   bookmarkLevelExpression?: string;
   printWhenExpression?: string;
-  // 过时属性（向后兼容）
+  // Deprecated properties (kept for backward compatibility)
   isStretchWithOverflow?: boolean;
   hyperlinkTooltip?: string;
 }
 
-// 图片元素接口
+// Image element interface
 export interface ImageElement extends DesignElementBase {
   type: "image";
   imageExpression?: string;
@@ -379,12 +379,12 @@ export interface ImageElement extends DesignElementBase {
   bookmarkLevel?: number;
   bookmarkLevelExpression?: string;
   printWhenExpression?: string;
-  // 过时属性（向后兼容）
+  // Deprecated properties (kept for backward compatibility)
   scaleImage?: "Clip" | "FillFrame" | "RetainShape" | "RealHeight" | "RealSize";
   hyperlinkTooltip?: string;
 }
 
-// 线条元素接口
+// Line element interface
 export interface LineElement extends DesignElementBase {
   type: "line";
   lineDirection?: "TopDown" | "BottomUp";
@@ -392,46 +392,46 @@ export interface LineElement extends DesignElementBase {
   lineColor?: string;
   lineStyle?: string;
   evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Band";
-  // 新增属性
+  // Newly added properties
   isPrintRepeatedValues?: boolean;
   printWhenExpression?: string;
 }
 
-// 矩形元素接口
+// Rectangle element interface
 export interface RectangleElement extends DesignElementBase {
   type: "rectangle";
-  radius?: number; // 圆角半径
-  pen?: Pen; // 边框样式
-  // 新增属性
+  radius?: number; // corner radius
+  pen?: Pen; // border style
+  // Newly added properties
   isPrintRepeatedValues?: boolean;
   isRemoveLineWhenBlank?: boolean;
   printWhenExpression?: string;
 }
 
-// 椭圆元素接口
+// Ellipse element interface
 export interface EllipseElement extends DesignElementBase {
   type: "ellipse";
-  pen?: Pen; // 边框样式
-  // 新增属性
+  pen?: Pen; // border style
+  // Newly added properties
   isPrintRepeatedValues?: boolean;
   isRemoveLineWhenBlank?: boolean;
   printWhenExpression?: string;
 }
 
-// 分页符元素接口
+// Break element interface
 export interface BreakElement extends DesignElementBase {
   type: "break";
   breakType?: "Page" | "Column";
-  // 新增属性
+  // Newly added properties
   isResetPageNumber?: boolean;
   isResetPageOverflow?: boolean;
 }
 
-// 容器元素接口
+// Frame (container) element interface
 export interface FrameElement extends DesignElementBase {
   type: "frame";
-  elements?: DesignElement[]; // 容器内的子元素
-  layout?: "FreeLayout" | "HorizontalLayout" | "VerticalLayout"; // 布局属性
+  elements?: DesignElement[]; // child elements within the container
+  layout?: "FreeLayout" | "HorizontalLayout" | "VerticalLayout"; // layout property
   evaluationTime?:
     | "Now"
     | "Report"
@@ -440,19 +440,19 @@ export interface FrameElement extends DesignElementBase {
     | "Group"
     | "Band"
     | "Auto";
-  // 条件打印
+  // Conditional printing
   printWhenExpression?: string;
   printWhenGroupChanges?: string;
-  // 分页控制
+  // Pagination control
   isIgnorePagination?: boolean;
   isSplitAllowed?: boolean;
   splitType?: "Stretch" | "Prevent" | "Immediate";
-  // 框架特有属性
+  // Frame-specific properties
   isRemoveLineWhenBlank?: boolean;
   isPrintRepeatedValues?: boolean;
 }
 
-// 行分组接口
+// Row group interface
 export interface RowGroup {
   uuid: string;
   name: string;
@@ -464,15 +464,15 @@ export interface RowGroup {
   expression?: string;
 }
 
-// 表格元素接口
+// Table element interface
 export interface TableElement extends DesignElementBase {
   type: "table";
   dataset: TableDataset;
-  // 支持分组和列的混合结构
+  // Supports a mixed structure of groups and columns
   children?: (ColumnGroup | TableColumn)[];
-  // 保持向后兼容，支持传统的columns数组
+  // Kept for backward compatibility, supports the legacy columns array
   columns: TableColumn[];
-  // 行分组
+  // Row groups
   rowGroups?: RowGroup[];
   styles?: {
     tableHeader?: string;
@@ -486,18 +486,18 @@ export interface TableElement extends DesignElementBase {
     | "NoDataCell"
     | "AllSectionsNoDetail"
     | "AllSectionsWithDetail";
-  // 表格级属性
+  // Table-level properties
   printHeaders?: boolean;
   ignoreWidth?: boolean;
   isIgnorePagination?: boolean;
-  // 样式继承
+  // Style inheritance
   style?: string;
   parentStyle?: string;
-  // 分页控制
+  // Pagination control
   splitType?: "Stretch" | "Prevent" | "Immediate";
 }
 
-// 子报表元素接口
+// Subreport element interface
 export interface SubreportElement extends DesignElementBase {
   type: "subreport";
   subreportExpression?: string;
@@ -517,7 +517,7 @@ export interface SubreportElement extends DesignElementBase {
   isIgnorePagination?: boolean;
 }
 
-// 列表元素接口
+// List element interface
 export interface ListElement extends DesignElementBase {
   type: "list";
   listContents?: {
@@ -525,70 +525,70 @@ export interface ListElement extends DesignElementBase {
     height?: number;
     width?: number;
   };
-  // 数据集运行配置
+  // Sub-dataset run configuration
   subDataset?: string;
   dataSourceExpression?: string;
   connectionExpression?: string;
-  // 列表设置
+  // List settings
   printOrder?: "Vertical" | "Horizontal";
   ignoreWidth?: boolean;
-  // 条件显示
+  // Conditional display
   printWhenExpression?: string;
-  // 求值设置
+  // Evaluation settings
   evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
   evaluationGroup?: string;
-  // 分页设置
+  // Pagination settings
   splitType?: "Stretch" | "Prevent" | "Immediate";
   isIgnorePagination?: boolean;
 }
 
-// 图表元素接口
+// Chart element interface
 export interface ChartElement extends DesignElementBase {
   type: "chart";
   chartType: "pie" | "pie3D" | "bar" | "bar3D" | "xyBar" | "stackedBar" | "stackedBar3D" | "line" | "xyLine" | "area" | "xyArea" | "scatter" | "bubble" | "timeSeries" | "highLow" | "candlestick" | "meter" | "thermometer" | "multiAxis" | "stackedArea" | "gantt" | "spider";
-  // 图表标题
+  // Chart title
   title?: string;
   titleExpression?: string;
   subtitleExpression?: string;
   legendExpression?: string;
-  // 图表设置
+  // Chart settings
   isShowLegend?: boolean;
   isShowTitle?: boolean;
   isShowSubtitle?: boolean;
   renderType?: "svg" | "draw" | "image";
   customizerClass?: string;
-  // 超链接
+  // Hyperlink
   hyperlinkTooltipExpression?: string;
   hyperlinkTarget?: "Self" | "Blank" | "Top" | "Parent";
   hyperlinkType?: "None" | "Reference" | "LocalAnchor" | "LocalPage" | "RemoteAnchor" | "RemotePage" | "Tooltip";
   hyperlinkExpression?: string;
   bookmarkLevel?: number;
-  // 评估设置
+  // Evaluation settings
   evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto" | "Master";
   evaluationGroup?: string;
   printWhenExpression?: string;
-  // 数据集
+  // Dataset
   subDataset?: string;
   dataSourceExpression?: string;
   incrementType?: "None" | "Group" | "Page" | "Column" | "Report";
   incrementGroup?: string;
-  // 系列表达式（分类图表：bar, line, area, stackedBar 等）
+  // Series expressions (categorical charts: bar, line, area, stackedBar, etc.)
   seriesExpression?: string;
   categoryExpression?: string;
   valueExpression?: string;
-  // 饼图表达式
+  // Pie chart expression
   keyExpression?: string;
-  // XY 图表表达式（scatter, bubble, xyLine, xyArea, timeSeries 等）
+  // XY chart expressions (scatter, bubble, xyLine, xyArea, timeSeries, etc.)
   xValueExpression?: string;
   yValueExpression?: string;
-  // 绘图设置
+  // Rendering settings
   isCircular?: boolean;
   isShowShapes?: boolean;
   itemLabelColor?: string;
   itemLabelBackgroundColor?: string;
   categoryAxisLabelExpression?: string;
   valueAxisLabelExpression?: string;
-  // 仪表盘/温度计特有
+  // Specific to gauge/thermometer charts
   dataExpression?: string;
   shape?: "chord" | "pie" | "circle" | "fan" | "dash" | "bullet";
   lowExpression?: string;
@@ -597,7 +597,7 @@ export interface ChartElement extends DesignElementBase {
   units?: string;
 }
 
-// 条码元素接口
+// Barcode element interface
 export interface BarcodeElement extends DesignElementBase {
   type: "barcode";
   barcodeType: "Code128" | "Code39" | "EAN13" | "EAN8" | "UPCA" | "UPCE" | "QRCode" | "DataMatrix" | "Interleaved2Of5" | "Codabar" | "EAN128" | "PDF417" | "POSTNET" | "RoyalMailCustomer" | "USPSIntelligentMail";
@@ -606,7 +606,7 @@ export interface BarcodeElement extends DesignElementBase {
   evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
 }
 
-// 地图元素接口
+// Map element interface
 export interface MapElement extends DesignElementBase {
   type: "map";
   mapType?: "html" | "image" | "pdf";
@@ -618,7 +618,7 @@ export interface MapElement extends DesignElementBase {
   evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
 }
 
-// 交叉表元素接口
+// Crosstab element interface
 export interface CrosstabElement extends DesignElementBase {
   type: "crosstab";
   crosstabWidth?: number;
@@ -628,7 +628,7 @@ export interface CrosstabElement extends DesignElementBase {
   evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto" | "Master";
 }
 
-// 图标标签元素接口
+// Icon label element interface
 export interface IconLabelElement extends DesignElementBase {
   type: "iconLabel";
   icon?: string;
@@ -638,7 +638,7 @@ export interface IconLabelElement extends DesignElementBase {
   evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
 }
 
-// 通用元素接口
+// Generic element interface
 export interface GenericElement extends DesignElementBase {
   type: "genericElement";
   namespace?: string;
@@ -646,7 +646,7 @@ export interface GenericElement extends DesignElementBase {
   evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
 }
 
-// 排序元素接口
+// Sort element interface
 export interface SortElement extends DesignElementBase {
   type: "sort";
   sortFields?: Array<{
@@ -657,7 +657,7 @@ export interface SortElement extends DesignElementBase {
   evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
 }
 
-// 设计元素联合类型
+// Design element union type
 export type DesignElement =
   | StaticTextElement
   | TextFieldElement
@@ -678,24 +678,24 @@ export type DesignElement =
   | GenericElement
   | SortElement;
 
-// 报表区域接口
+// Report band interface
 export interface Band {
   type: BandType;
   height: number;
   elements: DesignElement[];
   splitType?: "Stretch" | "Prevent" | "Immediate";
-  isSplitAllowed?: boolean; // 添加过时的isSplitAllowed属性以保持兼容性
+  isSplitAllowed?: boolean; // adds the deprecated isSplitAllowed property for backward compatibility
 }
 
-// 选中元素信息接口
+// Selected element info interface
 export interface SelectedElementInfo {
   bandIndex: number;
   elementIndex: number;
-  parentFrameIndex?: number; // 如果在 Frame 内，这是 Frame 在 Band 中的索引
+  parentFrameIndex?: number; // if inside a Frame, this is the Frame's index within the Band
   uuid?: string;
 }
 
-// 多选元素信息接口
+// Multi-selected elements info interface
 export interface SelectedElementsInfo {
   elements: Array<{
     bandIndex: number;
@@ -705,14 +705,14 @@ export interface SelectedElementsInfo {
   }>;
 }
 
-// 编辑元素信息接口
+// Editing element info interface
 export interface EditingElementInfo {
   bandIndex: number;
   elementIndex: number;
   parentFrameIndex?: number;
 }
 
-// 拖拽信息接口
+// Dragging info interface
 export interface DraggingInfo {
   bandIndex: number;
   elementIndex: number;
@@ -720,10 +720,10 @@ export interface DraggingInfo {
   startX: number;
   startY: number;
   lastTargetBandIndex?: number;
-  lastTargetFrameIndex?: number; // 记录最后一次目标Frame索引
+  lastTargetFrameIndex?: number; // records the index of the most recent target Frame
 }
 
-// 选择框接口
+// Selection box interface
 export interface SelectionBox {
   x: number;
   y: number;
@@ -731,7 +731,7 @@ export interface SelectionBox {
   height: number;
 }
 
-// 元素库项接口
+// Element library item interface
 export interface ElementLibraryItem {
   type: ElementType;
   name: string;

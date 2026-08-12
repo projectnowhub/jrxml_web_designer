@@ -784,7 +784,7 @@ describe('jrxmlGenerator', () => {
   })
 
   it('should not generate duplicate columns when both children and columns properties exist', () => {
-    // 创建一个包含列分组的表格元素，同时包含children和columns属性
+    // Create a table element containing a column group, with both children and columns properties
     const tableElement: any = {
       type: 'table',
       x: 0,
@@ -798,7 +798,7 @@ describe('jrxmlGenerator', () => {
       },
       children: [
         {
-          // 列分组
+          // Column group
           name: 'Group1',
           uuid: 'group1-uuid',
           width: 200,
@@ -827,7 +827,7 @@ describe('jrxmlGenerator', () => {
           },
           children: [
             {
-              // 子列1
+              // Child column 1
               name: 'Column1',
               uuid: 'column1-uuid',
               width: 100,
@@ -856,7 +856,7 @@ describe('jrxmlGenerator', () => {
               }
             },
             {
-              // 子列2
+              // Child column 2
               name: 'Column2',
               uuid: 'column2-uuid',
               width: 100,
@@ -887,7 +887,7 @@ describe('jrxmlGenerator', () => {
           ]
         },
         {
-          // 普通列
+          // Regular column
           name: 'Column3',
           uuid: 'column3-uuid',
           width: 100,
@@ -916,7 +916,7 @@ describe('jrxmlGenerator', () => {
           }
         }
       ],
-      // 同时添加columns属性，模拟原始问题
+      // Also add the columns property, to reproduce the original issue
       columns: [
         {
           name: 'Column1',
@@ -952,31 +952,31 @@ describe('jrxmlGenerator', () => {
 
     const generatedJRXML = generateJRXMLContent(mockReportProperties, bands, fields)
 
-    // 验证生成的JRXML中没有重复的列
-    
-    // 1. 提取所有列的UUID（只匹配 <jr:column> 元素，不匹配 <jr:columnGroup> 元素）
+    // Verify the generated JRXML has no duplicate columns
+
+    // 1. Extract every column's UUID (matching only <jr:column> elements, not <jr:columnGroup> elements)
     const columnUuids = [...generatedJRXML.matchAll(/<jr:column(?!Group)[^>]*uuid="([^"]+)"/g)]
       .map(match => match[1]);
-    
-    // 2. 检查UUID是否唯一
+
+    // 2. Check that the UUIDs are unique
     const uniqueColumnUuids = new Set(columnUuids);
     expect(uniqueColumnUuids.size).toBe(columnUuids.length);
-    
-    // 3. 验证只生成了3列
+
+    // 3. Verify that only 3 columns were generated
     expect(columnUuids.length).toBe(3);
-    
-    // 4. 验证生成了1个列分组
+
+    // 4. Verify that 1 column group was generated
     const columnGroupMatches = generatedJRXML.match(/<jr:columnGroup/g);
     expect(columnGroupMatches).toHaveLength(1);
-    
-    // 5. 验证所有预期的列UUID都存在
+
+    // 5. Verify every expected column UUID is present
     expect(columnUuids).toContain('column1-uuid');
     expect(columnUuids).toContain('column2-uuid');
     expect(columnUuids).toContain('column3-uuid');
   })
 
   it('should set correct rowSpan for ungrouped columns', () => {
-    // 创建一个表格元素，其中A和B列合并，C列未合并
+    // Create a table element where columns A and B are merged, and column C is not merged
     const tableElement: any = {
       type: 'table',
       x: 0,
@@ -990,7 +990,7 @@ describe('jrxmlGenerator', () => {
       },
       children: [
         {
-          // A和B的组合列
+          // The combined column for A and B
           name: 'Group1',
           uuid: 'group1-uuid',
           width: 200,
@@ -1007,7 +1007,7 @@ describe('jrxmlGenerator', () => {
           },
           children: [
             {
-              // A列
+              // Column A
               name: 'A',
               uuid: 'column-a-uuid',
               width: 100,
@@ -1035,7 +1035,7 @@ describe('jrxmlGenerator', () => {
               }
             },
             {
-              // B列
+              // Column B
               name: 'B',
               uuid: 'column-b-uuid',
               width: 100,
@@ -1065,7 +1065,7 @@ describe('jrxmlGenerator', () => {
           ]
         },
         {
-          // C列（未合并）
+          // Column C (not merged)
           name: 'C',
           uuid: 'column-c-uuid',
           width: 100,
@@ -1111,20 +1111,20 @@ describe('jrxmlGenerator', () => {
 
     const generatedJRXML = generateJRXMLContent(mockReportProperties, bands, fields)
 
-    // 验证生成的JRXML中C列的columnHeader的rowSpan为2
+    // Verify that column C's columnHeader has a rowSpan of 2 in the generated JRXML
     const columnCHeaderMatch = generatedJRXML.match(/<jr:columnHeader[^>]*rowSpan="([^"]+)"[^>]*>.*?Column C.*?<\/jr:columnHeader>/s);
 
-    // 直接搜索C列的columnHeader的rowSpan
+    // Directly search for column C's columnHeader rowSpan
     const columnCRowSpanMatch = generatedJRXML.match(/<jr:column[^>]*uuid="column-c-uuid"[^>]*>.*?<jr:columnHeader[^>]*rowSpan="([^"]+)"/s);
 
-    // 验证rowSpan为2
+    // Verify the rowSpan is 2
     expect(columnCRowSpanMatch).toBeDefined();
     expect(columnCRowSpanMatch?.[1]).toBe('2');
   })
 
   it('should inflate standalone column height to match rowSpan alongside groups', () => {
-    // 表格有一个分组（含2列）和一个独立列
-    // 独立列需要 rowSpan=2, height=60 (30*2)
+    // The table has one group (containing 2 columns) and one standalone column
+    // The standalone column needs rowSpan=2, height=60 (30*2)
     const mockReportProperties = {
       reportName: 'Test',
       pageWidth: 595,
@@ -1225,7 +1225,7 @@ describe('jrxmlGenerator', () => {
 
     const generated = generateJRXMLContent(mockReportProperties, bands, fields)
 
-    // 独立列的 columnHeader 应该有 rowSpan=2
+    // The standalone column's columnHeader should have rowSpan=2
     const standaloneMatch = generated.match(/<jr:column[^>]*uuid="col-standalone"[^>]*>[\s\S]*?<jr:columnHeader\s+height="(\d+)"\s+rowSpan="(\d+)"/)
     expect(standaloneMatch).toBeDefined()
     expect(standaloneMatch?.[2]).toBe('2')

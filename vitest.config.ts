@@ -7,7 +7,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    // 忽略测试文件中的TypeScript错误
+    // Ignore TypeScript errors in test files
     typecheck: {
       enabled: false
     }
@@ -17,7 +17,7 @@ export default defineConfig({
       '@': resolve(process.cwd(), './src'),
     },
   },
-  // 确保测试文件使用ES模块
+  // Ensure test files use ES modules
   esbuild: {
     target: 'esnext'
   }

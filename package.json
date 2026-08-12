@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "update-changelog": "echo '## [Unreleased]\n\n### Added\n- ' >> CHANGELOG.md && echo '请手动编辑CHANGELOG.md文件添加具体变更内容'",
+    "update-changelog": "echo '## [Unreleased]\n\n### Added\n- ' >> CHANGELOG.md && echo 'Please manually edit the CHANGELOG.md file to add specific change details'",
     "release": "node scripts/release.js",
     "verify:jrxml": "bash quick-verify.sh",
     "tauri:dev": "tauri dev",

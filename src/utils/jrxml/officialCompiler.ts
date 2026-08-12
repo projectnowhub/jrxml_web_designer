@@ -1,9 +1,9 @@
 // @ts-nocheck
 /**
- * JRXML编译验证器（基于JasperReports官方库）
+ * JRXML compilation validator (based on the official JasperReports library)
  *
- * 这个模块通过调用Java程序来使用JasperReports库编译JRXML
- * 确保生成的JRXML能被官方编译器成功编译
+ * This module invokes a Java program to compile JRXML using the JasperReports library,
+ * ensuring the generated JRXML can be successfully compiled by the official compiler
  */
 
 import { exec } from 'child_process';
@@ -36,7 +36,7 @@ export class JRXMLOfficialCompiler {
   }
 
   /**
-   * 检查环境
+   * Check the environment
    */
   async checkEnvironment(): Promise<{ javaAvailable: boolean; jarAvailable: boolean; compilerAvailable: boolean }> {
     const result = {
@@ -45,7 +45,7 @@ export class JRXMLOfficialCompiler {
       compilerAvailable: false
     };
 
-    // 检查Java
+    // Check Java
     try {
       const { stdout } = await execAsync('java -version');
       result.javaAvailable = true;
@@ -53,10 +53,10 @@ export class JRXMLOfficialCompiler {
       result.javaAvailable = false;
     }
 
-    // 检查JasperReports JAR
+    // Check the JasperReports JAR
     result.jarAvailable = fs.existsSync(this.jasperReportsJar);
 
-    // 检查编译器
+    // Check the compiler
     const compilerPath = path.join(this.toolsDir, 'JRXMLCompiler.class');
     result.compilerAvailable = fs.existsSync(compilerPath);
 
@@ -64,29 +64,29 @@ export class JRXMLOfficialCompiler {
   }
 
   /**
-   * 编译JRXML文件
+   * Compile a JRXML file
    */
   async compile(inputPath: string, outputPath?: string): Promise<CompilationResult> {
     const startTime = Date.now();
 
-    // 检查输入文件
+    // Check the input file
     if (!fs.existsSync(inputPath)) {
       return {
         success: false,
         inputPath,
-        error: '输入文件不存在',
+        error: 'Input file does not exist',
         compilationTime: Date.now() - startTime
       };
     }
 
-    // 检查环境
+    // Check the environment
     const env = await this.checkEnvironment();
     if (!env.javaAvailable) {
       return {
         success: false,
         inputPath,
-        error: 'Java未安装',
-        details: '请安装Java JDK 8+',
+        error: 'Java is not installed',
+        details: 'Please install Java JDK 8+',
         compilationTime: Date.now() - startTime
       };
     }
@@ -95,28 +95,28 @@ export class JRXMLOfficialCompiler {
       return {
         success: false,
         inputPath,
-        error: 'JasperReports库未找到',
-        details: `请下载jasperreports-${this.jasperReportsVersion}.jar到${this.libDir}`,
+        error: 'JasperReports library not found',
+        details: `Please download jasperreports-${this.jasperReportsVersion}.jar to ${this.libDir}`,
         compilationTime: Date.now() - startTime
       };
     }
 
-    // 设置输出路径
+    // Set the output path
     if (!outputPath) {
       outputPath = inputPath.replace(/\.jrxml$/, '.jasper');
     }
 
     try {
-      // 调用Java编译器
+      // Invoke the Java compiler
       const command = `java -cp "${this.toolsDir}:${this.jasperReportsJar}" JRXMLCompiler "${inputPath}" "${outputPath}"`;
 
       const { stdout, stderr } = await execAsync(command, {
-        timeout: 30000 // 30秒超时
+        timeout: 30000 // 30-second timeout
       });
 
       const compilationTime = Date.now() - startTime;
 
-      // 检查输出文件
+      // Check the output file
       if (fs.existsSync(outputPath)) {
         const stats = fs.statSync(outputPath);
         return {
@@ -124,14 +124,14 @@ export class JRXMLOfficialCompiler {
           inputPath,
           outputPath,
           compilationTime,
-          details: `编译成功，输出文件大小: ${stats.size} bytes`
+          details: `Compiled successfully, output file size: ${stats.size} bytes`
         };
       } else {
         return {
           success: false,
           inputPath,
           outputPath,
-          error: '编译命令执行成功，但输出文件未生成',
+          error: 'The compile command ran successfully, but no output file was generated',
           details: stderr || stdout,
           compilationTime
         };
@@ -150,35 +150,35 @@ export class JRXMLOfficialCompiler {
   }
 
   /**
-   * 验证JRXML语法（不编译）
+   * Validate JRXML syntax (without compiling)
    */
   async validate(inputPath: string): Promise<{ valid: boolean; error?: string; details?: string }> {
-    // 检查输入文件
+    // Check the input file
     if (!fs.existsSync(inputPath)) {
       return {
         valid: false,
-        error: '输入文件不存在'
+        error: 'Input file does not exist'
       };
     }
 
-    // 检查环境
+    // Check the environment
     const env = await this.checkEnvironment();
     if (!env.javaAvailable) {
       return {
         valid: false,
-        error: 'Java未安装'
+        error: 'Java is not installed'
       };
     }
 
     if (!env.jarAvailable) {
       return {
         valid: false,
-        error: 'JasperReports库未找到'
+        error: 'JasperReports library not found'
       };
     }
 
     try {
-      // 调用Java验证器（使用validate方法）
+      // Invoke the Java validator (using the validate method)
       const command = `java -cp "${this.toolsDir}:${this.jasperReportsJar}" JRXMLCompiler "${inputPath}"`;
 
       const { stdout, stderr } = await execAsync(command, {
@@ -199,7 +199,7 @@ export class JRXMLOfficialCompiler {
   }
 
   /**
-   * 批量编译多个JRXML文件
+   * Compile multiple JRXML files in a batch
    */
   async compileBatch(inputPaths: string[]): Promise<{
     total: number;
@@ -214,7 +214,7 @@ export class JRXMLOfficialCompiler {
       results.push(result);
 
       if (result.success) {
-        console.log(`✅ ${path.basename(inputPath)}: 编译成功`);
+        console.log(`✅ ${path.basename(inputPath)}: compiled successfully`);
       } else {
         console.log(`❌ ${path.basename(inputPath)}: ${result.error}`);
       }
@@ -229,7 +229,7 @@ export class JRXMLOfficialCompiler {
   }
 
   /**
-   * 生成验证报告
+   * Generate a validation report
    */
   generateReport(results: CompilationResult[]): string {
     const timestamp = new Date().toISOString();
@@ -238,41 +238,41 @@ export class JRXMLOfficialCompiler {
 
     let report = `
 =================================================================
-JRXML编译验证报告（JasperReports官方库）
+JRXML Compilation Validation Report (Official JasperReports Library)
 =================================================================
-验证时间: ${timestamp}
-JasperReports版本: ${this.jasperReportsVersion}
-总测试数: ${results.length}
-通过数: ${passed}
-失败数: ${failed}
+Validation time: ${timestamp}
+JasperReports version: ${this.jasperReportsVersion}
+Total tests: ${results.length}
+Passed: ${passed}
+Failed: ${failed}
 =================================================================
 
-详细结果:
+Detailed results:
 `;
 
     results.forEach((result, index) => {
       report += `\n${index + 1}. ${path.basename(result.inputPath)}`;
-      report += `\n   状态: ${result.success ? '✅ 通过' : '❌ 失败'}`;
+      report += `\n   Status: ${result.success ? '✅ Passed' : '❌ Failed'}`;
       if (result.outputPath) {
-        report += `\n   输出: ${result.outputPath}`;
+        report += `\n   Output: ${result.outputPath}`;
       }
       if (result.compilationTime) {
-        report += `\n   编译时间: ${result.compilationTime}ms`;
+        report += `\n   Compilation time: ${result.compilationTime}ms`;
       }
       if (result.error) {
-        report += `\n   错误: ${result.error}`;
+        report += `\n   Error: ${result.error}`;
       }
       if (result.details) {
-        report += `\n   详情: ${result.details}`;
+        report += `\n   Details: ${result.details}`;
       }
     });
 
     report += `\n\n=================================================================
-验证总结:
-1. 使用JasperReports ${this.jasperReportsVersion}官方库进行编译
-2. 所有JRXML语法通过官方验证
-3. 所有JRXML成功编译成jasper文件
-4. 生成的jasper文件可以直接在生产环境使用
+Validation summary:
+1. Compiled using the official JasperReports ${this.jasperReportsVersion} library
+2. All JRXML syntax passed official validation
+3. All JRXML files were successfully compiled into jasper files
+4. The generated jasper files can be used directly in production
 =================================================================
 `;
 
@@ -280,26 +280,26 @@ JasperReports版本: ${this.jasperReportsVersion}
   }
 }
 
-// 导出单例实例
+// Export a singleton instance
 export const jrxmlOfficialCompiler = new JRXMLOfficialCompiler();
 
-// 如果直接运行
+// If run directly
 if (require.main === module) {
   (async () => {
     const compiler = new JRXMLOfficialCompiler();
 
-    console.log('\n检查环境...');
+    console.log('\nChecking environment...');
     const env = await compiler.checkEnvironment();
     console.log('Java:', env.javaAvailable ? '✅' : '❌');
     console.log('JasperReports:', env.jarAvailable ? '✅' : '❌');
-    console.log('编译器:', env.compilerAvailable ? '✅' : '❌');
+    console.log('Compiler:', env.compilerAvailable ? '✅' : '❌');
 
     if (!env.javaAvailable || !env.jarAvailable) {
-      console.log('\n❌ 环境检查失败，请先安装Java和下载JasperReports库');
+      console.log('\n❌ Environment check failed. Please install Java and download the JasperReports library first');
       process.exit(1);
     }
 
-    // 编译test-reports目录下的所有JRXML文件
+    // Compile all JRXML files in the test-reports directory
     const testDir = path.join(__dirname, '..', 'test-reports');
     if (fs.existsSync(testDir)) {
       const files = fs.readdirSync(testDir)
@@ -307,12 +307,12 @@ if (require.main === module) {
         .map(f => path.join(testDir, f));
 
       if (files.length > 0) {
-        console.log(`\n编译 ${files.length} 个测试文件...\n`);
+        console.log(`\nCompiling ${files.length} test files...\n`);
         const batchResult = await compiler.compileBatch(files);
 
         console.log('\n' + compiler.generateReport(batchResult.results));
       } else {
-        console.log('\n未找到测试文件');
+        console.log('\nNo test files found');
       }
     }
   })();

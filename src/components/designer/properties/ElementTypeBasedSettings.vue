@@ -1,25 +1,25 @@
 <template>
   <div class="element-type-based-settings">
-    <!-- 根据元素类型显示样式设置 -->
+    <!-- Show style settings based on element type -->
     <div v-if="element">
-      <!-- 字体样式设置 -->
+      <!-- Font style settings -->
       <template v-if="['staticText', 'textField'].includes(element.type)">
-        <FontStyleSettings 
+        <FontStyleSettings
           v-model="element"
           @update:modelValue="emit('update:modelValue', element)"
         />
       </template>
-      
-      <!-- 边框样式设置 -->
+
+      <!-- Border style settings -->
       <template v-if="element.type !== 'line'">
-        <BorderStyleSettings 
-          v-model="element" 
+        <BorderStyleSettings
+          v-model="element"
           :label="t('properties.borderStyle')"
           @change="emit('update:modelValue', element)"
         />
       </template>
-      
-      <!-- 静态文本特定属性 -->
+
+      <!-- Static text specific properties -->
       <template v-if="element.type === 'staticText'">
         <div class="form-group">
           <label>{{ t('properties.textContent') }}</label>
@@ -27,7 +27,7 @@
         </div>
       </template>
       
-      <!-- 文本字段特定属性 -->
+      <!-- Text field specific properties -->
       <template v-else-if="element.type === 'textField'">
         <div class="form-group">
           <label>{{ t('properties.expression') }}</label>
@@ -58,7 +58,7 @@
         </div>
       </template>
       
-      <!-- 图片特定属性 -->
+      <!-- Image specific properties -->
       <template v-else-if="element.type === 'image'">
         <div class="form-group">
           <label>{{ t('properties.imageExpression') }}</label>
@@ -67,7 +67,7 @@
         </div>
       </template>
       
-      <!-- 矩形特定属性 -->
+      <!-- Rectangle specific properties -->
       <template v-else-if="element.type === 'rectangle'">
         <div class="form-group">
           <label>{{ t('properties.radius') }}</label>
@@ -75,7 +75,7 @@
         </div>
       </template>
       
-      <!-- 分页符特定属性 -->
+      <!-- Break specific properties -->
       <template v-else-if="element.type === 'break'">
         <div class="form-group">
           <label>{{ t('properties.breakType') }}</label>
@@ -86,7 +86,7 @@
         </div>
       </template>
       
-      <!-- 框架特定属性 -->
+      <!-- Frame specific properties -->
       <template v-else-if="element.type === 'frame'">
         <div class="form-group">
           <label>{{ t('properties.layoutMode') }}</label>
@@ -119,7 +119,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: DesignElement];
 }>();
 
-// 为了在模板中使用方便，定义一个计算属性
+// Define a computed property for convenient use in the template
 const element = computed(() => props.modelValue);
 </script>
 

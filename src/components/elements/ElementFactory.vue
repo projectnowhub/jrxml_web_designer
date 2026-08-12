@@ -34,7 +34,7 @@ import type {
   EditingElementInfo
 } from '../../types';
 
-// 组件缓存 - 使用普通对象而非ref，避免组件被转换为响应式对象
+// Component cache - use a plain object instead of a ref to avoid components being converted into reactive objects
 const componentCache: Record<string, any> = {
   staticText: StaticTextElement,
   textField: TextFieldElement,
@@ -56,9 +56,9 @@ const componentCache: Record<string, any> = {
   sort: SortElement
 };
 
-// 预加载组件
+// Preload components
 onMounted(() => {
-  // 注册默认组件到缓存
+  // Register default components into the cache
   elementRegistry.getAllElements().forEach(config => {
     if (!componentCache[config.type]) {
       loadComponent(config.type);
@@ -66,7 +66,7 @@ onMounted(() => {
   });
 });
 
-// 动态加载组件
+// Dynamically load a component
 async function loadComponent(type: string) {
   try {
     const component = await elementRegistry.loadElementComponent(type);
@@ -84,7 +84,7 @@ const props = defineProps<{
   bandIndex: number;
   elementIndex: number;
   selectedElement: SelectedElementInfo | null;
-  selectedElements: {bandIndex: number, elementIndex: number, parentFrameIndex?: number}[]; // 添加多选支持
+  selectedElements: {bandIndex: number, elementIndex: number, parentFrameIndex?: number}[]; // Add multi-select support
   editingElement: EditingElementInfo | null;
   isDragging?: boolean;
   reportFontFamily?: string;
@@ -120,29 +120,29 @@ const emit = defineEmits<{
   'update-jrxml': [];
 }>();
 
-// 根据元素类型获取对应的组件
+// Get the corresponding component based on the element type
 const getElementComponent = computed(() => {
   const type = props.element.type;
-  
-  // 从缓存中获取组件
+
+  // Get the component from the cache
   if (componentCache[type]) {
     return componentCache[type];
   }
-  
-  // 动态加载组件
+
+  // Dynamically load the component
   loadComponent(type);
-  
-  // 默认组件
+
+  // Default component
   return StaticTextElement;
 });
 
-// 通用属性 - 添加类型断言以确保与组件期望的类型匹配
+// Common props - add a type assertion to ensure compatibility with what the component expects
 const commonProps = computed(() => ({
-  element: props.element as any, // 使用any断言暂时解决类型兼容性问题
+  element: props.element as any, // Use an any assertion to temporarily work around type compatibility issues
   bandIndex: props.bandIndex,
   elementIndex: props.elementIndex,
   selectedElement: props.selectedElement,
-  selectedElements: props.selectedElements, // 添加多选支持
+  selectedElements: props.selectedElements, // Add multi-select support
   editingElement: props.editingElement,
   isDragging: props.isDragging,
   reportFontFamily: props.reportFontFamily,
@@ -159,7 +159,7 @@ const commonProps = computed(() => ({
 
 
 
-// 通用事件
+// Common events
 const commonEvents = {
   select: (bandIndex: number, elementIndex: number, isMultiSelect = false, parentFrameIndex?: number) => {
     emit('select', bandIndex, elementIndex, isMultiSelect, parentFrameIndex);

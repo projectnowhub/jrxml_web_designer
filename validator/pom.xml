@@ -10,7 +10,7 @@
     <packaging>jar</packaging>
 
     <name>JRXML Validator</name>
-    <description>JRXML编译验证工具</description>
+    <description>JRXML compilation validation tool</description>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -27,7 +27,7 @@
             <version>${jasperreports.version}</version>
         </dependency>
 
-        <!-- 测试依赖 -->
+        <!-- Test dependency -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

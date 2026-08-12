@@ -19,13 +19,13 @@ import type { BandType } from '../../types';
 
 const { t } = useI18n();
 
-// 获取Band显示名称
+// Get the band's display name
 function getBandDisplayName(bandType: string): string {
   // Assuming keys exist in bandNames section of locale files.
   return t(`bandNames.${bandType}`);
 }
 
-// 定义组件属性
+// Define component props
 interface Props {
   visible: boolean;
   initialHeight?: number;
@@ -37,7 +37,7 @@ interface Props {
   previewServerUrl?: string;
 }
 
-// 定义组件事件
+// Define component events
 interface Emits {
   (e: 'update:visible', value: boolean): void;
   (e: 'size-change', value: number): void;
@@ -51,7 +51,7 @@ interface Emits {
   (e: 'band-selection-change'): void;
 }
 
-// 使用defineProps和defineEmits
+// Use defineProps and defineEmits
 const props = withDefaults(defineProps<Props>(), {
   visible: false,
   initialHeight: PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT
@@ -59,22 +59,22 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 
-// 标签页相关
+// Tab-related state
 const activeTab = ref('pageSettings');
 const tabs = ref([
   { id: 'pageSettings', name: t('bottomPanel.jrxmlTabs.pageSettings') },
   { id: 'jrxml', name: t('bottomPanel.jrxmlContent') }
 ]);
 
-// 底部面板高度
+// Bottom panel height
 const bottomPanelHeight = ref(props.initialHeight);
 
-// 全屏状态
+// Fullscreen state
 const isFullscreen = ref(false);
 const originalPanelHeight = ref(props.initialHeight);
-const currentMaxSize = ref(window.innerHeight); // 不限制最大高度
+const currentMaxSize = ref(window.innerHeight); // No maximum height limit
 
-// 纸张规格定义
+// Paper size definitions
 const PAPER_SIZES = [
   { name: 'Letter', width: 612, height: 792 },
   { name: 'Legal', width: 612, height: 1008 },
@@ -131,16 +131,16 @@ const PAPER_SIZES = [
 const selectedPaperSize = ref('A4');
 const orientation = ref('Portrait');
 
-// 可用字体列表
+// List of available fonts
 const availableFonts = ref<string[]>([]);
 
-// PDF预览Modal显示状态
+// PDF preview modal visibility state
 const showPdfPreview = ref(false);
 
-// CodeMirrorEditor组件引用
+// Reference to the CodeMirrorEditor component
 const codeMirrorEditorRef = ref<InstanceType<typeof CodeMirrorEditor> | null>(null);
 
-// 搜索相关（聚合到按钮行）
+// Search-related state (consolidated into the button row)
 const searchInputRef = ref<HTMLInputElement | null>(null);
 const showSearch = ref(false);
 const searchQuery = ref('');
@@ -161,16 +161,16 @@ const toggleSearch = () => {
 const performSearch = () => {
   searchResultsCount.value = codeMirrorEditorRef.value?.performSearchWith(searchQuery.value) ?? 0;
   currentSearchResult.value = searchResultsCount.value > 0 ? 1 : 0;
-  // 纯数字且无搜索结果时，当作行号跳转
+  // If the query is purely numeric and there are no search results, treat it as a line-number jump
   if (searchResultsCount.value === 0 && /^\d+$/.test(searchQuery.value)) {
     jumpToLine(parseInt(searchQuery.value, 10), 0);
   }
-  // 保持搜索框焦点，防止编辑器抢焦点
+  // Keep focus on the search box so the editor doesn't steal it
   nextTick(() => { searchInputRef.value?.focus(); });
 };
 
 const findNext = () => {
-  // 纯数字无结果时，当作行号跳转
+  // If the query is purely numeric with no results, treat it as a line-number jump
   if (searchResultsCount.value === 0 && /^\d+$/.test(searchQuery.value)) {
     performSearch();
     closeSearch();
@@ -203,7 +203,7 @@ onMounted(async () => {
   availableFonts.value = await getAvailableFonts();
 });
 
-// 打开PDF预览
+// Open the PDF preview
 const openPdfPreview = (): void => {
   if (!localJrxmlContent.value) {
     alert(t('bottomPanel.alerts.generateJrxmlFirst'));
@@ -215,27 +215,28 @@ const openPdfPreview = (): void => {
   });
 };
 
-// 计算属性：本地绑定的reportProperties
+// Computed property: local binding for reportProperties
 const localReportProperties = computed({
   get: () => props.reportProperties,
   set: (value) => emit('update:report-properties', value)
 });
 
-// 检测纸张大小和方向
+// Detect the paper size and orientation
 const detectPaperSizeAndOrientation = () => {
   if (!props.reportProperties) return;
-  
+
   const w = props.reportProperties.pageWidth;
   const h = props.reportProperties.pageHeight;
   const isLandscape = w > h;
-  
-  // 只有在非手动更改方向时才更新方向（为了避免循环更新），但这里主要是初始化检测
-  // 实际上我们应该总是信任当前的宽高比
+
+  // Ideally we'd only update orientation when it wasn't changed manually (to avoid update loops),
+  // but this is mainly used for initial detection.
+  // In practice we should always trust the current width/height ratio.
   orientation.value = isLandscape ? 'Landscape' : 'Portrait';
-  
-  // 检查是否匹配预设尺寸
-  // 如果是横向，宽是长边；如果是纵向，高是长边
-  // 预设尺寸中 width 是短边，height 是长边
+
+  // Check whether it matches a preset size
+  // For landscape, width is the long side; for portrait, height is the long side.
+  // In the preset sizes, width is the short side and height is the long side.
   const checkW = isLandscape ? h : w;
   const checkH = isLandscape ? w : h;
   
@@ -243,23 +244,23 @@ const detectPaperSizeAndOrientation = () => {
   selectedPaperSize.value = match ? match.name : 'Custom';
 };
 
-// 监听 reportProperties 变化，更新选中状态
-// 使用 deep: true 监听内部属性变化
+// Watch for reportProperties changes and update the selected state
+// Use deep: true to watch changes to nested properties
 watch(() => props.reportProperties, () => {
-  // 当宽高发生变化时，重新检测
-  // 注意：这可能会在我们将要修改宽高时触发，所以需要小心处理
-  // 这里我们只在宽高不匹配当前选中的规格时更新
+  // Re-detect whenever width/height change
+  // Note: this may also fire while we're in the middle of changing width/height, so handle it carefully
+  // Here we only update when width/height no longer match the currently selected size
   detectPaperSizeAndOrientation();
 }, { deep: true, immediate: true });
 
-// 处理纸张规格变化
+// Handle paper size changes
 const handlePaperSizeChange = () => {
   if (selectedPaperSize.value === 'Custom') return;
-  
+
   const size = PAPER_SIZES.find(s => s.name === selectedPaperSize.value);
   if (!size) return;
-  
-  // 根据当前方向应用尺寸
+
+  // Apply the size based on the current orientation
   if (orientation.value === 'Landscape') {
     localReportProperties.value.pageWidth = size.height;
     localReportProperties.value.pageHeight = size.width;
@@ -269,19 +270,19 @@ const handlePaperSizeChange = () => {
   }
 };
 
-// 处理方向变化
+// Handle orientation changes
 const handleOrientationChange = () => {
   const w = localReportProperties.value.pageWidth;
   const h = localReportProperties.value.pageHeight;
-  
+
   if (orientation.value === 'Landscape') {
-    // 切换到横向：如果当前是纵向（宽 < 高），则交换
+    // Switching to landscape: if currently portrait (width < height), swap them
     if (w < h) {
       localReportProperties.value.pageWidth = h;
       localReportProperties.value.pageHeight = w;
     }
   } else {
-    // 切换到纵向：如果当前是横向（宽 > 高），则交换
+    // Switching to portrait: if currently landscape (width > height), swap them
     if (w > h) {
       localReportProperties.value.pageWidth = h;
       localReportProperties.value.pageHeight = w;
@@ -289,13 +290,13 @@ const handleOrientationChange = () => {
   }
 };
 
-// 计算属性：本地绑定的selectedBandTypes
+// Computed property: local binding for selectedBandTypes
 const localSelectedBandTypes = computed({
   get: () => props.selectedBandTypes,
   set: (value) => emit('update:selected-band-types', value)
 });
 
-// 计算属性：本地绑定的jrxmlContent
+// Computed property: local binding for jrxmlContent
 const localJrxmlContent = computed({
   get: () => {
     if (!props.jrxmlContent) return props.jrxmlContent;
@@ -314,31 +315,31 @@ const localJrxmlContent = computed({
   set: (value) => emit('update:jrxml-content', value)
 });
 
-// 同步滚动
+// Sync scrolling
 const syncScroll = () => {
-  // CodeMirrorEditor组件已经内置了行号和滚动同步功能
-  // 这里可以留空，或者添加其他需要的滚动处理逻辑
+  // CodeMirrorEditor already has built-in line number and scroll sync support
+  // This can be left empty, or extended with additional scroll handling logic if needed
 };
 
-// 处理底部面板大小变化
+// Handle bottom panel size changes
 const handleBottomPanelSizeChange = (newSize: number) => {
   bottomPanelHeight.value = newSize;
   emit('size-change', newSize);
 };
 
-// 处理Band选择变化
+// Handle Band selection changes
 const handleBandSelectionChange = () => {
-  // localSelectedBandTypes是计算属性，已经通过v-model自动更新到父组件
-  // 这里只需要触发band-selection-change事件，让父组件执行相关逻辑
+  // localSelectedBandTypes is a computed property already synced to the parent via v-model
+  // Here we just need to emit the band-selection-change event so the parent can run related logic
   emit('band-selection-change');
 };
 
-// 复制JRXML内容到剪贴板
+// Copy the JRXML content to the clipboard
 const copyJRXML = async (): Promise<void> => {
   emit('copy-jrxml');
 };
 
-// 重新生成JRXML内容
+// Regenerate the JRXML content
 const regenerateJRXML = (): void => {
   emit('regenerate-jrxml');
 };
@@ -347,79 +348,79 @@ const formatJRXML = (): void => {
   codeMirrorEditorRef.value?.formatDocument();
 };
 
-// 下载JRXML文件
+// Download the JRXML file
 const downloadJRXML = (): void => {
-  // 切换到JRXML标签页
+  // Switch to the JRXML tab
   activeTab.value = 'jrxml';
   emit('download-jrxml');
 };
 
-// 保存编辑后的JRXML内容
+// Save the edited JRXML content
 const saveJRXML = (): void => {
   emit('save-jrxml');
 };
 
-// 切换全屏模式
+// Toggle fullscreen mode
 const toggleFullscreen = (): void => {
   isFullscreen.value = !isFullscreen.value;
   if (isFullscreen.value) {
-    // 进入全屏模式
+    // Enter fullscreen mode
     originalPanelHeight.value = bottomPanelHeight.value;
-    currentMaxSize.value = window.innerHeight; // 设置更大的最大高度
-    bottomPanelHeight.value = window.innerHeight - 100; // 留出一些空间给其他UI元素
+    currentMaxSize.value = window.innerHeight; // Set a larger max height
+    bottomPanelHeight.value = window.innerHeight - 100; // Leave some space for other UI elements
   } else {
-    // 退出全屏模式
+    // Exit fullscreen mode
     bottomPanelHeight.value = originalPanelHeight.value;
-    currentMaxSize.value = window.innerHeight; // 恢复不限制最大高度
+    currentMaxSize.value = window.innerHeight; // Restore the unlimited max height
   }
 };
 
-// 监听键盘事件
+// Listen for keyboard events
 function handleKeyDown(event: KeyboardEvent) {
-  // 监听ESC键退出全屏或隐藏底部面板
+  // Listen for the ESC key to exit fullscreen or hide the bottom panel
   if (event.key === 'Escape') {
     if (isFullscreen.value) {
       toggleFullscreen();
     } else if (props.visible) {
-      // 当底部面板可见且未全屏时，按下ESC键隐藏底部面板
+      // When the bottom panel is visible and not fullscreen, ESC hides the bottom panel
       emit('update:visible', false);
     }
   }
-  
-  // 监听Cmd+F或Ctrl+F键，切换到JRXML标签页并进入全屏
+
+  // Listen for Cmd+F or Ctrl+F to switch to the JRXML tab and enter fullscreen
   if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
-    event.preventDefault(); // 阻止默认的搜索功能
-    
-    // 如果底部面板未打开，则打开它
+    event.preventDefault(); // Prevent the browser's default search functionality
+
+    // Open the bottom panel if it isn't already open
     if (!props.visible) {
       emit('update:visible', true);
     }
-    
-    // 切换到JRXML标签页
+
+    // Switch to the JRXML tab
     activeTab.value = 'jrxml';
-    
-    // 进入全屏模式
+
+    // Enter fullscreen mode
     if (!isFullscreen.value) {
       toggleFullscreen();
     }
-    
-    // 延迟一下，确保DOM已经更新，然后打开搜索栏并聚焦搜索输入框
+
+    // Wait briefly to ensure the DOM has updated, then open the search bar and focus its input
     setTimeout(() => {
       toggleSearch();
     }, 200);
   }
 }
 
-// 组件挂载时添加事件监听器
+// Add the event listener when the component is mounted
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown);
 });
 
-// 验证相关状态
+// Validation-related state
 const validationResult = ref<ValidationResult | null>(null);
 const isValidating = ref(false);
 
-// 执行XSD验证
+// Run XSD validation
 const runValidation = async () => {
   if (!localJrxmlContent.value) {
     alert(t('bottomPanel.alerts.generateJrxmlFirst'));
@@ -432,7 +433,7 @@ const runValidation = async () => {
   try {
     validationResult.value = await validateJRXML(localJrxmlContent.value);
     
-    // 验证失败时自动放大底部面板
+    // Automatically expand the bottom panel when validation fails
     if (!validationResult.value.valid) {
       bottomPanelHeight.value = window.innerHeight - 100;
       currentMaxSize.value = window.innerHeight;
@@ -444,10 +445,10 @@ const runValidation = async () => {
       errors: [{
         line: 0,
         column: 0,
-        message: `验证失败: ${String(error)}`
+        message: `Validation failed: ${String(error)}`
       }]
     };
-    // 验证失败时自动放大底部面板
+    // Automatically expand the bottom panel when validation fails
     bottomPanelHeight.value = window.innerHeight - 100;
     currentMaxSize.value = window.innerHeight;
     activeTab.value = 'jrxml';
@@ -456,23 +457,23 @@ const runValidation = async () => {
   }
 };
 
-// 清除验证结果
+// Clear the validation result
 const clearValidation = () => {
   validationResult.value = null;
 };
 
-// 跳转到指定行
+// Jump to a specific line
 const jumpToLine = (line: number, column: number) => {
   if (codeMirrorEditorRef.value) {
     codeMirrorEditorRef.value.jumpToLine(line, column);
   }
 };
 
-// 自动修复相关状态
+// Auto-fix-related state
 const isAutoFixing = ref(false);
 const autoFixResult = ref<AutoFixResult | null>(null);
 
-// 执行自动修复
+// Run auto-fix
 const runAutoFix = async () => {
   if (!localJrxmlContent.value) {
     alert(t('bottomPanel.alerts.generateJrxmlFirst'));
@@ -486,29 +487,29 @@ const runAutoFix = async () => {
     autoFixResult.value = await autoFixJRXML(localJrxmlContent.value);
 
     if (autoFixResult.value.fixed) {
-      // 将修复后的内容更新到编辑器
+      // Update the editor with the fixed content
       localJrxmlContent.value = autoFixResult.value.fixedContent;
-      // 切换到 JRXML 标签页显示修复结果
+      // Switch to the JRXML tab to show the fix result
       activeTab.value = 'jrxml';
     }
   } catch (error) {
-    console.error('自动修复失败:', error);
+    console.error('Auto-fix failed:', error);
   } finally {
     isAutoFixing.value = false;
   }
 };
 
-// 清除自动修复结果
+// Clear the auto-fix result
 const clearAutoFixResult = () => {
   autoFixResult.value = null;
 };
 
-// 组件挂载时添加事件监听器
+// Add the event listener when the component is mounted
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown);
 });
 
-// 组件卸载时移除事件监听器
+// Remove the event listener before the component is unmounted
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeyDown);
 });
@@ -536,7 +537,7 @@ onBeforeUnmount(() => {
       </button>
     </div>
     
-    <!-- 页面设置标签 -->
+    <!-- Page settings tab -->
     <div class="tab-content page-settings-tab" v-show="activeTab === 'pageSettings'">
       <div class="settings-grid">
         <div class="settings-section">
@@ -588,7 +589,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <!-- 字体设置 - 紧凑布局 -->
+        <!-- Font settings - compact layout -->
         <div class="settings-section font-settings-compact">
           <h4>{{ t('bottomPanel.defaultFontSettings') }}</h4>
           <div class="font-settings-row">
@@ -619,7 +620,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
         
-        <!-- Band选择 -->
+        <!-- Band selection -->
         <div class="settings-section band-selection-section">
           <h4>{{ t('bottomPanel.bandSelection') }}</h4>
           <div class="band-selection-grid">
@@ -642,7 +643,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
     
-    <!-- JRXML内容标签 -->
+    <!-- JRXML content tab -->
     <div class="tab-content jrxml-tab" v-show="activeTab === 'jrxml'">
       <div class="jrxml-container">
         <div class="jrxml-header">
@@ -677,15 +678,15 @@ onBeforeUnmount(() => {
                 ref="searchInputRef"
                 v-model="searchQuery"
                 class="inline-search-input"
-                placeholder="搜索... (Ctrl+F)"
+                placeholder="Search... (Ctrl+F)"
                 @input="performSearch"
                 @keydown.enter="findNext"
                 @keydown.shift.enter="findPrevious"
                 @keydown.escape="closeSearch"
               />
-              <n-button @click="findPrevious" type="default" size="small" title="上一个">↑</n-button>
-              <n-button @click="findNext" type="default" size="small" title="下一个">↓</n-button>
-              <n-button @click="closeSearch" type="default" size="small" title="关闭">×</n-button>
+              <n-button @click="findPrevious" type="default" size="small" title="Previous">↑</n-button>
+              <n-button @click="findNext" type="default" size="small" title="Next">↓</n-button>
+              <n-button @click="closeSearch" type="default" size="small" title="Close">×</n-button>
               <span v-if="searchResultsCount > 0" class="search-status">
                 {{ currentSearchResult }} / {{ searchResultsCount }}
               </span>
@@ -795,7 +796,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  max-height: 70vh; /* 限制最大高度，避免占用过多屏幕空间 */
+  max-height: 70vh; /* Limit the maximum height to avoid taking up too much screen space */
 }
 
 .tab-navigation {
@@ -803,7 +804,7 @@ onBeforeUnmount(() => {
   background-color: #e9e9e9;
   border-bottom: 1px solid #ddd;
   padding: 0 8px;
-  flex-shrink: 0; /* 确保导航栏不会被压缩 */
+  flex-shrink: 0; /* Ensure the navigation bar doesn't get compressed */
   position: sticky;
   top: 0;
   z-index: 10;
@@ -832,7 +833,7 @@ onBeforeUnmount(() => {
 .tab-content {
   flex: 1;
   overflow: auto;
-  min-height: 0; /* 确保flex子元素可以收缩 */
+  min-height: 0; /* Ensure flex child elements can shrink */
   padding: 10px;
   box-sizing: border-box;
 }
@@ -881,7 +882,7 @@ onBeforeUnmount(() => {
   padding-bottom: v-bind('UI_CONSTANTS.SMALL_MARGIN + "px"');
 }
 
-/* 表单行布局 */
+/* Form row layout */
 .form-row {
   display: flex;
   gap: v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
@@ -892,7 +893,7 @@ onBeforeUnmount(() => {
   flex: 1;
 }
 
-/* 紧凑字体设置样式 */
+/* Compact font settings style */
 .font-settings-compact {
   grid-column: span 1;
 }
@@ -1006,9 +1007,9 @@ onBeforeUnmount(() => {
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: v-bind('UI_CONSTANTS.FONT_SIZE_SMALL + "px"');
   line-height: 1.5;
-  white-space: pre; /* 保持 pre，不换行，以保持行号对应 */
-  word-wrap: normal; /* 不自动换行 */
-  overflow-x: auto; /* 允许横向滚动 */
+  white-space: pre; /* Keep pre (no wrapping) to preserve line-number alignment */
+  word-wrap: normal; /* Do not wrap automatically */
+  overflow-x: auto; /* Allow horizontal scrolling */
   border: none;
   outline: none;
   resize: none;
@@ -1182,7 +1183,7 @@ onBeforeUnmount(() => {
   font-weight: bold;
 }
 
-/* 自动修复按钮样式 */
+/* Auto-fix button style */
 .autofix-btn {
   margin-left: 8px;
 }
@@ -1230,7 +1231,7 @@ onBeforeUnmount(() => {
   color: #28a745;
 }
 
-/* 警告列表样式 */
+/* Warning list style */
 .autofix-warnings {
   margin-top: 12px;
   padding-top: 12px;

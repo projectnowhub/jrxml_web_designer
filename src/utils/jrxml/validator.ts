@@ -1,7 +1,7 @@
 // @ts-nocheck
 /**
- * JRXML编译验证器
- * 用于验证生成的JRXML是否符合JasperReports规范
+ * JRXML compilation validator
+ * Used to verify that the generated JRXML conforms to the JasperReports spec
  */
 
 import * as fs from 'fs';
@@ -21,90 +21,90 @@ export class JRXMLValidator {
   }
 
   private setupDefaultRules(): void {
-    // 规则1：XML声明
+    // Rule 1: XML declaration
     this.rules.push({
-      name: 'XML声明',
+      name: 'XML declaration',
       validate: (content) => content.trim().startsWith('<?xml version="1.0"'),
-      errorMessage: 'JRXML必须以XML声明开始'
+      errorMessage: 'JRXML must start with an XML declaration'
     });
 
-    // 规则2：jasperReport根元素
+    // Rule 2: jasperReport root element
     this.rules.push({
-      name: 'jasperReport根元素',
+      name: 'jasperReport root element',
       validate: (content) => /<jasperReport[\s>]/.test(content),
-      errorMessage: '缺少jasperReport根元素'
+      errorMessage: 'Missing jasperReport root element'
     });
 
-    // 规则3：必要的jasperReport属性
+    // Rule 3: Required jasperReport attributes
     this.rules.push({
-      name: 'jasperReport必要属性',
+      name: 'jasperReport required attributes',
       validate: (content) => {
         const requiredAttrs = ['name', 'pageWidth', 'pageHeight', 'columnWidth'];
         return requiredAttrs.every(attr => new RegExp(`${attr}="[^"]*"`).test(content));
       },
-      errorMessage: 'jasperReport缺少必要的属性(name, pageWidth, pageHeight, columnWidth)'
+      errorMessage: 'jasperReport is missing required attributes (name, pageWidth, pageHeight, columnWidth)'
     });
 
-    // 规则4：UUID属性
+    // Rule 4: UUID attribute
     this.rules.push({
-      name: 'UUID属性',
+      name: 'UUID attribute',
       validate: (content) => /uuid="[^"]*"/.test(content),
-      errorMessage: 'jasperReport缺少uuid属性'
+      errorMessage: 'jasperReport is missing the uuid attribute'
     });
 
-    // 规则5：reportElement中的UUID
+    // Rule 5: UUID inside reportElement
     this.rules.push({
       name: 'reportElement UUID',
       validate: (content) => {
         const reportElements = content.match(/<reportElement[^>]*>/g) || [];
         return reportElements.every(elem => /uuid="[^"]*"/.test(elem));
       },
-      errorMessage: 'reportElement缺少uuid属性'
+      errorMessage: 'reportElement is missing the uuid attribute'
     });
 
-    // 规则6：TextField表达式
+    // Rule 6: TextField expression
     this.rules.push({
-      name: 'TextField表达式',
+      name: 'TextField expression',
       validate: (content) => {
         if (!content.includes('<textField')) return true;
         return content.includes('<textFieldExpression>');
       },
-      errorMessage: 'textField缺少textFieldExpression'
+      errorMessage: 'textField is missing textFieldExpression'
     });
 
-    // 规则7：Image表达式
+    // Rule 7: Image expression
     this.rules.push({
-      name: 'Image表达式',
+      name: 'Image expression',
       validate: (content) => {
         if (!content.includes('<image>')) return true;
         return content.includes('<imageExpression>');
       },
-      errorMessage: 'image缺少imageExpression'
+      errorMessage: 'image is missing imageExpression'
     });
 
-    // 规则8：band属性
+    // Rule 8: band attribute
     this.rules.push({
-      name: 'band属性',
+      name: 'band attribute',
       validate: (content) => {
         const bands = content.match(/<band[^>]*>/g) || [];
         return bands.every(band => /height="\d+"/.test(band));
       },
-      errorMessage: 'band缺少height属性'
+      errorMessage: 'band is missing the height attribute'
     });
 
-    // 规则9：字段定义语法
+    // Rule 9: Field definition syntax
     this.rules.push({
-      name: '字段定义语法',
+      name: 'Field definition syntax',
       validate: (content) => {
         const fields = content.match(/<field[^>]*>/g) || [];
         return fields.every(field => /name="[^"]*"/.test(field) && /class="[^"]*"/.test(field));
       },
-      errorMessage: 'field缺少name或class属性'
+      errorMessage: 'field is missing the name or class attribute'
     });
 
-    // 规则10：样式引用有效性
+    // Rule 10: Style reference validity
     this.rules.push({
-      name: '样式引用有效性',
+      name: 'Style reference validity',
       validate: (content) => {
         const styles = content.match(/<style[^>]*name="([^"]*)"/g) || [];
         const styleNames = styles.map(s => s.match(/name="([^"]*)"/)?.[1] || '');
@@ -114,26 +114,26 @@ export class JRXMLValidator {
 
         return referencedStyles.every(ref => styleNames.includes(ref) || ref === '');
       },
-      errorMessage: '引用的样式未定义'
+      errorMessage: 'A referenced style is not defined'
     });
 
-    // 规则11：表达式语法
+    // Rule 11: Expression syntax
     this.rules.push({
-      name: '表达式语法',
+      name: 'Expression syntax',
       validate: (content) => {
         const expressions = content.match(/<textFieldExpression><!\[CDATA\[(.*?)\]\]><\/textFieldExpression>/g) || [];
         return expressions.every(expr => {
           const exprContent = expr.match(/CDATA\[(.*?)\]/)?.[1] || '';
-          // 基本的表达式语法检查
+          // Basic expression syntax check
           return exprContent.includes('$F{') || exprContent.includes('"') || exprContent.includes('$P{');
         });
       },
-      errorMessage: '表达式语法错误'
+      errorMessage: 'Expression syntax error'
     });
 
-    // 规则12：元素位置有效性
+    // Rule 12: Element position validity
     this.rules.push({
-      name: '元素位置有效性',
+      name: 'Element position validity',
       validate: (content) => {
         const elements = content.match(/<reportElement[^>]*>/g) || [];
         return elements.every(elem => {
@@ -144,12 +144,12 @@ export class JRXMLValidator {
           return x >= 0 && y >= 0 && width >= 0 && height >= 0;
         });
       },
-      errorMessage: '元素位置或大小无效'
+      errorMessage: 'Element position or size is invalid'
     });
 
-    // 规则13：字体属性有效性
+    // Rule 13: Font attribute validity
     this.rules.push({
-      name: '字体属性有效性',
+      name: 'Font attribute validity',
       validate: (content) => {
         const fonts = content.match(/<font[^>]*>/g) || [];
         return fonts.every(font => {
@@ -157,12 +157,12 @@ export class JRXMLValidator {
           return !size || parseInt(size) > 0;
         });
       },
-      errorMessage: '字体大小无效'
+      errorMessage: 'Invalid font size'
     });
 
-    // 规则14：边框属性有效性
+    // Rule 14: Border attribute validity
     this.rules.push({
-      name: '边框属性有效性',
+      name: 'Border attribute validity',
       validate: (content) => {
         const pens = content.match(/<pen[^>]*>/g) || [];
         return pens.every(pen => {
@@ -172,12 +172,12 @@ export class JRXMLValidator {
           return !isNaN(width) && width >= 0;
         });
       },
-      errorMessage: '边框宽度无效'
+      errorMessage: 'Invalid border width'
     });
   }
 
   /**
-   * 验证JRXML内容
+   * Validate JRXML content
    */
   validate(content: string): { valid: boolean; errors: string[]; warnings: string[] } {
     const errors: string[] = [];
@@ -189,7 +189,7 @@ export class JRXMLValidator {
           errors.push(`[${rule.name}] ${rule.errorMessage}`);
         }
       } catch (error) {
-        warnings.push(`[${rule.name}] 验证时发生错误: ${error}`);
+        warnings.push(`[${rule.name}] An error occurred during validation: ${error}`);
       }
     }
 
@@ -201,7 +201,7 @@ export class JRXMLValidator {
   }
 
   /**
-   * 验证JRXML文件
+   * Validate a JRXML file
    */
   validateFile(filePath: string): { valid: boolean; errors: string[]; warnings: string[] } {
     try {
@@ -210,14 +210,14 @@ export class JRXMLValidator {
     } catch (error) {
       return {
         valid: false,
-        errors: [`无法读取文件: ${error}`],
+        errors: [`Failed to read file: ${error}`],
         warnings: []
       };
     }
   }
 
   /**
-   * 生成验证报告
+   * Generate a validation report
    */
   generateReport(content: string, fileName: string = 'JRXML Report'): string {
     const result = this.validate(content);
@@ -225,32 +225,32 @@ export class JRXMLValidator {
 
     let report = `
 =================================================================
-JRXML验证报告
+JRXML Validation Report
 =================================================================
-文件: ${fileName}
-时间: ${timestamp}
-状态: ${result.valid ? '✅ 通过' : '❌ 失败'}
+File: ${fileName}
+Time: ${timestamp}
+Status: ${result.valid ? '✅ Passed' : '❌ Failed'}
 =================================================================
 
-详细信息:
+Details:
 `;
 
     if (result.errors.length > 0) {
-      report += `\n错误 (${result.errors.length}):\n`;
+      report += `\nErrors (${result.errors.length}):\n`;
       result.errors.forEach((error, index) => {
         report += `  ${index + 1}. ${error}\n`;
       });
     }
 
     if (result.warnings.length > 0) {
-      report += `\n警告 (${result.warnings.length}):\n`;
+      report += `\nWarnings (${result.warnings.length}):\n`;
       result.warnings.forEach((warning, index) => {
         report += `  ${index + 1}. ${warning}\n`;
       });
     }
 
     if (result.errors.length === 0 && result.warnings.length === 0) {
-      report += `\n✅ 所有验证规则通过\n`;
+      report += `\n✅ All validation rules passed\n`;
     }
 
     report += `\n=================================================================\n`;
@@ -259,10 +259,10 @@ JRXML验证报告
   }
 }
 
-// 导出单例实例
+// Export a singleton instance
 export const jrxmlValidator = new JRXMLValidator();
 
-// 使用示例
+// Usage example
 if (require.main === module) {
   const validator = new JRXMLValidator();
 

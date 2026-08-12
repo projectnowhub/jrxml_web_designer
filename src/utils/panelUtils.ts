@@ -1,8 +1,8 @@
-// 面板操作相关的工具函数
+// Panel-operation-related utility functions
 
 import { PANEL_CONSTANTS } from '@/constants/constants';
 
-// 调整底部面板高度
+// Adjust the bottom panel height
 export function adjustBottomPanelHeight(
   currentHeight: number,
   deltaY: number,
@@ -11,12 +11,12 @@ export function adjustBottomPanelHeight(
 ): number {
   const newHeight = currentHeight + deltaY;
   const minH = minHeight || PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT;
-  const maxH = maxHeight || 800; // 默认最大高度
-  
+  const maxH = maxHeight || 800; // default maximum height
+
   return Math.max(minH, Math.min(newHeight, maxH));
 }
 
-// 调整左侧面板宽度
+// Adjust the left panel width
 export function adjustLeftPanelWidth(
   currentWidth: number,
   deltaX: number,
@@ -30,21 +30,21 @@ export function adjustLeftPanelWidth(
   return Math.max(minW, Math.min(newWidth, maxW));
 }
 
-// 调整属性面板宽度
+// Adjust the property panel width
 export function adjustPropertyPanelWidth(
   currentWidth: number,
   deltaX: number,
   minWidth?: number,
   maxWidth?: number
 ): number {
-  const newWidth = currentWidth - deltaX; // 属性面板在右侧，所以方向相反
+  const newWidth = currentWidth - deltaX; // The property panel is on the right, so the direction is reversed
   const minW = minWidth || 200;
   const maxW = maxWidth || 600;
-  
+
   return Math.max(minW, Math.min(newWidth, maxW));
 }
 
-// 检查点是否在调整区域内
+// Check whether a point is within the resize area
 export function isInResizeArea(
   x: number,
   y: number,
@@ -64,7 +64,7 @@ export function isInResizeArea(
   }
 }
 
-// 获取鼠标光标样式
+// Get the mouse cursor style
 export function getResizeCursor(areaType: 'bottom' | 'left' | 'right'): string {
   switch (areaType) {
     case 'bottom':
@@ -78,7 +78,7 @@ export function getResizeCursor(areaType: 'bottom' | 'left' | 'right'): string {
   }
 }
 
-// 面板状态管理
+// Panel state management
 export interface PanelState {
   leftPanelWidth: number;
   bottomPanelHeight: number;
@@ -88,7 +88,7 @@ export interface PanelState {
   propertyPanelCollapsed: boolean;
 }
 
-// 获取默认面板状态
+// Get the default panel state
 export function getDefaultPanelState(): PanelState {
   return {
     leftPanelWidth: PANEL_CONSTANTS.DEFAULT_LEFT_PANEL_WIDTH,
@@ -100,7 +100,7 @@ export function getDefaultPanelState(): PanelState {
   };
 }
 
-// 切换面板折叠状态
+// Toggle the panel's collapsed state
 export function togglePanelCollapsed(
   currentState: PanelState,
   panelType: 'left' | 'bottom' | 'property'
@@ -122,16 +122,16 @@ export function togglePanelCollapsed(
   return newState;
 }
 
-// 保存面板状态到本地存储
+// Save panel state to local storage
 export function savePanelState(panelState: PanelState): void {
   try {
     localStorage.setItem('pdf_designer_panel_state', JSON.stringify(panelState));
   } catch (error) {
-    console.error('保存面板状态失败:', error);
+    console.error('Failed to save panel state:', error);
   }
 }
 
-// 从本地存储加载面板状态
+// Load panel state from local storage
 export function loadPanelState(): PanelState | null {
   try {
     const stateStr = localStorage.getItem('pdf_designer_panel_state');
@@ -139,12 +139,12 @@ export function loadPanelState(): PanelState | null {
       return JSON.parse(stateStr) as PanelState;
     }
   } catch (error) {
-    console.error('加载面板状态失败:', error);
+    console.error('Failed to load panel state:', error);
   }
   return null;
 }
 
-// 计算面板可见宽度
+// Calculate the visible panel width
 export function getPanelVisibleWidth(
   panelWidth: number,
   isCollapsed: boolean
@@ -152,7 +152,7 @@ export function getPanelVisibleWidth(
   return isCollapsed ? 0 : panelWidth;
 }
 
-// 计算面板可见高度
+// Calculate the visible panel height
 export function getPanelVisibleHeight(
   panelHeight: number,
   isCollapsed: boolean
@@ -160,7 +160,7 @@ export function getPanelVisibleHeight(
   return isCollapsed ? 0 : panelHeight;
 }
 
-// 计算内容区域尺寸
+// Calculate the content area size
 export function getContentAreaSize(
   containerWidth: number,
   containerHeight: number,

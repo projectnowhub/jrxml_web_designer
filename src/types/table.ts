@@ -1,6 +1,6 @@
-// 表格相关类型定义
+// Table-related type definitions
 
-// 基础单元格接口
+// Base cell interface
 export interface BaseCell {
   height?: number;
   width?: number;
@@ -29,21 +29,21 @@ export interface BaseCell {
     borderStyle?: string;
     borderColor?: string;
   };
-  element?: any; // 单元格内的元素
+  element?: any; // The element inside the cell
 }
 
-// 单元格接口
+// Cell interface
 export interface Cell extends BaseCell {
   rowSpan?: number;
   enable?: boolean;
 }
 
-// 分组单元格接口
+// Group cell interface
 export interface GroupCell extends Cell {
   groupName: string;
 }
 
-// 基础列接口
+// Base column interface
 export interface BaseColumn {
   uuid: string;
   name: string;
@@ -60,17 +60,17 @@ export interface BaseColumn {
   properties?: Record<string, string>;
 }
 
-// 普通列接口
+// Regular column interface
 export interface Column extends BaseColumn {
   detailCell?: Cell;
 }
 
-// 列组合接口
+// Column group interface
 export interface ColumnGroup extends BaseColumn {
   children: (Column | ColumnGroup)[];
 }
 
-// 表格元素接口
+// Table element interface
 export interface TableElement {
   type: 'table';
   uuid: string;
@@ -135,13 +135,13 @@ export interface TableElement {
   };
 }
 
-// 列访问者接口（用于访问者模式）
+// Column visitor interface (for the visitor pattern)
 export interface ColumnVisitor<T> {
   visitColumn(column: Column): T;
   visitColumnGroup(columnGroup: ColumnGroup): T;
 }
 
-// 列工厂接口
+// Column factory interface
 export interface ColumnFactory {
   createColumn(column: any): Column;
   createColumnGroup(group: any): ColumnGroup;

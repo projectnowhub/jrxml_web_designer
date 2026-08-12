@@ -2,7 +2,7 @@ import type { TableElement, Column, ColumnGroup, Cell } from '../../types/table'
 import { TableUtils } from './ColumnFactory';
 
 /**
- * 表格模型类，用于管理表格的状态和操作
+ * Table model class, used to manage the state and operations of a table
  */
 export class TableModel {
   private table: TableElement;
@@ -12,24 +12,24 @@ export class TableModel {
   }
 
   /**
-   * 获取表格元素
-   * @returns 表格元素
+   * Get the table element
+   * @returns The table element
    */
   getTable(): TableElement {
     return this.table;
   }
 
   /**
-   * 获取所有列（包括普通列和列组合）
-   * @returns 列数组
+   * Get all columns (including regular columns and column groups)
+   * @returns Array of columns
    */
   getColumns(): (Column | ColumnGroup)[] {
     return this.table.children || this.table.columns || [];
   }
 
   /**
-   * 设置列数组
-   * @param columns 列数组
+   * Set the columns array
+   * @param columns Array of columns
    */
   setColumns(columns: (Column | ColumnGroup)[]): void {
     if (this.table.children) {
@@ -37,14 +37,14 @@ export class TableModel {
     } else {
       this.table.columns = columns;
     }
-    // 更新所有列组合的宽度
+    // Update the widths of all column groups
     TableUtils.updateAllColumnGroupWidths(columns);
   }
 
   /**
-   * 添加列
-   * @param column 要添加的列
-   * @param index 插入位置，默认为末尾
+   * Add a column
+   * @param column The column to add
+   * @param index The insertion position, defaults to the end
    */
   addColumn(column: Column | ColumnGroup, index?: number): void {
     const columns = this.getColumns();
@@ -53,9 +53,9 @@ export class TableModel {
   }
 
   /**
-   * 移动列
-   * @param fromIndex 原索引
-   * @param toIndex 目标索引
+   * Move a column
+   * @param fromIndex The original index
+   * @param toIndex The target index
    */
   moveColumn(fromIndex: number, toIndex: number): void {
     const columns = this.getColumns();
@@ -64,8 +64,8 @@ export class TableModel {
   }
 
   /**
-   * 删除列
-   * @param uuid 要删除的列的UUID
+   * Remove a column
+   * @param uuid The UUID of the column to remove
    */
   removeColumn(uuid: string): void {
     const columns = this.getColumns();
@@ -74,9 +74,9 @@ export class TableModel {
   }
 
   /**
-   * 查找列 by UUID
-   * @param uuid 列的UUID
-   * @returns 找到的列，未找到则返回null
+   * Find a column by UUID
+   * @param uuid The column's UUID
+   * @returns The found column, or null if not found
    */
   findColumnByUuid(uuid: string): Column | ColumnGroup | null {
     const columns = this.getColumns();
@@ -84,8 +84,8 @@ export class TableModel {
   }
 
   /**
-   * 获取所有叶子列
-   * @returns 叶子列数组
+   * Get all leaf columns
+   * @returns Array of leaf columns
    */
   getLeafColumns(): Column[] {
     const columns = this.getColumns();
@@ -93,43 +93,43 @@ export class TableModel {
   }
 
   /**
-   * 更新列的属性
-   * @param uuid 列的UUID
-   * @param updates 更新的属性
+   * Update a column's properties
+   * @param uuid The column's UUID
+   * @param updates The properties to update
    */
   updateColumn(uuid: string, updates: Partial<Column | ColumnGroup>): void {
     const column = this.findColumnByUuid(uuid);
     if (column) {
       Object.assign(column, updates);
-      // 如果是列组合，更新其宽度
+      // If it's a column group, update its width
       if ('children' in column) {
         TableUtils.updateColumnGroupWidth(column);
-        // 递归更新父列组合的宽度
+        // Recursively update the parent column groups' widths
         this.updateParentColumnGroupWidths();
       } else {
-        // 如果是普通列，更新所有父列组合的宽度
+        // If it's a regular column, update all parent column groups' widths
         this.updateParentColumnGroupWidths();
       }
     }
   }
 
   /**
-   * 更新单元格的属性
-   * @param columnUuid 列的UUID
-   * @param cellType 单元格类型
-   * @param updates 更新的属性
+   * Update a cell's properties
+   * @param columnUuid The column's UUID
+   * @param cellType The cell type
+   * @param updates The properties to update
    */
   updateCell(columnUuid: string, cellType: keyof Pick<Column, 'tableHeader' | 'tableFooter' | 'columnHeader' | 'columnFooter' | 'detailCell'>,
     updates: Partial<Cell>): void {
     const column = this.findColumnByUuid(columnUuid);
     if (column) {
-      // 检查 detailCell 只在 Column 类型中存在
+      // Check that detailCell only exists on the Column type
       if (cellType === 'detailCell' && 'children' in column) {
-        // ColumnGroup 没有 detailCell 属性，直接返回
+        // ColumnGroup has no detailCell property, return directly
         return;
       }
-      
-      // 类型断言，确保编译器理解我们已经处理了类型差异
+
+      // Type assertion to ensure the compiler understands we've handled the type difference
       const columnWithCell = column as Column;
       if (!columnWithCell[cellType]) {
         columnWithCell[cellType] = {};
@@ -139,7 +139,7 @@ export class TableModel {
   }
 
   /**
-   * 递归更新所有父列组合的宽度
+   * Recursively update the widths of all parent column groups
    */
   private updateParentColumnGroupWidths(): void {
     const columns = this.getColumns();
@@ -147,8 +147,8 @@ export class TableModel {
   }
 
   /**
-   * 计算表格的总宽度
-   * @returns 表格总宽度
+   * Compute the total width of the table
+   * @returns The table's total width
    */
   calculateTotalWidth(): number {
     const columns = this.getColumns();
@@ -162,38 +162,38 @@ export class TableModel {
   }
 
   /**
-   * 更新表格宽度为实际列宽总和
+   * Update the table width to the actual sum of column widths
    */
   updateTableWidth(): void {
     this.table.width = this.calculateTotalWidth();
   }
 
   /**
-   * 验证表格结构
-   * @returns 验证结果，包含是否有效和错误信息
+   * Validate the table structure
+   * @returns The validation result, including whether it's valid and any error messages
    */
   validate(): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     const columns = this.getColumns();
 
-    // 检查是否有列
+    // Check whether there are any columns
     if (columns.length === 0) {
-      errors.push('表格至少需要有一列');
+      errors.push('The table must have at least one column');
     }
 
-    // 检查列宽度
+    // Check column widths
     TableUtils.traverseColumns(columns, column => {
       if (column.width <= 0) {
-        errors.push(`列 ${column.name} 的宽度必须大于0`);
+        errors.push(`The width of column ${column.name} must be greater than 0`);
       }
     });
 
-    // 检查列组合的宽度是否与子列宽度之和一致
+    // Check whether a column group's width matches the sum of its child columns' widths
     TableUtils.traverseColumns(columns, column => {
       if ('children' in column) {
         const calculatedWidth = TableUtils.calculateColumnGroupWidth(column);
         if (column.width !== calculatedWidth) {
-          errors.push(`列组合 ${column.name} 的宽度与子列宽度之和不一致`);
+          errors.push(`The width of column group ${column.name} does not match the sum of its child columns' widths`);
         }
       }
     });
@@ -205,8 +205,8 @@ export class TableModel {
   }
 
   /**
-   * 克隆表格模型
-   * @returns 克隆的表格模型
+   * Clone the table model
+   * @returns The cloned table model
    */
   clone(): TableModel {
     const clonedTable = JSON.parse(JSON.stringify(this.table)) as TableElement;

@@ -5,7 +5,7 @@ import App from './App.vue'
 import i18n from './i18n'
 import { initializeAllPlugins } from './plugins/PluginRegistry'
 
-// 初始化插件系统
+// Initialize the plugin system
 initializeAllPlugins()
 
 const app = createApp(App)

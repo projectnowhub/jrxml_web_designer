@@ -8,9 +8,9 @@ function parseJRXMLToDOM(jrxmlContent: string) {
   return dom.window.document;
 }
 
-describe('JRXML边框一致性测试', () => {
-  it('当topPen的lineWidth为0时，上边框不显示，其他边框正常显示', () => {
-    // 创建一个包含边框设置的JRXML片段
+describe('JRXML border consistency test', () => {
+  it('when topPen lineWidth is 0, the top border is not shown while other borders display normally', () => {
+    // Create a JRXML fragment containing border settings
     const jrxmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test" pageWidth="595" pageHeight="842" leftMargin="20" rightMargin="20" topMargin="30" bottomMargin="30">
   <detail>
@@ -30,55 +30,55 @@ describe('JRXML边框一致性测试', () => {
   </detail>
 </jasperReport>`;
 
-    // 解析JRXML
+    // Parse the JRXML
     const parsedData = parseJRXMLContent(jrxmlContent);
-    
-    // 验证解析结果
+
+    // Verify the parsed result
     const element = parsedData.bands[0].elements[0];
     expect(element.box).toBeDefined();
     expect(element.box.pen).toBeDefined();
     expect(element.box.pen.lineWidth).toBe(1);
     expect(element.box.topPen).toBeDefined();
     expect(element.box.topPen.lineWidth).toBe(0);
-    
-    // 重新生成JRXML
+
+    // Regenerate the JRXML
     const generatedJRXML = generateJRXMLContent(
       parsedData.properties,
       parsedData.bands,
       parsedData.fields || [],
       parsedData.parameters || []
     );
-    
-    // 验证生成的JRXML中包含相同的边框设置
+
+    // Verify that the generated JRXML contains the same border settings
     const doc = parseJRXMLToDOM(generatedJRXML);
     const staticTextElements = doc.querySelectorAll('staticText');
     expect(staticTextElements.length).toBeGreaterThan(0);
-    
+
     const boxElement = staticTextElements[0].querySelector('box');
     expect(boxElement).toBeDefined();
-    
-    // 检查是否生成了全局pen元素
+
+    // Check whether a global pen element was generated
     const penElement = boxElement!.querySelector('pen');
     expect(penElement).toBeDefined();
     expect(penElement!.getAttribute('lineWidth')).toBe('1');
     expect(penElement!.getAttribute('lineStyle')).toBe('Solid');
     expect(penElement!.getAttribute('lineColor')).toBe('#000000');
-    
-    // 注意：当lineWidth为0时，不会生成对应的pen元素，这是当前实现的行为
+
+    // Note: when lineWidth is 0, the corresponding pen element is not generated — this is the current implementation's behavior
     const topPenElement = boxElement!.querySelector('topPen');
     expect(topPenElement).toBeNull();
-    
-    // 再次解析生成的JRXML，验证一致性
+
+    // Re-parse the generated JRXML to verify consistency
     const reparsedData = parseJRXMLContent(generatedJRXML);
     const reparsedElement = reparsedData.bands[0].elements[0];
-    
+
     expect(reparsedElement.box.pen.lineWidth).toBe(1);
-    // 注意：当lineWidth为0时，不会生成对应的pen元素，所以解析后也没有topPen属性
+    // Note: when lineWidth is 0, the corresponding pen element is not generated, so there is no topPen attribute after re-parsing either
     expect(reparsedElement.box.topPen).toBeUndefined();
   });
-  
-  it('当所有方向的lineWidth都为0时，所有边框都不显示', () => {
-    // 创建一个包含所有边框宽度为0的JRXML片段
+
+  it('when lineWidth is 0 on all sides, no borders are shown', () => {
+    // Create a JRXML fragment with all border widths set to 0
     const jrxmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test" pageWidth="595" pageHeight="842" leftMargin="20" rightMargin="20" topMargin="30" bottomMargin="30">
   <detail>
@@ -101,10 +101,10 @@ describe('JRXML边框一致性测试', () => {
   </detail>
 </jasperReport>`;
 
-    // 解析JRXML
+    // Parse the JRXML
     const parsedData = parseJRXMLContent(jrxmlContent);
-    
-    // 验证解析结果
+
+    // Verify the parsed result
     const element = parsedData.bands[0].elements[0];
     expect(element.box).toBeDefined();
     expect(element.box.pen).toBeDefined();
@@ -117,37 +117,37 @@ describe('JRXML边框一致性测试', () => {
     expect(element.box.bottomPen.lineWidth).toBe(0);
     expect(element.box.rightPen).toBeDefined();
     expect(element.box.rightPen.lineWidth).toBe(0);
-    
-    // 重新生成JRXML
+
+    // Regenerate the JRXML
     const generatedJRXML = generateJRXMLContent(
       parsedData.properties,
       parsedData.bands,
       parsedData.fields || [],
       parsedData.parameters || []
     );
-    
-    // 验证生成的JRXML中包含相同的边框设置
-    // 注意：当所有lineWidth为0时，不会生成任何pen元素，这是当前实现的行为
+
+    // Verify that the generated JRXML contains the same border settings
+    // Note: when all lineWidth values are 0, no pen element is generated at all — this is the current implementation's behavior
     const doc = parseJRXMLToDOM(generatedJRXML);
     const staticTextElements = doc.querySelectorAll('staticText');
     expect(staticTextElements.length).toBeGreaterThan(0);
-    
+
     const boxElement = staticTextElements[0].querySelector('box');
     expect(boxElement).toBeDefined();
-    
-    // 检查是否没有生成任何pen元素
+
+    // Check that no pen element was generated
     const penElement = boxElement!.querySelector('pen');
     expect(penElement).toBeNull();
-    
+
     const topPenElement = boxElement!.querySelector('topPen');
     expect(topPenElement).toBeNull();
-    
+
     const leftPenElement = boxElement!.querySelector('leftPen');
     expect(leftPenElement).toBeNull();
-    
+
     const bottomPenElement = boxElement!.querySelector('bottomPen');
     expect(bottomPenElement).toBeNull();
-    
+
     const rightPenElement = boxElement!.querySelector('rightPen');
     expect(rightPenElement).toBeNull();
   });

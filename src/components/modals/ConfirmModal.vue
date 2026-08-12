@@ -24,7 +24,7 @@ const props = defineProps({
   },
   title: {
     type: String,
-    default: '确认'
+    default: 'Confirm'
   },
   message: {
     type: String,

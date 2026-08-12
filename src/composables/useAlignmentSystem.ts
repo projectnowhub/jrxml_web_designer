@@ -24,22 +24,22 @@ export interface AlignmentResult {
   alignedGuides: AlignmentGuide[];
   snappedToX: boolean;
   snappedToY: boolean;
-  snapStrength: number; // 0-1, 吸附强度
+  snapStrength: number; // 0-1, snap strength
 }
 
 export function useAlignmentSystem() {
-  // 对齐指南列表
+  // List of alignment guides
   const guides = ref<AlignmentGuide[]>([]);
 
-  // 对齐点列表
+  // List of alignment points
   const alignmentPoints = ref<AlignmentPoint[]>([]);
 
-  // 当前活跃的对齐指南
+  // Currently active alignment guides
   const activeGuides = computed(() =>
     guides.value.filter(g => g.active && g.visible)
   );
 
-  // 添加对齐指南
+  // Add an alignment guide
   const addGuide = (guide: Omit<AlignmentGuide, 'id' | 'visible' | 'active'>) => {
     const id = `guide-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     guides.value.push({
@@ -51,17 +51,17 @@ export function useAlignmentSystem() {
     return id;
   };
 
-  // 移除对齐指南
+  // Remove an alignment guide
   const removeGuide = (id: string) => {
     guides.value = guides.value.filter(g => g.id !== id);
   };
 
-  // 清除所有对齐指南
+  // Clear all alignment guides
   const clearGuides = () => {
     guides.value = [];
   };
 
-  // 更新对齐指南
+  // Update an alignment guide
   const updateGuide = (id: string, updates: Partial<AlignmentGuide>) => {
     const index = guides.value.findIndex(g => g.id === id);
     if (index !== -1) {
@@ -72,22 +72,22 @@ export function useAlignmentSystem() {
     }
   };
 
-  // 激活对齐指南
+  // Activate an alignment guide
   const activateGuide = (id: string) => {
     updateGuide(id, { active: true });
   };
 
-  // 停用对齐指南
+  // Deactivate an alignment guide
   const deactivateGuide = (id: string) => {
     updateGuide(id, { active: false });
   };
 
-  // 停用所有对齐指南
+  // Deactivate all alignment guides
   const deactivateAllGuides = () => {
     guides.value = guides.value.map(g => ({ ...g, active: false }));
   };
 
-  // 计算对齐位置
+  // Calculate the aligned position
   const calculateAlignment = (
     x: number,
     y: number,
@@ -103,7 +103,7 @@ export function useAlignmentSystem() {
     let snapStrength = 0;
     const alignedGuides: AlignmentGuide[] = [];
 
-    // 计算当前元素的边缘和中心
+    // Compute the edges and center of the current element
     const leftEdge = x;
     const rightEdge = x + width;
     const centerX = x + width / 2;
@@ -111,7 +111,7 @@ export function useAlignmentSystem() {
     const bottomEdge = y + height;
     const centerY = y + height / 2;
 
-    // 检查与其他元素的对齐
+    // Check alignment against other elements
     otherElements.forEach((element, index) => {
       const elLeft = element.x;
       const elRight = element.x + element.width;
@@ -120,11 +120,11 @@ export function useAlignmentSystem() {
       const elBottom = element.y + element.height;
       const elCenterY = element.y + element.height / 2;
 
-      // 水平对齐检查（左右边缘、中心）
+      // Horizontal alignment checks (left/right edges, center)
       const horizontalChecks = [
-        { value: leftEdge, target: elLeft, label: '左对齐' },
-        { value: rightEdge, target: elRight, label: '右对齐' },
-        { value: centerX, target: elCenterX, label: '水平居中' },
+        { value: leftEdge, target: elLeft, label: 'Align left' },
+        { value: rightEdge, target: elRight, label: 'Align right' },
+        { value: centerX, target: elCenterX, label: 'Center horizontally' },
       ];
 
       horizontalChecks.forEach(check => {
@@ -133,7 +133,7 @@ export function useAlignmentSystem() {
           snappedToX = true;
           snapStrength = Math.max(snapStrength, 1 - Math.abs(check.value - check.target) / snapDistance);
 
-          // 创建对齐指南
+          // Create an alignment guide
           const guide: AlignmentGuide = {
             id: `align-h-${index}-${check.label}`,
             type: 'vertical',
@@ -148,11 +148,11 @@ export function useAlignmentSystem() {
         }
       });
 
-      // 垂直对齐检查（上下边缘、中心）
+      // Vertical alignment checks (top/bottom edges, center)
       const verticalChecks = [
-        { value: topEdge, target: elTop, label: '上对齐' },
-        { value: bottomEdge, target: elBottom, label: '下对齐' },
-        { value: centerY, target: elCenterY, label: '垂直居中' },
+        { value: topEdge, target: elTop, label: 'Align top' },
+        { value: bottomEdge, target: elBottom, label: 'Align bottom' },
+        { value: centerY, target: elCenterY, label: 'Center vertically' },
       ];
 
       verticalChecks.forEach(check => {
@@ -161,7 +161,7 @@ export function useAlignmentSystem() {
           snappedToY = true;
           snapStrength = Math.max(snapStrength, 1 - Math.abs(check.value - check.target) / snapDistance);
 
-          // 创建对齐指南
+          // Create an alignment guide
           const guide: AlignmentGuide = {
             id: `align-v-${index}-${check.label}`,
             type: 'horizontal',
@@ -187,7 +187,7 @@ export function useAlignmentSystem() {
     };
   };
 
-  // 计算元素之间的间距
+  // Calculate the spacing between elements
   const calculateSpacing = (
     elements: Array<{ x: number; y: number; width: number; height: number }>,
     direction: 'horizontal' | 'vertical'
@@ -197,7 +197,7 @@ export function useAlignmentSystem() {
     const spacings: number[] = [];
 
     if (direction === 'horizontal') {
-      // 按X坐标排序
+      // Sort by X coordinate
       const sorted = [...elements].sort((a, b) => a.x - b.x);
 
       for (let i = 0; i < sorted.length - 1; i++) {
@@ -209,7 +209,7 @@ export function useAlignmentSystem() {
         }
       }
     } else {
-      // 按Y坐标排序
+      // Sort by Y coordinate
       const sorted = [...elements].sort((a, b) => a.y - b.y);
 
       for (let i = 0; i < sorted.length - 1; i++) {
@@ -225,7 +225,7 @@ export function useAlignmentSystem() {
     return spacings;
   };
 
-  // 计算均匀分布的位置
+  // Calculate positions for even distribution
   const calculateDistribution = (
     elements: Array<{ x: number; y: number; width: number; height: number }>,
     direction: 'horizontal' | 'vertical',
@@ -239,14 +239,14 @@ export function useAlignmentSystem() {
     const result: Array<{ x: number; y: number }> = [];
 
     if (direction === 'horizontal') {
-      // 按X坐标排序
+      // Sort by X coordinate
       const sorted = [...elements].sort((a, b) => a.x - b.x);
       const first = sorted[0];
       const last = sorted[sorted.length - 1];
 
       if (!first || !last) return result;
 
-      // 计算总宽度和总间距
+      // Compute the total width and total spacing
       const totalWidth = sorted.reduce((sum, el) => sum + el.width, 0);
       const totalSpace = (containerWidth || last.x + last.width) - first.x;
       const totalGap = totalSpace - totalWidth;
@@ -258,14 +258,14 @@ export function useAlignmentSystem() {
         currentX += el.width + gap;
       });
     } else {
-      // 按Y坐标排序
+      // Sort by Y coordinate
       const sorted = [...elements].sort((a, b) => a.y - b.y);
       const first = sorted[0];
       const last = sorted[sorted.length - 1];
 
       if (!first || !last) return result;
 
-      // 计算总高度和总间距
+      // Compute the total height and total spacing
       const totalHeight = sorted.reduce((sum, el) => sum + el.height, 0);
       const totalSpace = (containerHeight || last.y + last.height) - first.y;
       const totalGap = totalSpace - totalHeight;
@@ -281,7 +281,7 @@ export function useAlignmentSystem() {
     return result;
   };
 
-  // 对齐元素
+  // Align elements
   const alignElements = (
     elements: Array<{ x: number; y: number; width: number; height: number }>,
     alignment: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom'
@@ -331,7 +331,7 @@ export function useAlignmentSystem() {
     return result;
   };
 
-  // 获取对齐提示信息
+  // Get the alignment tooltip text
   const getAlignmentTooltip = (alignedGuides: AlignmentGuide[]): string => {
     if (alignedGuides.length === 0) return '';
 

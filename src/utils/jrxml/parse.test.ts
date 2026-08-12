@@ -5,7 +5,7 @@ import path from 'path'
 
 describe('parseJRXMLContent', () => {
   it('should parse JRXML with componentElement containing table', () => {
-    // 使用简单的JRXML内容，不包含命名空间，便于测试
+    // Use simple JRXML content without namespaces, to make testing easier
     const jrxmlContent = `
       <jasperReport name="test" pageWidth="595" pageHeight="842">
         <detail>
@@ -55,13 +55,13 @@ describe('parseJRXMLContent', () => {
     
     const result = parseJRXMLContent(jrxmlContent)
     
-    // 验证解析结果
+    // Verify the parse result
     expect(result).toBeDefined()
     expect(result.bands).toHaveLength(1)
     expect(result.bands[0].type).toBe('detail')
     expect(result.bands[0].elements).toHaveLength(1)
-    
-    // 验证表格元素
+
+    // Verify the table element
     const tableElement = result.bands[0].elements[0]
     expect(tableElement.type).toBe('table')
     expect(tableElement.x).toBe(20)
@@ -69,8 +69,8 @@ describe('parseJRXMLContent', () => {
     expect(tableElement.width).toBe(555)
     expect(tableElement.height).toBe(150)
     expect(tableElement.uuid).toBe('1234-5678-90ab-cdef')
-    
-    // 验证表格列
+
+    // Verify the table columns
     expect(tableElement.columns).toHaveLength(2)
     expect(tableElement.columns[0].width).toBe(100)
     expect(tableElement.columns[1].width).toBe(100)
@@ -126,14 +126,14 @@ describe('parseJRXMLContent', () => {
     
     const result = parseJRXMLContent(jrxmlContent)
     
-    // 验证字段解析
+    // Verify field parsing
     expect(result.fields).toHaveLength(2)
     expect(result.fields[0].name).toBe('field1')
     expect(result.fields[0].class).toBe('java.lang.String')
     expect(result.fields[1].name).toBe('field2')
     expect(result.fields[1].class).toBe('java.lang.Integer')
-    
-    // 验证参数解析
+
+    // Verify parameter parsing
     expect(result.parameters).toHaveLength(2)
     expect(result.parameters[0].name).toBe('param1')
     expect(result.parameters[0].class).toBe('java.lang.String')
@@ -169,14 +169,14 @@ describe('parseJRXMLContent', () => {
     
     expect(result.bands).toHaveLength(4)
     
-    // 验证不同类型的band都被解析
+    // Verify that all the different band types were parsed
     const bandTypes = result.bands.map(band => band.type)
     expect(bandTypes).toContain('title')
     expect(bandTypes).toContain('pageHeader')
     expect(bandTypes).toContain('detail')
     expect(bandTypes).toContain('pageFooter')
-    
-    // 验证band高度
+
+    // Verify band heights
     const titleBand = result.bands.find(band => band.type === 'title')
     expect(titleBand?.height).toBe(50)
     
@@ -207,7 +207,7 @@ describe('parseJRXMLContent', () => {
     expect(result.bands).toHaveLength(1)
     expect(result.bands[0].elements).toHaveLength(2)
     
-    // 验证staticText元素
+    // Verify the staticText element
     const staticTextElement = result.bands[0].elements[0]
     expect(staticTextElement.type).toBe('staticText')
     expect(staticTextElement.x).toBe(20)
@@ -215,8 +215,8 @@ describe('parseJRXMLContent', () => {
     expect(staticTextElement.width).toBe(100)
     expect(staticTextElement.height).toBe(20)
     expect(staticTextElement.text).toBe('Static Text')
-    
-    // 验证textField元素
+
+    // Verify the textField element
     const textFieldElement = result.bands[0].elements[1]
     expect(textFieldElement.type).toBe('textField')
     expect(textFieldElement.x).toBe(20)
@@ -236,16 +236,16 @@ describe('parseJRXMLContent', () => {
       </jasperReport>
     `
     
-    // 不应该抛出错误，而应该使用默认值
+    // Should not throw an error, and should use default values instead
     const result = parseJRXMLContent(jrxmlContent)
-    
-    // 验证使用默认值
+
+    // Verify that default values are used
     expect(result.properties.name).toBe('Unnamed Report')
-    expect(result.properties.pageWidth).toBe(595) // 默认值
-    expect(result.properties.pageHeight).toBe(842) // 默认值
-    
+    expect(result.properties.pageWidth).toBe(595) // Default value
+    expect(result.properties.pageHeight).toBe(842) // Default value
+
     const detailBand = result.bands[0]
-    expect(detailBand?.height).toBe(0) // 默认高度
+    expect(detailBand?.height).toBe(0) // Default height
   })
 
   it('should parse JRXML with namespace prefixes', () => {
@@ -293,7 +293,7 @@ describe('parseJRXMLContent', () => {
     
     expect(result).toBeDefined()
     expect(result.bands).toHaveLength(1)
-    expect(result.bands[0].elements).toHaveLength(0) // 没有元素
+    expect(result.bands[0].elements).toHaveLength(0) // No elements
   })
 
   it('should parse band with splitType attribute', () => {
@@ -834,29 +834,29 @@ describe('parseJRXMLContent', () => {
   })
 
   it('should parse table with 2 head rows correctly', () => {
-    // 读取外部JRXML文件
+    // Read the external JRXML file
     const jrxmlFilePath = path.join(__dirname, '../../../tests/table_with_2_head_rows.jrxml')
     const jrxmlContent = fs.readFileSync(jrxmlFilePath, 'utf-8')
     
     const result = parseJRXMLContent(jrxmlContent)
     
-    // 验证基本属性
+    // Verify basic properties
     expect(result.properties.name).toBe('Cherry_Table_Based')
     expect(result.properties.pageWidth).toBe(595)
     expect(result.properties.pageHeight).toBe(842)
     expect(result.properties.whenNoDataType).toBe('AllSectionsNoDetail')
-    
-    // 验证subDataset
+
+    // Verify subDataset
     expect(result.datasets).toHaveLength(1)
     expect(result.datasets[0].name).toBe('Dataset1')
-    
-    // 验证bands
+
+    // Verify bands
     expect(result.bands).toHaveLength(1)
     expect(result.bands[0].type).toBe('summary')
     expect(result.bands[0].height).toBe(471)
     expect(result.bands[0].splitType).toBe('Stretch')
-    
-    // 验证表格元素
+
+    // Verify the table element
     expect(result.bands[0].elements).toHaveLength(1)
     const tableElement = result.bands[0].elements[0]
     expect(tableElement.type).toBe('table')
@@ -864,49 +864,49 @@ describe('parseJRXMLContent', () => {
     expect(tableElement.y).toBe(20)
     expect(tableElement.width).toBe(545)
     expect(tableElement.height).toBe(120)
-    
-    // 验证表格结构
+
+    // Verify the table structure
     expect(tableElement.columns).toBeDefined()
-    expect(tableElement.columns).toHaveLength(3) // 2个子列 + 1个普通column
-    
-    // 验证children数组包含columnGroup和普通column
+    expect(tableElement.columns).toHaveLength(3) // 2 child columns + 1 regular column
+
+    // Verify the children array includes the columnGroup and the regular column
     expect(tableElement.children).toBeDefined()
-    expect(tableElement.children).toHaveLength(2) // 1个columnGroup + 1个普通column
-    
-    // 验证columnGroup
+    expect(tableElement.children).toHaveLength(2) // 1 columnGroup + 1 regular column
+
+    // Verify the columnGroup
     const columnGroup = tableElement.children[0]
     expect(columnGroup.type).toBe('columnGroup')
     expect(columnGroup.width).toBe(94)
-    expect(columnGroup.children).toHaveLength(2) // 2个子列
-    
-    // 验证columnGroup的表格头
+    expect(columnGroup.children).toHaveLength(2) // 2 child columns
+
+    // Verify the columnGroup's table header
     expect(columnGroup.tableHeader).toBeDefined()
     expect(columnGroup.tableHeader.element.height).toBe(30)
     expect(columnGroup.tableHeader.rowSpan).toBe(1)
 
-    // 验证columnGroup的子列
+    // Verify the columnGroup's child columns
     expect(columnGroup.children[0].width).toBe(49)
     expect(columnGroup.children[1].width).toBe(45)
 
-    // 验证普通column
+    // Verify the regular column
     const normalColumn = tableElement.children[1]
     expect(normalColumn.type).toBe('column')
     expect(normalColumn.width).toBe(451)
 
-    // 验证普通column的表格头
+    // Verify the regular column's table header
     expect(normalColumn.tableHeader).toBeDefined()
     expect(normalColumn.tableHeader.element.height).toBe(60)
     expect(normalColumn.tableHeader.rowSpan).toBe(2)
   })
 
   it('should generate expected TableElement structure from table_with_2_head_rows.jrxml', () => {
-    // 读取外部JRXML文件
+    // Read the external JRXML file
     const jrxmlFilePath = path.join(__dirname, '../../../tests/table_with_2_head_rows.jrxml')
     const jrxmlContent = fs.readFileSync(jrxmlFilePath, 'utf-8')
     
     const result = parseJRXMLContent(jrxmlContent)
     
-    // 验证表格元素
+    // Verify the table element
     expect(result.bands[0].elements).toHaveLength(1)
     const tableElement = result.bands[0].elements[0] as any
     expect(tableElement.type).toBe('table')
@@ -914,13 +914,13 @@ describe('parseJRXMLContent', () => {
     expect(tableElement.y).toBe(20)
     expect(tableElement.width).toBe(545)
     expect(tableElement.height).toBe(120)
-    
-    // 验证表格数据集
+
+    // Verify the table's dataset
     expect(tableElement.dataset).toBeDefined()
     expect(tableElement.dataset.name).toBe('Dataset1')
     expect(tableElement.dataset.uuid).toBe('4192004d-c999-41ee-abb5-a49cba17a2f3')
-    
-    // 验证children数组（包含列分组和普通列）
+
+    // Verify the children array (includes the column group and the regular column)
     expect(tableElement.children).toHaveLength(2)
     expect(tableElement.children[0].type).toBe('columnGroup')
     expect(tableElement.children[0].width).toBe(94)
@@ -928,14 +928,14 @@ describe('parseJRXMLContent', () => {
     expect(tableElement.children[0].children).toHaveLength(2)
     expect(tableElement.children[1].type).toBe('column')
     expect(tableElement.children[1].width).toBe(451)
-    
-    // 验证列分组的表格头
+
+    // Verify the column group's table header
     expect(tableElement.children[0].tableHeader).toBeDefined()
     expect(tableElement.children[0].tableHeader.element.text).toBe('ROW 1+CELL 1')
     expect(tableElement.children[0].tableHeader.element.height).toBe(30)
     expect(tableElement.children[0].tableHeader.rowSpan).toBe(1)
 
-    // 验证列分组的子列
+    // Verify the column group's child columns
     expect(tableElement.children[0].children[0].tableHeader).toBeDefined()
     expect(tableElement.children[0].children[0].tableHeader.element.text).toBe('ROW 2 CELL 1')
     expect(tableElement.children[0].children[0].tableHeader.element.height).toBe(30)
@@ -952,7 +952,7 @@ describe('parseJRXMLContent', () => {
     expect(tableElement.children[0].children[1].tableHeader.element.verticalAlignment).toBe('Middle')
     expect(tableElement.children[0].children[1].tableHeader.element.box).toBeDefined()
 
-    // 验证普通列的表格头
+    // Verify the regular column's table header
     expect(tableElement.children[1].tableHeader).toBeDefined()
     expect(tableElement.children[1].tableHeader.element.text).toBe('ROW 1+CELL 2+ROWSPAN2')
     expect(tableElement.children[1].tableHeader.element.height).toBe(60)
@@ -961,7 +961,7 @@ describe('parseJRXMLContent', () => {
     expect(tableElement.children[1].tableHeader.element.verticalAlignment).toBe('Middle')
     expect(tableElement.children[1].tableHeader.element.box).toBeDefined()
 
-    // 验证列头的box元素和文本对齐设置
+    // Verify the column header's box element and text alignment settings
     expect(tableElement.children[0].children[0].columnHeader).toBeDefined()
     expect(tableElement.children[0].children[0].columnHeader.element.textAlignment).toBe('Center')
     expect(tableElement.children[0].children[0].columnHeader.element.verticalAlignment).toBe('Middle')
@@ -977,8 +977,8 @@ describe('parseJRXMLContent', () => {
     expect(tableElement.children[1].columnHeader.element.verticalAlignment).toBe('Middle')
     expect(tableElement.children[1].columnHeader.element.box).toBeDefined()
     
-    // 推导组合列后的表头行结构
-    // 辅助函数：递归计算列或列分组的实际列数
+    // Derive the header row structure after column combination
+    // Helper function: recursively compute the actual column count of a column or column group
     const calculateColumnsCount = (item: any): number => {
       if (item.type === 'column') {
         return 1;
@@ -987,14 +987,14 @@ describe('parseJRXMLContent', () => {
       }
       return 0;
     };
-    
-    // 辅助函数：递归构建表头结构
+
+    // Helper function: recursively build the header structure
     const buildHeaderStructure = (items: any[], headerLevel: 'tableHeader' | 'columnHeader'): any[] => {
       const result: any[] = [];
-      
+
       items.forEach(item => {
         if (item.type === 'column') {
-          // 普通列，直接添加单元格
+          // Regular column, add the cell directly
           if (item[headerLevel]) {
             result.push({
               content: item[headerLevel].element?.text || item[headerLevel].element?.expression,
@@ -1005,7 +1005,7 @@ describe('parseJRXMLContent', () => {
             });
           }
         } else if (item.type === 'columnGroup') {
-          // 列分组，计算其 colspan
+          // Column group, compute its colspan
           const colSpan = calculateColumnsCount(item);
           if (item[headerLevel]) {
             result.push({
@@ -1016,33 +1016,33 @@ describe('parseJRXMLContent', () => {
               height: item[headerLevel].element?.height
             });
           } else {
-            // 如果列分组没有该级别的表头，则递归处理其子项
+            // If the column group has no header at this level, recursively process its children
             const childHeaders = buildHeaderStructure(item.children, headerLevel);
             result.push(...childHeaders);
           }
         }
       });
-      
+
       return result;
     };
-    
-    // 构建表格头（第一级表头）
+
+    // Build the table header (the first-level header)
     const tableHeaders = buildHeaderStructure(tableElement.children, 'tableHeader');
     expect(tableHeaders).toHaveLength(2);
     expect(tableHeaders[0].content).toBe('ROW 1+CELL 1');
     expect(tableHeaders[0].rowSpan).toBe(1);
-    expect(tableHeaders[0].colSpan).toBe(2); // 跨2列
+    expect(tableHeaders[0].colSpan).toBe(2); // Spans 2 columns
     expect(tableHeaders[0].width).toBe(94);
-    
+
     expect(tableHeaders[1].content).toBe('ROW 1+CELL 2+ROWSPAN2');
-    expect(tableHeaders[1].rowSpan).toBe(2); // 跨2行
+    expect(tableHeaders[1].rowSpan).toBe(2); // Spans 2 rows
     expect(tableHeaders[1].colSpan).toBe(1);
     expect(tableHeaders[1].width).toBe(451);
-    
-    // 构建列头（第二级表头）
+
+    // Build the column header (the second-level header)
     const columnHeaders = buildHeaderStructure(tableElement.children, 'columnHeader');
     expect(columnHeaders).toHaveLength(3);
-    // 列头由列分组的子列和普通列组成
+    // The column header consists of the column group's child columns and the regular column
     expect(columnHeaders[0].content).toBe('"Text Field"');
     expect(columnHeaders[0].rowSpan).toBe(1);
     expect(columnHeaders[0].colSpan).toBe(1);
@@ -1055,11 +1055,11 @@ describe('parseJRXMLContent', () => {
     expect(columnHeaders[2].rowSpan).toBe(1);
     expect(columnHeaders[2].colSpan).toBe(1);
     
-    // 计算表头的总行数（根据rowSpan最大的值）
+    // Compute the total number of header rows (based on the maximum rowSpan value)
     const calculateTotalHeaderRows = () => {
       let maxRowSpan = 0;
-      
-      // 递归检查所有表头的rowSpan
+
+      // Recursively check the rowSpan of every header
       const checkRowSpan = (items: any[]) => {
         items.forEach(item => {
           if (item.type === 'column') {
@@ -1080,23 +1080,23 @@ describe('parseJRXMLContent', () => {
     };
     
     const totalHeaderRows = calculateTotalHeaderRows();
-    expect(totalHeaderRows).toBe(2); // 最大rowSpan为2，所以表头总共有2行
-    
-    // 构建最终的表头行结构（按行组织）
+    expect(totalHeaderRows).toBe(2); // The maximum rowSpan is 2, so the header has 2 rows total
+
+    // Build the final header row structure (organized by row)
     const buildHeaderRows = () => {
       const rows: any[][] = [];
       const totalRows = calculateTotalHeaderRows();
-      
-      // 初始化行数组
+
+      // Initialize the row arrays
       for (let i = 0; i < totalRows; i++) {
         rows[i] = [];
       }
-      
-      // 递归填充行结构
+
+      // Recursively populate the row structure
       const fillRows = (items: any[], startRow: number) => {
         items.forEach(item => {
           if (item.type === 'column') {
-            // 普通列，填充其tableHeader（如果有）
+            // Regular column, populate its tableHeader (if present)
             if (item.tableHeader) {
               const { rowSpan, element } = item.tableHeader;
               const cell = {
@@ -1107,11 +1107,11 @@ describe('parseJRXMLContent', () => {
                 height: element?.height
               };
 
-              // 将单元格添加到起始行
+              // Add the cell to the starting row
               rows[startRow].push(cell);
             }
           } else if (item.type === 'columnGroup') {
-            // 列分组
+            // Column group
             if (item.tableHeader) {
               const { rowSpan, element } = item.tableHeader;
               const colSpan = calculateColumnsCount(item);
@@ -1122,47 +1122,47 @@ describe('parseJRXMLContent', () => {
                 width: item.width,
                 height: element?.height
               };
-              
-              // 将单元格添加到起始行
+
+              // Add the cell to the starting row
               rows[startRow].push(cell);
             }
-            
-            // 无论列分组是否有tableHeader，都需要处理其子项的表头
-            // 对于第二行，我们需要直接处理子项
+
+            // Regardless of whether the column group has a tableHeader, its children's headers still need processing
+            // For the second row, we need to process the children directly
             if (startRow < totalRows - 1) {
               fillRows(item.children, startRow + 1);
             }
           }
         });
       };
-      
-      // 填充第一级表头（tableHeader）
+
+      // Populate the first-level header (tableHeader)
       fillRows(tableElement.children, 0);
-      
+
       return rows;
     };
-    
-    // 构建列头行结构
+
+    // Build the column header row structure
     const buildColumnHeaderRow = () => {
       return buildHeaderStructure(tableElement.children, 'columnHeader');
     };
-    
+
     const headerRows = buildHeaderRows();
     const columnHeaderRow = buildColumnHeaderRow();
-    
-    // 验证表头行结构（与Jasperreport Studio预览对比）
+
+    // Verify the header row structure (compared against the JasperReports Studio preview)
     expect(headerRows).toHaveLength(2);
-    
-    // 第一行表头（对应预览第一行）
+
+    // The first header row (corresponds to the first row in the preview)
     expect(headerRows[0]).toHaveLength(2);
     expect(headerRows[0][0].content).toBe('ROW 1+CELL 1');
     expect(headerRows[0][0].rowSpan).toBe(1);
-    expect(headerRows[0][0].colSpan).toBe(2); // 跨2列
+    expect(headerRows[0][0].colSpan).toBe(2); // Spans 2 columns
     expect(headerRows[0][1].content).toBe('ROW 1+CELL 2+ROWSPAN2');
-    expect(headerRows[0][1].rowSpan).toBe(2); // 跨2行
+    expect(headerRows[0][1].rowSpan).toBe(2); // Spans 2 rows
     expect(headerRows[0][1].colSpan).toBe(1);
-    
-    // 第二行表头（对应预览第二行）
+
+    // The second header row (corresponds to the second row in the preview)
     expect(headerRows[1]).toHaveLength(2);
     expect(headerRows[1][0].content).toBe('ROW 2 CELL 1');
     expect(headerRows[1][0].rowSpan).toBe(1);
@@ -1170,8 +1170,8 @@ describe('parseJRXMLContent', () => {
     expect(headerRows[1][1].content).toBe('ROW 2 CELL 2');
     expect(headerRows[1][1].rowSpan).toBe(1);
     expect(headerRows[1][1].colSpan).toBe(1);
-    
-    // 列头行（对应预览第三行）
+
+    // The column header row (corresponds to the third row in the preview)
     expect(columnHeaderRow).toHaveLength(3);
     expect(columnHeaderRow[0].content).toBe('"Text Field"');
     expect(columnHeaderRow[0].rowSpan).toBe(1);
@@ -1182,11 +1182,11 @@ describe('parseJRXMLContent', () => {
     expect(columnHeaderRow[2].content).toBe('"Text Field"');
     expect(columnHeaderRow[2].rowSpan).toBe(1);
     expect(columnHeaderRow[2].colSpan).toBe(1);
-    
-    // 验证整体表格结构与预览一致
-    // 第一行：ROW 1+CELL 1 (colSpan=2) | ROW 1+CELL 2+ROWSPAN2 (rowSpan=2)
-    // 第二行：ROW 2 CELL 1 | ROW 2 CELL 2 | (空白，被上方单元格跨行覆盖)
-    // 第三行：Text Field | Text Field | Text Field
+
+    // Verify the overall table structure matches the preview
+    // Row 1: ROW 1+CELL 1 (colSpan=2) | ROW 1+CELL 2+ROWSPAN2 (rowSpan=2)
+    // Row 2: ROW 2 CELL 1 | ROW 2 CELL 2 | (blank, covered by the cell spanning down from above)
+    // Row 3: Text Field | Text Field | Text Field
   })
 
   

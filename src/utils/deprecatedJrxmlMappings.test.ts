@@ -8,9 +8,9 @@ function parseJRXMLToDOM(jrxmlContent: string) {
   return dom.window.document;
 }
 
-describe('JRXML过时标签和属性转换测试', () => {
-  describe('生成JRXML内容时的过时属性转换', () => {
-    it('应该将过时的border属性转换为pen子元素', () => {
+describe('JRXML deprecated tag and attribute conversion tests', () => {
+  describe('Deprecated attribute conversion during JRXML content generation', () => {
+    it('should convert the deprecated border attribute to a pen child element', () => {
       const properties = {
         name: 'Test Report',
         pageWidth: 595,
@@ -47,28 +47,28 @@ describe('JRXML过时标签和属性转换测试', () => {
       const jrxmlContent = generateJRXMLContent(properties, bands, []);
       const doc = parseJRXMLToDOM(jrxmlContent);
       
-      // 检查是否没有使用过时的border和borderColor属性
+      // Check that the deprecated border and borderColor attributes are not used
       const staticTextElements = doc.querySelectorAll('staticText');
       expect(staticTextElements.length).toBeGreaterThan(0);
-      
+
       const reportElement = staticTextElements[0].querySelector('reportElement');
       expect(reportElement).toBeDefined();
-      
-      // 检查reportElement是否没有过时的border属性
+
+      // Check that reportElement does not have the deprecated border attribute
       expect(reportElement!.getAttribute('border')).toBeNull();
       expect(reportElement!.getAttribute('borderColor')).toBeNull();
-      
-      // 检查是否使用了pen子元素
+
+      // Check that the pen child element is used
       const boxElement = staticTextElements[0].querySelector('box');
       expect(boxElement).toBeDefined();
-      
+
       const penElement = boxElement!.querySelector('pen');
       expect(penElement).toBeDefined();
       expect(penElement!.getAttribute('lineWidth')).toBe('1');
       expect(penElement!.getAttribute('lineColor')).toBe('#000000');
     });
 
-    it('应该将过时的isStretchWithOverflow属性转换为textAdjust属性', () => {
+    it('should convert the deprecated isStretchWithOverflow attribute to the textAdjust attribute', () => {
       const properties = {
         name: 'Test Report',
         pageWidth: 595,
@@ -100,18 +100,18 @@ describe('JRXML过时标签和属性转换测试', () => {
       const jrxmlContent = generateJRXMLContent(properties, bands, []);
       const doc = parseJRXMLToDOM(jrxmlContent);
       
-      // 检查是否没有使用过时的isStretchWithOverflow属性，而是使用了textAdjust属性
+      // Check that the deprecated isStretchWithOverflow attribute is not used, and textAdjust is used instead
       const textFieldElements = doc.querySelectorAll('textField');
       expect(textFieldElements.length).toBeGreaterThan(0);
-      
-      // 检查textField是否没有过时的isStretchWithOverflow属性
+
+      // Check that textField does not have the deprecated isStretchWithOverflow attribute
       expect(textFieldElements[0].getAttribute('isStretchWithOverflow')).toBeNull();
-      
-      // 检查textField是否使用了textAdjust属性
+
+      // Check that textField uses the textAdjust attribute
       expect(textFieldElements[0].getAttribute('textAdjust')).toBe('StretchHeight');
     });
 
-    it('应该将过时的isSplitAllowed属性转换为splitType属性', () => {
+    it('should convert the deprecated isSplitAllowed attribute to the splitType attribute', () => {
       const properties = {
         name: 'Test Report',
         pageWidth: 595,
@@ -134,18 +134,18 @@ describe('JRXML过时标签和属性转换测试', () => {
       const jrxmlContent = generateJRXMLContent(properties, bands, []);
       const doc = parseJRXMLToDOM(jrxmlContent);
       
-      // 检查是否没有使用过时的isSplitAllowed属性，而是使用了splitType属性
+      // Check that the deprecated isSplitAllowed attribute is not used, and splitType is used instead
       const bandElements = doc.querySelectorAll('band');
       expect(bandElements.length).toBeGreaterThan(0);
-      
-      // 检查band是否没有过时的isSplitAllowed属性
+
+      // Check that band does not have the deprecated isSplitAllowed attribute
       expect(bandElements[0].getAttribute('isSplitAllowed')).toBeNull();
-      
-      // 检查band是否使用了splitType属性
+
+      // Check that band uses the splitType attribute
       expect(bandElements[0].getAttribute('splitType')).toBe('Prevent');
     });
 
-    it('应该将过时的isStyledText属性转换为markup属性', () => {
+    it('should convert the deprecated isStyledText attribute to the markup attribute', () => {
       const properties = {
         name: 'Test Report',
         pageWidth: 595,
@@ -177,21 +177,21 @@ describe('JRXML过时标签和属性转换测试', () => {
       const jrxmlContent = generateJRXMLContent(properties, bands, []);
       const doc = parseJRXMLToDOM(jrxmlContent);
       
-      // 检查是否没有使用过时的isStyledText属性，而是使用了markup属性
+      // Check that the deprecated isStyledText attribute is not used, and markup is used instead
       const staticTextElements = doc.querySelectorAll('staticText');
       expect(staticTextElements.length).toBeGreaterThan(0);
-      
+
       const textElement = staticTextElements[0].querySelector('textElement');
       expect(textElement).toBeDefined();
-      
-      // 检查textElement是否没有过时的isStyledText属性
+
+      // Check that textElement does not have the deprecated isStyledText attribute
       expect(textElement!.getAttribute('isStyledText')).toBeNull();
-      
-      // 检查textElement是否使用了markup属性
+
+      // Check that textElement uses the markup attribute
       expect(textElement!.getAttribute('markup')).toBe('styled');
     });
 
-    it('当全局边框样式为空且没有设置边框宽度时，不应该生成box标签', () => {
+    it('should not generate a box tag when the global border style is empty and no border width is set', () => {
       const properties = {
         name: 'Test Report',
         pageWidth: 595,
@@ -215,9 +215,9 @@ describe('JRXML过时标签和属性转换测试', () => {
               height: 20,
               text: 'Test Text',
               box: {
-                borderStyle: '', // 边框样式为空（无）
-                borderWidth: 0   // 边框宽度为0
-                // 不设置borderColor，避免触发hasOldBorderColor检查
+                borderStyle: '', // Border style is empty (none)
+                borderWidth: 0   // Border width is 0
+                // borderColor is intentionally not set, to avoid triggering the hasOldBorderColor check
               }
             }
           ]
@@ -226,16 +226,16 @@ describe('JRXML过时标签和属性转换测试', () => {
 
       const jrxmlContent = generateJRXMLContent(properties, bands, []);
       const doc = parseJRXMLToDOM(jrxmlContent);
-      
-      // 检查是否没有生成box标签
+
+      // Check that no box tag was generated
       const staticTextElements = doc.querySelectorAll('staticText');
       expect(staticTextElements.length).toBeGreaterThan(0);
-      
+
       const boxElement = staticTextElements[0].querySelector('box');
       expect(boxElement).toBeNull();
     });
 
-    it('当全局边框样式不为空时，应该生成box标签', () => {
+    it('should generate a box tag when the global border style is not empty', () => {
       const properties = {
         name: 'Test Report',
         pageWidth: 595,
@@ -259,8 +259,8 @@ describe('JRXML过时标签和属性转换测试', () => {
               height: 20,
               text: 'Test Text',
               box: {
-                borderStyle: 'Solid', // 边框样式不为空
-                borderWidth: 1,      // 边框宽度不为0
+                borderStyle: 'Solid', // Border style is not empty
+                borderWidth: 1,      // Border width is not 0
                 borderColor: '#000000'
               }
             }
@@ -270,15 +270,15 @@ describe('JRXML过时标签和属性转换测试', () => {
 
       const jrxmlContent = generateJRXMLContent(properties, bands, []);
       const doc = parseJRXMLToDOM(jrxmlContent);
-      
-      // 检查是否生成了box标签
+
+      // Check that a box tag was generated
       const staticTextElements = doc.querySelectorAll('staticText');
       expect(staticTextElements.length).toBeGreaterThan(0);
-      
+
       const boxElement = staticTextElements[0].querySelector('box');
       expect(boxElement).toBeDefined();
-      
-      // 检查是否包含边框设置
+
+      // Check that the border settings are included
       const penElement = boxElement!.querySelector('pen');
       expect(penElement).toBeDefined();
       expect(penElement!.getAttribute('lineWidth')).toBe('1');
@@ -286,7 +286,7 @@ describe('JRXML过时标签和属性转换测试', () => {
       expect(penElement!.getAttribute('lineColor')).toBe('#000000');
     });
 
-    it('当没有设置边框样式但有边框宽度时，应该生成box标签', () => {
+    it('should generate a box tag when no border style is set but a border width is', () => {
       const properties = {
         name: 'Test Report',
         pageWidth: 595,
@@ -310,7 +310,7 @@ describe('JRXML过时标签和属性转换测试', () => {
               height: 20,
               text: 'Test Text',
               box: {
-                borderWidth: 1,      // 边框宽度不为0，即使没有边框样式
+                borderWidth: 1,      // Border width is not 0, even without a border style
                 borderColor: '#000000'
               }
             }
@@ -320,21 +320,21 @@ describe('JRXML过时标签和属性转换测试', () => {
 
       const jrxmlContent = generateJRXMLContent(properties, bands, []);
       const doc = parseJRXMLToDOM(jrxmlContent);
-      
-      // 检查是否生成了box标签
+
+      // Check that a box tag was generated
       const staticTextElements = doc.querySelectorAll('staticText');
       expect(staticTextElements.length).toBeGreaterThan(0);
-      
+
       const boxElement = staticTextElements[0].querySelector('box');
       expect(boxElement).toBeDefined();
-      
-      // 检查是否包含边框设置
+
+      // Check that the border settings are included
       const penElement = boxElement!.querySelector('pen');
       expect(penElement).toBeDefined();
       expect(penElement!.getAttribute('lineWidth')).toBe('1');
     });
 
-    it('当只设置边距时，应该生成box标签', () => {
+    it('should generate a box tag when only padding is set', () => {
       const properties = {
         name: 'Test Report',
         pageWidth: 595,
@@ -358,7 +358,7 @@ describe('JRXML过时标签和属性转换测试', () => {
               height: 20,
               text: 'Test Text',
               box: {
-                padding: 5  // 只设置边距
+                padding: 5  // Only padding is set
               }
             }
           ]
@@ -368,20 +368,20 @@ describe('JRXML过时标签和属性转换测试', () => {
       const jrxmlContent = generateJRXMLContent(properties, bands, []);
       const doc = parseJRXMLToDOM(jrxmlContent);
       
-      // 检查是否生成了box标签
+      // Check that a box tag was generated
       const staticTextElements = doc.querySelectorAll('staticText');
       expect(staticTextElements.length).toBeGreaterThan(0);
-      
+
       const boxElement = staticTextElements[0].querySelector('box');
       expect(boxElement).toBeDefined();
-      
-      // 检查是否包含边距设置
+
+      // Check that the padding settings are included
       expect(boxElement!.getAttribute('padding')).toBe('5');
     });
   });
 
-  describe('解析JRXML内容时的过时属性转换', () => {
-    it('应该将过时的border和borderColor属性转换为pen子元素', () => {
+  describe('Deprecated attribute conversion during JRXML content parsing', () => {
+    it('should convert the deprecated border and borderColor attributes to a pen child element', () => {
       const jrxmlWithDeprecatedAttrs = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Test Report" pageWidth="595" pageHeight="842" leftMargin="20" rightMargin="20" topMargin="30" bottomMargin="30">
   <detail>
@@ -397,8 +397,8 @@ describe('JRXML过时标签和属性转换测试', () => {
 </jasperReport>`;
 
       const { bands } = parseJRXMLContent(jrxmlWithDeprecatedAttrs);
-      
-      // 检查解析结果中是否正确转换了过时属性
+
+      // Check that the deprecated attributes were correctly converted in the parse result
       const detailBand = bands.find(band => band.type === 'detail');
       expect(detailBand).toBeDefined();
       expect(detailBand!.elements[0].box).toBeDefined();
@@ -407,7 +407,7 @@ describe('JRXML过时标签和属性转换测试', () => {
       expect(detailBand!.elements[0].box.pen.lineColor).toBe('#000000');
     });
 
-    it('应该将过时的isStretchWithOverflow属性转换为textAdjust属性', () => {
+    it('should convert the deprecated isStretchWithOverflow attribute to the textAdjust attribute', () => {
       const jrxmlWithDeprecatedAttrs = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Test Report" pageWidth="595" pageHeight="842" leftMargin="20" rightMargin="20" topMargin="30" bottomMargin="30">
   <detail>
@@ -422,14 +422,14 @@ describe('JRXML过时标签和属性转换测试', () => {
 </jasperReport>`;
 
       const { bands } = parseJRXMLContent(jrxmlWithDeprecatedAttrs);
-      
-      // 检查解析结果中是否正确转换了过时属性
+
+      // Check that the deprecated attributes were correctly converted in the parse result
       const detailBand = bands.find(band => band.type === 'detail');
       expect(detailBand).toBeDefined();
       expect(detailBand!.elements[0].textAdjust).toBe('StretchHeight');
     });
 
-    it('应该将过时的isSplitAllowed属性转换为splitType属性', () => {
+    it('should convert the deprecated isSplitAllowed attribute to the splitType attribute', () => {
       const jrxmlWithDeprecatedAttrs = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Test Report" pageWidth="595" pageHeight="842" leftMargin="20" rightMargin="20" topMargin="30" bottomMargin="30">
   <detail>
@@ -439,14 +439,14 @@ describe('JRXML过时标签和属性转换测试', () => {
 </jasperReport>`;
 
       const { bands } = parseJRXMLContent(jrxmlWithDeprecatedAttrs);
-      
-      // 检查解析结果中是否正确转换了过时属性
+
+      // Check that the deprecated attributes were correctly converted in the parse result
       const detailBand = bands.find(band => band.type === 'detail');
       expect(detailBand).toBeDefined();
       expect(detailBand!.splitType).toBe('Prevent');
     });
 
-    it('应该将过时的isStyledText属性转换为markup属性', () => {
+    it('should convert the deprecated isStyledText attribute to the markup attribute', () => {
       const jrxmlWithDeprecatedAttrs = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Test Report" pageWidth="595" pageHeight="842" leftMargin="20" rightMargin="20" topMargin="30" bottomMargin="30">
   <detail>
@@ -461,16 +461,16 @@ describe('JRXML过时标签和属性转换测试', () => {
 </jasperReport>`;
 
       const { bands } = parseJRXMLContent(jrxmlWithDeprecatedAttrs);
-      
-      // 检查解析结果中是否正确转换了过时属性
+
+      // Check that the deprecated attributes were correctly converted in the parse result
       const detailBand = bands.find(band => band.type === 'detail');
       expect(detailBand).toBeDefined();
       expect(detailBand!.elements[0].markup).toBe('styled');
     });
   });
 
-  describe('往返转换测试', () => {
-    it('应该正确处理包含过时属性的JRXML的往返转换', () => {
+  describe('Round-trip conversion tests', () => {
+    it('should correctly handle round-trip conversion of JRXML containing deprecated attributes', () => {
       const originalJrxml = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Test Report" pageWidth="595" pageHeight="842" leftMargin="20" rightMargin="20" topMargin="30" bottomMargin="30">
   <detail>
@@ -490,49 +490,49 @@ describe('JRXML过时标签和属性转换测试', () => {
   </detail>
 </jasperReport>`;
 
-      // 解析原始JRXML
+      // Parse the original JRXML
       const { properties, bands } = parseJRXMLContent(originalJrxml);
-      
-      // 重新生成JRXML
+
+      // Regenerate the JRXML
       const regeneratedJrxml = generateJRXMLContent(properties, bands, []);
-      
-      // 验证重新生成的JRXML结构
+
+      // Verify the structure of the regenerated JRXML
       const doc = parseJRXMLToDOM(regeneratedJrxml);
-      
-      // 检查band是否有正确的splitType属性
+
+      // Check that band has the correct splitType attribute
       const bandElements = doc.querySelectorAll('band');
       expect(bandElements.length).toBeGreaterThan(0);
       expect(bandElements[0].getAttribute('splitType')).toBe('Prevent');
       expect(bandElements[0].getAttribute('isSplitAllowed')).toBeNull();
-      
-      // 检查staticText元素
+
+      // Check the staticText element
       const staticTextElements = doc.querySelectorAll('staticText');
       expect(staticTextElements.length).toBeGreaterThan(0);
-      
+
       const staticText = staticTextElements[0];
       const boxElement = staticText.querySelector('box');
       expect(boxElement).toBeDefined();
-      
+
       const penElement = boxElement!.querySelector('pen');
       expect(penElement).toBeDefined();
       expect(penElement!.getAttribute('lineWidth')).toBe('1');
       expect(penElement!.getAttribute('lineColor')).toBe('#000000');
-      
+
       const textElement = staticText.querySelector('textElement');
       expect(textElement).toBeDefined();
       expect(textElement!.getAttribute('markup')).toBe('styled');
       expect(textElement!.getAttribute('isStyledText')).toBeNull();
-      
-      // 检查textField元素
+
+      // Check the textField element
       const textFieldElements = doc.querySelectorAll('textField');
       expect(textFieldElements.length).toBeGreaterThan(0);
       expect(textFieldElements[0].getAttribute('textAdjust')).toBe('StretchHeight');
       expect(textFieldElements[0].getAttribute('isStretchWithOverflow')).toBeNull();
-      
-      // 再次解析重新生成的JRXML
+
+      // Parse the regenerated JRXML again
       const { bands: finalBands } = parseJRXMLContent(regeneratedJrxml);
-      
-      // 验证转换结果的一致性
+
+      // Verify the consistency of the conversion result
       const finalDetailBand = finalBands.find(band => band.type === 'detail');
       expect(finalDetailBand).toBeDefined();
       expect(finalDetailBand!.splitType).toBe('Prevent');
@@ -542,7 +542,7 @@ describe('JRXML过时标签和属性转换测试', () => {
       expect(finalDetailBand!.elements[1].textAdjust).toBe('StretchHeight');
     });
 
-    it('应该正确处理包含splitType属性的band的往返转换', () => {
+    it('should correctly handle round-trip conversion of a band containing the splitType attribute', () => {
       const originalJrxml = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Test Report" pageWidth="595" pageHeight="842" leftMargin="20" rightMargin="20" topMargin="30" bottomMargin="30">
   <detail>
@@ -555,34 +555,34 @@ describe('JRXML过时标签和属性转换测试', () => {
   </detail>
 </jasperReport>`;
 
-      // 解析原始JRXML
+      // Parse the original JRXML
       const { properties, bands } = parseJRXMLContent(originalJrxml);
-      
-      // 验证解析结果中包含了splitType属性
+
+      // Verify the parse result includes the splitType attribute
       const detailBand = bands.find(band => band.type === 'detail');
       expect(detailBand).toBeDefined();
       expect(detailBand!.splitType).toBe('Prevent');
-      
-      // 重新生成JRXML
+
+      // Regenerate the JRXML
       const regeneratedJrxml = generateJRXMLContent(properties, bands, []);
-      
-      // 验证重新生成的JRXML包含了splitType属性
+
+      // Verify the regenerated JRXML includes the splitType attribute
       const doc = parseJRXMLToDOM(regeneratedJrxml);
       const bandElements = doc.querySelectorAll('band');
       expect(bandElements.length).toBeGreaterThan(0);
       expect(bandElements[0].getAttribute('splitType')).toBe('Prevent');
       expect(bandElements[0].getAttribute('isSplitAllowed')).toBeNull();
-      
-      // 再次解析重新生成的JRXML
+
+      // Parse the regenerated JRXML again
       const { bands: finalBands } = parseJRXMLContent(regeneratedJrxml);
-      
-      // 验证转换结果的一致性
+
+      // Verify the consistency of the conversion result
       const finalDetailBand = finalBands.find(band => band.type === 'detail');
       expect(finalDetailBand).toBeDefined();
       expect(finalDetailBand!.splitType).toBe('Prevent');
     });
 
-    it('应该优先使用splitType属性而不是isSplitAllowed属性', () => {
+    it('should prefer the splitType attribute over the isSplitAllowed attribute', () => {
       const originalJrxml = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Test Report" pageWidth="595" pageHeight="842" leftMargin="20" rightMargin="20" topMargin="30" bottomMargin="30">
   <detail>
@@ -595,19 +595,19 @@ describe('JRXML过时标签和属性转换测试', () => {
   </detail>
 </jasperReport>`;
 
-      // 解析原始JRXML
+      // Parse the original JRXML
       const { properties, bands } = parseJRXMLContent(originalJrxml);
-      
-      // 验证解析结果中优先使用了splitType属性而不是isSplitAllowed属性
+
+      // Verify the parse result prefers the splitType attribute over the isSplitAllowed attribute
       const detailBand = bands.find(band => band.type === 'detail');
       expect(detailBand).toBeDefined();
-      // 应该是"Stretch"而不是"Prevent"，因为splitType优先级更高
+      // Should be "Stretch" rather than "Prevent", since splitType takes priority
       expect(detailBand!.splitType).toBe('Stretch');
-      
-      // 重新生成JRXML
+
+      // Regenerate the JRXML
       const regeneratedJrxml = generateJRXMLContent(properties, bands, []);
-      
-      // 验证重新生成的JRXML包含了splitType="Stretch"属性，不包含过时的isSplitAllowed属性
+
+      // Verify the regenerated JRXML includes splitType="Stretch" and not the deprecated isSplitAllowed attribute
       const doc = parseJRXMLToDOM(regeneratedJrxml);
       const bandElements = doc.querySelectorAll('band');
       expect(bandElements.length).toBeGreaterThan(0);
@@ -615,8 +615,8 @@ describe('JRXML过时标签和属性转换测试', () => {
       expect(bandElements[0].getAttribute('isSplitAllowed')).toBeNull();
     });
 
-    test('应该优先使用非过时属性而不是过时属性', () => {
-      // 创建同时包含新属性和过时属性的元素
+    test('should prefer non-deprecated attributes over deprecated ones', () => {
+      // Create an element that contains both the new attribute and the deprecated attribute
       const elementWithBothProperties = {
         type: 'staticText',
         x: 10,
@@ -624,15 +624,15 @@ describe('JRXML过时标签和属性转换测试', () => {
         width: 100,
         height: 20,
         text: 'Test Text',
-        markup: 'html', // 新属性
-        isStyledText: false, // 过时属性
+        markup: 'html', // New attribute
+        isStyledText: false, // Deprecated attribute
         box: {
           pen: {
             lineWidth: 2,
             lineColor: '#FF0000'
           },
-          border: 1, // 过时属性
-          borderColor: '#000000' // 过时属性
+          border: 1, // Deprecated attribute
+          borderColor: '#000000' // Deprecated attribute
         }
       };
 
@@ -643,15 +643,15 @@ describe('JRXML过时标签和属性转换测试', () => {
         width: 100,
         height: 20,
         expression: '$F{field}',
-        textAdjust: 'StretchHeight', // 新属性
-        isStretchWithOverflow: false // 过时属性
+        textAdjust: 'StretchHeight', // New attribute
+        isStretchWithOverflow: false // Deprecated attribute
       };
 
       const bandWithElement = {
         type: 'detail',
         height: 70,
-        splitType: 'Prevent', // 新属性
-        isSplitAllowed: true, // 过时属性
+        splitType: 'Prevent', // New attribute
+        isSplitAllowed: true, // Deprecated attribute
         elements: [elementWithBothProperties, textFieldElement]
       };
 
@@ -665,36 +665,36 @@ describe('JRXML过时标签和属性转换测试', () => {
         bottomMargin: 30
       };
 
-      // 生成JRXML
+      // Generate the JRXML
       const generatedXml = generateJRXMLContent(properties, [bandWithElement], []);
       const doc = parseJRXMLToDOM(generatedXml);
 
-      // 验证优先使用新属性而不是过时属性
-      
-      // 检查band属性
+      // Verify the new attributes are preferred over the deprecated ones
+
+      // Check the band attributes
       const bandElements = doc.querySelectorAll('band');
       expect(bandElements.length).toBeGreaterThan(0);
       expect(bandElements[0].getAttribute('splitType')).toBe('Prevent');
       expect(bandElements[0].getAttribute('isSplitAllowed')).toBeNull();
-      
-      // 检查staticText元素
+
+      // Check the staticText element
       const staticTextElements = doc.querySelectorAll('staticText');
       expect(staticTextElements.length).toBeGreaterThan(0);
-      
+
       const textElement = staticTextElements[0].querySelector('textElement');
       expect(textElement).toBeDefined();
       expect(textElement!.getAttribute('markup')).toBe('html');
       expect(textElement!.getAttribute('isStyledText')).toBeNull();
-      
+
       const boxElement = staticTextElements[0].querySelector('box');
       expect(boxElement).toBeDefined();
-      
+
       const penElement = boxElement!.querySelector('pen');
       expect(penElement).toBeDefined();
       expect(penElement!.getAttribute('lineWidth')).toBe('2');
       expect(penElement!.getAttribute('lineColor')).toBe('#FF0000');
-      
-      // 检查textField元素
+
+      // Check the textField element
       const textFieldElements = doc.querySelectorAll('textField');
       expect(textFieldElements.length).toBeGreaterThan(0);
       expect(textFieldElements[0].getAttribute('textAdjust')).toBe('StretchHeight');
@@ -702,8 +702,8 @@ describe('JRXML过时标签和属性转换测试', () => {
     });
   });
 
-  describe('band标签splitType属性解析测试', () => {
-    it('应该正确解析包含splitType属性的band标签', () => {
+  describe('band tag splitType attribute parsing tests', () => {
+    it('should correctly parse a band tag containing the splitType attribute', () => {
       const jrxmlWithSplitType = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Test Report" pageWidth="595" pageHeight="842" leftMargin="20" rightMargin="20" topMargin="30" bottomMargin="30">
   <detail>
@@ -716,24 +716,24 @@ describe('JRXML过时标签和属性转换测试', () => {
   </detail>
 </jasperReport>`;
 
-      // 解析JRXML
+      // Parse the JRXML
       const { properties, bands } = parseJRXMLContent(jrxmlWithSplitType);
-      
-      // 验证解析结果中包含了splitType属性
+
+      // Verify the parse result includes the splitType attribute
       const detailBand = bands.find(band => band.type === 'detail');
       expect(detailBand).toBeDefined();
       expect(detailBand!.splitType).toBe('Prevent');
-      
-      // 重新生成JRXML
+
+      // Regenerate the JRXML
       const regeneratedJrxml = generateJRXMLContent(properties, bands, []);
-      
-      // 验证重新生成的JRXML包含了splitType属性
+
+      // Verify the regenerated JRXML includes the splitType attribute
       expect(regeneratedJrxml).toContain('splitType="Prevent"');
-      // 验证重新生成的JRXML不包含过时的isSplitAllowed属性
+      // Verify the regenerated JRXML does not include the deprecated isSplitAllowed attribute
       expect(regeneratedJrxml).not.toContain('isSplitAllowed');
     });
 
-    it('应该优先使用splitType属性而不是isSplitAllowed属性', () => {
+    it('should prefer the splitType attribute over the isSplitAllowed attribute', () => {
       const jrxmlWithBothAttributes = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Test Report" pageWidth="595" pageHeight="842" leftMargin="20" rightMargin="20" topMargin="30" bottomMargin="30">
   <detail>
@@ -746,25 +746,25 @@ describe('JRXML过时标签和属性转换测试', () => {
   </detail>
 </jasperReport>`;
 
-      // 解析JRXML
+      // Parse the JRXML
       const { properties, bands } = parseJRXMLContent(jrxmlWithBothAttributes);
-      
-      // 验证解析结果中优先使用了splitType属性而不是isSplitAllowed属性
+
+      // Verify the parse result prefers the splitType attribute over the isSplitAllowed attribute
       const detailBand = bands.find(band => band.type === 'detail');
       expect(detailBand).toBeDefined();
-      // 应该是"Stretch"而不是"Prevent"，因为splitType优先级更高
+      // Should be "Stretch" rather than "Prevent", since splitType takes priority
       expect(detailBand!.splitType).toBe('Stretch');
-      
-      // 重新生成JRXML
+
+      // Regenerate the JRXML
       const regeneratedJrxml = generateJRXMLContent(properties, bands, []);
-      
-      // 验证重新生成的JRXML包含了splitType="Stretch"属性
+
+      // Verify the regenerated JRXML includes the splitType="Stretch" attribute
       expect(regeneratedJrxml).toContain('splitType="Stretch"');
-      // 验证重新生成的JRXML不包含过时的isSplitAllowed属性
+      // Verify the regenerated JRXML does not include the deprecated isSplitAllowed attribute
       expect(regeneratedJrxml).not.toContain('isSplitAllowed');
     });
 
-    it('应该正确转换过时的isSplitAllowed属性为splitType属性', () => {
+    it('should correctly convert the deprecated isSplitAllowed attribute to the splitType attribute', () => {
       const jrxmlWithDeprecatedAttribute = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Test Report" pageWidth="595" pageHeight="842" leftMargin="20" rightMargin="20" topMargin="30" bottomMargin="30">
   <detail>
@@ -777,20 +777,20 @@ describe('JRXML过时标签和属性转换测试', () => {
   </detail>
 </jasperReport>`;
 
-      // 解析JRXML
+      // Parse the JRXML
       const { properties, bands } = parseJRXMLContent(jrxmlWithDeprecatedAttribute);
-      
-      // 验证解析结果中正确转换了isSplitAllowed属性
+
+      // Verify the parse result correctly converted the isSplitAllowed attribute
       const detailBand = bands.find(band => band.type === 'detail');
       expect(detailBand).toBeDefined();
       expect(detailBand!.splitType).toBe('Prevent');
-      
-      // 重新生成JRXML
+
+      // Regenerate the JRXML
       const regeneratedJrxml = generateJRXMLContent(properties, bands, []);
-      
-      // 验证重新生成的JRXML包含了splitType="Prevent"属性
+
+      // Verify the regenerated JRXML includes the splitType="Prevent" attribute
       expect(regeneratedJrxml).toContain('splitType="Prevent"');
-      // 验证重新生成的JRXML不包含过时的isSplitAllowed属性
+      // Verify the regenerated JRXML does not include the deprecated isSplitAllowed attribute
       expect(regeneratedJrxml).not.toContain('isSplitAllowed');
     });
   });

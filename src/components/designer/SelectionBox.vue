@@ -30,7 +30,7 @@ const props = withDefaults(defineProps<Props>(), {
   visible: false
 });
 
-// 计算框选框的位置和大小
+// Calculate the position and size of the selection box
 const left = computed(() => Math.min(props.startX, props.endX));
 const top = computed(() => Math.min(props.startY, props.endY));
 const width = computed(() => Math.abs(props.endX - props.startX));
@@ -44,7 +44,7 @@ const height = computed(() => Math.abs(props.endY - props.startY));
   background-color: rgba(0, 123, 255, 0.1);
   pointer-events: none;
   z-index: 1000;
-  /* 确保框选框相对于paper-container定位 */
+  /* Ensure the selection box is positioned relative to paper-container */
   transform-origin: top left;
 }
 </style>

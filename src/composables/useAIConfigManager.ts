@@ -1,13 +1,13 @@
 /**
- * AI Configuration Manager - 配置管理
+ * AI Configuration Manager - Configuration management
  *
- * 支持动态配置AI服务参数，并持久化到localStorage
+ * Supports dynamically configuring AI service parameters and persisting them to localStorage
  */
 
 import { ref, watch } from 'vue';
 
 // ============================================
-// 类型定义
+// Type definitions
 // ============================================
 
 export interface AIConfiguration {
@@ -16,7 +16,7 @@ export interface AIConfiguration {
   modelName: string;
   maxTokens: number;
   temperature: number;
-  requestTimeout: number; // 超时时间，单位毫秒
+  requestTimeout: number; // Timeout duration, in milliseconds
 }
 
 export interface AIConfigManagerReturn {
@@ -27,7 +27,7 @@ export interface AIConfigManagerReturn {
 }
 
 // ============================================
-// 默认配置
+// Default configuration
 // ============================================
 
 const DEFAULT_CONFIG: AIConfiguration = {
@@ -36,20 +36,20 @@ const DEFAULT_CONFIG: AIConfiguration = {
   modelName: 'local-model',
   maxTokens: 4096,
   temperature: 0.7,
-  requestTimeout: 300000 // 5分钟
+  requestTimeout: 300000 // 5 minutes
 };
 
 const STORAGE_KEY = 'jrxml_ai_config';
 
 // ============================================
-// 配置管理实现
+// Configuration management implementation
 // ============================================
 
 /**
- * 创建配置管理器
+ * Create a configuration manager
  */
 export function useAIConfigManager(): AIConfigManagerReturn {
-  // 从localStorage加载配置
+  // Load configuration from localStorage
   const loadConfigFromStorage = (): AIConfiguration => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -63,10 +63,10 @@ export function useAIConfigManager(): AIConfigManagerReturn {
     return { ...DEFAULT_CONFIG };
   };
 
-  // 当前配置
+  // Current configuration
   const config = ref<AIConfiguration>(loadConfigFromStorage());
 
-  // 保存配置到localStorage
+  // Save configuration to localStorage
   const saveConfigToStorage = (newConfig: AIConfiguration) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newConfig));
@@ -75,19 +75,19 @@ export function useAIConfigManager(): AIConfigManagerReturn {
     }
   };
 
-  // 更新配置
+  // Update configuration
   const updateConfig = (newConfig: Partial<AIConfiguration>) => {
     config.value = { ...config.value, ...newConfig };
     saveConfigToStorage(config.value);
   };
 
-  // 重置配置为默认值
+  // Reset configuration to defaults
   const resetConfig = () => {
     config.value = { ...DEFAULT_CONFIG };
     saveConfigToStorage(config.value);
   };
 
-  // 获取配置
+  // Get configuration
   const getConfigFromStorage = (): AIConfiguration => {
     return loadConfigFromStorage();
   };
@@ -101,6 +101,6 @@ export function useAIConfigManager(): AIConfigManagerReturn {
 }
 
 /**
- * 导出默认配置供外部使用
+ * Export the default configuration for external use
  */
 export { DEFAULT_CONFIG, STORAGE_KEY };

@@ -1,35 +1,35 @@
 import type { DesignElement, Band, ReportProperties } from '../types';
 
-// 插件接口
+// Plugin interface
 export interface Plugin {
   id: string;
   name: string;
   version: string;
   description?: string;
   author?: string;
-  
-  // 插件初始化
+
+  // Plugin initialization
   initialize?: () => void;
-  
-  // 插件销毁
+
+  // Plugin destruction
   destroy?: () => void;
-  
-  // 元素相关钩子
+
+  // Element-related hooks
   onElementCreated?: (element: DesignElement, bandIndex: number, elementIndex: number) => void;
   onElementSelected?: (element: DesignElement, bandIndex: number, elementIndex: number) => void;
   onElementModified?: (element: DesignElement, bandIndex: number, elementIndex: number) => void;
   onElementDeleted?: (element: DesignElement, bandIndex: number, elementIndex: number) => void;
-  
-  // Band相关钩子
+
+  // Band-related hooks
   onBandCreated?: (band: Band) => void;
   onBandModified?: (band: Band) => void;
   onBandDeleted?: (band: Band) => void;
-  
-  // 报表相关钩子
+
+  // Report-related hooks
   onReportLoaded?: (reportProperties: ReportProperties) => void;
   onReportSaved?: (reportProperties: ReportProperties) => void;
-  
-  // 自定义元素类型
+
+  // Custom element types
   customElements?: Array<{
     type: string;
     name: string;
@@ -39,14 +39,14 @@ export interface Plugin {
   }>;
 }
 
-// 插件注册器类
+// Plugin registry class
 export class PluginRegistry {
   private static instance: PluginRegistry;
   private plugins: Map<string, Plugin> = new Map();
   private initializedPlugins: Set<string> = new Set();
 
   private constructor() {
-    // 初始化时加载内置插件
+    // Load built-in plugins on initialization
     this.loadBuiltInPlugins();
   }
 
@@ -57,13 +57,13 @@ export class PluginRegistry {
     return PluginRegistry.instance;
   }
 
-  // 加载内置插件
+  // Load built-in plugins
   private loadBuiltInPlugins(): void {
-    // 这里可以加载内置插件
-    // 例如：this.registerPlugin(builtInPlugin);
+    // Built-in plugins can be loaded here
+    // e.g.: this.registerPlugin(builtInPlugin);
   }
 
-  // 注册插件
+  // Register a plugin
   public registerPlugin(plugin: Plugin): void {
     if (this.plugins.has(plugin.id)) {
       console.warn(`Plugin with id ${plugin.id} already registered.`);
@@ -74,12 +74,12 @@ export class PluginRegistry {
     console.log(`Plugin ${plugin.name} v${plugin.version} registered.`);
   }
 
-  // 注册多个插件
+  // Register multiple plugins
   public registerPlugins(plugins: Plugin[]): void {
     plugins.forEach(plugin => this.registerPlugin(plugin));
   }
 
-  // 卸载插件
+  // Unregister a plugin
   public unregisterPlugin(pluginId: string): boolean {
     const plugin = this.plugins.get(pluginId);
     if (!plugin) {
@@ -87,7 +87,7 @@ export class PluginRegistry {
       return false;
     }
 
-    // 销毁插件
+    // Destroy the plugin
     if (plugin.destroy && this.initializedPlugins.has(pluginId)) {
       plugin.destroy();
       this.initializedPlugins.delete(pluginId);
@@ -98,17 +98,17 @@ export class PluginRegistry {
     return true;
   }
 
-  // 获取插件
+  // Get a plugin
   public getPlugin(pluginId: string): Plugin | undefined {
     return this.plugins.get(pluginId);
   }
 
-  // 获取所有插件
+  // Get all plugins
   public getAllPlugins(): Plugin[] {
     return Array.from(this.plugins.values());
   }
 
-  // 初始化所有插件
+  // Initialize all plugins
   public initializeAllPlugins(): void {
     this.plugins.forEach((plugin, pluginId) => {
       if (plugin.initialize && !this.initializedPlugins.has(pluginId)) {
@@ -123,7 +123,7 @@ export class PluginRegistry {
     });
   }
 
-  // 销毁所有插件
+  // Destroy all plugins
   public destroyAllPlugins(): void {
     this.plugins.forEach((plugin, pluginId) => {
       if (plugin.destroy && this.initializedPlugins.has(pluginId)) {
@@ -138,7 +138,7 @@ export class PluginRegistry {
     });
   }
 
-  // 触发元素创建事件
+  // Trigger the element created event
   public triggerElementCreated(element: DesignElement, bandIndex: number, elementIndex: number): void {
     this.plugins.forEach(plugin => {
       if (plugin.onElementCreated) {
@@ -151,7 +151,7 @@ export class PluginRegistry {
     });
   }
 
-  // 触发元素选择事件
+  // Trigger the element selected event
   public triggerElementSelected(element: DesignElement, bandIndex: number, elementIndex: number): void {
     this.plugins.forEach(plugin => {
       if (plugin.onElementSelected) {
@@ -164,7 +164,7 @@ export class PluginRegistry {
     });
   }
 
-  // 触发元素修改事件
+  // Trigger the element modified event
   public triggerElementModified(element: DesignElement, bandIndex: number, elementIndex: number): void {
     this.plugins.forEach(plugin => {
       if (plugin.onElementModified) {
@@ -177,7 +177,7 @@ export class PluginRegistry {
     });
   }
 
-  // 触发元素删除事件
+  // Trigger the element deleted event
   public triggerElementDeleted(element: DesignElement, bandIndex: number, elementIndex: number): void {
     this.plugins.forEach(plugin => {
       if (plugin.onElementDeleted) {
@@ -190,7 +190,7 @@ export class PluginRegistry {
     });
   }
 
-  // 触发Band创建事件
+  // Trigger the Band created event
   public triggerBandCreated(band: Band): void {
     this.plugins.forEach(plugin => {
       if (plugin.onBandCreated) {
@@ -203,7 +203,7 @@ export class PluginRegistry {
     });
   }
 
-  // 触发Band修改事件
+  // Trigger the Band modified event
   public triggerBandModified(band: Band): void {
     this.plugins.forEach(plugin => {
       if (plugin.onBandModified) {
@@ -216,7 +216,7 @@ export class PluginRegistry {
     });
   }
 
-  // 触发Band删除事件
+  // Trigger the Band deleted event
   public triggerBandDeleted(band: Band): void {
     this.plugins.forEach(plugin => {
       if (plugin.onBandDeleted) {
@@ -229,7 +229,7 @@ export class PluginRegistry {
     });
   }
 
-  // 触发报表加载事件
+  // Trigger the report loaded event
   public triggerReportLoaded(reportProperties: ReportProperties): void {
     this.plugins.forEach(plugin => {
       if (plugin.onReportLoaded) {
@@ -242,7 +242,7 @@ export class PluginRegistry {
     });
   }
 
-  // 触发报表保存事件
+  // Trigger the report saved event
   public triggerReportSaved(reportProperties: ReportProperties): void {
     this.plugins.forEach(plugin => {
       if (plugin.onReportSaved) {
@@ -255,7 +255,7 @@ export class PluginRegistry {
     });
   }
 
-  // 获取所有自定义元素
+  // Get all custom elements
   public getCustomElements(): Array<{
     type: string;
     name: string;
@@ -281,10 +281,10 @@ export class PluginRegistry {
   }
 }
 
-// 导出默认实例
+// Export the default instance
 export const pluginRegistry = PluginRegistry.getInstance();
 
-// 导出注册辅助函数
+// Export registration helper functions
 export function registerPlugin(plugin: Plugin): void {
   pluginRegistry.registerPlugin(plugin);
 }

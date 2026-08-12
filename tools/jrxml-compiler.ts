@@ -1,12 +1,12 @@
 /**
- * JRXML编译验证工具
- * 验证生成的JRXML能否成功编译成jasper文件
+ * JRXML compilation validation tool
+ * Validates whether generated JRXML can be successfully compiled into a jasper file
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 
-// 测试用例定义
+// Test case definition
 interface TestCase {
   name: string;
   description: string;
@@ -15,11 +15,11 @@ interface TestCase {
   expectedFields?: string[];
 }
 
-// 测试用例
+// Test cases
 const testCases: TestCase[] = [
   {
     name: 'basic_textfield',
-    description: '基础TextField',
+    description: 'Basic TextField',
     jrxmlContent: `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -54,7 +54,7 @@ const testCases: TestCase[] = [
   },
   {
     name: 'styled_textfield',
-    description: '带样式的TextField',
+    description: 'TextField with styling',
     jrxmlContent: `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -95,7 +95,7 @@ const testCases: TestCase[] = [
   },
   {
     name: 'statictext_basic',
-    description: '基础StaticText',
+    description: 'Basic StaticText',
     jrxmlContent: `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -118,7 +118,7 @@ const testCases: TestCase[] = [
                 <textElement textAlignment="Center" verticalAlignment="Middle">
                     <font fontName="Arial" size="16" isBold="true"/>
                 </textElement>
-                <text><![CDATA[报表标题]]></text>
+                <text><![CDATA[Report Title]]></text>
             </staticText>
         </band>
     </title>
@@ -127,7 +127,7 @@ const testCases: TestCase[] = [
   },
   {
     name: 'image_element',
-    description: 'Image元素',
+    description: 'Image element',
     jrxmlContent: `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -157,7 +157,7 @@ const testCases: TestCase[] = [
   },
   {
     name: 'rectangle_element',
-    description: 'Rectangle元素',
+    description: 'Rectangle element',
     jrxmlContent: `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -188,7 +188,7 @@ const testCases: TestCase[] = [
   },
   {
     name: 'textfield_with_box',
-    description: '带Box的TextField',
+    description: 'TextField with Box',
     jrxmlContent: `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -233,7 +233,7 @@ const testCases: TestCase[] = [
 ];
 
 /**
- * JRXML编译验证器
+ * JRXML compilation validator
  */
 export class JRXMLCompiler {
   private outputDir: string;
@@ -246,47 +246,47 @@ export class JRXMLCompiler {
   }
 
   /**
-   * 验证JRXML语法
+   * Validates JRXML syntax
    */
   validateJRXMLSyntax(jrxmlContent: string): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    // 检查XML声明
+    // Check the XML declaration
     if (!jrxmlContent.trim().startsWith('<?xml version="1.0"')) {
-      errors.push('缺少XML声明或版本不正确');
+      errors.push('Missing XML declaration or incorrect version');
     }
 
-    // 检查jasperReport根元素
+    // Check the jasperReport root element
     if (!jrxmlContent.includes('<jasperReport')) {
-      errors.push('缺少jasperReport根元素');
+      errors.push('Missing jasperReport root element');
     }
 
-    // 检查必要的属性
+    // Check required attributes
     const requiredAttributes = ['name', 'pageWidth', 'pageHeight', 'columnWidth'];
     for (const attr of requiredAttributes) {
       if (!jrxmlContent.includes(`${attr}=`)) {
-        errors.push(`jasperReport缺少必要属性: ${attr}`);
+        errors.push(`jasperReport is missing a required attribute: ${attr}`);
       }
     }
 
-    // 检查UUID
+    // Check for UUID
     if (!jrxmlContent.includes('uuid=')) {
-      errors.push('缺少uuid属性');
+      errors.push('Missing uuid attribute');
     }
 
-    // 检查reportElement中的UUID
+    // Check UUID in reportElement
     if (jrxmlContent.includes('<reportElement') && !jrxmlContent.includes('uuid="')) {
-      errors.push('reportElement缺少uuid属性');
+      errors.push('reportElement is missing a uuid attribute');
     }
 
-    // 检查TextField表达式
+    // Check TextField expression
     if (jrxmlContent.includes('<textField') && !jrxmlContent.includes('<textFieldExpression>')) {
-      errors.push('textField缺少textFieldExpression');
+      errors.push('textField is missing a textFieldExpression');
     }
 
-    // 检查Image表达式
+    // Check Image expression
     if (jrxmlContent.includes('<image>') && !jrxmlContent.includes('<imageExpression>')) {
-      errors.push('image缺少imageExpression');
+      errors.push('image is missing an imageExpression');
     }
 
     return {
@@ -296,38 +296,38 @@ export class JRXMLCompiler {
   }
 
   /**
-   * 验证JRXML内容完整性
+   * Validates JRXML content completeness
    */
   validateJRXMLCompleteness(jrxmlContent: string): { valid: boolean; warnings: string[] } {
     const warnings: string[] = [];
 
-    // 检查band属性
+    // Check band attributes
     const bandMatches = jrxmlContent.match(/<band\s+height="(\d+)"/g);
     if (!bandMatches || bandMatches.length === 0) {
-      warnings.push('未找到band元素');
+      warnings.push('No band element found');
     }
 
-    // 检查元素位置
+    // Check element position
     const reportElementMatches = jrxmlContent.match(/<reportElement\s+x="\d+"\s+y="\d+"/g);
     if (!reportElementMatches) {
-      warnings.push('reportElement缺少位置属性');
+      warnings.push('reportElement is missing position attributes');
     }
 
-    // 检查TextField样式
+    // Check TextField style
     if (jrxmlContent.includes('<textField')) {
       if (!jrxmlContent.includes('isBlankWhenNull=')) {
-        warnings.push('textField缺少isBlankWhenNull属性');
+        warnings.push('textField is missing the isBlankWhenNull attribute');
       }
     }
 
-    // 检查字体定义
+    // Check font definition
     if (jrxmlContent.includes('<textElement') && !jrxmlContent.includes('<font')) {
-      warnings.push('textElement缺少font定义');
+      warnings.push('textElement is missing a font definition');
     }
 
-    // 检查边框定义
+    // Check border definition
     if (jrxmlContent.includes('<box>') && !jrxmlContent.includes('<pen')) {
-      warnings.push('box缺少pen定义');
+      warnings.push('box is missing a pen definition');
     }
 
     return {
@@ -337,9 +337,9 @@ export class JRXMLCompiler {
   }
 
   /**
-   * 编译JRXML（模拟）
-   * 注意：实际编译需要Java环境和JasperReports库
-   * 这里主要是验证语法和结构
+   * Compiles JRXML (simulated)
+   * Note: actual compilation requires a Java environment and the JasperReports library
+   * This mainly validates syntax and structure
    */
   async compileJRXML(jrxmlContent: string, name: string): Promise<{ success: boolean; output?: string; errors?: string[] }> {
     const result = this.validateJRXMLSyntax(jrxmlContent);
@@ -352,14 +352,14 @@ export class JRXMLCompiler {
       };
     }
 
-    // 保存JRXML文件
+    // Save the JRXML file
     const jrxmlPath = path.join(this.outputDir, `${name}.jrxml`);
     fs.writeFileSync(jrxmlPath, jrxmlContent, 'utf-8');
 
-    // 模拟编译成功
-    console.log(`✓ JRXML语法验证通过: ${name}`);
+    // Simulate a successful compilation
+    console.log(`✓ JRXML syntax validation passed: ${name}`);
     if (completeness.warnings.length > 0) {
-      console.log(`⚠ 警告: ${completeness.warnings.join(', ')}`);
+      console.log(`⚠ Warnings: ${completeness.warnings.join(', ')}`);
     }
 
     return {
@@ -369,7 +369,7 @@ export class JRXMLCompiler {
   }
 
   /**
-   * 运行所有测试用例
+   * Runs all test cases
    */
   async runAllTests(): Promise<{ passed: number; failed: number; results: any[] }> {
     let passed = 0;
@@ -377,8 +377,8 @@ export class JRXMLCompiler {
     const results: any[] = [];
 
     for (const testCase of testCases) {
-      console.log(`\n运行测试: ${testCase.name}`);
-      console.log(`描述: ${testCase.description}`);
+      console.log(`\nRunning test: ${testCase.name}`);
+      console.log(`Description: ${testCase.description}`);
 
       const result = await this.compileJRXML(testCase.jrxmlContent, testCase.name);
 
@@ -393,12 +393,12 @@ export class JRXMLCompiler {
 
       if (result.success === testCase.shouldCompile) {
         passed++;
-        console.log(`✅ 通过`);
+        console.log(`✅ Passed`);
       } else {
         failed++;
-        console.log(`❌ 失败`);
+        console.log(`❌ Failed`);
         if (result.errors) {
-          console.log(`错误: ${result.errors.join(', ')}`);
+          console.log(`Errors: ${result.errors.join(', ')}`);
         }
       }
     }
@@ -407,16 +407,16 @@ export class JRXMLCompiler {
   }
 }
 
-// 导出测试用例供其他测试使用
+// Export the test cases for use by other tests
 export { testCases, TestCase };
 
-// 如果直接运行
+// If run directly
 if (require.main === module) {
   const compiler = new JRXMLCompiler('./test-compiled');
   compiler.runAllTests().then(result => {
-    console.log(`\n测试结果:`);
-    console.log(`通过: ${result.passed}`);
-    console.log(`失败: ${result.failed}`);
-    console.log(`总计: ${result.passed + result.failed}`);
+    console.log(`\nTest results:`);
+    console.log(`Passed: ${result.passed}`);
+    console.log(`Failed: ${result.failed}`);
+    console.log(`Total: ${result.passed + result.failed}`);
   });
 }

@@ -14,13 +14,13 @@
       <button
         @click="showHelp = !showHelp"
         class="help-button"
-        title="表达式帮助"
+        title="Expression help"
       >
         ?
       </button>
     </div>
 
-    <!-- 自动完成下拉 -->
+    <!-- Autocomplete dropdown -->
     <div v-if="showAutocomplete && filteredSuggestions.length > 0" class="autocomplete-dropdown">
       <div
         v-for="(item, index) in filteredSuggestions"
@@ -36,10 +36,10 @@
       </div>
     </div>
 
-    <!-- 表达式帮助面板 -->
+    <!-- Expression help panel -->
     <div v-if="showHelp && !showAutocomplete" class="expression-help">
       <div class="help-section">
-        <h5>常用表达式</h5>
+        <h5>Common expressions</h5>
         <div class="help-items">
           <div
             v-for="item in commonExpressions"
@@ -54,149 +54,149 @@
       </div>
 
       <div class="help-section">
-        <h5>字段引用</h5>
+        <h5>Field references</h5>
         <div class="help-items">
           <div class="help-item" @click="insertExpression('$F{fieldName}')">
             <span class="expression-text">$F{fieldName}</span>
-            <span class="expression-desc">字段引用</span>
+            <span class="expression-desc">Field reference</span>
           </div>
           <div class="help-item" @click="insertExpression('$P{paramName}')">
             <span class="expression-text">$P{paramName}</span>
-            <span class="expression-desc">参数引用</span>
+            <span class="expression-desc">Parameter reference</span>
           </div>
           <div class="help-item" @click="insertExpression('$V{variableName}')">
             <span class="expression-text">$V{variableName}</span>
-            <span class="expression-desc">变量引用</span>
+            <span class="expression-desc">Variable reference</span>
           </div>
         </div>
       </div>
 
       <div class="help-section">
-        <h5>内置变量</h5>
+        <h5>Built-in variables</h5>
         <div class="help-items">
           <div class="help-item" @click="insertExpression('$V{REPORT_COUNT}')">
             <span class="expression-text">$V{REPORT_COUNT}</span>
-            <span class="expression-desc">数据源读取的总记录数</span>
+            <span class="expression-desc">Total number of records read from the data source</span>
           </div>
           <div class="help-item" @click="insertExpression('$V{PAGE_NUMBER}')">
             <span class="expression-text">$V{PAGE_NUMBER}</span>
-            <span class="expression-desc">当前页码（填充结束后为总页数）</span>
+            <span class="expression-desc">Current page number (total page count once filling finishes)</span>
           </div>
           <div class="help-item" @click="insertExpression('$V{PAGE_COUNT}')">
             <span class="expression-text">$V{PAGE_COUNT}</span>
-            <span class="expression-desc">生成当前页时处理的记录数</span>
+            <span class="expression-desc">Number of records processed while generating the current page</span>
           </div>
           <div class="help-item" @click="insertExpression('$V{COLUMN_NUMBER}')">
             <span class="expression-text">$V{COLUMN_NUMBER}</span>
-            <span class="expression-desc">当前列号</span>
+            <span class="expression-desc">Current column number</span>
           </div>
           <div class="help-item" @click="insertExpression('$V{COLUMN_COUNT}')">
             <span class="expression-text">$V{COLUMN_COUNT}</span>
-            <span class="expression-desc">生成当前列时处理的记录数</span>
+            <span class="expression-desc">Number of records processed while generating the current column</span>
           </div>
           <div class="help-item" @click="insertExpression('$V{MASTER_CURRENT_PAGE}')">
             <span class="expression-text">$V{MASTER_CURRENT_PAGE}</span>
-            <span class="expression-desc">主报表当前页码（仅Master评估时间）</span>
+            <span class="expression-desc">Current page number of the master report (Master evaluation time only)</span>
           </div>
           <div class="help-item" @click="insertExpression('$V{MASTER_TOTAL_PAGES}')">
             <span class="expression-text">$V{MASTER_TOTAL_PAGES}</span>
-            <span class="expression-desc">主报表总页数（仅Master评估时间）</span>
+            <span class="expression-desc">Total page count of the master report (Master evaluation time only)</span>
           </div>
         </div>
       </div>
 
       <div class="help-section">
-        <h5>内置参数</h5>
+        <h5>Built-in parameters</h5>
         <div class="help-items">
           <div class="help-item" @click="insertExpression('$P{REPORT_CONNECTION}')">
             <span class="expression-text">$P{REPORT_CONNECTION}</span>
-            <span class="expression-desc">JDBC连接</span>
+            <span class="expression-desc">JDBC connection</span>
           </div>
           <div class="help-item" @click="insertExpression('$P{REPORT_DATA_SOURCE}')">
             <span class="expression-text">$P{REPORT_DATA_SOURCE}</span>
-            <span class="expression-desc">报表数据源</span>
+            <span class="expression-desc">Report data source</span>
           </div>
           <div class="help-item" @click="insertExpression('$P{REPORT_LOCALE}')">
             <span class="expression-text">$P{REPORT_LOCALE}</span>
-            <span class="expression-desc">报表语言环境</span>
+            <span class="expression-desc">Report locale</span>
           </div>
           <div class="help-item" @click="insertExpression('$P{REPORT_SCRIPTLET}')">
             <span class="expression-text">$P{REPORT_SCRIPTLET}</span>
-            <span class="expression-desc">报表脚本</span>
+            <span class="expression-desc">Report scriptlet</span>
           </div>
         </div>
       </div>
 
       <div class="help-section">
-        <h5>比较运算符</h5>
+        <h5>Comparison operators</h5>
         <div class="help-items">
           <div class="help-item" @click="insertExpression('==')">
             <span class="expression-text">==</span>
-            <span class="expression-desc">等于</span>
+            <span class="expression-desc">Equal to</span>
           </div>
           <div class="help-item" @click="insertExpression('!=')">
             <span class="expression-text">!=</span>
-            <span class="expression-desc">不等于</span>
+            <span class="expression-desc">Not equal to</span>
           </div>
           <div class="help-item" @click="insertExpression('>')">
             <span class="expression-text">></span>
-            <span class="expression-desc">大于</span>
+            <span class="expression-desc">Greater than</span>
           </div>
           <div class="help-item" @click="insertExpression('<')">
             <span class="expression-text"><</span>
-            <span class="expression-desc">小于</span>
+            <span class="expression-desc">Less than</span>
           </div>
         </div>
       </div>
 
       <div class="help-section">
-        <h5>逻辑运算符</h5>
+        <h5>Logical operators</h5>
         <div class="help-items">
           <div class="help-item" @click="insertExpression('&&')">
             <span class="expression-text">&&</span>
-            <span class="expression-desc">与</span>
+            <span class="expression-desc">And</span>
           </div>
           <div class="help-item" @click="insertExpression('||')">
             <span class="expression-text">||</span>
-            <span class="expression-desc">或</span>
+            <span class="expression-desc">Or</span>
           </div>
           <div class="help-item" @click="insertExpression('!')">
             <span class="expression-text">!</span>
-            <span class="expression-desc">非</span>
+            <span class="expression-desc">Not</span>
           </div>
         </div>
       </div>
 
       <div class="help-section">
-        <h5>内置方法</h5>
+        <h5>Built-in methods</h5>
         <div class="help-items">
           <div class="help-item" @click="insertExpression('NOW()')">
             <span class="expression-text">NOW()</span>
-            <span class="expression-desc">当前时间</span>
+            <span class="expression-desc">Current time</span>
           </div>
           <div class="help-item" @click="insertExpression('TODAY()')">
             <span class="expression-text">TODAY()</span>
-            <span class="expression-desc">今天日期</span>
+            <span class="expression-desc">Today's date</span>
           </div>
           <div class="help-item" @click="insertExpression('String.valueOf()')">
             <span class="expression-text">String.valueOf()</span>
-            <span class="expression-desc">转换为字符串</span>
+            <span class="expression-desc">Convert to string</span>
           </div>
           <div class="help-item" @click="insertExpression('Integer.valueOf()')">
             <span class="expression-text">Integer.valueOf()</span>
-            <span class="expression-desc">转换为整数</span>
+            <span class="expression-desc">Convert to integer</span>
           </div>
           <div class="help-item" @click="insertExpression('Double.valueOf()')">
             <span class="expression-text">Double.valueOf()</span>
-            <span class="expression-desc">转换为浮点数</span>
+            <span class="expression-desc">Convert to double</span>
           </div>
           <div class="help-item" @click="insertExpression('new java.util.Date()')">
             <span class="expression-text">new java.util.Date()</span>
-            <span class="expression-desc">创建当前日期</span>
+            <span class="expression-desc">Create the current date</span>
           </div>
           <div class="help-item" @click="insertExpression('new java.text.SimpleDateFormat(&quot;yyyy-MM-dd&quot;).format()')">
             <span class="expression-text">SimpleDateFormat.format()</span>
-            <span class="expression-desc">日期格式化</span>
+            <span class="expression-desc">Date formatting</span>
           </div>
         </div>
       </div>
@@ -261,21 +261,21 @@ const allSuggestions = computed<SuggestionItem[]>(() => {
 
   // Built-in parameters (from JRParameter.java)
   const builtInParams = [
-    { value: 'REPORT_PARAMETERS_MAP', description: '包含用户填充时传递的报表参数Map' },
-    { value: 'JASPER_REPORTS_CONTEXT', description: '当前报表填充上下文' },
-    { value: 'JASPER_REPORT', description: '当前正在填充的JasperReport模板对象' },
-    { value: 'REPORT_CONNECTION', description: '执行默认报表查询所需的JDBC连接' },
-    { value: 'REPORT_MAX_COUNT', description: '限制数据源处理的记录数' },
-    { value: 'REPORT_DATA_SOURCE', description: '报表数据源实例' },
-    { value: 'REPORT_SCRIPTLET', description: '用户提供的报表脚本实例' },
-    { value: 'REPORT_LOCALE', description: '资源包所需的语言环境' },
-    { value: 'REPORT_RESOURCE_BUNDLE', description: '包含本地化消息的资源包' },
-    { value: 'REPORT_TIME_ZONE', description: '用于日期格式化的时区' },
-    { value: 'REPORT_VIRTUALIZER', description: '用于页面虚拟化的虚拟化器' },
-    { value: 'REPORT_CLASS_LOADER', description: '填充过程中加载资源的类加载器' },
-    { value: 'REPORT_FORMAT_FACTORY', description: '用于创建DateFormat和NumberFormat的格式化工厂' },
-    { value: 'IS_IGNORE_PAGINATION', description: '是否忽略分页标志' },
-    { value: 'REPORT_TEMPLATES', description: '填充时传递的报表模板集合' },
+    { value: 'REPORT_PARAMETERS_MAP', description: 'Map of report parameters passed in when the user fills the report' },
+    { value: 'JASPER_REPORTS_CONTEXT', description: 'The current report-filling context' },
+    { value: 'JASPER_REPORT', description: 'The JasperReport template object currently being filled' },
+    { value: 'REPORT_CONNECTION', description: 'The JDBC connection needed to run the default report query' },
+    { value: 'REPORT_MAX_COUNT', description: 'Limits the number of records processed from the data source' },
+    { value: 'REPORT_DATA_SOURCE', description: 'The report data source instance' },
+    { value: 'REPORT_SCRIPTLET', description: 'The user-supplied report scriptlet instance' },
+    { value: 'REPORT_LOCALE', description: 'The locale required for the resource bundle' },
+    { value: 'REPORT_RESOURCE_BUNDLE', description: 'The resource bundle containing localized messages' },
+    { value: 'REPORT_TIME_ZONE', description: 'The time zone used for date formatting' },
+    { value: 'REPORT_VIRTUALIZER', description: 'The virtualizer used for page virtualization' },
+    { value: 'REPORT_CLASS_LOADER', description: 'The class loader used to load resources during filling' },
+    { value: 'REPORT_FORMAT_FACTORY', description: 'The format factory used to create DateFormat and NumberFormat instances' },
+    { value: 'IS_IGNORE_PAGINATION', description: 'Whether to ignore the pagination flag' },
+    { value: 'REPORT_TEMPLATES', description: 'The collection of report templates passed in while filling' },
   ];
   for (const p of builtInParams) {
     items.push({
@@ -288,13 +288,13 @@ const allSuggestions = computed<SuggestionItem[]>(() => {
 
   // Built-in variables (from JRVariable.java)
   const builtInVars = [
-    { value: 'REPORT_COUNT', description: '数据源读取的总记录数' },
-    { value: 'PAGE_COUNT', description: '生成当前页时处理的记录数' },
-    { value: 'COLUMN_COUNT', description: '生成当前列时处理的记录数' },
-    { value: 'PAGE_NUMBER', description: '当前页码（报表填充结束后为总页数）' },
-    { value: 'COLUMN_NUMBER', description: '当前列号' },
-    { value: 'MASTER_CURRENT_PAGE', description: '主报表当前页码（仅Master评估时间可用）' },
-    { value: 'MASTER_TOTAL_PAGES', description: '主报表总页数（仅Master评估时间可用）' },
+    { value: 'REPORT_COUNT', description: 'Total number of records read from the data source' },
+    { value: 'PAGE_COUNT', description: 'Number of records processed while generating the current page' },
+    { value: 'COLUMN_COUNT', description: 'Number of records processed while generating the current column' },
+    { value: 'PAGE_NUMBER', description: 'Current page number (total page count once report filling finishes)' },
+    { value: 'COLUMN_NUMBER', description: 'Current column number' },
+    { value: 'MASTER_CURRENT_PAGE', description: 'Current page number of the master report (Master evaluation time only)' },
+    { value: 'MASTER_TOTAL_PAGES', description: 'Total page count of the master report (Master evaluation time only)' },
   ];
   for (const v of builtInVars) {
     items.push({
@@ -319,13 +319,13 @@ const allSuggestions = computed<SuggestionItem[]>(() => {
 
   // Built-in methods
   const builtInMethods = [
-    { value: 'NOW()', description: '当前时间' },
-    { value: 'TODAY()', description: '今天日期' },
-    { value: 'String.valueOf(', description: '转换为字符串' },
-    { value: 'Integer.valueOf(', description: '转换为整数' },
-    { value: 'Double.valueOf(', description: '转换为浮点数' },
-    { value: 'new java.util.Date()', description: '创建当前日期' },
-    { value: 'new java.text.SimpleDateFormat("yyyy-MM-dd").format(', description: '日期格式化' },
+    { value: 'NOW()', description: 'Current time' },
+    { value: 'TODAY()', description: "Today's date" },
+    { value: 'String.valueOf(', description: 'Convert to string' },
+    { value: 'Integer.valueOf(', description: 'Convert to integer' },
+    { value: 'Double.valueOf(', description: 'Convert to double' },
+    { value: 'new java.util.Date()', description: 'Create the current date' },
+    { value: 'new java.text.SimpleDateFormat("yyyy-MM-dd").format(', description: 'Date formatting' },
   ];
   for (const m of builtInMethods) {
     items.push({
@@ -485,12 +485,12 @@ function handleBlur() {
 }
 
 const commonExpressions = [
-  { expression: '$F{field}.equals("value")', description: '字段等于指定值' },
-  { expression: '$F{field} != null', description: '字段不为空' },
-  { expression: '$F{field} > 0', description: '字段大于0' },
-  { expression: '$V{PAGE_NUMBER} > 1', description: '页码大于1' },
-  { expression: '$F{status}.equals("active")', description: '状态为active' },
-  { expression: '$F{amount}.doubleValue() > 100', description: '金额大于100' },
+  { expression: '$F{field}.equals("value")', description: 'Field equals a specific value' },
+  { expression: '$F{field} != null', description: 'Field is not null' },
+  { expression: '$F{field} > 0', description: 'Field is greater than 0' },
+  { expression: '$V{PAGE_NUMBER} > 1', description: 'Page number is greater than 1' },
+  { expression: '$F{status}.equals("active")', description: 'Status equals "active"' },
+  { expression: '$F{amount}.doubleValue() > 100', description: 'Amount is greater than 100' },
 ];
 
 const insertExpression = (expression: string) => {

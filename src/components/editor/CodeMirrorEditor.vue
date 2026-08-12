@@ -16,20 +16,20 @@ import type { EditorStateConfig } from '@codemirror/state';
 import { defaultKeymap } from '@codemirror/commands';
 import { html_beautify } from 'js-beautify';
 
-// 定义组件属性
+// Define component props
 interface Props {
   modelValue: string;
   placeholder?: string;
   readOnly?: boolean;
 }
 
-// 定义组件事件
+// Define component events
 interface Emits {
   (e: 'update:modelValue', value: string): void;
   (e: 'scroll'): void;
 }
 
-// 使用defineProps和defineEmits
+// Use defineProps and defineEmits
 const props = withDefaults(defineProps<Props>(), {
   placeholder: '',
   readOnly: false
@@ -37,12 +37,12 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 
-// 引用
+// Refs
 const editorContainer = ref<HTMLElement | null>(null);
 const searchInput = ref<HTMLInputElement | null>(null);
 let editorView: EditorView | null = null;
 
-// 搜索相关状态
+// Search-related state
 const showSearch = ref(false);
 const searchQuery = ref('');
 const searchResultsCount = ref(0);
@@ -50,11 +50,11 @@ const currentSearchResult = ref(0);
 let searchResults: { from: number; to: number }[] = [];
 let currentSearchIndex = 0;
 
-// 创建编辑器
+// Create the editor
 const createEditor = () => {
   if (!editorContainer.value) return;
-  
-  // 编辑器配置
+
+  // Editor configuration
   const config: EditorStateConfig = {
     doc: props.modelValue,
     extensions: [
@@ -111,14 +111,14 @@ const createEditor = () => {
     ],
   };
   
-  // 创建编辑器视图
+  // Create the editor view
   editorView = new EditorView({
     state: EditorState.create(config),
     parent: editorContainer.value
   });
 };
 
-// 更新编辑器内容
+// Update the editor content
 const updateEditorContent = (content: string) => {
   if (editorView && editorView.state.doc.toString() !== content) {
     editorView.dispatch({
@@ -131,15 +131,15 @@ const updateEditorContent = (content: string) => {
   }
 };
 
-// 监听modelValue变化
+// Watch for modelValue changes
 watch(() => props.modelValue, (newValue) => {
   updateEditorContent(newValue);
 });
 
-// 监听readOnly变化
+// Watch for readOnly changes
 watch(() => props.readOnly, (newValue) => {
   if (editorView) {
-    // 重新创建编辑器状态以更新readOnly属性
+    // Recreate the editor state to update the readOnly property
     const newState = EditorState.create({
       doc: editorView.state.doc,
       extensions: [
@@ -207,12 +207,12 @@ watch(() => props.readOnly, (newValue) => {
   }
 });
 
-// 组件挂载时创建编辑器
+// Create the editor when the component is mounted
 onMounted(() => {
   createEditor();
 });
 
-// 组件卸载前销毁编辑器
+// Destroy the editor before the component is unmounted
 onBeforeUnmount(() => {
   if (editorView) {
     editorView.destroy();
@@ -220,11 +220,11 @@ onBeforeUnmount(() => {
   }
 });
 
-// 搜索相关方法
+// Search-related methods
 const toggleSearch = () => {
   showSearch.value = !showSearch.value;
   if (showSearch.value) {
-    // 延迟聚焦搜索输入框，确保DOM已更新
+    // Delay focusing the search input to ensure the DOM has updated
     setTimeout(() => {
       searchInput.value?.focus();
     }, 100);
@@ -244,7 +244,7 @@ const performSearch = () => {
     return;
   }
   
-  // 执行搜索
+  // Perform the search
   searchResults = [];
   const doc = editorView.state.doc;
   const text = doc.toString();
@@ -259,12 +259,12 @@ const performSearch = () => {
     index += query.length;
   }
   
-  // 更新搜索结果计数
+  // Update the search results count
   searchResultsCount.value = searchResults.length;
   currentSearchIndex = 0;
   currentSearchResult.value = searchResults.length > 0 ? 1 : 0;
-  
-  // 滚动到第一个匹配项
+
+  // Scroll to the first match
   if (searchResults.length > 0) {
     scrollToResult(currentSearchIndex);
   }
@@ -298,7 +298,7 @@ const closeSearch = () => {
 const clearSearchHighlights = () => {
   if (!editorView) return;
   
-  // 重置选择
+  // Reset the selection
   editorView.dispatch({
     selection: { anchor: 0, head: 0 }
   });
@@ -313,7 +313,7 @@ const scrollToResult = (index: number) => {
       selection: { anchor: result.from, head: result.to }
     });
 
-    // 滚动到结果位置
+    // Scroll to the result position
     editorView.dispatch({
       effects: EditorView.scrollIntoView(result.from, {
         yMargin: 50,
@@ -323,7 +323,7 @@ const scrollToResult = (index: number) => {
   }
 };
 
-// 跳转到指定行
+// Jump to a specific line
 const jumpToLine = (line: number, column: number) => {
   if (!editorView) return;
   
@@ -348,7 +348,7 @@ const jumpToLine = (line: number, column: number) => {
   }
 };
 
-// 使用指定查询执行搜索（供父组件调用）
+// Perform a search using a given query (called by the parent component)
 const performSearchWith = (query: string): number => {
   if (!editorView) return 0;
   if (!query) {
@@ -369,7 +369,7 @@ const performSearchWith = (query: string): number => {
   return searchResults.length;
 };
 
-// 格式化：使用 js-beautify 的 html_beautify 格式化 XML
+// Formatting: use js-beautify's html_beautify to format XML
 const BEAUTIFY_OPTS = {
   indent_size: 2,
   wrap_attributes: 'auto',
@@ -392,7 +392,7 @@ const formatDocument = () => {
   });
 };
 
-// 暴露方法给父组件
+// Expose methods to the parent component
 defineExpose({
   focus: () => { editorView?.focus(); },
   getEditor: () => editorView,
@@ -423,7 +423,7 @@ defineExpose({
   overflow: hidden;
 }
 
-/* 确保CodeMirror样式正确应用 */
+/* Ensure CodeMirror styles apply correctly */
 :deep(.cm-editor) {
   height: 100%;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;

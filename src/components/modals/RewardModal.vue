@@ -8,9 +8,9 @@
     :contentClass="'reward-modal-content'"
   >
     <div class="reward-content">
-      <h3>您的支持是我持续更新的动力！</h3>
-      <img src="/src/assets/FIREGOD_CN.jpg" alt="打赏码" class="reward-image">
-      <p>使用微信扫码打赏，感谢支持！</p>
+      <h3>Your support is what keeps me updating this project!</h3>
+      <img src="/src/assets/FIREGOD_CN.jpg" alt="Donation QR code" class="reward-image">
+      <p>Scan with WeChat to make a donation. Thank you for your support!</p>
     </div>
   </BaseModal>
 </template>
@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import BaseModal from './BaseModal.vue';
 
-// 定义props
+// Define props
 const props = defineProps({
   visible: {
     type: Boolean,
@@ -26,10 +26,10 @@ const props = defineProps({
   }
 });
 
-// 定义emits
+// Define emits
 const emit = defineEmits(['update:visible']);
 
-// 关闭弹窗
+// Close the modal
 const closeModal = () => {
   emit('update:visible', false);
 };

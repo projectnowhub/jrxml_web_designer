@@ -1,14 +1,14 @@
 /**
- * MCP Tool Handlers - 工具处理器实现
+ * MCP Tool Handlers - Tool handler implementations
  *
- * 实现所有MCP工具的核心逻辑，确保与Vue响应式系统集成
+ * Implements the core logic for all MCP tools, ensuring integration with the Vue reactivity system
  */
 
 import type { DesignElement, Band, BandType } from '@/types';
 import { createNewElement } from '@/utils/elementUtils';
 
 // ============================================
-// 类型定义
+// Type definitions
 // ============================================
 
 export interface MCPToolResult {
@@ -42,7 +42,7 @@ export interface MCPContext {
 }
 
 // ============================================
-// 查询工具处理器
+// Query tool handlers
 // ============================================
 
 const getDesignStateHandler: MCPToolHandler = {
@@ -104,26 +104,26 @@ const findElementsHandler: MCPToolHandler = {
       band.elements.forEach((element, index) => {
         let matches = true;
 
-        // 按字段名筛选
+        // Filter by field name
         if (fieldName) {
           const hasField = element.type === 'textField' &&
             (element as any).expression?.includes(`$F{${fieldName}}`);
           if (!hasField) matches = false;
         }
 
-        // 按参数名筛选
+        // Filter by parameter name
         if (parameterName) {
           const hasParam = element.type === 'textField' &&
             (element as any).expression?.includes(`$P{${parameterName}}`);
           if (!hasParam) matches = false;
         }
 
-        // 按元素类型筛选
+        // Filter by element type
         if (elementType && element.type !== elementType) {
           matches = false;
         }
 
-        // 按文本内容筛选
+        // Filter by text content
         if (text) {
           const elementText = (element as any).text || (element as any).expression || '';
           if (!elementText.toLowerCase().includes(text.toLowerCase())) {
@@ -150,7 +150,7 @@ const findElementsHandler: MCPToolHandler = {
 };
 
 // ============================================
-// 创建工具处理器
+// Create tool handlers
 // ============================================
 
 const createStaticTextHandler: MCPToolHandler = {
@@ -171,7 +171,7 @@ const createStaticTextHandler: MCPToolHandler = {
       textAlignment = 'Left'
     } = params;
 
-    // 查找目标band的索引
+    // Find the index of the target band
     const bandIndex = context.bands.findIndex(b => b.type === bandType);
     if (bandIndex === -1) {
       return {
@@ -180,7 +180,7 @@ const createStaticTextHandler: MCPToolHandler = {
       };
     }
 
-    // 创建元素
+    // Create the element
     const newElement = createNewElement('staticText', x, y) as any;
     Object.assign(newElement, {
       width,
@@ -195,22 +195,22 @@ const createStaticTextHandler: MCPToolHandler = {
       textAlignment
     });
 
-    // 关键：直接操作响应式数组，确保Vue检测到变化
+    // Key: mutate the reactive array directly so Vue detects the change
     const band = context.bands[bandIndex];
     if (band) {
       if (!band.elements) {
         band.elements = [];
       }
 
-      // 使用push方法，Vue会检测到数组变化
+      // Use push() so Vue detects the array change
       band.elements.push(newElement);
 
-      // 保存历史并更新JRXML
+      // Save history and update the JRXML
       context.saveStateToHistory();
       context.updateJRXML();
 
-      // 关键：强制触发Vue的响应式更新
-      // 通过重新赋值bands数组来触发Vue的更新
+      // Key: force-trigger Vue's reactive update
+      // Trigger Vue's update by reassigning the bands array
       const newBands = [...context.bands];
       context.bands.length = 0;
       context.bands.push(...newBands);
@@ -241,7 +241,7 @@ const createTextFieldHandler: MCPToolHandler = {
       pattern
     } = params;
 
-    // 查找目标band的索引
+    // Find the index of the target band
     const bandIndex = context.bands.findIndex(b => b.type === bandType);
     if (bandIndex === -1) {
       return {
@@ -250,7 +250,7 @@ const createTextFieldHandler: MCPToolHandler = {
       };
     }
 
-    // 创建元素
+    // Create the element
     const newElement = createNewElement('textField', x, y) as any;
     Object.assign(newElement, {
       width,
@@ -262,7 +262,7 @@ const createTextFieldHandler: MCPToolHandler = {
       pattern
     });
 
-    // 直接操作响应式数组
+    // Mutate the reactive array directly
     const band = context.bands[bandIndex];
     if (band) {
       if (!band.elements) {
@@ -270,7 +270,7 @@ const createTextFieldHandler: MCPToolHandler = {
       }
       band.elements.push(newElement);
 
-      // 保存历史并更新JRXML
+      // Save history and update the JRXML
       context.saveStateToHistory();
       context.updateJRXML();
     }
@@ -300,7 +300,7 @@ const createRectangleHandler: MCPToolHandler = {
       lineStyle = 'Solid'
     } = params;
 
-    // 查找目标band的索引
+    // Find the index of the target band
     const bandIndex = context.bands.findIndex(b => b.type === bandType);
     if (bandIndex === -1) {
       return {
@@ -309,7 +309,7 @@ const createRectangleHandler: MCPToolHandler = {
       };
     }
 
-    // 创建元素
+    // Create the element
     const newElement = createNewElement('rectangle', x, y) as any;
     Object.assign(newElement, {
       width,
@@ -324,7 +324,7 @@ const createRectangleHandler: MCPToolHandler = {
       }
     });
 
-    // 直接操作响应式数组
+    // Mutate the reactive array directly
     const band = context.bands[bandIndex];
     if (band) {
       if (!band.elements) {
@@ -332,7 +332,7 @@ const createRectangleHandler: MCPToolHandler = {
       }
       band.elements.push(newElement);
 
-      // 保存历史并更新JRXML
+      // Save history and update the JRXML
       context.saveStateToHistory();
       context.updateJRXML();
     }
@@ -359,7 +359,7 @@ const createFrameHandler: MCPToolHandler = {
       backgroundColor
     } = params;
 
-    // 查找目标band的索引
+    // Find the index of the target band
     const bandIndex = context.bands.findIndex(b => b.type === bandType);
     if (bandIndex === -1) {
       return {
@@ -368,7 +368,7 @@ const createFrameHandler: MCPToolHandler = {
       };
     }
 
-    // 创建元素
+    // Create the element
     const newElement = createNewElement('frame', x, y) as any;
     Object.assign(newElement, {
       width,
@@ -378,7 +378,7 @@ const createFrameHandler: MCPToolHandler = {
       backgroundColor
     });
 
-    // 直接操作响应式数组
+    // Mutate the reactive array directly
     const band = context.bands[bandIndex];
     if (band) {
       if (!band.elements) {
@@ -386,7 +386,7 @@ const createFrameHandler: MCPToolHandler = {
       }
       band.elements.push(newElement);
 
-      // 保存历史并更新JRXML
+      // Save history and update the JRXML
       context.saveStateToHistory();
       context.updateJRXML();
     }
@@ -402,27 +402,27 @@ const createFrameHandler: MCPToolHandler = {
 };
 
 // ============================================
-// 修改工具处理器
+// Modify tool handlers
 // ============================================
 
 const updateElementHandler: MCPToolHandler = {
   execute: async (params, context) => {
     const { uuid, properties } = params;
 
-    // 查找元素
+    // Find the element
     for (const band of context.bands) {
       const elementIndex = band.elements?.findIndex(e => e.uuid === uuid);
       if (elementIndex !== undefined && elementIndex !== -1) {
         const element = band.elements[elementIndex];
         if (element) {
-          // 更新属性
+          // Update properties
           Object.assign(element, properties);
 
-          // 保存历史并更新
+          // Save history and update
           context.saveStateToHistory();
           context.updateJRXML();
 
-          // 关键：强制触发Vue的响应式更新
+          // Key: force-trigger Vue's reactive update
           const newBands = [...context.bands];
           context.bands.length = 0;
           context.bands.push(...newBands);
@@ -448,19 +448,19 @@ const moveElementHandler: MCPToolHandler = {
   execute: async (params, context) => {
     const { uuid, x, y } = params;
 
-    // 查找元素
+    // Find the element
     for (const band of context.bands) {
       const element = band.elements?.find(e => e.uuid === uuid);
       if (element) {
-        // 更新位置
+        // Update position
         element.x = x;
         element.y = y;
 
-        // 保存历史并更新
+        // Save history and update
         context.saveStateToHistory();
         context.updateJRXML();
 
-        // 关键：强制触发Vue的响应式更新
+        // Key: force-trigger Vue's reactive update
         const newBands = [...context.bands];
         context.bands.length = 0;
         context.bands.push(...newBands);
@@ -482,7 +482,7 @@ const moveElementHandler: MCPToolHandler = {
 };
 
 // ============================================
-// 删除工具处理器
+// Delete tool handlers
 // ============================================
 
 const deleteElementHandler: MCPToolHandler = {
@@ -494,14 +494,14 @@ const deleteElementHandler: MCPToolHandler = {
 
       const elementIndex = band.elements.findIndex(e => e.uuid === uuid);
       if (elementIndex !== -1) {
-        // 删除元素
+        // Delete the element
         band.elements.splice(elementIndex, 1);
 
-        // 保存历史并更新
+        // Save history and update
         context.saveStateToHistory();
         context.updateJRXML();
 
-        // 关键：强制触发Vue的响应式更新
+        // Key: force-trigger Vue's reactive update
         const newBands = [...context.bands];
         context.bands.length = 0;
         context.bands.push(...newBands);
@@ -523,7 +523,7 @@ const deleteElementHandler: MCPToolHandler = {
 };
 
 // ============================================
-// 批量操作工具处理器
+// Batch operation tool handlers
 // ============================================
 
 const deleteElementsHandler: MCPToolHandler = {
@@ -652,7 +652,7 @@ const updateElementsStyleHandler: MCPToolHandler = {
 };
 
 // ============================================
-// 调整大小和对齐工具处理器
+// Resize and alignment tool handlers
 // ============================================
 
 const resizeElementHandler: MCPToolHandler = {
@@ -733,7 +733,7 @@ const alignElementsHandler: MCPToolHandler = {
     const { uuids, alignment } = params;
     const elements: Array<{ element: DesignElement; band: Band }> = [];
 
-    // 找出所有元素
+    // Find all elements
     for (const uuid of uuids) {
       for (const band of context.bands) {
         const element = band.elements?.find(e => e.uuid === uuid);
@@ -751,7 +751,7 @@ const alignElementsHandler: MCPToolHandler = {
       };
     }
 
-    // 根据对齐方式计算目标位置
+    // Compute the target position based on the alignment
     let targetValue: number;
     switch (alignment) {
       case 'left':
@@ -820,7 +820,7 @@ const distributeElementsHandler: MCPToolHandler = {
       };
     }
 
-    // 按位置排序
+    // Sort by position
     if (direction === 'horizontal') {
       elements.sort((a, b) => a.element.x - b.element.x);
       const totalWidth = elements.reduce((sum, e) => sum + e.element.width, 0);
@@ -880,13 +880,13 @@ const distributeElementsHandler: MCPToolHandler = {
 };
 
 // ============================================
-// 撤销/重做工具处理器
+// Undo/redo tool handlers
 // ============================================
 
 const undoHandler: MCPToolHandler = {
   execute: async (params, context) => {
     try {
-      // 调用父组件的undo功能
+      // Call the parent component's undo function
       if (typeof context.undo === 'function') {
         await context.undo();
         return {
@@ -935,7 +935,7 @@ const redoHandler: MCPToolHandler = {
 };
 
 // ============================================
-// 报表属性工具处理器
+// Report property tool handlers
 // ============================================
 
 const updateReportPropertiesHandler: MCPToolHandler = {
@@ -971,7 +971,7 @@ const addFieldHandler: MCPToolHandler = {
   execute: async (params, context) => {
     const { name, classType = 'java.lang.String', description } = params;
 
-    // 检查是否已存在同名字段
+    // Check whether a field with the same name already exists
     const exists = context.fields.some(f => f.name === name);
     if (exists) {
       return {
@@ -1034,7 +1034,7 @@ const updateBandHeightHandler: MCPToolHandler = {
   execute: async (params, context) => {
     const { bandType, height } = params;
 
-    // 查找band的索引
+    // Find the index of the band
     const bandIndex = context.bands.findIndex(b => b.type === bandType);
     if (bandIndex === -1) {
       return {
@@ -1043,12 +1043,12 @@ const updateBandHeightHandler: MCPToolHandler = {
       };
     }
 
-    // 更新高度
+    // Update the height
     const band = context.bands[bandIndex];
     if (band) {
       band.height = height;
 
-      // 保存历史并更新
+      // Save history and update
       context.saveStateToHistory();
       context.updateJRXML();
     }
@@ -1063,50 +1063,50 @@ const updateBandHeightHandler: MCPToolHandler = {
 };
 
 // ============================================
-// 工具处理器映射
+// Tool handler map
 // ============================================
 
 export const MCPToolHandlers: Record<string, MCPToolHandler> = {
-  // 查询工具
+  // Query tools
   'get_design_state': getDesignStateHandler,
   'get_element': getElementHandler,
   'find_elements': findElementsHandler,
-  // 创建工具
+  // Create tools
   'create_static_text': createStaticTextHandler,
   'create_text_field': createTextFieldHandler,
   'create_rectangle': createRectangleHandler,
   'create_frame': createFrameHandler,
-  // 修改工具
+  // Modify tools
   'update_element': updateElementHandler,
   'move_element': moveElementHandler,
-  // 删除工具
+  // Delete tools
   'delete_element': deleteElementHandler,
-  // Band操作工具
+  // Band operation tools
   'update_band_height': updateBandHeightHandler,
-  // 批量操作工具
+  // Batch operation tools
   'delete_elements': deleteElementsHandler,
   'move_elements': moveElementsHandler,
   'update_elements_style': updateElementsStyleHandler,
-  // 调整大小和对齐工具
+  // Resize and alignment tools
   'resize_element': resizeElementHandler,
   'resize_elements': resizeElementsHandler,
   'align_elements': alignElementsHandler,
   'distribute_elements': distributeElementsHandler,
-  // 撤销/重做工具
+  // Undo/redo tools
   'undo': undoHandler,
   'redo': redoHandler,
-  // 报表属性工具
+  // Report property tools
   'update_report_properties': updateReportPropertiesHandler,
   'add_field': addFieldHandler,
   'add_parameter': addParameterHandler
 };
 
 // ============================================
-// 工具执行接口
+// Tool execution interface
 // ============================================
 
 /**
- * 执行MCP工具
+ * Execute an MCP tool
  */
 export async function executeMCPTool(
   toolCall: MCPToolCall,
@@ -1132,7 +1132,7 @@ export async function executeMCPTool(
 }
 
 /**
- * 批量执行MCP工具
+ * Execute MCP tools in batch
  */
 export async function executeMCPToolsBatch(
   toolCalls: MCPToolCall[],
@@ -1144,7 +1144,7 @@ export async function executeMCPToolsBatch(
     const result = await executeMCPTool(toolCall, context);
     results.push(result);
 
-    // 如果某个工具执行失败，停止批量执行
+    // If a tool execution fails, stop the batch
     if (!result.success) {
       break;
     }

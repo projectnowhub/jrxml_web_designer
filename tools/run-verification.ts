@@ -1,12 +1,12 @@
 /**
- * JRXML官方库验证执行脚本
+ * JRXML official library verification execution script
  *
- * 这个脚本会：
- * 1. 检查Java环境
- * 2. 下载JasperReports库（如果不存在）
- * 3. 编译验证器
- * 4. 运行编译测试
- * 5. 输出详细结果
+ * This script will:
+ * 1. Check the Java environment
+ * 2. Download the JasperReports library (if not present)
+ * 3. Compile the validator
+ * 4. Run the compilation test
+ * 5. Output detailed results
  */
 
 import { exec } from 'child_process';
@@ -31,36 +31,36 @@ class JRXMLVerifier {
 
   async run(): Promise<void> {
     console.log('==========================================');
-    console.log('JRXML编译验证（JasperReports官方库）');
+    console.log('JRXML Compilation Verification (official JasperReports library)');
     console.log('==========================================\n');
 
     try {
-      // 步骤1：检查Java
-      console.log('步骤1: 检查Java环境');
+      // Step 1: check Java
+      console.log('Step 1: Checking the Java environment');
       await this.checkJava();
       console.log('');
 
-      // 步骤2：检查/下载JasperReports库
-      console.log('步骤2: 检查JasperReports库');
+      // Step 2: check/download the JasperReports library
+      console.log('Step 2: Checking the JasperReports library');
       await this.checkJasperReports();
       console.log('');
 
-      // 步骤3：编译验证器
-      console.log('步骤3: 编译JRXMLCompiler');
+      // Step 3: compile the validator
+      console.log('Step 3: Compiling JRXMLCompiler');
       await this.compileCompiler();
       console.log('');
 
-      // 步骤4：运行编译测试
-      console.log('步骤4: 运行编译测试');
+      // Step 4: run the compilation test
+      console.log('Step 4: Running the compilation test');
       await this.runCompilationTest();
       console.log('');
 
       console.log('==========================================');
-      console.log('✅ 验证完成！');
+      console.log('✅ Verification complete!');
       console.log('==========================================');
 
     } catch (error: any) {
-      console.error('\n❌ 验证失败:', error.message);
+      console.error('\n❌ Verification failed:', error.message);
       process.exit(1);
     }
   }
@@ -69,33 +69,33 @@ class JRXMLVerifier {
     try {
       const { stdout } = await execAsync('java -version');
       const version = stdout.split('\n')[0];
-      console.log(`✓ Java已安装: ${version}`);
+      console.log(`✓ Java is installed: ${version}`);
     } catch {
-      throw new Error('Java未安装。请安装Java JDK 8+');
+      throw new Error('Java is not installed. Please install Java JDK 8+');
     }
   }
 
   private async checkJasperReports(): Promise<void> {
     if (fs.existsSync(this.jasperReportsJar)) {
-      console.log(`✓ JasperReports库已存在: ${this.jasperReportsJar}`);
+      console.log(`✓ JasperReports library already exists: ${this.jasperReportsJar}`);
       return;
     }
 
-    console.log('⚠ JasperReports库不存在，尝试下载...');
+    console.log('⚠ JasperReports library not found, attempting to download...');
 
-    // 创建lib目录
+    // Create the lib directory
     if (!fs.existsSync(this.libDir)) {
       fs.mkdirSync(this.libDir, { recursive: true });
     }
 
     const url = `https://sourceforge.net/projects/jasperreports/files/jasperreports/${this.jasperReportsVersion}/jasperreports-${this.jasperReportsVersion}.jar/download`;
-    console.log(`下载地址: ${url}`);
+    console.log(`Download URL: ${url}`);
 
     try {
       await this.downloadFile(url, this.jasperReportsJar);
-      console.log('✓ 下载完成');
+      console.log('✓ Download complete');
     } catch (error: any) {
-      throw new Error(`下载JasperReports库失败: ${error.message}`);
+      throw new Error(`Failed to download the JasperReports library: ${error.message}`);
     }
   }
 
@@ -105,7 +105,7 @@ class JRXMLVerifier {
 
       https.get(url, (response) => {
         if (response.statusCode === 302 || response.statusCode === 301) {
-          // 跟随重定向
+          // Follow the redirect
           https.get(response.headers.location!, (redirectResponse) => {
             redirectResponse.pipe(file);
             file.on('finish', () => {
@@ -131,14 +131,14 @@ class JRXMLVerifier {
     try {
       const command = `javac -cp "${this.jasperReportsJar}" "${path.join(this.toolsDir, 'JRXMLCompiler.java')}"`;
       await execAsync(command);
-      console.log('✓ JRXMLCompiler编译成功');
+      console.log('✓ JRXMLCompiler compiled successfully');
     } catch (error: any) {
-      throw new Error(`编译JRXMLCompiler失败: ${error.message}`);
+      throw new Error(`Failed to compile JRXMLCompiler: ${error.message}`);
     }
   }
 
   private async runCompilationTest(): Promise<void> {
-    // 生成测试JRXML
+    // Generate the test JRXML
     const testDir = path.join(__dirname, '..', 'test-reports');
     const outputDir = path.join(__dirname, '..', 'test-compiled');
 
@@ -149,7 +149,7 @@ class JRXMLVerifier {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    // 生成测试文件
+    // Generate the test file
     const testJRXML = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -184,10 +184,10 @@ class JRXMLVerifier {
     const outputFile = path.join(outputDir, 'test_textfield.jasper');
 
     fs.writeFileSync(testFile, testJRXML, 'utf-8');
-    console.log(`✓ 测试JRXML已生成: ${testFile}`);
+    console.log(`✓ Test JRXML generated: ${testFile}`);
 
-    // 运行编译
-    console.log('\n正在编译...');
+    // Run the compilation
+    console.log('\nCompiling...');
     try {
       const command = `java -cp "${this.toolsDir}:${this.jasperReportsJar}" JRXMLCompiler "${testFile}" "${outputFile}"`;
       const { stdout, stderr } = await execAsync(command, {
@@ -198,23 +198,23 @@ class JRXMLVerifier {
 
       if (fs.existsSync(outputFile)) {
         const stats = fs.statSync(outputFile);
-        console.log(`✓ jasper文件已生成: ${outputFile} (${stats.size} bytes)`);
+        console.log(`✓ jasper file generated: ${outputFile} (${stats.size} bytes)`);
         console.log('\n==========================================');
-        console.log('✅ 编译成功！JRXML可以被JasperReports编译');
+        console.log('✅ Compilation succeeded! The JRXML can be compiled by JasperReports');
         console.log('==========================================');
       } else {
-        throw new Error('输出文件未生成');
+        throw new Error('Output file was not generated');
       }
     } catch (error: any) {
-      console.error('编译错误:', error.stderr || error.message);
-      throw new Error('JRXML编译失败');
+      console.error('Compilation error:', error.stderr || error.message);
+      throw new Error('JRXML compilation failed');
     }
   }
 }
 
-// 运行验证
+// Run the verification
 const verifier = new JRXMLVerifier();
 verifier.run().catch(error => {
-  console.error('致命错误:', error);
+  console.error('Fatal error:', error);
   process.exit(1);
 });

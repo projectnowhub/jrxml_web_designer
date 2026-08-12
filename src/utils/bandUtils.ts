@@ -1,16 +1,16 @@
-// Band相关的工具函数
+// Band-related utility functions
 
 import type { Band,BandType } from '@/types';
 import { BAND_TYPE_CONSTANTS, BAND_HEIGHT_CONSTANTS, BAND_CONSTANTS } from '@/constants/constants';
 import i18n from '@/i18n';
 
-// 获取Band的显示名称
+// Get the display name of a Band
 export function getBandDisplayName(bandType: string): string {
   // @ts-ignore
   return i18n.global.t(`bandNames.${bandType}`);
 }
 
-// 创建新Band
+// Create a new Band
 export function createNewBand(bandType: BandType): Band {
   return {
     type: bandType,
@@ -20,28 +20,28 @@ export function createNewBand(bandType: BandType): Band {
   };
 }
 
-// 获取Band的默认高度
+// Get the default height of a Band
 export function getBandDefaultHeight(bandType: BandType): number {
   return BAND_HEIGHT_CONSTANTS[bandType as keyof typeof BAND_HEIGHT_CONSTANTS] || 50;
 }
 
-// 检查点是否在Band内
+// Check whether a point is inside a Band
 export function isPointInBand(y: number, band: Band, bandY: number): boolean {
   return y >= bandY && y <= bandY + band.height;
 }
 
-// 获取Band在画布上的Y坐标
+// Get the Y coordinate of a Band on the canvas
 export function getBandYPosition(bands: Band[], targetBandType: string): number {
   let y = 0;
-  const bandSpacing = BAND_CONSTANTS.SPACING; // band之间的间距
+  const bandSpacing = BAND_CONSTANTS.SPACING; // spacing between bands
   let bandCount = 0;
-  
+
   for (const band of bands) {
     if (band.type === targetBandType) {
       return y;
     }
     y += band.height;
-    // 在band之间添加间距，但不在最后一个band后添加
+    // Add spacing between bands, but not after the last band
     if (bandCount < bands.length - 1) {
       y += bandSpacing;
     }
@@ -50,22 +50,22 @@ export function getBandYPosition(bands: Band[], targetBandType: string): number 
   return y;
 }
 
-// 获取指定Y坐标所在的Band
+// Get the Band located at a given Y coordinate
 export function getBandAtY(bands: Band[], y: number): { band: Band | null, bandY: number } {
   let currentY = 0;
-  const bandSpacing = BAND_CONSTANTS.SPACING; // band之间的间距
-  
+  const bandSpacing = BAND_CONSTANTS.SPACING; // spacing between bands
+
   for (let i = 0; i < bands.length; i++) {
     const band = bands[i];
     if (!band) continue;
-    
+
     const bandBottom = currentY + band.height;
-    
+
     if (y >= currentY && y <= bandBottom) {
       return { band, bandY: currentY };
     }
     currentY += band.height;
-    // 在band之间添加间距，但不在最后一个band后添加
+    // Add spacing between bands, but not after the last band
     if (i < bands.length - 1) {
       currentY += bandSpacing;
     }
@@ -73,55 +73,55 @@ export function getBandAtY(bands: Band[], y: number): { band: Band | null, bandY
   return { band: null, bandY: currentY };
 }
 
-// 获取所有Band的总高度
+// Get the total height of all Bands
 export function getTotalBandsHeight(bands: Band[]): number {
   if (bands.length === 0) return 0;
-  
-  const bandSpacing = BAND_CONSTANTS.SPACING; // band之间的间距
+
+  const bandSpacing = BAND_CONSTANTS.SPACING; // spacing between bands
   const totalBandHeight = bands.reduce((total, band) => total + band.height, 0);
-  const totalSpacing = (bands.length - 1) * bandSpacing; // 只在band之间添加间距
-  
+  const totalSpacing = (bands.length - 1) * bandSpacing; // only add spacing between bands
+
   return totalBandHeight + totalSpacing;
 }
 
-// 调整Band高度
+// Adjust the height of a Band
 export function adjustBandHeight(bands: Band[], bandType: string, newHeight: number): Band[] {
-  return bands.map(band => 
+  return bands.map(band =>
     band.type === bandType ? { ...band, height: newHeight } : band
   );
 }
 
 
-// 添加新Band到指定位置
+// Add a new Band at a given position
 export function addBandAtPosition(bands: Band[], bandType: BandType, position?: number): Band[] {
   const newBand = createNewBand(bandType);
-  
+
   if (position === undefined) {
-    // 如果没有指定位置，添加到末尾
+    // If no position is specified, add to the end
     return [...bands, newBand];
   }
-  
-  // 在指定位置插入
+
+  // Insert at the specified position
   const newBands = [...bands];
   newBands.splice(position, 0, newBand);
   return newBands;
 }
 
-// 删除Band
+// Remove a Band
 export function removeBand(bands: Band[], bandType: string): Band[] {
   return bands.filter(band => band.type !== bandType);
 }
 
-// 检查Band是否存在
+// Check whether a Band exists
 export function bandExists(bands: Band[], bandType: string): boolean {
   return bands.some(band => band.type === bandType);
 }
 
-// 获取Band的分割类型选项
+// Get the split type options for a Band
 export function getBandSplitOptions(): Array<{ value: string, label: string }> {
   return [
-    { value: 'Stretch', label: '拉伸' },
-    { value: 'Prevent', label: '防止' },
-    { value: 'Immediate', label: '立即' },
+    { value: 'Stretch', label: 'Stretch' },
+    { value: 'Prevent', label: 'Prevent' },
+    { value: 'Immediate', label: 'Immediate' },
   ];
 }

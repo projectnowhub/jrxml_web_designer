@@ -1,10 +1,10 @@
-// 测试表格元素拖入设计区后是否生成 jr:columnHeader 标签
+// Test whether jr:columnHeader tags are generated when a table element is dragged into the design area
 import { describe, it, expect } from 'vitest';
 import { generateJRXMLContent } from '../src/utils/jrxmlGenerator';
 
 describe('Table Column Header Generation', () => {
   it('should generate jr:columnHeader when table is dragged to design area', () => {
-    // 模拟一个拖入设计区的表格元素
+    // Simulate a table element dragged into the design area
     const mockTableElement = {
       type: 'table',
       x: 0,
@@ -67,10 +67,10 @@ describe('Table Column Header Generation', () => {
           }
         }
       ],
-      children: [] // 没有组合列
+      children: [] // no grouped columns
     };
 
-    // 模拟报表属性
+    // Simulate report properties
     const mockProperties = {
       name: 'TestReport',
       pageWidth: 595,
@@ -87,7 +87,7 @@ describe('Table Column Header Generation', () => {
       isSummaryNewPage: false
     };
 
-    // 模拟bands
+    // Simulate bands
     const mockBands = [
       {
         type: 'detail',
@@ -96,7 +96,7 @@ describe('Table Column Header Generation', () => {
       }
     ];
 
-    // 模拟fields
+    // Simulate fields
     const mockFields = [
       {
         name: 'FIELD_NAME',
@@ -104,20 +104,20 @@ describe('Table Column Header Generation', () => {
       }
     ];
 
-    // 生成JRXML
+    // Generate JRXML
     const jrxmlContent = generateJRXMLContent(mockProperties, mockBands, mockFields);
 
-    // 打印生成的JRXML
+    // Print the generated JRXML
     console.log('Generated JRXML:');
     console.log(jrxmlContent);
 
-    // 检查是否包含 jr:columnHeader 标签
+    // Check whether the jr:columnHeader tag is included
     expect(jrxmlContent).toContain('<jr:columnHeader');
     console.log('✅ SUCCESS: Table column header is generated correctly');
   });
 
   it('should generate jr:columnHeader for tables with children array (like dragged from library)', () => {
-    // 模拟从元素库拖入的表格元素，包含完整的children结构
+    // Simulate a table element dragged in from the element library, with a full children structure
     const mockTableFromLibrary = {
       type: 'table',
       x: 0,
@@ -128,7 +128,7 @@ describe('Table Column Header Generation', () => {
         uuid: 'test-dataset-uuid',
         name: 'tableDataset'
       },
-      // 从元素库拖入的表格可能同时有 children 和 columns 属性
+      // A table dragged from the element library may have both children and columns properties
       children: [
         {
           uuid: 'column1-uuid',
@@ -231,7 +231,7 @@ describe('Table Column Header Generation', () => {
           }
         }
       ],
-      // 同时保留原始的 columns 属性
+      // The original columns property is also retained
       columns: [
         {
           uuid: 'column1-uuid',
@@ -246,7 +246,7 @@ describe('Table Column Header Generation', () => {
       ]
     };
 
-    // 模拟报表属性
+    // Simulate report properties
     const mockProperties = {
       name: 'TestReport',
       pageWidth: 595,
@@ -263,7 +263,7 @@ describe('Table Column Header Generation', () => {
       isSummaryNewPage: false
     };
 
-    // 模拟bands
+    // Simulate bands
     const mockBands = [
       {
         type: 'detail',
@@ -272,7 +272,7 @@ describe('Table Column Header Generation', () => {
       }
     ];
 
-    // 模拟fields
+    // Simulate fields
     const mockFields = [
       {
         name: 'FIELD_NAME',
@@ -280,21 +280,21 @@ describe('Table Column Header Generation', () => {
       }
     ];
 
-    // 生成JRXML
-    console.log('\n=== 测试: 从元素库拖入的表格（包含children和columns属性）===');
-    console.log('表格元素结构:');
-    console.log('- children 数量:', mockTableFromLibrary.children.length);
-    console.log('- columns 数量:', mockTableFromLibrary.columns.length);
+    // Generate JRXML
+    console.log('\n=== Test: table dragged from the element library (has both children and columns properties) ===');
+    console.log('Table element structure:');
+    console.log('- children count:', mockTableFromLibrary.children.length);
+    console.log('- columns count:', mockTableFromLibrary.columns.length);
 
     const jrxmlContent = generateJRXMLContent(mockProperties, mockBands, mockFields);
-    console.log('\n生成的JRXML:');
+    console.log('\nGenerated JRXML:');
     console.log(jrxmlContent);
 
-    // 检查是否包含 jr:columnHeader 标签
+    // Check whether the jr:columnHeader tag is included
     const columnHeaderCount = (jrxmlContent.match(/<jr:columnHeader/g) || []).length;
-    console.log('\n=== 检查结果 ===');
-    console.log(`生成了 ${columnHeaderCount} 个 jr:columnHeader 标签`);
-    
+    console.log('\n=== Check result ===');
+    console.log(`Generated ${columnHeaderCount} jr:columnHeader tag(s)`);
+
     expect(jrxmlContent).toContain('<jr:columnHeader');
     console.log('✅ SUCCESS: Table column headers are generated correctly for library-dragged table');
   });

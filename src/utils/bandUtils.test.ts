@@ -166,9 +166,9 @@ describe('bandUtils', () => {
       const options = getBandSplitOptions();
       expect(options).toHaveLength(3);
       expect(options).toEqual([
-        { value: 'Stretch', label: '拉伸' },
-        { value: 'Prevent', label: '防止' },
-        { value: 'Immediate', label: '立即' }
+        { value: 'Stretch', label: 'Stretch' },
+        { value: 'Prevent', label: 'Prevent' },
+        { value: 'Immediate', label: 'Immediate' }
       ]);
     });
   });

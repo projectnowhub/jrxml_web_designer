@@ -37,7 +37,7 @@
         </select>
         <div v-if="errors.class" class="error-message">{{ errors.class }}</div>
       </div>
-      <!-- 为报表参数添加默认值字段 -->
+      <!-- Add a default value field for report parameters -->
       <div v-if="props.isParameter" class="form-group">
         <label for="defaultValue">{{ t('elementLibrary.defaultValue') }}</label>
         <input 

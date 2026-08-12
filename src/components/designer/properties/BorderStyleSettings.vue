@@ -67,7 +67,7 @@ const emit = defineEmits<{
   'change': []
 }>()
 
-// 计算属性：边框样式
+// Computed property: border style
 const borderStyle = computed({
   get: () => {
     if ('borderStyle' in props.modelValue) {
@@ -89,7 +89,7 @@ const borderStyle = computed({
   }
 });
 
-// 计算属性：边框宽度
+// Computed property: border width
 const borderWidth = computed({
   get: () => {
     if ('borderWidth' in props.modelValue) {
@@ -111,7 +111,7 @@ const borderWidth = computed({
   }
 });
 
-// 计算属性：边框颜色
+// Computed property: border color
 const borderColor = computed({
   get: () => {
     if ('borderColor' in props.modelValue) {

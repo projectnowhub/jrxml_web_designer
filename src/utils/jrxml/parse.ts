@@ -23,17 +23,17 @@ export function parseJRXMLContent(jrxmlContent: string): {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(jrxmlContent, "text/xml");
 
-  // 直接使用根元素作为jasperReport元素，不严格验证tagName，因为解析器可能会添加命名空间前缀
+  // Use the root element directly as the jasperReport element, without strictly validating tagName, since the parser may add a namespace prefix
   const jasperReportElem = xmlDoc.documentElement;
   if (!jasperReportElem) {
     throw new Error("Invalid JRXML: Missing root element");
   }
 
-  // 解析主报表查询字符串 - 只查找直接子元素
+  // Parse the main report's query string - only look at direct children
   let query: { language: string; text: string } | undefined;
   let queryStringElem = null;
 
-  // 1. 先查找直接子元素中的queryString（不带命名空间）
+  // 1. First look for a queryString among the direct children (without namespace)
   for (const child of Array.from(jasperReportElem.children)) {
     if (child.tagName === "queryString") {
       queryStringElem = child;
@@ -41,15 +41,15 @@ export function parseJRXMLContent(jrxmlContent: string): {
     }
   }
 
-  // 2. 如果没找到，尝试查找带命名空间的直接子元素
+  // 2. If not found, try looking for a namespaced direct child
   if (!queryStringElem) {
-    // 尝试使用getElementsByTagNameNS查找直接子元素
+    // Try using getElementsByTagNameNS to find a direct child
     const nsChildren = jasperReportElem.getElementsByTagNameNS(
       "http://jasperreports.sourceforge.net/jasperreports",
       "queryString",
     );
     if (nsChildren.length > 0) {
-      // 确保是直接子元素
+      // Ensure it's a direct child
       for (let i = 0; i < nsChildren.length; i++) {
         const child = nsChildren[i];
         if (child) {
@@ -63,7 +63,7 @@ export function parseJRXMLContent(jrxmlContent: string): {
     }
   }
 
-  // 3. 如果没找到，尝试通过localName匹配直接子元素
+  // 3. If still not found, try matching a direct child by localName
   if (!queryStringElem) {
     queryStringElem =
       Array.from(jasperReportElem.children).find(
@@ -105,17 +105,17 @@ export function parseJRXMLContent(jrxmlContent: string): {
   };
 
   const fields: Field[] = [];
-  // 只获取根元素直接子元素中的field元素，不包括数据集内部的字段
+  // Only collect field elements that are direct children of the root element, excluding fields inside datasets
   Array.from(jasperReportElem.children).forEach((child) => {
     if (child.tagName === "field" || child.localName === "field") {
       const name = child.getAttribute("name");
       const className = child.getAttribute("class") || "java.lang.String";
       if (name) {
         const field: Field = { name, class: className };
-        // 提取UUID（如果存在）
+        // Extract the UUID (if present)
         const uuid = child.getAttribute("uuid");
         if (uuid) field.uuid = uuid;
-        // 提取properties（如果存在）
+        // Extract properties (if present)
         const properties: Record<string, string> = {};
         const propertyElems = child.querySelectorAll("property");
         propertyElems.forEach((propElem) => {
@@ -134,25 +134,25 @@ export function parseJRXMLContent(jrxmlContent: string): {
   });
 
   const parameters: Parameter[] = [];
-  // 只获取根元素直接子元素中的parameter元素，不包括数据集内部的参数
+  // Only collect parameter elements that are direct children of the root element, excluding parameters inside datasets
   Array.from(jasperReportElem.children).forEach((child) => {
     if (child.tagName === "parameter" || child.localName === "parameter") {
       const name = child.getAttribute("name");
       const className = child.getAttribute("class") || "java.lang.String";
       if (name) {
         const param: Parameter = { name, class: className };
-        // 提取UUID（如果存在）
+        // Extract the UUID (if present)
         const uuid = child.getAttribute("uuid");
         if (uuid) param.uuid = uuid;
-        // 提取isForPrompting（如果存在，默认true）
+        // Extract isForPrompting (if present; defaults to true)
         if (child.hasAttribute("isForPrompting")) {
           param.isForPrompting = child.getAttribute("isForPrompting") === "true";
         }
-        // 提取nested（如果存在，默认false）
+        // Extract nested (if present; defaults to false)
         if (child.hasAttribute("nested")) {
           param.nested = child.getAttribute("nested") === "true";
         }
-        // 提取parameterDescription（如果存在）
+        // Extract parameterDescription (if present)
         const descElem = child.querySelector("parameterDescription");
         if (descElem && descElem.textContent) {
           param.parameterDescription = descElem.textContent.trim();
@@ -181,10 +181,10 @@ export function parseJRXMLContent(jrxmlContent: string): {
   ];
 
   bandTypes.forEach((type) => {
-    // 查找band容器元素，考虑命名空间
+    // Find the band container element, accounting for namespaces
     let bandContainer = xmlDoc.querySelector(`${type}`);
     if (!bandContainer) {
-      // 尝试使用getElementsByTagNameNS，将undefined转换为null
+      // Try getElementsByTagNameNS, converting undefined to null
       bandContainer =
         xmlDoc.getElementsByTagNameNS(
           "http://jasperreports.sourceforge.net/jasperreports",
@@ -192,7 +192,7 @@ export function parseJRXMLContent(jrxmlContent: string): {
         )[0] || null;
     }
     if (!bandContainer) {
-      // 尝试使用localName匹配所有元素，将undefined转换为null
+      // Try matching all elements by localName, converting undefined to null
       const allElements = xmlDoc.getElementsByTagName("*");
       bandContainer =
         Array.from(allElements).find((element) => element.localName === type) ||
@@ -200,10 +200,10 @@ export function parseJRXMLContent(jrxmlContent: string): {
     }
     if (!bandContainer) return;
 
-    // 查找band元素，考虑命名空间
+    // Find the band element, accounting for namespaces
     let bandElem = bandContainer.querySelector("band");
     if (!bandElem) {
-      // 尝试使用getElementsByTagNameNS，将undefined转换为null
+      // Try getElementsByTagNameNS, converting undefined to null
       bandElem =
         bandContainer.getElementsByTagNameNS(
           "http://jasperreports.sourceforge.net/jasperreports",
@@ -211,7 +211,7 @@ export function parseJRXMLContent(jrxmlContent: string): {
         )[0] || null;
     }
     if (!bandElem) {
-      // 尝试使用localName匹配，将undefined转换为null
+      // Try matching by localName, converting undefined to null
       const containerChildren = Array.from(bandContainer.children);
       bandElem =
         containerChildren.find(
@@ -239,7 +239,7 @@ export function parseJRXMLContent(jrxmlContent: string): {
     bands.push(band);
   });
 
-  // 解析子数据集
+  // Parse sub-datasets
   const datasets: SubDataset[] = [];
   Array.from(jasperReportElem.children).forEach((child) => {
     if (child.tagName === "subDataset" || child.localName === "subDataset") {
@@ -248,7 +248,7 @@ export function parseJRXMLContent(jrxmlContent: string): {
     }
   });
 
-  // 解析报表变量
+  // Parse report variables
   const variables: Variable[] = [];
   Array.from(jasperReportElem.children).forEach((child) => {
     if (child.tagName === "variable" || child.localName === "variable") {
@@ -256,20 +256,20 @@ export function parseJRXMLContent(jrxmlContent: string): {
       const className = child.getAttribute("class") || "java.lang.String";
       if (name) {
         const variable: Variable = { name, class: className };
-        // 提取UUID（如果存在）
+        // Extract the UUID (if present)
         const uuid = child.getAttribute("uuid");
         if (uuid) variable.uuid = uuid;
         const calcType = child.getAttribute("calculation");
         if (calcType) variable.calculationType = calcType;
-        // 提取incrementType（如果存在，默认"None"）
+        // Extract incrementType (if present; defaults to "None")
         if (child.hasAttribute("incrementType")) {
           variable.incrementType = child.getAttribute("incrementType") || "None";
         }
-        // 提取incrementGroup（如果存在）
+        // Extract incrementGroup (if present)
         if (child.hasAttribute("incrementGroup")) {
           variable.incrementGroup = child.getAttribute("incrementGroup") || undefined;
         }
-        // 提取calculationGroup（如果存在）
+        // Extract calculationGroup (if present)
         if (child.hasAttribute("calculationGroup")) {
           variable.calculationGroup = child.getAttribute("calculationGroup") || undefined;
         }
@@ -277,7 +277,7 @@ export function parseJRXMLContent(jrxmlContent: string): {
         if (resetType) variable.resetType = resetType;
         const resetGroup = child.getAttribute("resetGroup");
         if (resetGroup) variable.resetGroup = resetGroup;
-        // 提取isInitialized（如果存在，默认false）
+        // Extract isInitialized (if present; defaults to false)
         if (child.hasAttribute("isInitialized")) {
           variable.isInitialized = child.getAttribute("isInitialized") === "true";
         }
@@ -292,7 +292,7 @@ export function parseJRXMLContent(jrxmlContent: string): {
     }
   });
 
-  // 解析报表分组
+  // Parse report groups
   const groups: ReportGroup[] = [];
   Array.from(jasperReportElem.children).forEach((child) => {
     if (child.tagName === "group" || child.localName === "group") {
@@ -304,28 +304,28 @@ export function parseJRXMLContent(jrxmlContent: string): {
         expression: "",
       };
 
-      // 提取UUID（如果存在）
+      // Extract the UUID (if present)
       const uuid = child.getAttribute("uuid");
       if (uuid) group.uuid = uuid;
 
-      // 解析分组表达式
+      // Parse the group expression
       const groupExpression = child.querySelector("groupExpression");
       if (groupExpression && groupExpression.textContent) {
         group.expression = groupExpression.textContent.trim();
       }
 
-      // 解析分组属性
+      // Parse group attributes
       if (child.hasAttribute("isStartNewPage")) {
         group.isStartNewPage = child.getAttribute("isStartNewPage") === "true";
       }
-      // 提取isStartNewColumn（如果存在，默认false）
+      // Extract isStartNewColumn (if present; defaults to false)
       if (child.hasAttribute("isStartNewColumn")) {
         group.isStartNewColumn = child.getAttribute("isStartNewColumn") === "true";
       }
       if (child.hasAttribute("isRepeatHeader")) {
         group.isRepeatHeader = child.getAttribute("isRepeatHeader") === "true";
       }
-      // 提取isReprintHeaderOnEachPage（如果存在，默认false）
+      // Extract isReprintHeaderOnEachPage (if present; defaults to false)
       if (child.hasAttribute("isReprintHeaderOnEachPage")) {
         group.isReprintHeaderOnEachPage = child.getAttribute("isReprintHeaderOnEachPage") === "true";
       }
@@ -333,24 +333,24 @@ export function parseJRXMLContent(jrxmlContent: string): {
         group.isResetPageNumber =
           child.getAttribute("isResetPageNumber") === "true";
       }
-      // 提取isHideColumnHeader（如果存在，默认false）
+      // Extract isHideColumnHeader (if present; defaults to false)
       if (child.hasAttribute("isHideColumnHeader")) {
         group.isHideColumnHeader = child.getAttribute("isHideColumnHeader") === "true";
       }
-      // 提取isKeepTogether（如果存在，默认false）
+      // Extract isKeepTogether (if present; defaults to false)
       if (child.hasAttribute("isKeepTogether")) {
         group.isKeepTogether = child.getAttribute("isKeepTogether") === "true";
       }
-      // 提取isKeepFooterTogether（如果存在，默认false）
+      // Extract isKeepFooterTogether (if present; defaults to false)
       if (child.hasAttribute("isKeepFooterTogether")) {
         group.isKeepFooterTogether = child.getAttribute("isKeepFooterTogether") === "true";
       }
-      // 提取minHeightToStartNewPage（如果存在，默认0）
+      // Extract minHeightToStartNewPage (if present; defaults to 0)
       if (child.hasAttribute("minHeightToStartNewPage")) {
         group.minHeightToStartNewPage = parseInt(child.getAttribute("minHeightToStartNewPage") || "0");
       }
 
-      // 解析分组头 (groupHeader)
+      // Parse the group header (groupHeader)
       const groupHeaderElem = child.querySelector("groupHeader");
       if (groupHeaderElem) {
         const headerBandElem = groupHeaderElem.querySelector("band");
@@ -365,7 +365,7 @@ export function parseJRXMLContent(jrxmlContent: string): {
         }
       }
 
-      // 解析分组脚 (groupFooter)
+      // Parse the group footer (groupFooter)
       const groupFooterElem = child.querySelector("groupFooter");
       if (groupFooterElem) {
         const footerBandElem = groupFooterElem.querySelector("band");
@@ -384,7 +384,7 @@ export function parseJRXMLContent(jrxmlContent: string): {
     }
   });
 
-  // 解析报表样式
+  // Parse report styles
   const styles: ReportStyle[] = [];
   Array.from(jasperReportElem.children).forEach((child) => {
     if (child.tagName === "style" || child.localName === "style") {
@@ -476,7 +476,7 @@ export function parseJRXMLContent(jrxmlContent: string): {
     }
   });
 
-  // 解析报表级别 <property> 元素
+  // Parse report-level <property> elements
   const reportProperties: Array<{ name: string; value: string }> = [];
   Array.from(jasperReportElem.children).forEach((child) => {
     if (child.tagName === "property" || child.localName === "property") {
@@ -501,11 +501,11 @@ export function parseJRXMLContent(jrxmlContent: string): {
   };
 }
 
-// 解析子数据集元素
+// Parse a sub-dataset element
 function parseSubDataset(subDatasetElem: Element): SubDataset {
   const name = subDatasetElem.getAttribute("name") || "UnnamedDataset";
 
-  // 解析数据集属性
+  // Parse dataset properties
   const properties: Record<string, string> = {};
   Array.from(subDatasetElem.children).forEach((child) => {
     if (child.tagName === "property" || child.localName === "property") {
@@ -517,11 +517,11 @@ function parseSubDataset(subDatasetElem: Element): SubDataset {
     }
   });
 
-  // 解析查询字符串 - 只查找直接子元素
+  // Parse the query string - only look at direct children
   let query: { language: string; text: string } | undefined;
   let queryStringElem = null;
 
-  // 1. 先查找直接子元素中的queryString（不带命名空间）
+  // 1. First look for a queryString among the direct children (without namespace)
   for (const child of Array.from(subDatasetElem.children)) {
     if (child.tagName === "queryString") {
       queryStringElem = child;
@@ -529,15 +529,15 @@ function parseSubDataset(subDatasetElem: Element): SubDataset {
     }
   }
 
-  // 2. 如果没找到，尝试查找带命名空间的直接子元素
+  // 2. If not found, try looking for a namespaced direct child
   if (!queryStringElem) {
-    // 尝试使用getElementsByTagNameNS查找直接子元素
+    // Try using getElementsByTagNameNS to find a direct child
     const nsChildren = subDatasetElem.getElementsByTagNameNS(
       "http://jasperreports.sourceforge.net/jasperreports",
       "queryString",
     );
     if (nsChildren.length > 0) {
-      // 确保是直接子元素
+      // Ensure it's a direct child
       for (let i = 0; i < nsChildren.length; i++) {
         const child = nsChildren[i];
         if (child) {
@@ -551,7 +551,7 @@ function parseSubDataset(subDatasetElem: Element): SubDataset {
     }
   }
 
-  // 3. 如果没找到，尝试通过localName匹配直接子元素
+  // 3. If still not found, try matching a direct child by localName
   if (!queryStringElem) {
     queryStringElem =
       Array.from(subDatasetElem.children).find(
@@ -564,14 +564,14 @@ function parseSubDataset(subDatasetElem: Element): SubDataset {
     query = { language, text };
   }
 
-  // 解析数据集内部的字段
+  // Parse the fields inside the dataset
   const fields: Field[] = [];
   Array.from(subDatasetElem.children).forEach((child) => {
     if (child.tagName === "field" || child.localName === "field") {
       const fieldName = child.getAttribute("name");
       const className = child.getAttribute("class") || "java.lang.String";
       if (fieldName) {
-        // 解析字段属性
+        // Parse field properties
         const fieldProperties: Record<string, string> = {};
         Array.from(child.children).forEach((fieldChild) => {
           if (
@@ -595,7 +595,7 @@ function parseSubDataset(subDatasetElem: Element): SubDataset {
     }
   });
 
-  // 解析数据集内部的参数
+  // Parse the parameters inside the dataset
   const parameters: Parameter[] = [];
   Array.from(subDatasetElem.children).forEach((child) => {
     if (child.tagName === "parameter" || child.localName === "parameter") {
@@ -632,7 +632,7 @@ function parseBandElements(bandElem: Element): any[] {
     "crosstab",
   ];
   
-  // 图表类型的标签名映射
+  // Mapping of chart tag names to chart types
   const chartTagNames = [
     'pieChart', 'pie3DChart', 'barChart', 'bar3DChart', 'xyBarChart',
     'stackedBarChart', 'stackedBar3DChart', 'lineChart', 'xyLineChart',
@@ -641,12 +641,12 @@ function parseBandElements(bandElem: Element): any[] {
     'meterChart', 'thermometerChart', 'multiAxisChart', 'ganttChart', 'spiderChart'
   ];
 
-  // 遍历直接子元素，而不是使用 querySelectorAll（避免递归查找嵌套元素）
-  // 这也保留了元素的Z-order（堆叠顺序）
+  // Iterate direct children rather than using querySelectorAll (avoids recursively finding nested elements)
+  // This also preserves the elements' Z-order (stacking order)
   Array.from(bandElem.children).forEach((child) => {
     const elementType = child.localName || child.tagName;
 
-    // 检查是否是图表类型标签
+    // Check whether this is a chart-type tag
     if (chartTagNames.includes(elementType)) {
       const parsedElement = parseElement(child, 'chart');
       if (parsedElement) {
@@ -658,7 +658,7 @@ function parseBandElements(bandElem: Element): any[] {
         elements.push(parsedElement);
       }
     } else if (elementType === "componentElement") {
-      // 处理组件元素，特别是表格
+      // Handle component elements, notably tables
       const parsedComponent = parseComponentElement(child);
       if (parsedComponent) {
         elements.push(parsedComponent);
@@ -669,15 +669,15 @@ function parseBandElements(bandElem: Element): any[] {
   return elements;
 }
 
-// 解析组件元素，主要用于表格
+// Parse a component element, mainly used for tables
 function parseComponentElement(componentElem: Element): any {
   const reportElement = componentElem.querySelector("reportElement");
   if (!reportElement) return null;
 
-  // 查找表格元素 - 支持带命名空间和不带命名空间的table元素
+  // Find the table element - supports table elements with or without a namespace
   let tableElem = null;
 
-  // 1. 首先查找直接子元素
+  // 1. First look at direct children
   for (const child of Array.from(componentElem.children)) {
     if (
       child.tagName === "jr:table" ||
@@ -689,12 +689,12 @@ function parseComponentElement(componentElem: Element): any {
     }
   }
 
-  // 2. 如果没找到，尝试使用querySelector
+  // 2. If not found, try using querySelector
   if (!tableElem) {
     tableElem = componentElem.querySelector("table");
   }
 
-  // 3. 如果还是没找到，尝试查找所有后代元素
+  // 3. If still not found, try searching all descendant elements
   if (!tableElem) {
     const allDescendants = componentElem.getElementsByTagName("*");
     for (const descendant of Array.from(allDescendants)) {
@@ -710,19 +710,19 @@ function parseComponentElement(componentElem: Element): any {
   }
 
   if (tableElem) {
-    // 解析表格
+    // Parse the table
     return parseTableElement(tableElem, reportElement);
   }
 
-  // 查找barcode4j元素 - 支持带命名空间和不带命名空间
+  // Find a barcode4j element - supports with or without a namespace prefix
   const barcodeTypes = ['Code128', 'Code39', 'EAN13', 'EAN8', 'UPCA', 'UPCE', 'QRCode', 'DataMatrix', 'Interleaved2Of5', 'Codabar', 'EAN128', 'PDF417', 'POSTNET', 'RoyalMailCustomer', 'USPSIntelligentMail'];
-  
+
   for (const child of Array.from(componentElem.children)) {
     const childLocalName = child.localName || child.tagName;
-    // 检查是否是barcode4j元素（带或不带命名空间前缀）
+    // Check whether this is a barcode4j element (with or without a namespace prefix)
     for (const barcodeType of barcodeTypes) {
       if (childLocalName === barcodeType || child.tagName === `c:${barcodeType}`) {
-        // 解析barcode元素
+        // Parse the barcode element
         const codeExprElem = child.querySelector("codeExpression");
         const codeExpression = codeExprElem ? codeExprElem.textContent?.trim() || '' : '';
         
@@ -741,7 +741,7 @@ function parseComponentElement(componentElem: Element): any {
     }
   }
 
-  // 查找map元素
+  // Find a map element
   for (const child of Array.from(componentElem.children)) {
     const childLocalName = child.localName || child.tagName;
     if (childLocalName === 'map' || child.tagName === 'm:map') {
@@ -767,7 +767,7 @@ function parseComponentElement(componentElem: Element): any {
     }
   }
 
-  // 查找iconLabel元素
+  // Find an iconLabel element
   for (const child of Array.from(componentElem.children)) {
     const childLocalName = child.localName || child.tagName;
     if (childLocalName === 'iconLabel' || child.tagName === 'c:iconLabel') {
@@ -786,7 +786,7 @@ function parseComponentElement(componentElem: Element): any {
     }
   }
 
-  // 查找sort元素
+  // Find a sort element
   for (const child of Array.from(componentElem.children)) {
     const childLocalName = child.localName || child.tagName;
     if (childLocalName === 'sort' || child.tagName === 'c:sort') {
@@ -814,12 +814,12 @@ function parseComponentElement(componentElem: Element): any {
   return null;
 }
 
-// 解析表格单元格内容
+// Parse the contents of a table cell
 function parseCellContent(cellElem: Element): any {
-  // 解析单元格高度
+  // Parse the cell height
   const height = parseInt(cellElem.getAttribute("height") || "30");
 
-  // 解析单元格内的元素
+  // Parse the elements inside the cell
   const elements: any[] = [];
   const validElementTypes = [
     "staticText",
@@ -846,7 +846,7 @@ function parseCellContent(cellElem: Element): any {
     }
   });
 
-  // 返回包装为 { enable, element } 格式，与生成器期望一致
+  // Return wrapped in the { enable, element } format, matching what the generator expects
   if (elements.length > 0) {
     return {
       enable: true,
@@ -857,7 +857,7 @@ function parseCellContent(cellElem: Element): any {
     };
   }
 
-  // 默认静态文本元素
+  // Default static text element
   return {
     enable: true,
     element: {
@@ -873,12 +873,12 @@ function parseCellContent(cellElem: Element): any {
   };
 }
 
-// 解析表格列元素
+// Parse a table column element
 function parseColumnElement(columnElem: Element, index: number): any {
   const columnWidth = parseInt(columnElem.getAttribute("width") || "100");
   const columnUuid = columnElem.getAttribute("uuid") || crypto.randomUUID();
 
-  // 解析表头、列头和详情单元格 - 支持带命名空间和不带命名空间的单元格元素
+  // Parse the table header, column header, and detail cells - supports cell elements with or without a namespace
   const tableHeaderElem = Array.from(columnElem.children).find(
     (cell) => cell.localName === "tableHeader",
   );
@@ -895,11 +895,11 @@ function parseColumnElement(columnElem: Element, index: number): any {
     (cell) => cell.localName === "detailCell",
   );
 
-  // 解析rowSpan属性
+  // Parse the rowSpan attribute
   const parseCellWithRowSpan = (cellElem: Element | undefined) => {
     if (!cellElem) return null;
     const cellContent = parseCellContent(cellElem);
-    // 捕获rowSpan属性，默认值为1
+    // Capture the rowSpan attribute, defaulting to 1
     cellContent.rowSpan = parseInt(cellElem.getAttribute("rowSpan") || "1");
     return cellContent;
   };
@@ -920,21 +920,21 @@ function parseColumnElement(columnElem: Element, index: number): any {
     ? parseCellWithRowSpan(detailCellElem)
     : null;
 
-  // 获取列名 - 从columnHeader中的文本元素获取
+  // Get the column name - from a text element inside columnHeader
   let columnName = "";
 
-  // 先尝试从columnHeader中获取列名（通过 .element 子对象访问）
+  // First try to get the column name from columnHeader (accessed via the .element sub-object)
   if (columnHeader) {
     const elem = columnHeader.element || columnHeader;
     if (elem.type === "staticText") {
       columnName = elem.text || "";
     } else if (elem.type === "textField") {
-      // 去除expression值两侧的引号
+      // Strip the surrounding quotes from the expression value
       columnName = (elem.expression || "").replace(/^"|"$/g, "");
     }
   }
 
-  // 如果columnHeader中没有获取到列名，则从property元素获取
+  // If no column name was found in columnHeader, fall back to the property element
   if (!columnName) {
     const columnNameProp = columnElem.querySelector(
       'property[name="com.jaspersoft.studio.components.table.model.column.name"]',
@@ -942,12 +942,12 @@ function parseColumnElement(columnElem: Element, index: number): any {
     columnName = columnNameProp?.getAttribute("value") || "";
   }
 
-  // 如果仍然没有获取到列名，则使用默认列名
+  // If still no column name was found, use a default column name
   if (!columnName) {
     columnName = `Column${index + 1}`;
   }
 
-  // 为没有内容的单元格设置默认值（使用 { enable, element } 包装格式）
+  // Set default values for cells with no content (using the { enable, element } wrapper format)
   let tableHeaderWithDefaults = tableHeader;
   if (!tableHeaderWithDefaults) {
     tableHeaderWithDefaults = {
@@ -1056,32 +1056,32 @@ function parseColumnElement(columnElem: Element, index: number): any {
   };
 }
 
-// 解析列分组元素
+// Parse a column group element
 function parseColumnGroupElement(groupElem: Element, index: number): any {
   const groupUuid = groupElem.getAttribute("uuid") || crypto.randomUUID();
   const groupWidth = parseInt(groupElem.getAttribute("width") || "0");
 
-  // 先解析columnHeader元素
+  // First parse the columnHeader element
   const columnHeaderElem = Array.from(groupElem.children).find(
     (cell) => cell.localName === "columnHeader",
   );
 
-  // 解析rowSpan属性的辅助函数
+  // Helper function to parse the rowSpan attribute
   const parseCellWithRowSpan = (cellElem: Element | undefined) => {
     if (!cellElem) return undefined;
     const cellContent = parseCellContent(cellElem);
-    // 捕获rowSpan属性，默认值为1
+    // Capture the rowSpan attribute, defaulting to 1
     cellContent.rowSpan = parseInt(cellElem.getAttribute("rowSpan") || "1");
     return cellContent;
   };
 
-  // 获取列名 - 从columnHeader中的文本元素获取
+  // Get the column name - from a text element inside columnHeader
   let groupName = "";
   const columnHeader = columnHeaderElem
     ? parseCellWithRowSpan(columnHeaderElem)
     : undefined;
 
-  // 先尝试从columnHeader中获取列名（通过 .element 子对象访问）
+  // First try to get the column name from columnHeader (accessed via the .element sub-object)
   if (columnHeader) {
     const elem = columnHeader.element || columnHeader;
     if (elem.type === "staticText") {
@@ -1091,7 +1091,7 @@ function parseColumnGroupElement(groupElem: Element, index: number): any {
     }
   }
 
-  // 如果columnHeader中没有获取到列名，则从property元素获取
+  // If no column name was found in columnHeader, fall back to the property element
   if (!groupName) {
     const groupNameProp = groupElem.querySelector(
       'property[name="com.jaspersoft.studio.components.table.model.column.name"]',
@@ -1099,7 +1099,7 @@ function parseColumnGroupElement(groupElem: Element, index: number): any {
     groupName = groupNameProp?.getAttribute("value") || "";
   }
 
-  // 如果仍然没有获取到列名，则使用默认列名
+  // If still no column name was found, use a default column name
   if (!groupName) {
     groupName = `Group${index + 1}`;
   }
@@ -1112,7 +1112,7 @@ function parseColumnGroupElement(groupElem: Element, index: number): any {
     children: [],
   };
 
-  // 解析tableHeader
+  // Parse tableHeader
   const tableHeaderElem = Array.from(groupElem.children).find(
     (cell) => cell.localName === "tableHeader",
   );
@@ -1121,7 +1121,7 @@ function parseColumnGroupElement(groupElem: Element, index: number): any {
     group.tableHeader = parseCellWithRowSpan(tableHeaderElem);
   }
 
-  // 解析tableFooter
+  // Parse tableFooter
   const tableFooterElem = Array.from(groupElem.children).find(
     (cell) => cell.localName === "tableFooter",
   );
@@ -1130,13 +1130,13 @@ function parseColumnGroupElement(groupElem: Element, index: number): any {
     group.tableFooter = parseCellWithRowSpan(tableFooterElem);
   }
 
-  // 解析columnHeader
+  // Parse columnHeader
   group.hasColumnHeader = !!columnHeaderElem;
   if (columnHeader) {
     group.columnHeader = columnHeader;
   }
 
-  // 解析columnFooter
+  // Parse columnFooter
   const columnFooterElem = Array.from(groupElem.children).find(
     (cell) => cell.localName === "columnFooter",
   );
@@ -1145,10 +1145,10 @@ function parseColumnGroupElement(groupElem: Element, index: number): any {
     group.columnFooter = parseCellWithRowSpan(columnFooterElem);
   }
 
-  // 解析子分组和子列
+  // Parse child groups and child columns
   let childIndex = 0;
   Array.from(groupElem.children).forEach((child) => {
-    // 检查是否为列元素
+    // Check whether this is a column element
     if (
       child.tagName === "jr:column" ||
       child.localName === "column" ||
@@ -1156,7 +1156,7 @@ function parseColumnGroupElement(groupElem: Element, index: number): any {
     ) {
       group.children.push(parseColumnElement(child, childIndex++));
     }
-    // 检查是否为列分组元素
+    // Check whether this is a column group element
     else if (
       child.tagName === "jr:columnGroup" ||
       child.localName === "columnGroup" ||
@@ -1169,16 +1169,16 @@ function parseColumnGroupElement(groupElem: Element, index: number): any {
   return group;
 }
 
-// 解析表格元素
+// Parse a table element
 function parseTableElement(tableElem: Element, reportElement: Element): any {
-  // 获取基本属性
+  // Get the basic attributes
   const x = parseInt(reportElement.getAttribute("x") || "0");
   const y = parseInt(reportElement.getAttribute("y") || "0");
   const width = parseInt(reportElement.getAttribute("width") || "555");
   const height = parseInt(reportElement.getAttribute("height") || "200");
   const uuid = reportElement.getAttribute("uuid") || crypto.randomUUID();
 
-  // 解析颜色和模式属性
+  // Parse the color and mode attributes
   const forecolor = reportElement.hasAttribute("forecolor")
     ? reportElement.getAttribute("forecolor")
     : undefined;
@@ -1189,7 +1189,7 @@ function parseTableElement(tableElem: Element, reportElement: Element): any {
     ? reportElement.getAttribute("mode")
     : undefined;
 
-  // 解析表格样式
+  // Parse the table styles
   const styles: any = {};
   const tableHeaderStyle = reportElement.getAttribute(
     "com.jaspersoft.studio.table.style.table_header",
@@ -1205,40 +1205,40 @@ function parseTableElement(tableElem: Element, reportElement: Element): any {
   if (columnHeaderStyle) styles.columnHeader = columnHeaderStyle;
   if (detailStyle) styles.detail = detailStyle;
 
-  // 解析数据集
+  // Parse the dataset
   const datasetRunElem = tableElem.querySelector("datasetRun");
   const subDataset =
     datasetRunElem?.getAttribute("subDataset") || "tableDataset";
 
-  // 解析表格属性 - 捕获所有XSD允许的属性
+  // Parse the table attributes - capture every attribute allowed by the XSD
   const tableAttributes: any = {};
   for (let i = 0; i < tableElem.attributes.length; i++) {
     const attr = tableElem.attributes[i];
-    // 确保attr不是undefined
+    // Make sure attr isn't undefined
     if (attr) {
-      // 跳过命名空间和schemaLocation属性，因为它们在生成时会被硬编码
+      // Skip namespace and schemaLocation attributes, since they're hardcoded during generation
       if (attr.name.startsWith("xmlns") || attr.name === "xsi:schemaLocation") {
         continue;
       }
-      // 将属性添加到表格元素对象中
+      // Add the attribute to the table element object
       tableAttributes[attr.name] = attr.value;
     }
   }
 
-  // 解析表格连接表达式
+  // Parse the table's connection expression
   const connectionExprElem = datasetRunElem?.querySelector(
     "connectionExpression",
   );
   const connectionExpression =
     connectionExprElem?.textContent?.trim() || "$P{REPORT_CONNECTION}";
 
-  // 解析表格列和列分组 - 支持带命名空间和不带命名空间的列元素
+  // Parse the table's columns and column groups - supports column elements with or without a namespace
   const children: any[] = [];
   const columns: any[] = [];
   let childIndex = 0;
 
   Array.from(tableElem.children).forEach((child) => {
-    // 检查是否为列元素
+    // Check whether this is a column element
     if (
       child.tagName === "jr:column" ||
       child.localName === "column" ||
@@ -1248,7 +1248,7 @@ function parseTableElement(tableElem: Element, reportElement: Element): any {
       children.push(column);
       columns.push(column);
     }
-    // 检查是否为列分组元素
+    // Check whether this is a column group element
     else if (
       child.tagName === "jr:columnGroup" ||
       child.localName === "columnGroup" ||
@@ -1256,14 +1256,14 @@ function parseTableElement(tableElem: Element, reportElement: Element): any {
     ) {
       const group = parseColumnGroupElement(child, childIndex++);
       children.push(group);
-      // 同时收集所有普通列到columns数组，保持向后兼容
+      // Also collect every regular column into the columns array, for backward compatibility
       const collectColumns = (group: any) => {
         group.children.forEach((child: any) => {
           if (child.detailCell) {
-            // 普通列
+            // Regular column
             columns.push(child);
           } else {
-            // 子分组
+            // Child group
             collectColumns(child);
           }
         });
@@ -1272,7 +1272,7 @@ function parseTableElement(tableElem: Element, reportElement: Element): any {
     }
   });
 
-  // 构建表格元素
+  // Build the table element
   const tableElement: any = {
     type: "table",
     uuid,
@@ -1287,9 +1287,9 @@ function parseTableElement(tableElem: Element, reportElement: Element): any {
       type: "table",
       connectionExpression,
     },
-    children, // 支持分组和列的混合结构
-    columns, // 保持向后兼容，支持传统的columns数组
-    ...tableAttributes, // 包含所有表格属性
+    children, // Supports a mixed structure of groups and columns
+    columns, // Kept for backward compatibility, supporting the legacy columns array
+    ...tableAttributes, // Includes every table attribute
     forecolor,
     backcolor,
     mode,
@@ -1298,17 +1298,17 @@ function parseTableElement(tableElem: Element, reportElement: Element): any {
   return tableElement;
 }
 
-// 解析表格单元格元素
+// Parse a table cell element
 function parseCellElement(cellElem: Element): any {
-  // 获取单元格内的第一个元素
+  // Get the first element inside the cell
   const childElement = cellElem.firstElementChild;
   if (!childElement) return undefined;
 
-  // 解析单元格内的元素
+  // Parse the element inside the cell
   return parseElement(childElement, childElement.tagName);
 }
 
-// 辅助函数：查找元素的直接子元素，考虑命名空间
+// Helper function: find a direct child element by name, accounting for namespaces
 function findChildElement(parent: Element, localName: string): Element | null {
   return (
     Array.from(parent.children).find(
@@ -1318,7 +1318,7 @@ function findChildElement(parent: Element, localName: string): Element | null {
 }
 
 function parseElement(element: Element, type: string): any {
-  // 图表类型的标签名映射
+  // Mapping of chart tag names to chart types
   const chartTagNames = [
     'pieChart', 'pie3DChart', 'barChart', 'bar3DChart', 'xyBarChart',
     'stackedBarChart', 'stackedBar3DChart', 'lineChart', 'xyLineChart',
@@ -1327,11 +1327,11 @@ function parseElement(element: Element, type: string): any {
     'meterChart', 'thermometerChart', 'multiAxisChart', 'ganttChart', 'spiderChart'
   ];
   
-  // 查找reportElement，考虑命名空间
-  // 对于图表类型，reportElement在<chart>子元素内
+  // Find reportElement, accounting for namespaces
+  // For chart types, reportElement lives inside the <chart> child element
   let reportElement = findChildElement(element, "reportElement");
   if (!reportElement && (type === 'chart' || chartTagNames.includes(element.localName || element.tagName))) {
-    // 图表类型：reportElement在<chart>子元素内
+    // Chart type: reportElement lives inside the <chart> child element
     const chartElem = findChildElement(element, "chart");
     if (chartElem) {
       reportElement = findChildElement(chartElem, "reportElement");
@@ -1374,7 +1374,7 @@ function parseElement(element: Element, type: string): any {
   if (!elementType) return null;
 
   const result: Partial<DesignElement> = {
-    uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(), // 读取 UUID，如果不存在则自动生成
+    uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(), // Read the UUID; auto-generate one if it doesn't exist
     type: elementType,
     x: parseInt(reportElement.getAttribute("x") || "0"),
     y: parseInt(reportElement.getAttribute("y") || "0"),
@@ -1395,12 +1395,12 @@ function parseElement(element: Element, type: string): any {
     result.mode = mode as "Opaque" | "Transparent";
   }
 
-  // 查找box元素，考虑命名空间
+  // Find the box element, accounting for namespaces
   const boxElement = findChildElement(element, "box");
   if (boxElement) {
     result.box = parseBoxElement(boxElement);
 
-    // 将边框属性复制到元素根级别，以便表格UI能够正确显示
+    // Copy the border attributes to the element's root level, so the table UI can display them correctly
     const box = result.box;
     if (box) {
       const resultAny = result as any;
@@ -1410,7 +1410,7 @@ function parseElement(element: Element, type: string): any {
         resultAny.borderColor = box.pen.lineColor;
       }
 
-      // 处理各边边框属性
+      // Handle the per-side border attributes
       if (box.topPen) {
         resultAny.topBorderWidth = box.topPen.lineWidth;
         resultAny.topBorderStyle = box.topPen.lineStyle;
@@ -1434,7 +1434,7 @@ function parseElement(element: Element, type: string): any {
     }
   }
 
-  // 读取 printWhenExpression 和 style 属性
+  // Read the printWhenExpression and style attributes
   if (reportElement.hasAttribute("printWhenExpression")) {
     (result as any).printWhenExpression =
       reportElement.getAttribute("printWhenExpression") || undefined;
@@ -1459,7 +1459,7 @@ function parseElement(element: Element, type: string): any {
       reportElement.getAttribute("isResetPageOverflow") === "true";
   }
 
-  // 解析新增的通用属性
+  // Parse the newly added common attributes
   if (reportElement.hasAttribute("key")) {
     (result as any).key = reportElement.getAttribute("key") || undefined;
   }
@@ -1470,13 +1470,13 @@ function parseElement(element: Element, type: string): any {
     (result as any).stretchType = reportElement.getAttribute("stretchType") || undefined;
   }
 
-  // 解析styleExpression
+  // Parse styleExpression
   const styleExprElem = findChildElement(element, "styleExpression");
   if (styleExprElem) {
     (result as any).styleExpression = styleExprElem.textContent?.trim() || '';
   }
 
-  // 解析property元素
+  // Parse property elements
   const propertyElems = reportElement.querySelectorAll("property");
   if (propertyElems.length > 0) {
     const properties: Array<{ name: string; value: string }> = [];
@@ -1492,7 +1492,7 @@ function parseElement(element: Element, type: string): any {
     }
   }
 
-  // 解析propertyExpression元素
+  // Parse propertyExpression elements
   const propExprElems = reportElement.querySelectorAll("propertyExpression");
   if (propExprElems.length > 0) {
     const propertyExpressions: Array<{ name: string; valueExpression: string }> = [];
@@ -1701,7 +1701,7 @@ function parseStaticTextElement(element: Element, result: any): void {
     result.text = textNode.textContent || "";
   }
 
-  // 解析 StaticText 特有属性
+  // Parse StaticText-specific attributes
   if (element.hasAttribute("textAdjust")) {
     result.textAdjust = element.getAttribute("textAdjust");
   }
@@ -1737,7 +1737,7 @@ function parseTextFieldElement(element: Element, result: any): void {
     ? element.getAttribute("isBlankWhenNull") === "true"
     : true;
 
-  // 解析超链接属性
+  // Parse hyperlink attributes
   if (element.hasAttribute("hyperlinkType"))
     result.hyperlinkType = element.getAttribute("hyperlinkType");
   if (element.hasAttribute("bookmarkLevel"))
@@ -1776,7 +1776,7 @@ function parseTextFieldElement(element: Element, result: any): void {
     }
   }
 
-  // 解析超链接表达式
+  // Parse hyperlink expressions
   const hyperlinkRefExpr = findChildElement(
     element,
     "hyperlinkReferenceExpression",
@@ -1799,7 +1799,7 @@ function parseTextFieldElement(element: Element, result: any): void {
     result.hyperlinkPageExpression = hyperlinkPageExpr.textContent || "";
   }
 
-  // 解析新增的超链接表达式
+  // Parse the newly added hyperlink expressions
   const hyperlinkTooltipExpr = findChildElement(element, "hyperlinkTooltipExpression");
   if (hyperlinkTooltipExpr) {
     result.hyperlinkTooltipExpression = hyperlinkTooltipExpr.textContent || "";
@@ -1854,7 +1854,7 @@ function parseImageElement(element: Element, result: any): void {
     result.imageExpression = imageExpression.textContent || "";
   }
 
-  // 解析超链接表达式
+  // Parse hyperlink expressions
   const hyperlinkRefExpr = findChildElement(
     element,
     "hyperlinkReferenceExpression",
@@ -1901,7 +1901,7 @@ function parseLineElement(element: Element, result: any): void {
   if (element.hasAttribute("evaluationTime")) {
     result.evaluationTime = element.getAttribute("evaluationTime");
   }
-  // 解析线条标签上的直接笔属性
+  // Parse the direct pen attributes on the line tag
   if (element.hasAttribute("lineWidth")) {
     result.lineWidth = parseFloat(element.getAttribute("lineWidth") || "0");
   }
@@ -1970,11 +1970,11 @@ function parseBreakElement(element: Element, result: any): void {
   } else {
     result.breakType = "Page";
   }
-  // BreakElement 特有的 reportElement 属性由 parseElement 中的公共代码处理
+  // BreakElement-specific reportElement attributes are handled by the shared code in parseElement
 }
 
 function parseFrameElement(element: Element, result: any): void {
-  // 解析frame标签上的属性
+  // Parse the attributes on the frame tag
   if (element.hasAttribute("isIgnorePagination")) {
     result.isIgnorePagination =
       element.getAttribute("isIgnorePagination") === "true";
@@ -1994,7 +1994,7 @@ function parseFrameElement(element: Element, result: any): void {
     );
   }
 
-  // 递归解析容器内的子元素
+  // Recursively parse the child elements within the container
   const elements: any[] = [];
   const validElementTypes = [
     "staticText",
@@ -2011,7 +2011,7 @@ function parseFrameElement(element: Element, result: any): void {
     "crosstab",
   ];
 
-  // 遍历直接子元素
+  // Iterate direct child elements
   Array.from(element.children).forEach((child) => {
     const childType = child.localName || child.tagName;
     if (validElementTypes.includes(childType)) {
@@ -2026,7 +2026,7 @@ function parseFrameElement(element: Element, result: any): void {
     result.elements = elements;
   }
 
-  // 解析property中的layout信息
+  // Parse layout information from the property elements
   const properties = element.querySelectorAll("property");
   properties.forEach((prop) => {
     const name = prop.getAttribute("name");
@@ -2043,112 +2043,112 @@ function parseFrameElement(element: Element, result: any): void {
   });
 }
 
-// 解析子报表元素
+// Parse a subreport element
 function parseSubreportElement(element: Element, result: any): void {
-  // 解析subreportExpression
+  // Parse subreportExpression
   const subreportExprElem = element.querySelector("subreportExpression");
   if (subreportExprElem) {
     result.subreportExpression = subreportExprElem.textContent?.trim() || '';
   }
-  
-  // 解析parametersMapExpression
+
+  // Parse parametersMapExpression
   const paramsMapExprElem = element.querySelector("parametersMapExpression");
   if (paramsMapExprElem) {
     result.parametersMapExpression = paramsMapExprElem.textContent?.trim() || '';
   }
-  
-  // 解析connectionExpression
+
+  // Parse connectionExpression
   const connExprElem = element.querySelector("connectionExpression");
   if (connExprElem) {
     result.connectionExpression = connExprElem.textContent?.trim() || '';
   }
-  
-  // 解析dataSourceExpression
+
+  // Parse dataSourceExpression
   const dsExprElem = element.querySelector("dataSourceExpression");
   if (dsExprElem) {
     result.dataSourceExpression = dsExprElem.textContent?.trim() || '';
   }
-  
-  // 解析evaluationTime
+
+  // Parse evaluationTime
   if (element.hasAttribute("evaluationTime")) {
     result.evaluationTime = element.getAttribute("evaluationTime");
   }
-  
-  // 解析isUsingCache
+
+  // Parse isUsingCache
   if (element.hasAttribute("isUsingCache")) {
     result.isUsingCache = element.getAttribute("isUsingCache") === "true";
   }
-  
-  // 解析runToBottom
+
+  // Parse runToBottom
   if (element.hasAttribute("runToBottom")) {
     result.runToBottom = element.getAttribute("runToBottom") === "true";
   }
 }
 
-// 解析列表元素
+// Parse a list element
 function parseListElement(element: Element, result: any): void {
-  // 解析printOrder
+  // Parse printOrder
   if (element.hasAttribute("printOrder")) {
     result.printOrder = element.getAttribute("printOrder");
   }
-  
-  // 解析ignoreWidth
+
+  // Parse ignoreWidth
   if (element.hasAttribute("ignoreWidth")) {
     result.ignoreWidth = element.getAttribute("ignoreWidth") === "true";
   }
   
-  // 解析evaluationTime
+  // Parse evaluationTime
   if (element.hasAttribute("evaluationTime")) {
     result.evaluationTime = element.getAttribute("evaluationTime");
   }
-  
-  // 解析splitType
+
+  // Parse splitType
   if (element.hasAttribute("splitType")) {
     result.splitType = element.getAttribute("splitType");
   }
-  
-  // 解析isIgnorePagination
+
+  // Parse isIgnorePagination
   if (element.hasAttribute("isIgnorePagination")) {
     result.isIgnorePagination = element.getAttribute("isIgnorePagination") === "true";
   }
-  
-  // 解析datasetRun（数据集运行配置）
+
+  // Parse datasetRun (dataset run configuration)
   const datasetRunElem = element.querySelector("datasetRun");
   if (datasetRunElem) {
-    // 解析subDataset
+    // Parse subDataset
     if (datasetRunElem.hasAttribute("subDataset")) {
       result.subDataset = datasetRunElem.getAttribute("subDataset");
     }
-    
-    // 解析dataSourceExpression
+
+    // Parse dataSourceExpression
     const dsExprElem = datasetRunElem.querySelector("dataSourceExpression");
     if (dsExprElem) {
       result.dataSourceExpression = dsExprElem.textContent?.trim() || '';
     }
-    
-    // 解析connectionExpression
+
+    // Parse connectionExpression
     const connExprElem = datasetRunElem.querySelector("connectionExpression");
     if (connExprElem) {
       result.connectionExpression = connExprElem.textContent?.trim() || '';
     }
   }
-  
-  // 兼容旧格式：直接在list元素下的dataSourceExpression
+
+  // Backward compatibility with the old format: dataSourceExpression directly under the list element
   if (!result.dataSourceExpression) {
     const dsExprElem = element.querySelector("dataSourceExpression");
     if (dsExprElem) {
       result.dataSourceExpression = dsExprElem.textContent?.trim() || '';
     }
   }
-  
-  // 解析listContents
+
+  // Parse listContents
   const listContentsElem = element.querySelector("listContents");
   if (listContentsElem) {
     const contentsHeight = parseInt(listContentsElem.getAttribute("height") || "0");
     const contentsWidth = parseInt(listContentsElem.getAttribute("width") || "0");
     const elements: any[] = [];
-    
-    // 解析列表内容中的子元素
+
+    // Parse the child elements inside the list contents
     Array.from(listContentsElem.children).forEach(child => {
       const childType = child.localName || child.tagName;
       const validElementTypes = [
@@ -2170,9 +2170,9 @@ function parseListElement(element: Element, result: any): void {
   }
 }
 
-// 解析图表元素
+// Parse a chart element
 function parseChartElement(element: Element, result: any): void {
-  // 根据元素标签名确定图表类型
+  // Determine the chart type from the element's tag name
   const tagName = element.tagName || element.localName || '';
   const chartTypeMap: Record<string, string> = {
     'pieChart': 'pie', 'pie3DChart': 'pie3D',
@@ -2186,20 +2186,20 @@ function parseChartElement(element: Element, result: any): void {
     'multiAxisChart': 'multiAxis', 'ganttChart': 'gantt', 'spiderChart': 'spider'
   };
   
-  // 尝试匹配带或不带命名空间的标签名
+  // Try matching tag names with or without a namespace
   for (const [key, value] of Object.entries(chartTypeMap)) {
     if (tagName === key || tagName === `jr:${key}` || tagName.includes(key)) {
       result.chartType = value;
       break;
     }
   }
-  
-  // 解析chart子元素
-  const chartElem = element.querySelector("chart") || 
+
+  // Parse the chart child element
+  const chartElem = element.querySelector("chart") ||
     (element.localName === 'chart' ? element : null);
-  
+
   if (chartElem) {
-    // chart元素属性
+    // chart element attributes
     if (chartElem.hasAttribute("evaluationTime")) {
       result.evaluationTime = chartElem.getAttribute("evaluationTime");
     }
@@ -2221,7 +2221,7 @@ function parseChartElement(element: Element, result: any): void {
         result.titleExpression = titleExprElem.textContent?.trim() || '';
       }
     }
-    // 兼容旧格式：直接在chart下的titleExpression
+    // Backward compatibility with the old format: titleExpression directly under chart
     if (!result.titleExpression) {
       const titleExprElem = chartElem.querySelector("titleExpression");
       if (titleExprElem) {
@@ -2253,7 +2253,7 @@ function parseChartElement(element: Element, result: any): void {
         result.legendExpression = labelExprElem.textContent?.trim() || '';
       }
     }
-    // 兼容旧格式
+    // Backward compatibility with the old format
     if (!result.legendExpression) {
       const legendExprElem = chartElem.querySelector("legendExpression");
       if (legendExprElem) {
@@ -2283,31 +2283,31 @@ function parseChartElement(element: Element, result: any): void {
     }
   }
   
-  // 解析reportElement属性
+  // Parse reportElement attributes
   const reportElem = element.querySelector("reportElement");
   if (reportElem) {
     if (reportElem.hasAttribute("uuid")) {
       result.uuid = reportElem.getAttribute("uuid");
     }
   }
-  
-  // 解析外层chart元素属性（兼容evaluationTime在最外层）
+
+  // Parse the outer chart element's attributes (supports evaluationTime living on the outermost element)
   if (!result.evaluationTime && element.hasAttribute("evaluationTime")) {
     result.evaluationTime = element.getAttribute("evaluationTime");
   }
-  
-  // 解析数据集
+
+  // Parse the dataset
   parseChartDataset(element, result);
-  
-  // 解析Plot
+
+  // Parse the Plot
   parseChartPlot(element, result);
 }
 
-// 解析图表数据集
+// Parse the chart dataset
 function parseChartDataset(element: Element, result: any): void {
   const chartType = result.chartType || 'bar';
-  
-  // 饼图数据集
+
+  // Pie chart dataset
   const pieDataset = element.querySelector("pieDataset");
   if (pieDataset) {
     parseDatasetAttributes(pieDataset, result);
@@ -2323,7 +2323,7 @@ function parseChartDataset(element: Element, result: any): void {
     return;
   }
   
-  // 分类数据集
+  // Category dataset
   const categoryDataset = element.querySelector("categoryDataset");
   if (categoryDataset) {
     parseDatasetAttributes(categoryDataset, result);
@@ -2346,7 +2346,7 @@ function parseChartDataset(element: Element, result: any): void {
     return;
   }
   
-  // XY数据集
+  // XY dataset
   const xyDataset = element.querySelector("xyDataset");
   if (xyDataset) {
     parseDatasetAttributes(xyDataset, result);
@@ -2369,7 +2369,7 @@ function parseChartDataset(element: Element, result: any): void {
     return;
   }
   
-  // HighLow数据集
+  // HighLow dataset
   const highLowDataset = element.querySelector("highLowDataset");
   if (highLowDataset) {
     parseDatasetAttributes(highLowDataset, result);
@@ -2393,7 +2393,7 @@ function parseChartDataset(element: Element, result: any): void {
   }
 }
 
-// 解析数据集公共属性
+// Parse the dataset's common attributes
 function parseDatasetAttributes(datasetElem: Element, result: any): void {
   const dataset = datasetElem.querySelector("dataset");
   if (dataset) {
@@ -2417,7 +2417,7 @@ function parseDatasetAttributes(datasetElem: Element, result: any): void {
   }
 }
 
-// 解析图表Plot
+// Parse the chart Plot
 function parseChartPlot(element: Element, result: any): void {
   const plotTags = [
     'piePlot', 'pie3DPlot', 'barPlot', 'bar3DPlot', 'linePlot', 'areaPlot',
@@ -2427,12 +2427,12 @@ function parseChartPlot(element: Element, result: any): void {
   for (const tag of plotTags) {
     const plotElem = element.querySelector(tag);
     if (plotElem) {
-      // 饼图属性
+      // Pie chart attributes
       if (plotElem.hasAttribute("isCircular")) {
         result.isCircular = plotElem.getAttribute("isCircular") === "true";
       }
-      
-      // 折线图属性
+
+      // Line chart attributes
       if (plotElem.hasAttribute("isShowShapes")) {
         result.isShowShapes = plotElem.getAttribute("isShowShapes") === "true";
       }
@@ -2448,7 +2448,7 @@ function parseChartPlot(element: Element, result: any): void {
         }
       }
       
-      // 轴标签
+      // Axis labels
       const categoryAxisLabel = plotElem.querySelector("categoryAxisLabelExpression");
       if (categoryAxisLabel) {
         result.categoryAxisLabelExpression = categoryAxisLabel.textContent?.trim() || '';
@@ -2464,15 +2464,15 @@ function parseChartPlot(element: Element, result: any): void {
   }
 }
 
-// 解析交叉表元素
+// Parse a crosstab element
 function parseCrosstabElement(element: Element, result: any): void {
-  // 解析crosstabDataset
+  // Parse crosstabDataset
   const datasetElem = element.querySelector("crosstabDataset");
   if (datasetElem) {
     result.whenNoDataType = datasetElem.getAttribute("whenNoDataType") || 'AllSectionsNoDetail';
   }
-  
-  // 解析crosstabWidth和crosstabHeight
+
+  // Parse crosstabWidth and crosstabHeight
   if (element.hasAttribute("crosstabWidth")) {
     result.crosstabWidth = parseInt(element.getAttribute("crosstabWidth") || "0");
   }

@@ -8,10 +8,10 @@ const props = defineProps<{
   message: ChatMessage;
 }>();
 
-// 状态
+// State
 const copied = ref(false);
 
-// 样式计算
+// Style computation
 const messageClass = computed(() => ({
   'chat-message': true,
   'user-message': props.message.role === 'user',
@@ -22,7 +22,7 @@ const messageClass = computed(() => ({
   'is-loading': props.message.isLoading
 }));
 
-// 图标映射
+// Icon mapping
 const roleIcon = computed(() => {
   switch (props.message.role) {
     case 'user': return '👤';
@@ -34,7 +34,7 @@ const roleIcon = computed(() => {
   }
 });
 
-// 格式化时间
+// Format time
 const formattedTime = computed(() => {
   return props.message.timestamp.toLocaleTimeString('zh-CN', {
     hour: '2-digit',
@@ -42,7 +42,7 @@ const formattedTime = computed(() => {
   });
 });
 
-// 复制消息内容
+// Copy message content
 async function copyMessage() {
   try {
     await navigator.clipboard.writeText(props.message.content);
@@ -58,36 +58,36 @@ async function copyMessage() {
 
 <template>
   <div :class="messageClass">
-    <!-- 加载指示器 -->
+    <!-- Loading indicator -->
     <div v-if="message.isLoading" class="loading-indicator">
       <div class="spinner"></div>
       <span>{{ message.content }}</span>
     </div>
 
-    <!-- 消息内容 -->
+    <!-- Message content -->
     <div v-else class="message-content">
-      <!-- 头部 -->
+      <!-- Header -->
       <div class="message-header">
         <span class="role-icon">{{ roleIcon }}</span>
-        <span class="role-name">{{ message.role === 'user' ? '你' : 'AI助手' }}</span>
+        <span class="role-name">{{ message.role === 'user' ? 'You' : 'AI Assistant' }}</span>
         <span class="timestamp">{{ formattedTime }}</span>
         <button
           v-if="message.role === 'assistant' && message.content"
           class="copy-btn"
           @click="copyMessage"
-          :title="copied ? '已复制' : '复制消息'"
+          :title="copied ? 'Copied' : 'Copy message'"
         >
           <svg v-if="!copied" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           <span v-else>✓</span>
         </button>
       </div>
 
-      <!-- 消息正文 -->
+      <!-- Message body -->
       <div class="message-body">
         {{ message.content }}
       </div>
 
-      <!-- 工具调用显示 -->
+      <!-- Tool call display -->
       <ToolCallDisplay
         v-if="message.toolCall"
         :tool-call="message.toolCall"

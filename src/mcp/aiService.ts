@@ -1,7 +1,7 @@
 /**
- * AI Service - OpenAI兼容API调用
+ * AI Service - OpenAI-compatible API calls
  *
- * 使用配置的参数调用AI服务
+ * Calls the AI service using configured parameters
  */
 
 import { SYSTEM_PROMPT } from '@/config/aiConfig';
@@ -9,7 +9,7 @@ import type { MCPToolCall } from './handlers';
 import type { AIConfiguration } from '@/composables/useAIConfigManager';
 
 // ============================================
-// 类型定义
+// Type definitions
 // ============================================
 
 export interface Message {
@@ -43,11 +43,11 @@ export interface OpenAITool {
 }
 
 // ============================================
-// API调用函数
+// API call functions
 // ============================================
 
 /**
- * 调用OpenAI兼容API
+ * Call an OpenAI-compatible API
  */
 export async function callOpenAICompatibleAPI(
   messages: Message[],
@@ -62,7 +62,7 @@ export async function callOpenAICompatibleAPI(
       temperature: config.temperature,
     };
 
-    // 如果提供了工具定义，添加到请求中
+    // If tool definitions were provided, add them to the request
     if (tools && tools.length > 0) {
       requestBody.tools = tools;
       requestBody.tool_choice = 'auto';
@@ -71,7 +71,7 @@ export async function callOpenAICompatibleAPI(
     console.log('Calling AI API:', config.apiEndpoint);
     console.log('Model:', config.modelName);
 
-    // 发送请求
+    // Send the request
     const response = await fetch(`${config.apiEndpoint}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -79,7 +79,7 @@ export async function callOpenAICompatibleAPI(
         'Authorization': `Bearer ${config.apiKey}`,
       },
       body: JSON.stringify(requestBody),
-      signal: AbortSignal.timeout(config.requestTimeout), // 使用配置的超时时间
+      signal: AbortSignal.timeout(config.requestTimeout), // Use the configured timeout
     });
 
     if (!response.ok) {
@@ -89,7 +89,7 @@ export async function callOpenAICompatibleAPI(
 
     const data = await response.json();
 
-    // 解析响应
+    // Parse the response
     const choice = data.choices[0];
     if (!choice) {
       throw new Error('No response from AI');
@@ -98,7 +98,7 @@ export async function callOpenAICompatibleAPI(
     const assistantMessage = choice.message;
     const toolCalls: MCPToolCall[] = [];
 
-    // 提取工具调用
+    // Extract tool calls
     if (assistantMessage.tool_calls) {
       for (const toolCall of assistantMessage.tool_calls) {
         try {
@@ -131,12 +131,12 @@ export async function callOpenAICompatibleAPI(
 }
 
 /**
- * 从纯文本中提取工具调用（备用方案）
+ * Extract tool calls from plain text (fallback approach)
  */
 function extractToolCallsFromText(text: string): MCPToolCall[] {
   const toolCalls: MCPToolCall[] = [];
 
-  // 匹配 ```json ... ``` 格式
+  // Match the ```json ... ``` format
   const jsonBlockPattern = /```json\s*([\s\S]*?)```/g;
   let match;
 
@@ -147,7 +147,7 @@ function extractToolCallsFromText(text: string): MCPToolCall[] {
 
       const parsed = JSON.parse(jsonStr);
 
-      // 处理单个工具调用
+      // Handle a single tool call
       if (parsed.tool_name && parsed.parameters) {
         toolCalls.push({
           name: parsed.tool_name,
@@ -155,7 +155,7 @@ function extractToolCallsFromText(text: string): MCPToolCall[] {
         });
       }
 
-      // 处理多个工具调用
+      // Handle multiple tool calls
       if (parsed.tool_calls && Array.isArray(parsed.tool_calls)) {
         for (const tc of parsed.tool_calls) {
           if (tc.tool_name && tc.parameters) {
@@ -175,7 +175,7 @@ function extractToolCallsFromText(text: string): MCPToolCall[] {
 }
 
 /**
- * 准备对话历史
+ * Prepare the conversation history
  */
 export function prepareConversationHistory(
   messages: Message[]
@@ -187,14 +187,14 @@ export function prepareConversationHistory(
 }
 
 /**
- * 创建用户消息
+ * Create a user message
  */
 export function createUserMessage(content: string): Message {
   return { role: 'user', content };
 }
 
 /**
- * 创建助手消息
+ * Create an assistant message
  */
 export function createAssistantMessage(content: string, toolCalls?: MCPToolCall[]): Message {
   const message: Message = { role: 'assistant', content };
@@ -214,51 +214,51 @@ export function createAssistantMessage(content: string, toolCalls?: MCPToolCall[
 }
 
 /**
- * 创建设计状态消息
+ * Create a design-state message
  */
 function createDesignStateMessage(designState: any): Message {
   const stateDescription = formatDesignState(designState);
   return {
     role: 'system',
-    content: `[当前设计状态]\n${stateDescription}\n[/当前设计状态]`
+    content: `[Current Design State]\n${stateDescription}\n[/Current Design State]`
   };
 }
 
 /**
- * 格式化设计状态为可读格式
+ * Format the design state into a human-readable format
  */
 function formatDesignState(designState: any): string {
   const lines: string[] = [];
 
-  // 当前选中的元素
+  // Currently selected element
   if (designState.selectedElement) {
     const element = designState.selectedElement;
-    lines.push('【当前选中的元素】');
+    lines.push('[Currently Selected Element]');
     lines.push(`- UUID: ${element.uuid}`);
-    lines.push(`- 类型: ${element.type}`);
-    lines.push(`- 位置: (${element.x}, ${element.y})`);
-    lines.push(`- 大小: ${element.width}x${element.height}`);
+    lines.push(`- Type: ${element.type}`);
+    lines.push(`- Position: (${element.x}, ${element.y})`);
+    lines.push(`- Size: ${element.width}x${element.height}`);
 
     if (element.type === 'staticText') {
-      lines.push(`- 文本: "${element.text || ''}"`);
+      lines.push(`- Text: "${element.text || ''}"`);
     } else if (element.type === 'textField') {
-      lines.push(`- 表达式: "${element.expression || ''}"`);
+      lines.push(`- Expression: "${element.expression || ''}"`);
     }
 
     if (element.forecolor) {
-      lines.push(`- 颜色: ${element.forecolor}`);
+      lines.push(`- Color: ${element.forecolor}`);
     }
     lines.push('');
   }
 
-  // Band信息
+  // Band information
   if (designState.bands && Array.isArray(designState.bands)) {
-    lines.push('报表结构：');
+    lines.push('Report structure:');
     for (const band of designState.bands) {
       const elementsCount = band.elements?.length || 0;
-      lines.push(`- ${band.type} band: 高度${band.height}px, 包含${elementsCount}个元素`);
+      lines.push(`- ${band.type} band: height ${band.height}px, contains ${elementsCount} element(s)`);
 
-      // 列出元素详情
+      // List element details
       if (band.elements && band.elements.length > 0) {
         for (const element of band.elements) {
           const elementType = element.type;
@@ -266,34 +266,34 @@ function formatDesignState(designState: any): string {
           let description = '';
 
           if (elementType === 'staticText') {
-            description = `静态文本"${element.text || ''}"`;
+            description = `static text "${element.text || ''}"`;
           } else if (elementType === 'textField') {
-            description = `动态文本框"${element.expression || ''}"`;
+            description = `dynamic text field "${element.expression || ''}"`;
           } else if (elementType === 'rectangle') {
-            description = '矩形';
+            description = 'rectangle';
           } else if (elementType === 'frame') {
-            description = 'Frame容器';
+            description = 'Frame container';
           } else {
             description = elementType;
           }
 
-          lines.push(`    - UUID: ${uuid} - ${description} (位置: ${element.x},${element.y}, 大小: ${element.width}x${element.height})`);
+          lines.push(`    - UUID: ${uuid} - ${description} (position: ${element.x},${element.y}, size: ${element.width}x${element.height})`);
         }
       }
     }
   }
 
-  // 字段信息
+  // Field information
   if (designState.fields && designState.fields.length > 0) {
-    lines.push('\n可用字段：');
+    lines.push('\nAvailable fields:');
     for (const field of designState.fields) {
       lines.push(`- $F{${field.name}} (${field.class})`);
     }
   }
 
-  // 参数信息
+  // Parameter information
   if (designState.parameters && designState.parameters.length > 0) {
-    lines.push('\n可用参数：');
+    lines.push('\nAvailable parameters:');
     for (const param of designState.parameters) {
       lines.push(`- $P{${param.name}}`);
     }
@@ -303,11 +303,11 @@ function formatDesignState(designState: any): string {
 }
 
 // ============================================
-// 从工具Schema生成OpenAI工具定义
+// Generate OpenAI tool definitions from tool schemas
 // ============================================
 
 /**
- * 将MCP工具Schema转换为OpenAI工具格式
+ * Convert MCP tool schemas to OpenAI tool format
  */
 export function convertToOpenAITools(
   mcpTools: Array<{
@@ -327,11 +327,11 @@ export function convertToOpenAITools(
 }
 
 // ============================================
-// 主要接口
+// Main interface
 // ============================================
 
 /**
- * 处理用户输入并调用AI
+ * Process user input and call the AI
  */
 export async function processUserInput(
   userMessage: string,
@@ -342,31 +342,31 @@ export async function processUserInput(
     inputSchema: any;
   }>,
   config: AIConfiguration,
-  designState?: any  // 新增：当前设计状态
+  designState?: any  // Added: current design state
 ): Promise<AIResponse> {
-  // 如果提供了设计状态，将其添加到对话历史中
+  // If a design state was provided, add it to the conversation history
   if (designState) {
     const stateMessage = createDesignStateMessage(designState);
-    // 避免重复添加相同的状态消息
+    // Avoid adding the same state message twice
     const lastMessage = conversationHistory[conversationHistory.length - 1];
     if (!lastMessage || lastMessage.content !== stateMessage.content) {
       conversationHistory.push(stateMessage);
     }
   }
 
-  // 添加用户消息到历史
+  // Add the user message to the history
   conversationHistory.push(createUserMessage(userMessage));
 
-  // 准备消息（包含系统提示）
+  // Prepare messages (including the system prompt)
   const messages = prepareConversationHistory(conversationHistory);
 
-  // 转换工具定义为OpenAI格式
+  // Convert tool definitions to OpenAI format
   const openAITools = convertToOpenAITools(availableTools);
 
-  // 调用API
+  // Call the API
   const response = await callOpenAICompatibleAPI(messages, openAITools, config);
 
-  // 如果API调用失败，尝试从纯文本中提取工具调用
+  // If the API call failed, try extracting tool calls from plain text
   if (!response.success || response.toolCalls.length === 0) {
     if (response.content) {
       const textToolCalls = extractToolCallsFromText(response.content);
@@ -376,7 +376,7 @@ export async function processUserInput(
     }
   }
 
-  // 添加助手响应到历史
+  // Add the assistant response to the history
   conversationHistory.push(createAssistantMessage(
     response.content,
     response.toolCalls.length > 0 ? response.toolCalls : undefined

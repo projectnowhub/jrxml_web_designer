@@ -8,7 +8,7 @@ const props = withDefaults(defineProps<{
   maxlength?: number;
 }>(), {
   disabled: false,
-  placeholder: '输入指令，例如：在detail band中创建一个文本框显示客户名称',
+  placeholder: 'Enter a command, e.g.: create a text field in the detail band to display the customer name',
   maxlength: 1000
 });
 
@@ -18,16 +18,16 @@ const emit = defineEmits<{
   (e: 'submit', value: string): void;
 }>();
 
-// 状态
+// State
 const inputValue = ref('');
 const isFocused = ref(false);
 
-// 计算属性
+// Computed properties
 const canSubmit = computed(() => {
   return inputValue.value.trim().length > 0 && !props.disabled;
 });
 
-// 方法
+// Methods
 function handleInput(event: Event) {
   const target = event.target as HTMLTextAreaElement;
   inputValue.value = target.value;
@@ -42,7 +42,7 @@ function handleSubmit() {
 }
 
 function handleKeydown(event: KeyboardEvent) {
-  // Ctrl+Enter键提交（或Command+Enter on Mac）
+  // Submit with Ctrl+Enter (or Command+Enter on Mac)
   if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
     event.preventDefault();
     handleSubmit();
@@ -78,7 +78,7 @@ function handleBlur() {
         class="submit-btn"
         :disabled="!canSubmit"
         @click="handleSubmit"
-        title="发送消息 (Ctrl+Enter)"
+        title="Send message (Ctrl+Enter)"
       >
         <span class="btn-icon">➤</span>
       </button>

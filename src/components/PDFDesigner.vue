@@ -13,26 +13,26 @@
         </div>
         <div class="header-toolbar-ops">
           <span class="toolbar-divider"></span>
-          <button class="toolbar-btn" @click="deleteElement" title="删除">
+          <button class="toolbar-btn" @click="deleteElement" title="Delete">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
           </button>
-          <button class="toolbar-btn" @click="copyElement" title="复制">
+          <button class="toolbar-btn" @click="copyElement" title="Copy">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
-          <button class="toolbar-btn" @click="pasteElement" title="粘贴">
+          <button class="toolbar-btn" @click="pasteElement" title="Paste">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
           </button>
         </div>
       </div>
       <div class="header-actions">
-        <!-- 缩放控制 -->
+        <!-- Zoom controls -->
         <ZoomControls
           :zoom-level="zoomLevel"
           :paper-width="reportProperties.pageWidth"
           @update:zoomLevel="setZoomLevel($event)"
         />
 
-        <!-- 文件管理组件 -->
+        <!-- File manager component -->
         <FileManager
           :current-file-name="currentFileName"
           :current-file-id="currentFileId"
@@ -48,7 +48,7 @@
           {{ showBottomPanel ? t('actions.hideBottomPanel') : t('actions.showBottomPanel') }}
         </n-button>
 
-        <!-- 吸附控制 -->
+        <!-- Snap controls -->
         <div class="snap-controls-header">
           <n-checkbox
             :checked="enableSnapToGrid"
@@ -86,7 +86,7 @@
       </div>
     </div>
 
-    <!-- 坐标显示元素 -->
+    <!-- Coordinate display element -->
       <div
         v-if="dragCoordinates.visible"
         class="coordinates-display"
@@ -94,7 +94,7 @@
         {{ t('designer.coordinates', { bandName: dragCoordinates.bandName, x: dragCoordinates.x, y: dragCoordinates.y }) }}
       </div>
 
-      <!-- Band高度调整提示 -->
+      <!-- Band height adjustment tooltip -->
       <div
         v-if="resizingBandInfo.visible"
         class="band-height-display"
@@ -103,7 +103,7 @@
       </div>
 
       <div class="designer-layout">
-      <!-- 左侧元素库 -->
+      <!-- Left-side element library -->
       <ResizablePanel
         v-show="showLeftPanel"
         position="left"
@@ -145,7 +145,7 @@
         />
       </ResizablePanel>
 
-      <!-- 中间设计区域 -->
+      <!-- Center design area -->
       <div class="design-area-wrapper" style="position:relative;flex:1;overflow:auto;">
       <MultiSelectToolbar
         :visible="selectedElements.length > 1"
@@ -213,7 +213,7 @@
       />
       </div>
 
-      <!-- 右侧属性面板 -->
+      <!-- Right-side properties panel -->
       <ResizablePanel
         v-show="showRightPanel"
         position="right"
@@ -225,33 +225,33 @@
         @size-change="handlePropertyPanelSizeChange"
         @collapse-change="rightPanelCollapsed = $event"
       >
-        <!-- 右侧面板标签页 -->
+        <!-- Right panel tabs -->
         <div class="right-panel-tabs">
           <button
             class="right-panel-tab"
             :class="{ active: rightPanelTab === 'properties' }"
             @click="rightPanelTab = 'properties'"
           >
-            属性
+            Properties
           </button>
           <button
             class="right-panel-tab"
             :class="{ active: rightPanelTab === 'ai' }"
             @click="rightPanelTab = 'ai'"
           >
-            🤖 AI助手
+            🤖 AI Assistant
           </button>
           <button
             v-if="rightPanelTab === 'ai'"
             class="right-panel-settings-btn"
             @click="toggleAISettings"
-            title="配置AI服务"
+            title="Configure AI service"
           >
             ⚙️
           </button>
         </div>
 
-        <!-- 元素属性组件 -->
+        <!-- Element properties component -->
         <div v-show="rightPanelTab === 'properties'">
           <ElementProperties
             :selected-band-index="selectedBandIndex"
@@ -272,7 +272,7 @@
           />
         </div>
 
-        <!-- AI助手面板 -->
+        <!-- AI Assistant panel -->
         <div v-show="rightPanelTab === 'ai'" class="ai-panel-container">
           <AIChatPanel
             :visible="rightPanelTab === 'ai'"
@@ -287,7 +287,7 @@
       </ResizablePanel>
     </div>
 
-    <!-- 底部标签页区域 -->
+    <!-- Bottom tab area -->
     <BottomPanel
       :visible="showBottomPanel"
       :initial-height="bottomPanelHeight"
@@ -309,18 +309,18 @@
       @band-selection-change="handleBandSelectionChange"
     />
 
-    <!-- 拖拽反馈层 -->
+    <!-- Drag feedback layer -->
     <DragFeedbackLayer :feedback="dragFeedback" />
 
-    <!-- 打赏弹窗 -->
+    <!-- Donation modal -->
     <RewardModal v-if="locale === 'zh'" v-model:visible="showReward" />
     <RewardModalEn v-else v-model:visible="showReward" />
 
-    <!-- 使用说明弹窗 -->
+    <!-- Help modal -->
     <HelpModal v-if="locale === 'zh'" v-model:visible="showHelp" />
     <HelpModalEn v-else v-model:visible="showHelp" />
 
-    <!-- 字段管理弹窗 -->
+    <!-- Field management modal -->
     <FieldManagementModal
       v-model:visible="showFieldModal"
       :field="isEditingParameter ? editingParameter : editingField"
@@ -328,7 +328,7 @@
       @save="handleFieldSave"
     />
 
-    <!-- 变量管理弹窗 -->
+    <!-- Variable management modal -->
     <VariableManagementModal
       v-model:visible="showVariableModal"
       :variable="editingVariable"
@@ -338,7 +338,7 @@
       @save="handleVariableSave"
     />
 
-    <!-- 样式管理弹窗 -->
+    <!-- Style management modal -->
     <StyleManagementModal
       v-model:visible="showStyleModal"
       :style="editingStyle"
@@ -346,7 +346,7 @@
       @save="handleStyleSave"
     />
 
-    <!-- PDF预览弹窗 -->
+    <!-- PDF preview modal -->
     <PdfPreviewModal
       :visible="showPdfPreview"
       :jrxml-content="jrxmlContent"
@@ -357,7 +357,7 @@
       @update:visible="showPdfPreview = $event"
     />
 
-    <!-- 预览服务器设置弹窗 -->
+    <!-- Preview server settings modal -->
     <PreviewServerSettingsModal
       :visible="showPreviewServerSettings"
       :current-url="previewServerUrl"
@@ -365,7 +365,7 @@
       @update:url="updatePreviewServerUrl"
     />
 
-    <!-- 子数据集管理弹窗 -->
+    <!-- Sub-dataset management modal -->
     <SubDatasetManagementModal
       :visible="showSubDatasetModal"
       :dataset="editingSubDataset"
@@ -373,21 +373,21 @@
       @save="handleSubDatasetSave"
     />
 
-    <!-- 组名称输入对话框 -->
+    <!-- Group name input dialog -->
     <BaseModal
       v-model:visible="showGroupDialog"
-      title="将列加入组"
+      title="Add columns to group"
       :contentClass="'group-dialog'"
       :useVShow="true"
       @confirm="confirmJoinColumnsToGroup"
     >
       <div class="group-dialog-content">
         <div class="form-group">
-          <label>选择现有组或输入新组名称：</label>
+          <label>Select an existing group or enter a new group name:</label>
           <n-select
             v-model:value="groupDialogState.selectedGroupName"
             :options="groupDialogState.existingGroups.map(group => ({ label: group.name, value: group.name }))"
-            placeholder="选择现有组或输入新名称"
+            placeholder="Select an existing group or enter a new name"
             filterable
             tag
             style="width: 100%; margin-top: 8px;"
@@ -396,7 +396,7 @@
       </div>
     </BaseModal>
 
-    <!-- 列选择对话框 -->
+    <!-- Column selection dialog -->
     <ColumnSelectionModal
       v-model:visible="showColumnSelectionModal"
       :columns="columnSelectionState.columns"
@@ -404,31 +404,31 @@
       @confirm="(selectedColumnIndices, selectedRegion, groupText) => handleColumnSelectionConfirm(selectedColumnIndices, selectedRegion, groupText)"
     />
 
-    <!-- 右键菜单 -->
+    <!-- Right-click context menu -->
     <div v-if="contextMenu.visible" class="context-menu-overlay" @click="contextMenu.visible = false" @contextmenu.prevent="contextMenu.visible = false">
       <div class="context-menu" :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }">
         <div v-if="contextMenu.type === 'element'" class="context-menu-items">
           <div class="context-menu-item" @click="handleContextMenuAction('copy')">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> 复制
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy
           </div>
           <div class="context-menu-item" @click="handleContextMenuAction('paste')">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> 粘贴
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> Paste
           </div>
           <div class="context-menu-divider"></div>
           <div class="context-menu-item" @click="handleContextMenuAction('delete')">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> 删除
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete
           </div>
           <div class="context-menu-divider"></div>
           <div class="context-menu-item" @click="handleContextMenuAction('bringToFront')">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg> 置顶
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg> Bring to Front
           </div>
           <div class="context-menu-item" @click="handleContextMenuAction('sendToBack')">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg> 置底
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg> Send to Back
           </div>
         </div>
         <div v-else class="context-menu-items">
           <div class="context-menu-item" @click="handleContextMenuAction('paste')">
-            <span class="menu-icon">📎</span> 粘贴
+            <span class="menu-icon">📎</span> Paste
           </div>
         </div>
       </div>
@@ -501,48 +501,48 @@ import {
   ZOOM_CONSTANTS
 } from '../constants/constants';
 
-// 导入新创建的工具函数和常量
+// Import newly created utility functions and constants
 import {getBandDisplayName} from '../utils/bandUtils';
 
 import {loadFromLocalStorage, saveToLocalStorage} from '../utils/fileUtils';
 
-// 导入元素边界验证工具
+// Import element bounds validation utility
 import {getOutOfBoundsElements} from '../utils/elementBoundsValidator';
 import {useBoundaryDetection} from '@/composables/useBoundaryDetection';
 import {useAlignmentSystem} from '@/composables/useAlignmentSystem';
 import {useDragFeedback} from '@/composables/useDragFeedback';
 
-// 确保浏览器环境中DOMParser可用
-// 移除未使用的getDOMParser函数
+// Ensure DOMParser is available in the browser environment
+// Removed the unused getDOMParser function
 import {generateJRXMLContent, parseJRXMLContent} from '../utils/jrxmlGenerator';
 
 
-// 导入通知管理器
+// Import the notification manager
 import notification from '../utils/notification';
 import {createElement, getAllElements as getAllElementConfigs} from '@/components/elements/ElementRegistry';
 import { syncTableColumns } from '../utils/table/ColumnTreeSync';
 
-// 导入默认JRXML示例文件
+// Import the default JRXML example file
 import defaultJrxmlContent from '../../tests/build_by_jasper_studio_jrxml/grouped_header_column_table_example.jrxml?raw';
 
 const { t, locale } = useI18n();
 
-// 标签页相关
+// Tab-related state
 const activeTab = ref('pageSettings');
 
-// 面板显示状态
+// Panel visibility state
 const showLeftPanel = ref(true);
 const showRightPanel = ref(true);
 const showBottomPanel = ref(false);
 const showAIChat = ref(false);
 const aiChatPanelHeight = ref(300);
-const rightPanelTab = ref('properties'); // 'properties' 或 'ai'
+const rightPanelTab = ref('properties'); // 'properties' or 'ai'
 
-// 浏览器兼容性检查
+// Browser compatibility check
 const browserSupport = ref(checkWebMCPSupport());
 const isAIAssistantSupported = computed(() => browserSupport.value.isSupported);
 
-// MCP上下文，用于AI对话框执行工具调用
+// MCP context, used by the AI dialog to execute tool calls
 const mcpContext = computed<MCPContext>(() => ({
   bands: bands.value,
   reportProperties: reportProperties.value,
@@ -556,49 +556,49 @@ const mcpContext = computed<MCPContext>(() => ({
   selectedElements: selectedElements.value
 }));
 
-// 强制更新函数，用于工具执行后触发UI更新
+// Force-update function, used to trigger a UI refresh after a tool executes
 function forceUpdateUI() {
   console.log('forceUpdateUI called');
   console.log('bands.value before update:', bands.value);
 
-  // 通过深拷贝创建新数组，确保Vue检测到变化
+  // Create a new array via deep clone so Vue detects the change
   const newBands = JSON.parse(JSON.stringify(bands.value));
   bands.value = newBands;
 
   console.log('bands.value after update:', bands.value);
 
-  // 使用Vue的强制更新机制
+  // Use Vue's force-update mechanism
   const instance = getCurrentInstance();
   if (instance) {
     console.log('Forcing component update');
     instance.proxy?.$forceUpdate();
   }
 
-  // 调用nextTick确保DOM更新
+  // Call nextTick to ensure the DOM has updated
   nextTick(() => {
     console.log('Calling updateJRXML');
     updateJRXML();
   });
 }
 
-// 属性面板宽度
-const propertyPanelWidth = ref(PANEL_CONSTANTS.DEFAULT_PROPERTY_PANEL_WIDTH); // 默认宽度300px
-const rightPanelCollapsed = ref(false); // 右侧面板折叠状态
+// Properties panel width
+const propertyPanelWidth = ref(PANEL_CONSTANTS.DEFAULT_PROPERTY_PANEL_WIDTH); // Default width 300px
+const rightPanelCollapsed = ref(false); // Right panel collapsed state
 
-// 左侧面板宽度
+// Left panel width
 const leftPanelWidth = ref(PANEL_CONSTANTS.DEFAULT_LEFT_PANEL_WIDTH);
-const leftPanelCollapsed = ref(false); // 左侧面板折叠状态
+const leftPanelCollapsed = ref(false); // Left panel collapsed state
 
-// DesignerCanvas组件引用
+// DesignerCanvas component reference
 const designerCanvasRef = ref<any>(null);
 
-// 底部面板高度
-const bottomPanelHeight = ref(PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT); // 默认高度400px
+// Bottom panel height
+const bottomPanelHeight = ref(PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT); // Default height 400px
 
-// JRXML内容显示
+// JRXML content display
 const jrxmlContent = ref('');
 
-// 报表属性
+// Report properties
 const reportProperties = ref({
   name: 'NewReport',
   pageWidth: REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH,
@@ -617,7 +617,7 @@ const reportProperties = ref({
 
 });
 
-// 文件管理相关状态
+// File management related state
 const {
   currentFileName,
   currentFileId,
@@ -630,12 +630,12 @@ const {
   defaultFileName: t('fileManager.untitledReport')
 });
 
-// 更新网页标题
+// Update the page title
 watch(currentFileName, (newName) => {
   document.title = newName ? `${newName} - ${t('app.title')}` : t('app.title');
 }, { immediate: true });
 
-// 监听语言变化，更新标题
+// Watch for language changes and update the title
 watch(() => t('app.title'), () => {
   const name = currentFileName.value;
   document.title = name ? `${name} - ${t('app.title')}` : t('app.title');
@@ -644,12 +644,12 @@ watch(() => t('app.title'), () => {
 
 
 function createNewFile() {
-  // 创建新文件的逻辑
+  // Logic for creating a new file
   const timestamp = new Date().getTime();
   currentFileName.value = `${t('fileManager.untitledReport')}${timestamp}`;
   currentFileId.value = `file_${timestamp}`;
 
-  // 重置报表数据
+  // Reset the report data
   reportProperties.value = {
     name: 'NewReport',
     pageWidth: 595,
@@ -677,7 +677,7 @@ function createNewFile() {
     { type: BAND_TYPE_CONSTANTS.SUMMARY as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60, elements: [] }
   ];
 
-  // 更新selectedBandTypes以匹配新的bands
+  // Update selectedBandTypes to match the new bands
   selectedBandTypes.value = bands.value.map(band => band.type);
 
   reportFields.value = [];
@@ -685,7 +685,7 @@ function createNewFile() {
   subDatasets.value = [];
   jrxmlContent.value = '';
 
-  // 清除当前选中的元素
+  // Clear the currently selected element
   selectedElement.value = null;
   selectedBandIndex.value = null;
 }
@@ -703,19 +703,19 @@ function saveCurrentFileToStorage() {
 
 function loadFile(fileData: DesignerFile | any) {
   try {
-    // 解析文件内容
+    // Parse the file content
     const fileContent = typeof fileData.content === 'string'
       ? JSON.parse(fileData.content)
       : fileData;
 
-    // 加载文件数据到当前报表
+    // Load the file data into the current report
     if (fileContent.reportProperties) {
       reportProperties.value = { ...reportProperties.value, ...fileContent.reportProperties };
     }
 
     if (fileContent.bands) {
       bands.value = fileContent.bands;
-      // 更新selectedBandTypes以匹配加载的bands
+      // Update selectedBandTypes to match the loaded bands
       selectedBandTypes.value = fileContent.bands.map((band: Band) => band.type);
     }
 
@@ -735,18 +735,18 @@ function loadFile(fileData: DesignerFile | any) {
       jrxmlContent.value = fileContent.jrxmlContent;
     }
 
-    // 更新当前文件信息
+    // Update the current file info
     currentFileName.value = fileData.name || t('fileManager.untitledReport');
     currentFileId.value = fileData.id || null;
     if (fileData.id) {
       setLastFile({ id: fileData.id, name: fileData.name });
     }
 
-    // 清除当前选中的元素
+    // Clear the currently selected element
     selectedElement.value = null;
     selectedBandIndex.value = null;
   } catch (error) {
-    console.error('加载文件失败:', error);
+    console.error('Failed to load file:', error);
     notification.error(t('fileManager.invalidFileFormat'));
   }
 }
@@ -761,27 +761,27 @@ function saveAsLocalFile() {
 }
 
 function saveCurrentFile() {
-  // 创建bands的深拷贝，以便处理边框属性
+  // Create a deep clone of bands so border properties can be processed
   const processedBands = JSON.parse(JSON.stringify(bands.value));
 
-  // 处理每个band中的元素，过滤掉宽度为0的边框属性
+  // Process elements in each band, filtering out border properties with a width of 0
   processedBands.forEach((band: any) => {
     if (band.elements && Array.isArray(band.elements)) {
       band.elements.forEach((element: any) => {
         if (element.box) {
-          // 处理新边框模型
+          // Handle the new border model
           if (element.box.pen && element.box.pen.lineWidth <= 0) {
             delete element.box.pen;
           }
 
-          // 处理各边边框
+          // Handle borders on each side
           ['topPen', 'leftPen', 'bottomPen', 'rightPen'].forEach(penType => {
             if (element.box[penType] && element.box[penType].lineWidth <= 0) {
               delete element.box[penType];
             }
           });
 
-          // 如果box对象为空，则删除整个box属性
+          // If the box object is empty, remove the entire box property
           if (Object.keys(element.box).length === 0) {
             delete element.box;
           }
@@ -790,7 +790,7 @@ function saveCurrentFile() {
     }
   });
 
-  // 准备要保存的数据
+  // Prepare the data to save
   const fileData = {
     id: currentFileId.value,
     name: currentFileName.value,
@@ -803,68 +803,68 @@ function saveCurrentFile() {
     lastModified: new Date().toISOString()
   };
 
-  // 返回文件数据
+  // Return the file data
   return fileData;
 }
 
-// 未完善元素，仅 localhost 可见
+// Incomplete elements, only visible on localhost
 const INCOMPLETE_ELEMENTS = ['map', 'crosstab', 'iconLabel', 'genericElement', 'list', 'subreport'];
 const isDev = location.hostname === 'localhost';
 
-// 可用元素
+// Available elements
 const elements = computed(() =>
   getAllElementConfigs()
     .filter(config => isDev || !INCOMPLETE_ELEMENTS.includes(config.type))
     .map(config => ({ type: config.type, name: config.name }))
 );
 
-// 定义元素接口
-// 使用从types/index.ts导入的Pen和Box接口
+// Define the element interfaces
+// Using the Pen and Box interfaces imported from types/index.ts
 
-// 使用从types/index.ts导入的接口
+// Using the interfaces imported from types/index.ts
 
-// 报表区域
+// Report bands
 const bands = ref<Band[]>([
   { type: BAND_TYPE_CONSTANTS.TITLE as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 50, elements: [] },
   { type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50, elements: [] },
   { type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30, elements: [] },
-  { type: BAND_TYPE_CONSTANTS.DETAIL as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100, elements: [] }, // 默认给detail区域100的高度
+  { type: BAND_TYPE_CONSTANTS.DETAIL as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100, elements: [] }, // Default the detail band to a height of 100
   { type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30, elements: [] },
   { type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40, elements: [] },
   { type: BAND_TYPE_CONSTANTS.SUMMARY as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60, elements: [] }
 ]);
 
-// 所有可能的band类型
+// All possible band types
 const allBandTypes = [
-  { type: BAND_TYPE_CONSTANTS.TITLE as BandType, name: '标题', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 80 },
-  { type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType, name: '页眉', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50 },
-  { type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType, name: '列标题', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30 },
-  { type: BAND_TYPE_CONSTANTS.DETAIL as BandType, name: '详细数据', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100 },
-  { type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType, name: '列脚', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30 },
-  { type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType, name: '页脚', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40 },
-  { type: BAND_TYPE_CONSTANTS.SUMMARY as BandType, name: '汇总', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60 },
-  { type: BAND_TYPE_CONSTANTS.BACKGROUND as BandType, name: '背景', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.BACKGROUND] || 0 },
-  { type: BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER as BandType, name: '末页页脚', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER] || 40 },
-  { type: BAND_TYPE_CONSTANTS.NO_DATA as BandType, name: '无数据', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.NO_DATA] || 50 }
+  { type: BAND_TYPE_CONSTANTS.TITLE as BandType, name: 'Title', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 80 },
+  { type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType, name: 'Page Header', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50 },
+  { type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType, name: 'Column Header', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30 },
+  { type: BAND_TYPE_CONSTANTS.DETAIL as BandType, name: 'Detail', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100 },
+  { type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType, name: 'Column Footer', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30 },
+  { type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType, name: 'Page Footer', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40 },
+  { type: BAND_TYPE_CONSTANTS.SUMMARY as BandType, name: 'Summary', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60 },
+  { type: BAND_TYPE_CONSTANTS.BACKGROUND as BandType, name: 'Background', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.BACKGROUND] || 0 },
+  { type: BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER as BandType, name: 'Last Page Footer', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER] || 40 },
+  { type: BAND_TYPE_CONSTANTS.NO_DATA as BandType, name: 'No Data', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.NO_DATA] || 50 }
 ];
 
-// 当前选中的band类型
+// The currently selected band type
 const selectedBandTypes = ref<BandType[]>(bands.value.map(band => band.type));
 
-// 数据字段
+// Data fields
 const reportFields = ref<ReportField[]>([
 ]);
 
-// 报表参数
+// Report parameters
 const reportParameters = ref<ReportParameter[]>([
 ]);
 
-// 子数据集
+// Sub-datasets
 const subDatasets = ref<TableDataset[]>([]);
 const showSubDatasetModal = ref(false);
 const editingSubDataset = ref<TableDataset | undefined>(undefined);
 
-// 报表样式
+// Report styles
 const reportStyles = ref<any[]>([
   {
     name: 'Table_TH',
@@ -949,16 +949,16 @@ const reportStyles = ref<any[]>([
   }
 ]);
 
-// 报表变量
+// Report variables
 const reportVariables = ref<any[]>([]);
 
-// 报表分组
+// Report groups
 const reportGroups = ref<any[]>([]);
 
-// 右键菜单状态
+// Context menu state
 const contextMenu = ref({ visible: false, x: 0, y: 0, type: 'element' as 'element' | 'canvas' });
 
-// 表格样式
+// Table styles
 const tableStyles = ref({
   tableHeader: 'Table_TH',
   columnHeader: 'Table_CH',
@@ -966,64 +966,64 @@ const tableStyles = ref({
   detailCell: 'Table_TD'
 });
 
-// 处理添加子数据集
+// Handle adding a sub-dataset
 const handleAddSubDataset = () => {
   editingSubDataset.value = undefined;
   showSubDatasetModal.value = true;
 };
 
-// 处理编辑子数据集
+// Handle editing a sub-dataset
 const handleEditSubDataset = (dataset: TableDataset, index: number) => {
   editingSubDataset.value = dataset;
   showSubDatasetModal.value = true;
 };
 
-// 处理删除子数据集
+// Handle deleting a sub-dataset
 const handleDeleteSubDataset = (index: number) => {
-  // 保存状态到历史记录
+  // Save state to history
   saveStateToHistory();
 
-  // 删除子数据集
+  // Remove the sub-dataset
   subDatasets.value.splice(index, 1);
 
-  // 更新JRXML
+  // Update JRXML
   updateJRXML();
 };
 
-// 处理子数据集保存
+// Handle saving a sub-dataset
 const handleSubDatasetSave = (dataset: TableDataset) => {
-  // 保存状态到历史记录
+  // Save state to history
   saveStateToHistory();
 
   const existingIndex = subDatasets.value.findIndex((d: TableDataset) => d.uuid === dataset.uuid);
 
   if (existingIndex >= 0) {
-    // 更新现有子数据集
+    // Update the existing sub-dataset
     subDatasets.value[existingIndex] = dataset;
   } else {
-    // 添加新子数据集
+    // Add the new sub-dataset
     subDatasets.value.push(dataset);
   }
 
-  // 更新JRXML
+  // Update JRXML
   updateJRXML();
 
-  // 关闭模态框
+  // Close the modal
   showSubDatasetModal.value = false;
 };
 
-// 检查并创建默认表格数据集
+// Check for and create a default table dataset
 const checkAndCreateDefaultTableDataset = (datasetName: string = 'tableDataset') => {
-  // 检查是否已存在同名数据集
+  // Check whether a dataset with the same name already exists
   const existingDataset = subDatasets.value.find((d: TableDataset) => d.name === datasetName);
   if (existingDataset) {
     return;
   }
 
-  // 保存状态到历史记录
+  // Save state to history
   saveStateToHistory();
 
-  // 创建默认数据集
+  // Create the default dataset
   const defaultDataset: TableDataset = {
     uuid: crypto.randomUUID(),
     name: datasetName,
@@ -1034,17 +1034,17 @@ const checkAndCreateDefaultTableDataset = (datasetName: string = 'tableDataset')
     ]
   };
 
-  // 添加到子数据集列表
+  // Add it to the sub-dataset list
   subDatasets.value.push(defaultDataset);
 
-  // 更新JRXML
+  // Update JRXML
   updateJRXML();
 };
 
-// 元素创建事件处理函数
+// Element-created event handler
 const handleElementCreated = (element: DesignElement, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
-  // 触发元素创建事件，提供必要的参数
-  console.log('元素已创建:', {
+  // Fire the element-created event, providing the necessary parameters
+  console.log('Element created:', {
     element,
     bandIndex,
     elementIndex,
@@ -1057,17 +1057,17 @@ const handleElementCreated = (element: DesignElement, bandIndex: number, element
     }
   });
 
-  // 可以在这里添加其他元素创建后的处理逻辑
-  // 例如：根据元素类型执行特定的初始化操作
+  // Additional post-creation handling logic can be added here
+  // e.g. perform type-specific initialization based on the element type
   switch (element.type) {
     case 'textField':
-      // 文本字段元素的初始化逻辑
+      // Initialization logic for text field elements
       break;
-    // 其他元素类型的初始化逻辑
+    // Initialization logic for other element types
   }
 };
 
-// 历史记录栈 - 用于撤销功能
+// History stack - used for the undo feature
 type HistoryState = {
   reportProperties: typeof reportProperties.value;
   bands: typeof bands.value;
@@ -1076,10 +1076,10 @@ type HistoryState = {
   subDatasets: typeof subDatasets.value;
 };
 
-// 超出边界的元素
+// Out-of-bounds elements
 const outOfBoundsElements = ref<Array<{bandIndex: number, elementIndex: number, element: DesignElement}>>([]);
 
-// 边界检测composable
+// Boundary detection composable
 const {
   boundaryState: boundaryDetectionState,
   checkAllElements: checkAllBoundaryElements,
@@ -1088,7 +1088,7 @@ const {
   getViolationSummary: boundaryViolationSummary,
 } = useBoundaryDetection({ tolerance: 5, realtime: true });
 
-// 对齐系统composable
+// Alignment system composable
 const {
   activeGuides: activeAlignmentGuides,
   calculateAlignment,
@@ -1096,7 +1096,7 @@ const {
   alignElements,
 } = useAlignmentSystem();
 
-// 拖拽反馈composable
+// Drag feedback composable
 const {
   feedback: dragFeedback,
   updateDroppableZones,
@@ -1104,19 +1104,19 @@ const {
   stopDrag: stopDragFeedback,
 } = useDragFeedback();
 
-// 检查并更新超出边界的元素
+// Check for and update out-of-bounds elements
 function updateOutOfBoundsElements() {
-  // 安全检查，确保bands和reportProperties已初始化
+  // Safety check to ensure bands and reportProperties have been initialized
   if (!bands.value || !reportProperties.value) {
-    console.warn('bands或reportProperties未初始化，跳过边界检查');
+    console.warn('bands or reportProperties not initialized, skipping boundary check');
     return;
   }
 
-  // 获取所有超出边界的元素（保持原有格式供DesignerCanvas使用）
+  // Get all out-of-bounds elements (keep the original format for DesignerCanvas)
   const outOfBounds = getOutOfBoundsElements(bands.value, reportProperties.value);
   outOfBoundsElements.value = outOfBounds;
 
-  // 同时使用composable进行详细边界检测
+  // Also run detailed boundary detection via the composable
   checkAllBoundaryElements(
     bands.value,
     reportProperties.value.pageWidth,
@@ -1124,11 +1124,11 @@ function updateOutOfBoundsElements() {
   );
 
   if (outOfBounds.length > 0) {
-    console.warn(`发现 ${outOfBounds.length} 个超出边界的元素:`, outOfBounds);
+    console.warn(`Found ${outOfBounds.length} out-of-bounds element(s):`, outOfBounds);
   }
 }
 
-// 获取当前选中的多个元素的实际数据
+// Get the actual data for the currently selected elements
 function getSelectedElementsData() {
   const result: Array<{ x: number; y: number; width: number; height: number; bandIndex: number; elementIndex: number }> = [];
   for (const sel of selectedElements.value) {
@@ -1142,7 +1142,7 @@ function getSelectedElementsData() {
   return result;
 }
 
-// 多选对齐操作
+// Multi-select alignment operation
 function handleMultiAlign(direction: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') {
   const elementsData = getSelectedElementsData();
   if (elementsData.length < 2) return;
@@ -1161,7 +1161,7 @@ function handleMultiAlign(direction: 'left' | 'center' | 'right' | 'top' | 'midd
   updateJRXML();
 }
 
-// 多选分布操作
+// Multi-select distribution operation
 function handleMultiDistribute(direction: 'horizontal' | 'vertical') {
   const elementsData = getSelectedElementsData();
   if (elementsData.length < 3) return;
@@ -1180,7 +1180,7 @@ function handleMultiDistribute(direction: 'horizontal' | 'vertical') {
   updateJRXML();
 }
 
-// 多选尺寸操作
+// Multi-select resize operation
 function handleMultiResize(type: 'sameWidth' | 'sameHeight' | 'sameSize') {
   const elementsData = getSelectedElementsData();
   if (elementsData.length < 2) return;
@@ -1240,19 +1240,19 @@ const {
   }
 });
 
-const isDraggingOrResizing = ref(false); // 标记是否正在拖动或调整大小
-const isUpdatingJRXML = ref(false); // 防止 updateJRXML 重入的标志
+const isDraggingOrResizing = ref(false); // Flags whether a drag or resize is in progress
+const isUpdatingJRXML = ref(false); // Guards against re-entrant calls to updateJRXML
 
-// 添加新参数
-// 移除未使用的参数管理函数
+// Add a new parameter
+// Removed the unused parameter management function
 
-// 选中状态
+// Selection state
 const selectedBandIndex = ref<number | null>(null);
 const selectedElement = ref<SelectedElementInfo | null>(null);
-const selectedElements = ref<SelectedElementInfo[]>([]); // 元素编辑状态
+const selectedElements = ref<SelectedElementInfo[]>([]); // Element editing state
 const editingElement = ref<EditingElementInfo | null>(null);
 
-// 组名称输入对话框状态
+// Group name input dialog state
 const showGroupDialog = ref(false);
 const groupDialogState = ref({
   elementIndex: 0,
@@ -1263,7 +1263,7 @@ const groupDialogState = ref({
   selectedGroupName: ''
 });
 
-// 列选择对话框状态
+// Column selection dialog state
 const showColumnSelectionModal = ref(false);
 const columnSelectionState = ref({
   elementIndex: 0,
@@ -1275,20 +1275,20 @@ const columnSelectionState = ref({
 
 
 
-// 报表设计区域焦点状态
-const isDesignAreaFocused = ref(true); // 默认聚焦设计区域
+// Report design area focus state
+const isDesignAreaFocused = ref(true); // Focus the design area by default
 
-// 设置设计区域焦点
+// Set focus on the design area
 const setDesignAreaFocused = () => {
   isDesignAreaFocused.value = true;
 };
 
-// 移除设计区域焦点
+// Remove focus from the design area
 const removeDesignAreaFocused = () => {
   isDesignAreaFocused.value = false;
 };
 
-// 计算属性
+// Computed properties
 const paperWidth = computed(() => reportProperties.value?.pageWidth || REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH);
 const paperHeight = computed(() => reportProperties.value?.pageHeight || REPORT_CONSTANTS.DEFAULT_PAGE_HEIGHT);
 const { zoomLevel, resetZoom, calculateOptimalZoom, handleZoomChange } = useZoom({
@@ -1296,7 +1296,7 @@ const { zoomLevel, resetZoom, calculateOptimalZoom, handleZoomChange } = useZoom
   zoomConstants: ZOOM_CONSTANTS
 });
 
-// 设置缩放级别的函数
+// Function to set the zoom level
 const setZoomLevel = (newZoom: number) => {
   zoomLevel.value = newZoom;
 };
@@ -1310,12 +1310,12 @@ const currentElement = computed(() => {
   return null;
 });
 
-// 获取所有报表元素
+// Get all report elements
 
 
 
 
-// 按band分组的报表元素 - 暂时注释掉，因为未使用
+// Report elements grouped by band - temporarily commented out since it's unused
 /*
 const groupedReportElements = computed(() => {
   const groups: Record<string, Array<{ element: DesignElement, bandIndex: number, elementIndex: number }>> = {};
@@ -1342,16 +1342,16 @@ const groupedReportElements = computed(() => {
 });
 */
 
-// 标尺相关计算属性
+// Ruler-related computed properties
 const horizontalRulerTicks = computed(() => {
   const ticks = [];
   const width = paperWidth.value;
-  const unit = RULER_CONSTANTS.UNIT_SIZE; // 减小基本单位，从10px改为5px，增加刻度密度
+  const unit = RULER_CONSTANTS.UNIT_SIZE; // Reduced base unit, from 10px to 5px, to increase tick density
 
   for (let i = 0; i <= width; i += unit) {
     ticks.push({
-      position: i, // 不应用缩放比例，保持实际位置
-      major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0 // 每25px一个主要刻度，从50px改为25px
+      position: i, // Do not apply the zoom scale, keep the actual position
+      major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0 // One major tick every 25px, changed from 50px to 25px
     });
   }
 
@@ -1362,9 +1362,9 @@ const horizontalRulerLabels = computed(() => {
   const labels = [];
   const width = paperWidth.value;
 
-  for (let i = 0; i <= width; i += RULER_CONSTANTS.LABEL_INTERVAL) { // 每25px显示一个标签，从50px改为25px
+  for (let i = 0; i <= width; i += RULER_CONSTANTS.LABEL_INTERVAL) { // Show a label every 25px, changed from 50px to 25px
     labels.push({
-      position: i, // 不应用缩放比例，保持实际位置
+      position: i, // Do not apply the zoom scale, keep the actual position
       value: i.toString()
     });
   }
@@ -1375,12 +1375,12 @@ const horizontalRulerLabels = computed(() => {
 const verticalRulerTicks = computed(() => {
   const ticks = [];
   const height = paperHeight.value;
-  const unit = RULER_CONSTANTS.UNIT_SIZE; // 减小基本单位，从10px改为5px，增加刻度密度
+  const unit = RULER_CONSTANTS.UNIT_SIZE; // Reduced base unit, from 10px to 5px, to increase tick density
 
   for (let i = 0; i <= height; i += unit) {
     ticks.push({
-      position: i, // 不应用缩放比例，保持实际位置
-      major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0 // 每25px一个主要刻度，从50px改为25px
+      position: i, // Do not apply the zoom scale, keep the actual position
+      major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0 // One major tick every 25px, changed from 50px to 25px
     });
   }
 
@@ -1391,9 +1391,9 @@ const verticalRulerLabels = computed(() => {
   const labels = [];
   const height = paperHeight.value;
 
-  for (let i = 0; i <= height; i += RULER_CONSTANTS.LABEL_INTERVAL) { // 每25px显示一个标签，从50px改为25px
+  for (let i = 0; i <= height; i += RULER_CONSTANTS.LABEL_INTERVAL) { // Show a label every 25px, changed from 50px to 25px
     labels.push({
-      position: i, // 不应用缩放比例，保持实际位置
+      position: i, // Do not apply the zoom scale, keep the actual position
       value: i.toString()
     });
   }
@@ -1401,9 +1401,9 @@ const verticalRulerLabels = computed(() => {
   return labels;
 });
 
-// 拖拽相关
+// Drag-related state
 const draggingInfo = ref<DraggingInfo | null>(null);
-const highlightedBandIndex = ref<number | null>(null); // 高亮显示的目标band索引
+const highlightedBandIndex = ref<number | null>(null); // Index of the highlighted target band
 const {
   enableSnapToGrid,
   enableSnapToAlignment,
@@ -1417,31 +1417,31 @@ const {
   bandSpacing: BAND_CONSTANTS.SPACING
 });
 
-// 控制网格显示/隐藏
+// Controls whether the grid is shown or hidden
 const showGrid = ref(true);
-// 拖动时显示的坐标信息
+// Coordinate info shown while dragging
 const dragCoordinates = ref<{x: number, y: number, visible: boolean, bandName: string}>({ x: 0, y: 0, visible: false, bandName: '' });
-// Band调整高度时的信息
+// Info shown while resizing a band's height
 const resizingBandInfo = reactive({ visible: false, bandName: '', height: 0 });
 // Expose it as a ref for template reactivity
 const resizingBandInfoRef = ref(resizingBandInfo);
-// 调整大小相关
+// Resize-related state
 const resizingInfo = ref<{bandIndex: number, elementIndex: number, startX: number, startY: number, startWidth: number, startHeight: number, parentFrameIndex?: number} | null>(null);
 
-// 跟踪最后点击的band
-const lastClickedBandIndex = ref<number>(3); // 默认为DETAIL区域（索引3）
+// Tracks the last-clicked band
+const lastClickedBandIndex = ref<number>(3); // Defaults to the DETAIL band (index 3)
 
-// 跟踪从组件库拖拽的元素（修复Mac Tauri环境下dataTransfer可能失效的问题）
+// Tracks the element being dragged from the component library (works around dataTransfer sometimes failing in the Mac Tauri environment)
 const draggedLibraryElement = ref<any>(null);
 
-// 辅助函数：根据数据集生成表格列
+// Helper function: generate table columns from a dataset
 function generateTableColumnsFromDataset(defaultTableWidth: number = 555) {
-  // 优先使用子数据集
+  // Prefer the sub-dataset if one exists
   if (subDatasets.value.length > 0) {
     const dataset = subDatasets.value[0];
     if (dataset && dataset.fields && dataset.fields.length > 0) {
       const fieldCount = dataset.fields.length;
-      const columnWidth = Math.round(defaultTableWidth / fieldCount); // 根据表格宽度均分列宽
+      const columnWidth = Math.round(defaultTableWidth / fieldCount); // Distribute column width evenly across the table width
       return dataset.fields.map(field => {
         return {
           uuid: crypto.randomUUID(),
@@ -1495,11 +1495,11 @@ function generateTableColumnsFromDataset(defaultTableWidth: number = 555) {
       });
     }
   }
-  // 默认返回空数组，使用ElementRegistry中的默认列
+  // Default to returning an empty array, using the default columns from ElementRegistry
   return [];
 }
 
-// 处理拖放
+// Handle drag-and-drop
 const handleDragStart = (event: DragEvent, element: any) => {
   draggedLibraryElement.value = element;
   if (event.dataTransfer) {
@@ -1508,76 +1508,76 @@ const handleDragStart = (event: DragEvent, element: any) => {
   }
 };
 
-// 处理元素双击事件
+// Handle element double-click events
 const handleElementDoubleClick = (element: any) => {
-  // 确保有最后点击的band
+  // Ensure there is a last-clicked band
   if (lastClickedBandIndex.value === null || lastClickedBandIndex.value === undefined) {
-    console.warn('没有选中的band，将使用默认band');
-    lastClickedBandIndex.value = 3; // 默认使用DETAIL区域
+    console.warn('No band selected, falling back to the default band');
+    lastClickedBandIndex.value = 3; // Default to the DETAIL band
   }
 
-  // 获取目标band
+  // Get the target band
   const targetBand = bands.value[lastClickedBandIndex.value];
   if (!targetBand) {
-    console.error('目标band不存在');
+    console.error('Target band does not exist');
     return;
   }
 
-  // 保存状态到历史记录
+  // Save state to history
   saveStateToHistory();
 
-  // 创建新元素
+  // Create the new element
   let newElement: DesignElement = {
     ...createElement(element.type),
-    uuid: crypto.randomUUID(), // 生成 UUID
-    x: 50, // 默认位置
-    y: 20, // 默认位置
+    uuid: crypto.randomUUID(), // Generate a UUID
+    x: 50, // Default position
+    y: 20, // Default position
     ...getDefaultElementProperties(element.type)
   } as DesignElement;
 
-  // 如果是表格元素，检查并创建默认数据集，然后生成对应的列
+  // For table elements, check for/create the default dataset, then generate the corresponding columns
   if (element.type === 'table') {
-    // 获取表格默认宽度
+    // Get the default table width
     const defaultTableWidth = (newElement as any).width || 555;
 
-    // 检查并创建默认数据集
+    // Check for and create the default dataset
     const datasetName = (newElement as any).dataset?.name || 'tableDataset';
     checkAndCreateDefaultTableDataset(datasetName);
 
-    // 使用数据集生成表格列
+    // Generate table columns from the dataset
     const columns = generateTableColumnsFromDataset(defaultTableWidth);
     if (columns.length > 0) {
       (newElement as any).columns = columns;
-      // 计算表格总宽度
+      // Calculate the total table width
       const totalWidth = columns.reduce((sum, column) => sum + (column.width || 150), 0);
       newElement.width = totalWidth;
     }
   }
 
-  // 为矩形、椭圆、容器和图片设置默认高度为band高度的一半
+  // For rectangles, ellipses, frames, and images, default the height to half the band's height
   if (['rectangle', 'ellipse', 'frame', 'image'].includes(element.type)) {
     newElement.height = Math.round(targetBand.height / 2);
   }
 
-  // 确保band有elements数组
+  // Ensure the band has an elements array
   if (!targetBand.elements) {
     targetBand.elements = [];
   }
 
-  // 添加元素到目标band
+  // Add the element to the target band
   targetBand.elements.push(newElement);
 
-  // 选中新添加的元素
+  // Select the newly added element
   const newElementIndex = targetBand.elements.length - 1;
   selectElement(lastClickedBandIndex.value, newElementIndex);
 
-  // 触发元素创建事件
+  // Fire the element-created event
   handleElementCreated(newElement, lastClickedBandIndex.value, newElementIndex);
 
-  // 更新JRXML
+  // Update JRXML
   updateJRXML();
 
-  console.log('元素已添加到band:', newElement);
+  console.log('Element added to band:', newElement);
 };
 
 const handleDrop = (event: DragEvent) => {
@@ -1585,10 +1585,10 @@ const handleDrop = (event: DragEvent) => {
 
   let elementData = null;
 
-  // 优先从内部状态获取（解决Mac Tauri环境下可能获取不到dataTransfer的问题）
+  // Prefer reading from internal state (works around dataTransfer sometimes being unavailable in the Mac Tauri environment)
   if (draggedLibraryElement.value) {
     elementData = draggedLibraryElement.value;
-    draggedLibraryElement.value = null; // 重置状态
+    draggedLibraryElement.value = null; // Reset the state
   } else if (event.dataTransfer) {
     try {
       const data = event.dataTransfer.getData('application/json');
@@ -1596,27 +1596,27 @@ const handleDrop = (event: DragEvent) => {
         elementData = JSON.parse(data);
       }
     } catch (e) {
-      console.error('解析拖拽数据失败:', e);
+      console.error('Failed to parse drag data:', e);
     }
   }
 
   if (elementData) {
 
-    // 获取paper元素作为参考点
+    // Get the paper element as a reference point
     const paper = document.querySelector('.paper') as HTMLElement;
     if (!paper) return;
 
     const paperRect = paper.getBoundingClientRect();
-    // 计算相对于paper的坐标
+    // Calculate coordinates relative to the paper
     const x = event.clientX - paperRect.left;
     const y = event.clientY - paperRect.top;
 
-    // 考虑缩放比例
+    // Account for the zoom scale
     const currentZoom = zoomLevel.value;
     const scaledX = x / currentZoom;
     const scaledY = y / currentZoom;
 
-    // 找到对应的band
+    // Find the corresponding band
     let bandIndex = 0;
     let currentY = 0;
     if (bands.value && Array.isArray(bands.value)) {
@@ -1632,54 +1632,54 @@ const handleDrop = (event: DragEvent) => {
       }
     }
 
-    // 创建新元素
+    // Create the new element
     let newElement: DesignElement = {
       ...createElement(elementData.type),
-      uuid: crypto.randomUUID(), // 生成 UUID
-      x: Math.round(Math.max(0, scaledX - 50)), // 减去元素宽度的一半以居中，并确保为整数
-      y: Math.round(Math.max(0, scaledY - currentY)), // 相对于band的位置，并确保为整数
+      uuid: crypto.randomUUID(), // Generate a UUID
+      x: Math.round(Math.max(0, scaledX - 50)), // Subtract half the element width to center it, and ensure an integer
+      y: Math.round(Math.max(0, scaledY - currentY)), // Position relative to the band, and ensure an integer
       ...getDefaultElementProperties(elementData.type)
     } as DesignElement;
 
-    // 如果是表格元素，检查并创建默认数据集，然后生成对应的列
+    // For table elements, check for/create the default dataset, then generate the corresponding columns
     if (elementData.type === 'table') {
-      // 获取表格默认宽度
+      // Get the default table width
       const defaultTableWidth = (newElement as any).width || 555;
 
-      // 检查并创建默认数据集
+      // Check for and create the default dataset
       const datasetName = (newElement as any).dataset?.name || 'tableDataset';
       checkAndCreateDefaultTableDataset(datasetName);
 
-      // 使用数据集生成表格列
+      // Generate table columns from the dataset
       const columns = generateTableColumnsFromDataset(defaultTableWidth);
       if (columns.length > 0) {
         (newElement as any).columns = columns;
-        // 计算表格总宽度
+        // Calculate the total table width
         const totalWidth = columns.reduce((sum, column) => sum + (column.width || 150), 0);
         newElement.width = totalWidth;
-        // 更新x坐标，使其居中
+        // Update the x coordinate to center it
         newElement.x = Math.round(Math.max(0, scaledX - totalWidth / 2));
       }
     }
 
     const targetBand = bands.value[bandIndex];
     if (targetBand && targetBand.elements) {
-      // 为矩形、椭圆、容器和图片设置默认高度为band高度的一半
+      // For rectangles, ellipses, frames, and images, default the height to half the band's height
       if (['rectangle', 'ellipse', 'frame', 'image'].includes(elementData.type)) {
         newElement.height = Math.round(targetBand.height / 2);
       }
-      // 保存状态到历史记录
+      // Save state to history
       saveStateToHistory();
 
-      // 检测是否在 Frame 上
+      // Detect whether it is being dropped on a Frame
       let targetFrameIndex = -1;
 
-      // 遍历 Band 中的 Frame，检测新元素是否落在 Frame 上
+      // Iterate over the Frames in the Band to check whether the new element lands on one
       for (let i = targetBand.elements.length - 1; i >= 0; i--) {
         const el = targetBand.elements[i];
         if (!el) continue;
         if (el.type === 'frame') {
-          // 检查新元素的中心点是否在 Frame 内
+          // Check whether the new element's center point is inside the Frame
           const centerX = newElement.x + newElement.width / 2;
           const centerY = newElement.y + newElement.height / 2;
 
@@ -1692,87 +1692,87 @@ const handleDrop = (event: DragEvent) => {
       }
 
       if (targetFrameIndex !== -1) {
-         // 添加到 Frame
+         // Add it to the Frame
          const frame = targetBand.elements[targetFrameIndex] as FrameElement;
          if (!frame.elements) frame.elements = [];
 
-         // 转换为相对于 Frame 的坐标
+         // Convert to coordinates relative to the Frame
          newElement.x -= frame.x;
          newElement.y -= frame.y;
 
-         // Frame 内边界检查
+         // Bounds check within the Frame
          if (newElement.x < 0) newElement.x = 0;
          if (newElement.y < 0) newElement.y = 0;
          if (newElement.x + newElement.width > frame.width) newElement.x = Math.max(0, frame.width - newElement.width);
          if (newElement.y + newElement.height > frame.height) newElement.y = Math.max(0, frame.height - newElement.height);
 
          frame.elements.push(newElement);
-         // 选中新添加的元素，注意传递 parentFrameIndex
+         // Select the newly added element; note that parentFrameIndex must be passed
          const frameElementIndex = frame.elements.length - 1;
          selectElement(bandIndex, frameElementIndex, false, targetFrameIndex);
 
-         // 触发元素创建事件，添加到Frame时需要传递parentFrameIndex
+         // Fire the element-created event; parentFrameIndex must be passed when adding to a Frame
          handleElementCreated(newElement, bandIndex, frameElementIndex, targetFrameIndex);
 
       } else {
-        // 添加到 Band (原有逻辑)
-        // 确保元素不会超出边距限制
+        // Add it to the Band (original logic)
+        // Ensure the element does not exceed the margin limits
         const availableWidth = paperWidth.value - (reportProperties.value?.leftMargin || 0) - (reportProperties.value?.rightMargin || 0);
 
-        // 限制元素不超出右边界
+        // Constrain the element so it doesn't exceed the right boundary
         if (newElement.x + newElement.width > availableWidth) {
           newElement.x = Math.round(availableWidth - newElement.width);
         }
 
-        // 确保元素宽度不超过可用空间
+        // Ensure the element's width doesn't exceed the available space
         if (newElement.width > availableWidth) {
           newElement.width = Math.round(availableWidth);
         }
 
-        // 确保元素不超出band高度
+        // Ensure the element doesn't exceed the band's height
         if (newElement.y + newElement.height > targetBand.height) {
           newElement.y = Math.round(targetBand.height - newElement.height);
         }
 
         targetBand.elements.push(newElement);
 
-        // 选中刚添加的元素
+        // Select the newly added element
         const newElementIndex = targetBand.elements.length - 1;
         selectElement(bandIndex, newElementIndex);
 
-        // 触发元素创建事件
+        // Fire the element-created event
         handleElementCreated(newElement, bandIndex, newElementIndex);
       }
 
-      // 更新JRXML
+      // Update JRXML
       updateJRXML();
     }
   }
 
-  // 清除高亮状态
+  // Clear the highlight state
   highlightedBandIndex.value = null;
 };
 
-// 处理拖动过程中的视觉反馈
+// Handle visual feedback while dragging
 const handleDragOver = (event: DragEvent) => {
   event.preventDefault();
   if (event.dataTransfer) {
     event.dataTransfer.dropEffect = 'copy';
   }
 
-  // 获取paper元素作为参考点
+  // Get the paper element as a reference point
   const paper = document.querySelector('.paper') as HTMLElement;
   if (!paper) return;
 
   const paperRect = paper.getBoundingClientRect();
-  // 计算相对于paper的坐标
+  // Calculate coordinates relative to the paper
   const y = event.clientY - paperRect.top;
 
-  // 考虑缩放比例
+  // Account for the zoom scale
   const currentZoom = zoomLevel.value;
   const scaledY = y / currentZoom;
 
-  // 找到对应的band
+  // Find the corresponding band
   let bandIndex = -1;
   let currentY = 0;
   for (let i = 0; i < bands.value.length; i++) {
@@ -1786,13 +1786,13 @@ const handleDragOver = (event: DragEvent) => {
     }
   }
 
-  // 更新高亮状态
+  // Update the highlight state
   highlightedBandIndex.value = bandIndex;
 };
 
-// 处理拖动离开事件
+// Handle the drag-leave event
 const handleDragLeave = (event: DragEvent) => {
-  // 检查是否真的离开了paper区域
+  // Check whether the paper area was actually left
   const paper = document.querySelector('.paper') as HTMLElement;
   if (paper && !paper.contains(event.relatedTarget as Node)) {
     highlightedBandIndex.value = null;
@@ -1800,7 +1800,7 @@ const handleDragLeave = (event: DragEvent) => {
 };
 
 const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
-  // 使用报表的默认字体设置
+  // Use the report's default font settings
   const defaultFontProps = {
     fontFamily: reportProperties.value?.defaultFont?.name || FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
     fontSize: reportProperties.value?.defaultFont?.size || REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
@@ -1809,7 +1809,7 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
     isUnderline: reportProperties.value?.defaultFont?.isUnderline || false
   };
 
-  // 计算报表页面的可用宽度
+  // Calculate the available width of the report page
   const calculateAvailableWidth = () => {
     const pageWidth = reportProperties.value?.pageWidth || REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH;
     const leftMargin = reportProperties.value?.leftMargin || REPORT_CONSTANTS.DEFAULT_MARGIN;
@@ -1841,7 +1841,7 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
     case 'rectangle':
       return {
         mode: 'Transparent',
-        border: '1px solid #ccc' // 为矩形元素默认添加边框
+        border: '1px solid #ccc' // Add a default border for rectangle elements
       };
     case 'table':
       return {
@@ -1852,20 +1852,20 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
   }
 };
 
-// 选择区域
+// Select a band
 const selectBand = (index: number) => {
   selectedBandIndex.value = index;
   selectedElement.value = null;
-  selectedElements.value = []; // 清空多选
-  // 更新最后点击的band索引
+  selectedElements.value = []; // Clear the multi-selection
+  // Update the last-clicked band index
   lastClickedBandIndex.value = index;
-  // 自动隐藏底部面板
+  // Automatically hide the bottom panel
   showBottomPanel.value = false;
 };
 
-// 选择元素
+// Select an element
 const selectElement = (bandIndex: number, elementIndex: number, isMultiSelect = false, parentFrameIndex?: number) => {
-  // 获取元素引用以获取 UUID
+  // Get the element reference in order to obtain its UUID
   const band = bands.value[bandIndex];
   let element;
 
@@ -1880,26 +1880,26 @@ const selectElement = (bandIndex: number, elementIndex: number, isMultiSelect = 
 
   const uuid = element?.uuid;
 
-  // 快速更新选中状态，避免不必要的DOM操作
+  // Quickly update the selection state, avoiding unnecessary DOM operations
   if (isMultiSelect) {
-    // 多选模式
+    // Multi-select mode
     const existingIndex = selectedElements.value.findIndex(
       el => el.bandIndex === bandIndex && el.elementIndex === elementIndex && el.parentFrameIndex === parentFrameIndex
     );
 
     if (existingIndex !== -1) {
-      // 如果元素已选中，则取消选中
+      // If the element is already selected, deselect it
       selectedElements.value.splice(existingIndex, 1);
     } else {
-      // 添加到多选列表
+      // Add it to the multi-selection list
       selectedElements.value.push({ bandIndex, elementIndex, parentFrameIndex, uuid });
     }
 
-    // 如果没有选中任何元素，则清空selectedElement
+    // If nothing is selected anymore, clear selectedElement
     if (selectedElements.value.length === 0) {
       selectedElement.value = null;
     } else {
-      // 将最后一个选中的元素作为当前选中的元素
+      // Use the last-selected element as the current selection
       const lastSelected = selectedElements.value[selectedElements.value.length - 1];
       if (lastSelected) {
         selectedElement.value = {
@@ -1911,63 +1911,63 @@ const selectElement = (bandIndex: number, elementIndex: number, isMultiSelect = 
       }
     }
   } else {
-    // 单选模式
+    // Single-select mode
     selectedElement.value = { bandIndex, elementIndex, parentFrameIndex, uuid };
-    selectedElements.value = [{ bandIndex, elementIndex, parentFrameIndex, uuid }]; // 清空多选列表，只保留当前选中的元素
+    selectedElements.value = [{ bandIndex, elementIndex, parentFrameIndex, uuid }]; // Clear the multi-selection list, keeping only the currently selected element
   }
 
   selectedBandIndex.value = null;
 
-  // 自动隐藏底部面板
+  // Automatically hide the bottom panel
   showBottomPanel.value = false;
 
   if (element && !element.box) {
-    // 使用initBox函数初始化box属性
+    // Use initBox to initialize the box property
     initBox();
   }
 
-  // 移除了昂贵的DOM查询和动画效果，通过Vue的响应式系统和CSS类来管理选择状态
+  // Removed the expensive DOM queries and animation effects; selection state is now managed via Vue's reactivity system and CSS classes
 };
 
-// 清空所有选择
+// Clear all selections
 const clearSelection = () => {
   selectedElement.value = null;
   selectedElements.value = [];
   selectedBandIndex.value = null;
 };
 
-// 框选元素
+// Select elements within a marquee (rubber-band) rectangle
 const selectElementsInRect = (rect: { left: number, top: number, right: number, bottom: number }) => {
-  // 清空当前选择
+  // Clear the current selection
   selectedElements.value = [];
   selectedElement.value = null;
 
-  // 计算band的累积高度，用于将绝对坐标转换为相对于band的坐标
-  // 初始偏移量需要考虑上边距
+  // Calculate the cumulative height of the bands, used to convert absolute coordinates to coordinates relative to a band
+  // The initial offset must account for the top margin
   let bandOffsetY = reportProperties.value?.topMargin || 0;
 
-  // 遍历所有band和元素，检查是否在框选区域内
+  // Iterate over all bands and elements, checking whether each falls within the marquee area
   bands.value.forEach((band, bandIndex) => {
-    // 检查当前band是否与框选区域有重叠
+    // Check whether the current band overlaps the marquee area
     const bandTop = bandOffsetY;
     const bandBottom = bandOffsetY + band.height;
 
-    // 如果band与框选区域没有重叠，跳过
+    // If the band does not overlap the marquee area, skip it
     if (bandBottom < rect.top || bandTop > rect.bottom) {
       bandOffsetY += band.height;
       return;
     }
 
-    // 遍历当前band中的所有元素
+    // Iterate over all elements in the current band
     band.elements.forEach((element, elementIndex) => {
-      // 计算元素在画布上的绝对位置
-      // 元素的X坐标需要考虑左边距
+      // Calculate the element's absolute position on the canvas
+      // The element's X coordinate must account for the left margin
       const elementLeft = (reportProperties.value?.leftMargin || 0) + element.x;
       const elementTop = bandOffsetY + element.y;
       const elementRight = elementLeft + element.width;
       const elementBottom = elementTop + element.height;
 
-      // 检查元素是否与框选区域有重叠
+      // Check whether the element overlaps the marquee area
       const isOverlapping = !(
         elementRight < rect.left ||
         elementLeft > rect.right ||
@@ -1975,17 +1975,17 @@ const selectElementsInRect = (rect: { left: number, top: number, right: number, 
         elementTop > rect.bottom
       );
 
-      // 如果有重叠，添加到选择列表
+      // If it overlaps, add it to the selection list
       if (isOverlapping) {
         selectedElements.value.push({ bandIndex, elementIndex, uuid: element.uuid });
       }
     });
 
-    // 更新band的Y坐标偏移
+    // Update the band's Y offset
     bandOffsetY += band.height;
   });
 
-  // 如果有选中的元素，将最后一个选中的元素作为当前选中的元素
+  // If any elements are selected, use the last-selected one as the current selection
   if (selectedElements.value.length > 0) {
     const lastSelected = selectedElements.value[selectedElements.value.length - 1];
     if (lastSelected) {
@@ -1997,20 +1997,20 @@ const selectElementsInRect = (rect: { left: number, top: number, right: number, 
     }
   }
 
-  // 自动隐藏底部面板
+  // Automatically hide the bottom panel
   showBottomPanel.value = false;
 };
 
-// 缓存事件处理函数，避免重复创建
+// Cache the event handler functions to avoid recreating them
 let cachedMouseMoveHandler: ((e: MouseEvent) => void) | null = null;
 let cachedMouseUpHandler: ((e: MouseEvent) => void) | null = null;
 
-// 开始拖拽元素
+// Start dragging an element
 const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
   event.stopPropagation();
   selectElement(bandIndex, elementIndex, false, parentFrameIndex);
 
-  // 自动隐藏底部面板
+  // Automatically hide the bottom panel
   showBottomPanel.value = false;
 
   const band = bands.value[bandIndex];
@@ -2026,34 +2026,34 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
   }
 
   if (draggedElement) {
-    // 获取当前缩放比例
+    // Get the current zoom scale
     const currentZoom = zoomLevel.value;
 
-    // 获取paper元素的位置信息，用于更准确的坐标计算
+    // Get the paper element's position info, for more accurate coordinate calculations
     const paperEl = document.querySelector('.paper') as HTMLElement;
     let paperOffsetX = 0;
     let paperOffsetY = 0;
 
     if (paperEl) {
       const paperRect = paperEl.getBoundingClientRect();
-      // 考虑缩放比例的偏移量
+      // Offset accounting for the zoom scale
       paperOffsetX = paperRect.left;
       paperOffsetY = paperRect.top;
     }
 
-    // 存储拖拽信息，考虑缩放比例
+    // Store the drag info, accounting for the zoom scale
     draggingInfo.value = {
       bandIndex,
       elementIndex,
       parentFrameIndex,
       startX: ((event.clientX - paperOffsetX) / currentZoom) - draggedElement.x,
       startY: ((event.clientY - paperOffsetY) / currentZoom) - draggedElement.y,
-      lastTargetBandIndex: bandIndex // 初始化为当前band索引
+      lastTargetBandIndex: bandIndex // Initialize to the current band index
     };
 
     isDraggingOrResizing.value = true;
 
-    // 使用缓存的事件处理函数，避免每次拖拽都创建新的函数
+    // Use the cached event handler functions to avoid creating new ones on every drag
     if (!cachedMouseMoveHandler) {
       cachedMouseMoveHandler = (e: MouseEvent) => {
         if (draggingInfo.value) {
@@ -2074,43 +2074,43 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
           }
 
           if (currentBand && currentElement) {
-            // 获取当前缩放比例
+            // Get the current zoom scale
             const currentZoom = zoomLevel.value;
 
-            // 计算元素相对于paper的位置，考虑缩放比例
-            // 注意：由于现在使用padding，元素坐标是相对于内容区域的
-            // 计算可用宽度，不除以currentZoom因为newX计算已经考虑了缩放
-            // const availableWidth = ... (已在上面计算为 containerWidth)
+            // Calculate the element's position relative to the paper, accounting for the zoom scale
+            // Note: since padding is now used, element coordinates are relative to the content area
+            // Calculate the available width; no need to divide by currentZoom since the newX calculation already accounts for zoom
+            // const availableWidth = ... (already calculated above as containerWidth)
 
-            // 获取paper元素的位置信息，用于更准确的坐标计算
+            // Get the paper element's position info, for more accurate coordinate calculations
             let paperOffsetX = 0;
             let paperOffsetY = 0;
             const paperEl = document.querySelector('.paper') as HTMLElement;
 
             if (paperEl) {
               const paperRect = paperEl.getBoundingClientRect();
-              // 考虑缩放比例的偏移量
+              // Offset accounting for the zoom scale
               paperOffsetX = paperRect.left;
               paperOffsetY = paperRect.top;
             }
 
-            // 计算新的X和Y坐标，考虑缩放和偏移
+            // Calculate the new X and Y coordinates, accounting for zoom and offset
             let newX = ((e.clientX - paperOffsetX) / currentZoom) - draggingInfo.value.startX;
-            let newY = ((e.clientY - paperOffsetY) / currentZoom) - draggingInfo.value.startY; // 移除y坐标的下限限制
+            let newY = ((e.clientY - paperOffsetY) / currentZoom) - draggingInfo.value.startY; // Remove the lower bound on the Y coordinate
 
-            // 如果在 Frame 中，不限制坐标，允许移出 Frame
+            // If inside a Frame, don't constrain the coordinates, allowing the element to move outside the Frame
             if (draggingInfo.value.parentFrameIndex !== undefined) {
-               // 不做限制
+               // No constraint applied
             } else {
-               // 在 Band 中，限制 X 坐标
+               // Inside a Band, constrain the X coordinate
                newX = Math.max(0, Math.min(newX, containerWidth - currentElement.width));
 
-                // 原有的 Band Y 限制逻辑
-                // 获取第一个band和最后一个band的位置信息
+                // Original Band Y-constraint logic
+                // Get the position info of the first and last bands
                 const firstBandElement = document.querySelectorAll('.band')[0] as HTMLElement;
                 const lastBandElement = document.querySelectorAll('.band')[bands.value.length - 1] as HTMLElement;
 
-                // 计算当前band在页面中的位置
+                // Calculate the position of the current band on the page
                 const currentBandElement = document.querySelectorAll('.band')[draggingInfo.value.bandIndex] as HTMLElement;
                 let currentBandTopInPage = 0;
 
@@ -2120,35 +2120,35 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
                   const currentBandRect = currentBandElement.getBoundingClientRect();
                   const paperRect = paperEl.getBoundingClientRect();
 
-                  // 计算第一个band和最后一个band相对于页面的位置
+                  // Calculate the positions of the first and last bands relative to the page
                   const firstBandTopInPage = (firstBandRect.top - paperRect.top) / currentZoom;
                   const lastBandBottomInPage = (lastBandRect.bottom - paperRect.top) / currentZoom;
                   currentBandTopInPage = (currentBandRect.top - paperRect.top) / currentZoom;
 
-                  // 计算元素在页面中的绝对位置（相对于整个页面）
+                  // Calculate the element's absolute position on the page (relative to the entire page)
                   const elementTopInPage = currentBandTopInPage + newY;
 
-                  // 限制元素顶部不能超出第一个band的上边界
+                  // Constrain the element's top so it doesn't exceed the first band's top boundary
                   if (elementTopInPage < firstBandTopInPage) {
                     const adjustment = firstBandTopInPage - elementTopInPage;
                     newY += adjustment;
                   }
 
-                  // 对于最后一个band中的元素，限制其底部不能超出最后一个band的底部边界
+                  // For elements in the last band, constrain their bottom so it doesn't exceed the last band's bottom boundary
                   if (draggingInfo.value.bandIndex === bands.value.length - 1) {
-                    // 计算元素在最后一个band中的最大Y坐标
+                    // Calculate the element's maximum Y coordinate within the last band
                     const maxRelativeY = lastBandBottomInPage - currentBandTopInPage - currentElement.height;
                     newY = Math.min(newY, maxRelativeY);
                   }
                 }
             }
 
-            // 应用自动吸附功能
+            // Apply auto-snap functionality
             if (enableSnapToGrid.value) {
-              // 定义网格大小为3像素，减小吸附距离
+              // Define the grid size as 3 pixels, reducing the snap distance
               const gridSize = 3;
 
-              // 对X坐标进行吸附
+              // Snap the X coordinate
               const remainderX = newX % gridSize;
               if (remainderX < gridSize / 2) {
                 newX = newX - remainderX;
@@ -2156,7 +2156,7 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
                 newX = newX + (gridSize - remainderX);
               }
 
-              // 对Y坐标进行吸附
+              // Snap the Y coordinate
               const remainderY = newY % gridSize;
               if (remainderY < gridSize / 2) {
                 newY = newY - remainderY;
@@ -2165,33 +2165,33 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
               }
             }
 
-            // 应用对齐线吸附功能
+            // Apply alignment-line snapping
             if (enableSnapToAlignment.value) {
-              // 创建临时元素对象用于检测对齐线
+              // Create a temporary element object for alignment-line detection
               const tempElement = { ...currentElement, x: newX, y: newY };
               const snapInfo = detectAlignmentLines(tempElement, draggingInfo.value.bandIndex, false);
 
-              // 应用水平吸附
+              // Apply horizontal snapping
               if (snapInfo.horizontal) {
                 newX += snapInfo.horizontal.offset;
               }
 
-              // 应用垂直吸附
+              // Apply vertical snapping
               if (snapInfo.vertical) {
                 newY += snapInfo.vertical.offset;
               }
             }
 
-            // 确保坐标值为整数
+            // Ensure the coordinate values are integers
             currentElement.x = Math.round(newX);
             currentElement.y = Math.round(newY);
 
-            // 如果元素移动到不同的band，需要限制Y坐标不超过band高度
+            // If the element moves into a different band, constrain the Y coordinate so it doesn't exceed the band's height
             if (highlightedBandIndex.value !== null && highlightedBandIndex.value !== draggingInfo.value.bandIndex) {
               const targetBand = bands.value[highlightedBandIndex.value];
               if (targetBand) {
                 const maxY = targetBand.height - currentElement.height;
-                // 计算元素相对于目标band的Y坐标
+                // Calculate the element's Y coordinate relative to the target band
                 const bandElements = document.querySelectorAll('.band');
                 const currentBandElement = bandElements[draggingInfo.value.bandIndex] as HTMLElement;
                 const targetBandElement = bandElements[highlightedBandIndex.value] as HTMLElement;
@@ -2201,54 +2201,54 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
                   const targetBandRect = targetBandElement.getBoundingClientRect();
                   const relativeY = newY + (currentBandRect.top - targetBandRect.top) / currentZoom;
 
-                  // 限制相对Y坐标
+                  // Constrain the relative Y coordinate
                   if (relativeY > maxY) {
-                    // 调整元素的实际Y坐标
+                    // Adjust the element's actual Y coordinate
                     currentElement.y = newY - (relativeY - maxY);
                   }
                 }
               }
             }
 
-            // 检测对齐线（使用最终位置）
-            // 使用当前元素所在的band索引，确保对齐线检测的一致性
+            // Detect alignment lines (using the final position)
+            // Use the band index the element currently belongs to, ensuring consistent alignment-line detection
             detectAlignmentLines(currentElement, draggingInfo.value.bandIndex);
 
-            // 更新并显示坐标信息
-            // 显示元素的相对坐标值
+            // Update and display the coordinate info
+            // Show the element's relative coordinate values
             let relativeX = Math.round(newX);
             let relativeY = Math.round(newY);
 
-            // 使用已经获取的paperElement变量
+            // Reuse the already-retrieved paperElement variable
             if (paperEl) {
               const bandElements = document.querySelectorAll('.band');
 
-              // 计算元素在拖动过程中相对于目标band的坐标
+              // Calculate the element's coordinates relative to the target band while dragging
               if (highlightedBandIndex.value !== null && bandElements[highlightedBandIndex.value]) {
-                // 如果有高亮的band（表示鼠标当前所在的band），计算元素相对于这个band的坐标
+                // If there's a highlighted band (the band the mouse is currently over), calculate the element's coordinates relative to it
                 const targetBandElement = bandElements[highlightedBandIndex.value] as HTMLElement;
                 const targetBandRect = targetBandElement.getBoundingClientRect();
 
-                // 修复：使用元素的实际Y坐标（newY）而不是鼠标位置来计算相对Y坐标
-                // 获取当前元素所在band的顶部位置
+                // Fix: use the element's actual Y coordinate (newY) rather than the mouse position to calculate the relative Y coordinate
+                // Get the top position of the band the current element belongs to
                 const currentBandElement = bandElements[draggingInfo.value.bandIndex] as HTMLElement;
                 const currentBandRect = currentBandElement.getBoundingClientRect();
 
-                // 如果元素在不同的band，需要调整计算方式
+                // If the element is in a different band, the calculation must be adjusted
                 if (highlightedBandIndex.value !== draggingInfo.value.bandIndex) {
-                  // 元素移动到不同的band，计算相对于新band的Y坐标
+                  // The element moved to a different band; calculate the Y coordinate relative to the new band
                   relativeY = Math.round(newY + (currentBandRect.top - targetBandRect.top) / currentZoom);
                 } else {
-                  // 元素在同一band内，使用元素的Y坐标
+                  // The element is within the same band; use the element's Y coordinate
                   relativeY = Math.round(newY);
                 }
 
-                // 确保Y坐标是相对于目标band的相对值
+                // Ensure the Y coordinate is relative to the target band
                 if (relativeY < 0) {
                   relativeY = 0;
                 }
 
-                // 限制移动元素相对Y值的最大值不能超过targetBand的高度减去元素的高度
+                // Constrain the moved element's relative Y value so it doesn't exceed the target band's height minus the element's height
                 const targetBand = bands.value[highlightedBandIndex.value];
                 if (targetBand && currentElement) {
                   const maxY = targetBand.height - currentElement.height;
@@ -2266,19 +2266,19 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
               bandName: ''
             };
 
-            // 使用DOM元素的实际位置来计算目标band，提高准确性
-            // 使用已经获取的paperElement变量
+            // Use the DOM elements' actual positions to calculate the target band, for greater accuracy
+            // Reuse the already-retrieved paperElement variable
             if (paperEl) {
               let targetBandIndex = draggingInfo.value.bandIndex;
               let isOverBand = false;
 
-              // 获取所有band元素
+              // Get all band elements
               const bandElements = document.querySelectorAll('.band');
               for (let i = 0; i < bandElements.length; i++) {
                 const bandElement = bandElements[i] as HTMLElement;
                 const bandRect = bandElement.getBoundingClientRect();
 
-                // 检查鼠标位置是否在当前band的范围内
+                // Check whether the mouse position falls within the current band's bounds
                 if (e.clientY >= bandRect.top && e.clientY <= bandRect.bottom) {
                   targetBandIndex = i;
                   isOverBand = true;
@@ -2286,31 +2286,31 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
                 }
               }
 
-              // 只有当鼠标在某个band上方时，才更新高亮的band
+              // Only update the highlighted band when the mouse is over some band
               if (isOverBand) {
                 highlightedBandIndex.value = targetBandIndex;
               }
 
-              // 当拖动中的元素移动到目标band后输出日志
+              // Log once the dragged element has moved into the target band
               if (isOverBand && targetBandIndex !== draggingInfo.value.bandIndex &&
                   targetBandIndex !== draggingInfo.value.lastTargetBandIndex) {
                 const sourceBand = bands.value[draggingInfo.value.bandIndex];
                 const targetBand = bands.value[targetBandIndex];
                 if (sourceBand && targetBand) {
-                  console.log(`元素从 ${getBandDisplayName(sourceBand.type)} 移动到 ${getBandDisplayName(targetBand.type)}`);
-                  // 更新上一次的目标band索引
+                  console.log(`Element moved from ${getBandDisplayName(sourceBand.type)} to ${getBandDisplayName(targetBand.type)}`);
+                  // Update the last target band index
                   draggingInfo.value.lastTargetBandIndex = targetBandIndex;
 
-                  //这里增加移动元素相对Y值的最大值不能超过targetBand的高度减去元素的高度
+                  // TODO: also constrain the moved element's relative Y value so it doesn't exceed the target band's height minus the element's height
 
                 }
               }
             }
 
-            // 更新坐标显示元素的位置，使其跟随鼠标
+            // Update the position of the coordinate-display element so it follows the mouse
             const coordinatesElement = document.querySelector('.coordinates-display') as HTMLElement;
             if (coordinatesElement) {
-              // 获取当前鼠标所在band的名称
+              // Get the name of the band the mouse is currently over
               let bandName = '';
               if (highlightedBandIndex.value !== null &&
                   bands.value[highlightedBandIndex.value] !== undefined) {
@@ -2320,11 +2320,11 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
                 }
               }
 
-              // 考虑缩放比例的坐标显示
+              // Coordinate display accounting for the zoom scale
               coordinatesElement.style.left = (e.clientX + 10) + 'px';
               coordinatesElement.style.top = (e.clientY - 30) + 'px';
 
-              // 更新dragCoordinates的值，让模板显示正确的坐标和band名称
+              // Update dragCoordinates so the template shows the correct coordinates and band name
               dragCoordinates.value.x = relativeX;
               dragCoordinates.value.y = relativeY;
               dragCoordinates.value.bandName = bandName;
@@ -2336,7 +2336,7 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
 
     if (!cachedMouseUpHandler) {
       cachedMouseUpHandler = (e: MouseEvent) => {
-        // 保存状态到历史记录
+        // Save state to history
         saveStateToHistory();
 
         if (draggingInfo.value) {
@@ -2344,7 +2344,7 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
           let currentElement;
 
           if (draggingInfo.value.parentFrameIndex !== undefined) {
-            // 增加安全检查
+            // Add a safety check
             if (currentBand && currentBand.elements && currentBand.elements[draggingInfo.value.parentFrameIndex]) {
               const frame = currentBand.elements[draggingInfo.value.parentFrameIndex];
               if (frame && frame.type === 'frame' && frame.elements) {
@@ -2358,16 +2358,16 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
           }
 
           if (currentBand && currentElement) {
-            // 1. 获取目标 Band
+            // 1. Get the target Band
             let targetBandIndex = draggingInfo.value.bandIndex;
 
-            // 如果有最后一次高亮的band索引，且该索引有效，则使用它
+            // If there is a last-highlighted band index and it's valid, use it
             if (draggingInfo.value.lastTargetBandIndex !== undefined &&
                 draggingInfo.value.lastTargetBandIndex >= 0 &&
                 draggingInfo.value.lastTargetBandIndex < bands.value.length) {
               targetBandIndex = draggingInfo.value.lastTargetBandIndex;
             } else {
-              // 否则，使用鼠标位置来确定目标band
+              // Otherwise, use the mouse position to determine the target band
               const paperEl = document.querySelector('.paper') as HTMLElement;
               if (paperEl) {
                 const bandElements = document.querySelectorAll('.band');
@@ -2384,8 +2384,8 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
 
             const targetBand = bands.value[targetBandIndex];
 
-            // 2. 计算元素在页面上的绝对坐标（或者相对于目标 Band 的坐标）
-            // 计算 Source Parent 相对于 Source Band 的坐标
+            // 2. Calculate the element's absolute coordinates on the page (or its coordinates relative to the target Band)
+            // Calculate the Source Parent's coordinates relative to the Source Band
             let sourceParentRelX = 0;
             let sourceParentRelY = 0;
             if (draggingInfo.value.parentFrameIndex !== undefined) {
@@ -2396,11 +2396,11 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
                }
             }
 
-            // 计算元素相对于 Source Band 的坐标
+            // Calculate the element's coordinates relative to the Source Band
             const elementRelSourceBandX = sourceParentRelX + currentElement.x;
             const elementRelSourceBandY = sourceParentRelY + currentElement.y;
 
-            // 计算 Source Band 相对于 Target Band 的偏移
+            // Calculate the Source Band's offset relative to the Target Band
             const sourceBandEl = document.querySelectorAll('.band')[draggingInfo.value.bandIndex];
             const targetBandEl = document.querySelectorAll('.band')[targetBandIndex];
 
@@ -2414,12 +2414,12 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
             const elementRelTargetBandX = elementRelSourceBandX;
             const elementRelTargetBandY = elementRelSourceBandY + bandOffsetY;
 
-            // 3. 在 Target Band 中查找目标 Frame
+            // 3. Look for a target Frame within the Target Band
             let targetFrameIndex = -1;
             if (targetBand && targetBand.elements) {
-              // 遍历 Target Band 中的 Frame
+              // Iterate over the Frames in the Target Band
               for (let i = targetBand.elements.length - 1; i >= 0; i--) {
-                  // 避免将 Frame 放入自身：如果是在同一个 Band，且当前遍历到的 Frame 就是正在拖拽的元素，则跳过
+                  // Avoid dropping a Frame into itself: if we're in the same Band and the Frame being iterated is the one being dragged, skip it
                   if (targetBandIndex === draggingInfo.value.bandIndex &&
                       draggingInfo.value.parentFrameIndex === undefined &&
                       i === draggingInfo.value.elementIndex) {
@@ -2442,14 +2442,14 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
               }
             }
 
-            // 4. 判断是否改变了容器
+            // 4. Determine whether the container changed
             const isSameBand = draggingInfo.value.bandIndex === targetBandIndex;
             const isSameFrame = draggingInfo.value.parentFrameIndex === (targetFrameIndex === -1 ? undefined : targetFrameIndex);
 
             if ((!isSameBand || !isSameFrame) && targetBand) {
                // Reparenting
 
-               // 提前获取目标Frame引用（splice会导致索引偏移）
+               // Grab the target Frame reference up front (splice would otherwise shift the indices)
                let targetFrame: FrameElement | null = null;
                if (targetFrameIndex !== -1) {
                    targetFrame = targetBand.elements[targetFrameIndex] as FrameElement;
@@ -2496,9 +2496,9 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
                  }
                }
             } else {
-              // 同容器移动，使用拖拽过程中显示的坐标值
-              // 注意：dragCoordinates 可能只更新了显示值，实际值已经在 mousemove 中通过 currentElement 引用更新了
-              // 这里主要是确保整数和边界
+              // Moved within the same container; use the coordinate values shown while dragging
+              // Note: dragCoordinates may only have updated the displayed value — the actual value was already updated in mousemove via the currentElement reference
+              // This mainly just ensures integers and bounds
               currentElement.x = Math.round(currentElement.x);
               currentElement.y = Math.round(currentElement.y);
               if (currentElement.y < 0) currentElement.y = 0;
@@ -2506,20 +2506,20 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
           }
         }
 
-        // 清除高亮和坐标显示
+        // Clear the highlight and coordinate display
         highlightedBandIndex.value = null;
         dragCoordinates.value.visible = false;
 
-        // 清除对齐线
+        // Clear the alignment lines
         clearAlignmentLines();
 
         draggingInfo.value = null;
         isDraggingOrResizing.value = false;
 
-        // 更新JRXML
+        // Update JRXML
         updateJRXML();
 
-        // 移除事件监听器
+        // Remove the event listeners
         if (cachedMouseMoveHandler) {
           document.removeEventListener('mousemove', cachedMouseMoveHandler);
         }
@@ -2530,12 +2530,12 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
       };
     }
 
-    // 添加事件监听器
+    // Add the event listeners
     document.addEventListener('mousemove', cachedMouseMoveHandler);
     document.addEventListener('mouseup', cachedMouseUpHandler);
 
-    // 立即触发一次mousemove事件，确保元素能够立即跟随鼠标
-    // 这解决了在按下鼠标键100毫秒内移动鼠标，元素没有立即跟上鼠标位置的问题
+    // Immediately fire a mousemove event once, so the element follows the mouse right away
+    // This fixes the issue where moving the mouse within 100ms of pressing the mouse button left the element lagging behind the mouse position
     setTimeout(() => {
       if (cachedMouseMoveHandler) {
         cachedMouseMoveHandler(event);
@@ -2544,49 +2544,49 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
   }
 };
 
-// 删除元素
+// Delete an element
 const deleteElement = () => {
-  // 检查是否有选中的元素
+  // Check whether any elements are selected
   if (selectedElements.value && selectedElements.value.length > 0) {
-    // 删除多个选中的元素
+    // Delete multiple selected elements
     saveStateToHistory();
 
-    // 按照从后往前的顺序删除，避免索引变化问题
+    // Delete from last to first to avoid index-shift issues
     const sortedElements = [...selectedElements.value].sort((a, b) => {
       if (a.bandIndex !== b.bandIndex) {
-        return b.bandIndex - a.bandIndex; // 按band索引降序
+        return b.bandIndex - a.bandIndex; // Descending by band index
       }
-      return b.elementIndex - a.elementIndex; // 按元素索引降序
+      return b.elementIndex - a.elementIndex; // Descending by element index
     });
 
-    // 删除元素
+    // Delete the elements
     sortedElements.forEach(({ bandIndex, elementIndex, parentFrameIndex }) => {
       const band = bands.value[bandIndex];
       if (band && band.elements) {
         if (parentFrameIndex !== undefined) {
-           // 删除 Frame 内的元素
+           // Delete an element inside a Frame
            const frame = band.elements[parentFrameIndex];
            if (frame && frame.type === 'frame' && frame.elements) {
              frame.elements.splice(elementIndex, 1);
            }
         } else {
-           // 删除 Band 内的元素
+           // Delete an element inside a Band
            band.elements.splice(elementIndex, 1);
         }
       }
     });
 
-    // 清空选中列表
+    // Clear the selection list
     selectedElements.value = [];
     selectedElement.value = null;
   } else if (selectedElement.value) {
-    // 删除单个选中的元素（保持原有逻辑）
+    // Delete a single selected element (original logic)
     saveStateToHistory();
     const { bandIndex, elementIndex, parentFrameIndex } = selectedElement.value;
     const band = bands.value[bandIndex];
     if (band && band.elements) {
       if (parentFrameIndex !== undefined) {
-         // 删除 Frame 内的元素
+         // Delete an element inside a Frame
          const frame = band.elements[parentFrameIndex];
          if (frame && frame.type === 'frame' && frame.elements) {
            frame.elements.splice(elementIndex, 1);
@@ -2599,34 +2599,34 @@ const deleteElement = () => {
   }
 };
 
-// 开始编辑静态文本
+// Start editing static text
 const startEditing = (bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
   editingElement.value = { bandIndex, elementIndex, parentFrameIndex };
-  // 选择该元素
+  // Select the element
   selectElement(bandIndex, elementIndex, false, parentFrameIndex);
 
-  // 自动隐藏底部面板
+  // Automatically hide the bottom panel
   showBottomPanel.value = false;
 };
 
-// 完成编辑
+// Finish editing
 const finishEditing = () => {
   editingElement.value = null;
-  // 保存数据
+  // Save the data
   saveToLocalStorageWrapper();
   updateJRXML();
 };
 
-// 取消编辑
+// Cancel editing
 const cancelEditing = () => {
   editingElement.value = null;
 };
 
-// fileUtils函数的包装函数
+// Wrapper function for the fileUtils functions
 const saveToLocalStorageWrapper = () => {
-  // 安全检查，确保reportProperties.value存在
+  // Safety check to ensure reportProperties.value exists
   if (!reportProperties.value) {
-    console.error('reportProperties.value未定义，无法保存到本地存储');
+    console.error('reportProperties.value is undefined, cannot save to local storage');
     return;
   }
 
@@ -2648,7 +2648,7 @@ const loadFromLocalStorageWrapper = () => {
     bands.value = loadedData.reportData.bands;
     reportFields.value = loadedData.reportData.reportFields;
     jrxmlContent.value = loadedData.reportData.jrxmlContent;
-    // 更新selectedBandTypes以匹配加载的bands
+    // Update selectedBandTypes to match the loaded bands
     if (loadedData.reportData.bands && Array.isArray(loadedData.reportData.bands)) {
       selectedBandTypes.value = loadedData.reportData.bands.map((band: Band) => band.type);
     } else {
@@ -2660,36 +2660,36 @@ const loadFromLocalStorageWrapper = () => {
 };
 
 
-// 初始化元素的Box属性
+// Initialize an element's Box property
 const initBox = () => {
   if (currentElement.value) {
-    // 创建一个默认的box对象
+    // Create a default box object
     currentElement.value.box = {
-      // 全局边框
+      // Global border
       border: '',
       borderColor: '#000000',
       borderWidth: 0,
       borderStyle: '',
 
-      // 各边边框 - 样式默认为空字符串，表示"使用全局"
+      // Per-side borders - style defaults to an empty string, meaning "use the global setting"
       topBorder: '',
       topBorderColor: '#000000',
       topBorderWidth: 0,
-      topBorderStyle: '', // 默认为空字符串，表示"使用全局"
+      topBorderStyle: '', // Defaults to an empty string, meaning "use the global setting"
       leftBorder: '',
       leftBorderColor: '#000000',
       leftBorderWidth: 0,
-      leftBorderStyle: '', // 默认为空字符串，表示"使用全局"
+      leftBorderStyle: '', // Defaults to an empty string, meaning "use the global setting"
       bottomBorder: '',
       bottomBorderColor: '#000000',
       bottomBorderWidth: 0,
-      bottomBorderStyle: '', // 默认为空字符串，表示"使用全局"
+      bottomBorderStyle: '', // Defaults to an empty string, meaning "use the global setting"
       rightBorder: '',
       rightBorderColor: '#000000',
       rightBorderWidth: 0,
-      rightBorderStyle: '', // 默认为空字符串，表示"使用全局"
+      rightBorderStyle: '', // Defaults to an empty string, meaning "use the global setting"
 
-      // 边距
+      // Margins
       padding: 0,
       topPadding: 0,
       leftPadding: 0,
@@ -2699,15 +2699,15 @@ const initBox = () => {
   }
 };
 
-// 下载JRXML文件
+// Download the JRXML file
 const downloadJRXML = () => {
   const content = generateJRXMLContent(reportProperties.value, bands.value, reportFields.value, reportParameters.value, subDatasets.value, [], reportVariables.value, [], reportGroups.value);
   jrxmlContent.value = content;
 
-  // 自动切换到JRXML标签页
+  // Automatically switch to the JRXML tab
   activeTab.value = 'jrxml';
 
-  // 创建下载链接
+  // Create the download link
   const blob = new Blob([content], { type: 'application/xml' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -2718,11 +2718,11 @@ const downloadJRXML = () => {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 
-  // 保存数据
+  // Save the data
   saveToLocalStorageWrapper();
 };
 
-// 面板显示控制函数
+// Panel visibility control functions
 const toggleLeftPanel = () => {
   showLeftPanel.value = !showLeftPanel.value;
 };
@@ -2739,19 +2739,19 @@ const toggleAIChat = () => {
   showAIChat.value = !showAIChat.value;
 };
 
-// AI设置相关
+// AI settings related state
 const showAISettings = ref(false);
 
 const toggleAISettings = () => {
   showAISettings.value = !showAISettings.value;
 };
 
-// 处理左侧面板大小变化
+// Handle left panel size changes
 const handleLeftPanelSizeChange = (newSize: number) => {
   leftPanelWidth.value = newSize;
 };
 
-// 暴露给测试的属性和方法
+// Properties and methods exposed for testing
 defineExpose({
   bands,
   reportProperties,
@@ -2766,114 +2766,114 @@ defineExpose({
   redo
 });
 
-// 处理属性面板大小变化
+// Handle properties panel size changes
 const handlePropertyPanelSizeChange = (newSize: number) => {
   propertyPanelWidth.value = newSize;
 };
 
-// 处理底部面板大小变化
+// Handle bottom panel size changes
 const handleBottomPanelSizeChange = (newSize: number) => {
   bottomPanelHeight.value = newSize;
 };
 
 
-// 自动更新JRXML内容
+// Automatically update the JRXML content
 const updateJRXML = () => {
-  // 防止重入：如果 updateJRXML 正在执行中，跳过本次调用
+  // Guard against re-entrancy: if updateJRXML is already running, skip this call
   if (isUpdatingJRXML.value) {
     return;
   }
   isUpdatingJRXML.value = true;
   try {
-    // 确保所有数据都已初始化
+    // Ensure all data has been initialized
     if (!reportProperties.value || !bands.value || !reportFields.value || !reportParameters.value) {
       return;
     }
 
     const content = generateJRXMLContent(reportProperties.value, bands.value, reportFields.value, reportParameters.value, subDatasets.value, reportStyles.value, reportVariables.value, [], reportGroups.value);
 
-    // 如果内容有变化，保存到历史记录
+    // If the content changed, save it to history
     if (content !== jrxmlContent.value) {
-      // 只在非拖拽/调整大小状态下保存历史
+      // Only save history while not dragging/resizing
       if (!isDraggingOrResizing.value && historyStack.value.length === 0) {
-        // 初始化时保存第一次状态
+        // Save the initial state on first run
         saveStateToHistory();
       }
       jrxmlContent.value = content;
 
-      // 立即保存到本地存储，确保JRXML内容被保存
+      // Save to local storage immediately, ensuring the JRXML content gets persisted
       saveToLocalStorageWrapper();
     }
   } catch (error) {
-    console.error('更新JRXML失败:', error);
+    console.error('Failed to update JRXML:', error);
   } finally {
     isUpdatingJRXML.value = false;
   }
 };
 
-// 复制元素到剪贴板
+// Copy an element to the clipboard
 const copyElement = async () => {
   if (selectedElement.value) {
     const { bandIndex, elementIndex } = selectedElement.value;
     const band = bands.value[bandIndex];
     if (band && band.elements && band.elements[elementIndex]) {
       try {
-        // 深拷贝元素数据
+        // Deep-clone the element data
         let elementData = JSON.parse(JSON.stringify(band.elements[elementIndex]));
 
-        // 生成新的 UUID，避免复制 UUID
+        // Generate a new UUID rather than duplicating the original
         elementData.uuid = crypto.randomUUID();
 
-        // 处理边框属性，只保留宽度大于0的边框
+        // Process border properties, keeping only borders with a width greater than 0
         if (elementData.box) {
-          // 处理新边框模型
+          // Handle the new border model
           if (elementData.box.pen && elementData.box.pen.lineWidth <= 0) {
             delete elementData.box.pen;
           }
 
-          // 处理各边边框
+          // Handle borders on each side
           ['topPen', 'leftPen', 'bottomPen', 'rightPen'].forEach(penType => {
             if (elementData.box[penType] && elementData.box[penType].lineWidth <= 0) {
               delete elementData.box[penType];
             }
           });
 
-          // 如果box对象为空，则删除整个box属性
+          // If the box object is empty, remove the entire box property
           if (Object.keys(elementData.box).length === 0) {
             delete elementData.box;
           }
         }
 
-        // 创建要复制的数据对象，包含元数据标记以便识别这是PDF设计器的元素
+        // Build the data object to copy, including a metadata marker to identify it as a PDF Designer element
         const clipboardData = {
           type: 'PDF_DESIGNER_ELEMENT',
           version: '1.0',
           elementData: elementData
         };
-        // 将数据转换为JSON字符串并写入剪贴板
+        // Convert the data to a JSON string and write it to the clipboard
         await navigator.clipboard.writeText(JSON.stringify(clipboardData));
-        console.log('元素已复制到剪贴板:', elementData);
-        // 可选：显示复制成功的提示
+        console.log('Element copied to clipboard:', elementData);
+        // Optional: show a "copied successfully" notification
       } catch (err) {
-        console.error('复制到剪贴板失败:', err);
-        // 降级方案：使用旧的内存存储方式作为备用
+        console.error('Failed to copy to clipboard:', err);
+        // Fallback: use the legacy in-memory storage approach as a backup
         let elementData = JSON.parse(JSON.stringify(band.elements[elementIndex]));
 
-        // 处理边框属性，只保留宽度大于0的边框
+        // Process border properties, keeping only borders with a width greater than 0
         if (elementData.box) {
-          // 处理新边框模型
+          // Handle the new border model
           if (elementData.box.pen && elementData.box.pen.lineWidth <= 0) {
             delete elementData.box.pen;
           }
 
-          // 处理各边边框
+          // Handle borders on each side
           ['topPen', 'leftPen', 'bottomPen', 'rightPen'].forEach(penType => {
             if (elementData.box[penType] && elementData.box[penType].lineWidth <= 0) {
               delete elementData.box[penType];
             }
           });
 
-          // 如果box对象为空，则删除整个box属性
+          // If the box object is empty, remove the entire box property
           if (Object.keys(elementData.box).length === 0) {
             delete elementData.box;
           }
@@ -2889,20 +2889,20 @@ const copyElement = async () => {
   }
 };
 
-// 从剪贴板粘贴元素
+// Paste an element from the clipboard
 const pasteElement = async () => {
   try {
-    // 首先尝试从剪贴板读取
+    // First try reading from the clipboard
     const clipboardText = await navigator.clipboard.readText();
     const clipboardData = JSON.parse(clipboardText);
 
-    // 验证是否是我们的PDF设计器元素数据
+    // Verify this is our own PDF Designer element data
     if (clipboardData.type === 'PDF_DESIGNER_ELEMENT' && clipboardData.elementData) {
       processPastedElement(clipboardData.elementData);
     }
   } catch (err) {
-    console.error('从剪贴板读取失败:', err);
-    // 降级方案：尝试从sessionStorage读取
+    console.error('Failed to read from clipboard:', err);
+    // Fallback: try reading from sessionStorage
     try {
       const savedData = sessionStorage.getItem('pdfDesignerCopiedElement');
       if (savedData) {
@@ -2912,22 +2912,22 @@ const pasteElement = async () => {
         }
       }
     } catch (sessionErr) {
-      console.error('从sessionStorage读取失败:', sessionErr);
+      console.error('Failed to read from sessionStorage:', sessionErr);
     }
   }
 };
 
-// 处理粘贴的元素数据（抽取为单独函数以便重用）
+// Handle the pasted element data (extracted into a separate function for reuse)
 const processPastedElement = (elementData: any) => {
   saveStateToHistory();
 
-  // 确定粘贴位置（使用当前选中的区域或默认使用第一个可编辑区域）
+  // Determine the paste location (use the currently selected band, or default to the first editable band)
   let targetBandIndex = selectedBandIndex.value !== null ? selectedBandIndex.value : 0;
 
-  // 找到第一个包含elements数组的band
+  // Find the first band that has an elements array
   if (targetBandIndex === null) {
     targetBandIndex = bands.value.findIndex(band => band.elements && Array.isArray(band.elements));
-    // 如果没有找到，使用detail区域（通常索引为3）
+    // If none is found, use the detail band (usually index 3)
     if (targetBandIndex === -1) {
       targetBandIndex = 3;
     }
@@ -2935,18 +2935,18 @@ const processPastedElement = (elementData: any) => {
 
   const targetBand = bands.value[targetBandIndex];
   if (!targetBand) {
-    console.error('目标区域不存在');
+    console.error('Target band does not exist');
     return;
   }
 
-  // 创建新元素（深拷贝）
+  // Create the new element (deep clone)
   const newElement = JSON.parse(JSON.stringify(elementData));
 
-  // 调整位置，避免与原元素重叠（向右下方移动一点）
+  // Offset the position slightly so it doesn't overlap the original element (shift down and to the right)
   newElement.x = Math.round(newElement.x + KEYBOARD_CONSTANTS.ELEMENT_PASTE_OFFSET);
   newElement.y = Math.round(newElement.y + KEYBOARD_CONSTANTS.ELEMENT_PASTE_OFFSET);
 
-  // 确保元素的宽度和高度也为整数
+  // Ensure the element's width and height are also integers
   if (newElement.width) {
     newElement.width = Math.round(newElement.width);
   }
@@ -2954,99 +2954,99 @@ const processPastedElement = (elementData: any) => {
     newElement.height = Math.round(newElement.height);
   }
 
-  // 确保元素ID唯一
+  // Ensure the element's ID is unique
   if (newElement.id) {
     newElement.id = `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  // 添加到目标区域
+  // Add it to the target band
   if (!targetBand.elements) {
     targetBand.elements = [];
   }
 
   targetBand.elements.push(newElement);
 
-  // 选中新添加的元素
+  // Select the newly added element
   const newElementIndex = targetBand.elements.length - 1;
   selectElement(targetBandIndex, newElementIndex);
 
-  // 更新JRXML
+  // Update JRXML
   updateJRXML();
 
-  console.log('元素已粘贴:', newElement);
+  console.log('Element pasted:', newElement);
 };
 
-// 在组件顶层定义handleKeyDown函数
+// Define the handleKeyDown function at the top level of the component
 const handleKeyDown = (event: KeyboardEvent) => {
-  // 获取当前活动元素，用于判断焦点状态
+  // Get the currently active element, used to determine focus state
   const activeEl = document.activeElement;
   const isInputFocused = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
   const isTextareaFocused = activeEl && activeEl.tagName === 'TEXTAREA';
 
-  // 检测是否有文本被选中
+  // Detect whether any text is selected
   const selection = window.getSelection();
   const isTextSelected = selection && selection.toString().trim().length > 0;
 
-  // 检测是否按下了ctrl键（windows）或meta键（mac）
+  // Detect whether the Ctrl key (Windows) or Meta key (Mac) is pressed
   const isCtrlOrMetaPressed = event.ctrlKey || event.metaKey;
 
-  // CTRL/CMD+0 重置缩放比例
+  // CTRL/CMD+0 resets the zoom level
   if (isCtrlOrMetaPressed && event.key === '0') {
     event.preventDefault();
     resetZoom();
     return;
   }
 
-  // CTRL/CMD+S 保存当前文件
+  // CTRL/CMD+S saves the current file
   if (isCtrlOrMetaPressed && event.key === 's') {
     event.preventDefault();
     saveCurrentFileToStorage();
     return;
   }
 
-  // CTRL/CMD+B 快捷键切换底部面板显示状态
+  // CTRL/CMD+B toggles the bottom panel's visibility
   if (isCtrlOrMetaPressed && event.key === 'b') {
     event.preventDefault();
     toggleBottomPanel();
     return;
   }
 
-  // CTRL/CMD+Z 撤销操作
+  // CTRL/CMD+Z undoes an action
   if (isCtrlOrMetaPressed && event.key === 'z') {
     event.preventDefault();
     undo();
     return;
   }
 
-  // CTRL/CMD+Y 重做操作
+  // CTRL/CMD+Y redoes an action
   if (isCtrlOrMetaPressed && event.key === 'y') {
     event.preventDefault();
     redo();
     return;
   }
 
-  // CTRL/CMD+C 处理：优先检查是否有输入框处于焦点状态，如果有则执行浏览器默认复制行为
+  // CTRL/CMD+C handling: first check whether an input is focused, and if so, fall back to the browser's default copy behavior
   if (isCtrlOrMetaPressed && event.key === 'c') {
-    // 如果输入框处于焦点状态，执行浏览器默认复制行为
+    // If an input is focused, use the browser's default copy behavior
     if (isInputFocused) {
-      // 不阻止默认行为，让浏览器执行默认的文本复制
+      // Don't prevent the default behavior; let the browser perform its default text copy
       return;
     }
 
-    // 如果有文本被选中，执行浏览器默认复制行为
+    // If text is selected, use the browser's default copy behavior
     if (isTextSelected) {
-      // 不阻止默认行为，让浏览器执行默认的文本复制
+      // Don't prevent the default behavior; let the browser perform its default text copy
       return;
     }
 
-    // 如果没有文本被选中，但有元素被选中，则复制元素
+    // If no text is selected but an element is selected, copy the element
     if (selectedElement.value) {
       event.preventDefault();
       copyElement();
       return;
     }
 
-    // 如果没有文本被选中，也没有元素被选中，但设计区域有焦点，则复制JRXML
+    // If neither text nor an element is selected, but the design area has focus, copy the JRXML
     if (isDesignAreaFocused.value) {
       event.preventDefault();
       copyJRXML();
@@ -3054,15 +3054,15 @@ const handleKeyDown = (event: KeyboardEvent) => {
     }
   }
 
-  // CTRL/CMD+V 处理：优先检查是否有输入框处于焦点状态，如果有则执行浏览器默认粘贴行为
+  // CTRL/CMD+V handling: first check whether an input is focused, and if so, fall back to the browser's default paste behavior
   if (isCtrlOrMetaPressed && event.key === 'v') {
-    // 如果输入框处于焦点状态，执行浏览器默认粘贴行为
+    // If an input is focused, use the browser's default paste behavior
     if (isInputFocused) {
-      // 不阻止默认行为，让浏览器执行默认的文本粘贴
+      // Don't prevent the default behavior; let the browser perform its default text paste
       return;
     }
 
-    // 粘贴元素（只要设计区域有焦点且不在textarea中时才执行自定义粘贴功能）
+    // Paste an element (custom paste only runs while the design area is focused and we're not in a textarea)
     if (isDesignAreaFocused.value && !isTextareaFocused) {
       event.preventDefault();
       pasteElement();
@@ -3070,7 +3070,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
     }
   }
 
-  // Del键删除选中的组件（仅在非编辑模式下且没有输入框处于焦点状态时）
+  // Delete key removes the selected component (only outside edit mode and when no input is focused)
   if ((event.key === 'Delete' || event.key === 'Backspace') &&
       (selectedElement.value || (selectedElements.value && selectedElements.value.length > 0)) &&
       !editingElement.value &&
@@ -3080,27 +3080,27 @@ const handleKeyDown = (event: KeyboardEvent) => {
     return;
   }
 
-  // 方向键处理：Shift+方向键微调元素位置，单独方向键选择周围组件
+  // Arrow key handling: Shift+Arrow nudges the element's position, Arrow alone selects a neighboring component
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
-    // 如果输入框处于焦点状态，使用默认行为（移动光标）
+    // If an input is focused, use the default behavior (move the cursor)
     if (isInputFocused) {
       return;
     }
 
     event.preventDefault();
 
-    // 如果按住Shift键且有选中元素，则微调元素位置
+    // If Shift is held and an element is selected, nudge its position
     if (event.shiftKey && selectedElement.value) {
       moveElementByKeyboard(event.key);
     } else {
-      // 否则执行原来的导航功能
+      // Otherwise, perform the original navigation behavior
       navigateElements(event.key);
     }
     return;
   }
 };
 
-// 键盘导航选择周围组件
+// Keyboard navigation to select a neighboring component
 const navigateElements = (direction: string) => {
   if (!selectedElement.value) return;
 
@@ -3113,25 +3113,25 @@ const navigateElements = (direction: string) => {
   let nearestElement: { bandIndex: number; elementIndex: number; distance: number } | null = null;
   let currentBandY = 0;
 
-  // 计算当前元素的绝对位置
+  // Calculate the current element's absolute position
   const currentX = currentElement.x;
   const currentY = currentBandY + currentElement.y;
 
-  // 遍历所有元素，找到最近的符合方向条件的元素
+  // Iterate over all elements to find the nearest one matching the direction criteria
   bands.value.forEach((band, bandIdx) => {
-    // 累计带的Y坐标
+    // Accumulate the band's Y offset
     const bandOffsetY = currentBandY;
     currentBandY += band.height;
 
     band.elements.forEach((element, elementIdx) => {
-      // 跳过当前选中的元素
+      // Skip the currently selected element
       if (bandIdx === currentBandIndex && elementIdx === currentElementIndex) return;
 
-      // 计算元素的绝对位置
+      // Calculate the element's absolute position
       const elementX = element.x;
       const elementY = bandOffsetY + element.y;
 
-      // 根据方向计算是否符合条件
+      // Determine whether it matches the direction criteria
       let isValidDirection = false;
 
       switch (direction) {
@@ -3150,20 +3150,20 @@ const navigateElements = (direction: string) => {
       }
 
       if (isValidDirection) {
-        // 计算距离
+        // Calculate the distance
         let distance = 0;
         switch (direction) {
           case 'ArrowUp':
           case 'ArrowDown':
-            distance = Math.abs(elementY - currentY) + Math.abs(elementX - currentX) * KEYBOARD_CONSTANTS.SECONDARY_AXIS_WEIGHT; // Y方向为主，X方向为辅
+            distance = Math.abs(elementY - currentY) + Math.abs(elementX - currentX) * KEYBOARD_CONSTANTS.SECONDARY_AXIS_WEIGHT; // Y axis is primary, X axis is secondary
             break;
           case 'ArrowLeft':
           case 'ArrowRight':
-            distance = Math.abs(elementX - currentX) + Math.abs(elementY - currentY) * KEYBOARD_CONSTANTS.SECONDARY_AXIS_WEIGHT; // X方向为主，Y方向为辅
+            distance = Math.abs(elementX - currentX) + Math.abs(elementY - currentY) * KEYBOARD_CONSTANTS.SECONDARY_AXIS_WEIGHT; // X axis is primary, Y axis is secondary
             break;
         }
 
-        // 更新最近的元素
+        // Update the nearest element
         if (!nearestElement || distance < nearestElement.distance) {
           nearestElement = { bandIndex: bandIdx, elementIndex: elementIdx, distance };
         }
@@ -3171,15 +3171,15 @@ const navigateElements = (direction: string) => {
     });
   });
 
-  // 选择最近的元素
+  // Select the nearest element
   if (nearestElement) {
-    // 使用类型断言确保属性访问有效
+    // Use a type assertion to ensure valid property access
     const element = nearestElement as { bandIndex: number; elementIndex: number };
     selectElement(element.bandIndex, element.elementIndex);
   }
 };
 
-// 使用键盘微调元素位置
+// Nudge an element's position using the keyboard
 const moveElementByKeyboard = (direction: string) => {
   if (!selectedElement.value) return;
 
@@ -3189,10 +3189,10 @@ const moveElementByKeyboard = (direction: string) => {
 
   if (!currentBand || !currentElement) return;
 
-  // 定义微调的步长（像素）
+  // Define the nudge step size (in pixels)
   const MOVE_STEP = 1;
 
-  // 计算新位置
+  // Calculate the new position
   let newX = currentElement.x;
   let newY = currentElement.y;
 
@@ -3211,35 +3211,35 @@ const moveElementByKeyboard = (direction: string) => {
       break;
   }
 
-  // 保存移动前的状态到历史记录（用于撤销）
+  // Save the pre-move state to history (for undo)
   saveStateToHistory();
 
-  // 更新元素位置
+  // Update the element's position
   currentElement.x = newX;
   currentElement.y = newY;
 
-  // 触发更新
+  // Trigger an update
   updateJRXML();
   saveToLocalStorageWrapper();
 
-  // 检查是否超出边界
+  // Check whether it's now out of bounds
   updateOutOfBoundsElements();
 };
 
-// 处理报表区域的点击事件，取消选中状态
+// Handle click events on the report area, clearing the selection
 const handlePaperClick = () => {
-  // 只有在没有其他元素被点击的情况下才取消选中
+  // Only clear the selection if no other element was clicked
   selectedElement.value = null;
   selectedBandIndex.value = null;
 };
 
-// 组件挂载时加载数据
+// Load data when the component mounts
 onMounted(() => {
-  console.log('组件挂载开始...');
+  console.log('Component mount started...');
   const hasLocalData = loadFromLocalStorageWrapper();
-  console.log('本地数据加载完成');
+  console.log('Local data load complete');
 
-  // 尝试加载最后编辑的文件
+  // Try loading the last-edited file
   loadFilesFromStorage();
   const lastFile = loadLastFile();
   let hasFileData = false;
@@ -3251,30 +3251,30 @@ onMounted(() => {
     }
   }
 
-  // 初始加载后更新JRXML，使用setTimeout确保所有数据都已加载
+  // Update JRXML after the initial load; use setTimeout to ensure all data has finished loading
   setTimeout(() => {
-    console.log('开始初始JRXML生成...');
+    console.log('Starting initial JRXML generation...');
     updateJRXML();
   }, 100);
 
-  // 初始缩放设置 - 自动适应窗口
-  // 使用setTimeout确保DOM已完全渲染后再计算缩放比例
+  // Initial zoom setup - automatically fit the window
+  // Use setTimeout to ensure the DOM has fully rendered before calculating the zoom scale
   setTimeout(() => {
     zoomLevel.value = calculateOptimalZoom();
   }, 200);
 
-  // 添加键盘事件监听
+  // Add the keyboard event listener
   document.addEventListener('keydown', handleKeyDown);
 
-  // 添加鼠标滚轮事件监听，用于缩放功能
+  // Add a mouse wheel event listener, used for the zoom feature
   const handleWheel = (event: Event) => {
-    // 检查是否按下了Ctrl键
+    // Check whether the Ctrl key is pressed
     const wheelEvent = event as WheelEvent;
     if (wheelEvent.ctrlKey || wheelEvent.metaKey) {
-      // 阻止默认行为（页面缩放）
+      // Prevent the default behavior (page zoom)
       wheelEvent.preventDefault();
 
-      // 根据滚轮方向执行缩放
+      // Zoom according to the wheel direction
       const delta = wheelEvent.deltaY < 0 ? 0.1 : -0.1;
       handleZoomChange(delta);
     }
@@ -3283,7 +3283,7 @@ onMounted(() => {
   document.addEventListener('wheel', handleWheel, { passive: false });
   (window as any).pdfDesignerWheelListener = handleWheel;
 
-  // 获取paper元素并添加点击事件监听
+  // Get the paper element and add a click event listener
   const paperElement = document.querySelector('.paper');
   if (paperElement) {
     paperElement.addEventListener('click', () => {
@@ -3292,28 +3292,28 @@ onMounted(() => {
     });
   }
 
-  // 保存监听器引用，以便在组件卸载时移除
+  // Store listener references so they can be removed when the component unmounts
   (window as any).pdfDesignerKeydownListener = handleKeyDown;
   (window as any).pdfDesignerPaperClickListener = handlePaperClick;
   (window as any).pdfDesignerSetFocused = setDesignAreaFocused;
   (window as any).pdfDesignerRemoveFocused = removeDesignAreaFocused;
 });
 
-// 组件卸载时清理事件监听器
+// Clean up event listeners when the component unmounts
 onUnmounted(() => {
-  // 移除键盘事件监听器
+  // Remove the keyboard event listener
   const keydownListener = (window as any).pdfDesignerKeydownListener;
   if (keydownListener) {
     document.removeEventListener('keydown', keydownListener);
   }
 
-  // 移除鼠标滚轮事件监听器
+  // Remove the mouse wheel event listener
   const wheelListener = (window as any).pdfDesignerWheelListener;
   if (wheelListener) {
     document.removeEventListener('wheel', wheelListener);
   }
 
-  // 移除paper点击事件监听器
+  // Remove the paper click event listener
   const handlePaperClick = (window as any).pdfDesignerPaperClickListener;
   const paperElement = document.querySelector('.paper');
   if (handlePaperClick && paperElement) {
@@ -3321,59 +3321,59 @@ onUnmounted(() => {
   }
 });
 
-// 监听关键数据变化，自动保存和更新JRXML
+// Watch for changes to key data, auto-saving and updating JRXML
 watch(
   [reportProperties, bands, reportFields, reportParameters],
   () => {
-    // 在非拖拽/调整大小状态下，且不在 JRXML 更新过程中时才更新
+    // Only update while not dragging/resizing and not already in the middle of a JRXML update
     if (!isDraggingOrResizing.value && !isUpdatingJRXML.value) {
       saveToLocalStorageWrapper();
       updateJRXML();
-      // 更新超出边界的元素
+      // Update the out-of-bounds elements
       updateOutOfBoundsElements();
     }
   },
   { deep: true }
 );
 
-// 监听拖拽状态变化，在拖拽结束时更新超出边界的元素
+// Watch for drag-state changes, updating out-of-bounds elements once dragging ends
 watch(
   isDraggingOrResizing,
   (newValue, oldValue) => {
-    // 当从拖拽状态变为非拖拽状态时，更新超出边界的元素
+    // Update the out-of-bounds elements when transitioning from dragging to not dragging
     if (oldValue === true && newValue === false) {
       updateOutOfBoundsElements();
     }
   }
 );
 
-// 复制JRXML内容到剪贴板
+// Copy the JRXML content to the clipboard
 const copyJRXML = async (): Promise<void> => {
   try {
     await navigator.clipboard.writeText(jrxmlContent.value);
     notification.success(t('notifications.jrxmlCopiedSuccess'));
   } catch (err: unknown) {
-    console.error('复制失败:', err);
+    console.error('Copy failed:', err);
     notification.error(t('notifications.jrxmlCopyFailed'));
   }
 };
 
-// 重新生成JRXML内容
+// Regenerate the JRXML content
 const regenerateJRXML = (): void => {
   updateJRXML();
-  // 显示提示信息
-  notification.info('JRXML已重新生成');
+  // Show a notification message
+  notification.info('JRXML has been regenerated');
 };
 
-// 打开PDF预览
+// Open the PDF preview
 const openPdfPreview = (): void => {
   try {
     if (!jrxmlContent.value) {
-      // 直接生成JRXML内容，不下载
+      // Generate the JRXML content directly, without downloading it
       const content = generateJRXMLContent(reportProperties.value, bands.value, reportFields.value, reportParameters.value, subDatasets.value, [], reportVariables.value, [], reportGroups.value);
       jrxmlContent.value = content;
     }
-    // 如果subDatasets为空，从表格元素中提取
+    // If subDatasets is empty, extract it from the table elements
     if (subDatasets.value.length === 0) {
       const extracted: TableDataset[] = [];
       for (const band of bands.value) {
@@ -3395,18 +3395,18 @@ const openPdfPreview = (): void => {
       showPdfPreview.value = true;
     });
   } catch (error) {
-    console.error('预览PDF失败:', error);
-    alert('预览PDF失败，请检查控制台错误信息');
+    console.error('Failed to preview PDF:', error);
+    alert('Failed to preview PDF, please check the console for error details');
   }
 };
 
-// 保存编辑后的JRXML内容
+// Save the edited JRXML content
 const saveJRXML = (): void => {
   try {
-    // 使用我们的parseJRXMLContent函数解析JRXML内容
+    // Use our parseJRXMLContent function to parse the JRXML content
     const parsedData = parseJRXMLContent(jrxmlContent.value);
 
-    // 更新报表属性
+    // Update the report properties
     reportProperties.value = {
       ...parsedData.properties,
       defaultFont: reportProperties.value?.defaultFont || {
@@ -3418,28 +3418,28 @@ const saveJRXML = (): void => {
       }
     };
 
-    // 更新字段定义
+    // Update the field definitions
     reportFields.value = parsedData.fields;
 
-    // 更新参数定义
+    // Update the parameter definitions
     reportParameters.value = parsedData.parameters || [];
 
-    // 更新变量定义
+    // Update the variable definitions
     if (parsedData.variables) {
       reportVariables.value = parsedData.variables;
     }
 
-    // 更新分组定义
+    // Update the group definitions
     if (parsedData.groups) {
       reportGroups.value = parsedData.groups;
     }
 
-    // 更新样式定义
+    // Update the style definitions
     if (parsedData.styles) {
       reportStyles.value = parsedData.styles;
     }
 
-    // 更新子数据集
+    // Update the sub-datasets
     if (parsedData.datasets) {
       subDatasets.value = parsedData.datasets.map(dataset => ({
         uuid: crypto.randomUUID(),
@@ -3449,25 +3449,25 @@ const saveJRXML = (): void => {
       })) as any;
     }
 
-    // 更新bands
+    // Update the bands
     bands.value = parsedData.bands;
 
-    // 更新选中的band类型
+    // Update the selected band types
     selectedBandTypes.value = parsedData.bands.map(band => band.type);
 
-    // 为矩形元素添加默认边框，确保显示效果
+    // Add a default border to rectangle elements to ensure they render correctly
     bands.value.forEach(band => {
       band.elements.forEach(element => {
-        // 确保元素宽度合理（但不强制最小高度，以保留JRXML原始设置）
-        if (element.width < ELEMENT_CONSTANTS.MIN_WIDTH) element.width = ELEMENT_CONSTANTS.MIN_WIDTH; // 确保最小宽度
+        // Ensure the element's width is reasonable (but don't force a minimum height, to preserve the JRXML's original settings)
+        if (element.width < ELEMENT_CONSTANTS.MIN_WIDTH) element.width = ELEMENT_CONSTANTS.MIN_WIDTH; // Enforce the minimum width
 
-        // 对于box元素，确保解析的边框属性正确应用
+        // For box elements, ensure the parsed border properties are applied correctly
         if (element.box) {
-          // 处理pen元素中的边框样式
+          // Convert the border style within a pen element
           const processPen = (pen: any): string => {
             if (!pen) return '';
 
-            // 如果lineWidth为0或undefined，返回空字符串表示无边框
+            // If lineWidth is 0 or undefined, return an empty string to indicate no border
             if (pen.lineWidth === 0 || pen.lineWidth === undefined) {
               return '';
             }
@@ -3499,27 +3499,27 @@ const saveJRXML = (): void => {
             return `${width} ${style} ${color}`;
           };
 
-          // 将边框样式字符串转换为UI显示的边框样式名称
+          // Convert a border style string into the border style name used by the UI
           const convertBorderStyleToName = (borderStyle: string): string => {
             if (!borderStyle || borderStyle === '') return '';
 
-            // 如果已经是样式名称，直接返回
+            // If it's already a style name, return it as-is
             if (['Thin', 'Medium', 'Thick', 'Dashed', 'Dotted', 'Double', '1Point', '2Point', '4Point'].includes(borderStyle)) {
               return borderStyle;
             }
 
-            // 解析边框样式字符串，如 "1px solid #000000"
+            // Parse a border style string, e.g. "1px solid #000000"
             const parts = borderStyle.split(' ');
             if (parts.length >= 2) {
               const width = parts[0];
               const style = parts[1];
 
-              // 如果宽度为0，返回空字符串表示无边框
+              // If the width is 0, return an empty string to indicate no border
               if (width === '0px') {
                 return '';
               }
 
-              // 根据宽度确定样式名称
+              // Determine the style name based on the width
               if (width === '1px') {
                 if (style === 'solid') return 'Thin';
                 if (style === 'dashed') return 'Dashed';
@@ -3533,20 +3533,20 @@ const saveJRXML = (): void => {
               }
             }
 
-            // 默认返回空字符串而不是Thin，避免意外显示边框
+            // Default to an empty string rather than Thin, to avoid unexpectedly displaying a border
             return '';
           };
 
-          // 从边框样式字符串中提取颜色
+          // Extract the color from a border style string
           const extractBorderColor = (borderStyle: string): string => {
             if (!borderStyle || borderStyle === '') return '#000000';
 
-            // 如果已经是样式名称，返回默认颜色
+            // If it's already a style name, return the default color
             if (['Thin', 'Medium', 'Thick', 'Dashed', 'Dotted', 'Double', '1Point', '2Point', '4Point'].includes(borderStyle)) {
               return '#000000';
             }
 
-            // 解析边框样式字符串，如 "1px solid #000000"
+            // Parse a border style string, e.g. "1px solid #000000"
             const parts = borderStyle.split(' ');
             if (parts.length >= 3 && parts[2]) {
               return parts[2];
@@ -3555,27 +3555,27 @@ const saveJRXML = (): void => {
             return '#000000';
           };
 
-          // 为各边的pen设置边框样式
-          // 处理pen属性，但不使用不存在的borderStyle
+          // Set the border style for each side's pen
+          // Process the pen property, without using the non-existent borderStyle
           if (element.box.topPen) {
-            // 可以将pen属性的值转换后赋给topBorder
+            // Convert the pen property's value and assign it to topBorder
             element.box.topBorder = processPen(element.box.topPen);
           }
           if (element.box.leftPen) {
-            // 可以将pen属性的值转换后赋给leftBorder
+            // Convert the pen property's value and assign it to leftBorder
             element.box.leftBorder = processPen(element.box.leftPen);
           }
-          // 处理pen属性，但不使用不存在的borderStyle
+          // Process the pen property, without using the non-existent borderStyle
           if (element.box.bottomPen) {
-            // 可以将pen属性的值转换后赋给bottomBorder
+            // Convert the pen property's value and assign it to bottomBorder
             element.box.bottomBorder = processPen(element.box.bottomPen);
           }
           if (element.box.rightPen) {
-            // 可以将pen属性的值转换后赋给rightBorder
+            // Convert the pen property's value and assign it to rightBorder
             element.box.rightBorder = processPen(element.box.rightPen);
           }
 
-          // 处理border属性映射
+          // Handle the border property mapping
           const borderMap: Record<string, string> = {
             'Thin': '1px',
             '1Point': '1px',
@@ -3586,15 +3586,15 @@ const saveJRXML = (): void => {
             'Double': '3px double'
           };
 
-          // 应用边框属性
+          // Apply the border properties
           const applyBorder = (borderAttr: string, colorAttr: string): string => {
             if (!borderAttr) return '';
 
             let borderValue = borderMap[borderAttr] || '1px';
-            // 使用类型断言来解决索引问题
+            // Use a type assertion to work around the indexing issue
             let borderColor = (element.box as any)?.[colorAttr] || '#000000';
 
-            // 如果borderAttr是样式名称（非像素值），添加完整的边框样式
+            // If borderAttr is a style name (not a pixel value), build the full border style string
             if (borderAttr !== 'Thin' && borderAttr !== '1Point' && borderAttr !== '2Point' && borderAttr !== '4Point') {
               if (borderValue.includes(' ')) {
                 return borderValue + ' ' + borderColor;
@@ -3605,23 +3605,23 @@ const saveJRXML = (): void => {
             return `${borderValue} solid ${borderColor}`;
           };
 
-          // 设置各边的边框样式
-          // 直接使用现有的border属性，不需要额外的borderStyle
+          // Set the border style for each side
+          // Use the existing border property directly, no extra borderStyle needed
           if (element.box.topBorder) {
-            // 已经有topBorder属性，确保它的值正确
+            // topBorder is already set; just ensure its value is correct
           }
-          // 直接使用现有的border属性，不需要额外的borderStyle
+          // Use the existing border property directly, no extra borderStyle needed
           if (element.box.leftBorder) {
-            // 已经有leftBorder属性，确保它的值正确
+            // leftBorder is already set; just ensure its value is correct
           }
           if (element.box.bottomBorder) {
-            // 已经有bottomBorder属性，确保它的值正确
+            // bottomBorder is already set; just ensure its value is correct
           }
           if (element.box.rightBorder) {
-            // 已经有rightBorder属性，确保它的值正确
+            // rightBorder is already set; just ensure its value is correct
           }
 
-          // 如果设置了全局border属性，应用到所有边
+          // If a global border property is set, apply it to all sides
           if (element.box.border && (!element.box.topBorder || !element.box.leftBorder || !element.box.bottomBorder || !element.box.rightBorder)) {
             const globalBorder = applyBorder(element.box.border, 'borderColor');
             if (!element.box.topBorder) element.box.topBorder = globalBorder;
@@ -3630,7 +3630,7 @@ const saveJRXML = (): void => {
             if (!element.box.rightBorder) element.box.rightBorder = globalBorder;
           }
 
-          // 将边框样式字符串转换为UI显示的边框样式名称
+          // Convert a border style string into the border style name used by the UI
           if (element.box.border && typeof element.box.border === 'string' && element.box.border.includes(' ')) {
             element.box.border = convertBorderStyleToName(element.box.border);
           }
@@ -3652,7 +3652,7 @@ const saveJRXML = (): void => {
           }
         }
 
-        // 确保元素不超出纸张边界
+        // Ensure the element doesn't exceed the paper boundary
         element.x = Math.max(0, element.x);
         element.y = Math.max(0, element.y);
         if (element.x + element.width > paperWidth.value) {
@@ -3660,45 +3660,45 @@ const saveJRXML = (): void => {
         }
       });
 
-      // 确保band高度至少为最小高度
+      // Ensure the band height is at least the minimum height
       const minHeight = BAND_CONSTANTS.MIN_HEIGHT;
       band.height = Math.max(band.height, minHeight);
     });
 
-    // 重新生成JRXML内容，确保参数被包含
+    // Regenerate the JRXML content, ensuring parameters are included
     updateJRXML();
 
-    // 保存到本地存储
+    // Save to local storage
     saveToLocalStorageWrapper();
 
-    // 显示成功提示
+    // Show a success notification
     notification.success(t('notifications.jrxmlEditSaved'));
   } catch (error: unknown) {
-    console.error('保存JRXML失败:', error);
+    console.error('Failed to save JRXML:', error);
     notification.error(t('notifications.jrxmlEditSaveFailed', { error: error instanceof Error ? error.message : 'Unknown error' }));
   }
 };
 
-// 监听边框设置变化，实时更新边框样式
+// Watch for border-setting changes, updating the border style in real time
 watch(() => currentElement.value?.box?.border, (newBorderStyle) => {
   if (!currentElement.value || !currentElement.value.box) return;
 
   const box = currentElement.value.box;
 
-  // 如果边框样式为空字符串，清除所有边框
+  // If the border style is an empty string, clear all borders
   if (!newBorderStyle || newBorderStyle === '') {
     box.topBorder = '';
     box.leftBorder = '';
     box.bottomBorder = '';
     box.rightBorder = '';
-    // 更新JRXML
+    // Update JRXML
     updateJRXML();
     return;
   }
 
   const borderColor = box.borderColor || '#000000';
 
-  // 边框样式映射
+  // Border style mapping
   const borderMap: Record<string, string> = {
     'Thin': '1px',
     '1Point': '1px',
@@ -3709,105 +3709,105 @@ watch(() => currentElement.value?.box?.border, (newBorderStyle) => {
     'Double': '3px double'
   };
 
-  // 生成边框样式字符串
+  // Build the border style string
   const borderValue = borderMap[newBorderStyle] || '1px';
   const fullBorderStyle = `${borderValue} solid ${borderColor}`;
 
-  // 立即应用到所有边
+  // Apply it to all sides immediately
   box.topBorder = fullBorderStyle;
   box.leftBorder = fullBorderStyle;
   box.bottomBorder = fullBorderStyle;
   box.rightBorder = fullBorderStyle;
 
-  // 更新JRXML
+  // Update JRXML
   updateJRXML();
 });
 
-// 监听边框宽度变化，确保pen对象中包含lineWidth属性
+// Watch for border-width changes, ensuring the pen object includes a lineWidth property
 watch(() => currentElement.value?.box?.borderWidth, (newBorderWidth) => {
   if (!currentElement.value || !currentElement.value.box) return;
 
   const box = currentElement.value.box;
 
-  // 如果边框宽度为0，自动将边框样式设置为"无"
+  // If the border width is 0, automatically set the border style to "None"
   if (newBorderWidth === 0 || newBorderWidth === undefined || newBorderWidth === null) {
     box.borderStyle = '';
 
-    // 删除pen对象
+    // Remove the pen object
     delete box.pen;
   } else {
-    // 确保pen对象存在
+    // Ensure the pen object exists
     if (!box.pen) {
       box.pen = {};
     }
 
-    // 更新pen对象的lineWidth属性
+    // Update the pen object's lineWidth property
     box.pen.lineWidth = newBorderWidth;
 
-    // 如果没有设置边框样式，使用默认样式
+    // If no border style is set, use the default style
     if (!box.pen.lineStyle) {
       box.pen.lineStyle = box.borderStyle || 'Solid';
     }
 
-    // 如果没有设置边框颜色，使用默认颜色
+    // If no border color is set, use the default color
     if (!box.pen.lineColor) {
       box.pen.lineColor = box.borderColor || '#000000';
     }
   }
 
-  // 更新JRXML
+  // Update JRXML
   updateJRXML();
 });
 
-// 监听边框样式变化，确保pen对象中包含lineStyle属性
+// Watch for border-style changes, ensuring the pen object includes a lineStyle property
 watch(() => currentElement.value?.box?.borderStyle, (newBorderStyle, oldBorderStyle) => {
   if (!currentElement.value || !currentElement.value.box) return;
 
   const box = currentElement.value.box;
 
-  // 如果边框样式设置为"无"（空字符串），自动将边框粗细改为0
+  // If the border style is set to "None" (an empty string), automatically set the width to 0
   if (newBorderStyle === undefined || newBorderStyle === null || newBorderStyle === '') {
     box.borderWidth = 0;
 
-    // 删除pen对象
+    // Remove the pen object
     delete box.pen;
   } else {
-    // 当边框样式从"无"切换到其他选项时，如果边框粗细为0则自动设置为1
+    // When the border style switches from "None" to another option, automatically default the width to 1 if it's currently 0
     if ((oldBorderStyle === '' || oldBorderStyle === undefined || oldBorderStyle === null) &&
         box.borderWidth === 0) {
       box.borderWidth = 1;
     }
 
-    // 确保pen对象存在
+    // Ensure the pen object exists
     if (!box.pen) {
       box.pen = {};
     }
 
-    // 更新pen对象的lineStyle属性
+    // Update the pen object's lineStyle property
     box.pen.lineStyle = newBorderStyle;
 
-    // 如果没有设置边框宽度，使用默认宽度
+    // If no border width is set, use the default width
     if (!box.pen.lineWidth) {
       box.pen.lineWidth = box.borderWidth || 1;
     }
 
-    // 如果没有设置边框颜色，使用默认颜色
+    // If no border color is set, use the default color
     if (!box.pen.lineColor) {
       box.pen.lineColor = box.borderColor || '#000000';
     }
   }
 
-  // 更新JRXML
+  // Update JRXML
   updateJRXML();
 });
 
-// 监听边框颜色变化，实时更新边框样式
+// Watch for border-color changes, updating the border style in real time
 watch(() => currentElement.value?.box?.borderColor, (newBorderColor) => {
   if (!currentElement.value || !currentElement.value.box) return;
 
   const box = currentElement.value.box;
 
-  // 如果有边框样式，更新各边边框颜色
+  // If a border style is set, update the color on each side
   if (box.border && box.border !== '') {
     const borderMap: Record<string, string> = {
       'Thin': '1px',
@@ -3822,29 +3822,29 @@ watch(() => currentElement.value?.box?.borderColor, (newBorderColor) => {
     const borderValue = borderMap[box.border] || '1px';
     const fullBorderStyle = `${borderValue} solid ${newBorderColor || '#000000'}`;
 
-    // 立即应用到所有边
+    // Apply it to all sides immediately
     box.topBorder = fullBorderStyle;
     box.leftBorder = fullBorderStyle;
     box.bottomBorder = fullBorderStyle;
     box.rightBorder = fullBorderStyle;
 
-    // 更新JRXML
+    // Update JRXML
     updateJRXML();
   }
 });
 
-// 监听上边框变化
+// Watch for top-border changes
 watch(() => currentElement.value?.box?.topBorder, (newTopBorder) => {
   if (!currentElement.value || !currentElement.value.box) return;
 
-  // 如果边框样式为空字符串，清除上边框
+  // If the border style is an empty string, clear the top border
   if (!newTopBorder || newTopBorder === '') {
-    // 边框已清除，更新JRXML
+    // Border cleared; update JRXML
     updateJRXML();
     return;
   }
 
-  // 如果边框是样式名称（如"Thin"），转换为完整的边框样式字符串
+  // If the border is a style name (e.g. "Thin"), convert it to a full border style string
   if (['Thin', 'Medium', 'Thick', 'Dashed', 'Dotted', 'Double', '1Point', '2Point', '4Point'].includes(newTopBorder)) {
     const box = currentElement.value.box;
     const borderColor = box.topBorderColor || '#000000';
@@ -3861,23 +3861,23 @@ watch(() => currentElement.value?.box?.topBorder, (newTopBorder) => {
 
     const borderValue = borderMap[newTopBorder] || '1px';
     box.topBorder = `${borderValue} solid ${borderColor}`;
-    // 更新JRXML
+    // Update JRXML
     updateJRXML();
   }
 });
 
-// 监听左边框变化
+// Watch for left-border changes
 watch(() => currentElement.value?.box?.leftBorder, (newLeftBorder) => {
   if (!currentElement.value || !currentElement.value.box) return;
 
-  // 如果边框样式为空字符串，清除左边框
+  // If the border style is an empty string, clear the left border
   if (!newLeftBorder || newLeftBorder === '') {
-    // 边框已清除，更新JRXML
+    // Border cleared; update JRXML
     updateJRXML();
     return;
   }
 
-  // 如果边框是样式名称（如"Thin"），转换为完整的边框样式字符串
+  // If the border is a style name (e.g. "Thin"), convert it to a full border style string
   if (['Thin', 'Medium', 'Thick', 'Dashed', 'Dotted', 'Double', '1Point', '2Point', '4Point'].includes(newLeftBorder)) {
     const box = currentElement.value.box;
     const borderColor = box.leftBorderColor || '#000000';
@@ -3894,23 +3894,23 @@ watch(() => currentElement.value?.box?.leftBorder, (newLeftBorder) => {
 
     const borderValue = borderMap[newLeftBorder] || '1px';
     box.leftBorder = `${borderValue} solid ${borderColor}`;
-    // 更新JRXML
+    // Update JRXML
     updateJRXML();
   }
 });
 
-// 监听下边框变化
+// Watch for bottom-border changes
 watch(() => currentElement.value?.box?.bottomBorder, (newBottomBorder) => {
   if (!currentElement.value || !currentElement.value.box) return;
 
-  // 如果边框样式为空字符串，清除下边框
+  // If the border style is an empty string, clear the bottom border
   if (!newBottomBorder || newBottomBorder === '') {
-    // 边框已清除，更新JRXML
+    // Border cleared; update JRXML
     updateJRXML();
     return;
   }
 
-  // 如果边框是样式名称（如"Thin"），转换为完整的边框样式字符串
+  // If the border is a style name (e.g. "Thin"), convert it to a full border style string
   if (['Thin', 'Medium', 'Thick', 'Dashed', 'Dotted', 'Double', '1Point', '2Point', '4Point'].includes(newBottomBorder)) {
     const box = currentElement.value.box;
     const borderColor = box.bottomBorderColor || '#000000';
@@ -3927,23 +3927,23 @@ watch(() => currentElement.value?.box?.bottomBorder, (newBottomBorder) => {
 
     const borderValue = borderMap[newBottomBorder] || '1px';
     box.bottomBorder = `${borderValue} solid ${borderColor}`;
-    // 更新JRXML
+    // Update JRXML
     updateJRXML();
   }
 });
 
-// 监听右边框变化
+// Watch for right-border changes
 watch(() => currentElement.value?.box?.rightBorder, (newRightBorder) => {
   if (!currentElement.value || !currentElement.value.box) return;
 
-  // 如果边框样式为空字符串，清除右边框
+  // If the border style is an empty string, clear the right border
   if (!newRightBorder || newRightBorder === '') {
-    // 边框已清除，更新JRXML
+    // Border cleared; update JRXML
     updateJRXML();
     return;
   }
 
-  // 如果边框是样式名称（如"Thin"），转换为完整的边框样式字符串
+  // If the border is a style name (e.g. "Thin"), convert it to a full border style string
   if (['Thin', 'Medium', 'Thick', 'Dashed', 'Dotted', 'Double', '1Point', '2Point', '4Point'].includes(newRightBorder)) {
     const box = currentElement.value.box;
     const borderColor = box.rightBorderColor || '#000000';
@@ -3960,38 +3960,38 @@ watch(() => currentElement.value?.box?.rightBorder, (newRightBorder) => {
 
     const borderValue = borderMap[newRightBorder] || '1px';
     box.rightBorder = `${borderValue} solid ${borderColor}`;
-    // 更新JRXML
+    // Update JRXML
     updateJRXML();
   }
 });
 
 
 
-// 开始调整band高度
+// Start resizing a band's height
 const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   event.preventDefault();
 
-  // 自动隐藏底部面板
+  // Automatically hide the bottom panel
   showBottomPanel.value = false;
 
   const startY = event.clientY;
   if (!bands.value || !bands.value[bandIndex]) return;
 
-  // 获取当前缩放比例
+  // Get the current zoom scale
   const currentZoom = zoomLevel.value;
   const startHeight = bands.value[bandIndex].height;
 
-  // 获取paper元素的位置信息，用于更准确的坐标计算
+  // Get the paper element's position info, for more accurate coordinate calculations
   const paperElement = document.querySelector('.paper') as HTMLElement;
   let paperOffsetY = 0;
 
   if (paperElement) {
     const paperRect = paperElement.getBoundingClientRect();
-    // 考虑缩放比例的偏移量
+    // Offset accounting for the zoom scale
     paperOffsetY = paperRect.top;
   }
 
-  // 显示band高度调整提示
+  // Show the band height adjustment tooltip
   const band = bands.value[bandIndex];
   resizingBandInfo.visible = true;
   resizingBandInfo.bandName = getBandDisplayName(band.type);
@@ -3999,11 +3999,11 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
 
   const handleMouseMove = (e: MouseEvent): void => {
     if (!bands.value || !bands.value[bandIndex]) return;
-    // 考虑缩放比例计算高度变化，使用paperOffsetY来更准确地计算
+    // Calculate the height change accounting for the zoom scale, using paperOffsetY for more accuracy
     const deltaY = (e.clientY - paperOffsetY) / currentZoom - (startY - paperOffsetY) / currentZoom;
     const newHeight = Math.max(BAND_CONSTANTS.MIN_HEIGHT, Math.round(startHeight + deltaY));
 
-    // 更新band高度
+    // Update the band height
     bands.value = bands.value.map((b, i) => {
       if (i === bandIndex) {
         return { ...b, height: newHeight };
@@ -4011,22 +4011,22 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
       return b;
     });
 
-    // 更新band高度调整提示
+    // Update the band height adjustment tooltip
     resizingBandInfo.bandName = bands.value[bandIndex] ? getBandDisplayName(bands.value[bandIndex].type) : '';
     resizingBandInfo.height = newHeight;
 
-    // 定位band高度显示元素，使其跟随鼠标
+    // Position the band-height display element so it follows the mouse
     const bandHeightElement = document.querySelector('.band-height-display') as HTMLElement;
     if (bandHeightElement) {
       bandHeightElement.style.left = (e.clientX + 10) + 'px';
       bandHeightElement.style.top = (e.clientY - 30) + 'px';
     }
 
-    // 调整该区域内元素的位置，确保元素不会超出区域边界
+    // Adjust the positions of elements within this band so they don't exceed the band's bounds
     const band = bands.value[bandIndex];
     if (band && band.elements) {
       band.elements.forEach(element => {
-        // 考虑缩放比例的元素位置调整
+        // Adjust the element's position accounting for the zoom scale
         if ((element.y + element.height) > newHeight) {
           element.y = Math.max(0, newHeight - element.height);
         }
@@ -4035,7 +4035,7 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   };
 
   const handleMouseUp = (): void => {
-    // 隐藏band高度调整提示
+    // Hide the band height adjustment tooltip
     resizingBandInfo.visible = false;
     resizingBandInfo.bandName = '';
     resizingBandInfo.height = 0;
@@ -4047,7 +4047,7 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   document.addEventListener('mouseup', handleMouseUp);
 };
 
-// 获取指定Band的Y坐标偏移
+// Get the given Band's Y offset
 const getBandOffsetY = (bandIndex: number): number => {
   let offset = 0;
   for (let i = 0; i < bandIndex; i++) {
@@ -4056,11 +4056,11 @@ const getBandOffsetY = (bandIndex: number): number => {
   return offset;
 };
 
-// 开始调整元素大小
+// Start resizing an element
 const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex: number, direction: string, parentFrameIndex?: number): void => {
   event.preventDefault();
 
-  // 自动隐藏底部面板
+  // Automatically hide the bottom panel
   showBottomPanel.value = false;
 
   const band = bands.value[bandIndex];
@@ -4076,17 +4076,17 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
   }
 
   if (element) {
-    // 获取当前缩放比例
+    // Get the current zoom scale
     const currentZoom = zoomLevel.value;
 
-    // 获取paper元素的位置信息，用于更准确的坐标计算
+    // Get the paper element's position info, for more accurate coordinate calculations
     const paperElement = document.querySelector('.paper') as HTMLElement;
     let paperOffsetX = 0;
     let paperOffsetY = 0;
 
     if (paperElement) {
       const paperRect = paperElement.getBoundingClientRect();
-      // 考虑缩放比例的偏移量
+      // Offset accounting for the zoom scale
       paperOffsetX = paperRect.left;
       paperOffsetY = paperRect.top;
     }
@@ -4126,33 +4126,33 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
 
       if (!element) return;
 
-      // 获取当前缩放比例
+      // Get the current zoom scale
       const currentZoom = zoomLevel.value;
 
-      // 获取paper元素的当前位置信息，用于更准确的坐标计算
+      // Get the paper element's current position info, for more accurate coordinate calculations
       const paperEl = document.querySelector('.paper') as HTMLElement;
       let currentPaperOffsetX = 0;
       let currentPaperOffsetY = 0;
 
       if (paperEl) {
         const paperRect = paperEl.getBoundingClientRect();
-        // 考虑缩放比例的偏移量
+        // Offset accounting for the zoom scale
         currentPaperOffsetX = paperRect.left;
         currentPaperOffsetY = paperRect.top;
       }
 
-      // 计算新的宽度和高度，考虑缩放比例
+      // Calculate the new width and height, accounting for the zoom scale
       let newWidth = resizingInfo.value.startWidth + ((e.clientX - currentPaperOffsetX) / currentZoom - resizingInfo.value.startX);
       let newHeight = resizingInfo.value.startHeight + ((e.clientY - currentPaperOffsetY) / currentZoom - resizingInfo.value.startY);
 
-      // 限制最小尺寸
+      // Constrain the minimum size
       const minSize = 1;
       newWidth = Math.max(minSize, newWidth);
       newHeight = Math.max(minSize, newHeight);
 
-      // 获取报表边距设置
+      // Get the report's margin settings
       const { leftMargin = 0, rightMargin = 0 } = reportProperties.value;
-      // 限制不能超出纸张右边界和band底部边界
+      // Constrain the size so it doesn't exceed the paper's right boundary or the band's bottom boundary
       let maxElementWidth;
       if (resizingInfo.value.parentFrameIndex !== undefined) {
          maxElementWidth = containerWidth - element.x;
@@ -4164,57 +4164,57 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
       newWidth = Math.min(newWidth, maxElementWidth);
       newHeight = Math.min(newHeight, availableHeight);
 
-      // 如果按下SHIFT键，保持原始宽高比
+      // If the SHIFT key is held, preserve the original aspect ratio
       if (e.shiftKey) {
-        // 计算原始宽高比
+        // Calculate the original aspect ratio
         const aspectRatio = resizingInfo.value.startWidth / resizingInfo.value.startHeight;
 
-        // 计算基于宽度的高度和基于高度的宽度
+        // Calculate the height derived from the width, and the width derived from the height
         const heightBasedOnWidth = newWidth / aspectRatio;
         const widthBasedOnHeight = newHeight * aspectRatio;
 
-        // 选择更接近原始比例的尺寸
+        // Choose whichever dimension is closer to the original ratio
         if (Math.abs(newHeight - heightBasedOnWidth) < Math.abs(newWidth - widthBasedOnHeight)) {
-          // 以宽度为基准，调整高度
+          // Use the width as the basis, and adjust the height
           newHeight = heightBasedOnWidth;
         } else {
-          // 以高度为基准，调整宽度
+          // Use the height as the basis, and adjust the width
           newWidth = widthBasedOnHeight;
         }
 
-        // 再次限制尺寸，确保不超出边界
+        // Constrain the size again to ensure it doesn't exceed the bounds
         newWidth = Math.max(minSize, Math.min(newWidth, maxElementWidth));
         newHeight = Math.max(minSize, Math.min(newHeight, availableHeight));
       } else if (e.altKey) {
-        // 如果按下ALT键，锁定1:1宽高比
-        // 计算基于宽度的1:1高度和基于高度的1:1宽度
+        // If the ALT key is held, lock the aspect ratio to 1:1
+        // Calculate the 1:1 height derived from the width, and the 1:1 width derived from the height
         const size1x1FromWidth = newWidth;
         const size1x1FromHeight = newHeight;
 
-        // 选择变化量更大的维度作为基准
+        // Use whichever dimension changed more as the basis
         const widthChange = Math.abs(newWidth - resizingInfo.value.startWidth);
         const heightChange = Math.abs(newHeight - resizingInfo.value.startHeight);
 
         if (widthChange >= heightChange) {
-          // 以宽度为基准，高度等于宽度
+          // Use the width as the basis; height equals width
           newHeight = size1x1FromWidth;
         } else {
-          // 以高度为基准，宽度等于高度
+          // Use the height as the basis; width equals height
           newWidth = size1x1FromHeight;
         }
 
-        // 再次限制尺寸，确保不超出边界
+        // Constrain the size again to ensure it doesn't exceed the bounds
         newWidth = Math.max(minSize, Math.min(newWidth, maxElementWidth));
         newHeight = Math.max(minSize, Math.min(newHeight, availableHeight));
       }
 
-      // 先保存临时尺寸
+      // First, store the temporary size
       const tempWidth = Math.round(newWidth);
       const tempHeight = Math.round(newHeight);
 
-      // 特殊处理表格元素：调整表格宽度时自动调整列宽
+      // Special handling for table elements: automatically adjust column widths when the table width changes
       if (element.type === 'table') {
-        // 在children数组中查找对应的列（递归查找）
+        // Look up the corresponding column within the children array (recursive search)
         const findColumnInChildren = (children: any[], targetColumn: any): any | null => {
           for (const child of children) {
             if (child.uuid === targetColumn.uuid) {
@@ -4231,37 +4231,37 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
         };
 
         if (element.columns && element.columns.length > 0) {
-          // 获取所有列的当前宽度
+          // Get the current width of each column
           const columnWidths = element.columns.map(col => col.width || 0);
           const totalColumnWidth = columnWidths.reduce((sum, width) => sum + width, 0);
 
           if (totalColumnWidth > 0) {
-            // 计算每列应分配的宽度比例
+            // Calculate the width ratio each column should receive
             const ratios = columnWidths.map(width => width / totalColumnWidth);
 
-            // 根据新的表格宽度按比例分配列宽
+            // Distribute column widths proportionally based on the new table width
             const newColumnWidths = ratios.map(ratio => {
-              // 按比例分配新宽度
+              // Distribute the new width proportionally
               const newColWidth = tempWidth * ratio;
-              // 确保每列至少有一个最小宽度
+              // Ensure every column has at least a minimum width
               return Math.max(10, Math.round(newColWidth));
             });
 
-            // 调整最后一列宽度，确保总和等于表格宽度
+            // Adjust the last column's width so the total matches the table width
             const sumNewWidths = newColumnWidths.reduce((sum, width) => sum + width, 0);
             if (sumNewWidths !== tempWidth && newColumnWidths.length > 0) {
               const diff = tempWidth - sumNewWidths;
               const lastIndex = newColumnWidths.length - 1;
-              // 确保newColumnWidths[lastIndex]不是undefined
+              // Ensure newColumnWidths[lastIndex] isn't undefined
               newColumnWidths[lastIndex] = (newColumnWidths[lastIndex] || 0) + diff;
             }
 
-            // 更新所有列的宽度
+            // Update the width of every column
             element.columns.forEach((col, index) => {
               const newColWidth = newColumnWidths[index]!;
               col.width = newColWidth;
 
-              // 同时更新列中所有单元格的宽度
+              // Also update the width of every cell within the column
               if (col.tableHeader && col.tableHeader.element) {
                 col.tableHeader.element.width = newColWidth;
               }
@@ -4278,13 +4278,13 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
                 col.tableFooter.element.width = newColWidth;
               }
 
-              // 如果表格有children属性，同时更新children属性中对应列的宽度
+              // If the table has a children property, also update the width of the corresponding column within it
               if (element.children) {
                 const childColumn = findColumnInChildren(element.children, col);
                 if (childColumn) {
                   childColumn.width = newColWidth;
 
-                  // 同时更新childColumn中所有相关单元格的宽度
+                  // Also update the width of every related cell within childColumn
                   if (childColumn.tableHeader) {
                     childColumn.tableHeader.width = newColWidth;
                   }
@@ -4306,33 +4306,33 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
           }
         }
 
-        // 设置表格最终宽度和高度
+        // Set the table's final width and height
         element.width = tempWidth;
       } else {
-        // 非表格元素，直接应用大小调整
+        // Non-table element; apply the size adjustment directly
         element.width = tempWidth;
       }
 
-      // 应用高度调整
+      // Apply the height adjustment
       element.height = tempHeight;
 
-      // 使用最终尺寸再次检测对齐线（确保对齐线正确显示）
+      // Re-run alignment-line detection using the final size (to ensure alignment lines display correctly)
       if (enableSnapToAlignment.value) {
         detectAlignmentLines(element, resizingInfo.value.bandIndex);
       }
     };
 
     const handleMouseUp = () => {
-      // 清除对齐线
+      // Clear the alignment lines
       clearAlignmentLines();
 
-      // 保存状态到历史记录
+      // Save state to history
       saveStateToHistory();
 
       resizingInfo.value = null;
       isDraggingOrResizing.value = false;
 
-      // 更新JRXML
+      // Update JRXML
       updateJRXML();
 
       document.removeEventListener('mousemove', handleMouseMove);
@@ -4344,7 +4344,7 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
   }
 }
 
-// 组件卸载时清理事件监听器
+// Clean up event listeners when the component unmounts
 onUnmounted(() => {
   if ((window as any).pdfDesignerKeydownListener) {
     document.removeEventListener('keydown', (window as any).pdfDesignerKeydownListener);
@@ -4352,57 +4352,57 @@ onUnmounted(() => {
   }
 });
 
-// 打赏相关
+// Donation-related state
 const showReward = ref(false);
 
-// 使用说明相关
+// Help-related state
 const showHelp = ref(false);
 
-// PDF预览相关
+// PDF preview related state
 const showPdfPreview = ref(false);
 
-// 预览服务器设置相关
+// Preview server settings related state
 const showPreviewServerSettings = ref(false);
 const previewServerUrl = ref(localStorage.getItem('previewServerUrl') || 'https://jrxml-pdf-preview.firegod.cn/api/pdf/generateForm');
 
-// 字段管理相关
+// Field management related state
 const showFieldModal = ref(false);
 const editingField = ref<ReportField | undefined>(undefined);
 const editingParameter = ref<ReportParameter | undefined>(undefined);
 
-// 变量管理相关
+// Variable management related state
 const showVariableModal = ref(false);
 const editingVariable = ref<ReportVariable | undefined>(undefined);
 
-// 打开预览服务器设置
+// Open the preview server settings
 const openPreviewServerSettings = (): void => {
   showPreviewServerSettings.value = true;
 };
 
-// 更新预览服务器地址
+// Update the preview server address
 const updatePreviewServerUrl = (url: string): void => {
   previewServerUrl.value = url;
   localStorage.setItem('previewServerUrl', url);
 };
 const isEditingParameter = ref(false);
 
-// 处理添加字段
+// Handle adding a field
 const handleAddField = (): void => {
   editingField.value = undefined;
   isEditingParameter.value = false;
   showFieldModal.value = true;
 };
 
-// 处理编辑字段
+// Handle editing a field
 const handleEditField = (field: ReportField): void => {
   editingField.value = { ...field };
   isEditingParameter.value = false;
   showFieldModal.value = true;
 };
 
-// 处理删除字段
+// Handle deleting a field
 const handleDeleteField = (fieldName: string): void => {
-  if (confirm(`确定要删除字段 "${fieldName}" 吗？`)) {
+  if (confirm(`Are you sure you want to delete field "${fieldName}"?`)) {
     const fieldIndex = reportFields.value.findIndex(field => field.name === fieldName);
     if (fieldIndex !== -1) {
       reportFields.value.splice(fieldIndex, 1);
@@ -4412,24 +4412,24 @@ const handleDeleteField = (fieldName: string): void => {
   }
 };
 
-// 处理添加报表参数
+// Handle adding a report parameter
 const handleAddParameter = (): void => {
-  // 使用字段管理模态框，因为参数和字段的结构相似
+  // Reuse the field management modal, since parameters and fields share a similar structure
   editingParameter.value = undefined;
   showFieldModal.value = true;
   isEditingParameter.value = true;
 };
 
-// 处理编辑报表参数
+// Handle editing a report parameter
 const handleEditParameter = (parameter: ReportParameter): void => {
   editingParameter.value = { ...parameter };
   showFieldModal.value = true;
   isEditingParameter.value = true;
 };
 
-// 处理删除报表参数
+// Handle deleting a report parameter
 const handleDeleteParameter = (parameterName: string): void => {
-  if (confirm(`确定要删除参数 "${parameterName}" 吗？`)) {
+  if (confirm(`Are you sure you want to delete parameter "${parameterName}"?`)) {
     const parameterIndex = reportParameters.value.findIndex(param => param.name === parameterName);
     if (parameterIndex !== -1) {
       reportParameters.value.splice(parameterIndex, 1);
@@ -4439,21 +4439,21 @@ const handleDeleteParameter = (parameterName: string): void => {
   }
 };
 
-// 处理添加变量
+// Handle adding a variable
 const handleAddVariable = (): void => {
   editingVariable.value = undefined;
   showVariableModal.value = true;
 };
 
-// 处理编辑变量
+// Handle editing a variable
 const handleEditVariable = (variable: ReportVariable): void => {
   editingVariable.value = { ...variable };
   showVariableModal.value = true;
 };
 
-// 处理删除变量
+// Handle deleting a variable
 const handleDeleteVariable = (variableName: string): void => {
-  if (confirm(`确定要删除变量 "${variableName}" 吗？`)) {
+  if (confirm(`Are you sure you want to delete variable "${variableName}"?`)) {
     const variableIndex = reportVariables.value.findIndex(v => v.name === variableName);
     if (variableIndex !== -1) {
       reportVariables.value.splice(variableIndex, 1);
@@ -4463,11 +4463,11 @@ const handleDeleteVariable = (variableName: string): void => {
   }
 };
 
-// 处理变量保存
+// Handle saving a variable
 const handleVariableSave = (variable: ReportVariable): void => {
   const existingIndex = reportVariables.value.findIndex(v => v.name === variable.name);
   if (existingIndex !== -1 && editingVariable.value?.name !== variable.name) {
-    alert('变量名称已存在，请使用其他名称');
+    alert('A variable with this name already exists, please use a different name');
     return;
   }
   if (existingIndex !== -1) {
@@ -4479,25 +4479,25 @@ const handleVariableSave = (variable: ReportVariable): void => {
   updateJRXML();
 };
 
-// 样式管理相关
+// Style management related state
 const showStyleModal = ref(false);
 const editingStyle = ref<any | undefined>(undefined);
 
-// 处理添加样式
+// Handle adding a style
 const handleAddStyle = (): void => {
   editingStyle.value = undefined;
   showStyleModal.value = true;
 };
 
-// 处理编辑样式
+// Handle editing a style
 const handleEditStyle = (style: any): void => {
   editingStyle.value = { ...style, box: style.box ? { ...style.box } : undefined };
   showStyleModal.value = true;
 };
 
-// 处理删除样式
+// Handle deleting a style
 const handleDeleteStyle = (styleName: string): void => {
-  if (confirm(`确定要删除样式 "${styleName}" 吗？`)) {
+  if (confirm(`Are you sure you want to delete style "${styleName}"?`)) {
     const styleIndex = reportStyles.value.findIndex(s => s.name === styleName);
     if (styleIndex !== -1) {
       reportStyles.value.splice(styleIndex, 1);
@@ -4507,11 +4507,11 @@ const handleDeleteStyle = (styleName: string): void => {
   }
 };
 
-// 处理样式保存
+// Handle saving a style
 const handleStyleSave = (style: any): void => {
   const existingIndex = reportStyles.value.findIndex(s => s.name === style.name);
   if (existingIndex !== -1 && editingStyle.value?.name !== style.name) {
-    alert('样式名称已存在，请使用其他名称');
+    alert('A style with this name already exists, please use a different name');
     return;
   }
   if (existingIndex !== -1) {
@@ -4523,14 +4523,14 @@ const handleStyleSave = (style: any): void => {
   updateJRXML();
 };
 
-// 处理删除元素
+// Handle deleting an element
 const handleDeleteElement = (bandIndex: number, elementIndex: number): void => {
   const band = bands.value[bandIndex];
   if (band && band.elements) {
     band.elements.splice(elementIndex, 1);
     saveStateToHistory();
     updateJRXML();
-    // 清除选中状态
+    // Clear the selection state
     if (selectedElement.value && selectedElement.value.bandIndex === bandIndex && selectedElement.value.elementIndex === elementIndex) {
       selectedElement.value = null;
       selectedElements.value = [];
@@ -4538,40 +4538,40 @@ const handleDeleteElement = (bandIndex: number, elementIndex: number): void => {
   }
 };
 
-// 处理字段保存
+// Handle saving a field
 const handleFieldSave = (fieldOrParam: ReportField | ReportParameter): void => {
   if (isEditingParameter.value) {
-    // 处理参数保存
+    // Handle saving a parameter
     const existingParamIndex = reportParameters.value.findIndex(p => p.name === fieldOrParam.name);
 
     if (existingParamIndex !== -1 && editingParameter.value?.name !== fieldOrParam.name) {
-      // 如果是编辑且参数名已存在，显示错误
-      alert('参数名称已存在，请使用其他名称');
+      // If editing and a parameter with this name already exists, show an error
+      alert('A parameter with this name already exists, please use a different name');
       return;
     }
 
     if (existingParamIndex !== -1) {
-      // 更新现有参数
+      // Update the existing parameter
       reportParameters.value[existingParamIndex] = fieldOrParam as ReportParameter;
     } else {
-      // 添加新参数
+      // Add the new parameter
       reportParameters.value.push(fieldOrParam as ReportParameter);
     }
   } else {
-    // 处理字段保存
+    // Handle saving a field
     const existingFieldIndex = reportFields.value.findIndex(f => f.name === fieldOrParam.name);
 
     if (existingFieldIndex !== -1 && editingField.value?.name !== fieldOrParam.name) {
-      // 如果是编辑且字段名已存在，显示错误
-      alert('字段名称已存在，请使用其他名称');
+      // If editing and a field with this name already exists, show an error
+      alert('A field with this name already exists, please use a different name');
       return;
     }
 
     if (existingFieldIndex !== -1) {
-      // 更新现有字段
+      // Update the existing field
       reportFields.value[existingFieldIndex] = fieldOrParam as ReportField;
     } else {
-      // 添加新字段
+      // Add the new field
       reportFields.value.push(fieldOrParam as ReportField);
     }
   }
@@ -4580,16 +4580,16 @@ const handleFieldSave = (fieldOrParam: ReportField | ReportParameter): void => {
   updateJRXML();
 };
 
-// 处理字段检查
+// Handle checking fields
 const handleCheckFields = (fields: string[]): void => {
   let fieldsAdded = false;
 
   fields.forEach(fieldName => {
-    // 检查字段是否已存在
+    // Check whether the field already exists
     const existingFieldIndex = reportFields.value.findIndex(f => f.name === fieldName);
 
     if (existingFieldIndex === -1) {
-      // 字段不存在，自动添加
+      // The field doesn't exist yet; add it automatically
       reportFields.value.push({
         name: fieldName,
         class: 'java.lang.String'
@@ -4599,84 +4599,84 @@ const handleCheckFields = (fields: string[]): void => {
   });
 
   if (fieldsAdded) {
-    // 保存状态到历史记录
+    // Save state to history
     saveStateToHistory();
-    // 更新JRXML
+    // Update JRXML
     updateJRXML();
   }
 };
 
-// 处理表格列移动
+// Handle moving a table column
 const handleMoveColumn = (elementIndex: number, fromIndex: number, toIndex: number, bandIndex: number, parentFrameIndex?: number): void => {
-  // 获取当前band
+  // Get the current band
   const band = bands.value[bandIndex];
   if (!band) return;
 
-  // 获取要操作的元素
+  // Get the element to operate on
   let element;
   if (parentFrameIndex !== undefined) {
-    // 处理Frame内的元素
+    // Handle an element inside a Frame
     const frame = band.elements[parentFrameIndex];
     if (frame && frame.type === 'frame' && frame.elements) {
       element = frame.elements[elementIndex];
     }
   } else {
-    // 处理直接在Band中的元素
+    // Handle an element directly within a Band
     element = band.elements[elementIndex];
   }
 
-  // 确保是表格元素
+  // Ensure it is a table element
   if (!element || element.type !== 'table') return;
 
   const tableElement = element as any;
   if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
 
-  // 保存状态到历史记录
+  // Save state to history
   saveStateToHistory();
 
-  // 执行列移动
+  // Perform the column move
   const columns = [...tableElement.columns];
   const [movedColumn] = columns.splice(fromIndex, 1);
   columns.splice(toIndex, 0, movedColumn);
 
-  // 更新表格的列
+  // Update the table's columns
   tableElement.columns = columns;
 
-  // 更新JRXML
+  // Update JRXML
   updateJRXML();
 };
 
-// 处理将选中的列加入组
+// Handle adding the selected columns to a group
 const handleAddColumnsToGroup = (params: { elementIndex: number; columnIndices: number[]; bandIndex: number; parentFrameIndex?: number }): void => {
   const { elementIndex, columnIndices, bandIndex, parentFrameIndex } = params;
 
-  // 获取当前band
+  // Get the current band
   const band = bands.value[bandIndex];
   if (!band) return;
 
-  // 获取要操作的元素
+  // Get the element to operate on
   let element;
   if (parentFrameIndex !== undefined) {
-    // 处理Frame内的元素
+    // Handle an element inside a Frame
     const frame = band.elements[parentFrameIndex];
     if (frame && frame.type === 'frame' && frame.elements) {
       element = frame.elements[elementIndex];
     }
   } else {
-    // 处理直接在Band中的元素
+    // Handle an element directly within a Band
     element = band.elements[elementIndex];
   }
 
-  // 确保是表格元素
+  // Ensure it is a table element
   if (!element || element.type !== 'table') return;
 
   const tableElement = element as any;
   if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
 
-  // 收集所有现有的列分组
+  // Collect all existing column groups
   const existingGroups: any[] = [];
 
-  // 递归收集所有分组
+  // Recursively collect all groups
   const collectGroups = (items: any[]): void => {
     items.forEach(item => {
       if (item.children) {
@@ -4686,15 +4686,15 @@ const handleAddColumnsToGroup = (params: { elementIndex: number; columnIndices: 
     });
   };
 
-  // 初始化children属性（如果不存在）
+  // Initialize the children property if it doesn't exist
   if (!tableElement.children) {
     tableElement.children = [...tableElement.columns];
   }
 
-  // 收集现有分组
+  // Collect the existing groups
   collectGroups(tableElement.children);
 
-  // 更新列选择对话框状态
+  // Update the column selection dialog state
   columnSelectionState.value = {
     elementIndex,
     bandIndex,
@@ -4703,74 +4703,74 @@ const handleAddColumnsToGroup = (params: { elementIndex: number; columnIndices: 
     children: tableElement.children || tableElement.columns
   };
 
-  // 显示列选择对话框
+  // Show the column selection dialog
   showColumnSelectionModal.value = true;
 };
 
-// 处理列选择确认
+// Handle confirmation of the column selection
 const handleColumnSelectionConfirm = (selectedColumnIndices: number[], selectedRegion: string, groupText: string): void => {
   const { elementIndex, bandIndex, parentFrameIndex } = columnSelectionState.value;
 
-  // 获取当前band
+  // Get the current band
   const band = bands.value[bandIndex];
   if (!band) return;
 
-  // 获取要操作的元素
+  // Get the element to operate on
   let element;
   if (parentFrameIndex !== undefined) {
-    // 处理Frame内的元素
+    // Handle an element inside a Frame
     const frame = band.elements[parentFrameIndex];
     if (frame && frame.type === 'frame' && frame.elements) {
       element = frame.elements[elementIndex];
     }
   } else {
-    // 处理直接在Band中的元素
+    // Handle an element directly within a Band
     element = band.elements[elementIndex];
   }
 
-  // 确保是表格元素
+  // Ensure it is a table element
   if (!element || element.type !== 'table') return;
 
   const tableElement = element as any;
   if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
 
-  // 确保至少选择了2列
+  // Ensure at least 2 columns are selected
   if (selectedColumnIndices.length < 2) return;
 
-  // 保存状态到历史记录
+  // Save state to history
   saveStateToHistory();
 
-  // 排序选中的列索引，确保从左到右处理
+  // Sort the selected column indices to process them left to right
   const sortedIndices = [...selectedColumnIndices].sort((a, b) => a - b);
 
-  // 确保sortedIndices不为空
+  // Ensure sortedIndices isn't empty
   if (sortedIndices.length === 0) return;
 
-  // 获取选中的列或组（从children数组中获取，因为它包含组合列）
+  // Get the selected columns or groups (from the children array, since it includes combined columns)
   const selectedColumns = sortedIndices.map(index => tableElement.children[index]);
 
-  // 计算分组宽度（递归计算，处理组合列）
+  // Calculate the group's width (recursively, to handle combined columns)
   function calculateWidth(item: any): number {
     if (item.children) {
-      // 组合列，递归计算所有子列的宽度之和
+      // A combined column; recursively sum the widths of all child columns
       return item.children.reduce((sum: number, child: any) => sum + calculateWidth(child), 0);
     } else {
-      // 普通列，直接使用宽度
+      // A regular column; use its width directly
       return item.width || 0;
     }
   }
 
   const groupWidth = selectedColumns.reduce((sum: number, column: any) => sum + calculateWidth(column), 0);
 
-  // 创建新的列分组（保留原来的组合列结构）
+  // Create the new column group (preserving the original combined-column structure)
   const newGroup: any = {
     uuid: crypto.randomUUID(),
     name: `Group_${Date.now()}`,
     width: groupWidth,
-    children: selectedColumns // 直接使用选中的项目（包括组合列），而不是展开子列
+    children: selectedColumns // Use the selected items directly (including combined columns), rather than flattening the child columns
   };
 
-  // 根据选择的区域设置相应的属性
+  // Set the corresponding property based on the selected region
   const textContent = groupText || newGroup.name;
   if (selectedRegion === 'tableHeader') {
     newGroup.hasTableHeader = true;
@@ -4831,28 +4831,28 @@ const handleColumnSelectionConfirm = (selectedColumnIndices: number[], selectedR
     };
   }
 
-  // 初始化children属性（如果不存在）
+  // Initialize the children property if it doesn't exist
   if (!tableElement.children) {
     tableElement.children = [...tableElement.columns];
   }
 
-  // 更新children数组，移除选中的列并添加新分组
+  // Update the children array, removing the selected columns and adding the new group
   const newChildren = [...tableElement.children];
 
-  // 从后往前移除选中的列，避免索引偏移
+  // Remove the selected columns from last to first to avoid index shifting
   for (let i = sortedIndices.length - 1; i >= 0; i--) {
     const index = sortedIndices[i] as number;
     newChildren.splice(index, 1);
   }
 
-  // 在第一个选中列的位置插入新分组
+  // Insert the new group at the position of the first selected column
   const firstIndex = sortedIndices[0] as number;
   newChildren.splice(firstIndex, 0, newGroup);
 
-  // 更新表格元素
+  // Update the table element
   tableElement.children = newChildren;
 
-  // 计算表格中组合列的最大嵌套层级
+  // Calculate the maximum nesting depth of combined columns in the table
   function calculateMaxDepth(node: any, depth: number = 0): number {
     if (!node.children || node.children.length === 0) {
       return depth;
@@ -4867,14 +4867,14 @@ const handleColumnSelectionConfirm = (selectedColumnIndices: number[], selectedR
     return maxDepth;
   }
 
-  // 计算最大嵌套层级
+  // Calculate the maximum nesting depth
   const maxDepth = calculateMaxDepth({ children: tableElement.children });
   const requiredRowSpan = maxDepth;
 
-  // 更新未分组列的rowSpan值
+  // Update the rowSpan value of ungrouped columns
   tableElement.children.forEach((child: any) => {
     if (!child.children) {
-      // 这是一个未分组的列
+      // This is an ungrouped column
       if (child.tableHeader) {
         child.tableHeader.rowSpan = requiredRowSpan;
       }
@@ -4884,45 +4884,45 @@ const handleColumnSelectionConfirm = (selectedColumnIndices: number[], selectedR
     }
   });
 
-  // 同步 columns 从 children 重建
+  // Sync columns, rebuilding it from children
   syncTableColumns(tableElement);
 
-  // 更新JRXML
+  // Update JRXML
   updateJRXML();
 };
 
-// 处理将选中的列加入现有组
+// Handle adding the selected columns to an existing group
 const handleJoinColumnsToExistingGroup = (elementIndex: number, columnIndices: number[], bandIndex: number, parentFrameIndex?: number): void => {
-  // 获取当前band
+  // Get the current band
   const band = bands.value[bandIndex];
   if (!band) return;
 
-  // 获取要操作的元素
+  // Get the element to operate on
   let element;
   if (parentFrameIndex !== undefined) {
-    // 处理Frame内的元素
+    // Handle an element inside a Frame
     const frame = band.elements[parentFrameIndex];
     if (frame && frame.type === 'frame' && frame.elements) {
       element = frame.elements[elementIndex];
     }
   } else {
-    // 处理直接在Band中的元素
+    // Handle an element directly within a Band
     element = band.elements[elementIndex];
   }
 
-  // 确保是表格元素
+  // Ensure it is a table element
   if (!element || element.type !== 'table') return;
 
   const tableElement = element as any;
   if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
 
-  // 确保至少选择了1列
+  // Ensure at least 1 column is selected
   if (columnIndices.length < 1) return;
 
-  // 收集所有现有的列分组
+  // Collect all existing column groups
   const existingGroups: any[] = [];
 
-  // 递归收集所有分组
+  // Recursively collect all groups
   const collectGroups = (items: any[]): void => {
     items.forEach(item => {
       if (item.children) {
@@ -4932,15 +4932,15 @@ const handleJoinColumnsToExistingGroup = (elementIndex: number, columnIndices: n
     });
   };
 
-  // 初始化children属性（如果不存在）
+  // Initialize the children property if it doesn't exist
   if (!tableElement.children) {
     tableElement.children = [...tableElement.columns];
   }
 
-  // 收集现有分组
+  // Collect the existing groups
   collectGroups(tableElement.children);
 
-  // 更新对话框状态
+  // Update the dialog state
   groupDialogState.value = {
     elementIndex,
     columnIndices,
@@ -4950,70 +4950,70 @@ const handleJoinColumnsToExistingGroup = (elementIndex: number, columnIndices: n
     selectedGroupName: ''
   };
 
-  // 显示对话框
+  // Show the dialog
   showGroupDialog.value = true;
 };
 
-// 确认将列加入组
+// Confirm adding the columns to a group
 const confirmJoinColumnsToGroup = (): void => {
   const { elementIndex, columnIndices, bandIndex, parentFrameIndex, existingGroups, selectedGroupName } = groupDialogState.value;
 
   if (!selectedGroupName) {
-    // 如果用户没有输入组名称，直接返回
+    // If the user didn't enter a group name, return immediately
     return;
   }
 
-  // 获取当前band
+  // Get the current band
   const band = bands.value[bandIndex];
   if (!band) return;
 
-  // 获取要操作的元素
+  // Get the element to operate on
   let element;
   if (parentFrameIndex !== undefined) {
-    // 处理Frame内的元素
+    // Handle an element inside a Frame
     const frame = band.elements[parentFrameIndex];
     if (frame && frame.type === 'frame' && frame.elements) {
       element = frame.elements[elementIndex];
     }
   } else {
-    // 处理直接在Band中的元素
+    // Handle an element directly within a Band
     element = band.elements[elementIndex];
   }
 
-  // 确保是表格元素
+  // Ensure it is a table element
   if (!element || element.type !== 'table') return;
 
   const tableElement = element as any;
   if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
 
-  // 保存状态到历史记录
+  // Save state to history
   saveStateToHistory();
 
-  // 初始化children数组（如果不存在）
+  // Initialize the children array if it doesn't exist
   if (!tableElement.children) {
     tableElement.children = [...tableElement.columns];
   }
 
-  // 排序选中的列索引，确保从左到右处理
+  // Sort the selected column indices to process them left to right
   const sortedIndices = [...columnIndices].sort((a, b) => a - b);
 
-  // 从 children 数组获取选中的列（indices 从 children 数组得到）
+  // Get the selected columns from the children array (indices are derived from the children array)
   const selectedColumns = sortedIndices.map(index => tableElement.children[index]);
 
-  // 查找用户指定的组
+  // Look up the group specified by the user
   let targetGroup = existingGroups.find(group => group.name === selectedGroupName);
 
-  // 先创建新的children数组，避免索引偏移问题
+  // Build the new children array first, to avoid index-shift issues
   const newChildren = [...tableElement.children];
 
-  // 从后往前移除选中的列，避免索引偏移
+  // Remove the selected columns from last to first to avoid index shifting
   for (let i = sortedIndices.length - 1; i >= 0; i--) {
     const index = sortedIndices[i] as number;
     newChildren.splice(index, 1);
   }
 
   if (!targetGroup) {
-    // 如果组不存在，创建新组
+    // If the group doesn't exist, create a new one
     const groupWidth = selectedColumns.reduce((sum: number, column: any) => sum + column.width, 0);
 
     let defaultTableHeaderHeight = 30;
@@ -5045,18 +5045,18 @@ const confirmJoinColumnsToGroup = (): void => {
       children: []
     };
 
-    // 在第一个选中列的位置插入新分组
+    // Insert the new group at the position of the first selected column
     const firstIndex = sortedIndices[0] as number;
     newChildren.splice(firstIndex, 0, targetGroup);
   }
 
-  // 将选中的列添加到目标组
+  // Add the selected columns to the target group
   targetGroup.children.push(...selectedColumns);
 
-  // 重新计算目标组的宽度
+  // Recalculate the target group's width
   targetGroup.width = targetGroup.children.reduce((sum: number, item: any) => sum + item.width, 0);
 
-  // 更新目标组的头部宽度
+  // Update the target group's header width
   if (targetGroup.tableHeader && targetGroup.tableHeader.element) {
     targetGroup.tableHeader.element.width = targetGroup.width;
   }
@@ -5064,20 +5064,20 @@ const confirmJoinColumnsToGroup = (): void => {
     targetGroup.columnHeader.element.width = targetGroup.width;
   }
 
-  // 更新表格元素
+  // Update the table element
   tableElement.children = newChildren;
 
-  // 同步 columns 从 children 重建（含 rowSpan 计算）
+  // Sync columns, rebuilding it from children (including rowSpan calculation)
   syncTableColumns(tableElement);
 
-  // 更新JRXML
+  // Update JRXML
   updateJRXML();
 
-  // 关闭对话框
+  // Close the dialog
   showGroupDialog.value = false;
 };
 
-// 处理元素上下文菜单
+// Handle the element context menu
 const handleElementContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number): void => {
   event.preventDefault();
   event.stopPropagation();
@@ -5085,13 +5085,13 @@ const handleElementContextMenu = (event: MouseEvent, bandIndex: number, elementI
   contextMenu.value = { visible: true, x: event.clientX, y: event.clientY, type: 'element' };
 };
 
-// 处理画布上下文菜单
+// Handle the canvas context menu
 const handleCanvasContextMenu = (event: MouseEvent): void => {
   event.preventDefault();
   contextMenu.value = { visible: true, x: event.clientX, y: event.clientY, type: 'canvas' };
 };
 
-// 处理上下文菜单操作
+// Handle a context menu action
 const handleContextMenuAction = (action: string) => {
   contextMenu.value.visible = false;
   switch (action) {
@@ -5103,7 +5103,7 @@ const handleContextMenuAction = (action: string) => {
   }
 };
 
-// 移动元素Z轴顺序
+// Move an element's Z-order
 const moveElementZOrder = (direction: 'front' | 'back') => {
   if (!selectedElement.value) return;
   saveStateToHistory();
@@ -5122,26 +5122,26 @@ const moveElementZOrder = (direction: 'front' | 'back') => {
   updateJRXML();
 };
 
-// 处理Band选择变化
+// Handle Band selection changes
 const handleBandSelectionChange = (): void => {
-  // 获取当前选中的band类型
+  // Get the currently selected band types
   const currentSelectedTypes = [...selectedBandTypes.value] as BandType[];
 
-  // 获取当前bands中的类型
+  // Get the types currently present in bands
   const currentBandTypes = bands.value.map(band => band.type);
 
-  // 找出需要添加的band（在selectedBandTypes中但不在currentBandTypes中）
+  // Determine which bands need to be added (present in selectedBandTypes but not in currentBandTypes)
   const bandsToAdd = currentSelectedTypes.filter(type => !currentBandTypes.includes(type));
 
-  // 找出需要移除的band（在currentBandTypes中但不在selectedBandTypes中）
+  // Determine which bands need to be removed (present in currentBandTypes but not in selectedBandTypes)
   const bandsToRemove = currentBandTypes.filter(type => !currentSelectedTypes.includes(type));
 
-  // 移除不需要的band
+  // Remove the bands that are no longer needed
   if (bandsToRemove.length > 0) {
     bands.value = bands.value.filter(band => !bandsToRemove.includes(band.type));
   }
 
-  // 添加新的band
+  // Add the new bands
   if (bandsToAdd.length > 0) {
     const newBands = bandsToAdd.map(type => {
       const bandTypeConfig = allBandTypes.find(bt => bt.type === type);
@@ -5152,16 +5152,16 @@ const handleBandSelectionChange = (): void => {
       };
     });
 
-    // 按照allBandTypes的顺序插入新band
+    // Insert the new bands in the order defined by allBandTypes
     allBandTypes.forEach(bandType => {
       if (bandsToAdd.includes(bandType.type as BandType)) {
         const newBand = newBands.find(b => b.type === bandType.type);
         if (newBand) {
-          // 确保height属性不为undefined
+          // Ensure the height property isn't undefined
           if (newBand.height === undefined) {
             newBand.height = BAND_HEIGHT_CONSTANTS[bandType.type] || 50;
           }
-          // 找到合适的插入位置
+          // Find the appropriate insertion position
           let insertIndex = bands.value.length;
           for (let i = 0; i < bands.value.length; i++) {
             const currentBandTypeIndex = allBandTypes.findIndex(bt => bt.type === bands.value[i]?.type);
@@ -5171,23 +5171,23 @@ const handleBandSelectionChange = (): void => {
               break;
             }
           }
-          // 使用类型断言确保newBand符合Band接口
+          // Use a type assertion to ensure newBand satisfies the Band interface
           bands.value.splice(insertIndex, 0, newBand as Band);
         }
       }
     });
   }
 
-  // 保存状态到历史记录
+  // Save state to history
   saveStateToHistory();
 
-  // 更新JRXML
+  // Update JRXML
   updateJRXML();
 };
 </script>
 
 <style scoped>
-/* 组名称输入对话框样式 */
+/* Group name input dialog styles */
 .group-dialog {
   width: 400px;
 }
@@ -5216,7 +5216,7 @@ const handleBandSelectionChange = (): void => {
   color: #1890ff;
 }
 
-/* CSS变量定义 */
+/* CSS variable definitions */
 :root {
   --primary-color: #1890ff;
   --primary-hover: #40a9ff;
@@ -5233,7 +5233,7 @@ const handleBandSelectionChange = (): void => {
   font-family: Arial, sans-serif;
 }
 
-/* 右侧面板标签页样式 */
+/* Right panel tab styles */
 .right-panel-tabs {
   display: flex;
   border-bottom: 1px solid var(--border-color);
@@ -5352,7 +5352,7 @@ const handleBandSelectionChange = (): void => {
   }
 }
 
-/* 坐标显示样式 */
+/* Coordinate display styles */
 .coordinates-display, .band-height-display {
   position: absolute;
   background-color: rgba(0, 0, 0, 0.8);
@@ -5369,7 +5369,7 @@ const handleBandSelectionChange = (): void => {
   margin: 0 0 10px 0;
 }
 
-/* 右键菜单 */
+/* Right-click context menu */
 .context-menu-overlay {
   position: fixed;
   top: 0;
@@ -5422,7 +5422,7 @@ const handleBandSelectionChange = (): void => {
   text-align: center;
 }
 
-/* 工具栏操作按钮 */
+/* Toolbar action buttons */
 .header-toolbar-ops {
   display: flex;
   align-items: center;

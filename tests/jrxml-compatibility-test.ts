@@ -1,6 +1,6 @@
 /**
- * JRXML编译兼容性测试套件
- * 验证生成的JRXML能否被JasperReports成功编译
+ * JRXML compilation compatibility test suite
+ * Validates whether generated JRXML can be successfully compiled by JasperReports
  */
 
 import * as fs from 'fs';
@@ -31,10 +31,10 @@ export class JRXMLCompatibilityTestSuite {
   }
 
   private setupTestCases(): void {
-    // 测试用例1：基础TextField
+    // Test case 1: Basic TextField
     this.testCases.push({
       name: 'TextField_Basic',
-      description: '基础文本字段',
+      description: 'Basic text field',
       jrxml: `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -69,22 +69,22 @@ export class JRXMLCompatibilityTestSuite {
       shouldCompile: true,
       validationRules: [
         {
-          name: 'TextField有表达式',
+          name: 'TextField has an expression',
           validate: (content) => content.includes('<textFieldExpression>'),
-          message: 'TextField缺少表达式'
+          message: 'TextField is missing an expression'
         },
         {
-          name: 'Field有name属性',
+          name: 'Field has a name attribute',
           validate: (content) => /<field name="[^"]*"/.test(content),
-          message: 'Field缺少name属性'
+          message: 'Field is missing a name attribute'
         }
       ]
     });
 
-    // 测试用例2：带样式的TextField
+    // Test case 2: TextField with styling
     this.testCases.push({
       name: 'TextField_Styled',
-      description: '带样式的文本字段',
+      description: 'Styled text field',
       jrxml: `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -129,22 +129,22 @@ export class JRXMLCompatibilityTestSuite {
       shouldCompile: true,
       validationRules: [
         {
-          name: 'TextField有pattern',
+          name: 'TextField has a pattern',
           validate: (content) => content.includes('pattern="#,##0.00"'),
-          message: 'TextField缺少pattern属性'
+          message: 'TextField is missing a pattern attribute'
         },
         {
-          name: 'Style有name属性',
+          name: 'Style has a name attribute',
           validate: (content) => /<style name="[^"]*"/.test(content),
-          message: 'Style缺少name属性'
+          message: 'Style is missing a name attribute'
         }
       ]
     });
 
-    // 测试用例3：StaticText
+    // Test case 3: StaticText
     this.testCases.push({
       name: 'StaticText_Basic',
-      description: '基础静态文本',
+      description: 'Basic static text',
       jrxml: `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -167,7 +167,7 @@ export class JRXMLCompatibilityTestSuite {
                 <textElement textAlignment="Center" verticalAlignment="Middle">
                     <font fontName="Arial" size="16" isBold="true"/>
                 </textElement>
-                <text><![CDATA[报表标题]]></text>
+                <text><![CDATA[Report Title]]></text>
             </staticText>
         </band>
     </title>
@@ -177,22 +177,22 @@ export class JRXMLCompatibilityTestSuite {
       shouldCompile: true,
       validationRules: [
         {
-          name: 'StaticText有text',
+          name: 'StaticText has text',
           validate: (content) => content.includes('<text><![CDATA['),
-          message: 'StaticText缺少text内容'
+          message: 'StaticText is missing text content'
         },
         {
-          name: 'StaticText有font',
+          name: 'StaticText has a font',
           validate: (content) => content.includes('<font'),
-          message: 'StaticText缺少font定义'
+          message: 'StaticText is missing a font definition'
         }
       ]
     });
 
-    // 测试用例4：Image
+    // Test case 4: Image
     this.testCases.push({
       name: 'Image_Basic',
-      description: '基础图片元素',
+      description: 'Basic image element',
       jrxml: `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -223,22 +223,22 @@ export class JRXMLCompatibilityTestSuite {
       shouldCompile: true,
       validationRules: [
         {
-          name: 'Image有表达式',
+          name: 'Image has an expression',
           validate: (content) => content.includes('<imageExpression>'),
-          message: 'Image缺少imageExpression'
+          message: 'Image is missing an imageExpression'
         },
         {
-          name: 'Image有hAlign',
+          name: 'Image has hAlign',
           validate: (content) => content.includes('hAlign="Center"'),
-          message: 'Image缺少hAlign属性'
+          message: 'Image is missing an hAlign attribute'
         }
       ]
     });
 
-    // 测试用例5：Rectangle
+    // Test case 5: Rectangle
     this.testCases.push({
       name: 'Rectangle_Basic',
-      description: '基础矩形元素',
+      description: 'Basic rectangle element',
       jrxml: `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -270,17 +270,17 @@ export class JRXMLCompatibilityTestSuite {
       shouldCompile: true,
       validationRules: [
         {
-          name: 'Rectangle有pen',
+          name: 'Rectangle has a pen',
           validate: (content) => content.includes('<pen lineWidth="1.0"/>'),
-          message: 'Rectangle缺少pen定义'
+          message: 'Rectangle is missing a pen definition'
         }
       ]
     });
 
-    // 测试用例6：带Box的TextField
+    // Test case 6: TextField with Box
     this.testCases.push({
       name: 'TextField_WithBox',
-      description: '带Box的文本字段',
+      description: 'Text field with a box',
       jrxml: `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -324,21 +324,21 @@ export class JRXMLCompatibilityTestSuite {
       shouldCompile: true,
       validationRules: [
         {
-          name: 'Box有pen',
+          name: 'Box has a pen',
           validate: (content) => content.includes('<pen lineWidth="1.0"'),
-          message: 'Box缺少pen定义'
+          message: 'Box is missing a pen definition'
         },
         {
-          name: 'Box有padding',
+          name: 'Box has padding',
           validate: (content) => content.includes('<topPadding'),
-          message: 'Box缺少padding定义'
+          message: 'Box is missing a padding definition'
         }
       ]
     });
   }
 
   /**
-   * 运行所有测试
+   * Runs all tests
    */
   runAllTests(): { passed: number; failed: number; results: any[] } {
     let passed = 0;
@@ -363,34 +363,34 @@ export class JRXMLCompatibilityTestSuite {
   }
 
   /**
-   * 运行单个测试
+   * Runs a single test
    */
   private runTest(testCase: TestCase): { passed: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    // 基础语法验证
+    // Basic syntax validation
     if (!testCase.jrxml.includes('<?xml version="1.0"')) {
-      errors.push('缺少XML声明');
+      errors.push('Missing XML declaration');
     }
 
     if (!testCase.jrxml.includes('<jasperReport')) {
-      errors.push('缺少jasperReport根元素');
+      errors.push('Missing jasperReport root element');
     }
 
-    // 必要属性验证
+    // Required attribute validation
     const requiredAttrs = ['name', 'pageWidth', 'pageHeight', 'columnWidth'];
     for (const attr of requiredAttrs) {
       if (!testCase.jrxml.includes(`${attr}="`)) {
-        errors.push(`jasperReport缺少${attr}属性`);
+        errors.push(`jasperReport is missing the ${attr} attribute`);
       }
     }
 
-    // UUID验证
+    // UUID validation
     if (!testCase.jrxml.includes('uuid="')) {
-      errors.push('缺少uuid属性');
+      errors.push('Missing uuid attribute');
     }
 
-    // 执行自定义验证规则
+    // Run custom validation rules
     if (testCase.validationRules) {
       for (const rule of testCase.validationRules) {
         if (!rule.validate(testCase.jrxml)) {
@@ -406,28 +406,28 @@ export class JRXMLCompatibilityTestSuite {
   }
 
   /**
-   * 生成测试报告
+   * Generates a test report
    */
   generateReport(results: any[]): string {
     const timestamp = new Date().toISOString();
     let report = `
 =================================================================
-JRXML编译兼容性测试报告
+JRXML Compilation Compatibility Test Report
 =================================================================
-测试时间: ${timestamp}
-测试用例数: ${results.length}
-通过数: ${results.filter(r => r.passed).length}
-失败数: ${results.filter(r => !r.passed).length}
+Test time: ${timestamp}
+Test case count: ${results.length}
+Passed: ${results.filter(r => r.passed).length}
+Failed: ${results.filter(r => !r.passed).length}
 =================================================================
 
-详细结果:
+Detailed results:
 `;
 
     results.forEach((result, index) => {
       report += `\n${index + 1}. ${result.name || 'Unknown'}`;
-      report += `\n   状态: ${result.passed ? '✅ 通过' : '❌ 失败'}`;
+      report += `\n   Status: ${result.passed ? '✅ Passed' : '❌ Failed'}`;
       if (result.errors && result.errors.length > 0) {
-        report += `\n   错误:`;
+        report += `\n   Errors:`;
         result.errors.forEach((error: string) => {
           report += `\n     - ${error}`;
         });
@@ -435,15 +435,15 @@ JRXML编译兼容性测试报告
     });
 
     report += `\n\n=================================================================
-验证规则总结:
-1. 所有JRXML必须以XML声明开始
-2. 必须包含jasperReport根元素
-3. jasperReport必须包含name, pageWidth, pageHeight, columnWidth属性
-4. 所有元素必须包含uuid属性
-5. TextField必须包含textFieldExpression
-6. Image必须包含imageExpression
-7. Field必须包含name和class属性
-8. Style必须包含name属性
+Validation rule summary:
+1. All JRXML must start with an XML declaration
+2. Must include a jasperReport root element
+3. jasperReport must include the name, pageWidth, pageHeight, columnWidth attributes
+4. All elements must include a uuid attribute
+5. TextField must include a textFieldExpression
+6. Image must include an imageExpression
+7. Field must include name and class attributes
+8. Style must include a name attribute
 =================================================================
 `;
 
@@ -451,7 +451,7 @@ JRXML编译兼容性测试报告
   }
 
   /**
-   * 保存测试用例到文件
+   * Saves the test cases to files
    */
   saveTestCases(outputDir: string): void {
     if (!fs.existsSync(outputDir)) {
@@ -461,20 +461,20 @@ JRXML编译兼容性测试报告
     this.testCases.forEach(testCase => {
       const filePath = path.join(outputDir, `${testCase.name}.jrxml`);
       fs.writeFileSync(filePath, testCase.jrxml, 'utf-8');
-      console.log(`✓ 保存测试用例: ${filePath}`);
+      console.log(`✓ Saved test case: ${filePath}`);
     });
   }
 }
 
-// 使用示例
+// Usage example
 if (require.main === module) {
   const testSuite = new JRXMLCompatibilityTestSuite();
 
-  console.log('\n运行JRXML编译兼容性测试...\n');
+  console.log('\nRunning JRXML compilation compatibility tests...\n');
   const results = testSuite.runAllTests();
 
   console.log('\n' + testSuite.generateReport(results.results));
 
-  // 保存测试用例
+  // Save the test cases
   testSuite.saveTestCases('./test-reports');
 }

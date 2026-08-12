@@ -8,42 +8,42 @@ const props = defineProps<{
   toolResult?: MCPToolResult;
 }>();
 
-// 工具显示名称映射
+// Tool display name mapping
 const toolDisplayNames: Record<string, string> = {
-  'get_design_state': '获取设计状态',
-  'get_element': '获取元素信息',
-  'find_elements': '查找元素',
-  'create_static_text': '创建静态文本',
-  'create_text_field': '创建动态文本框',
-  'create_rectangle': '创建矩形',
-  'create_frame': '创建Frame',
-  'update_element': '更新元素',
-  'move_element': '移动元素',
-  'delete_element': '删除元素',
-  'update_band_height': '调整Band高度'
+  'get_design_state': 'Get design state',
+  'get_element': 'Get element info',
+  'find_elements': 'Find elements',
+  'create_static_text': 'Create static text',
+  'create_text_field': 'Create dynamic text field',
+  'create_rectangle': 'Create rectangle',
+  'create_frame': 'Create Frame',
+  'update_element': 'Update element',
+  'move_element': 'Move element',
+  'delete_element': 'Delete element',
+  'update_band_height': 'Adjust band height'
 };
 
-// 获取工具显示名称
+// Get the tool display name
 const displayName = computed(() => {
   return toolDisplayNames[props.toolCall.name] || props.toolCall.name;
 });
 
-// 格式化参数
+// Format parameters
 const formattedParams = computed(() => {
   const params = props.toolCall.params;
   if (!params || Object.keys(params).length === 0) {
-    return '无参数';
+    return 'No parameters';
   }
   return JSON.stringify(params, null, 2);
 });
 
-// 工具状态
+// Tool status
 const toolStatus = computed(() => {
   if (!props.toolResult) return 'pending';
   return props.toolResult.success ? 'success' : 'failed';
 });
 
-// 状态样式类
+// Status style class
 const statusClass = computed(() => ({
   'tool-call-display': true,
   'status-pending': toolStatus.value === 'pending',
@@ -54,29 +54,29 @@ const statusClass = computed(() => ({
 
 <template>
   <div :class="statusClass">
-    <!-- 工具名称 -->
+    <!-- Tool name -->
     <div class="tool-header">
       <span class="tool-icon">🔧</span>
       <span class="tool-name">{{ displayName }}</span>
       <span v-if="toolResult" class="tool-status" :class="toolStatus">
-        {{ toolStatus === 'success' ? '✓ 成功' : '✗ 失败' }}
+        {{ toolStatus === 'success' ? '✓ Success' : '✗ Failed' }}
       </span>
     </div>
 
-    <!-- 工具参数 -->
+    <!-- Tool parameters -->
     <div class="tool-params">
-      <div class="params-label">参数:</div>
+      <div class="params-label">Parameters:</div>
       <pre class="params-code">{{ formattedParams }}</pre>
     </div>
 
-    <!-- 工具结果 -->
+    <!-- Tool result -->
     <div v-if="toolResult" class="tool-result">
-      <div class="result-label">结果:</div>
+      <div class="result-label">Result:</div>
       <div v-if="toolResult.success" class="result-success">
-        {{ toolResult.data?.message || '执行成功' }}
+        {{ toolResult.data?.message || 'Executed successfully' }}
       </div>
       <div v-else class="result-error">
-        {{ toolResult.error || '执行失败' }}
+        {{ toolResult.error || 'Execution failed' }}
       </div>
     </div>
   </div>

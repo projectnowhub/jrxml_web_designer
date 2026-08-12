@@ -1,39 +1,39 @@
 <template>
   <div class="column-tree-node" :style="{ marginLeft: depth > 0 ? '16px' : '0' }">
-    <!-- 节点头部 -->
+    <!-- Node header -->
     <div
       class="column-tree-node-header"
       :class="{ group: isGroup, 'last-sibling': isLast }"
     >
-      <!-- 展开/折叠按钮（仅分组） -->
+      <!-- Expand/collapse button (groups only) -->
       <button
         v-if="isGroup"
         class="column-tree-expand-btn"
         :class="{ collapsed: !expanded }"
         @click="expanded = !expanded"
-        :title="expanded ? '折叠' : '展开'"
+        :title="expanded ? 'Collapse' : 'Expand'"
       >
         ▶
       </button>
       <span v-else class="column-tree-expand-placeholder"></span>
 
-      <!-- 节点类型图标 -->
+      <!-- Node type icon -->
       <span class="column-tree-node-icon">
         {{ isGroup ? '▦' : '☰' }}
       </span>
 
-      <!-- 名称输入 -->
+      <!-- Name input -->
       <input
         class="column-tree-node-name"
         :value="node.name"
         @input="handleNameChange(($event.target as HTMLInputElement).value)"
         @blur="handleNameBlur"
-        placeholder="名称"
+        placeholder="Name"
       />
 
-      <!-- 宽度 -->
+      <!-- Width -->
       <template v-if="isGroup">
-        <span class="column-tree-node-width-display" :title="`宽度: ${node.width}px (自动计算)`">
+        <span class="column-tree-node-width-display" :title="`Width: ${node.width}px (auto-calculated)`">
           {{ node.width }}
         </span>
       </template>
@@ -44,55 +44,55 @@
           :value="(node as Column).width"
           @change="handleWidthChange(($event.target as HTMLInputElement).value)"
           min="1"
-          title="列宽 (px)"
+          title="Column width (px)"
         />
       </template>
 
-      <!-- 操作按钮 -->
+      <!-- Action buttons -->
       <div class="column-tree-node-actions">
         <button
           v-if="canMoveUp"
           class="column-tree-action-btn"
           @click.stop="$emit('move-node', node.uuid, 'up')"
-          title="上移"
+          title="Move up"
         >↑</button>
         <button
           v-if="canMoveDown"
           class="column-tree-action-btn"
           @click.stop="$emit('move-node', node.uuid, 'down')"
-          title="下移"
+          title="Move down"
         >↓</button>
         <button
           v-if="isGroup"
           class="column-tree-action-btn"
           @click.stop="$emit('add-column-child', node.uuid)"
-          title="组内添加列"
+          title="Add column inside group"
         >⊕</button>
         <button
           class="column-tree-action-btn"
           @click.stop="$emit('add-column-after', node.uuid)"
-          title="后添加列"
+          title="Add column after"
         >+</button>
         <button
           class="column-tree-action-btn"
           @click.stop="$emit('add-column-group-after', node.uuid)"
-          title="后添加分组"
+          title="Add group after"
         >⧉</button>
         <button
           v-if="isGroup"
           class="column-tree-action-btn"
           @click.stop="$emit('ungroup-node', node.uuid)"
-          title="取消分组"
+          title="Ungroup"
         >⊟</button>
         <button
           class="column-tree-action-btn danger"
           @click.stop="$emit('delete-node', node.uuid)"
-          title="删除"
+          title="Delete"
         >×</button>
       </div>
     </div>
 
-    <!-- 分组子节点 -->
+    <!-- Group child nodes -->
     <div v-if="isGroup && expanded" class="column-tree-node-children">
       <ColumnTreeNode
         v-for="(child, idx) in (node as ColumnGroup).children"
@@ -111,9 +111,9 @@
         @ungroup-node="(uuid) => $emit('ungroup-node', uuid)"
         @move-node="(uuid, dir) => $emit('move-node', uuid, dir)"
       />
-      <!-- 组内空状态提示 -->
+      <!-- Empty-group hint -->
       <div v-if="(node as ColumnGroup).children.length === 0" class="column-tree-empty-hint">
-        点击 ⊕ 添加组内列
+        Click ⊕ to add a column inside the group
       </div>
     </div>
   </div>
@@ -160,7 +160,7 @@ function handleNameChange(value: string) {
 }
 
 function handleNameBlur() {
-  // 触发 JRXML 更新
+  // Trigger a JRXML update
 }
 
 function handleWidthChange(value: string) {

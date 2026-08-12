@@ -16,8 +16,8 @@ const props = withDefaults(defineProps<{
   initialHeight?: number;
   mcpContext?: MCPContext;
   onUpdate?: () => void;
-  embedded?: boolean; // 是否嵌入模式（隐藏header）
-  showSettings?: boolean; // 外部控制设置面板显示
+  embedded?: boolean; // Whether in embedded mode (hides the header)
+  showSettings?: boolean; // Externally controls whether the settings panel is shown
 }>(), {
   visible: false,
   initialHeight: 300,
@@ -33,7 +33,7 @@ const emit = defineEmits<{
   (e: 'update:showSettings', value: boolean): void;
 }>();
 
-// AI对话
+// AI conversation
 const {
   messages,
   isLoading,
@@ -41,7 +41,7 @@ const {
   clearHistory
 } = useAIChat(() => props.mcpContext, props.onUpdate);
 
-// AI配置管理
+// AI configuration management
 const {
   config,
   updateConfig,
@@ -49,39 +49,39 @@ const {
   getConfigFromStorage
 } = useAIConfigManager();
 
-// 状态
+// State
 const panelHeight = ref(props.initialHeight);
 const isExpanded = ref(true);
 const messagesContainer = ref<HTMLDivElement | null>(null);
 
-// 配置表单（requestTimeout在UI中显示为秒，保存时转换为毫秒）
+// Configuration form (requestTimeout is shown in seconds in the UI, converted to milliseconds on save)
 const configForm = ref<AIConfiguration & { requestTimeoutSeconds: number }>({
   ...config,
   requestTimeoutSeconds: Math.round(config.requestTimeout / 1000)
 } as AIConfiguration & { requestTimeoutSeconds: number });
 
-// 计算属性
+// Computed properties
 const panelStyle = computed(() => ({
   height: props.embedded ? '100%' : (isExpanded.value ? `${panelHeight.value}px` : '40px')
 }));
 
-// 计算showSettings（支持外部控制）
+// Compute showSettings (supports external control)
 const showSettings = computed({
   get: () => props.showSettings,
   set: (value: boolean) => emit('update:showSettings', value)
 });
 
-// 切换展开/折叠
+// Toggle expand/collapse
 function toggleExpand() {
   isExpanded.value = !isExpanded.value;
 }
 
-// 关闭面板
+// Close the panel
 function close() {
   emit('update:visible', false);
 }
 
-// 切换设置界面
+// Toggle the settings panel
 function toggleSettings() {
   showSettings.value = !showSettings.value;
   if (showSettings.value) {
@@ -92,9 +92,9 @@ function toggleSettings() {
   }
 }
 
-// 保存配置
+// Save configuration
 function saveConfig() {
-  // 将秒转换为毫秒
+  // Convert seconds to milliseconds
   const configToSave = {
     ...configForm.value,
     requestTimeout: (configForm.value as any).requestTimeoutSeconds * 1000
@@ -103,7 +103,7 @@ function saveConfig() {
   showSettings.value = false;
 }
 
-// 重置配置
+// Reset configuration
 function handleResetConfig() {
   resetConfig();
   const freshConfig = getConfigFromStorage();
@@ -114,12 +114,12 @@ function handleResetConfig() {
   showSettings.value = false;
 }
 
-// 发送消息
+// Send message
 async function handleSendMessage(content: string) {
   await sendMessage(content);
 }
 
-// 滚动到底部
+// Scroll to bottom
 async function scrollToBottom() {
   await nextTick();
   if (messagesContainer.value) {
@@ -127,7 +127,7 @@ async function scrollToBottom() {
   }
 }
 
-// 监听消息变化，自动滚动
+// Watch for message changes and auto-scroll
 watch(
   () => messages.length,
   () => {
@@ -135,7 +135,7 @@ watch(
   }
 );
 
-// 初始化
+// Initialization
 onMounted(() => {
   configForm.value = {
     ...config,
@@ -143,60 +143,60 @@ onMounted(() => {
   } as AIConfiguration & { requestTimeoutSeconds: number };
   browserSupport.value = checkWebMCPSupport();
 
-  // 添加键盘快捷键监听器
+  // Add a keyboard shortcut listener
   document.addEventListener('keydown', handleKeyDown);
 });
 
-// 键盘快捷键处理
+// Keyboard shortcut handling
 function handleKeyDown(event: KeyboardEvent) {
-  // Ctrl+K 或 Cmd+K (Mac)
+  // Ctrl+K or Cmd+K (Mac)
   if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
     event.preventDefault();
     clearHistory();
   }
 }
 
-// 浏览器兼容性检查
+// Browser compatibility check
 const browserSupport = ref<BrowserSupportResult | null>(null);
 const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
 </script>
 
 <template>
   <div class="ai-chat-panel" :class="{ 'ai-chat-panel--embedded': embedded }" :style="panelStyle" v-show="visible">
-    <!-- 头部（非嵌入模式时显示） -->
+    <!-- Header (shown when not in embedded mode) -->
     <div v-if="!embedded" class="panel-header" @click="toggleExpand">
       <div class="header-left">
         <span class="panel-icon">🤖</span>
-        <span class="panel-title">AI 助手</span>
+        <span class="panel-title">AI Assistant</span>
         <span class="config-status" :title="`API: ${config.apiEndpoint}`">
           ⚙️
         </span>
       </div>
 
       <div class="header-actions">
-        <button class="action-btn" @click.stop="toggleSettings" title="配置AI服务">
+        <button class="action-btn" @click.stop="toggleSettings" title="Configure AI service">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
-        <button class="action-btn" @click.stop="clearHistory" title="清空历史">
+        <button class="action-btn" @click.stop="clearHistory" title="Clear history">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         </button>
-        <button class="action-btn close-btn" @click.stop="close" title="关闭">
+        <button class="action-btn close-btn" @click.stop="close" title="Close">
           ✕
         </button>
       </div>
     </div>
 
-    <!-- 配置面板 -->
+    <!-- Settings panel -->
     <div v-if="showSettings" class="settings-panel">
       <div class="settings-header">
-        <h4>AI服务配置</h4>
+        <h4>AI Service Configuration</h4>
         <button class="close-settings-btn" @click="showSettings = false">✕</button>
       </div>
 
       <div class="settings-form">
-        <!-- API接口地址 -->
+        <!-- API endpoint address -->
         <div class="form-group">
-          <label for="apiEndpoint">API接口地址</label>
+          <label for="apiEndpoint">API Endpoint Address</label>
           <input
             id="apiEndpoint"
             v-model="configForm.apiEndpoint"
@@ -204,12 +204,12 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             placeholder="http://127.0.0.1:1234/v1"
             class="form-input"
           />
-          <span class="form-hint">LMStudio默认: http://127.0.0.1:1234/v1</span>
+          <span class="form-hint">LMStudio default: http://127.0.0.1:1234/v1</span>
         </div>
 
-        <!-- API密钥 -->
+        <!-- API key -->
         <div class="form-group">
-          <label for="apiKey">API密钥</label>
+          <label for="apiKey">API Key</label>
           <input
             id="apiKey"
             v-model="configForm.apiKey"
@@ -217,12 +217,12 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             placeholder="lm-studio"
             class="form-input"
           />
-          <span class="form-hint">本地模型可使用默认值: lm-studio</span>
+          <span class="form-hint">Local models can use the default value: lm-studio</span>
         </div>
 
-        <!-- 模型名称 -->
+        <!-- Model name -->
         <div class="form-group">
-          <label for="modelName">模型名称</label>
+          <label for="modelName">Model Name</label>
           <input
             id="modelName"
             v-model="configForm.modelName"
@@ -230,12 +230,12 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             placeholder="local-model"
             class="form-input"
           />
-          <span class="form-hint">LMStudio会自动检测模型</span>
+          <span class="form-hint">LMStudio detects the model automatically</span>
         </div>
 
-        <!-- Token限制 -->
+        <!-- Token limit -->
         <div class="form-group">
-          <label for="maxTokens">最大Token数</label>
+          <label for="maxTokens">Max Tokens</label>
           <input
             id="maxTokens"
             v-model.number="configForm.maxTokens"
@@ -244,12 +244,12 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             max="100000"
             class="form-input"
           />
-          <span class="form-hint">默认: 4096</span>
+          <span class="form-hint">Default: 4096</span>
         </div>
 
-        <!-- 温度参数 -->
+        <!-- Temperature parameter -->
         <div class="form-group">
-          <label for="temperature">温度参数</label>
+          <label for="temperature">Temperature</label>
           <input
             id="temperature"
             v-model.number="configForm.temperature"
@@ -259,12 +259,12 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             step="0.1"
             class="form-input"
           />
-          <span class="form-hint">0.0-1.0，越高越随机（默认: 0.7）</span>
+          <span class="form-hint">0.0-1.0, higher is more random (default: 0.7)</span>
         </div>
 
-        <!-- 请求超时时间 -->
+        <!-- Request timeout -->
         <div class="form-group">
-          <label for="requestTimeout">请求超时时间（秒）</label>
+          <label for="requestTimeout">Request Timeout (seconds)</label>
           <input
             id="requestTimeout"
             v-model.number="(configForm as any).requestTimeoutSeconds"
@@ -274,22 +274,22 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             step="30"
             class="form-input"
           />
-          <span class="form-hint">单位：秒，默认: 300秒（5分钟）</span>
+          <span class="form-hint">Unit: seconds, default: 300 seconds (5 minutes)</span>
         </div>
 
-        <!-- 操作按钮 -->
+        <!-- Action buttons -->
         <div class="form-actions">
           <button class="btn btn-secondary" @click="handleResetConfig">
-            重置默认
+            Reset to Default
           </button>
           <button class="btn btn-primary" @click="saveConfig">
-            保存配置
+            Save Configuration
           </button>
         </div>
       </div>
     </div>
 
-    <!-- 消息列表 -->
+    <!-- Message list -->
     <div class="messages-container" ref="messagesContainer">
       <ChatMessage
         v-for="message in messages"
@@ -297,21 +297,21 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
         :message="message"
       />
 
-      <!-- 空状态提示 -->
+      <!-- Empty state hint -->
       <div v-if="messages.length === 0 && isSupported" class="empty-state">
         <div class="empty-icon">💬</div>
-        <div class="empty-text">开始与AI助手对话</div>
-        <div class="empty-hint">例如：在detail band中创建一个标题</div>
-        <div class="empty-hint">当前API: {{ config.apiEndpoint }}</div>
+        <div class="empty-text">Start a conversation with the AI assistant</div>
+        <div class="empty-hint">e.g.: create a title in the detail band</div>
+        <div class="empty-hint">Current API: {{ config.apiEndpoint }}</div>
       </div>
 
-      <!-- 浏览器不支持提示 -->
+      <!-- Browser unsupported notice -->
       <div v-if="!isSupported" class="unsupported-warning">
         <div class="warning-icon">⚠️</div>
-        <div class="warning-title">浏览器不支持AI助手</div>
+        <div class="warning-title">Browser Does Not Support AI Assistant</div>
         <div class="warning-message">{{ browserSupport?.message }}</div>
         <div class="warning-requirements">
-          <div class="requirement-title">需要以下浏览器特性支持：</div>
+          <div class="requirement-title">The following browser features are required:</div>
           <ul class="requirement-list">
             <li :class="{ supported: browserSupport?.features.webassembly }">
               {{ browserSupport?.features.webassembly ? '✓' : '✗' }} WebAssembly
@@ -328,15 +328,15 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
           </ul>
         </div>
         <div class="suggestion">
-          建议使用最新版本的Chrome、Firefox或Safari浏览器
+          We recommend using the latest version of Chrome, Firefox, or Safari
         </div>
       </div>
     </div>
 
-    <!-- 输入框 -->
+    <!-- Input box -->
     <ChatInput
       :disabled="isLoading || !isSupported"
-      :placeholder="isSupported ? '输入指令，例如：在detail band中创建一个文本框显示客户名称' : '浏览器不支持，请升级浏览器'"
+      :placeholder="isSupported ? 'Enter a command, e.g.: create a text field in the detail band to display the customer name' : 'Browser not supported, please upgrade your browser'"
       @submit="handleSendMessage"
     />
   </div>
@@ -421,7 +421,7 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
   background-color: #ffcdd2;
 }
 
-/* 配置面板样式 */
+/* Settings panel styles */
 .settings-panel {
   background-color: #f9f9f9;
   border-bottom: 1px solid #e0e0e0;
@@ -525,7 +525,7 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
   background-color: #d0d0d0;
 }
 
-/* 消息容器 */
+/* Message container */
 .messages-container {
   flex: 1;
   overflow-y: auto;
@@ -557,7 +557,7 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
   margin-bottom: 4px;
 }
 
-/* 浏览器不支持提示样式 */
+/* Browser unsupported notice styles */
 .unsupported-warning {
   display: flex;
   flex-direction: column;
