@@ -4363,7 +4363,7 @@ const showPdfPreview = ref(false);
 
 // Preview server settings related state
 const showPreviewServerSettings = ref(false);
-const previewServerUrl = ref(localStorage.getItem('previewServerUrl') || 'https://jrxml-pdf-preview.firegod.cn/api/pdf/generateForm');
+const previewServerUrl = ref(localStorage.getItem('previewServerUrl') || 'http://localhost:8084/api/pdf/generateForm');
 
 // Field management related state
 const showFieldModal = ref(false);

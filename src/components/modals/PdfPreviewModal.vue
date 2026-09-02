@@ -217,7 +217,7 @@ const isGenerating = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 const previewUrl = ref<string>('about:blank');
 
-const API_URL_DEFAULT = 'https://jrxml-pdf-preview.firegod.cn/api/pdf/generateForm';
+const API_URL_DEFAULT = 'http://localhost:8084/api/pdf/generateForm';
 
 function shortType(className: string): string {
   const parts = className.split('.');
