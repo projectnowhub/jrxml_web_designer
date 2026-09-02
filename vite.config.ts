@@ -14,6 +14,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src')
     }
   },
+  server: {
+    port: 1420,
+  },
   build: {
     chunkSizeWarningLimit: 1500,
     rollupOptions: {

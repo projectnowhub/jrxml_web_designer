@@ -80,9 +80,33 @@
             { label: t('actions.setPreviewServer'), handler: openPreviewServerSettings, class: 'btn-primary' }
           ]"
         />
-        <n-button @click="showReward = true" type="default">{{ t('actions.donate') }}</n-button>
-        <n-button @click="showHelp = true" type="default">{{ t('actions.help') }}</n-button>
+        <!-- <n-button @click="showHelp = true" type="default">{{ t('actions.help') }}</n-button> -->
         <LanguageSwitcher />
+
+        <div class="my-act-menu">
+            <n-button
+              type="default"
+              @click="showMyActMenu = !showMyActMenu"
+            >
+              My Act
+              <span class="dropdown-arrow">▾</span>
+            </n-button>
+
+            <div v-if="showMyActMenu" class="my-act-dropdown">
+              <button
+                type="button"
+                class="my-act-dropdown-item"
+                @click="handleSignOut"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <path d="M16 17l5-5-5-5" />
+                  <path d="M21 12H9" />
+                </svg>
+                <span>Sign out</span>
+              </button>
+            </div>
+        </div>
       </div>
     </div>
 
@@ -529,6 +553,7 @@ const { t, locale } = useI18n();
 
 // Tab-related state
 const activeTab = ref('pageSettings');
+const showMyActMenu = ref(false);
 
 // Panel visibility state
 const showLeftPanel = ref(true);
@@ -642,6 +667,19 @@ watch(() => t('app.title'), () => {
 });
 
 
+const handleSignOut = () => {
+  showMyActMenu.value = false;
+
+  localStorage.removeItem("jrxml_auth_user");
+  localStorage.removeItem("jrxml_auth_token");
+
+  const redirectUrl = `${window.location.origin}/login`;
+
+  window.location.href =
+    `https://projectnow-dev.ipecsystems.com/logout?redirect_to=${encodeURIComponent(
+      redirectUrl
+    )}`;
+};
 
 function createNewFile() {
   // Logic for creating a new file
@@ -5187,6 +5225,55 @@ const handleBandSelectionChange = (): void => {
 </script>
 
 <style scoped>
+
+.my-act-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-arrow {
+  margin-left: 6px;
+  font-size: 12px;
+}
+
+.my-act-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 150px;
+  padding: 6px;
+  background: rgba(18, 19, 28, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+}
+
+.my-act-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: rgba(244, 244, 245, 0.9);
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+}
+
+.my-act-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.my-act-dropdown-item svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
 /* Group name input dialog styles */
 .group-dialog {
   width: 400px;

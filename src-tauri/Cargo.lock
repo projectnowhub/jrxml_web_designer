@@ -4357,7 +4357,7 @@ dependencies = [
 name = "webview2-com-sys"
 version = "0.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36695906a1b53a3bf5c4289621efedac12b73eeb0b89e7e1a89b517302d5d75c"
+checksum = "36695906a1b53a3bf5c4289621efedac12b73eeb0b89e7e1a89b142002d5d75c"
 dependencies = [
  "thiserror 2.0.17",
  "windows",

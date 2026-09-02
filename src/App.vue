@@ -1,12 +1,12 @@
-<script setup lang="ts">
-import PDFDesigner from './components/PDFDesigner.vue'
-</script>
-
 <template>
   <div id="app">
-    <PDFDesigner />
+    <RouterView />
   </div>
 </template>
+
+<script setup lang="ts">
+import { RouterView } from 'vue-router'
+</script>
 
 <style scoped>
 * {

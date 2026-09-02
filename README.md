@@ -90,7 +90,7 @@ pnpm run dev
 
 4. 打开浏览器访问
 ```
-http://localhost:5173
+http://localhost:1420
 ```
 
 ### 构建生产版本
