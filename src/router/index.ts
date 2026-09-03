@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import LoginView from "../views/LoginView.vue";
 import CallbackView from "../views/CallbackView.vue";
+import DesktopLoginView from "../views/DesktopLoginView.vue";
 import HomeView from "../views/HomeView.vue";
 import PDFDesigner from "../components/PDFDesigner.vue";
 import { isAuthenticated } from "../utils/auth";
@@ -23,6 +24,11 @@ const router = createRouter({
       path: "/callback",
       name: "callback",
       component: CallbackView,
+    },
+    {
+      path: "/desktop-login",
+      name: "desktop-login",
+      component: DesktopLoginView,
     },
     {
       path: "/designer",

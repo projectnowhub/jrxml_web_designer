@@ -427,6 +427,7 @@ import { computed, h, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { AUTH_CONFIG } from "../config/auth.config";
 import { createAuthService } from "../services/authService";
+import { closeTab } from "../utils/closeTab";
 
 const router = useRouter();
 const status = ref("Verifying your credentials...");
@@ -653,6 +654,7 @@ onMounted(async () => {
   try {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
+    const state = params.get("state");
 
     if (!code) {
       throw new Error("No authorization code found in callback URL");
@@ -672,6 +674,12 @@ onMounted(async () => {
 
     status.value = "Exchanging token securely";
     const token = await authService.exchangeCode(code);
+
+    if (state === "DESKTOP") {
+      window.location.href = `cdp-report-app://callback?token=${token}`;
+      closeTab();
+      return;
+    }
 
     status.value = "Loading your workspace";
     const user = await authService.fetchUser(token);

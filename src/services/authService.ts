@@ -5,6 +5,7 @@ import {
   getVerifier,
   saveVerifier,
 } from "../utils/pkce";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 export interface AuthConfig {
   clientId: string;
@@ -114,6 +115,12 @@ export class AuthService {
   logout(redirectTo = "/login"): void {
     window.location.href = `${this.config.logoutUri}?redirect_to=${window.location.origin}${redirectTo}`;
   }
+}
+
+export function desktopLogin(tenantUrl: string): void {
+  console.log("Hiii")
+  const { origin } = new URL(tenantUrl);
+  openUrl(`${origin}/desktop-login`);
 }
 
 let instance: AuthService | null = null;

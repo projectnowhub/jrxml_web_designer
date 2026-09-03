@@ -548,6 +548,7 @@ import { syncTableColumns } from '../utils/table/ColumnTreeSync';
 
 // Import the default JRXML example file
 import defaultJrxmlContent from '../../tests/build_by_jasper_studio_jrxml/grouped_header_column_table_example.jrxml?raw';
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 const { t, locale } = useI18n();
 
@@ -667,18 +668,21 @@ watch(() => t('app.title'), () => {
 });
 
 
-const handleSignOut = () => {
+const handleSignOut = async () => {
   showMyActMenu.value = false;
 
   localStorage.removeItem("jrxml_auth_user");
   localStorage.removeItem("jrxml_auth_token");
 
-  const redirectUrl = `${window.location.origin}/login`;
+  const redirectTo = window.isTauri
+    ? "cdp-report-app://"
+    : window.location.origin;
 
-  window.location.href =
-    `https://projectnow-dev.ipecsystems.com/logout?redirect_to=${encodeURIComponent(
-      redirectUrl
-    )}`;
+    const url = `${import.meta.env.VITE_OAUTH_BASE_URL}/logout?redirect_to=${encodeURIComponent(redirectTo)}`;
+
+  window.isTauri
+    ? await openUrl(url)
+    : (window.location.href = url);
 };
 
 function createNewFile() {

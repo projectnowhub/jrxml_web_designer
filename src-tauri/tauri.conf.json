@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "JRXML Report Designer",
+  "productName": "cdp-report-app",
   "version": "0.4.6",
   "identifier": "cn.fiergod.jrxml.designer",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "JRXML Report Designer",
+        "title": "cdp-report-app",
         "width": 800,
         "height": 600,
         "resizable": true,
@@ -23,6 +23,13 @@
       "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: *; connect-src *"
     },
     "macOSPrivateApi": true
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["cdp-report-app"]
+      }
+    }
   },
   "bundle": {
     "active": true,

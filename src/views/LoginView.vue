@@ -47,13 +47,46 @@
 
         <div class="heading-wrap">
           <h1>Welcome back</h1>
-          <p>Sign in to continue to your workspace</p>
+          <p>
+            {{
+              isDesktop
+                ? "Desktop Application"
+                : "Sign in to continue to your workspace"
+            }}
+          </p>
         </div>
 
+        <form
+          v-if="isDesktop && !tenantUrl"
+          class="tenant-form"
+          @submit.prevent="handleTenantSubmit"
+        >
+          <label for="tenant-url">Enter your tenant URL to get started</label>
+          <input
+            id="tenant-url"
+            v-model="tenantUrlInput"
+            type="url"
+            placeholder="https://your-tenant.cdp.com"
+            :disabled="isVerifyingTenant"
+            required
+          />
+          <p v-if="tenantFormError" class="tenant-form-error">
+            {{ tenantFormError }}
+          </p>
+          <button
+            class="primary-button"
+            type="submit"
+            :disabled="isVerifyingTenant"
+          >
+            {{ isVerifyingTenant ? "Verifying..." : "Verify Tenant" }}
+          </button>
+        </form>
+
         <button
+          v-if="!isDesktop || tenantUrl"
           class="primary-button"
           type="button"
-          :disabled="isLoading"
+          :disabled="isLoading || !isTenantVerified"
           @click="handleLogin"
         >
           <span class="icon"
@@ -89,10 +122,12 @@
               />
             </svg>
           </span>
-         <span>{{
+          <span>{{
             isError
               ? errorMessage
-              : "Secure access to your workspace and dashboard."
+              : isDesktop && !isTenantVerified
+                ? "Verify your tenant URL before continuing."
+                : "Secure access to your workspace and dashboard."
           }}</span>
         </div>
 
@@ -124,22 +159,52 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { AUTH_CONFIG } from "../config/auth.config";
-import { createAuthService } from "../services/authService";
-import { verifyTenantSession } from "../utils/auth";
+import { createAuthService, desktopLogin } from "../services/authService";
+import {
+  getTenantIdFromUrl,
+  verifyTenant,
+  verifyTenantSession,
+} from "../utils/auth";
 
 const router = useRouter();
 const isLoading = ref(false);
 const isError = ref(false);
 const errorMessage = ref("");
+const tenantUrl = ref(localStorage.getItem("cdp_tenant_url") || "");
+const tenantUrlInput = ref(tenantUrl.value);
+const isTenantVerified = ref<boolean | null>(null);
+const isVerifyingTenant = ref(false);
+const tenantFormError = ref("");
+
+const isDesktop = computed(
+  () =>
+    Boolean(
+      (window as Window & { isTauri?: boolean; __TAURI_INTERNALS__?: unknown })
+        .isTauri,
+    ) ||
+    Boolean(
+      (window as Window & { __TAURI_INTERNALS__?: unknown })
+        .__TAURI_INTERNALS__,
+    ),
+);
+
 
 onMounted(async () => {
+  console.log("LoginView mounted. Checking tenant verification...", isDesktop.value, tenantUrl.value);
+  if (isDesktop.value && !tenantUrl.value) {
+    return;
+  }
+
   try {
-    const verified = await verifyTenantSession();
+    const verified = isDesktop.value
+      ? await verifyTenant(getTenantIdFromUrl(tenantUrl.value) || "")
+      : await verifyTenantSession();
 
     if (verified) {
+      isTenantVerified.value = true;
       return;
     }
 
@@ -149,18 +214,59 @@ onMounted(async () => {
     localStorage.removeItem("jrxml_auth_user");
 
     isError.value = true;
+    isTenantVerified.value = false;
     errorMessage.value =
       "Tenant verification failed. Please contact your administrator to get the proper URL to proceed further.";
   } catch (error) {
     console.error("Tenant verification failed on login page:", error);
 
     isError.value = true;
+    isTenantVerified.value = false;
     errorMessage.value =
       "Tenant verification failed. Please contact your administrator to get the proper URL to proceed further.";
   }
 });
 
+const handleTenantSubmit = async () => {
+  tenantFormError.value = "";
+  const normalizedUrl = tenantUrlInput.value.trim();
+  const tenantId = getTenantIdFromUrl(normalizedUrl);
+
+  if (!tenantId) {
+    tenantFormError.value = "Please enter a valid tenant URL.";
+    return;
+  }
+
+  isVerifyingTenant.value = true;
+  try {
+    if (await verifyTenant(tenantId)) {
+      tenantUrl.value = normalizedUrl;
+      isTenantVerified.value = true;
+      localStorage.setItem("cdp_tenant_url", normalizedUrl);
+    } else {
+      isTenantVerified.value = false;
+      tenantFormError.value =
+        "Tenant verification failed. Please contact your administrator.";
+    }
+  } catch (error) {
+    console.error("Tenant verification failed:", error);
+    isTenantVerified.value = false;
+    tenantFormError.value = "Tenant verification failed. Please try again.";
+  } finally {
+    isVerifyingTenant.value = false;
+  }
+};
+
 const handleLogin = async () => {
+  if (isDesktop.value) {
+    if (!tenantUrl.value || !isTenantVerified.value) {
+      return;
+    }
+
+    desktopLogin(tenantUrl.value);
+    return;
+  }
+
   isLoading.value = true;
   isError.value = false;
 
@@ -315,6 +421,48 @@ const handleLanguageToggle = () => {
   color: rgba(202, 197, 216, 0.8);
   font-size: 13px;
   line-height: 1.5;
+}
+
+.tenant-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.tenant-form label {
+  color: rgba(202, 197, 216, 0.9);
+  font-size: 13px;
+  text-align: center;
+}
+
+.tenant-form input {
+  width: 100%;
+  height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.9rem;
+  padding: 0 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f4f4f5;
+  font-size: 13px;
+  outline: none;
+}
+
+.tenant-form input:focus {
+  border-color: rgba(124, 92, 247, 0.8);
+  box-shadow: 0 0 0 3px rgba(124, 92, 247, 0.14);
+}
+
+.tenant-form input::placeholder {
+  color: rgba(202, 197, 216, 0.55);
+}
+
+.tenant-form-error {
+  margin: 0;
+  color: #fca5a5;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .primary-button {

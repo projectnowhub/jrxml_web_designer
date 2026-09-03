@@ -45,5 +45,12 @@ export function clearVerifier(): void {
 }
 
 export function getClientId(fallback: string): string {
-  return fallback || "cdp-contractor";
+  if (typeof window === "undefined") {
+    return fallback || "cdp-contractor";
+  }
+
+  const hostnameParts = window.location.hostname.split(".");
+  return hostnameParts.length >= 2
+    ? (hostnameParts[0] ?? "")
+    : fallback || "cdp-contractor";
 }

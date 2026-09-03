@@ -24,6 +24,7 @@
 
 <script setup lang="ts">
 import { useRouter } from "vue-router";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 const router = useRouter();
 
@@ -31,13 +32,21 @@ function goToDesigner() {
   router.push("/designer");
 }
 
-function goToLogin() {
+async function goToLogin() {
   localStorage.removeItem("jrxml_auth_user");
   localStorage.removeItem("jrxml_auth_token");
   
-  const redirectUrl = `${window.location.origin}/login`;
-  window.location.href =
-    `https://projectnow-dev.ipecsystems.com/logout?redirect_to=${encodeURIComponent(redirectUrl)}`;}
+  const redirectTo = window.isTauri
+    ? "cdp-report-app://"
+    : window.location.origin;
+
+  const url = `${import.meta.env.VITE_OAUTH_BASE_URL}/logout?redirect_to=${encodeURIComponent(redirectTo)}`;
+
+  window.isTauri
+    ? await openUrl(url)
+    : (window.location.href = url);
+  }
+  
 </script>
 
 <style scoped>
