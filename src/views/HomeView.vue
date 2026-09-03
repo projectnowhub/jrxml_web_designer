@@ -35,17 +35,27 @@ function goToDesigner() {
 async function goToLogin() {
   localStorage.removeItem("jrxml_auth_user");
   localStorage.removeItem("jrxml_auth_token");
-  
-  const redirectTo = window.isTauri
+
+  const isTauri = Boolean(
+    (window as Window & {
+      __TAURI_INTERNALS__?: unknown;
+    }).__TAURI_INTERNALS__,
+  );
+
+  const redirectTo = isTauri
     ? "cdp-report-app://"
     : window.location.origin;
 
-  const url = `${import.meta.env.VITE_OAUTH_BASE_URL}/logout?redirect_to=${encodeURIComponent(redirectTo)}`;
+  const url =
+    `${import.meta.env.VITE_OAUTH_BASE_URL}/logout` +
+    `?redirect_to=${encodeURIComponent(redirectTo)}`;
 
-  window.isTauri
-    ? await openUrl(url)
-    : (window.location.href = url);
+  if (isTauri) {
+    await openUrl(url);
+  } else {
+    window.location.href = url;
   }
+}
   
 </script>
 
