@@ -2,42 +2,58 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        // Deep link
-        .plugin(tauri_plugin_deep_link::init())
-        // Open URLs in browser
-        .plugin(tauri_plugin_opener::init())
-        // Single instance
-        // IMPORTANT: register this before deep-link handling
-        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
-            println!("A new app instance was opened with: {argv:?}");
+    let mut builder = tauri::Builder::default();
 
-            // Bring existing window to front
-            if let Some(main) = app.get_webview_window("main") {
-                let _ = main.show();
-                let _ = main.set_focus();
-            }
-        }))
-        .setup(|app| {
-            // Linux development:
-            // register the custom URL scheme
-            #[cfg(target_os = "linux")]
-            {
-                use tauri_plugin_deep_link::DeepLinkExt;
+    // IMPORTANT:
+    // single-instance MUST be registered before deep-link.
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(
+            tauri_plugin_single_instance::init(|app, argv, cwd| {
+                println!("Single instance callback");
+                println!("argv: {:?}", argv);
+                println!("cwd: {}", cwd);
 
-                app.deep_link().register("cdp-report-app")?;
-            }
+                // The deep-link plugin will already have processed
+                // the deep-link arguments because the "deep-link"
+                // feature is enabled on tauri-plugin-single-instance.
 
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
-            }
+                if let Some(main) = app.get_webview_window("main") {
+                    let _ = main.show();
+                    let _ = main.set_focus();
+                }
+            }),
+        );
+    }
 
-            Ok(())
-        })
+    // Deep-link plugin MUST come after single-instance.
+    builder = builder.plugin(tauri_plugin_deep_link::init());
+
+    // Opener
+    builder = builder.plugin(tauri_plugin_opener::init());
+
+    // Development logging
+    builder = builder.setup(|app| {
+        #[cfg(any(target_os = "linux", all(debug_assertions, windows)))]
+        {
+            use tauri_plugin_deep_link::DeepLinkExt;
+
+            // Register configured schemes during development.
+            app.deep_link().register_all()?;
+        }
+
+        if cfg!(debug_assertions) {
+            app.handle().plugin(
+                tauri_plugin_log::Builder::default()
+                    .level(log::LevelFilter::Info)
+                    .build(),
+            )?;
+        }
+
+        Ok(())
+    });
+
+    builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
