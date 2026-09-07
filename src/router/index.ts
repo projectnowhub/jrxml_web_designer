@@ -4,6 +4,7 @@ import CallbackView from "../views/CallbackView.vue";
 import DesktopLoginView from "../views/DesktopLoginView.vue";
 import HomeView from "../views/HomeView.vue";
 import PDFDesigner from "../components/PDFDesigner.vue";
+import MyProfileView from "../views/MyProfileView.vue";
 import { isAuthenticated } from "../utils/auth";
 
 const router = createRouter({
@@ -36,6 +37,12 @@ const router = createRouter({
       component: PDFDesigner,
       meta: { requiresAuth: true },
     },
+    {
+      path: "/myprofile",
+      name: "myprofile",
+      component: MyProfileView,
+      meta: { requiresAuth: true },
+    }
   ],
 });
 

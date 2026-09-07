@@ -13,10 +13,10 @@
         >
           <Menu :size="19" :stroke-width="1.7" aria-hidden="true" />
         </button>
-        <div class="brand-icon">
-          <BarChart3 :size="34" :stroke-width="1.8" aria-hidden="true" />
+        <div class="brand-img">
+          <img src="/assets/cdp-logo.png" alt="CDP Report" />
         </div>
-        <span class="brand-text">CDP PLATFORM</span>
+        <span class="brand-text">CDP REPORT</span>
       </div>
       <label class="search-box">
         <Search :size="19" :stroke-width="1.7" aria-hidden="true" />
@@ -37,7 +37,7 @@
           type="button"
           aria-label="Notifications"
         >
-          <BellDot :size="19" :stroke-width="1.7" aria-hidden="true" />
+          <Bell :size="19" :stroke-width="1.7" aria-hidden="true" />
         </button>
         <div class="account-menu">
           <button
@@ -45,15 +45,33 @@
             type="button"
             @click="isAccountOpen = !isAccountOpen"
           >
-            <span class="avatar">{{ userInitial }}</span
-            ><span class="account-copy"
-              ><strong>{{ userName }}</strong
-              ><small>Workspace member</small></span
-            ><ChevronDown class="chevron" :size="16" :stroke-width="1.7" />
+            <span class="avatar">{{ userInitial }}</span>
           </button>
           <div v-if="isAccountOpen" class="account-popover">
-            <span>{{ userEmail }}</span
-            ><button type="button" @click="goToLogin">Sign out</button>
+            <div class="account-popover-header">
+              <span class="avatar">{{ userInitial }}</span>
+              <div>
+                <strong>{{ userName }}</strong>
+                <span>{{ userEmail }}</span>
+              </div>
+            </div>
+            <div class="account-popover-divider" />
+            <button
+              class="account-action"
+              type="button"
+              @click="goToMyProfile"
+            >
+              <UserRound :size="16" :stroke-width="1.7" aria-hidden="true" />
+              <span>My profile</span>
+            </button>
+            <button
+              class="account-action sign-out"
+              type="button"
+              @click="goToLogin"
+            >
+              <LogOut :size="16" :stroke-width="1.7" aria-hidden="true" />
+              <span>Sign out</span>
+            </button>
           </div>
         </div>
       </div>
@@ -158,16 +176,17 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   Activity,
   ArrowRight,
-  BarChart3,
-  BellDot,
+  Bell,
   ChevronDown,
   CircleHelp,
   Files,
   Inbox,
   LayoutTemplate,
+  LogOut,
   Menu,
   MoreHorizontal,
   Search,
+  UserRound,
 } from "@lucide/vue";
 
 const router = useRouter();
@@ -176,8 +195,12 @@ const isSidebarCollapsed = ref(false);
 const searchQuery = ref("");
 const storedUser = JSON.parse(
   localStorage.getItem("jrxml_auth_user") || "{}",
-) as { name?: string; username?: string; email?: string };
-const userName = storedUser.name || storedUser.username || "Designer";
+) as {
+  name?: string;
+  username?: string;
+  email?: string;
+};
+const userName = storedUser.firstName || "Designer";
 const userEmail = storedUser.email || "Your CDP workspace";
 const userInitial = userName.charAt(0).toUpperCase();
 const templates = [
@@ -201,11 +224,15 @@ const templates = [
   },
 ];
 
-function goToDesigner() {
+const goToDesigner = () => {
   router.push("/designer");
-}
+};
 
-async function goToLogin() {
+const goToMyProfile = () => {
+  router.push("/myprofile");
+};
+
+const goToLogin = async () => {
   localStorage.removeItem("jrxml_auth_user");
   localStorage.removeItem("jrxml_auth_token");
 
@@ -334,7 +361,7 @@ button:hover {
   z-index: 20;
   width: 100%;
   height: 74px;
-  padding: 0 42px;
+  padding: 0 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -354,15 +381,12 @@ button:hover {
 .brand-wrap {
   gap: 10px;
 }
-.brand-icon {
+
+.brand-img img {
   width: 34px;
   height: 34px;
 }
-.brand-icon svg {
-  width: 100%;
-  height: 100%;
-  color: #9d8cff;
-}
+
 .brand-text {
   color: #e7e3ff;
   font-size: 11px;
@@ -370,7 +394,7 @@ button:hover {
   letter-spacing: 0.16em;
 }
 .topbar-actions {
-  gap: 18px;
+  gap: 8px;
 }
 .icon-button,
 .account-button {
@@ -393,8 +417,8 @@ button:hover {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: linear-gradient(135deg, #7c5cf7, #6366f1);
   color: white;
+  border:#7c5cf7  2px solid;
   font-style: normal;
   font-weight: 700;
 }
@@ -427,30 +451,63 @@ button:hover {
   z-index: 2;
   right: 0;
   top: 46px;
-  width: 190px;
-  padding: 12px;
+  width: 238px;
+  padding: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  border-radius: 12px;
   background: #171622;
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.4);
 }
-.account-popover > span {
-  display: block;
-  padding: 3px 8px 10px;
+.account-popover-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+}
+.account-popover-header > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.account-popover-header strong,
+.account-popover-header span:not(.avatar) {
   overflow: hidden;
-  color: #8f8a9e;
   font-size: 11px;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.account-popover button {
+.account-popover-header strong {
+  color: #f4f4f5;
+  font-size: 12px;
+}
+.account-popover-header span:not(.avatar) {
+  color: #8f8a9e;
+}
+.account-popover-divider {
+  height: 1px;
+  margin: 4px 0;
+  background: rgba(255, 255, 255, 0.08);
+}
+.account-action {
   width: 100%;
-  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 8px;
   border: 0;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #f4f4f5;
+  background: transparent;
+  color: #d6d2df;
+  font-size: 12px;
+  font-weight: 500;
   text-align: left;
   cursor: pointer;
+}
+.account-action:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+.account-action.sign-out {
+  color: #ff7373;
 }
 .workspace-layout {
   display: flex;
@@ -841,7 +898,7 @@ button:hover {
 .search-box {
   position: absolute;
   left: 50%;
-  width: min(430px, 38vw);
+  width: min(570px, 38vw);
   height: 40px;
   display: flex;
   align-items: center;
