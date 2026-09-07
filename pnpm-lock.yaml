@@ -26,6 +26,9 @@ importers:
       '@codemirror/view':
         specifier: ^6.43.1
         version: 6.43.1
+      '@lucide/vue':
+        specifier: ^1.41.0
+        version: 1.41.0(vue@3.5.28(typescript@5.9.3))
       '@tauri-apps/plugin-deep-link':
         specifier: ^2.4.10
         version: 2.4.10
@@ -450,6 +453,11 @@ packages:
 
   '@lezer/xml@1.0.6':
     resolution: {integrity: sha512-CdDwirL0OEaStFue/66ZmFSeppuL6Dwjlk8qk153mSQwiSH/Dlri4GNymrNWnUmPl2Um7QfV1FO9KFUyX3Twww==}
+
+  '@lucide/vue@1.41.0':
+    resolution: {integrity: sha512-ciHtudHTeqMDzJKPI36AGboypCk8Jz3qFin3oU0nJfPc5MwXmqLXIEQvXE+yI6Sz5SnxVqREgm8rVN4KdDlnVQ==}
+    peerDependencies:
+      vue: '>=3.0.1'
 
   '@marijn/find-cluster-break@1.0.2':
     resolution: {integrity: sha512-l0h88YhZFyKdXIFNfSWpyjStDjGHwZ/U7iobcK1cQQD8sejsONdQtTVU+1wVN1PBw40PiiHB1vA5S7VTfQiP9g==}
@@ -2159,6 +2167,10 @@ snapshots:
       '@lezer/common': 1.5.0
       '@lezer/highlight': 1.2.3
       '@lezer/lr': 1.4.8
+
+  '@lucide/vue@1.41.0(vue@3.5.28(typescript@5.9.3))':
+    dependencies:
+      vue: 3.5.28(typescript@5.9.3)
 
   '@marijn/find-cluster-break@1.0.2': {}
 

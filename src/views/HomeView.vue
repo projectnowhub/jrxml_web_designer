@@ -11,37 +11,15 @@
           :aria-expanded="!isSidebarCollapsed"
           @click="isSidebarCollapsed = !isSidebarCollapsed"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+          <Menu :size="19" :stroke-width="1.7" aria-hidden="true" />
         </button>
         <div class="brand-icon">
-          <svg viewBox="0 0 64 64">
-            <rect
-              x="8"
-              y="10"
-              width="48"
-              height="42"
-              rx="14"
-              fill="#7c5cf7"
-              opacity=".18"
-            />
-            <path
-              d="M18 40V24h7v16M29 40V17h7v23M40 40V28h7v12"
-              fill="none"
-              stroke="#9d8cff"
-              stroke-width="4"
-              stroke-linecap="round"
-            />
-          </svg>
+          <BarChart3 :size="34" :stroke-width="1.8" aria-hidden="true" />
         </div>
         <span class="brand-text">CDP PLATFORM</span>
       </div>
       <label class="search-box">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="10.8" cy="10.8" r="6.8" />
-          <path d="m16 16 4.5 4.5" />
-        </svg>
+        <Search :size="19" :stroke-width="1.7" aria-hidden="true" />
         <input
           v-model="searchQuery"
           type="search"
@@ -52,23 +30,14 @@
       </label>
       <div class="topbar-actions">
         <button class="icon-button" type="button" aria-label="Help">
-          <svg viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="9" />
-            <path
-              d="M9.7 9a2.4 2.4 0 1 1 4.1 1.7c-1.1 1-1.8 1.4-1.8 2.8M12 17h.01"
-            />
-          </svg>
+          <CircleHelp :size="19" :stroke-width="1.7" aria-hidden="true" />
         </button>
         <button
           class="icon-button notification-button"
           type="button"
           aria-label="Notifications"
         >
-          <svg viewBox="0 0 24 24">
-            <path
-              d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"
-            /></svg
-          ><i />
+          <BellDot :size="19" :stroke-width="1.7" aria-hidden="true" />
         </button>
         <div class="account-menu">
           <button
@@ -80,7 +49,7 @@
             ><span class="account-copy"
               ><strong>{{ userName }}</strong
               ><small>Workspace member</small></span
-            ><span class="chevron">⌄</span>
+            ><ChevronDown class="chevron" :size="16" :stroke-width="1.7" />
           </button>
           <div v-if="isAccountOpen" class="account-popover">
             <span>{{ userEmail }}</span
@@ -96,11 +65,19 @@
       <aside class="sidebar">
         <nav>
           <button class="nav-item active" type="button" title="Templates">
-            <span class="nav-symbol">▦</span><span>Templates</span></button
+            <LayoutTemplate
+              class="nav-symbol"
+              :size="18"
+              :stroke-width="1.7"
+            /><span>Templates</span></button
           ><button class="nav-item" type="button">
-            <span class="nav-symbol">▤</span><span>My templates</span></button
+            <Files class="nav-symbol" :size="18" :stroke-width="1.7" /><span
+              >My templates</span
+            ></button
           ><button class="nav-item" type="button">
-            <span class="nav-symbol">⌁</span><span>Activity</span>
+            <Activity class="nav-symbol" :size="18" :stroke-width="1.7" /><span
+              >Activity</span
+            >
           </button>
         </nav>
         <div class="sidebar-footer"><i /> All systems operational</div>
@@ -123,7 +100,9 @@
         <section class="section-block">
           <div class="section-heading">
             <h2>Recent templates</h2>
-            <button class="view-all" type="button">View all →</button>
+            <button class="view-all" type="button">
+              View all <ArrowRight :size="14" />
+            </button>
           </div>
           <div class="template-grid">
             <article class="template-card new-card" @click="goToDesigner">
@@ -143,7 +122,9 @@
               <div class="template-info">
                 <div class="template-title">
                   <strong>{{ template.name }}</strong
-                  ><button type="button" aria-label="More options">•••</button>
+                  ><button type="button" aria-label="More options">
+                    <MoreHorizontal :size="16" />
+                  </button>
                 </div>
                 <span>{{ template.updated }}</span>
                 <div class="owner-row">
@@ -160,7 +141,7 @@
             <span class="muted-label">Recently accessed</span>
           </div>
           <div class="empty-state">
-            <div>⌁</div>
+            <div><Inbox :size="30" :stroke-width="1.6" /></div>
             <strong>No shared templates yet</strong
             ><span>Templates shared with you will appear here.</span>
           </div>
@@ -174,6 +155,20 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import {
+  Activity,
+  ArrowRight,
+  BarChart3,
+  BellDot,
+  ChevronDown,
+  CircleHelp,
+  Files,
+  Inbox,
+  LayoutTemplate,
+  Menu,
+  MoreHorizontal,
+  Search,
+} from "@lucide/vue";
 
 const router = useRouter();
 const isAccountOpen = ref(false);
@@ -366,6 +361,7 @@ button:hover {
 .brand-icon svg {
   width: 100%;
   height: 100%;
+  color: #9d8cff;
 }
 .brand-text {
   color: #e7e3ff;
@@ -602,6 +598,9 @@ button:hover {
   border: 0;
   background: none;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .template-grid {
   display: grid;
@@ -718,10 +717,12 @@ button:hover {
   font-size: 12px;
 }
 .template-title button {
+  display: grid;
+  place-items: center;
+  padding: 4px;
   border: 0;
   background: none;
   color: #777285;
-  letter-spacing: 2px;
   cursor: pointer;
 }
 .template-info > span {
@@ -889,16 +890,7 @@ button:hover {
   border-radius: 8px;
   font-size: 0;
 }
-.notification-button i {
-  position: absolute;
-  top: 10%;
-  right: 45%;
-  width: 5px;
-  height: 5px;
-  border: 1px solid #09090f;
-  border-radius: 50%;
-  background: #a18cff;
-}
+
 .nav-symbol {
   width: 18px;
   color: #aaa2c4;
