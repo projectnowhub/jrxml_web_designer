@@ -10,8 +10,10 @@
     "beforeBuildCommand": "pnpm build"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
+        "label": "main",
         "title": "cdp-report-app",
         "width": 800,
         "height": 600,
@@ -34,6 +36,11 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "linux": {
+      "deb": {
+        "desktopTemplate": "desktop-template.desktop"
+      }
+    },
     "shortDescription": "A professional JRXML report designer.",
     "longDescription": "A professional JRXML report designer based on Tauri and Vue 3.",
     "icon": [
