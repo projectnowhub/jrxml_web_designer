@@ -5,6 +5,7 @@ import DesktopLoginView from "../views/DesktopLoginView.vue";
 import HomeView from "../views/HomeView.vue";
 import PDFDesigner from "../components/PDFDesigner.vue";
 import MyProfileView from "../views/MyProfileView.vue";
+import AppLayout from "../components/AppLayout.vue";
 import { isAuthenticated } from "../utils/auth";
 
 const router = createRouter({
@@ -12,9 +13,20 @@ const router = createRouter({
   routes: [
     {
       path: "/",
-      name: "home",
-      component: HomeView,
+      component: AppLayout,
       meta: { requiresAuth: true },
+      children: [
+        {
+          path: "",
+          name: "home",
+          component: HomeView,
+        },
+        {
+          path: "myprofile",
+          name: "myprofile",
+          component: MyProfileView,
+        },
+      ],
     },
     {
       path: "/login",
@@ -37,12 +49,6 @@ const router = createRouter({
       component: PDFDesigner,
       meta: { requiresAuth: true },
     },
-    {
-      path: "/myprofile",
-      name: "myprofile",
-      component: MyProfileView,
-      meta: { requiresAuth: true },
-    }
   ],
 });
 
@@ -51,7 +57,7 @@ router.beforeEach((to, _from) => {
   const loggedIn = isAuthenticated();
 
   if (requiresAuth && !loggedIn) {
-    return '/login';
+    return "/login";
   }
 
   if (to.path === "/login" && loggedIn) {

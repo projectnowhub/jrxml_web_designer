@@ -7,10 +7,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from "vue";
 import { useRouter, RouterView } from "vue-router";
-import {
-  getCurrent,
-  onOpenUrl,
-} from "@tauri-apps/plugin-deep-link";
+import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 
 const router = useRouter();
 
@@ -19,9 +16,11 @@ let lastHandledUrl: string | undefined;
 
 const isTauri = () =>
   Boolean(
-    (window as Window & {
-      __TAURI_INTERNALS__?: unknown;
-    }).__TAURI_INTERNALS__,
+    (
+      window as Window & {
+        __TAURI_INTERNALS__?: unknown;
+      }
+    ).__TAURI_INTERNALS__,
   );
 
 async function handleDeepLink(urls: string[]) {

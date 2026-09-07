@@ -36,11 +36,6 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "linux": {
-      "deb": {
-        "desktopTemplate": "desktop-template.desktop"
-      }
-    },
     "shortDescription": "A professional JRXML report designer.",
     "longDescription": "A professional JRXML report designer based on Tauri and Vue 3.",
     "icon": [
