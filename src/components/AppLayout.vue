@@ -14,9 +14,12 @@
           <Menu :size="19" :stroke-width="1.7" aria-hidden="true" />
         </button>
         <div class="brand-img">
-          <img src="/assets/cdp-logo.png" alt="CDP Report" />
+          <img src="/assets/cdp-logo.png" alt="ProjectNow CDP" />
         </div>
-        <span class="brand-text">CDP REPORT</span>
+        <div class="brand-name">
+          <span class="brand-text">ProjectNow CDP</span>
+          <span class="brand-badge">REPORT STUDIO</span>
+        </div>
       </div>
       <label class="search-box">
         <Search :size="19" :stroke-width="1.7" aria-hidden="true" />
@@ -280,11 +283,35 @@ button:hover {
   width: 34px;
   height: 34px;
 }
+.brand-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1;
+  min-width: 0;
+}
 .brand-text {
-  color: #e7e3ff;
-  font-size: 11px;
+  color: #f4f4f5;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: -0.025em;
+}
+.brand-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 2px 6px;
+  border: 1px solid rgba(124, 92, 247, 0.18);
+  border-radius: 4px;
+  color: #7c5cf7;
+  background: rgba(124, 92, 247, 0.1);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+@media (max-width: 1023px) {
+  .brand-badge {
+    display: none;
+  }
 }
 
 .account-button {
@@ -537,7 +564,7 @@ button:hover {
   }
 }
 @media (max-width: 700px) {
-  .brand-text {
+  .brand-name {
     display: none;
   }
   .search-box {
