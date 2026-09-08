@@ -1,11 +1,15 @@
 import { createRouter, createWebHistory } from "vue-router";
-import LoginView from "../views/LoginView.vue";
-import CallbackView from "../views/CallbackView.vue";
-import DesktopLoginView from "../views/DesktopLoginView.vue";
-import HomeView from "../views/HomeView.vue";
-import PDFDesigner from "../components/PDFDesigner.vue";
-import MyProfileView from "../views/MyProfileView.vue";
-import AppLayout from "../components/AppLayout.vue";
+import {
+  HomeView,
+  LoginView,
+  MyProfileView,
+  CallbackView,
+  DesktopLoginView,
+  MyTemplatesView,
+  ActivityView,
+} from "../views";
+import { PDFDesigner, AppLayout } from "../components";
+
 import { isAuthenticated } from "../utils/auth";
 
 const router = createRouter({
@@ -26,6 +30,17 @@ const router = createRouter({
           name: "myprofile",
           component: MyProfileView,
         },
+        {
+          path: "mytemplates",
+          name: "mytemplates",
+          component: MyTemplatesView,
+        },
+        {
+          path: "activity",
+          name: "activity",
+          component: ActivityView,
+        },
+
       ],
     },
     {

@@ -76,22 +76,21 @@
       <aside class="sidebar">
         <nav>
           <button
+            v-for="menu in sidebarMenus"
+            :key="menu.routeName"
             class="nav-item"
-            :class="{ active: route.name === 'home' }"
+            :class="{ active: route.name === menu.routeName }"
             type="button"
-            title="Templates"
-            @click="router.push('/')"
+            :title="menu.label"
+            @click="router.push(menu.route)"
           >
-            <LayoutTemplate class="nav-symbol" :size="18" :stroke-width="1.7" />
-            <span>Templates</span>
-          </button>
-          <button class="nav-item" type="button" title="My templates">
-            <Files class="nav-symbol" :size="18" :stroke-width="1.7" />
-            <span>My templates</span>
-          </button>
-          <button class="nav-item" type="button" title="Activity">
-            <Activity class="nav-symbol" :size="18" :stroke-width="1.7" />
-            <span>Activity</span>
+            <component
+              :is="menu.icon"
+              class="nav-symbol"
+              :size="18"
+              :stroke-width="1.7"
+            />
+            <span>{{ menu.label }}</span>
           </button>
         </nav>
         <div class="sidebar-footer"><i /> All systems operational</div>
@@ -127,6 +126,27 @@ import {
 } from "@lucide/vue";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
 import { getStoredUser } from "../utils/auth";
+
+const sidebarMenus = [
+  {
+    label: "Templates",
+    route: "/",
+    routeName: "home",
+    icon: LayoutTemplate,
+  },
+  {
+    label: "My templates",
+    route: "/mytemplates",
+    routeName: "mytemplates",
+    icon: Files,
+  },
+  {
+    label: "Activity",
+    route: "/activity",
+    routeName: "activity",
+    icon: Activity,
+  },
+];
 
 const router = useRouter();
 const route = useRoute();
