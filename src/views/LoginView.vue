@@ -131,6 +131,57 @@
           }}</span>
         </div>
 
+        <div
+          v-if="isDesktop && tenantUrl && isTenantVerified"
+          class="tenant-info-panel"
+        >
+          <div class="tenant-info-main">
+            <div class="tenant-info-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+                <path
+                  d="M12 8h.01M12 11v5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </div>
+            <div class="tenant-info-details">
+              <p class="tenant-info-label">Current Tenant</p>
+              <p class="tenant-info-url">{{ tenantUrl }}</p>
+              <button
+                type="button"
+                class="change-url-button"
+                @click="changeTenantUrl"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                Change Tenant URL
+              </button>
+            </div>
+          </div>
+          <div class="tenant-info-status" aria-hidden="true">
+            <span class="verified-dot" />
+          </div>
+        </div>
+
         <div class="divider" />
 
         <div class="footer-row">
@@ -259,6 +310,16 @@ const handleTenantSubmit = async () => {
   } finally {
     isVerifyingTenant.value = false;
   }
+};
+
+const changeTenantUrl = () => {
+  localStorage.removeItem(TENANT_URL_KEY);
+  tenantUrl.value = "";
+  tenantUrlInput.value = "";
+  isTenantVerified.value = null;
+  tenantFormError.value = "";
+  isError.value = false;
+  errorMessage.value = "";
 };
 
 const handleLogin = async () => {
@@ -528,6 +589,111 @@ const handleLogin = async () => {
   background: rgba(239, 68, 68, 0.06);
   border-color: rgba(239, 68, 68, 0.2);
   color: #fca5a5;
+}
+
+.tenant-info-panel {
+  margin-top: 1rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: 0.9rem;
+  background: linear-gradient(
+    90deg,
+    rgba(30, 58, 138, 0.32),
+    rgba(49, 46, 129, 0.22)
+  );
+}
+
+.tenant-info-main {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.tenant-info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  background: rgba(30, 58, 138, 0.5);
+  color: #60a5fa;
+}
+
+.tenant-info-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.tenant-info-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.tenant-info-label {
+  margin: 0 0 0.25rem;
+  font-size: 11px;
+  font-weight: 600;
+  color: #93c5fd;
+}
+
+.tenant-info-url {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #bfdbfe;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.change-url-button {
+  margin-top: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: #60a5fa;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.change-url-button:hover {
+  color: #93c5fd;
+}
+
+.change-url-button svg {
+  width: 12px;
+  height: 12px;
+}
+
+.tenant-info-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(20, 83, 45, 0.35);
+}
+
+.verified-dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #22c55e;
 }
 
 .status-icon {
