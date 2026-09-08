@@ -428,6 +428,7 @@ import { useRouter } from "vue-router";
 import { AUTH_CONFIG } from "../config/auth.config";
 import { createAuthService } from "../services/authService";
 import { closeTab } from "../utils/closeTab";
+import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
 
 const router = useRouter();
 const status = ref("Verifying your credentials...");
@@ -682,16 +683,15 @@ onMounted(async () => {
     }
 
     status.value = "Loading your workspace";
-    const user = await authService.fetchUser(token);
-
-    localStorage.setItem("jrxml_auth_user", JSON.stringify(user ?? {}));
-    localStorage.setItem("jrxml_auth_token", token);
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+    const user = await authService.fetchUser();
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user ?? {}));
 
     window.history.replaceState({}, "", "/");
     await router.replace("/");
   } catch (error) {
-    localStorage.removeItem("jrxml_auth_token");
-    localStorage.removeItem("jrxml_auth_user");
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_USER_KEY);
     await router.replace({ path: "/login", query: { error: "callback" } });
   }
 });

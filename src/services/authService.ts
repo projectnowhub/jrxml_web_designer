@@ -6,6 +6,7 @@ import {
   saveVerifier,
 } from "../utils/pkce";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import apiClient from "./apiClient";
 
 export interface AuthConfig {
   clientId: string;
@@ -43,9 +44,10 @@ export class AuthService {
     this.config = config;
   }
 
-  async login(): Promise<void> {
+  login = async (): Promise<void> => {
     const clientId = getClientId(this.config.clientId);
     const pkce = await generatePKCE();
+
     saveVerifier(pkce.verifier);
 
     const params = new URLSearchParams({
@@ -58,10 +60,11 @@ export class AuthService {
     });
 
     window.location.href = `${this.config.authUrl}?${params.toString()}`;
-  }
+  };
 
-  async exchangeCode(code: string): Promise<string> {
+  exchangeCode = async (code: string): Promise<string> => {
     const verifier = getVerifier();
+
     if (!verifier) {
       throw new Error(
         "PKCE verifier not found. Login session may have expired.",
@@ -78,63 +81,50 @@ export class AuthService {
       grant_type: "authorization_code",
     });
 
-    const response = await fetch(this.config.tokenUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+    const data = await apiClient.post<TokenResponse>(
+      this.config.tokenUrl,
       body,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Token exchange failed: ${errorText}`);
-    }
-
-    const data = (await response.json()) as TokenResponse;
-    clearVerifier();
-    return data.access_token;
-  }
-
-  async fetchUser(token: string): Promise<AuthUser> {
-    const response = await fetch(this.config.userUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
       },
-    });
+    );
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch user: ${response.status}`);
-    }
+    clearVerifier();
 
-    const data = (await response.json()) as AuthUser;
-    return data;
-  }
+    return data.access_token;
+  };
 
-  logout(redirectTo = "/login"): void {
+  fetchUser = async (): Promise<AuthUser> => {
+    return apiClient.get<AuthUser>(this.config.userUrl);
+  };
+
+  logout = (redirectTo = "/login"): void => {
     window.location.href = `${this.config.logoutUri}?redirect_to=${window.location.origin}${redirectTo}`;
-  }
+  };
 }
 
-export function desktopLogin(tenantUrl: string): void {
-  console.log("Hiii")
+export const desktopLogin = (tenantUrl: string): void => {
   const { origin } = new URL(tenantUrl);
+
   openUrl(`${origin}/desktop-login`);
-}
+};
 
 let instance: AuthService | null = null;
 
-export function createAuthService(config: AuthConfig): AuthService {
+export const createAuthService = (config: AuthConfig): AuthService => {
   instance = new AuthService(config);
-  return instance;
-}
 
-export function getAuthService(): AuthService {
+  return instance;
+};
+
+export const getAuthService = (): AuthService => {
   if (!instance) {
     throw new Error(
       "AuthService not initialized. Call createAuthService() first.",
     );
   }
+
   return instance;
-}
+};

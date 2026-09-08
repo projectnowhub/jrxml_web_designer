@@ -2,25 +2,92 @@
   <div class="pdf-designer">
     <div class="designer-header">
       <div class="header-left">
-        <h1>{{ t('app.title') }}</h1>
+        <h1>{{ t("app.title") }}</h1>
         <div class="header-undo-redo">
-          <n-button @click="undo" type="default" quaternary circle :title="t('actions.undo')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M3 10h10a5 5 0 0 1 0 10H9"/><polyline points="7 14 3 10 7 6"/></svg>
+          <n-button
+            @click="undo"
+            type="default"
+            quaternary
+            circle
+            :title="t('actions.undo')"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              width="16"
+              height="16"
+            >
+              <path d="M3 10h10a5 5 0 0 1 0 10H9" />
+              <polyline points="7 14 3 10 7 6" />
+            </svg>
           </n-button>
-          <n-button @click="redo" type="default" quaternary circle :title="t('actions.redo')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 10H11a5 5 0 0 0 0 10h4"/><polyline points="17 14 21 10 17 6"/></svg>
+          <n-button
+            @click="redo"
+            type="default"
+            quaternary
+            circle
+            :title="t('actions.redo')"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              width="16"
+              height="16"
+            >
+              <path d="M21 10H11a5 5 0 0 0 0 10h4" />
+              <polyline points="17 14 21 10 17 6" />
+            </svg>
           </n-button>
         </div>
         <div class="header-toolbar-ops">
           <span class="toolbar-divider"></span>
           <button class="toolbar-btn" @click="deleteElement" title="Delete">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              width="16"
+              height="16"
+            >
+              <path
+                d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+              />
+            </svg>
           </button>
           <button class="toolbar-btn" @click="copyElement" title="Copy">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              width="16"
+              height="16"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" />
+              <path
+                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+              />
+            </svg>
           </button>
           <button class="toolbar-btn" @click="pasteElement" title="Paste">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              width="16"
+              height="16"
+            >
+              <path
+                d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+              />
+              <rect x="8" y="2" width="8" height="4" rx="1" />
+            </svg>
           </button>
         </div>
       </div>
@@ -45,7 +112,11 @@
         />
 
         <n-button @click="toggleBottomPanel" type="default">
-          {{ showBottomPanel ? t('actions.hideBottomPanel') : t('actions.showBottomPanel') }}
+          {{
+            showBottomPanel
+              ? t("actions.hideBottomPanel")
+              : t("actions.showBottomPanel")
+          }}
         </n-button>
 
         <!-- Snap controls -->
@@ -55,78 +126,92 @@
             size="small"
             @update:checked="enableSnapToGrid = $event"
           >
-            {{ t('actions.snapToGrid') }}
+            {{ t("actions.snapToGrid") }}
           </n-checkbox>
           <n-checkbox
             :checked="enableSnapToAlignment"
             size="small"
             @update:checked="enableSnapToAlignment = $event"
           >
-            {{ t('actions.snapToAlignment') }}
+            {{ t("actions.snapToAlignment") }}
           </n-checkbox>
           <n-checkbox
             :checked="showGrid"
             size="small"
             @update:checked="showGrid = $event"
           >
-            {{ t('actions.showGrid') }}
+            {{ t("actions.showGrid") }}
           </n-checkbox>
         </div>
 
         <SplitButton
           :actions="[
-            { label: t('actions.previewPDF'), handler: openPdfPreview, class: 'btn-primary' },
-            { label: t('actions.downloadJRXML'), handler: downloadJRXML, class: 'btn-primary' },
-            { label: t('actions.setPreviewServer'), handler: openPreviewServerSettings, class: 'btn-primary' }
+            {
+              label: t('actions.previewPDF'),
+              handler: openPdfPreview,
+              class: 'btn-primary',
+            },
+            {
+              label: t('actions.downloadJRXML'),
+              handler: downloadJRXML,
+              class: 'btn-primary',
+            },
+            {
+              label: t('actions.setPreviewServer'),
+              handler: openPreviewServerSettings,
+              class: 'btn-primary',
+            },
           ]"
         />
         <!-- <n-button @click="showHelp = true" type="default">{{ t('actions.help') }}</n-button> -->
         <LanguageSwitcher />
 
         <div class="my-act-menu">
-            <n-button
-              type="default"
-              @click="showMyActMenu = !showMyActMenu"
-            >
-              My Act
-              <span class="dropdown-arrow">▾</span>
-            </n-button>
+          <n-button type="default" @click="showMyActMenu = !showMyActMenu">
+            My Act
+            <span class="dropdown-arrow">▾</span>
+          </n-button>
 
-            <div v-if="showMyActMenu" class="my-act-dropdown">
-              <button
-                type="button"
-                class="my-act-dropdown-item"
-                @click="handleSignOut"
+          <div v-if="showMyActMenu" class="my-act-dropdown">
+            <button
+              type="button"
+              class="my-act-dropdown-item"
+              @click="handleSignOut"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <path d="M16 17l5-5-5-5" />
-                  <path d="M21 12H9" />
-                </svg>
-                <span>Sign out</span>
-              </button>
-            </div>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <path d="M16 17l5-5-5-5" />
+                <path d="M21 12H9" />
+              </svg>
+              <span>Sign out</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Coordinate display element -->
-      <div
-        v-if="dragCoordinates.visible"
-        class="coordinates-display"
-      >
-        {{ t('designer.coordinates', { bandName: dragCoordinates.bandName, x: dragCoordinates.x, y: dragCoordinates.y }) }}
-      </div>
+    <div v-if="dragCoordinates.visible" class="coordinates-display">
+      {{
+        t("designer.coordinates", {
+          bandName: dragCoordinates.bandName,
+          x: dragCoordinates.x,
+          y: dragCoordinates.y,
+        })
+      }}
+    </div>
 
-      <!-- Band height adjustment tooltip -->
-      <div
-        v-if="resizingBandInfo.visible"
-        class="band-height-display"
-      >
-        {{ resizingBandInfo.bandName }} Height: {{ resizingBandInfo.height }}px
-      </div>
+    <!-- Band height adjustment tooltip -->
+    <div v-if="resizingBandInfo.visible" class="band-height-display">
+      {{ resizingBandInfo.bandName }} Height: {{ resizingBandInfo.height }}px
+    </div>
 
-      <div class="designer-layout">
+    <div class="designer-layout">
       <!-- Left-side element library -->
       <ResizablePanel
         v-show="showLeftPanel"
@@ -170,71 +255,82 @@
       </ResizablePanel>
 
       <!-- Center design area -->
-      <div class="design-area-wrapper" style="position:relative;flex:1;overflow:auto;">
-      <MultiSelectToolbar
-        :visible="selectedElements.length > 1"
-        :count="selectedElements.length"
-        @align="handleMultiAlign"
-        @distribute="handleMultiDistribute"
-        @resize="handleMultiResize"
-      />
-      <AlignmentGuides
-        :guides="activeAlignmentGuides.map(g => ({ id: g.id, type: g.type, position: g.position, label: g.label, active: g.active }))"
-        :zoom-level="zoomLevel"
-      />
-      <DesignerCanvas
-        ref="designerCanvasRef"
-        :paper-width="paperWidth"
-        :paper-height="paperHeight"
-        :zoom-level="zoomLevel"
-        :report-properties="reportProperties"
-        :bands="bands"
-        :selected-band-index="selectedBandIndex"
-        :highlighted-band-index="highlightedBandIndex"
-        :selected-element="selectedElement"
-        :selected-elements="selectedElements"
-        :editing-element="editingElement"
-        :is-dragging-or-resizing="isDraggingOrResizing"
-        :alignment-lines="alignmentLines"
-        :horizontal-ruler-ticks="horizontalRulerTicks"
-        :horizontal-ruler-labels="horizontalRulerLabels"
-        :vertical-ruler-ticks="verticalRulerTicks"
-        :vertical-ruler-labels="verticalRulerLabels"
-        :is-design-area-focused="isDesignAreaFocused"
-        :out-of-bounds-elements="outOfBoundsElements"
-        :ui-constants="UI_CONSTANTS"
-        :enable-snap-to-grid="enableSnapToGrid"
-        :enable-snap-to-alignment="enableSnapToAlignment"
-        :show-grid="showGrid"
-        :report-styles="reportStyles"
-        :table-styles="tableStyles"
-        @set-design-area-focused="setDesignAreaFocused"
-        @select-band="selectBand"
-        @select-element="selectElement"
-        @start-dragging="startDragging"
-        @start-resizing-element="startResizingElement"
-        @start-editing="startEditing"
-        @finish-editing="finishEditing"
-        @cancel-editing="cancelEditing"
-        @handle-drop="handleDrop"
-        @handle-drag-over="handleDragOver"
-        @handle-drag-leave="handleDragLeave"
-        @start-resizing-band="startResizingBand"
-        @zoom-change="(newZoom) => zoomLevel = newZoom"
-        @select-elements-in-rect="selectElementsInRect"
-        @clear-selection="clearSelection"
-        @check-fields="handleCheckFields"
-        @contextmenu="handleElementContextMenu"
-        @canvas-contextmenu="handleCanvasContextMenu"
-        @reset-zoom="resetZoom"
-        @move-column="handleMoveColumn"
-        @add-columns-to-group="handleAddColumnsToGroup"
-        @join-columns-to-existing-group="handleJoinColumnsToExistingGroup"
-        @update:enable-snap-to-grid="enableSnapToGrid = $event"
-        @update:enable-snap-to-alignment="enableSnapToAlignment = $event"
-        @update:show-grid="showGrid = $event"
-        @update:table-styles="tableStyles = $event"
-      />
+      <div
+        class="design-area-wrapper"
+        style="position: relative; flex: 1; overflow: auto"
+      >
+        <MultiSelectToolbar
+          :visible="selectedElements.length > 1"
+          :count="selectedElements.length"
+          @align="handleMultiAlign"
+          @distribute="handleMultiDistribute"
+          @resize="handleMultiResize"
+        />
+        <AlignmentGuides
+          :guides="
+            activeAlignmentGuides.map((g) => ({
+              id: g.id,
+              type: g.type,
+              position: g.position,
+              label: g.label,
+              active: g.active,
+            }))
+          "
+          :zoom-level="zoomLevel"
+        />
+        <DesignerCanvas
+          ref="designerCanvasRef"
+          :paper-width="paperWidth"
+          :paper-height="paperHeight"
+          :zoom-level="zoomLevel"
+          :report-properties="reportProperties"
+          :bands="bands"
+          :selected-band-index="selectedBandIndex"
+          :highlighted-band-index="highlightedBandIndex"
+          :selected-element="selectedElement"
+          :selected-elements="selectedElements"
+          :editing-element="editingElement"
+          :is-dragging-or-resizing="isDraggingOrResizing"
+          :alignment-lines="alignmentLines"
+          :horizontal-ruler-ticks="horizontalRulerTicks"
+          :horizontal-ruler-labels="horizontalRulerLabels"
+          :vertical-ruler-ticks="verticalRulerTicks"
+          :vertical-ruler-labels="verticalRulerLabels"
+          :is-design-area-focused="isDesignAreaFocused"
+          :out-of-bounds-elements="outOfBoundsElements"
+          :ui-constants="UI_CONSTANTS"
+          :enable-snap-to-grid="enableSnapToGrid"
+          :enable-snap-to-alignment="enableSnapToAlignment"
+          :show-grid="showGrid"
+          :report-styles="reportStyles"
+          :table-styles="tableStyles"
+          @set-design-area-focused="setDesignAreaFocused"
+          @select-band="selectBand"
+          @select-element="selectElement"
+          @start-dragging="startDragging"
+          @start-resizing-element="startResizingElement"
+          @start-editing="startEditing"
+          @finish-editing="finishEditing"
+          @cancel-editing="cancelEditing"
+          @handle-drop="handleDrop"
+          @handle-drag-over="handleDragOver"
+          @handle-drag-leave="handleDragLeave"
+          @start-resizing-band="startResizingBand"
+          @zoom-change="(newZoom) => (zoomLevel = newZoom)"
+          @select-elements-in-rect="selectElementsInRect"
+          @clear-selection="clearSelection"
+          @check-fields="handleCheckFields"
+          @contextmenu="handleElementContextMenu"
+          @canvas-contextmenu="handleCanvasContextMenu"
+          @reset-zoom="resetZoom"
+          @move-column="handleMoveColumn"
+          @add-columns-to-group="handleAddColumnsToGroup"
+          @join-columns-to-existing-group="handleJoinColumnsToExistingGroup"
+          @update:enable-snap-to-grid="enableSnapToGrid = $event"
+          @update:enable-snap-to-alignment="enableSnapToAlignment = $event"
+          @update:show-grid="showGrid = $event"
+          @update:table-styles="tableStyles = $event"
+        />
       </div>
 
       <!-- Right-side properties panel -->
@@ -410,11 +506,16 @@
           <label>Select an existing group or enter a new group name:</label>
           <n-select
             v-model:value="groupDialogState.selectedGroupName"
-            :options="groupDialogState.existingGroups.map(group => ({ label: group.name, value: group.name }))"
+            :options="
+              groupDialogState.existingGroups.map((group) => ({
+                label: group.name,
+                value: group.name,
+              }))
+            "
             placeholder="Select an existing group or enter a new name"
             filterable
             tag
-            style="width: 100%; margin-top: 8px;"
+            style="width: 100%; margin-top: 8px"
           />
         </div>
       </div>
@@ -425,69 +526,154 @@
       v-model:visible="showColumnSelectionModal"
       :columns="columnSelectionState.columns"
       :children="columnSelectionState.children"
-      @confirm="(selectedColumnIndices, selectedRegion, groupText) => handleColumnSelectionConfirm(selectedColumnIndices, selectedRegion, groupText)"
+      @confirm="
+        (selectedColumnIndices, selectedRegion, groupText) =>
+          handleColumnSelectionConfirm(
+            selectedColumnIndices,
+            selectedRegion,
+            groupText,
+          )
+      "
     />
 
     <!-- Right-click context menu -->
-    <div v-if="contextMenu.visible" class="context-menu-overlay" @click="contextMenu.visible = false" @contextmenu.prevent="contextMenu.visible = false">
-      <div class="context-menu" :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }">
+    <div
+      v-if="contextMenu.visible"
+      class="context-menu-overlay"
+      @click="contextMenu.visible = false"
+      @contextmenu.prevent="contextMenu.visible = false"
+    >
+      <div
+        class="context-menu"
+        :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
+      >
         <div v-if="contextMenu.type === 'element'" class="context-menu-items">
-          <div class="context-menu-item" @click="handleContextMenuAction('copy')">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy
+          <div
+            class="context-menu-item"
+            @click="handleContextMenuAction('copy')"
+          >
+            <svg
+              class="menu-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" />
+              <path
+                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+              />
+            </svg>
+            Copy
           </div>
-          <div class="context-menu-item" @click="handleContextMenuAction('paste')">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> Paste
+          <div
+            class="context-menu-item"
+            @click="handleContextMenuAction('paste')"
+          >
+            <svg
+              class="menu-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+              />
+              <rect x="8" y="2" width="8" height="4" rx="1" />
+            </svg>
+            Paste
           </div>
           <div class="context-menu-divider"></div>
-          <div class="context-menu-item" @click="handleContextMenuAction('delete')">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete
+          <div
+            class="context-menu-item"
+            @click="handleContextMenuAction('delete')"
+          >
+            <svg
+              class="menu-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+              />
+            </svg>
+            Delete
           </div>
           <div class="context-menu-divider"></div>
-          <div class="context-menu-item" @click="handleContextMenuAction('bringToFront')">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg> Bring to Front
+          <div
+            class="context-menu-item"
+            @click="handleContextMenuAction('bringToFront')"
+          >
+            <svg
+              class="menu-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M12 19V5M5 12l7-7 7 7" />
+            </svg>
+            Bring to Front
           </div>
-          <div class="context-menu-item" @click="handleContextMenuAction('sendToBack')">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg> Send to Back
+          <div
+            class="context-menu-item"
+            @click="handleContextMenuAction('sendToBack')"
+          >
+            <svg
+              class="menu-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M12 5v14M19 12l-7 7-7-7" />
+            </svg>
+            Send to Back
           </div>
         </div>
         <div v-else class="context-menu-items">
-          <div class="context-menu-item" @click="handleContextMenuAction('paste')">
+          <div
+            class="context-menu-item"
+            @click="handleContextMenuAction('paste')"
+          >
             <span class="menu-icon">📎</span> Paste
           </div>
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
 <script setup lang="ts">
-import ResizablePanel from './panels/ResizablePanel.vue';
-import DesignerCanvas from './designer/DesignerCanvas.vue';
-import RewardModal from './modals/RewardModal.vue';
-import RewardModalEn from './modals/RewardModalEn.vue';
-import HelpModal from './modals/HelpModal.vue';
-import HelpModalEn from './modals/HelpModalEn.vue';
-import FieldManagementModal from './modals/FieldManagementModal.vue';
-import PdfPreviewModal from './modals/PdfPreviewModal.vue';
-import PreviewServerSettingsModal from './modals/PreviewServerSettingsModal.vue';
-import SubDatasetManagementModal from './modals/SubDatasetManagementModal.vue';
-import VariableManagementModal from './modals/VariableManagementModal.vue';
-import StyleManagementModal from './modals/StyleManagementModal.vue';
-import BaseModal from './modals/BaseModal.vue';
-import ColumnSelectionModal from './modals/ColumnSelectionModal.vue';
-import BottomPanel from './panels/BottomPanel.vue';
-import AIChatPanel from './ai/AIChatPanel.vue';
-import ElementLibrary from './ElementLibrary.vue';
-import FileManager from './designer/controls/FileManager.vue';
-import ZoomControls from './designer/controls/ZoomControls.vue';
-import ElementProperties from './designer/properties/ElementProperties.vue';
-import LanguageSwitcher from './common/LanguageSwitcher.vue';
-import SplitButton from './common/SplitButton.vue';
-import MultiSelectToolbar from './designer/MultiSelectToolbar.vue';
-import AlignmentGuides from './designer/AlignmentGuides.vue';
-import DragFeedbackLayer from './designer/DragFeedbackLayer.vue';
-import {NButton, NSelect, NCheckbox} from 'naive-ui';
+import ResizablePanel from "./panels/ResizablePanel.vue";
+import DesignerCanvas from "./designer/DesignerCanvas.vue";
+import RewardModal from "./modals/RewardModal.vue";
+import RewardModalEn from "./modals/RewardModalEn.vue";
+import HelpModal from "./modals/HelpModal.vue";
+import HelpModalEn from "./modals/HelpModalEn.vue";
+import FieldManagementModal from "./modals/FieldManagementModal.vue";
+import PdfPreviewModal from "./modals/PdfPreviewModal.vue";
+import PreviewServerSettingsModal from "./modals/PreviewServerSettingsModal.vue";
+import SubDatasetManagementModal from "./modals/SubDatasetManagementModal.vue";
+import VariableManagementModal from "./modals/VariableManagementModal.vue";
+import StyleManagementModal from "./modals/StyleManagementModal.vue";
+import BaseModal from "./modals/BaseModal.vue";
+import ColumnSelectionModal from "./modals/ColumnSelectionModal.vue";
+import BottomPanel from "./panels/BottomPanel.vue";
+import AIChatPanel from "./ai/AIChatPanel.vue";
+import ElementLibrary from "./ElementLibrary.vue";
+import FileManager from "./designer/controls/FileManager.vue";
+import ZoomControls from "./designer/controls/ZoomControls.vue";
+import ElementProperties from "./designer/properties/ElementProperties.vue";
+import LanguageSwitcher from "./common/LanguageSwitcher.vue";
+import SplitButton from "./common/SplitButton.vue";
+import MultiSelectToolbar from "./designer/MultiSelectToolbar.vue";
+import AlignmentGuides from "./designer/AlignmentGuides.vue";
+import DragFeedbackLayer from "./designer/DragFeedbackLayer.vue";
+import { NButton, NSelect, NCheckbox } from "naive-ui";
 import type {
   Band,
   BandType,
@@ -499,17 +685,26 @@ import type {
   ReportParameter,
   ReportVariable,
   SelectedElementInfo,
-  TableDataset
-} from '../types';
-import type {DesignerFile} from '@/types/designerFile';
-import type {MCPContext} from '@/mcp';
-import {checkWebMCPSupport} from '@/utils/browserCompatibility';
-import {computed, nextTick, onMounted, onUnmounted, reactive, ref, watch, getCurrentInstance} from 'vue';
-import {useI18n} from 'vue-i18n';
-import {useDesignerFiles} from '@/composables/useDesignerFiles';
-import {useUndoRedo} from '@/composables/useUndoRedo';
-import {useZoom} from '@/composables/useZoom';
-import {useSnapAlignment} from '@/composables/useSnapAlignment';
+  TableDataset,
+} from "../types";
+import type { DesignerFile } from "@/types/designerFile";
+import type { MCPContext } from "@/mcp";
+import { checkWebMCPSupport } from "@/utils/browserCompatibility";
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  reactive,
+  ref,
+  watch,
+  getCurrentInstance,
+} from "vue";
+import { useI18n } from "vue-i18n";
+import { useDesignerFiles } from "@/composables/useDesignerFiles";
+import { useUndoRedo } from "@/composables/useUndoRedo";
+import { useZoom } from "@/composables/useZoom";
+import { useSnapAlignment } from "@/composables/useSnapAlignment";
 import {
   BAND_CONSTANTS,
   BAND_HEIGHT_CONSTANTS,
@@ -522,38 +717,44 @@ import {
   REPORT_CONSTANTS,
   RULER_CONSTANTS,
   UI_CONSTANTS,
-  ZOOM_CONSTANTS
-} from '../constants/constants';
+  ZOOM_CONSTANTS,
+} from "../constants/constants";
 
 // Import newly created utility functions and constants
-import {getBandDisplayName} from '../utils/bandUtils';
+import { getBandDisplayName } from "../utils/bandUtils";
 
-import {loadFromLocalStorage, saveToLocalStorage} from '../utils/fileUtils';
+import { loadFromLocalStorage, saveToLocalStorage } from "../utils/fileUtils";
 
 // Import element bounds validation utility
-import {getOutOfBoundsElements} from '../utils/elementBoundsValidator';
-import {useBoundaryDetection} from '@/composables/useBoundaryDetection';
-import {useAlignmentSystem} from '@/composables/useAlignmentSystem';
-import {useDragFeedback} from '@/composables/useDragFeedback';
+import { getOutOfBoundsElements } from "../utils/elementBoundsValidator";
+import { useBoundaryDetection } from "@/composables/useBoundaryDetection";
+import { useAlignmentSystem } from "@/composables/useAlignmentSystem";
+import { useDragFeedback } from "@/composables/useDragFeedback";
 
 // Ensure DOMParser is available in the browser environment
 // Removed the unused getDOMParser function
-import {generateJRXMLContent, parseJRXMLContent} from '../utils/jrxmlGenerator';
-
+import {
+  generateJRXMLContent,
+  parseJRXMLContent,
+} from "../utils/jrxmlGenerator";
 
 // Import the notification manager
-import notification from '../utils/notification';
-import {createElement, getAllElements as getAllElementConfigs} from '@/components/elements/ElementRegistry';
-import { syncTableColumns } from '../utils/table/ColumnTreeSync';
+import notification from "../utils/notification";
+import {
+  createElement,
+  getAllElements as getAllElementConfigs,
+} from "@/components/elements/ElementRegistry";
+import { syncTableColumns } from "../utils/table/ColumnTreeSync";
 
 // Import the default JRXML example file
-import defaultJrxmlContent from '../../tests/build_by_jasper_studio_jrxml/grouped_header_column_table_example.jrxml?raw';
+import defaultJrxmlContent from "../../tests/build_by_jasper_studio_jrxml/grouped_header_column_table_example.jrxml?raw";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
 
 const { t, locale } = useI18n();
 
 // Tab-related state
-const activeTab = ref('pageSettings');
+const activeTab = ref("pageSettings");
 const showMyActMenu = ref(false);
 
 // Panel visibility state
@@ -562,7 +763,7 @@ const showRightPanel = ref(true);
 const showBottomPanel = ref(false);
 const showAIChat = ref(false);
 const aiChatPanelHeight = ref(300);
-const rightPanelTab = ref('properties'); // 'properties' or 'ai'
+const rightPanelTab = ref("properties"); // 'properties' or 'ai'
 
 // Browser compatibility check
 const browserSupport = ref(checkWebMCPSupport());
@@ -579,30 +780,30 @@ const mcpContext = computed<MCPContext>(() => ({
   updateJRXML,
   selectElement,
   selectedElement: selectedElement.value,
-  selectedElements: selectedElements.value
+  selectedElements: selectedElements.value,
 }));
 
 // Force-update function, used to trigger a UI refresh after a tool executes
 function forceUpdateUI() {
-  console.log('forceUpdateUI called');
-  console.log('bands.value before update:', bands.value);
+  console.log("forceUpdateUI called");
+  console.log("bands.value before update:", bands.value);
 
   // Create a new array via deep clone so Vue detects the change
   const newBands = JSON.parse(JSON.stringify(bands.value));
   bands.value = newBands;
 
-  console.log('bands.value after update:', bands.value);
+  console.log("bands.value after update:", bands.value);
 
   // Use Vue's force-update mechanism
   const instance = getCurrentInstance();
   if (instance) {
-    console.log('Forcing component update');
+    console.log("Forcing component update");
     instance.proxy?.$forceUpdate();
   }
 
   // Call nextTick to ensure the DOM has updated
   nextTick(() => {
-    console.log('Calling updateJRXML');
+    console.log("Calling updateJRXML");
     updateJRXML();
   });
 }
@@ -622,11 +823,11 @@ const designerCanvasRef = ref<any>(null);
 const bottomPanelHeight = ref(PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT); // Default height 400px
 
 // JRXML content display
-const jrxmlContent = ref('');
+const jrxmlContent = ref("");
 
 // Report properties
 const reportProperties = ref({
-  name: 'NewReport',
+  name: "NewReport",
   pageWidth: REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH,
   pageHeight: REPORT_CONSTANTS.DEFAULT_PAGE_HEIGHT,
   leftMargin: REPORT_CONSTANTS.DEFAULT_MARGIN,
@@ -638,9 +839,8 @@ const reportProperties = ref({
     size: REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
     isBold: false,
     isItalic: false,
-    isUnderline: false
+    isUnderline: false,
   },
-
 });
 
 // File management related state
@@ -651,41 +851,48 @@ const {
   loadLastFile,
   findFileById,
   saveCurrentFileContent,
-  setLastFile
+  setLastFile,
 } = useDesignerFiles({
-  defaultFileName: t('fileManager.untitledReport')
+  defaultFileName: t("fileManager.untitledReport"),
 });
 
 // Update the page title
-watch(currentFileName, (newName) => {
-  document.title = newName ? `${newName} - ${t('app.title')}` : t('app.title');
-}, { immediate: true });
+watch(
+  currentFileName,
+  (newName) => {
+    document.title = newName
+      ? `${newName} - ${t("app.title")}`
+      : t("app.title");
+  },
+  { immediate: true },
+);
 
 // Watch for language changes and update the title
-watch(() => t('app.title'), () => {
-  const name = currentFileName.value;
-  document.title = name ? `${name} - ${t('app.title')}` : t('app.title');
-});
-
+watch(
+  () => t("app.title"),
+  () => {
+    const name = currentFileName.value;
+    document.title = name ? `${name} - ${t("app.title")}` : t("app.title");
+  },
+);
 
 const handleSignOut = async () => {
   showMyActMenu.value = false;
 
-  localStorage.removeItem("jrxml_auth_user");
-  localStorage.removeItem("jrxml_auth_token");
+  localStorage.removeItem(AUTH_USER_KEY);
+  localStorage.removeItem(AUTH_TOKEN_KEY);
 
   const isTauri = Boolean(
-    (window as Window & {
-      __TAURI_INTERNALS__?: unknown;
-    }).__TAURI_INTERNALS__,
+    (
+      window as Window & {
+        __TAURI_INTERNALS__?: unknown;
+      }
+    ).__TAURI_INTERNALS__,
   );
 
+  const redirectTo = isTauri ? "cdp-report-app://" : window.location.origin;
 
-  const redirectTo = isTauri
-    ? "cdp-report-app://"
-    : window.location.origin;
-
-    const url = `${import.meta.env.VITE_OAUTH_BASE_URL}/logout?redirect_to=${encodeURIComponent(redirectTo)}`;
+  const url = `${import.meta.env.VITE_OAUTH_BASE_URL}/logout?redirect_to=${encodeURIComponent(redirectTo)}`;
 
   if (isTauri) {
     await openUrl(url);
@@ -697,12 +904,12 @@ const handleSignOut = async () => {
 function createNewFile() {
   // Logic for creating a new file
   const timestamp = new Date().getTime();
-  currentFileName.value = `${t('fileManager.untitledReport')}${timestamp}`;
+  currentFileName.value = `${t("fileManager.untitledReport")}${timestamp}`;
   currentFileId.value = `file_${timestamp}`;
 
   // Reset the report data
   reportProperties.value = {
-    name: 'NewReport',
+    name: "NewReport",
     pageWidth: 595,
     pageHeight: 842,
     leftMargin: 20,
@@ -714,27 +921,55 @@ function createNewFile() {
       size: 12,
       isBold: false,
       isItalic: false,
-      isUnderline: false
-    }
+      isUnderline: false,
+    },
   };
 
   bands.value = [
-    { type: BAND_TYPE_CONSTANTS.TITLE as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 50, elements: [] },
-    { type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50, elements: [] },
-    { type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30, elements: [] },
-    { type: BAND_TYPE_CONSTANTS.DETAIL as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100, elements: [] },
-    { type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30, elements: [] },
-    { type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40, elements: [] },
-    { type: BAND_TYPE_CONSTANTS.SUMMARY as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60, elements: [] }
+    {
+      type: BAND_TYPE_CONSTANTS.TITLE as BandType,
+      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 50,
+      elements: [],
+    },
+    {
+      type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
+      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
+      elements: [],
+    },
+    {
+      type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType,
+      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30,
+      elements: [],
+    },
+    {
+      type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
+      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100,
+      elements: [],
+    },
+    {
+      type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType,
+      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30,
+      elements: [],
+    },
+    {
+      type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
+      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
+      elements: [],
+    },
+    {
+      type: BAND_TYPE_CONSTANTS.SUMMARY as BandType,
+      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60,
+      elements: [],
+    },
   ];
 
   // Update selectedBandTypes to match the new bands
-  selectedBandTypes.value = bands.value.map(band => band.type);
+  selectedBandTypes.value = bands.value.map((band) => band.type);
 
   reportFields.value = [];
   reportParameters.value = [];
   subDatasets.value = [];
-  jrxmlContent.value = '';
+  jrxmlContent.value = "";
 
   // Clear the currently selected element
   selectedElement.value = null;
@@ -746,28 +981,34 @@ function saveCurrentFileToStorage() {
 
   const ok = saveCurrentFileContent(fileData);
   if (ok) {
-    notification.success(t('notifications.fileSavedSuccess'));
+    notification.success(t("notifications.fileSavedSuccess"));
   } else {
-    notification.error(t('notifications.fileSaveFailed'));
+    notification.error(t("notifications.fileSaveFailed"));
   }
 }
 
 function loadFile(fileData: DesignerFile | any) {
   try {
     // Parse the file content
-    const fileContent = typeof fileData.content === 'string'
-      ? JSON.parse(fileData.content)
-      : fileData;
+    const fileContent =
+      typeof fileData.content === "string"
+        ? JSON.parse(fileData.content)
+        : fileData;
 
     // Load the file data into the current report
     if (fileContent.reportProperties) {
-      reportProperties.value = { ...reportProperties.value, ...fileContent.reportProperties };
+      reportProperties.value = {
+        ...reportProperties.value,
+        ...fileContent.reportProperties,
+      };
     }
 
     if (fileContent.bands) {
       bands.value = fileContent.bands;
       // Update selectedBandTypes to match the loaded bands
-      selectedBandTypes.value = fileContent.bands.map((band: Band) => band.type);
+      selectedBandTypes.value = fileContent.bands.map(
+        (band: Band) => band.type,
+      );
     }
 
     if (fileContent.reportFields) {
@@ -787,7 +1028,7 @@ function loadFile(fileData: DesignerFile | any) {
     }
 
     // Update the current file info
-    currentFileName.value = fileData.name || t('fileManager.untitledReport');
+    currentFileName.value = fileData.name || t("fileManager.untitledReport");
     currentFileId.value = fileData.id || null;
     if (fileData.id) {
       setLastFile({ id: fileData.id, name: fileData.name });
@@ -797,13 +1038,16 @@ function loadFile(fileData: DesignerFile | any) {
     selectedElement.value = null;
     selectedBandIndex.value = null;
   } catch (error) {
-    console.error('Failed to load file:', error);
-    notification.error(t('fileManager.invalidFileFormat'));
+    console.error("Failed to load file:", error);
+    notification.error(t("fileManager.invalidFileFormat"));
   }
 }
 
 function saveAsLocalFile() {
-  const newName = prompt(t('fileManager.enterNewFileName'), currentFileName.value);
+  const newName = prompt(
+    t("fileManager.enterNewFileName"),
+    currentFileName.value,
+  );
   if (!newName) return;
   const timestamp = Date.now();
   currentFileName.value = newName;
@@ -826,7 +1070,7 @@ function saveCurrentFile() {
           }
 
           // Handle borders on each side
-          ['topPen', 'leftPen', 'bottomPen', 'rightPen'].forEach(penType => {
+          ["topPen", "leftPen", "bottomPen", "rightPen"].forEach((penType) => {
             if (element.box[penType] && element.box[penType].lineWidth <= 0) {
               delete element.box[penType];
             }
@@ -851,7 +1095,7 @@ function saveCurrentFile() {
     reportParameters: reportParameters.value,
     subDatasets: subDatasets.value,
     jrxmlContent: jrxmlContent.value,
-    lastModified: new Date().toISOString()
+    lastModified: new Date().toISOString(),
   };
 
   // Return the file data
@@ -859,14 +1103,21 @@ function saveCurrentFile() {
 }
 
 // Incomplete elements, only visible on localhost
-const INCOMPLETE_ELEMENTS = ['map', 'crosstab', 'iconLabel', 'genericElement', 'list', 'subreport'];
-const isDev = location.hostname === 'localhost';
+const INCOMPLETE_ELEMENTS = [
+  "map",
+  "crosstab",
+  "iconLabel",
+  "genericElement",
+  "list",
+  "subreport",
+];
+const isDev = location.hostname === "localhost";
 
 // Available elements
 const elements = computed(() =>
   getAllElementConfigs()
-    .filter(config => isDev || !INCOMPLETE_ELEMENTS.includes(config.type))
-    .map(config => ({ type: config.type, name: config.name }))
+    .filter((config) => isDev || !INCOMPLETE_ELEMENTS.includes(config.type))
+    .map((config) => ({ type: config.type, name: config.name })),
 );
 
 // Define the element interfaces
@@ -876,39 +1127,108 @@ const elements = computed(() =>
 
 // Report bands
 const bands = ref<Band[]>([
-  { type: BAND_TYPE_CONSTANTS.TITLE as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 50, elements: [] },
-  { type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50, elements: [] },
-  { type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30, elements: [] },
-  { type: BAND_TYPE_CONSTANTS.DETAIL as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100, elements: [] }, // Default the detail band to a height of 100
-  { type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30, elements: [] },
-  { type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40, elements: [] },
-  { type: BAND_TYPE_CONSTANTS.SUMMARY as BandType, height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60, elements: [] }
+  {
+    type: BAND_TYPE_CONSTANTS.TITLE as BandType,
+    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 50,
+    elements: [],
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
+    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
+    elements: [],
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType,
+    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30,
+    elements: [],
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
+    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100,
+    elements: [],
+  }, // Default the detail band to a height of 100
+  {
+    type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType,
+    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30,
+    elements: [],
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
+    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
+    elements: [],
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.SUMMARY as BandType,
+    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60,
+    elements: [],
+  },
 ]);
 
 // All possible band types
 const allBandTypes = [
-  { type: BAND_TYPE_CONSTANTS.TITLE as BandType, name: 'Title', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 80 },
-  { type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType, name: 'Page Header', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50 },
-  { type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType, name: 'Column Header', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30 },
-  { type: BAND_TYPE_CONSTANTS.DETAIL as BandType, name: 'Detail', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100 },
-  { type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType, name: 'Column Footer', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30 },
-  { type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType, name: 'Page Footer', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40 },
-  { type: BAND_TYPE_CONSTANTS.SUMMARY as BandType, name: 'Summary', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60 },
-  { type: BAND_TYPE_CONSTANTS.BACKGROUND as BandType, name: 'Background', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.BACKGROUND] || 0 },
-  { type: BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER as BandType, name: 'Last Page Footer', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER] || 40 },
-  { type: BAND_TYPE_CONSTANTS.NO_DATA as BandType, name: 'No Data', defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.NO_DATA] || 50 }
+  {
+    type: BAND_TYPE_CONSTANTS.TITLE as BandType,
+    name: "Title",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 80,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
+    name: "Page Header",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType,
+    name: "Column Header",
+    defaultHeight:
+      BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
+    name: "Detail",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType,
+    name: "Column Footer",
+    defaultHeight:
+      BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
+    name: "Page Footer",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.SUMMARY as BandType,
+    name: "Summary",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.BACKGROUND as BandType,
+    name: "Background",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.BACKGROUND] || 0,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER as BandType,
+    name: "Last Page Footer",
+    defaultHeight:
+      BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER] || 40,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.NO_DATA as BandType,
+    name: "No Data",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.NO_DATA] || 50,
+  },
 ];
 
 // The currently selected band type
-const selectedBandTypes = ref<BandType[]>(bands.value.map(band => band.type));
+const selectedBandTypes = ref<BandType[]>(bands.value.map((band) => band.type));
 
 // Data fields
-const reportFields = ref<ReportField[]>([
-]);
+const reportFields = ref<ReportField[]>([]);
 
 // Report parameters
-const reportParameters = ref<ReportParameter[]>([
-]);
+const reportParameters = ref<ReportParameter[]>([]);
 
 // Sub-datasets
 const subDatasets = ref<TableDataset[]>([]);
@@ -918,86 +1238,86 @@ const editingSubDataset = ref<TableDataset | undefined>(undefined);
 // Report styles
 const reportStyles = ref<any[]>([
   {
-    name: 'Table_TH',
-    mode: 'Opaque',
-    backcolor: '#F0F8FF',
+    name: "Table_TH",
+    mode: "Opaque",
+    backcolor: "#F0F8FF",
     box: {
       pen: {
         lineWidth: 0.5,
-        lineColor: '#000000'
+        lineColor: "#000000",
       },
       topPen: {
         lineWidth: 0.5,
-        lineColor: '#000000'
+        lineColor: "#000000",
       },
       leftPen: {
         lineWidth: 0.5,
-        lineColor: '#000000'
+        lineColor: "#000000",
       },
       bottomPen: {
         lineWidth: 0.5,
-        lineColor: '#000000'
+        lineColor: "#000000",
       },
       rightPen: {
         lineWidth: 0.5,
-        lineColor: '#000000'
-      }
-    }
+        lineColor: "#000000",
+      },
+    },
   },
   {
-    name: 'Table_CH',
-    mode: 'Opaque',
-    backcolor: '#BFE1FF',
+    name: "Table_CH",
+    mode: "Opaque",
+    backcolor: "#BFE1FF",
     box: {
       pen: {
         lineWidth: 0.5,
-        lineColor: '#000000'
+        lineColor: "#000000",
       },
       topPen: {
         lineWidth: 0.5,
-        lineColor: '#000000'
+        lineColor: "#000000",
       },
       leftPen: {
         lineWidth: 0.5,
-        lineColor: '#000000'
+        lineColor: "#000000",
       },
       bottomPen: {
         lineWidth: 0.5,
-        lineColor: '#000000'
+        lineColor: "#000000",
       },
       rightPen: {
         lineWidth: 0.5,
-        lineColor: '#000000'
-      }
-    }
+        lineColor: "#000000",
+      },
+    },
   },
   {
-    name: 'Table_TD',
-    mode: 'Opaque',
-    backcolor: '#FFFFFF',
+    name: "Table_TD",
+    mode: "Opaque",
+    backcolor: "#FFFFFF",
     box: {
       pen: {
         lineWidth: 0.5,
-        lineColor: '#000000'
+        lineColor: "#000000",
       },
       topPen: {
         lineWidth: 0.5,
-        lineColor: '#000000'
+        lineColor: "#000000",
       },
       leftPen: {
         lineWidth: 0.5,
-        lineColor: '#000000'
+        lineColor: "#000000",
       },
       bottomPen: {
         lineWidth: 0.5,
-        lineColor: '#000000'
+        lineColor: "#000000",
       },
       rightPen: {
         lineWidth: 0.5,
-        lineColor: '#000000'
-      }
-    }
-  }
+        lineColor: "#000000",
+      },
+    },
+  },
 ]);
 
 // Report variables
@@ -1007,14 +1327,19 @@ const reportVariables = ref<any[]>([]);
 const reportGroups = ref<any[]>([]);
 
 // Context menu state
-const contextMenu = ref({ visible: false, x: 0, y: 0, type: 'element' as 'element' | 'canvas' });
+const contextMenu = ref({
+  visible: false,
+  x: 0,
+  y: 0,
+  type: "element" as "element" | "canvas",
+});
 
 // Table styles
 const tableStyles = ref({
-  tableHeader: 'Table_TH',
-  columnHeader: 'Table_CH',
-  columnFooter: 'Table_CH',
-  detailCell: 'Table_TD'
+  tableHeader: "Table_TH",
+  columnHeader: "Table_CH",
+  columnFooter: "Table_CH",
+  detailCell: "Table_TD",
 });
 
 // Handle adding a sub-dataset
@@ -1046,7 +1371,9 @@ const handleSubDatasetSave = (dataset: TableDataset) => {
   // Save state to history
   saveStateToHistory();
 
-  const existingIndex = subDatasets.value.findIndex((d: TableDataset) => d.uuid === dataset.uuid);
+  const existingIndex = subDatasets.value.findIndex(
+    (d: TableDataset) => d.uuid === dataset.uuid,
+  );
 
   if (existingIndex >= 0) {
     // Update the existing sub-dataset
@@ -1064,9 +1391,13 @@ const handleSubDatasetSave = (dataset: TableDataset) => {
 };
 
 // Check for and create a default table dataset
-const checkAndCreateDefaultTableDataset = (datasetName: string = 'tableDataset') => {
+const checkAndCreateDefaultTableDataset = (
+  datasetName: string = "tableDataset",
+) => {
   // Check whether a dataset with the same name already exists
-  const existingDataset = subDatasets.value.find((d: TableDataset) => d.name === datasetName);
+  const existingDataset = subDatasets.value.find(
+    (d: TableDataset) => d.name === datasetName,
+  );
   if (existingDataset) {
     return;
   }
@@ -1079,10 +1410,10 @@ const checkAndCreateDefaultTableDataset = (datasetName: string = 'tableDataset')
     uuid: crypto.randomUUID(),
     name: datasetName,
     fields: [
-      { name: 'FIELD_NAME', class: 'java.lang.String' },
-      { name: 'FIELD_NAME2', class: 'java.lang.String' },
-      { name: 'FIELD_NAME3', class: 'java.lang.String' }
-    ]
+      { name: "FIELD_NAME", class: "java.lang.String" },
+      { name: "FIELD_NAME2", class: "java.lang.String" },
+      { name: "FIELD_NAME3", class: "java.lang.String" },
+    ],
   };
 
   // Add it to the sub-dataset list
@@ -1093,9 +1424,14 @@ const checkAndCreateDefaultTableDataset = (datasetName: string = 'tableDataset')
 };
 
 // Element-created event handler
-const handleElementCreated = (element: DesignElement, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
+const handleElementCreated = (
+  element: DesignElement,
+  bandIndex: number,
+  elementIndex: number,
+  parentFrameIndex?: number,
+) => {
   // Fire the element-created event, providing the necessary parameters
-  console.log('Element created:', {
+  console.log("Element created:", {
     element,
     bandIndex,
     elementIndex,
@@ -1104,14 +1440,14 @@ const handleElementCreated = (element: DesignElement, bandIndex: number, element
       x: element.x,
       y: element.y,
       width: element.width,
-      height: element.height
-    }
+      height: element.height,
+    },
   });
 
   // Additional post-creation handling logic can be added here
   // e.g. perform type-specific initialization based on the element type
   switch (element.type) {
-    case 'textField':
+    case "textField":
       // Initialization logic for text field elements
       break;
     // Initialization logic for other element types
@@ -1128,7 +1464,9 @@ type HistoryState = {
 };
 
 // Out-of-bounds elements
-const outOfBoundsElements = ref<Array<{bandIndex: number, elementIndex: number, element: DesignElement}>>([]);
+const outOfBoundsElements = ref<
+  Array<{ bandIndex: number; elementIndex: number; element: DesignElement }>
+>([]);
 
 // Boundary detection composable
 const {
@@ -1159,42 +1497,66 @@ const {
 function updateOutOfBoundsElements() {
   // Safety check to ensure bands and reportProperties have been initialized
   if (!bands.value || !reportProperties.value) {
-    console.warn('bands or reportProperties not initialized, skipping boundary check');
+    console.warn(
+      "bands or reportProperties not initialized, skipping boundary check",
+    );
     return;
   }
 
   // Get all out-of-bounds elements (keep the original format for DesignerCanvas)
-  const outOfBounds = getOutOfBoundsElements(bands.value, reportProperties.value);
+  const outOfBounds = getOutOfBoundsElements(
+    bands.value,
+    reportProperties.value,
+  );
   outOfBoundsElements.value = outOfBounds;
 
   // Also run detailed boundary detection via the composable
   checkAllBoundaryElements(
     bands.value,
     reportProperties.value.pageWidth,
-    reportProperties.value
+    reportProperties.value,
   );
 
   if (outOfBounds.length > 0) {
-    console.warn(`Found ${outOfBounds.length} out-of-bounds element(s):`, outOfBounds);
+    console.warn(
+      `Found ${outOfBounds.length} out-of-bounds element(s):`,
+      outOfBounds,
+    );
   }
 }
 
 // Get the actual data for the currently selected elements
 function getSelectedElementsData() {
-  const result: Array<{ x: number; y: number; width: number; height: number; bandIndex: number; elementIndex: number }> = [];
+  const result: Array<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    bandIndex: number;
+    elementIndex: number;
+  }> = [];
   for (const sel of selectedElements.value) {
     const band = bands.value[sel.bandIndex];
     if (band && band.elements[sel.elementIndex]) {
       const el = band.elements[sel.elementIndex];
       if (!el) continue;
-      result.push({ x: el.x, y: el.y, width: el.width, height: el.height, bandIndex: sel.bandIndex, elementIndex: sel.elementIndex });
+      result.push({
+        x: el.x,
+        y: el.y,
+        width: el.width,
+        height: el.height,
+        bandIndex: sel.bandIndex,
+        elementIndex: sel.elementIndex,
+      });
     }
   }
   return result;
 }
 
 // Multi-select alignment operation
-function handleMultiAlign(direction: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') {
+function handleMultiAlign(
+  direction: "left" | "center" | "right" | "top" | "middle" | "bottom",
+) {
   const elementsData = getSelectedElementsData();
   if (elementsData.length < 2) return;
   saveStateToHistory();
@@ -1213,7 +1575,7 @@ function handleMultiAlign(direction: 'left' | 'center' | 'right' | 'top' | 'midd
 }
 
 // Multi-select distribution operation
-function handleMultiDistribute(direction: 'horizontal' | 'vertical') {
+function handleMultiDistribute(direction: "horizontal" | "vertical") {
   const elementsData = getSelectedElementsData();
   if (elementsData.length < 3) return;
   saveStateToHistory();
@@ -1232,13 +1594,13 @@ function handleMultiDistribute(direction: 'horizontal' | 'vertical') {
 }
 
 // Multi-select resize operation
-function handleMultiResize(type: 'sameWidth' | 'sameHeight' | 'sameSize') {
+function handleMultiResize(type: "sameWidth" | "sameHeight" | "sameSize") {
   const elementsData = getSelectedElementsData();
   if (elementsData.length < 2) return;
   saveStateToHistory();
 
-  if (type === 'sameWidth' || type === 'sameSize') {
-    const maxWidth = Math.max(...elementsData.map(e => e.width));
+  if (type === "sameWidth" || type === "sameSize") {
+    const maxWidth = Math.max(...elementsData.map((e) => e.width));
     elementsData.forEach((_, i) => {
       const sel = selectedElements.value[i];
       if (!sel) return;
@@ -1249,8 +1611,8 @@ function handleMultiResize(type: 'sameWidth' | 'sameHeight' | 'sameSize') {
       }
     });
   }
-  if (type === 'sameHeight' || type === 'sameSize') {
-    const maxHeight = Math.max(...elementsData.map(e => e.height));
+  if (type === "sameHeight" || type === "sameSize") {
+    const maxHeight = Math.max(...elementsData.map((e) => e.height));
     elementsData.forEach((_, i) => {
       const sel = selectedElements.value[i];
       if (!sel) return;
@@ -1264,32 +1626,27 @@ function handleMultiResize(type: 'sameWidth' | 'sameHeight' | 'sameSize') {
   updateJRXML();
 }
 
-const {
-  historyStack,
-  redoStack,
-  saveStateToHistory,
-  undo,
-  redo
-} = useUndoRedo<HistoryState>({
-  maxHistorySize: HISTORY_CONSTANTS.MAX_HISTORY_SIZE,
-  getState: () => ({
-    reportProperties: reportProperties.value,
-    bands: bands.value,
-    reportFields: reportFields.value,
-    reportParameters: reportParameters.value,
-    subDatasets: subDatasets.value
-  }),
-  applyState: (state) => {
-    reportProperties.value = state.reportProperties;
-    bands.value = state.bands;
-    reportFields.value = state.reportFields;
-    reportParameters.value = state.reportParameters;
-    subDatasets.value = state.subDatasets;
-  },
-  onAfterRestore: () => {
-    updateJRXML();
-  }
-});
+const { historyStack, redoStack, saveStateToHistory, undo, redo } =
+  useUndoRedo<HistoryState>({
+    maxHistorySize: HISTORY_CONSTANTS.MAX_HISTORY_SIZE,
+    getState: () => ({
+      reportProperties: reportProperties.value,
+      bands: bands.value,
+      reportFields: reportFields.value,
+      reportParameters: reportParameters.value,
+      subDatasets: subDatasets.value,
+    }),
+    applyState: (state) => {
+      reportProperties.value = state.reportProperties;
+      bands.value = state.bands;
+      reportFields.value = state.reportFields;
+      reportParameters.value = state.reportParameters;
+      subDatasets.value = state.subDatasets;
+    },
+    onAfterRestore: () => {
+      updateJRXML();
+    },
+  });
 
 const isDraggingOrResizing = ref(false); // Flags whether a drag or resize is in progress
 const isUpdatingJRXML = ref(false); // Guards against re-entrant calls to updateJRXML
@@ -1311,7 +1668,7 @@ const groupDialogState = ref({
   bandIndex: 0,
   parentFrameIndex: undefined as number | undefined,
   existingGroups: [] as any[],
-  selectedGroupName: ''
+  selectedGroupName: "",
 });
 
 // Column selection dialog state
@@ -1321,10 +1678,8 @@ const columnSelectionState = ref({
   bandIndex: 0,
   parentFrameIndex: undefined as number | undefined,
   columns: [] as any[],
-  children: [] as any[]
+  children: [] as any[],
 });
-
-
 
 // Report design area focus state
 const isDesignAreaFocused = ref(true); // Focus the design area by default
@@ -1340,12 +1695,19 @@ const removeDesignAreaFocused = () => {
 };
 
 // Computed properties
-const paperWidth = computed(() => reportProperties.value?.pageWidth || REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH);
-const paperHeight = computed(() => reportProperties.value?.pageHeight || REPORT_CONSTANTS.DEFAULT_PAGE_HEIGHT);
-const { zoomLevel, resetZoom, calculateOptimalZoom, handleZoomChange } = useZoom({
-  paperWidth,
-  zoomConstants: ZOOM_CONSTANTS
-});
+const paperWidth = computed(
+  () =>
+    reportProperties.value?.pageWidth || REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH,
+);
+const paperHeight = computed(
+  () =>
+    reportProperties.value?.pageHeight || REPORT_CONSTANTS.DEFAULT_PAGE_HEIGHT,
+);
+const { zoomLevel, resetZoom, calculateOptimalZoom, handleZoomChange } =
+  useZoom({
+    paperWidth,
+    zoomConstants: ZOOM_CONSTANTS,
+  });
 
 // Function to set the zoom level
 const setZoomLevel = (newZoom: number) => {
@@ -1362,9 +1724,6 @@ const currentElement = computed(() => {
 });
 
 // Get all report elements
-
-
-
 
 // Report elements grouped by band - temporarily commented out since it's unused
 /*
@@ -1402,7 +1761,7 @@ const horizontalRulerTicks = computed(() => {
   for (let i = 0; i <= width; i += unit) {
     ticks.push({
       position: i, // Do not apply the zoom scale, keep the actual position
-      major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0 // One major tick every 25px, changed from 50px to 25px
+      major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0, // One major tick every 25px, changed from 50px to 25px
     });
   }
 
@@ -1413,10 +1772,11 @@ const horizontalRulerLabels = computed(() => {
   const labels = [];
   const width = paperWidth.value;
 
-  for (let i = 0; i <= width; i += RULER_CONSTANTS.LABEL_INTERVAL) { // Show a label every 25px, changed from 50px to 25px
+  for (let i = 0; i <= width; i += RULER_CONSTANTS.LABEL_INTERVAL) {
+    // Show a label every 25px, changed from 50px to 25px
     labels.push({
       position: i, // Do not apply the zoom scale, keep the actual position
-      value: i.toString()
+      value: i.toString(),
     });
   }
 
@@ -1431,7 +1791,7 @@ const verticalRulerTicks = computed(() => {
   for (let i = 0; i <= height; i += unit) {
     ticks.push({
       position: i, // Do not apply the zoom scale, keep the actual position
-      major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0 // One major tick every 25px, changed from 50px to 25px
+      major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0, // One major tick every 25px, changed from 50px to 25px
     });
   }
 
@@ -1442,10 +1802,11 @@ const verticalRulerLabels = computed(() => {
   const labels = [];
   const height = paperHeight.value;
 
-  for (let i = 0; i <= height; i += RULER_CONSTANTS.LABEL_INTERVAL) { // Show a label every 25px, changed from 50px to 25px
+  for (let i = 0; i <= height; i += RULER_CONSTANTS.LABEL_INTERVAL) {
+    // Show a label every 25px, changed from 50px to 25px
     labels.push({
       position: i, // Do not apply the zoom scale, keep the actual position
-      value: i.toString()
+      value: i.toString(),
     });
   }
 
@@ -1460,24 +1821,37 @@ const {
   enableSnapToAlignment,
   alignmentLines,
   detectAlignmentLines,
-  clearAlignmentLines
+  clearAlignmentLines,
 } = useSnapAlignment({
   bands,
   reportProperties,
   highlightedBandIndex,
-  bandSpacing: BAND_CONSTANTS.SPACING
+  bandSpacing: BAND_CONSTANTS.SPACING,
 });
 
 // Controls whether the grid is shown or hidden
 const showGrid = ref(true);
 // Coordinate info shown while dragging
-const dragCoordinates = ref<{x: number, y: number, visible: boolean, bandName: string}>({ x: 0, y: 0, visible: false, bandName: '' });
+const dragCoordinates = ref<{
+  x: number;
+  y: number;
+  visible: boolean;
+  bandName: string;
+}>({ x: 0, y: 0, visible: false, bandName: "" });
 // Info shown while resizing a band's height
-const resizingBandInfo = reactive({ visible: false, bandName: '', height: 0 });
+const resizingBandInfo = reactive({ visible: false, bandName: "", height: 0 });
 // Expose it as a ref for template reactivity
 const resizingBandInfoRef = ref(resizingBandInfo);
 // Resize-related state
-const resizingInfo = ref<{bandIndex: number, elementIndex: number, startX: number, startY: number, startWidth: number, startHeight: number, parentFrameIndex?: number} | null>(null);
+const resizingInfo = ref<{
+  bandIndex: number;
+  elementIndex: number;
+  startX: number;
+  startY: number;
+  startWidth: number;
+  startHeight: number;
+  parentFrameIndex?: number;
+} | null>(null);
 
 // Tracks the last-clicked band
 const lastClickedBandIndex = ref<number>(3); // Defaults to the DETAIL band (index 3)
@@ -1493,7 +1867,7 @@ function generateTableColumnsFromDataset(defaultTableWidth: number = 555) {
     if (dataset && dataset.fields && dataset.fields.length > 0) {
       const fieldCount = dataset.fields.length;
       const columnWidth = Math.round(defaultTableWidth / fieldCount); // Distribute column width evenly across the table width
-      return dataset.fields.map(field => {
+      return dataset.fields.map((field) => {
         return {
           uuid: crypto.randomUUID(),
           width: columnWidth,
@@ -1501,47 +1875,47 @@ function generateTableColumnsFromDataset(defaultTableWidth: number = 555) {
           tableHeader: {
             enable: false,
             element: {
-              type: 'staticText',
+              type: "staticText",
               x: 0,
               y: 0,
               width: columnWidth,
               height: 30,
               text: field.name,
-              forecolor: '#000000',
-              backcolor: '#FFFFFF',
-              fontFamily: 'SansSerif',
+              forecolor: "#000000",
+              backcolor: "#FFFFFF",
+              fontFamily: "SansSerif",
               fontSize: 19,
               isBold: true,
-              textAlignment: 'Center',
-              verticalAlignment: 'Middle'
-            }
+              textAlignment: "Center",
+              verticalAlignment: "Middle",
+            },
           },
           columnHeader: {
             enable: true,
             element: {
-              type: 'staticText',
+              type: "staticText",
               x: 0,
               y: 0,
               width: columnWidth,
               height: 30,
               text: field.name,
-              textAlignment: 'Center',
-              verticalAlignment: 'Middle'
-            }
+              textAlignment: "Center",
+              verticalAlignment: "Middle",
+            },
           },
           detailCell: {
             enable: true,
             element: {
-              type: 'textField',
+              type: "textField",
               x: 0,
               y: 0,
               width: columnWidth,
               height: 30,
               expression: `$F{${field.name}}`,
-              textAlignment: 'Center',
-              verticalAlignment: 'Middle'
-            }
-          }
+              textAlignment: "Center",
+              verticalAlignment: "Middle",
+            },
+          },
         };
       });
     }
@@ -1554,23 +1928,26 @@ function generateTableColumnsFromDataset(defaultTableWidth: number = 555) {
 const handleDragStart = (event: DragEvent, element: any) => {
   draggedLibraryElement.value = element;
   if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'copy';
-    event.dataTransfer.setData('application/json', JSON.stringify(element));
+    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.setData("application/json", JSON.stringify(element));
   }
 };
 
 // Handle element double-click events
 const handleElementDoubleClick = (element: any) => {
   // Ensure there is a last-clicked band
-  if (lastClickedBandIndex.value === null || lastClickedBandIndex.value === undefined) {
-    console.warn('No band selected, falling back to the default band');
+  if (
+    lastClickedBandIndex.value === null ||
+    lastClickedBandIndex.value === undefined
+  ) {
+    console.warn("No band selected, falling back to the default band");
     lastClickedBandIndex.value = 3; // Default to the DETAIL band
   }
 
   // Get the target band
   const targetBand = bands.value[lastClickedBandIndex.value];
   if (!targetBand) {
-    console.error('Target band does not exist');
+    console.error("Target band does not exist");
     return;
   }
 
@@ -1583,16 +1960,16 @@ const handleElementDoubleClick = (element: any) => {
     uuid: crypto.randomUUID(), // Generate a UUID
     x: 50, // Default position
     y: 20, // Default position
-    ...getDefaultElementProperties(element.type)
+    ...getDefaultElementProperties(element.type),
   } as DesignElement;
 
   // For table elements, check for/create the default dataset, then generate the corresponding columns
-  if (element.type === 'table') {
+  if (element.type === "table") {
     // Get the default table width
     const defaultTableWidth = (newElement as any).width || 555;
 
     // Check for and create the default dataset
-    const datasetName = (newElement as any).dataset?.name || 'tableDataset';
+    const datasetName = (newElement as any).dataset?.name || "tableDataset";
     checkAndCreateDefaultTableDataset(datasetName);
 
     // Generate table columns from the dataset
@@ -1600,13 +1977,16 @@ const handleElementDoubleClick = (element: any) => {
     if (columns.length > 0) {
       (newElement as any).columns = columns;
       // Calculate the total table width
-      const totalWidth = columns.reduce((sum, column) => sum + (column.width || 150), 0);
+      const totalWidth = columns.reduce(
+        (sum, column) => sum + (column.width || 150),
+        0,
+      );
       newElement.width = totalWidth;
     }
   }
 
   // For rectangles, ellipses, frames, and images, default the height to half the band's height
-  if (['rectangle', 'ellipse', 'frame', 'image'].includes(element.type)) {
+  if (["rectangle", "ellipse", "frame", "image"].includes(element.type)) {
     newElement.height = Math.round(targetBand.height / 2);
   }
 
@@ -1628,7 +2008,7 @@ const handleElementDoubleClick = (element: any) => {
   // Update JRXML
   updateJRXML();
 
-  console.log('Element added to band:', newElement);
+  console.log("Element added to band:", newElement);
 };
 
 const handleDrop = (event: DragEvent) => {
@@ -1642,19 +2022,18 @@ const handleDrop = (event: DragEvent) => {
     draggedLibraryElement.value = null; // Reset the state
   } else if (event.dataTransfer) {
     try {
-      const data = event.dataTransfer.getData('application/json');
+      const data = event.dataTransfer.getData("application/json");
       if (data) {
         elementData = JSON.parse(data);
       }
     } catch (e) {
-      console.error('Failed to parse drag data:', e);
+      console.error("Failed to parse drag data:", e);
     }
   }
 
   if (elementData) {
-
     // Get the paper element as a reference point
-    const paper = document.querySelector('.paper') as HTMLElement;
+    const paper = document.querySelector(".paper") as HTMLElement;
     if (!paper) return;
 
     const paperRect = paper.getBoundingClientRect();
@@ -1689,16 +2068,16 @@ const handleDrop = (event: DragEvent) => {
       uuid: crypto.randomUUID(), // Generate a UUID
       x: Math.round(Math.max(0, scaledX - 50)), // Subtract half the element width to center it, and ensure an integer
       y: Math.round(Math.max(0, scaledY - currentY)), // Position relative to the band, and ensure an integer
-      ...getDefaultElementProperties(elementData.type)
+      ...getDefaultElementProperties(elementData.type),
     } as DesignElement;
 
     // For table elements, check for/create the default dataset, then generate the corresponding columns
-    if (elementData.type === 'table') {
+    if (elementData.type === "table") {
       // Get the default table width
       const defaultTableWidth = (newElement as any).width || 555;
 
       // Check for and create the default dataset
-      const datasetName = (newElement as any).dataset?.name || 'tableDataset';
+      const datasetName = (newElement as any).dataset?.name || "tableDataset";
       checkAndCreateDefaultTableDataset(datasetName);
 
       // Generate table columns from the dataset
@@ -1706,7 +2085,10 @@ const handleDrop = (event: DragEvent) => {
       if (columns.length > 0) {
         (newElement as any).columns = columns;
         // Calculate the total table width
-        const totalWidth = columns.reduce((sum, column) => sum + (column.width || 150), 0);
+        const totalWidth = columns.reduce(
+          (sum, column) => sum + (column.width || 150),
+          0,
+        );
         newElement.width = totalWidth;
         // Update the x coordinate to center it
         newElement.x = Math.round(Math.max(0, scaledX - totalWidth / 2));
@@ -1716,7 +2098,9 @@ const handleDrop = (event: DragEvent) => {
     const targetBand = bands.value[bandIndex];
     if (targetBand && targetBand.elements) {
       // For rectangles, ellipses, frames, and images, default the height to half the band's height
-      if (['rectangle', 'ellipse', 'frame', 'image'].includes(elementData.type)) {
+      if (
+        ["rectangle", "ellipse", "frame", "image"].includes(elementData.type)
+      ) {
         newElement.height = Math.round(targetBand.height / 2);
       }
       // Save state to history
@@ -1729,46 +2113,59 @@ const handleDrop = (event: DragEvent) => {
       for (let i = targetBand.elements.length - 1; i >= 0; i--) {
         const el = targetBand.elements[i];
         if (!el) continue;
-        if (el.type === 'frame') {
+        if (el.type === "frame") {
           // Check whether the new element's center point is inside the Frame
           const centerX = newElement.x + newElement.width / 2;
           const centerY = newElement.y + newElement.height / 2;
 
-          if (centerX >= el.x && centerX <= el.x + el.width &&
-              centerY >= el.y && centerY <= el.y + el.height) {
-             targetFrameIndex = i;
-             break;
+          if (
+            centerX >= el.x &&
+            centerX <= el.x + el.width &&
+            centerY >= el.y &&
+            centerY <= el.y + el.height
+          ) {
+            targetFrameIndex = i;
+            break;
           }
         }
       }
 
       if (targetFrameIndex !== -1) {
-         // Add it to the Frame
-         const frame = targetBand.elements[targetFrameIndex] as FrameElement;
-         if (!frame.elements) frame.elements = [];
+        // Add it to the Frame
+        const frame = targetBand.elements[targetFrameIndex] as FrameElement;
+        if (!frame.elements) frame.elements = [];
 
-         // Convert to coordinates relative to the Frame
-         newElement.x -= frame.x;
-         newElement.y -= frame.y;
+        // Convert to coordinates relative to the Frame
+        newElement.x -= frame.x;
+        newElement.y -= frame.y;
 
-         // Bounds check within the Frame
-         if (newElement.x < 0) newElement.x = 0;
-         if (newElement.y < 0) newElement.y = 0;
-         if (newElement.x + newElement.width > frame.width) newElement.x = Math.max(0, frame.width - newElement.width);
-         if (newElement.y + newElement.height > frame.height) newElement.y = Math.max(0, frame.height - newElement.height);
+        // Bounds check within the Frame
+        if (newElement.x < 0) newElement.x = 0;
+        if (newElement.y < 0) newElement.y = 0;
+        if (newElement.x + newElement.width > frame.width)
+          newElement.x = Math.max(0, frame.width - newElement.width);
+        if (newElement.y + newElement.height > frame.height)
+          newElement.y = Math.max(0, frame.height - newElement.height);
 
-         frame.elements.push(newElement);
-         // Select the newly added element; note that parentFrameIndex must be passed
-         const frameElementIndex = frame.elements.length - 1;
-         selectElement(bandIndex, frameElementIndex, false, targetFrameIndex);
+        frame.elements.push(newElement);
+        // Select the newly added element; note that parentFrameIndex must be passed
+        const frameElementIndex = frame.elements.length - 1;
+        selectElement(bandIndex, frameElementIndex, false, targetFrameIndex);
 
-         // Fire the element-created event; parentFrameIndex must be passed when adding to a Frame
-         handleElementCreated(newElement, bandIndex, frameElementIndex, targetFrameIndex);
-
+        // Fire the element-created event; parentFrameIndex must be passed when adding to a Frame
+        handleElementCreated(
+          newElement,
+          bandIndex,
+          frameElementIndex,
+          targetFrameIndex,
+        );
       } else {
         // Add it to the Band (original logic)
         // Ensure the element does not exceed the margin limits
-        const availableWidth = paperWidth.value - (reportProperties.value?.leftMargin || 0) - (reportProperties.value?.rightMargin || 0);
+        const availableWidth =
+          paperWidth.value -
+          (reportProperties.value?.leftMargin || 0) -
+          (reportProperties.value?.rightMargin || 0);
 
         // Constrain the element so it doesn't exceed the right boundary
         if (newElement.x + newElement.width > availableWidth) {
@@ -1808,11 +2205,11 @@ const handleDrop = (event: DragEvent) => {
 const handleDragOver = (event: DragEvent) => {
   event.preventDefault();
   if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = 'copy';
+    event.dataTransfer.dropEffect = "copy";
   }
 
   // Get the paper element as a reference point
-  const paper = document.querySelector('.paper') as HTMLElement;
+  const paper = document.querySelector(".paper") as HTMLElement;
   if (!paper) return;
 
   const paperRect = paper.getBoundingClientRect();
@@ -1844,7 +2241,7 @@ const handleDragOver = (event: DragEvent) => {
 // Handle the drag-leave event
 const handleDragLeave = (event: DragEvent) => {
   // Check whether the paper area was actually left
-  const paper = document.querySelector('.paper') as HTMLElement;
+  const paper = document.querySelector(".paper") as HTMLElement;
   if (paper && !paper.contains(event.relatedTarget as Node)) {
     highlightedBandIndex.value = null;
   }
@@ -1853,50 +2250,60 @@ const handleDragLeave = (event: DragEvent) => {
 const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
   // Use the report's default font settings
   const defaultFontProps = {
-    fontFamily: reportProperties.value?.defaultFont?.name || FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
-    fontSize: reportProperties.value?.defaultFont?.size || REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
+    fontFamily:
+      reportProperties.value?.defaultFont?.name ||
+      FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
+    fontSize:
+      reportProperties.value?.defaultFont?.size ||
+      REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
     isBold: reportProperties.value?.defaultFont?.isBold || false,
     isItalic: reportProperties.value?.defaultFont?.isItalic || false,
-    isUnderline: reportProperties.value?.defaultFont?.isUnderline || false
+    isUnderline: reportProperties.value?.defaultFont?.isUnderline || false,
   };
 
   // Calculate the available width of the report page
   const calculateAvailableWidth = () => {
-    const pageWidth = reportProperties.value?.pageWidth || REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH;
-    const leftMargin = reportProperties.value?.leftMargin || REPORT_CONSTANTS.DEFAULT_MARGIN;
-    const rightMargin = reportProperties.value?.rightMargin || REPORT_CONSTANTS.DEFAULT_MARGIN;
+    const pageWidth =
+      reportProperties.value?.pageWidth || REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH;
+    const leftMargin =
+      reportProperties.value?.leftMargin || REPORT_CONSTANTS.DEFAULT_MARGIN;
+    const rightMargin =
+      reportProperties.value?.rightMargin || REPORT_CONSTANTS.DEFAULT_MARGIN;
     return Math.round(pageWidth - leftMargin - rightMargin);
   };
 
   switch (type) {
-    case 'staticText':
+    case "staticText":
       return {
-        text: t('properties.defaultStaticText'),
-        ...defaultFontProps
+        text: t("properties.defaultStaticText"),
+        ...defaultFontProps,
       };
-    case 'textField':
+    case "textField":
       return {
-        expression: `"${t('properties.defaultTextFieldExpression')}"`,
+        expression: `"${t("properties.defaultTextFieldExpression")}"`,
         isStretchWithOverflow: false,
-        evaluationTime: 'Now',
-        pattern: '',
+        evaluationTime: "Now",
+        pattern: "",
         isBlankWhenNull: false,
         ...defaultFontProps,
-        textAlignment: 'Left',
-        verticalAlignment: 'Top'
+        textAlignment: "Left",
+        verticalAlignment: "Top",
       };
-    case 'image':
-      return { imageExpression: '"https://raw.githubusercontent.com/fengyunhe/jrxml_web_designer/refs/heads/master/src/assets/FIREGOD_CN.jpg"' };
-    case 'line':
-      return { lineDirection: 'TopDown', lineWidth: 1 };
-    case 'rectangle':
+    case "image":
       return {
-        mode: 'Transparent',
-        border: '1px solid #ccc' // Add a default border for rectangle elements
+        imageExpression:
+          '"https://raw.githubusercontent.com/fengyunhe/jrxml_web_designer/refs/heads/master/src/assets/FIREGOD_CN.jpg"',
       };
-    case 'table':
+    case "line":
+      return { lineDirection: "TopDown", lineWidth: 1 };
+    case "rectangle":
       return {
-        width: calculateAvailableWidth()
+        mode: "Transparent",
+        border: "1px solid #ccc", // Add a default border for rectangle elements
+      };
+    case "table":
+      return {
+        width: calculateAvailableWidth(),
       };
     default:
       return {};
@@ -1915,14 +2322,19 @@ const selectBand = (index: number) => {
 };
 
 // Select an element
-const selectElement = (bandIndex: number, elementIndex: number, isMultiSelect = false, parentFrameIndex?: number) => {
+const selectElement = (
+  bandIndex: number,
+  elementIndex: number,
+  isMultiSelect = false,
+  parentFrameIndex?: number,
+) => {
   // Get the element reference in order to obtain its UUID
   const band = bands.value[bandIndex];
   let element;
 
   if (parentFrameIndex !== undefined) {
     const frame = band?.elements[parentFrameIndex] as FrameElement;
-    if (frame && frame.type === 'frame' && frame.elements) {
+    if (frame && frame.type === "frame" && frame.elements) {
       element = frame.elements[elementIndex];
     }
   } else {
@@ -1935,7 +2347,10 @@ const selectElement = (bandIndex: number, elementIndex: number, isMultiSelect = 
   if (isMultiSelect) {
     // Multi-select mode
     const existingIndex = selectedElements.value.findIndex(
-      el => el.bandIndex === bandIndex && el.elementIndex === elementIndex && el.parentFrameIndex === parentFrameIndex
+      (el) =>
+        el.bandIndex === bandIndex &&
+        el.elementIndex === elementIndex &&
+        el.parentFrameIndex === parentFrameIndex,
     );
 
     if (existingIndex !== -1) {
@@ -1943,7 +2358,12 @@ const selectElement = (bandIndex: number, elementIndex: number, isMultiSelect = 
       selectedElements.value.splice(existingIndex, 1);
     } else {
       // Add it to the multi-selection list
-      selectedElements.value.push({ bandIndex, elementIndex, parentFrameIndex, uuid });
+      selectedElements.value.push({
+        bandIndex,
+        elementIndex,
+        parentFrameIndex,
+        uuid,
+      });
     }
 
     // If nothing is selected anymore, clear selectedElement
@@ -1951,20 +2371,23 @@ const selectElement = (bandIndex: number, elementIndex: number, isMultiSelect = 
       selectedElement.value = null;
     } else {
       // Use the last-selected element as the current selection
-      const lastSelected = selectedElements.value[selectedElements.value.length - 1];
+      const lastSelected =
+        selectedElements.value[selectedElements.value.length - 1];
       if (lastSelected) {
         selectedElement.value = {
           bandIndex: lastSelected.bandIndex,
           elementIndex: lastSelected.elementIndex,
           parentFrameIndex: lastSelected.parentFrameIndex,
-          uuid: lastSelected.uuid
+          uuid: lastSelected.uuid,
         };
       }
     }
   } else {
     // Single-select mode
     selectedElement.value = { bandIndex, elementIndex, parentFrameIndex, uuid };
-    selectedElements.value = [{ bandIndex, elementIndex, parentFrameIndex, uuid }]; // Clear the multi-selection list, keeping only the currently selected element
+    selectedElements.value = [
+      { bandIndex, elementIndex, parentFrameIndex, uuid },
+    ]; // Clear the multi-selection list, keeping only the currently selected element
   }
 
   selectedBandIndex.value = null;
@@ -1988,7 +2411,12 @@ const clearSelection = () => {
 };
 
 // Select elements within a marquee (rubber-band) rectangle
-const selectElementsInRect = (rect: { left: number, top: number, right: number, bottom: number }) => {
+const selectElementsInRect = (rect: {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}) => {
   // Clear the current selection
   selectedElements.value = [];
   selectedElement.value = null;
@@ -2028,7 +2456,11 @@ const selectElementsInRect = (rect: { left: number, top: number, right: number, 
 
       // If it overlaps, add it to the selection list
       if (isOverlapping) {
-        selectedElements.value.push({ bandIndex, elementIndex, uuid: element.uuid });
+        selectedElements.value.push({
+          bandIndex,
+          elementIndex,
+          uuid: element.uuid,
+        });
       }
     });
 
@@ -2038,12 +2470,13 @@ const selectElementsInRect = (rect: { left: number, top: number, right: number, 
 
   // If any elements are selected, use the last-selected one as the current selection
   if (selectedElements.value.length > 0) {
-    const lastSelected = selectedElements.value[selectedElements.value.length - 1];
+    const lastSelected =
+      selectedElements.value[selectedElements.value.length - 1];
     if (lastSelected) {
       selectedElement.value = {
         bandIndex: lastSelected.bandIndex,
         elementIndex: lastSelected.elementIndex,
-        uuid: lastSelected.uuid
+        uuid: lastSelected.uuid,
       };
     }
   }
@@ -2057,7 +2490,12 @@ let cachedMouseMoveHandler: ((e: MouseEvent) => void) | null = null;
 let cachedMouseUpHandler: ((e: MouseEvent) => void) | null = null;
 
 // Start dragging an element
-const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
+const startDragging = (
+  event: MouseEvent,
+  bandIndex: number,
+  elementIndex: number,
+  parentFrameIndex?: number,
+) => {
   event.stopPropagation();
   selectElement(bandIndex, elementIndex, false, parentFrameIndex);
 
@@ -2069,7 +2507,7 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
 
   if (parentFrameIndex !== undefined) {
     const frame = band?.elements[parentFrameIndex] as FrameElement;
-    if (frame && frame.type === 'frame' && frame.elements) {
+    if (frame && frame.type === "frame" && frame.elements) {
       draggedElement = frame.elements[elementIndex];
     }
   } else {
@@ -2081,7 +2519,7 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
     const currentZoom = zoomLevel.value;
 
     // Get the paper element's position info, for more accurate coordinate calculations
-    const paperEl = document.querySelector('.paper') as HTMLElement;
+    const paperEl = document.querySelector(".paper") as HTMLElement;
     let paperOffsetX = 0;
     let paperOffsetY = 0;
 
@@ -2097,9 +2535,9 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
       bandIndex,
       elementIndex,
       parentFrameIndex,
-      startX: ((event.clientX - paperOffsetX) / currentZoom) - draggedElement.x,
-      startY: ((event.clientY - paperOffsetY) / currentZoom) - draggedElement.y,
-      lastTargetBandIndex: bandIndex // Initialize to the current band index
+      startX: (event.clientX - paperOffsetX) / currentZoom - draggedElement.x,
+      startY: (event.clientY - paperOffsetY) / currentZoom - draggedElement.y,
+      lastTargetBandIndex: bandIndex, // Initialize to the current band index
     };
 
     isDraggingOrResizing.value = true;
@@ -2110,18 +2548,23 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
         if (draggingInfo.value) {
           const currentBand = bands.value[draggingInfo.value.bandIndex];
           let currentElement;
-          let containerWidth = (paperWidth.value - (reportProperties.value?.leftMargin || 0) - (reportProperties.value?.rightMargin || 0));
+          let containerWidth =
+            paperWidth.value -
+            (reportProperties.value?.leftMargin || 0) -
+            (reportProperties.value?.rightMargin || 0);
           let containerHeight = null; // Frame height limit
 
           if (draggingInfo.value.parentFrameIndex !== undefined) {
-             const frame = currentBand?.elements[draggingInfo.value.parentFrameIndex];
-             if (frame && frame.type === 'frame' && frame.elements) {
-               currentElement = frame.elements[draggingInfo.value.elementIndex];
-               containerWidth = frame.width;
-               containerHeight = frame.height;
-             }
+            const frame =
+              currentBand?.elements[draggingInfo.value.parentFrameIndex];
+            if (frame && frame.type === "frame" && frame.elements) {
+              currentElement = frame.elements[draggingInfo.value.elementIndex];
+              containerWidth = frame.width;
+              containerHeight = frame.height;
+            }
           } else {
-             currentElement = currentBand?.elements[draggingInfo.value.elementIndex];
+            currentElement =
+              currentBand?.elements[draggingInfo.value.elementIndex];
           }
 
           if (currentBand && currentElement) {
@@ -2136,7 +2579,7 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
             // Get the paper element's position info, for more accurate coordinate calculations
             let paperOffsetX = 0;
             let paperOffsetY = 0;
-            const paperEl = document.querySelector('.paper') as HTMLElement;
+            const paperEl = document.querySelector(".paper") as HTMLElement;
 
             if (paperEl) {
               const paperRect = paperEl.getBoundingClientRect();
@@ -2146,52 +2589,77 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
             }
 
             // Calculate the new X and Y coordinates, accounting for zoom and offset
-            let newX = ((e.clientX - paperOffsetX) / currentZoom) - draggingInfo.value.startX;
-            let newY = ((e.clientY - paperOffsetY) / currentZoom) - draggingInfo.value.startY; // Remove the lower bound on the Y coordinate
+            let newX =
+              (e.clientX - paperOffsetX) / currentZoom -
+              draggingInfo.value.startX;
+            let newY =
+              (e.clientY - paperOffsetY) / currentZoom -
+              draggingInfo.value.startY; // Remove the lower bound on the Y coordinate
 
             // If inside a Frame, don't constrain the coordinates, allowing the element to move outside the Frame
             if (draggingInfo.value.parentFrameIndex !== undefined) {
-               // No constraint applied
+              // No constraint applied
             } else {
-               // Inside a Band, constrain the X coordinate
-               newX = Math.max(0, Math.min(newX, containerWidth - currentElement.width));
+              // Inside a Band, constrain the X coordinate
+              newX = Math.max(
+                0,
+                Math.min(newX, containerWidth - currentElement.width),
+              );
 
-                // Original Band Y-constraint logic
-                // Get the position info of the first and last bands
-                const firstBandElement = document.querySelectorAll('.band')[0] as HTMLElement;
-                const lastBandElement = document.querySelectorAll('.band')[bands.value.length - 1] as HTMLElement;
+              // Original Band Y-constraint logic
+              // Get the position info of the first and last bands
+              const firstBandElement = document.querySelectorAll(
+                ".band",
+              )[0] as HTMLElement;
+              const lastBandElement = document.querySelectorAll(".band")[
+                bands.value.length - 1
+              ] as HTMLElement;
 
-                // Calculate the position of the current band on the page
-                const currentBandElement = document.querySelectorAll('.band')[draggingInfo.value.bandIndex] as HTMLElement;
-                let currentBandTopInPage = 0;
+              // Calculate the position of the current band on the page
+              const currentBandElement = document.querySelectorAll(".band")[
+                draggingInfo.value.bandIndex
+              ] as HTMLElement;
+              let currentBandTopInPage = 0;
 
-                if (firstBandElement && lastBandElement && currentBandElement && paperEl) {
-                  const firstBandRect = firstBandElement.getBoundingClientRect();
-                  const lastBandRect = lastBandElement.getBoundingClientRect();
-                  const currentBandRect = currentBandElement.getBoundingClientRect();
-                  const paperRect = paperEl.getBoundingClientRect();
+              if (
+                firstBandElement &&
+                lastBandElement &&
+                currentBandElement &&
+                paperEl
+              ) {
+                const firstBandRect = firstBandElement.getBoundingClientRect();
+                const lastBandRect = lastBandElement.getBoundingClientRect();
+                const currentBandRect =
+                  currentBandElement.getBoundingClientRect();
+                const paperRect = paperEl.getBoundingClientRect();
 
-                  // Calculate the positions of the first and last bands relative to the page
-                  const firstBandTopInPage = (firstBandRect.top - paperRect.top) / currentZoom;
-                  const lastBandBottomInPage = (lastBandRect.bottom - paperRect.top) / currentZoom;
-                  currentBandTopInPage = (currentBandRect.top - paperRect.top) / currentZoom;
+                // Calculate the positions of the first and last bands relative to the page
+                const firstBandTopInPage =
+                  (firstBandRect.top - paperRect.top) / currentZoom;
+                const lastBandBottomInPage =
+                  (lastBandRect.bottom - paperRect.top) / currentZoom;
+                currentBandTopInPage =
+                  (currentBandRect.top - paperRect.top) / currentZoom;
 
-                  // Calculate the element's absolute position on the page (relative to the entire page)
-                  const elementTopInPage = currentBandTopInPage + newY;
+                // Calculate the element's absolute position on the page (relative to the entire page)
+                const elementTopInPage = currentBandTopInPage + newY;
 
-                  // Constrain the element's top so it doesn't exceed the first band's top boundary
-                  if (elementTopInPage < firstBandTopInPage) {
-                    const adjustment = firstBandTopInPage - elementTopInPage;
-                    newY += adjustment;
-                  }
-
-                  // For elements in the last band, constrain their bottom so it doesn't exceed the last band's bottom boundary
-                  if (draggingInfo.value.bandIndex === bands.value.length - 1) {
-                    // Calculate the element's maximum Y coordinate within the last band
-                    const maxRelativeY = lastBandBottomInPage - currentBandTopInPage - currentElement.height;
-                    newY = Math.min(newY, maxRelativeY);
-                  }
+                // Constrain the element's top so it doesn't exceed the first band's top boundary
+                if (elementTopInPage < firstBandTopInPage) {
+                  const adjustment = firstBandTopInPage - elementTopInPage;
+                  newY += adjustment;
                 }
+
+                // For elements in the last band, constrain their bottom so it doesn't exceed the last band's bottom boundary
+                if (draggingInfo.value.bandIndex === bands.value.length - 1) {
+                  // Calculate the element's maximum Y coordinate within the last band
+                  const maxRelativeY =
+                    lastBandBottomInPage -
+                    currentBandTopInPage -
+                    currentElement.height;
+                  newY = Math.min(newY, maxRelativeY);
+                }
+              }
             }
 
             // Apply auto-snap functionality
@@ -2220,7 +2688,11 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
             if (enableSnapToAlignment.value) {
               // Create a temporary element object for alignment-line detection
               const tempElement = { ...currentElement, x: newX, y: newY };
-              const snapInfo = detectAlignmentLines(tempElement, draggingInfo.value.bandIndex, false);
+              const snapInfo = detectAlignmentLines(
+                tempElement,
+                draggingInfo.value.bandIndex,
+                false,
+              );
 
               // Apply horizontal snapping
               if (snapInfo.horizontal) {
@@ -2238,19 +2710,30 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
             currentElement.y = Math.round(newY);
 
             // If the element moves into a different band, constrain the Y coordinate so it doesn't exceed the band's height
-            if (highlightedBandIndex.value !== null && highlightedBandIndex.value !== draggingInfo.value.bandIndex) {
+            if (
+              highlightedBandIndex.value !== null &&
+              highlightedBandIndex.value !== draggingInfo.value.bandIndex
+            ) {
               const targetBand = bands.value[highlightedBandIndex.value];
               if (targetBand) {
                 const maxY = targetBand.height - currentElement.height;
                 // Calculate the element's Y coordinate relative to the target band
-                const bandElements = document.querySelectorAll('.band');
-                const currentBandElement = bandElements[draggingInfo.value.bandIndex] as HTMLElement;
-                const targetBandElement = bandElements[highlightedBandIndex.value] as HTMLElement;
+                const bandElements = document.querySelectorAll(".band");
+                const currentBandElement = bandElements[
+                  draggingInfo.value.bandIndex
+                ] as HTMLElement;
+                const targetBandElement = bandElements[
+                  highlightedBandIndex.value
+                ] as HTMLElement;
 
                 if (currentBandElement && targetBandElement) {
-                  const currentBandRect = currentBandElement.getBoundingClientRect();
-                  const targetBandRect = targetBandElement.getBoundingClientRect();
-                  const relativeY = newY + (currentBandRect.top - targetBandRect.top) / currentZoom;
+                  const currentBandRect =
+                    currentBandElement.getBoundingClientRect();
+                  const targetBandRect =
+                    targetBandElement.getBoundingClientRect();
+                  const relativeY =
+                    newY +
+                    (currentBandRect.top - targetBandRect.top) / currentZoom;
 
                   // Constrain the relative Y coordinate
                   if (relativeY > maxY) {
@@ -2272,23 +2755,37 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
 
             // Reuse the already-retrieved paperElement variable
             if (paperEl) {
-              const bandElements = document.querySelectorAll('.band');
+              const bandElements = document.querySelectorAll(".band");
 
               // Calculate the element's coordinates relative to the target band while dragging
-              if (highlightedBandIndex.value !== null && bandElements[highlightedBandIndex.value]) {
+              if (
+                highlightedBandIndex.value !== null &&
+                bandElements[highlightedBandIndex.value]
+              ) {
                 // If there's a highlighted band (the band the mouse is currently over), calculate the element's coordinates relative to it
-                const targetBandElement = bandElements[highlightedBandIndex.value] as HTMLElement;
-                const targetBandRect = targetBandElement.getBoundingClientRect();
+                const targetBandElement = bandElements[
+                  highlightedBandIndex.value
+                ] as HTMLElement;
+                const targetBandRect =
+                  targetBandElement.getBoundingClientRect();
 
                 // Fix: use the element's actual Y coordinate (newY) rather than the mouse position to calculate the relative Y coordinate
                 // Get the top position of the band the current element belongs to
-                const currentBandElement = bandElements[draggingInfo.value.bandIndex] as HTMLElement;
-                const currentBandRect = currentBandElement.getBoundingClientRect();
+                const currentBandElement = bandElements[
+                  draggingInfo.value.bandIndex
+                ] as HTMLElement;
+                const currentBandRect =
+                  currentBandElement.getBoundingClientRect();
 
                 // If the element is in a different band, the calculation must be adjusted
-                if (highlightedBandIndex.value !== draggingInfo.value.bandIndex) {
+                if (
+                  highlightedBandIndex.value !== draggingInfo.value.bandIndex
+                ) {
                   // The element moved to a different band; calculate the Y coordinate relative to the new band
-                  relativeY = Math.round(newY + (currentBandRect.top - targetBandRect.top) / currentZoom);
+                  relativeY = Math.round(
+                    newY +
+                      (currentBandRect.top - targetBandRect.top) / currentZoom,
+                  );
                 } else {
                   // The element is within the same band; use the element's Y coordinate
                   relativeY = Math.round(newY);
@@ -2314,7 +2811,7 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
               x: relativeX,
               y: relativeY,
               visible: true,
-              bandName: ''
+              bandName: "",
             };
 
             // Use the DOM elements' actual positions to calculate the target band, for greater accuracy
@@ -2324,7 +2821,7 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
               let isOverBand = false;
 
               // Get all band elements
-              const bandElements = document.querySelectorAll('.band');
+              const bandElements = document.querySelectorAll(".band");
               for (let i = 0; i < bandElements.length; i++) {
                 const bandElement = bandElements[i] as HTMLElement;
                 const bandRect = bandElement.getBoundingClientRect();
@@ -2343,37 +2840,45 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
               }
 
               // Log once the dragged element has moved into the target band
-              if (isOverBand && targetBandIndex !== draggingInfo.value.bandIndex &&
-                  targetBandIndex !== draggingInfo.value.lastTargetBandIndex) {
+              if (
+                isOverBand &&
+                targetBandIndex !== draggingInfo.value.bandIndex &&
+                targetBandIndex !== draggingInfo.value.lastTargetBandIndex
+              ) {
                 const sourceBand = bands.value[draggingInfo.value.bandIndex];
                 const targetBand = bands.value[targetBandIndex];
                 if (sourceBand && targetBand) {
-                  console.log(`Element moved from ${getBandDisplayName(sourceBand.type)} to ${getBandDisplayName(targetBand.type)}`);
+                  console.log(
+                    `Element moved from ${getBandDisplayName(sourceBand.type)} to ${getBandDisplayName(targetBand.type)}`,
+                  );
                   // Update the last target band index
                   draggingInfo.value.lastTargetBandIndex = targetBandIndex;
 
                   // TODO: also constrain the moved element's relative Y value so it doesn't exceed the target band's height minus the element's height
-
                 }
               }
             }
 
             // Update the position of the coordinate-display element so it follows the mouse
-            const coordinatesElement = document.querySelector('.coordinates-display') as HTMLElement;
+            const coordinatesElement = document.querySelector(
+              ".coordinates-display",
+            ) as HTMLElement;
             if (coordinatesElement) {
               // Get the name of the band the mouse is currently over
-              let bandName = '';
-              if (highlightedBandIndex.value !== null &&
-                  bands.value[highlightedBandIndex.value] !== undefined) {
+              let bandName = "";
+              if (
+                highlightedBandIndex.value !== null &&
+                bands.value[highlightedBandIndex.value] !== undefined
+              ) {
                 const currentBand = bands.value[highlightedBandIndex.value];
                 if (currentBand) {
-                  bandName = getBandDisplayName(currentBand.type) + ' - ';
+                  bandName = getBandDisplayName(currentBand.type) + " - ";
                 }
               }
 
               // Coordinate display accounting for the zoom scale
-              coordinatesElement.style.left = (e.clientX + 10) + 'px';
-              coordinatesElement.style.top = (e.clientY - 30) + 'px';
+              coordinatesElement.style.left = e.clientX + 10 + "px";
+              coordinatesElement.style.top = e.clientY - 30 + "px";
 
               // Update dragCoordinates so the template shows the correct coordinates and band name
               dragCoordinates.value.x = relativeX;
@@ -2396,15 +2901,22 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
 
           if (draggingInfo.value.parentFrameIndex !== undefined) {
             // Add a safety check
-            if (currentBand && currentBand.elements && currentBand.elements[draggingInfo.value.parentFrameIndex]) {
-              const frame = currentBand.elements[draggingInfo.value.parentFrameIndex];
-              if (frame && frame.type === 'frame' && frame.elements) {
-                currentElement = frame.elements[draggingInfo.value.elementIndex];
+            if (
+              currentBand &&
+              currentBand.elements &&
+              currentBand.elements[draggingInfo.value.parentFrameIndex]
+            ) {
+              const frame =
+                currentBand.elements[draggingInfo.value.parentFrameIndex];
+              if (frame && frame.type === "frame" && frame.elements) {
+                currentElement =
+                  frame.elements[draggingInfo.value.elementIndex];
               }
             }
           } else {
             if (currentBand && currentBand.elements) {
-              currentElement = currentBand.elements[draggingInfo.value.elementIndex];
+              currentElement =
+                currentBand.elements[draggingInfo.value.elementIndex];
             }
           }
 
@@ -2413,19 +2925,24 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
             let targetBandIndex = draggingInfo.value.bandIndex;
 
             // If there is a last-highlighted band index and it's valid, use it
-            if (draggingInfo.value.lastTargetBandIndex !== undefined &&
-                draggingInfo.value.lastTargetBandIndex >= 0 &&
-                draggingInfo.value.lastTargetBandIndex < bands.value.length) {
+            if (
+              draggingInfo.value.lastTargetBandIndex !== undefined &&
+              draggingInfo.value.lastTargetBandIndex >= 0 &&
+              draggingInfo.value.lastTargetBandIndex < bands.value.length
+            ) {
               targetBandIndex = draggingInfo.value.lastTargetBandIndex;
             } else {
               // Otherwise, use the mouse position to determine the target band
-              const paperEl = document.querySelector('.paper') as HTMLElement;
+              const paperEl = document.querySelector(".paper") as HTMLElement;
               if (paperEl) {
-                const bandElements = document.querySelectorAll('.band');
+                const bandElements = document.querySelectorAll(".band");
                 for (let i = 0; i < bandElements.length; i++) {
                   const bandElement = bandElements[i] as HTMLElement;
                   const bandRect = bandElement.getBoundingClientRect();
-                  if (e.clientY >= bandRect.top && e.clientY <= bandRect.bottom) {
+                  if (
+                    e.clientY >= bandRect.top &&
+                    e.clientY <= bandRect.bottom
+                  ) {
                     targetBandIndex = i;
                     break;
                   }
@@ -2440,11 +2957,14 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
             let sourceParentRelX = 0;
             let sourceParentRelY = 0;
             if (draggingInfo.value.parentFrameIndex !== undefined) {
-               const frame = bands.value[draggingInfo.value.bandIndex]?.elements[draggingInfo.value.parentFrameIndex];
-               if (frame) {
-                 sourceParentRelX = frame.x;
-                 sourceParentRelY = frame.y;
-               }
+              const frame =
+                bands.value[draggingInfo.value.bandIndex]?.elements[
+                  draggingInfo.value.parentFrameIndex
+                ];
+              if (frame) {
+                sourceParentRelX = frame.x;
+                sourceParentRelY = frame.y;
+              }
             }
 
             // Calculate the element's coordinates relative to the Source Band
@@ -2452,15 +2972,18 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
             const elementRelSourceBandY = sourceParentRelY + currentElement.y;
 
             // Calculate the Source Band's offset relative to the Target Band
-            const sourceBandEl = document.querySelectorAll('.band')[draggingInfo.value.bandIndex];
-            const targetBandEl = document.querySelectorAll('.band')[targetBandIndex];
+            const sourceBandEl =
+              document.querySelectorAll(".band")[draggingInfo.value.bandIndex];
+            const targetBandEl =
+              document.querySelectorAll(".band")[targetBandIndex];
 
             if (!sourceBandEl || !targetBandEl) return;
 
             const sourceBandElement = sourceBandEl.getBoundingClientRect();
             const targetBandElement = targetBandEl.getBoundingClientRect();
             const currentZoom = zoomLevel.value;
-            const bandOffsetY = (sourceBandElement.top - targetBandElement.top) / currentZoom;
+            const bandOffsetY =
+              (sourceBandElement.top - targetBandElement.top) / currentZoom;
 
             const elementRelTargetBandX = elementRelSourceBandX;
             const elementRelTargetBandY = elementRelSourceBandY + bandOffsetY;
@@ -2470,82 +2993,115 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
             if (targetBand && targetBand.elements) {
               // Iterate over the Frames in the Target Band
               for (let i = targetBand.elements.length - 1; i >= 0; i--) {
-                  // Avoid dropping a Frame into itself: if we're in the same Band and the Frame being iterated is the one being dragged, skip it
-                  if (targetBandIndex === draggingInfo.value.bandIndex &&
-                      draggingInfo.value.parentFrameIndex === undefined &&
-                      i === draggingInfo.value.elementIndex) {
-                    continue;
-                  }
+                // Avoid dropping a Frame into itself: if we're in the same Band and the Frame being iterated is the one being dragged, skip it
+                if (
+                  targetBandIndex === draggingInfo.value.bandIndex &&
+                  draggingInfo.value.parentFrameIndex === undefined &&
+                  i === draggingInfo.value.elementIndex
+                ) {
+                  continue;
+                }
 
-                  const el = targetBand.elements[i];
-                  if (!el) continue;
-                  if (el.type === 'frame') {
-                      // Check intersection using element center
-                      const centerX = elementRelTargetBandX + currentElement.width / 2;
-                      const centerY = elementRelTargetBandY + currentElement.height / 2;
+                const el = targetBand.elements[i];
+                if (!el) continue;
+                if (el.type === "frame") {
+                  // Check intersection using element center
+                  const centerX =
+                    elementRelTargetBandX + currentElement.width / 2;
+                  const centerY =
+                    elementRelTargetBandY + currentElement.height / 2;
 
-                      if (centerX >= el.x && centerX <= el.x + el.width &&
-                          centerY >= el.y && centerY <= el.y + el.height) {
-                         targetFrameIndex = i;
-                         break;
-                      }
+                  if (
+                    centerX >= el.x &&
+                    centerX <= el.x + el.width &&
+                    centerY >= el.y &&
+                    centerY <= el.y + el.height
+                  ) {
+                    targetFrameIndex = i;
+                    break;
                   }
+                }
               }
             }
 
             // 4. Determine whether the container changed
             const isSameBand = draggingInfo.value.bandIndex === targetBandIndex;
-            const isSameFrame = draggingInfo.value.parentFrameIndex === (targetFrameIndex === -1 ? undefined : targetFrameIndex);
+            const isSameFrame =
+              draggingInfo.value.parentFrameIndex ===
+              (targetFrameIndex === -1 ? undefined : targetFrameIndex);
 
             if ((!isSameBand || !isSameFrame) && targetBand) {
-               // Reparenting
+              // Reparenting
 
-               // Grab the target Frame reference up front (splice would otherwise shift the indices)
-               let targetFrame: FrameElement | null = null;
-               if (targetFrameIndex !== -1) {
-                   targetFrame = targetBand.elements[targetFrameIndex] as FrameElement;
-               }
+              // Grab the target Frame reference up front (splice would otherwise shift the indices)
+              let targetFrame: FrameElement | null = null;
+              if (targetFrameIndex !== -1) {
+                targetFrame = targetBand.elements[
+                  targetFrameIndex
+                ] as FrameElement;
+              }
 
-               // Remove from Source
-               let element;
-               if (draggingInfo.value.parentFrameIndex !== undefined) {
-                   const frame = bands.value[draggingInfo.value.bandIndex]?.elements[draggingInfo.value.parentFrameIndex] as FrameElement;
-                   if (frame && frame.elements) {
-                     element = frame.elements.splice(draggingInfo.value.elementIndex, 1)[0];
-                   }
-               } else {
-                   element = bands.value[draggingInfo.value.bandIndex]?.elements.splice(draggingInfo.value.elementIndex, 1)[0];
-               }
+              // Remove from Source
+              let element;
+              if (draggingInfo.value.parentFrameIndex !== undefined) {
+                const frame = bands.value[draggingInfo.value.bandIndex]
+                  ?.elements[
+                  draggingInfo.value.parentFrameIndex
+                ] as FrameElement;
+                if (frame && frame.elements) {
+                  element = frame.elements.splice(
+                    draggingInfo.value.elementIndex,
+                    1,
+                  )[0];
+                }
+              } else {
+                element = bands.value[
+                  draggingInfo.value.bandIndex
+                ]?.elements.splice(draggingInfo.value.elementIndex, 1)[0];
+              }
 
-               if (element) {
-                 // Add to Target
-                 if (targetFrame) {
-                     if (!targetFrame.elements) targetFrame.elements = [];
+              if (element) {
+                // Add to Target
+                if (targetFrame) {
+                  if (!targetFrame.elements) targetFrame.elements = [];
 
-                     // Convert to Frame Rel Coords
-                     element.x = Math.round(elementRelTargetBandX - targetFrame.x);
-                     element.y = Math.round(elementRelTargetBandY - targetFrame.y);
+                  // Convert to Frame Rel Coords
+                  element.x = Math.round(elementRelTargetBandX - targetFrame.x);
+                  element.y = Math.round(elementRelTargetBandY - targetFrame.y);
 
-                     // Limit
-                     element.x = Math.max(0, element.x);
-                     element.y = Math.max(0, element.y);
-                     if (element.x + element.width > targetFrame.width) element.x = Math.max(0, targetFrame.width - element.width);
-                     if (element.y + element.height > targetFrame.height) element.y = Math.max(0, targetFrame.height - element.height);
+                  // Limit
+                  element.x = Math.max(0, element.x);
+                  element.y = Math.max(0, element.y);
+                  if (element.x + element.width > targetFrame.width)
+                    element.x = Math.max(0, targetFrame.width - element.width);
+                  if (element.y + element.height > targetFrame.height)
+                    element.y = Math.max(
+                      0,
+                      targetFrame.height - element.height,
+                    );
 
-                     targetFrame.elements.push(element);
-                     selectElement(targetBandIndex, targetFrame.elements.length - 1, false, targetFrameIndex);
-                 } else {
-                     // Add to Band
-                     element.x = Math.round(elementRelTargetBandX);
-                     element.y = Math.round(elementRelTargetBandY);
+                  targetFrame.elements.push(element);
+                  selectElement(
+                    targetBandIndex,
+                    targetFrame.elements.length - 1,
+                    false,
+                    targetFrameIndex,
+                  );
+                } else {
+                  // Add to Band
+                  element.x = Math.round(elementRelTargetBandX);
+                  element.y = Math.round(elementRelTargetBandY);
 
-                     // Limit Y >= 0
-                     element.y = Math.max(0, element.y);
+                  // Limit Y >= 0
+                  element.y = Math.max(0, element.y);
 
-                     targetBand.elements.push(element);
-                     selectElement(targetBandIndex, targetBand.elements.length - 1);
-                 }
-               }
+                  targetBand.elements.push(element);
+                  selectElement(
+                    targetBandIndex,
+                    targetBand.elements.length - 1,
+                  );
+                }
+              }
             } else {
               // Moved within the same container; use the coordinate values shown while dragging
               // Note: dragCoordinates may only have updated the displayed value — the actual value was already updated in mousemove via the currentElement reference
@@ -2572,18 +3128,18 @@ const startDragging = (event: MouseEvent, bandIndex: number, elementIndex: numbe
 
         // Remove the event listeners
         if (cachedMouseMoveHandler) {
-          document.removeEventListener('mousemove', cachedMouseMoveHandler);
+          document.removeEventListener("mousemove", cachedMouseMoveHandler);
         }
         if (cachedMouseUpHandler) {
-          document.removeEventListener('mouseup', cachedMouseUpHandler);
+          document.removeEventListener("mouseup", cachedMouseUpHandler);
           cachedMouseUpHandler = null;
         }
       };
     }
 
     // Add the event listeners
-    document.addEventListener('mousemove', cachedMouseMoveHandler);
-    document.addEventListener('mouseup', cachedMouseUpHandler);
+    document.addEventListener("mousemove", cachedMouseMoveHandler);
+    document.addEventListener("mouseup", cachedMouseUpHandler);
 
     // Immediately fire a mousemove event once, so the element follows the mouse right away
     // This fixes the issue where moving the mouse within 100ms of pressing the mouse button left the element lagging behind the mouse position
@@ -2615,14 +3171,14 @@ const deleteElement = () => {
       const band = bands.value[bandIndex];
       if (band && band.elements) {
         if (parentFrameIndex !== undefined) {
-           // Delete an element inside a Frame
-           const frame = band.elements[parentFrameIndex];
-           if (frame && frame.type === 'frame' && frame.elements) {
-             frame.elements.splice(elementIndex, 1);
-           }
+          // Delete an element inside a Frame
+          const frame = band.elements[parentFrameIndex];
+          if (frame && frame.type === "frame" && frame.elements) {
+            frame.elements.splice(elementIndex, 1);
+          }
         } else {
-           // Delete an element inside a Band
-           band.elements.splice(elementIndex, 1);
+          // Delete an element inside a Band
+          band.elements.splice(elementIndex, 1);
         }
       }
     });
@@ -2637,13 +3193,13 @@ const deleteElement = () => {
     const band = bands.value[bandIndex];
     if (band && band.elements) {
       if (parentFrameIndex !== undefined) {
-         // Delete an element inside a Frame
-         const frame = band.elements[parentFrameIndex];
-         if (frame && frame.type === 'frame' && frame.elements) {
-           frame.elements.splice(elementIndex, 1);
-         }
+        // Delete an element inside a Frame
+        const frame = band.elements[parentFrameIndex];
+        if (frame && frame.type === "frame" && frame.elements) {
+          frame.elements.splice(elementIndex, 1);
+        }
       } else {
-         band.elements.splice(elementIndex, 1);
+        band.elements.splice(elementIndex, 1);
       }
       selectedElement.value = null;
     }
@@ -2651,7 +3207,11 @@ const deleteElement = () => {
 };
 
 // Start editing static text
-const startEditing = (bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
+const startEditing = (
+  bandIndex: number,
+  elementIndex: number,
+  parentFrameIndex?: number,
+) => {
   editingElement.value = { bandIndex, elementIndex, parentFrameIndex };
   // Select the element
   selectElement(bandIndex, elementIndex, false, parentFrameIndex);
@@ -2677,7 +3237,9 @@ const cancelEditing = () => {
 const saveToLocalStorageWrapper = () => {
   // Safety check to ensure reportProperties.value exists
   if (!reportProperties.value) {
-    console.error('reportProperties.value is undefined, cannot save to local storage');
+    console.error(
+      "reportProperties.value is undefined, cannot save to local storage",
+    );
     return;
   }
 
@@ -2686,9 +3248,9 @@ const saveToLocalStorageWrapper = () => {
       reportProperties: reportProperties.value,
       bands: bands.value,
       reportFields: reportFields.value,
-      jrxmlContent: jrxmlContent.value
+      jrxmlContent: jrxmlContent.value,
     },
-    reportProperties.value?.name || 'report'
+    reportProperties.value?.name || "report",
   );
 };
 
@@ -2700,8 +3262,13 @@ const loadFromLocalStorageWrapper = () => {
     reportFields.value = loadedData.reportData.reportFields;
     jrxmlContent.value = loadedData.reportData.jrxmlContent;
     // Update selectedBandTypes to match the loaded bands
-    if (loadedData.reportData.bands && Array.isArray(loadedData.reportData.bands)) {
-      selectedBandTypes.value = loadedData.reportData.bands.map((band: Band) => band.type);
+    if (
+      loadedData.reportData.bands &&
+      Array.isArray(loadedData.reportData.bands)
+    ) {
+      selectedBandTypes.value = loadedData.reportData.bands.map(
+        (band: Band) => band.type,
+      );
     } else {
       selectedBandTypes.value = [];
     }
@@ -2710,60 +3277,69 @@ const loadFromLocalStorageWrapper = () => {
   return false;
 };
 
-
 // Initialize an element's Box property
 const initBox = () => {
   if (currentElement.value) {
     // Create a default box object
     currentElement.value.box = {
       // Global border
-      border: '',
-      borderColor: '#000000',
+      border: "",
+      borderColor: "#000000",
       borderWidth: 0,
-      borderStyle: '',
+      borderStyle: "",
 
       // Per-side borders - style defaults to an empty string, meaning "use the global setting"
-      topBorder: '',
-      topBorderColor: '#000000',
+      topBorder: "",
+      topBorderColor: "#000000",
       topBorderWidth: 0,
-      topBorderStyle: '', // Defaults to an empty string, meaning "use the global setting"
-      leftBorder: '',
-      leftBorderColor: '#000000',
+      topBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
+      leftBorder: "",
+      leftBorderColor: "#000000",
       leftBorderWidth: 0,
-      leftBorderStyle: '', // Defaults to an empty string, meaning "use the global setting"
-      bottomBorder: '',
-      bottomBorderColor: '#000000',
+      leftBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
+      bottomBorder: "",
+      bottomBorderColor: "#000000",
       bottomBorderWidth: 0,
-      bottomBorderStyle: '', // Defaults to an empty string, meaning "use the global setting"
-      rightBorder: '',
-      rightBorderColor: '#000000',
+      bottomBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
+      rightBorder: "",
+      rightBorderColor: "#000000",
       rightBorderWidth: 0,
-      rightBorderStyle: '', // Defaults to an empty string, meaning "use the global setting"
+      rightBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
 
       // Margins
       padding: 0,
       topPadding: 0,
       leftPadding: 0,
       bottomPadding: 0,
-      rightPadding: 0
+      rightPadding: 0,
     };
   }
 };
 
 // Download the JRXML file
 const downloadJRXML = () => {
-  const content = generateJRXMLContent(reportProperties.value, bands.value, reportFields.value, reportParameters.value, subDatasets.value, [], reportVariables.value, [], reportGroups.value);
+  const content = generateJRXMLContent(
+    reportProperties.value,
+    bands.value,
+    reportFields.value,
+    reportParameters.value,
+    subDatasets.value,
+    [],
+    reportVariables.value,
+    [],
+    reportGroups.value,
+  );
   jrxmlContent.value = content;
 
   // Automatically switch to the JRXML tab
-  activeTab.value = 'jrxml';
+  activeTab.value = "jrxml";
 
   // Create the download link
-  const blob = new Blob([content], { type: 'application/xml' });
+  const blob = new Blob([content], { type: "application/xml" });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
-  link.download = `${reportProperties.value?.name || 'report'}.jrxml`;
+  link.download = `${reportProperties.value?.name || "report"}.jrxml`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -2814,7 +3390,7 @@ defineExpose({
   selectElement,
   deleteElement,
   undo,
-  redo
+  redo,
 });
 
 // Handle properties panel size changes
@@ -2827,7 +3403,6 @@ const handleBottomPanelSizeChange = (newSize: number) => {
   bottomPanelHeight.value = newSize;
 };
 
-
 // Automatically update the JRXML content
 const updateJRXML = () => {
   // Guard against re-entrancy: if updateJRXML is already running, skip this call
@@ -2837,11 +3412,26 @@ const updateJRXML = () => {
   isUpdatingJRXML.value = true;
   try {
     // Ensure all data has been initialized
-    if (!reportProperties.value || !bands.value || !reportFields.value || !reportParameters.value) {
+    if (
+      !reportProperties.value ||
+      !bands.value ||
+      !reportFields.value ||
+      !reportParameters.value
+    ) {
       return;
     }
 
-    const content = generateJRXMLContent(reportProperties.value, bands.value, reportFields.value, reportParameters.value, subDatasets.value, reportStyles.value, reportVariables.value, [], reportGroups.value);
+    const content = generateJRXMLContent(
+      reportProperties.value,
+      bands.value,
+      reportFields.value,
+      reportParameters.value,
+      subDatasets.value,
+      reportStyles.value,
+      reportVariables.value,
+      [],
+      reportGroups.value,
+    );
 
     // If the content changed, save it to history
     if (content !== jrxmlContent.value) {
@@ -2856,7 +3446,7 @@ const updateJRXML = () => {
       saveToLocalStorageWrapper();
     }
   } catch (error) {
-    console.error('Failed to update JRXML:', error);
+    console.error("Failed to update JRXML:", error);
   } finally {
     isUpdatingJRXML.value = false;
   }
@@ -2870,7 +3460,9 @@ const copyElement = async () => {
     if (band && band.elements && band.elements[elementIndex]) {
       try {
         // Deep-clone the element data
-        let elementData = JSON.parse(JSON.stringify(band.elements[elementIndex]));
+        let elementData = JSON.parse(
+          JSON.stringify(band.elements[elementIndex]),
+        );
 
         // Generate a new UUID rather than duplicating the original
         elementData.uuid = crypto.randomUUID();
@@ -2883,8 +3475,11 @@ const copyElement = async () => {
           }
 
           // Handle borders on each side
-          ['topPen', 'leftPen', 'bottomPen', 'rightPen'].forEach(penType => {
-            if (elementData.box[penType] && elementData.box[penType].lineWidth <= 0) {
+          ["topPen", "leftPen", "bottomPen", "rightPen"].forEach((penType) => {
+            if (
+              elementData.box[penType] &&
+              elementData.box[penType].lineWidth <= 0
+            ) {
               delete elementData.box[penType];
             }
           });
@@ -2897,18 +3492,20 @@ const copyElement = async () => {
 
         // Build the data object to copy, including a metadata marker to identify it as a PDF Designer element
         const clipboardData = {
-          type: 'PDF_DESIGNER_ELEMENT',
-          version: '1.0',
-          elementData: elementData
+          type: "PDF_DESIGNER_ELEMENT",
+          version: "1.0",
+          elementData: elementData,
         };
         // Convert the data to a JSON string and write it to the clipboard
         await navigator.clipboard.writeText(JSON.stringify(clipboardData));
-        console.log('Element copied to clipboard:', elementData);
+        console.log("Element copied to clipboard:", elementData);
         // Optional: show a "copied successfully" notification
       } catch (err) {
-        console.error('Failed to copy to clipboard:', err);
+        console.error("Failed to copy to clipboard:", err);
         // Fallback: use the legacy in-memory storage approach as a backup
-        let elementData = JSON.parse(JSON.stringify(band.elements[elementIndex]));
+        let elementData = JSON.parse(
+          JSON.stringify(band.elements[elementIndex]),
+        );
 
         // Process border properties, keeping only borders with a width greater than 0
         if (elementData.box) {
@@ -2918,8 +3515,11 @@ const copyElement = async () => {
           }
 
           // Handle borders on each side
-          ['topPen', 'leftPen', 'bottomPen', 'rightPen'].forEach(penType => {
-            if (elementData.box[penType] && elementData.box[penType].lineWidth <= 0) {
+          ["topPen", "leftPen", "bottomPen", "rightPen"].forEach((penType) => {
+            if (
+              elementData.box[penType] &&
+              elementData.box[penType].lineWidth <= 0
+            ) {
               delete elementData.box[penType];
             }
           });
@@ -2930,11 +3530,14 @@ const copyElement = async () => {
           }
         }
 
-        sessionStorage.setItem('pdfDesignerCopiedElement', JSON.stringify({
-          type: 'PDF_DESIGNER_ELEMENT',
-          version: '1.0',
-          elementData: elementData
-        }));
+        sessionStorage.setItem(
+          "pdfDesignerCopiedElement",
+          JSON.stringify({
+            type: "PDF_DESIGNER_ELEMENT",
+            version: "1.0",
+            elementData: elementData,
+          }),
+        );
       }
     }
   }
@@ -2948,22 +3551,28 @@ const pasteElement = async () => {
     const clipboardData = JSON.parse(clipboardText);
 
     // Verify this is our own PDF Designer element data
-    if (clipboardData.type === 'PDF_DESIGNER_ELEMENT' && clipboardData.elementData) {
+    if (
+      clipboardData.type === "PDF_DESIGNER_ELEMENT" &&
+      clipboardData.elementData
+    ) {
       processPastedElement(clipboardData.elementData);
     }
   } catch (err) {
-    console.error('Failed to read from clipboard:', err);
+    console.error("Failed to read from clipboard:", err);
     // Fallback: try reading from sessionStorage
     try {
-      const savedData = sessionStorage.getItem('pdfDesignerCopiedElement');
+      const savedData = sessionStorage.getItem("pdfDesignerCopiedElement");
       if (savedData) {
         const clipboardData = JSON.parse(savedData);
-        if (clipboardData.type === 'PDF_DESIGNER_ELEMENT' && clipboardData.elementData) {
+        if (
+          clipboardData.type === "PDF_DESIGNER_ELEMENT" &&
+          clipboardData.elementData
+        ) {
           processPastedElement(clipboardData.elementData);
         }
       }
     } catch (sessionErr) {
-      console.error('Failed to read from sessionStorage:', sessionErr);
+      console.error("Failed to read from sessionStorage:", sessionErr);
     }
   }
 };
@@ -2973,11 +3582,14 @@ const processPastedElement = (elementData: any) => {
   saveStateToHistory();
 
   // Determine the paste location (use the currently selected band, or default to the first editable band)
-  let targetBandIndex = selectedBandIndex.value !== null ? selectedBandIndex.value : 0;
+  let targetBandIndex =
+    selectedBandIndex.value !== null ? selectedBandIndex.value : 0;
 
   // Find the first band that has an elements array
   if (targetBandIndex === null) {
-    targetBandIndex = bands.value.findIndex(band => band.elements && Array.isArray(band.elements));
+    targetBandIndex = bands.value.findIndex(
+      (band) => band.elements && Array.isArray(band.elements),
+    );
     // If none is found, use the detail band (usually index 3)
     if (targetBandIndex === -1) {
       targetBandIndex = 3;
@@ -2986,7 +3598,7 @@ const processPastedElement = (elementData: any) => {
 
   const targetBand = bands.value[targetBandIndex];
   if (!targetBand) {
-    console.error('Target band does not exist');
+    console.error("Target band does not exist");
     return;
   }
 
@@ -2994,8 +3606,12 @@ const processPastedElement = (elementData: any) => {
   const newElement = JSON.parse(JSON.stringify(elementData));
 
   // Offset the position slightly so it doesn't overlap the original element (shift down and to the right)
-  newElement.x = Math.round(newElement.x + KEYBOARD_CONSTANTS.ELEMENT_PASTE_OFFSET);
-  newElement.y = Math.round(newElement.y + KEYBOARD_CONSTANTS.ELEMENT_PASTE_OFFSET);
+  newElement.x = Math.round(
+    newElement.x + KEYBOARD_CONSTANTS.ELEMENT_PASTE_OFFSET,
+  );
+  newElement.y = Math.round(
+    newElement.y + KEYBOARD_CONSTANTS.ELEMENT_PASTE_OFFSET,
+  );
 
   // Ensure the element's width and height are also integers
   if (newElement.width) {
@@ -3024,15 +3640,19 @@ const processPastedElement = (elementData: any) => {
   // Update JRXML
   updateJRXML();
 
-  console.log('Element pasted:', newElement);
+  console.log("Element pasted:", newElement);
 };
 
 // Define the handleKeyDown function at the top level of the component
 const handleKeyDown = (event: KeyboardEvent) => {
   // Get the currently active element, used to determine focus state
   const activeEl = document.activeElement;
-  const isInputFocused = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
-  const isTextareaFocused = activeEl && activeEl.tagName === 'TEXTAREA';
+  const isInputFocused =
+    activeEl &&
+    (activeEl.tagName === "INPUT" ||
+      activeEl.tagName === "TEXTAREA" ||
+      activeEl.tagName === "SELECT");
+  const isTextareaFocused = activeEl && activeEl.tagName === "TEXTAREA";
 
   // Detect whether any text is selected
   const selection = window.getSelection();
@@ -3042,42 +3662,42 @@ const handleKeyDown = (event: KeyboardEvent) => {
   const isCtrlOrMetaPressed = event.ctrlKey || event.metaKey;
 
   // CTRL/CMD+0 resets the zoom level
-  if (isCtrlOrMetaPressed && event.key === '0') {
+  if (isCtrlOrMetaPressed && event.key === "0") {
     event.preventDefault();
     resetZoom();
     return;
   }
 
   // CTRL/CMD+S saves the current file
-  if (isCtrlOrMetaPressed && event.key === 's') {
+  if (isCtrlOrMetaPressed && event.key === "s") {
     event.preventDefault();
     saveCurrentFileToStorage();
     return;
   }
 
   // CTRL/CMD+B toggles the bottom panel's visibility
-  if (isCtrlOrMetaPressed && event.key === 'b') {
+  if (isCtrlOrMetaPressed && event.key === "b") {
     event.preventDefault();
     toggleBottomPanel();
     return;
   }
 
   // CTRL/CMD+Z undoes an action
-  if (isCtrlOrMetaPressed && event.key === 'z') {
+  if (isCtrlOrMetaPressed && event.key === "z") {
     event.preventDefault();
     undo();
     return;
   }
 
   // CTRL/CMD+Y redoes an action
-  if (isCtrlOrMetaPressed && event.key === 'y') {
+  if (isCtrlOrMetaPressed && event.key === "y") {
     event.preventDefault();
     redo();
     return;
   }
 
   // CTRL/CMD+C handling: first check whether an input is focused, and if so, fall back to the browser's default copy behavior
-  if (isCtrlOrMetaPressed && event.key === 'c') {
+  if (isCtrlOrMetaPressed && event.key === "c") {
     // If an input is focused, use the browser's default copy behavior
     if (isInputFocused) {
       // Don't prevent the default behavior; let the browser perform its default text copy
@@ -3106,7 +3726,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }
 
   // CTRL/CMD+V handling: first check whether an input is focused, and if so, fall back to the browser's default paste behavior
-  if (isCtrlOrMetaPressed && event.key === 'v') {
+  if (isCtrlOrMetaPressed && event.key === "v") {
     // If an input is focused, use the browser's default paste behavior
     if (isInputFocused) {
       // Don't prevent the default behavior; let the browser perform its default text paste
@@ -3122,17 +3742,20 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }
 
   // Delete key removes the selected component (only outside edit mode and when no input is focused)
-  if ((event.key === 'Delete' || event.key === 'Backspace') &&
-      (selectedElement.value || (selectedElements.value && selectedElements.value.length > 0)) &&
-      !editingElement.value &&
-      !isInputFocused) {
+  if (
+    (event.key === "Delete" || event.key === "Backspace") &&
+    (selectedElement.value ||
+      (selectedElements.value && selectedElements.value.length > 0)) &&
+    !editingElement.value &&
+    !isInputFocused
+  ) {
     event.preventDefault();
     deleteElement();
     return;
   }
 
   // Arrow key handling: Shift+Arrow nudges the element's position, Arrow alone selects a neighboring component
-  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
     // If an input is focused, use the default behavior (move the cursor)
     if (isInputFocused) {
       return;
@@ -3155,13 +3778,18 @@ const handleKeyDown = (event: KeyboardEvent) => {
 const navigateElements = (direction: string) => {
   if (!selectedElement.value) return;
 
-  const { bandIndex: currentBandIndex, elementIndex: currentElementIndex } = selectedElement.value;
+  const { bandIndex: currentBandIndex, elementIndex: currentElementIndex } =
+    selectedElement.value;
   const currentBand = bands.value[currentBandIndex];
   const currentElement = currentBand?.elements[currentElementIndex];
 
   if (!currentBand || !currentElement) return;
 
-  let nearestElement: { bandIndex: number; elementIndex: number; distance: number } | null = null;
+  let nearestElement: {
+    bandIndex: number;
+    elementIndex: number;
+    distance: number;
+  } | null = null;
   let currentBandY = 0;
 
   // Calculate the current element's absolute position
@@ -3176,7 +3804,8 @@ const navigateElements = (direction: string) => {
 
     band.elements.forEach((element, elementIdx) => {
       // Skip the currently selected element
-      if (bandIdx === currentBandIndex && elementIdx === currentElementIndex) return;
+      if (bandIdx === currentBandIndex && elementIdx === currentElementIndex)
+        return;
 
       // Calculate the element's absolute position
       const elementX = element.x;
@@ -3186,16 +3815,16 @@ const navigateElements = (direction: string) => {
       let isValidDirection = false;
 
       switch (direction) {
-        case 'ArrowUp':
+        case "ArrowUp":
           isValidDirection = elementY < currentY;
           break;
-        case 'ArrowDown':
+        case "ArrowDown":
           isValidDirection = elementY > currentY;
           break;
-        case 'ArrowLeft':
+        case "ArrowLeft":
           isValidDirection = elementX < currentX;
           break;
-        case 'ArrowRight':
+        case "ArrowRight":
           isValidDirection = elementX > currentX;
           break;
       }
@@ -3204,19 +3833,29 @@ const navigateElements = (direction: string) => {
         // Calculate the distance
         let distance = 0;
         switch (direction) {
-          case 'ArrowUp':
-          case 'ArrowDown':
-            distance = Math.abs(elementY - currentY) + Math.abs(elementX - currentX) * KEYBOARD_CONSTANTS.SECONDARY_AXIS_WEIGHT; // Y axis is primary, X axis is secondary
+          case "ArrowUp":
+          case "ArrowDown":
+            distance =
+              Math.abs(elementY - currentY) +
+              Math.abs(elementX - currentX) *
+                KEYBOARD_CONSTANTS.SECONDARY_AXIS_WEIGHT; // Y axis is primary, X axis is secondary
             break;
-          case 'ArrowLeft':
-          case 'ArrowRight':
-            distance = Math.abs(elementX - currentX) + Math.abs(elementY - currentY) * KEYBOARD_CONSTANTS.SECONDARY_AXIS_WEIGHT; // X axis is primary, Y axis is secondary
+          case "ArrowLeft":
+          case "ArrowRight":
+            distance =
+              Math.abs(elementX - currentX) +
+              Math.abs(elementY - currentY) *
+                KEYBOARD_CONSTANTS.SECONDARY_AXIS_WEIGHT; // X axis is primary, Y axis is secondary
             break;
         }
 
         // Update the nearest element
         if (!nearestElement || distance < nearestElement.distance) {
-          nearestElement = { bandIndex: bandIdx, elementIndex: elementIdx, distance };
+          nearestElement = {
+            bandIndex: bandIdx,
+            elementIndex: elementIdx,
+            distance,
+          };
         }
       }
     });
@@ -3225,7 +3864,10 @@ const navigateElements = (direction: string) => {
   // Select the nearest element
   if (nearestElement) {
     // Use a type assertion to ensure valid property access
-    const element = nearestElement as { bandIndex: number; elementIndex: number };
+    const element = nearestElement as {
+      bandIndex: number;
+      elementIndex: number;
+    };
     selectElement(element.bandIndex, element.elementIndex);
   }
 };
@@ -3234,7 +3876,8 @@ const navigateElements = (direction: string) => {
 const moveElementByKeyboard = (direction: string) => {
   if (!selectedElement.value) return;
 
-  const { bandIndex: currentBandIndex, elementIndex: currentElementIndex } = selectedElement.value;
+  const { bandIndex: currentBandIndex, elementIndex: currentElementIndex } =
+    selectedElement.value;
   const currentBand = bands.value[currentBandIndex];
   const currentElement = currentBand?.elements[currentElementIndex];
 
@@ -3248,17 +3891,23 @@ const moveElementByKeyboard = (direction: string) => {
   let newY = currentElement.y;
 
   switch (direction) {
-    case 'ArrowUp':
+    case "ArrowUp":
       newY = Math.max(0, currentElement.y - MOVE_STEP);
       break;
-    case 'ArrowDown':
-      newY = Math.min(currentBand.height - currentElement.height, currentElement.y + MOVE_STEP);
+    case "ArrowDown":
+      newY = Math.min(
+        currentBand.height - currentElement.height,
+        currentElement.y + MOVE_STEP,
+      );
       break;
-    case 'ArrowLeft':
+    case "ArrowLeft":
       newX = Math.max(0, currentElement.x - MOVE_STEP);
       break;
-    case 'ArrowRight':
-      newX = Math.min(reportProperties.value.pageWidth - currentElement.width, currentElement.x + MOVE_STEP);
+    case "ArrowRight":
+      newX = Math.min(
+        reportProperties.value.pageWidth - currentElement.width,
+        currentElement.x + MOVE_STEP,
+      );
       break;
   }
 
@@ -3286,9 +3935,9 @@ const handlePaperClick = () => {
 
 // Load data when the component mounts
 onMounted(() => {
-  console.log('Component mount started...');
+  console.log("Component mount started...");
   const hasLocalData = loadFromLocalStorageWrapper();
-  console.log('Local data load complete');
+  console.log("Local data load complete");
 
   // Try loading the last-edited file
   loadFilesFromStorage();
@@ -3304,7 +3953,7 @@ onMounted(() => {
 
   // Update JRXML after the initial load; use setTimeout to ensure all data has finished loading
   setTimeout(() => {
-    console.log('Starting initial JRXML generation...');
+    console.log("Starting initial JRXML generation...");
     updateJRXML();
   }, 100);
 
@@ -3315,7 +3964,7 @@ onMounted(() => {
   }, 200);
 
   // Add the keyboard event listener
-  document.addEventListener('keydown', handleKeyDown);
+  document.addEventListener("keydown", handleKeyDown);
 
   // Add a mouse wheel event listener, used for the zoom feature
   const handleWheel = (event: Event) => {
@@ -3331,13 +3980,13 @@ onMounted(() => {
     }
   };
 
-  document.addEventListener('wheel', handleWheel, { passive: false });
+  document.addEventListener("wheel", handleWheel, { passive: false });
   (window as any).pdfDesignerWheelListener = handleWheel;
 
   // Get the paper element and add a click event listener
-  const paperElement = document.querySelector('.paper');
+  const paperElement = document.querySelector(".paper");
   if (paperElement) {
-    paperElement.addEventListener('click', () => {
+    paperElement.addEventListener("click", () => {
       handlePaperClick();
       setDesignAreaFocused();
     });
@@ -3355,20 +4004,20 @@ onUnmounted(() => {
   // Remove the keyboard event listener
   const keydownListener = (window as any).pdfDesignerKeydownListener;
   if (keydownListener) {
-    document.removeEventListener('keydown', keydownListener);
+    document.removeEventListener("keydown", keydownListener);
   }
 
   // Remove the mouse wheel event listener
   const wheelListener = (window as any).pdfDesignerWheelListener;
   if (wheelListener) {
-    document.removeEventListener('wheel', wheelListener);
+    document.removeEventListener("wheel", wheelListener);
   }
 
   // Remove the paper click event listener
   const handlePaperClick = (window as any).pdfDesignerPaperClickListener;
-  const paperElement = document.querySelector('.paper');
+  const paperElement = document.querySelector(".paper");
   if (handlePaperClick && paperElement) {
-    paperElement.removeEventListener('click', handlePaperClick);
+    paperElement.removeEventListener("click", handlePaperClick);
   }
 });
 
@@ -3384,28 +4033,25 @@ watch(
       updateOutOfBoundsElements();
     }
   },
-  { deep: true }
+  { deep: true },
 );
 
 // Watch for drag-state changes, updating out-of-bounds elements once dragging ends
-watch(
-  isDraggingOrResizing,
-  (newValue, oldValue) => {
-    // Update the out-of-bounds elements when transitioning from dragging to not dragging
-    if (oldValue === true && newValue === false) {
-      updateOutOfBoundsElements();
-    }
+watch(isDraggingOrResizing, (newValue, oldValue) => {
+  // Update the out-of-bounds elements when transitioning from dragging to not dragging
+  if (oldValue === true && newValue === false) {
+    updateOutOfBoundsElements();
   }
-);
+});
 
 // Copy the JRXML content to the clipboard
 const copyJRXML = async (): Promise<void> => {
   try {
     await navigator.clipboard.writeText(jrxmlContent.value);
-    notification.success(t('notifications.jrxmlCopiedSuccess'));
+    notification.success(t("notifications.jrxmlCopiedSuccess"));
   } catch (err: unknown) {
-    console.error('Copy failed:', err);
-    notification.error(t('notifications.jrxmlCopyFailed'));
+    console.error("Copy failed:", err);
+    notification.error(t("notifications.jrxmlCopyFailed"));
   }
 };
 
@@ -3413,7 +4059,7 @@ const copyJRXML = async (): Promise<void> => {
 const regenerateJRXML = (): void => {
   updateJRXML();
   // Show a notification message
-  notification.info('JRXML has been regenerated');
+  notification.info("JRXML has been regenerated");
 };
 
 // Open the PDF preview
@@ -3421,18 +4067,33 @@ const openPdfPreview = (): void => {
   try {
     if (!jrxmlContent.value) {
       // Generate the JRXML content directly, without downloading it
-      const content = generateJRXMLContent(reportProperties.value, bands.value, reportFields.value, reportParameters.value, subDatasets.value, [], reportVariables.value, [], reportGroups.value);
+      const content = generateJRXMLContent(
+        reportProperties.value,
+        bands.value,
+        reportFields.value,
+        reportParameters.value,
+        subDatasets.value,
+        [],
+        reportVariables.value,
+        [],
+        reportGroups.value,
+      );
       jrxmlContent.value = content;
     }
     // If subDatasets is empty, extract it from the table elements
     if (subDatasets.value.length === 0) {
       const extracted: TableDataset[] = [];
       for (const band of bands.value) {
-        for (const el of (band.elements || [])) {
-          if (el.type === 'table' && (el as any).dataset?.fields?.length > 0) {
+        for (const el of band.elements || []) {
+          if (el.type === "table" && (el as any).dataset?.fields?.length > 0) {
             const ds = (el as any).dataset;
-            if (!extracted.find(d => d.name === ds.name)) {
-              extracted.push({ uuid: ds.uuid || crypto.randomUUID(), name: ds.name, fields: ds.fields, query: ds.query });
+            if (!extracted.find((d) => d.name === ds.name)) {
+              extracted.push({
+                uuid: ds.uuid || crypto.randomUUID(),
+                name: ds.name,
+                fields: ds.fields,
+                query: ds.query,
+              });
             }
           }
         }
@@ -3446,8 +4107,8 @@ const openPdfPreview = (): void => {
       showPdfPreview.value = true;
     });
   } catch (error) {
-    console.error('Failed to preview PDF:', error);
-    alert('Failed to preview PDF, please check the console for error details');
+    console.error("Failed to preview PDF:", error);
+    alert("Failed to preview PDF, please check the console for error details");
   }
 };
 
@@ -3465,8 +4126,8 @@ const saveJRXML = (): void => {
         size: REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
         isBold: false,
         isItalic: false,
-        isUnderline: false
-      }
+        isUnderline: false,
+      },
     };
 
     // Update the field definitions
@@ -3492,11 +4153,11 @@ const saveJRXML = (): void => {
 
     // Update the sub-datasets
     if (parsedData.datasets) {
-      subDatasets.value = parsedData.datasets.map(dataset => ({
+      subDatasets.value = parsedData.datasets.map((dataset) => ({
         uuid: crypto.randomUUID(),
         name: dataset.name,
         fields: dataset.fields,
-        query: dataset.query
+        query: dataset.query,
       })) as any;
     }
 
@@ -3504,42 +4165,43 @@ const saveJRXML = (): void => {
     bands.value = parsedData.bands;
 
     // Update the selected band types
-    selectedBandTypes.value = parsedData.bands.map(band => band.type);
+    selectedBandTypes.value = parsedData.bands.map((band) => band.type);
 
     // Add a default border to rectangle elements to ensure they render correctly
-    bands.value.forEach(band => {
-      band.elements.forEach(element => {
+    bands.value.forEach((band) => {
+      band.elements.forEach((element) => {
         // Ensure the element's width is reasonable (but don't force a minimum height, to preserve the JRXML's original settings)
-        if (element.width < ELEMENT_CONSTANTS.MIN_WIDTH) element.width = ELEMENT_CONSTANTS.MIN_WIDTH; // Enforce the minimum width
+        if (element.width < ELEMENT_CONSTANTS.MIN_WIDTH)
+          element.width = ELEMENT_CONSTANTS.MIN_WIDTH; // Enforce the minimum width
 
         // For box elements, ensure the parsed border properties are applied correctly
         if (element.box) {
           // Convert the border style within a pen element
           const processPen = (pen: any): string => {
-            if (!pen) return '';
+            if (!pen) return "";
 
             // If lineWidth is 0 or undefined, return an empty string to indicate no border
             if (pen.lineWidth === 0 || pen.lineWidth === undefined) {
-              return '';
+              return "";
             }
 
             let width = `${pen.lineWidth}px`;
-            let style = 'solid';
-            let color = '#000000';
+            let style = "solid";
+            let color = "#000000";
 
             if (pen.lineStyle) {
               switch (pen.lineStyle) {
-                case 'Dashed':
-                  style = 'dashed';
+                case "Dashed":
+                  style = "dashed";
                   break;
-                case 'Dotted':
-                  style = 'dotted';
+                case "Dotted":
+                  style = "dotted";
                   break;
-                case 'Double':
-                  style = 'double';
+                case "Double":
+                  style = "double";
                   break;
                 default:
-                  style = 'solid';
+                  style = "solid";
               }
             }
 
@@ -3552,58 +4214,82 @@ const saveJRXML = (): void => {
 
           // Convert a border style string into the border style name used by the UI
           const convertBorderStyleToName = (borderStyle: string): string => {
-            if (!borderStyle || borderStyle === '') return '';
+            if (!borderStyle || borderStyle === "") return "";
 
             // If it's already a style name, return it as-is
-            if (['Thin', 'Medium', 'Thick', 'Dashed', 'Dotted', 'Double', '1Point', '2Point', '4Point'].includes(borderStyle)) {
+            if (
+              [
+                "Thin",
+                "Medium",
+                "Thick",
+                "Dashed",
+                "Dotted",
+                "Double",
+                "1Point",
+                "2Point",
+                "4Point",
+              ].includes(borderStyle)
+            ) {
               return borderStyle;
             }
 
             // Parse a border style string, e.g. "1px solid #000000"
-            const parts = borderStyle.split(' ');
+            const parts = borderStyle.split(" ");
             if (parts.length >= 2) {
               const width = parts[0];
               const style = parts[1];
 
               // If the width is 0, return an empty string to indicate no border
-              if (width === '0px') {
-                return '';
+              if (width === "0px") {
+                return "";
               }
 
               // Determine the style name based on the width
-              if (width === '1px') {
-                if (style === 'solid') return 'Thin';
-                if (style === 'dashed') return 'Dashed';
-                if (style === 'dotted') return 'Dotted';
-              } else if (width === '2px') {
-                if (style === 'solid') return 'Medium';
-              } else if (width === '3px' && style === 'double') {
-                return 'Double';
-              } else if (width === '4px') {
-                if (style === 'solid') return 'Thick';
+              if (width === "1px") {
+                if (style === "solid") return "Thin";
+                if (style === "dashed") return "Dashed";
+                if (style === "dotted") return "Dotted";
+              } else if (width === "2px") {
+                if (style === "solid") return "Medium";
+              } else if (width === "3px" && style === "double") {
+                return "Double";
+              } else if (width === "4px") {
+                if (style === "solid") return "Thick";
               }
             }
 
             // Default to an empty string rather than Thin, to avoid unexpectedly displaying a border
-            return '';
+            return "";
           };
 
           // Extract the color from a border style string
           const extractBorderColor = (borderStyle: string): string => {
-            if (!borderStyle || borderStyle === '') return '#000000';
+            if (!borderStyle || borderStyle === "") return "#000000";
 
             // If it's already a style name, return the default color
-            if (['Thin', 'Medium', 'Thick', 'Dashed', 'Dotted', 'Double', '1Point', '2Point', '4Point'].includes(borderStyle)) {
-              return '#000000';
+            if (
+              [
+                "Thin",
+                "Medium",
+                "Thick",
+                "Dashed",
+                "Dotted",
+                "Double",
+                "1Point",
+                "2Point",
+                "4Point",
+              ].includes(borderStyle)
+            ) {
+              return "#000000";
             }
 
             // Parse a border style string, e.g. "1px solid #000000"
-            const parts = borderStyle.split(' ');
+            const parts = borderStyle.split(" ");
             if (parts.length >= 3 && parts[2]) {
               return parts[2];
             }
 
-            return '#000000';
+            return "#000000";
           };
 
           // Set the border style for each side's pen
@@ -3628,27 +4314,35 @@ const saveJRXML = (): void => {
 
           // Handle the border property mapping
           const borderMap: Record<string, string> = {
-            'Thin': '1px',
-            '1Point': '1px',
-            '2Point': '2px',
-            '4Point': '4px',
-            'Dotted': '1px dotted',
-            'Dashed': '1px dashed',
-            'Double': '3px double'
+            Thin: "1px",
+            "1Point": "1px",
+            "2Point": "2px",
+            "4Point": "4px",
+            Dotted: "1px dotted",
+            Dashed: "1px dashed",
+            Double: "3px double",
           };
 
           // Apply the border properties
-          const applyBorder = (borderAttr: string, colorAttr: string): string => {
-            if (!borderAttr) return '';
+          const applyBorder = (
+            borderAttr: string,
+            colorAttr: string,
+          ): string => {
+            if (!borderAttr) return "";
 
-            let borderValue = borderMap[borderAttr] || '1px';
+            let borderValue = borderMap[borderAttr] || "1px";
             // Use a type assertion to work around the indexing issue
-            let borderColor = (element.box as any)?.[colorAttr] || '#000000';
+            let borderColor = (element.box as any)?.[colorAttr] || "#000000";
 
             // If borderAttr is a style name (not a pixel value), build the full border style string
-            if (borderAttr !== 'Thin' && borderAttr !== '1Point' && borderAttr !== '2Point' && borderAttr !== '4Point') {
-              if (borderValue.includes(' ')) {
-                return borderValue + ' ' + borderColor;
+            if (
+              borderAttr !== "Thin" &&
+              borderAttr !== "1Point" &&
+              borderAttr !== "2Point" &&
+              borderAttr !== "4Point"
+            ) {
+              if (borderValue.includes(" ")) {
+                return borderValue + " " + borderColor;
               }
               return `${borderValue} solid ${borderColor}`;
             }
@@ -3673,33 +4367,77 @@ const saveJRXML = (): void => {
           }
 
           // If a global border property is set, apply it to all sides
-          if (element.box.border && (!element.box.topBorder || !element.box.leftBorder || !element.box.bottomBorder || !element.box.rightBorder)) {
-            const globalBorder = applyBorder(element.box.border, 'borderColor');
+          if (
+            element.box.border &&
+            (!element.box.topBorder ||
+              !element.box.leftBorder ||
+              !element.box.bottomBorder ||
+              !element.box.rightBorder)
+          ) {
+            const globalBorder = applyBorder(element.box.border, "borderColor");
             if (!element.box.topBorder) element.box.topBorder = globalBorder;
             if (!element.box.leftBorder) element.box.leftBorder = globalBorder;
-            if (!element.box.bottomBorder) element.box.bottomBorder = globalBorder;
-            if (!element.box.rightBorder) element.box.rightBorder = globalBorder;
+            if (!element.box.bottomBorder)
+              element.box.bottomBorder = globalBorder;
+            if (!element.box.rightBorder)
+              element.box.rightBorder = globalBorder;
           }
 
           // Convert a border style string into the border style name used by the UI
-          if (element.box.border && typeof element.box.border === 'string' && element.box.border.includes(' ')) {
+          if (
+            element.box.border &&
+            typeof element.box.border === "string" &&
+            element.box.border.includes(" ")
+          ) {
             element.box.border = convertBorderStyleToName(element.box.border);
           }
-          if (element.box.topBorder && typeof element.box.topBorder === 'string' && element.box.topBorder.includes(' ')) {
-            element.box.topBorderColor = extractBorderColor(element.box.topBorder);
-            element.box.topBorder = convertBorderStyleToName(element.box.topBorder);
+          if (
+            element.box.topBorder &&
+            typeof element.box.topBorder === "string" &&
+            element.box.topBorder.includes(" ")
+          ) {
+            element.box.topBorderColor = extractBorderColor(
+              element.box.topBorder,
+            );
+            element.box.topBorder = convertBorderStyleToName(
+              element.box.topBorder,
+            );
           }
-          if (element.box.leftBorder && typeof element.box.leftBorder === 'string' && element.box.leftBorder.includes(' ')) {
-            element.box.leftBorderColor = extractBorderColor(element.box.leftBorder);
-            element.box.leftBorder = convertBorderStyleToName(element.box.leftBorder);
+          if (
+            element.box.leftBorder &&
+            typeof element.box.leftBorder === "string" &&
+            element.box.leftBorder.includes(" ")
+          ) {
+            element.box.leftBorderColor = extractBorderColor(
+              element.box.leftBorder,
+            );
+            element.box.leftBorder = convertBorderStyleToName(
+              element.box.leftBorder,
+            );
           }
-          if (element.box.bottomBorder && typeof element.box.bottomBorder === 'string' && element.box.bottomBorder.includes(' ')) {
-            element.box.bottomBorderColor = extractBorderColor(element.box.bottomBorder);
-            element.box.bottomBorder = convertBorderStyleToName(element.box.bottomBorder);
+          if (
+            element.box.bottomBorder &&
+            typeof element.box.bottomBorder === "string" &&
+            element.box.bottomBorder.includes(" ")
+          ) {
+            element.box.bottomBorderColor = extractBorderColor(
+              element.box.bottomBorder,
+            );
+            element.box.bottomBorder = convertBorderStyleToName(
+              element.box.bottomBorder,
+            );
           }
-          if (element.box.rightBorder && typeof element.box.rightBorder === 'string' && element.box.rightBorder.includes(' ')) {
-            element.box.rightBorderColor = extractBorderColor(element.box.rightBorder);
-            element.box.rightBorder = convertBorderStyleToName(element.box.rightBorder);
+          if (
+            element.box.rightBorder &&
+            typeof element.box.rightBorder === "string" &&
+            element.box.rightBorder.includes(" ")
+          ) {
+            element.box.rightBorderColor = extractBorderColor(
+              element.box.rightBorder,
+            );
+            element.box.rightBorder = convertBorderStyleToName(
+              element.box.rightBorder,
+            );
           }
         }
 
@@ -3723,155 +4461,52 @@ const saveJRXML = (): void => {
     saveToLocalStorageWrapper();
 
     // Show a success notification
-    notification.success(t('notifications.jrxmlEditSaved'));
+    notification.success(t("notifications.jrxmlEditSaved"));
   } catch (error: unknown) {
-    console.error('Failed to save JRXML:', error);
-    notification.error(t('notifications.jrxmlEditSaveFailed', { error: error instanceof Error ? error.message : 'Unknown error' }));
+    console.error("Failed to save JRXML:", error);
+    notification.error(
+      t("notifications.jrxmlEditSaveFailed", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+    );
   }
 };
 
 // Watch for border-setting changes, updating the border style in real time
-watch(() => currentElement.value?.box?.border, (newBorderStyle) => {
-  if (!currentElement.value || !currentElement.value.box) return;
+watch(
+  () => currentElement.value?.box?.border,
+  (newBorderStyle) => {
+    if (!currentElement.value || !currentElement.value.box) return;
 
-  const box = currentElement.value.box;
+    const box = currentElement.value.box;
 
-  // If the border style is an empty string, clear all borders
-  if (!newBorderStyle || newBorderStyle === '') {
-    box.topBorder = '';
-    box.leftBorder = '';
-    box.bottomBorder = '';
-    box.rightBorder = '';
-    // Update JRXML
-    updateJRXML();
-    return;
-  }
-
-  const borderColor = box.borderColor || '#000000';
-
-  // Border style mapping
-  const borderMap: Record<string, string> = {
-    'Thin': '1px',
-    '1Point': '1px',
-    '2Point': '2px',
-    '4Point': '4px',
-    'Dotted': '1px dotted',
-    'Dashed': '1px dashed',
-    'Double': '3px double'
-  };
-
-  // Build the border style string
-  const borderValue = borderMap[newBorderStyle] || '1px';
-  const fullBorderStyle = `${borderValue} solid ${borderColor}`;
-
-  // Apply it to all sides immediately
-  box.topBorder = fullBorderStyle;
-  box.leftBorder = fullBorderStyle;
-  box.bottomBorder = fullBorderStyle;
-  box.rightBorder = fullBorderStyle;
-
-  // Update JRXML
-  updateJRXML();
-});
-
-// Watch for border-width changes, ensuring the pen object includes a lineWidth property
-watch(() => currentElement.value?.box?.borderWidth, (newBorderWidth) => {
-  if (!currentElement.value || !currentElement.value.box) return;
-
-  const box = currentElement.value.box;
-
-  // If the border width is 0, automatically set the border style to "None"
-  if (newBorderWidth === 0 || newBorderWidth === undefined || newBorderWidth === null) {
-    box.borderStyle = '';
-
-    // Remove the pen object
-    delete box.pen;
-  } else {
-    // Ensure the pen object exists
-    if (!box.pen) {
-      box.pen = {};
+    // If the border style is an empty string, clear all borders
+    if (!newBorderStyle || newBorderStyle === "") {
+      box.topBorder = "";
+      box.leftBorder = "";
+      box.bottomBorder = "";
+      box.rightBorder = "";
+      // Update JRXML
+      updateJRXML();
+      return;
     }
 
-    // Update the pen object's lineWidth property
-    box.pen.lineWidth = newBorderWidth;
+    const borderColor = box.borderColor || "#000000";
 
-    // If no border style is set, use the default style
-    if (!box.pen.lineStyle) {
-      box.pen.lineStyle = box.borderStyle || 'Solid';
-    }
-
-    // If no border color is set, use the default color
-    if (!box.pen.lineColor) {
-      box.pen.lineColor = box.borderColor || '#000000';
-    }
-  }
-
-  // Update JRXML
-  updateJRXML();
-});
-
-// Watch for border-style changes, ensuring the pen object includes a lineStyle property
-watch(() => currentElement.value?.box?.borderStyle, (newBorderStyle, oldBorderStyle) => {
-  if (!currentElement.value || !currentElement.value.box) return;
-
-  const box = currentElement.value.box;
-
-  // If the border style is set to "None" (an empty string), automatically set the width to 0
-  if (newBorderStyle === undefined || newBorderStyle === null || newBorderStyle === '') {
-    box.borderWidth = 0;
-
-    // Remove the pen object
-    delete box.pen;
-  } else {
-    // When the border style switches from "None" to another option, automatically default the width to 1 if it's currently 0
-    if ((oldBorderStyle === '' || oldBorderStyle === undefined || oldBorderStyle === null) &&
-        box.borderWidth === 0) {
-      box.borderWidth = 1;
-    }
-
-    // Ensure the pen object exists
-    if (!box.pen) {
-      box.pen = {};
-    }
-
-    // Update the pen object's lineStyle property
-    box.pen.lineStyle = newBorderStyle;
-
-    // If no border width is set, use the default width
-    if (!box.pen.lineWidth) {
-      box.pen.lineWidth = box.borderWidth || 1;
-    }
-
-    // If no border color is set, use the default color
-    if (!box.pen.lineColor) {
-      box.pen.lineColor = box.borderColor || '#000000';
-    }
-  }
-
-  // Update JRXML
-  updateJRXML();
-});
-
-// Watch for border-color changes, updating the border style in real time
-watch(() => currentElement.value?.box?.borderColor, (newBorderColor) => {
-  if (!currentElement.value || !currentElement.value.box) return;
-
-  const box = currentElement.value.box;
-
-  // If a border style is set, update the color on each side
-  if (box.border && box.border !== '') {
+    // Border style mapping
     const borderMap: Record<string, string> = {
-      'Thin': '1px',
-      '1Point': '1px',
-      '2Point': '2px',
-      '4Point': '4px',
-      'Dotted': '1px dotted',
-      'Dashed': '1px dashed',
-      'Double': '3px double'
+      Thin: "1px",
+      "1Point": "1px",
+      "2Point": "2px",
+      "4Point": "4px",
+      Dotted: "1px dotted",
+      Dashed: "1px dashed",
+      Double: "3px double",
     };
 
-    const borderValue = borderMap[box.border] || '1px';
-    const fullBorderStyle = `${borderValue} solid ${newBorderColor || '#000000'}`;
+    // Build the border style string
+    const borderValue = borderMap[newBorderStyle] || "1px";
+    const fullBorderStyle = `${borderValue} solid ${borderColor}`;
 
     // Apply it to all sides immediately
     box.topBorder = fullBorderStyle;
@@ -3881,142 +4516,331 @@ watch(() => currentElement.value?.box?.borderColor, (newBorderColor) => {
 
     // Update JRXML
     updateJRXML();
-  }
-});
+  },
+);
+
+// Watch for border-width changes, ensuring the pen object includes a lineWidth property
+watch(
+  () => currentElement.value?.box?.borderWidth,
+  (newBorderWidth) => {
+    if (!currentElement.value || !currentElement.value.box) return;
+
+    const box = currentElement.value.box;
+
+    // If the border width is 0, automatically set the border style to "None"
+    if (
+      newBorderWidth === 0 ||
+      newBorderWidth === undefined ||
+      newBorderWidth === null
+    ) {
+      box.borderStyle = "";
+
+      // Remove the pen object
+      delete box.pen;
+    } else {
+      // Ensure the pen object exists
+      if (!box.pen) {
+        box.pen = {};
+      }
+
+      // Update the pen object's lineWidth property
+      box.pen.lineWidth = newBorderWidth;
+
+      // If no border style is set, use the default style
+      if (!box.pen.lineStyle) {
+        box.pen.lineStyle = box.borderStyle || "Solid";
+      }
+
+      // If no border color is set, use the default color
+      if (!box.pen.lineColor) {
+        box.pen.lineColor = box.borderColor || "#000000";
+      }
+    }
+
+    // Update JRXML
+    updateJRXML();
+  },
+);
+
+// Watch for border-style changes, ensuring the pen object includes a lineStyle property
+watch(
+  () => currentElement.value?.box?.borderStyle,
+  (newBorderStyle, oldBorderStyle) => {
+    if (!currentElement.value || !currentElement.value.box) return;
+
+    const box = currentElement.value.box;
+
+    // If the border style is set to "None" (an empty string), automatically set the width to 0
+    if (
+      newBorderStyle === undefined ||
+      newBorderStyle === null ||
+      newBorderStyle === ""
+    ) {
+      box.borderWidth = 0;
+
+      // Remove the pen object
+      delete box.pen;
+    } else {
+      // When the border style switches from "None" to another option, automatically default the width to 1 if it's currently 0
+      if (
+        (oldBorderStyle === "" ||
+          oldBorderStyle === undefined ||
+          oldBorderStyle === null) &&
+        box.borderWidth === 0
+      ) {
+        box.borderWidth = 1;
+      }
+
+      // Ensure the pen object exists
+      if (!box.pen) {
+        box.pen = {};
+      }
+
+      // Update the pen object's lineStyle property
+      box.pen.lineStyle = newBorderStyle;
+
+      // If no border width is set, use the default width
+      if (!box.pen.lineWidth) {
+        box.pen.lineWidth = box.borderWidth || 1;
+      }
+
+      // If no border color is set, use the default color
+      if (!box.pen.lineColor) {
+        box.pen.lineColor = box.borderColor || "#000000";
+      }
+    }
+
+    // Update JRXML
+    updateJRXML();
+  },
+);
+
+// Watch for border-color changes, updating the border style in real time
+watch(
+  () => currentElement.value?.box?.borderColor,
+  (newBorderColor) => {
+    if (!currentElement.value || !currentElement.value.box) return;
+
+    const box = currentElement.value.box;
+
+    // If a border style is set, update the color on each side
+    if (box.border && box.border !== "") {
+      const borderMap: Record<string, string> = {
+        Thin: "1px",
+        "1Point": "1px",
+        "2Point": "2px",
+        "4Point": "4px",
+        Dotted: "1px dotted",
+        Dashed: "1px dashed",
+        Double: "3px double",
+      };
+
+      const borderValue = borderMap[box.border] || "1px";
+      const fullBorderStyle = `${borderValue} solid ${newBorderColor || "#000000"}`;
+
+      // Apply it to all sides immediately
+      box.topBorder = fullBorderStyle;
+      box.leftBorder = fullBorderStyle;
+      box.bottomBorder = fullBorderStyle;
+      box.rightBorder = fullBorderStyle;
+
+      // Update JRXML
+      updateJRXML();
+    }
+  },
+);
 
 // Watch for top-border changes
-watch(() => currentElement.value?.box?.topBorder, (newTopBorder) => {
-  if (!currentElement.value || !currentElement.value.box) return;
+watch(
+  () => currentElement.value?.box?.topBorder,
+  (newTopBorder) => {
+    if (!currentElement.value || !currentElement.value.box) return;
 
-  // If the border style is an empty string, clear the top border
-  if (!newTopBorder || newTopBorder === '') {
-    // Border cleared; update JRXML
-    updateJRXML();
-    return;
-  }
+    // If the border style is an empty string, clear the top border
+    if (!newTopBorder || newTopBorder === "") {
+      // Border cleared; update JRXML
+      updateJRXML();
+      return;
+    }
 
-  // If the border is a style name (e.g. "Thin"), convert it to a full border style string
-  if (['Thin', 'Medium', 'Thick', 'Dashed', 'Dotted', 'Double', '1Point', '2Point', '4Point'].includes(newTopBorder)) {
-    const box = currentElement.value.box;
-    const borderColor = box.topBorderColor || '#000000';
+    // If the border is a style name (e.g. "Thin"), convert it to a full border style string
+    if (
+      [
+        "Thin",
+        "Medium",
+        "Thick",
+        "Dashed",
+        "Dotted",
+        "Double",
+        "1Point",
+        "2Point",
+        "4Point",
+      ].includes(newTopBorder)
+    ) {
+      const box = currentElement.value.box;
+      const borderColor = box.topBorderColor || "#000000";
 
-    const borderMap: Record<string, string> = {
-      'Thin': '1px',
-      '1Point': '1px',
-      '2Point': '2px',
-      '4Point': '4px',
-      'Dotted': '1px dotted',
-      'Dashed': '1px dashed',
-      'Double': '3px double'
-    };
+      const borderMap: Record<string, string> = {
+        Thin: "1px",
+        "1Point": "1px",
+        "2Point": "2px",
+        "4Point": "4px",
+        Dotted: "1px dotted",
+        Dashed: "1px dashed",
+        Double: "3px double",
+      };
 
-    const borderValue = borderMap[newTopBorder] || '1px';
-    box.topBorder = `${borderValue} solid ${borderColor}`;
-    // Update JRXML
-    updateJRXML();
-  }
-});
+      const borderValue = borderMap[newTopBorder] || "1px";
+      box.topBorder = `${borderValue} solid ${borderColor}`;
+      // Update JRXML
+      updateJRXML();
+    }
+  },
+);
 
 // Watch for left-border changes
-watch(() => currentElement.value?.box?.leftBorder, (newLeftBorder) => {
-  if (!currentElement.value || !currentElement.value.box) return;
+watch(
+  () => currentElement.value?.box?.leftBorder,
+  (newLeftBorder) => {
+    if (!currentElement.value || !currentElement.value.box) return;
 
-  // If the border style is an empty string, clear the left border
-  if (!newLeftBorder || newLeftBorder === '') {
-    // Border cleared; update JRXML
-    updateJRXML();
-    return;
-  }
+    // If the border style is an empty string, clear the left border
+    if (!newLeftBorder || newLeftBorder === "") {
+      // Border cleared; update JRXML
+      updateJRXML();
+      return;
+    }
 
-  // If the border is a style name (e.g. "Thin"), convert it to a full border style string
-  if (['Thin', 'Medium', 'Thick', 'Dashed', 'Dotted', 'Double', '1Point', '2Point', '4Point'].includes(newLeftBorder)) {
-    const box = currentElement.value.box;
-    const borderColor = box.leftBorderColor || '#000000';
+    // If the border is a style name (e.g. "Thin"), convert it to a full border style string
+    if (
+      [
+        "Thin",
+        "Medium",
+        "Thick",
+        "Dashed",
+        "Dotted",
+        "Double",
+        "1Point",
+        "2Point",
+        "4Point",
+      ].includes(newLeftBorder)
+    ) {
+      const box = currentElement.value.box;
+      const borderColor = box.leftBorderColor || "#000000";
 
-    const borderMap: Record<string, string> = {
-      'Thin': '1px',
-      '1Point': '1px',
-      '2Point': '2px',
-      '4Point': '4px',
-      'Dotted': '1px dotted',
-      'Dashed': '1px dashed',
-      'Double': '3px double'
-    };
+      const borderMap: Record<string, string> = {
+        Thin: "1px",
+        "1Point": "1px",
+        "2Point": "2px",
+        "4Point": "4px",
+        Dotted: "1px dotted",
+        Dashed: "1px dashed",
+        Double: "3px double",
+      };
 
-    const borderValue = borderMap[newLeftBorder] || '1px';
-    box.leftBorder = `${borderValue} solid ${borderColor}`;
-    // Update JRXML
-    updateJRXML();
-  }
-});
+      const borderValue = borderMap[newLeftBorder] || "1px";
+      box.leftBorder = `${borderValue} solid ${borderColor}`;
+      // Update JRXML
+      updateJRXML();
+    }
+  },
+);
 
 // Watch for bottom-border changes
-watch(() => currentElement.value?.box?.bottomBorder, (newBottomBorder) => {
-  if (!currentElement.value || !currentElement.value.box) return;
+watch(
+  () => currentElement.value?.box?.bottomBorder,
+  (newBottomBorder) => {
+    if (!currentElement.value || !currentElement.value.box) return;
 
-  // If the border style is an empty string, clear the bottom border
-  if (!newBottomBorder || newBottomBorder === '') {
-    // Border cleared; update JRXML
-    updateJRXML();
-    return;
-  }
+    // If the border style is an empty string, clear the bottom border
+    if (!newBottomBorder || newBottomBorder === "") {
+      // Border cleared; update JRXML
+      updateJRXML();
+      return;
+    }
 
-  // If the border is a style name (e.g. "Thin"), convert it to a full border style string
-  if (['Thin', 'Medium', 'Thick', 'Dashed', 'Dotted', 'Double', '1Point', '2Point', '4Point'].includes(newBottomBorder)) {
-    const box = currentElement.value.box;
-    const borderColor = box.bottomBorderColor || '#000000';
+    // If the border is a style name (e.g. "Thin"), convert it to a full border style string
+    if (
+      [
+        "Thin",
+        "Medium",
+        "Thick",
+        "Dashed",
+        "Dotted",
+        "Double",
+        "1Point",
+        "2Point",
+        "4Point",
+      ].includes(newBottomBorder)
+    ) {
+      const box = currentElement.value.box;
+      const borderColor = box.bottomBorderColor || "#000000";
 
-    const borderMap: Record<string, string> = {
-      'Thin': '1px',
-      '1Point': '1px',
-      '2Point': '2px',
-      '4Point': '4px',
-      'Dotted': '1px dotted',
-      'Dashed': '1px dashed',
-      'Double': '3px double'
-    };
+      const borderMap: Record<string, string> = {
+        Thin: "1px",
+        "1Point": "1px",
+        "2Point": "2px",
+        "4Point": "4px",
+        Dotted: "1px dotted",
+        Dashed: "1px dashed",
+        Double: "3px double",
+      };
 
-    const borderValue = borderMap[newBottomBorder] || '1px';
-    box.bottomBorder = `${borderValue} solid ${borderColor}`;
-    // Update JRXML
-    updateJRXML();
-  }
-});
+      const borderValue = borderMap[newBottomBorder] || "1px";
+      box.bottomBorder = `${borderValue} solid ${borderColor}`;
+      // Update JRXML
+      updateJRXML();
+    }
+  },
+);
 
 // Watch for right-border changes
-watch(() => currentElement.value?.box?.rightBorder, (newRightBorder) => {
-  if (!currentElement.value || !currentElement.value.box) return;
+watch(
+  () => currentElement.value?.box?.rightBorder,
+  (newRightBorder) => {
+    if (!currentElement.value || !currentElement.value.box) return;
 
-  // If the border style is an empty string, clear the right border
-  if (!newRightBorder || newRightBorder === '') {
-    // Border cleared; update JRXML
-    updateJRXML();
-    return;
-  }
+    // If the border style is an empty string, clear the right border
+    if (!newRightBorder || newRightBorder === "") {
+      // Border cleared; update JRXML
+      updateJRXML();
+      return;
+    }
 
-  // If the border is a style name (e.g. "Thin"), convert it to a full border style string
-  if (['Thin', 'Medium', 'Thick', 'Dashed', 'Dotted', 'Double', '1Point', '2Point', '4Point'].includes(newRightBorder)) {
-    const box = currentElement.value.box;
-    const borderColor = box.rightBorderColor || '#000000';
+    // If the border is a style name (e.g. "Thin"), convert it to a full border style string
+    if (
+      [
+        "Thin",
+        "Medium",
+        "Thick",
+        "Dashed",
+        "Dotted",
+        "Double",
+        "1Point",
+        "2Point",
+        "4Point",
+      ].includes(newRightBorder)
+    ) {
+      const box = currentElement.value.box;
+      const borderColor = box.rightBorderColor || "#000000";
 
-    const borderMap: Record<string, string> = {
-      'Thin': '1px',
-      '1Point': '1px',
-      '2Point': '2px',
-      '4Point': '4px',
-      'Dotted': '1px dotted',
-      'Dashed': '1px dashed',
-      'Double': '3px double'
-    };
+      const borderMap: Record<string, string> = {
+        Thin: "1px",
+        "1Point": "1px",
+        "2Point": "2px",
+        "4Point": "4px",
+        Dotted: "1px dotted",
+        Dashed: "1px dashed",
+        Double: "3px double",
+      };
 
-    const borderValue = borderMap[newRightBorder] || '1px';
-    box.rightBorder = `${borderValue} solid ${borderColor}`;
-    // Update JRXML
-    updateJRXML();
-  }
-});
-
-
+      const borderValue = borderMap[newRightBorder] || "1px";
+      box.rightBorder = `${borderValue} solid ${borderColor}`;
+      // Update JRXML
+      updateJRXML();
+    }
+  },
+);
 
 // Start resizing a band's height
 const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
@@ -4033,7 +4857,7 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   const startHeight = bands.value[bandIndex].height;
 
   // Get the paper element's position info, for more accurate coordinate calculations
-  const paperElement = document.querySelector('.paper') as HTMLElement;
+  const paperElement = document.querySelector(".paper") as HTMLElement;
   let paperOffsetY = 0;
 
   if (paperElement) {
@@ -4051,8 +4875,13 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   const handleMouseMove = (e: MouseEvent): void => {
     if (!bands.value || !bands.value[bandIndex]) return;
     // Calculate the height change accounting for the zoom scale, using paperOffsetY for more accuracy
-    const deltaY = (e.clientY - paperOffsetY) / currentZoom - (startY - paperOffsetY) / currentZoom;
-    const newHeight = Math.max(BAND_CONSTANTS.MIN_HEIGHT, Math.round(startHeight + deltaY));
+    const deltaY =
+      (e.clientY - paperOffsetY) / currentZoom -
+      (startY - paperOffsetY) / currentZoom;
+    const newHeight = Math.max(
+      BAND_CONSTANTS.MIN_HEIGHT,
+      Math.round(startHeight + deltaY),
+    );
 
     // Update the band height
     bands.value = bands.value.map((b, i) => {
@@ -4063,22 +4892,26 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
     });
 
     // Update the band height adjustment tooltip
-    resizingBandInfo.bandName = bands.value[bandIndex] ? getBandDisplayName(bands.value[bandIndex].type) : '';
+    resizingBandInfo.bandName = bands.value[bandIndex]
+      ? getBandDisplayName(bands.value[bandIndex].type)
+      : "";
     resizingBandInfo.height = newHeight;
 
     // Position the band-height display element so it follows the mouse
-    const bandHeightElement = document.querySelector('.band-height-display') as HTMLElement;
+    const bandHeightElement = document.querySelector(
+      ".band-height-display",
+    ) as HTMLElement;
     if (bandHeightElement) {
-      bandHeightElement.style.left = (e.clientX + 10) + 'px';
-      bandHeightElement.style.top = (e.clientY - 30) + 'px';
+      bandHeightElement.style.left = e.clientX + 10 + "px";
+      bandHeightElement.style.top = e.clientY - 30 + "px";
     }
 
     // Adjust the positions of elements within this band so they don't exceed the band's bounds
     const band = bands.value[bandIndex];
     if (band && band.elements) {
-      band.elements.forEach(element => {
+      band.elements.forEach((element) => {
         // Adjust the element's position accounting for the zoom scale
-        if ((element.y + element.height) > newHeight) {
+        if (element.y + element.height > newHeight) {
           element.y = Math.max(0, newHeight - element.height);
         }
       });
@@ -4088,14 +4921,14 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   const handleMouseUp = (): void => {
     // Hide the band height adjustment tooltip
     resizingBandInfo.visible = false;
-    resizingBandInfo.bandName = '';
+    resizingBandInfo.bandName = "";
     resizingBandInfo.height = 0;
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", handleMouseUp);
   };
 
-  document.addEventListener('mousemove', handleMouseMove);
-  document.addEventListener('mouseup', handleMouseUp);
+  document.addEventListener("mousemove", handleMouseMove);
+  document.addEventListener("mouseup", handleMouseUp);
 };
 
 // Get the given Band's Y offset
@@ -4108,7 +4941,13 @@ const getBandOffsetY = (bandIndex: number): number => {
 };
 
 // Start resizing an element
-const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex: number, direction: string, parentFrameIndex?: number): void => {
+const startResizingElement = (
+  event: MouseEvent,
+  bandIndex: number,
+  elementIndex: number,
+  direction: string,
+  parentFrameIndex?: number,
+): void => {
   event.preventDefault();
 
   // Automatically hide the bottom panel
@@ -4119,7 +4958,7 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
 
   if (parentFrameIndex !== undefined) {
     const frame = band?.elements[parentFrameIndex];
-    if (frame && frame.type === 'frame' && frame.elements) {
+    if (frame && frame.type === "frame" && frame.elements) {
       element = frame.elements[elementIndex];
     }
   } else {
@@ -4131,7 +4970,7 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
     const currentZoom = zoomLevel.value;
 
     // Get the paper element's position info, for more accurate coordinate calculations
-    const paperElement = document.querySelector('.paper') as HTMLElement;
+    const paperElement = document.querySelector(".paper") as HTMLElement;
     let paperOffsetX = 0;
     let paperOffsetY = 0;
 
@@ -4149,7 +4988,7 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
       startY: (event.clientY - paperOffsetY) / currentZoom,
       startWidth: element.width,
       startHeight: element.height,
-      parentFrameIndex
+      parentFrameIndex,
     };
 
     isDraggingOrResizing.value = true;
@@ -4161,12 +5000,15 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
       if (!currentBand) return;
 
       let element: DesignElement | undefined;
-      let containerWidth = (paperWidth.value - (reportProperties.value?.leftMargin || 0) - (reportProperties.value?.rightMargin || 0));
+      let containerWidth =
+        paperWidth.value -
+        (reportProperties.value?.leftMargin || 0) -
+        (reportProperties.value?.rightMargin || 0);
       let containerHeight = currentBand.height;
 
       if (resizingInfo.value.parentFrameIndex !== undefined) {
         const frame = currentBand.elements[resizingInfo.value.parentFrameIndex];
-        if (frame && frame.type === 'frame' && frame.elements) {
+        if (frame && frame.type === "frame" && frame.elements) {
           element = frame.elements[resizingInfo.value.elementIndex];
           containerWidth = frame.width;
           containerHeight = frame.height;
@@ -4181,7 +5023,7 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
       const currentZoom = zoomLevel.value;
 
       // Get the paper element's current position info, for more accurate coordinate calculations
-      const paperEl = document.querySelector('.paper') as HTMLElement;
+      const paperEl = document.querySelector(".paper") as HTMLElement;
       let currentPaperOffsetX = 0;
       let currentPaperOffsetY = 0;
 
@@ -4193,8 +5035,14 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
       }
 
       // Calculate the new width and height, accounting for the zoom scale
-      let newWidth = resizingInfo.value.startWidth + ((e.clientX - currentPaperOffsetX) / currentZoom - resizingInfo.value.startX);
-      let newHeight = resizingInfo.value.startHeight + ((e.clientY - currentPaperOffsetY) / currentZoom - resizingInfo.value.startY);
+      let newWidth =
+        resizingInfo.value.startWidth +
+        ((e.clientX - currentPaperOffsetX) / currentZoom -
+          resizingInfo.value.startX);
+      let newHeight =
+        resizingInfo.value.startHeight +
+        ((e.clientY - currentPaperOffsetY) / currentZoom -
+          resizingInfo.value.startY);
 
       // Constrain the minimum size
       const minSize = 1;
@@ -4206,26 +5054,31 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
       // Constrain the size so it doesn't exceed the paper's right boundary or the band's bottom boundary
       let maxElementWidth;
       if (resizingInfo.value.parentFrameIndex !== undefined) {
-         maxElementWidth = containerWidth - element.x;
+        maxElementWidth = containerWidth - element.x;
       } else {
-         maxElementWidth = paperWidth.value - leftMargin - rightMargin - element.x;
+        maxElementWidth =
+          paperWidth.value - leftMargin - rightMargin - element.x;
       }
 
-      const availableHeight = (containerHeight - element.y);
+      const availableHeight = containerHeight - element.y;
       newWidth = Math.min(newWidth, maxElementWidth);
       newHeight = Math.min(newHeight, availableHeight);
 
       // If the SHIFT key is held, preserve the original aspect ratio
       if (e.shiftKey) {
         // Calculate the original aspect ratio
-        const aspectRatio = resizingInfo.value.startWidth / resizingInfo.value.startHeight;
+        const aspectRatio =
+          resizingInfo.value.startWidth / resizingInfo.value.startHeight;
 
         // Calculate the height derived from the width, and the width derived from the height
         const heightBasedOnWidth = newWidth / aspectRatio;
         const widthBasedOnHeight = newHeight * aspectRatio;
 
         // Choose whichever dimension is closer to the original ratio
-        if (Math.abs(newHeight - heightBasedOnWidth) < Math.abs(newWidth - widthBasedOnHeight)) {
+        if (
+          Math.abs(newHeight - heightBasedOnWidth) <
+          Math.abs(newWidth - widthBasedOnHeight)
+        ) {
           // Use the width as the basis, and adjust the height
           newHeight = heightBasedOnWidth;
         } else {
@@ -4244,7 +5097,9 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
 
         // Use whichever dimension changed more as the basis
         const widthChange = Math.abs(newWidth - resizingInfo.value.startWidth);
-        const heightChange = Math.abs(newHeight - resizingInfo.value.startHeight);
+        const heightChange = Math.abs(
+          newHeight - resizingInfo.value.startHeight,
+        );
 
         if (widthChange >= heightChange) {
           // Use the width as the basis; height equals width
@@ -4264,9 +5119,12 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
       const tempHeight = Math.round(newHeight);
 
       // Special handling for table elements: automatically adjust column widths when the table width changes
-      if (element.type === 'table') {
+      if (element.type === "table") {
         // Look up the corresponding column within the children array (recursive search)
-        const findColumnInChildren = (children: any[], targetColumn: any): any | null => {
+        const findColumnInChildren = (
+          children: any[],
+          targetColumn: any,
+        ): any | null => {
           for (const child of children) {
             if (child.uuid === targetColumn.uuid) {
               return child;
@@ -4283,15 +5141,20 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
 
         if (element.columns && element.columns.length > 0) {
           // Get the current width of each column
-          const columnWidths = element.columns.map(col => col.width || 0);
-          const totalColumnWidth = columnWidths.reduce((sum, width) => sum + width, 0);
+          const columnWidths = element.columns.map((col) => col.width || 0);
+          const totalColumnWidth = columnWidths.reduce(
+            (sum, width) => sum + width,
+            0,
+          );
 
           if (totalColumnWidth > 0) {
             // Calculate the width ratio each column should receive
-            const ratios = columnWidths.map(width => width / totalColumnWidth);
+            const ratios = columnWidths.map(
+              (width) => width / totalColumnWidth,
+            );
 
             // Distribute column widths proportionally based on the new table width
-            const newColumnWidths = ratios.map(ratio => {
+            const newColumnWidths = ratios.map((ratio) => {
               // Distribute the new width proportionally
               const newColWidth = tempWidth * ratio;
               // Ensure every column has at least a minimum width
@@ -4299,12 +5162,16 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
             });
 
             // Adjust the last column's width so the total matches the table width
-            const sumNewWidths = newColumnWidths.reduce((sum, width) => sum + width, 0);
+            const sumNewWidths = newColumnWidths.reduce(
+              (sum, width) => sum + width,
+              0,
+            );
             if (sumNewWidths !== tempWidth && newColumnWidths.length > 0) {
               const diff = tempWidth - sumNewWidths;
               const lastIndex = newColumnWidths.length - 1;
               // Ensure newColumnWidths[lastIndex] isn't undefined
-              newColumnWidths[lastIndex] = (newColumnWidths[lastIndex] || 0) + diff;
+              newColumnWidths[lastIndex] =
+                (newColumnWidths[lastIndex] || 0) + diff;
             }
 
             // Update the width of every column
@@ -4386,19 +5253,22 @@ const startResizingElement = (event: MouseEvent, bandIndex: number, elementIndex
       // Update JRXML
       updateJRXML();
 
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
   }
-}
+};
 
 // Clean up event listeners when the component unmounts
 onUnmounted(() => {
   if ((window as any).pdfDesignerKeydownListener) {
-    document.removeEventListener('keydown', (window as any).pdfDesignerKeydownListener);
+    document.removeEventListener(
+      "keydown",
+      (window as any).pdfDesignerKeydownListener,
+    );
     delete (window as any).pdfDesignerKeydownListener;
   }
 });
@@ -4414,7 +5284,10 @@ const showPdfPreview = ref(false);
 
 // Preview server settings related state
 const showPreviewServerSettings = ref(false);
-const previewServerUrl = ref(localStorage.getItem('previewServerUrl') || 'http://localhost:8084/api/pdf/generateForm');
+const previewServerUrl = ref(
+  localStorage.getItem("previewServerUrl") ||
+    "http://localhost:8084/api/pdf/generateForm",
+);
 
 // Field management related state
 const showFieldModal = ref(false);
@@ -4433,7 +5306,7 @@ const openPreviewServerSettings = (): void => {
 // Update the preview server address
 const updatePreviewServerUrl = (url: string): void => {
   previewServerUrl.value = url;
-  localStorage.setItem('previewServerUrl', url);
+  localStorage.setItem("previewServerUrl", url);
 };
 const isEditingParameter = ref(false);
 
@@ -4454,7 +5327,9 @@ const handleEditField = (field: ReportField): void => {
 // Handle deleting a field
 const handleDeleteField = (fieldName: string): void => {
   if (confirm(`Are you sure you want to delete field "${fieldName}"?`)) {
-    const fieldIndex = reportFields.value.findIndex(field => field.name === fieldName);
+    const fieldIndex = reportFields.value.findIndex(
+      (field) => field.name === fieldName,
+    );
     if (fieldIndex !== -1) {
       reportFields.value.splice(fieldIndex, 1);
       saveStateToHistory();
@@ -4480,8 +5355,12 @@ const handleEditParameter = (parameter: ReportParameter): void => {
 
 // Handle deleting a report parameter
 const handleDeleteParameter = (parameterName: string): void => {
-  if (confirm(`Are you sure you want to delete parameter "${parameterName}"?`)) {
-    const parameterIndex = reportParameters.value.findIndex(param => param.name === parameterName);
+  if (
+    confirm(`Are you sure you want to delete parameter "${parameterName}"?`)
+  ) {
+    const parameterIndex = reportParameters.value.findIndex(
+      (param) => param.name === parameterName,
+    );
     if (parameterIndex !== -1) {
       reportParameters.value.splice(parameterIndex, 1);
       saveStateToHistory();
@@ -4505,7 +5384,9 @@ const handleEditVariable = (variable: ReportVariable): void => {
 // Handle deleting a variable
 const handleDeleteVariable = (variableName: string): void => {
   if (confirm(`Are you sure you want to delete variable "${variableName}"?`)) {
-    const variableIndex = reportVariables.value.findIndex(v => v.name === variableName);
+    const variableIndex = reportVariables.value.findIndex(
+      (v) => v.name === variableName,
+    );
     if (variableIndex !== -1) {
       reportVariables.value.splice(variableIndex, 1);
       saveStateToHistory();
@@ -4516,9 +5397,13 @@ const handleDeleteVariable = (variableName: string): void => {
 
 // Handle saving a variable
 const handleVariableSave = (variable: ReportVariable): void => {
-  const existingIndex = reportVariables.value.findIndex(v => v.name === variable.name);
+  const existingIndex = reportVariables.value.findIndex(
+    (v) => v.name === variable.name,
+  );
   if (existingIndex !== -1 && editingVariable.value?.name !== variable.name) {
-    alert('A variable with this name already exists, please use a different name');
+    alert(
+      "A variable with this name already exists, please use a different name",
+    );
     return;
   }
   if (existingIndex !== -1) {
@@ -4542,14 +5427,19 @@ const handleAddStyle = (): void => {
 
 // Handle editing a style
 const handleEditStyle = (style: any): void => {
-  editingStyle.value = { ...style, box: style.box ? { ...style.box } : undefined };
+  editingStyle.value = {
+    ...style,
+    box: style.box ? { ...style.box } : undefined,
+  };
   showStyleModal.value = true;
 };
 
 // Handle deleting a style
 const handleDeleteStyle = (styleName: string): void => {
   if (confirm(`Are you sure you want to delete style "${styleName}"?`)) {
-    const styleIndex = reportStyles.value.findIndex(s => s.name === styleName);
+    const styleIndex = reportStyles.value.findIndex(
+      (s) => s.name === styleName,
+    );
     if (styleIndex !== -1) {
       reportStyles.value.splice(styleIndex, 1);
       saveStateToHistory();
@@ -4560,9 +5450,11 @@ const handleDeleteStyle = (styleName: string): void => {
 
 // Handle saving a style
 const handleStyleSave = (style: any): void => {
-  const existingIndex = reportStyles.value.findIndex(s => s.name === style.name);
+  const existingIndex = reportStyles.value.findIndex(
+    (s) => s.name === style.name,
+  );
   if (existingIndex !== -1 && editingStyle.value?.name !== style.name) {
-    alert('A style with this name already exists, please use a different name');
+    alert("A style with this name already exists, please use a different name");
     return;
   }
   if (existingIndex !== -1) {
@@ -4582,7 +5474,11 @@ const handleDeleteElement = (bandIndex: number, elementIndex: number): void => {
     saveStateToHistory();
     updateJRXML();
     // Clear the selection state
-    if (selectedElement.value && selectedElement.value.bandIndex === bandIndex && selectedElement.value.elementIndex === elementIndex) {
+    if (
+      selectedElement.value &&
+      selectedElement.value.bandIndex === bandIndex &&
+      selectedElement.value.elementIndex === elementIndex
+    ) {
       selectedElement.value = null;
       selectedElements.value = [];
     }
@@ -4593,28 +5489,43 @@ const handleDeleteElement = (bandIndex: number, elementIndex: number): void => {
 const handleFieldSave = (fieldOrParam: ReportField | ReportParameter): void => {
   if (isEditingParameter.value) {
     // Handle saving a parameter
-    const existingParamIndex = reportParameters.value.findIndex(p => p.name === fieldOrParam.name);
+    const existingParamIndex = reportParameters.value.findIndex(
+      (p) => p.name === fieldOrParam.name,
+    );
 
-    if (existingParamIndex !== -1 && editingParameter.value?.name !== fieldOrParam.name) {
+    if (
+      existingParamIndex !== -1 &&
+      editingParameter.value?.name !== fieldOrParam.name
+    ) {
       // If editing and a parameter with this name already exists, show an error
-      alert('A parameter with this name already exists, please use a different name');
+      alert(
+        "A parameter with this name already exists, please use a different name",
+      );
       return;
     }
 
     if (existingParamIndex !== -1) {
       // Update the existing parameter
-      reportParameters.value[existingParamIndex] = fieldOrParam as ReportParameter;
+      reportParameters.value[existingParamIndex] =
+        fieldOrParam as ReportParameter;
     } else {
       // Add the new parameter
       reportParameters.value.push(fieldOrParam as ReportParameter);
     }
   } else {
     // Handle saving a field
-    const existingFieldIndex = reportFields.value.findIndex(f => f.name === fieldOrParam.name);
+    const existingFieldIndex = reportFields.value.findIndex(
+      (f) => f.name === fieldOrParam.name,
+    );
 
-    if (existingFieldIndex !== -1 && editingField.value?.name !== fieldOrParam.name) {
+    if (
+      existingFieldIndex !== -1 &&
+      editingField.value?.name !== fieldOrParam.name
+    ) {
       // If editing and a field with this name already exists, show an error
-      alert('A field with this name already exists, please use a different name');
+      alert(
+        "A field with this name already exists, please use a different name",
+      );
       return;
     }
 
@@ -4635,15 +5546,17 @@ const handleFieldSave = (fieldOrParam: ReportField | ReportParameter): void => {
 const handleCheckFields = (fields: string[]): void => {
   let fieldsAdded = false;
 
-  fields.forEach(fieldName => {
+  fields.forEach((fieldName) => {
     // Check whether the field already exists
-    const existingFieldIndex = reportFields.value.findIndex(f => f.name === fieldName);
+    const existingFieldIndex = reportFields.value.findIndex(
+      (f) => f.name === fieldName,
+    );
 
     if (existingFieldIndex === -1) {
       // The field doesn't exist yet; add it automatically
       reportFields.value.push({
         name: fieldName,
-        class: 'java.lang.String'
+        class: "java.lang.String",
       });
       fieldsAdded = true;
     }
@@ -4658,7 +5571,13 @@ const handleCheckFields = (fields: string[]): void => {
 };
 
 // Handle moving a table column
-const handleMoveColumn = (elementIndex: number, fromIndex: number, toIndex: number, bandIndex: number, parentFrameIndex?: number): void => {
+const handleMoveColumn = (
+  elementIndex: number,
+  fromIndex: number,
+  toIndex: number,
+  bandIndex: number,
+  parentFrameIndex?: number,
+): void => {
   // Get the current band
   const band = bands.value[bandIndex];
   if (!band) return;
@@ -4668,7 +5587,7 @@ const handleMoveColumn = (elementIndex: number, fromIndex: number, toIndex: numb
   if (parentFrameIndex !== undefined) {
     // Handle an element inside a Frame
     const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === 'frame' && frame.elements) {
+    if (frame && frame.type === "frame" && frame.elements) {
       element = frame.elements[elementIndex];
     }
   } else {
@@ -4677,7 +5596,7 @@ const handleMoveColumn = (elementIndex: number, fromIndex: number, toIndex: numb
   }
 
   // Ensure it is a table element
-  if (!element || element.type !== 'table') return;
+  if (!element || element.type !== "table") return;
 
   const tableElement = element as any;
   if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
@@ -4698,7 +5617,12 @@ const handleMoveColumn = (elementIndex: number, fromIndex: number, toIndex: numb
 };
 
 // Handle adding the selected columns to a group
-const handleAddColumnsToGroup = (params: { elementIndex: number; columnIndices: number[]; bandIndex: number; parentFrameIndex?: number }): void => {
+const handleAddColumnsToGroup = (params: {
+  elementIndex: number;
+  columnIndices: number[];
+  bandIndex: number;
+  parentFrameIndex?: number;
+}): void => {
   const { elementIndex, columnIndices, bandIndex, parentFrameIndex } = params;
 
   // Get the current band
@@ -4710,7 +5634,7 @@ const handleAddColumnsToGroup = (params: { elementIndex: number; columnIndices: 
   if (parentFrameIndex !== undefined) {
     // Handle an element inside a Frame
     const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === 'frame' && frame.elements) {
+    if (frame && frame.type === "frame" && frame.elements) {
       element = frame.elements[elementIndex];
     }
   } else {
@@ -4719,7 +5643,7 @@ const handleAddColumnsToGroup = (params: { elementIndex: number; columnIndices: 
   }
 
   // Ensure it is a table element
-  if (!element || element.type !== 'table') return;
+  if (!element || element.type !== "table") return;
 
   const tableElement = element as any;
   if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
@@ -4729,7 +5653,7 @@ const handleAddColumnsToGroup = (params: { elementIndex: number; columnIndices: 
 
   // Recursively collect all groups
   const collectGroups = (items: any[]): void => {
-    items.forEach(item => {
+    items.forEach((item) => {
       if (item.children) {
         existingGroups.push(item);
         collectGroups(item.children);
@@ -4751,7 +5675,7 @@ const handleAddColumnsToGroup = (params: { elementIndex: number; columnIndices: 
     bandIndex,
     parentFrameIndex,
     columns: tableElement.columns,
-    children: tableElement.children || tableElement.columns
+    children: tableElement.children || tableElement.columns,
   };
 
   // Show the column selection dialog
@@ -4759,8 +5683,13 @@ const handleAddColumnsToGroup = (params: { elementIndex: number; columnIndices: 
 };
 
 // Handle confirmation of the column selection
-const handleColumnSelectionConfirm = (selectedColumnIndices: number[], selectedRegion: string, groupText: string): void => {
-  const { elementIndex, bandIndex, parentFrameIndex } = columnSelectionState.value;
+const handleColumnSelectionConfirm = (
+  selectedColumnIndices: number[],
+  selectedRegion: string,
+  groupText: string,
+): void => {
+  const { elementIndex, bandIndex, parentFrameIndex } =
+    columnSelectionState.value;
 
   // Get the current band
   const band = bands.value[bandIndex];
@@ -4771,7 +5700,7 @@ const handleColumnSelectionConfirm = (selectedColumnIndices: number[], selectedR
   if (parentFrameIndex !== undefined) {
     // Handle an element inside a Frame
     const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === 'frame' && frame.elements) {
+    if (frame && frame.type === "frame" && frame.elements) {
       element = frame.elements[elementIndex];
     }
   } else {
@@ -4780,7 +5709,7 @@ const handleColumnSelectionConfirm = (selectedColumnIndices: number[], selectedR
   }
 
   // Ensure it is a table element
-  if (!element || element.type !== 'table') return;
+  if (!element || element.type !== "table") return;
 
   const tableElement = element as any;
   if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
@@ -4798,87 +5727,95 @@ const handleColumnSelectionConfirm = (selectedColumnIndices: number[], selectedR
   if (sortedIndices.length === 0) return;
 
   // Get the selected columns or groups (from the children array, since it includes combined columns)
-  const selectedColumns = sortedIndices.map(index => tableElement.children[index]);
+  const selectedColumns = sortedIndices.map(
+    (index) => tableElement.children[index],
+  );
 
   // Calculate the group's width (recursively, to handle combined columns)
   function calculateWidth(item: any): number {
     if (item.children) {
       // A combined column; recursively sum the widths of all child columns
-      return item.children.reduce((sum: number, child: any) => sum + calculateWidth(child), 0);
+      return item.children.reduce(
+        (sum: number, child: any) => sum + calculateWidth(child),
+        0,
+      );
     } else {
       // A regular column; use its width directly
       return item.width || 0;
     }
   }
 
-  const groupWidth = selectedColumns.reduce((sum: number, column: any) => sum + calculateWidth(column), 0);
+  const groupWidth = selectedColumns.reduce(
+    (sum: number, column: any) => sum + calculateWidth(column),
+    0,
+  );
 
   // Create the new column group (preserving the original combined-column structure)
   const newGroup: any = {
     uuid: crypto.randomUUID(),
     name: `Group_${Date.now()}`,
     width: groupWidth,
-    children: selectedColumns // Use the selected items directly (including combined columns), rather than flattening the child columns
+    children: selectedColumns, // Use the selected items directly (including combined columns), rather than flattening the child columns
   };
 
   // Set the corresponding property based on the selected region
   const textContent = groupText || newGroup.name;
-  if (selectedRegion === 'tableHeader') {
+  if (selectedRegion === "tableHeader") {
     newGroup.hasTableHeader = true;
     newGroup.tableHeader = {
       enable: true,
       element: {
-        type: 'staticText',
+        type: "staticText",
         text: textContent,
         x: 0,
         y: 0,
         width: groupWidth,
         height: 30,
-        textAlignment: 'Center',
-        verticalAlignment: 'Middle'
-      }
+        textAlignment: "Center",
+        verticalAlignment: "Middle",
+      },
     };
-  } else if (selectedRegion === 'columnHeader') {
+  } else if (selectedRegion === "columnHeader") {
     newGroup.columnHeader = {
       enable: true,
       element: {
-        type: 'staticText',
+        type: "staticText",
         text: textContent,
         x: 0,
         y: 0,
         width: groupWidth,
         height: 30,
-        textAlignment: 'Center',
-        verticalAlignment: 'Middle'
-      }
+        textAlignment: "Center",
+        verticalAlignment: "Middle",
+      },
     };
-  } else if (selectedRegion === 'columnFooter') {
+  } else if (selectedRegion === "columnFooter") {
     newGroup.columnFooter = {
       enable: true,
       element: {
-        type: 'staticText',
+        type: "staticText",
         text: textContent,
         x: 0,
         y: 0,
         width: groupWidth,
         height: 30,
-        textAlignment: 'Center',
-        verticalAlignment: 'Middle'
-      }
+        textAlignment: "Center",
+        verticalAlignment: "Middle",
+      },
     };
-  } else if (selectedRegion === 'tableFooter') {
+  } else if (selectedRegion === "tableFooter") {
     newGroup.tableFooter = {
       enable: true,
       element: {
-        type: 'staticText',
+        type: "staticText",
         text: textContent,
         x: 0,
         y: 0,
         width: groupWidth,
         height: 30,
-        textAlignment: 'Center',
-        verticalAlignment: 'Middle'
-      }
+        textAlignment: "Center",
+        verticalAlignment: "Middle",
+      },
     };
   }
 
@@ -4943,7 +5880,12 @@ const handleColumnSelectionConfirm = (selectedColumnIndices: number[], selectedR
 };
 
 // Handle adding the selected columns to an existing group
-const handleJoinColumnsToExistingGroup = (elementIndex: number, columnIndices: number[], bandIndex: number, parentFrameIndex?: number): void => {
+const handleJoinColumnsToExistingGroup = (
+  elementIndex: number,
+  columnIndices: number[],
+  bandIndex: number,
+  parentFrameIndex?: number,
+): void => {
   // Get the current band
   const band = bands.value[bandIndex];
   if (!band) return;
@@ -4953,7 +5895,7 @@ const handleJoinColumnsToExistingGroup = (elementIndex: number, columnIndices: n
   if (parentFrameIndex !== undefined) {
     // Handle an element inside a Frame
     const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === 'frame' && frame.elements) {
+    if (frame && frame.type === "frame" && frame.elements) {
       element = frame.elements[elementIndex];
     }
   } else {
@@ -4962,7 +5904,7 @@ const handleJoinColumnsToExistingGroup = (elementIndex: number, columnIndices: n
   }
 
   // Ensure it is a table element
-  if (!element || element.type !== 'table') return;
+  if (!element || element.type !== "table") return;
 
   const tableElement = element as any;
   if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
@@ -4975,7 +5917,7 @@ const handleJoinColumnsToExistingGroup = (elementIndex: number, columnIndices: n
 
   // Recursively collect all groups
   const collectGroups = (items: any[]): void => {
-    items.forEach(item => {
+    items.forEach((item) => {
       if (item.children) {
         existingGroups.push(item);
         collectGroups(item.children);
@@ -4998,7 +5940,7 @@ const handleJoinColumnsToExistingGroup = (elementIndex: number, columnIndices: n
     bandIndex,
     parentFrameIndex,
     existingGroups,
-    selectedGroupName: ''
+    selectedGroupName: "",
   };
 
   // Show the dialog
@@ -5007,7 +5949,14 @@ const handleJoinColumnsToExistingGroup = (elementIndex: number, columnIndices: n
 
 // Confirm adding the columns to a group
 const confirmJoinColumnsToGroup = (): void => {
-  const { elementIndex, columnIndices, bandIndex, parentFrameIndex, existingGroups, selectedGroupName } = groupDialogState.value;
+  const {
+    elementIndex,
+    columnIndices,
+    bandIndex,
+    parentFrameIndex,
+    existingGroups,
+    selectedGroupName,
+  } = groupDialogState.value;
 
   if (!selectedGroupName) {
     // If the user didn't enter a group name, return immediately
@@ -5023,7 +5972,7 @@ const confirmJoinColumnsToGroup = (): void => {
   if (parentFrameIndex !== undefined) {
     // Handle an element inside a Frame
     const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === 'frame' && frame.elements) {
+    if (frame && frame.type === "frame" && frame.elements) {
       element = frame.elements[elementIndex];
     }
   } else {
@@ -5032,7 +5981,7 @@ const confirmJoinColumnsToGroup = (): void => {
   }
 
   // Ensure it is a table element
-  if (!element || element.type !== 'table') return;
+  if (!element || element.type !== "table") return;
 
   const tableElement = element as any;
   if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
@@ -5049,10 +5998,14 @@ const confirmJoinColumnsToGroup = (): void => {
   const sortedIndices = [...columnIndices].sort((a, b) => a - b);
 
   // Get the selected columns from the children array (indices are derived from the children array)
-  const selectedColumns = sortedIndices.map(index => tableElement.children[index]);
+  const selectedColumns = sortedIndices.map(
+    (index) => tableElement.children[index],
+  );
 
   // Look up the group specified by the user
-  let targetGroup = existingGroups.find(group => group.name === selectedGroupName);
+  let targetGroup = existingGroups.find(
+    (group) => group.name === selectedGroupName,
+  );
 
   // Build the new children array first, to avoid index-shift issues
   const newChildren = [...tableElement.children];
@@ -5065,14 +6018,18 @@ const confirmJoinColumnsToGroup = (): void => {
 
   if (!targetGroup) {
     // If the group doesn't exist, create a new one
-    const groupWidth = selectedColumns.reduce((sum: number, column: any) => sum + column.width, 0);
+    const groupWidth = selectedColumns.reduce(
+      (sum: number, column: any) => sum + column.width,
+      0,
+    );
 
     let defaultTableHeaderHeight = 30;
     let defaultColumnHeaderHeight = 30;
     if (selectedColumns.length > 0 && selectedColumns[0]) {
       const firstColumn = selectedColumns[0];
       defaultTableHeaderHeight = firstColumn.tableHeader?.element?.height || 30;
-      defaultColumnHeaderHeight = firstColumn.columnHeader?.element?.height || 30;
+      defaultColumnHeaderHeight =
+        firstColumn.columnHeader?.element?.height || 30;
     }
 
     targetGroup = {
@@ -5083,17 +6040,17 @@ const confirmJoinColumnsToGroup = (): void => {
       tableHeader: {
         enable: true,
         element: {
-          type: 'staticText',
+          type: "staticText",
           text: selectedGroupName,
           x: 0,
           y: 0,
           width: groupWidth,
           height: defaultTableHeaderHeight,
-          textAlignment: 'Center',
-          verticalAlignment: 'Middle'
-        }
+          textAlignment: "Center",
+          verticalAlignment: "Middle",
+        },
       },
-      children: []
+      children: [],
     };
 
     // Insert the new group at the position of the first selected column
@@ -5105,7 +6062,10 @@ const confirmJoinColumnsToGroup = (): void => {
   targetGroup.children.push(...selectedColumns);
 
   // Recalculate the target group's width
-  targetGroup.width = targetGroup.children.reduce((sum: number, item: any) => sum + item.width, 0);
+  targetGroup.width = targetGroup.children.reduce(
+    (sum: number, item: any) => sum + item.width,
+    0,
+  );
 
   // Update the target group's header width
   if (targetGroup.tableHeader && targetGroup.tableHeader.element) {
@@ -5129,46 +6089,72 @@ const confirmJoinColumnsToGroup = (): void => {
 };
 
 // Handle the element context menu
-const handleElementContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number): void => {
+const handleElementContextMenu = (
+  event: MouseEvent,
+  bandIndex: number,
+  elementIndex: number,
+  parentFrameIndex?: number,
+): void => {
   event.preventDefault();
   event.stopPropagation();
   selectElement(bandIndex, elementIndex, false, parentFrameIndex);
-  contextMenu.value = { visible: true, x: event.clientX, y: event.clientY, type: 'element' };
+  contextMenu.value = {
+    visible: true,
+    x: event.clientX,
+    y: event.clientY,
+    type: "element",
+  };
 };
 
 // Handle the canvas context menu
 const handleCanvasContextMenu = (event: MouseEvent): void => {
   event.preventDefault();
-  contextMenu.value = { visible: true, x: event.clientX, y: event.clientY, type: 'canvas' };
+  contextMenu.value = {
+    visible: true,
+    x: event.clientX,
+    y: event.clientY,
+    type: "canvas",
+  };
 };
 
 // Handle a context menu action
 const handleContextMenuAction = (action: string) => {
   contextMenu.value.visible = false;
   switch (action) {
-    case 'copy': copyElement(); break;
-    case 'paste': pasteElement(); break;
-    case 'delete': deleteElement(); break;
-    case 'bringToFront': moveElementZOrder('front'); break;
-    case 'sendToBack': moveElementZOrder('back'); break;
+    case "copy":
+      copyElement();
+      break;
+    case "paste":
+      pasteElement();
+      break;
+    case "delete":
+      deleteElement();
+      break;
+    case "bringToFront":
+      moveElementZOrder("front");
+      break;
+    case "sendToBack":
+      moveElementZOrder("back");
+      break;
   }
 };
 
 // Move an element's Z-order
-const moveElementZOrder = (direction: 'front' | 'back') => {
+const moveElementZOrder = (direction: "front" | "back") => {
   if (!selectedElement.value) return;
   saveStateToHistory();
   const { bandIndex, elementIndex, parentFrameIndex } = selectedElement.value;
   const band = bands.value[bandIndex];
   if (!band) return;
-  const elements = parentFrameIndex !== undefined
-    ? (band.elements[parentFrameIndex] as any).elements
-    : band.elements;
+  const elements =
+    parentFrameIndex !== undefined
+      ? (band.elements[parentFrameIndex] as any).elements
+      : band.elements;
   if (!elements) return;
   const [element] = elements.splice(elementIndex, 1);
-  if (direction === 'front') elements.push(element);
+  if (direction === "front") elements.push(element);
   else elements.unshift(element);
-  const newIndex = direction === 'front' ? elements.length - 1 : 0;
+  const newIndex = direction === "front" ? elements.length - 1 : 0;
   selectElement(bandIndex, newIndex, false, parentFrameIndex);
   updateJRXML();
 };
@@ -5179,34 +6165,40 @@ const handleBandSelectionChange = (): void => {
   const currentSelectedTypes = [...selectedBandTypes.value] as BandType[];
 
   // Get the types currently present in bands
-  const currentBandTypes = bands.value.map(band => band.type);
+  const currentBandTypes = bands.value.map((band) => band.type);
 
   // Determine which bands need to be added (present in selectedBandTypes but not in currentBandTypes)
-  const bandsToAdd = currentSelectedTypes.filter(type => !currentBandTypes.includes(type));
+  const bandsToAdd = currentSelectedTypes.filter(
+    (type) => !currentBandTypes.includes(type),
+  );
 
   // Determine which bands need to be removed (present in currentBandTypes but not in selectedBandTypes)
-  const bandsToRemove = currentBandTypes.filter(type => !currentSelectedTypes.includes(type));
+  const bandsToRemove = currentBandTypes.filter(
+    (type) => !currentSelectedTypes.includes(type),
+  );
 
   // Remove the bands that are no longer needed
   if (bandsToRemove.length > 0) {
-    bands.value = bands.value.filter(band => !bandsToRemove.includes(band.type));
+    bands.value = bands.value.filter(
+      (band) => !bandsToRemove.includes(band.type),
+    );
   }
 
   // Add the new bands
   if (bandsToAdd.length > 0) {
-    const newBands = bandsToAdd.map(type => {
-      const bandTypeConfig = allBandTypes.find(bt => bt.type === type);
+    const newBands = bandsToAdd.map((type) => {
+      const bandTypeConfig = allBandTypes.find((bt) => bt.type === type);
       return {
         type: type as BandType,
         height: bandTypeConfig ? bandTypeConfig.defaultHeight : 50,
-        elements: []
+        elements: [],
       };
     });
 
     // Insert the new bands in the order defined by allBandTypes
-    allBandTypes.forEach(bandType => {
+    allBandTypes.forEach((bandType) => {
       if (bandsToAdd.includes(bandType.type as BandType)) {
-        const newBand = newBands.find(b => b.type === bandType.type);
+        const newBand = newBands.find((b) => b.type === bandType.type);
         if (newBand) {
           // Ensure the height property isn't undefined
           if (newBand.height === undefined) {
@@ -5215,8 +6207,12 @@ const handleBandSelectionChange = (): void => {
           // Find the appropriate insertion position
           let insertIndex = bands.value.length;
           for (let i = 0; i < bands.value.length; i++) {
-            const currentBandTypeIndex = allBandTypes.findIndex(bt => bt.type === bands.value[i]?.type);
-            const newBandTypeIndex = allBandTypes.findIndex(bt => bt.type === bandType.type);
+            const currentBandTypeIndex = allBandTypes.findIndex(
+              (bt) => bt.type === bands.value[i]?.type,
+            );
+            const newBandTypeIndex = allBandTypes.findIndex(
+              (bt) => bt.type === bandType.type,
+            );
             if (newBandTypeIndex < currentBandTypeIndex) {
               insertIndex = i;
               break;
@@ -5238,7 +6234,6 @@ const handleBandSelectionChange = (): void => {
 </script>
 
 <style scoped>
-
 .my-act-menu {
   position: relative;
   display: inline-block;
@@ -5445,7 +6440,8 @@ const handleBandSelectionChange = (): void => {
     box-shadow: 0 0 0 v-bind('UI_CONSTANTS.BORDER_MEDIUM + "px"') #1890ff;
   }
   50% {
-    box-shadow: 0 0 0 v-bind('UI_CONSTANTS.BORDER_THICK + "px"') rgba(24, 144, 255, 0.5);
+    box-shadow: 0 0 0 v-bind('UI_CONSTANTS.BORDER_THICK + "px"')
+      rgba(24, 144, 255, 0.5);
   }
   100% {
     box-shadow: 0 0 0 v-bind('UI_CONSTANTS.BORDER_MEDIUM + "px"') #1890ff;
@@ -5453,11 +6449,13 @@ const handleBandSelectionChange = (): void => {
 }
 
 /* Coordinate display styles */
-.coordinates-display, .band-height-display {
+.coordinates-display,
+.band-height-display {
   position: absolute;
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
-  padding: v-bind('UI_CONSTANTS.SMALL_MARGIN + "px"') v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
+  padding: v-bind('UI_CONSTANTS.SMALL_MARGIN + "px"')
+    v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
   border-radius: v-bind('UI_CONSTANTS.BORDER_RADIUS_SMALL + "px"');
   font-size: v-bind('UI_CONSTANTS.FONT_SIZE_TINY + "px"');
   pointer-events: none;
@@ -5485,7 +6483,11 @@ const handleBandSelectionChange = (): void => {
   background: var(--prop-bg-primary, #fff);
   border: 1px solid var(--prop-border-color, #d9d9d9);
   border-radius: var(--prop-border-radius-md, 4px);
-  box-shadow: var(--prop-shadow-md, 0 3px 6px -4px rgba(0,0,0,0.12), 0 6px 16px 0 rgba(0,0,0,0.08));
+  box-shadow: var(
+    --prop-shadow-md,
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 6px 16px 0 rgba(0, 0, 0, 0.08)
+  );
   padding: 4px 0;
   z-index: 10001;
 }
@@ -5554,5 +6556,4 @@ const handleBandSelectionChange = (): void => {
 .toolbar-btn:hover {
   background-color: var(--prop-bg-hover, #f0f0f0);
 }
-
 </style>

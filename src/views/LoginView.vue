@@ -137,11 +137,7 @@
           <span class="copyright"
             >&copy; {{ new Date().getFullYear() }} CDP Platform</span
           >
-          <button
-            type="button"
-            class="lang-button"
-            @click="handleLanguageToggle"
-          >
+          <button type="button" class="lang-button">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 0c2.2 1.8 3.8 4.9 3.8 8s-1.6 6.2-3.8 8c-2.2-1.8-3.8-4.9-3.8-8s1.6-6.2 3.8-8zm-1.5 0h3c.3 1.6.8 3.1 1.6 4.4-.8 1.2-1.3 2.7-1.6 4.4h-3c-.3-1.7-.8-3.2-1.6-4.4.8-1.3 1.3-2.8 1.6-4.4zm-3 1.5c-.9 1.3-1.5 3.1-1.7 5h3.1c.3-1.9 1-3.6 1.8-5H7.5zm9 0c.8 1.4 1.5 3.1 1.8 5h-3.1c-.3-1.9-1-3.6-1.8-5h3.1zm-9 12.5c.2 1.9.8 3.7 1.7 5h3.1c-.8-1.4-1.5-3.1-1.8-5H7.5zm9 0c-.3 1.9-1 3.6-1.8 5h-3.1c.2-1.9.8-3.7 1.7-5h3.2z"
@@ -168,12 +164,17 @@ import {
   verifyTenant,
   verifyTenantSession,
 } from "../utils/auth";
+import {
+  AUTH_TOKEN_KEY,
+  AUTH_USER_KEY,
+  TENANT_URL_KEY,
+} from "../services/apiClient";
 
 const router = useRouter();
 const isLoading = ref(false);
 const isError = ref(false);
 const errorMessage = ref("");
-const tenantUrl = ref(localStorage.getItem("cdp_tenant_url") || "");
+const tenantUrl = ref(localStorage.getItem(TENANT_URL_KEY) ?? "");
 const tenantUrlInput = ref(tenantUrl.value);
 const isTenantVerified = ref<boolean | null>(null);
 const isVerifyingTenant = ref(false);
@@ -191,9 +192,12 @@ const isDesktop = computed(
     ),
 );
 
-
 onMounted(async () => {
-  console.log("LoginView mounted. Checking tenant verification...", isDesktop.value, tenantUrl.value);
+  console.log(
+    "LoginView mounted. Checking tenant verification...",
+    isDesktop.value,
+    tenantUrl.value,
+  );
   if (isDesktop.value && !tenantUrl.value) {
     return;
   }
@@ -210,8 +214,8 @@ onMounted(async () => {
 
     console.warn("Tenant verification failed.");
 
-    localStorage.removeItem("jrxml_auth_token");
-    localStorage.removeItem("jrxml_auth_user");
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_USER_KEY);
 
     isError.value = true;
     isTenantVerified.value = false;
@@ -242,7 +246,7 @@ const handleTenantSubmit = async () => {
     if (await verifyTenant(tenantId)) {
       tenantUrl.value = normalizedUrl;
       isTenantVerified.value = true;
-      localStorage.setItem("cdp_tenant_url", normalizedUrl);
+      localStorage.setItem(TENANT_URL_KEY, normalizedUrl);
     } else {
       isTenantVerified.value = false;
       tenantFormError.value =
@@ -290,10 +294,6 @@ const handleLogin = async () => {
   } finally {
     isLoading.value = false;
   }
-};
-
-const handleLanguageToggle = () => {
-  // Placeholder for future language switching
 };
 </script>
 

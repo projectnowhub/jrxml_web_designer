@@ -35,7 +35,7 @@
         <button class="icon-button" type="button" aria-label="Notifications">
           <Bell :size="19" :stroke-width="1.7" aria-hidden="true" />
         </button>
-        <div class="account-menu">
+        <div ref="accountMenuRef" class="account-menu">
           <button
             class="account-button"
             type="button"
@@ -111,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 import { RouterView, useRoute, useRouter } from "vue-router";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
@@ -125,20 +125,15 @@ import {
   Search,
   UserRound,
 } from "@lucide/vue";
+import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
+import { getStoredUser } from "../utils/auth";
 
 const router = useRouter();
 const route = useRoute();
 const isAccountOpen = ref(false);
 const isSidebarCollapsed = ref(false);
 const searchQuery = ref("");
-const storedUser = JSON.parse(
-  localStorage.getItem("jrxml_auth_user") || "{}",
-) as {
-  firstName?: string;
-  name?: string;
-  username?: string;
-  email?: string;
-};
+const storedUser = getStoredUser();
 const userName =
   storedUser.firstName || storedUser.name || storedUser.username || "Designer";
 const userEmail = storedUser.email || "Your CDP workspace";
@@ -150,8 +145,8 @@ function goToMyProfile() {
 }
 
 async function signOut() {
-  localStorage.removeItem("jrxml_auth_user");
-  localStorage.removeItem("jrxml_auth_token");
+  localStorage.removeItem(AUTH_USER_KEY);
+  localStorage.removeItem(AUTH_TOKEN_KEY);
 
   const isTauri = Boolean(
     (window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__,
@@ -165,6 +160,25 @@ async function signOut() {
     window.location.href = url;
   }
 }
+
+const accountMenuRef = ref<HTMLElement | null>(null);
+
+const handleClickOutside = (event: MouseEvent): void => {
+  if (
+    accountMenuRef.value &&
+    !accountMenuRef.value.contains(event.target as Node)
+  ) {
+    isAccountOpen.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener("click", handleClickOutside);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("click", handleClickOutside);
+});
 </script>
 
 <style scoped>

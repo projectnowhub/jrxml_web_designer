@@ -62,17 +62,18 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
 import { ArrowRight, Inbox, MoreHorizontal } from "@lucide/vue";
+import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
 
 const router = useRouter();
 const storedUser = JSON.parse(
-  localStorage.getItem("jrxml_auth_user") || "{}",
+  localStorage.getItem(AUTH_USER_KEY) ?? "{}",
 ) as {
   firstName?: string;
   name?: string;
   username?: string;
   email?: string;
 };
-const userName = storedUser.firstName || "Designer";
+const userName = storedUser.firstName ?? "Designer";
 const templates = [
   {
     name: "Monthly sales report",
