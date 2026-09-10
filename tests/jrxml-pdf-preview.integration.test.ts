@@ -12,7 +12,8 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
-const PREVIEW_API_URL = "http://localhost:8084/api/pdf/generateForm";
+const PREVIEW_API_URL =
+  "https://preview.report.projectnowcdp.com/api/pdf/generateForm";
 const REQUEST_TIMEOUT = 20000;
 
 // ---------------------------------------------------------------------------

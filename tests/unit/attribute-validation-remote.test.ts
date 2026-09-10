@@ -5,12 +5,13 @@
  * JasperReports compilation server. Actual results are authoritative; this
  * verifies the consistency of schemas/jrxml-schema.json against the real XSD.
  *
- * Remote server: http://localhost:8084
+ * Remote server: https://preview.report.projectnowcdp.com
  */
 
 import { describe, it, expect } from "vitest";
 
-const PREVIEW_API_URL = "http://localhost:8084/api/pdf/generateForm";
+const PREVIEW_API_URL =
+  "https://preview.report.projectnowcdp.com/api/pdf/generateForm";
 const REQUEST_TIMEOUT = 30000;
 
 interface TestResult {
@@ -625,7 +626,7 @@ describe("Test summary", () => {
   it("all attribute validation complete", async () => {
     console.log("\n========================================");
     console.log("Remote attribute validation test complete");
-    console.log("Server: http://localhost:8084");
+    console.log("Server: https://preview.report.projectnowcdp.com");
     console.log("========================================\n");
 
     // Basic JRXML validation

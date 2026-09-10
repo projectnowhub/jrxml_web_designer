@@ -123,7 +123,7 @@
 
 1. **field/variable/sortField/group的uuid是否真的不被允许**
    - 测试用例已创建: `tests/unit/attribute-validation-remote.test.ts`
-   - 远程服务器: `http://localhost:8084`
+   - 远程服务器: `https://preview.report.projectnowcdp.com`
    - 状态: 🔄 待服务器恢复后验证
 
 2. **parameter是否真的支持uuid**

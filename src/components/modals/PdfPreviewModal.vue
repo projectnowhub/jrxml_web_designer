@@ -7,7 +7,12 @@
     @cancel="closeModal"
     :contentClass="'pdf-preview-modal'"
     :bodyHeight="'90vh'"
-    :contentStyle="{ width: '98vw', maxWidth: 'none', height: '98vh', maxHeight: '98vh' }"
+    :contentStyle="{
+      width: '98vw',
+      maxWidth: 'none',
+      height: '98vh',
+      maxHeight: '98vh',
+    }"
     :bodyStyle="{ padding: '0', overflow: 'hidden', display: 'flex' }"
   >
     <div class="pdf-preview-body">
@@ -15,7 +20,7 @@
       <div class="editor-panel" v-show="showEditor">
         <div class="editor-header">
           <n-button size="small" quaternary @click="regenerateAll">
-            {{ t('pdfPreview.dataSource.regenerate') }}
+            {{ t("pdfPreview.dataSource.regenerate") }}
           </n-button>
         </div>
         <n-tabs type="line" animated class="editor-tabs">
@@ -23,26 +28,40 @@
           <n-tab-pane :tab="t('pdfPreview.parameters.title')" name="params">
             <div class="tab-content">
               <div v-if="!props.reportParameters?.length" class="empty-hint">
-                {{ t('pdfPreview.parameters.noParameters') }}
+                {{ t("pdfPreview.parameters.noParameters") }}
               </div>
               <div v-else class="param-list">
-                <div v-for="param in props.reportParameters" :key="param.name" class="param-row">
+                <div
+                  v-for="param in props.reportParameters"
+                  :key="param.name"
+                  class="param-row"
+                >
                   <div class="param-label">
                     <span class="param-name">{{ param.name }}</span>
-                    <n-tag size="tiny" :bordered="false" type="info">{{ shortType(param.class) }}</n-tag>
+                    <n-tag size="tiny" :bordered="false" type="info">{{
+                      shortType(param.class)
+                    }}</n-tag>
                   </div>
                   <input
                     v-if="param.class === 'java.lang.Boolean'"
                     type="checkbox"
                     :checked="editableParams[param.name]"
-                    @change="editableParams[param.name] = ($event.target as HTMLInputElement).checked"
+                    @change="
+                      editableParams[param.name] = (
+                        $event.target as HTMLInputElement
+                      ).checked
+                    "
                     class="param-checkbox"
                   />
                   <input
                     v-else
                     class="param-input"
                     :value="editableParams[param.name]"
-                    @input="editableParams[param.name] = ($event.target as HTMLInputElement).value"
+                    @input="
+                      editableParams[param.name] = (
+                        $event.target as HTMLInputElement
+                      ).value
+                    "
                     :placeholder="param.defaultValue || ''"
                   />
                 </div>
@@ -54,12 +73,12 @@
           <n-tab-pane :tab="t('pdfPreview.dataSource.title')" name="dataSource">
             <div class="tab-content">
               <div v-if="!props.reportFields?.length" class="empty-hint">
-                {{ t('pdfPreview.dataSource.noFields') }}
+                {{ t("pdfPreview.dataSource.noFields") }}
               </div>
               <div v-else>
                 <div class="ds-toolbar">
                   <label class="row-count-label">
-                    {{ t('pdfPreview.dataSource.rowCount') }}
+                    {{ t("pdfPreview.dataSource.rowCount") }}
                     <input
                       type="number"
                       class="row-count-input"
@@ -70,33 +89,56 @@
                     />
                   </label>
                   <n-button size="small" quaternary @click="addRow">
-                    {{ t('pdfPreview.dataSource.addRow') }}
+                    {{ t("pdfPreview.dataSource.addRow") }}
                   </n-button>
                 </div>
                 <div class="ds-table-wrapper">
                   <table class="ds-table">
                     <thead>
                       <tr>
-                        <th v-for="field in props.reportFields" :key="field.name" class="ds-th">
+                        <th
+                          v-for="field in props.reportFields"
+                          :key="field.name"
+                          class="ds-th"
+                        >
                           <div class="th-inner">
                             <span>{{ field.name }}</span>
-                            <n-tag size="tiny" :bordered="false">{{ shortType(field.class) }}</n-tag>
+                            <n-tag size="tiny" :bordered="false">{{
+                              shortType(field.class)
+                            }}</n-tag>
                           </div>
                         </th>
                         <th class="ds-th ds-th-actions"></th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="(row, rowIdx) in editableDataSource" :key="rowIdx">
-                        <td v-for="field in props.reportFields" :key="field.name" class="ds-td">
+                      <tr
+                        v-for="(row, rowIdx) in editableDataSource"
+                        :key="rowIdx"
+                      >
+                        <td
+                          v-for="field in props.reportFields"
+                          :key="field.name"
+                          class="ds-td"
+                        >
                           <input
                             class="ds-cell-input"
                             :value="row[field.name]"
-                            @input="row[field.name] = ($event.target as HTMLInputElement).value"
+                            @input="
+                              row[field.name] = (
+                                $event.target as HTMLInputElement
+                              ).value
+                            "
                           />
                         </td>
                         <td class="ds-td ds-td-actions">
-                          <button class="remove-row-btn" @click="removeRow(rowIdx)" title="×">×</button>
+                          <button
+                            class="remove-row-btn"
+                            @click="removeRow(rowIdx)"
+                            title="×"
+                          >
+                            ×
+                          </button>
                         </td>
                       </tr>
                     </tbody>
@@ -116,7 +158,7 @@
             <div class="tab-content">
               <div class="ds-toolbar">
                 <label class="row-count-label">
-                  {{ t('pdfPreview.dataSource.rowCount') }}
+                  {{ t("pdfPreview.dataSource.rowCount") }}
                   <input
                     type="number"
                     class="row-count-input"
@@ -127,33 +169,57 @@
                   />
                 </label>
                 <n-button size="small" quaternary @click="addSubRow(ds.name)">
-                  {{ t('pdfPreview.dataSource.addRow') }}
+                  {{ t("pdfPreview.dataSource.addRow") }}
                 </n-button>
               </div>
               <div class="ds-table-wrapper">
                 <table class="ds-table">
                   <thead>
                     <tr>
-                      <th v-for="field in ds.fields" :key="field.name" class="ds-th">
+                      <th
+                        v-for="field in ds.fields"
+                        :key="field.name"
+                        class="ds-th"
+                      >
                         <div class="th-inner">
                           <span>{{ field.name }}</span>
-                          <n-tag size="tiny" :bordered="false">{{ shortType(field.class) }}</n-tag>
+                          <n-tag size="tiny" :bordered="false">{{
+                            shortType(field.class)
+                          }}</n-tag>
                         </div>
                       </th>
                       <th class="ds-th ds-th-actions"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(row, rowIdx) in (editableSubDataSources[ds.name] || [])" :key="rowIdx">
-                      <td v-for="field in ds.fields" :key="field.name" class="ds-td">
+                    <tr
+                      v-for="(row, rowIdx) in editableSubDataSources[ds.name] ||
+                      []"
+                      :key="rowIdx"
+                    >
+                      <td
+                        v-for="field in ds.fields"
+                        :key="field.name"
+                        class="ds-td"
+                      >
                         <input
                           class="ds-cell-input"
                           :value="row[field.name]"
-                          @input="row[field.name] = ($event.target as HTMLInputElement).value"
+                          @input="
+                            row[field.name] = (
+                              $event.target as HTMLInputElement
+                            ).value
+                          "
                         />
                       </td>
                       <td class="ds-td ds-td-actions">
-                        <button class="remove-row-btn" @click="removeSubRow(ds.name, rowIdx)" title="×">×</button>
+                        <button
+                          class="remove-row-btn"
+                          @click="removeSubRow(ds.name, rowIdx)"
+                          title="×"
+                        >
+                          ×
+                        </button>
                       </td>
                     </tr>
                   </tbody>
@@ -165,15 +231,28 @@
       </div>
 
       <!-- Toggle Button -->
-      <button class="panel-toggle" @click="showEditor = !showEditor" :title="showEditor ? t('pdfPreview.editor.hidePanel') : t('pdfPreview.editor.showPanel')">
-        {{ showEditor ? '◀' : '▶' }}
+      <button
+        class="panel-toggle"
+        @click="showEditor = !showEditor"
+        :title="
+          showEditor
+            ? t('pdfPreview.editor.hidePanel')
+            : t('pdfPreview.editor.showPanel')
+        "
+      >
+        {{ showEditor ? "◀" : "▶" }}
       </button>
 
       <!-- PDF Preview -->
       <div class="pdf-panel">
         <div class="pdf-toolbar">
-          <n-button type="primary" size="small" @click="generatePreview" :loading="isGenerating">
-            {{ t('pdfPreview.generateBtn') }}
+          <n-button
+            type="primary"
+            size="small"
+            @click="generatePreview"
+            :loading="isGenerating"
+          >
+            {{ t("pdfPreview.generateBtn") }}
           </n-button>
         </div>
         <iframe
@@ -188,12 +267,16 @@
 </template>
 
 <script setup lang="ts">
-import BaseModal from './BaseModal.vue';
-import { ref, computed, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { NButton, NTabs, NTabPane, NTag } from 'naive-ui';
-import type { ReportParameter, ReportField, TableDataset } from '../../types';
-import { generateMockValue, generateMockParameters, generateMockDataSource } from '../../utils/mockDataGenerator';
+import BaseModal from "./BaseModal.vue";
+import { ref, computed, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { NButton, NTabs, NTabPane, NTag } from "naive-ui";
+import type { ReportParameter, ReportField, TableDataset } from "../../types";
+import {
+  generateMockValue,
+  generateMockParameters,
+  generateMockDataSource,
+} from "../../utils/mockDataGenerator";
 
 const { t } = useI18n();
 
@@ -206,7 +289,7 @@ const props = defineProps<{
   previewServerUrl?: string;
 }>();
 
-const emit = defineEmits(['update:visible']);
+const emit = defineEmits(["update:visible"]);
 
 const editableParams = ref<Record<string, any>>({});
 const editableDataSource = ref<Record<string, any>[]>([]);
@@ -215,17 +298,18 @@ const resolvedSubDatasets = ref<TableDataset[]>([]);
 const showEditor = ref(true);
 const isGenerating = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
-const previewUrl = ref<string>('about:blank');
+const previewUrl = ref<string>("about:blank");
 
-const API_URL_DEFAULT = 'http://localhost:8084/api/pdf/generateForm';
+const API_URL_DEFAULT =
+  "https://preview.report.projectnowcdp.com/api/pdf/generateForm";
 
 function shortType(className: string): string {
-  const parts = className.split('.');
+  const parts = className.split(".");
   return parts[parts.length - 1] || className;
 }
 
 function initializeEditor() {
-  previewUrl.value = 'about:blank';
+  previewUrl.value = "about:blank";
   isGenerating.value = false;
 
   const params = props.reportParameters || [];
@@ -236,22 +320,26 @@ function initializeEditor() {
   if (subDatasets.length === 0 && props.jrxmlContent) {
     try {
       const parser = new DOMParser();
-      const doc = parser.parseFromString(props.jrxmlContent, 'text/xml');
+      const doc = parser.parseFromString(props.jrxmlContent, "text/xml");
       // JRXML uses the subDataset tag to define sub-datasets
-      const subDatasetEls = doc.querySelectorAll('subDataset');
+      const subDatasetEls = doc.querySelectorAll("subDataset");
       for (const dsEl of subDatasetEls) {
-        const dsName = dsEl.getAttribute('name') || 'unknown';
-        const fieldEls = dsEl.querySelectorAll('field');
+        const dsName = dsEl.getAttribute("name") || "unknown";
+        const fieldEls = dsEl.querySelectorAll("field");
         if (fieldEls.length > 0) {
-          const dsFields = [...fieldEls].map(f => ({
-            name: f.getAttribute('name') || '',
-            class: f.getAttribute('class') || 'java.lang.String',
+          const dsFields = [...fieldEls].map((f) => ({
+            name: f.getAttribute("name") || "",
+            class: f.getAttribute("class") || "java.lang.String",
           }));
-          subDatasets.push({ uuid: crypto.randomUUID(), name: dsName, fields: dsFields });
+          subDatasets.push({
+            uuid: crypto.randomUUID(),
+            name: dsName,
+            fields: dsFields,
+          });
         }
       }
     } catch (e) {
-      console.warn('Failed to parse JRXML for sub-datasets:', e);
+      console.warn("Failed to parse JRXML for sub-datasets:", e);
     }
   }
 
@@ -259,12 +347,12 @@ function initializeEditor() {
   if (fields.length === 0 && props.jrxmlContent) {
     try {
       const parser = new DOMParser();
-      const doc = parser.parseFromString(props.jrxmlContent, 'text/xml');
-      const fieldEls = doc.querySelectorAll('jasperReport > field');
+      const doc = parser.parseFromString(props.jrxmlContent, "text/xml");
+      const fieldEls = doc.querySelectorAll("jasperReport > field");
       if (fieldEls.length > 0) {
-        fields = [...fieldEls].map(f => ({
-          name: f.getAttribute('name') || '',
-          class: f.getAttribute('class') || 'java.lang.String',
+        fields = [...fieldEls].map((f) => ({
+          name: f.getAttribute("name") || "",
+          class: f.getAttribute("class") || "java.lang.String",
         }));
       }
     } catch (e) {
@@ -336,11 +424,13 @@ function onRowCountChange(event: Event) {
 }
 
 const visibleSubDatasets = computed(() => {
-  return resolvedSubDatasets.value.filter(ds => ds.fields && ds.fields.length > 0);
+  return resolvedSubDatasets.value.filter(
+    (ds) => ds.fields && ds.fields.length > 0,
+  );
 });
 
 function addSubRow(dsName: string) {
-  const ds = resolvedSubDatasets.value.find(d => d.name === dsName);
+  const ds = resolvedSubDatasets.value.find((d) => d.name === dsName);
   if (!ds?.fields) return;
   const rows = editableSubDataSources.value[dsName] || [];
   const newRow: Record<string, any> = {};
@@ -365,7 +455,7 @@ function onSubRowCountChange(dsName: string, event: Event) {
   if (isNaN(count) || count < 1) count = 1;
   if (count > 100) count = 100;
 
-  const ds = resolvedSubDatasets.value.find(d => d.name === dsName);
+  const ds = resolvedSubDatasets.value.find((d) => d.name === dsName);
   if (!ds?.fields) return;
   const current = editableSubDataSources.value[dsName] || [];
 
@@ -385,19 +475,30 @@ function onSubRowCountChange(dsName: string, event: Event) {
 function convertSubDataSourcesTypes(): Record<string, Record<string, any>[]> {
   const result: Record<string, Record<string, any>[]> = {};
   for (const [dsName, rows] of Object.entries(editableSubDataSources.value)) {
-    const ds = resolvedSubDatasets.value.find(d => d.name === dsName);
-    if (!ds?.fields) { result[dsName] = rows; continue; }
-    const fieldMap = new Map(ds.fields.map(f => [f.name, f.class || '']));
-    result[dsName] = rows.map(row => {
+    const ds = resolvedSubDatasets.value.find((d) => d.name === dsName);
+    if (!ds?.fields) {
+      result[dsName] = rows;
+      continue;
+    }
+    const fieldMap = new Map(ds.fields.map((f) => [f.name, f.class || ""]));
+    result[dsName] = rows.map((row) => {
       const converted: Record<string, any> = {};
       for (const [key, val] of Object.entries(row)) {
-        const cls = fieldMap.get(key) || '';
-        if (cls === 'java.lang.Integer' || cls === 'java.lang.Short' || cls === 'java.lang.Byte') {
+        const cls = fieldMap.get(key) || "";
+        if (
+          cls === "java.lang.Integer" ||
+          cls === "java.lang.Short" ||
+          cls === "java.lang.Byte"
+        ) {
           converted[key] = parseInt(String(val), 10);
-        } else if (cls === 'java.lang.Double' || cls === 'java.lang.Float' || cls === 'java.lang.BigDecimal') {
+        } else if (
+          cls === "java.lang.Double" ||
+          cls === "java.lang.Float" ||
+          cls === "java.lang.BigDecimal"
+        ) {
           converted[key] = parseFloat(String(val));
-        } else if (cls === 'java.lang.Boolean') {
-          converted[key] = String(val) === 'true';
+        } else if (cls === "java.lang.Boolean") {
+          converted[key] = String(val) === "true";
         } else {
           converted[key] = val;
         }
@@ -412,7 +513,12 @@ function generatePreview() {
   const apiUrl = props.previewServerUrl || API_URL_DEFAULT;
   isGenerating.value = true;
 
-  const escapeHtml = (str: string) => str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const escapeHtml = (str: string) =>
+    str
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
 
   const typedSubDataSources = convertSubDataSourcesTypes();
   const formHtml = `<!DOCTYPE html><html><body onload="document.getElementById('pdfForm').submit()">
@@ -420,27 +526,32 @@ function generatePreview() {
       <input type="hidden" name="jrxml" value="${escapeHtml(props.jrxmlContent)}">
       <input type="hidden" name="parameters" value="${escapeHtml(JSON.stringify(editableParams.value))}">
       <input type="hidden" name="dataSource" value="${escapeHtml(JSON.stringify(editableDataSource.value))}">
-      ${Object.keys(typedSubDataSources).length > 0
-        ? `<input type="hidden" name="subDataSources" value="${escapeHtml(JSON.stringify(typedSubDataSources))}">`
-        : ''}
+      ${
+        Object.keys(typedSubDataSources).length > 0
+          ? `<input type="hidden" name="subDataSources" value="${escapeHtml(JSON.stringify(typedSubDataSources))}">`
+          : ""
+      }
     </form></body></html>`;
 
   previewUrl.value = `data:text/html;charset=utf-8,${encodeURIComponent(formHtml)}`;
 }
 
 const closeModal = () => {
-  emit('update:visible', false);
+  emit("update:visible", false);
 };
 
 const handleIframeLoad = () => {
   isGenerating.value = false;
 };
 
-watch(() => props.visible, (newVisible) => {
-  if (newVisible) {
-    initializeEditor();
-  }
-});
+watch(
+  () => props.visible,
+  (newVisible) => {
+    if (newVisible) {
+      initializeEditor();
+    }
+  },
+);
 </script>
 
 <style scoped>

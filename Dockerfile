@@ -31,7 +31,7 @@ EXPOSE 8084
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:8084/api/export/formats || exit 1
+  CMD curl -f https://preview.report.projectnowcdp.com/api/export/formats || exit 1
 
 # Run the application
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

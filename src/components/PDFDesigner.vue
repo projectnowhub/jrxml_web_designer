@@ -5286,7 +5286,7 @@ const showPdfPreview = ref(false);
 const showPreviewServerSettings = ref(false);
 const previewServerUrl = ref(
   localStorage.getItem("previewServerUrl") ||
-    "http://localhost:8084/api/pdf/generateForm",
+    "https://preview.report.projectnowcdp.com/api/pdf/generateForm",
 );
 
 // Field management related state
