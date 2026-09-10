@@ -1,0 +1,48 @@
+# Build context for deploy/Dockerfile.
+# Keep this tight — the repo carries a 4.5 GB src-tauri/target, a jasperreport6Fork
+# submodule and a 292 KB XSD that must never enter the image build context.
+
+# Dependencies / build outputs — reinstalled and rebuilt inside the image
+node_modules
+**/node_modules
+dist
+dist-ssr
+**/dist
+coverage
+/outputs
+
+# VCS / CI / infra — not needed to build the SPA
+.git
+.gitignore
+.gitmodules
+.github
+k8s
+# NB: keep deploy/ — deploy/nginx.conf is COPY'd by deploy/Dockerfile
+
+# Desktop (Tauri) build — huge, irrelevant to the web image
+src-tauri
+
+# Reference-only / vendored material
+jasperreport6Fork
+jasperreport.xsd
+lib
+schemas
+validator
+tools
+test-attribute-validation
+
+# Tests & fixtures — not shipped in the static bundle
+tests
+**/*.test.ts
+**/*.spec.ts
+
+# Docs & editor cruft
+docs
+*.md
+.vscode
+.idea
+.claude
+.env
+.env.*
+!.env.example
+*.local

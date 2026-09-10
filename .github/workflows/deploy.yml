@@ -1,0 +1,156 @@
+name: Deploy
+
+# Manual only.  Actions -> Deploy -> Run workflow -> pick a ref + an environment.
+# Nothing deploys on push.  production is gated by the GitHub Environment reviewer.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        default: dev
+        type: choice
+        options: [dev, staging, production]
+      ref:
+        description: Branch, tag or SHA to deploy
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Resolve overlay + immutable image tag for the chosen ref ───────────────
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.cfg.outputs.environment }}
+      overlay: ${{ steps.cfg.outputs.overlay }}
+      image_tag: ${{ steps.cfg.outputs.image_tag }}
+      ref: ${{ steps.cfg.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: false
+          fetch-depth: 0
+
+      - name: Resolve config
+        id: cfg
+        run: |
+          ENV="${{ inputs.environment }}"
+          SHA="$(git rev-parse --short=7 HEAD)"
+          {
+            echo "environment=$ENV"
+            echo "overlay=$ENV"
+            echo "image_tag=$SHA"
+            echo "ref=$(git rev-parse HEAD)"
+          } >> "$GITHUB_OUTPUT"
+          echo "Deploying ${{ inputs.ref }} @ $(git rev-parse HEAD) ($SHA) -> $ENV"
+
+  # ── Build + push the SPA image, then roll it out ──────────────────────────
+  # Single job so the GitHub Environment (secrets, vars, prod reviewer) is
+  # evaluated exactly once per run.
+  deploy:
+    needs: setup
+    runs-on: ubuntu-latest
+    environment: ${{ needs.setup.outputs.environment }}
+    concurrency:
+      group: deploy-${{ needs.setup.outputs.environment }}
+      cancel-in-progress: false
+    env:
+      NS: projectnowcdp-report-studio-${{ needs.setup.outputs.overlay }}
+      OVERLAY: ${{ needs.setup.outputs.overlay }}
+      IMAGE_TAG: ${{ needs.setup.outputs.image_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.setup.outputs.ref }}
+          submodules: false
+
+      - name: Resolve registry host
+        id: reg
+        env:
+          DOCKER_REGISTRY_URL: ${{ secrets.DOCKER_REGISTRY_URL }}
+        run: |
+          R="${DOCKER_REGISTRY_URL#https://}"; R="${R#http://}"; R="${R%/}"
+          echo "host=$R" >> "$GITHUB_OUTPUT"
+
+      # ---- build & push -------------------------------------------------------
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ steps.reg.outputs.host }}
+          username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          provenance: false
+          tags: |
+            ${{ steps.reg.outputs.host }}/projectnowcdp-report-studio:${{ env.IMAGE_TAG }}
+            ${{ steps.reg.outputs.host }}/projectnowcdp-report-studio:${{ env.OVERLAY }}-latest
+          build-args: |
+            VITE_PDF_PREVIEW_API=${{ secrets.VITE_PDF_PREVIEW_API }}
+            VITE_APP_VERSION=${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ---- roll out --------------------------------------------------------
+      - uses: azure/setup-kubectl@v4
+
+      - name: Install kustomize
+        env:
+          KUSTOMIZE_VERSION: 5.6.0
+        run: |
+          curl -sSLo kustomize.tar.gz \
+            --retry 5 --retry-delay 5 --retry-connrefused \
+            "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+          tar -xzf kustomize.tar.gz
+          sudo install -m 0755 kustomize /usr/local/bin/kustomize
+          rm -f kustomize.tar.gz kustomize
+          kustomize version
+
+      - name: Configure kubeconfig
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          mkdir -p ~/.kube
+          # Accept either a raw kubeconfig or a base64-encoded one
+          if printf '%s' "$KUBE_CONFIG" | base64 -d 2>/dev/null | grep -q 'apiVersion'; then
+            printf '%s' "$KUBE_CONFIG" | base64 -d > ~/.kube/config
+          else
+            printf '%s' "$KUBE_CONFIG" > ~/.kube/config
+          fi
+          chmod 600 ~/.kube/config
+          kubectl config current-context
+
+      - name: Ensure namespaces
+        run: kubectl apply -f k8s/namespaces.yaml
+
+      - name: Ensure registry pull secret (upsert)
+        run: |
+          kubectl -n "$NS" create secret docker-registry regcred \
+            --docker-server="${{ steps.reg.outputs.host }}" \
+            --docker-username="${{ secrets.DOCKER_REGISTRY_USERNAME }}" \
+            --docker-password="${{ secrets.DOCKER_REGISTRY_PASSWORD }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy
+        env:
+          REGISTRY_HOST: ${{ steps.reg.outputs.host }}
+        run: |
+          IMG="${REGISTRY_HOST}/projectnowcdp-report-studio:${IMAGE_TAG}"
+          cd "k8s/overlays/${OVERLAY}"
+          kustomize edit set image "projectnowcdp-report-studio=${IMG}"
+          kubectl apply -k .
+          kubectl -n "$NS" annotate deployment/projectnowcdp-report-studio \
+            kubernetes.io/change-cause="${IMAGE_TAG} deployed by ${{ github.actor }} via run ${{ github.run_id }}" \
+            --overwrite
+          kubectl -n "$NS" rollout status deployment/projectnowcdp-report-studio --timeout=5m
