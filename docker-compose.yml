@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   jrxml-preview-server:
@@ -12,7 +12,13 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8084/api/export/formats"]
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "https://preview.report.projectnowcdp.com/api/export/formats",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
