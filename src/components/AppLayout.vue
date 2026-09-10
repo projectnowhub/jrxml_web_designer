@@ -11,7 +11,7 @@
           :aria-expanded="!isSidebarCollapsed"
           @click="isSidebarCollapsed = !isSidebarCollapsed"
         >
-          <Menu :size="19" :stroke-width="1.7" aria-hidden="true" />
+          <Menu :size="20" :stroke-width="2.25" aria-hidden="true" />
         </button>
         <div class="brand-img">
           <img src="/assets/cdp-logo.png" alt="ProjectNow CDP" />
@@ -22,7 +22,7 @@
         </div>
       </div>
       <label class="search-box">
-        <Search :size="19" :stroke-width="1.7" aria-hidden="true" />
+        <Search :size="20" :stroke-width="2.25" aria-hidden="true" />
         <input
           v-model="searchQuery"
           type="search"
@@ -33,10 +33,10 @@
       </label>
       <div class="topbar-actions">
         <button class="icon-button" type="button" aria-label="Help">
-          <CircleHelp :size="19" :stroke-width="1.7" aria-hidden="true" />
+          <CircleHelp :size="20" :stroke-width="2.25" aria-hidden="true" />
         </button>
         <button class="icon-button" type="button" aria-label="Notifications">
-          <Bell :size="19" :stroke-width="1.7" aria-hidden="true" />
+          <Bell :size="20" :stroke-width="2.25" aria-hidden="true" />
         </button>
         <div ref="accountMenuRef" class="account-menu">
           <button
@@ -56,7 +56,7 @@
             </div>
             <div class="account-popover-divider" />
             <button class="account-action" type="button" @click="goToMyProfile">
-              <UserRound :size="16" :stroke-width="1.7" aria-hidden="true" />
+              <UserRound :size="17" :stroke-width="2.25" aria-hidden="true" />
               <span>My profile</span>
             </button>
             <button
@@ -64,7 +64,7 @@
               type="button"
               @click="signOut"
             >
-              <LogOut :size="16" :stroke-width="1.7" aria-hidden="true" />
+              <LogOut :size="17" :stroke-width="2.25" aria-hidden="true" />
               <span>Sign out</span>
             </button>
           </div>
@@ -90,8 +90,8 @@
             <component
               :is="menu.icon"
               class="nav-symbol"
-              :size="18"
-              :stroke-width="1.7"
+              :size="19"
+              :stroke-width="2.25"
             />
             <span>{{ menu.label }}</span>
           </button>
@@ -214,7 +214,7 @@ h1 {
 
 p {
   margin: 16px 0 0;
-  color: rgba(202, 197, 216, 0.8);
+  color: #6e6a80;
   font-size: 1rem;
   line-height: 1.7;
   max-width: 620px;
@@ -225,15 +225,20 @@ button {
   border-radius: 12px;
   padding: 8px 12px;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 650;
   cursor: pointer;
   transition:
-    transform 0.18s ease,
+    transform 0.16s ease,
+    box-shadow 0.2s ease,
     opacity 0.18s ease;
 }
 
 button:hover {
   transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0) scale(0.97);
 }
 
 .primary {
@@ -242,18 +247,19 @@ button:hover {
 }
 
 .secondary {
-  background: rgba(255, 255, 255, 0.04);
-  color: #f4f4f5;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #f4f4f8;
+  color: #45425a;
+  border: 1px solid #e6e5ee;
 }
 
 .app-layout {
   min-height: 100vh;
   width: 100%;
-  color: #f4f4f5;
+  color: #1c1b26;
   background:
-    radial-gradient(circle at top, rgba(99, 102, 241, 0.16), transparent 30%),
-    #09090f;
+    radial-gradient(circle at top, rgba(99, 102, 241, 0.1), transparent 32%),
+    radial-gradient(circle at top right, rgba(124, 92, 247, 0.06), transparent 38%),
+    #ffffff;
 }
 .topbar {
   position: sticky;
@@ -265,9 +271,12 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(9, 9, 15, 0.84);
+  border-bottom: 1px solid rgba(28, 27, 38, 0.08);
+  background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(18px);
+  box-shadow:
+    0 1px 0 rgba(28, 27, 38, 0.05),
+    0 16px 34px -22px rgba(23, 20, 44, 0.14);
   box-sizing: border-box;
 }
 .brand-wrap,
@@ -282,6 +291,7 @@ button:hover {
 .brand-img img {
   width: 34px;
   height: 34px;
+  filter: drop-shadow(0 2px 8px rgba(124, 92, 247, 0.2));
 }
 .brand-name {
   display: flex;
@@ -291,21 +301,21 @@ button:hover {
   min-width: 0;
 }
 .brand-text {
-  color: #f4f4f5;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.025em;
+  color: #1c1b26;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
 }
 .brand-badge {
   display: inline-flex;
   align-self: flex-start;
   padding: 2px 6px;
-  border: 1px solid rgba(124, 92, 247, 0.18);
+  border: 1px solid rgba(124, 92, 247, 0.28);
   border-radius: 4px;
-  color: #7c5cf7;
-  background: rgba(124, 92, 247, 0.1);
+  color: #6440f4;
+  background: rgba(124, 92, 247, 0.14);
   font-size: 8.5px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.1em;
 }
 @media (max-width: 1023px) {
@@ -316,7 +326,7 @@ button:hover {
 
 .account-button {
   border: 0;
-  color: #aca8bc;
+  color: #6e6a80;
   background: transparent;
   cursor: pointer;
 }
@@ -332,9 +342,11 @@ button:hover {
   height: 34px;
   border: 2px solid #7c5cf7;
   border-radius: 50%;
+  background: linear-gradient(135deg, #7c5cf7, #6366f1);
   color: white;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 3px 12px rgba(99, 102, 241, 0.32);
 }
 .account-menu {
   position: relative;
@@ -346,10 +358,23 @@ button:hover {
   right: 0;
   width: 238px;
   padding: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(28, 27, 38, 0.1);
   border-radius: 12px;
-  background: #171622;
-  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.4);
+  background: #ffffff;
+  box-shadow:
+    0 18px 38px rgba(23, 20, 44, 0.16),
+    0 2px 6px rgba(23, 20, 44, 0.08);
+  animation: popover-in 0.16s ease;
+}
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 .account-popover-header {
   display: flex;
@@ -370,16 +395,17 @@ button:hover {
   white-space: nowrap;
 }
 .account-popover-header strong {
-  color: #f4f4f5;
-  font-size: 12px;
+  color: #1c1b26;
+  font-size: 13px;
+  font-weight: 700;
 }
 .account-popover-header span:not(.avatar) {
-  color: #8f8a9e;
+  color: #77718a;
 }
 .account-popover-divider {
   height: 1px;
   margin: 4px 0;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(28, 27, 38, 0.08);
 }
 .account-action {
   width: 100%;
@@ -390,17 +416,22 @@ button:hover {
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: #d6d2df;
-  font-size: 12px;
-  font-weight: 500;
+  color: #45425a;
+  font-size: 12.5px;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
+  transition: background 0.14s ease;
 }
 .account-action:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(124, 92, 247, 0.08);
 }
 .account-action.sign-out {
-  color: #ff7373;
+  color: #e5484d;
+}
+.account-action.sign-out:hover {
+  background: rgba(229, 72, 77, 0.09);
+  color: #d0342e;
 }
 .workspace-layout {
   display: flex;
@@ -418,8 +449,10 @@ button:hover {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
-  background: rgba(12, 11, 19, 0.62);
+  border-right: 1px solid rgba(28, 27, 38, 0.07);
+  background:
+    radial-gradient(circle at top left, rgba(124, 92, 247, 0.06), transparent 62%),
+    linear-gradient(180deg, #fcfcfe, #f6f6fa);
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
@@ -428,30 +461,53 @@ button:hover {
   display: none;
 }
 .nav-item {
+  position: relative;
   width: 100%;
   display: flex;
   align-items: center;
   gap: 13px;
-  padding: 12px 14px;
+  padding: 11px 14px;
   margin-bottom: 5px;
   border: 1px solid transparent;
   border-radius: 9px;
   background: transparent;
-  color: #9994aa;
-  font-size: 13px;
+  color: #4b4660;
+  font-size: 13.5px;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
-}
-.nav-item.active {
-  border-color: rgba(124, 92, 247, 0.2);
-  background: rgba(124, 92, 247, 0.12);
-  color: #e2dcff;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.2s ease,
+    color 0.16s ease;
 }
 .nav-item:hover {
-  color: #fff;
+  border-color: rgba(124, 92, 247, 0.18);
+  background: rgba(124, 92, 247, 0.07);
+  color: #1c1b26;
+}
+.nav-item.active {
+  border-color: rgba(124, 92, 247, 0.32);
+  background: linear-gradient(
+    135deg,
+    rgba(124, 92, 247, 0.14),
+    rgba(99, 102, 241, 0.09)
+  );
+  color: #5b3ee0;
+  font-weight: 700;
+  box-shadow:
+    inset 3px 0 0 rgba(124, 92, 247, 0.55),
+    0 1px 3px rgba(124, 92, 247, 0.12);
 }
 .nav-symbol {
-  color: #aaa2c4;
+  color: #8a84a3;
+}
+.nav-item:hover .nav-symbol {
+  color: #6440f4;
+}
+.nav-item.active .nav-symbol {
+  color: #5b3ee0;
 }
 .sidebar-footer {
   display: flex;
@@ -459,14 +515,24 @@ button:hover {
   gap: 8px;
   padding: 0 11px;
   color: #6f6a7e;
-  font-size: 10px;
+  font-size: 10.5px;
+  font-weight: 600;
 }
 .sidebar-footer i {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #5fd6a0;
-  box-shadow: 0 0 9px #5fd6a0;
+  animation: status-pulse 2.4s ease-in-out infinite;
+}
+@keyframes status-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(95, 214, 160, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 13px rgba(95, 214, 160, 0.95);
+  }
 }
 .main-content {
   flex: 1 1 auto;
@@ -481,7 +547,7 @@ button:hover {
   margin-right: 8px;
   border: 1px solid transparent;
   border-radius: 8px;
-  color: #f4f4f5;
+  color: #45425a;
   background: transparent;
   cursor: pointer;
 }
@@ -490,51 +556,62 @@ button:hover {
   place-items: center;
   border: 1px solid transparent;
   border-radius: 8px;
-  color: #f4f4f5;
+  color: #45425a;
   background: transparent;
   cursor: pointer;
 }
 .menu-button:hover,
 .icon-button:hover {
-  border-color: rgba(157, 140, 255, 0.28);
-  color: #f4f4f5;
-  background: rgba(124, 92, 247, 0.12);
+  border-color: rgba(124, 92, 247, 0.35);
+  color: #6440f4;
+  background: rgba(124, 92, 247, 0.08);
 }
 
 .search-box {
   position: absolute;
   left: 50%;
   width: min(570px, 38vw);
-  height: 40px;
+  height: 42px;
   display: flex;
   align-items: center;
   gap: 11px;
   padding: 0 12px 0 15px;
   transform: translateX(-50%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 10px;
-  color: #817b91;
-  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(28, 27, 38, 0.12);
+  border-radius: 11px;
+  color: #8a84a3;
+  background: #f2f3f9;
   box-sizing: border-box;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+.search-box:focus-within {
+  border-color: rgba(124, 92, 247, 0.5);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(124, 92, 247, 0.14);
 }
 .search-box input {
   min-width: 0;
   flex: 1;
   border: 0;
   outline: 0;
-  color: #f4f4f5;
+  color: #1c1b26;
   background: transparent;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
 }
 .search-box input::placeholder {
-  color: #817b91;
+  color: #9a94ab;
 }
 .search-box kbd {
-  padding: 2px 6px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 2px 7px;
+  border: 1px solid rgba(28, 27, 38, 0.16);
   border-radius: 4px;
-  color: #777184;
+  color: #6f6a7e;
   font-size: 10px;
+  font-weight: 600;
   font-family: inherit;
 }
 .sidebar-collapsed .sidebar {
@@ -552,8 +629,15 @@ button:hover {
 .sidebar-collapsed .sidebar-footer {
   display: none;
 }
+.sidebar-collapsed .nav-item.active {
+  box-shadow: none;
+}
 .sidebar-collapsed .nav-symbol {
-  color: #d7d0f8;
+  color: #45425a;
+}
+.sidebar-collapsed .nav-item:hover .nav-symbol,
+.sidebar-collapsed .nav-item.active .nav-symbol {
+  color: #6440f4;
 }
 @media (max-width: 900px) {
   .sidebar {
@@ -603,7 +687,7 @@ button:hover {
     width: min(280px, 82vw);
     height: calc(100vh - 64px);
     flex-basis: min(280px, 82vw);
-    box-shadow: 18px 0 40px rgba(0, 0, 0, 0.38);
+    box-shadow: 18px 0 40px rgba(23, 20, 44, 0.14);
   }
   .workspace-layout:not(.sidebar-collapsed) .sidebar-backdrop {
     position: fixed;
@@ -614,7 +698,7 @@ button:hover {
     height: auto;
     padding: 0;
     border: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(23, 20, 44, 0.32);
     cursor: pointer;
   }
 }

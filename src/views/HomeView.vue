@@ -11,7 +11,7 @@
       <div class="section-heading">
         <h2>Recent templates</h2>
         <button class="view-all" type="button">
-          View all <ArrowRight :size="14" />
+          View all <ArrowRight :size="15" :stroke-width="2.25" />
         </button>
       </div>
       <div class="template-grid">
@@ -33,7 +33,7 @@
             <div class="template-title">
               <strong>{{ template.name }}</strong
               ><button type="button" aria-label="More options">
-                <MoreHorizontal :size="16" />
+                <MoreHorizontal :size="17" :stroke-width="2.25" />
               </button>
             </div>
             <span>{{ template.updated }}</span>
@@ -51,7 +51,7 @@
         <span class="muted-label">Recently accessed</span>
       </div>
       <div class="empty-state">
-        <div><Inbox :size="30" :stroke-width="1.6" /></div>
+        <div><Inbox :size="32" :stroke-width="2" /></div>
         <strong>No shared templates yet</strong
         ><span>Templates shared with you will appear here.</span>
       </div>
@@ -103,7 +103,7 @@ const goToDesigner = () => {
 
 onMounted(() => {
   getTemplates().then((response) => {
-    console.log("Templates fetched:", response.data);
+    console.log("Templates fetched:", response);
   }).catch((error) => {
     console.error("Error fetching templates:", error);
   });
@@ -114,11 +114,12 @@ onMounted(() => {
 .eyebrow {
   display: inline-block;
   padding: 6px 10px;
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.18);
   border-radius: 999px;
-  color: #a5b4fc;
+  color: #6366f1;
   font-size: 11px;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   margin-bottom: 18px;
@@ -136,7 +137,7 @@ onMounted(() => {
   margin: 0;
   border: 0;
   background: none;
-  color: #9d8cff;
+  color: #6440f4;
   font-size: 10px;
 }
 .content-heading h1 {
@@ -146,7 +147,7 @@ onMounted(() => {
 }
 .content-heading p {
   margin: 0;
-  color: #8b869a;
+  color: #6e6a80;
   font-size: 13px;
 }
 .primary-button {
@@ -179,13 +180,13 @@ onMounted(() => {
 }
 .section-heading h2 {
   margin: 0;
-  font-size: 15px;
-  font-weight: 650;
+  font-size: 16px;
+  font-weight: 700;
 }
 .view-all,
 .muted-label {
-  color: #918ba3;
-  font-size: 11px;
+  color: #6f6a7e;
+  font-size: 11.5px;
 }
 .view-all {
   border: 0;
@@ -193,7 +194,12 @@ onMounted(() => {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+.view-all:hover {
+  color: #6440f4;
 }
 .template-grid {
   display: grid;
@@ -202,16 +208,19 @@ onMounted(() => {
 }
 .template-card {
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(28, 27, 38, 0.09);
   border-radius: 10px;
-  background: rgba(20, 19, 29, 0.82);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.05);
   transition:
     transform 0.2s ease,
-    border-color 0.2s ease;
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .template-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(124, 92, 247, 0.5);
+  border-color: rgba(124, 92, 247, 0.45);
+  box-shadow: 0 10px 24px rgba(124, 92, 247, 0.12);
 }
 .new-card {
   min-height: 238px;
@@ -221,14 +230,14 @@ onMounted(() => {
   justify-content: center;
   gap: 10px;
   border-style: dashed;
-  background: rgba(124, 92, 247, 0.045);
-  color: #e9e6f5;
+  background: rgba(124, 92, 247, 0.04);
+  color: #45425a;
   cursor: pointer;
 }
 .new-card span,
 .template-info > span,
 .empty-state span {
-  color: #777285;
+  color: #8a84a3;
   font-size: 11px;
 }
 .new-icon {
@@ -238,22 +247,22 @@ onMounted(() => {
   height: 42px;
   margin-bottom: 3px;
   border-radius: 10px;
-  background: rgba(124, 92, 247, 0.16);
-  color: #aa99ff;
+  background: rgba(124, 92, 247, 0.1);
+  color: #6440f4;
   font-size: 27px;
-  font-weight: 300;
+  font-weight: 500;
 }
 .template-preview {
   height: 130px;
   padding: 19px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: linear-gradient(135deg, #2c234a, #1d1b2a);
+  border-bottom: 1px solid rgba(28, 27, 38, 0.06);
+  background: linear-gradient(135deg, #ede9fe, #f6f4ff);
 }
 .template-preview.blue {
-  background: linear-gradient(135deg, #1e3448, #1b202d);
+  background: linear-gradient(135deg, #dbeafe, #f0f5fc);
 }
 .template-preview.green {
-  background: linear-gradient(135deg, #1c3937, #1c252b);
+  background: linear-gradient(135deg, #d6f0e8, #eff8f4);
 }
 .preview-lines {
   display: grid;
@@ -264,11 +273,11 @@ onMounted(() => {
   display: block;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.38);
+  background: rgba(92, 76, 166, 0.35);
 }
 .preview-lines i:not(:first-child) {
   width: 70%;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(92, 76, 166, 0.16);
 }
 .preview-chart {
   display: flex;
@@ -300,6 +309,8 @@ onMounted(() => {
   padding: 14px;
 }
 .template-title {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
@@ -307,7 +318,8 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
 }
 .template-title button {
   display: grid;
@@ -315,23 +327,38 @@ onMounted(() => {
   padding: 4px;
   border: 0;
   background: none;
-  color: #777285;
+  color: #8a84a3;
   cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+.template-title button:hover {
+  color: #6440f4;
+  background: rgba(124, 92, 247, 0.08);
 }
 .template-info > span {
   display: block;
   margin-top: 5px;
 }
 .owner-row {
+  display: flex;
+  align-items: center;
   gap: 6px;
   margin-top: 14px;
-  color: #858092;
+  color: #77718a;
   font-size: 10px;
 }
 .owner-row i {
+  display: inline-grid;
+  place-items: center;
   width: 19px;
   height: 19px;
+  border-radius: 50%;
+  background: rgba(124, 92, 247, 0.12);
+  color: #6440f4;
   font-size: 9px;
+  font-style: normal;
 }
 .shared-section {
   margin-top: 54px;
@@ -343,9 +370,9 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(28, 27, 38, 0.08);
   border-radius: 10px;
-  background: rgba(17, 16, 25, 0.55);
+  background: #fafafc;
 }
 .empty-state > div {
   color: #8172d7;
@@ -353,7 +380,8 @@ onMounted(() => {
   line-height: 25px;
 }
 .empty-state strong {
-  font-size: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
 }
 @media (max-width: 900px) {
   .template-grid {
