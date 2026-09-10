@@ -331,7 +331,7 @@ Round-trip integrity is verified by:
 
 ### 6.1 PDF Preview Server
 
-- **Endpoint**: `POST https://jrxml-pdf-preview.firegod.cn/api/pdf/generateForm`
+- **Endpoint**: `POST https://preview.report.projectnowcdp.com/api/pdf/generateForm`
 - **Payload**: form-urlencoded with fields `jrxml`, `parameters` (JSON), `dataSource` (JSON)
 - **Returns**: PDF binary content
 - **Implementation**: `PdfPreviewModal.vue` creates a hidden `<form>` in a `data:` URI iframe that auto-submits
