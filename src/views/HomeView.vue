@@ -60,9 +60,11 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { ArrowRight, Inbox, MoreHorizontal } from "@lucide/vue";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
+import { getTemplates } from "../services";
 
 const router = useRouter();
 const storedUser = JSON.parse(
@@ -98,6 +100,14 @@ const templates = [
 const goToDesigner = () => {
   router.push("/designer");
 };
+
+onMounted(() => {
+  getTemplates().then((response) => {
+    console.log("Templates fetched:", response.data);
+  }).catch((error) => {
+    console.error("Error fetching templates:", error);
+  });
+});
 </script>
 
 <style scoped>
