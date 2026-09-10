@@ -1,0 +1,134 @@
+name: Deploy
+
+# Manual only — Actions → Deploy → Run workflow → pick the branch ("Use workflow
+# from") and the environment. Mirrors projectnowcdp/.github/workflows/deploy.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        type: choice
+        options: [dev, staging, production]
+
+permissions:
+  contents: read
+
+# ── Shared setup job ─────────────────────────────────────────────────────────
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.config.outputs.environment }}
+      overlay: ${{ steps.config.outputs.overlay }}
+      image_tag: ${{ steps.config.outputs.image_tag }}
+      registry: ${{ steps.config.outputs.registry }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false   # repo has an SSH submodule — never fetch it in CI
+
+      - name: Resolve config
+        id: config
+        run: |
+          SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c1-7)
+
+          ENV="${{ inputs.environment }}"
+          OVERLAY="$ENV"                     # overlays are named dev / staging / production
+
+          IMAGE_TAG="${OVERLAY}-sha-${SHORT_SHA}"
+
+          # Strip https:// or http:// — image refs cannot carry a protocol prefix
+          REGISTRY="${{ secrets.DOCKER_REGISTRY_URL }}"
+          REGISTRY="${REGISTRY#https://}"
+          REGISTRY="${REGISTRY#http://}"
+
+          echo "environment=$ENV"     >> $GITHUB_OUTPUT
+          echo "overlay=$OVERLAY"     >> $GITHUB_OUTPUT
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "registry=$REGISTRY"   >> $GITHUB_OUTPUT
+
+  # ── Deploy projectnowcdp-report-studio ─────────────────────────────────────
+  deploy:
+    name: Deploy → ${{ needs.setup.outputs.environment }}
+    needs: setup
+    runs-on: ubuntu-latest
+    environment: ${{ needs.setup.outputs.environment }}
+    concurrency:
+      group: deploy-${{ needs.setup.outputs.environment }}
+      cancel-in-progress: ${{ needs.setup.outputs.environment != 'production' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.DOCKER_REGISTRY_URL }}
+          username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          tags: |
+            ${{ needs.setup.outputs.registry }}/projectnowcdp-report-studio:${{ needs.setup.outputs.image_tag }}
+            ${{ needs.setup.outputs.registry }}/projectnowcdp-report-studio:${{ needs.setup.outputs.overlay }}-latest
+          build-args: |
+            VITE_PDF_PREVIEW_API=${{ secrets.VITE_PDF_PREVIEW_API }}
+            VITE_APP_VERSION=${{ needs.setup.outputs.image_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Set up kustomize
+        env:
+          KUSTOMIZE_VERSION: 5.8.1
+        run: |
+          curl -sSLo kustomize.tar.gz \
+            --retry 5 --retry-delay 5 --retry-connrefused \
+            "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+          tar -xzf kustomize.tar.gz
+          sudo install -m 0755 kustomize /usr/local/bin/kustomize
+          rm -f kustomize.tar.gz kustomize
+          kustomize version
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Ensure namespaces
+        run: kubectl apply -f k8s/namespaces.yaml
+
+      - name: Ensure registry secret
+        run: |
+          NS="projectnowcdp-report-studio-${{ needs.setup.outputs.overlay }}"
+          kubectl -n $NS get secret regcred 2>/dev/null || \
+          kubectl -n $NS create secret docker-registry regcred \
+            --docker-server=${{ needs.setup.outputs.registry }} \
+            --docker-username=${{ secrets.DOCKER_REGISTRY_USERNAME }} \
+            --docker-password=${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+
+      - name: Deploy to Kubernetes
+        run: |
+          REGISTRY="${{ needs.setup.outputs.registry }}"
+          OVERLAY="${{ needs.setup.outputs.overlay }}"
+          IMAGE_TAG="${{ needs.setup.outputs.image_tag }}"
+
+          cd k8s/overlays/${OVERLAY}
+          kustomize edit set image projectnowcdp-report-studio=${REGISTRY}/projectnowcdp-report-studio:${IMAGE_TAG}
+          kubectl apply -k .
+          kubectl rollout status deployment/projectnowcdp-report-studio \
+            -n projectnowcdp-report-studio-${OVERLAY} \
+            --timeout=5m

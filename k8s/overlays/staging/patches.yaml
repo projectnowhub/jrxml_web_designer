@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: projectnowcdp-report-studio
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+        - name: projectnowcdp-report-studio
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: projectnowcdp-report-studio
+spec:
+  tls:
+    - hosts:
+        - "*.staging-report.projectnowcdp.com"
+      secretName: projectnowcdp-report-studio-staging-tls
+  rules:
+    - host: "*.staging-report.projectnowcdp.com"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: projectnowcdp-report-studio
+                port:
+                  number: 80

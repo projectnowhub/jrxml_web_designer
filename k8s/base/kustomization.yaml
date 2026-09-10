@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Each overlay sets `namespace:` and the real image (`images:` + CI's
+# `kustomize edit set image`). The base container image is the bare name
+# `projectnowcdp-report-studio`, which the overlay image transformer rewrites.
+resources:
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: projectnowcdp-report-studio
+      app.kubernetes.io/part-of: projectnowcdp
+      app.kubernetes.io/component: frontend
+    includeSelectors: true

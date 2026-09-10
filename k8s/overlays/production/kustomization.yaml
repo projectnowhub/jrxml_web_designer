@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: projectnowcdp-report-studio-production
+
+resources:
+  - ../../base
+  - certificate.yaml
+  - hpa.yaml
+  - pdb.yaml
+
+images:
+  - name: projectnowcdp-report-studio
+    newName: docker-registry.ipecsystems.com/projectnowcdp-report-studio
+    newTag: production-latest
+
+patches:
+  - path: patches.yaml
+  # Let the HPA own the replica count — drop the static field so `kubectl apply`
+  # does not fight the autoscaler on every deploy.
+  - target:
+      kind: Deployment
+      name: projectnowcdp-report-studio
+    patch: |
+      - op: remove
+        path: /spec/replicas

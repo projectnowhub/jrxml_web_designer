@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: projectnowcdp-report-studio-dev
+
+resources:
+  - ../../base
+  - certificate.yaml
+
+images:
+  - name: projectnowcdp-report-studio
+    newName: docker-registry.ipecsystems.com/projectnowcdp-report-studio
+    newTag: dev-latest
+
+patches:
+  - path: patches.yaml

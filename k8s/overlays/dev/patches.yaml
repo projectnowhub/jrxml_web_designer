@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: projectnowcdp-report-studio
+spec:
+  tls:
+    - hosts:
+        - "*.dev-report.projectnowcdp.com"
+      secretName: projectnowcdp-report-studio-dev-tls
+  rules:
+    - host: "*.dev-report.projectnowcdp.com"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: projectnowcdp-report-studio
+                port:
+                  number: 80

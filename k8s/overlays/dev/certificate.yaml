@@ -1,0 +1,11 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: projectnowcdp-report-studio-dev-tls
+spec:
+  secretName: projectnowcdp-report-studio-dev-tls
+  issuerRef:
+    name: hetzner-cluster-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.dev-report.projectnowcdp.com"
