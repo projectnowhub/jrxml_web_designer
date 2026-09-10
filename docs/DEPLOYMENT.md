@@ -17,39 +17,46 @@ Kubernetes (Rancher) behind nginx-ingress with cert-manager TLS.
 | production | `projectnowcdp-report-studio-production` | `*.report.projectnowcdp.com`          | manual — `Run workflow` → `production` (Environment reviewer required) |
 
 **Deployment is manual only — nothing deploys on push.** Every rollout is a
-`workflow_dispatch`: you pick the git ref and the environment.
+`workflow_dispatch`: you pick the branch (GitHub's *Use workflow from*) and the
+environment. Mirrors `projectnowcdp/.github/workflows/deploy.yml`.
 
 `vim-2.dev-report.projectnowcdp.com`, `acme.dev-report...`, etc. — any left-most
 label routes to the same app; wildcard TLS covers it.
 
 ---
 
-## Pipelines
+## Pipeline
 
-### `ci.yml` — every PR and push to `main` (not a deploy)
-`pnpm install` → `pnpm build` (`vue-tsc` typecheck + `vite build`) → `pnpm test` (vitest).
+There is **one** workflow, `deploy.yml`, and **nothing runs automatically** — no PR
+check, no push trigger, no test job. Type errors are still caught: the image build runs
+`pnpm build` (`vue-tsc -b && vite build`) and fails the deploy if types don't compile.
+`vitest` is not run in CI — run `pnpm test` locally.
 
 ### `deploy.yml` — `workflow_dispatch` only
 
 ```
 GitHub → Actions → Deploy → Run workflow
-  ref:         main   (or any branch / tag / SHA)
-  environment: dev | staging | production
+  Use workflow from:  <branch / tag>          ← the ref that gets deployed
+  environment:        dev | staging | production
 ```
 
-1. **setup** — checks out the chosen `ref`; the image tag is that ref's
-   `git rev-parse --short=7 HEAD`.
-2. **deploy** — one job so the GitHub Environment (secrets, vars, prod reviewer) is
-   evaluated once. `docker buildx` from `deploy/Dockerfile` → pushes
-   `…/projectnowcdp-report-studio:<short-sha>` and `…:<env>-latest` (GHA layer cache) →
-   writes kubeconfig → `kubectl apply -f k8s/namespaces.yaml` → upserts the `regcred`
-   pull secret → `kustomize edit set image` to the `<short-sha>` tag →
-   `kubectl apply -k k8s/overlays/<env>` → `kubectl rollout status --timeout=5m`.
+Two jobs, same shape as the reference:
 
-The running Deployment always references the **immutable `<short-sha>` tag**, never a
-floating one. `<env>-latest` exists only as a human convenience.
+1. **setup** — `Resolve config`: `SHORT_SHA = ${GITHUB_SHA:0:7}`, `overlay = environment`,
+   `IMAGE_TAG = <overlay>-sha-<SHORT_SHA>` (e.g. `dev-sha-abc1234`), `REGISTRY` =
+   `DOCKER_REGISTRY_URL` with the protocol stripped. Emitted as job outputs.
+2. **deploy** (`environment: <env>`, `concurrency: deploy-<env>`, cancels in-progress for
+   non-prod) — `docker buildx` from `deploy/Dockerfile` → pushes
+   `<registry>/projectnowcdp-report-studio:<overlay>-sha-<sha>` **and** `:<overlay>-latest`
+   (GHA layer cache) → `azure/setup-kubectl` + kustomize 5.8.1 → writes
+   `~/.kube/config` from `KUBE_CONFIG` → `kubectl apply -f k8s/namespaces.yaml` →
+   `regcred` (`get || create`) → `cd k8s/overlays/<overlay>` →
+   `kustomize edit set image projectnowcdp-report-studio=<registry>/…:<IMAGE_TAG>` →
+   `kubectl apply -k .` → `kubectl rollout status deployment/projectnowcdp-report-studio
+   -n projectnowcdp-report-studio-<overlay> --timeout=5m`.
 
-`production` waits for the Environment reviewer before the job starts.
+The running Deployment gets the immutable `<overlay>-sha-<sha>` tag; `<overlay>-latest`
+is a floating human alias. `production` waits for the Environment reviewer.
 
 ---
 
@@ -67,7 +74,7 @@ Reuses the same names as the `projectnowcdp` reference repo:
 | `DOCKER_REGISTRY_URL`      | `docker-registry.ipecsystems.com` (with or without `https://`) |
 | `DOCKER_REGISTRY_USERNAME` | registry login                                   |
 | `DOCKER_REGISTRY_PASSWORD` | registry password / token                        |
-| `KUBE_CONFIG`              | the Rancher kubeconfig — **raw YAML or base64**, the workflow auto-detects |
+| `KUBE_CONFIG`              | the Rancher kubeconfig as **raw YAML** (written straight to `~/.kube/config`, same as the reference) |
 | `VITE_PDF_PREVIEW_API`     | `https://preview.report.projectnowcdp.com` — **optional**; add later, only read after the 2-line source change. Absent ⇒ empty build arg ⇒ app uses its in-code default |
 
 > `VITE_PDF_PREVIEW_API` is a build-time value compiled into the JS bundle (shipped to
@@ -117,7 +124,7 @@ kubectl -n projectnowcdp-report-studio-production set image \
   projectnowcdp-report-studio=<REGISTRY>/projectnowcdp-report-studio:<old-short-sha>
 ```
 
-To make it durable, re-run **Deploy** with `ref:` set to the known-good commit.
+To make it durable, re-run **Deploy** from the known-good branch/tag (*Use workflow from*).
 
 `revisionHistoryLimit: 5` keeps the last five ReplicaSets for `rollout undo --to-revision`.
 
