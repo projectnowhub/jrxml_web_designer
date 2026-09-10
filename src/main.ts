@@ -1,13 +1,15 @@
-import { createApp } from 'vue'
-import './style.css'
-import './styles/properties-panel.css'
-import App from './App.vue'
-import i18n from './i18n'
-import { initializeAllPlugins } from './plugins/PluginRegistry'
+import { createApp } from "vue";
+import "./style.css";
+import "./styles/properties-panel.css";
+import App from "./App.vue";
+import i18n from "./i18n";
+import router from "./router";
+import { initializeAllPlugins } from "./plugins/PluginRegistry";
 
 // Initialize the plugin system
-initializeAllPlugins()
+initializeAllPlugins();
 
-const app = createApp(App)
-app.use(i18n)
-app.mount('#app')
+const app = createApp(App);
+app.use(i18n);
+app.use(router);
+app.mount("#app");

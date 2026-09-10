@@ -1,9 +1,9 @@
 {
-  "name": "pdf_template_designer",
+  "name": "cdp-report-app",
   "private": true,
   "version": "0.4.6",
   "packageManager": "pnpm@9.15.4",
-  "description": "A professional JRXML report designer.",
+  "description": "A professional cdp report designer.",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -26,12 +26,16 @@
     "@codemirror/lint": "^6.9.7",
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.43.1",
+    "@lucide/vue": "^1.41.0",
+    "@tauri-apps/plugin-deep-link": "^2.4.10",
+    "@tauri-apps/plugin-opener": "^2.5.5",
     "js-beautify": "^1.15.4",
     "naive-ui": "^2.43.2",
     "uss-xsd-engine": "^0.2.1",
     "vscode-languageserver-types": "^3.17.5",
     "vue": "^3.5.28",
     "vue-i18n": "^11.2.8",
+    "vue-router": "^5.3.0",
     "xerces-wasm": "^1.0.0"
   },
   "devDependencies": {

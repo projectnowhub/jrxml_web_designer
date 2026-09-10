@@ -1,7 +1,8 @@
 // API configuration
 export const API_CONFIG = {
   // PDF preview endpoint
-  PDF_PREVIEW_API: 'https://jrxml-pdf-preview.firegod.cn/api/pdf/generateForm',
+  PDF_PREVIEW_API:
+    "https://preview.report.projectnowcdp.com/api/pdf/generateForm",
 
   // Other API configuration can be added here
 };
