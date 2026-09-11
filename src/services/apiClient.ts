@@ -82,7 +82,9 @@ const resolveUrl = (path: string, requestBaseURL?: string): string => {
   const apiBaseURL = requestBaseURL || baseURL;
 
   if (!apiBaseURL) {
-    throw new ApiError("VITE_BASE_API_URL is not configured");
+    throw new ApiError(
+      `Unable to resolve API URL. Base URL is not configured. Path: ${path}`
+    );
   }
 
   return `${apiBaseURL.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
