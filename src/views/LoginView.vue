@@ -208,8 +208,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { AUTH_CONFIG } from "../config/auth.config";
-import { createAuthService, desktopLogin } from "../services/authService";
+import { desktopLogin, login } from "../services/authService";
 import {
   getTenantIdFromUrl,
   verifyTenant,
@@ -336,17 +335,7 @@ const handleLogin = async () => {
   isError.value = false;
 
   try {
-    const authService = createAuthService({
-      clientId: AUTH_CONFIG.clientId,
-      authUrl: AUTH_CONFIG.authUrl,
-      tokenUrl: AUTH_CONFIG.tokenUrl,
-      userUrl: AUTH_CONFIG.userUrl,
-      redirectUri: AUTH_CONFIG.redirectUri,
-      logoutUri: AUTH_CONFIG.logoutUri,
-      state: AUTH_CONFIG.state,
-    });
-
-    await authService.login();
+    await login();
   } catch (error) {
     console.error("Login failed:", error);
     isError.value = true;
@@ -364,8 +353,19 @@ const handleLogin = async () => {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: #09090f;
-  color: #f4f4f5;
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(99, 102, 241, 0.1),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at top right,
+      rgba(124, 92, 247, 0.06),
+      transparent 38%
+    ),
+    linear-gradient(180deg, #fcfcfe, #f6f6fa);
+  color: #1c1b26;
 }
 
 .login-backdrop {
@@ -387,7 +387,7 @@ const handleLogin = async () => {
   right: -8rem;
   width: 32rem;
   height: 32rem;
-  background: rgba(124, 92, 247, 0.2);
+  background: rgba(124, 92, 247, 0.16);
 }
 
 .glow-bottom {
@@ -395,16 +395,16 @@ const handleLogin = async () => {
   bottom: -10rem;
   width: 28rem;
   height: 28rem;
-  background: rgba(99, 102, 241, 0.14);
+  background: rgba(99, 102, 241, 0.11);
 }
 
 .grid-pattern {
   position: absolute;
   inset: 0;
-  opacity: 0.04;
+  opacity: 0.05;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+    linear-gradient(rgba(28, 27, 38, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(28, 27, 38, 0.12) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
@@ -415,12 +415,12 @@ const handleLogin = async () => {
 }
 
 .login-card {
-  background: rgba(18, 19, 28, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1px solid rgba(28, 27, 38, 0.1);
   border-radius: 1.5rem;
   box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.72),
-    0 0 0 1px rgba(255, 255, 255, 0.02);
+    0 24px 64px rgba(23, 20, 44, 0.14),
+    0 2px 6px rgba(23, 20, 44, 0.06);
   padding: 2rem 2rem 1.5rem;
 }
 
@@ -441,13 +441,13 @@ const handleLogin = async () => {
   margin-bottom: 1rem;
   background: linear-gradient(
     135deg,
-    rgba(124, 92, 247, 0.2),
-    rgba(99, 102, 241, 0.08)
+    rgba(124, 92, 247, 0.14),
+    rgba(99, 102, 241, 0.06)
   );
-  border: 1px solid rgba(167, 139, 250, 0.28);
+  border: 1px solid rgba(124, 92, 247, 0.3);
   box-shadow:
     0 0 0 3px rgba(124, 92, 247, 0.08),
-    0 4px 16px rgba(0, 0, 0, 0.35);
+    0 4px 16px rgba(23, 20, 44, 0.12);
 }
 
 .brand-icon svg {
@@ -459,7 +459,7 @@ const handleLogin = async () => {
   letter-spacing: 0.18em;
   font-size: 10px;
   font-weight: 700;
-  color: rgba(167, 139, 250, 0.95);
+  color: #6440f4;
   text-transform: uppercase;
 }
 
@@ -472,12 +472,12 @@ const handleLogin = async () => {
   margin: 0 0 0.4rem;
   font-size: clamp(1.6rem, 2vw, 2.1rem);
   letter-spacing: -0.04em;
-  color: #f4f4f5;
+  color: #1c1b26;
 }
 
 .heading-wrap p {
   margin: 0;
-  color: rgba(202, 197, 216, 0.8);
+  color: #6e6a80;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -490,7 +490,7 @@ const handleLogin = async () => {
 }
 
 .tenant-form label {
-  color: rgba(202, 197, 216, 0.9);
+  color: #4b4660;
   font-size: 13px;
   text-align: center;
 }
@@ -498,27 +498,32 @@ const handleLogin = async () => {
 .tenant-form input {
   width: 100%;
   height: 46px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(28, 27, 38, 0.14);
   border-radius: 0.9rem;
   padding: 0 1rem;
-  background: rgba(255, 255, 255, 0.04);
-  color: #f4f4f5;
+  background: #f2f3f9;
+  color: #1c1b26;
   font-size: 13px;
   outline: none;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
 }
 
 .tenant-form input:focus {
-  border-color: rgba(124, 92, 247, 0.8);
+  border-color: rgba(124, 92, 247, 0.5);
+  background: #ffffff;
   box-shadow: 0 0 0 3px rgba(124, 92, 247, 0.14);
 }
 
 .tenant-form input::placeholder {
-  color: rgba(202, 197, 216, 0.55);
+  color: #9a94ab;
 }
 
 .tenant-form-error {
   margin: 0;
-  color: #fca5a5;
+  color: #e5484d;
   font-size: 12px;
   line-height: 1.4;
   text-align: center;
@@ -540,7 +545,7 @@ const handleLogin = async () => {
   gap: 0.6rem;
   cursor: pointer;
   box-shadow:
-    0 4px 20px rgba(124, 92, 247, 0.35),
+    0 4px 16px rgba(124, 92, 247, 0.26),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
   transition:
     transform 0.2s ease,
@@ -571,9 +576,9 @@ const handleLogin = async () => {
 
 .status-box {
   margin-top: 1rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(202, 197, 216, 0.9);
+  background: #f4f4f8;
+  border: 1px solid rgba(28, 27, 38, 0.08);
+  color: #6e6a80;
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
@@ -584,9 +589,9 @@ const handleLogin = async () => {
 }
 
 .status-box.error {
-  background: rgba(239, 68, 68, 0.06);
-  border-color: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
+  background: rgba(229, 72, 77, 0.08);
+  border-color: rgba(229, 72, 77, 0.3);
+  color: #d0342e;
 }
 
 .tenant-info-panel {
@@ -596,12 +601,12 @@ const handleLogin = async () => {
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.9rem 1rem;
-  border: 1px solid rgba(59, 130, 246, 0.35);
+  border: 1px solid rgba(59, 130, 246, 0.3);
   border-radius: 0.9rem;
   background: linear-gradient(
     90deg,
-    rgba(30, 58, 138, 0.32),
-    rgba(49, 46, 129, 0.22)
+    rgba(59, 130, 246, 0.1),
+    rgba(99, 102, 241, 0.07)
   );
 }
 
@@ -621,8 +626,8 @@ const handleLogin = async () => {
   height: 32px;
   flex-shrink: 0;
   border-radius: 0.5rem;
-  background: rgba(30, 58, 138, 0.5);
-  color: #60a5fa;
+  background: rgba(37, 99, 235, 0.12);
+  color: #3b82f6;
 }
 
 .tenant-info-icon svg {
@@ -639,14 +644,14 @@ const handleLogin = async () => {
   margin: 0 0 0.25rem;
   font-size: 11px;
   font-weight: 600;
-  color: #93c5fd;
+  color: #2563eb;
 }
 
 .tenant-info-url {
   margin: 0;
   font-size: 13px;
   font-weight: 500;
-  color: #bfdbfe;
+  color: #45425a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -662,13 +667,13 @@ const handleLogin = async () => {
   padding: 0;
   font-size: 11px;
   font-weight: 500;
-  color: #60a5fa;
+  color: #3b82f6;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 
 .change-url-button:hover {
-  color: #93c5fd;
+  color: #2563eb;
 }
 
 .change-url-button svg {
@@ -683,7 +688,7 @@ const handleLogin = async () => {
   flex-shrink: 0;
   padding: 4px;
   border-radius: 999px;
-  background: rgba(20, 83, 45, 0.35);
+  background: rgba(95, 214, 160, 0.18);
 }
 
 .verified-dot {
@@ -691,7 +696,7 @@ const handleLogin = async () => {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: #22c55e;
+  background: #5fd6a0;
 }
 
 .status-icon {
@@ -711,7 +716,7 @@ const handleLogin = async () => {
 
 .divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(28, 27, 38, 0.08);
   margin: 1.5rem 0 1rem;
 }
 
@@ -723,14 +728,14 @@ const handleLogin = async () => {
 }
 
 .copyright {
-  color: rgba(174, 166, 196, 0.92);
+  color: #8a84a3;
   font-size: 11px;
 }
 
 .lang-button {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(28, 27, 38, 0.12);
   background: transparent;
-  color: rgba(174, 166, 196, 0.95);
+  color: #6f6a7e;
   border-radius: 0.5rem;
   height: 28px;
   display: inline-flex;
@@ -739,6 +744,16 @@ const handleLogin = async () => {
   padding: 0 0.6rem;
   font-size: 11px;
   cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.lang-button:hover {
+  border-color: rgba(124, 92, 247, 0.28);
+  background: rgba(124, 92, 247, 0.08);
+  color: #6440f4;
 }
 
 .lang-button svg {
@@ -750,6 +765,6 @@ const handleLogin = async () => {
   margin: 1.25rem 0 0;
   text-align: center;
   font-size: 11px;
-  color: rgba(174, 166, 196, 0.9);
+  color: #8a84a3;
 }
 </style>

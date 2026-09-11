@@ -748,8 +748,7 @@ import { syncTableColumns } from "../utils/table/ColumnTreeSync";
 
 // Import the default JRXML example file
 import defaultJrxmlContent from "../../tests/build_by_jasper_studio_jrxml/grouped_header_column_table_example.jrxml?raw";
-import { openUrl } from "@tauri-apps/plugin-opener";
-import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
+import { logout } from "../services/authService";
 
 const { t, locale } = useI18n();
 
@@ -876,29 +875,9 @@ watch(
   },
 );
 
-const handleSignOut = async () => {
+const handleSignOut = () => {
   showMyActMenu.value = false;
-
-  localStorage.removeItem(AUTH_USER_KEY);
-  localStorage.removeItem(AUTH_TOKEN_KEY);
-
-  const isTauri = Boolean(
-    (
-      window as Window & {
-        __TAURI_INTERNALS__?: unknown;
-      }
-    ).__TAURI_INTERNALS__,
-  );
-
-  const redirectTo = isTauri ? "cdp-report-app://" : window.location.origin;
-
-  const url = `${import.meta.env.VITE_OAUTH_BASE_URL}/logout?redirect_to=${encodeURIComponent(redirectTo)}`;
-
-  if (isTauri) {
-    await openUrl(url);
-  } else {
-    window.location.href = url;
-  }
+  void logout();
 };
 
 function createNewFile() {
