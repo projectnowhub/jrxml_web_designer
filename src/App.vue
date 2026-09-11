@@ -9,6 +9,7 @@ import { onMounted, onUnmounted } from "vue";
 import { useRouter, RouterView } from "vue-router";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "./services/apiClient";
+import { fetchUser } from "./services/authService";
 
 const router = useRouter();
 
@@ -40,6 +41,9 @@ async function handleDeepLink(urls: string[]) {
     // Login deep link
     if (token) {
       localStorage.setItem(AUTH_TOKEN_KEY, token);
+      const user = await fetchUser();
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user ?? {}));
+
       await router.replace("/");
       return;
     }

@@ -17,21 +17,10 @@
 
 <script setup lang="ts">
 import { onMounted } from "vue";
-import { AUTH_CONFIG } from "../config/auth.config";
-import { createAuthService } from "../services/authService";
+import { login } from "../services/authService";
 
 onMounted(() => {
-  const authService = createAuthService({
-    clientId: AUTH_CONFIG.clientId,
-    authUrl: AUTH_CONFIG.authUrl,
-    tokenUrl: AUTH_CONFIG.tokenUrl,
-    userUrl: AUTH_CONFIG.userUrl,
-    redirectUri: AUTH_CONFIG.redirectUri,
-    logoutUri: AUTH_CONFIG.logoutUri,
-    state: "DESKTOP",
-  });
-
-  void authService.login();
+  void login({ state: "DESKTOP" });
 });
 </script>
 
