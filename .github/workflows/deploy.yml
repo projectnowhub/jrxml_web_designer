@@ -84,6 +84,12 @@ jobs:
           build-args: |
             VITE_PDF_PREVIEW_API=${{ secrets.VITE_PDF_PREVIEW_API }}
             VITE_APP_VERSION=${{ needs.setup.outputs.image_tag }}
+            VITE_OAUTH_CLIENT_ID=${{ needs.setup.outputs.environment == 'dev' && secrets.VITE_OAUTH_CLIENT_ID_DEV || needs.setup.outputs.environment == 'staging' && secrets.VITE_OAUTH_CLIENT_ID_STAGING || secrets.VITE_OAUTH_CLIENT_ID }}
+            VITE_OAUTH_BASE_URL=${{ needs.setup.outputs.environment == 'dev' && secrets.VITE_OAUTH_BASE_URL_DEV || needs.setup.outputs.environment == 'staging' && secrets.VITE_OAUTH_BASE_URL_STAGING || secrets.VITE_OAUTH_BASE_URL }}
+            VITE_OAUTH_AUTH_URL=${{ needs.setup.outputs.environment == 'dev' && secrets.VITE_OAUTH_AUTH_URL_DEV || needs.setup.outputs.environment == 'staging' && secrets.VITE_OAUTH_AUTH_URL_STAGING || secrets.VITE_OAUTH_AUTH_URL }}
+            VITE_OAUTH_TOKEN_URL=${{ needs.setup.outputs.environment == 'dev' && secrets.VITE_OAUTH_TOKEN_URL_DEV || needs.setup.outputs.environment == 'staging' && secrets.VITE_OAUTH_TOKEN_URL_STAGING || secrets.VITE_OAUTH_TOKEN_URL }}
+            VITE_OAUTH_USER_URL=${{ needs.setup.outputs.environment == 'dev' && secrets.VITE_OAUTH_USER_URL_DEV || needs.setup.outputs.environment == 'staging' && secrets.VITE_OAUTH_USER_URL_STAGING || secrets.VITE_OAUTH_USER_URL }}
+            VITE_OAUTH_LOGOUT_URI=${{ needs.setup.outputs.environment == 'dev' && secrets.VITE_OAUTH_LOGOUT_URI_DEV || needs.setup.outputs.environment == 'staging' && secrets.VITE_OAUTH_LOGOUT_URI_STAGING || secrets.VITE_OAUTH_LOGOUT_URI }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

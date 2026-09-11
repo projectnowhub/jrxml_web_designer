@@ -23,14 +23,12 @@ import { createAuthService } from "../services/authService";
 onMounted(() => {
   const authService = createAuthService({
     clientId: AUTH_CONFIG.clientId,
-    tenant: AUTH_CONFIG.tenant,
     authUrl: AUTH_CONFIG.authUrl,
     tokenUrl: AUTH_CONFIG.tokenUrl,
     userUrl: AUTH_CONFIG.userUrl,
     redirectUri: AUTH_CONFIG.redirectUri,
     logoutUri: AUTH_CONFIG.logoutUri,
     state: "DESKTOP",
-    codeChallenge: AUTH_CONFIG.codeChallenge,
   });
 
   void authService.login();

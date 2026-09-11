@@ -10,14 +10,12 @@ import apiClient from "./apiClient";
 
 export interface AuthConfig {
   clientId: string;
-  tenant?: string;
   authUrl: string;
   tokenUrl: string;
   userUrl: string;
   redirectUri: string;
   logoutUri: string;
   state: string;
-  codeChallenge: string;
 }
 
 export interface AuthUser {
