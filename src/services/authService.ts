@@ -6,17 +6,10 @@ import {
   saveVerifier,
 } from "../utils/pkce";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import apiClient from "./apiClient";
+import apiClient, { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "./apiClient";
+import { AUTH_CONFIG, type AuthClientConfig } from "../config/auth.config";
 
-export interface AuthConfig {
-  clientId: string;
-  authUrl: string;
-  tokenUrl: string;
-  userUrl: string;
-  redirectUri: string;
-  logoutUri: string;
-  state: string;
-}
+export type AuthConfig = AuthClientConfig;
 
 export interface AuthUser {
   id?: string;
@@ -35,94 +28,87 @@ export interface TokenResponse {
   [key: string]: unknown;
 }
 
-export class AuthService {
-  private config: AuthConfig;
+export interface LoginOptions {
+  state?: string;
+}
 
-  constructor(config: AuthConfig) {
-    this.config = config;
+export const login = async (options: LoginOptions = {}): Promise<void> => {
+  const clientId = getClientId(AUTH_CONFIG.clientId);
+  const pkce = await generatePKCE();
+
+  saveVerifier(pkce.verifier);
+
+  const params = new URLSearchParams({
+    response_type: "code",
+    client_id: clientId,
+    state: options.state ?? AUTH_CONFIG.state,
+    code_challenge: pkce.challenge,
+    code_challenge_method: "S256",
+    redirect_uri: AUTH_CONFIG.redirectUri,
+  });
+
+  window.location.href = `${AUTH_CONFIG.authUrl}?${params.toString()}`;
+};
+
+export const exchangeCode = async (code: string): Promise<string> => {
+  const verifier = getVerifier();
+
+  if (!verifier) {
+    throw new Error("PKCE verifier not found. Login session may have expired.");
   }
 
-  login = async (): Promise<void> => {
-    const clientId = getClientId(this.config.clientId);
-    const pkce = await generatePKCE();
+  const clientId = getClientId(AUTH_CONFIG.clientId);
 
-    saveVerifier(pkce.verifier);
+  const body = new URLSearchParams({
+    code,
+    code_verifier: verifier,
+    client_id: clientId,
+    redirect_uri: AUTH_CONFIG.redirectUri,
+    grant_type: "authorization_code",
+  });
 
-    const params = new URLSearchParams({
-      response_type: "code",
-      client_id: clientId,
-      state: this.config.state,
-      code_challenge: pkce.challenge,
-      code_challenge_method: "S256",
-      redirect_uri: this.config.redirectUri,
-    });
+  const data = await apiClient.post<TokenResponse>(AUTH_CONFIG.tokenUrl, body, {
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+  });
 
-    window.location.href = `${this.config.authUrl}?${params.toString()}`;
-  };
+  clearVerifier();
 
-  exchangeCode = async (code: string): Promise<string> => {
-    const verifier = getVerifier();
+  return data.access_token;
+};
 
-    if (!verifier) {
-      throw new Error(
-        "PKCE verifier not found. Login session may have expired.",
-      );
-    }
+export const fetchUser = async (): Promise<AuthUser> => {
+  return apiClient.get<AuthUser>(AUTH_CONFIG.userUrl);
+};
 
-    const clientId = getClientId(this.config.clientId);
+export const logout = async (redirectTo = "/login"): Promise<void> => {
+  localStorage.removeItem(AUTH_USER_KEY);
+  localStorage.removeItem(AUTH_TOKEN_KEY);
 
-    const body = new URLSearchParams({
-      code,
-      code_verifier: verifier,
-      client_id: clientId,
-      redirect_uri: this.config.redirectUri,
-      grant_type: "authorization_code",
-    });
+  const isTauri = Boolean(
+    (
+      window as Window & {
+        __TAURI_INTERNALS__?: unknown;
+      }
+    ).__TAURI_INTERNALS__,
+  );
 
-    const data = await apiClient.post<TokenResponse>(
-      this.config.tokenUrl,
-      body,
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      },
-    );
+  const target = isTauri
+    ? "cdp-report-app://"
+    : `${window.location.origin}${redirectTo}`;
 
-    clearVerifier();
+  const url = `${AUTH_CONFIG.logoutUri}?redirect_to=${encodeURIComponent(target)}`;
 
-    return data.access_token;
-  };
-
-  fetchUser = async (): Promise<AuthUser> => {
-    return apiClient.get<AuthUser>(this.config.userUrl);
-  };
-
-  logout = (redirectTo = "/login"): void => {
-    window.location.href = `${this.config.logoutUri}?redirect_to=${window.location.origin}${redirectTo}`;
-  };
-}
+  if (isTauri) {
+    await openUrl(url);
+  } else {
+    window.location.href = url;
+  }
+};
 
 export const desktopLogin = (tenantUrl: string): void => {
   const { origin } = new URL(tenantUrl);
 
   openUrl(`${origin}/desktop-login`);
-};
-
-let instance: AuthService | null = null;
-
-export const createAuthService = (config: AuthConfig): AuthService => {
-  instance = new AuthService(config);
-
-  return instance;
-};
-
-export const getAuthService = (): AuthService => {
-  if (!instance) {
-    throw new Error(
-      "AuthService not initialized. Call createAuthService() first.",
-    );
-  }
-
-  return instance;
 };
