@@ -115,7 +115,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import { RouterView, useRoute, useRouter } from "vue-router";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   Activity,
   Bell,
@@ -127,8 +126,8 @@ import {
   Search,
   UserRound,
 } from "@lucide/vue";
-import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
 import { getStoredUser } from "../utils/auth";
+import { logout } from "../services/authService";
 
 const sidebarMenus = [
   {
@@ -167,21 +166,9 @@ function goToMyProfile() {
   router.push("/myprofile");
 }
 
-async function signOut() {
-  localStorage.removeItem(AUTH_USER_KEY);
-  localStorage.removeItem(AUTH_TOKEN_KEY);
-
-  const isTauri = Boolean(
-    (window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__,
-  );
-  const redirectTo = isTauri ? "cdp-report-app://" : window.location.origin;
-  const url = `${import.meta.env.VITE_OAUTH_BASE_URL}/logout?redirect_to=${encodeURIComponent(redirectTo)}`;
-
-  if (isTauri) {
-    await openUrl(url);
-  } else {
-    window.location.href = url;
-  }
+function signOut() {
+  isAccountOpen.value = false;
+  void logout();
 }
 
 const accountMenuRef = ref<HTMLElement | null>(null);

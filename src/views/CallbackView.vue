@@ -425,8 +425,7 @@
 <script setup lang="ts">
 import { computed, h, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { AUTH_CONFIG } from "../config/auth.config";
-import { createAuthService } from "../services/authService";
+import { exchangeCode, fetchUser } from "../services/authService";
 import { closeTab } from "../utils/closeTab";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
 
@@ -661,18 +660,8 @@ onMounted(async () => {
       throw new Error("No authorization code found in callback URL");
     }
 
-    const authService = createAuthService({
-      clientId: AUTH_CONFIG.clientId,
-      authUrl: AUTH_CONFIG.authUrl,
-      tokenUrl: AUTH_CONFIG.tokenUrl,
-      userUrl: AUTH_CONFIG.userUrl,
-      redirectUri: AUTH_CONFIG.redirectUri,
-      logoutUri: AUTH_CONFIG.logoutUri,
-      state: AUTH_CONFIG.state,
-    });
-
     status.value = "Exchanging token securely";
-    const token = await authService.exchangeCode(code);
+    const token = await exchangeCode(code);
 
     if (state === "DESKTOP") {
       window.location.href = `cdp-report-app://callback?token=${token}`;
@@ -682,7 +671,7 @@ onMounted(async () => {
 
     status.value = "Loading your workspace";
     localStorage.setItem(AUTH_TOKEN_KEY, token);
-    const user = await authService.fetchUser();
+    const user = await fetchUser();
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user ?? {}));
 
     window.history.replaceState({}, "", "/");
