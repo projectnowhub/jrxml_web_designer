@@ -2,7 +2,15 @@
   <div class="pdf-designer">
     <div class="designer-header">
       <div class="header-left">
-        <h1>{{ t("app.title") }}</h1>
+        <div class="brand-wrap">
+          <div class="brand-img">
+            <img src="/assets/cdp-logo.png" alt="ProjectNow CDP" />
+          </div>
+          <div class="brand-name">
+            <span class="brand-text">ProjectNow CDP</span>
+            <span class="brand-badge">REPORT STUDIO</span>
+          </div>
+        </div>
         <div class="header-undo-redo">
           <n-button
             @click="undo"
@@ -164,7 +172,7 @@
           ]"
         />
         <!-- <n-button @click="showHelp = true" type="default">{{ t('actions.help') }}</n-button> -->
-        <LanguageSwitcher />
+        <!-- <LanguageSwitcher /> -->
 
         <div class="my-act-menu">
           <n-button type="default" @click="showMyActMenu = !showMyActMenu">
@@ -6213,6 +6221,48 @@ const handleBandSelectionChange = (): void => {
 </script>
 
 <style scoped>
+.brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-img img {
+  width: 34px;
+  height: 34px;
+  filter: drop-shadow(0 2px 8px rgba(124, 92, 247, 0.2));
+}
+.brand-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1;
+  min-width: 0;
+}
+.brand-text {
+  color: #1c1b26;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.brand-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 2px 6px;
+  border: 1px solid rgba(124, 92, 247, 0.28);
+  border-radius: 4px;
+  color: #6440f4;
+  background: rgba(124, 92, 247, 0.14);
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+@media (max-width: 1023px) {
+  .brand-badge {
+    display: none;
+  }
+}
+
 .my-act-menu {
   position: relative;
   display: inline-block;
@@ -6382,11 +6432,12 @@ const handleBandSelectionChange = (): void => {
   display: flex;
   align-items: center;
   gap: 16px;
+
 }
 
 .header-undo-redo {
   display: flex;
-  gap: 6px;
+  gap: 2px;
   align-items: center;
 }
 

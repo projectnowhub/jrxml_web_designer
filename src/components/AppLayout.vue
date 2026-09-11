@@ -273,12 +273,12 @@ button:active {
   align-items: center;
 }
 .brand-wrap {
-  gap: 10px;
 }
 .brand-img img {
   width: 34px;
   height: 34px;
   filter: drop-shadow(0 2px 8px rgba(124, 92, 247, 0.2));
+  margin-right: 10px;
 }
 .brand-name {
   display: flex;

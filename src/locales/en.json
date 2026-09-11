@@ -9,8 +9,8 @@
     "showLeftPanel": "Show Left Panel",
     "hideRightPanel": "Hide Right Panel",
     "showRightPanel": "Show Right Panel",
-    "hideBottomPanel": "Hide Bottom Panel",
-    "showBottomPanel": "Show Bottom Panel",
+    "hideBottomPanel": "Hide Panel",
+    "showBottomPanel": "Show Panel",
     "showGrid": "Show Grid",
     "snapToGrid": "Snap to Grid",
     "snapToAlignment": "Snap to Alignment",
@@ -23,7 +23,7 @@
     "help": "Help"
   },
   "fileManager": {
-    "title": "File Manager",
+    "title": "File",
     "newFile": "New File",
     "openLocalFile": "Open Local File",
     "save": "Save",
