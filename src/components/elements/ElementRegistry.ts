@@ -524,101 +524,101 @@ export class ElementRegistry {
     });
 
     // Composite Elements
-    this.registerElement({
-      type: 'pageNumber',
-      name: 'elementNames.pageNumber',
-      icon: '#',
-      iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6M12 9v6"/></svg>',
-      category: 'composite',
-      defaultProps: {
-        type: 'textField',
-        x: 0, y: 0, width: 50, height: 20,
-        expression: '$V{PAGE_NUMBER}',
-        evaluationTime: 'Now',
-        fontFamily: 'SansSerif', fontSize: 12,
-        textAlignment: 'Center', verticalAlignment: 'Middle'
-      }
-    });
+    // this.registerElement({
+    //   type: 'pageNumber',
+    //   name: 'elementNames.pageNumber',
+    //   icon: '#',
+    //   iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6M12 9v6"/></svg>',
+    //   category: 'composite',
+    //   defaultProps: {
+    //     type: 'textField',
+    //     x: 0, y: 0, width: 50, height: 20,
+    //     expression: '$V{PAGE_NUMBER}',
+    //     evaluationTime: 'Now',
+    //     fontFamily: 'SansSerif', fontSize: 12,
+    //     textAlignment: 'Center', verticalAlignment: 'Middle'
+    //   }
+    // });
 
-    this.registerElement({
-      type: 'totalPages',
-      name: 'elementNames.totalPages',
-      icon: 'Σ',
-      iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8l5-3 5 3M7 16l5 3 5-3"/></svg>',
-      category: 'composite',
-      defaultProps: {
-        type: 'textField',
-        x: 0, y: 0, width: 50, height: 20,
-        expression: '$V{PAGE_NUMBER}',
-        evaluationTime: 'Report',
-        fontFamily: 'SansSerif', fontSize: 12,
-        textAlignment: 'Center', verticalAlignment: 'Middle'
-      }
-    });
+    // this.registerElement({
+    //   type: 'totalPages',
+    //   name: 'elementNames.totalPages',
+    //   icon: 'Σ',
+    //   iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8l5-3 5 3M7 16l5 3 5-3"/></svg>',
+    //   category: 'composite',
+    //   defaultProps: {
+    //     type: 'textField',
+    //     x: 0, y: 0, width: 50, height: 20,
+    //     expression: '$V{PAGE_NUMBER}',
+    //     evaluationTime: 'Report',
+    //     fontFamily: 'SansSerif', fontSize: 12,
+    //     textAlignment: 'Center', verticalAlignment: 'Middle'
+    //   }
+    // });
 
-    this.registerElement({
-      type: 'currentDate',
-      name: 'elementNames.currentDate',
-      icon: '📅',
-      iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
-      category: 'composite',
-      defaultProps: {
-        type: 'textField',
-        x: 0, y: 0, width: 100, height: 20,
-        expression: 'new java.util.Date()',
-        evaluationTime: 'Now', pattern: 'yyyy-MM-dd',
-        fontFamily: 'SansSerif', fontSize: 12,
-        textAlignment: 'Center', verticalAlignment: 'Middle'
-      }
-    });
+    // this.registerElement({
+    //   type: 'currentDate',
+    //   name: 'elementNames.currentDate',
+    //   icon: '📅',
+    //   iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+    //   category: 'composite',
+    //   defaultProps: {
+    //     type: 'textField',
+    //     x: 0, y: 0, width: 100, height: 20,
+    //     expression: 'new java.util.Date()',
+    //     evaluationTime: 'Now', pattern: 'yyyy-MM-dd',
+    //     fontFamily: 'SansSerif', fontSize: 12,
+    //     textAlignment: 'Center', verticalAlignment: 'Middle'
+    //   }
+    // });
 
-    this.registerElement({
-      type: 'currentTime',
-      name: 'elementNames.currentTime',
-      icon: '🕒',
-      iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
-      category: 'composite',
-      defaultProps: {
-        type: 'textField',
-        x: 0, y: 0, width: 80, height: 20,
-        expression: 'new java.util.Date()',
-        evaluationTime: 'Now', pattern: 'HH:mm:ss',
-        fontFamily: 'SansSerif', fontSize: 12,
-        textAlignment: 'Center', verticalAlignment: 'Middle'
-      }
-    });
+    // this.registerElement({
+    //   type: 'currentTime',
+    //   name: 'elementNames.currentTime',
+    //   icon: '🕒',
+    //   iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+    //   category: 'composite',
+    //   defaultProps: {
+    //     type: 'textField',
+    //     x: 0, y: 0, width: 80, height: 20,
+    //     expression: 'new java.util.Date()',
+    //     evaluationTime: 'Now', pattern: 'HH:mm:ss',
+    //     fontFamily: 'SansSerif', fontSize: 12,
+    //     textAlignment: 'Center', verticalAlignment: 'Middle'
+    //   }
+    // });
 
-    this.registerElement({
-      type: 'percentage',
-      name: 'elementNames.percentage',
-      icon: '%',
-      iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M20 4L4 20"/></svg>',
-      category: 'composite',
-      defaultProps: {
-        type: 'textField',
-        x: 0, y: 0, width: 60, height: 20,
-        expression: '$V{REPORT_COUNT} / $V{REPORT_TOTAL_COUNT}',
-        evaluationTime: 'Report', pattern: '#,##0.0%',
-        fontFamily: 'SansSerif', fontSize: 12,
-        textAlignment: 'Center', verticalAlignment: 'Middle'
-      }
-    });
+    // this.registerElement({
+    //   type: 'percentage',
+    //   name: 'elementNames.percentage',
+    //   icon: '%',
+    //   iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M20 4L4 20"/></svg>',
+    //   category: 'composite',
+    //   defaultProps: {
+    //     type: 'textField',
+    //     x: 0, y: 0, width: 60, height: 20,
+    //     expression: '$V{REPORT_COUNT} / $V{REPORT_TOTAL_COUNT}',
+    //     evaluationTime: 'Report', pattern: '#,##0.0%',
+    //     fontFamily: 'SansSerif', fontSize: 12,
+    //     textAlignment: 'Center', verticalAlignment: 'Middle'
+    //   }
+    // });
 
-    this.registerElement({
-      type: 'pageXofY',
-      name: 'elementNames.pageXofY',
-      icon: '#/#',
-      iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>',
-      category: 'composite',
-      defaultProps: {
-        type: 'textField',
-        x: 0, y: 0, width: 80, height: 20,
-        expression: '$V{PAGE_NUMBER} + " / " + $V{NUMBER_OF_PAGES}',
-        evaluationTime: 'Now',
-        fontFamily: 'SansSerif', fontSize: 12,
-        textAlignment: 'Center', verticalAlignment: 'Middle'
-      }
-    });
+    // this.registerElement({
+    //   type: 'pageXofY',
+    //   name: 'elementNames.pageXofY',
+    //   icon: '#/#',
+    //   iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>',
+    //   category: 'composite',
+    //   defaultProps: {
+    //     type: 'textField',
+    //     x: 0, y: 0, width: 80, height: 20,
+    //     expression: '$V{PAGE_NUMBER} + " / " + $V{NUMBER_OF_PAGES}',
+    //     evaluationTime: 'Now',
+    //     fontFamily: 'SansSerif', fontSize: 12,
+    //     textAlignment: 'Center', verticalAlignment: 'Middle'
+    //   }
+    // });
   }
 
   // Register an element

@@ -6,6 +6,7 @@
       <div
         v-for="(categoryElements, categoryKey) in groupedElements"
         :key="categoryKey"
+        v-show="categoryElements.length > 0"
         class="element-category"
       >
         <div class="category-header" @click="toggleCategory(categoryKey)">
@@ -74,6 +75,7 @@
             <div
               class="element-info-container"
               @click="selectElementFromList(element, selectElement)"
+              @dblclick.stop="handleReportElementDblClick(element)"
             >
               <span
                 class="element-icon"
@@ -82,9 +84,31 @@
                   getElementIcon(element.element.type)
                 "
               ></span>
-              <span class="element-info">{{
-                getElementDisplayInfoWithoutBand(element.element)
-              }}</span>
+              <input
+                v-if="editingElementKey === getElementKey(element)"
+                :ref="setInlineEditInputRef"
+                v-model="editingValue"
+                class="report-element-inline-input"
+                @click.stop
+                @dblclick.stop
+                @input="handleInlineInput(element)"
+                @keydown.enter.prevent="finishInlineEdit(element)"
+                @keydown.esc.prevent="cancelInlineEdit(element)"
+                @blur="finishInlineEdit(element)"
+              />
+              <span
+                v-else
+                class="element-info"
+                :title="
+                  getElementDisplayInfoWithoutBand(element.element) ||
+                  t(getElementTypeName(element.element.type))
+                "
+              >
+                {{
+                  getElementDisplayInfoWithoutBand(element.element) ||
+                  t(getElementTypeName(element.element.type))
+                }}
+              </span>
             </div>
             <n-button
               class="action-button delete-button"
@@ -549,7 +573,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, nextTick, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
 import ConfirmModal from "./modals/ConfirmModal.vue";
@@ -568,6 +592,7 @@ import {
   getElementIcon,
   getElementIconSvg,
   getElementKey,
+  getElementTypeName,
   isElementSelected,
   selectElementFromList,
   selectElementsByField,
@@ -625,6 +650,12 @@ interface Emits {
     bandIndex: number,
     elementIndex: number,
     parentFrameIndex?: number,
+  ): void;
+  (
+    e: "update-element-value",
+    element: any,
+    newValue: string,
+    oldValue: string,
   ): void;
 }
 
@@ -952,6 +983,160 @@ function handleConfirmDelete(): void {
     pendingDeleteElement.value = null;
   }
 }
+
+// ==================== Report Element Inline Editing ====================
+const editingElementKey = ref<string | null>(null);
+const editingValue = ref<string>("");
+const originalValue = ref<string>("");
+const inlineEditInputRef = ref<HTMLInputElement | null>(null);
+
+const setInlineEditInputRef = (el: any) => {
+  if (el) {
+    inlineEditInputRef.value = el as HTMLInputElement;
+  }
+};
+
+// Check whether an element type supports text/expression inline editing
+function isElementTextEditable(element: DesignElement): boolean {
+  if (!element) return false;
+  return ["staticText", "textField", "image", "barcode", "subreport"].includes(
+    element.type,
+  );
+}
+
+// Get the editable value from an element
+function getElementEditableValue(element: DesignElement): string {
+  if (!element) return "";
+  if (element.type === "staticText") {
+    return (element as StaticTextElement).text ?? "";
+  }
+  if (element.type === "textField") {
+    const tf = element as TextFieldElement;
+    if (
+      tf.expression !== undefined &&
+      tf.expression !== null &&
+      tf.expression !== ""
+    ) {
+      return tf.expression;
+    }
+    if ((tf as any).fieldName) {
+      return `$F{${(tf as any).fieldName}}`;
+    }
+    return "";
+  }
+  if (element.type === "image") {
+    return (element as any).imagePath || (element as any).imageExpression || "";
+  }
+  if (element.type === "barcode") {
+    return (element as any).codeExpression || "";
+  }
+  if (element.type === "subreport") {
+    return (element as any).subreportExpression || "";
+  }
+  return (element as any).text || (element as any).expression || "";
+}
+
+// Set the editable value on an element
+function setElementEditableValue(element: DesignElement, val: string): void {
+  if (!element) return;
+  if (element.type === "staticText") {
+    (element as StaticTextElement).text = val;
+  } else if (element.type === "textField") {
+    const tf = element as TextFieldElement;
+    tf.expression = val;
+    // If the expression matches $F{field}, also sync fieldName
+    const fieldMatch = val.trim().match(/^\$F\{([^}]+)\}$/);
+    if (fieldMatch && fieldMatch[1]) {
+      (tf as any).fieldName = fieldMatch[1].trim();
+    }
+  } else if (element.type === "image") {
+    (element as any).imagePath = val;
+  } else if (element.type === "barcode") {
+    (element as any).codeExpression = val;
+  } else if (element.type === "subreport") {
+    (element as any).subreportExpression = val;
+  } else if ((element as any).text !== undefined) {
+    (element as any).text = val;
+  } else if ((element as any).expression !== undefined) {
+    (element as any).expression = val;
+  }
+}
+
+// Handle double-clicking a report element item
+function handleReportElementDblClick(item: any): void {
+  // Always select the element first so editor/properties sync selection
+  selectElementFromList(item, selectElement);
+
+  if (!isElementTextEditable(item.element)) {
+    return;
+  }
+
+  const key = getElementKey(item);
+  editingElementKey.value = key;
+  const val = getElementEditableValue(item.element);
+  editingValue.value = val;
+  originalValue.value = val;
+
+  nextTick(() => {
+    if (inlineEditInputRef.value) {
+      inlineEditInputRef.value.focus();
+      inlineEditInputRef.value.select();
+    }
+  });
+}
+
+// Live update while typing so canvas and properties panel update in real-time
+function handleInlineInput(item: any): void {
+  setElementEditableValue(item.element, editingValue.value);
+}
+
+// Finish editing on Enter or blur
+function finishInlineEdit(item: any): void {
+  if (
+    !editingElementKey.value ||
+    editingElementKey.value !== getElementKey(item)
+  ) {
+    return;
+  }
+  const newValue = editingValue.value;
+  const oldValue = originalValue.value;
+  setElementEditableValue(item.element, newValue);
+  editingElementKey.value = null;
+
+  if (newValue !== oldValue) {
+    emit("update-element-value", item, newValue, oldValue);
+  }
+}
+
+// Cancel editing on Escape
+function cancelInlineEdit(item: any): void {
+  if (
+    !editingElementKey.value ||
+    editingElementKey.value !== getElementKey(item)
+  ) {
+    return;
+  }
+  setElementEditableValue(item.element, originalValue.value);
+  editingValue.value = originalValue.value;
+  editingElementKey.value = null;
+}
+
+// Watch selectedElement: if selection moves to another element, close edit mode
+watch(
+  () => props.selectedElement,
+  (newVal) => {
+    if (editingElementKey.value && newVal) {
+      const currentItemKey = editingElementKey.value;
+      const expectedKeySuffix =
+        newVal.parentFrameIndex !== undefined
+          ? `-${newVal.bandIndex}-${newVal.parentFrameIndex}-${newVal.elementIndex}`
+          : `-${newVal.bandIndex}-${newVal.elementIndex}`;
+      if (!currentItemKey.endsWith(expectedKeySuffix)) {
+        editingElementKey.value = null;
+      }
+    }
+  },
+);
 </script>
 
 <style scoped>
@@ -1150,6 +1335,22 @@ function handleConfirmDelete(): void {
   display: flex;
   align-items: center;
   cursor: pointer;
+  min-width: 0;
+}
+
+.report-element-inline-input {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  padding: 1px 6px;
+  font-size: 12px;
+  border: 1px solid #1890ff;
+  border-radius: 3px;
+  background-color: #ffffff;
+  color: #333333;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  box-sizing: border-box;
 }
 
 .report-element-item .element-icon {

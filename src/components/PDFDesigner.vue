@@ -286,6 +286,7 @@
           @edit-style="handleEditStyle"
           @delete-style="handleDeleteStyle"
           @delete-element="deleteElement"
+          @update-element-value="handleUpdateElementValue"
           @add-sub-dataset="handleAddSubDataset"
           @edit-sub-dataset="handleEditSubDataset"
           @delete-sub-dataset="handleDeleteSubDataset"
@@ -2772,7 +2773,8 @@ const startDragging = (
               (document.querySelector(".page-sheet") as HTMLElement) ||
               (document.querySelector(".paper") as HTMLElement);
 
-            const paperEl = activeSheet || (document.querySelector(".paper") as HTMLElement);
+            const paperEl =
+              activeSheet || (document.querySelector(".paper") as HTMLElement);
             if (paperEl) {
               const paperRect = paperEl.getBoundingClientRect();
               paperOffsetX = paperRect.left;
@@ -5602,6 +5604,17 @@ const openPreviewServerSettings = (): void => {
 const updatePreviewServerUrl = (url: string): void => {
   previewServerUrl.value = url;
   localStorage.setItem("previewServerUrl", url);
+};
+
+// Handle updating element value from report elements list
+const handleUpdateElementValue = (
+  _elementItem: any,
+  _newValue: string,
+  _oldValue: string,
+): void => {
+  saveStateToHistory();
+  updateJRXML();
+  saveToLocalStorageWrapper();
 };
 const isEditingParameter = ref(false);
 

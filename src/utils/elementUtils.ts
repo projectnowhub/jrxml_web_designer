@@ -1,10 +1,18 @@
 // Element-related utility functions
 
-import type { DesignElement } from '@/types';
-import { getElementConfig, createElement } from '@/components/elements/ElementRegistry';
+import type { DesignElement } from "@/types";
+import {
+  getElementConfig,
+  createElement,
+} from "@/components/elements/ElementRegistry";
 
 // Get the unique key for an element
-export function getElementKey(element: { element: DesignElement, bandIndex: number, elementIndex: number, parentFrameIndex?: number }): string {
+export function getElementKey(element: {
+  element: DesignElement;
+  bandIndex: number;
+  elementIndex: number;
+  parentFrameIndex?: number;
+}): string {
   if (element.parentFrameIndex !== undefined) {
     return `${element.element.type}-${element.bandIndex}-${element.parentFrameIndex}-${element.elementIndex}`;
   }
@@ -20,7 +28,7 @@ export function getElementTypeName(type: string): string {
 // Get the element icon
 export function getElementIcon(type: string): string {
   const config = getElementConfig(type);
-  return config?.icon || '?';
+  return config?.icon || "?";
 }
 
 // Get the element SVG icon
@@ -30,27 +38,47 @@ export function getElementIconSvg(type: string): string | undefined {
 }
 
 // Get element display info (excluding Band)
-export function getElementDisplayInfoWithoutBand(element: DesignElement): string {
-  let info = '';
+export function getElementDisplayInfoWithoutBand(
+  element: DesignElement,
+): string {
+  let info = "";
 
   // Add type-specific info based on the element type
-  if (element.type === 'staticText' && (element as any).text) {
-    info = `${(element as any).text.substring(0, 15)}${(element as any).text.length > 15 ? '...' : ''}`;
-  } else if (element.type === 'textField') {
+  if (element.type === "staticText" && (element as any).text) {
+    info = `${(element as any).text.substring(0, 15)}${(element as any).text.length > 15 ? "..." : ""}`;
+  } else if (element.type === "textField") {
     if ((element as any).expression) {
-      info = `${(element as any).expression.substring(0, 15)}${(element as any).expression.length > 15 ? '...' : ''}`;
+      info = `${(element as any).expression.substring(0, 15)}${(element as any).expression.length > 15 ? "..." : ""}`;
     } else if ((element as any).fieldName) {
       info = `$F{${(element as any).fieldName}}`;
     }
-  } else if (element.type === 'image' && (element as any).imagePath) {
+  } else if (element.type === "image" && (element as any).imagePath) {
     info = (element as any).imagePath;
+  } else if (element.type === "barcode" && (element as any).codeExpression) {
+    info = `${(element as any).codeExpression.substring(0, 15)}${(element as any).codeExpression.length > 15 ? "..." : ""}`;
+  } else if (
+    element.type === "subreport" &&
+    (element as any).subreportExpression
+  ) {
+    info = `${(element as any).subreportExpression.substring(0, 15)}${(element as any).subreportExpression.length > 15 ? "..." : ""}`;
   }
 
   return info;
 }
 
 // Check whether an element is selected
-export function isElementSelected(element: { element: DesignElement, bandIndex: number, elementIndex: number, parentFrameIndex?: number }, selectedElement: { bandIndex: number, elementIndex: number, parentFrameIndex?: number } | null | undefined): boolean {
+export function isElementSelected(
+  element: {
+    element: DesignElement;
+    bandIndex: number;
+    elementIndex: number;
+    parentFrameIndex?: number;
+  },
+  selectedElement:
+    | { bandIndex: number; elementIndex: number; parentFrameIndex?: number }
+    | null
+    | undefined,
+): boolean {
   if (!selectedElement) return false;
 
   // If both elements have a UUID, prefer comparing by UUID
@@ -59,18 +87,46 @@ export function isElementSelected(element: { element: DesignElement, bandIndex: 
   }
 
   // Otherwise fall back to position-based comparison
-  return selectedElement.bandIndex === element.bandIndex &&
-         selectedElement.elementIndex === element.elementIndex &&
-         selectedElement.parentFrameIndex === element.parentFrameIndex;
+  return (
+    selectedElement.bandIndex === element.bandIndex &&
+    selectedElement.elementIndex === element.elementIndex &&
+    selectedElement.parentFrameIndex === element.parentFrameIndex
+  );
 }
 
 // Select an element from the list
-export function selectElementFromList(element: { element: DesignElement, bandIndex: number, elementIndex: number, parentFrameIndex?: number }, selectElement: (bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number) => void): void {
-  selectElement(element.bandIndex, element.elementIndex, false, element.parentFrameIndex);
+export function selectElementFromList(
+  element: {
+    element: DesignElement;
+    bandIndex: number;
+    elementIndex: number;
+    parentFrameIndex?: number;
+  },
+  selectElement: (
+    bandIndex: number,
+    elementIndex: number,
+    isMultiSelect?: boolean,
+    parentFrameIndex?: number,
+  ) => void,
+): void {
+  selectElement(
+    element.bandIndex,
+    element.elementIndex,
+    false,
+    element.parentFrameIndex,
+  );
 }
 
 // Recursively find elements
-function findElementsByPredicate(bands: any[], predicate: (element: DesignElement) => boolean, callback: (bandIndex: number, elementIndex: number, parentFrameIndex?: number) => void): boolean {
+function findElementsByPredicate(
+  bands: any[],
+  predicate: (element: DesignElement) => boolean,
+  callback: (
+    bandIndex: number,
+    elementIndex: number,
+    parentFrameIndex?: number,
+  ) => void,
+): boolean {
   let found = false;
 
   bands.forEach((band, bandIndex) => {
@@ -84,13 +140,15 @@ function findElementsByPredicate(bands: any[], predicate: (element: DesignElemen
         }
 
         // If it's a Frame, recursively check child elements
-        if (element.type === 'frame' && (element as any).elements) {
-          (element as any).elements.forEach((childElement: DesignElement, childIndex: number) => {
-            if (predicate(childElement)) {
-              callback(bandIndex, childIndex, elementIndex);
-              found = true;
-            }
-          });
+        if (element.type === "frame" && (element as any).elements) {
+          (element as any).elements.forEach(
+            (childElement: DesignElement, childIndex: number) => {
+              if (predicate(childElement)) {
+                callback(bandIndex, childIndex, elementIndex);
+                found = true;
+              }
+            },
+          );
         }
       });
     }
@@ -100,14 +158,31 @@ function findElementsByPredicate(bands: any[], predicate: (element: DesignElemen
 }
 
 // Select elements by parameter
-export function selectElementsByParameter(bands: any[], paramName: string, selectElement: (bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number) => void): void {
+export function selectElementsByParameter(
+  bands: any[],
+  paramName: string,
+  selectElement: (
+    bandIndex: number,
+    elementIndex: number,
+    isMultiSelect?: boolean,
+    parentFrameIndex?: number,
+  ) => void,
+): void {
   const predicate = (element: DesignElement) => {
-    return element.type === 'textField' && (element as any).expression && (element as any).expression.includes(`$P{${paramName}}`);
+    return (
+      element.type === "textField" &&
+      (element as any).expression &&
+      (element as any).expression.includes(`$P{${paramName}}`)
+    );
   };
 
-  const found = findElementsByPredicate(bands, predicate, (bandIndex, elementIndex, parentFrameIndex) => {
-    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
-  });
+  const found = findElementsByPredicate(
+    bands,
+    predicate,
+    (bandIndex, elementIndex, parentFrameIndex) => {
+      selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    },
+  );
 
   // If no element using this parameter was found, a hint could be shown
   if (!found) {
@@ -116,14 +191,31 @@ export function selectElementsByParameter(bands: any[], paramName: string, selec
 }
 
 // Select elements by field
-export function selectElementsByField(bands: any[], fieldName: string, selectElement: (bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number) => void): void {
+export function selectElementsByField(
+  bands: any[],
+  fieldName: string,
+  selectElement: (
+    bandIndex: number,
+    elementIndex: number,
+    isMultiSelect?: boolean,
+    parentFrameIndex?: number,
+  ) => void,
+): void {
   const predicate = (element: DesignElement) => {
-    return element.type === 'textField' && (element as any).expression && (element as any).expression.includes(`$F{${fieldName}}`);
+    return (
+      element.type === "textField" &&
+      (element as any).expression &&
+      (element as any).expression.includes(`$F{${fieldName}}`)
+    );
   };
 
-  const found = findElementsByPredicate(bands, predicate, (bandIndex, elementIndex, parentFrameIndex) => {
-    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
-  });
+  const found = findElementsByPredicate(
+    bands,
+    predicate,
+    (bandIndex, elementIndex, parentFrameIndex) => {
+      selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    },
+  );
 
   // If no element using this field was found, a hint could be shown
   if (!found) {
@@ -132,7 +224,11 @@ export function selectElementsByField(bands: any[], fieldName: string, selectEle
 }
 
 // Create a new element
-export function createNewElement(type: string, x: number, y: number): DesignElement {
+export function createNewElement(
+  type: string,
+  x: number,
+  y: number,
+): DesignElement {
   let element: DesignElement;
   try {
     element = createElement(type, { x, y });
@@ -142,7 +238,7 @@ export function createNewElement(type: string, x: number, y: number): DesignElem
       x,
       y,
       width: 100,
-      height: 30
+      height: 30,
     } as DesignElement;
   }
 
@@ -155,7 +251,11 @@ export function createNewElement(type: string, x: number, y: number): DesignElem
 }
 
 // Duplicate an element
-export function duplicateElement(element: DesignElement, offsetX: number = 10, offsetY: number = 10): DesignElement {
+export function duplicateElement(
+  element: DesignElement,
+  offsetX: number = 10,
+  offsetY: number = 10,
+): DesignElement {
   // Deep clone the element
   const duplicatedElement = JSON.parse(JSON.stringify(element));
 
@@ -170,8 +270,11 @@ export function duplicateElement(element: DesignElement, offsetX: number = 10, o
     }
 
     // Process each side's border
-    ['topPen', 'leftPen', 'bottomPen', 'rightPen'].forEach(penType => {
-      if (duplicatedElement.box[penType] && duplicatedElement.box[penType].lineWidth <= 0) {
+    ["topPen", "leftPen", "bottomPen", "rightPen"].forEach((penType) => {
+      if (
+        duplicatedElement.box[penType] &&
+        duplicatedElement.box[penType].lineWidth <= 0
+      ) {
         delete duplicatedElement.box[penType];
       }
     });
@@ -190,15 +293,26 @@ export function duplicateElement(element: DesignElement, offsetX: number = 10, o
 }
 
 // Check whether a point is inside an element
-export function isPointInElement(x: number, y: number, element: DesignElement): boolean {
-  return x >= element.x &&
-         x <= element.x + element.width &&
-         y >= element.y &&
-         y <= element.y + element.height;
+export function isPointInElement(
+  x: number,
+  y: number,
+  element: DesignElement,
+): boolean {
+  return (
+    x >= element.x &&
+    x <= element.x + element.width &&
+    y >= element.y &&
+    y <= element.y + element.height
+  );
 }
 
 // Get the bounding box of an element
-export function getElementBounds(element: DesignElement): { x: number, y: number, width: number, height: number } {
+export function getElementBounds(element: DesignElement): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
   return {
     x: element.x,
     y: element.y,
@@ -208,13 +322,15 @@ export function getElementBounds(element: DesignElement): { x: number, y: number
 }
 
 // Get the bounding box of multiple elements
-export function getElementsBounds(elements: DesignElement[]): { x: number, y: number, width: number, height: number } | null {
+export function getElementsBounds(
+  elements: DesignElement[],
+): { x: number; y: number; width: number; height: number } | null {
   if (elements.length === 0) return null;
 
-  const minX = Math.min(...elements.map(el => el.x));
-  const minY = Math.min(...elements.map(el => el.y));
-  const maxX = Math.max(...elements.map(el => el.x + el.width));
-  const maxY = Math.max(...elements.map(el => el.y + el.height));
+  const minX = Math.min(...elements.map((el) => el.x));
+  const minY = Math.min(...elements.map((el) => el.y));
+  const maxX = Math.max(...elements.map((el) => el.x + el.width));
+  const maxY = Math.max(...elements.map((el) => el.y + el.height));
 
   return {
     x: minX,
