@@ -94,13 +94,22 @@ export function parseJRXMLContent(jrxmlContent: string): {
     whenNoDataType:
       jasperReportElem.getAttribute("whenNoDataType") || "AllSectionsNoDetail",
     sectionType: jasperReportElem.getAttribute("sectionType") || "Band",
-    columnWidth: parseInt(jasperReportElem.getAttribute("columnWidth") || "555"),
-    columnSpacing: parseInt(jasperReportElem.getAttribute("columnSpacing") || "0"),
+    columnWidth: parseInt(
+      jasperReportElem.getAttribute("columnWidth") || "555",
+    ),
+    columnSpacing: parseInt(
+      jasperReportElem.getAttribute("columnSpacing") || "0",
+    ),
     isTitleNewPage: jasperReportElem.getAttribute("isTitleNewPage") === "true",
-    isSummaryNewPage: jasperReportElem.getAttribute("isSummaryNewPage") === "true",
-    isSummaryWithPageHeaderAndFooter: jasperReportElem.getAttribute("isSummaryWithPageHeaderAndFooter") === "true",
-    isFloatColumnFooter: jasperReportElem.getAttribute("isFloatColumnFooter") === "true",
-    isIgnorePagination: jasperReportElem.getAttribute("isIgnorePagination") === "true",
+    isSummaryNewPage:
+      jasperReportElem.getAttribute("isSummaryNewPage") === "true",
+    isSummaryWithPageHeaderAndFooter:
+      jasperReportElem.getAttribute("isSummaryWithPageHeaderAndFooter") ===
+      "true",
+    isFloatColumnFooter:
+      jasperReportElem.getAttribute("isFloatColumnFooter") === "true",
+    isIgnorePagination:
+      jasperReportElem.getAttribute("isIgnorePagination") === "true",
     query,
   };
 
@@ -146,7 +155,8 @@ export function parseJRXMLContent(jrxmlContent: string): {
         if (uuid) param.uuid = uuid;
         // Extract isForPrompting (if present; defaults to true)
         if (child.hasAttribute("isForPrompting")) {
-          param.isForPrompting = child.getAttribute("isForPrompting") === "true";
+          param.isForPrompting =
+            child.getAttribute("isForPrompting") === "true";
         }
         // Extract nested (if present; defaults to false)
         if (child.hasAttribute("nested")) {
@@ -220,8 +230,65 @@ export function parseJRXMLContent(jrxmlContent: string): {
     }
     if (!bandElem) return;
 
+    if (type === "detail") {
+      const containerChildren = Array.from(bandContainer.children);
+      const bandElems = containerChildren.filter(
+        (child) => child.localName === "band" || child.tagName === "band",
+      );
+      if (bandElems.length > 1) {
+        const allDetailElements: DesignElement[] = [];
+        let firstHeight = 100;
+        let splitTypeVal: string | undefined;
+
+        bandElems.forEach((bElem, pIdx) => {
+          const h = parseInt(bElem.getAttribute("height") || "100");
+          if (pIdx === 0) {
+            firstHeight = h;
+            splitTypeVal = bElem.getAttribute("splitType") || undefined;
+          }
+          const pageElems = parseBandElements(bElem);
+          pageElems.forEach((el) => {
+            if (el.type === "break" && el.y === 0 && pIdx > 0) {
+              return;
+            }
+            (el as any).pageIndex = pIdx;
+            allDetailElements.push(el);
+          });
+        });
+
+        properties.pageCount = bandElems.length;
+        const detailBand: any = {
+          type: "detail",
+          height: firstHeight,
+          elements: allDetailElements,
+          splitType: splitTypeVal || "Stretch",
+        };
+        bands.push(detailBand);
+        return;
+      }
+    }
+
     const height = parseInt(bandElem.getAttribute("height") || "0");
     const elements = parseBandElements(bandElem);
+
+    // If detail has a single band with page breaks, split elements across pages
+    if (
+      type === "detail" &&
+      elements.some(
+        (el) => el.type === "break" && (el as any).breakType === "Page",
+      )
+    ) {
+      const breaks = elements
+        .filter((el) => el.type === "break" && (el as any).breakType === "Page")
+        .sort((a, b) => a.y - b.y);
+
+      elements.forEach((el) => {
+        if (el.type === "break" && (el as any).breakType === "Page") return;
+        const pageIdx = breaks.filter((brk) => el.y >= brk.y).length;
+        (el as any).pageIndex = pageIdx;
+      });
+      properties.pageCount = breaks.length + 1;
+    }
 
     const band: any = {
       type: type as BandType,
@@ -263,15 +330,18 @@ export function parseJRXMLContent(jrxmlContent: string): {
         if (calcType) variable.calculationType = calcType;
         // Extract incrementType (if present; defaults to "None")
         if (child.hasAttribute("incrementType")) {
-          variable.incrementType = child.getAttribute("incrementType") || "None";
+          variable.incrementType =
+            child.getAttribute("incrementType") || "None";
         }
         // Extract incrementGroup (if present)
         if (child.hasAttribute("incrementGroup")) {
-          variable.incrementGroup = child.getAttribute("incrementGroup") || undefined;
+          variable.incrementGroup =
+            child.getAttribute("incrementGroup") || undefined;
         }
         // Extract calculationGroup (if present)
         if (child.hasAttribute("calculationGroup")) {
-          variable.calculationGroup = child.getAttribute("calculationGroup") || undefined;
+          variable.calculationGroup =
+            child.getAttribute("calculationGroup") || undefined;
         }
         const resetType = child.getAttribute("resetType");
         if (resetType) variable.resetType = resetType;
@@ -279,7 +349,8 @@ export function parseJRXMLContent(jrxmlContent: string): {
         if (resetGroup) variable.resetGroup = resetGroup;
         // Extract isInitialized (if present; defaults to false)
         if (child.hasAttribute("isInitialized")) {
-          variable.isInitialized = child.getAttribute("isInitialized") === "true";
+          variable.isInitialized =
+            child.getAttribute("isInitialized") === "true";
         }
         const exprElem = child.querySelector("variableExpression");
         if (exprElem && exprElem.textContent)
@@ -320,14 +391,16 @@ export function parseJRXMLContent(jrxmlContent: string): {
       }
       // Extract isStartNewColumn (if present; defaults to false)
       if (child.hasAttribute("isStartNewColumn")) {
-        group.isStartNewColumn = child.getAttribute("isStartNewColumn") === "true";
+        group.isStartNewColumn =
+          child.getAttribute("isStartNewColumn") === "true";
       }
       if (child.hasAttribute("isRepeatHeader")) {
         group.isRepeatHeader = child.getAttribute("isRepeatHeader") === "true";
       }
       // Extract isReprintHeaderOnEachPage (if present; defaults to false)
       if (child.hasAttribute("isReprintHeaderOnEachPage")) {
-        group.isReprintHeaderOnEachPage = child.getAttribute("isReprintHeaderOnEachPage") === "true";
+        group.isReprintHeaderOnEachPage =
+          child.getAttribute("isReprintHeaderOnEachPage") === "true";
       }
       if (child.hasAttribute("isResetPageNumber")) {
         group.isResetPageNumber =
@@ -335,7 +408,8 @@ export function parseJRXMLContent(jrxmlContent: string): {
       }
       // Extract isHideColumnHeader (if present; defaults to false)
       if (child.hasAttribute("isHideColumnHeader")) {
-        group.isHideColumnHeader = child.getAttribute("isHideColumnHeader") === "true";
+        group.isHideColumnHeader =
+          child.getAttribute("isHideColumnHeader") === "true";
       }
       // Extract isKeepTogether (if present; defaults to false)
       if (child.hasAttribute("isKeepTogether")) {
@@ -343,11 +417,14 @@ export function parseJRXMLContent(jrxmlContent: string): {
       }
       // Extract isKeepFooterTogether (if present; defaults to false)
       if (child.hasAttribute("isKeepFooterTogether")) {
-        group.isKeepFooterTogether = child.getAttribute("isKeepFooterTogether") === "true";
+        group.isKeepFooterTogether =
+          child.getAttribute("isKeepFooterTogether") === "true";
       }
       // Extract minHeightToStartNewPage (if present; defaults to 0)
       if (child.hasAttribute("minHeightToStartNewPage")) {
-        group.minHeightToStartNewPage = parseInt(child.getAttribute("minHeightToStartNewPage") || "0");
+        group.minHeightToStartNewPage = parseInt(
+          child.getAttribute("minHeightToStartNewPage") || "0",
+        );
       }
 
       // Parse the group header (groupHeader)
@@ -631,14 +708,31 @@ function parseBandElements(bandElem: Element): any[] {
     "chart",
     "crosstab",
   ];
-  
+
   // Mapping of chart tag names to chart types
   const chartTagNames = [
-    'pieChart', 'pie3DChart', 'barChart', 'bar3DChart', 'xyBarChart',
-    'stackedBarChart', 'stackedBar3DChart', 'lineChart', 'xyLineChart',
-    'areaChart', 'xyAreaChart', 'stackedAreaChart', 'scatterChart', 'bubbleChart',
-    'timeSeriesChart', 'highLowChart', 'candlestickChart',
-    'meterChart', 'thermometerChart', 'multiAxisChart', 'ganttChart', 'spiderChart'
+    "pieChart",
+    "pie3DChart",
+    "barChart",
+    "bar3DChart",
+    "xyBarChart",
+    "stackedBarChart",
+    "stackedBar3DChart",
+    "lineChart",
+    "xyLineChart",
+    "areaChart",
+    "xyAreaChart",
+    "stackedAreaChart",
+    "scatterChart",
+    "bubbleChart",
+    "timeSeriesChart",
+    "highLowChart",
+    "candlestickChart",
+    "meterChart",
+    "thermometerChart",
+    "multiAxisChart",
+    "ganttChart",
+    "spiderChart",
   ];
 
   // Iterate direct children rather than using querySelectorAll (avoids recursively finding nested elements)
@@ -648,7 +742,7 @@ function parseBandElements(bandElem: Element): any[] {
 
     // Check whether this is a chart-type tag
     if (chartTagNames.includes(elementType)) {
-      const parsedElement = parseElement(child, 'chart');
+      const parsedElement = parseElement(child, "chart");
       if (parsedElement) {
         elements.push(parsedElement);
       }
@@ -715,19 +809,40 @@ function parseComponentElement(componentElem: Element): any {
   }
 
   // Find a barcode4j element - supports with or without a namespace prefix
-  const barcodeTypes = ['Code128', 'Code39', 'EAN13', 'EAN8', 'UPCA', 'UPCE', 'QRCode', 'DataMatrix', 'Interleaved2Of5', 'Codabar', 'EAN128', 'PDF417', 'POSTNET', 'RoyalMailCustomer', 'USPSIntelligentMail'];
+  const barcodeTypes = [
+    "Code128",
+    "Code39",
+    "EAN13",
+    "EAN8",
+    "UPCA",
+    "UPCE",
+    "QRCode",
+    "DataMatrix",
+    "Interleaved2Of5",
+    "Codabar",
+    "EAN128",
+    "PDF417",
+    "POSTNET",
+    "RoyalMailCustomer",
+    "USPSIntelligentMail",
+  ];
 
   for (const child of Array.from(componentElem.children)) {
     const childLocalName = child.localName || child.tagName;
     // Check whether this is a barcode4j element (with or without a namespace prefix)
     for (const barcodeType of barcodeTypes) {
-      if (childLocalName === barcodeType || child.tagName === `c:${barcodeType}`) {
+      if (
+        childLocalName === barcodeType ||
+        child.tagName === `c:${barcodeType}`
+      ) {
         // Parse the barcode element
         const codeExprElem = child.querySelector("codeExpression");
-        const codeExpression = codeExprElem ? codeExprElem.textContent?.trim() || '' : '';
-        
+        const codeExpression = codeExprElem
+          ? codeExprElem.textContent?.trim() || ""
+          : "";
+
         return {
-          type: 'barcode',
+          type: "barcode",
           uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
           x: parseInt(reportElement.getAttribute("x") || "0"),
           y: parseInt(reportElement.getAttribute("y") || "0"),
@@ -735,7 +850,7 @@ function parseComponentElement(componentElem: Element): any {
           height: parseInt(reportElement.getAttribute("height") || "30"),
           barcodeType: barcodeType,
           codeExpression: codeExpression,
-          printWhenExpression: ''
+          printWhenExpression: "",
         };
       }
     }
@@ -744,25 +859,29 @@ function parseComponentElement(componentElem: Element): any {
   // Find a map element
   for (const child of Array.from(componentElem.children)) {
     const childLocalName = child.localName || child.tagName;
-    if (childLocalName === 'map' || child.tagName === 'm:map') {
+    if (childLocalName === "map" || child.tagName === "m:map") {
       const latExprElem = child.querySelector("latExpression");
       const lngExprElem = child.querySelector("lngExpression");
       const zoomExprElem = child.querySelector("zoomExpression");
       const langExprElem = child.querySelector("languageExpression");
-      
+
       return {
-        type: 'map',
+        type: "map",
         uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
         x: parseInt(reportElement.getAttribute("x") || "0"),
         y: parseInt(reportElement.getAttribute("y") || "0"),
         width: parseInt(reportElement.getAttribute("width") || "100"),
         height: parseInt(reportElement.getAttribute("height") || "100"),
-        mapType: 'html',
-        latExpression: latExprElem ? latExprElem.textContent?.trim() || '' : '',
-        lngExpression: lngExprElem ? lngExprElem.textContent?.trim() || '' : '',
-        zoomExpression: zoomExprElem ? zoomExprElem.textContent?.trim() || '' : '',
-        languageExpression: langExprElem ? langExprElem.textContent?.trim() || '' : '',
-        printWhenExpression: ''
+        mapType: "html",
+        latExpression: latExprElem ? latExprElem.textContent?.trim() || "" : "",
+        lngExpression: lngExprElem ? lngExprElem.textContent?.trim() || "" : "",
+        zoomExpression: zoomExprElem
+          ? zoomExprElem.textContent?.trim() || ""
+          : "",
+        languageExpression: langExprElem
+          ? langExprElem.textContent?.trim() || ""
+          : "",
+        printWhenExpression: "",
       };
     }
   }
@@ -770,18 +889,20 @@ function parseComponentElement(componentElem: Element): any {
   // Find an iconLabel element
   for (const child of Array.from(componentElem.children)) {
     const childLocalName = child.localName || child.tagName;
-    if (childLocalName === 'iconLabel' || child.tagName === 'c:iconLabel') {
+    if (childLocalName === "iconLabel" || child.tagName === "c:iconLabel") {
       const labelExprElem = child.querySelector("labelExpression");
-      
+
       return {
-        type: 'iconLabel',
+        type: "iconLabel",
         uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
         x: parseInt(reportElement.getAttribute("x") || "0"),
         y: parseInt(reportElement.getAttribute("y") || "0"),
         width: parseInt(reportElement.getAttribute("width") || "100"),
         height: parseInt(reportElement.getAttribute("height") || "30"),
-        labelExpression: labelExprElem ? labelExprElem.textContent?.trim() || '' : '',
-        printWhenExpression: ''
+        labelExpression: labelExprElem
+          ? labelExprElem.textContent?.trim() || ""
+          : "",
+        printWhenExpression: "",
       };
     }
   }
@@ -789,24 +910,24 @@ function parseComponentElement(componentElem: Element): any {
   // Find a sort element
   for (const child of Array.from(componentElem.children)) {
     const childLocalName = child.localName || child.tagName;
-    if (childLocalName === 'sort' || child.tagName === 'c:sort') {
-      const sortFields: Array<{name: string; order?: string}> = [];
+    if (childLocalName === "sort" || child.tagName === "c:sort") {
+      const sortFields: Array<{ name: string; order?: string }> = [];
       const sortFieldElems = child.querySelectorAll("sortField");
-      sortFieldElems.forEach(fieldElem => {
+      sortFieldElems.forEach((fieldElem) => {
         const name = fieldElem.getAttribute("name") || "";
         const order = fieldElem.getAttribute("order") || "Ascending";
         sortFields.push({ name, order });
       });
-      
+
       return {
-        type: 'sort',
+        type: "sort",
         uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
         x: parseInt(reportElement.getAttribute("x") || "0"),
         y: parseInt(reportElement.getAttribute("y") || "0"),
         width: parseInt(reportElement.getAttribute("width") || "100"),
         height: parseInt(reportElement.getAttribute("height") || "30"),
         sortFields: sortFields,
-        printWhenExpression: ''
+        printWhenExpression: "",
       };
     }
   }
@@ -1320,17 +1441,38 @@ function findChildElement(parent: Element, localName: string): Element | null {
 function parseElement(element: Element, type: string): any {
   // Mapping of chart tag names to chart types
   const chartTagNames = [
-    'pieChart', 'pie3DChart', 'barChart', 'bar3DChart', 'xyBarChart',
-    'stackedBarChart', 'stackedBar3DChart', 'lineChart', 'xyLineChart',
-    'areaChart', 'xyAreaChart', 'stackedAreaChart', 'scatterChart', 'bubbleChart',
-    'timeSeriesChart', 'highLowChart', 'candlestickChart',
-    'meterChart', 'thermometerChart', 'multiAxisChart', 'ganttChart', 'spiderChart'
+    "pieChart",
+    "pie3DChart",
+    "barChart",
+    "bar3DChart",
+    "xyBarChart",
+    "stackedBarChart",
+    "stackedBar3DChart",
+    "lineChart",
+    "xyLineChart",
+    "areaChart",
+    "xyAreaChart",
+    "stackedAreaChart",
+    "scatterChart",
+    "bubbleChart",
+    "timeSeriesChart",
+    "highLowChart",
+    "candlestickChart",
+    "meterChart",
+    "thermometerChart",
+    "multiAxisChart",
+    "ganttChart",
+    "spiderChart",
   ];
-  
+
   // Find reportElement, accounting for namespaces
   // For chart types, reportElement lives inside the <chart> child element
   let reportElement = findChildElement(element, "reportElement");
-  if (!reportElement && (type === 'chart' || chartTagNames.includes(element.localName || element.tagName))) {
+  if (
+    !reportElement &&
+    (type === "chart" ||
+      chartTagNames.includes(element.localName || element.tagName))
+  ) {
     // Chart type: reportElement lives inside the <chart> child element
     const chartElem = findChildElement(element, "chart");
     if (chartElem) {
@@ -1376,10 +1518,16 @@ function parseElement(element: Element, type: string): any {
   const result: Partial<DesignElement> = {
     uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(), // Read the UUID; auto-generate one if it doesn't exist
     type: elementType,
-    x: parseInt(reportElement.getAttribute("x") || "0"),
-    y: parseInt(reportElement.getAttribute("y") || "0"),
-    width: parseInt(reportElement.getAttribute("width") || "100"),
-    height: parseInt(reportElement.getAttribute("height") || "30"),
+    x: Math.max(0, parseInt(reportElement.getAttribute("x") || "0")),
+    y: Math.max(0, parseInt(reportElement.getAttribute("y") || "0")),
+    width: Math.max(
+      1,
+      Math.abs(parseInt(reportElement.getAttribute("width") || "100")),
+    ),
+    height: Math.max(
+      1,
+      Math.abs(parseInt(reportElement.getAttribute("height") || "30")),
+    ),
   };
 
   if (reportElement.hasAttribute("forecolor")) {
@@ -1464,27 +1612,29 @@ function parseElement(element: Element, type: string): any {
     (result as any).key = reportElement.getAttribute("key") || undefined;
   }
   if (reportElement.hasAttribute("positionType")) {
-    (result as any).positionType = reportElement.getAttribute("positionType") || undefined;
+    (result as any).positionType =
+      reportElement.getAttribute("positionType") || undefined;
   }
   if (reportElement.hasAttribute("stretchType")) {
-    (result as any).stretchType = reportElement.getAttribute("stretchType") || undefined;
+    (result as any).stretchType =
+      reportElement.getAttribute("stretchType") || undefined;
   }
 
   // Parse styleExpression
   const styleExprElem = findChildElement(element, "styleExpression");
   if (styleExprElem) {
-    (result as any).styleExpression = styleExprElem.textContent?.trim() || '';
+    (result as any).styleExpression = styleExprElem.textContent?.trim() || "";
   }
 
   // Parse property elements
   const propertyElems = reportElement.querySelectorAll("property");
   if (propertyElems.length > 0) {
     const properties: Array<{ name: string; value: string }> = [];
-    propertyElems.forEach(prop => {
+    propertyElems.forEach((prop) => {
       const name = prop.getAttribute("name");
       const value = prop.getAttribute("value");
       if (name) {
-        properties.push({ name, value: value || '' });
+        properties.push({ name, value: value || "" });
       }
     });
     if (properties.length > 0) {
@@ -1495,10 +1645,13 @@ function parseElement(element: Element, type: string): any {
   // Parse propertyExpression elements
   const propExprElems = reportElement.querySelectorAll("propertyExpression");
   if (propExprElems.length > 0) {
-    const propertyExpressions: Array<{ name: string; valueExpression: string }> = [];
-    propExprElems.forEach(prop => {
+    const propertyExpressions: Array<{
+      name: string;
+      valueExpression: string;
+    }> = [];
+    propExprElems.forEach((prop) => {
       const name = prop.getAttribute("name");
-      const valueExpression = prop.textContent?.trim() || '';
+      const valueExpression = prop.textContent?.trim() || "";
       if (name) {
         propertyExpressions.push({ name, valueExpression });
       }
@@ -1800,11 +1953,17 @@ function parseTextFieldElement(element: Element, result: any): void {
   }
 
   // Parse the newly added hyperlink expressions
-  const hyperlinkTooltipExpr = findChildElement(element, "hyperlinkTooltipExpression");
+  const hyperlinkTooltipExpr = findChildElement(
+    element,
+    "hyperlinkTooltipExpression",
+  );
   if (hyperlinkTooltipExpr) {
     result.hyperlinkTooltipExpression = hyperlinkTooltipExpr.textContent || "";
   }
-  const hyperlinkWhenExpr = findChildElement(element, "hyperlinkWhenExpression");
+  const hyperlinkWhenExpr = findChildElement(
+    element,
+    "hyperlinkWhenExpression",
+  );
   if (hyperlinkWhenExpr) {
     result.hyperlinkWhenExpression = hyperlinkWhenExpr.textContent || "";
   }
@@ -1812,7 +1971,10 @@ function parseTextFieldElement(element: Element, result: any): void {
   if (anchorNameExpr) {
     result.anchorNameExpression = anchorNameExpr.textContent || "";
   }
-  const bookmarkLevelExpr = findChildElement(element, "bookmarkLevelExpression");
+  const bookmarkLevelExpr = findChildElement(
+    element,
+    "bookmarkLevelExpression",
+  );
   if (bookmarkLevelExpr) {
     result.bookmarkLevelExpression = bookmarkLevelExpr.textContent || "";
   }
@@ -1842,7 +2004,9 @@ function parseImageElement(element: Element, result: any): void {
   if (element.hasAttribute("rotation"))
     result.rotation = element.getAttribute("rotation");
   if (element.hasAttribute("bookmarkLevel"))
-    result.bookmarkLevel = parseInt(element.getAttribute("bookmarkLevel") || "0");
+    result.bookmarkLevel = parseInt(
+      element.getAttribute("bookmarkLevel") || "0",
+    );
 
   const graphicElement = parseGraphicElement(element);
   if (Object.keys(graphicElement).length > 0) {
@@ -1876,11 +2040,17 @@ function parseImageElement(element: Element, result: any): void {
   if (hyperlinkPageExpr) {
     result.hyperlinkPageExpression = hyperlinkPageExpr.textContent || "";
   }
-  const hyperlinkTooltipExpr = findChildElement(element, "hyperlinkTooltipExpression");
+  const hyperlinkTooltipExpr = findChildElement(
+    element,
+    "hyperlinkTooltipExpression",
+  );
   if (hyperlinkTooltipExpr) {
     result.hyperlinkTooltipExpression = hyperlinkTooltipExpr.textContent || "";
   }
-  const hyperlinkWhenExpr = findChildElement(element, "hyperlinkWhenExpression");
+  const hyperlinkWhenExpr = findChildElement(
+    element,
+    "hyperlinkWhenExpression",
+  );
   if (hyperlinkWhenExpr) {
     result.hyperlinkWhenExpression = hyperlinkWhenExpr.textContent || "";
   }
@@ -1888,7 +2058,10 @@ function parseImageElement(element: Element, result: any): void {
   if (anchorNameExpr) {
     result.anchorNameExpression = anchorNameExpr.textContent || "";
   }
-  const bookmarkLevelExpr = findChildElement(element, "bookmarkLevelExpression");
+  const bookmarkLevelExpr = findChildElement(
+    element,
+    "bookmarkLevelExpression",
+  );
   if (bookmarkLevelExpr) {
     result.bookmarkLevelExpression = bookmarkLevelExpr.textContent || "";
   }
@@ -2048,25 +2221,26 @@ function parseSubreportElement(element: Element, result: any): void {
   // Parse subreportExpression
   const subreportExprElem = element.querySelector("subreportExpression");
   if (subreportExprElem) {
-    result.subreportExpression = subreportExprElem.textContent?.trim() || '';
+    result.subreportExpression = subreportExprElem.textContent?.trim() || "";
   }
 
   // Parse parametersMapExpression
   const paramsMapExprElem = element.querySelector("parametersMapExpression");
   if (paramsMapExprElem) {
-    result.parametersMapExpression = paramsMapExprElem.textContent?.trim() || '';
+    result.parametersMapExpression =
+      paramsMapExprElem.textContent?.trim() || "";
   }
 
   // Parse connectionExpression
   const connExprElem = element.querySelector("connectionExpression");
   if (connExprElem) {
-    result.connectionExpression = connExprElem.textContent?.trim() || '';
+    result.connectionExpression = connExprElem.textContent?.trim() || "";
   }
 
   // Parse dataSourceExpression
   const dsExprElem = element.querySelector("dataSourceExpression");
   if (dsExprElem) {
-    result.dataSourceExpression = dsExprElem.textContent?.trim() || '';
+    result.dataSourceExpression = dsExprElem.textContent?.trim() || "";
   }
 
   // Parse evaluationTime
@@ -2096,7 +2270,7 @@ function parseListElement(element: Element, result: any): void {
   if (element.hasAttribute("ignoreWidth")) {
     result.ignoreWidth = element.getAttribute("ignoreWidth") === "true";
   }
-  
+
   // Parse evaluationTime
   if (element.hasAttribute("evaluationTime")) {
     result.evaluationTime = element.getAttribute("evaluationTime");
@@ -2109,7 +2283,8 @@ function parseListElement(element: Element, result: any): void {
 
   // Parse isIgnorePagination
   if (element.hasAttribute("isIgnorePagination")) {
-    result.isIgnorePagination = element.getAttribute("isIgnorePagination") === "true";
+    result.isIgnorePagination =
+      element.getAttribute("isIgnorePagination") === "true";
   }
 
   // Parse datasetRun (dataset run configuration)
@@ -2123,13 +2298,13 @@ function parseListElement(element: Element, result: any): void {
     // Parse dataSourceExpression
     const dsExprElem = datasetRunElem.querySelector("dataSourceExpression");
     if (dsExprElem) {
-      result.dataSourceExpression = dsExprElem.textContent?.trim() || '';
+      result.dataSourceExpression = dsExprElem.textContent?.trim() || "";
     }
 
     // Parse connectionExpression
     const connExprElem = datasetRunElem.querySelector("connectionExpression");
     if (connExprElem) {
-      result.connectionExpression = connExprElem.textContent?.trim() || '';
+      result.connectionExpression = connExprElem.textContent?.trim() || "";
     }
   }
 
@@ -2137,23 +2312,37 @@ function parseListElement(element: Element, result: any): void {
   if (!result.dataSourceExpression) {
     const dsExprElem = element.querySelector("dataSourceExpression");
     if (dsExprElem) {
-      result.dataSourceExpression = dsExprElem.textContent?.trim() || '';
+      result.dataSourceExpression = dsExprElem.textContent?.trim() || "";
     }
   }
 
   // Parse listContents
   const listContentsElem = element.querySelector("listContents");
   if (listContentsElem) {
-    const contentsHeight = parseInt(listContentsElem.getAttribute("height") || "0");
-    const contentsWidth = parseInt(listContentsElem.getAttribute("width") || "0");
+    const contentsHeight = parseInt(
+      listContentsElem.getAttribute("height") || "0",
+    );
+    const contentsWidth = parseInt(
+      listContentsElem.getAttribute("width") || "0",
+    );
     const elements: any[] = [];
 
     // Parse the child elements inside the list contents
-    Array.from(listContentsElem.children).forEach(child => {
+    Array.from(listContentsElem.children).forEach((child) => {
       const childType = child.localName || child.tagName;
       const validElementTypes = [
-        "staticText", "textField", "image", "line", "rectangle", "ellipse",
-        "break", "frame", "subreport", "list", "chart", "crosstab"
+        "staticText",
+        "textField",
+        "image",
+        "line",
+        "rectangle",
+        "ellipse",
+        "break",
+        "frame",
+        "subreport",
+        "list",
+        "chart",
+        "crosstab",
       ];
       if (validElementTypes.includes(childType)) {
         const parsedElement = parseElement(child, childType);
@@ -2162,10 +2351,10 @@ function parseListElement(element: Element, result: any): void {
         }
       }
     });
-    
+
     result.listContents = {
       elements: elements,
-      height: contentsHeight
+      height: contentsHeight,
     };
   }
 }
@@ -2173,19 +2362,32 @@ function parseListElement(element: Element, result: any): void {
 // Parse a chart element
 function parseChartElement(element: Element, result: any): void {
   // Determine the chart type from the element's tag name
-  const tagName = element.tagName || element.localName || '';
+  const tagName = element.tagName || element.localName || "";
   const chartTypeMap: Record<string, string> = {
-    'pieChart': 'pie', 'pie3DChart': 'pie3D',
-    'barChart': 'bar', 'bar3DChart': 'bar3D', 'xyBarChart': 'xyBar',
-    'stackedBarChart': 'stackedBar', 'stackedBar3DChart': 'stackedBar3D',
-    'lineChart': 'line', 'xyLineChart': 'xyLine',
-    'areaChart': 'area', 'xyAreaChart': 'xyArea', 'stackedAreaChart': 'stackedArea',
-    'scatterChart': 'scatter', 'bubbleChart': 'bubble',
-    'timeSeriesChart': 'timeSeries', 'highLowChart': 'highLow', 'candlestickChart': 'candlestick',
-    'meterChart': 'meter', 'thermometerChart': 'thermometer',
-    'multiAxisChart': 'multiAxis', 'ganttChart': 'gantt', 'spiderChart': 'spider'
+    pieChart: "pie",
+    pie3DChart: "pie3D",
+    barChart: "bar",
+    bar3DChart: "bar3D",
+    xyBarChart: "xyBar",
+    stackedBarChart: "stackedBar",
+    stackedBar3DChart: "stackedBar3D",
+    lineChart: "line",
+    xyLineChart: "xyLine",
+    areaChart: "area",
+    xyAreaChart: "xyArea",
+    stackedAreaChart: "stackedArea",
+    scatterChart: "scatter",
+    bubbleChart: "bubble",
+    timeSeriesChart: "timeSeries",
+    highLowChart: "highLow",
+    candlestickChart: "candlestick",
+    meterChart: "meter",
+    thermometerChart: "thermometer",
+    multiAxisChart: "multiAxis",
+    ganttChart: "gantt",
+    spiderChart: "spider",
   };
-  
+
   // Try matching tag names with or without a namespace
   for (const [key, value] of Object.entries(chartTypeMap)) {
     if (tagName === key || tagName === `jr:${key}` || tagName.includes(key)) {
@@ -2195,8 +2397,9 @@ function parseChartElement(element: Element, result: any): void {
   }
 
   // Parse the chart child element
-  const chartElem = element.querySelector("chart") ||
-    (element.localName === 'chart' ? element : null);
+  const chartElem =
+    element.querySelector("chart") ||
+    (element.localName === "chart" ? element : null);
 
   if (chartElem) {
     // chart element attributes
@@ -2212,65 +2415,68 @@ function parseChartElement(element: Element, result: any): void {
     if (chartElem.hasAttribute("customizerClass")) {
       result.customizerClass = chartElem.getAttribute("customizerClass");
     }
-    
+
     // chartTitle
     const chartTitleElem = chartElem.querySelector("chartTitle");
     if (chartTitleElem) {
       const titleExprElem = chartTitleElem.querySelector("titleExpression");
       if (titleExprElem) {
-        result.titleExpression = titleExprElem.textContent?.trim() || '';
+        result.titleExpression = titleExprElem.textContent?.trim() || "";
       }
     }
     // Backward compatibility with the old format: titleExpression directly under chart
     if (!result.titleExpression) {
       const titleExprElem = chartElem.querySelector("titleExpression");
       if (titleExprElem) {
-        result.titleExpression = titleExprElem.textContent?.trim() || '';
+        result.titleExpression = titleExprElem.textContent?.trim() || "";
       }
     }
-    
+
     // chartSubtitle
     const chartSubtitleElem = chartElem.querySelector("chartSubtitle");
     if (chartSubtitleElem) {
-      const subtitleExprElem = chartSubtitleElem.querySelector("subtitleExpression");
+      const subtitleExprElem =
+        chartSubtitleElem.querySelector("subtitleExpression");
       if (subtitleExprElem) {
-        result.subtitleExpression = subtitleExprElem.textContent?.trim() || '';
+        result.subtitleExpression = subtitleExprElem.textContent?.trim() || "";
       }
     }
     if (!result.subtitleExpression) {
       const subtitleExprElem = chartElem.querySelector("subtitleExpression");
       if (subtitleExprElem) {
-        result.subtitleExpression = subtitleExprElem.textContent?.trim() || '';
+        result.subtitleExpression = subtitleExprElem.textContent?.trim() || "";
       }
     }
-    
+
     // chartLegend
     const chartLegendElem = chartElem.querySelector("chartLegend");
     if (chartLegendElem) {
       result.isShowLegend = true;
       const labelExprElem = chartLegendElem.querySelector("labelExpression");
       if (labelExprElem) {
-        result.legendExpression = labelExprElem.textContent?.trim() || '';
+        result.legendExpression = labelExprElem.textContent?.trim() || "";
       }
     }
     // Backward compatibility with the old format
     if (!result.legendExpression) {
       const legendExprElem = chartElem.querySelector("legendExpression");
       if (legendExprElem) {
-        result.legendExpression = legendExprElem.textContent?.trim() || '';
+        result.legendExpression = legendExprElem.textContent?.trim() || "";
       }
     }
-    
+
     // hyperlinkTooltipExpression
     const tooltipElem = chartElem.querySelector("hyperlinkTooltipExpression");
     if (tooltipElem) {
-      result.hyperlinkTooltipExpression = tooltipElem.textContent?.trim() || '';
+      result.hyperlinkTooltipExpression = tooltipElem.textContent?.trim() || "";
     }
-    
+
     // hyperlinkReferenceExpression
-    const hyperlinkElem = chartElem.querySelector("hyperlinkReferenceExpression");
+    const hyperlinkElem = chartElem.querySelector(
+      "hyperlinkReferenceExpression",
+    );
     if (hyperlinkElem) {
-      result.hyperlinkExpression = hyperlinkElem.textContent?.trim() || '';
+      result.hyperlinkExpression = hyperlinkElem.textContent?.trim() || "";
       if (hyperlinkElem.hasAttribute("type")) {
         result.hyperlinkType = hyperlinkElem.getAttribute("type");
       }
@@ -2278,11 +2484,13 @@ function parseChartElement(element: Element, result: any): void {
         result.hyperlinkTarget = hyperlinkElem.getAttribute("target");
       }
       if (hyperlinkElem.hasAttribute("bookmarkLevel")) {
-        result.bookmarkLevel = parseInt(hyperlinkElem.getAttribute("bookmarkLevel") || "0");
+        result.bookmarkLevel = parseInt(
+          hyperlinkElem.getAttribute("bookmarkLevel") || "0",
+        );
       }
     }
   }
-  
+
   // Parse reportElement attributes
   const reportElem = element.querySelector("reportElement");
   if (reportElem) {
@@ -2305,88 +2513,88 @@ function parseChartElement(element: Element, result: any): void {
 
 // Parse the chart dataset
 function parseChartDataset(element: Element, result: any): void {
-  const chartType = result.chartType || 'bar';
+  const chartType = result.chartType || "bar";
 
   // Pie chart dataset
   const pieDataset = element.querySelector("pieDataset");
   if (pieDataset) {
     parseDatasetAttributes(pieDataset, result);
-    
+
     const keyExpr = pieDataset.querySelector("keyExpression");
     if (keyExpr) {
-      result.keyExpression = keyExpr.textContent?.trim() || '';
+      result.keyExpression = keyExpr.textContent?.trim() || "";
     }
     const valueExpr = pieDataset.querySelector("valueExpression");
     if (valueExpr) {
-      result.valueExpression = valueExpr.textContent?.trim() || '';
+      result.valueExpression = valueExpr.textContent?.trim() || "";
     }
     return;
   }
-  
+
   // Category dataset
   const categoryDataset = element.querySelector("categoryDataset");
   if (categoryDataset) {
     parseDatasetAttributes(categoryDataset, result);
-    
+
     const categorySeries = categoryDataset.querySelector("categorySeries");
     if (categorySeries) {
       const seriesExpr = categorySeries.querySelector("seriesExpression");
       if (seriesExpr) {
-        result.seriesExpression = seriesExpr.textContent?.trim() || '';
+        result.seriesExpression = seriesExpr.textContent?.trim() || "";
       }
       const categoryExpr = categorySeries.querySelector("categoryExpression");
       if (categoryExpr) {
-        result.categoryExpression = categoryExpr.textContent?.trim() || '';
+        result.categoryExpression = categoryExpr.textContent?.trim() || "";
       }
       const valueExpr = categorySeries.querySelector("valueExpression");
       if (valueExpr) {
-        result.valueExpression = valueExpr.textContent?.trim() || '';
+        result.valueExpression = valueExpr.textContent?.trim() || "";
       }
     }
     return;
   }
-  
+
   // XY dataset
   const xyDataset = element.querySelector("xyDataset");
   if (xyDataset) {
     parseDatasetAttributes(xyDataset, result);
-    
+
     const xySeries = xyDataset.querySelector("xySeries");
     if (xySeries) {
       const seriesExpr = xySeries.querySelector("seriesExpression");
       if (seriesExpr) {
-        result.seriesExpression = seriesExpr.textContent?.trim() || '';
+        result.seriesExpression = seriesExpr.textContent?.trim() || "";
       }
       const xValueExpr = xySeries.querySelector("xValueExpression");
       if (xValueExpr) {
-        result.xValueExpression = xValueExpr.textContent?.trim() || '';
+        result.xValueExpression = xValueExpr.textContent?.trim() || "";
       }
       const yValueExpr = xySeries.querySelector("yValueExpression");
       if (yValueExpr) {
-        result.yValueExpression = yValueExpr.textContent?.trim() || '';
+        result.yValueExpression = yValueExpr.textContent?.trim() || "";
       }
     }
     return;
   }
-  
+
   // HighLow dataset
   const highLowDataset = element.querySelector("highLowDataset");
   if (highLowDataset) {
     parseDatasetAttributes(highLowDataset, result);
-    
+
     const highLowSeries = highLowDataset.querySelector("highLowSeries");
     if (highLowSeries) {
       const seriesExpr = highLowSeries.querySelector("seriesExpression");
       if (seriesExpr) {
-        result.seriesExpression = seriesExpr.textContent?.trim() || '';
+        result.seriesExpression = seriesExpr.textContent?.trim() || "";
       }
       const xValueExpr = highLowSeries.querySelector("xValueExpression");
       if (xValueExpr) {
-        result.xValueExpression = xValueExpr.textContent?.trim() || '';
+        result.xValueExpression = xValueExpr.textContent?.trim() || "";
       }
       const yValueExpr = highLowSeries.querySelector("yValueExpression");
       if (yValueExpr) {
-        result.yValueExpression = yValueExpr.textContent?.trim() || '';
+        result.yValueExpression = yValueExpr.textContent?.trim() || "";
       }
     }
     return;
@@ -2403,7 +2611,7 @@ function parseDatasetAttributes(datasetElem: Element, result: any): void {
     if (dataset.hasAttribute("incrementGroup")) {
       result.incrementGroup = dataset.getAttribute("incrementGroup");
     }
-    
+
     const datasetRun = dataset.querySelector("datasetRun");
     if (datasetRun) {
       if (datasetRun.hasAttribute("subDataset")) {
@@ -2411,7 +2619,7 @@ function parseDatasetAttributes(datasetElem: Element, result: any): void {
       }
       const dsExpr = datasetRun.querySelector("dataSourceExpression");
       if (dsExpr) {
-        result.dataSourceExpression = dsExpr.textContent?.trim() || '';
+        result.dataSourceExpression = dsExpr.textContent?.trim() || "";
       }
     }
   }
@@ -2420,10 +2628,19 @@ function parseDatasetAttributes(datasetElem: Element, result: any): void {
 // Parse the chart Plot
 function parseChartPlot(element: Element, result: any): void {
   const plotTags = [
-    'piePlot', 'pie3DPlot', 'barPlot', 'bar3DPlot', 'linePlot', 'areaPlot',
-    'scatterPlot', 'bubblePlot', 'highLowPlot', 'meterPlot', 'thermometerPlot'
+    "piePlot",
+    "pie3DPlot",
+    "barPlot",
+    "bar3DPlot",
+    "linePlot",
+    "areaPlot",
+    "scatterPlot",
+    "bubblePlot",
+    "highLowPlot",
+    "meterPlot",
+    "thermometerPlot",
   ];
-  
+
   for (const tag of plotTags) {
     const plotElem = element.querySelector(tag);
     if (plotElem) {
@@ -2436,7 +2653,7 @@ function parseChartPlot(element: Element, result: any): void {
       if (plotElem.hasAttribute("isShowShapes")) {
         result.isShowShapes = plotElem.getAttribute("isShowShapes") === "true";
       }
-      
+
       // itemLabel
       const itemLabel = plotElem.querySelector("itemLabel");
       if (itemLabel) {
@@ -2444,21 +2661,26 @@ function parseChartPlot(element: Element, result: any): void {
           result.itemLabelColor = itemLabel.getAttribute("color");
         }
         if (itemLabel.hasAttribute("backgroundColor")) {
-          result.itemLabelBackgroundColor = itemLabel.getAttribute("backgroundColor");
+          result.itemLabelBackgroundColor =
+            itemLabel.getAttribute("backgroundColor");
         }
       }
-      
+
       // Axis labels
-      const categoryAxisLabel = plotElem.querySelector("categoryAxisLabelExpression");
+      const categoryAxisLabel = plotElem.querySelector(
+        "categoryAxisLabelExpression",
+      );
       if (categoryAxisLabel) {
-        result.categoryAxisLabelExpression = categoryAxisLabel.textContent?.trim() || '';
+        result.categoryAxisLabelExpression =
+          categoryAxisLabel.textContent?.trim() || "";
       }
-      
+
       const valueAxisLabel = plotElem.querySelector("valueAxisLabelExpression");
       if (valueAxisLabel) {
-        result.valueAxisLabelExpression = valueAxisLabel.textContent?.trim() || '';
+        result.valueAxisLabelExpression =
+          valueAxisLabel.textContent?.trim() || "";
       }
-      
+
       break;
     }
   }
@@ -2469,15 +2691,20 @@ function parseCrosstabElement(element: Element, result: any): void {
   // Parse crosstabDataset
   const datasetElem = element.querySelector("crosstabDataset");
   if (datasetElem) {
-    result.whenNoDataType = datasetElem.getAttribute("whenNoDataType") || 'AllSectionsNoDetail';
+    result.whenNoDataType =
+      datasetElem.getAttribute("whenNoDataType") || "AllSectionsNoDetail";
   }
 
   // Parse crosstabWidth and crosstabHeight
   if (element.hasAttribute("crosstabWidth")) {
-    result.crosstabWidth = parseInt(element.getAttribute("crosstabWidth") || "0");
+    result.crosstabWidth = parseInt(
+      element.getAttribute("crosstabWidth") || "0",
+    );
   }
   if (element.hasAttribute("crosstabHeight")) {
-    result.crosstabHeight = parseInt(element.getAttribute("crosstabHeight") || "0");
+    result.crosstabHeight = parseInt(
+      element.getAttribute("crosstabHeight") || "0",
+    );
   }
 }
 

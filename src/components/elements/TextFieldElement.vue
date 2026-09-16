@@ -58,6 +58,8 @@ const props = defineProps<{
   reportIsItalic?: boolean;
   reportIsUnderline?: boolean;
   parentFrameIndex?: number;
+  pageNumber?: number;
+  totalPages?: number;
 }>();
 
 // Emits
@@ -96,7 +98,34 @@ watch(() => isEditing.value, (newVal) => {
 // Display text
 const displayText = computed(() => {
   if (props.element.expression) {
-    return props.element.expression;
+    const expr = props.element.expression;
+    if (props.pageNumber !== undefined && expr.includes('$V{PAGE_NUMBER}')) {
+      const pNum = String(props.pageNumber);
+      const totalP = String(props.totalPages || props.pageNumber);
+
+      if (expr.trim() === '$V{PAGE_NUMBER}') {
+        return pNum;
+      }
+
+      let evaluated = expr;
+      if (evaluated.includes('" of "') || evaluated.includes('" / "') || evaluated.includes('"/"')) {
+        let count = 0;
+        evaluated = evaluated.replace(/\$V\{PAGE_NUMBER\}/g, () => {
+          count++;
+          return count === 1 ? pNum : totalP;
+        });
+      } else {
+        evaluated = evaluated.replace(/\$V\{PAGE_NUMBER\}/g, pNum);
+      }
+
+      evaluated = evaluated
+        .replace(/"\s*\+\s*/g, '')
+        .replace(/\s*\+\s*"/g, '')
+        .replace(/\s*\+\s*/g, ' ')
+        .replace(/^"|"$/g, '');
+      return evaluated;
+    }
+    return expr;
   }
   return `"${t('properties.defaultTextFieldExpression')}"`;
 });

@@ -4,7 +4,6 @@ import type { ReportProperties, Field, Parameter } from "./jrxml/types";
 import { buildJasperReportOpenTag } from "./jrxml/xmlBuilder";
 import { generateUUID } from "./jrxml/uuidGenerator";
 
-
 export type { ReportProperties, Field, Parameter } from "./jrxml/types";
 
 // Default font name
@@ -22,9 +21,12 @@ function generateReportElementAttrs(element: any): string {
   if (element.key) attrs += ` key="${element.key}"`;
   if (element.style) attrs += ` style="${element.style}"`;
   if (element.mode) attrs += ` mode="${element.mode}"`;
-  if (element.positionType && element.positionType !== 'FixRelativeToTop') attrs += ` positionType="${element.positionType}"`;
-  if (element.stretchType && element.stretchType !== 'NoStretch') attrs += ` stretchType="${element.stretchType}"`;
-  if (element.isPrintRepeatedValues === false) attrs += ` isPrintRepeatedValues="false"`;
+  if (element.positionType && element.positionType !== "FixRelativeToTop")
+    attrs += ` positionType="${element.positionType}"`;
+  if (element.stretchType && element.stretchType !== "NoStretch")
+    attrs += ` stretchType="${element.stretchType}"`;
+  if (element.isPrintRepeatedValues === false)
+    attrs += ` isPrintRepeatedValues="false"`;
   if (element.isRemoveLineWhenBlank) attrs += ` isRemoveLineWhenBlank="true"`;
   if (element.forecolor) attrs += ` forecolor="${element.forecolor}"`;
   if (element.backcolor) attrs += ` backcolor="${element.backcolor}"`;
@@ -33,7 +35,7 @@ function generateReportElementAttrs(element: any): string {
 
 // Generate reportElement child elements (printWhenExpression, styleExpression, property, propertyExpression)
 function generateReportElementChildren(element: any): string {
-  let xml = '';
+  let xml = "";
   if (element.printWhenExpression) {
     xml += `<printWhenExpression><![CDATA[${element.printWhenExpression}]]></printWhenExpression>`;
   }
@@ -44,7 +46,7 @@ function generateReportElementChildren(element: any): string {
   if (element.properties && element.properties.length > 0) {
     element.properties.forEach((prop: any) => {
       if (prop.name) {
-        xml += `<property name="${prop.name}" value="${prop.value || ''}"/>`;
+        xml += `<property name="${prop.name}" value="${prop.value || ""}"/>`;
       }
     });
   }
@@ -52,7 +54,7 @@ function generateReportElementChildren(element: any): string {
   if (element.propertyExpressions && element.propertyExpressions.length > 0) {
     element.propertyExpressions.forEach((prop: any) => {
       if (prop.name) {
-        xml += `<propertyExpression name="${prop.name}"><![CDATA[${prop.valueExpression || ''}]]></propertyExpression>`;
+        xml += `<propertyExpression name="${prop.name}"><![CDATA[${prop.valueExpression || ""}]]></propertyExpression>`;
       }
     });
   }
@@ -70,6 +72,7 @@ export function generateJRXMLContent(
   variables: any[] = [],
   reportProperties: any[] = [],
   groups: ReportGroup[] = [],
+  totalPagesCount?: number,
 ): string {
   // Ensure the page margins have default values; use 0 if not set
   const safeProperties = {
@@ -301,16 +304,22 @@ export function generateJRXMLContent(
         if (group.isStartNewColumn) groupAttrs += ' isStartNewColumn="true"';
         if (group.isRepeatHeader) groupAttrs += ' isRepeatHeader="true"';
         // Add the isReprintHeaderOnEachPage attribute (if not the default value false)
-        if (group.isReprintHeaderOnEachPage) groupAttrs += ' isReprintHeaderOnEachPage="true"';
+        if (group.isReprintHeaderOnEachPage)
+          groupAttrs += ' isReprintHeaderOnEachPage="true"';
         if (group.isResetPageNumber) groupAttrs += ' isResetPageNumber="true"';
         // Add the isHideColumnHeader attribute (if not the default value false)
-        if (group.isHideColumnHeader) groupAttrs += ' isHideColumnHeader="true"';
+        if (group.isHideColumnHeader)
+          groupAttrs += ' isHideColumnHeader="true"';
         // Add the isKeepTogether attribute (if not the default value false)
         if (group.isKeepTogether) groupAttrs += ' isKeepTogether="true"';
         // Add the isKeepFooterTogether attribute (if not the default value false)
-        if (group.isKeepFooterTogether) groupAttrs += ' isKeepFooterTogether="true"';
+        if (group.isKeepFooterTogether)
+          groupAttrs += ' isKeepFooterTogether="true"';
         // Add the minHeightToStartNewPage attribute (if not the default value 0)
-        if (group.minHeightToStartNewPage && group.minHeightToStartNewPage > 0) {
+        if (
+          group.minHeightToStartNewPage &&
+          group.minHeightToStartNewPage > 0
+        ) {
           groupAttrs += ` minHeightToStartNewPage="${group.minHeightToStartNewPage}"`;
         }
         jrxml += `<group ${groupAttrs}>`;
@@ -351,6 +360,54 @@ export function generateJRXMLContent(
   // Add report bands
   bands.forEach((band) => {
     if (band.elements.length > 0 || band.height > 0) {
+      if (band.type === "detail") {
+        // Check for multi-page detail
+        let maxPageIndex = 0;
+        band.elements.forEach((el) => {
+          if (el.pageIndex !== undefined && el.pageIndex > maxPageIndex) {
+            maxPageIndex = el.pageIndex;
+          }
+        });
+        const numPages = Math.max(
+          safeProperties.pageCount || 1,
+          maxPageIndex + 1,
+          totalPagesCount || 1,
+        );
+
+        if (numPages > 1) {
+          jrxml += `<detail>`;
+          const colWidth =
+            safeProperties.pageWidth -
+            safeProperties.leftMargin -
+            safeProperties.rightMargin;
+          for (let p = 0; p < numPages; p++) {
+            const pageElements = band.elements.filter(
+              (el) => (el.pageIndex ?? 0) === p,
+            );
+            const bandHeight = band.height > 0 ? band.height : 100;
+            let bandAttrs = `height="${bandHeight}"`;
+            if (band.splitType) {
+              bandAttrs += ` splitType="${band.splitType}"`;
+            } else {
+              bandAttrs += ` splitType="Stretch"`;
+            }
+
+            jrxml += `<band ${bandAttrs}>`;
+            if (p > 0) {
+              // Standard JasperReports page break at top of subsequent detail page bands
+              jrxml += `<break type="Page"><reportElement x="0" y="0" width="${colWidth}" height="1" uuid="${generateUUID()}"/></break>`;
+            }
+            pageElements.forEach((element) => {
+              const validatedElement = validateElementPosition(element);
+              jrxml += generateElementXML(validatedElement);
+            });
+            jrxml += `</band>`;
+          }
+          jrxml += `</detail>`;
+          return;
+        }
+      }
+
       jrxml += `<${band.type}>`;
 
       // Per the XSD spec, the height attribute belongs on the band element, but band does not allow a uuid attribute
@@ -820,11 +877,14 @@ function validateElementPosition(element: any): any {
   // Create a copy of the element to avoid mutating the original object
   const validatedElement = { ...element };
 
-  // Ensure the element has default values
-  validatedElement.x = validatedElement.x || 0;
-  validatedElement.y = validatedElement.y || 0;
-  validatedElement.width = validatedElement.width || 100;
-  validatedElement.height = validatedElement.height || 20;
+  // Ensure the element has default non-negative values
+  validatedElement.x = Math.max(0, validatedElement.x ?? 0);
+  validatedElement.y = Math.max(0, validatedElement.y ?? 0);
+  validatedElement.width = Math.max(1, Math.abs(validatedElement.width ?? 100));
+  validatedElement.height = Math.max(
+    1,
+    Math.abs(validatedElement.height ?? 20),
+  );
   return validatedElement;
 }
 
@@ -1002,7 +1062,7 @@ function generateTextFieldXML(element: any): string {
   ) {
     textElementAttrs += ` rotation="${element.rotation}"`;
   }
-  
+
   if (
     element.textAlignment &&
     ["Left", "Center", "Right", "Justified"].includes(element.textAlignment)
@@ -1123,7 +1183,10 @@ function generateImageXML(element: any): string {
   }
 
   // Rotation
-  if (element.rotation && ["None", "Left", "Right", "UpsideDown"].includes(element.rotation)) {
+  if (
+    element.rotation &&
+    ["None", "Left", "Right", "UpsideDown"].includes(element.rotation)
+  ) {
     xml += ` rotation="${element.rotation}"`;
   }
 
@@ -1411,7 +1474,7 @@ function generateSubreportXML(element: any): string {
   if (element.runToBottom) {
     xml += ` runToBottom="true"`;
   }
-  
+
   xml += `>`;
   xml += `<reportElement${generateReportElementAttrs(element)}>`;
   xml += `${generateReportElementChildren(element)}`;
@@ -1443,7 +1506,7 @@ function generateListXML(element: any): string {
   let xml = `<list`;
 
   // Generate the printOrder attribute
-  if (element.printOrder && element.printOrder !== 'Vertical') {
+  if (element.printOrder && element.printOrder !== "Vertical") {
     xml += ` printOrder="${element.printOrder}"`;
   }
 
@@ -1458,7 +1521,11 @@ function generateListXML(element: any): string {
   xml += "</reportElement>";
 
   // Generate datasetRun (dataset run configuration)
-  if (element.subDataset || element.dataSourceExpression || element.connectionExpression) {
+  if (
+    element.subDataset ||
+    element.dataSourceExpression ||
+    element.connectionExpression
+  ) {
     xml += `<datasetRun`;
     if (element.subDataset) {
       xml += ` subDataset="${element.subDataset}"`;
@@ -1467,14 +1534,14 @@ function generateListXML(element: any): string {
       xml += ` uuid="${element.uuid}"`;
     }
     xml += `>`;
-    
+
     if (element.connectionExpression) {
       xml += `<connectionExpression><![CDATA[${element.connectionExpression}]]></connectionExpression>`;
     }
     if (element.dataSourceExpression) {
       xml += `<dataSourceExpression><![CDATA[${element.dataSourceExpression}]]></dataSourceExpression>`;
     }
-    
+
     xml += `</datasetRun>`;
   } else if (element.dataSourceExpression) {
     // Backward compatibility with the old format: dataSourceExpression directly under the list element
@@ -1482,7 +1549,11 @@ function generateListXML(element: any): string {
   }
 
   // Generate the list contents
-  if (element.listContents && element.listContents.elements && element.listContents.elements.length > 0) {
+  if (
+    element.listContents &&
+    element.listContents.elements &&
+    element.listContents.elements.length > 0
+  ) {
     const contentsHeight = element.listContents.height || element.height;
     const contentsWidth = element.listContents.width || element.width;
     xml += `<listContents height="${contentsHeight}" width="${contentsWidth}">`;
@@ -1498,25 +1569,38 @@ function generateListXML(element: any): string {
 
 // Generate chart XML
 function generateChartXML(element: any): string {
-  const chartType = element.chartType || 'pie';
+  const chartType = element.chartType || "pie";
   const chartTagMap: Record<string, string> = {
-    pie: 'pieChart', pie3D: 'pie3DChart',
-    bar: 'barChart', bar3D: 'bar3DChart', xyBar: 'xyBarChart',
-    stackedBar: 'stackedBarChart', stackedBar3D: 'stackedBar3DChart',
-    line: 'lineChart', xyLine: 'xyLineChart',
-    area: 'areaChart', xyArea: 'xyAreaChart', stackedArea: 'stackedAreaChart',
-    scatter: 'scatterChart', bubble: 'bubbleChart',
-    timeSeries: 'timeSeriesChart', highLow: 'highLowChart', candlestick: 'candlestickChart',
-    meter: 'meterChart', thermometer: 'thermometerChart',
-    multiAxis: 'multiAxisChart', gantt: 'ganttChart', spider: 'spiderChart'
+    pie: "pieChart",
+    pie3D: "pie3DChart",
+    bar: "barChart",
+    bar3D: "bar3DChart",
+    xyBar: "xyBarChart",
+    stackedBar: "stackedBarChart",
+    stackedBar3D: "stackedBar3DChart",
+    line: "lineChart",
+    xyLine: "xyLineChart",
+    area: "areaChart",
+    xyArea: "xyAreaChart",
+    stackedArea: "stackedAreaChart",
+    scatter: "scatterChart",
+    bubble: "bubbleChart",
+    timeSeries: "timeSeriesChart",
+    highLow: "highLowChart",
+    candlestick: "candlestickChart",
+    meter: "meterChart",
+    thermometer: "thermometerChart",
+    multiAxis: "multiAxisChart",
+    gantt: "ganttChart",
+    spider: "spiderChart",
   };
-  const chartTag = chartTagMap[chartType] || 'pieChart';
+  const chartTag = chartTagMap[chartType] || "pieChart";
 
   let xml = `<${chartTag}>`;
 
   // The <chart> element
   xml += `<chart`;
-  if (element.evaluationTime && element.evaluationTime !== 'Now') {
+  if (element.evaluationTime && element.evaluationTime !== "Now") {
     xml += ` evaluationTime="${element.evaluationTime}"`;
   }
   if (element.evaluationGroup) {
@@ -1536,7 +1620,10 @@ function generateChartXML(element: any): string {
   xml += "</reportElement>";
 
   // chartTitle
-  if (element.isShowTitle !== false && (element.titleExpression || element.title)) {
+  if (
+    element.isShowTitle !== false &&
+    (element.titleExpression || element.title)
+  ) {
     xml += `<chartTitle>`;
     if (element.titleExpression) {
       xml += `<titleExpression><![CDATA[${element.titleExpression}]]></titleExpression>`;
@@ -1570,7 +1657,7 @@ function generateChartXML(element: any): string {
 
   // hyperlinkReferenceExpression
   if (element.hyperlinkExpression && element.hyperlinkType) {
-    xml += `<hyperlinkReferenceExpression target="${element.hyperlinkTarget || 'Self'}" type="${element.hyperlinkType}"`;
+    xml += `<hyperlinkReferenceExpression target="${element.hyperlinkTarget || "Self"}" type="${element.hyperlinkType}"`;
     if (element.bookmarkLevel) {
       xml += ` bookmarkLevel="${element.bookmarkLevel}"`;
     }
@@ -1587,9 +1674,9 @@ function generateChartXML(element: any): string {
 
   xml += `<${datasetTag}>`;
   xml += `<dataset`;
-  if (element.incrementType && element.incrementType !== 'None') {
+  if (element.incrementType && element.incrementType !== "None") {
     xml += ` incrementType="${element.incrementType}"`;
-    if (element.incrementType === 'Group' && element.incrementGroup) {
+    if (element.incrementType === "Group" && element.incrementGroup) {
       xml += ` incrementGroup="${element.incrementGroup}"`;
     }
   }
@@ -1622,35 +1709,52 @@ function generateChartXML(element: any): string {
 // Get the dataset tag
 function getDatasetTag(chartType: string): string {
   const map: Record<string, string> = {
-    pie: 'pieDataset', pie3D: 'pieDataset',
-    bar: 'categoryDataset', bar3D: 'categoryDataset',
-    stackedBar: 'categoryDataset', stackedBar3D: 'categoryDataset',
-    line: 'categoryDataset', area: 'categoryDataset', stackedArea: 'categoryDataset',
-    xyBar: 'xyDataset', xyLine: 'xyDataset', xyArea: 'xyDataset',
-    scatter: 'xyDataset', bubble: 'xyDataset', timeSeries: 'xyDataset',
-    highLow: 'highLowDataset', candlestick: 'highLowDataset',
-    meter: 'categoryDataset', thermometer: 'categoryDataset',
+    pie: "pieDataset",
+    pie3D: "pieDataset",
+    bar: "categoryDataset",
+    bar3D: "categoryDataset",
+    stackedBar: "categoryDataset",
+    stackedBar3D: "categoryDataset",
+    line: "categoryDataset",
+    area: "categoryDataset",
+    stackedArea: "categoryDataset",
+    xyBar: "xyDataset",
+    xyLine: "xyDataset",
+    xyArea: "xyDataset",
+    scatter: "xyDataset",
+    bubble: "xyDataset",
+    timeSeries: "xyDataset",
+    highLow: "highLowDataset",
+    candlestick: "highLowDataset",
+    meter: "categoryDataset",
+    thermometer: "categoryDataset",
   };
-  return map[chartType] || 'categoryDataset';
+  return map[chartType] || "categoryDataset";
 }
 
 // Get the data series tag
 function getDatasetItemTag(chartType: string): string {
   const map: Record<string, string> = {
-    pie: 'keyExpression', pie3D: 'keyExpression',
-    bar: 'categorySeries', bar3D: 'categorySeries',
-    stackedBar: 'categorySeries', stackedBar3D: 'categorySeries',
-    line: 'categorySeries', area: 'categorySeries', stackedArea: 'categorySeries',
-    meter: 'categorySeries', thermometer: 'categorySeries',
+    pie: "keyExpression",
+    pie3D: "keyExpression",
+    bar: "categorySeries",
+    bar3D: "categorySeries",
+    stackedBar: "categorySeries",
+    stackedBar3D: "categorySeries",
+    line: "categorySeries",
+    area: "categorySeries",
+    stackedArea: "categorySeries",
+    meter: "categorySeries",
+    thermometer: "categorySeries",
   };
-  return map[chartType] || 'categorySeries';
+  return map[chartType] || "categorySeries";
 }
 
 // Generate the series expressions
 function generateDatasetSeries(chartType: string, element: any): string {
-  let xml = '';
+  let xml = "";
 
-  if (['pie', 'pie3D'].includes(chartType)) {
+  if (["pie", "pie3D"].includes(chartType)) {
     // Pie chart: keyExpression + valueExpression
     if (element.keyExpression) {
       xml += `<keyExpression><![CDATA[${element.keyExpression}]]></keyExpression>`;
@@ -1658,7 +1762,18 @@ function generateDatasetSeries(chartType: string, element: any): string {
     if (element.valueExpression) {
       xml += `<valueExpression><![CDATA[${element.valueExpression}]]></valueExpression>`;
     }
-  } else if (['scatter', 'bubble', 'xyLine', 'xyArea', 'xyBar', 'timeSeries', 'highLow', 'candlestick'].includes(chartType)) {
+  } else if (
+    [
+      "scatter",
+      "bubble",
+      "xyLine",
+      "xyArea",
+      "xyBar",
+      "timeSeries",
+      "highLow",
+      "candlestick",
+    ].includes(chartType)
+  ) {
     // XY chart: xySeries
     xml += `<xySeries>`;
     if (element.seriesExpression) {
@@ -1692,28 +1807,38 @@ function generateDatasetSeries(chartType: string, element: any): string {
 // Generate Plot
 function generatePlot(chartType: string, element: any): string {
   const plotTagMap: Record<string, string> = {
-    pie: 'piePlot', pie3D: 'pie3DPlot',
-    bar: 'barPlot', bar3D: 'bar3DPlot',
-    stackedBar: 'barPlot', stackedBar3D: 'bar3DPlot',
-    line: 'linePlot', xyLine: 'linePlot',
-    area: 'areaPlot', xyArea: 'areaPlot', stackedArea: 'areaPlot',
-    scatter: 'scatterPlot', bubble: 'bubblePlot', timeSeries: 'linePlot',
-    highLow: 'highLowPlot', candlestick: 'highLowPlot',
-    meter: 'meterPlot', thermometer: 'thermometerPlot',
+    pie: "piePlot",
+    pie3D: "pie3DPlot",
+    bar: "barPlot",
+    bar3D: "bar3DPlot",
+    stackedBar: "barPlot",
+    stackedBar3D: "bar3DPlot",
+    line: "linePlot",
+    xyLine: "linePlot",
+    area: "areaPlot",
+    xyArea: "areaPlot",
+    stackedArea: "areaPlot",
+    scatter: "scatterPlot",
+    bubble: "bubblePlot",
+    timeSeries: "linePlot",
+    highLow: "highLowPlot",
+    candlestick: "highLowPlot",
+    meter: "meterPlot",
+    thermometer: "thermometerPlot",
   };
-  const plotTag = plotTagMap[chartType] || 'plot';
+  const plotTag = plotTagMap[chartType] || "plot";
 
   let xml = `<${plotTag}`;
 
   // Pie-chart-specific attributes
-  if (['pie', 'pie3D'].includes(chartType)) {
+  if (["pie", "pie3D"].includes(chartType)) {
     if (element.isCircular !== undefined) {
       xml += ` isCircular="${element.isCircular}"`;
     }
   }
 
   // Line-chart-specific attributes
-  if (['line', 'xyLine', 'timeSeries'].includes(chartType)) {
+  if (["line", "xyLine", "timeSeries"].includes(chartType)) {
     if (element.isShowShapes !== undefined) {
       xml += ` isShowShapes="${element.isShowShapes}"`;
     }
@@ -1725,14 +1850,35 @@ function generatePlot(chartType: string, element: any): string {
   xml += `<plot/>`;
 
   // itemLabel (category charts and pie charts)
-  if (!['scatter', 'bubble', 'highLow', 'candlestick', 'meter', 'thermometer'].includes(chartType)) {
-    const itemLabelColor = element.itemLabelColor || '#000000';
-    const itemLabelBg = element.itemLabelBackgroundColor || '#FFFFFF';
+  if (
+    ![
+      "scatter",
+      "bubble",
+      "highLow",
+      "candlestick",
+      "meter",
+      "thermometer",
+    ].includes(chartType)
+  ) {
+    const itemLabelColor = element.itemLabelColor || "#000000";
+    const itemLabelBg = element.itemLabelBackgroundColor || "#FFFFFF";
     xml += `<itemLabel color="${itemLabelColor}" backgroundColor="${itemLabelBg}"/>`;
   }
 
   // Category axis label (category charts)
-  if (['bar', 'bar3D', 'stackedBar', 'stackedBar3D', 'line', 'area', 'stackedArea', 'meter', 'thermometer'].includes(chartType)) {
+  if (
+    [
+      "bar",
+      "bar3D",
+      "stackedBar",
+      "stackedBar3D",
+      "line",
+      "area",
+      "stackedArea",
+      "meter",
+      "thermometer",
+    ].includes(chartType)
+  ) {
     if (element.categoryAxisLabelExpression) {
       xml += `<categoryAxisLabelExpression><![CDATA[${element.categoryAxisLabelExpression}]]></categoryAxisLabelExpression>`;
     }
@@ -1740,7 +1886,17 @@ function generatePlot(chartType: string, element: any): string {
   }
 
   // Value axis label (category charts)
-  if (['bar', 'bar3D', 'stackedBar', 'stackedBar3D', 'line', 'area', 'stackedArea'].includes(chartType)) {
+  if (
+    [
+      "bar",
+      "bar3D",
+      "stackedBar",
+      "stackedBar3D",
+      "line",
+      "area",
+      "stackedArea",
+    ].includes(chartType)
+  ) {
     if (element.valueAxisLabelExpression) {
       xml += `<valueAxisLabelExpression><![CDATA[${element.valueAxisLabelExpression}]]></valueAxisLabelExpression>`;
     }
@@ -1753,7 +1909,7 @@ function generatePlot(chartType: string, element: any): string {
 
 // Generate barcode XML
 function generateBarcodeXML(element: any): string {
-  const barcodeType = element.barcodeType || 'Code128';
+  const barcodeType = element.barcodeType || "Code128";
   // Barcode4j elements are wrapped in componentElement
   let xml = `<componentElement>`;
   xml += `<reportElement${generateReportElementAttrs(element)}>`;
@@ -1867,7 +2023,7 @@ function generateSortXML(element: any): string {
   xml += `<c:sort xmlns:c="http://jasperreports.sourceforge.net/jasperreports/components">`;
   if (element.sortFields && element.sortFields.length > 0) {
     element.sortFields.forEach((field: any) => {
-      const order = field.order || 'Ascending';
+      const order = field.order || "Ascending";
       xml += `<c:sortField name="${field.name}" order="${order}"/>`;
     });
   }
@@ -1950,14 +2106,18 @@ function generateColumnXML(
         const rowSpan =
           column.columnHeader.rowSpan || columnHeaderElement.rowSpan || 1;
         // Prefer column.columnHeader.height (the column header's own height), falling back to the inner element's height
-        const columnHeaderHeight = column.columnHeader.height || columnHeaderElement.height || 30;
+        const columnHeaderHeight =
+          column.columnHeader.height || columnHeaderElement.height || 30;
 
         // Check the original column object
         console.log("Checking column object before JRXML generation:", {
           columnName: column.name,
           originalColumnHeader: column.columnHeader,
           originalElement: columnHeaderElement,
-          issue: rowSpan > 1 && columnHeaderHeight !== 15 * rowSpan ? "Height anomaly" : "Normal",
+          issue:
+            rowSpan > 1 && columnHeaderHeight !== 15 * rowSpan
+              ? "Height anomaly"
+              : "Normal",
         });
 
         console.log("Column header height details during JRXML generation:", {
@@ -1973,8 +2133,12 @@ function generateColumnXML(
 
         // Check for anomalies
         if (rowSpan > 1 && columnHeaderHeight === 60 && rowSpan === 2) {
-          console.error("Anomaly detected! Height 60 should be 30 (15*2), not 60 (30*2)");
-          console.error("Possible cause: height was multiplied by rowSpan twice");
+          console.error(
+            "Anomaly detected! Height 60 should be 30 (15*2), not 60 (30*2)",
+          );
+          console.error(
+            "Possible cause: height was multiplied by rowSpan twice",
+          );
         }
 
         xml += `<jr:columnHeader height="${toInt(columnHeaderHeight)}" rowSpan="${rowSpan}" style="Table_CH">
@@ -2107,7 +2271,7 @@ function generateColumnGroupXML(
 
   // If there are no valid child elements, don't generate a columnGroup
   if (validChildren.length === 0 && (!group.columnHeader || group.width <= 0)) {
-    return '';
+    return "";
   }
 
   // Ensure the group has a uuid; generate one if missing
@@ -2252,7 +2416,11 @@ function generateColumnGroupXML(
 
         // If the columnGroup's rowSpan is 1, the inner column's rowSpan should also be 1,
         // since the columnGroup already occupies one row
-        if (groupHeaderRowSpan === 1 && child.columnHeader.rowSpan && child.columnHeader.rowSpan > 1) {
+        if (
+          groupHeaderRowSpan === 1 &&
+          child.columnHeader.rowSpan &&
+          child.columnHeader.rowSpan > 1
+        ) {
           // Reset the inner column's rowSpan to 1
           child.columnHeader.rowSpan = 1;
           // Adjust the height to a single row's height
@@ -2558,7 +2726,7 @@ function generateTableXML(element: any): string {
   xml += `${generateReportElementChildren(element)}`;
 
   // Add table style attributes
-  let tableStyleProps = '';
+  let tableStyleProps = "";
   if (element.styles) {
     if (element.styles.tableHeader) {
       tableStyleProps += `<property name="com.jaspersoft.studio.table.style.table_header" value="${element.styles.tableHeader}"/>`;

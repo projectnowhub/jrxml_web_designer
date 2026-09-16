@@ -49,12 +49,12 @@ export const DOM_CONSTANTS = {
 
 // Border style constants
 export const BORDER_CONSTANTS = {
-  THIN: 'Thin',
-  MEDIUM: 'Medium',
-  THICK: 'Thick',
-  DASHED: 'Dashed',
-  DOTTED: 'Dotted',
-  DOUBLE: 'Double',
+  THIN: "Thin",
+  MEDIUM: "Medium",
+  THICK: "Thick",
+  DASHED: "Dashed",
+  DOTTED: "Dotted",
+  DOUBLE: "Double",
   // Border width constants
   THIN_WIDTH: 1,
   MEDIUM_WIDTH: 2,
@@ -63,22 +63,22 @@ export const BORDER_CONSTANTS = {
 
 // Text alignment constants
 export const TEXT_ALIGN_CONSTANTS = {
-  LEFT: 'Left',
-  CENTER: 'Center',
-  RIGHT: 'Right',
-  JUSTIFIED: 'Justified',
+  LEFT: "Left",
+  CENTER: "Center",
+  RIGHT: "Right",
+  JUSTIFIED: "Justified",
 };
 
 // Vertical alignment constants
 export const VERTICAL_ALIGN_CONSTANTS = {
-  TOP: 'Top',
-  MIDDLE: 'Middle',
-  BOTTOM: 'Bottom',
+  TOP: "Top",
+  MIDDLE: "Middle",
+  BOTTOM: "Bottom",
 };
 
 // Font constants
 export const FONT_CONSTANTS = {
-  DEFAULT_FONT_FAMILY: 'Noto Serif SC',
+  DEFAULT_FONT_FAMILY: "Noto Serif SC",
   // Font size constants
   DEFAULT_SIZE: 12,
   MIN_SIZE: 8,
@@ -91,14 +91,14 @@ export const FONT_CONSTANTS = {
 
 // Element type constants
 export const ELEMENT_TYPE_CONSTANTS = {
-  STATIC_TEXT: 'staticText',
-  TEXT_FIELD: 'textField',
-  IMAGE: 'image',
-  LINE: 'line',
-  RECTANGLE: 'rectangle',
-  ELLIPSE: 'ellipse',
-  BREAK: 'break',
-  FRAME: 'frame',
+  STATIC_TEXT: "staticText",
+  TEXT_FIELD: "textField",
+  IMAGE: "image",
+  LINE: "line",
+  RECTANGLE: "rectangle",
+  ELLIPSE: "ellipse",
+  BREAK: "break",
+  FRAME: "frame",
 };
 
 // Element size constants
@@ -109,21 +109,21 @@ export const ELEMENT_CONSTANTS = {
 
 // Band type constants
 export const BAND_TYPE_CONSTANTS = {
-  TITLE: 'title',
-  PAGE_HEADER: 'pageHeader',
-  COLUMN_HEADER: 'columnHeader',
-  DETAIL: 'detail',
-  COLUMN_FOOTER: 'columnFooter',
-  PAGE_FOOTER: 'pageFooter',
-  SUMMARY: 'summary',
-  BACKGROUND: 'background',
-  LAST_PAGE_FOOTER: 'lastPageFooter',
-  NO_DATA: 'noData',
+  TITLE: "title",
+  PAGE_HEADER: "pageHeader",
+  COLUMN_HEADER: "columnHeader",
+  DETAIL: "detail",
+  COLUMN_FOOTER: "columnFooter",
+  PAGE_FOOTER: "pageFooter",
+  SUMMARY: "summary",
+  BACKGROUND: "background",
+  LAST_PAGE_FOOTER: "lastPageFooter",
+  NO_DATA: "noData",
 };
 
 // Band default height constants
 export const BAND_HEIGHT_CONSTANTS = {
-  [BAND_TYPE_CONSTANTS.TITLE]: 80,
+  [BAND_TYPE_CONSTANTS.TITLE]: 54,
   [BAND_TYPE_CONSTANTS.PAGE_HEADER]: 50,
   [BAND_TYPE_CONSTANTS.COLUMN_HEADER]: 30,
   [BAND_TYPE_CONSTANTS.DETAIL]: 100,
@@ -145,13 +145,13 @@ export const BAND_CONSTANTS = {
 
 // Evaluation time constants
 export const EVALUATION_TIME_CONSTANTS = {
-  NOW: 'Now',
-  REPORT: 'Report',
-  PAGE: 'Page',
-  COLUMN: 'Column',
-  GROUP: 'Group',
-  BAND: 'Band',
-  AUTO: 'Auto',
+  NOW: "Now",
+  REPORT: "Report",
+  PAGE: "Page",
+  COLUMN: "Column",
+  GROUP: "Group",
+  BAND: "Band",
+  AUTO: "Auto",
 };
 
 // Ruler-related constants
@@ -215,8 +215,8 @@ export const UI_CONSTANTS = {
   SMALL_GAP: 5,
   MEDIUM_GAP: 15,
   // Input field padding
-  INPUT_PADDING_SMALL: '6px 12px',
-  INPUT_PADDING_MEDIUM: '8px 16px',
+  INPUT_PADDING_SMALL: "6px 12px",
+  INPUT_PADDING_MEDIUM: "8px 16px",
   // Panel padding
   PANEL_PADDING: 16,
   // DOM operation delay

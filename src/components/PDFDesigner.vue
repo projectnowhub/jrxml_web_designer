@@ -97,6 +97,36 @@
               <rect x="8" y="2" width="8" height="4" rx="1" />
             </svg>
           </button>
+          <span class="toolbar-divider"></span>
+          <button
+            class="toolbar-btn"
+            @click="addNewPage"
+            title="Add New Page"
+            style="
+              width: auto;
+              padding: 0 8px;
+              gap: 4px;
+              display: inline-flex;
+              align-items: center;
+            "
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              width="14"
+              height="14"
+            >
+              <path
+                d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+              />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="12" y1="18" x2="12" y2="12" />
+              <line x1="9" y1="15" x2="15" y2="15" />
+            </svg>
+            <span style="font-size: 12px; font-weight: 500">+ Page</span>
+          </button>
         </div>
       </div>
       <div class="header-actions">
@@ -312,6 +342,7 @@
           :show-grid="showGrid"
           :report-styles="reportStyles"
           :table-styles="tableStyles"
+          :total-pages="totalPages"
           @set-design-area-focused="setDesignAreaFocused"
           @select-band="selectBand"
           @select-element="selectElement"
@@ -324,7 +355,7 @@
           @handle-drag-over="handleDragOver"
           @handle-drag-leave="handleDragLeave"
           @start-resizing-band="startResizingBand"
-          @zoom-change="(newZoom) => (zoomLevel = newZoom)"
+          @zoom-change="(newZoom: number) => (zoomLevel = newZoom)"
           @select-elements-in-rect="selectElementsInRect"
           @clear-selection="clearSelection"
           @check-fields="handleCheckFields"
@@ -338,6 +369,8 @@
           @update:enable-snap-to-alignment="enableSnapToAlignment = $event"
           @update:show-grid="showGrid = $event"
           @update:table-styles="tableStyles = $event"
+          @add-page="addNewPage"
+          @delete-page="deletePage"
         />
       </div>
 
@@ -941,7 +974,22 @@ function createNewFile() {
     {
       type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
       height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
-      elements: [],
+      elements: [
+        {
+          uuid: crypto.randomUUID(),
+          type: "textField",
+          name: "PageNumberField",
+          x: 435,
+          y: 10,
+          width: 120,
+          height: 20,
+          expression: '"Page " + $V{PAGE_NUMBER}',
+          fontName: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
+          fontSize: 10,
+          hAlign: "Right",
+          vAlign: "Middle",
+        } as any,
+      ],
     },
     {
       type: BAND_TYPE_CONSTANTS.SUMMARY as BandType,
@@ -949,6 +997,8 @@ function createNewFile() {
       elements: [],
     },
   ];
+
+  pageCount.value = 1;
 
   // Update selectedBandTypes to match the new bands
   selectedBandTypes.value = bands.value.map((band) => band.type);
@@ -996,6 +1046,18 @@ function loadFile(fileData: DesignerFile | any) {
       selectedBandTypes.value = fileContent.bands.map(
         (band: Band) => band.type,
       );
+      const detailBand = fileContent.bands.find(
+        (band: Band) => band.type === BAND_TYPE_CONSTANTS.DETAIL,
+      );
+      if (detailBand && detailBand.elements) {
+        const maxPage = Math.max(
+          0,
+          ...detailBand.elements.map((e: any) => e.pageIndex || 0),
+        );
+        pageCount.value = maxPage + 1;
+      } else {
+        pageCount.value = 1;
+      }
     }
 
     if (fileContent.reportFields) {
@@ -1116,7 +1178,7 @@ const elements = computed(() =>
 const bands = ref<Band[]>([
   {
     type: BAND_TYPE_CONSTANTS.TITLE as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 50,
+    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 54,
     elements: [],
   },
   {
@@ -1131,9 +1193,9 @@ const bands = ref<Band[]>([
   },
   {
     type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100,
+    height: 598, // Fits remaining space of A4 (842 - 20 - 20 - (54+50+30+30+40) = 598)
     elements: [],
-  }, // Default the detail band to a height of 100
+  },
   {
     type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType,
     height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30,
@@ -1142,7 +1204,22 @@ const bands = ref<Band[]>([
   {
     type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
     height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
-    elements: [],
+    elements: [
+      {
+        uuid: crypto.randomUUID(),
+        type: "textField",
+        name: "PageNumberField",
+        x: 435,
+        y: 10,
+        width: 120,
+        height: 20,
+        expression: '"Page " + $V{PAGE_NUMBER}',
+        fontName: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
+        fontSize: 10,
+        hAlign: "Right",
+        vAlign: "Middle",
+      } as any,
+    ],
   },
   {
     type: BAND_TYPE_CONSTANTS.SUMMARY as BandType,
@@ -1150,6 +1227,50 @@ const bands = ref<Band[]>([
     elements: [],
   },
 ]);
+
+// Multi-page state and methods
+const pageCount = ref(1);
+
+const maxDetailPageIndex = computed(() => {
+  const detailBand = bands.value.find(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+  if (!detailBand || !detailBand.elements) return 0;
+  return Math.max(0, ...detailBand.elements.map((e: any) => e.pageIndex || 0));
+});
+
+const totalPages = computed(() =>
+  Math.max(pageCount.value, maxDetailPageIndex.value + 1),
+);
+
+const addNewPage = () => {
+  saveStateToHistory();
+  pageCount.value++;
+  notification.success(`Page ${pageCount.value} added`);
+  updateJRXML();
+};
+
+const deletePage = (pageIndex: number) => {
+  if (pageIndex <= 0) return;
+  saveStateToHistory();
+  const detailBand = bands.value.find(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+  if (detailBand && detailBand.elements) {
+    detailBand.elements = detailBand.elements.filter(
+      (el: any) => (el.pageIndex ?? 0) !== pageIndex,
+    );
+    detailBand.elements.forEach((el: any) => {
+      if ((el.pageIndex ?? 0) > pageIndex) {
+        el.pageIndex = (el.pageIndex ?? 0) - 1;
+      }
+    });
+  }
+  selectedElement.value = null;
+  pageCount.value = Math.max(1, pageCount.value - 1);
+  notification.info(`Page ${pageIndex + 1} deleted`);
+  updateJRXML();
+};
 
 // All possible band types
 const allBandTypes = [
@@ -1690,6 +1811,45 @@ const paperHeight = computed(
   () =>
     reportProperties.value?.pageHeight || REPORT_CONSTANTS.DEFAULT_PAGE_HEIGHT,
 );
+
+// Ensure the bands fit within the A4 page height and detail takes the remaining space
+const ensureBandsFitPage = () => {
+  const topMargin = reportProperties.value?.topMargin || 0;
+  const bottomMargin = reportProperties.value?.bottomMargin || 0;
+  const availableHeight = paperHeight.value - topMargin - bottomMargin;
+
+  const detailIndex = bands.value.findIndex(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+  if (detailIndex === -1) return;
+
+  let otherBandsHeight = 0;
+  bands.value.forEach((b, i) => {
+    if (i !== detailIndex) {
+      otherBandsHeight += b.height || 0;
+    }
+  });
+
+  const remaining = Math.max(
+    BAND_CONSTANTS.MIN_HEIGHT,
+    availableHeight - otherBandsHeight,
+  );
+  if (bands.value[detailIndex]) {
+    bands.value[detailIndex].height = remaining;
+  }
+};
+
+// Watch paper dimensions and margins to ensure bands always fit the page
+watch(
+  [
+    () => paperHeight.value,
+    () => reportProperties.value?.topMargin,
+    () => reportProperties.value?.bottomMargin,
+  ],
+  () => {
+    ensureBandsFitPage();
+  },
+);
 const { zoomLevel, resetZoom, calculateOptimalZoom, handleZoomChange } =
   useZoom({
     paperWidth,
@@ -1773,13 +1933,18 @@ const horizontalRulerLabels = computed(() => {
 const verticalRulerTicks = computed(() => {
   const ticks = [];
   const height = paperHeight.value;
-  const unit = RULER_CONSTANTS.UNIT_SIZE; // Reduced base unit, from 10px to 5px, to increase tick density
+  const unit = RULER_CONSTANTS.UNIT_SIZE;
+  const pages = totalPages.value;
+  const pageGap = 32;
 
-  for (let i = 0; i <= height; i += unit) {
-    ticks.push({
-      position: i, // Do not apply the zoom scale, keep the actual position
-      major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0, // One major tick every 25px, changed from 50px to 25px
-    });
+  for (let p = 0; p < pages; p++) {
+    const pageOffset = p * (height + pageGap);
+    for (let i = 0; i <= height; i += unit) {
+      ticks.push({
+        position: pageOffset + i,
+        major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0,
+      });
+    }
   }
 
   return ticks;
@@ -1788,13 +1953,17 @@ const verticalRulerTicks = computed(() => {
 const verticalRulerLabels = computed(() => {
   const labels = [];
   const height = paperHeight.value;
+  const pages = totalPages.value;
+  const pageGap = 32;
 
-  for (let i = 0; i <= height; i += RULER_CONSTANTS.LABEL_INTERVAL) {
-    // Show a label every 25px, changed from 50px to 25px
-    labels.push({
-      position: i, // Do not apply the zoom scale, keep the actual position
-      value: i.toString(),
-    });
+  for (let p = 0; p < pages; p++) {
+    const pageOffset = p * (height + pageGap);
+    for (let i = 0; i <= height; i += RULER_CONSTANTS.LABEL_INTERVAL) {
+      labels.push({
+        position: pageOffset + i,
+        value: i.toString(),
+      });
+    }
   }
 
   return labels;
@@ -1838,6 +2007,7 @@ const resizingInfo = ref<{
   startWidth: number;
   startHeight: number;
   parentFrameIndex?: number;
+  targetSheet?: HTMLElement;
 } | null>(null);
 
 // Tracks the last-clicked band
@@ -1998,7 +2168,7 @@ const handleElementDoubleClick = (element: any) => {
   console.log("Element added to band:", newElement);
 };
 
-const handleDrop = (event: DragEvent) => {
+const handleDrop = (event: DragEvent, pageIndex?: number) => {
   event.preventDefault();
 
   let elementData = null;
@@ -2019,34 +2189,41 @@ const handleDrop = (event: DragEvent) => {
   }
 
   if (elementData) {
-    // Get the paper element as a reference point
-    const paper = document.querySelector(".paper") as HTMLElement;
-    if (!paper) return;
+    // Get the target page sheet
+    const targetSheet =
+      ((event.target as HTMLElement)?.closest(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".paper") as HTMLElement);
+    if (!targetSheet) return;
 
-    const paperRect = paper.getBoundingClientRect();
-    // Calculate coordinates relative to the paper
-    const x = event.clientX - paperRect.left;
-    const y = event.clientY - paperRect.top;
+    let targetPageIndex = pageIndex ?? 0;
+    if (targetSheet.dataset.pageIndex !== undefined) {
+      targetPageIndex = parseInt(targetSheet.dataset.pageIndex, 10);
+    }
 
-    // Account for the zoom scale
     const currentZoom = zoomLevel.value;
-    const scaledX = x / currentZoom;
-    const scaledY = y / currentZoom;
+    const targetBandEl = (event.target as HTMLElement)?.closest(
+      ".band",
+    ) as HTMLElement;
 
-    // Find the corresponding band
     let bandIndex = 0;
-    let currentY = 0;
-    if (bands.value && Array.isArray(bands.value)) {
-      for (let i = 0; i < bands.value.length; i++) {
-        const band = bands.value[i];
-        if (band && scaledY >= currentY && scaledY <= currentY + band.height) {
-          bandIndex = i;
-          break;
-        }
-        if (band) {
-          currentY += band.height;
-        }
-      }
+    let scaledX = 0;
+    let scaledY = 0;
+
+    if (targetBandEl && targetBandEl.dataset.bandIndex !== undefined) {
+      bandIndex = parseInt(targetBandEl.dataset.bandIndex, 10);
+      const bandRect = targetBandEl.getBoundingClientRect();
+      scaledX = (event.clientX - bandRect.left) / currentZoom;
+      scaledY = (event.clientY - bandRect.top) / currentZoom;
+    } else {
+      // Fallback: Find detail band
+      const dIndex = bands.value.findIndex(
+        (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+      );
+      bandIndex = dIndex !== -1 ? dIndex : 0;
+      const sheetRect = targetSheet.getBoundingClientRect();
+      scaledX = (event.clientX - sheetRect.left) / currentZoom;
+      scaledY = (event.clientY - sheetRect.top) / currentZoom;
     }
 
     // Create the new element
@@ -2054,9 +2231,14 @@ const handleDrop = (event: DragEvent) => {
       ...createElement(elementData.type),
       uuid: crypto.randomUUID(), // Generate a UUID
       x: Math.round(Math.max(0, scaledX - 50)), // Subtract half the element width to center it, and ensure an integer
-      y: Math.round(Math.max(0, scaledY - currentY)), // Position relative to the band, and ensure an integer
+      y: Math.round(Math.max(0, scaledY - 10)), // Position relative to the band, and ensure an integer
       ...getDefaultElementProperties(elementData.type),
     } as DesignElement;
+
+    // For detail band elements, assign pageIndex
+    if (bands.value[bandIndex]?.type === BAND_TYPE_CONSTANTS.DETAIL) {
+      newElement.pageIndex = targetPageIndex;
+    }
 
     // For table elements, check for/create the default dataset, then generate the corresponding columns
     if (elementData.type === "table") {
@@ -2505,16 +2687,22 @@ const startDragging = (
     // Get the current zoom scale
     const currentZoom = zoomLevel.value;
 
-    // Get the paper element's position info, for more accurate coordinate calculations
-    const paperEl = document.querySelector(".paper") as HTMLElement;
+    // Get the page sheet element's position info, for accurate coordinate calculations
+    const targetSheet =
+      ((event.target as HTMLElement)?.closest(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".paper") as HTMLElement);
     let paperOffsetX = 0;
     let paperOffsetY = 0;
+    let sourcePageIndex = 0;
 
-    if (paperEl) {
-      const paperRect = paperEl.getBoundingClientRect();
-      // Offset accounting for the zoom scale
+    if (targetSheet) {
+      const paperRect = targetSheet.getBoundingClientRect();
       paperOffsetX = paperRect.left;
       paperOffsetY = paperRect.top;
+      if (targetSheet.dataset.pageIndex !== undefined) {
+        sourcePageIndex = parseInt(targetSheet.dataset.pageIndex, 10);
+      }
     }
 
     // Store the drag info, accounting for the zoom scale
@@ -2564,13 +2752,29 @@ const startDragging = (
             // const availableWidth = ... (already calculated above as containerWidth)
 
             // Get the paper element's position info, for more accurate coordinate calculations
+            // Get the active page sheet element's position info
             let paperOffsetX = 0;
             let paperOffsetY = 0;
-            const paperEl = document.querySelector(".paper") as HTMLElement;
+            const elementsAtPoint = document.elementsFromPoint(
+              e.clientX,
+              e.clientY,
+            );
+            const sourcePageIndex = draggingInfo.value.sourcePageIndex;
+            const activeSheet =
+              (elementsAtPoint.find((el) =>
+                el.classList.contains("page-sheet"),
+              ) as HTMLElement) ||
+              (sourcePageIndex !== undefined
+                ? (document.querySelectorAll(".page-sheet")[
+                    sourcePageIndex
+                  ] as HTMLElement)
+                : null) ||
+              (document.querySelector(".page-sheet") as HTMLElement) ||
+              (document.querySelector(".paper") as HTMLElement);
 
+            const paperEl = activeSheet || (document.querySelector(".paper") as HTMLElement);
             if (paperEl) {
               const paperRect = paperEl.getBoundingClientRect();
-              // Offset accounting for the zoom scale
               paperOffsetX = paperRect.left;
               paperOffsetY = paperRect.top;
             }
@@ -2581,7 +2785,7 @@ const startDragging = (
               draggingInfo.value.startX;
             let newY =
               (e.clientY - paperOffsetY) / currentZoom -
-              draggingInfo.value.startY; // Remove the lower bound on the Y coordinate
+              draggingInfo.value.startY;
 
             // If inside a Frame, don't constrain the coordinates, allowing the element to move outside the Frame
             if (draggingInfo.value.parentFrameIndex !== undefined) {
@@ -2593,19 +2797,18 @@ const startDragging = (
                 Math.min(newX, containerWidth - currentElement.width),
               );
 
-              // Original Band Y-constraint logic
-              // Get the position info of the first and last bands
-              const firstBandElement = document.querySelectorAll(
-                ".band",
-              )[0] as HTMLElement;
-              const lastBandElement = document.querySelectorAll(".band")[
-                bands.value.length - 1
+              // Band Y-constraint logic for the active page sheet
+              const sheetBands = activeSheet.querySelectorAll(".band");
+              const firstBandElement = sheetBands[0] as HTMLElement;
+              const lastBandElement = sheetBands[
+                sheetBands.length - 1
               ] as HTMLElement;
 
               // Calculate the position of the current band on the page
-              const currentBandElement = document.querySelectorAll(".band")[
-                draggingInfo.value.bandIndex
-              ] as HTMLElement;
+              const currentBandElement =
+                (activeSheet.querySelector(
+                  `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
+                ) as HTMLElement) || (sheetBands[0] as HTMLElement);
               let currentBandTopInPage = 0;
 
               if (
@@ -2803,46 +3006,42 @@ const startDragging = (
 
             // Use the DOM elements' actual positions to calculate the target band, for greater accuracy
             // Reuse the already-retrieved paperElement variable
-            if (paperEl) {
-              let targetBandIndex = draggingInfo.value.bandIndex;
-              let isOverBand = false;
+            let targetBandIndex = draggingInfo.value.bandIndex;
+            let isOverBand = false;
 
-              // Get all band elements
-              const bandElements = document.querySelectorAll(".band");
-              for (let i = 0; i < bandElements.length; i++) {
-                const bandElement = bandElements[i] as HTMLElement;
-                const bandRect = bandElement.getBoundingClientRect();
+            const bandUnderMouse = (
+              document.elementFromPoint(e.clientX, e.clientY) as HTMLElement
+            )?.closest(".band") as HTMLElement;
 
-                // Check whether the mouse position falls within the current band's bounds
-                if (e.clientY >= bandRect.top && e.clientY <= bandRect.bottom) {
-                  targetBandIndex = i;
-                  isOverBand = true;
-                  break;
-                }
-              }
+            if (
+              bandUnderMouse &&
+              bandUnderMouse.dataset.bandIndex !== undefined
+            ) {
+              targetBandIndex = parseInt(bandUnderMouse.dataset.bandIndex, 10);
+              isOverBand = true;
+            }
 
-              // Only update the highlighted band when the mouse is over some band
-              if (isOverBand) {
-                highlightedBandIndex.value = targetBandIndex;
-              }
+            // Only update the highlighted band when the mouse is over some band
+            if (isOverBand) {
+              highlightedBandIndex.value = targetBandIndex;
+            }
 
-              // Log once the dragged element has moved into the target band
-              if (
-                isOverBand &&
-                targetBandIndex !== draggingInfo.value.bandIndex &&
-                targetBandIndex !== draggingInfo.value.lastTargetBandIndex
-              ) {
-                const sourceBand = bands.value[draggingInfo.value.bandIndex];
-                const targetBand = bands.value[targetBandIndex];
-                if (sourceBand && targetBand) {
-                  console.log(
-                    `Element moved from ${getBandDisplayName(sourceBand.type)} to ${getBandDisplayName(targetBand.type)}`,
-                  );
-                  // Update the last target band index
-                  draggingInfo.value.lastTargetBandIndex = targetBandIndex;
+            // Log once the dragged element has moved into the target band
+            if (
+              isOverBand &&
+              targetBandIndex !== draggingInfo.value.bandIndex &&
+              targetBandIndex !== draggingInfo.value.lastTargetBandIndex
+            ) {
+              const sourceBand = bands.value[draggingInfo.value.bandIndex];
+              const targetBand = bands.value[targetBandIndex];
+              if (sourceBand && targetBand) {
+                console.log(
+                  `Element moved from ${getBandDisplayName(sourceBand.type)} to ${getBandDisplayName(targetBand.type)}`,
+                );
+                // Update the last target band index
+                draggingInfo.value.lastTargetBandIndex = targetBandIndex;
 
-                  // TODO: also constrain the moved element's relative Y value so it doesn't exceed the target band's height minus the element's height
-                }
+                // TODO: also constrain the moved element's relative Y value so it doesn't exceed the target band's height minus the element's height
               }
             }
 
@@ -2908,7 +3107,22 @@ const startDragging = (
           }
 
           if (currentBand && currentElement) {
-            // 1. Get the target Band
+            // 1. Get the target Band and target Page Sheet
+            const sheetUnderMouse = (
+              document.elementFromPoint(e.clientX, e.clientY) as HTMLElement
+            )?.closest(".page-sheet") as HTMLElement;
+            let targetSheetPageIndex =
+              (draggingInfo.value as any)?.sourcePageIndex ?? 0;
+            if (
+              sheetUnderMouse &&
+              sheetUnderMouse.dataset.pageIndex !== undefined
+            ) {
+              targetSheetPageIndex = parseInt(
+                sheetUnderMouse.dataset.pageIndex,
+                10,
+              );
+            }
+
             let targetBandIndex = draggingInfo.value.bandIndex;
 
             // If there is a last-highlighted band index and it's valid, use it
@@ -2918,23 +3132,6 @@ const startDragging = (
               draggingInfo.value.lastTargetBandIndex < bands.value.length
             ) {
               targetBandIndex = draggingInfo.value.lastTargetBandIndex;
-            } else {
-              // Otherwise, use the mouse position to determine the target band
-              const paperEl = document.querySelector(".paper") as HTMLElement;
-              if (paperEl) {
-                const bandElements = document.querySelectorAll(".band");
-                for (let i = 0; i < bandElements.length; i++) {
-                  const bandElement = bandElements[i] as HTMLElement;
-                  const bandRect = bandElement.getBoundingClientRect();
-                  if (
-                    e.clientY >= bandRect.top &&
-                    e.clientY <= bandRect.bottom
-                  ) {
-                    targetBandIndex = i;
-                    break;
-                  }
-                }
-              }
             }
 
             const targetBand = bands.value[targetBandIndex];
@@ -2959,9 +3156,23 @@ const startDragging = (
             const elementRelSourceBandY = sourceParentRelY + currentElement.y;
 
             // Calculate the Source Band's offset relative to the Target Band
+            const activePageSheet =
+              sheetUnderMouse ||
+              (document.querySelectorAll(".page-sheet")[
+                targetSheetPageIndex
+              ] as HTMLElement) ||
+              (document.querySelector(".page-sheet") as HTMLElement) ||
+              (document.querySelector(".paper") as HTMLElement);
+
             const sourceBandEl =
+              (activePageSheet?.querySelector(
+                `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
+              ) as HTMLElement) ||
               document.querySelectorAll(".band")[draggingInfo.value.bandIndex];
             const targetBandEl =
+              (activePageSheet?.querySelector(
+                `.band[data-band-index="${targetBandIndex}"]`,
+              ) as HTMLElement) ||
               document.querySelectorAll(".band")[targetBandIndex];
 
             if (!sourceBandEl || !targetBandEl) return;
@@ -3096,6 +3307,10 @@ const startDragging = (
               currentElement.x = Math.round(currentElement.x);
               currentElement.y = Math.round(currentElement.y);
               if (currentElement.y < 0) currentElement.y = 0;
+            }
+
+            if (targetSheetPageIndex >= pageCount.value) {
+              pageCount.value = targetSheetPageIndex + 1;
             }
           }
         }
@@ -3306,7 +3521,10 @@ const initBox = () => {
 // Download the JRXML file
 const downloadJRXML = () => {
   const content = generateJRXMLContent(
-    reportProperties.value,
+    {
+      ...reportProperties.value,
+      pageCount: totalPages.value,
+    },
     bands.value,
     reportFields.value,
     reportParameters.value,
@@ -3315,6 +3533,7 @@ const downloadJRXML = () => {
     reportVariables.value,
     [],
     reportGroups.value,
+    totalPages.value,
   );
   jrxmlContent.value = content;
 
@@ -3409,7 +3628,10 @@ const updateJRXML = () => {
     }
 
     const content = generateJRXMLContent(
-      reportProperties.value,
+      {
+        ...reportProperties.value,
+        pageCount: totalPages.value,
+      },
       bands.value,
       reportFields.value,
       reportParameters.value,
@@ -3418,6 +3640,7 @@ const updateJRXML = () => {
       reportVariables.value,
       [],
       reportGroups.value,
+      totalPages.value,
     );
 
     // If the content changed, save it to history
@@ -3940,6 +4163,7 @@ onMounted(() => {
 
   // Update JRXML after the initial load; use setTimeout to ensure all data has finished loading
   setTimeout(() => {
+    ensureBandsFitPage();
     console.log("Starting initial JRXML generation...");
     updateJRXML();
   }, 100);
@@ -4055,7 +4279,10 @@ const openPdfPreview = (): void => {
     if (!jrxmlContent.value) {
       // Generate the JRXML content directly, without downloading it
       const content = generateJRXMLContent(
-        reportProperties.value,
+        {
+          ...reportProperties.value,
+          pageCount: totalPages.value,
+        },
         bands.value,
         reportFields.value,
         reportParameters.value,
@@ -4064,6 +4291,7 @@ const openPdfPreview = (): void => {
         reportVariables.value,
         [],
         reportGroups.value,
+        totalPages.value,
       );
       jrxmlContent.value = content;
     }
@@ -4072,16 +4300,8 @@ const openPdfPreview = (): void => {
       const extracted: TableDataset[] = [];
       for (const band of bands.value) {
         for (const el of band.elements || []) {
-          if (el.type === "table" && (el as any).dataset?.fields?.length > 0) {
-            const ds = (el as any).dataset;
-            if (!extracted.find((d) => d.name === ds.name)) {
-              extracted.push({
-                uuid: ds.uuid || crypto.randomUUID(),
-                name: ds.name,
-                fields: ds.fields,
-                query: ds.query,
-              });
-            }
+          if (el.type === "table" && (el as any).dataset) {
+            extracted.push((el as any).dataset);
           }
         }
       }
@@ -4089,6 +4309,7 @@ const openPdfPreview = (): void => {
         subDatasets.value = extracted;
       }
     }
+
     showPdfPreview.value = false;
     nextTick(() => {
       showPdfPreview.value = true;
@@ -4116,6 +4337,18 @@ const saveJRXML = (): void => {
         isUnderline: false,
       },
     };
+
+    if (parsedData.properties?.pageCount) {
+      pageCount.value = parsedData.properties.pageCount;
+    } else {
+      const detailBand = parsedData.bands.find(
+        (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+      );
+      const maxIdx = detailBand?.elements
+        ? Math.max(0, ...detailBand.elements.map((e: any) => e.pageIndex || 0))
+        : 0;
+      pageCount.value = maxIdx + 1;
+    }
 
     // Update the field definitions
     reportFields.value = parsedData.fields;
@@ -4153,6 +4386,20 @@ const saveJRXML = (): void => {
 
     // Update the selected band types
     selectedBandTypes.value = parsedData.bands.map((band) => band.type);
+
+    // Update pageCount based on loaded elements
+    const detailBand = parsedData.bands.find(
+      (b: Band) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+    );
+    if (detailBand && detailBand.elements) {
+      const maxPage = Math.max(
+        0,
+        ...detailBand.elements.map((e: any) => e.pageIndex || 0),
+      );
+      pageCount.value = Math.max(1, maxPage + 1);
+    } else {
+      pageCount.value = 1;
+    }
 
     // Add a default border to rectangle elements to ensure they render correctly
     bands.value.forEach((band) => {
@@ -4859,30 +5106,83 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   resizingBandInfo.bandName = getBandDisplayName(band.type);
   resizingBandInfo.height = startHeight;
 
+  const detailIndex = bands.value.findIndex(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+  const startDetailHeight =
+    detailIndex !== -1 && bands.value[detailIndex]
+      ? bands.value[detailIndex].height
+      : 100;
+
+  const topMargin = reportProperties.value?.topMargin || 0;
+  const bottomMargin = reportProperties.value?.bottomMargin || 0;
+  const availableHeight = paperHeight.value - topMargin - bottomMargin;
+
+  // Total height of all other fixed bands (excluding the band being resized and detail)
+  let otherFixedBandsHeight = 0;
+  bands.value.forEach((b, i) => {
+    if (i !== bandIndex && i !== detailIndex) {
+      otherFixedBandsHeight += b.height || 0;
+    }
+  });
+
   const handleMouseMove = (e: MouseEvent): void => {
     if (!bands.value || !bands.value[bandIndex]) return;
-    // Calculate the height change accounting for the zoom scale, using paperOffsetY for more accuracy
-    const deltaY =
-      (e.clientY - paperOffsetY) / currentZoom -
-      (startY - paperOffsetY) / currentZoom;
-    const newHeight = Math.max(
-      BAND_CONSTANTS.MIN_HEIGHT,
-      Math.round(startHeight + deltaY),
-    );
+    const deltaY = (e.clientY - startY) / currentZoom;
 
-    // Update the band height
-    bands.value = bands.value.map((b, i) => {
-      if (i === bandIndex) {
-        return { ...b, height: newHeight };
-      }
-      return b;
-    });
+    if (bandIndex === detailIndex) {
+      // User is directly resizing the detail band
+      const maxDetail = Math.max(
+        BAND_CONSTANTS.MIN_HEIGHT,
+        availableHeight - otherFixedBandsHeight,
+      );
+      const newHeight = Math.min(
+        maxDetail,
+        Math.max(BAND_CONSTANTS.MIN_HEIGHT, Math.round(startHeight + deltaY)),
+      );
 
-    // Update the band height adjustment tooltip
+      bands.value = bands.value.map((b, i) => {
+        if (i === bandIndex) {
+          return { ...b, height: newHeight };
+        }
+        return b;
+      });
+      resizingBandInfo.height = newHeight;
+    } else {
+      // User is resizing another band (Title, PageHeader, etc.)
+      // It can grow by at most the space detail can yield without detail going below MIN_HEIGHT
+      const maxAllowedDelta = Math.max(
+        0,
+        startDetailHeight - BAND_CONSTANTS.MIN_HEIGHT,
+      );
+      const minAllowedDelta = BAND_CONSTANTS.MIN_HEIGHT - startHeight;
+      const clampedDelta = Math.min(
+        maxAllowedDelta,
+        Math.max(minAllowedDelta, Math.round(deltaY)),
+      );
+
+      const newHeight = startHeight + clampedDelta;
+      const newDetailHeight = Math.max(
+        BAND_CONSTANTS.MIN_HEIGHT,
+        availableHeight - otherFixedBandsHeight - newHeight,
+      );
+
+      bands.value = bands.value.map((b, i) => {
+        if (i === bandIndex) {
+          return { ...b, height: newHeight };
+        }
+        if (i === detailIndex) {
+          return { ...b, height: newDetailHeight };
+        }
+        return b;
+      });
+
+      resizingBandInfo.height = newHeight;
+    }
+
     resizingBandInfo.bandName = bands.value[bandIndex]
       ? getBandDisplayName(bands.value[bandIndex].type)
       : "";
-    resizingBandInfo.height = newHeight;
 
     // Position the band-height display element so it follows the mouse
     const bandHeightElement = document.querySelector(
@@ -4893,13 +5193,12 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
       bandHeightElement.style.top = e.clientY - 30 + "px";
     }
 
-    // Adjust the positions of elements within this band so they don't exceed the band's bounds
-    const band = bands.value[bandIndex];
-    if (band && band.elements) {
-      band.elements.forEach((element) => {
-        // Adjust the element's position accounting for the zoom scale
-        if (element.y + element.height > newHeight) {
-          element.y = Math.max(0, newHeight - element.height);
+    // Adjust elements within resized band so they don't exceed the band's bounds
+    const currentBand = bands.value[bandIndex];
+    if (currentBand && currentBand.elements) {
+      currentBand.elements.forEach((element) => {
+        if (element.y + element.height > currentBand.height) {
+          element.y = Math.max(0, currentBand.height - element.height);
         }
       });
     }
@@ -4912,6 +5211,8 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
     resizingBandInfo.height = 0;
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("mouseup", handleMouseUp);
+    saveStateToHistory();
+    updateJRXML();
   };
 
   document.addEventListener("mousemove", handleMouseMove);
@@ -4956,13 +5257,16 @@ const startResizingElement = (
     // Get the current zoom scale
     const currentZoom = zoomLevel.value;
 
-    // Get the paper element's position info, for more accurate coordinate calculations
-    const paperElement = document.querySelector(".paper") as HTMLElement;
+    // Get the page sheet element's position info, for more accurate coordinate calculations
+    const targetSheet =
+      ((event.target as HTMLElement)?.closest(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".paper") as HTMLElement);
     let paperOffsetX = 0;
     let paperOffsetY = 0;
 
-    if (paperElement) {
-      const paperRect = paperElement.getBoundingClientRect();
+    if (targetSheet) {
+      const paperRect = targetSheet.getBoundingClientRect();
       // Offset accounting for the zoom scale
       paperOffsetX = paperRect.left;
       paperOffsetY = paperRect.top;
@@ -4976,6 +5280,7 @@ const startResizingElement = (
       startWidth: element.width,
       startHeight: element.height,
       parentFrameIndex,
+      targetSheet,
     };
 
     isDraggingOrResizing.value = true;
@@ -5010,7 +5315,10 @@ const startResizingElement = (
       const currentZoom = zoomLevel.value;
 
       // Get the paper element's current position info, for more accurate coordinate calculations
-      const paperEl = document.querySelector(".paper") as HTMLElement;
+      const paperEl =
+        resizingInfo.value.targetSheet ||
+        (document.querySelector(".page-sheet") as HTMLElement) ||
+        (document.querySelector(".paper") as HTMLElement);
       let currentPaperOffsetX = 0;
       let currentPaperOffsetY = 0;
 
@@ -5047,9 +5355,9 @@ const startResizingElement = (
           paperWidth.value - leftMargin - rightMargin - element.x;
       }
 
-      const availableHeight = containerHeight - element.y;
-      newWidth = Math.min(newWidth, maxElementWidth);
-      newHeight = Math.min(newHeight, availableHeight);
+      const availableHeight = Math.max(minSize, containerHeight - element.y);
+      newWidth = Math.max(minSize, Math.min(newWidth, maxElementWidth));
+      newHeight = Math.max(minSize, Math.min(newHeight, availableHeight));
 
       // If the SHIFT key is held, preserve the original aspect ratio
       if (e.shiftKey) {
@@ -6212,6 +6520,9 @@ const handleBandSelectionChange = (): void => {
     });
   }
 
+  // Ensure bands fit within the A4 page height
+  ensureBandsFitPage();
+
   // Save state to history
   saveStateToHistory();
 
@@ -6432,7 +6743,6 @@ const handleBandSelectionChange = (): void => {
   display: flex;
   align-items: center;
   gap: 16px;
-
 }
 
 .header-undo-redo {

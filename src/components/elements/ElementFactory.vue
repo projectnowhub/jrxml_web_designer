@@ -102,6 +102,8 @@ const props = defineProps<{
     columnFooter: string;
     detailCell: string;
   };
+  pageNumber?: number;
+  totalPages?: number;
 }>();
 
 // Emits
@@ -154,7 +156,9 @@ const commonProps = computed(() => ({
   parentFrameIndex: props.parentFrameIndex,
   zoomLevel: props.zoomLevel,
   reportStyles: props.reportStyles,
-  tableStyles: props.tableStyles
+  tableStyles: props.tableStyles,
+  pageNumber: props.pageNumber,
+  totalPages: props.totalPages
 }));
 
 

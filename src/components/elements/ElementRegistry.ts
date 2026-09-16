@@ -174,23 +174,23 @@ export class ElementRegistry {
       }
     });
 
-    this.registerElement({
-      type: 'break',
-      name: 'elementNames.break',
-      icon: '⤓',
-      iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>',
-      category: 'basic',
-      defaultProps: {
-        type: 'break',
-        x: 0,
-        y: 0,
-        width: 100,
-        height: 1, // Breaks are usually thin
-        breakType: 'Page',
-        // New properties
-        isResetPageNumber: false
-      }
-    });
+    // this.registerElement({
+    //   type: 'break',
+    //   name: 'elementNames.break',
+    //   icon: '⤓',
+    //   iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>',
+    //   category: 'basic',
+    //   defaultProps: {
+    //     type: 'break',
+    //     x: 0,
+    //     y: 0,
+    //     width: 100,
+    //     height: 1, // Breaks are usually thin
+    //     breakType: 'Page',
+    //     // New properties
+    //     isResetPageNumber: false
+    //   }
+    // });
 
     this.registerElement({
       type: 'frame',
