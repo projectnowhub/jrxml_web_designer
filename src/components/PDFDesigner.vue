@@ -992,11 +992,6 @@ function createNewFile() {
         } as any,
       ],
     },
-    {
-      type: BAND_TYPE_CONSTANTS.SUMMARY as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60,
-      elements: [],
-    },
   ];
 
   pageCount.value = 1;
@@ -1221,11 +1216,6 @@ const bands = ref<Band[]>([
         vAlign: "Middle",
       } as any,
     ],
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.SUMMARY as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60,
-    elements: [],
   },
 ]);
 
