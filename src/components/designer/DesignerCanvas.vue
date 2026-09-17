@@ -437,10 +437,6 @@
                       </div>
                     </div>
                   </div>
-                  <div
-                    class="band-resize-handle"
-                    @mousedown.stop="startResizingBand($event, detailBandIndex)"
-                  ></div>
                 </div>
 
                 <!-- 5. ALL PAGES: Column Footer Band (if enabled) -->
@@ -1692,18 +1688,31 @@ onBeforeUnmount(() => {
 
 .band-resize-handle {
   position: absolute;
-  bottom: -2px;
+  bottom: -4px;
   left: 0;
   right: 0;
-  height: 5px;
+  height: 8px;
   cursor: ns-resize;
-  background-color: rgba(74, 144, 226, 0.3);
+  background-color: rgba(74, 144, 226, 0.4);
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease;
+  z-index: 25;
 }
 
-.band:hover .band-resize-handle {
+.band:hover .band-resize-handle,
+.band-resize-handle:hover {
   opacity: 1;
+  background-color: rgba(74, 144, 226, 0.9);
+}
+
+/* Bottom bands: handle is located at the TOP edge so dragging up expands the band */
+.column-footer-band .band-resize-handle,
+.summary-band .band-resize-handle,
+.page-footer-band .band-resize-handle {
+  top: -4px;
+  bottom: auto;
 }
 
 .alignment-lines {

@@ -52,8 +52,18 @@ export function getElementDisplayInfoWithoutBand(
     } else if ((element as any).fieldName) {
       info = `$F{${(element as any).fieldName}}`;
     }
-  } else if (element.type === "image" && (element as any).imagePath) {
-    info = (element as any).imagePath;
+  } else if (element.type === "image") {
+    if ((element as any).imagePath) {
+      info = (element as any).imagePath;
+    } else if ((element as any).imageExpression) {
+      const expr = ((element as any).imageExpression || "").trim();
+      if (expr.startsWith('"data:image/') || expr.startsWith("data:image/")) {
+        info = "[Embedded Image]";
+      } else {
+        const cleaned = expr.replace(/^"|"$/g, "");
+        info = `${cleaned.substring(0, 15)}${cleaned.length > 15 ? "..." : ""}`;
+      }
+    }
   } else if (element.type === "barcode" && (element as any).codeExpression) {
     info = `${(element as any).codeExpression.substring(0, 15)}${(element as any).codeExpression.length > 15 ? "..." : ""}`;
   } else if (

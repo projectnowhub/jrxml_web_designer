@@ -840,9 +840,12 @@ export interface DraggingInfo {
   parentFrameIndex?: number;
   startX: number;
   startY: number;
+  origElementX?: number;
+  origElementY?: number;
   lastTargetBandIndex?: number;
   lastTargetFrameIndex?: number; // records the index of the most recent target Frame
   sourcePageIndex?: number;
+  lastTargetPageIndex?: number;
 }
 
 // Selection box interface

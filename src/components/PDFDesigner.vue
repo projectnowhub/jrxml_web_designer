@@ -2673,7 +2673,7 @@ const startDragging = (
   showBottomPanel.value = false;
 
   const band = bands.value[bandIndex];
-  let draggedElement;
+  let draggedElement: DesignElement | undefined;
 
   if (parentFrameIndex !== undefined) {
     const frame = band?.elements[parentFrameIndex] as FrameElement;
@@ -2685,50 +2685,43 @@ const startDragging = (
   }
 
   if (draggedElement) {
-    // Get the current zoom scale
     const currentZoom = zoomLevel.value;
 
-    // Get the page sheet element's position info, for accurate coordinate calculations
     const targetSheet =
       ((event.target as HTMLElement)?.closest(".page-sheet") as HTMLElement) ||
       (document.querySelector(".page-sheet") as HTMLElement) ||
       (document.querySelector(".paper") as HTMLElement);
-    let paperOffsetX = 0;
-    let paperOffsetY = 0;
     let sourcePageIndex = 0;
-
-    if (targetSheet) {
-      const paperRect = targetSheet.getBoundingClientRect();
-      paperOffsetX = paperRect.left;
-      paperOffsetY = paperRect.top;
-      if (targetSheet.dataset.pageIndex !== undefined) {
-        sourcePageIndex = parseInt(targetSheet.dataset.pageIndex, 10);
-      }
+    if (targetSheet && targetSheet.dataset.pageIndex !== undefined) {
+      sourcePageIndex = parseInt(targetSheet.dataset.pageIndex, 10);
+    } else if ((draggedElement as any).pageIndex !== undefined) {
+      sourcePageIndex = (draggedElement as any).pageIndex;
     }
 
-    // Store the drag info, accounting for the zoom scale
     draggingInfo.value = {
       bandIndex,
       elementIndex,
       parentFrameIndex,
-      startX: (event.clientX - paperOffsetX) / currentZoom - draggedElement.x,
-      startY: (event.clientY - paperOffsetY) / currentZoom - draggedElement.y,
-      lastTargetBandIndex: bandIndex, // Initialize to the current band index
+      startX: event.clientX,
+      startY: event.clientY,
+      origElementX: draggedElement.x,
+      origElementY: draggedElement.y,
+      lastTargetBandIndex: bandIndex,
+      sourcePageIndex,
+      lastTargetPageIndex: sourcePageIndex,
     };
 
     isDraggingOrResizing.value = true;
 
-    // Use the cached event handler functions to avoid creating new ones on every drag
     if (!cachedMouseMoveHandler) {
       cachedMouseMoveHandler = (e: MouseEvent) => {
         if (draggingInfo.value) {
           const currentBand = bands.value[draggingInfo.value.bandIndex];
-          let currentElement;
+          let currentElement: DesignElement | undefined;
           let containerWidth =
             paperWidth.value -
             (reportProperties.value?.leftMargin || 0) -
             (reportProperties.value?.rightMargin || 0);
-          let containerHeight = null; // Frame height limit
 
           if (draggingInfo.value.parentFrameIndex !== undefined) {
             const frame =
@@ -2736,7 +2729,6 @@ const startDragging = (
             if (frame && frame.type === "frame" && frame.elements) {
               currentElement = frame.elements[draggingInfo.value.elementIndex];
               containerWidth = frame.width;
-              containerHeight = frame.height;
             }
           } else {
             currentElement =
@@ -2744,334 +2736,139 @@ const startDragging = (
           }
 
           if (currentBand && currentElement) {
-            // Get the current zoom scale
             const currentZoom = zoomLevel.value;
 
-            // Calculate the element's position relative to the paper, accounting for the zoom scale
-            // Note: since padding is now used, element coordinates are relative to the content area
-            // Calculate the available width; no need to divide by currentZoom since the newX calculation already accounts for zoom
-            // const availableWidth = ... (already calculated above as containerWidth)
+            // Direct delta from starting mouse position (1:1 cursor following, zero jitter)
+            const deltaX =
+              (e.clientX - draggingInfo.value.startX) / currentZoom;
+            const deltaY =
+              (e.clientY - draggingInfo.value.startY) / currentZoom;
 
-            // Get the paper element's position info, for more accurate coordinate calculations
-            // Get the active page sheet element's position info
-            let paperOffsetX = 0;
-            let paperOffsetY = 0;
-            const elementsAtPoint = document.elementsFromPoint(
-              e.clientX,
-              e.clientY,
-            );
-            const sourcePageIndex = draggingInfo.value.sourcePageIndex;
-            const activeSheet =
-              (elementsAtPoint.find((el) =>
-                el.classList.contains("page-sheet"),
-              ) as HTMLElement) ||
-              (sourcePageIndex !== undefined
-                ? (document.querySelectorAll(".page-sheet")[
-                    sourcePageIndex
-                  ] as HTMLElement)
-                : null) ||
-              (document.querySelector(".page-sheet") as HTMLElement) ||
-              (document.querySelector(".paper") as HTMLElement);
+            let newX = (draggingInfo.value.origElementX ?? 0) + deltaX;
+            let newY = (draggingInfo.value.origElementY ?? 0) + deltaY;
 
-            const paperEl =
-              activeSheet || (document.querySelector(".paper") as HTMLElement);
-            if (paperEl) {
-              const paperRect = paperEl.getBoundingClientRect();
-              paperOffsetX = paperRect.left;
-              paperOffsetY = paperRect.top;
-            }
-
-            // Calculate the new X and Y coordinates, accounting for zoom and offset
-            let newX =
-              (e.clientX - paperOffsetX) / currentZoom -
-              draggingInfo.value.startX;
-            let newY =
-              (e.clientY - paperOffsetY) / currentZoom -
-              draggingInfo.value.startY;
-
-            // If inside a Frame, don't constrain the coordinates, allowing the element to move outside the Frame
-            if (draggingInfo.value.parentFrameIndex !== undefined) {
-              // No constraint applied
-            } else {
-              // Inside a Band, constrain the X coordinate
+            // Inside band, constrain X coordinate to container width
+            if (draggingInfo.value.parentFrameIndex === undefined) {
               newX = Math.max(
                 0,
                 Math.min(newX, containerWidth - currentElement.width),
               );
-
-              // Band Y-constraint logic for the active page sheet
-              const sheetBands = activeSheet.querySelectorAll(".band");
-              const firstBandElement = sheetBands[0] as HTMLElement;
-              const lastBandElement = sheetBands[
-                sheetBands.length - 1
-              ] as HTMLElement;
-
-              // Calculate the position of the current band on the page
-              const currentBandElement =
-                (activeSheet.querySelector(
-                  `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
-                ) as HTMLElement) || (sheetBands[0] as HTMLElement);
-              let currentBandTopInPage = 0;
-
-              if (
-                firstBandElement &&
-                lastBandElement &&
-                currentBandElement &&
-                paperEl
-              ) {
-                const firstBandRect = firstBandElement.getBoundingClientRect();
-                const lastBandRect = lastBandElement.getBoundingClientRect();
-                const currentBandRect =
-                  currentBandElement.getBoundingClientRect();
-                const paperRect = paperEl.getBoundingClientRect();
-
-                // Calculate the positions of the first and last bands relative to the page
-                const firstBandTopInPage =
-                  (firstBandRect.top - paperRect.top) / currentZoom;
-                const lastBandBottomInPage =
-                  (lastBandRect.bottom - paperRect.top) / currentZoom;
-                currentBandTopInPage =
-                  (currentBandRect.top - paperRect.top) / currentZoom;
-
-                // Calculate the element's absolute position on the page (relative to the entire page)
-                const elementTopInPage = currentBandTopInPage + newY;
-
-                // Constrain the element's top so it doesn't exceed the first band's top boundary
-                if (elementTopInPage < firstBandTopInPage) {
-                  const adjustment = firstBandTopInPage - elementTopInPage;
-                  newY += adjustment;
-                }
-
-                // For elements in the last band, constrain their bottom so it doesn't exceed the last band's bottom boundary
-                if (draggingInfo.value.bandIndex === bands.value.length - 1) {
-                  // Calculate the element's maximum Y coordinate within the last band
-                  const maxRelativeY =
-                    lastBandBottomInPage -
-                    currentBandTopInPage -
-                    currentElement.height;
-                  newY = Math.min(newY, maxRelativeY);
-                }
-              }
             }
 
-            // Apply auto-snap functionality
+            // Apply auto-snap to grid
             if (enableSnapToGrid.value) {
-              // Define the grid size as 3 pixels, reducing the snap distance
               const gridSize = 3;
-
-              // Snap the X coordinate
               const remainderX = newX % gridSize;
-              if (remainderX < gridSize / 2) {
-                newX = newX - remainderX;
-              } else {
-                newX = newX + (gridSize - remainderX);
-              }
-
-              // Snap the Y coordinate
+              newX =
+                remainderX < gridSize / 2
+                  ? newX - remainderX
+                  : newX + (gridSize - remainderX);
               const remainderY = newY % gridSize;
-              if (remainderY < gridSize / 2) {
-                newY = newY - remainderY;
-              } else {
-                newY = newY + (gridSize - remainderY);
-              }
+              newY =
+                remainderY < gridSize / 2
+                  ? newY - remainderY
+                  : newY + (gridSize - remainderY);
             }
 
             // Apply alignment-line snapping
             if (enableSnapToAlignment.value) {
-              // Create a temporary element object for alignment-line detection
               const tempElement = { ...currentElement, x: newX, y: newY };
               const snapInfo = detectAlignmentLines(
                 tempElement,
                 draggingInfo.value.bandIndex,
                 false,
               );
-
-              // Apply horizontal snapping
               if (snapInfo.horizontal) {
                 newX += snapInfo.horizontal.offset;
               }
-
-              // Apply vertical snapping
               if (snapInfo.vertical) {
                 newY += snapInfo.vertical.offset;
               }
             }
 
-            // Ensure the coordinate values are integers
+            // Update current element position
             currentElement.x = Math.round(newX);
             currentElement.y = Math.round(newY);
 
-            // If the element moves into a different band, constrain the Y coordinate so it doesn't exceed the band's height
-            if (
-              highlightedBandIndex.value !== null &&
-              highlightedBandIndex.value !== draggingInfo.value.bandIndex
-            ) {
-              const targetBand = bands.value[highlightedBandIndex.value];
-              if (targetBand) {
-                const maxY = targetBand.height - currentElement.height;
-                // Calculate the element's Y coordinate relative to the target band
-                const bandElements = document.querySelectorAll(".band");
-                const currentBandElement = bandElements[
-                  draggingInfo.value.bandIndex
-                ] as HTMLElement;
-                const targetBandElement = bandElements[
-                  highlightedBandIndex.value
-                ] as HTMLElement;
-
-                if (currentBandElement && targetBandElement) {
-                  const currentBandRect =
-                    currentBandElement.getBoundingClientRect();
-                  const targetBandRect =
-                    targetBandElement.getBoundingClientRect();
-                  const relativeY =
-                    newY +
-                    (currentBandRect.top - targetBandRect.top) / currentZoom;
-
-                  // Constrain the relative Y coordinate
-                  if (relativeY > maxY) {
-                    // Adjust the element's actual Y coordinate
-                    currentElement.y = newY - (relativeY - maxY);
-                  }
-                }
-              }
-            }
-
             // Detect alignment lines (using the final position)
-            // Use the band index the element currently belongs to, ensuring consistent alignment-line detection
             detectAlignmentLines(currentElement, draggingInfo.value.bandIndex);
 
-            // Update and display the coordinate info
-            // Show the element's relative coordinate values
-            let relativeX = Math.round(newX);
-            let relativeY = Math.round(newY);
+            // Fast target band detection using elementFromPoint
+            const elUnderPoint = document.elementFromPoint(
+              e.clientX,
+              e.clientY,
+            ) as HTMLElement | null;
+            const bandUnderMouse = elUnderPoint?.closest(
+              ".band",
+            ) as HTMLElement | null;
+            const sheetUnderMouse = (elUnderPoint?.closest(".page-sheet") ||
+              bandUnderMouse?.closest(".page-sheet")) as HTMLElement | null;
 
-            // Reuse the already-retrieved paperElement variable
-            if (paperEl) {
-              const bandElements = document.querySelectorAll(".band");
-
-              // Calculate the element's coordinates relative to the target band while dragging
-              if (
-                highlightedBandIndex.value !== null &&
-                bandElements[highlightedBandIndex.value]
-              ) {
-                // If there's a highlighted band (the band the mouse is currently over), calculate the element's coordinates relative to it
-                const targetBandElement = bandElements[
-                  highlightedBandIndex.value
-                ] as HTMLElement;
-                const targetBandRect =
-                  targetBandElement.getBoundingClientRect();
-
-                // Fix: use the element's actual Y coordinate (newY) rather than the mouse position to calculate the relative Y coordinate
-                // Get the top position of the band the current element belongs to
-                const currentBandElement = bandElements[
-                  draggingInfo.value.bandIndex
-                ] as HTMLElement;
-                const currentBandRect =
-                  currentBandElement.getBoundingClientRect();
-
-                // If the element is in a different band, the calculation must be adjusted
-                if (
-                  highlightedBandIndex.value !== draggingInfo.value.bandIndex
-                ) {
-                  // The element moved to a different band; calculate the Y coordinate relative to the new band
-                  relativeY = Math.round(
-                    newY +
-                      (currentBandRect.top - targetBandRect.top) / currentZoom,
-                  );
-                } else {
-                  // The element is within the same band; use the element's Y coordinate
-                  relativeY = Math.round(newY);
-                }
-
-                // Ensure the Y coordinate is relative to the target band
-                if (relativeY < 0) {
-                  relativeY = 0;
-                }
-
-                // Constrain the moved element's relative Y value so it doesn't exceed the target band's height minus the element's height
-                const targetBand = bands.value[highlightedBandIndex.value];
-                if (targetBand && currentElement) {
-                  const maxY = targetBand.height - currentElement.height;
-                  if (relativeY > maxY) {
-                    relativeY = maxY;
-                  }
-                }
-              }
-            }
-
-            dragCoordinates.value = {
-              x: relativeX,
-              y: relativeY,
-              visible: true,
-              bandName: "",
-            };
-
-            // Use the DOM elements' actual positions to calculate the target band, for greater accuracy
-            // Reuse the already-retrieved paperElement variable
             let targetBandIndex = draggingInfo.value.bandIndex;
-            let isOverBand = false;
-
-            const bandUnderMouse = (
-              document.elementFromPoint(e.clientX, e.clientY) as HTMLElement
-            )?.closest(".band") as HTMLElement;
-
             if (
               bandUnderMouse &&
               bandUnderMouse.dataset.bandIndex !== undefined
             ) {
               targetBandIndex = parseInt(bandUnderMouse.dataset.bandIndex, 10);
-              isOverBand = true;
-            }
-
-            // Only update the highlighted band when the mouse is over some band
-            if (isOverBand) {
               highlightedBandIndex.value = targetBandIndex;
+              draggingInfo.value.lastTargetBandIndex = targetBandIndex;
             }
 
-            // Log once the dragged element has moved into the target band
             if (
-              isOverBand &&
-              targetBandIndex !== draggingInfo.value.bandIndex &&
-              targetBandIndex !== draggingInfo.value.lastTargetBandIndex
+              sheetUnderMouse &&
+              sheetUnderMouse.dataset.pageIndex !== undefined
             ) {
-              const sourceBand = bands.value[draggingInfo.value.bandIndex];
-              const targetBand = bands.value[targetBandIndex];
-              if (sourceBand && targetBand) {
-                console.log(
-                  `Element moved from ${getBandDisplayName(sourceBand.type)} to ${getBandDisplayName(targetBand.type)}`,
-                );
-                // Update the last target band index
-                draggingInfo.value.lastTargetBandIndex = targetBandIndex;
+              draggingInfo.value.lastTargetPageIndex = parseInt(
+                sheetUnderMouse.dataset.pageIndex,
+                10,
+              );
+            }
 
-                // TODO: also constrain the moved element's relative Y value so it doesn't exceed the target band's height minus the element's height
+            // Display coordinates relative to target band
+            let relativeX = Math.max(0, Math.round(newX));
+            let relativeY = Math.round(newY);
+
+            if (
+              bandUnderMouse &&
+              targetBandIndex !== draggingInfo.value.bandIndex
+            ) {
+              const sourceSheet =
+                document.querySelector(
+                  `.page-sheet[data-page-index="${draggingInfo.value.sourcePageIndex}"]`,
+                ) ||
+                document.querySelector(".page-sheet") ||
+                document.querySelector(".paper");
+              const sourceBandEl = sourceSheet?.querySelector(
+                `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
+              ) as HTMLElement | null;
+              if (sourceBandEl) {
+                const sourceRect = sourceBandEl.getBoundingClientRect();
+                const targetRect = bandUnderMouse.getBoundingClientRect();
+                relativeY = Math.round(
+                  newY + (sourceRect.top - targetRect.top) / currentZoom,
+                );
               }
             }
+            if (relativeY < 0) relativeY = 0;
 
-            // Update the position of the coordinate-display element so it follows the mouse
+            const targetBand = bands.value[targetBandIndex];
+            const bandName = targetBand
+              ? getBandDisplayName(targetBand.type) + " - "
+              : "";
+
+            dragCoordinates.value = {
+              x: relativeX,
+              y: relativeY,
+              visible: true,
+              bandName,
+            };
+
             const coordinatesElement = document.querySelector(
               ".coordinates-display",
             ) as HTMLElement;
             if (coordinatesElement) {
-              // Get the name of the band the mouse is currently over
-              let bandName = "";
-              if (
-                highlightedBandIndex.value !== null &&
-                bands.value[highlightedBandIndex.value] !== undefined
-              ) {
-                const currentBand = bands.value[highlightedBandIndex.value];
-                if (currentBand) {
-                  bandName = getBandDisplayName(currentBand.type) + " - ";
-                }
-              }
-
-              // Coordinate display accounting for the zoom scale
               coordinatesElement.style.left = e.clientX + 10 + "px";
               coordinatesElement.style.top = e.clientY - 30 + "px";
-
-              // Update dragCoordinates so the template shows the correct coordinates and band name
-              dragCoordinates.value.x = relativeX;
-              dragCoordinates.value.y = relativeY;
-              dragCoordinates.value.bandName = bandName;
             }
           }
         }
@@ -3080,15 +2877,13 @@ const startDragging = (
 
     if (!cachedMouseUpHandler) {
       cachedMouseUpHandler = (e: MouseEvent) => {
-        // Save state to history
         saveStateToHistory();
 
         if (draggingInfo.value) {
           const currentBand = bands.value[draggingInfo.value.bandIndex];
-          let currentElement;
+          let currentElement: DesignElement | undefined;
 
           if (draggingInfo.value.parentFrameIndex !== undefined) {
-            // Add a safety check
             if (
               currentBand &&
               currentBand.elements &&
@@ -3109,12 +2904,31 @@ const startDragging = (
           }
 
           if (currentBand && currentElement) {
-            // 1. Get the target Band and target Page Sheet
-            const sheetUnderMouse = (
-              document.elementFromPoint(e.clientX, e.clientY) as HTMLElement
-            )?.closest(".page-sheet") as HTMLElement;
+            // Target band and sheet identification
+            const elUnderPoint = document.elementFromPoint(
+              e.clientX,
+              e.clientY,
+            ) as HTMLElement | null;
+            const bandUnderMouse = elUnderPoint?.closest(
+              ".band",
+            ) as HTMLElement | null;
+            const sheetUnderMouse = (elUnderPoint?.closest(".page-sheet") ||
+              bandUnderMouse?.closest(".page-sheet")) as HTMLElement | null;
+
+            let targetBandIndex =
+              draggingInfo.value.lastTargetBandIndex ??
+              draggingInfo.value.bandIndex;
+            if (
+              bandUnderMouse &&
+              bandUnderMouse.dataset.bandIndex !== undefined
+            ) {
+              targetBandIndex = parseInt(bandUnderMouse.dataset.bandIndex, 10);
+            }
+
             let targetSheetPageIndex =
-              (draggingInfo.value as any)?.sourcePageIndex ?? 0;
+              draggingInfo.value.lastTargetPageIndex ??
+              draggingInfo.value.sourcePageIndex ??
+              0;
             if (
               sheetUnderMouse &&
               sheetUnderMouse.dataset.pageIndex !== undefined
@@ -3125,21 +2939,9 @@ const startDragging = (
               );
             }
 
-            let targetBandIndex = draggingInfo.value.bandIndex;
-
-            // If there is a last-highlighted band index and it's valid, use it
-            if (
-              draggingInfo.value.lastTargetBandIndex !== undefined &&
-              draggingInfo.value.lastTargetBandIndex >= 0 &&
-              draggingInfo.value.lastTargetBandIndex < bands.value.length
-            ) {
-              targetBandIndex = draggingInfo.value.lastTargetBandIndex;
-            }
-
             const targetBand = bands.value[targetBandIndex];
 
-            // 2. Calculate the element's absolute coordinates on the page (or its coordinates relative to the target Band)
-            // Calculate the Source Parent's coordinates relative to the Source Band
+            // Source parent coordinates if inside a frame
             let sourceParentRelX = 0;
             let sourceParentRelY = 0;
             if (draggingInfo.value.parentFrameIndex !== undefined) {
@@ -3153,47 +2955,57 @@ const startDragging = (
               }
             }
 
-            // Calculate the element's coordinates relative to the Source Band
             const elementRelSourceBandX = sourceParentRelX + currentElement.x;
             const elementRelSourceBandY = sourceParentRelY + currentElement.y;
 
-            // Calculate the Source Band's offset relative to the Target Band
-            const activePageSheet =
-              sheetUnderMouse ||
-              (document.querySelectorAll(".page-sheet")[
-                targetSheetPageIndex
-              ] as HTMLElement) ||
-              (document.querySelector(".page-sheet") as HTMLElement) ||
-              (document.querySelector(".paper") as HTMLElement);
+            // Coordinate conversion between source band and target band/sheet
+            const sourcePageIndex = draggingInfo.value.sourcePageIndex ?? 0;
+            const currentZoom = zoomLevel.value;
+
+            const sourceSheetEl =
+              document.querySelector(
+                `.page-sheet[data-page-index="${sourcePageIndex}"]`,
+              ) ||
+              document.querySelector(".page-sheet") ||
+              document.querySelector(".paper");
+            const targetSheetEl =
+              document.querySelector(
+                `.page-sheet[data-page-index="${targetSheetPageIndex}"]`,
+              ) ||
+              document.querySelector(".page-sheet") ||
+              document.querySelector(".paper");
 
             const sourceBandEl =
-              (activePageSheet?.querySelector(
+              (sourceSheetEl?.querySelector(
                 `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
               ) as HTMLElement) ||
               document.querySelectorAll(".band")[draggingInfo.value.bandIndex];
             const targetBandEl =
-              (activePageSheet?.querySelector(
+              (targetSheetEl?.querySelector(
                 `.band[data-band-index="${targetBandIndex}"]`,
               ) as HTMLElement) ||
               document.querySelectorAll(".band")[targetBandIndex];
 
-            if (!sourceBandEl || !targetBandEl) return;
+            let elementRelTargetBandX = elementRelSourceBandX;
+            let elementRelTargetBandY = elementRelSourceBandY;
 
-            const sourceBandElement = sourceBandEl.getBoundingClientRect();
-            const targetBandElement = targetBandEl.getBoundingClientRect();
-            const currentZoom = zoomLevel.value;
-            const bandOffsetY =
-              (sourceBandElement.top - targetBandElement.top) / currentZoom;
+            if (
+              sourceBandEl &&
+              targetBandEl &&
+              (draggingInfo.value.bandIndex !== targetBandIndex ||
+                sourcePageIndex !== targetSheetPageIndex)
+            ) {
+              const sourceBandRect = sourceBandEl.getBoundingClientRect();
+              const targetBandRect = targetBandEl.getBoundingClientRect();
+              const bandOffsetY =
+                (sourceBandRect.top - targetBandRect.top) / currentZoom;
+              elementRelTargetBandY = elementRelSourceBandY + bandOffsetY;
+            }
 
-            const elementRelTargetBandX = elementRelSourceBandX;
-            const elementRelTargetBandY = elementRelSourceBandY + bandOffsetY;
-
-            // 3. Look for a target Frame within the Target Band
+            // Find target frame within target band (if dropped inside a frame)
             let targetFrameIndex = -1;
             if (targetBand && targetBand.elements) {
-              // Iterate over the Frames in the Target Band
               for (let i = targetBand.elements.length - 1; i >= 0; i--) {
-                // Avoid dropping a Frame into itself: if we're in the same Band and the Frame being iterated is the one being dragged, skip it
                 if (
                   targetBandIndex === draggingInfo.value.bandIndex &&
                   draggingInfo.value.parentFrameIndex === undefined &&
@@ -3205,7 +3017,6 @@ const startDragging = (
                 const el = targetBand.elements[i];
                 if (!el) continue;
                 if (el.type === "frame") {
-                  // Check intersection using element center
                   const centerX =
                     elementRelTargetBandX + currentElement.width / 2;
                   const centerY =
@@ -3224,16 +3035,14 @@ const startDragging = (
               }
             }
 
-            // 4. Determine whether the container changed
             const isSameBand = draggingInfo.value.bandIndex === targetBandIndex;
             const isSameFrame =
               draggingInfo.value.parentFrameIndex ===
               (targetFrameIndex === -1 ? undefined : targetFrameIndex);
+            const isSamePage = sourcePageIndex === targetSheetPageIndex;
 
             if ((!isSameBand || !isSameFrame) && targetBand) {
               // Reparenting
-
-              // Grab the target Frame reference up front (splice would otherwise shift the indices)
               let targetFrame: FrameElement | null = null;
               if (targetFrameIndex !== -1) {
                 targetFrame = targetBand.elements[
@@ -3241,8 +3050,8 @@ const startDragging = (
                 ] as FrameElement;
               }
 
-              // Remove from Source
-              let element;
+              // Remove from source
+              let element: DesignElement | undefined;
               if (draggingInfo.value.parentFrameIndex !== undefined) {
                 const frame = bands.value[draggingInfo.value.bandIndex]
                   ?.elements[
@@ -3261,15 +3070,10 @@ const startDragging = (
               }
 
               if (element) {
-                // Add to Target
                 if (targetFrame) {
                   if (!targetFrame.elements) targetFrame.elements = [];
-
-                  // Convert to Frame Rel Coords
                   element.x = Math.round(elementRelTargetBandX - targetFrame.x);
                   element.y = Math.round(elementRelTargetBandY - targetFrame.y);
-
-                  // Limit
                   element.x = Math.max(0, element.x);
                   element.y = Math.max(0, element.y);
                   if (element.x + element.width > targetFrame.width)
@@ -3279,6 +3083,7 @@ const startDragging = (
                       0,
                       targetFrame.height - element.height,
                     );
+                  delete (element as any).pageIndex;
 
                   targetFrame.elements.push(element);
                   selectElement(
@@ -3288,12 +3093,14 @@ const startDragging = (
                     targetFrameIndex,
                   );
                 } else {
-                  // Add to Band
-                  element.x = Math.round(elementRelTargetBandX);
-                  element.y = Math.round(elementRelTargetBandY);
+                  element.x = Math.max(0, Math.round(elementRelTargetBandX));
+                  element.y = Math.max(0, Math.round(elementRelTargetBandY));
 
-                  // Limit Y >= 0
-                  element.y = Math.max(0, element.y);
+                  if (targetBand.type === BAND_TYPE_CONSTANTS.DETAIL) {
+                    (element as any).pageIndex = targetSheetPageIndex;
+                  } else {
+                    delete (element as any).pageIndex;
+                  }
 
                   targetBand.elements.push(element);
                   selectElement(
@@ -3303,12 +3110,22 @@ const startDragging = (
                 }
               }
             } else {
-              // Moved within the same container; use the coordinate values shown while dragging
-              // Note: dragCoordinates may only have updated the displayed value — the actual value was already updated in mousemove via the currentElement reference
-              // This mainly just ensures integers and bounds
-              currentElement.x = Math.round(currentElement.x);
-              currentElement.y = Math.round(currentElement.y);
-              if (currentElement.y < 0) currentElement.y = 0;
+              // Within the same container
+              if (
+                isSameBand &&
+                !isSamePage &&
+                currentBand.type === BAND_TYPE_CONSTANTS.DETAIL
+              ) {
+                // Moved detail element across pages
+                currentElement.y = Math.max(
+                  0,
+                  Math.round(elementRelTargetBandY),
+                );
+                (currentElement as any).pageIndex = targetSheetPageIndex;
+              } else {
+                currentElement.x = Math.max(0, Math.round(currentElement.x));
+                currentElement.y = Math.max(0, Math.round(currentElement.y));
+              }
             }
 
             if (targetSheetPageIndex >= pageCount.value) {
@@ -3317,27 +3134,25 @@ const startDragging = (
           }
         }
 
-        // Clear the highlight and coordinate display
+        // Clear highlight and coordinate display
         highlightedBandIndex.value = null;
         dragCoordinates.value.visible = false;
-
-        // Clear the alignment lines
         clearAlignmentLines();
-
         draggingInfo.value = null;
         isDraggingOrResizing.value = false;
 
-        // Update JRXML
-        updateJRXML();
-
-        // Remove the event listeners
+        // Remove event listeners
         if (cachedMouseMoveHandler) {
           document.removeEventListener("mousemove", cachedMouseMoveHandler);
+          cachedMouseMoveHandler = null;
         }
         if (cachedMouseUpHandler) {
           document.removeEventListener("mouseup", cachedMouseUpHandler);
           cachedMouseUpHandler = null;
         }
+
+        // Update JRXML
+        updateJRXML();
       };
     }
 
@@ -3346,7 +3161,6 @@ const startDragging = (
     document.addEventListener("mouseup", cachedMouseUpHandler);
 
     // Immediately fire a mousemove event once, so the element follows the mouse right away
-    // This fixes the issue where moving the mouse within 100ms of pressing the mouse button left the element lagging behind the mouse position
     setTimeout(() => {
       if (cachedMouseMoveHandler) {
         cachedMouseMoveHandler(event);
@@ -3628,6 +3442,9 @@ const updateJRXML = () => {
     ) {
       return;
     }
+
+    // Ensure bands fit within the A4 page height and detail takes the remaining space
+    ensureBandsFitPage();
 
     const content = generateJRXMLContent(
       {
@@ -5090,98 +4907,182 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
 
   // Get the current zoom scale
   const currentZoom = zoomLevel.value;
-  const startHeight = bands.value[bandIndex].height;
+  const minHeight = BAND_CONSTANTS.MIN_HEIGHT;
 
-  // Get the paper element's position info, for more accurate coordinate calculations
-  const paperElement = document.querySelector(".paper") as HTMLElement;
-  let paperOffsetY = 0;
+  // Detail band does not have its own resize handle; it occupies whatever space remains
+  const detailIndex = bands.value.findIndex(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+  if (bandIndex === detailIndex) return;
 
-  if (paperElement) {
-    const paperRect = paperElement.getBoundingClientRect();
-    // Offset accounting for the zoom scale
-    paperOffsetY = paperRect.top;
+  const columnFooterIndex = bands.value.findIndex(
+    (b) => b.type === BAND_TYPE_CONSTANTS.COLUMN_FOOTER,
+  );
+  const summaryIndex = bands.value.findIndex(
+    (b) => b.type === BAND_TYPE_CONSTANTS.SUMMARY,
+  );
+  const pageFooterIndex = bands.value.findIndex(
+    (b) => b.type === BAND_TYPE_CONSTANTS.PAGE_FOOTER,
+  );
+
+  const currentBandType = bands.value[bandIndex]?.type;
+  // Bottom bands (Column Footer, Summary, Page Footer) have their handle at the TOP edge:
+  // Dragging UP (deltaY < 0) increases height; dragging DOWN (deltaY > 0) decreases height.
+  // Top bands (Title, Page Header, Column Header) have their handle at the BOTTOM edge:
+  // Dragging DOWN (deltaY > 0) increases height; dragging UP (deltaY < 0) decreases height.
+  const isBottomBand =
+    currentBandType === BAND_TYPE_CONSTANTS.COLUMN_FOOTER ||
+    currentBandType === BAND_TYPE_CONSTANTS.SUMMARY ||
+    currentBandType === BAND_TYPE_CONSTANTS.PAGE_FOOTER ||
+    currentBandType === BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER;
+
+  // Available height in the A4 printable area
+  const topMargin = reportProperties.value?.topMargin || 0;
+  const bottomMargin = reportProperties.value?.bottomMargin || 0;
+  const availableHeight = paperHeight.value - topMargin - bottomMargin;
+
+  // Snapshot starting heights of all bands
+  const startHeights: number[] = bands.value.map((b) => b.height || 0);
+  const startTargetHeight: number = startHeights[bandIndex] ?? minHeight;
+
+  // Identify bands directly above the target band in proximity order (nearest first)
+  const aboveIndices: number[] = [];
+  if (bandIndex === pageFooterIndex) {
+    if (summaryIndex !== -1 && (startHeights[summaryIndex] ?? 0) > 0) {
+      aboveIndices.push(summaryIndex);
+    }
+    if (
+      columnFooterIndex !== -1 &&
+      (startHeights[columnFooterIndex] ?? 0) > 0
+    ) {
+      aboveIndices.push(columnFooterIndex);
+    }
+    if (detailIndex !== -1) {
+      aboveIndices.push(detailIndex);
+    }
+  } else if (bandIndex === summaryIndex) {
+    if (
+      columnFooterIndex !== -1 &&
+      (startHeights[columnFooterIndex] ?? 0) > 0
+    ) {
+      aboveIndices.push(columnFooterIndex);
+    }
+    if (detailIndex !== -1) {
+      aboveIndices.push(detailIndex);
+    }
+  } else if (bandIndex === columnFooterIndex) {
+    if (detailIndex !== -1) {
+      aboveIndices.push(detailIndex);
+    }
   }
+
+  // Maximum growth for bottom band: limited by space available in the bands above it
+  let maxBottomGrowth = 0;
+  for (const idx of aboveIndices) {
+    maxBottomGrowth += Math.max(
+      0,
+      (startHeights[idx] ?? minHeight) - minHeight,
+    );
+  }
+  const maxBottomShrink = Math.max(0, startTargetHeight - minHeight);
+
+  // Total height of all other bands excluding the band being resized and Detail band (for top bands)
+  let otherBandsHeight = 0;
+  bands.value.forEach((b, i) => {
+    if (i !== bandIndex && i !== detailIndex) {
+      otherBandsHeight += startHeights[i] || 0;
+    }
+  });
+
+  const maxTopGrowth = Math.max(
+    minHeight,
+    availableHeight - otherBandsHeight - minHeight,
+  );
 
   // Show the band height adjustment tooltip
   const band = bands.value[bandIndex];
   resizingBandInfo.visible = true;
   resizingBandInfo.bandName = getBandDisplayName(band.type);
-  resizingBandInfo.height = startHeight;
-
-  const detailIndex = bands.value.findIndex(
-    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
-  );
-  const startDetailHeight =
-    detailIndex !== -1 && bands.value[detailIndex]
-      ? bands.value[detailIndex].height
-      : 100;
-
-  const topMargin = reportProperties.value?.topMargin || 0;
-  const bottomMargin = reportProperties.value?.bottomMargin || 0;
-  const availableHeight = paperHeight.value - topMargin - bottomMargin;
-
-  // Total height of all other fixed bands (excluding the band being resized and detail)
-  let otherFixedBandsHeight = 0;
-  bands.value.forEach((b, i) => {
-    if (i !== bandIndex && i !== detailIndex) {
-      otherFixedBandsHeight += b.height || 0;
-    }
-  });
+  resizingBandInfo.height = startTargetHeight;
 
   const handleMouseMove = (e: MouseEvent): void => {
     if (!bands.value || !bands.value[bandIndex]) return;
     const deltaY = (e.clientY - startY) / currentZoom;
+    let newTargetHeight: number = startTargetHeight;
 
-    if (bandIndex === detailIndex) {
-      // User is directly resizing the detail band
-      const maxDetail = Math.max(
-        BAND_CONSTANTS.MIN_HEIGHT,
-        availableHeight - otherFixedBandsHeight,
-      );
-      const newHeight = Math.min(
-        maxDetail,
-        Math.max(BAND_CONSTANTS.MIN_HEIGHT, Math.round(startHeight + deltaY)),
-      );
-
-      bands.value = bands.value.map((b, i) => {
-        if (i === bandIndex) {
-          return { ...b, height: newHeight };
-        }
-        return b;
-      });
-      resizingBandInfo.height = newHeight;
-    } else {
-      // User is resizing another band (Title, PageHeader, etc.)
-      // It can grow by at most the space detail can yield without detail going below MIN_HEIGHT
-      const maxAllowedDelta = Math.max(
-        0,
-        startDetailHeight - BAND_CONSTANTS.MIN_HEIGHT,
-      );
-      const minAllowedDelta = BAND_CONSTANTS.MIN_HEIGHT - startHeight;
+    if (isBottomBand) {
+      // Dragging UP (deltaY < 0) means expanding upward: effectiveDelta > 0
+      // Dragging DOWN (deltaY > 0) means shrinking downward: effectiveDelta < 0
+      const effectiveDelta = -deltaY;
       const clampedDelta = Math.min(
-        maxAllowedDelta,
-        Math.max(minAllowedDelta, Math.round(deltaY)),
+        maxBottomGrowth,
+        Math.max(-maxBottomShrink, Math.round(effectiveDelta)),
       );
 
-      const newHeight = startHeight + clampedDelta;
+      newTargetHeight = startTargetHeight + clampedDelta;
+
+      // Allocate space across bands directly above (nearest band first!)
+      const newHeights = [...startHeights];
+      newHeights[bandIndex] = newTargetHeight;
+
+      if (clampedDelta > 0) {
+        // Taking space from above bands starting with the nearest one
+        let needed = clampedDelta;
+        for (const idx of aboveIndices) {
+          const curH = startHeights[idx] ?? minHeight;
+          const canYield = Math.max(0, curH - minHeight);
+          const take = Math.min(needed, canYield);
+          newHeights[idx] = curH - take;
+          needed -= take;
+          if (needed <= 0) break;
+        }
+      } else if (clampedDelta < 0) {
+        // Giving space back to nearest above band
+        const nearestIdx = aboveIndices[0];
+        if (nearestIdx !== undefined) {
+          newHeights[nearestIdx] =
+            (startHeights[nearestIdx] ?? minHeight) + -clampedDelta;
+        }
+      }
+
+      bands.value = bands.value.map((b, i) => ({
+        ...b,
+        height: newHeights[i] ?? b.height,
+      }));
+
+      // Adjust elements within any shrunk above bands
+      for (const idx of aboveIndices) {
+        const b = bands.value[idx];
+        const h = newHeights[idx];
+        if (b && b.elements && h !== undefined) {
+          b.elements.forEach((element) => {
+            if (element.y + element.height > h) {
+              element.y = Math.max(0, h - element.height);
+            }
+          });
+        }
+      }
+    } else {
+      // Top bands (Title, Page Header, Column Header)
+      // Dragging DOWN expands the band; Detail yields space
+      newTargetHeight = Math.min(
+        maxTopGrowth,
+        Math.max(minHeight, Math.round(startTargetHeight + deltaY)),
+      );
+
       const newDetailHeight = Math.max(
-        BAND_CONSTANTS.MIN_HEIGHT,
-        availableHeight - otherFixedBandsHeight - newHeight,
+        minHeight,
+        availableHeight - otherBandsHeight - newTargetHeight,
       );
 
       bands.value = bands.value.map((b, i) => {
-        if (i === bandIndex) {
-          return { ...b, height: newHeight };
-        }
-        if (i === detailIndex) {
-          return { ...b, height: newDetailHeight };
-        }
+        if (i === bandIndex) return { ...b, height: newTargetHeight };
+        if (i === detailIndex) return { ...b, height: newDetailHeight };
         return b;
       });
-
-      resizingBandInfo.height = newHeight;
     }
 
+    resizingBandInfo.height = newTargetHeight;
     resizingBandInfo.bandName = bands.value[bandIndex]
       ? getBandDisplayName(bands.value[bandIndex].type)
       : "";
@@ -5196,11 +5097,11 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
     }
 
     // Adjust elements within resized band so they don't exceed the band's bounds
-    const currentBand = bands.value[bandIndex];
-    if (currentBand && currentBand.elements) {
-      currentBand.elements.forEach((element) => {
-        if (element.y + element.height > currentBand.height) {
-          element.y = Math.max(0, currentBand.height - element.height);
+    const currentResizedBand = bands.value[bandIndex];
+    if (currentResizedBand && currentResizedBand.elements) {
+      currentResizedBand.elements.forEach((element) => {
+        if (element.y + element.height > newTargetHeight) {
+          element.y = Math.max(0, newTargetHeight - element.height);
         }
       });
     }
@@ -5213,6 +5114,8 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
     resizingBandInfo.height = 0;
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("mouseup", handleMouseUp);
+    ensureBandsFitPage();
+    updateOutOfBoundsElements();
     saveStateToHistory();
     updateJRXML();
   };
