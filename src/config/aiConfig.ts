@@ -131,7 +131,7 @@ Important notes:
 3. Units are in pixels (px)
 4. Only call a tool when it is genuinely needed
 5. Tool execution results will be automatically fed back to you
-6. Valid bandType values include: title, pageHeader, pageFooter, columnHeader, columnFooter, detail, summary
+6. Valid bandType values include: pageHeader, pageFooter, columnHeader, columnFooter, detail.
 7. When the user refers to "this element" or "the title" or similar, use the UUID from [Current Design State] to locate the element
 8. When modifying an element, use the update_element tool and provide the element's UUID
 9. If the user hasn't clearly specified an element, ask the user which element they want to modify

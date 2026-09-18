@@ -948,11 +948,6 @@ function createNewFile() {
 
   bands.value = [
     {
-      type: BAND_TYPE_CONSTANTS.TITLE as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 50,
-      elements: [],
-    },
-    {
       type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
       height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
       elements: [],
@@ -964,7 +959,7 @@ function createNewFile() {
     },
     {
       type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100,
+      height: 652, // Fits full printable height of A4 (842 - 20 - 20 - (50+30+30+40) = 652)
       elements: [],
     },
     {
@@ -1173,11 +1168,6 @@ const elements = computed(() =>
 // Report bands
 const bands = ref<Band[]>([
   {
-    type: BAND_TYPE_CONSTANTS.TITLE as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 54,
-    elements: [],
-  },
-  {
     type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
     height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
     elements: [],
@@ -1189,7 +1179,7 @@ const bands = ref<Band[]>([
   },
   {
     type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
-    height: 598, // Fits remaining space of A4 (842 - 20 - 20 - (54+50+30+30+40) = 598)
+    height: 652, // Fits remaining space of A4 (842 - 20 - 20 - (50+30+30+40) = 652)
     elements: [],
   },
   {
@@ -1266,11 +1256,6 @@ const deletePage = (pageIndex: number) => {
 // All possible band types
 const allBandTypes = [
   {
-    type: BAND_TYPE_CONSTANTS.TITLE as BandType,
-    name: "Title",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 80,
-  },
-  {
     type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
     name: "Page Header",
     defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
@@ -1296,11 +1281,6 @@ const allBandTypes = [
     type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
     name: "Page Footer",
     defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.SUMMARY as BandType,
-    name: "Summary",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60,
   },
   {
     type: BAND_TYPE_CONSTANTS.BACKGROUND as BandType,
