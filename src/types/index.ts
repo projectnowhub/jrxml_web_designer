@@ -91,8 +91,6 @@ export type BandType =
   | "detail"
   | "pageHeader"
   | "pageFooter"
-  | "title"
-  | "summary"
   | "columnHeader"
   | "columnFooter"
   | "background"
