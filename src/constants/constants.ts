@@ -109,30 +109,22 @@ export const ELEMENT_CONSTANTS = {
 
 // Band type constants
 export const BAND_TYPE_CONSTANTS = {
-  TITLE: "title",
   PAGE_HEADER: "pageHeader",
   COLUMN_HEADER: "columnHeader",
   DETAIL: "detail",
   COLUMN_FOOTER: "columnFooter",
   PAGE_FOOTER: "pageFooter",
-  SUMMARY: "summary",
   BACKGROUND: "background",
-  LAST_PAGE_FOOTER: "lastPageFooter",
-  NO_DATA: "noData",
 };
 
 // Band default height constants
 export const BAND_HEIGHT_CONSTANTS = {
-  [BAND_TYPE_CONSTANTS.TITLE]: 54,
   [BAND_TYPE_CONSTANTS.PAGE_HEADER]: 50,
   [BAND_TYPE_CONSTANTS.COLUMN_HEADER]: 30,
   [BAND_TYPE_CONSTANTS.DETAIL]: 100,
   [BAND_TYPE_CONSTANTS.COLUMN_FOOTER]: 30,
   [BAND_TYPE_CONSTANTS.PAGE_FOOTER]: 40,
-  [BAND_TYPE_CONSTANTS.SUMMARY]: 60,
   [BAND_TYPE_CONSTANTS.BACKGROUND]: 0,
-  [BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER]: 40,
-  [BAND_TYPE_CONSTANTS.NO_DATA]: 50,
 };
 
 // Band-related constants
@@ -143,30 +135,58 @@ export const BAND_CONSTANTS = {
   SPACING: 0, // spacing between bands
 };
 
+// All configurable bands definition
+export const ALL_CONFIGURABLE_BANDS = [
+  {
+    type: BAND_TYPE_CONSTANTS.PAGE_HEADER,
+    name: "Page Header",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.COLUMN_HEADER,
+    name: "Column Header",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.DETAIL,
+    name: "Detail",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER,
+    name: "Column Footer",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.PAGE_FOOTER,
+    name: "Page Footer",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.BACKGROUND,
+    name: "Background",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.BACKGROUND] || 0,
+  },
+];
+
 // Developer default band configuration (default height, min, max in px)
 export const DEVELOPER_DEFAULT_BAND_CONFIG: Record<
   string,
   { defaultHeight: number; min: number; max: number }
 > = {
-  [BAND_TYPE_CONSTANTS.PAGE_HEADER]: { defaultHeight: 50, min: 20, max: 200 },
-  [BAND_TYPE_CONSTANTS.COLUMN_HEADER]: { defaultHeight: 30, min: 15, max: 150 },
-  [BAND_TYPE_CONSTANTS.COLUMN_FOOTER]: { defaultHeight: 30, min: 15, max: 150 },
-  [BAND_TYPE_CONSTANTS.PAGE_FOOTER]: { defaultHeight: 40, min: 20, max: 150 },
-  [BAND_TYPE_CONSTANTS.TITLE]: { defaultHeight: 54, min: 20, max: 250 },
-  [BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER]: { defaultHeight: 40, min: 20, max: 150 },
-  [BAND_TYPE_CONSTANTS.SUMMARY]: { defaultHeight: 60, min: 20, max: 300 },
+  [BAND_TYPE_CONSTANTS.PAGE_HEADER]: { defaultHeight: 50, min: 20, max: 70 },
+  [BAND_TYPE_CONSTANTS.COLUMN_HEADER]: { defaultHeight: 30, min: 20, max: 70 },
+  [BAND_TYPE_CONSTANTS.COLUMN_FOOTER]: { defaultHeight: 30, min: 20, max: 70 },
+  [BAND_TYPE_CONSTANTS.PAGE_FOOTER]: { defaultHeight: 40, min: 20, max: 70 },
 };
 
 // Default band constraints (min and max heights in px)
 export const DEFAULT_BAND_LIMITS: Record<string, { min: number; max: number }> =
   {
-    [BAND_TYPE_CONSTANTS.PAGE_HEADER]: { min: 20, max: 200 },
-    [BAND_TYPE_CONSTANTS.COLUMN_HEADER]: { min: 15, max: 150 },
-    [BAND_TYPE_CONSTANTS.COLUMN_FOOTER]: { min: 15, max: 150 },
-    [BAND_TYPE_CONSTANTS.PAGE_FOOTER]: { min: 20, max: 150 },
-    [BAND_TYPE_CONSTANTS.TITLE]: { min: 20, max: 250 },
-    [BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER]: { min: 20, max: 150 },
-    [BAND_TYPE_CONSTANTS.SUMMARY]: { min: 20, max: 300 },
+    [BAND_TYPE_CONSTANTS.PAGE_HEADER]: { min: 20, max: 70 },
+    [BAND_TYPE_CONSTANTS.COLUMN_HEADER]: { min: 20, max: 70 },
+    [BAND_TYPE_CONSTANTS.COLUMN_FOOTER]: { min: 20, max: 70 },
+    [BAND_TYPE_CONSTANTS.PAGE_FOOTER]: { min: 20, max: 70 },
   };
 
 // Storage key and loader for user-configured global default band config
@@ -202,8 +222,7 @@ export function getEffectiveDefaultBandConfig(): Record<
                   ? item.height
                   : dev.defaultHeight,
               min: typeof item.min === "number" ? item.min : dev.min,
-              // If the saved max was the legacy hardcoded 70 or lower, upgrade to dev.max
-              max: typeof item.max === "number" && item.max > 70 ? item.max : dev.max,
+              max: typeof item.max === "number" ? item.max : dev.max,
             };
           }
         }

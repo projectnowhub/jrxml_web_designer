@@ -151,376 +151,152 @@
                     : 'auto',
                 }"
               >
-                <!-- 1. ALL PAGES: Common Page Header Band -->
+                <!-- Dynamic Bands for this Page -->
                 <div
-                  v-if="
-                    pageHeaderBandIndex !== -1 &&
-                    pageHeaderBand &&
-                    (pageHeaderBand.height > 0 ||
-                      pageHeaderBand.elements.length > 0)
-                  "
-                  class="band page-header-band"
-                  :data-band-index="pageHeaderBandIndex"
-                  :data-band-name="'pageHeader'"
-                  :style="{ height: pageHeaderBand.height + 'px' }"
-                  @click="selectBand(pageHeaderBandIndex)"
-                  :class="{
-                    selected: selectedBandIndex === pageHeaderBandIndex,
-                    'dragging-target':
-                      highlightedBandIndex === pageHeaderBandIndex,
-                    'drag-over': highlightedBandIndex === pageHeaderBandIndex,
-                  }"
-                >
-                  <div class="band-background-label-container">
-                    <span class="band-background-label"
-                      >{{ t("bandNames.pageHeader") }} (Common)</span
-                    >
-                  </div>
-                  <div class="band-content">
-                    <ElementFactory
-                      v-for="(item, index) in pageHeaderBand.elements"
-                      :key="`page-${pIndex}-pheader-${item.uuid || index}`"
-                      :element="item"
-                      :band-index="pageHeaderBandIndex"
-                      :element-index="index"
-                      :selected-element="selectedElement"
-                      :selected-elements="selectedElements"
-                      :editing-element="editingElement"
-                      :is-dragging="isDraggingOrResizing"
-                      :report-font-family="reportProperties.defaultFont?.name"
-                      :report-font-size="reportProperties.defaultFont?.size"
-                      :report-is-bold="reportProperties.defaultFont?.isBold"
-                      :report-is-italic="reportProperties.defaultFont?.isItalic"
-                      :report-is-underline="
-                        reportProperties.defaultFont?.isUnderline
-                      "
-                      :is-out-of-bounds="
-                        isElementOutOfBounds(pageHeaderBandIndex, index)
-                      "
-                      :zoom-level="zoomLevel"
-                      :report-styles="props.reportStyles"
-                      :table-styles="props.tableStyles"
-                      @select="selectElement"
-                      @drag-start="startDragging"
-                      @resize-start="startResizingElement"
-                      @contextmenu="handleElementContextMenu"
-                      @start-editing="startEditing"
-                      @finish-editing="finishEditing"
-                      @cancel-editing="cancelEditing"
-                      @check-fields="checkFields"
-                      @move-column="handleMoveColumn"
-                      @add-columns-to-group="handleAddColumnsToGroup"
-                      @join-columns-to-existing-group="
-                        handleJoinColumnsToExistingGroup
-                      "
-                      @update-jrxml="emit('update-jrxml')"
-                    />
-                  </div>
-                  <div
-                    class="band-resize-handle"
-                    @mousedown.stop="
-                      startResizingBand($event, pageHeaderBandIndex)
-                    "
-                  ></div>
-                </div>
-
-                <!-- 3. ALL PAGES: Column Header Band (if enabled) -->
-                <div
-                  v-if="
-                    columnHeaderBandIndex !== -1 &&
-                    columnHeaderBand &&
-                    (columnHeaderBand.height > 0 ||
-                      columnHeaderBand.elements.length > 0)
-                  "
-                  class="band column-header-band"
-                  :data-band-index="columnHeaderBandIndex"
-                  :data-band-name="'columnHeader'"
-                  :style="{ height: columnHeaderBand.height + 'px' }"
-                  @click="selectBand(columnHeaderBandIndex)"
-                  :class="{
-                    selected: selectedBandIndex === columnHeaderBandIndex,
-                    'dragging-target':
-                      highlightedBandIndex === columnHeaderBandIndex,
-                    'drag-over': highlightedBandIndex === columnHeaderBandIndex,
-                  }"
+                  v-for="bItem in getBandsForPage(pIndex)"
+                  :key="`page-${pIndex}-band-${bItem.band.type}-${bItem.bandIndex}`"
+                  class="band"
+                  :class="[
+                    `${bItem.band.type}-band`,
+                    bItem.band.type === 'columnFooter' ? 'column-footer-band' : '',
+                    bItem.band.type === 'pageFooter' ? 'page-footer-band' : '',
+                    bItem.band.type === 'pageHeader' ? 'page-header-band' : '',
+                    bItem.band.type === 'columnHeader' ? 'column-header-band' : '',
+                    {
+                      'dragging-target':
+                        highlightedBandIndex === bItem.bandIndex,
+                      'drag-over': highlightedBandIndex === bItem.bandIndex,
+                    },
+                  ]"
+                  :data-band-index="bItem.bandIndex"
+                  :data-band-name="bItem.band.type"
+                  :style="{ height: bItem.effectiveHeight + 'px' }"
+                  @click.stop="selectBand(bItem.bandIndex)"
                 >
                   <div class="band-background-label-container">
                     <span class="band-background-label">{{
-                      t("bandNames.columnHeader")
+                      bItem.displayLabel
                     }}</span>
                   </div>
-                  <div class="band-content">
-                    <ElementFactory
-                      v-for="(item, index) in columnHeaderBand.elements"
-                      :key="`page-${pIndex}-cheader-${item.uuid || index}`"
-                      :element="item"
-                      :band-index="columnHeaderBandIndex"
-                      :element-index="index"
-                      :selected-element="selectedElement"
-                      :selected-elements="selectedElements"
-                      :editing-element="editingElement"
-                      :is-dragging="isDraggingOrResizing"
-                      :report-font-family="reportProperties.defaultFont?.name"
-                      :report-font-size="reportProperties.defaultFont?.size"
-                      :report-is-bold="reportProperties.defaultFont?.isBold"
-                      :report-is-italic="reportProperties.defaultFont?.isItalic"
-                      :report-is-underline="
-                        reportProperties.defaultFont?.isUnderline
-                      "
-                      :is-out-of-bounds="
-                        isElementOutOfBounds(columnHeaderBandIndex, index)
-                      "
-                      :zoom-level="zoomLevel"
-                      :report-styles="props.reportStyles"
-                      :table-styles="props.tableStyles"
-                      @select="selectElement"
-                      @drag-start="startDragging"
-                      @resize-start="startResizingElement"
-                      @contextmenu="handleElementContextMenu"
-                      @start-editing="startEditing"
-                      @finish-editing="finishEditing"
-                      @cancel-editing="cancelEditing"
-                      @check-fields="checkFields"
-                      @move-column="handleMoveColumn"
-                      @add-columns-to-group="handleAddColumnsToGroup"
-                      @join-columns-to-existing-group="
-                        handleJoinColumnsToExistingGroup
-                      "
-                      @update-jrxml="emit('update-jrxml')"
-                    />
-                  </div>
-                  <div
-                    class="band-resize-handle"
-                    @mousedown.stop="
-                      startResizingBand($event, columnHeaderBandIndex)
-                    "
-                  ></div>
-                </div>
 
-                <!-- 4. DETAIL BAND: Page-specific Content Area -->
-                <div
-                  v-if="detailBandIndex !== -1"
-                  class="band detail-band"
-                  :data-band-index="detailBandIndex"
-                  :data-band-name="'detail'"
-                  :style="{ height: getPageDetailHeight(pIndex - 1) + 'px' }"
-                  @click="selectBand(detailBandIndex)"
-                  :class="{
-                    selected: selectedBandIndex === detailBandIndex,
-                    'dragging-target': highlightedBandIndex === detailBandIndex,
-                    'drag-over': highlightedBandIndex === detailBandIndex,
-                  }"
-                >
-                  <div class="band-background-label-container">
-                    <span class="band-background-label"
-                      >{{ t("bandNames.detail") }} (Page {{ pIndex }})</span
-                    >
-                  </div>
                   <div class="band-content">
-                    <ElementFactory
-                      v-for="{
-                        element: item,
-                        originalIndex,
-                      } in getDetailElementsForPage(pIndex - 1)"
-                      :key="`page-${pIndex}-detail-${item.uuid || originalIndex}`"
-                      :element="item"
-                      :band-index="detailBandIndex"
-                      :element-index="originalIndex"
-                      :selected-element="selectedElement"
-                      :selected-elements="selectedElements"
-                      :editing-element="editingElement"
-                      :is-dragging="isDraggingOrResizing"
-                      :report-font-family="reportProperties.defaultFont?.name"
-                      :report-font-size="reportProperties.defaultFont?.size"
-                      :report-is-bold="reportProperties.defaultFont?.isBold"
-                      :report-is-italic="reportProperties.defaultFont?.isItalic"
-                      :report-is-underline="
-                        reportProperties.defaultFont?.isUnderline
-                      "
-                      :is-out-of-bounds="
-                        isElementOutOfBounds(detailBandIndex, originalIndex)
-                      "
-                      :zoom-level="zoomLevel"
-                      :report-styles="props.reportStyles"
-                      :table-styles="props.tableStyles"
-                      @select="selectElement"
-                      @drag-start="startDragging"
-                      @resize-start="startResizingElement"
-                      @contextmenu="handleElementContextMenu"
-                      @start-editing="startEditing"
-                      @finish-editing="finishEditing"
-                      @cancel-editing="cancelEditing"
-                      @check-fields="checkFields"
-                      @move-column="handleMoveColumn"
-                      @add-columns-to-group="handleAddColumnsToGroup"
-                      @join-columns-to-existing-group="
-                        handleJoinColumnsToExistingGroup
-                      "
-                      @update-jrxml="emit('update-jrxml')"
-                    />
-                    <div
-                      v-if="getDetailElementsForPage(pIndex - 1).length === 0"
-                      class="canvas-empty-state"
-                    >
-                      <div class="empty-state-text">
-                        Drag elements onto Page {{ pIndex }}
+                    <!-- Detail Band Elements (partitioned by page) -->
+                    <template v-if="bItem.isDetail">
+                      <ElementFactory
+                        v-for="{
+                          element: item,
+                          originalIndex,
+                        } in getDetailElementsForPage(pIndex - 1)"
+                        :key="`page-${pIndex}-detail-${item.uuid || originalIndex}`"
+                        :element="item"
+                        :band-index="bItem.bandIndex"
+                        :element-index="originalIndex"
+                        :selected-element="selectedElement"
+                        :selected-elements="selectedElements"
+                        :editing-element="editingElement"
+                        :is-dragging="isDraggingOrResizing"
+                        :report-font-family="reportProperties.defaultFont?.name"
+                        :report-font-size="reportProperties.defaultFont?.size"
+                        :report-is-bold="reportProperties.defaultFont?.isBold"
+                        :report-is-italic="reportProperties.defaultFont?.isItalic"
+                        :report-is-underline="
+                          reportProperties.defaultFont?.isUnderline
+                        "
+                        :is-out-of-bounds="
+                          isElementOutOfBounds(bItem.bandIndex, originalIndex)
+                        "
+                        :zoom-level="zoomLevel"
+                        :report-styles="props.reportStyles"
+                        :table-styles="props.tableStyles"
+                        @select="selectElement"
+                        @drag-start="startDragging"
+                        @resize-start="startResizingElement"
+                        @contextmenu="handleElementContextMenu"
+                        @start-editing="startEditing"
+                        @finish-editing="finishEditing"
+                        @cancel-editing="cancelEditing"
+                        @check-fields="checkFields"
+                        @move-column="handleMoveColumn"
+                        @add-columns-to-group="handleAddColumnsToGroup"
+                        @join-columns-to-existing-group="
+                          handleJoinColumnsToExistingGroup
+                        "
+                        @update-jrxml="emit('update-jrxml')"
+                      />
+                      <div
+                        v-if="
+                          getDetailElementsForPage(pIndex - 1).length === 0
+                        "
+                        class="canvas-empty-state"
+                      >
+                        <div class="empty-state-text">
+                          Drag elements onto Page {{ pIndex }}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
+                    </template>
 
-                <!-- 5. ALL PAGES: Column Footer Band (if enabled) -->
-                <div
-                  v-if="
-                    columnFooterBandIndex !== -1 &&
-                    columnFooterBand &&
-                    (columnFooterBand.height > 0 ||
-                      columnFooterBand.elements.length > 0)
-                  "
-                  class="band column-footer-band"
-                  :data-band-index="columnFooterBandIndex"
-                  :data-band-name="'columnFooter'"
-                  :style="{ height: columnFooterBand.height + 'px' }"
-                  @click="selectBand(columnFooterBandIndex)"
-                  :class="{
-                    selected: selectedBandIndex === columnFooterBandIndex,
-                    'dragging-target':
-                      highlightedBandIndex === columnFooterBandIndex,
-                    'drag-over': highlightedBandIndex === columnFooterBandIndex,
-                  }"
-                >
-                  <div class="band-background-label-container">
-                    <span class="band-background-label">{{
-                      t("bandNames.columnFooter")
-                    }}</span>
+                    <!-- Standard Band Elements -->
+                    <template v-else>
+                      <ElementFactory
+                        v-for="(item, index) in bItem.band.elements"
+                        :key="`page-${pIndex}-${bItem.band.type}-${item.uuid || index}`"
+                        :element="item"
+                        :band-index="bItem.bandIndex"
+                        :element-index="index"
+                        :selected-element="selectedElement"
+                        :selected-elements="selectedElements"
+                        :editing-element="editingElement"
+                        :is-dragging="isDraggingOrResizing"
+                        :report-font-family="reportProperties.defaultFont?.name"
+                        :report-font-size="reportProperties.defaultFont?.size"
+                        :report-is-bold="reportProperties.defaultFont?.isBold"
+                        :report-is-italic="reportProperties.defaultFont?.isItalic"
+                        :report-is-underline="
+                          reportProperties.defaultFont?.isUnderline
+                        "
+                        :is-out-of-bounds="
+                          isElementOutOfBounds(bItem.bandIndex, index)
+                        "
+                        :zoom-level="zoomLevel"
+                        :report-styles="props.reportStyles"
+                        :table-styles="props.tableStyles"
+                        :page-number="pIndex"
+                        :total-pages="totalPages"
+                        @select="selectElement"
+                        @drag-start="startDragging"
+                        @resize-start="startResizingElement"
+                        @contextmenu="handleElementContextMenu"
+                        @start-editing="startEditing"
+                        @finish-editing="finishEditing"
+                        @cancel-editing="cancelEditing"
+                        @check-fields="checkFields"
+                        @move-column="handleMoveColumn"
+                        @add-columns-to-group="handleAddColumnsToGroup"
+                        @join-columns-to-existing-group="
+                          handleJoinColumnsToExistingGroup
+                        "
+                        @update-jrxml="emit('update-jrxml')"
+                      />
+                      <!-- Default page number indicator if page footer is empty -->
+                      <div
+                        v-if="
+                          bItem.band.type === 'pageFooter' &&
+                          (!bItem.band.elements ||
+                            bItem.band.elements.length === 0)
+                        "
+                        class="footer-page-indicator"
+                      >
+                        <span>Page {{ pIndex }} of {{ totalPages }}</span>
+                      </div>
+                    </template>
                   </div>
-                  <div class="band-content">
-                    <ElementFactory
-                      v-for="(item, index) in columnFooterBand.elements"
-                      :key="`page-${pIndex}-cfooter-${item.uuid || index}`"
-                      :element="item"
-                      :band-index="columnFooterBandIndex"
-                      :element-index="index"
-                      :selected-element="selectedElement"
-                      :selected-elements="selectedElements"
-                      :editing-element="editingElement"
-                      :is-dragging="isDraggingOrResizing"
-                      :report-font-family="reportProperties.defaultFont?.name"
-                      :report-font-size="reportProperties.defaultFont?.size"
-                      :report-is-bold="reportProperties.defaultFont?.isBold"
-                      :report-is-italic="reportProperties.defaultFont?.isItalic"
-                      :report-is-underline="
-                        reportProperties.defaultFont?.isUnderline
-                      "
-                      :is-out-of-bounds="
-                        isElementOutOfBounds(columnFooterBandIndex, index)
-                      "
-                      :zoom-level="zoomLevel"
-                      :report-styles="props.reportStyles"
-                      :table-styles="props.tableStyles"
-                      @select="selectElement"
-                      @drag-start="startDragging"
-                      @resize-start="startResizingElement"
-                      @contextmenu="handleElementContextMenu"
-                      @start-editing="startEditing"
-                      @finish-editing="finishEditing"
-                      @cancel-editing="cancelEditing"
-                      @check-fields="checkFields"
-                      @move-column="handleMoveColumn"
-                      @add-columns-to-group="handleAddColumnsToGroup"
-                      @join-columns-to-existing-group="
-                        handleJoinColumnsToExistingGroup
-                      "
-                      @update-jrxml="emit('update-jrxml')"
-                    />
-                  </div>
+
+                  <!-- Band resize handle for non-detail bands -->
                   <div
+                    v-if="bItem.showResizeHandle"
                     class="band-resize-handle"
                     @mousedown.stop="
-                      startResizingBand($event, columnFooterBandIndex)
-                    "
-                  ></div>
-                </div>
-
-                <!-- 5. ALL PAGES: Common Page Footer Band -->
-                <div
-                  v-if="
-                    pageFooterBandIndex !== -1 &&
-                    pageFooterBand &&
-                    (pageFooterBand.height > 0 ||
-                      pageFooterBand.elements.length > 0)
-                  "
-                  class="band page-footer-band"
-                  :data-band-index="pageFooterBandIndex"
-                  :data-band-name="'pageFooter'"
-                  :style="{ height: pageFooterBand.height + 'px' }"
-                  @click="selectBand(pageFooterBandIndex)"
-                  :class="{
-                    selected: selectedBandIndex === pageFooterBandIndex,
-                    'dragging-target':
-                      highlightedBandIndex === pageFooterBandIndex,
-                    'drag-over': highlightedBandIndex === pageFooterBandIndex,
-                  }"
-                >
-                  <div class="band-background-label-container">
-                    <span class="band-background-label"
-                      >{{ t("bandNames.pageFooter") }} (Common - Page
-                      {{ pIndex }})</span
-                    >
-                  </div>
-                  <div class="band-content">
-                    <ElementFactory
-                      v-for="(item, index) in pageFooterBand.elements"
-                      :key="`page-${pIndex}-pfooter-${item.uuid || index}`"
-                      :element="item"
-                      :band-index="pageFooterBandIndex"
-                      :element-index="index"
-                      :selected-element="selectedElement"
-                      :selected-elements="selectedElements"
-                      :editing-element="editingElement"
-                      :is-dragging="isDraggingOrResizing"
-                      :report-font-family="reportProperties.defaultFont?.name"
-                      :report-font-size="reportProperties.defaultFont?.size"
-                      :report-is-bold="reportProperties.defaultFont?.isBold"
-                      :report-is-italic="reportProperties.defaultFont?.isItalic"
-                      :report-is-underline="
-                        reportProperties.defaultFont?.isUnderline
-                      "
-                      :is-out-of-bounds="
-                        isElementOutOfBounds(pageFooterBandIndex, index)
-                      "
-                      :zoom-level="zoomLevel"
-                      :report-styles="props.reportStyles"
-                      :table-styles="props.tableStyles"
-                      :page-number="pIndex"
-                      :total-pages="totalPages"
-                      @select="selectElement"
-                      @drag-start="startDragging"
-                      @resize-start="startResizingElement"
-                      @contextmenu="handleElementContextMenu"
-                      @start-editing="startEditing"
-                      @finish-editing="finishEditing"
-                      @cancel-editing="cancelEditing"
-                      @check-fields="checkFields"
-                      @move-column="handleMoveColumn"
-                      @add-columns-to-group="handleAddColumnsToGroup"
-                      @join-columns-to-existing-group="
-                        handleJoinColumnsToExistingGroup
-                      "
-                      @update-jrxml="emit('update-jrxml')"
-                    />
-                    <!-- Default page number indicator if page footer is empty -->
-                    <div
-                      v-if="pageFooterBand.elements.length === 0"
-                      class="footer-page-indicator"
-                    >
-                      <span>Page {{ pIndex }} of {{ totalPages }}</span>
-                    </div>
-                  </div>
-                  <div
-                    class="band-resize-handle"
-                    @mousedown.stop="
-                      startResizingBand($event, pageFooterBandIndex)
+                      startResizingBand($event, bItem.bandIndex)
                     "
                   ></div>
                 </div>
@@ -715,46 +491,9 @@ const emit = defineEmits([
   "delete-page",
 ]);
 
-// Computed band indices
-const pageHeaderBandIndex = computed(() =>
-  props.bands.findIndex((b) => b.type === "pageHeader"),
-);
-const columnHeaderBandIndex = computed(() =>
-  props.bands.findIndex((b) => b.type === "columnHeader"),
-);
+// Computed detail band index
 const detailBandIndex = computed(() =>
   props.bands.findIndex((b) => b.type === "detail"),
-);
-const columnFooterBandIndex = computed(() =>
-  props.bands.findIndex((b) => b.type === "columnFooter"),
-);
-const pageFooterBandIndex = computed(() =>
-  props.bands.findIndex((b) => b.type === "pageFooter"),
-);
-
-// Computed band objects for safe template access
-const pageHeaderBand = computed(() =>
-  pageHeaderBandIndex.value !== -1
-    ? props.bands[pageHeaderBandIndex.value]
-    : undefined,
-);
-const columnHeaderBand = computed(() =>
-  columnHeaderBandIndex.value !== -1
-    ? props.bands[columnHeaderBandIndex.value]
-    : undefined,
-);
-const detailBand = computed(() =>
-  detailBandIndex.value !== -1 ? props.bands[detailBandIndex.value] : undefined,
-);
-const columnFooterBand = computed(() =>
-  columnFooterBandIndex.value !== -1
-    ? props.bands[columnFooterBandIndex.value]
-    : undefined,
-);
-const pageFooterBand = computed(() =>
-  pageFooterBandIndex.value !== -1
-    ? props.bands[pageFooterBandIndex.value]
-    : undefined,
 );
 
 const totalPages = computed(() => Math.max(1, props.totalPages || 1));
@@ -764,6 +503,37 @@ const totalRulerHeight = computed(() => {
   const pageGap = 32;
   return props.paperHeight * pages + Math.max(0, (pages - 1) * pageGap);
 });
+
+// Determine if a band is visible on the given page
+function isBandVisibleOnPage(
+  band: Band,
+  _pIndex: number,
+  _total: number,
+): boolean {
+  // Background is an underlay layer, excluded from stacked vertical flow
+  if (band.type === "background") return false;
+
+  // Non-detail bands with <= 0 height and no elements are hidden
+  if (
+    band.type !== "detail" &&
+    band.height <= 0 &&
+    (!band.elements || band.elements.length === 0)
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+// Generate contextual display label for each band
+function getBandDisplayLabel(bandType: string, pIndex: number): string {
+  const name = getBandDisplayName(bandType);
+  if (bandType === "detail") {
+    return `${name} (Page ${pIndex})`;
+  }
+
+  return name;
+}
 
 const getDetailElementsForPage = (pageIdx: number) => {
   if (detailBandIndex.value === -1) return [];
@@ -779,39 +549,59 @@ const getDetailElementsForPage = (pageIdx: number) => {
   return result;
 };
 
-const getPageDetailHeight = (_pIdx: number) => {
+// Calculate remaining height for detail band dynamically based on all visible non-detail bands on page
+const getPageDetailHeight = (pageIdx: number) => {
   if (detailBandIndex.value === -1) return 100;
   const detailBand = props.bands[detailBandIndex.value];
   if (!detailBand) return 100;
+
+  const pIndex = pageIdx + 1;
   const topMargin = props.reportProperties?.topMargin || 0;
   const bottomMargin = props.reportProperties?.bottomMargin || 0;
   const availableHeight = props.paperHeight - topMargin - bottomMargin;
+
   let otherBandsHeight = 0;
-  if (
-    pageHeaderBandIndex.value !== -1 &&
-    props.bands[pageHeaderBandIndex.value]
-  ) {
-    otherBandsHeight += props.bands[pageHeaderBandIndex.value]?.height || 0;
-  }
-  if (
-    columnHeaderBandIndex.value !== -1 &&
-    props.bands[columnHeaderBandIndex.value]
-  ) {
-    otherBandsHeight += props.bands[columnHeaderBandIndex.value]?.height || 0;
-  }
-  if (
-    columnFooterBandIndex.value !== -1 &&
-    props.bands[columnFooterBandIndex.value]
-  ) {
-    otherBandsHeight += props.bands[columnFooterBandIndex.value]?.height || 0;
-  }
-  if (
-    pageFooterBandIndex.value !== -1 &&
-    props.bands[pageFooterBandIndex.value]
-  ) {
-    otherBandsHeight += props.bands[pageFooterBandIndex.value]?.height || 0;
-  }
+  props.bands.forEach((b) => {
+    if (
+      b.type !== "detail" &&
+      isBandVisibleOnPage(b, pIndex, totalPages.value)
+    ) {
+      otherBandsHeight += b.height || 0;
+    }
+  });
+
   return Math.max(20, availableHeight - otherBandsHeight);
+};
+
+interface PageBandInfo {
+  band: Band;
+  bandIndex: number;
+  isDetail: boolean;
+  effectiveHeight: number;
+  displayLabel: string;
+  showResizeHandle: boolean;
+}
+
+// Get the dynamic list of bands for a given page
+const getBandsForPage = (pIndex: number): PageBandInfo[] => {
+  const result: PageBandInfo[] = [];
+  props.bands.forEach((band, bandIndex) => {
+    if (!isBandVisibleOnPage(band, pIndex, totalPages.value)) {
+      return;
+    }
+    const isDetail = band.type === "detail";
+    result.push({
+      band,
+      bandIndex,
+      isDetail,
+      effectiveHeight: isDetail
+        ? getPageDetailHeight(pIndex - 1)
+        : band.height || 0,
+      displayLabel: getBandDisplayLabel(band.type, pIndex),
+      showResizeHandle: !isDetail,
+    });
+  });
+  return result;
 };
 
 // Selection box state
@@ -1181,17 +971,6 @@ onMounted(() => {
     paperContainerRef.value.addEventListener("scroll", handleScroll);
     (window as any).paperContainerScrollListener = handleScroll;
   }
-
-  // Add paper click event listener
-  const paper = document.querySelector(".paper");
-  if (paper) {
-    const handlePaperClick = () => {
-      emit("set-design-area-focused");
-    };
-
-    paper.addEventListener("click", handlePaperClick);
-    (window as any).paperClickListener = handlePaperClick;
-  }
 });
 
 onBeforeUnmount(() => {
@@ -1214,18 +993,10 @@ onBeforeUnmount(() => {
     document.removeEventListener("keydown", keyDownListener as EventListener);
   }
 
-  // Remove paper click event listener
-  const paperClickListener = (window as any).paperClickListener;
-  const paper = document.querySelector(".paper");
-  if (paperClickListener && paper) {
-    paper.removeEventListener("click", paperClickListener);
-  }
-
   // Clean up global references
   delete (window as any).paperContainerScrollListener;
   delete (window as any).designerCanvasWheelListener;
   delete (window as any).designerCanvasKeyDownListener;
-  delete (window as any).paperClickListener;
 });
 </script>
 
@@ -1470,11 +1241,7 @@ onBeforeUnmount(() => {
 
 .band:hover {
   background-color: rgba(240, 240, 255, 0.8);
-}
-
-.band.selected {
-  border-color: #4a90e2;
-  background-color: rgba(240, 248, 255, 0.8);
+  z-index: 5;
 }
 
 .band.dragging-target {
@@ -1517,10 +1284,10 @@ onBeforeUnmount(() => {
 
 .band-resize-handle {
   position: absolute;
-  bottom: -4px;
+  bottom: -5px;
   left: 0;
   right: 0;
-  height: 8px;
+  height: 10px;
   cursor: ns-resize;
   background-color: rgba(74, 144, 226, 0.4);
   opacity: 0;
@@ -1533,14 +1300,33 @@ onBeforeUnmount(() => {
 .band:hover .band-resize-handle,
 .band-resize-handle:hover {
   opacity: 1;
-  background-color: rgba(74, 144, 226, 0.9);
+  background-color: rgba(74, 144, 226, 0.95);
+  z-index: 30;
 }
 
 /* Bottom bands: handle is located at the TOP edge so dragging up expands the band */
+.columnFooter-band .band-resize-handle,
 .column-footer-band .band-resize-handle,
+.pageFooter-band .band-resize-handle,
 .page-footer-band .band-resize-handle {
-  top: -4px;
+  top: -5px;
   bottom: auto;
+}
+
+/* When hovering Detail, highlight the dragger between Detail and the following footer band */
+.detail-band:hover + .columnFooter-band .band-resize-handle,
+.detail-band:hover + .column-footer-band .band-resize-handle,
+.detail-band:hover + .pageFooter-band .band-resize-handle,
+.detail-band:hover + .page-footer-band .band-resize-handle {
+  opacity: 0.7;
+  background-color: rgba(74, 144, 226, 0.6);
+}
+
+/* When hovering Column Footer, also highlight the dragger between Column Footer and Page Footer */
+.columnFooter-band:hover + .pageFooter-band .band-resize-handle,
+.column-footer-band:hover + .page-footer-band .band-resize-handle {
+  opacity: 0.7;
+  background-color: rgba(74, 144, 226, 0.6);
 }
 
 .alignment-lines {

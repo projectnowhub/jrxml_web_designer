@@ -10,7 +10,7 @@
     </div>
 
     <!-- Report properties -->
-    <div v-if="!selectedBandIndex && !selectedElement" class="property-section">
+    <div v-if="!selectedElement || !currentElement" class="property-section">
       <h4>{{ t("properties.reportProperties") }}</h4>
 
       <!-- Band height and template limits settings -->
@@ -47,7 +47,7 @@
         <div class="band-cards-grid">
           <div
             v-for="(band, index) in bands"
-            :key="index"
+            :key="band.type"
             class="template-band-card"
           >
             <!-- Card Header: Band Name + Auto badge for Detail -->
@@ -55,7 +55,10 @@
               <span class="template-band-title">{{
                 getBandDisplayName(band.type)
               }}</span>
-              <span v-if="band.type === 'detail'" class="band-badge-auto">
+              <span
+                v-if="band.type === 'detail'"
+                class="band-badge-auto"
+              >
                 {{ t("properties.detailAutoCalculated") }}
               </span>
             </div>
@@ -106,9 +109,10 @@
                     <input
                       v-model.number="getBandLimit(band.type).min"
                       type="number"
-                      min="0"
+                      min="10"
                       step="1"
-                      @change="emit('save-state')"
+                      @change="onTemplateMinChange(band.type)"
+                      @blur="onTemplateMinChange(band.type)"
                     />
                     <span class="unit">px</span>
                   </div>
@@ -119,9 +123,11 @@
                     <input
                       v-model.number="getBandLimit(band.type).max"
                       type="number"
-                      min="0"
+                      :min="getBandLimit(band.type).min || 10"
+                      :max="getMaxAllowedLimit(band.type)"
                       step="1"
-                      @change="emit('save-state')"
+                      @change="onTemplateMaxChange(band.type)"
+                      @blur="onTemplateMaxChange(band.type)"
                     />
                     <span class="unit">px</span>
                   </div>
@@ -3001,12 +3007,12 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 function getBandLimit(bandType: string) {
-  if (!props.reportProperties) return { min: 20, max: 200 };
+  if (!props.reportProperties) return { min: 20, max: 70 };
   if (!props.reportProperties.bandLimits) {
     props.reportProperties.bandLimits = getEffectiveDefaultBandLimits();
   }
   if (!props.reportProperties.bandLimits[bandType]) {
-    props.reportProperties.bandLimits[bandType] = { min: 20, max: 200 };
+    props.reportProperties.bandLimits[bandType] = { min: 20, max: 70 };
   }
   return props.reportProperties.bandLimits[bandType];
 }
@@ -3019,13 +3025,69 @@ function getMaxPhysicalHeight(bandType: string): number {
   let otherBandsH = 0;
   if (props.bands && Array.isArray(props.bands)) {
     props.bands.forEach((b) => {
-      if (b.type !== bandType && b.type !== "detail") {
+      if (b.type !== bandType && b.type !== "detail" && b.type !== "background") {
         otherBandsH += b.height || 0;
       }
     });
   }
   // Leave at least 20px for detail band
   return Math.max(20, printableH - otherBandsH - 20);
+}
+
+function getMaxAllowedLimit(bandType: string): number {
+  const pageH = props.reportProperties?.pageHeight || 842;
+  const topM = props.reportProperties?.topMargin || 20;
+  const bottomM = props.reportProperties?.bottomMargin || 20;
+  const printableH = pageH - topM - bottomM;
+  let otherBandsMin = 0;
+  if (props.bands && Array.isArray(props.bands)) {
+    props.bands.forEach((b) => {
+      if (b.type !== bandType && b.type !== "detail" && b.type !== "background") {
+        const limit = getBandLimit(b.type);
+        otherBandsMin += Math.max(10, limit?.min || 10);
+      }
+    });
+  }
+  const detailMin = 10;
+  return Math.max(10, printableH - otherBandsMin - detailMin);
+}
+
+function onTemplateMinChange(bandType: string) {
+  const limit = getBandLimit(bandType);
+  if (typeof limit.min === "number") {
+    if (limit.min < 10) {
+      limit.min = 10;
+    }
+    if (typeof limit.max === "number" && limit.min > limit.max) {
+      limit.max = limit.min;
+    }
+  }
+  const band = props.bands?.find((b) => b.type === bandType);
+  if (band && typeof band.height === "number" && band.height < limit.min) {
+    band.height = limit.min;
+  }
+  emit("save-state");
+}
+
+function onTemplateMaxChange(bandType: string) {
+  const limit = getBandLimit(bandType);
+  const maxCeiling = getMaxAllowedLimit(bandType);
+  if (typeof limit.max === "number") {
+    if (limit.max < 10) {
+      limit.max = 10;
+    }
+    if (limit.max > maxCeiling) {
+      limit.max = maxCeiling;
+    }
+    if (typeof limit.min === "number" && limit.max < limit.min) {
+      limit.min = limit.max;
+    }
+  }
+  const band = props.bands?.find((b) => b.type === bandType);
+  if (band && typeof band.height === "number" && band.height > limit.max) {
+    band.height = limit.max;
+  }
+  emit("save-state");
 }
 
 function resetTemplateBandLimitsToDefault() {
@@ -4183,8 +4245,9 @@ function updateBandHeight(index: number) {
       if (band.height > maxAllowed) {
         band.height = maxAllowed;
       }
-      if (band.height < (limit.min || 0)) {
-        band.height = limit.min || 0;
+      const effectiveMin = Math.max(10, limit.min || 10);
+      if (band.height < effectiveMin) {
+        band.height = effectiveMin;
       }
       // If user inputs a height greater than current limit.max, auto-expand limit.max
       if (typeof limit.max === "number" && band.height > limit.max) {
@@ -4192,7 +4255,7 @@ function updateBandHeight(index: number) {
       }
       // If user inputs a height less than current limit.min, auto-adjust limit.min
       if (typeof limit.min === "number" && band.height < limit.min) {
-        limit.min = band.height;
+        limit.min = Math.max(10, band.height);
       }
     }
   }
@@ -5664,6 +5727,7 @@ function addPropertyExpression() {
   border-color: #cbd5e1;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
+
 
 .template-band-header {
   display: flex;

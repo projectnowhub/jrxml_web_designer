@@ -250,16 +250,12 @@ const localReportProperties = computed({
   set: (value) => emit("update:report-properties", value),
 });
 
-// Resizable band types list for limit constraints
-const resizableBandTypes = computed(() => [
-  { type: BAND_TYPE_CONSTANTS.PAGE_HEADER },
-  { type: BAND_TYPE_CONSTANTS.COLUMN_HEADER },
-  { type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER },
-  { type: BAND_TYPE_CONSTANTS.PAGE_FOOTER },
-  { type: BAND_TYPE_CONSTANTS.TITLE },
-  { type: BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER },
-  { type: BAND_TYPE_CONSTANTS.SUMMARY },
-]);
+// Resizable band types list for limit constraints (excluding background and detail which is auto-calculated)
+const resizableBandTypes = computed(() => {
+  return (props.allBandTypes || [])
+    .filter((bt) => bt.type !== "background" && bt.type !== "detail")
+    .map((bt) => ({ type: bt.type }));
+});
 
 // Dedicated state for global default band limits (independent from active template)
 const globalDefaultBandLimits = ref<
@@ -275,12 +271,19 @@ const getGlobalBandConfig = (bandType: string) => {
     const dev = DEVELOPER_DEFAULT_BAND_CONFIG[bandType] || {
       defaultHeight: 50,
       min: 20,
-      max: 200,
+      max: 70,
     };
     globalDefaultBandConfig.value[bandType] = { ...dev };
   }
   return globalDefaultBandConfig.value[bandType]!;
 };
+
+const standardActiveBands = [
+  BAND_TYPE_CONSTANTS.PAGE_HEADER,
+  BAND_TYPE_CONSTANTS.COLUMN_HEADER,
+  BAND_TYPE_CONSTANTS.COLUMN_FOOTER,
+  BAND_TYPE_CONSTANTS.PAGE_FOOTER,
+];
 
 // Calculate remaining A4 space for Detail band based on configured default band heights
 const defaultDetailCalculatedHeight = computed(() => {
@@ -288,13 +291,6 @@ const defaultDetailCalculatedHeight = computed(() => {
   const topM = localReportProperties.value?.topMargin || 20;
   const bottomM = localReportProperties.value?.bottomMargin || 20;
   const printableH = pageH - topM - bottomM;
-
-  const standardActiveBands = [
-    BAND_TYPE_CONSTANTS.PAGE_HEADER,
-    BAND_TYPE_CONSTANTS.COLUMN_HEADER,
-    BAND_TYPE_CONSTANTS.COLUMN_FOOTER,
-    BAND_TYPE_CONSTANTS.PAGE_FOOTER,
-  ];
 
   let otherDefaults = 0;
   standardActiveBands.forEach((type) => {
@@ -308,11 +304,63 @@ const defaultDetailCalculatedHeight = computed(() => {
 const onDefaultHeightChange = (bandType: string) => {
   const conf = getGlobalBandConfig(bandType);
   if (typeof conf.defaultHeight === "number") {
+    if (conf.defaultHeight < 10) {
+      conf.defaultHeight = 10;
+    }
     if (conf.defaultHeight > conf.max) {
       conf.max = conf.defaultHeight;
     }
     if (conf.defaultHeight < conf.min) {
       conf.min = conf.defaultHeight;
+    }
+  }
+  autoSaveGlobalBandConfig();
+};
+
+const onGlobalMinChange = (bandType: string) => {
+  const conf = getGlobalBandConfig(bandType);
+  if (typeof conf.min === "number") {
+    if (conf.min < 10) {
+      conf.min = 10;
+    }
+    if (conf.min > conf.max) {
+      conf.max = conf.min;
+    }
+    if (typeof conf.defaultHeight === "number" && conf.defaultHeight < conf.min) {
+      conf.defaultHeight = conf.min;
+    }
+  }
+  autoSaveGlobalBandConfig();
+};
+
+const getMaxAllowedGlobalLimit = (bandType: string): number => {
+  const printableH = 842 - 20 - 20; // standard A4 printable height (802px)
+  let otherBandsMin = 0;
+  standardActiveBands.forEach((type) => {
+    if (type !== bandType) {
+      const conf = getGlobalBandConfig(type);
+      otherBandsMin += Math.max(10, conf?.min || 10);
+    }
+  });
+  const detailMin = 10;
+  return Math.max(10, printableH - otherBandsMin - detailMin);
+};
+
+const onGlobalMaxChange = (bandType: string) => {
+  const conf = getGlobalBandConfig(bandType);
+  const maxCeiling = getMaxAllowedGlobalLimit(bandType);
+  if (typeof conf.max === "number") {
+    if (conf.max < 10) {
+      conf.max = 10;
+    }
+    if (conf.max > maxCeiling) {
+      conf.max = maxCeiling;
+    }
+    if (conf.max < conf.min) {
+      conf.min = conf.max;
+    }
+    if (typeof conf.defaultHeight === "number" && conf.defaultHeight > conf.max) {
+      conf.defaultHeight = conf.max;
     }
   }
   autoSaveGlobalBandConfig();
@@ -915,9 +963,10 @@ onBeforeUnmount(() => {
                         getGlobalBandConfig(bType.type).defaultHeight
                       "
                       type="number"
-                      min="0"
+                      min="10"
                       step="1"
                       @change="onDefaultHeightChange(bType.type)"
+                      @blur="onDefaultHeightChange(bType.type)"
                     />
                     <span class="unit">px</span>
                   </div>
@@ -928,9 +977,10 @@ onBeforeUnmount(() => {
                     <input
                       v-model.number="getGlobalBandConfig(bType.type).min"
                       type="number"
-                      min="0"
+                      min="10"
                       step="1"
-                      @change="autoSaveGlobalBandConfig"
+                      @change="onGlobalMinChange(bType.type)"
+                      @blur="onGlobalMinChange(bType.type)"
                     />
                     <span class="unit">px</span>
                   </div>
@@ -941,9 +991,11 @@ onBeforeUnmount(() => {
                     <input
                       v-model.number="getGlobalBandConfig(bType.type).max"
                       type="number"
-                      min="0"
+                      :min="getGlobalBandConfig(bType.type).min || 10"
+                      :max="getMaxAllowedGlobalLimit(bType.type)"
                       step="1"
-                      @change="autoSaveGlobalBandConfig"
+                      @change="onGlobalMaxChange(bType.type)"
+                      @blur="onGlobalMaxChange(bType.type)"
                     />
                     <span class="unit">px</span>
                   </div>

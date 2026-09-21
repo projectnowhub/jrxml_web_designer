@@ -749,6 +749,7 @@ import { useUndoRedo } from "@/composables/useUndoRedo";
 import { useZoom } from "@/composables/useZoom";
 import { useSnapAlignment } from "@/composables/useSnapAlignment";
 import {
+  ALL_CONFIGURABLE_BANDS,
   BAND_CONSTANTS,
   BAND_HEIGHT_CONSTANTS,
   BAND_TYPE_CONSTANTS,
@@ -1296,51 +1297,7 @@ const deletePage = (pageIndex: number) => {
 };
 
 // All possible band types
-const allBandTypes = [
-  {
-    type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
-    name: "Page Header",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType,
-    name: "Column Header",
-    defaultHeight:
-      BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
-    name: "Detail",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType,
-    name: "Column Footer",
-    defaultHeight:
-      BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
-    name: "Page Footer",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.BACKGROUND as BandType,
-    name: "Background",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.BACKGROUND] || 0,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER as BandType,
-    name: "Last Page Footer",
-    defaultHeight:
-      BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER] || 40,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.NO_DATA as BandType,
-    name: "No Data",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.NO_DATA] || 50,
-  },
-];
+const allBandTypes = ALL_CONFIGURABLE_BANDS;
 
 // The currently selected band type
 const selectedBandTypes = ref<BandType[]>(bands.value.map((band) => band.type));
@@ -1825,7 +1782,7 @@ const paperHeight = computed(
     reportProperties.value?.pageHeight || REPORT_CONSTANTS.DEFAULT_PAGE_HEIGHT,
 );
 
-// Ensure the bands fit within the A4 page height and detail takes the remaining space
+// Ensure the bands fit within the page height and detail takes the remaining space
 const ensureBandsFitPage = () => {
   const topMargin = reportProperties.value?.topMargin || 0;
   const bottomMargin = reportProperties.value?.bottomMargin || 0;
@@ -1838,7 +1795,8 @@ const ensureBandsFitPage = () => {
 
   let otherBandsHeight = 0;
   bands.value.forEach((b, i) => {
-    if (i !== detailIndex) {
+    // Exclude detail itself, and non-stacking band (background underlay)
+    if (i !== detailIndex && b.type !== BAND_TYPE_CONSTANTS.BACKGROUND) {
       otherBandsHeight += b.height || 0;
     }
   });
@@ -1860,7 +1818,11 @@ watch(
     () => reportProperties.value?.bottomMargin,
     () =>
       bands.value
-        .filter((b) => b.type !== BAND_TYPE_CONSTANTS.DETAIL)
+        .filter(
+          (b) =>
+            b.type !== BAND_TYPE_CONSTANTS.DETAIL &&
+            b.type !== BAND_TYPE_CONSTANTS.BACKGROUND,
+        )
         .map((b) => b.height)
         .join(","),
   ],
@@ -2499,6 +2461,7 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
 
 // Select a band
 const selectBand = (index: number) => {
+  setDesignAreaFocused();
   selectedBandIndex.value = index;
   selectedElement.value = null;
   selectedElements.value = []; // Clear the multi-selection
@@ -2506,6 +2469,8 @@ const selectBand = (index: number) => {
   lastClickedBandIndex.value = index;
   // Automatically hide the bottom panel
   showBottomPanel.value = false;
+  // Automatically switch to the properties tab
+  rightPanelTab.value = "properties";
 };
 
 // Select an element
@@ -3977,13 +3942,6 @@ const moveElementByKeyboard = (direction: string) => {
   updateOutOfBoundsElements();
 };
 
-// Handle click events on the report area, clearing the selection
-const handlePaperClick = () => {
-  // Only clear the selection if no other element was clicked
-  selectedElement.value = null;
-  selectedBandIndex.value = null;
-};
-
 // Load data when the component mounts
 onMounted(() => {
   console.log("Component mount started...");
@@ -4035,18 +3993,8 @@ onMounted(() => {
   document.addEventListener("wheel", handleWheel, { passive: false });
   (window as any).pdfDesignerWheelListener = handleWheel;
 
-  // Get the paper element and add a click event listener
-  const paperElement = document.querySelector(".paper");
-  if (paperElement) {
-    paperElement.addEventListener("click", () => {
-      handlePaperClick();
-      setDesignAreaFocused();
-    });
-  }
-
   // Store listener references so they can be removed when the component unmounts
   (window as any).pdfDesignerKeydownListener = handleKeyDown;
-  (window as any).pdfDesignerPaperClickListener = handlePaperClick;
   (window as any).pdfDesignerSetFocused = setDesignAreaFocused;
   (window as any).pdfDesignerRemoveFocused = removeDesignAreaFocused;
 });
@@ -4063,13 +4011,6 @@ onUnmounted(() => {
   const wheelListener = (window as any).pdfDesignerWheelListener;
   if (wheelListener) {
     document.removeEventListener("wheel", wheelListener);
-  }
-
-  // Remove the paper click event listener
-  const handlePaperClick = (window as any).pdfDesignerPaperClickListener;
-  const paperElement = document.querySelector(".paper");
-  if (handlePaperClick && paperElement) {
-    paperElement.removeEventListener("click", handlePaperClick);
   }
 });
 
@@ -4947,7 +4888,7 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   const bandLimitsConfig = reportProperties.value?.bandLimits?.[
     currentBandType
   ] ||
-    getEffectiveDefaultBandLimits()[currentBandType] || { min: 20, max: 200 };
+    getEffectiveDefaultBandLimits()[currentBandType] || { min: 20, max: 70 };
   const minHeight =
     typeof bandLimitsConfig.min === "number" ? bandLimitsConfig.min : 20;
   const maxHeight =
@@ -4959,9 +4900,7 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   // Dragging DOWN (deltaY > 0) increases height; dragging UP (deltaY < 0) decreases height.
   const isBottomBand =
     currentBandType === BAND_TYPE_CONSTANTS.COLUMN_FOOTER ||
-    currentBandType === BAND_TYPE_CONSTANTS.SUMMARY ||
-    currentBandType === BAND_TYPE_CONSTANTS.PAGE_FOOTER ||
-    currentBandType === BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER;
+    currentBandType === BAND_TYPE_CONSTANTS.PAGE_FOOTER;
 
   // Available height in the A4 printable area
   const topMargin = reportProperties.value?.topMargin || 0;
@@ -4999,7 +4938,10 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   let lastToastType: "min" | "max" | null = null;
   let lastToastTime = 0;
 
-  const showLimitToast = (type: "min" | "max") => {
+  const showLimitToast = (
+    type: "min" | "max",
+    reason?: "page_full" | "template_limit",
+  ) => {
     const now = Date.now();
     if (lastToastType === type && now - lastToastTime < 2000) {
       return;
@@ -5008,9 +4950,15 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
     lastToastTime = now;
 
     if (type === "max") {
-      notification.info(
-        `${bandDisplayName} space is exceeded, change the default setting for more space.`,
-      );
+      if (reason === "page_full") {
+        notification.info(
+          `You don't have space to extend ${bandDisplayName}. Detail band has reached its minimum height (${detailMinHeight}px).`,
+        );
+      } else {
+        notification.info(
+          `${bandDisplayName} space is exceeded, change the template band setting for more space.`,
+        );
+      }
     } else {
       notification.info(
         `Min height reached, if you don't want this ${bandDisplayName} band, please remove them.`,
@@ -5028,7 +4976,11 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
     const requestedHeight = Math.round(startTargetHeight + effectiveDelta);
 
     if (requestedHeight > effectiveMax) {
-      showLimitToast("max");
+      const reason =
+        effectiveMax === maxPossibleHeight && maxPossibleHeight < maxHeight
+          ? "page_full"
+          : "template_limit";
+      showLimitToast("max", reason);
     } else if (requestedHeight < minHeight) {
       showLimitToast("min");
     } else {

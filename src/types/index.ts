@@ -88,14 +88,12 @@ export interface ReportProperty {
 
 // Band type enum
 export type BandType =
-  | "detail"
   | "pageHeader"
-  | "pageFooter"
   | "columnHeader"
+  | "detail"
   | "columnFooter"
-  | "background"
-  | "lastPageFooter"
-  | "noData";
+  | "pageFooter"
+  | "background";
 
 // Pen style interface
 export interface Pen {
