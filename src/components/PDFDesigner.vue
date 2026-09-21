@@ -725,6 +725,7 @@ import type {
   FrameElement,
   ReportField,
   ReportParameter,
+  ReportProperties,
   ReportVariable,
   SelectedElementInfo,
   TableDataset,
@@ -751,6 +752,9 @@ import {
   BAND_CONSTANTS,
   BAND_HEIGHT_CONSTANTS,
   BAND_TYPE_CONSTANTS,
+  DEFAULT_BAND_LIMITS,
+  getEffectiveDefaultBandLimits,
+  getEffectiveDefaultBandConfig,
   ELEMENT_CONSTANTS,
   FONT_CONSTANTS,
   HISTORY_CONSTANTS,
@@ -867,7 +871,7 @@ const bottomPanelHeight = ref(PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT); // D
 const jrxmlContent = ref("");
 
 // Report properties
-const reportProperties = ref({
+const reportProperties = ref<ReportProperties>({
   name: "NewReport",
   pageWidth: REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH,
   pageHeight: REPORT_CONSTANTS.DEFAULT_PAGE_HEIGHT,
@@ -882,6 +886,7 @@ const reportProperties = ref({
     isItalic: false,
     isUnderline: false,
   },
+  bandLimits: getEffectiveDefaultBandLimits(),
 });
 
 // File management related state
@@ -944,32 +949,51 @@ function createNewFile() {
       isItalic: false,
       isUnderline: false,
     },
+    bandLimits: getEffectiveDefaultBandLimits(),
   };
+
+  const defaultBandConfig = getEffectiveDefaultBandConfig();
+  const pageHeaderH =
+    defaultBandConfig[BAND_TYPE_CONSTANTS.PAGE_HEADER]?.defaultHeight ??
+    (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50);
+  const columnHeaderH =
+    defaultBandConfig[BAND_TYPE_CONSTANTS.COLUMN_HEADER]?.defaultHeight ??
+    (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30);
+  const columnFooterH =
+    defaultBandConfig[BAND_TYPE_CONSTANTS.COLUMN_FOOTER]?.defaultHeight ??
+    (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30);
+  const pageFooterH =
+    defaultBandConfig[BAND_TYPE_CONSTANTS.PAGE_FOOTER]?.defaultHeight ??
+    (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40);
+  const detailH = Math.max(
+    50,
+    802 - (pageHeaderH + columnHeaderH + columnFooterH + pageFooterH),
+  );
 
   bands.value = [
     {
       type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
+      height: pageHeaderH,
       elements: [],
     },
     {
       type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30,
+      height: columnHeaderH,
       elements: [],
     },
     {
       type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
-      height: 652, // Fits full printable height of A4 (842 - 20 - 20 - (50+30+30+40) = 652)
+      height: detailH,
       elements: [],
     },
     {
       type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30,
+      height: columnFooterH,
       elements: [],
     },
     {
       type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
+      height: pageFooterH,
       elements: [
         {
           uuid: crypto.randomUUID(),
@@ -1166,30 +1190,48 @@ const elements = computed(() =>
 // Using the interfaces imported from types/index.ts
 
 // Report bands
+const initDefaultBandConfig = getEffectiveDefaultBandConfig();
+const initPageHeaderH =
+  initDefaultBandConfig[BAND_TYPE_CONSTANTS.PAGE_HEADER]?.defaultHeight ??
+  (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50);
+const initColumnHeaderH =
+  initDefaultBandConfig[BAND_TYPE_CONSTANTS.COLUMN_HEADER]?.defaultHeight ??
+  (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30);
+const initColumnFooterH =
+  initDefaultBandConfig[BAND_TYPE_CONSTANTS.COLUMN_FOOTER]?.defaultHeight ??
+  (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30);
+const initPageFooterH =
+  initDefaultBandConfig[BAND_TYPE_CONSTANTS.PAGE_FOOTER]?.defaultHeight ??
+  (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40);
+const initDetailH = Math.max(
+  50,
+  802 - (initPageHeaderH + initColumnHeaderH + initColumnFooterH + initPageFooterH),
+);
+
 const bands = ref<Band[]>([
   {
     type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
+    height: initPageHeaderH,
     elements: [],
   },
   {
     type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30,
+    height: initColumnHeaderH,
     elements: [],
   },
   {
     type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
-    height: 652, // Fits remaining space of A4 (842 - 20 - 20 - (50+30+30+40) = 652)
+    height: initDetailH,
     elements: [],
   },
   {
     type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30,
+    height: initColumnFooterH,
     elements: [],
   },
   {
     type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
+    height: initPageFooterH,
     elements: [
       {
         uuid: crypto.randomUUID(),
@@ -1810,12 +1852,17 @@ const ensureBandsFitPage = () => {
   }
 };
 
-// Watch paper dimensions and margins to ensure bands always fit the page
+// Watch paper dimensions, margins, and non-detail band heights to ensure Detail always fits remaining space
 watch(
   [
     () => paperHeight.value,
     () => reportProperties.value?.topMargin,
     () => reportProperties.value?.bottomMargin,
+    () =>
+      bands.value
+        .filter((b) => b.type !== BAND_TYPE_CONSTANTS.DETAIL)
+        .map((b) => b.height)
+        .join(","),
   ],
   () => {
     ensureBandsFitPage();
@@ -3245,7 +3292,12 @@ const saveToLocalStorageWrapper = () => {
 const loadFromLocalStorageWrapper = () => {
   const loadedData = loadFromLocalStorage();
   if (loadedData && loadedData.reportData) {
-    reportProperties.value = loadedData.reportData.reportProperties;
+    reportProperties.value = {
+      ...loadedData.reportData.reportProperties,
+      bandLimits:
+        loadedData.reportData.reportProperties.bandLimits ||
+        getEffectiveDefaultBandLimits(),
+    };
     bands.value = loadedData.reportData.bands;
     reportFields.value = loadedData.reportData.reportFields;
     jrxmlContent.value = loadedData.reportData.jrxmlContent;
@@ -4118,6 +4170,10 @@ const saveJRXML = (): void => {
     // Update the report properties
     reportProperties.value = {
       ...parsedData.properties,
+      orientation:
+        parsedData.properties?.orientation === "landscape"
+          ? "landscape"
+          : "portrait",
       defaultFont: reportProperties.value?.defaultFont || {
         name: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
         size: REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
@@ -4125,6 +4181,8 @@ const saveJRXML = (): void => {
         isItalic: false,
         isUnderline: false,
       },
+      bandLimits:
+        reportProperties.value?.bandLimits || getEffectiveDefaultBandLimits(),
     };
 
     if (parsedData.properties?.pageCount) {
@@ -4875,9 +4933,9 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   const startY = event.clientY;
   if (!bands.value || !bands.value[bandIndex]) return;
 
-  // Get the current zoom scale
   const currentZoom = zoomLevel.value;
-  const minHeight = BAND_CONSTANTS.MIN_HEIGHT;
+  const targetBand = bands.value[bandIndex];
+  const currentBandType = targetBand.type;
 
   // Detail band does not have its own resize handle; it occupies whatever space remains
   const detailIndex = bands.value.findIndex(
@@ -4885,20 +4943,19 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   );
   if (bandIndex === detailIndex) return;
 
-  const columnFooterIndex = bands.value.findIndex(
-    (b) => b.type === BAND_TYPE_CONSTANTS.COLUMN_FOOTER,
-  );
-  const summaryIndex = bands.value.findIndex(
-    (b) => b.type === BAND_TYPE_CONSTANTS.SUMMARY,
-  );
-  const pageFooterIndex = bands.value.findIndex(
-    (b) => b.type === BAND_TYPE_CONSTANTS.PAGE_FOOTER,
-  );
+  // Retrieve configurable min and max constraints (default 20px min, 70px max)
+  const bandLimitsConfig = reportProperties.value?.bandLimits?.[
+    currentBandType
+  ] ||
+    getEffectiveDefaultBandLimits()[currentBandType] || { min: 20, max: 200 };
+  const minHeight =
+    typeof bandLimitsConfig.min === "number" ? bandLimitsConfig.min : 20;
+  const maxHeight =
+    typeof bandLimitsConfig.max === "number" ? bandLimitsConfig.max : 70;
 
-  const currentBandType = bands.value[bandIndex]?.type;
-  // Bottom bands (Column Footer, Summary, Page Footer) have their handle at the TOP edge:
+  // Bottom bands (Column Footer, Summary, Page Footer, Last Page Footer) have handle at TOP edge:
   // Dragging UP (deltaY < 0) increases height; dragging DOWN (deltaY > 0) decreases height.
-  // Top bands (Title, Page Header, Column Header) have their handle at the BOTTOM edge:
+  // Top bands (Page Header, Column Header) have handle at BOTTOM edge:
   // Dragging DOWN (deltaY > 0) increases height; dragging UP (deltaY < 0) decreases height.
   const isBottomBand =
     currentBandType === BAND_TYPE_CONSTANTS.COLUMN_FOOTER ||
@@ -4915,48 +4972,7 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   const startHeights: number[] = bands.value.map((b) => b.height || 0);
   const startTargetHeight: number = startHeights[bandIndex] ?? minHeight;
 
-  // Identify bands directly above the target band in proximity order (nearest first)
-  const aboveIndices: number[] = [];
-  if (bandIndex === pageFooterIndex) {
-    if (summaryIndex !== -1 && (startHeights[summaryIndex] ?? 0) > 0) {
-      aboveIndices.push(summaryIndex);
-    }
-    if (
-      columnFooterIndex !== -1 &&
-      (startHeights[columnFooterIndex] ?? 0) > 0
-    ) {
-      aboveIndices.push(columnFooterIndex);
-    }
-    if (detailIndex !== -1) {
-      aboveIndices.push(detailIndex);
-    }
-  } else if (bandIndex === summaryIndex) {
-    if (
-      columnFooterIndex !== -1 &&
-      (startHeights[columnFooterIndex] ?? 0) > 0
-    ) {
-      aboveIndices.push(columnFooterIndex);
-    }
-    if (detailIndex !== -1) {
-      aboveIndices.push(detailIndex);
-    }
-  } else if (bandIndex === columnFooterIndex) {
-    if (detailIndex !== -1) {
-      aboveIndices.push(detailIndex);
-    }
-  }
-
-  // Maximum growth for bottom band: limited by space available in the bands above it
-  let maxBottomGrowth = 0;
-  for (const idx of aboveIndices) {
-    maxBottomGrowth += Math.max(
-      0,
-      (startHeights[idx] ?? minHeight) - minHeight,
-    );
-  }
-  const maxBottomShrink = Math.max(0, startTargetHeight - minHeight);
-
-  // Total height of all other bands excluding the band being resized and Detail band (for top bands)
+  // Total height of all other fixed bands (excluding target band and Detail)
   let otherBandsHeight = 0;
   bands.value.forEach((b, i) => {
     if (i !== bandIndex && i !== detailIndex) {
@@ -4964,98 +4980,79 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
     }
   });
 
-  const maxTopGrowth = Math.max(
+  // Detail band minimum height
+  const detailMinHeight = BAND_CONSTANTS.MIN_HEIGHT || 20;
+  // Detail-constrained upper limit for this band
+  const maxPossibleHeight = Math.max(
     minHeight,
-    availableHeight - otherBandsHeight - minHeight,
+    availableHeight - otherBandsHeight - detailMinHeight,
   );
+  const effectiveMax = Math.min(maxHeight, maxPossibleHeight);
 
   // Show the band height adjustment tooltip
-  const band = bands.value[bandIndex];
+  const bandDisplayName = getBandDisplayName(currentBandType);
   resizingBandInfo.visible = true;
-  resizingBandInfo.bandName = getBandDisplayName(band.type);
+  resizingBandInfo.bandName = bandDisplayName;
   resizingBandInfo.height = startTargetHeight;
+
+  // Toast notification throttling state
+  let lastToastType: "min" | "max" | null = null;
+  let lastToastTime = 0;
+
+  const showLimitToast = (type: "min" | "max") => {
+    const now = Date.now();
+    if (lastToastType === type && now - lastToastTime < 2000) {
+      return;
+    }
+    lastToastType = type;
+    lastToastTime = now;
+
+    if (type === "max") {
+      notification.info(
+        `${bandDisplayName} space is exceeded, change the default setting for more space.`,
+      );
+    } else {
+      notification.info(
+        `Min height reached, if you don't want this ${bandDisplayName} band, please remove them.`,
+      );
+    }
+  };
 
   const handleMouseMove = (e: MouseEvent): void => {
     if (!bands.value || !bands.value[bandIndex]) return;
     const deltaY = (e.clientY - startY) / currentZoom;
-    let newTargetHeight: number = startTargetHeight;
 
-    if (isBottomBand) {
-      // Dragging UP (deltaY < 0) means expanding upward: effectiveDelta > 0
-      // Dragging DOWN (deltaY > 0) means shrinking downward: effectiveDelta < 0
-      const effectiveDelta = -deltaY;
-      const clampedDelta = Math.min(
-        maxBottomGrowth,
-        Math.max(-maxBottomShrink, Math.round(effectiveDelta)),
-      );
+    // For bottom bands (handle at top edge): dragging UP (-deltaY) expands
+    // For top bands (handle at bottom edge): dragging DOWN (+deltaY) expands
+    const effectiveDelta = isBottomBand ? -deltaY : deltaY;
+    const requestedHeight = Math.round(startTargetHeight + effectiveDelta);
 
-      newTargetHeight = startTargetHeight + clampedDelta;
-
-      // Allocate space across bands directly above (nearest band first!)
-      const newHeights = [...startHeights];
-      newHeights[bandIndex] = newTargetHeight;
-
-      if (clampedDelta > 0) {
-        // Taking space from above bands starting with the nearest one
-        let needed = clampedDelta;
-        for (const idx of aboveIndices) {
-          const curH = startHeights[idx] ?? minHeight;
-          const canYield = Math.max(0, curH - minHeight);
-          const take = Math.min(needed, canYield);
-          newHeights[idx] = curH - take;
-          needed -= take;
-          if (needed <= 0) break;
-        }
-      } else if (clampedDelta < 0) {
-        // Giving space back to nearest above band
-        const nearestIdx = aboveIndices[0];
-        if (nearestIdx !== undefined) {
-          newHeights[nearestIdx] =
-            (startHeights[nearestIdx] ?? minHeight) + -clampedDelta;
-        }
-      }
-
-      bands.value = bands.value.map((b, i) => ({
-        ...b,
-        height: newHeights[i] ?? b.height,
-      }));
-
-      // Adjust elements within any shrunk above bands
-      for (const idx of aboveIndices) {
-        const b = bands.value[idx];
-        const h = newHeights[idx];
-        if (b && b.elements && h !== undefined) {
-          b.elements.forEach((element) => {
-            if (element.y + element.height > h) {
-              element.y = Math.max(0, h - element.height);
-            }
-          });
-        }
-      }
+    if (requestedHeight > effectiveMax) {
+      showLimitToast("max");
+    } else if (requestedHeight < minHeight) {
+      showLimitToast("min");
     } else {
-      // Top bands (Title, Page Header, Column Header)
-      // Dragging DOWN expands the band; Detail yields space
-      newTargetHeight = Math.min(
-        maxTopGrowth,
-        Math.max(minHeight, Math.round(startTargetHeight + deltaY)),
-      );
-
-      const newDetailHeight = Math.max(
-        minHeight,
-        availableHeight - otherBandsHeight - newTargetHeight,
-      );
-
-      bands.value = bands.value.map((b, i) => {
-        if (i === bandIndex) return { ...b, height: newTargetHeight };
-        if (i === detailIndex) return { ...b, height: newDetailHeight };
-        return b;
-      });
+      lastToastType = null;
     }
 
+    const newTargetHeight = Math.max(
+      minHeight,
+      Math.min(effectiveMax, requestedHeight),
+    );
+
+    const newDetailHeight = Math.max(
+      detailMinHeight,
+      availableHeight - otherBandsHeight - newTargetHeight,
+    );
+
+    bands.value = bands.value.map((b, i) => {
+      if (i === bandIndex) return { ...b, height: newTargetHeight };
+      if (i === detailIndex) return { ...b, height: newDetailHeight };
+      return b;
+    });
+
     resizingBandInfo.height = newTargetHeight;
-    resizingBandInfo.bandName = bands.value[bandIndex]
-      ? getBandDisplayName(bands.value[bandIndex].type)
-      : "";
+    resizingBandInfo.bandName = bandDisplayName;
 
     // Position the band-height display element so it follows the mouse
     const bandHeightElement = document.querySelector(
@@ -6367,11 +6364,15 @@ const handleBandSelectionChange = (): void => {
 
   // Add the new bands
   if (bandsToAdd.length > 0) {
+    const defaultBandConfig = getEffectiveDefaultBandConfig();
     const newBands = bandsToAdd.map((type) => {
       const bandTypeConfig = allBandTypes.find((bt) => bt.type === type);
+      const defaultHeight =
+        defaultBandConfig[type]?.defaultHeight ??
+        (bandTypeConfig ? bandTypeConfig.defaultHeight : 50);
       return {
         type: type as BandType,
-        height: bandTypeConfig ? bandTypeConfig.defaultHeight : 50,
+        height: defaultHeight,
         elements: [],
       };
     });

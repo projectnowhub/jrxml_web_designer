@@ -259,6 +259,7 @@ export interface ReportProperties {
   defaultFont: FontSettings;
   orientation?: "portrait" | "landscape";
   pageCount?: number;
+  bandLimits?: Record<string, { min: number; max: number }>;
 }
 
 // Base design element interface

@@ -1,21 +1,40 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { NButton, NAlert } from 'naive-ui';
-import ResizablePanel from './ResizablePanel.vue';
-import PdfPreviewModal from '../modals/PdfPreviewModal.vue';
-import CodeMirrorEditor from '../editor/CodeMirrorEditor.vue';
+import {
+  ref,
+  computed,
+  nextTick,
+  onMounted,
+  onBeforeUnmount,
+  watch,
+} from "vue";
+import { useI18n } from "vue-i18n";
+import { NButton, NAlert } from "naive-ui";
+import ResizablePanel from "./ResizablePanel.vue";
+import PdfPreviewModal from "../modals/PdfPreviewModal.vue";
+import CodeMirrorEditor from "../editor/CodeMirrorEditor.vue";
 
-import { validateJRXML, autoFixJRXML, type ValidationResult, type ValidationError, type AutoFixResult } from '../../utils/jrxml/xsdValidator';
-import { html_beautify } from 'js-beautify';
+import {
+  validateJRXML,
+  autoFixJRXML,
+  type ValidationResult,
+  type ValidationError,
+  type AutoFixResult,
+} from "../../utils/jrxml/xsdValidator";
+import { html_beautify } from "js-beautify";
 
-import type { Band, ReportProperties } from '../../types';
+import type { Band, ReportProperties } from "../../types";
 import {
   UI_CONSTANTS,
-  PANEL_CONSTANTS
-} from '../../constants/constants';
-import { getAvailableFonts } from '../../utils/fontUtils';
-import type { BandType } from '../../types';
+  PANEL_CONSTANTS,
+  BAND_TYPE_CONSTANTS,
+  DEFAULT_BAND_LIMITS,
+  DEVELOPER_DEFAULT_BAND_CONFIG,
+  GLOBAL_BAND_LIMITS_STORAGE_KEY,
+  getEffectiveDefaultBandConfig,
+  getEffectiveDefaultBandLimits,
+} from "../../constants/constants";
+import { getAvailableFonts } from "../../utils/fontUtils";
+import type { BandType } from "../../types";
 
 const { t } = useI18n();
 
@@ -39,31 +58,31 @@ interface Props {
 
 // Define component events
 interface Emits {
-  (e: 'update:visible', value: boolean): void;
-  (e: 'size-change', value: number): void;
-  (e: 'update:report-properties', value: any): void;
-  (e: 'update:selected-band-types', value: BandType[]): void;
-  (e: 'update:jrxml-content', value: string): void;
-  (e: 'copy-jrxml'): void;
-  (e: 'save-jrxml'): void;
-  (e: 'regenerate-jrxml'): void;
-  (e: 'download-jrxml'): void;
-  (e: 'band-selection-change'): void;
+  (e: "update:visible", value: boolean): void;
+  (e: "size-change", value: number): void;
+  (e: "update:report-properties", value: any): void;
+  (e: "update:selected-band-types", value: BandType[]): void;
+  (e: "update:jrxml-content", value: string): void;
+  (e: "copy-jrxml"): void;
+  (e: "save-jrxml"): void;
+  (e: "regenerate-jrxml"): void;
+  (e: "download-jrxml"): void;
+  (e: "band-selection-change"): void;
 }
 
 // Use defineProps and defineEmits
 const props = withDefaults(defineProps<Props>(), {
   visible: false,
-  initialHeight: PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT
+  initialHeight: PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT,
 });
 
 const emit = defineEmits<Emits>();
 
 // Tab-related state
-const activeTab = ref('pageSettings');
+const activeTab = ref("pageSettings");
 const tabs = ref([
-  { id: 'pageSettings', name: t('bottomPanel.jrxmlTabs.pageSettings') },
-  { id: 'jrxml', name: t('bottomPanel.jrxmlContent') }
+  { id: "pageSettings", name: t("bottomPanel.jrxmlTabs.pageSettings") },
+  { id: "jrxml", name: t("bottomPanel.jrxmlContent") },
 ]);
 
 // Bottom panel height
@@ -76,60 +95,60 @@ const currentMaxSize = ref(window.innerHeight); // No maximum height limit
 
 // Paper size definitions
 const PAPER_SIZES = [
-  { name: 'Letter', width: 612, height: 792 },
-  { name: 'Legal', width: 612, height: 1008 },
-  { name: 'A0', width: 2384, height: 3370 },
-  { name: 'A1', width: 1684, height: 2384 },
-  { name: 'A2', width: 1191, height: 1684 },
-  { name: 'A3', width: 842, height: 1190 },
-  { name: 'A4', width: 595, height: 842 },
-  { name: 'A5', width: 420, height: 595 },
-  { name: 'A6', width: 298, height: 420 },
-  { name: 'A7', width: 210, height: 298 },
-  { name: 'A8', width: 147, height: 210 },
-  { name: 'A9', width: 105, height: 147 },
-  { name: 'A10', width: 74, height: 105 },
-  { name: 'B0', width: 2835, height: 4008 },
-  { name: 'B1', width: 2004, height: 2835 },
-  { name: 'B2', width: 1417, height: 2004 },
-  { name: 'B3', width: 1001, height: 1417 },
-  { name: 'B4', width: 708, height: 1000 },
-  { name: 'B5', width: 498, height: 708 },
-  { name: 'B6', width: 354, height: 499 },
-  { name: 'B7', width: 249, height: 354 },
-  { name: 'B8', width: 176, height: 249 },
-  { name: 'B9', width: 125, height: 176 },
-  { name: 'B10', width: 88, height: 125 },
-  { name: 'C0', width: 2599, height: 3676 },
-  { name: 'C1', width: 1837, height: 2599 },
-  { name: 'C2', width: 1298, height: 1837 },
-  { name: 'C3', width: 918, height: 1298 },
-  { name: 'C4', width: 649, height: 918 },
-  { name: 'C5', width: 459, height: 649 },
-  { name: 'C6', width: 323, height: 459 },
-  { name: 'C7', width: 230, height: 323 },
-  { name: 'C8', width: 162, height: 230 },
-  { name: 'C9', width: 113, height: 162 },
-  { name: 'C10', width: 79, height: 113 },
-  { name: 'RA0', width: 2437, height: 3458 },
-  { name: 'RA1', width: 1729, height: 2437 },
-  { name: 'RA2', width: 1218, height: 1729 },
-  { name: 'SRA0', width: 2551, height: 3628 },
-  { name: 'SRA1', width: 1814, height: 2551 },
-  { name: 'SRA2', width: 1275, height: 1814 },
-  { name: 'Executive', width: 522, height: 756 },
-  { name: 'Statement', width: 396, height: 612 },
-  { name: 'Tabloid', width: 792, height: 1224 },
-  { name: 'Ledger', width: 1224, height: 792 },
-  { name: 'Note', width: 540, height: 780 },
-  { name: 'Folio', width: 612, height: 936 },
-  { name: 'Quarto', width: 610, height: 780 },
-  { name: '10x14', width: 720, height: 1008 },
-  { name: 'Custom', width: 0, height: 0 }
+  { name: "Letter", width: 612, height: 792 },
+  { name: "Legal", width: 612, height: 1008 },
+  { name: "A0", width: 2384, height: 3370 },
+  { name: "A1", width: 1684, height: 2384 },
+  { name: "A2", width: 1191, height: 1684 },
+  { name: "A3", width: 842, height: 1190 },
+  { name: "A4", width: 595, height: 842 },
+  { name: "A5", width: 420, height: 595 },
+  { name: "A6", width: 298, height: 420 },
+  { name: "A7", width: 210, height: 298 },
+  { name: "A8", width: 147, height: 210 },
+  { name: "A9", width: 105, height: 147 },
+  { name: "A10", width: 74, height: 105 },
+  { name: "B0", width: 2835, height: 4008 },
+  { name: "B1", width: 2004, height: 2835 },
+  { name: "B2", width: 1417, height: 2004 },
+  { name: "B3", width: 1001, height: 1417 },
+  { name: "B4", width: 708, height: 1000 },
+  { name: "B5", width: 498, height: 708 },
+  { name: "B6", width: 354, height: 499 },
+  { name: "B7", width: 249, height: 354 },
+  { name: "B8", width: 176, height: 249 },
+  { name: "B9", width: 125, height: 176 },
+  { name: "B10", width: 88, height: 125 },
+  { name: "C0", width: 2599, height: 3676 },
+  { name: "C1", width: 1837, height: 2599 },
+  { name: "C2", width: 1298, height: 1837 },
+  { name: "C3", width: 918, height: 1298 },
+  { name: "C4", width: 649, height: 918 },
+  { name: "C5", width: 459, height: 649 },
+  { name: "C6", width: 323, height: 459 },
+  { name: "C7", width: 230, height: 323 },
+  { name: "C8", width: 162, height: 230 },
+  { name: "C9", width: 113, height: 162 },
+  { name: "C10", width: 79, height: 113 },
+  { name: "RA0", width: 2437, height: 3458 },
+  { name: "RA1", width: 1729, height: 2437 },
+  { name: "RA2", width: 1218, height: 1729 },
+  { name: "SRA0", width: 2551, height: 3628 },
+  { name: "SRA1", width: 1814, height: 2551 },
+  { name: "SRA2", width: 1275, height: 1814 },
+  { name: "Executive", width: 522, height: 756 },
+  { name: "Statement", width: 396, height: 612 },
+  { name: "Tabloid", width: 792, height: 1224 },
+  { name: "Ledger", width: 1224, height: 792 },
+  { name: "Note", width: 540, height: 780 },
+  { name: "Folio", width: 612, height: 936 },
+  { name: "Quarto", width: 610, height: 780 },
+  { name: "10x14", width: 720, height: 1008 },
+  { name: "Custom", width: 0, height: 0 },
 ];
 
-const selectedPaperSize = ref('A4');
-const orientation = ref('Portrait');
+const selectedPaperSize = ref("A4");
+const orientation = ref("Portrait");
 
 // List of available fonts
 const availableFonts = ref<string[]>([]);
@@ -138,35 +157,43 @@ const availableFonts = ref<string[]>([]);
 const showPdfPreview = ref(false);
 
 // Reference to the CodeMirrorEditor component
-const codeMirrorEditorRef = ref<InstanceType<typeof CodeMirrorEditor> | null>(null);
+const codeMirrorEditorRef = ref<InstanceType<typeof CodeMirrorEditor> | null>(
+  null,
+);
 
 // Search-related state (consolidated into the button row)
 const searchInputRef = ref<HTMLInputElement | null>(null);
 const showSearch = ref(false);
-const searchQuery = ref('');
+const searchQuery = ref("");
 const searchResultsCount = ref(0);
 const currentSearchResult = ref(0);
 
 const toggleSearch = () => {
   showSearch.value = !showSearch.value;
   if (showSearch.value) {
-    searchResultsCount.value = codeMirrorEditorRef.value?.performSearchWith(searchQuery.value) ?? 0;
+    searchResultsCount.value =
+      codeMirrorEditorRef.value?.performSearchWith(searchQuery.value) ?? 0;
     currentSearchResult.value = searchResultsCount.value > 0 ? 1 : 0;
-    nextTick(() => { searchInputRef.value?.focus(); });
+    nextTick(() => {
+      searchInputRef.value?.focus();
+    });
   } else {
     codeMirrorEditorRef.value?.closeSearch();
   }
 };
 
 const performSearch = () => {
-  searchResultsCount.value = codeMirrorEditorRef.value?.performSearchWith(searchQuery.value) ?? 0;
+  searchResultsCount.value =
+    codeMirrorEditorRef.value?.performSearchWith(searchQuery.value) ?? 0;
   currentSearchResult.value = searchResultsCount.value > 0 ? 1 : 0;
   // If the query is purely numeric and there are no search results, treat it as a line-number jump
   if (searchResultsCount.value === 0 && /^\d+$/.test(searchQuery.value)) {
     jumpToLine(parseInt(searchQuery.value, 10), 0);
   }
   // Keep focus on the search box so the editor doesn't steal it
-  nextTick(() => { searchInputRef.value?.focus(); });
+  nextTick(() => {
+    searchInputRef.value?.focus();
+  });
 };
 
 const findNext = () => {
@@ -178,22 +205,24 @@ const findNext = () => {
   }
   codeMirrorEditorRef.value?.findNext();
   if (searchResultsCount.value > 0) {
-    currentSearchResult.value = ((currentSearchResult.value) % searchResultsCount.value) + 1;
+    currentSearchResult.value =
+      (currentSearchResult.value % searchResultsCount.value) + 1;
   }
 };
 
 const findPrevious = () => {
   codeMirrorEditorRef.value?.findPrevious();
   if (searchResultsCount.value > 0) {
-    currentSearchResult.value = currentSearchResult.value <= 1
-      ? searchResultsCount.value
-      : currentSearchResult.value - 1;
+    currentSearchResult.value =
+      currentSearchResult.value <= 1
+        ? searchResultsCount.value
+        : currentSearchResult.value - 1;
   }
 };
 
 const closeSearch = () => {
   showSearch.value = false;
-  searchQuery.value = '';
+  searchQuery.value = "";
   searchResultsCount.value = 0;
   currentSearchResult.value = 0;
   codeMirrorEditorRef.value?.closeSearch();
@@ -206,7 +235,7 @@ onMounted(async () => {
 // Open the PDF preview
 const openPdfPreview = (): void => {
   if (!localJrxmlContent.value) {
-    alert(t('bottomPanel.alerts.generateJrxmlFirst'));
+    alert(t("bottomPanel.alerts.generateJrxmlFirst"));
     return;
   }
   showPdfPreview.value = false;
@@ -218,8 +247,135 @@ const openPdfPreview = (): void => {
 // Computed property: local binding for reportProperties
 const localReportProperties = computed({
   get: () => props.reportProperties,
-  set: (value) => emit('update:report-properties', value)
+  set: (value) => emit("update:report-properties", value),
 });
+
+// Resizable band types list for limit constraints
+const resizableBandTypes = computed(() => [
+  { type: BAND_TYPE_CONSTANTS.PAGE_HEADER },
+  { type: BAND_TYPE_CONSTANTS.COLUMN_HEADER },
+  { type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER },
+  { type: BAND_TYPE_CONSTANTS.PAGE_FOOTER },
+  { type: BAND_TYPE_CONSTANTS.TITLE },
+  { type: BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER },
+  { type: BAND_TYPE_CONSTANTS.SUMMARY },
+]);
+
+// Dedicated state for global default band limits (independent from active template)
+const globalDefaultBandLimits = ref<
+  Record<string, { min: number; max: number }>
+>(getEffectiveDefaultBandLimits());
+// Dedicated state for global default band settings (independent from active template)
+const globalDefaultBandConfig = ref<
+  Record<string, { defaultHeight: number; min: number; max: number }>
+>(getEffectiveDefaultBandConfig());
+
+const getGlobalBandConfig = (bandType: string) => {
+  if (!globalDefaultBandConfig.value[bandType]) {
+    const dev = DEVELOPER_DEFAULT_BAND_CONFIG[bandType] || {
+      defaultHeight: 50,
+      min: 20,
+      max: 200,
+    };
+    globalDefaultBandConfig.value[bandType] = { ...dev };
+  }
+  return globalDefaultBandConfig.value[bandType]!;
+};
+
+// Calculate remaining A4 space for Detail band based on configured default band heights
+const defaultDetailCalculatedHeight = computed(() => {
+  const pageH = localReportProperties.value?.pageHeight || 842;
+  const topM = localReportProperties.value?.topMargin || 20;
+  const bottomM = localReportProperties.value?.bottomMargin || 20;
+  const printableH = pageH - topM - bottomM;
+
+  const standardActiveBands = [
+    BAND_TYPE_CONSTANTS.PAGE_HEADER,
+    BAND_TYPE_CONSTANTS.COLUMN_HEADER,
+    BAND_TYPE_CONSTANTS.COLUMN_FOOTER,
+    BAND_TYPE_CONSTANTS.PAGE_FOOTER,
+  ];
+
+  let otherDefaults = 0;
+  standardActiveBands.forEach((type) => {
+    const conf = getGlobalBandConfig(type);
+    otherDefaults += conf?.defaultHeight || 0;
+  });
+
+  return Math.max(20, printableH - otherDefaults);
+});
+
+const onDefaultHeightChange = (bandType: string) => {
+  const conf = getGlobalBandConfig(bandType);
+  if (typeof conf.defaultHeight === "number") {
+    if (conf.defaultHeight > conf.max) {
+      conf.max = conf.defaultHeight;
+    }
+    if (conf.defaultHeight < conf.min) {
+      conf.min = conf.defaultHeight;
+    }
+  }
+  autoSaveGlobalBandConfig();
+};
+
+const autoSaveGlobalBandConfig = () => {
+  try {
+    localStorage.setItem(
+      GLOBAL_BAND_LIMITS_STORAGE_KEY,
+      JSON.stringify(globalDefaultBandConfig.value),
+    );
+  } catch (e) {
+    console.error("Failed to save default band config to localStorage:", e);
+  }
+};
+
+const resetBandLimitsToDefault = () => {
+  globalDefaultBandConfig.value = JSON.parse(
+    JSON.stringify(DEVELOPER_DEFAULT_BAND_CONFIG),
+  );
+  try {
+    localStorage.removeItem(GLOBAL_BAND_LIMITS_STORAGE_KEY);
+  } catch (e) {
+    console.error("Failed to remove saved band limits from localStorage:", e);
+  }
+  alert(t("bottomPanel.resetToDeveloperDefaultsSuccess"));
+};
+
+const applyGlobalDefaultsToCurrentTemplate = () => {
+  if (!localReportProperties.value) return;
+  const config = globalDefaultBandConfig.value;
+  const limits: Record<string, { min: number; max: number }> = {};
+  for (const key of Object.keys(config)) {
+    const item = config[key];
+    if (item) {
+      limits[key] = { min: item.min, max: item.max };
+    }
+  }
+  localReportProperties.value.bandLimits = limits;
+  emit("update:report-properties", localReportProperties.value);
+
+  if (props.bands && Array.isArray(props.bands)) {
+    let otherBandsH = 0;
+    props.bands.forEach((band) => {
+      const bConf = config[band.type];
+      if (band.type !== "detail" && bConf?.defaultHeight) {
+        band.height = bConf.defaultHeight;
+        otherBandsH += band.height;
+      }
+    });
+    // Detail band absorbs whatever space remains on the page
+    const detailBand = props.bands.find((b) => b.type === "detail");
+    if (detailBand) {
+      const pageH = localReportProperties.value?.pageHeight || 842;
+      const topM = localReportProperties.value?.topMargin || 20;
+      const bottomM = localReportProperties.value?.bottomMargin || 20;
+      detailBand.height = Math.max(20, pageH - topM - bottomM - otherBandsH);
+    }
+    emit("save-jrxml");
+  }
+
+  alert(t("bottomPanel.appliedToTemplateSuccess"));
+};
 
 // Detect the paper size and orientation
 const detectPaperSizeAndOrientation = () => {
@@ -232,36 +388,42 @@ const detectPaperSizeAndOrientation = () => {
   // Ideally we'd only update orientation when it wasn't changed manually (to avoid update loops),
   // but this is mainly used for initial detection.
   // In practice we should always trust the current width/height ratio.
-  orientation.value = isLandscape ? 'Landscape' : 'Portrait';
+  orientation.value = isLandscape ? "Landscape" : "Portrait";
 
   // Check whether it matches a preset size
   // For landscape, width is the long side; for portrait, height is the long side.
   // In the preset sizes, width is the short side and height is the long side.
   const checkW = isLandscape ? h : w;
   const checkH = isLandscape ? w : h;
-  
-  const match = PAPER_SIZES.find(s => s.name !== 'Custom' && s.width === checkW && s.height === checkH);
-  selectedPaperSize.value = match ? match.name : 'Custom';
+
+  const match = PAPER_SIZES.find(
+    (s) => s.name !== "Custom" && s.width === checkW && s.height === checkH,
+  );
+  selectedPaperSize.value = match ? match.name : "Custom";
 };
 
 // Watch for reportProperties changes and update the selected state
 // Use deep: true to watch changes to nested properties
-watch(() => props.reportProperties, () => {
-  // Re-detect whenever width/height change
-  // Note: this may also fire while we're in the middle of changing width/height, so handle it carefully
-  // Here we only update when width/height no longer match the currently selected size
-  detectPaperSizeAndOrientation();
-}, { deep: true, immediate: true });
+watch(
+  () => props.reportProperties,
+  () => {
+    // Re-detect whenever width/height change
+    // Note: this may also fire while we're in the middle of changing width/height, so handle it carefully
+    // Here we only update when width/height no longer match the currently selected size
+    detectPaperSizeAndOrientation();
+  },
+  { deep: true, immediate: true },
+);
 
 // Handle paper size changes
 const handlePaperSizeChange = () => {
-  if (selectedPaperSize.value === 'Custom') return;
+  if (selectedPaperSize.value === "Custom") return;
 
-  const size = PAPER_SIZES.find(s => s.name === selectedPaperSize.value);
+  const size = PAPER_SIZES.find((s) => s.name === selectedPaperSize.value);
   if (!size) return;
 
   // Apply the size based on the current orientation
-  if (orientation.value === 'Landscape') {
+  if (orientation.value === "Landscape") {
     localReportProperties.value.pageWidth = size.height;
     localReportProperties.value.pageHeight = size.width;
   } else {
@@ -275,7 +437,7 @@ const handleOrientationChange = () => {
   const w = localReportProperties.value.pageWidth;
   const h = localReportProperties.value.pageHeight;
 
-  if (orientation.value === 'Landscape') {
+  if (orientation.value === "Landscape") {
     // Switching to landscape: if currently portrait (width < height), swap them
     if (w < h) {
       localReportProperties.value.pageWidth = h;
@@ -293,7 +455,7 @@ const handleOrientationChange = () => {
 // Computed property: local binding for selectedBandTypes
 const localSelectedBandTypes = computed({
   get: () => props.selectedBandTypes,
-  set: (value) => emit('update:selected-band-types', value)
+  set: (value) => emit("update:selected-band-types", value),
 });
 
 // Computed property: local binding for jrxmlContent
@@ -302,17 +464,29 @@ const localJrxmlContent = computed({
     if (!props.jrxmlContent) return props.jrxmlContent;
     return html_beautify(props.jrxmlContent, {
       indent_size: 2,
-      wrap_attributes: 'auto',
+      wrap_attributes: "auto",
       wrap_line_length: 120,
       content_unformatted: [
-        'text', 'textFieldExpression', 'parameterExpression', 'queryString',
-        'sortField', 'groupExpression', 'reportFont', 'property',
-        'propertyExpression', 'font'
+        "text",
+        "textFieldExpression",
+        "parameterExpression",
+        "queryString",
+        "sortField",
+        "groupExpression",
+        "reportFont",
+        "property",
+        "propertyExpression",
+        "font",
       ],
-      extra_liners: ['text', 'textFieldExpression', 'parameterExpression', 'queryString']
+      extra_liners: [
+        "text",
+        "textFieldExpression",
+        "parameterExpression",
+        "queryString",
+      ],
     });
   },
-  set: (value) => emit('update:jrxml-content', value)
+  set: (value) => emit("update:jrxml-content", value),
 });
 
 // Sync scrolling
@@ -324,24 +498,24 @@ const syncScroll = () => {
 // Handle bottom panel size changes
 const handleBottomPanelSizeChange = (newSize: number) => {
   bottomPanelHeight.value = newSize;
-  emit('size-change', newSize);
+  emit("size-change", newSize);
 };
 
 // Handle Band selection changes
 const handleBandSelectionChange = () => {
   // localSelectedBandTypes is a computed property already synced to the parent via v-model
   // Here we just need to emit the band-selection-change event so the parent can run related logic
-  emit('band-selection-change');
+  emit("band-selection-change");
 };
 
 // Copy the JRXML content to the clipboard
 const copyJRXML = async (): Promise<void> => {
-  emit('copy-jrxml');
+  emit("copy-jrxml");
 };
 
 // Regenerate the JRXML content
 const regenerateJRXML = (): void => {
-  emit('regenerate-jrxml');
+  emit("regenerate-jrxml");
 };
 
 const formatJRXML = (): void => {
@@ -351,13 +525,13 @@ const formatJRXML = (): void => {
 // Download the JRXML file
 const downloadJRXML = (): void => {
   // Switch to the JRXML tab
-  activeTab.value = 'jrxml';
-  emit('download-jrxml');
+  activeTab.value = "jrxml";
+  emit("download-jrxml");
 };
 
 // Save the edited JRXML content
 const saveJRXML = (): void => {
-  emit('save-jrxml');
+  emit("save-jrxml");
 };
 
 // Toggle fullscreen mode
@@ -378,26 +552,26 @@ const toggleFullscreen = (): void => {
 // Listen for keyboard events
 function handleKeyDown(event: KeyboardEvent) {
   // Listen for the ESC key to exit fullscreen or hide the bottom panel
-  if (event.key === 'Escape') {
+  if (event.key === "Escape") {
     if (isFullscreen.value) {
       toggleFullscreen();
     } else if (props.visible) {
       // When the bottom panel is visible and not fullscreen, ESC hides the bottom panel
-      emit('update:visible', false);
+      emit("update:visible", false);
     }
   }
 
   // Listen for Cmd+F or Ctrl+F to switch to the JRXML tab and enter fullscreen
-  if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
+  if ((event.metaKey || event.ctrlKey) && event.key === "f") {
     event.preventDefault(); // Prevent the browser's default search functionality
 
     // Open the bottom panel if it isn't already open
     if (!props.visible) {
-      emit('update:visible', true);
+      emit("update:visible", true);
     }
 
     // Switch to the JRXML tab
-    activeTab.value = 'jrxml';
+    activeTab.value = "jrxml";
 
     // Enter fullscreen mode
     if (!isFullscreen.value) {
@@ -413,7 +587,7 @@ function handleKeyDown(event: KeyboardEvent) {
 
 // Add the event listener when the component is mounted
 onMounted(() => {
-  window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener("keydown", handleKeyDown);
 });
 
 // Validation-related state
@@ -423,35 +597,37 @@ const isValidating = ref(false);
 // Run XSD validation
 const runValidation = async () => {
   if (!localJrxmlContent.value) {
-    alert(t('bottomPanel.alerts.generateJrxmlFirst'));
+    alert(t("bottomPanel.alerts.generateJrxmlFirst"));
     return;
   }
-  
+
   isValidating.value = true;
   validationResult.value = null;
-  
+
   try {
     validationResult.value = await validateJRXML(localJrxmlContent.value);
-    
+
     // Automatically expand the bottom panel when validation fails
     if (!validationResult.value.valid) {
       bottomPanelHeight.value = window.innerHeight - 100;
       currentMaxSize.value = window.innerHeight;
-      activeTab.value = 'jrxml';
+      activeTab.value = "jrxml";
     }
   } catch (error) {
     validationResult.value = {
       valid: false,
-      errors: [{
-        line: 0,
-        column: 0,
-        message: `Validation failed: ${String(error)}`
-      }]
+      errors: [
+        {
+          line: 0,
+          column: 0,
+          message: `Validation failed: ${String(error)}`,
+        },
+      ],
     };
     // Automatically expand the bottom panel when validation fails
     bottomPanelHeight.value = window.innerHeight - 100;
     currentMaxSize.value = window.innerHeight;
-    activeTab.value = 'jrxml';
+    activeTab.value = "jrxml";
   } finally {
     isValidating.value = false;
   }
@@ -476,7 +652,7 @@ const autoFixResult = ref<AutoFixResult | null>(null);
 // Run auto-fix
 const runAutoFix = async () => {
   if (!localJrxmlContent.value) {
-    alert(t('bottomPanel.alerts.generateJrxmlFirst'));
+    alert(t("bottomPanel.alerts.generateJrxmlFirst"));
     return;
   }
 
@@ -490,10 +666,10 @@ const runAutoFix = async () => {
       // Update the editor with the fixed content
       localJrxmlContent.value = autoFixResult.value.fixedContent;
       // Switch to the JRXML tab to show the fix result
-      activeTab.value = 'jrxml';
+      activeTab.value = "jrxml";
     }
   } catch (error) {
-    console.error('Auto-fix failed:', error);
+    console.error("Auto-fix failed:", error);
   } finally {
     isAutoFixing.value = false;
   }
@@ -506,17 +682,17 @@ const clearAutoFixResult = () => {
 
 // Add the event listener when the component is mounted
 onMounted(() => {
-  window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener("keydown", handleKeyDown);
 });
 
 // Remove the event listener before the component is unmounted
 onBeforeUnmount(() => {
-  window.removeEventListener('keydown', handleKeyDown);
+  window.removeEventListener("keydown", handleKeyDown);
 });
 </script>
 
 <template>
-  <ResizablePanel 
+  <ResizablePanel
     v-show="visible"
     position="bottom"
     :initial-size="bottomPanelHeight"
@@ -526,108 +702,166 @@ onBeforeUnmount(() => {
     @size-change="handleBottomPanelSizeChange"
   >
     <div class="tab-navigation">
-      <button 
-        v-for="tab in tabs" 
+      <button
+        v-for="tab in tabs"
         :key="tab.id"
-        class="tab-button" 
-        :class="{ 'active': activeTab === tab.id }"
+        class="tab-button"
+        :class="{ active: activeTab === tab.id }"
         @click="activeTab = tab.id"
       >
         {{ tab.name }}
       </button>
     </div>
-    
+
     <!-- Page settings tab -->
-    <div class="tab-content page-settings-tab" v-show="activeTab === 'pageSettings'">
+    <div
+      class="tab-content page-settings-tab"
+      v-show="activeTab === 'pageSettings'"
+    >
       <div class="settings-grid">
         <div class="settings-section">
-          <h4>{{ t('bottomPanel.basicInfo') }}</h4>
+          <h4>{{ t("bottomPanel.basicInfo") }}</h4>
           <div class="form-group">
-            <label>{{ t('bottomPanel.reportName') }}</label>
+            <label>{{ t("bottomPanel.reportName") }}</label>
             <input v-model="localReportProperties.name" type="text" />
           </div>
 
           <div class="form-row">
             <div class="form-group flex-1">
-              <label>{{ t('bottomPanel.paperSize') }}</label>
-              <select v-model="selectedPaperSize" @change="handlePaperSizeChange">
-                <option v-for="size in PAPER_SIZES" :key="size.name" :value="size.name">
+              <label>{{ t("bottomPanel.paperSize") }}</label>
+              <select
+                v-model="selectedPaperSize"
+                @change="handlePaperSizeChange"
+              >
+                <option
+                  v-for="size in PAPER_SIZES"
+                  :key="size.name"
+                  :value="size.name"
+                >
                   {{ size.name }}
                 </option>
               </select>
             </div>
             <div class="form-group flex-1">
-              <label>{{ t('bottomPanel.paperOrientation') }}</label>
+              <label>{{ t("bottomPanel.paperOrientation") }}</label>
               <select v-model="orientation" @change="handleOrientationChange">
-                <option value="Portrait">{{ t('bottomPanel.portrait') }}</option>
-                <option value="Landscape">{{ t('bottomPanel.landscape') }}</option>
+                <option value="Portrait">
+                  {{ t("bottomPanel.portrait") }}
+                </option>
+                <option value="Landscape">
+                  {{ t("bottomPanel.landscape") }}
+                </option>
               </select>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group flex-1">
-              <label>{{ t('bottomPanel.pageWidth') }}</label>
-              <input v-model.number="localReportProperties.pageWidth" type="number" />
+              <label>{{ t("bottomPanel.pageWidth") }}</label>
+              <input
+                v-model.number="localReportProperties.pageWidth"
+                type="number"
+              />
             </div>
             <div class="form-group flex-1">
-              <label>{{ t('bottomPanel.pageHeight') }}</label>
-              <input v-model.number="localReportProperties.pageHeight" type="number" />
+              <label>{{ t("bottomPanel.pageHeight") }}</label>
+              <input
+                v-model.number="localReportProperties.pageHeight"
+                type="number"
+              />
             </div>
           </div>
         </div>
-        
+
         <div class="settings-section">
-          <h4>{{ t('bottomPanel.pageMargins') }}</h4>
+          <h4>{{ t("bottomPanel.pageMargins") }}</h4>
           <div class="form-group">
-            <label>{{ t('bottomPanel.marginsPx') }}</label>
+            <label>{{ t("bottomPanel.marginsPx") }}</label>
             <div class="margin-inputs">
-              <input v-model.number="localReportProperties.leftMargin" type="number" :placeholder="t('properties.leftSide')" />
-              <input v-model.number="localReportProperties.rightMargin" type="number" :placeholder="t('properties.rightSide')" />
-              <input v-model.number="localReportProperties.topMargin" type="number" :placeholder="t('properties.topSide')" />
-              <input v-model.number="localReportProperties.bottomMargin" type="number" :placeholder="t('properties.bottomSide')" />
+              <input
+                v-model.number="localReportProperties.leftMargin"
+                type="number"
+                :placeholder="t('properties.leftSide')"
+              />
+              <input
+                v-model.number="localReportProperties.rightMargin"
+                type="number"
+                :placeholder="t('properties.rightSide')"
+              />
+              <input
+                v-model.number="localReportProperties.topMargin"
+                type="number"
+                :placeholder="t('properties.topSide')"
+              />
+              <input
+                v-model.number="localReportProperties.bottomMargin"
+                type="number"
+                :placeholder="t('properties.bottomSide')"
+              />
             </div>
           </div>
         </div>
 
         <!-- Font settings - compact layout -->
         <div class="settings-section font-settings-compact">
-          <h4>{{ t('bottomPanel.defaultFontSettings') }}</h4>
+          <h4>{{ t("bottomPanel.defaultFontSettings") }}</h4>
           <div class="font-settings-row">
             <div class="font-setting-item">
-              <label>{{ t('properties.fontName') }}</label>
+              <label>{{ t("properties.fontName") }}</label>
               <select v-model="localReportProperties.defaultFont.name">
-                <option v-for="font in availableFonts" :key="font" :value="font">{{ font }}</option>
+                <option
+                  v-for="font in availableFonts"
+                  :key="font"
+                  :value="font"
+                >
+                  {{ font }}
+                </option>
               </select>
             </div>
             <div class="font-setting-item">
-              <label>{{ t('properties.fontSize') }}</label>
-              <input v-model.number="localReportProperties.defaultFont.size" type="number" />
+              <label>{{ t("properties.fontSize") }}</label>
+              <input
+                v-model.number="localReportProperties.defaultFont.size"
+                type="number"
+              />
             </div>
           </div>
           <div class="font-style-options">
             <label>
-              <input v-model="localReportProperties.defaultFont.isBold" type="checkbox" />
-              {{ t('properties.bold') }}
+              <input
+                v-model="localReportProperties.defaultFont.isBold"
+                type="checkbox"
+              />
+              {{ t("properties.bold") }}
             </label>
             <label>
-              <input v-model="localReportProperties.defaultFont.isItalic" type="checkbox" />
-              {{ t('properties.italic') }}
+              <input
+                v-model="localReportProperties.defaultFont.isItalic"
+                type="checkbox"
+              />
+              {{ t("properties.italic") }}
             </label>
             <label>
-              <input v-model="localReportProperties.defaultFont.isUnderline" type="checkbox" />
-              {{ t('properties.underline') }}
+              <input
+                v-model="localReportProperties.defaultFont.isUnderline"
+                type="checkbox"
+              />
+              {{ t("properties.underline") }}
             </label>
           </div>
         </div>
-        
+
         <!-- Band selection -->
         <div class="settings-section band-selection-section">
-          <h4>{{ t('bottomPanel.bandSelection') }}</h4>
+          <h4>{{ t("bottomPanel.bandSelection") }}</h4>
           <div class="band-selection-grid">
-            <div v-for="bandType in allBandTypes" :key="bandType.type" class="band-selection-item">
+            <div
+              v-for="bandType in allBandTypes"
+              :key="bandType.type"
+              class="band-selection-item"
+            >
               <label>
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   :value="bandType.type"
                   v-model="localSelectedBandTypes"
                   @change="handleBandSelectionChange"
@@ -637,23 +871,139 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <div class="band-selection-note">
-            <small>{{ t('bottomPanel.bandSelectionHint') }}</small>
+            <small>{{ t("bottomPanel.bandSelectionHint") }}</small>
+          </div>
+        </div>
+
+        <!-- Band height limits constraints -->
+        <div class="settings-section band-limits-section">
+          <div class="band-limits-header">
+            <h4>{{ t("bottomPanel.defaultBandSettings") }}</h4>
+          </div>
+          <div class="band-limits-actions">
+            <n-button
+              size="tiny"
+              type="default"
+              @click="resetBandLimitsToDefault"
+            >
+              {{ t("bottomPanel.resetToDeveloperDefaults") }}
+            </n-button>
+            <n-button
+              size="tiny"
+              type="info"
+              secondary
+              @click="applyGlobalDefaultsToCurrentTemplate"
+            >
+              {{ t("bottomPanel.applyToCurrentTemplate") }}
+            </n-button>
+          </div>
+          <div class="band-limits-grid">
+            <div
+              v-for="bType in resizableBandTypes"
+              :key="bType.type"
+              class="band-limit-card"
+            >
+              <div class="band-limit-title">
+                {{ getBandDisplayName(bType.type) }}
+              </div>
+              <div class="band-limit-inputs">
+                <div class="band-limit-input-group">
+                  <label>{{ t("bottomPanel.defaultHeight") }}</label>
+                  <div class="input-unit-wrapper">
+                    <input
+                      v-model.number="
+                        getGlobalBandConfig(bType.type).defaultHeight
+                      "
+                      type="number"
+                      min="0"
+                      step="1"
+                      @change="onDefaultHeightChange(bType.type)"
+                    />
+                    <span class="unit">px</span>
+                  </div>
+                </div>
+                <div class="band-limit-input-group">
+                  <label>{{ t("bottomPanel.minHeight") }}</label>
+                  <div class="input-unit-wrapper">
+                    <input
+                      v-model.number="getGlobalBandConfig(bType.type).min"
+                      type="number"
+                      min="0"
+                      step="1"
+                      @change="autoSaveGlobalBandConfig"
+                    />
+                    <span class="unit">px</span>
+                  </div>
+                </div>
+                <div class="band-limit-input-group">
+                  <label>{{ t("bottomPanel.maxHeight") }}</label>
+                  <div class="input-unit-wrapper">
+                    <input
+                      v-model.number="getGlobalBandConfig(bType.type).max"
+                      type="number"
+                      min="0"
+                      step="1"
+                      @change="autoSaveGlobalBandConfig"
+                    />
+                    <span class="unit">px</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Detail Band (Auto-Calculated Remaining A4 Space) -->
+            <div class="band-limit-card band-limit-card-detail">
+              <div class="band-limit-title">
+                <span>{{ t("bandNames.detail") || "Detail" }}</span>
+                <span class="band-badge-auto">{{
+                  t("properties.detailAutoCalculated") || "Auto Calculated"
+                }}</span>
+              </div>
+              <div class="band-limit-inputs">
+                <div class="band-limit-input-group">
+                  <label>{{ t("bottomPanel.defaultHeight") }}</label>
+                  <div
+                    class="input-unit-wrapper is-disabled"
+                    title="Detail height is automatically calculated from remaining A4 page space"
+                  >
+                    <input
+                      :value="defaultDetailCalculatedHeight"
+                      type="number"
+                      disabled
+                    />
+                    <span class="unit">px</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-    
+
     <!-- JRXML content tab -->
     <div class="tab-content jrxml-tab" v-show="activeTab === 'jrxml'">
       <div class="jrxml-container">
         <div class="jrxml-header">
           <div class="jrxml-actions">
-            <n-button @click="copyJRXML" type="default" size="small">{{ t('bottomPanel.copy') }}</n-button>
-            <n-button @click="saveJRXML" type="primary" size="small">{{ t('bottomPanel.apply') }}</n-button>
-            <n-button @click="regenerateJRXML" type="default" size="small">{{ t('bottomPanel.regenerate') }}</n-button>
-            <n-button @click="formatJRXML" type="default" size="small">{{ t('bottomPanel.format') }}</n-button>
-            <n-button @click="downloadJRXML" type="primary" size="small">{{ t('bottomPanel.downloadJRXML') }}</n-button>
-            <n-button @click="openPdfPreview" type="info" size="small">{{ t('bottomPanel.previewPDF') }}</n-button>
+            <n-button @click="copyJRXML" type="default" size="small">{{
+              t("bottomPanel.copy")
+            }}</n-button>
+            <n-button @click="saveJRXML" type="primary" size="small">{{
+              t("bottomPanel.apply")
+            }}</n-button>
+            <n-button @click="regenerateJRXML" type="default" size="small">{{
+              t("bottomPanel.regenerate")
+            }}</n-button>
+            <n-button @click="formatJRXML" type="default" size="small">{{
+              t("bottomPanel.format")
+            }}</n-button>
+            <n-button @click="downloadJRXML" type="primary" size="small">{{
+              t("bottomPanel.downloadJRXML")
+            }}</n-button>
+            <n-button @click="openPdfPreview" type="info" size="small">{{
+              t("bottomPanel.previewPDF")
+            }}</n-button>
             <n-button
               @click="runValidation"
               :loading="isValidating"
@@ -661,7 +1011,7 @@ onBeforeUnmount(() => {
               size="small"
               class="validation-btn"
             >
-              {{ t('bottomPanel.validate') }}
+              {{ t("bottomPanel.validate") }}
             </n-button>
             <n-button
               @click="runAutoFix"
@@ -670,7 +1020,7 @@ onBeforeUnmount(() => {
               size="small"
               class="autofix-btn"
             >
-              {{ t('bottomPanel.autoFix') }}
+              {{ t("bottomPanel.autoFix") }}
             </n-button>
             <template v-if="showSearch">
               <div class="action-separator"></div>
@@ -684,38 +1034,68 @@ onBeforeUnmount(() => {
                 @keydown.shift.enter="findPrevious"
                 @keydown.escape="closeSearch"
               />
-              <n-button @click="findPrevious" type="default" size="small" title="Previous">↑</n-button>
-              <n-button @click="findNext" type="default" size="small" title="Next">↓</n-button>
-              <n-button @click="closeSearch" type="default" size="small" title="Close">×</n-button>
+              <n-button
+                @click="findPrevious"
+                type="default"
+                size="small"
+                title="Previous"
+                >↑</n-button
+              >
+              <n-button
+                @click="findNext"
+                type="default"
+                size="small"
+                title="Next"
+                >↓</n-button
+              >
+              <n-button
+                @click="closeSearch"
+                type="default"
+                size="small"
+                title="Close"
+                >×</n-button
+              >
               <span v-if="searchResultsCount > 0" class="search-status">
                 {{ currentSearchResult }} / {{ searchResultsCount }}
               </span>
             </template>
           </div>
         </div>
-        
+
         <n-alert
           v-if="validationResult"
           :type="validationResult.valid ? 'success' : 'error'"
-          :title="validationResult.valid ? t('bottomPanel.validationSuccess') : t('bottomPanel.validationFailed')"
+          :title="
+            validationResult.valid
+              ? t('bottomPanel.validationSuccess')
+              : t('bottomPanel.validationFailed')
+          "
           closable
           @close="clearValidation"
           class="validation-result"
         >
           <div v-if="validationResult.valid">
-            <p>{{ t('bottomPanel.validationNoErrors') }}</p>
+            <p>{{ t("bottomPanel.validationNoErrors") }}</p>
           </div>
           <div v-else>
-            <p>{{ t('bottomPanel.validationErrorCount', { count: validationResult.errors.length }) }}</p>
+            <p>
+              {{
+                t("bottomPanel.validationErrorCount", {
+                  count: validationResult.errors.length,
+                })
+              }}
+            </p>
             <ul class="validation-error-list">
-              <li 
-                v-for="(error, index) in validationResult.errors" 
+              <li
+                v-for="(error, index) in validationResult.errors"
                 :key="index"
-                :class="[error.severity, { 'clickable': error.line > 0 }]"
+                :class="[error.severity, { clickable: error.line > 0 }]"
                 @click="error.line > 0 && jumpToLine(error.line, error.column)"
               >
                 <span class="error-location">
-                  {{ error.line > 0 ? `[${error.line}:${error.column}]` : '[?]' }}
+                  {{
+                    error.line > 0 ? `[${error.line}:${error.column}]` : "[?]"
+                  }}
                 </span>
                 <span class="error-message">{{ error.message }}</span>
               </li>
@@ -725,14 +1105,30 @@ onBeforeUnmount(() => {
 
         <n-alert
           v-if="autoFixResult"
-          :type="autoFixResult.fixed ? 'success' : (autoFixResult.warnings.length > 0 ? 'warning' : 'info')"
-          :title="autoFixResult.fixed ? t('bottomPanel.autoFixSuccess') : t('bottomPanel.autoFixNoChanges')"
+          :type="
+            autoFixResult.fixed
+              ? 'success'
+              : autoFixResult.warnings.length > 0
+                ? 'warning'
+                : 'info'
+          "
+          :title="
+            autoFixResult.fixed
+              ? t('bottomPanel.autoFixSuccess')
+              : t('bottomPanel.autoFixNoChanges')
+          "
           closable
           @close="clearAutoFixResult"
           class="autofix-result"
         >
           <div v-if="autoFixResult.fixed">
-            <p>{{ t('bottomPanel.autoFixFixedCount', { count: autoFixResult.fixes.length }) }}</p>
+            <p>
+              {{
+                t("bottomPanel.autoFixFixedCount", {
+                  count: autoFixResult.fixes.length,
+                })
+              }}
+            </p>
             <ul class="autofix-list">
               <li
                 v-for="(fix, index) in autoFixResult.fixes"
@@ -741,29 +1137,40 @@ onBeforeUnmount(() => {
                 @click="jumpToLine(fix.lineNumber, 0)"
               >
                 <span class="fix-location">
-                  {{ fix.lineNumber > 0 ? `[${fix.lineNumber}]` : '[?]' }}
+                  {{ fix.lineNumber > 0 ? `[${fix.lineNumber}]` : "[?]" }}
                 </span>
                 <span class="fix-message">
-                  {{ t('bottomPanel.autoFixRemovedAttribute', { element: fix.elementName, attribute: fix.attributeName }) }}
+                  {{
+                    t("bottomPanel.autoFixRemovedAttribute", {
+                      element: fix.elementName,
+                      attribute: fix.attributeName,
+                    })
+                  }}
                 </span>
               </li>
             </ul>
           </div>
-          <div v-if="autoFixResult.warnings.length > 0" class="autofix-warnings">
-            <p>{{ t('bottomPanel.autoFixWarnings') }}</p>
+          <div
+            v-if="autoFixResult.warnings.length > 0"
+            class="autofix-warnings"
+          >
+            <p>{{ t("bottomPanel.autoFixWarnings") }}</p>
             <ul class="autofix-list warning-list">
               <li
                 v-for="(warning, index) in autoFixResult.warnings"
                 :key="index"
               >
                 <span class="warning-message">
-                  <strong>&lt;{{ warning.elementName }}&gt;</strong>: {{ warning.message }}
+                  <strong>&lt;{{ warning.elementName }}&gt;</strong>:
+                  {{ warning.message }}
                 </span>
               </li>
             </ul>
           </div>
-          <div v-if="!autoFixResult.fixed && autoFixResult.warnings.length === 0">
-            <p>{{ t('bottomPanel.autoFixNoIssuesFound') }}</p>
+          <div
+            v-if="!autoFixResult.fixed && autoFixResult.warnings.length === 0"
+          >
+            <p>{{ t("bottomPanel.autoFixNoIssuesFound") }}</p>
           </div>
         </n-alert>
 
@@ -771,14 +1178,15 @@ onBeforeUnmount(() => {
           <CodeMirrorEditor
             ref="codeMirrorEditorRef"
             v-model="localJrxmlContent"
-            :placeholder="localJrxmlContent ? '' : t('bottomPanel.clickToGenerate')"
+            :placeholder="
+              localJrxmlContent ? '' : t('bottomPanel.clickToGenerate')
+            "
             @update:modelValue="localJrxmlContent = $event"
             @scroll="syncScroll"
           />
         </div>
       </div>
     </div>
-
   </ResizablePanel>
 
   <PdfPreviewModal
@@ -911,7 +1319,7 @@ onBeforeUnmount(() => {
 .font-setting-item select,
 .font-setting-item input {
   width: 100%;
-  padding: v-bind('UI_CONSTANTS.INPUT_PADDING_SMALL');
+  padding: v-bind("UI_CONSTANTS.INPUT_PADDING_SMALL");
   border: v-bind('UI_CONSTANTS.BORDER_THIN + "px"') solid #ddd;
   border-radius: v-bind('UI_CONSTANTS.BORDER_RADIUS_SMALL + "px"');
   font-size: v-bind('UI_CONSTANTS.FONT_SIZE_SMALL + "px"');
@@ -962,7 +1370,8 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: v-bind('UI_CONSTANTS.SMALL_MARGIN + "px"') v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
+  padding: v-bind('UI_CONSTANTS.SMALL_MARGIN + "px"')
+    v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
   background-color: #e9e9e9;
   border-bottom: v-bind('UI_CONSTANTS.BORDER_THIN + "px"') solid #ddd;
   flex-shrink: 0;
@@ -988,7 +1397,7 @@ onBeforeUnmount(() => {
   color: #999;
   text-align: right;
   padding: v-bind('UI_CONSTANTS.PANEL_PADDING + "px"') 8px;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
   font-size: v-bind('UI_CONSTANTS.FONT_SIZE_SMALL + "px"');
   line-height: 1.5;
   overflow: hidden;
@@ -1004,7 +1413,7 @@ onBeforeUnmount(() => {
   height: 100%;
   padding: v-bind('UI_CONSTANTS.PANEL_PADDING + "px"');
   background-color: #f8f9fa;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
   font-size: v-bind('UI_CONSTANTS.FONT_SIZE_SMALL + "px"');
   line-height: 1.5;
   white-space: pre; /* Keep pre (no wrapping) to preserve line-number alignment */
@@ -1044,7 +1453,7 @@ onBeforeUnmount(() => {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 12px;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
   height: 20px;
   flex-shrink: 0;
 }
@@ -1093,6 +1502,113 @@ onBeforeUnmount(() => {
   border-top: 1px dashed #e0e0e0;
 }
 
+.band-limits-header {
+  margin-bottom: 12px;
+}
+
+.band-limits-header h4 {
+  margin: 0;
+}
+
+.band-limits-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.band-limits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.band-limit-card {
+  background-color: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.band-limit-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: #1e293b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.band-badge-auto {
+  font-size: 10px;
+  color: #0284c7;
+  background: #f0f9ff;
+  border: 1px solid #e0f2fe;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.band-limit-inputs {
+  display: flex;
+  gap: 8px;
+}
+
+.band-limit-input-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.band-limit-input-group label {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.input-unit-wrapper {
+  display: flex;
+  align-items: center;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 6px;
+  background-color: #f1f5f9;
+  transition: background-color 0.15s ease;
+}
+
+.input-unit-wrapper:hover,
+.input-unit-wrapper:focus-within {
+  background-color: #e2e8f0;
+}
+
+.input-unit-wrapper.is-disabled {
+  opacity: 0.65;
+  background-color: #f8fafc;
+  cursor: not-allowed;
+}
+
+.input-unit-wrapper.is-disabled input {
+  cursor: not-allowed;
+  color: #64748b;
+}
+
+.input-unit-wrapper input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  outline: none;
+  padding: 0;
+}
+
+.input-unit-wrapper .unit {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-left: 2px;
+}
+
 .margin-inputs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1114,7 +1630,7 @@ onBeforeUnmount(() => {
 .form-group input,
 .form-group select {
   width: 100%;
-  padding: v-bind('UI_CONSTANTS.INPUT_PADDING_SMALL');
+  padding: v-bind("UI_CONSTANTS.INPUT_PADDING_SMALL");
   border: v-bind('UI_CONSTANTS.BORDER_THIN + "px"') solid #ddd;
   border-radius: v-bind('UI_CONSTANTS.BORDER_RADIUS_SMALL + "px"');
   font-size: v-bind('UI_CONSTANTS.FONT_SIZE_SMALL + "px"');
@@ -1254,5 +1770,4 @@ onBeforeUnmount(() => {
 .warning-list strong {
   color: #533f03;
 }
-
 </style>

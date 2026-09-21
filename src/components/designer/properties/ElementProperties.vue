@@ -13,47 +13,120 @@
     <div v-if="!selectedBandIndex && !selectedElement" class="property-section">
       <h4>{{ t("properties.reportProperties") }}</h4>
 
-      <!-- Band height settings -->
+      <!-- Band height and template limits settings -->
       <div class="form-group">
-        <h4>{{ t("properties.bandHeightSettings") }}</h4>
-        <div class="band-heights-grid">
+        <div class="band-settings-header-wrapper">
+          <div class="band-settings-title-group">
+            <h4>{{ t("properties.templateBandSettings") }}</h4>
+            <span class="template-scope-pill">{{
+              t("properties.templateScopeBadge")
+            }}</span>
+          </div>
+          <button
+            type="button"
+            class="reset-template-limits-btn"
+            :title="t('properties.resetToDefaultTooltip')"
+            @click="resetTemplateBandLimitsToDefault"
+          >
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+            {{ t("properties.resetDefaults") }}
+          </button>
+        </div>
+        <div class="band-cards-grid">
           <div
             v-for="(band, index) in bands"
             :key="index"
-            class="band-height-item"
+            class="template-band-card"
           >
-            <label>
-              {{ getBandDisplayName(band.type) }}
-              <span
-                v-if="band.type === 'detail'"
-                style="font-size: 11px; opacity: 0.7; font-weight: normal"
-              >
-                (Auto)
+            <!-- Card Header: Band Name + Auto badge for Detail -->
+            <div class="template-band-header">
+              <span class="template-band-title">{{
+                getBandDisplayName(band.type)
+              }}</span>
+              <span v-if="band.type === 'detail'" class="band-badge-auto">
+                {{ t("properties.detailAutoCalculated") }}
               </span>
-            </label>
-            <div class="band-height-control">
-              <input
-                v-model.number="band.height"
-                type="number"
-                min="0"
-                step="1"
-                class="band-height-input"
-                :disabled="band.type === 'detail'"
-                :title="
-                  band.type === 'detail'
-                    ? 'Detail height is automatically calculated from remaining A4 page space'
-                    : ''
-                "
-                @change="
-                  ensureIntegerValue(band, 'height');
-                  updateBandHeight(index);
-                "
-                @blur="
-                  ensureIntegerValue(band, 'height');
-                  updateBandHeight(index);
-                "
-              />
-              <span class="band-height-unit">px</span>
+            </div>
+
+            <!-- Card Inputs: Height, Min Height, Max Height -->
+            <div class="band-limit-inputs">
+              <div class="band-limit-input-group">
+                <label>{{ t("properties.height") }}</label>
+                <div
+                  class="input-unit-wrapper"
+                  :class="{ 'is-disabled': band.type === 'detail' }"
+                >
+                  <input
+                    v-model.number="band.height"
+                    type="number"
+                    :min="
+                      band.type !== 'detail' ? getBandLimit(band.type).min : 0
+                    "
+                    :max="
+                      band.type !== 'detail'
+                        ? getMaxPhysicalHeight(band.type)
+                        : undefined
+                    "
+                    step="1"
+                    :disabled="band.type === 'detail'"
+                    :title="
+                      band.type === 'detail'
+                        ? t('properties.detailAutoCalculatedHint')
+                        : ''
+                    "
+                    @change="
+                      ensureIntegerValue(band, 'height');
+                      updateBandHeight(index);
+                    "
+                    @blur="
+                      ensureIntegerValue(band, 'height');
+                      updateBandHeight(index);
+                    "
+                  />
+                  <span class="unit">px</span>
+                </div>
+              </div>
+
+              <template v-if="band.type !== 'detail'">
+                <div class="band-limit-input-group">
+                  <label>{{ t("properties.minHeight") }}</label>
+                  <div class="input-unit-wrapper">
+                    <input
+                      v-model.number="getBandLimit(band.type).min"
+                      type="number"
+                      min="0"
+                      step="1"
+                      @change="emit('save-state')"
+                    />
+                    <span class="unit">px</span>
+                  </div>
+                </div>
+                <div class="band-limit-input-group">
+                  <label>{{ t("properties.maxHeight") }}</label>
+                  <div class="input-unit-wrapper">
+                    <input
+                      v-model.number="getBandLimit(band.type).max"
+                      type="number"
+                      min="0"
+                      step="1"
+                      @change="emit('save-state')"
+                    />
+                    <span class="unit">px</span>
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -2863,6 +2936,10 @@ import { useI18n } from "vue-i18n";
 import { NButton, NTabs, NTabPane, NRadioGroup, NRadioButton } from "naive-ui";
 import type { Band, SelectedElementInfo, TableDataset } from "../../../types";
 import { getAvailableFonts } from "../../../utils/fontUtils";
+import {
+  getEffectiveDefaultBandLimits,
+  getEffectiveDefaultBandConfig,
+} from "../../../constants/constants";
 import BaseModal from "../../modals/BaseModal.vue";
 import ColorPickerWithOpacity from "./ColorPickerWithOpacity.vue";
 import FontStyleSettings from "./FontStyleSettings.vue";
@@ -2922,6 +2999,58 @@ interface Emits {
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
+
+function getBandLimit(bandType: string) {
+  if (!props.reportProperties) return { min: 20, max: 200 };
+  if (!props.reportProperties.bandLimits) {
+    props.reportProperties.bandLimits = getEffectiveDefaultBandLimits();
+  }
+  if (!props.reportProperties.bandLimits[bandType]) {
+    props.reportProperties.bandLimits[bandType] = { min: 20, max: 200 };
+  }
+  return props.reportProperties.bandLimits[bandType];
+}
+
+function getMaxPhysicalHeight(bandType: string): number {
+  const pageH = props.reportProperties?.pageHeight || 842;
+  const topM = props.reportProperties?.topMargin || 20;
+  const bottomM = props.reportProperties?.bottomMargin || 20;
+  const printableH = pageH - topM - bottomM;
+  let otherBandsH = 0;
+  if (props.bands && Array.isArray(props.bands)) {
+    props.bands.forEach((b) => {
+      if (b.type !== bandType && b.type !== "detail") {
+        otherBandsH += b.height || 0;
+      }
+    });
+  }
+  // Leave at least 20px for detail band
+  return Math.max(20, printableH - otherBandsH - 20);
+}
+
+function resetTemplateBandLimitsToDefault() {
+  if (!props.reportProperties) return;
+  const config = getEffectiveDefaultBandConfig();
+  const limits: Record<string, { min: number; max: number }> = {};
+  for (const key of Object.keys(config)) {
+    const item = config[key];
+    if (item) {
+      limits[key] = { min: item.min, max: item.max };
+    }
+  }
+  props.reportProperties.bandLimits = limits;
+
+  if (props.bands && Array.isArray(props.bands)) {
+    props.bands.forEach((band, index) => {
+      const bConf = config[band.type];
+      if (band.type !== "detail" && bConf?.defaultHeight) {
+        band.height = bConf.defaultHeight;
+        updateBandHeight(index);
+      }
+    });
+  }
+  emit("save-state");
+}
 
 // Live preview (used for transition animation)
 const { previewConfig, startPreview, stopPreview, confirmPreview } =
@@ -4044,7 +4173,46 @@ function getBandDisplayName(bandType: string): string {
 }
 
 // Update Band height
-function updateBandHeight(_index: number) {
+function updateBandHeight(index: number) {
+  const band = props.bands[index];
+  if (band && band.type !== "detail") {
+    const limit = getBandLimit(band.type);
+    const maxAllowed = getMaxPhysicalHeight(band.type);
+    if (typeof band.height === "number") {
+      // Ensure band does not exceed physical page space
+      if (band.height > maxAllowed) {
+        band.height = maxAllowed;
+      }
+      if (band.height < (limit.min || 0)) {
+        band.height = limit.min || 0;
+      }
+      // If user inputs a height greater than current limit.max, auto-expand limit.max
+      if (typeof limit.max === "number" && band.height > limit.max) {
+        limit.max = band.height;
+      }
+      // If user inputs a height less than current limit.min, auto-adjust limit.min
+      if (typeof limit.min === "number" && band.height < limit.min) {
+        limit.min = band.height;
+      }
+    }
+  }
+
+  // Recalculate Detail band height so it automatically absorbs the change (A4 page fitting)
+  const detailBand = props.bands.find((b) => b.type === "detail");
+  if (detailBand) {
+    const pageH = props.reportProperties?.pageHeight || 842;
+    const topM = props.reportProperties?.topMargin || 20;
+    const bottomM = props.reportProperties?.bottomMargin || 20;
+    const availableH = pageH - topM - bottomM;
+    let otherBandsH = 0;
+    props.bands.forEach((b) => {
+      if (b.type !== "detail") {
+        otherBandsH += b.height || 0;
+      }
+    });
+    detailBand.height = Math.max(20, availableH - otherBandsH);
+  }
+
   const updatedBands = [...props.bands];
   emit("save-state");
   emit("update:bands", updatedBands);
@@ -5424,30 +5592,164 @@ function addPropertyExpression() {
   color: #999;
 }
 
-.band-heights-grid {
-  display: grid;
-  gap: var(--prop-spacing-sm);
+.band-settings-header-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
 }
 
-.band-height-item {
+.band-settings-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.band-settings-title-group h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.template-scope-pill {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  background-color: #f1f5f9;
+  color: #475569;
+  border-radius: 4px;
+  letter-spacing: 0.2px;
+}
+
+.reset-template-limits-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.reset-template-limits-btn:hover {
+  color: #0284c7;
+  background: #f0f9ff;
+}
+
+.band-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.template-band-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.template-band-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.template-band-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.band-height-control {
+.template-band-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: #1e293b;
+}
+
+.band-badge-auto {
+  font-size: 10px;
+  color: #0284c7;
+  background: #f0f9ff;
+  border: 1px solid #e0f2fe;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.band-limit-inputs {
+  display: flex;
+  gap: 6px;
+}
+
+.band-limit-input-group {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.band-limit-input-group label {
+  font-size: 10.5px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.input-unit-wrapper {
   display: flex;
   align-items: center;
-  gap: var(--prop-spacing-xs);
+  border: none;
+  border-radius: 4px;
+  padding: 3px 6px;
+  background-color: #f1f5f9;
+  transition: background-color 0.15s ease;
 }
 
-.band-height-input {
-  width: 80px;
+.input-unit-wrapper:hover,
+.input-unit-wrapper:focus-within {
+  background-color: #e2e8f0;
 }
 
-.band-height-unit {
-  font-size: var(--prop-font-size-sm);
-  color: var(--prop-text-tertiary);
+.input-unit-wrapper.is-disabled {
+  opacity: 0.65;
+  background-color: #f8fafc;
+  cursor: not-allowed;
+}
+
+.input-unit-wrapper input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #1e293b;
+  outline: none;
+  padding: 0;
+}
+
+.input-unit-wrapper input:disabled {
+  cursor: not-allowed;
+  color: #64748b;
+}
+
+.input-unit-wrapper .unit {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-left: 2px;
+  user-select: none;
 }
 
 .box-section {

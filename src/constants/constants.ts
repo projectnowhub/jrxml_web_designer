@@ -143,6 +143,93 @@ export const BAND_CONSTANTS = {
   SPACING: 0, // spacing between bands
 };
 
+// Developer default band configuration (default height, min, max in px)
+export const DEVELOPER_DEFAULT_BAND_CONFIG: Record<
+  string,
+  { defaultHeight: number; min: number; max: number }
+> = {
+  [BAND_TYPE_CONSTANTS.PAGE_HEADER]: { defaultHeight: 50, min: 20, max: 200 },
+  [BAND_TYPE_CONSTANTS.COLUMN_HEADER]: { defaultHeight: 30, min: 15, max: 150 },
+  [BAND_TYPE_CONSTANTS.COLUMN_FOOTER]: { defaultHeight: 30, min: 15, max: 150 },
+  [BAND_TYPE_CONSTANTS.PAGE_FOOTER]: { defaultHeight: 40, min: 20, max: 150 },
+  [BAND_TYPE_CONSTANTS.TITLE]: { defaultHeight: 54, min: 20, max: 250 },
+  [BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER]: { defaultHeight: 40, min: 20, max: 150 },
+  [BAND_TYPE_CONSTANTS.SUMMARY]: { defaultHeight: 60, min: 20, max: 300 },
+};
+
+// Default band constraints (min and max heights in px)
+export const DEFAULT_BAND_LIMITS: Record<string, { min: number; max: number }> =
+  {
+    [BAND_TYPE_CONSTANTS.PAGE_HEADER]: { min: 20, max: 200 },
+    [BAND_TYPE_CONSTANTS.COLUMN_HEADER]: { min: 15, max: 150 },
+    [BAND_TYPE_CONSTANTS.COLUMN_FOOTER]: { min: 15, max: 150 },
+    [BAND_TYPE_CONSTANTS.PAGE_FOOTER]: { min: 20, max: 150 },
+    [BAND_TYPE_CONSTANTS.TITLE]: { min: 20, max: 250 },
+    [BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER]: { min: 20, max: 150 },
+    [BAND_TYPE_CONSTANTS.SUMMARY]: { min: 20, max: 300 },
+  };
+
+// Storage key and loader for user-configured global default band config
+export const GLOBAL_BAND_LIMITS_STORAGE_KEY = "jrxml_global_band_limits";
+
+export function getEffectiveDefaultBandConfig(): Record<
+  string,
+  { defaultHeight: number; min: number; max: number }
+> {
+  const result: Record<string, { defaultHeight: number; min: number; max: number }> = {};
+  for (const key of Object.keys(DEVELOPER_DEFAULT_BAND_CONFIG)) {
+    const dev = DEVELOPER_DEFAULT_BAND_CONFIG[key];
+    if (dev) {
+      result[key] = { ...dev };
+    }
+  }
+
+  try {
+    if (typeof localStorage !== "undefined") {
+      const saved = localStorage.getItem(GLOBAL_BAND_LIMITS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        for (const key of Object.keys(DEVELOPER_DEFAULT_BAND_CONFIG)) {
+          const dev = DEVELOPER_DEFAULT_BAND_CONFIG[key];
+          if (!dev) continue;
+          const item = parsed?.[key];
+          if (item) {
+            result[key] = {
+              defaultHeight:
+                typeof item.defaultHeight === "number"
+                  ? item.defaultHeight
+                  : typeof item.height === "number"
+                  ? item.height
+                  : dev.defaultHeight,
+              min: typeof item.min === "number" ? item.min : dev.min,
+              // If the saved max was the legacy hardcoded 70 or lower, upgrade to dev.max
+              max: typeof item.max === "number" && item.max > 70 ? item.max : dev.max,
+            };
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to load saved band limits from localStorage:", e);
+  }
+  return result;
+}
+
+export function getEffectiveDefaultBandLimits(): Record<
+  string,
+  { min: number; max: number }
+> {
+  const config = getEffectiveDefaultBandConfig();
+  const limits: Record<string, { min: number; max: number }> = {};
+  for (const key of Object.keys(config)) {
+    const item = config[key];
+    if (item) {
+      limits[key] = { min: item.min, max: item.max };
+    }
+  }
+  return limits;
+}
+
 // Evaluation time constants
 export const EVALUATION_TIME_CONSTANTS = {
   NOW: "Now",
