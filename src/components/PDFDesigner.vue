@@ -356,7 +356,7 @@
           @handle-drag-over="handleDragOver"
           @handle-drag-leave="handleDragLeave"
           @start-resizing-band="startResizingBand"
-          @zoom-change="(newZoom: number) => (zoomLevel = newZoom)"
+          @zoom-change="handleZoomChange"
           @select-elements-in-rect="selectElementsInRect"
           @clear-selection="clearSelection"
           @check-fields="handleCheckFields"
@@ -1830,11 +1830,17 @@ watch(
     ensureBandsFitPage();
   },
 );
-const { zoomLevel, resetZoom, calculateOptimalZoom, handleZoomChange } =
-  useZoom({
-    paperWidth,
-    zoomConstants: ZOOM_CONSTANTS,
-  });
+const {
+  zoomLevel,
+  resetZoom,
+  calculateOptimalZoom,
+  handleZoomChange,
+  zoomIn,
+  zoomOut,
+} = useZoom({
+  paperWidth,
+  zoomConstants: ZOOM_CONSTANTS,
+});
 
 // Function to set the zoom level
 const setZoomLevel = (newZoom: number) => {
@@ -3684,6 +3690,20 @@ const handleKeyDown = (event: KeyboardEvent) => {
     return;
   }
 
+  // CTRL/CMD+Plus/Equal zooms in
+  if (isCtrlOrMetaPressed && (event.key === "=" || event.key === "+")) {
+    event.preventDefault();
+    zoomIn();
+    return;
+  }
+
+  // CTRL/CMD+Minus zooms out
+  if (isCtrlOrMetaPressed && (event.key === "-" || event.key === "_")) {
+    event.preventDefault();
+    zoomOut();
+    return;
+  }
+
   // CTRL/CMD+S saves the current file
   if (isCtrlOrMetaPressed && event.key === "s") {
     event.preventDefault();
@@ -3985,7 +4005,7 @@ onMounted(() => {
       wheelEvent.preventDefault();
 
       // Zoom according to the wheel direction
-      const delta = wheelEvent.deltaY < 0 ? 0.1 : -0.1;
+      const delta = wheelEvent.deltaY < 0 ? 1 : -1;
       handleZoomChange(delta);
     }
   };

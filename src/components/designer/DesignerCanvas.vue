@@ -1,5 +1,5 @@
 <template>
-  <div class="designer-canvas" @click="setDesignAreaFocused">
+  <div ref="designerCanvasRef" class="designer-canvas" @click="setDesignAreaFocused">
     <!-- Drag feedback layer -->
     <DragFeedbackLayer :feedback="dragFeedback" />
 
@@ -615,6 +615,7 @@ const selectionBox = ref({
 
 const isSelecting = ref(false);
 
+const designerCanvasRef = ref<HTMLElement | null>(null);
 const horizontalRulerRef = ref<HTMLElement | null>(null);
 const verticalRulerRef = ref<HTMLElement | null>(null);
 const paperContainerRef = ref<HTMLElement | null>(null);
@@ -794,10 +795,11 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 // Scroll event handling
 const handleWheel = (event: WheelEvent) => {
-  // If the Ctrl key is held, zoom
-  if (event.ctrlKey) {
+  // If the Ctrl or Meta key is held, zoom
+  if (event.ctrlKey || event.metaKey) {
     event.preventDefault();
-    const delta = event.deltaY > 0 ? -0.1 : 0.1;
+    event.stopPropagation();
+    const delta = event.deltaY < 0 ? 1 : -1;
     emit("zoom-change", delta);
   }
 };
@@ -942,7 +944,7 @@ const endSelection = () => {
 // Lifecycle hooks
 onMounted(() => {
   // Add mouse wheel event listener
-  const designerCanvas = document.querySelector(".designer-canvas");
+  const designerCanvas = designerCanvasRef.value || document.querySelector(".designer-canvas");
   if (designerCanvas) {
     designerCanvas.addEventListener("wheel", handleWheel as EventListener, {
       passive: false,
@@ -982,7 +984,7 @@ onBeforeUnmount(() => {
 
   // Remove mouse wheel event listener
   const wheelListener = (window as any).designerCanvasWheelListener;
-  const designerCanvas = document.querySelector(".designer-canvas");
+  const designerCanvas = designerCanvasRef.value || document.querySelector(".designer-canvas");
   if (wheelListener && designerCanvas) {
     designerCanvas.removeEventListener("wheel", wheelListener as EventListener);
   }
