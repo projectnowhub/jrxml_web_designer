@@ -2,50 +2,15 @@
   <div class="prop-panel table-properties">
     <h4 class="prop-heading-md">Table Properties</h4>
 
-    <!-- Dataset -->
+    <!-- Data Source Info -->
     <div class="prop-form-group">
-      <label class="prop-label">Dataset name</label>
+      <label class="prop-label">Table Data Source</label>
       <input
-        :value="element.dataset?.name || ''"
+        :value="element.dataset?.name || 'Main Table Data'"
         @input="updateDatasetProperty('name', ($event.target as HTMLInputElement).value)"
         type="text"
-        placeholder="tableDataset"
+        placeholder="e.g. Sales Orders"
         class="prop-input"
-      />
-    </div>
-
-    <!-- Connection expression -->
-    <div class="prop-form-group">
-      <label class="prop-label">Connection expression</label>
-      <ExpressionEditor
-        :model-value="element.dataset?.connectionExpression || ''"
-        @update:model-value="updateDatasetProperty('connectionExpression', $event)"
-        placeholder="$P{REPORT_CONNECTION}"
-        :report-fields="reportFields"
-        :report-parameters="reportParameters"
-        :report-variables="reportVariables"
-      />
-    </div>
-
-    <!-- Query text -->
-    <div class="prop-form-group">
-      <label class="prop-label">Query text</label>
-      <textarea
-        :value="element.dataset?.query?.text || ''"
-        @input="updateQueryProperty('text', ($event.target as HTMLTextAreaElement).value)"
-        placeholder="SELECT * FROM table"
-        rows="3"
-        class="prop-textarea"
-      ></textarea>
-    </div>
-
-    <!-- Query language -->
-    <div class="prop-form-group">
-      <SelectControl
-        :model-value="element.dataset?.query?.language || 'sql'"
-        @update:model-value="updateQueryProperty('language', $event)"
-        :options="queryLanguageOptions"
-        label="Query language"
       />
     </div>
 
@@ -122,17 +87,6 @@
     <!-- Divider -->
     <div class="prop-divider"></div>
 
-    <!-- When-no-data type -->
-    <div class="prop-form-group">
-      <SelectControl
-        :model-value="element.whenNoDataType || 'AllSectionsNoDetail'"
-        @update:model-value="updateProperty('whenNoDataType', $event)"
-        :options="whenNoDataTypeOptions"
-        label="When no data"
-        description="How to handle the table when there is no data"
-      />
-    </div>
-
     <!-- Print headers -->
     <div class="prop-form-group">
       <SwitchControl
@@ -140,26 +94,6 @@
         @update:model-value="updateProperty('printHeaders', $event)"
         label="Print headers"
         description="Whether to print the table headers"
-      />
-    </div>
-
-    <!-- Ignore width -->
-    <div class="prop-form-group">
-      <SwitchControl
-        :model-value="element.ignoreWidth || false"
-        @update:model-value="updateProperty('ignoreWidth', $event)"
-        label="Ignore width"
-        description="Ignore the table width constraint"
-      />
-    </div>
-
-    <!-- Ignore pagination -->
-    <div class="prop-form-group">
-      <SwitchControl
-        :model-value="element.isIgnorePagination || false"
-        @update:model-value="updateProperty('isIgnorePagination', $event)"
-        label="Ignore pagination"
-        description="Table content will not be split across pages"
       />
     </div>
 
@@ -204,10 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import ExpressionEditor from './common/ExpressionEditor.vue';
 import SwitchControl from './common/SwitchControl.vue';
-import SelectControl from './common/SelectControl.vue';
 
 const props = defineProps<{
   element: any;
@@ -221,21 +152,6 @@ const emit = defineEmits<{
   'update:element': [element: any];
 }>();
 
-const queryLanguageOptions = [
-  { value: 'sql', label: 'SQL' },
-  { value: 'xPath', label: 'XPath' },
-  { value: 'HQL', label: 'HQL' },
-  { value: 'EJBQL', label: 'EJBQL' },
-  { value: 'MDX', label: 'MDX' }
-];
-
-const whenNoDataTypeOptions = [
-  { value: 'Blank', label: 'Blank' },
-  { value: 'NoDataCell', label: 'No-data cell' },
-  { value: 'AllSectionsNoDetail', label: 'All sections, no detail' },
-  { value: 'AllSectionsWithDetail', label: 'All sections, with detail' }
-];
-
 const updateProperty = (property: string, value: any) => {
   const updatedElement = { ...props.element };
   updatedElement[property] = value;
@@ -248,18 +164,6 @@ const updateDatasetProperty = (property: string, value: any) => {
     updatedElement.dataset = {};
   }
   updatedElement.dataset[property] = value;
-  emit('update:element', updatedElement);
-};
-
-const updateQueryProperty = (property: string, value: any) => {
-  const updatedElement = { ...props.element };
-  if (!updatedElement.dataset) {
-    updatedElement.dataset = {};
-  }
-  if (!updatedElement.dataset.query) {
-    updatedElement.dataset.query = { language: 'sql', text: '' };
-  }
-  updatedElement.dataset.query[property] = value;
   emit('update:element', updatedElement);
 };
 

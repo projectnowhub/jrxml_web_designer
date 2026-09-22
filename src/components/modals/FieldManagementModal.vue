@@ -94,17 +94,16 @@ const modalTitle = computed(() => {
     : (props.isParameter ? t('elementLibrary.addReportParameter') : t('fieldManagement.addField'));
 });
 
-// Allowed field types based on JRXML Schema
+// Allowed field types based on JRXML Schema with friendly manager labels
 const allowedFieldTypes = ref([
-  { label: t('fieldManagement.fieldTypes.string'), value: 'java.lang.String' },
-  { label: t('fieldManagement.fieldTypes.integer'), value: 'java.lang.Integer' },
-  { label: t('fieldManagement.fieldTypes.long'), value: 'java.lang.Long' },
-  { label: t('fieldManagement.fieldTypes.float'), value: 'java.lang.Float' },
-  { label: t('fieldManagement.fieldTypes.double'), value: 'java.lang.Double' },
-  { label: t('fieldManagement.fieldTypes.boolean'), value: 'java.lang.Boolean' },
-  { label: t('fieldManagement.fieldTypes.date'), value: 'java.util.Date' },
-  { label: t('fieldManagement.fieldTypes.timestamp'), value: 'java.sql.Timestamp' },
-  { label: t('fieldManagement.fieldTypes.byteArray'), value: 'byte[]' }
+  { label: '🔤 Text', value: 'java.lang.String' },
+  { label: '🔢 Whole Number (Integer)', value: 'java.lang.Integer' },
+  { label: '🔢 Large Number', value: 'java.lang.Long' },
+  { label: '💵 Currency / Money', value: 'java.math.BigDecimal' },
+  { label: '🔢 Decimal Number', value: 'java.lang.Double' },
+  { label: '☑️ Yes / No (Boolean)', value: 'java.lang.Boolean' },
+  { label: '📅 Date', value: 'java.util.Date' },
+  { label: '🕒 Date & Time', value: 'java.sql.Timestamp' }
 ]);
 
 // Watch for field prop changes

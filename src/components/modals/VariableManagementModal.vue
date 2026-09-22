@@ -139,15 +139,13 @@ const modalTitle = computed(() =>
 );
 
 const allowedClasses = ref([
-  { label: 'String', value: 'java.lang.String' },
-  { label: 'Integer', value: 'java.lang.Integer' },
-  { label: 'Long', value: 'java.lang.Long' },
-  { label: 'Float', value: 'java.lang.Float' },
-  { label: 'Double', value: 'java.lang.Double' },
-  { label: 'Boolean', value: 'java.lang.Boolean' },
-  { label: 'Date', value: 'java.util.Date' },
-  { label: 'BigDecimal', value: 'java.math.BigDecimal' },
-  { label: 'List', value: 'java.util.List' }
+  { label: '🔤 Text', value: 'java.lang.String' },
+  { label: '🔢 Whole Number (Integer)', value: 'java.lang.Integer' },
+  { label: '🔢 Large Number', value: 'java.lang.Long' },
+  { label: '💵 Currency / Money', value: 'java.math.BigDecimal' },
+  { label: '🔢 Decimal Number', value: 'java.lang.Double' },
+  { label: '☑️ Yes / No (Boolean)', value: 'java.lang.Boolean' },
+  { label: '📅 Date', value: 'java.util.Date' }
 ]);
 
 watch(

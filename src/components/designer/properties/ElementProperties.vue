@@ -185,26 +185,6 @@
             </div>
           </div>
 
-          <!-- Common print-when expression (all element types except break and table) -->
-          <div
-            class="form-group"
-            v-if="
-              currentElement &&
-              currentElement.type !== 'break' &&
-              currentElement.type !== 'table'
-            "
-          >
-            <label>{{
-              t("properties.printWhenExpression") || "Print When Expression"
-            }}</label>
-            <ExpressionEditor
-              :model-value="currentElement.printWhenExpression || ''"
-              @update:model-value="currentElement.printWhenExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-            />
-          </div>
 
           <!-- Style reference -->
           <div
@@ -234,14 +214,14 @@
               ></textarea>
             </div>
             <div class="form-group">
-              <label>Text Adjust</label>
+              <label>{{ t("properties.textAdjust") || "When Text Is Too Long" }}</label>
               <select v-model="currentElement.textAdjust">
-                <option value="">Default</option>
+                <option value="">{{ t("properties.default") || "Default" }}</option>
                 <option value="StretchHeight">
-                  StretchHeight - Stretch Height
+                  Wrap text and expand height
                 </option>
-                <option value="CutText">CutText - Cut Text</option>
-                <option value="ShrinkToFit">ShrinkToFit - Shrink to Fit</option>
+                <option value="CutText">Cut off excess text</option>
+                <option value="ShrinkToFit">Shrink font size to fit</option>
               </select>
             </div>
             <div class="form-group">
@@ -252,15 +232,6 @@
                 <option value="Left">Left - Rotate Left 90°</option>
                 <option value="Right">Right - Rotate Right 90°</option>
                 <option value="UpsideDown">UpsideDown - Upside Down</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Markup Type</label>
-              <select v-model="currentElement.markup">
-                <option value="none">None</option>
-                <option value="html">HTML</option>
-                <option value="rtf">RTF</option>
-                <option value="styledtext">Styled Text</option>
               </select>
             </div>
             <div class="form-group">
@@ -393,22 +364,6 @@
                 <option value="Bottom">Bottom - Align Bottom</option>
               </select>
             </div>
-            <div class="form-group">
-              <label>Error Handling</label>
-              <select v-model="currentElement.onErrorType">
-                <option value="">Default</option>
-                <option value="Error">Error - Throw Error</option>
-                <option value="Blank">Blank - Blank</option>
-                <option value="Icon">Icon - Icon</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <SwitchControl
-                :model-value="currentElement.isUsingCache !== false"
-                @update:model-value="currentElement.isUsingCache = $event"
-                label="Use Cache"
-              />
-            </div>
           </template>
 
           <!-- Rectangle properties -->
@@ -424,28 +379,6 @@
                 placeholder="0"
               />
             </div>
-            <div class="form-group">
-              <SwitchControl
-                :model-value="currentElement.isPrintRepeatedValues !== false"
-                @update:model-value="
-                  currentElement.isPrintRepeatedValues = $event
-                "
-                label="Print Repeated Values"
-              />
-            </div>
-          </template>
-
-          <!-- Ellipse properties -->
-          <template v-if="currentElement && currentElement.type === 'ellipse'">
-            <div class="form-group">
-              <SwitchControl
-                :model-value="currentElement.isPrintRepeatedValues !== false"
-                @update:model-value="
-                  currentElement.isPrintRepeatedValues = $event
-                "
-                label="Print Repeated Values"
-              />
-            </div>
           </template>
 
           <!-- Line properties -->
@@ -458,44 +391,9 @@
                 <option value="BottomUp">BottomUp - Bottom to Top</option>
               </select>
             </div>
-            <div class="form-group">
-              <SwitchControl
-                :model-value="currentElement.isPrintRepeatedValues !== false"
-                @update:model-value="
-                  currentElement.isPrintRepeatedValues = $event
-                "
-                label="Print Repeated Values"
-              />
-            </div>
           </template>
 
-          <!-- Break properties -->
-          <template v-if="currentElement && currentElement.type === 'break'">
-            <div class="form-group">
-              <label>Break Type</label>
-              <select v-model="currentElement.breakType">
-                <option value="Page">Page - Page Break</option>
-                <option value="Column">Column - Column Break</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <SwitchControl
-                :model-value="currentElement.isResetPageNumber || false"
-                @update:model-value="currentElement.isResetPageNumber = $event"
-                label="Reset Page Number"
-              />
-            </div>
-            <div class="form-group">
-              <SwitchControl
-                :model-value="currentElement.isResetPageOverflow || false"
-                @update:model-value="
-                  currentElement.isResetPageOverflow = $event
-                "
-                label="Reset Page Overflow"
-              />
-            </div>
-          </template>
-
+          <!-- Text Field properties -->
           <template
             v-else-if="currentElement && currentElement.type === 'textField'"
           >
@@ -503,306 +401,85 @@
               class="form-group"
               v-if="currentElement && currentElement.type === 'textField'"
             >
-              <label>{{ t("properties.expression") }}</label>
-              <ExpressionEditor
-                :model-value="getTextFieldExpression(currentElement)"
-                @update:model-value="updateTextFieldExpression"
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                :placeholder="
-                  t('properties.expressionHint', {
-                    fieldHolder: '$F{fieldName}',
-                  })
-                "
-              />
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label style="margin-bottom: 0;">{{ t("properties.textContent") }}</label>
+                <select
+                  v-if="reportFields && reportFields.length > 0"
+                  style="font-size: 11px; padding: 2px 6px; width: auto; max-width: 140px;"
+                  @change="insertFieldIntoTextField(($event.target as HTMLSelectElement).value); ($event.target as HTMLSelectElement).value = ''"
+                >
+                  <option value="">+ Insert Field...</option>
+                  <option v-for="f in reportFields" :key="f.name" :value="`$F{${f.name}}`">
+                    {{ f.name }}
+                  </option>
+                </select>
+              </div>
+              <textarea
+                v-if="currentElement"
+                :value="getTextFieldDisplay(currentElement)"
+                @input="updateTextFieldDisplay(($event.target as HTMLTextAreaElement).value)"
+                placeholder="Enter text or $F{field_name}"
+                rows="2"
+              ></textarea>
             </div>
             <div class="form-group">
-              <label>{{ t("properties.pattern") }}</label>
-              <input
-                v-if="currentElement"
-                v-model="currentElement.pattern"
-                type="text"
-              />
-              <small>{{ t("properties.patternHint") }}</small>
-            </div>
-
-            <!-- Added: Evaluation Time -->
-            <div class="form-group">
-              <label>Evaluation Time</label>
-              <select
-                v-if="currentElement"
-                v-model="currentElement.evaluationTime"
-              >
-                <option value="Now">Now - Evaluate Immediately</option>
-                <option value="Report">Report - At Report End</option>
-                <option value="Page">Page - At Page End</option>
-                <option value="Column">Column - At Column End</option>
-                <option value="Group">Group - At Group End</option>
-                <option value="Band">Band - At Band End</option>
-                <option value="Auto">Auto - Engine Decides</option>
-                <option value="Master">Master - At Master Report End</option>
-              </select>
-            </div>
-
-            <!-- Added: Hyperlink Type -->
-            <div class="form-group">
-              <label>Hyperlink Type</label>
-              <select
-                v-if="currentElement"
-                v-model="currentElement.hyperlinkType"
-              >
-                <option value="None">None</option>
-                <option value="Reference">Reference - URL Reference</option>
-                <option value="Anchor">Anchor - Anchor</option>
-                <option value="LocalAnchor">LocalAnchor - Local Anchor</option>
-                <option value="LocalPage">LocalPage - Local Page</option>
-                <option value="RemotePage">RemotePage - Remote Page</option>
-                <option value="RemoteAnchor">
-                  RemoteAnchor - Remote Anchor
+              <label>{{ t("properties.textAdjust") || "When Text Is Too Long" }}</label>
+              <select v-model="currentElement.textAdjust">
+                <option value="">{{ t("properties.default") || "Default" }}</option>
+                <option value="StretchHeight">
+                  Wrap text and expand height
                 </option>
-                <option value="mailto">mailto - Email</option>
+                <option value="CutText">Cut off excess text</option>
+                <option value="ShrinkToFit">Shrink font size to fit</option>
               </select>
             </div>
-
-            <!-- Added: Hyperlink Reference Expression -->
-            <div
-              class="form-group"
-              v-if="currentElement.hyperlinkType === 'Reference'"
-            >
-              <label>Hyperlink Reference Expression</label>
-              <ExpressionEditor
-                :model-value="currentElement.hyperlinkReferenceExpression || ''"
-                @update:model-value="
-                  currentElement.hyperlinkReferenceExpression = $event
-                "
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder='e.g.: "https://example.com"'
-              />
-            </div>
-
-            <!-- Added: Hyperlink Tooltip Expression -->
-            <div
-              class="form-group"
-              v-if="
-                currentElement.hyperlinkType &&
-                currentElement.hyperlinkType !== 'None'
-              "
-            >
-              <label>Hyperlink Tooltip</label>
-              <ExpressionEditor
-                :model-value="currentElement.hyperlinkTooltipExpression || ''"
-                @update:model-value="
-                  currentElement.hyperlinkTooltipExpression = $event
-                "
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder='e.g.: "Click to view"'
-              />
-            </div>
-
-            <!-- Added: Anchor Name Expression -->
-            <div
-              class="form-group"
-              v-if="
-                currentElement.hyperlinkType === 'Anchor' ||
-                currentElement.hyperlinkType === 'LocalAnchor'
-              "
-            >
-              <label>Anchor Name Expression</label>
-              <ExpressionEditor
-                :model-value="currentElement.anchorNameExpression || ''"
-                @update:model-value="
-                  currentElement.anchorNameExpression = $event
-                "
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder='e.g.: "anchor1"'
-              />
-            </div>
-
-            <!-- Added: Blank When Null -->
             <div class="form-group">
-              <SwitchControl
-                :model-value="currentElement.isBlankWhenNull !== false"
-                @update:model-value="currentElement.isBlankWhenNull = $event"
-                label="Blank When Null"
-              />
+              <label>Rotation</label>
+              <select v-model="currentElement.rotation">
+                <option value="">Default</option>
+                <option value="None">None - No Rotation</option>
+                <option value="Left">Left - Rotate Left 90°</option>
+                <option value="Right">Right - Rotate Right 90°</option>
+                <option value="UpsideDown">UpsideDown - Upside Down</option>
+              </select>
             </div>
-
-            <!-- Added: Bookmark Level -->
             <div class="form-group">
-              <label>Bookmark Level</label>
+              <label>{{ t("properties.fontSize") }}</label>
               <input
                 v-if="currentElement"
-                v-model.number="currentElement.bookmarkLevel"
+                v-model.number="currentElement.fontSize"
                 type="number"
-                min="0"
               />
+            </div>
+            <div class="checkbox-group">
+              <label>
+                <input
+                  v-if="currentElement"
+                  v-model="currentElement.isBold"
+                  type="checkbox"
+                />
+                {{ t("properties.bold") }}
+              </label>
+              <label>
+                <input
+                  v-if="currentElement"
+                  v-model="currentElement.isItalic"
+                  type="checkbox"
+                />
+                {{ t("properties.italic") }}
+              </label>
+              <label>
+                <input
+                  v-if="currentElement"
+                  v-model="currentElement.isUnderline"
+                  type="checkbox"
+                />
+                {{ t("properties.underline") }}
+              </label>
             </div>
           </template>
         </n-tab-pane>
 
-        <!-- Element general settings tab -->
-        <n-tab-pane
-          v-if="currentElement && currentElement.type !== 'sort'"
-          name="elementSettings"
-          :tab="'Element Settings'"
-        >
-          <div class="form-group">
-            <label>Element Key</label>
-            <input
-              v-model="currentElement.key"
-              type="text"
-              placeholder="Used to identify the element at runtime"
-            />
-          </div>
-          <div class="form-group">
-            <label>Position Type</label>
-            <select v-model="currentElement.positionType">
-              <option value="">Default (FixRelativeToTop)</option>
-              <option value="FixRelativeToTop">
-                FixRelativeToTop - Fixed Relative to Top
-              </option>
-              <option value="FixRelativeToBottom">
-                FixRelativeToBottom - Fixed Relative to Bottom
-              </option>
-              <option value="Float">Float - Float</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Stretch Type</label>
-            <select v-model="currentElement.stretchType">
-              <option value="">Default (NoStretch)</option>
-              <option value="NoStretch">NoStretch - No Stretch</option>
-              <option value="ElementGroupBottom">
-                ElementGroupBottom - Stretch to Group Bottom
-              </option>
-              <option value="ElementGroupHeight">
-                ElementGroupHeight - Stretch to Group Height
-              </option>
-              <option value="ContainerBottom">
-                ContainerBottom - Stretch to Container Bottom
-              </option>
-              <option value="ContainerHeight">
-                ContainerHeight - Stretch to Container Height
-              </option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Conditional Style Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.styleExpression || ''"
-              @update:model-value="currentElement.styleExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-              placeholder='e.g.: $V{rowNumber} % 2 == 0 ? "evenRow" : ""'
-            />
-          </div>
-
-          <!-- Custom properties -->
-          <div class="form-group">
-            <label>Custom Properties</label>
-            <div
-              v-if="
-                currentElement.properties &&
-                currentElement.properties.length > 0
-              "
-              style="margin-bottom: 8px"
-            >
-              <div
-                v-for="(prop, index) in currentElement.properties"
-                :key="index"
-                style="display: flex; gap: 4px; margin-bottom: 4px"
-              >
-                <input
-                  v-model="prop.name"
-                  type="text"
-                  placeholder="Property Name"
-                  style="flex: 1"
-                />
-                <input
-                  v-model="prop.value"
-                  type="text"
-                  placeholder="Property Value"
-                  style="flex: 1"
-                />
-                <button
-                  @click="currentElement.properties.splice(index, 1)"
-                  type="button"
-                  class="prop-btn-danger"
-                  style="padding: 2px 6px"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-            <button
-              @click="addProperty"
-              type="button"
-              class="prop-btn-primary"
-              style="font-size: 12px"
-            >
-              + Add Property
-            </button>
-          </div>
-
-          <!-- Custom property expressions -->
-          <div class="form-group">
-            <label>Custom Property Expressions</label>
-            <div
-              v-if="
-                currentElement.propertyExpressions &&
-                currentElement.propertyExpressions.length > 0
-              "
-              style="margin-bottom: 8px"
-            >
-              <div
-                v-for="(prop, index) in currentElement.propertyExpressions"
-                :key="index"
-                style="margin-bottom: 4px"
-              >
-                <div style="display: flex; gap: 4px; margin-bottom: 2px">
-                  <input
-                    v-model="prop.name"
-                    type="text"
-                    placeholder="Property Name"
-                    style="flex: 1"
-                  />
-                  <button
-                    @click="currentElement.propertyExpressions.splice(index, 1)"
-                    type="button"
-                    class="prop-btn-danger"
-                    style="padding: 2px 6px"
-                  >
-                    ×
-                  </button>
-                </div>
-                <ExpressionEditor
-                  :model-value="prop.valueExpression || ''"
-                  @update:model-value="prop.valueExpression = $event"
-                  :report-fields="reportFields"
-                  :report-parameters="reportParameters"
-                  :report-variables="reportVariables"
-                  placeholder="Property Value Expression"
-                />
-              </div>
-            </div>
-            <button
-              @click="addPropertyExpression"
-              type="button"
-              class="prop-btn-primary"
-              style="font-size: 12px"
-            >
-              + Add Property Expression
-            </button>
-          </div>
-        </n-tab-pane>
 
         <!-- Table properties tab -->
         <n-tab-pane
@@ -949,15 +626,7 @@
 
         <!-- Style settings tab -->
         <n-tab-pane name="style" :tab="t('properties.styleSettings')">
-          <template v-if="currentElement && currentElement.type === 'break'">
-            <div class="box-section">
-              <p style="font-size: 12px; color: #666">
-                {{ t("properties.breakNoStyle") }}
-              </p>
-            </div>
-          </template>
-          <template v-else>
-            <h4>{{ t("properties.styleSettings") }}</h4>
+          <h4>{{ t("properties.styleSettings") }}</h4>
 
             <!-- Border settings (not supported for table elements) -->
             <template v-if="currentElement.type !== 'table'">
@@ -1662,747 +1331,6 @@
                 </div>
               </div>
             </template>
-          </template>
-        </n-tab-pane>
-
-        <!-- Subreport properties tab -->
-        <n-tab-pane
-          v-if="currentElement && currentElement.type === 'subreport'"
-          name="subreport"
-          :tab="'Subreport Properties'"
-        >
-          <div class="form-group">
-            <label>Subreport Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.subreportExpression || ''"
-              @update:model-value="currentElement.subreportExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-              placeholder="e.g.: $P{SUBREPORT_DIR} + 'subreport.jasper'"
-            />
-          </div>
-          <div class="form-group">
-            <label>Connection Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.connectionExpression || ''"
-              @update:model-value="currentElement.connectionExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-              placeholder="e.g.: $P{REPORT_CONNECTION}"
-            />
-          </div>
-          <div class="form-group">
-            <label>Data Source Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.dataSourceExpression || ''"
-              @update:model-value="currentElement.dataSourceExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-              placeholder="e.g.: $P{REPORT_DATA_SOURCE}"
-            />
-          </div>
-          <div class="form-group">
-            <label>Parameters Map Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.parametersMapExpression || ''"
-              @update:model-value="
-                currentElement.parametersMapExpression = $event
-              "
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-              placeholder="e.g.: $P{REPORT_PARAMETERS_MAP}"
-            />
-          </div>
-          <div class="form-group">
-            <label>Evaluation Time</label>
-            <select v-model="currentElement.evaluationTime">
-              <option value="Now">Now - Evaluate Immediately</option>
-              <option value="Report">Report - At Report End</option>
-              <option value="Page">Page - At Page End</option>
-              <option value="Column">Column - At Column End</option>
-              <option value="Group">Group - At Group End</option>
-              <option value="Band">Band - At Band End</option>
-              <option value="Auto">Auto - Engine Decides</option>
-              <option value="Master">Master - At Master Report End</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <SwitchControl
-              :model-value="currentElement.isUsingCache || false"
-              @update:model-value="currentElement.isUsingCache = $event"
-              label="Use Cache"
-            />
-          </div>
-          <div class="form-group">
-            <SwitchControl
-              :model-value="currentElement.isIgnorePagination || false"
-              @update:model-value="currentElement.isIgnorePagination = $event"
-              label="Ignore Pagination"
-            />
-          </div>
-        </n-tab-pane>
-
-        <!-- Chart properties tab -->
-        <n-tab-pane
-          v-if="currentElement && currentElement.type === 'chart'"
-          name="chart"
-          :tab="'Chart Properties'"
-        >
-          <div class="form-group">
-            <label>Chart Type</label>
-            <select v-model="currentElement.chartType">
-              <optgroup label="Category Charts">
-                <option value="pie">Pie Chart</option>
-                <option value="pie3D">3D Pie Chart</option>
-                <option value="bar">Bar Chart</option>
-                <option value="bar3D">3D Bar Chart</option>
-                <option value="stackedBar">Stacked Bar Chart</option>
-                <option value="stackedBar3D">3D Stacked Bar Chart</option>
-                <option value="line">Line Chart</option>
-                <option value="area">Area Chart</option>
-                <option value="stackedArea">Stacked Area Chart</option>
-              </optgroup>
-              <optgroup label="XY Charts">
-                <option value="xyBar">XY Bar Chart</option>
-                <option value="xyLine">XY Line Chart</option>
-                <option value="xyArea">XY Area Chart</option>
-                <option value="scatter">Scatter Chart</option>
-                <option value="bubble">Bubble Chart</option>
-                <option value="timeSeries">Time Series</option>
-              </optgroup>
-              <optgroup label="Financial Charts">
-                <option value="highLow">High-Low Chart</option>
-                <option value="candlestick">Candlestick Chart</option>
-              </optgroup>
-              <optgroup label="Special Charts">
-                <option value="meter">Meter</option>
-                <option value="thermometer">Thermometer</option>
-                <option value="multiAxis">Multi-Axis Chart</option>
-                <option value="gantt">Gantt Chart</option>
-                <option value="spider">Spider Chart</option>
-              </optgroup>
-            </select>
-          </div>
-
-          <!-- Chart settings -->
-          <div class="form-group">
-            <label>Render Type</label>
-            <select v-model="currentElement.renderType">
-              <option value="">Default</option>
-              <option value="svg">SVG</option>
-              <option value="draw">Draw</option>
-              <option value="image">Image</option>
-            </select>
-          </div>
-          <div class="form-group" style="display: flex; gap: 16px">
-            <label
-              style="
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                white-space: nowrap;
-              "
-            >
-              <input type="checkbox" v-model="currentElement.isShowTitle" />
-              Show Title
-            </label>
-            <label
-              style="
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                white-space: nowrap;
-              "
-            >
-              <input type="checkbox" v-model="currentElement.isShowSubtitle" />
-              Show Subtitle
-            </label>
-            <label
-              style="
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                white-space: nowrap;
-              "
-            >
-              <input type="checkbox" v-model="currentElement.isShowLegend" />
-              Show Legend
-            </label>
-          </div>
-          <div class="form-group">
-            <label>Customizer Class</label>
-            <input
-              v-model="currentElement.customizerClass"
-              type="text"
-              placeholder="com.example.MyChartCustomizer"
-            />
-          </div>
-
-          <!-- Title expression -->
-          <div class="form-group">
-            <label>Title Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.titleExpression || ''"
-              @update:model-value="currentElement.titleExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-            />
-          </div>
-          <div class="form-group">
-            <label>Title Text</label>
-            <input v-model="currentElement.title" type="text" />
-          </div>
-          <div class="form-group">
-            <label>Subtitle Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.subtitleExpression || ''"
-              @update:model-value="currentElement.subtitleExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-            />
-          </div>
-          <div class="form-group">
-            <label>Legend Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.legendExpression || ''"
-              @update:model-value="currentElement.legendExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-            />
-          </div>
-
-          <!-- Dataset settings -->
-          <div
-            style="
-              border-top: 1px solid #e8e8e8;
-              margin: 8px 0;
-              padding-top: 8px;
-            "
-          >
-            <label
-              style="
-                font-weight: 600;
-                font-size: 12px;
-                color: #666;
-                margin-bottom: 6px;
-                display: block;
-              "
-              >Dataset</label
-            >
-          </div>
-          <div class="form-group">
-            <label>Sub-Dataset Name</label>
-            <input
-              v-model="currentElement.subDataset"
-              type="text"
-              placeholder="e.g.: pieDataset"
-            />
-          </div>
-          <div class="form-group">
-            <label>Data Source Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.dataSourceExpression || ''"
-              @update:model-value="currentElement.dataSourceExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-              placeholder="e.g.: $P{myDatasource}"
-            />
-          </div>
-          <div class="form-group">
-            <label>Increment Type</label>
-            <select v-model="currentElement.incrementType">
-              <option value="">None</option>
-              <option value="None">None</option>
-              <option value="Group">Group</option>
-              <option value="Page">Page</option>
-              <option value="Column">Column</option>
-              <option value="Report">Report</option>
-            </select>
-          </div>
-          <div
-            class="form-group"
-            v-if="currentElement.incrementType === 'Group'"
-          >
-            <label>Increment Group</label>
-            <input v-model="currentElement.incrementGroup" type="text" />
-          </div>
-
-          <!-- Series expression (category charts) -->
-          <template
-            v-if="
-              [
-                'bar',
-                'bar3D',
-                'stackedBar',
-                'stackedBar3D',
-                'line',
-                'area',
-                'stackedArea',
-              ].includes(currentElement.chartType)
-            "
-          >
-            <div
-              style="
-                border-top: 1px solid #e8e8e8;
-                margin: 8px 0;
-                padding-top: 8px;
-              "
-            >
-              <label
-                style="
-                  font-weight: 600;
-                  font-size: 12px;
-                  color: #666;
-                  margin-bottom: 6px;
-                  display: block;
-                "
-                >Series Expression</label
-              >
-            </div>
-            <div class="form-group">
-              <label>Series</label>
-              <ExpressionEditor
-                :model-value="currentElement.seriesExpression || ''"
-                @update:model-value="currentElement.seriesExpression = $event"
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder="e.g.: $F{sales_state}"
-              />
-            </div>
-            <div class="form-group">
-              <label>Category</label>
-              <ExpressionEditor
-                :model-value="currentElement.categoryExpression || ''"
-                @update:model-value="currentElement.categoryExpression = $event"
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder="e.g.: $F{full_name}"
-              />
-            </div>
-            <div class="form-group">
-              <label>Value</label>
-              <ExpressionEditor
-                :model-value="currentElement.valueExpression || ''"
-                @update:model-value="currentElement.valueExpression = $event"
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder="e.g.: $V{amount}"
-              />
-            </div>
-          </template>
-
-          <!-- Pie chart expression -->
-          <template v-if="['pie', 'pie3D'].includes(currentElement.chartType)">
-            <div
-              style="
-                border-top: 1px solid #e8e8e8;
-                margin: 8px 0;
-                padding-top: 8px;
-              "
-            >
-              <label
-                style="
-                  font-weight: 600;
-                  font-size: 12px;
-                  color: #666;
-                  margin-bottom: 6px;
-                  display: block;
-                "
-                >Pie Chart Expression</label
-              >
-            </div>
-            <div class="form-group">
-              <label>Key</label>
-              <ExpressionEditor
-                :model-value="currentElement.keyExpression || ''"
-                @update:model-value="currentElement.keyExpression = $event"
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder="e.g.: $F{category}"
-              />
-            </div>
-            <div class="form-group">
-              <label>Value</label>
-              <ExpressionEditor
-                :model-value="currentElement.valueExpression || ''"
-                @update:model-value="currentElement.valueExpression = $event"
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder="e.g.: $V{amount}"
-              />
-            </div>
-          </template>
-
-          <!-- XY chart expression -->
-          <template
-            v-if="
-              [
-                'scatter',
-                'bubble',
-                'xyLine',
-                'xyArea',
-                'xyBar',
-                'timeSeries',
-                'highLow',
-                'candlestick',
-              ].includes(currentElement.chartType)
-            "
-          >
-            <div
-              style="
-                border-top: 1px solid #e8e8e8;
-                margin: 8px 0;
-                padding-top: 8px;
-              "
-            >
-              <label
-                style="
-                  font-weight: 600;
-                  font-size: 12px;
-                  color: #666;
-                  margin-bottom: 6px;
-                  display: block;
-                "
-                >XY Series Expression</label
-              >
-            </div>
-            <div class="form-group">
-              <label>Series</label>
-              <ExpressionEditor
-                :model-value="currentElement.seriesExpression || ''"
-                @update:model-value="currentElement.seriesExpression = $event"
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder="e.g.: $F{series}"
-              />
-            </div>
-            <div class="form-group">
-              <label>X Value</label>
-              <ExpressionEditor
-                :model-value="currentElement.xValueExpression || ''"
-                @update:model-value="currentElement.xValueExpression = $event"
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder="e.g.: $F{x_value}"
-              />
-            </div>
-            <div class="form-group">
-              <label>Y Value</label>
-              <ExpressionEditor
-                :model-value="currentElement.yValueExpression || ''"
-                @update:model-value="currentElement.yValueExpression = $event"
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder="e.g.: $F{y_value}"
-              />
-            </div>
-          </template>
-
-          <!-- Meter/thermometer expression -->
-          <template
-            v-if="['meter', 'thermometer'].includes(currentElement.chartType)"
-          >
-            <div
-              style="
-                border-top: 1px solid #e8e8e8;
-                margin: 8px 0;
-                padding-top: 8px;
-              "
-            >
-              <label
-                style="
-                  font-weight: 600;
-                  font-size: 12px;
-                  color: #666;
-                  margin-bottom: 6px;
-                  display: block;
-                "
-                >Meter Settings</label
-              >
-            </div>
-            <div class="form-group">
-              <label>Data Expression</label>
-              <ExpressionEditor
-                :model-value="currentElement.dataExpression || ''"
-                @update:model-value="currentElement.dataExpression = $event"
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder="e.g.: $V{value}"
-              />
-            </div>
-            <div class="form-group" v-if="currentElement.chartType === 'meter'">
-              <label>Shape</label>
-              <select v-model="currentElement.shape">
-                <option value="">Default</option>
-                <option value="chord">Chord</option>
-                <option value="pie">Pie</option>
-                <option value="circle">Circle</option>
-                <option value="fan">Fan</option>
-                <option value="dash">Dash</option>
-                <option value="bullet">Bullet</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Units</label>
-              <input
-                v-model="currentElement.units"
-                type="text"
-                placeholder="e.g.: %"
-              />
-            </div>
-            <div class="form-group">
-              <label>Low Threshold</label>
-              <ExpressionEditor
-                :model-value="currentElement.lowExpression || ''"
-                @update:model-value="currentElement.lowExpression = $event"
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder="e.g.: 0"
-              />
-            </div>
-            <div class="form-group">
-              <label>Medium Threshold</label>
-              <ExpressionEditor
-                :model-value="currentElement.mediumExpression || ''"
-                @update:model-value="currentElement.mediumExpression = $event"
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder="e.g.: 50"
-              />
-            </div>
-            <div class="form-group">
-              <label>High Threshold</label>
-              <ExpressionEditor
-                :model-value="currentElement.highExpression || ''"
-                @update:model-value="currentElement.highExpression = $event"
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder="e.g.: 100"
-              />
-            </div>
-          </template>
-
-          <!-- Plot settings (category charts) -->
-          <template
-            v-if="
-              [
-                'bar',
-                'bar3D',
-                'stackedBar',
-                'stackedBar3D',
-                'line',
-                'area',
-                'stackedArea',
-              ].includes(currentElement.chartType)
-            "
-          >
-            <div
-              style="
-                border-top: 1px solid #e8e8e8;
-                margin: 8px 0;
-                padding-top: 8px;
-              "
-            >
-              <label
-                style="
-                  font-weight: 600;
-                  font-size: 12px;
-                  color: #666;
-                  margin-bottom: 6px;
-                  display: block;
-                "
-                >Plot Settings</label
-              >
-            </div>
-            <div
-              class="form-group"
-              v-if="['line'].includes(currentElement.chartType)"
-            >
-              <label style="display: flex; align-items: center; gap: 4px">
-                <input type="checkbox" v-model="currentElement.isShowShapes" />
-                Show Data Point Shapes
-              </label>
-            </div>
-            <div class="form-group">
-              <label>Label Color</label>
-              <input
-                v-model="currentElement.itemLabelColor"
-                type="color"
-                style="width: 60px; height: 30px"
-              />
-            </div>
-            <div class="form-group">
-              <label>Label Background Color</label>
-              <input
-                v-model="currentElement.itemLabelBackgroundColor"
-                type="color"
-                style="width: 60px; height: 30px"
-              />
-            </div>
-            <div class="form-group">
-              <label>Category Axis Label</label>
-              <ExpressionEditor
-                :model-value="currentElement.categoryAxisLabelExpression || ''"
-                @update:model-value="
-                  currentElement.categoryAxisLabelExpression = $event
-                "
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder="e.g.: $F{axis_label}"
-              />
-            </div>
-            <div class="form-group">
-              <label>Value Axis Label</label>
-              <ExpressionEditor
-                :model-value="currentElement.valueAxisLabelExpression || ''"
-                @update:model-value="
-                  currentElement.valueAxisLabelExpression = $event
-                "
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder="e.g.: Amount"
-              />
-            </div>
-          </template>
-
-          <!-- Pie chart plot settings -->
-          <template v-if="['pie', 'pie3D'].includes(currentElement.chartType)">
-            <div
-              style="
-                border-top: 1px solid #e8e8e8;
-                margin: 8px 0;
-                padding-top: 8px;
-              "
-            >
-              <label
-                style="
-                  font-weight: 600;
-                  font-size: 12px;
-                  color: #666;
-                  margin-bottom: 6px;
-                  display: block;
-                "
-                >Plot Settings</label
-              >
-            </div>
-            <div class="form-group">
-              <label style="display: flex; align-items: center; gap: 4px">
-                <input type="checkbox" v-model="currentElement.isCircular" />
-                Circular Display
-              </label>
-            </div>
-            <div class="form-group">
-              <label>Label Color</label>
-              <input
-                v-model="currentElement.itemLabelColor"
-                type="color"
-                style="width: 60px; height: 30px"
-              />
-            </div>
-            <div class="form-group">
-              <label>Label Background Color</label>
-              <input
-                v-model="currentElement.itemLabelBackgroundColor"
-                type="color"
-                style="width: 60px; height: 30px"
-              />
-            </div>
-          </template>
-
-          <!-- Hyperlink settings -->
-          <div
-            style="
-              border-top: 1px solid #e8e8e8;
-              margin: 8px 0;
-              padding-top: 8px;
-            "
-          >
-            <label
-              style="
-                font-weight: 600;
-                font-size: 12px;
-                color: #666;
-                margin-bottom: 6px;
-                display: block;
-              "
-              >Hyperlink</label
-            >
-          </div>
-          <div class="form-group">
-            <label>Tooltip Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.hyperlinkTooltipExpression || ''"
-              @update:model-value="
-                currentElement.hyperlinkTooltipExpression = $event
-              "
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-            />
-          </div>
-          <div class="form-group">
-            <label>Hyperlink Type</label>
-            <select v-model="currentElement.hyperlinkType">
-              <option value="">None</option>
-              <option value="Reference">Reference</option>
-              <option value="LocalAnchor">LocalAnchor</option>
-              <option value="LocalPage">LocalPage</option>
-              <option value="RemoteAnchor">RemoteAnchor</option>
-              <option value="RemotePage">RemotePage</option>
-              <option value="Tooltip">Tooltip</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Hyperlink Target</label>
-            <select v-model="currentElement.hyperlinkTarget">
-              <option value="">Default</option>
-              <option value="Self">Self</option>
-              <option value="Blank">Blank</option>
-              <option value="Top">Top</option>
-              <option value="Parent">Parent</option>
-            </select>
-          </div>
-          <div class="form-group" v-if="currentElement.hyperlinkType">
-            <label>Hyperlink Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.hyperlinkExpression || ''"
-              @update:model-value="currentElement.hyperlinkExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-            />
-          </div>
-          <div class="form-group">
-            <label>Bookmark Level</label>
-            <input
-              v-model.number="currentElement.bookmarkLevel"
-              type="number"
-              min="0"
-              max="10"
-            />
-          </div>
         </n-tab-pane>
 
         <!-- Barcode properties tab -->
@@ -2429,362 +1357,12 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Barcode Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.codeExpression || ''"
-              @update:model-value="currentElement.codeExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-              placeholder='e.g.: "1234567890"'
-            />
-          </div>
-        </n-tab-pane>
-
-        <!-- Map properties tab -->
-        <n-tab-pane
-          v-if="currentElement && currentElement.type === 'map'"
-          name="map"
-          :tab="'Map Properties'"
-        >
-          <div class="form-group">
-            <label>Map Type</label>
-            <select v-model="currentElement.mapType">
-              <option value="html">HTML</option>
-              <option value="image">Image</option>
-              <option value="pdf">PDF</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Latitude Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.latExpression || ''"
-              @update:model-value="currentElement.latExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-            />
-          </div>
-          <div class="form-group">
-            <label>Longitude Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.lngExpression || ''"
-              @update:model-value="currentElement.lngExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-            />
-          </div>
-          <div class="form-group">
-            <label>Zoom Level Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.zoomExpression || ''"
-              @update:model-value="currentElement.zoomExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-            />
-          </div>
-          <div class="form-group">
-            <label>Language Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.languageExpression || ''"
-              @update:model-value="currentElement.languageExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-            />
-          </div>
-        </n-tab-pane>
-
-        <!-- Crosstab properties tab -->
-        <n-tab-pane
-          v-if="currentElement && currentElement.type === 'crosstab'"
-          name="crosstab"
-          :tab="'Crosstab Properties'"
-        >
-          <div class="form-group">
-            <label>Crosstab Width</label>
+            <label>Barcode Value</label>
             <input
-              v-model.number="currentElement.crosstabWidth"
-              type="number"
-              min="0"
-              placeholder="Pixels"
-            />
-          </div>
-          <div class="form-group">
-            <label>Crosstab Height</label>
-            <input
-              v-model.number="currentElement.crosstabHeight"
-              type="number"
-              min="0"
-              placeholder="Pixels"
-            />
-          </div>
-          <div class="form-group">
-            <label>When No Data</label>
-            <select v-model="currentElement.whenNoDataType">
-              <option value="AllSectionsNoDetail">
-                All Sections, No Detail
-              </option>
-              <option value="AllSectionsWithDetail">
-                All Sections With Detail
-              </option>
-              <option value="NoDataCell">No Data Cell</option>
-              <option value="Blank">Blank</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Evaluation Time</label>
-            <select v-model="currentElement.evaluationTime">
-              <option value="Now">Now - Evaluate Immediately</option>
-              <option value="Report">Report - At Report End</option>
-              <option value="Page">Page - At Page End</option>
-              <option value="Column">Column - At Column End</option>
-              <option value="Group">Group - At Group End</option>
-              <option value="Band">Band - At Band End</option>
-              <option value="Auto">Auto - Engine Decides</option>
-              <option value="Master">Master - At Master Report End</option>
-            </select>
-          </div>
-        </n-tab-pane>
-
-        <!-- Icon label properties tab -->
-        <n-tab-pane
-          v-if="currentElement && currentElement.type === 'iconLabel'"
-          name="iconLabel"
-          :tab="'Icon Label Properties'"
-        >
-          <div class="form-group">
-            <label>Icon</label>
-            <input
-              v-model="currentElement.icon"
               type="text"
-              placeholder="Enter an icon name or emoji, e.g.: 📊, 📊"
-            />
-          </div>
-          <div class="form-group">
-            <label>Static Label</label>
-            <input
-              v-model="currentElement.label"
-              type="text"
-              placeholder="Enter fixed label text"
-            />
-          </div>
-          <div class="form-group">
-            <label>Label Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.labelExpression || ''"
-              @update:model-value="currentElement.labelExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-            />
-          </div>
-          <div class="form-group">
-            <label>Evaluation Time</label>
-            <select v-model="currentElement.evaluationTime">
-              <option value="Now">Now - Evaluate Immediately</option>
-              <option value="Report">Report - At Report End</option>
-              <option value="Page">Page - At Page End</option>
-              <option value="Column">Column - At Column End</option>
-              <option value="Group">Group - At Group End</option>
-              <option value="Band">Band - At Band End</option>
-              <option value="Auto">Auto - Engine Decides</option>
-              <option value="Master">Master - At Master Report End</option>
-            </select>
-          </div>
-        </n-tab-pane>
-
-        <!-- Generic element properties tab -->
-        <n-tab-pane
-          v-if="currentElement && currentElement.type === 'genericElement'"
-          name="genericElement"
-          :tab="'Generic Element Properties'"
-        >
-          <div class="form-group">
-            <label>Namespace</label>
-            <input
-              v-model="currentElement.namespace"
-              type="text"
-              placeholder="e.g.: http://example.com/namespace"
-            />
-          </div>
-          <div class="form-group">
-            <label>Evaluation Time</label>
-            <select v-model="currentElement.evaluationTime">
-              <option value="Now">Now - Evaluate Immediately</option>
-              <option value="Report">Report - At Report End</option>
-              <option value="Page">Page - At Page End</option>
-              <option value="Column">Column - At Column End</option>
-              <option value="Group">Group - At Group End</option>
-              <option value="Band">Band - At Band End</option>
-              <option value="Auto">Auto - Engine Decides</option>
-              <option value="Master">Master - At Master Report End</option>
-            </select>
-          </div>
-        </n-tab-pane>
-
-        <!-- Sort properties tab -->
-        <n-tab-pane
-          v-if="currentElement && currentElement.type === 'sort'"
-          name="sort"
-          :tab="'Sort Properties'"
-        >
-          <div class="form-group">
-            <label>Sort Fields</label>
-            <div
-              v-if="
-                currentElement.sortFields &&
-                currentElement.sortFields.length > 0
-              "
-            >
-              <div
-                v-for="(field, index) in currentElement.sortFields"
-                :key="index"
-                class="sort-field-item"
-              >
-                <input
-                  v-model="field.name"
-                  type="text"
-                  placeholder="Field Name"
-                  class="sort-field-name"
-                />
-                <select v-model="field.order" class="sort-field-order">
-                  <option value="Ascending">Ascending</option>
-                  <option value="Descending">Descending</option>
-                </select>
-                <button
-                  @click="removeSortField(index)"
-                  class="sort-field-remove"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-            <button @click="addSortField" class="add-sort-field">
-              Add Sort Field
-            </button>
-          </div>
-          <div class="form-group">
-            <label>Evaluation Time</label>
-            <select v-model="currentElement.evaluationTime">
-              <option value="Now">Now - Evaluate Immediately</option>
-              <option value="Report">Report - At Report End</option>
-              <option value="Page">Page - At Page End</option>
-              <option value="Column">Column - At Column End</option>
-              <option value="Group">Group - At Group End</option>
-              <option value="Band">Band - At Band End</option>
-              <option value="Auto">Auto - Engine Decides</option>
-              <option value="Master">Master - At Master Report End</option>
-            </select>
-          </div>
-        </n-tab-pane>
-
-        <!-- List properties tab -->
-        <n-tab-pane
-          v-if="currentElement && currentElement.type === 'list'"
-          name="list"
-          :tab="'List Properties'"
-        >
-          <div class="form-group">
-            <label>Print Order</label>
-            <select v-model="currentElement.printOrder">
-              <option value="Vertical">Vertical - Vertical</option>
-              <option value="Horizontal">Horizontal - Horizontal</option>
-            </select>
-          </div>
-          <div
-            class="form-group"
-            v-if="currentElement.printOrder === 'Horizontal'"
-          >
-            <label style="display: flex; align-items: center; gap: 4px">
-              <input type="checkbox" v-model="currentElement.ignoreWidth" />
-              Ignore Width (Continue Rendering)
-            </label>
-          </div>
-          <div class="form-group">
-            <label>Sub-Dataset Name</label>
-            <input
-              v-model="currentElement.subDataset"
-              type="text"
-              placeholder="e.g.: Addresses"
-            />
-          </div>
-          <div class="form-group">
-            <label>Data Source Expression</label>
-            <ExpressionEditor
-              :model-value="currentElement.dataSourceExpression || ''"
-              @update:model-value="currentElement.dataSourceExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-              placeholder="e.g.: $P{myDatasource}"
-            />
-          </div>
-          <div class="form-group">
-            <label>Connection Expression (Optional)</label>
-            <ExpressionEditor
-              :model-value="currentElement.connectionExpression || ''"
-              @update:model-value="currentElement.connectionExpression = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-              placeholder="e.g.: $P{connection}"
-            />
-          </div>
-          <div class="form-group">
-            <label>List Contents Height</label>
-            <input
-              v-model.number="listContentsHeight"
-              type="number"
-              min="0"
-              placeholder="Pixels"
-              @change="updateListContentsHeight"
-            />
-          </div>
-          <div class="form-group">
-            <label>List Contents Width</label>
-            <input
-              v-model.number="listContentsWidth"
-              type="number"
-              min="0"
-              placeholder="Pixels"
-              @change="updateListContentsWidth"
-            />
-          </div>
-          <div class="form-group">
-            <label>Split Type</label>
-            <select v-model="currentElement.splitType">
-              <option value="Stretch">Stretch - Stretch</option>
-              <option value="Prevent">Prevent - Prevent Split</option>
-              <option value="Immediate">Immediate - Split Immediately</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Evaluation Time</label>
-            <select v-model="currentElement.evaluationTime">
-              <option value="Now">Now - Evaluate Immediately</option>
-              <option value="Report">Report - At Report End</option>
-              <option value="Page">Page - At Page End</option>
-              <option value="Column">Column - At Column End</option>
-              <option value="Group">Group - At Group End</option>
-              <option value="Band">Band - At Band End</option>
-              <option value="Auto">Auto - Engine Decides</option>
-            </select>
-          </div>
-          <div
-            class="form-group"
-            v-if="currentElement.evaluationTime === 'Group'"
-          >
-            <label>Evaluation Group</label>
-            <ExpressionEditor
-              :model-value="currentElement.evaluationGroup || ''"
-              @update:model-value="currentElement.evaluationGroup = $event"
-              :report-fields="reportFields"
-              :report-parameters="reportParameters"
-              :report-variables="reportVariables"
-              placeholder="Enter group name"
+              :value="getBarcodeValue(currentElement)"
+              @input="updateBarcodeValue(($event.target as HTMLInputElement).value)"
+              placeholder="e.g. 1234567890"
             />
           </div>
         </n-tab-pane>
@@ -4326,6 +2904,65 @@ function updateTextFieldExpression(newExpression: string) {
   emit("save-state");
   currentElement.value.expression = newExpression;
 
+  emit("update-jrxml");
+}
+
+// Get clean text field content for display (strips quotes if static text, preserves field expressions)
+function getTextFieldDisplay(element: any) {
+  if (!element) return "";
+  const raw = element.expression || (element.fieldName ? `$F{${element.fieldName}}` : "");
+  const trimmed = String(raw).trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+// Update text field content (wraps static text in quotes, preserves $F{...} / $V{...} expressions)
+function updateTextFieldDisplay(val: string) {
+  if (!currentElement.value || currentElement.value.type !== "textField") return;
+  emit("save-state");
+  const trimmed = val.trim();
+  if (!trimmed) {
+    currentElement.value.expression = '""';
+  } else if (trimmed.startsWith("$") || (trimmed.startsWith('"') && trimmed.endsWith('"')) || trimmed.includes("+")) {
+    currentElement.value.expression = val;
+  } else {
+    currentElement.value.expression = `"${val}"`;
+  }
+  emit("update-jrxml");
+}
+
+// Insert a selected field into the text field
+function insertFieldIntoTextField(fieldExpr: string) {
+  if (!fieldExpr || !currentElement.value || currentElement.value.type !== "textField") return;
+  emit("save-state");
+  currentElement.value.expression = fieldExpr;
+  emit("update-jrxml");
+}
+
+// Get clean barcode value for display (without quotes if static text)
+function getBarcodeValue(element: any) {
+  if (!element || !element.codeExpression) return "";
+  const raw = String(element.codeExpression).trim();
+  if (raw.startsWith('"') && raw.endsWith('"')) {
+    return raw.slice(1, -1);
+  }
+  return raw;
+}
+
+// Update barcode value (wraps plain text in quotes, preserves $F{...} expressions)
+function updateBarcodeValue(val: string) {
+  if (!currentElement.value || currentElement.value.type !== "barcode") return;
+  emit("save-state");
+  const trimmed = val.trim();
+  if (!trimmed) {
+    currentElement.value.codeExpression = '""';
+  } else if (trimmed.startsWith("$") || (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
+    currentElement.value.codeExpression = trimmed;
+  } else {
+    currentElement.value.codeExpression = `"${trimmed}"`;
+  }
   emit("update-jrxml");
 }
 

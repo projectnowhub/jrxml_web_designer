@@ -503,10 +503,20 @@ const handleOrientationChange = () => {
   }
 };
 
-// Computed property: local binding for selectedBandTypes
+// Computed property: local binding for selectedBandTypes (Detail band is permanently required)
 const localSelectedBandTypes = computed({
-  get: () => props.selectedBandTypes,
-  set: (value) => emit("update:selected-band-types", value),
+  get: () => {
+    if (!props.selectedBandTypes.includes(BAND_TYPE_CONSTANTS.DETAIL as BandType)) {
+      return [...props.selectedBandTypes, BAND_TYPE_CONSTANTS.DETAIL as BandType];
+    }
+    return props.selectedBandTypes;
+  },
+  set: (value: BandType[]) => {
+    const safeValue = value.includes(BAND_TYPE_CONSTANTS.DETAIL as BandType)
+      ? value
+      : [...value, BAND_TYPE_CONSTANTS.DETAIL as BandType];
+    emit("update:selected-band-types", safeValue);
+  },
 });
 
 // Computed property: local binding for jrxmlContent
@@ -910,14 +920,22 @@ onBeforeUnmount(() => {
               :key="bandType.type"
               class="band-selection-item"
             >
-              <label>
+              <label :class="{ 'is-disabled': bandType.type === BAND_TYPE_CONSTANTS.DETAIL }">
                 <input
                   type="checkbox"
                   :value="bandType.type"
                   v-model="localSelectedBandTypes"
+                  :disabled="bandType.type === BAND_TYPE_CONSTANTS.DETAIL"
                   @change="handleBandSelectionChange"
                 />
                 {{ getBandDisplayName(bandType.type) }}
+                <span
+                  v-if="bandType.type === BAND_TYPE_CONSTANTS.DETAIL"
+                  class="band-required-tag"
+                  :title="t('bottomPanel.detailBandAlwaysRequired') || 'Main report canvas (always required)'"
+                >
+                  {{ t("common.required") || "Required" }}
+                </span>
               </label>
             </div>
           </div>
@@ -1549,6 +1567,31 @@ onBeforeUnmount(() => {
 
 .band-selection-item {
   margin: 0;
+}
+
+.band-selection-item label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.band-selection-item label.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.85;
+  color: #4b5563;
+}
+
+.band-required-tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 1px 5px;
+  border-radius: 4px;
+  line-height: 1.2;
 }
 
 .band-selection-note {

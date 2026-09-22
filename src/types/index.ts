@@ -312,7 +312,7 @@ export interface StaticTextElement extends DesignElementBase {
   text?: string;
   markup?: "none" | "html" | "rtf" | "styledtext";
   textAdjust?: "StretchHeight" | "CutText" | "ShrinkToFit";
-  rotation?: "None" | "Left" | "Right";
+  rotation?: "None" | "Left" | "Right" | "UpsideDown";
   pattern?: string;
   xml_lang?: string;
   printWhenExpression?: string;
@@ -322,6 +322,7 @@ export interface StaticTextElement extends DesignElementBase {
 export interface TextFieldElement extends DesignElementBase {
   type: "textField";
   expression?: string;
+  rotation?: "None" | "Left" | "Right" | "UpsideDown";
   evaluationTime?:
     | "Now"
     | "Report"

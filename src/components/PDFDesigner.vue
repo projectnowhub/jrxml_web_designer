@@ -2385,8 +2385,7 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
       };
     case "image":
       return {
-        imageExpression:
-          '"https://raw.githubusercontent.com/fengyunhe/jrxml_web_designer/refs/heads/master/src/assets/FIREGOD_CN.jpg"',
+        imageExpression: "",
       };
     case "line":
       return { lineDirection: "TopDown", lineWidth: 1 };
@@ -6268,8 +6267,11 @@ const handleBandSelectionChange = (): void => {
   );
 
   // Determine which bands need to be removed (present in currentBandTypes but not in selectedBandTypes)
+  // Detail band is the fundamental report canvas and must never be removed
   const bandsToRemove = currentBandTypes.filter(
-    (type) => !currentSelectedTypes.includes(type),
+    (type) =>
+      !currentSelectedTypes.includes(type) &&
+      type !== BAND_TYPE_CONSTANTS.DETAIL,
   );
 
   // Remove the bands that are no longer needed
