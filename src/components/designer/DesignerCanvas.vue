@@ -302,7 +302,10 @@
                 </div>
 
                 <!-- Alignment lines -->
-                <div v-if="isDraggingOrResizing" class="alignment-lines">
+                <div
+                  v-if="isDraggingOrResizing && enableSnapToAlignment"
+                  class="alignment-lines"
+                >
                   <div
                     v-for="(line, index) in alignmentLines.horizontal"
                     :key="'h-' + index"

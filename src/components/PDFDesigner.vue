@@ -99,7 +99,10 @@
           <n-checkbox
             :checked="enableSnapToAlignment"
             size="small"
-            @update:checked="enableSnapToAlignment = $event"
+            @update:checked="
+              enableSnapToAlignment = $event;
+              if (!$event) clearAlignmentLines();
+            "
           >
             {{ t("actions.snapToAlignment") }}
           </n-checkbox>
@@ -2681,7 +2684,7 @@ const startDragging = (
 
             // Apply auto-snap to grid
             if (enableSnapToGrid.value) {
-              const gridSize = 3;
+              const gridSize = UI_CONSTANTS.GRID_SIZE;
               const remainderX = newX % gridSize;
               newX =
                 remainderX < gridSize / 2
@@ -2715,7 +2718,11 @@ const startDragging = (
             currentElement.y = Math.round(newY);
 
             // Detect alignment lines (using the final position)
-            detectAlignmentLines(currentElement, draggingInfo.value.bandIndex);
+            if (enableSnapToAlignment.value) {
+              detectAlignmentLines(currentElement, draggingInfo.value.bandIndex);
+            } else {
+              clearAlignmentLines();
+            }
 
             // Fast target band detection using elementFromPoint
             const elUnderPoint = document.elementFromPoint(
@@ -5312,6 +5319,8 @@ const startResizingElement = (
       // Re-run alignment-line detection using the final size (to ensure alignment lines display correctly)
       if (enableSnapToAlignment.value) {
         detectAlignmentLines(element, resizingInfo.value.bandIndex);
+      } else {
+        clearAlignmentLines();
       }
     };
 
