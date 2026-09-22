@@ -334,7 +334,10 @@ const onGlobalMinChange = (bandType: string) => {
 };
 
 const getMaxAllowedGlobalLimit = (bandType: string): number => {
-  const printableH = 842 - 20 - 20; // standard A4 printable height (802px)
+  const pageH = localReportProperties.value?.pageHeight || 842;
+  const topM = localReportProperties.value?.topMargin || 20;
+  const bottomM = localReportProperties.value?.bottomMargin || 20;
+  const printableH = pageH - topM - bottomM;
   let otherBandsMin = 0;
   standardActiveBands.forEach((type) => {
     if (type !== bandType) {
