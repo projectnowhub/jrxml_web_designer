@@ -302,6 +302,7 @@
           @select-element="selectElement"
           @start-dragging="startDragging"
           @start-resizing-element="startResizingElement"
+          @auto-fit-height="autoFitElementHeight"
           @start-editing="startEditing"
           @finish-editing="finishEditing"
           @cancel-editing="cancelEditing"
@@ -731,6 +732,7 @@ import { loadFromLocalStorage, saveToLocalStorage } from "../utils/fileUtils";
 
 // Import element bounds validation utility
 import { getOutOfBoundsElements } from "../utils/elementBoundsValidator";
+import { calculateTextElementHeight } from "../utils/elementUtils";
 import { useBoundaryDetection } from "@/composables/useBoundaryDetection";
 import { useAlignmentSystem } from "@/composables/useAlignmentSystem";
 import { useDragFeedback } from "@/composables/useDragFeedback";
@@ -1973,8 +1975,11 @@ const resizingBandInfoRef = ref(resizingBandInfo);
 const resizingInfo = ref<{
   bandIndex: number;
   elementIndex: number;
+  direction?: string;
   startX: number;
   startY: number;
+  startElementX: number;
+  startElementY: number;
   startWidth: number;
   startHeight: number;
   parentFrameIndex?: number;
@@ -5102,8 +5107,11 @@ const startResizingElement = (
     resizingInfo.value = {
       bandIndex,
       elementIndex,
+      direction: direction || "se",
       startX: (event.clientX - paperOffsetX) / currentZoom,
       startY: (event.clientY - paperOffsetY) / currentZoom,
+      startElementX: element.x,
+      startElementY: element.y,
       startWidth: element.width,
       startHeight: element.height,
       parentFrameIndex,
@@ -5156,89 +5164,134 @@ const startResizingElement = (
         currentPaperOffsetY = paperRect.top;
       }
 
-      // Calculate the new width and height, accounting for the zoom scale
-      let newWidth =
-        resizingInfo.value.startWidth +
-        ((e.clientX - currentPaperOffsetX) / currentZoom -
-          resizingInfo.value.startX);
-      let newHeight =
-        resizingInfo.value.startHeight +
-        ((e.clientY - currentPaperOffsetY) / currentZoom -
-          resizingInfo.value.startY);
+      // Calculate the new width, height, and position, accounting for zoom scale and 8-way direction
+      const dir = resizingInfo.value.direction || "se";
+      const startElementX = resizingInfo.value.startElementX ?? element.x;
+      const startElementY = resizingInfo.value.startElementY ?? element.y;
+      const startWidth = resizingInfo.value.startWidth;
+      const startHeight = resizingInfo.value.startHeight;
 
-      // Constrain the minimum size
-      const minSize = 1;
-      newWidth = Math.max(minSize, newWidth);
-      newHeight = Math.max(minSize, newHeight);
+      const currentMouseX = (e.clientX - currentPaperOffsetX) / currentZoom;
+      const currentMouseY = (e.clientY - currentPaperOffsetY) / currentZoom;
+      const deltaX = currentMouseX - resizingInfo.value.startX;
+      const deltaY = currentMouseY - resizingInfo.value.startY;
 
-      // Get the report's margin settings
-      const { leftMargin = 0, rightMargin = 0 } = reportProperties.value;
-      // Constrain the size so it doesn't exceed the paper's right boundary or the band's bottom boundary
-      let maxElementWidth;
-      if (resizingInfo.value.parentFrameIndex !== undefined) {
-        maxElementWidth = containerWidth - element.x;
-      } else {
-        maxElementWidth =
-          paperWidth.value - leftMargin - rightMargin - element.x;
+      const minSize = 5;
+
+      let newX = startElementX;
+      let newY = startElementY;
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+
+      // Horizontal resize
+      if (dir.includes("e")) {
+        // Dragging right edge: left edge (newX) is fixed at startElementX
+        const maxRight = containerWidth;
+        const candidateRight = startElementX + startWidth + deltaX;
+        const clampedRight = Math.min(maxRight, Math.max(startElementX + minSize, candidateRight));
+        newWidth = clampedRight - startElementX;
+        newX = startElementX;
+      } else if (dir.includes("w")) {
+        // Dragging left edge: right edge is fixed at (startElementX + startWidth)
+        const rightEdge = startElementX + startWidth;
+        const candidateLeft = startElementX + deltaX;
+        const clampedLeft = Math.max(0, Math.min(rightEdge - minSize, candidateLeft));
+        newX = clampedLeft;
+        newWidth = rightEdge - clampedLeft;
       }
 
-      const availableHeight = Math.max(minSize, containerHeight - element.y);
-      newWidth = Math.max(minSize, Math.min(newWidth, maxElementWidth));
-      newHeight = Math.max(minSize, Math.min(newHeight, availableHeight));
+      // Vertical resize
+      if (dir.includes("s")) {
+        // Dragging bottom edge: top edge (newY) is fixed at startElementY
+        const maxBottom = containerHeight;
+        const candidateBottom = startElementY + startHeight + deltaY;
+        const clampedBottom = Math.min(maxBottom, Math.max(startElementY + minSize, candidateBottom));
+        newHeight = clampedBottom - startElementY;
+        newY = startElementY;
+      } else if (dir.includes("n")) {
+        // Dragging top edge: bottom edge is fixed at (startElementY + startHeight)
+        const bottomEdge = startElementY + startHeight;
+        const candidateTop = startElementY + deltaY;
+        const clampedTop = Math.max(0, Math.min(bottomEdge - minSize, candidateTop));
+        newY = clampedTop;
+        newHeight = bottomEdge - clampedTop;
+      }
 
       // If the SHIFT key is held, preserve the original aspect ratio
       if (e.shiftKey) {
-        // Calculate the original aspect ratio
-        const aspectRatio =
-          resizingInfo.value.startWidth / resizingInfo.value.startHeight;
-
-        // Calculate the height derived from the width, and the width derived from the height
+        const aspectRatio = startWidth / startHeight;
         const heightBasedOnWidth = newWidth / aspectRatio;
         const widthBasedOnHeight = newHeight * aspectRatio;
 
-        // Choose whichever dimension is closer to the original ratio
         if (
           Math.abs(newHeight - heightBasedOnWidth) <
           Math.abs(newWidth - widthBasedOnHeight)
         ) {
-          // Use the width as the basis, and adjust the height
-          newHeight = heightBasedOnWidth;
+          newHeight = Math.max(minSize, heightBasedOnWidth);
+          if (dir.includes("n")) {
+            newY = startElementY + startHeight - newHeight;
+            if (newY < 0) {
+              newY = 0;
+              newHeight = startElementY + startHeight;
+              newWidth = newHeight * aspectRatio;
+              if (dir.includes("w")) {
+                newX = startElementX + startWidth - newWidth;
+              }
+            }
+          }
         } else {
-          // Use the height as the basis, and adjust the width
-          newWidth = widthBasedOnHeight;
+          newWidth = Math.max(minSize, widthBasedOnHeight);
+          if (dir.includes("w")) {
+            newX = startElementX + startWidth - newWidth;
+            if (newX < 0) {
+              newX = 0;
+              newWidth = startElementX + startWidth;
+              newHeight = newWidth / aspectRatio;
+              if (dir.includes("n")) {
+                newY = startElementY + startHeight - newHeight;
+              }
+            }
+          }
         }
-
-        // Constrain the size again to ensure it doesn't exceed the bounds
-        newWidth = Math.max(minSize, Math.min(newWidth, maxElementWidth));
-        newHeight = Math.max(minSize, Math.min(newHeight, availableHeight));
       } else if (e.altKey) {
-        // If the ALT key is held, lock the aspect ratio to 1:1
-        // Calculate the 1:1 height derived from the width, and the 1:1 width derived from the height
-        const size1x1FromWidth = newWidth;
-        const size1x1FromHeight = newHeight;
-
-        // Use whichever dimension changed more as the basis
-        const widthChange = Math.abs(newWidth - resizingInfo.value.startWidth);
-        const heightChange = Math.abs(
-          newHeight - resizingInfo.value.startHeight,
-        );
+        // If ALT key is held, lock aspect ratio to 1:1
+        const widthChange = Math.abs(newWidth - startWidth);
+        const heightChange = Math.abs(newHeight - startHeight);
 
         if (widthChange >= heightChange) {
-          // Use the width as the basis; height equals width
-          newHeight = size1x1FromWidth;
+          newHeight = newWidth;
+          if (dir.includes("n")) {
+            newY = startElementY + startHeight - newHeight;
+            if (newY < 0) {
+              newY = 0;
+              newHeight = startElementY + startHeight;
+              newWidth = newHeight;
+              if (dir.includes("w")) {
+                newX = startElementX + startWidth - newWidth;
+              }
+            }
+          }
         } else {
-          // Use the height as the basis; width equals height
-          newWidth = size1x1FromHeight;
+          newWidth = newHeight;
+          if (dir.includes("w")) {
+            newX = startElementX + startWidth - newWidth;
+            if (newX < 0) {
+              newX = 0;
+              newWidth = startElementX + startWidth;
+              newHeight = newWidth;
+              if (dir.includes("n")) {
+                newY = startElementY + startHeight - newHeight;
+              }
+            }
+          }
         }
-
-        // Constrain the size again to ensure it doesn't exceed the bounds
-        newWidth = Math.max(minSize, Math.min(newWidth, maxElementWidth));
-        newHeight = Math.max(minSize, Math.min(newHeight, availableHeight));
       }
 
-      // First, store the temporary size
+      // First, store the temporary size and position
       const tempWidth = Math.round(newWidth);
       const tempHeight = Math.round(newHeight);
+      const tempX = Math.round(newX);
+      const tempY = Math.round(newY);
 
       // Special handling for table elements: automatically adjust column widths when the table width changes
       if (element.type === "table") {
@@ -5353,7 +5406,9 @@ const startResizingElement = (
         element.width = tempWidth;
       }
 
-      // Apply the height adjustment
+      // Apply the position and height adjustments
+      element.x = tempX;
+      element.y = tempY;
       element.height = tempHeight;
 
       // Re-run alignment-line detection using the final size (to ensure alignment lines display correctly)
@@ -5383,6 +5438,35 @@ const startResizingElement = (
 
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
+  }
+};
+
+// Auto-fit element height to its text content
+const autoFitElementHeight = (
+  bandIndex: number,
+  elementIndex: number,
+  parentFrameIndex?: number,
+) => {
+  const band = bands.value[bandIndex];
+  if (!band) return;
+
+  let element: DesignElement | undefined;
+  if (parentFrameIndex !== undefined) {
+    const frame = band.elements[parentFrameIndex];
+    if (frame && frame.type === "frame" && frame.elements) {
+      element = frame.elements[elementIndex];
+    }
+  } else {
+    element = band.elements[elementIndex];
+  }
+
+  if (!element) return;
+
+  const neededHeight = calculateTextElementHeight(element as any);
+  if (neededHeight > 0) {
+    saveStateToHistory();
+    element.height = neededHeight;
+    updateJRXML();
   }
 };
 

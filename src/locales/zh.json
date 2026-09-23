@@ -19,7 +19,10 @@
     "downloadJRXML": "下载JRXML",
     "previewPDF": "预览PDF",
     "setPreviewServer": "设置预览服务器",
-    "help": "使用说明"
+    "help": "使用说明",
+    "delete": "删除",
+    "copy": "复制",
+    "paste": "粘贴"
   },
   "fileManager": {
     "title": "文件管理",

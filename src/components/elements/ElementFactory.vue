@@ -108,7 +108,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number];
   dragStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   startEditing: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   finishEditing: [];
@@ -118,6 +118,7 @@ const emit = defineEmits<{
   addColumnsToGroup: [elementIndex: number, columnIndices: number[], bandIndex: number, parentFrameIndex?: number];
   joinColumnsToExistingGroup: [elementIndex: number, columnIndices: number[], bandIndex: number, parentFrameIndex?: number];
   'update-jrxml': [];
+  autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
 // Get the corresponding component based on the element type
@@ -169,8 +170,11 @@ const commonEvents = {
   dragStart: (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
     emit('dragStart', event, bandIndex, elementIndex, parentFrameIndex);
   },
-  resizeStart: (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
-    emit('resizeStart', event, bandIndex, elementIndex, parentFrameIndex);
+  resizeStart: (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string) => {
+    emit('resizeStart', event, bandIndex, elementIndex, parentFrameIndex, direction);
+  },
+  autoFitHeight: (bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
+    emit('autoFitHeight', bandIndex, elementIndex, parentFrameIndex);
   },
   contextmenu: (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
     emit('contextmenu', event, bandIndex, elementIndex, parentFrameIndex);

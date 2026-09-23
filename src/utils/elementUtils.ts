@@ -60,6 +60,67 @@ export function quoteExpressionValue(value: string): string {
   return `"${value}"`;
 }
 
+// Calculate the required rendered height for a text field based on its text, width, font, and padding
+export function calculateTextElementHeight(element: {
+  expression?: string;
+  fieldName?: string;
+  width: number;
+  fontSize?: number;
+  fontFamily?: string;
+  isBold?: boolean;
+  isItalic?: boolean;
+  box?: any;
+}): number {
+  if (typeof document === 'undefined') return 20;
+
+  const div = document.createElement('div');
+  div.style.visibility = 'hidden';
+  div.style.position = 'absolute';
+  div.style.left = '-9999px';
+  div.style.top = '-9999px';
+  div.style.width = `${Math.max(element.width || 100, 10)}px`;
+  div.style.fontSize = `${element.fontSize || 10}px`;
+  div.style.fontFamily = element.fontFamily || 'SansSerif';
+  div.style.fontWeight = element.isBold ? 'bold' : 'normal';
+  div.style.fontStyle = element.isItalic ? 'italic' : 'normal';
+  div.style.whiteSpace = 'pre-wrap';
+  div.style.wordBreak = 'break-word';
+  div.style.overflowWrap = 'break-word';
+  div.style.lineHeight = '1.3';
+  div.style.boxSizing = 'border-box';
+
+  if (element.box) {
+    const padTop = element.box.topPadding ?? element.box.padding ?? 0;
+    const padBottom = element.box.bottomPadding ?? element.box.padding ?? 0;
+    const padLeft = element.box.leftPadding ?? element.box.padding ?? 0;
+    const padRight = element.box.rightPadding ?? element.box.padding ?? 0;
+    div.style.paddingTop = `${padTop}px`;
+    div.style.paddingBottom = `${padBottom}px`;
+    div.style.paddingLeft = `${padLeft}px`;
+    div.style.paddingRight = `${padRight}px`;
+  }
+
+  let raw = element.expression || (element.fieldName ? `$F{${element.fieldName}}` : '');
+  const displayText = stripExpressionQuotes(raw).replace(/\\n/g, '\n');
+  div.textContent = displayText || ' ';
+
+  document.body.appendChild(div);
+  const domHeight = Math.ceil(div.getBoundingClientRect().height);
+  document.body.removeChild(div);
+
+  if (domHeight > 0) {
+    return Math.max(domHeight, 15);
+  }
+
+  // Fallback for environments without CSS layout engine (e.g. JSDOM in tests)
+  const lineCount = Math.max((displayText || ' ').split('\n').length, 1);
+  const approxLineHeight = (element.fontSize || 10) * 1.35;
+  const padTop = element.box?.topPadding ?? element.box?.padding ?? 0;
+  const padBottom = element.box?.bottomPadding ?? element.box?.padding ?? 0;
+  const estimated = Math.ceil(lineCount * approxLineHeight + padTop + padBottom);
+  return Math.max(estimated, 15);
+}
+
 // Get element display info (excluding Band)
 export function getElementDisplayInfoWithoutBand(
   element: DesignElement,

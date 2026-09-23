@@ -337,35 +337,52 @@
             >
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <label style="margin-bottom: 0;">{{ t("properties.textContent") }}</label>
-                <select
-                  v-if="reportFields && reportFields.length > 0"
-                  style="font-size: 11px; padding: 2px 6px; width: auto; max-width: 140px;"
-                  @change="insertFieldIntoTextField(($event.target as HTMLSelectElement).value); ($event.target as HTMLSelectElement).value = ''"
-                >
-                  <option value="">+ Insert Field...</option>
-                  <option v-for="f in reportFields" :key="f.name" :value="`$F{${f.name}}`">
-                    {{ f.name }}
-                  </option>
-                </select>
+                <div style="display: flex; gap: 4px; align-items: center;">
+                  <button
+                    type="button"
+                    class="btn-autofit-height"
+                    title="Auto-fit element height to content"
+                    @click="autoFitCurrentElementHeight"
+                  >
+                    Auto-fit Height
+                  </button>
+                  <select
+                    v-if="reportFields && reportFields.length > 0"
+                    style="font-size: 11px; padding: 2px 6px; width: auto; max-width: 120px;"
+                    @change="insertFieldIntoTextField(($event.target as HTMLSelectElement).value); ($event.target as HTMLSelectElement).value = ''"
+                  >
+                    <option value="">+ Insert Field...</option>
+                    <option v-for="f in reportFields" :key="f.name" :value="`$F{${f.name}}`">
+                      {{ f.name }}
+                    </option>
+                  </select>
+                </div>
               </div>
               <textarea
                 v-if="currentElement"
                 :value="getTextFieldDisplay(currentElement)"
                 @input="updateTextFieldDisplay(($event.target as HTMLTextAreaElement).value)"
                 placeholder="Enter text or $F{field_name}"
-                rows="2"
+                rows="3"
+                style="white-space: pre-wrap;"
               ></textarea>
             </div>
             <div class="form-group">
               <label>{{ t("properties.textAdjust") || "When Text Is Too Long" }}</label>
               <select v-model="currentElement.textAdjust">
-                <option value="">{{ t("properties.default") || "Default" }}</option>
+                <option value="">{{ t("properties.default") || "Default (Cut off excess text)" }}</option>
                 <option value="StretchHeight">
                   Wrap text and expand height
                 </option>
                 <option value="CutText">Cut off excess text</option>
                 <option value="ShrinkToFit">Shrink font size to fit</option>
               </select>
+              <small
+                v-if="currentElement.textAdjust === 'StretchHeight'"
+                style="display: block; font-size: 11px; color: #1890ff; margin-top: 3px;"
+              >
+                ℹ Field and band height will expand dynamically during PDF generation.
+              </small>
             </div>
             <div class="form-group">
               <label>Rotation</label>
@@ -1454,6 +1471,7 @@ import { useI18n } from "vue-i18n";
 import { NButton, NTabs, NTabPane, NRadioGroup, NRadioButton } from "naive-ui";
 import type { Band, SelectedElementInfo, TableDataset } from "../../../types";
 import { getAvailableFonts } from "../../../utils/fontUtils";
+import { calculateTextElementHeight } from "../../../utils/elementUtils";
 import {
   getEffectiveDefaultBandLimits,
   getEffectiveDefaultBandConfig,
@@ -2846,10 +2864,10 @@ function getTextFieldDisplay(element: any) {
   if (!element) return "";
   const raw = element.expression || (element.fieldName ? `$F{${element.fieldName}}` : "");
   const trimmed = String(raw).trim();
-  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
-    return trimmed.slice(1, -1);
+  if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
+    return trimmed.slice(1, -1).replace(/\\n/g, '\n');
   }
-  return trimmed;
+  return trimmed.replace(/\\n/g, '\n');
 }
 
 // Update text field content (wraps static text in quotes, preserves $F{...} / $V{...} expressions)
@@ -2866,6 +2884,17 @@ function updateTextFieldDisplay(val: string) {
     elem.expression = `"${val}"`;
   }
   emit("update-jrxml");
+}
+
+// Auto-fit element height to text content
+function autoFitCurrentElementHeight() {
+  if (!currentElement.value || currentElement.value.type !== "textField") return;
+  const needed = calculateTextElementHeight(currentElement.value as any);
+  if (needed > 0) {
+    emit("save-state");
+    currentElement.value.height = needed;
+    emit("update-jrxml");
+  }
 }
 
 // Insert a selected field into the text field
@@ -4802,6 +4831,24 @@ function addPropertyExpression() {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--prop-spacing-lg);
+}
+
+.btn-autofit-height {
+  padding: 2px 7px;
+  font-size: 11px;
+  background-color: #f0f7ff;
+  color: #1890ff;
+  border: 1px solid #91d5ff;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-autofit-height:hover {
+  background-color: #1890ff;
+  color: #ffffff;
+  border-color: #1890ff;
 }
 
 @media (max-width: 768px) {

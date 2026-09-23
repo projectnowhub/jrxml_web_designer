@@ -14,12 +14,54 @@
     <!-- Child components will override this content -->
     <slot></slot>
 
-    <!-- Resize handle -->
-    <div 
-      v-if="isSelected"
-      class="resize-handle resize-handle-se"
-      @mousedown.stop="(event) => handleResize('se', event)"
-    ></div>
+    <!-- 8 Resize handles (Figma / Google Docs style) -->
+    <template v-if="isSelected">
+      <!-- 4 Corners -->
+      <div 
+        class="resize-handle resize-handle-nw"
+        title="Resize Top-Left"
+        @mousedown.stop="(event) => handleResize('nw', event)"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-ne"
+        title="Resize Top-Right"
+        @mousedown.stop="(event) => handleResize('ne', event)"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-sw"
+        title="Resize Bottom-Left"
+        @mousedown.stop="(event) => handleResize('sw', event)"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-se"
+        title="Resize Bottom-Right"
+        @mousedown.stop="(event) => handleResize('se', event)"
+      ></div>
+
+      <!-- 4 Edges -->
+      <div 
+        class="resize-handle resize-handle-n"
+        title="Resize Top (Double-click to Auto-fit)"
+        @mousedown.stop="(event) => handleResize('n', event)"
+        @dblclick.stop="handleAutoFitHeight"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-s"
+        title="Resize Bottom (Double-click to Auto-fit)"
+        @mousedown.stop="(event) => handleResize('s', event)"
+        @dblclick.stop="handleAutoFitHeight"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-w"
+        title="Resize Left"
+        @mousedown.stop="(event) => handleResize('w', event)"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-e"
+        title="Resize Right"
+        @mousedown.stop="(event) => handleResize('e', event)"
+      ></div>
+    </template>
   </div>
 </template>
 
@@ -48,9 +90,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number];
   dragStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   startEditing: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
 // Whether selected
@@ -342,12 +385,17 @@ const handleMouseDown = (event: MouseEvent) => {
 };
 
 // Handle resize
-const handleResize = (_direction: string, event?: MouseEvent) => {
+const handleResize = (direction: string, event?: MouseEvent) => {
   // Get the current event object
-  const resizeEvent = event || window.event as MouseEvent;
+  const resizeEvent = event || (window.event as MouseEvent);
   if (resizeEvent && resizeEvent.button === 0) {
-    emit('resizeStart', resizeEvent, props.bandIndex, props.elementIndex, props.parentFrameIndex);
+    emit('resizeStart', resizeEvent, props.bandIndex, props.elementIndex, props.parentFrameIndex, direction);
   }
+};
+
+// Handle auto-fit height (from double-clicking the bottom handle)
+const handleAutoFitHeight = () => {
+  emit('autoFitHeight', props.bandIndex, props.elementIndex, props.parentFrameIndex);
 };
 
 // Handle context menu
@@ -371,8 +419,10 @@ const handleDoubleClick = () => {
   /* Add a small click-area extension to improve selection accuracy */
   transform-origin: center;
   transition: outline 0.1s ease;
-  /* Add text wrapping style */
-  word-break: break-all;
+  /* Natural typography wrapping */
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 .design-element.selected {
@@ -392,12 +442,91 @@ const handleDoubleClick = () => {
 
 .resize-handle {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 10px;
-  height: 10px;
   background-color: #1890ff;
-  cursor: se-resize;
   z-index: 20;
+  box-sizing: border-box;
+  border: 1px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: background-color 0.1s ease;
+}
+
+.resize-handle:hover {
+  background-color: #40a9ff;
+}
+
+.resize-handle-nw {
+  top: -4px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  cursor: nw-resize;
+  border-radius: 1px;
+}
+
+.resize-handle-ne {
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  cursor: ne-resize;
+  border-radius: 1px;
+}
+
+.resize-handle-sw {
+  bottom: -4px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  cursor: sw-resize;
+  border-radius: 1px;
+}
+
+.resize-handle-se {
+  bottom: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  cursor: se-resize;
+  border-radius: 1px;
+}
+
+.resize-handle-n {
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 6px;
+  cursor: n-resize;
+  border-radius: 2px;
+}
+
+.resize-handle-s {
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 6px;
+  cursor: s-resize;
+  border-radius: 2px;
+}
+
+.resize-handle-w {
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 14px;
+  cursor: w-resize;
+  border-radius: 2px;
+}
+
+.resize-handle-e {
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 14px;
+  cursor: e-resize;
+  border-radius: 2px;
 }
 </style>

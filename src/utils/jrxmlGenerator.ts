@@ -1107,7 +1107,12 @@ function generateTextFieldXML(element: any): string {
   }
 
   if (expression) {
-    xml += `<textFieldExpression><![CDATA[${expression}]]></textFieldExpression>`;
+    let cleanExpression = expression;
+    if (cleanExpression.startsWith('"') && cleanExpression.endsWith('"') && cleanExpression.length >= 2) {
+      const inner = cleanExpression.slice(1, -1);
+      cleanExpression = `"${inner.replace(/\r\n|\r|\n/g, '\\n')}"`;
+    }
+    xml += `<textFieldExpression><![CDATA[${cleanExpression}]]></textFieldExpression>`;
   }
 
   // New: pattern expression

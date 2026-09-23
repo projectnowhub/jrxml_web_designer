@@ -13,6 +13,7 @@ import {
   isPointInElement,
   getElementBounds,
   getElementsBounds,
+  calculateTextElementHeight,
 } from "@/utils/elementUtils";
 import type { DesignElement } from "@/types";
 import { ELEMENT_TYPE_CONSTANTS } from "@/constants/constants";
@@ -550,6 +551,41 @@ describe("elementUtils", () => {
         expect(bounds.width).toBe(100);
         expect(bounds.height).toBe(30);
       }
+    });
+  });
+
+  describe("calculateTextElementHeight", () => {
+    it("should return a minimum height for empty expression", () => {
+      const height = calculateTextElementHeight({
+        expression: '""',
+        width: 100,
+        fontSize: 12,
+      });
+      expect(height).toBeGreaterThanOrEqual(15);
+    });
+
+    it("should calculate height for multiline text", () => {
+      const height = calculateTextElementHeight({
+        expression: '"Line 1\\nLine 2\\nLine 3"',
+        width: 100,
+        fontSize: 14,
+      });
+      expect(height).toBeGreaterThan(20);
+    });
+
+    it("should account for box padding", () => {
+      const heightNoPadding = calculateTextElementHeight({
+        expression: '"Test text"',
+        width: 100,
+        fontSize: 12,
+      });
+      const heightWithPadding = calculateTextElementHeight({
+        expression: '"Test text"',
+        width: 100,
+        fontSize: 12,
+        box: { topPadding: 10, bottomPadding: 10 },
+      });
+      expect(heightWithPadding).toBeGreaterThanOrEqual(heightNoPadding);
     });
   });
 });

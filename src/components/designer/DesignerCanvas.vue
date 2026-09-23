@@ -211,6 +211,7 @@
                         @select="selectElement"
                         @drag-start="startDragging"
                         @resize-start="startResizingElement"
+                        @auto-fit-height="handleAutoFitHeight"
                         @contextmenu="handleElementContextMenu"
                         @start-editing="startEditing"
                         @finish-editing="finishEditing"
@@ -265,6 +266,7 @@
                         @select="selectElement"
                         @drag-start="startDragging"
                         @resize-start="startResizingElement"
+                        @auto-fit-height="handleAutoFitHeight"
                         @contextmenu="handleElementContextMenu"
                         @start-editing="startEditing"
                         @finish-editing="finishEditing"
@@ -492,6 +494,7 @@ const emit = defineEmits([
   "canvas-contextmenu", // Added canvas context menu event
   "add-page",
   "delete-page",
+  "auto-fit-height",
 ]);
 
 // Computed detail band index
@@ -673,15 +676,24 @@ const startResizingElement = (
   bandIndex: number,
   elementIndex: number,
   parentFrameIndex?: number,
+  direction?: string,
 ) => {
   emit(
     "start-resizing-element",
     event,
     bandIndex,
     elementIndex,
-    "se",
+    direction || "se",
     parentFrameIndex,
-  ); // Default direction is 'se'
+  );
+};
+
+const handleAutoFitHeight = (
+  bandIndex: number,
+  elementIndex: number,
+  parentFrameIndex?: number,
+) => {
+  emit("auto-fit-height", bandIndex, elementIndex, parentFrameIndex);
 };
 
 const startEditing = (

@@ -19,7 +19,10 @@
     "downloadJRXML": "Download JRXML",
     "previewPDF": "Preview PDF",
     "setPreviewServer": "Set Preview Server",
-    "help": "Help"
+    "help": "Help",
+    "delete": "Delete",
+    "copy": "Copy",
+    "paste": "Paste"
   },
   "fileManager": {
     "title": "File",
