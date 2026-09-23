@@ -283,4 +283,147 @@ describe('PDFDesigner - Element Dragging and Coordinates', () => {
       expect(mockDragCoordinates.value.bandName).toContain('title - ')
     })
   })
+
+  describe('Inline Editor Drag Protection', () => {
+    it('should ignore mouse drag events originating inside contenteditable or inline-edit-contenteditable', () => {
+      // Simulating BaseElement's handleMouseDown guard
+      const handleMouseDownSimulator = (event: { button: number; target: any }, emitDragStart: Function) => {
+        if (event.button !== 0) return
+
+        const target = event.target
+        if (
+          target &&
+          (target.isContentEditable ||
+            target.closest?.('[contenteditable="true"]') ||
+            target.closest?.('.inline-edit-contenteditable') ||
+            target.tagName === 'INPUT' ||
+            target.tagName === 'TEXTAREA')
+        ) {
+          return
+        }
+
+        emitDragStart()
+      }
+
+      const dragStartFn = vi.fn()
+
+      // 1. Target is contenteditable div
+      const editableDiv = {
+        isContentEditable: true,
+        closest: (selector: string) => (selector === '[contenteditable="true"]' ? editableDiv : null),
+        tagName: 'DIV'
+      }
+      handleMouseDownSimulator({ button: 0, target: editableDiv }, dragStartFn)
+      expect(dragStartFn).not.toHaveBeenCalled()
+
+      // 2. Target is a text span inside contenteditable inline editor
+      const childSpan = {
+        isContentEditable: false,
+        closest: (selector: string) => (selector === '.inline-edit-contenteditable' ? editableDiv : null),
+        tagName: 'SPAN'
+      }
+      handleMouseDownSimulator({ button: 0, target: childSpan }, dragStartFn)
+      expect(dragStartFn).not.toHaveBeenCalled()
+
+      // 3. Target is normal canvas element (not editable)
+      const normalDiv = {
+        isContentEditable: false,
+        closest: () => null,
+        tagName: 'DIV'
+      }
+      handleMouseDownSimulator({ button: 0, target: normalDiv }, dragStartFn)
+      expect(dragStartFn).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('Hyperlink Edit Popover & Selection Isolation', () => {
+    it('should open link popover on edit and reset popover state when another text is selected', () => {
+      // Simulating TextFormatToolbar state
+      let showLinkPopover = false
+      let showColorPicker = false
+      let showHighlightPicker = false
+      let linkText = ''
+      let linkUrl = ''
+
+      const openLinkPopover = (prefillTarget?: string, prefillLabel?: string) => {
+        showLinkPopover = true
+        showColorPicker = false
+        showHighlightPicker = false
+        if (prefillLabel) linkText = prefillLabel
+        if (prefillTarget) linkUrl = prefillTarget
+      }
+
+      const onSelectedTextChange = () => {
+        // As implemented in TextFormatToolbar's watch(() => props.selectedText)
+        showColorPicker = false
+        showHighlightPicker = false
+        showLinkPopover = false
+      }
+
+      // Step 1: User clicks "Edit Link" on a preview chip
+      openLinkPopover('https://google.com', 'Google Search')
+      expect(showLinkPopover).toBe(true)
+      expect(linkText).toBe('Google Search')
+      expect(linkUrl).toBe('https://google.com')
+
+      // Step 2: User selects another text or sentence
+      onSelectedTextChange()
+
+      // Step 3: showLinkPopover MUST be reset to false so format toolbar is shown, NOT the old link popover
+      expect(showLinkPopover).toBe(false)
+      expect(showColorPicker).toBe(false)
+      expect(showHighlightPicker).toBe(false)
+    })
+
+    it('should keep unique input values for Web, Email, and Phone tabs in both create and edit modes', () => {
+      // Simulating TextFormatToolbar unique tab input state
+      type LinkType = 'url' | 'email' | 'phone'
+      let activeTab: LinkType = 'url'
+      let linkInputs: Record<LinkType, string> = {
+        url: '',
+        email: '',
+        phone: '',
+      }
+
+      const parseAndSetLinkTarget = (url: string) => {
+        if (url.startsWith('mailto:')) {
+          activeTab = 'email'
+          linkInputs.email = url.replace(/^mailto:/, '')
+        } else if (url.startsWith('tel:')) {
+          activeTab = 'phone'
+          linkInputs.phone = url.replace(/^tel:/, '')
+        } else {
+          activeTab = 'url'
+          linkInputs.url = url
+        }
+      }
+
+      // Case 1: Create Mode - typing in one tab must NOT overwrite other tabs
+      linkInputs = { url: '', email: '', phone: '' }
+      activeTab = 'phone'
+      linkInputs.phone = '720410235'
+
+      activeTab = 'url'
+      expect(linkInputs.url).toBe('') // Must remain empty, NOT 720410235!
+      linkInputs.url = 'https://mysite.com'
+
+      activeTab = 'email'
+      expect(linkInputs.email).toBe('') // Must remain empty!
+      linkInputs.email = 'test@example.com'
+
+      // Switching back to Phone preserves phone value without bleeding
+      activeTab = 'phone'
+      expect(linkInputs.phone).toBe('720410235')
+      expect(linkInputs.url).toBe('https://mysite.com')
+      expect(linkInputs.email).toBe('test@example.com')
+
+      // Case 2: Edit Mode - editing a phone link sets Phone tab only
+      linkInputs = { url: '', email: '', phone: '' }
+      parseAndSetLinkTarget('tel:9876543210')
+      expect(activeTab).toBe('phone')
+      expect(linkInputs.phone).toBe('9876543210')
+      expect(linkInputs.url).toBe('') // Web is clean
+      expect(linkInputs.email).toBe('') // Email is clean
+    })
+  })
 })

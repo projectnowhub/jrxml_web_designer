@@ -157,6 +157,7 @@
   },
   "properties": {
     "title": "Properties",
+    "markup": "Markup",
     "reportProperties": "Report Properties",
     "bandHeightSettings": "Band Height Settings",
     "templateBandSettings": "Template Band Settings",

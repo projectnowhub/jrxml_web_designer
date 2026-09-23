@@ -157,6 +157,7 @@
   },
   "properties": {
     "title": "属性设置",
+    "markup": "标记模式",
     "reportProperties": "报表属性",
     "bandHeightSettings": "Band高度设置",
     "basicProperties": "基本属性",

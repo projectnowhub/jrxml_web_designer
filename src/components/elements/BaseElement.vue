@@ -339,6 +339,19 @@ const handleMouseDown = (event: MouseEvent) => {
     return;
   }
 
+  // Do not initiate element drag if clicking inside an active inline editor, contenteditable, or text input
+  const target = event.target as HTMLElement | null;
+  if (
+    target &&
+    (target.isContentEditable ||
+      target.closest?.('[contenteditable="true"]') ||
+      target.closest?.('.inline-edit-contenteditable') ||
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA')
+  ) {
+    return;
+  }
+
   // Record the initial position and time of the mouse down
   const startX = event.clientX;
   const startY = event.clientY;

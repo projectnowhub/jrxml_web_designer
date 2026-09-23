@@ -395,6 +395,14 @@
               </select>
             </div>
             <div class="form-group">
+              <label>{{ t("properties.markup") || "Markup" }}</label>
+              <select v-model="currentElement.markup">
+                <option value="none">None (Plain Text)</option>
+                <option value="html">HTML (Rich Text & Links)</option>
+                <option value="styled">Styled</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label>{{ t("properties.fontSize") }}</label>
               <input
                 v-if="currentElement"

@@ -937,10 +937,14 @@ function generateStaticTextXML(element: any): string {
     textElementAttrs += ` rotation="${element.rotation}"`;
   }
 
-  // Prefer the non-deprecated markup attribute; only fall back to the deprecated isStyledText attribute if markup is absent
-  if (element.markup) {
-    // If markup is already specified, use it directly
-    textElementAttrs += ` markup="${element.markup}"`;
+  // Markup attribute: explicit or auto-detected if HTML tags exist
+  let markup = element.markup;
+  if (!markup && element.expression && /<(b|strong|i|em|u|s|strike|del|font|a|span)\b[^>]*>/i.test(element.expression)) {
+    markup = "html";
+  }
+
+  if (markup && markup !== "none") {
+    textElementAttrs += ` markup="${markup}"`;
   } else if (element.isStyledText !== undefined) {
     // Only use the deprecated isStyledText attribute if markup is absent
     const markupValue = element.isStyledText ? "styled" : "none";
@@ -1077,6 +1081,19 @@ function generateTextFieldXML(element: any): string {
     textElementAttrs += ` verticalAlignment="${element.verticalAlignment}"`;
   }
 
+  // Markup attribute: explicit or auto-detected if HTML tags exist
+  let markup = element.markup;
+  if (!markup && element.expression && /<(b|strong|i|em|u|s|strike|del|font|a|span)\b[^>]*>/i.test(element.expression)) {
+    markup = "html";
+  }
+
+  if (markup && markup !== "none") {
+    textElementAttrs += ` markup="${markup}"`;
+  } else if (element.isStyledText !== undefined) {
+    const markupValue = element.isStyledText ? "styled" : "none";
+    textElementAttrs += ` markup="${markupValue}"`;
+  }
+
   xml += `<textElement${textElementAttrs}>`;
 
   // Add the font configuration
@@ -1110,7 +1127,11 @@ function generateTextFieldXML(element: any): string {
     let cleanExpression = expression;
     if (cleanExpression.startsWith('"') && cleanExpression.endsWith('"') && cleanExpression.length >= 2) {
       const inner = cleanExpression.slice(1, -1);
-      cleanExpression = `"${inner.replace(/\r\n|\r|\n/g, '\\n')}"`;
+      const escapedInner = inner
+        .replace(/\\"/g, '"')
+        .replace(/"/g, '\\"')
+        .replace(/\r\n|\r|\n/g, '\\n');
+      cleanExpression = `"${escapedInner}"`;
     }
     xml += `<textFieldExpression><![CDATA[${cleanExpression}]]></textFieldExpression>`;
   }

@@ -1908,6 +1908,19 @@ function parseTextFieldElement(element: Element, result: any): void {
       result.verticalAlignment = textElement.getAttribute("verticalAlignment");
     }
 
+    if (textElement.hasAttribute("isStyledText")) {
+      const isStyledText = textElement.getAttribute("isStyledText") === "true";
+      result.markup = isStyledText ? "styled" : "none";
+    }
+
+    if (textElement.hasAttribute("markup")) {
+      result.markup = textElement.getAttribute("markup");
+    }
+
+    if (textElement.hasAttribute("rotation")) {
+      result.rotation = textElement.getAttribute("rotation");
+    }
+
     const fontElement = findChildElement(textElement, "font");
     if (fontElement) {
       if (fontElement.hasAttribute("size"))
