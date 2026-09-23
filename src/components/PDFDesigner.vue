@@ -6578,6 +6578,8 @@ const handleBandSelectionChange = (): void => {
   height: 56px;
   flex-shrink: 0;
   gap: 12px;
+  position: relative;
+  z-index: 1000;
 }
 
 .designer-header h1 {
@@ -6592,12 +6594,6 @@ const handleBandSelectionChange = (): void => {
   gap: 8px;
   flex: 0 1 auto;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.header-left.header-workflow::-webkit-scrollbar {
-  display: none;
 }
 
 /* Google Docs style editable document title */

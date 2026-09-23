@@ -37,6 +37,29 @@ export function getElementIconSvg(type: string): string | undefined {
   return config?.iconSvg;
 }
 
+// Strip the surrounding double quotes of a literal expression so the UI can show
+// clean text (e.g. `"Hello"` -> `Hello`). Field/variable expressions are returned trimmed.
+export function stripExpressionQuotes(expression: string): string {
+  const trimmed = (expression || "").trim();
+  if (trimmed.length >= 2 && trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+// Keep the stored JRXML expression valid: plain text typed by the user is wrapped in
+// quotes, while field/variable expressions, concatenations and values the user quoted
+// manually are preserved exactly as typed.
+export function quoteExpressionValue(value: string): string {
+  const trimmed = (value || "").trim();
+  if (!trimmed) return '""';
+  if (trimmed.startsWith("$") || trimmed.includes("+")) return value;
+  if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
+    return value;
+  }
+  return `"${value}"`;
+}
+
 // Get element display info (excluding Band)
 export function getElementDisplayInfoWithoutBand(
   element: DesignElement,
@@ -46,7 +69,10 @@ export function getElementDisplayInfoWithoutBand(
   // Add type-specific info based on the element type
   if (element.type === "textField") {
     if ((element as any).expression) {
-      info = `${(element as any).expression.substring(0, 15)}${(element as any).expression.length > 15 ? "..." : ""}`;
+      // Static text is stored as a quoted literal (e.g. `"Hello"`); show it without
+      // the quotes so the element list matches what the user actually typed.
+      const cleaned = stripExpressionQuotes((element as any).expression);
+      info = `${cleaned.substring(0, 15)}${cleaned.length > 15 ? "..." : ""}`;
     } else if ((element as any).fieldName) {
       info = `$F{${(element as any).fieldName}}`;
     }

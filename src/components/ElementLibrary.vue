@@ -334,7 +334,9 @@ import {
   getElementKey,
   getElementTypeName,
   isElementSelected,
+  quoteExpressionValue,
   selectElementFromList,
+  stripExpressionQuotes,
 } from "../utils/elementUtils";
 
 const { t } = useI18n();
@@ -683,7 +685,9 @@ function getElementEditableValue(element: DesignElement): string {
       tf.expression !== null &&
       tf.expression !== ""
     ) {
-      return tf.expression;
+      // Show static text without the quotes added automatically by the designer;
+      // the user can type quotes manually when a literal string is needed.
+      return stripExpressionQuotes(tf.expression);
     }
     if ((tf as any).fieldName) {
       return `$F{${(tf as any).fieldName}}`;
@@ -707,9 +711,13 @@ function setElementEditableValue(element: DesignElement, val: string): void {
   if (!element) return;
   if (element.type === "textField") {
     const tf = element as TextFieldElement;
-    tf.expression = val;
+    // Keep the stored JRXML expression valid: plain text is saved as a quoted literal,
+    // while `$F{...}` expressions, concatenations and values the user quoted manually
+    // (e.g. `"Hello"`) are stored exactly as typed.
+    const expression = quoteExpressionValue(val);
+    tf.expression = expression;
     // If the expression matches $F{field}, also sync fieldName
-    const fieldMatch = val.trim().match(/^\$F\{([^}]+)\}$/);
+    const fieldMatch = expression.trim().match(/^\$F\{([^}]+)\}$/);
     if (fieldMatch && fieldMatch[1]) {
       (tf as any).fieldName = fieldMatch[1].trim();
     }
