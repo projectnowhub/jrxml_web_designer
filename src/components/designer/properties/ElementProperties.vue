@@ -204,72 +204,6 @@
             </select>
           </div>
 
-          <!-- Show specific properties based on element type -->
-          <template v-if="currentElement.type === 'staticText'">
-            <div class="form-group">
-              <label>{{ t("properties.textContent") }}</label>
-              <textarea
-                v-if="currentElement"
-                v-model="currentElement.text"
-              ></textarea>
-            </div>
-            <div class="form-group">
-              <label>{{ t("properties.textAdjust") || "When Text Is Too Long" }}</label>
-              <select v-model="currentElement.textAdjust">
-                <option value="">{{ t("properties.default") || "Default" }}</option>
-                <option value="StretchHeight">
-                  Wrap text and expand height
-                </option>
-                <option value="CutText">Cut off excess text</option>
-                <option value="ShrinkToFit">Shrink font size to fit</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Rotation</label>
-              <select v-model="currentElement.rotation">
-                <option value="">Default</option>
-                <option value="None">None - No Rotation</option>
-                <option value="Left">Left - Rotate Left 90°</option>
-                <option value="Right">Right - Rotate Right 90°</option>
-                <option value="UpsideDown">UpsideDown - Upside Down</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>{{ t("properties.fontSize") }}</label>
-              <input
-                v-if="currentElement"
-                v-model.number="currentElement.fontSize"
-                type="number"
-              />
-            </div>
-            <div class="checkbox-group">
-              <label>
-                <input
-                  v-if="currentElement"
-                  v-model="currentElement.isBold"
-                  type="checkbox"
-                />
-                {{ t("properties.bold") }}
-              </label>
-              <label>
-                <input
-                  v-if="currentElement"
-                  v-model="currentElement.isItalic"
-                  type="checkbox"
-                />
-                {{ t("properties.italic") }}
-              </label>
-              <label>
-                <input
-                  v-if="currentElement"
-                  v-model="currentElement.isUnderline"
-                  type="checkbox"
-                />
-                {{ t("properties.underline") }}
-              </label>
-            </div>
-          </template>
-
           <!-- Image properties -->
           <template v-if="currentElement && currentElement.type === 'image'">
             <div class="form-group">
@@ -393,7 +327,7 @@
             </div>
           </template>
 
-          <!-- Text Field properties -->
+          <!-- Text properties -->
           <template
             v-else-if="currentElement && currentElement.type === 'textField'"
           >
@@ -1801,12 +1735,12 @@ const addColumn = () => {
       columnHeader: {
         enable: true,
         element: {
-          type: "staticText",
+          type: "textField",
           x: 0,
           y: 0,
           width: 100,
           height: 30,
-          text: `Column ${currentElement.value.columns.length + 1}`,
+          expression: `"Column ${currentElement.value.columns.length + 1}"`,
           textAlignment: "Center",
           verticalAlignment: "Middle",
         },
@@ -2922,13 +2856,14 @@ function getTextFieldDisplay(element: any) {
 function updateTextFieldDisplay(val: string) {
   if (!currentElement.value || currentElement.value.type !== "textField") return;
   emit("save-state");
+  const elem = currentElement.value as any;
   const trimmed = val.trim();
   if (!trimmed) {
-    currentElement.value.expression = '""';
+    elem.expression = '""';
   } else if (trimmed.startsWith("$") || (trimmed.startsWith('"') && trimmed.endsWith('"')) || trimmed.includes("+")) {
-    currentElement.value.expression = val;
+    elem.expression = val;
   } else {
-    currentElement.value.expression = `"${val}"`;
+    elem.expression = `"${val}"`;
   }
   emit("update-jrxml");
 }
@@ -3345,12 +3280,9 @@ function updateColumnName(column: any, index: number) {
       // Update childColumn's name
       childColumn.name = newName;
 
-      // If childColumn has a columnHeader and it is of type staticText, also update its text content
-      if (
-        childColumn.columnHeader &&
-        childColumn.columnHeader.type === "staticText"
-      ) {
-        childColumn.columnHeader.text = newName;
+      // If childColumn has a columnHeader, also update its text expression
+      if (childColumn.columnHeader) {
+        childColumn.columnHeader.expression = `"${newName}"`;
       }
     }
   }
@@ -3366,7 +3298,7 @@ function updateTableHeaderText(column: any, index: number) {
   )
     return;
 
-  const newText = column.tableHeader.text;
+  const newText = column.tableHeader.expression || column.tableHeader.text || "";
 
   // If the table has a children property, also update the corresponding column's table header text within children
   if (
@@ -3380,8 +3312,8 @@ function updateTableHeaderText(column: any, index: number) {
       column,
     );
     if (childColumn && childColumn.hasTableHeader && childColumn.tableHeader) {
-      // Update childColumn's table header text
-      childColumn.tableHeader.text = newText;
+      // Update childColumn's table header expression
+      childColumn.tableHeader.expression = newText;
     }
   }
 }
@@ -3391,48 +3323,7 @@ function updateFieldExpression(column: any, index: number) {
   if (!column || !currentElement || !column.detailCell) return;
 
   const newExpression = column.detailCell.expression;
-
-  // If detailCell is of type staticText, convert it to a textField type
-  if (column.detailCell.type === "staticText") {
-    // Preserve the original properties
-    const {
-      x,
-      y,
-      width,
-      height,
-      textAlignment,
-      verticalAlignment,
-      fontSize,
-      isBold,
-      isItalic,
-      isUnderline,
-      fontFamily,
-      backcolor,
-      mode,
-      box,
-    } = column.detailCell;
-    // Convert to a textField type
-    column.detailCell = {
-      type: "textField",
-      x,
-      y,
-      width,
-      height,
-      expression: newExpression,
-      textAlignment,
-      verticalAlignment,
-      fontSize,
-      isBold,
-      isItalic,
-      isUnderline,
-      fontFamily,
-      backcolor,
-      mode,
-      box,
-      textAdjust: "CutText",
-      isBlankWhenNull: true,
-    };
-  }
+  column.detailCell.expression = newExpression;
 
   // If the table has a children property, also update the corresponding column's field expression within children
   if (
@@ -3446,50 +3337,7 @@ function updateFieldExpression(column: any, index: number) {
       column,
     );
     if (childColumn && childColumn.detailCell) {
-      // If childColumn's detailCell is of type staticText, convert it to a textField type
-      if (childColumn.detailCell.type === "staticText") {
-        // Preserve the original properties
-        const {
-          x,
-          y,
-          width,
-          height,
-          textAlignment,
-          verticalAlignment,
-          fontSize,
-          isBold,
-          isItalic,
-          isUnderline,
-          fontFamily,
-          backcolor,
-          mode,
-          box,
-        } = childColumn.detailCell;
-        // Convert to a textField type
-        childColumn.detailCell = {
-          type: "textField",
-          x,
-          y,
-          width,
-          height,
-          expression: newExpression,
-          textAlignment,
-          verticalAlignment,
-          fontSize,
-          isBold,
-          isItalic,
-          isUnderline,
-          fontFamily,
-          backcolor,
-          mode,
-          box,
-          textAdjust: "CutText",
-          isBlankWhenNull: true,
-        };
-      } else {
-        // Update childColumn's field expression
-        childColumn.detailCell.expression = newExpression;
-      }
+      childColumn.detailCell.expression = newExpression;
     }
   }
 }
@@ -3506,12 +3354,12 @@ function toggleTableHeader(column: any, event: Event) {
     // Generate new default Table Header data
     if (!column.tableHeader) {
       column.tableHeader = {
-        type: "staticText",
+        type: "textField",
         x: 0,
         y: 0,
         width: column.width,
         height: 30,
-        text: column.name,
+        expression: `"${column.name}"`,
         forecolor: "#000000",
         backcolor: "#FFFFFF",
         fontFamily: "SansSerif",
@@ -3651,12 +3499,12 @@ function addSelectedFieldsAsColumns() {
         tableHeader: {
           enable: false,
           element: {
-            type: "staticText",
+            type: "textField",
             x: 0,
             y: 0,
             width: columnWidth,
             height: 30,
-            text: fieldName,
+            expression: `"${fieldName}"`,
             forecolor: "#000000",
             backcolor: "#FFFFFF",
             fontFamily: "SansSerif",
@@ -3667,12 +3515,12 @@ function addSelectedFieldsAsColumns() {
         columnHeader: {
           enable: true,
           element: {
-            type: "staticText",
+            type: "textField",
             x: 0,
             y: 0,
             width: columnWidth,
             height: 30,
-            text: fieldName,
+            expression: `"${fieldName}"`,
           },
         },
         detailCell: {

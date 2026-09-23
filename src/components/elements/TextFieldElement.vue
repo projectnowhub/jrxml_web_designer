@@ -19,14 +19,14 @@
   >
     <template v-if="isEditing">
       <input 
-        v-model="element.expression" 
+        v-model="editValue" 
         type="text" 
         class="inline-edit-input"
         @blur="handleFinishEditing"
         @keyup.enter="handleFinishEditing"
         @keyup.esc="handleCancelEditing"
         ref="editInput"
-        placeholder="Enter expression"
+        placeholder="Enter text"
       />
     </template>
     <template v-else>
@@ -76,6 +76,7 @@ const emit = defineEmits<{
 
 // Refs
 const editInput = ref<HTMLInputElement | null>(null);
+const editValue = ref('');
 
 // Whether currently editing
 const isEditing = computed(() => {
@@ -85,13 +86,22 @@ const isEditing = computed(() => {
          props.editingElement.parentFrameIndex === props.parentFrameIndex;
 });
 
-// Focus the input when entering edit mode
+// Focus the input and sync value when entering edit mode
 watch(() => isEditing.value, (newVal) => {
-  if (newVal && editInput.value) {
-    setTimeout(() => {
-      editInput.value?.focus();
-      editInput.value?.select();
-    }, 10);
+  if (newVal) {
+    const raw = props.element.expression || '';
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
+      editValue.value = trimmed.slice(1, -1);
+    } else {
+      editValue.value = raw;
+    }
+    if (editInput.value) {
+      setTimeout(() => {
+        editInput.value?.focus();
+        editInput.value?.select();
+      }, 10);
+    }
   }
 });
 
@@ -125,9 +135,16 @@ const displayText = computed(() => {
         .replace(/^"|"$/g, '');
       return evaluated;
     }
+
+    // Strip surrounding quotes for plain literal strings so user sees clean text
+    const trimmed = expr.trim();
+    if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
+      return trimmed.slice(1, -1);
+    }
+
     return expr;
   }
-  return `"${t('properties.defaultTextFieldExpression')}"`;
+  return t('properties.defaultTextFieldExpression') || 'Text';
 });
 
 // Handle selection
@@ -152,6 +169,15 @@ const handleStartEditing = () => {
 
 // Finish editing
 const handleFinishEditing = () => {
+  const val = editValue.value.trim();
+  if (!val) {
+    props.element.expression = '""';
+  } else if (val.startsWith('$') || (val.startsWith('"') && val.endsWith('"')) || val.includes('+')) {
+    props.element.expression = val;
+  } else {
+    props.element.expression = `"${val}"`;
+  }
+
   // Extract all field references $F{fieldName} from the expression
   const currentExpression = props.element.expression || '';
   const fieldReferences: string[] = [];

@@ -129,7 +129,7 @@
   },
   "elementNames": {
     "staticText": "静态文本",
-    "textField": "动态文本",
+    "textField": "文本",
     "image": "图片",
     "line": "线条",
     "rectangle": "矩形",
@@ -192,7 +192,7 @@
     "underline": "下划线",
     "expression": "表达式",
     "expressionHint": "例如: {fieldHolder} 或 \"固定文字\"",
-    "defaultTextFieldExpression": "文本域",
+    "defaultTextFieldExpression": "文本",
     "defaultStaticText": "静态文本",
     "pattern": "格式模式",
     "patternHint": "例如: 日期格式 \"yyyy-MM-dd\"，数字格式 \"#,##0.00\"",

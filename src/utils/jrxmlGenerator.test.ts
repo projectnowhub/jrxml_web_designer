@@ -575,6 +575,7 @@ describe('jrxmlGenerator', () => {
             y: 10,
             width: 100,
             height: 0,
+            height: 20,
             lineDirection: 'TopDown'
           } as DesignElement
         ]

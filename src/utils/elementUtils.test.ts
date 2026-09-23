@@ -23,6 +23,7 @@ describe("elementUtils", () => {
       const element = {
         element: {
           type: "staticText" as any,
+          type: "textField" as any,
           x: 10,
           y: 20,
           width: 100,
@@ -33,13 +34,14 @@ describe("elementUtils", () => {
       };
 
       expect(getElementKey(element)).toBe("staticText-1-2");
+      expect(getElementKey(element)).toBe("textField-1-2");
     });
   });
 
   describe("getElementTypeName", () => {
     it("should return the correct type name for static text", () => {
       expect(getElementTypeName(ELEMENT_TYPE_CONSTANTS.STATIC_TEXT)).toBe(
-        "elementNames.staticText",
+        "elementNames.textField",
       );
     });
 
@@ -78,7 +80,7 @@ describe("elementUtils", () => {
     });
 
     it("should return the correct icon for text field", () => {
-      expect(getElementIcon(ELEMENT_TYPE_CONSTANTS.TEXT_FIELD)).toBe("{ }");
+      expect(getElementIcon(ELEMENT_TYPE_CONSTANTS.TEXT_FIELD)).toBe("T");
     });
 
     it("should return the correct icon for image", () => {
@@ -100,13 +102,16 @@ describe("elementUtils", () => {
 
   describe("getElementDisplayInfoWithoutBand", () => {
     it("should return truncated text for static text element", () => {
+    it("should return truncated text for long expression text field element", () => {
       const element = {
         type: "staticText" as any,
+        type: "textField" as any,
         x: 10,
         y: 20,
         width: 100,
         height: 30,
         text: "This is a very long text that should be truncated",
+        expression: "This is a very long text that should be truncated",
       };
 
       expect(getElementDisplayInfoWithoutBand(element)).toBe(
@@ -115,13 +120,16 @@ describe("elementUtils", () => {
     });
 
     it("should return full text for short static text element", () => {
+    it("should return full text for short expression text field element", () => {
       const element = {
         type: "staticText" as any,
+        type: "textField" as any,
         x: 10,
         y: 20,
         width: 100,
         height: 30,
         text: "Short text",
+        expression: "Short text",
       };
 
       expect(getElementDisplayInfoWithoutBand(element)).toBe("Short text");
@@ -342,19 +350,18 @@ describe("elementUtils", () => {
   });
 
   describe("createNewElement", () => {
-    it("should create a new static text element", () => {
+    it("should create a new static text element (converted to textField)", () => {
       const element = createNewElement(
         ELEMENT_TYPE_CONSTANTS.STATIC_TEXT,
         10,
         20,
       );
 
-      expect(element.type).toBe("staticText");
+      expect(element.type).toBe("textField");
       expect(element.x).toBe(10);
       expect(element.y).toBe(20);
       expect(element.width).toBe(100);
       expect(element.height).toBe(20);
-      expect((element as any).text).toBe("静态文本");
     });
 
     it("should create a new text field element", () => {
@@ -422,11 +429,13 @@ describe("elementUtils", () => {
     it("should duplicate an element with default offset", () => {
       const original: DesignElement = {
         type: "staticText" as any,
+        type: "textField" as any,
         x: 10,
         y: 20,
         width: 100,
         height: 30,
         text: "Original text",
+        expression: "Original text",
       };
 
       const duplicate = duplicateElement(original);
@@ -437,16 +446,20 @@ describe("elementUtils", () => {
       expect(duplicate.height).toBe(30);
       expect(duplicate.type).toBe("staticText");
       expect((duplicate as any).text).toBe("Original text");
+      expect(duplicate.type).toBe("textField");
+      expect((duplicate as any).expression).toBe("Original text");
     });
 
     it("should duplicate an element with custom offset", () => {
       const original: DesignElement = {
         type: "staticText" as any,
+        type: "textField" as any,
         x: 10,
         y: 20,
         width: 100,
         height: 30,
         text: "Original text",
+        expression: "Original text",
       };
 
       const duplicate = duplicateElement(original, 50, 60);
@@ -457,6 +470,8 @@ describe("elementUtils", () => {
       expect(duplicate.height).toBe(30);
       expect(duplicate.type).toBe("staticText");
       expect((duplicate as any).text).toBe("Original text");
+      expect(duplicate.type).toBe("textField");
+      expect((duplicate as any).expression).toBe("Original text");
     });
   });
 
@@ -464,6 +479,7 @@ describe("elementUtils", () => {
     it("should return true for point inside element", () => {
       const element: DesignElement = {
         type: "staticText" as any,
+        type: "textField" as any,
         x: 10,
         y: 20,
         width: 100,
@@ -476,6 +492,7 @@ describe("elementUtils", () => {
     it("should return true for point on element border", () => {
       const element: DesignElement = {
         type: "staticText" as any,
+        type: "textField" as any,
         x: 10,
         y: 20,
         width: 100,
@@ -489,6 +506,7 @@ describe("elementUtils", () => {
     it("should return false for point outside element", () => {
       const element: DesignElement = {
         type: "staticText" as any,
+        type: "textField" as any,
         x: 10,
         y: 20,
         width: 100,
@@ -506,6 +524,7 @@ describe("elementUtils", () => {
     it("should return the bounds of an element", () => {
       const element: DesignElement = {
         type: "staticText" as any,
+        type: "textField" as any,
         x: 10,
         y: 20,
         width: 100,
@@ -526,6 +545,7 @@ describe("elementUtils", () => {
       const elements: DesignElement[] = [
         {
           type: "staticText" as any,
+          type: "textField" as any,
           x: 10,
           y: 20,
           width: 100,
@@ -560,6 +580,7 @@ describe("elementUtils", () => {
       const elements: DesignElement[] = [
         {
           type: "staticText" as any,
+          type: "textField" as any,
           x: 10,
           y: 20,
           width: 100,

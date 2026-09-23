@@ -181,11 +181,11 @@ const createStaticTextHandler: MCPToolHandler = {
     }
 
     // Create the element
-    const newElement = createNewElement('staticText', x, y) as any;
+    const newElement = createNewElement('textField', x, y) as any;
     Object.assign(newElement, {
       width,
       height,
-      text,
+      expression: `"${text}"`,
       fontSize,
       fontFamily,
       isBold,

@@ -321,7 +321,6 @@ import ConfirmModal from "./modals/ConfirmModal.vue";
 import { ElementRegistry } from "./elements/ElementRegistry";
 import type {
   DesignElement,
-  StaticTextElement,
   TextFieldElement,
   ReportField,
   ReportParameter,
@@ -455,11 +454,6 @@ const groupedReportElements = computed(() => {
           element.type
             .toLowerCase()
             .includes(elementFilterText.value.toLowerCase()) ||
-          (element.type === "staticText" &&
-            (element as StaticTextElement).text &&
-            ((element as StaticTextElement).text || "")
-              .toLowerCase()
-              .includes(elementFilterText.value.toLowerCase())) ||
           (element.type === "textField" &&
             ((element as TextFieldElement).expression || "")
               .toLowerCase()
@@ -674,7 +668,7 @@ const setInlineEditInputRef = (el: any) => {
 // Check whether an element type supports text/expression inline editing
 function isElementTextEditable(element: DesignElement): boolean {
   if (!element) return false;
-  return ["staticText", "textField", "image", "barcode", "subreport"].includes(
+  return ["textField", "image", "barcode", "subreport"].includes(
     element.type,
   );
 }
@@ -682,9 +676,6 @@ function isElementTextEditable(element: DesignElement): boolean {
 // Get the editable value from an element
 function getElementEditableValue(element: DesignElement): string {
   if (!element) return "";
-  if (element.type === "staticText") {
-    return (element as StaticTextElement).text ?? "";
-  }
   if (element.type === "textField") {
     const tf = element as TextFieldElement;
     if (
@@ -708,15 +699,13 @@ function getElementEditableValue(element: DesignElement): string {
   if (element.type === "subreport") {
     return (element as any).subreportExpression || "";
   }
-  return (element as any).text || (element as any).expression || "";
+  return (element as any).expression || "";
 }
 
 // Set the editable value on an element
 function setElementEditableValue(element: DesignElement, val: string): void {
   if (!element) return;
-  if (element.type === "staticText") {
-    (element as StaticTextElement).text = val;
-  } else if (element.type === "textField") {
+  if (element.type === "textField") {
     const tf = element as TextFieldElement;
     tf.expression = val;
     // If the expression matches $F{field}, also sync fieldName

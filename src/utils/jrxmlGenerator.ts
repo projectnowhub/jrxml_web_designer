@@ -2162,7 +2162,7 @@ function generateColumnXML(
       // If there's no columnHeader object, generate a default columnHeader
       xml += `<jr:columnHeader height="30" rowSpan="1" style="Table_CH">
 `;
-      xml += `<staticText>
+      xml += `<textField>
 `;
       xml += `<reportElement x="0" y="0" width="${toInt(column.width)}" height="30"/>
 `;
@@ -2172,9 +2172,9 @@ function generateColumnXML(
 `;
       xml += `</textElement>
 `;
-      xml += `<text><![CDATA[${column.name || `Column${index + 1}`}]]></text>
+      xml += `<textFieldExpression><![CDATA["${column.name || `Column${index + 1}`}"]]></textFieldExpression>
 `;
-      xml += `</staticText>
+      xml += `</textField>
 `;
       xml += `</jr:columnHeader>
 `;
@@ -2348,14 +2348,9 @@ function generateColumnGroupXML(
     // Resolve the columnHeader structure to get the actual element (which may live under the element property)
     const actualColumnHeader = columnHeader.element || columnHeader;
 
-    // Only use group.name as the default when text or expression hasn't been explicitly set
-    if (actualColumnHeader.type === "staticText" && !actualColumnHeader.text) {
-      actualColumnHeader.text = group.name;
-    } else if (
-      actualColumnHeader.type === "textField" &&
-      !actualColumnHeader.expression
-    ) {
-      actualColumnHeader.expression = group.name;
+    // Only use group.name as the default when expression hasn't been explicitly set
+    if (!actualColumnHeader.expression) {
+      actualColumnHeader.expression = `"${group.name}"`;
     }
     // If there's no border set, add a default border
     if (!actualColumnHeader.box || !actualColumnHeader.box.pen) {

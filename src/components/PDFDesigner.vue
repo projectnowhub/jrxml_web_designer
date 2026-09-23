@@ -1957,12 +1957,12 @@ function generateTableColumnsFromDataset(defaultTableWidth: number = 555) {
           tableHeader: {
             enable: false,
             element: {
-              type: "staticText",
+              type: "textField",
               x: 0,
               y: 0,
               width: columnWidth,
               height: 30,
-              text: field.name,
+              expression: `"${field.name}"`,
               forecolor: "#000000",
               backcolor: "#FFFFFF",
               fontFamily: "SansSerif",
@@ -1975,12 +1975,12 @@ function generateTableColumnsFromDataset(defaultTableWidth: number = 555) {
           columnHeader: {
             enable: true,
             element: {
-              type: "staticText",
+              type: "textField",
               x: 0,
               y: 0,
               width: columnWidth,
               height: 30,
-              text: field.name,
+              expression: `"${field.name}"`,
               textAlignment: "Center",
               verticalAlignment: "Middle",
             },
@@ -2367,11 +2367,6 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
   };
 
   switch (type) {
-    case "staticText":
-      return {
-        text: t("properties.defaultStaticText"),
-        ...defaultFontProps,
-      };
     case "textField":
       return {
         expression: `"${t("properties.defaultTextFieldExpression")}"`,
@@ -5859,8 +5854,8 @@ const handleColumnSelectionConfirm = (
     newGroup.tableHeader = {
       enable: true,
       element: {
-        type: "staticText",
-        text: textContent,
+        type: "textField",
+        expression: `"${textContent}"`,
         x: 0,
         y: 0,
         width: groupWidth,
@@ -5873,8 +5868,8 @@ const handleColumnSelectionConfirm = (
     newGroup.columnHeader = {
       enable: true,
       element: {
-        type: "staticText",
-        text: textContent,
+        type: "textField",
+        expression: `"${textContent}"`,
         x: 0,
         y: 0,
         width: groupWidth,
@@ -5887,8 +5882,8 @@ const handleColumnSelectionConfirm = (
     newGroup.columnFooter = {
       enable: true,
       element: {
-        type: "staticText",
-        text: textContent,
+        type: "textField",
+        expression: `"${textContent}"`,
         x: 0,
         y: 0,
         width: groupWidth,
@@ -5901,8 +5896,8 @@ const handleColumnSelectionConfirm = (
     newGroup.tableFooter = {
       enable: true,
       element: {
-        type: "staticText",
-        text: textContent,
+        type: "textField",
+        expression: `"${textContent}"`,
         x: 0,
         y: 0,
         width: groupWidth,
@@ -6134,8 +6129,8 @@ const confirmJoinColumnsToGroup = (): void => {
       tableHeader: {
         enable: true,
         element: {
-          type: "staticText",
-          text: selectedGroupName,
+          type: "textField",
+          expression: `"${selectedGroupName}"`,
           x: 0,
           y: 0,
           width: groupWidth,

@@ -129,7 +129,7 @@
   },
   "elementNames": {
     "staticText": "Static Text",
-    "textField": "Text Field",
+    "textField": "Text",
     "image": "Image",
     "line": "Line",
     "rectangle": "Rectangle",
@@ -203,7 +203,7 @@
     "underline": "Underline",
     "expression": "Expression",
     "expressionHint": "e.g., {fieldHolder} or 或 \"Fixed text\"",
-    "defaultTextFieldExpression": "Text Field",
+    "defaultTextFieldExpression": "Text",
     "defaultStaticText": "Static Text",
     "pattern": "Pattern",
     "patternHint": "e.g., Date: \"yyyy-MM-dd\", Number: \"#,##0.00\"",

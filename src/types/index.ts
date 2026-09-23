@@ -778,7 +778,6 @@ export interface SortElement extends DesignElementBase {
 
 // Design element union type
 export type DesignElement =
-  | StaticTextElement
   | TextFieldElement
   | ImageElement
   | LineElement

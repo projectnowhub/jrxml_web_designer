@@ -270,10 +270,8 @@ function formatDesignState(designState: any): string {
     lines.push(`- Position: (${element.x}, ${element.y})`);
     lines.push(`- Size: ${element.width}x${element.height}`);
 
-    if (element.type === "staticText") {
-      lines.push(`- Text: "${element.text || ""}"`);
-    } else if (element.type === "textField") {
-      lines.push(`- Expression: "${element.expression || ""}"`);
+    if (element.type === "textField") {
+      lines.push(`- Text: "${element.expression || ""}"`);
     }
 
     if (element.forecolor) {
@@ -298,10 +296,8 @@ function formatDesignState(designState: any): string {
           const uuid = element.uuid;
           let description = "";
 
-          if (elementType === "staticText") {
-            description = `static text "${element.text || ""}"`;
-          } else if (elementType === "textField") {
-            description = `dynamic text field "${element.expression || ""}"`;
+          if (elementType === "textField") {
+            description = `text "${element.expression || ""}"`;
           } else if (elementType === "rectangle") {
             description = "rectangle";
           } else if (elementType === "frame") {

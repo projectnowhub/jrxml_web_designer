@@ -33,39 +33,11 @@ export class ElementRegistry {
   // Register default elements
   private registerDefaultElements(): void {
     this.registerElement({
-      type: "staticText",
-      name: "elementNames.staticText",
+      type: "textField",
+      name: "elementNames.textField",
       icon: "T",
       iconSvg:
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>',
-      category: "basic",
-      defaultProps: {
-        type: "staticText",
-        x: 0,
-        y: 0,
-        width: 100,
-        height: 20,
-        text: "静态文本",
-        markup: "none",
-        textAdjust: "CutText",
-        rotation: "None",
-        // Style properties
-        fontFamily: "SansSerif",
-        fontSize: 12,
-        isBold: false,
-        isItalic: false,
-        isUnderline: false,
-        textAlignment: "Left",
-        verticalAlignment: "Top",
-      },
-    });
-
-    this.registerElement({
-      type: "textField",
-      name: "elementNames.textField",
-      icon: "{ }",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 9l-3 3 3 3M16 9l3 3-3 3M14 4l-4 16"/></svg>',
       category: "basic",
       defaultProps: {
         type: "textField",
@@ -73,7 +45,7 @@ export class ElementRegistry {
         y: 0,
         width: 100,
         height: 20,
-        expression: '"Text Field"',
+        expression: '"Text"',
         evaluationTime: "Now",
         evaluationGroup: "",
         pattern: "",
@@ -250,12 +222,12 @@ export class ElementRegistry {
             tableHeader: {
               enable: false,
               element: {
-                type: "staticText",
+                type: "textField",
                 x: 0,
                 y: 0,
                 width: 160,
                 height: 30,
-                text: "Header",
+                expression: '"Header"',
                 forecolor: "#000000",
                 backcolor: "#FFFFFF",
                 fontFamily: "SansSerif",
@@ -268,12 +240,12 @@ export class ElementRegistry {
             columnHeader: {
               enable: true,
               element: {
-                type: "staticText",
+                type: "textField",
                 x: 0,
                 y: 0,
                 width: 160,
                 height: 30,
-                text: "Column Header",
+                expression: '"Column Header"',
                 textAlignment: "Center",
                 verticalAlignment: "Middle",
               },
@@ -299,12 +271,12 @@ export class ElementRegistry {
             tableHeader: {
               enable: false,
               element: {
-                type: "staticText",
+                type: "textField",
                 x: 0,
                 y: 0,
                 width: 180,
                 height: 30,
-                text: "",
+                expression: '""',
                 forecolor: "#000000",
                 backcolor: "#FFFFFF",
                 fontFamily: "SansSerif",
@@ -317,12 +289,12 @@ export class ElementRegistry {
             columnHeader: {
               enable: true,
               element: {
-                type: "staticText",
+                type: "textField",
                 x: 0,
                 y: 0,
                 width: 180,
                 height: 30,
-                text: "Column Header",
+                expression: '"Column Header"',
                 textAlignment: "Center",
                 verticalAlignment: "Middle",
               },
@@ -741,7 +713,7 @@ export class ElementRegistry {
     } as DesignElement;
   }
 
-  // Load an element component
+  // Load an element's component dynamically
   public async loadElementComponent(type: string): Promise<any> {
     const config = this.getElementConfig(type);
     if (!config) {
@@ -755,7 +727,6 @@ export class ElementRegistry {
     // Dynamically load the component
     try {
       const componentMap: Record<string, string> = {
-        staticText: "./StaticTextElement.vue",
         textField: "./TextFieldElement.vue",
         image: "./ImageElement.vue",
         line: "./LineElement.vue",

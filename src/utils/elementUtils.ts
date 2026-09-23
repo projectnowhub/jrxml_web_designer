@@ -44,9 +44,7 @@ export function getElementDisplayInfoWithoutBand(
   let info = "";
 
   // Add type-specific info based on the element type
-  if (element.type === "staticText" && (element as any).text) {
-    info = `${(element as any).text.substring(0, 15)}${(element as any).text.length > 15 ? "..." : ""}`;
-  } else if (element.type === "textField") {
+  if (element.type === "textField") {
     if ((element as any).expression) {
       info = `${(element as any).expression.substring(0, 15)}${(element as any).expression.length > 15 ? "..." : ""}`;
     } else if ((element as any).fieldName) {

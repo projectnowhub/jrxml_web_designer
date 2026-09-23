@@ -978,16 +978,16 @@ function parseCellContent(cellElem: Element): any {
     };
   }
 
-  // Default static text element
+  // Default text field element
   return {
     enable: true,
     element: {
-      type: "staticText",
+      type: "textField",
       x: 0,
       y: 0,
       width: 100,
       height,
-      text: "",
+      expression: "",
       textAlignment: "Left",
       verticalAlignment: "Middle",
     },
@@ -1047,11 +1047,11 @@ function parseColumnElement(columnElem: Element, index: number): any {
   // First try to get the column name from columnHeader (accessed via the .element sub-object)
   if (columnHeader) {
     const elem = columnHeader.element || columnHeader;
-    if (elem.type === "staticText") {
-      columnName = elem.text || "";
-    } else if (elem.type === "textField") {
+    if (elem.expression) {
       // Strip the surrounding quotes from the expression value
-      columnName = (elem.expression || "").replace(/^"|"$/g, "");
+      columnName = elem.expression.replace(/^"|"$/g, "");
+    } else if (elem.text) {
+      columnName = elem.text;
     }
   }
 
@@ -1074,12 +1074,12 @@ function parseColumnElement(columnElem: Element, index: number): any {
     tableHeaderWithDefaults = {
       enable: true,
       element: {
-        type: "staticText",
+        type: "textField",
         x: 0,
         y: 0,
         width: columnWidth,
         height: 30,
-        text: "",
+        expression: "",
         textAlignment: "Center",
         verticalAlignment: "Middle",
       },
@@ -1092,12 +1092,12 @@ function parseColumnElement(columnElem: Element, index: number): any {
     columnHeaderWithDefaults = {
       enable: true,
       element: {
-        type: "staticText",
+        type: "textField",
         x: 0,
         y: 0,
         width: columnWidth,
         height: 30,
-        text: columnName,
+        expression: `"${columnName}"`,
         textAlignment: "Center",
         verticalAlignment: "Middle",
       },
@@ -1205,10 +1205,10 @@ function parseColumnGroupElement(groupElem: Element, index: number): any {
   // First try to get the column name from columnHeader (accessed via the .element sub-object)
   if (columnHeader) {
     const elem = columnHeader.element || columnHeader;
-    if (elem.type === "staticText") {
-      groupName = elem.text || "";
-    } else if (elem.type === "textField") {
-      groupName = elem.expression || "";
+    if (elem.expression) {
+      groupName = (elem.expression || "").replace(/^"|"$/g, "");
+    } else if (elem.text) {
+      groupName = elem.text;
     }
   }
 

@@ -10,7 +10,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue';
 import { elementRegistry } from './ElementRegistry';
-import StaticTextElement from './StaticTextElement.vue';
 import TextFieldElement from './TextFieldElement.vue';
 import ImageElement from './ImageElement.vue';
 import LineElement from './LineElement.vue';
@@ -36,7 +35,6 @@ import type {
 
 // Component cache - use a plain object instead of a ref to avoid components being converted into reactive objects
 const componentCache: Record<string, any> = {
-  staticText: StaticTextElement,
   textField: TextFieldElement,
   image: ImageElement,
   line: LineElement,
@@ -135,7 +133,7 @@ const getElementComponent = computed(() => {
   loadComponent(type);
 
   // Default component
-  return StaticTextElement;
+  return TextFieldElement;
 });
 
 // Common props - add a type assertion to ensure compatibility with what the component expects
