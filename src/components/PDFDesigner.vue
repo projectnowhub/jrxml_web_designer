@@ -403,10 +403,6 @@
     <!-- Drag feedback layer -->
     <DragFeedbackLayer :feedback="dragFeedback" />
 
-    <!-- Donation modal -->
-    <RewardModal v-if="locale === 'zh'" v-model:visible="showReward" />
-    <RewardModalEn v-else v-model:visible="showReward" />
-
     <!-- Help modal -->
     <HelpModal v-if="locale === 'zh'" v-model:visible="showHelp" />
     <HelpModalEn v-else v-model:visible="showHelp" />
@@ -621,8 +617,6 @@
 <script setup lang="ts">
 import ResizablePanel from "./panels/ResizablePanel.vue";
 import DesignerCanvas from "./designer/DesignerCanvas.vue";
-import RewardModal from "./modals/RewardModal.vue";
-import RewardModalEn from "./modals/RewardModalEn.vue";
 import HelpModal from "./modals/HelpModal.vue";
 import HelpModalEn from "./modals/HelpModalEn.vue";
 import FieldManagementModal from "./modals/FieldManagementModal.vue";
@@ -5350,9 +5344,6 @@ onUnmounted(() => {
     delete (window as any).pdfDesignerKeydownListener;
   }
 });
-
-// Donation-related state
-const showReward = ref(false);
 
 // Help-related state
 const showHelp = ref(false);

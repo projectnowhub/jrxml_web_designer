@@ -19,7 +19,6 @@ const mockT = (key: string) => {
     'actions.snapToAlignment': 'Snap to Alignment',
     'actions.previewPDF': 'Preview PDF',
     'actions.generateJRXML': 'Generate JRXML',
-    'actions.donate': 'Donate',
     'actions.help': 'Help',
     'properties.defaultStaticText': 'Static Text',
     'properties.defaultTextFieldExpression': 'Text Field',
