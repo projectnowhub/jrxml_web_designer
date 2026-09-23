@@ -63,14 +63,17 @@
         <button
           type="button"
           class="format-btn color-trigger-btn"
-          :class="{ 'is-active': showColorPicker }"
+          :class="{ 'is-active': showColorPicker || !!activeFormats.color }"
           title="Text Color"
           @click="openColorPicker"
         >
           <Palette :size="14" :stroke-width="2" />
           <span
             class="current-color-indicator"
-            :style="{ backgroundColor: activeFormats.color || '#000000' }"
+            :style="{
+              backgroundColor: activeFormats.color || 'transparent',
+              opacity: activeFormats.color ? 1 : 0
+            }"
           ></span>
         </button>
 
@@ -85,7 +88,10 @@
           <Highlighter :size="14" :stroke-width="2" />
           <span
             class="current-color-indicator"
-            :style="{ backgroundColor: activeFormats.highlight || '#fff566' }"
+            :style="{
+              backgroundColor: activeFormats.highlight || 'transparent',
+              opacity: activeFormats.highlight ? 1 : 0
+            }"
           ></span>
         </button>
 
@@ -127,13 +133,25 @@
           </button>
         </div>
 
+        <!-- Automatic / Reset Text Color Button -->
+        <button
+          type="button"
+          class="clear-highlight-btn"
+          :class="{ 'is-active-none': !activeFormats.color }"
+          title="Automatic (Default color)"
+          @click="applyColor('inherit')"
+        >
+          <span class="no-color-icon">⊘</span>
+          <span>Automatic</span>
+        </button>
+
         <div class="color-swatches-grid">
           <button
             v-for="color in presetColors"
             :key="color"
             type="button"
             class="color-swatch-btn"
-            :class="{ 'is-selected': activeFormats.color === color }"
+            :class="{ 'is-selected': !!activeFormats.color && activeFormats.color.toLowerCase() === color.toLowerCase() }"
             :style="{ backgroundColor: color }"
             :title="color"
             @click="applyColor(color)"
@@ -186,6 +204,7 @@
         <button
           type="button"
           class="clear-highlight-btn"
+          :class="{ 'is-active-none': !activeFormats.highlight }"
           title="Remove highlight"
           @click="applyHighlight('transparent')"
         >
@@ -199,7 +218,7 @@
             :key="color.value"
             type="button"
             class="color-swatch-btn"
-            :class="{ 'is-selected': activeFormats.highlight === color.value }"
+            :class="{ 'is-selected': !!activeFormats.highlight && color.value.toLowerCase() === activeFormats.highlight.toLowerCase() }"
             :style="{ backgroundColor: color.value }"
             :title="color.name"
             @click="applyHighlight(color.value)"
@@ -590,6 +609,9 @@ const openColorPicker = () => {
   showColorPicker.value = true;
   showHighlightPicker.value = false;
   showLinkPopover.value = false;
+  if (props.activeFormats.color) {
+    customColorInput.value = props.activeFormats.color;
+  }
 };
 
 const applyColor = (color: string) => {
@@ -929,6 +951,13 @@ defineExpose({
   background: #f3f4f6;
   color: #111827;
   border-color: #9ca3af;
+}
+
+.clear-highlight-btn.is-active-none {
+  background: #e6f7ff;
+  border-color: #1890ff;
+  color: #1890ff;
+  font-weight: 600;
 }
 
 .no-color-icon {

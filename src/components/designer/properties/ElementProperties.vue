@@ -3204,15 +3204,15 @@ function handleSideMarginInput(
   // If individual margins weren't explicitly initialized yet but global padding was set,
   // seed the other sides with the current global value before diverging.
   const prevGlobal =
-    box.padding !== undefined && box.padding !== "" && !isNaN(Number(box.padding))
+    box.padding !== undefined && !isNaN(Number(box.padding))
       ? Number(box.padding)
       : undefined;
 
   if (prevGlobal !== undefined) {
-    if (box.topPadding === undefined || box.topPadding === "") box.topPadding = prevGlobal;
-    if (box.leftPadding === undefined || box.leftPadding === "") box.leftPadding = prevGlobal;
-    if (box.bottomPadding === undefined || box.bottomPadding === "") box.bottomPadding = prevGlobal;
-    if (box.rightPadding === undefined || box.rightPadding === "") box.rightPadding = prevGlobal;
+    if (box.topPadding === undefined) box.topPadding = prevGlobal;
+    if (box.leftPadding === undefined) box.leftPadding = prevGlobal;
+    if (box.bottomPadding === undefined) box.bottomPadding = prevGlobal;
+    if (box.rightPadding === undefined) box.rightPadding = prevGlobal;
   }
 
   // Reset global margin value so it doesn't conflict or falsely indicate all sides are equal
@@ -3228,7 +3228,6 @@ function handleSideMarginInput(
   // If all four sides happen to be defined and equal, synchronize global margin
   if (
     box.topPadding !== undefined &&
-    box.topPadding !== "" &&
     box.topPadding === box.bottomPadding &&
     box.topPadding === box.leftPadding &&
     box.topPadding === box.rightPadding

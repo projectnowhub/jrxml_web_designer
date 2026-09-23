@@ -554,7 +554,20 @@ const handleSelectionUpdate = () => {
   };
   toolbarVisible.value = true;
 
-  const linkEl = getAncestorLink(sel.anchorNode);
+  // Detect link ONLY from <a> nodes inside editInput
+  let linkEl = getAncestorLink(sel.anchorNode) || getAncestorLink(sel.focusNode);
+  if (!linkEl && sel.rangeCount > 0 && editInput.value) {
+    const r = sel.getRangeAt(0);
+    const common = r.commonAncestorContainer;
+    const commonEl = common.nodeType === Node.ELEMENT_NODE ? (common as HTMLElement) : common.parentElement;
+    if (commonEl && editInput.value.contains(commonEl)) {
+      const a = commonEl.querySelector('a');
+      if (a && r.intersectsNode(a)) {
+        linkEl = a as HTMLAnchorElement;
+      }
+    }
+  }
+
   if (linkEl) {
     const href = linkEl.getAttribute('href') || '';
     currentLink.value = {
@@ -566,25 +579,103 @@ const handleSelectionUpdate = () => {
     currentLink.value = undefined;
   }
 
-  // Detect highlight / background color
-  let highlightVal = '';
-  try {
-    highlightVal = document.queryCommandValue('hiliteColor') || document.queryCommandValue('backColor') || '';
-  } catch (e) {
-    highlightVal = '';
-  }
-  if (!highlightVal || highlightVal === 'rgba(0, 0, 0, 0)' || highlightVal === 'transparent') {
-    let pNode: Node | null = sel.anchorNode;
-    while (pNode && pNode !== editInput.value) {
-      if (pNode.nodeType === Node.ELEMENT_NODE) {
-        const bg = (pNode as HTMLElement).style?.backgroundColor;
-        if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') {
-          highlightVal = bg;
-          break;
+  // Helper to extract explicit text color from ancestor chain inside editInput
+  const getExplicitColor = (node: Node | null, root: HTMLElement | null): string => {
+    let curr = node;
+    while (curr && curr !== root) {
+      if (curr.nodeType === Node.ELEMENT_NODE) {
+        const el = curr as HTMLElement;
+        if (el.tagName === 'FONT' && (el as HTMLFontElement).color) {
+          return (el as HTMLFontElement).color;
+        }
+        const c = el.style?.color;
+        if (c && c !== 'inherit') {
+          return c;
         }
       }
-      pNode = pNode.parentNode;
+      curr = curr.parentNode;
     }
+    return '';
+  };
+
+  // Helper to extract explicit highlight color from ancestor chain inside editInput
+  const getExplicitHighlight = (node: Node | null, root: HTMLElement | null): string => {
+    let curr = node;
+    while (curr && curr !== root) {
+      if (curr.nodeType === Node.ELEMENT_NODE) {
+        const el = curr as HTMLElement;
+        if (el.tagName === 'MARK') {
+          return el.style.backgroundColor || '#fff566';
+        }
+        const bg = el.style?.backgroundColor;
+        if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') {
+          return bg;
+        }
+      }
+      curr = curr.parentNode;
+    }
+    return '';
+  };
+
+  // Detect text color ONLY from explicit styles on descendant nodes inside editInput
+  let colorVal = getExplicitColor(sel.anchorNode, editInput.value);
+  if (!colorVal && sel.focusNode) {
+    colorVal = getExplicitColor(sel.focusNode, editInput.value);
+  }
+  if (!colorVal && sel.rangeCount > 0 && editInput.value) {
+    const r = sel.getRangeAt(0);
+    const common = r.commonAncestorContainer;
+    const commonEl = common.nodeType === Node.ELEMENT_NODE ? (common as HTMLElement) : common.parentElement;
+    if (commonEl && editInput.value.contains(commonEl)) {
+      const font = commonEl.querySelector('font[color]');
+      if (font && r.intersectsNode(font)) {
+        colorVal = (font as HTMLFontElement).color;
+      } else {
+        const allStyled = commonEl.querySelectorAll('[style*="color"]');
+        for (let i = 0; i < allStyled.length; i++) {
+          const el = allStyled[i] as HTMLElement;
+          if (el !== editInput.value && r.intersectsNode(el) && el.style.color && el.style.color !== 'inherit') {
+            colorVal = el.style.color;
+            break;
+          }
+        }
+      }
+    }
+  }
+  if (colorVal) {
+    colorVal = rgbToHex(colorVal).toLowerCase();
+  }
+
+  // Detect highlight / background color ONLY from explicit styles on descendant nodes inside editInput
+  let highlightVal = getExplicitHighlight(sel.anchorNode, editInput.value);
+  if (!highlightVal && sel.focusNode) {
+    highlightVal = getExplicitHighlight(sel.focusNode, editInput.value);
+  }
+  if (!highlightVal && sel.rangeCount > 0 && editInput.value) {
+    const r = sel.getRangeAt(0);
+    const common = r.commonAncestorContainer;
+    const commonEl = common.nodeType === Node.ELEMENT_NODE ? (common as HTMLElement) : common.parentElement;
+    if (commonEl && editInput.value.contains(commonEl)) {
+      const mark = commonEl.querySelector('mark');
+      if (mark && r.intersectsNode(mark)) {
+        highlightVal = mark.style.backgroundColor || '#fff566';
+      } else {
+        const allBg = commonEl.querySelectorAll('[style*="background"]');
+        for (let i = 0; i < allBg.length; i++) {
+          const el = allBg[i] as HTMLElement;
+          if (el !== editInput.value && r.intersectsNode(el)) {
+            const bg = el.style.backgroundColor;
+            if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') {
+              highlightVal = bg;
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+  if (highlightVal) {
+    highlightVal = rgbToHex(highlightVal).toLowerCase();
   }
 
   activeFormats.value = {
@@ -592,7 +683,7 @@ const handleSelectionUpdate = () => {
     italic: document.queryCommandState('italic'),
     underline: document.queryCommandState('underline'),
     strike: document.queryCommandState('strikeThrough'),
-    color: document.queryCommandValue('foreColor') || '',
+    color: colorVal,
     highlight: highlightVal,
     link: !!linkEl,
   };
@@ -814,8 +905,40 @@ const handleFormat = (command: string, value?: string) => {
       sel.addRange(savedSelectionRange.value);
     }
   }
-  if (command === 'foreColor' && value) {
-    document.execCommand('foreColor', false, value);
+  if (command === 'foreColor') {
+    if (!value || value === 'inherit' || value === 'transparent' || value === 'default') {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0 && editInput.value) {
+        const range = sel.getRangeAt(0);
+        let curr: Node | null = sel.anchorNode;
+        while (curr && curr !== editInput.value) {
+          if (curr.nodeType === Node.ELEMENT_NODE) {
+            const el = curr as HTMLElement;
+            if (el.tagName === 'FONT') {
+              el.removeAttribute('color');
+            }
+            if (el.style?.color) {
+              el.style.color = '';
+            }
+          }
+          curr = curr.parentNode;
+        }
+        const common = range.commonAncestorContainer;
+        const commonEl = common.nodeType === Node.ELEMENT_NODE ? (common as HTMLElement) : common.parentElement;
+        if (commonEl && editInput.value.contains(commonEl)) {
+          commonEl.querySelectorAll('font[color]').forEach((f) => {
+            if (range.intersectsNode(f)) (f as HTMLElement).removeAttribute('color');
+          });
+          commonEl.querySelectorAll('[style*="color"]').forEach((s) => {
+            if (s !== editInput.value && range.intersectsNode(s)) {
+              (s as HTMLElement).style.color = '';
+            }
+          });
+        }
+      }
+    } else {
+      document.execCommand('foreColor', false, value);
+    }
   } else if (command === 'hiliteColor') {
     if (!value || value === 'transparent') {
       document.execCommand('hiliteColor', false, 'transparent');
@@ -848,6 +971,44 @@ const handleApplyLink = (target: string, type: 'url' | 'email' | 'phone', label?
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) return;
 
+  // 1. Detect existing formatting on the selection or its ancestors
+  let existingColor = '';
+  let existingHighlight = '';
+
+  let checkNode: Node | null = sel.anchorNode;
+  while (checkNode && checkNode !== editInput.value) {
+    if (checkNode.nodeType === Node.ELEMENT_NODE) {
+      const el = checkNode as HTMLElement;
+      if (!existingColor) {
+        if (el.tagName === 'FONT' && (el as HTMLFontElement).color) {
+          existingColor = (el as HTMLFontElement).color;
+        } else if (el.style?.color && el.style.color !== 'inherit') {
+          existingColor = rgbToHex(el.style.color);
+        }
+      }
+      if (!existingHighlight) {
+        if (el.tagName === 'MARK') {
+          existingHighlight = el.style.backgroundColor || '#fff566';
+        } else if (
+          el.style?.backgroundColor &&
+          el.style.backgroundColor !== 'transparent' &&
+          el.style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+        ) {
+          existingHighlight = rgbToHex(el.style.backgroundColor);
+        }
+      }
+    }
+    checkNode = checkNode.parentNode;
+  }
+
+  // Also fallback to activeFormats if ancestors didn't have explicit styles
+  if (!existingColor && activeFormats.value.color && activeFormats.value.color !== '#000000' && activeFormats.value.color !== '#1890ff') {
+    existingColor = activeFormats.value.color;
+  }
+  if (!existingHighlight && activeFormats.value.highlight) {
+    existingHighlight = activeFormats.value.highlight;
+  }
+
   let linkEl = getAncestorLink(sel.anchorNode) || getAncestorLink(sel.focusNode);
   if (!linkEl && sel.rangeCount > 0) {
     const r = sel.getRangeAt(0);
@@ -857,6 +1018,7 @@ const handleApplyLink = (target: string, type: 'url' | 'email' | 'phone', label?
         (r.commonAncestorContainer as HTMLElement).querySelector('a');
     }
   }
+
   if (linkEl) {
     linkEl.setAttribute('href', target);
     if (label !== undefined && label.trim()) {
@@ -870,21 +1032,47 @@ const handleApplyLink = (target: string, type: 'url' | 'email' | 'phone', label?
       linkEl.removeAttribute('rel');
     }
     linkEl.classList.add('text-hyperlink');
+
+    if (existingColor && !linkEl.style.color) {
+      linkEl.style.color = existingColor;
+    }
+    if (existingHighlight && !linkEl.style.backgroundColor) {
+      linkEl.style.backgroundColor = existingHighlight;
+    }
   } else {
     const range = sel.getRangeAt(0);
-    const textToDisplay = label || range.toString() || target;
 
     const anchor = document.createElement('a');
     anchor.href = target;
-    anchor.textContent = textToDisplay;
     anchor.className = 'text-hyperlink';
     if (type === 'url') {
       anchor.target = '_blank';
       anchor.rel = 'noopener noreferrer';
     }
 
-    range.deleteContents();
-    range.insertNode(anchor);
+    if (existingColor) {
+      anchor.style.color = existingColor;
+    }
+    if (existingHighlight) {
+      anchor.style.backgroundColor = existingHighlight;
+    }
+
+    const hasCustomLabel = label !== undefined && label.trim() && label !== range.toString();
+
+    if (hasCustomLabel) {
+      anchor.textContent = label!;
+      range.deleteContents();
+      range.insertNode(anchor);
+    } else {
+      // Extract contents to preserve any existing child tags (spans, fonts, marks, bold, italic)
+      const fragment = range.extractContents();
+      if (fragment.childNodes.length === 0) {
+        anchor.textContent = target;
+      } else {
+        anchor.appendChild(fragment);
+      }
+      range.insertNode(anchor);
+    }
 
     // Place selection cursor after the new anchor
     const newRange = document.createRange();
@@ -918,8 +1106,24 @@ const handleRemoveLink = () => {
     }
   }
   if (linkEl) {
-    const textNode = document.createTextNode(linkEl.textContent || '');
-    linkEl.parentNode?.replaceChild(textNode, linkEl);
+    const parent = linkEl.parentNode;
+    if (parent) {
+      // If the link had custom color or highlight, preserve it in a span
+      if (linkEl.style.color || linkEl.style.backgroundColor) {
+        const span = document.createElement('span');
+        if (linkEl.style.color) span.style.color = linkEl.style.color;
+        if (linkEl.style.backgroundColor) span.style.backgroundColor = linkEl.style.backgroundColor;
+        while (linkEl.firstChild) {
+          span.appendChild(linkEl.firstChild);
+        }
+        parent.replaceChild(span, linkEl);
+      } else {
+        while (linkEl.firstChild) {
+          parent.insertBefore(linkEl.firstChild, linkEl);
+        }
+        parent.removeChild(linkEl);
+      }
+    }
   } else {
     document.execCommand('unlink', false);
   }
