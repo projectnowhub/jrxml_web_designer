@@ -60,7 +60,118 @@ export function quoteExpressionValue(value: string): string {
   return `"${value}"`;
 }
 
-// Calculate the required rendered height for a text field based on its text, width, font, and padding
+// Helper to parse box padding or border dimension safely
+function parseBoxDimension(val: any): number | undefined {
+  if (val === undefined || val === null || val === '') return undefined;
+  const num = Number(val);
+  return isNaN(num) ? undefined : Math.max(0, num);
+}
+
+// Get the resolved padding (margin) for all four sides of a box
+export function getElementBoxPadding(box?: any): {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+} {
+  if (!box) {
+    return { top: 0, right: 0, bottom: 0, left: 0 };
+  }
+  const globalPad = parseBoxDimension(box.padding) ?? 0;
+  const top = parseBoxDimension(box.topPadding) ?? globalPad;
+  const right = parseBoxDimension(box.rightPadding) ?? globalPad;
+  const bottom = parseBoxDimension(box.bottomPadding) ?? globalPad;
+  const left = parseBoxDimension(box.leftPadding) ?? globalPad;
+
+  return { top, right, bottom, left };
+}
+
+// Get the resolved border widths for all four sides of a box
+export function getElementBoxBorderWidths(box?: any): {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+} {
+  if (!box) {
+    return { top: 0, right: 0, bottom: 0, left: 0 };
+  }
+
+  const getSideBorderWidth = (side: 'top' | 'right' | 'bottom' | 'left'): number => {
+    const penProperty = side === 'top' ? box.topPen :
+                        side === 'left' ? box.leftPen :
+                        side === 'bottom' ? box.bottomPen :
+                        box.rightPen;
+
+    const sideBorderStyle = side === 'top' ? box.topBorderStyle :
+                            side === 'left' ? box.leftBorderStyle :
+                            side === 'bottom' ? box.bottomBorderStyle :
+                            box.rightBorderStyle;
+
+    const sideBorderWidth = side === 'top' ? box.topBorderWidth :
+                            side === 'left' ? box.leftBorderWidth :
+                            side === 'bottom' ? box.bottomBorderWidth :
+                            box.rightBorderWidth;
+
+    const borderProperty = side === 'top' ? box.topBorder :
+                           side === 'left' ? box.leftBorder :
+                           side === 'bottom' ? box.bottomBorder :
+                           box.rightBorder;
+
+    if (sideBorderStyle === 'None' || sideBorderStyle === 'none' || borderProperty === 'None' || borderProperty === 'none') {
+      return 0;
+    }
+
+    if (penProperty?.lineWidth !== undefined && penProperty.lineWidth !== '') {
+      return Math.max(0, Number(penProperty.lineWidth) || 0);
+    }
+    if (sideBorderWidth !== undefined && sideBorderWidth !== '') {
+      return Math.max(0, Number(sideBorderWidth) || 0);
+    }
+    if (box.borderWidth !== undefined && box.borderWidth !== '') {
+      return Math.max(0, Number(box.borderWidth) || 0);
+    }
+    if (box.pen?.lineWidth !== undefined && box.pen.lineWidth !== '') {
+      return Math.max(0, Number(box.pen.lineWidth) || 0);
+    }
+    if (borderProperty === 'Thin' || borderProperty === '1Point') return 1;
+    if (borderProperty === '2Point' || borderProperty === 'Medium') return 2;
+    if (borderProperty === '4Point' || borderProperty === 'Thick') return 4;
+
+    const hasGlobal = (box.pen?.lineStyle && box.pen.lineStyle !== 'None') ||
+                      (box.borderStyle && box.borderStyle !== 'None') ||
+                      (box.border && box.border !== 'None' && box.border !== '');
+    if (hasGlobal) return 1;
+
+    return 0;
+  };
+
+  return {
+    top: getSideBorderWidth('top'),
+    right: getSideBorderWidth('right'),
+    bottom: getSideBorderWidth('bottom'),
+    left: getSideBorderWidth('left'),
+  };
+}
+
+// Get combined padding and border insets of a box
+export function getElementBoxInsets(box?: any): {
+  padding: { top: number; right: number; bottom: number; left: number };
+  borders: { top: number; right: number; bottom: number; left: number };
+  vertical: number;
+  horizontal: number;
+} {
+  const padding = getElementBoxPadding(box);
+  const borders = getElementBoxBorderWidths(box);
+  return {
+    padding,
+    borders,
+    vertical: padding.top + padding.bottom + borders.top + borders.bottom,
+    horizontal: padding.left + padding.right + borders.left + borders.right,
+  };
+}
+
+// Calculate the required rendered height for a text field based on its text, width, font, padding, and borders
 export function calculateTextElementHeight(element: {
   expression?: string;
   fieldName?: string;
@@ -72,6 +183,8 @@ export function calculateTextElementHeight(element: {
   box?: any;
 }): number {
   if (typeof document === 'undefined') return 20;
+
+  const insets = getElementBoxInsets(element.box);
 
   const div = document.createElement('div');
   div.style.visibility = 'hidden';
@@ -89,16 +202,15 @@ export function calculateTextElementHeight(element: {
   div.style.lineHeight = '1.3';
   div.style.boxSizing = 'border-box';
 
-  if (element.box) {
-    const padTop = element.box.topPadding ?? element.box.padding ?? 0;
-    const padBottom = element.box.bottomPadding ?? element.box.padding ?? 0;
-    const padLeft = element.box.leftPadding ?? element.box.padding ?? 0;
-    const padRight = element.box.rightPadding ?? element.box.padding ?? 0;
-    div.style.paddingTop = `${padTop}px`;
-    div.style.paddingBottom = `${padBottom}px`;
-    div.style.paddingLeft = `${padLeft}px`;
-    div.style.paddingRight = `${padRight}px`;
-  }
+  div.style.paddingTop = `${insets.padding.top}px`;
+  div.style.paddingBottom = `${insets.padding.bottom}px`;
+  div.style.paddingLeft = `${insets.padding.left}px`;
+  div.style.paddingRight = `${insets.padding.right}px`;
+
+  if (insets.borders.top > 0) div.style.borderTop = `${insets.borders.top}px solid transparent`;
+  if (insets.borders.bottom > 0) div.style.borderBottom = `${insets.borders.bottom}px solid transparent`;
+  if (insets.borders.left > 0) div.style.borderLeft = `${insets.borders.left}px solid transparent`;
+  if (insets.borders.right > 0) div.style.borderRight = `${insets.borders.right}px solid transparent`;
 
   let raw = element.expression || (element.fieldName ? `$F{${element.fieldName}}` : '');
   const displayText = stripExpressionQuotes(raw).replace(/\\n/g, '\n');
@@ -115,9 +227,7 @@ export function calculateTextElementHeight(element: {
   // Fallback for environments without CSS layout engine (e.g. JSDOM in tests)
   const lineCount = Math.max((displayText || ' ').split('\n').length, 1);
   const approxLineHeight = (element.fontSize || 10) * 1.35;
-  const padTop = element.box?.topPadding ?? element.box?.padding ?? 0;
-  const padBottom = element.box?.bottomPadding ?? element.box?.padding ?? 0;
-  const estimated = Math.ceil(lineCount * approxLineHeight + padTop + padBottom);
+  const estimated = Math.ceil(lineCount * approxLineHeight + insets.vertical);
   return Math.max(estimated, 15);
 }
 

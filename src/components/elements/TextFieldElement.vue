@@ -172,6 +172,7 @@ import {
 import BaseElement from './BaseElement.vue';
 import TextFormatToolbar from './TextFormatToolbar.vue';
 import type { TextFieldElement, SelectedElementInfo, EditingElementInfo } from '../../types';
+import { getElementBoxInsets, calculateTextElementHeight } from '../../utils/elementUtils';
 
 const { t } = useI18n();
 
@@ -382,10 +383,13 @@ const showOverflowBadge = computed(() => {
   return isSelected.value && isOverflowing.value && !isEditing.value;
 });
 
-// Check if content overflows current element height
+// Check if content overflows current element height (taking margins & borders into account)
 const checkOverflow = () => {
   if (contentContainer.value && !isEditing.value) {
-    isOverflowing.value = contentContainer.value.scrollHeight > props.element.height + 2;
+    const insets = getElementBoxInsets(props.element.box);
+    const contentHeight = Math.ceil(contentContainer.value.scrollHeight);
+    const availableHeight = Math.max(0, props.element.height - insets.vertical);
+    isOverflowing.value = contentHeight > availableHeight + 1;
   } else {
     isOverflowing.value = false;
   }
@@ -397,11 +401,29 @@ watch(
     () => props.element.width,
     () => props.element.height,
     () => props.element.fontSize,
+    () => props.element.fontFamily,
+    () => props.element.isBold,
+    () => props.element.isItalic,
+    () => props.element.markup,
+    () => props.element.box,
+    () => props.element.box?.padding,
+    () => props.element.box?.topPadding,
+    () => props.element.box?.bottomPadding,
+    () => props.element.box?.leftPadding,
+    () => props.element.box?.rightPadding,
+    () => props.element.box?.borderWidth,
+    () => props.element.box?.topBorderWidth,
+    () => props.element.box?.bottomBorderWidth,
+    () => props.element.box?.leftBorderWidth,
+    () => props.element.box?.rightBorderWidth,
+    () => props.element.box?.pen?.lineWidth,
+    () => props.element.box?.borderStyle,
+    () => isSelected.value,
   ],
   () => {
     nextTick(checkOverflow);
   },
-  { flush: 'post' },
+  { flush: 'post', deep: true },
 );
 
 // Helper: place caret at the end of contenteditable container
@@ -601,14 +623,31 @@ watch(
   }
 );
 
+let resizeObserver: ResizeObserver | null = null;
+
 onMounted(() => {
-  nextTick(checkOverflow);
+  nextTick(() => {
+    checkOverflow();
+    if (typeof ResizeObserver !== 'undefined' && contentContainer.value) {
+      resizeObserver = new ResizeObserver(() => {
+        checkOverflow();
+      });
+      resizeObserver.observe(contentContainer.value);
+      if (contentContainer.value.parentElement) {
+        resizeObserver.observe(contentContainer.value.parentElement);
+      }
+    }
+  });
   document.addEventListener('selectionchange', handleDocumentSelectionChange);
   document.addEventListener('mousedown', handleOutsideMouseDown, true);
   document.addEventListener('click', handleOutsideMouseDown, true);
 });
 
 onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
   document.removeEventListener('selectionchange', handleDocumentSelectionChange);
   document.removeEventListener('mousedown', handleOutsideMouseDown, true);
   document.removeEventListener('click', handleOutsideMouseDown, true);
@@ -1166,16 +1205,27 @@ const handleBlur = (e: FocusEvent) => {
   }, 200);
 };
 
-// Auto-fit height to content
+// Auto-fit height to content with consideration of margins (box padding & borders)
 const handleAutoFit = () => {
-  if (!contentContainer.value) return;
-  const requiredHeight = Math.ceil(contentContainer.value.scrollHeight);
-  if (requiredHeight > 0) {
-    props.element.height = Math.max(requiredHeight, 15);
+  const insets = getElementBoxInsets(props.element.box);
+  let contentHeight = 0;
+  if (contentContainer.value) {
+    contentHeight = Math.ceil(contentContainer.value.scrollHeight);
+  }
+  let targetHeight = 0;
+  if (contentHeight > 0) {
+    targetHeight = Math.max(contentHeight + insets.vertical, 15);
+  } else {
+    targetHeight = calculateTextElementHeight(props.element as any);
+  }
+
+  if (targetHeight > 0) {
+    props.element.height = targetHeight;
     nextTick(() => {
       checkOverflow();
       emit('updateElement');
       emit('update-jrxml');
+      emit('autoFitHeight', props.bandIndex, props.elementIndex, props.parentFrameIndex);
     });
   }
 };

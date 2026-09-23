@@ -14,6 +14,9 @@ import {
   getElementBounds,
   getElementsBounds,
   calculateTextElementHeight,
+  getElementBoxPadding,
+  getElementBoxBorderWidths,
+  getElementBoxInsets,
 } from "@/utils/elementUtils";
 import type { DesignElement } from "@/types";
 import { ELEMENT_TYPE_CONSTANTS } from "@/constants/constants";
@@ -586,6 +589,95 @@ describe("elementUtils", () => {
         box: { topPadding: 10, bottomPadding: 10 },
       });
       expect(heightWithPadding).toBeGreaterThanOrEqual(heightNoPadding);
+    });
+
+    it("should account for borders in addition to padding", () => {
+      const heightPaddingOnly = calculateTextElementHeight({
+        expression: '"Test text"',
+        width: 100,
+        fontSize: 12,
+        box: { topPadding: 10, bottomPadding: 10 },
+      });
+      const heightWithBorders = calculateTextElementHeight({
+        expression: '"Test text"',
+        width: 100,
+        fontSize: 12,
+        box: {
+          topPadding: 10,
+          bottomPadding: 10,
+          topPen: { lineWidth: 5 },
+          bottomPen: { lineWidth: 5 },
+        },
+      });
+      expect(heightWithBorders).toBeGreaterThan(heightPaddingOnly);
+    });
+  });
+
+  describe("getElementBoxPadding", () => {
+    it("should return zeros for undefined box", () => {
+      expect(getElementBoxPadding(undefined)).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+    });
+
+    it("should apply global padding to all sides", () => {
+      expect(getElementBoxPadding({ padding: 10 })).toEqual({ top: 10, right: 10, bottom: 10, left: 10 });
+    });
+
+    it("should allow individual side padding to override global padding, including 0", () => {
+      expect(getElementBoxPadding({ padding: 10, topPadding: 0, bottomPadding: 15 })).toEqual({
+        top: 0,
+        right: 10,
+        bottom: 15,
+        left: 10,
+      });
+    });
+
+    it("should handle individual side padding without global padding", () => {
+      expect(getElementBoxPadding({ topPadding: 8, leftPadding: 4 })).toEqual({
+        top: 8,
+        right: 0,
+        bottom: 0,
+        left: 4,
+      });
+    });
+  });
+
+  describe("getElementBoxBorderWidths", () => {
+    it("should return zeros for undefined box", () => {
+      expect(getElementBoxBorderWidths(undefined)).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+    });
+
+    it("should resolve sidePen line widths", () => {
+      const box = {
+        topPen: { lineWidth: 2 },
+        bottomPen: { lineWidth: 4 },
+      };
+      expect(getElementBoxBorderWidths(box)).toEqual({ top: 2, right: 0, bottom: 4, left: 0 });
+    });
+
+    it("should resolve global pen lineWidth if sides not specified", () => {
+      const box = {
+        pen: { lineWidth: 3 },
+      };
+      expect(getElementBoxBorderWidths(box)).toEqual({ top: 3, right: 3, bottom: 3, left: 3 });
+    });
+  });
+
+  describe("getElementBoxInsets", () => {
+    it("should calculate combined vertical and horizontal insets", () => {
+      const box = {
+        padding: 5,
+        topPadding: 10,
+        bottomPadding: 12,
+        topPen: { lineWidth: 2 },
+        bottomPen: { lineWidth: 3 },
+        leftPen: { lineWidth: 1 },
+        rightPen: { lineWidth: 1 },
+      };
+      const insets = getElementBoxInsets(box);
+      expect(insets.padding).toEqual({ top: 10, right: 5, bottom: 12, left: 5 });
+      expect(insets.borders).toEqual({ top: 2, right: 1, bottom: 3, left: 1 });
+      expect(insets.vertical).toBe(10 + 12 + 2 + 3); // 27
+      expect(insets.horizontal).toBe(5 + 5 + 1 + 1); // 12
     });
   });
 });

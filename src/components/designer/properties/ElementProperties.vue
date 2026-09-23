@@ -982,9 +982,11 @@
                   <div class="form-group compact">
                     <label>{{ t("properties.globalMargin") }}</label>
                     <input
-                      v-if="currentElement && currentElement.box"
-                      v-model.number="currentElement.box.padding"
+                      v-if="currentElement"
+                      :value="currentElement.box?.padding ?? ''"
+                      @input="handleGlobalMarginInput"
                       type="number"
+                      min="0"
                       :placeholder="t('properties.globalMargin')"
                       class="small-input"
                     />
@@ -995,36 +997,44 @@
                     <div class="form-group compact">
                       <label>{{ t("properties.topMargin") }}</label>
                       <input
-                        v-if="currentElement && currentElement.box"
-                        v-model.number="currentElement.box.topPadding"
+                        v-if="currentElement"
+                        :value="currentElement.box?.topPadding ?? ''"
+                        @input="handleSideMarginInput('top', $event)"
                         type="number"
+                        min="0"
                         class="small-input"
                       />
                     </div>
                     <div class="form-group compact">
                       <label>{{ t("properties.leftMargin") }}</label>
                       <input
-                        v-if="currentElement && currentElement.box"
-                        v-model.number="currentElement.box.leftPadding"
+                        v-if="currentElement"
+                        :value="currentElement.box?.leftPadding ?? ''"
+                        @input="handleSideMarginInput('left', $event)"
                         type="number"
+                        min="0"
                         class="small-input"
                       />
                     </div>
                     <div class="form-group compact">
                       <label>{{ t("properties.bottomMargin") }}</label>
                       <input
-                        v-if="currentElement && currentElement.box"
-                        v-model.number="currentElement.box.bottomPadding"
+                        v-if="currentElement"
+                        :value="currentElement.box?.bottomPadding ?? ''"
+                        @input="handleSideMarginInput('bottom', $event)"
                         type="number"
+                        min="0"
                         class="small-input"
                       />
                     </div>
                     <div class="form-group compact">
                       <label>{{ t("properties.rightMargin") }}</label>
                       <input
-                        v-if="currentElement && currentElement.box"
-                        v-model.number="currentElement.box.rightPadding"
+                        v-if="currentElement"
+                        :value="currentElement.box?.rightPadding ?? ''"
+                        @input="handleSideMarginInput('right', $event)"
                         type="number"
+                        min="0"
                         class="small-input"
                       />
                     </div>
@@ -3147,6 +3157,85 @@ function setUnifiedBorderColor(value: string) {
   sides.forEach((side) => {
     setSideBorderColor(side, value);
   });
+  emit("update-jrxml");
+}
+
+// Handle Global Margin input: sets all four sides and global padding
+function handleGlobalMarginInput(event: Event) {
+  if (!currentElement.value) return;
+  if (!currentElement.value.box) {
+    currentElement.value.box = {};
+  }
+  const input = event.target as HTMLInputElement;
+  const rawVal = input.value;
+  emit("save-state");
+
+  if (rawVal === "" || rawVal === undefined || rawVal === null) {
+    currentElement.value.box.padding = undefined;
+    currentElement.value.box.topPadding = undefined;
+    currentElement.value.box.bottomPadding = undefined;
+    currentElement.value.box.leftPadding = undefined;
+    currentElement.value.box.rightPadding = undefined;
+  } else {
+    const num = Math.max(0, parseFloat(rawVal) || 0);
+    currentElement.value.box.padding = num;
+    currentElement.value.box.topPadding = num;
+    currentElement.value.box.bottomPadding = num;
+    currentElement.value.box.leftPadding = num;
+    currentElement.value.box.rightPadding = num;
+  }
+  emit("update-jrxml");
+}
+
+// Handle individual side margin input: resets global padding and sets specific side
+function handleSideMarginInput(
+  side: "top" | "left" | "bottom" | "right",
+  event: Event,
+) {
+  if (!currentElement.value) return;
+  if (!currentElement.value.box) {
+    currentElement.value.box = {};
+  }
+  const box = currentElement.value.box;
+  const input = event.target as HTMLInputElement;
+  const rawVal = input.value;
+  emit("save-state");
+
+  // If individual margins weren't explicitly initialized yet but global padding was set,
+  // seed the other sides with the current global value before diverging.
+  const prevGlobal =
+    box.padding !== undefined && box.padding !== "" && !isNaN(Number(box.padding))
+      ? Number(box.padding)
+      : undefined;
+
+  if (prevGlobal !== undefined) {
+    if (box.topPadding === undefined || box.topPadding === "") box.topPadding = prevGlobal;
+    if (box.leftPadding === undefined || box.leftPadding === "") box.leftPadding = prevGlobal;
+    if (box.bottomPadding === undefined || box.bottomPadding === "") box.bottomPadding = prevGlobal;
+    if (box.rightPadding === undefined || box.rightPadding === "") box.rightPadding = prevGlobal;
+  }
+
+  // Reset global margin value so it doesn't conflict or falsely indicate all sides are equal
+  box.padding = undefined;
+
+  const key = `${side}Padding` as "topPadding" | "leftPadding" | "bottomPadding" | "rightPadding";
+  if (rawVal === "" || rawVal === undefined || rawVal === null) {
+    box[key] = undefined;
+  } else {
+    box[key] = Math.max(0, parseFloat(rawVal) || 0);
+  }
+
+  // If all four sides happen to be defined and equal, synchronize global margin
+  if (
+    box.topPadding !== undefined &&
+    box.topPadding !== "" &&
+    box.topPadding === box.bottomPadding &&
+    box.topPadding === box.leftPadding &&
+    box.topPadding === box.rightPadding
+  ) {
+    box.padding = box.topPadding;
+  }
+
   emit("update-jrxml");
 }
 

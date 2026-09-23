@@ -5465,8 +5465,12 @@ const autoFitElementHeight = (
   const neededHeight = calculateTextElementHeight(element as any);
   if (neededHeight > 0) {
     saveStateToHistory();
-    element.height = neededHeight;
+    element.height = Math.max(element.height || 0, neededHeight);
+    if (parentFrameIndex === undefined && element.y + element.height > band.height) {
+      band.height = element.y + element.height;
+    }
     updateJRXML();
+    ensureBandsFitPage();
   }
 };
 

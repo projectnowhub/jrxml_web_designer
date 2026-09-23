@@ -68,6 +68,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { DesignElement, SelectedElementInfo } from '../../types';
+import { getElementBoxPadding } from '../../utils/elementUtils';
 
 // Props
 const props = defineProps<{
@@ -175,10 +176,10 @@ const elementStyle = computed(() => {
     height: `${props.element.height}px`,
     backgroundColor: (props.element.mode === 'Opaque' && props.element.backcolor) ? props.element.backcolor : 'transparent',
     color: props.element.type !== 'table' ? props.element.forecolor : undefined,
-    paddingTop: props.element.box?.topPadding ? `${props.element.box.topPadding}px` : (props.element.box?.padding ? `${props.element.box.padding}px` : undefined),
-    paddingLeft: props.element.box?.leftPadding ? `${props.element.box.leftPadding}px` : (props.element.box?.padding ? `${props.element.box.padding}px` : undefined),
-    paddingBottom: props.element.box?.bottomPadding ? `${props.element.box.bottomPadding}px` : (props.element.box?.padding ? `${props.element.box.padding}px` : undefined),
-    paddingRight: props.element.box?.rightPadding ? `${props.element.box.rightPadding}px` : (props.element.box?.padding ? `${props.element.box.padding}px` : undefined),
+    paddingTop: `${getElementBoxPadding(props.element.box).top}px`,
+    paddingLeft: `${getElementBoxPadding(props.element.box).left}px`,
+    paddingBottom: `${getElementBoxPadding(props.element.box).bottom}px`,
+    paddingRight: `${getElementBoxPadding(props.element.box).right}px`,
     borderTop: calculateBorder('top'),
     borderLeft: calculateBorder('left'),
     borderBottom: calculateBorder('bottom'),
