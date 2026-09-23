@@ -1,7 +1,8 @@
 <template>
   <div class="pdf-designer">
     <div class="designer-header">
-      <div class="header-left">
+      <div class="header-left header-workflow">
+        <!-- 1. Logo & App Name (Option C) -->
         <div class="brand-wrap">
           <div class="brand-img">
             <img src="/assets/cdp-logo.png" alt="ProjectNow CDP" />
@@ -11,63 +12,23 @@
             <span class="brand-badge">REPORT STUDIO</span>
           </div>
         </div>
-        <div class="header-undo-redo">
-          <n-button
-            @click="undo"
-            type="default"
-            quaternary
-            circle
-            :title="t('actions.undo')"
-          >
-            <Undo2 :size="16" :stroke-width="2" aria-hidden="true" />
-          </n-button>
-          <n-button
-            @click="redo"
-            type="default"
-            quaternary
-            circle
-            :title="t('actions.redo')"
-          >
-            <Redo2 :size="16" :stroke-width="2" aria-hidden="true" />
-          </n-button>
-        </div>
-        <div class="header-toolbar-ops">
-          <span class="toolbar-divider"></span>
-          <button class="toolbar-btn" @click="deleteElement" title="Delete">
-            <Trash2 :size="16" :stroke-width="2" aria-hidden="true" />
-          </button>
-          <button class="toolbar-btn" @click="copyElement" title="Copy">
-            <Copy :size="16" :stroke-width="2" aria-hidden="true" />
-          </button>
-          <button class="toolbar-btn" @click="pasteElement" title="Paste">
-            <ClipboardPaste :size="16" :stroke-width="2" aria-hidden="true" />
-          </button>
-          <span class="toolbar-divider"></span>
-          <button
-            class="toolbar-btn"
-            @click="addNewPage"
-            title="Add New Page"
-            style="
-              width: auto;
-              padding: 0 8px;
-              gap: 4px;
-              display: inline-flex;
-              align-items: center;
-            "
-          >
-            <FilePlus :size="16" :stroke-width="2" aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-      <div class="header-actions">
-        <!-- Zoom controls -->
-        <ZoomControls
-          :zoom-level="zoomLevel"
-          :paper-width="reportProperties.pageWidth"
-          @update:zoomLevel="setZoomLevel($event)"
-        />
 
-        <!-- File manager component -->
+        <!-- 2. File Name (Inline Editable Google Docs Style) -->
+        <div class="document-title-wrap">
+          <input
+            v-model="headerFileName"
+            class="document-title-input"
+            @focus="isTitleEditing = true"
+            @blur="handleHeaderTitleCommit"
+            @keydown.enter.prevent="onTitleEnter"
+            placeholder="Untitled Report"
+            :title="t('fileManager.renameFile') || 'Click to rename report'"
+          />
+        </div>
+
+        <span class="toolbar-divider"></span>
+
+        <!-- 3. File Manager -->
         <FileManager
           :current-file-name="currentFileName"
           :current-file-id="currentFileId"
@@ -79,7 +40,65 @@
           @update:currentFileId="currentFileId = $event"
         />
 
-        <n-button @click="toggleBottomPanel" type="default">
+        <span class="toolbar-divider"></span>
+
+        <!-- 4. Undo / Redo -->
+        <div class="header-undo-redo">
+          <n-button
+            @click="undo"
+            type="default"
+            quaternary
+            circle
+            :title="t('actions.undo') + ' (Ctrl+Z)'"
+          >
+            <Undo2 :size="16" :stroke-width="2" aria-hidden="true" />
+          </n-button>
+          <n-button
+            @click="redo"
+            type="default"
+            quaternary
+            circle
+            :title="t('actions.redo') + ' (Ctrl+Y)'"
+          >
+            <Redo2 :size="16" :stroke-width="2" aria-hidden="true" />
+          </n-button>
+        </div>
+
+        <span class="toolbar-divider"></span>
+
+        <!-- 5. Delete, Copy, Paste, Add Page -->
+        <div class="header-toolbar-ops">
+           <button
+            class="toolbar-btn add-page-btn"
+            @click="addNewPage"
+            title="Add New Page"
+          >
+            <FilePlus :size="16" :stroke-width="2" aria-hidden="true" />
+          </button>
+          <button class="toolbar-btn" @click="deleteElement" :title="t('actions.delete') || 'Delete'">
+            <Trash2 :size="16" :stroke-width="2" aria-hidden="true" />
+          </button>
+          <button class="toolbar-btn" @click="copyElement" :title="t('actions.copy') || 'Copy'">
+            <Copy :size="16" :stroke-width="2" aria-hidden="true" />
+          </button>
+          <button class="toolbar-btn" @click="pasteElement" :title="t('actions.paste') || 'Paste'">
+            <ClipboardPaste :size="16" :stroke-width="2" aria-hidden="true" />
+          </button>
+        </div>
+
+        <span class="toolbar-divider"></span>
+
+        <!-- 6. Zoom controls -->
+        <ZoomControls
+          :zoom-level="zoomLevel"
+          :paper-width="reportProperties.pageWidth"
+          @update:zoomLevel="setZoomLevel($event)"
+        />
+
+        <span class="toolbar-divider"></span>
+
+        <!-- 7. Show Bottom Panel -->
+        <n-button @click="toggleBottomPanel" type="default" size="small" class="bottom-panel-btn">
           {{
             showBottomPanel
               ? t("actions.hideBottomPanel")
@@ -87,7 +106,9 @@
           }}
         </n-button>
 
-        <!-- Snap controls -->
+        <span class="toolbar-divider"></span>
+
+        <!-- 8. Snap controls -->
         <div class="snap-controls-header">
           <n-checkbox
             :checked="enableSnapToGrid"
@@ -114,7 +135,11 @@
             {{ t("actions.showGrid") }}
           </n-checkbox>
         </div>
+        <span class="toolbar-divider"></span>
+      </div>
 
+      <div class="header-actions">
+        <!-- 9. Preview PDF -->
         <SplitButton
           :actions="[
             {
@@ -134,9 +159,8 @@
             },
           ]"
         />
-        <!-- <n-button @click="showHelp = true" type="default">{{ t('actions.help') }}</n-button> -->
-        <!-- <LanguageSwitcher /> -->
 
+        <!-- 10. My Act -->
         <div class="my-act-menu">
           <n-button type="default" @click="showMyActMenu = !showMyActMenu">
             My Act
@@ -832,9 +856,37 @@ const {
   findFileById,
   saveCurrentFileContent,
   setLastFile,
+  renameFile,
 } = useDesignerFiles({
   defaultFileName: t("fileManager.untitledReport"),
 });
+
+// Editable document title in header (Google Docs style)
+const headerFileName = ref(currentFileName.value);
+const isTitleEditing = ref(false);
+
+watch(currentFileName, (newVal) => {
+  if (newVal !== headerFileName.value) {
+    headerFileName.value = newVal;
+  }
+});
+
+function handleHeaderTitleCommit() {
+  isTitleEditing.value = false;
+  const trimmed = headerFileName.value.trim();
+  if (!trimmed) {
+    headerFileName.value = currentFileName.value || t("fileManager.untitledReport");
+    return;
+  }
+  if (currentFileId.value) {
+    renameFile(currentFileId.value, trimmed);
+  }
+  currentFileName.value = trimmed;
+}
+
+function onTitleEnter(e: Event) {
+  (e.target as HTMLInputElement)?.blur();
+}
 
 // Update the page title
 watch(
@@ -6327,43 +6379,43 @@ const handleBandSelectionChange = (): void => {
 .brand-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  padding: 3px 6px;
+  flex-shrink: 0;
 }
 
 .brand-img img {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   filter: drop-shadow(0 2px 8px rgba(124, 92, 247, 0.2));
+  border-radius: 4px;
 }
 .brand-name {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   line-height: 1;
   min-width: 0;
 }
 .brand-text {
   color: #1c1b26;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 .brand-badge {
   display: inline-flex;
   align-self: flex-start;
-  padding: 2px 6px;
+  padding: 1.5px 5px;
   border: 1px solid rgba(124, 92, 247, 0.28);
   border-radius: 4px;
   color: #6440f4;
   background: rgba(124, 92, 247, 0.14);
-  font-size: 8.5px;
+  font-size: 8px;
   font-weight: 800;
-  letter-spacing: 0.1em;
-}
-@media (max-width: 1023px) {
-  .brand-badge {
-    display: none;
-  }
+  letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
 .my-act-menu {
@@ -6519,45 +6571,96 @@ const handleBandSelectionChange = (): void => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 1rem;
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #ddd;
-  height: 60px;
+  padding: 0 14px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  height: 56px;
   flex-shrink: 0;
+  gap: 12px;
 }
 
 .designer-header h1 {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
 }
 
-.header-left {
+.header-left.header-workflow {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.header-left.header-workflow::-webkit-scrollbar {
+  display: none;
+}
+
+/* Google Docs style editable document title */
+.document-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.document-title-input {
+  font-size: 15px;
+  font-weight: 500;
+  color: #111827;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  outline: none;
+  min-width: 120px;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  border-color: #d1d5db;
+  background-color: #f9fafb;
+}
+
+.document-title-input:focus {
+  border-color: #2563eb;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
 }
 
 .header-undo-redo {
   display: flex;
   gap: 2px;
   align-items: center;
+  flex-shrink: 0;
+}
+
+.bottom-panel-btn {
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .header-actions {
   display: flex;
-  gap: 6px;
+  gap: 10px;
   align-items: center;
+  flex: 1 1 auto;
+  justify-content: flex-end;
 }
 
 .snap-controls-header {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  padding: 0 8px;
-  border-left: 1px solid #ddd;
-  border-right: 1px solid #ddd;
-  margin: 0 4px;
+  padding: 0 4px;
+  flex-shrink: 0;
 }
 
 .designer-layout {
@@ -6662,14 +6765,15 @@ const handleBandSelectionChange = (): void => {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-left: 12px;
+  flex-shrink: 0;
 }
 
 .toolbar-divider {
   width: 1px;
   height: 20px;
-  background: var(--prop-divider-color, #f0f0f0);
-  margin: 0 4px;
+  background: #e5e7eb;
+  margin: 0 2px;
+  flex-shrink: 0;
 }
 
 .toolbar-btn {
@@ -6683,10 +6787,18 @@ const handleBandSelectionChange = (): void => {
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  transition: background-color 0.1s;
+  color: #4b5563;
+  transition: all 0.15s ease;
 }
 
 .toolbar-btn:hover {
-  background-color: var(--prop-bg-hover, #f0f0f0);
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.toolbar-btn.add-page-btn {
+  width: auto;
+  padding: 0 6px;
+  gap: 4px;
 }
 </style>
