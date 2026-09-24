@@ -2754,6 +2754,63 @@ const selectElementsInRect = (rect: {
 let cachedMouseMoveHandler: ((e: MouseEvent) => void) | null = null;
 let cachedMouseUpHandler: ((e: MouseEvent) => void) | null = null;
 
+// Detect target band and sheet under coordinates (combines elementFromPoint with geometric fallback)
+const getTargetBandAndSheetUnderPoint = (clientX: number, clientY: number) => {
+  const elUnderPoint = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+  let bandUnderMouse = elUnderPoint?.closest(".band") as HTMLElement | null;
+  let sheetUnderMouse = (elUnderPoint?.closest(".page-sheet") ||
+    bandUnderMouse?.closest(".page-sheet")) as HTMLElement | null;
+
+  // Geometric fallback when elementFromPoint hits an element instead of band surface
+  if (!bandUnderMouse) {
+    const sheets = Array.from(document.querySelectorAll<HTMLElement>(".page-sheet"));
+    let targetSheet: HTMLElement | null = null;
+    for (const sheet of sheets) {
+      const rect = sheet.getBoundingClientRect();
+      if (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+      ) {
+        targetSheet = sheet;
+        break;
+      }
+    }
+    if (!targetSheet && sheets.length > 0) {
+      targetSheet =
+        sheets.find((sheet) => {
+          const rect = sheet.getBoundingClientRect();
+          return clientY >= rect.top && clientY <= rect.bottom;
+        }) ?? sheets[0] ?? null;
+    }
+    sheetUnderMouse = targetSheet;
+
+    if (sheetUnderMouse) {
+      const bandEls = Array.from(sheetUnderMouse.querySelectorAll<HTMLElement>(".band"));
+      for (const bandEl of bandEls) {
+        const rect = bandEl.getBoundingClientRect();
+        if (clientY >= rect.top && clientY <= rect.bottom) {
+          bandUnderMouse = bandEl;
+          break;
+        }
+      }
+      if (!bandUnderMouse && bandEls.length > 0) {
+        const firstEl = bandEls[0];
+        const lastEl = bandEls[bandEls.length - 1];
+        if (firstEl && lastEl) {
+          const firstRect = firstEl.getBoundingClientRect();
+          const lastRect = lastEl.getBoundingClientRect();
+          if (clientY < firstRect.top) bandUnderMouse = firstEl;
+          else if (clientY > lastRect.bottom) bandUnderMouse = lastEl;
+        }
+      }
+    }
+  }
+
+  return { bandUnderMouse, sheetUnderMouse };
+};
+
 // Start dragging an element
 const startDragging = (
   event: MouseEvent,
@@ -2892,16 +2949,33 @@ const startDragging = (
               clearAlignmentLines();
             }
 
-            // Fast target band detection using elementFromPoint
-            const elUnderPoint = document.elementFromPoint(
-              e.clientX,
-              e.clientY,
+            // Calculate reference client Y for target band detection:
+            // If the element's origin (newY) is still within the current band [0, currentBand.height),
+            // keep the current band as target so tall elements don't get misattributed to neighbor bands.
+            let checkClientY = e.clientY;
+            const sourceSheet =
+              document.querySelector(
+                `.page-sheet[data-page-index="${draggingInfo.value.sourcePageIndex}"]`,
+              ) ||
+              document.querySelector(".page-sheet") ||
+              document.querySelector(".paper");
+            const sourceBandEl = sourceSheet?.querySelector(
+              `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
             ) as HTMLElement | null;
-            const bandUnderMouse = elUnderPoint?.closest(
-              ".band",
-            ) as HTMLElement | null;
-            const sheetUnderMouse = (elUnderPoint?.closest(".page-sheet") ||
-              bandUnderMouse?.closest(".page-sheet")) as HTMLElement | null;
+
+            if (sourceBandEl && draggingInfo.value.parentFrameIndex === undefined) {
+              const sourceRect = sourceBandEl.getBoundingClientRect();
+              const bandH = currentBand.height || 20;
+              if (newY >= 0 && newY < bandH) {
+                checkClientY = sourceRect.top + Math.min(newY * currentZoom + 5, Math.max(5, sourceRect.height - 5));
+              } else {
+                checkClientY = sourceRect.top + newY * currentZoom + 5;
+              }
+            }
+
+            // Target band and sheet detection
+            const { bandUnderMouse, sheetUnderMouse } =
+              getTargetBandAndSheetUnderPoint(e.clientX, checkClientY);
 
             let targetBandIndex = draggingInfo.value.bandIndex;
             if (
@@ -3003,16 +3077,34 @@ const startDragging = (
           }
 
           if (currentBand && currentElement) {
+            // Calculate reference client Y for target band detection:
+            // Use the element's actual origin to prevent misattributing tall elements
+            const currentZoom = zoomLevel.value;
+            let checkClientY = e.clientY;
+            const originSheet =
+              document.querySelector(
+                `.page-sheet[data-page-index="${draggingInfo.value.sourcePageIndex}"]`,
+              ) ||
+              document.querySelector(".page-sheet") ||
+              document.querySelector(".paper");
+            const originBandEl = originSheet?.querySelector(
+              `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
+            ) as HTMLElement | null;
+
+            if (originBandEl && draggingInfo.value.parentFrameIndex === undefined) {
+              const sourceRect = originBandEl.getBoundingClientRect();
+              const bandH = currentBand.height || 20;
+              const elY = currentElement.y;
+              if (elY >= 0 && elY < bandH) {
+                checkClientY = sourceRect.top + Math.min(elY * currentZoom + 5, Math.max(5, sourceRect.height - 5));
+              } else {
+                checkClientY = sourceRect.top + elY * currentZoom + 5;
+              }
+            }
+
             // Target band and sheet identification
-            const elUnderPoint = document.elementFromPoint(
-              e.clientX,
-              e.clientY,
-            ) as HTMLElement | null;
-            const bandUnderMouse = elUnderPoint?.closest(
-              ".band",
-            ) as HTMLElement | null;
-            const sheetUnderMouse = (elUnderPoint?.closest(".page-sheet") ||
-              bandUnderMouse?.closest(".page-sheet")) as HTMLElement | null;
+            const { bandUnderMouse, sheetUnderMouse } =
+              getTargetBandAndSheetUnderPoint(e.clientX, checkClientY);
 
             let targetBandIndex =
               draggingInfo.value.lastTargetBandIndex ??
@@ -3059,7 +3151,6 @@ const startDragging = (
 
             // Coordinate conversion between source band and target band/sheet
             const sourcePageIndex = draggingInfo.value.sourcePageIndex ?? 0;
-            const currentZoom = zoomLevel.value;
 
             const sourceSheetEl =
               document.querySelector(
@@ -4041,12 +4132,15 @@ const moveElementByKeyboard = (direction: string) => {
     case "ArrowUp":
       newY = Math.max(0, currentElement.y - MOVE_STEP);
       break;
-    case "ArrowDown":
-      newY = Math.min(
-        currentBand.height - currentElement.height,
-        currentElement.y + MOVE_STEP,
-      );
+    case "ArrowDown": {
+      const maxDown = currentBand.height - currentElement.height;
+      if (maxDown > 0) {
+        newY = Math.min(maxDown, currentElement.y + MOVE_STEP);
+      } else {
+        newY = currentElement.y + MOVE_STEP;
+      }
       break;
+    }
     case "ArrowLeft":
       newX = Math.max(0, currentElement.x - MOVE_STEP);
       break;
@@ -5614,12 +5708,66 @@ const autoFitElementHeight = (
   const neededHeight = calculateTextElementHeight(element as any);
   if (neededHeight > 0) {
     saveStateToHistory();
+
+    const currentBandType = band.type;
+    const isDetail = currentBandType === BAND_TYPE_CONSTANTS.DETAIL;
+    const bandLimitsConfig =
+      reportProperties.value?.bandLimits?.[currentBandType] ||
+      getEffectiveDefaultBandLimits()[currentBandType] ||
+      { min: 20, max: 70 };
+    const maxHeight =
+      typeof bandLimitsConfig.max === "number" ? bandLimitsConfig.max : 70;
+
+    // Available space in printable area
+    const topMargin = reportProperties.value?.topMargin || 0;
+    const bottomMargin = reportProperties.value?.bottomMargin || 0;
+    const availableHeight = paperHeight.value - topMargin - bottomMargin;
+    const detailIndex = bands.value.findIndex(
+      (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+    );
+    let otherBandsHeight = 0;
+    bands.value.forEach((b, i) => {
+      if (
+        i !== bandIndex &&
+        i !== detailIndex &&
+        b.type !== BAND_TYPE_CONSTANTS.BACKGROUND
+      ) {
+        otherBandsHeight += b.height || 0;
+      }
+    });
+    const detailMinHeight = BAND_CONSTANTS.MIN_HEIGHT || 20;
+    const maxPossibleHeight = Math.max(
+      band.height || 20,
+      availableHeight - otherBandsHeight - detailMinHeight,
+    );
+    const effectiveMax = isDetail
+      ? maxPossibleHeight
+      : Math.min(maxHeight, maxPossibleHeight);
+
     element.height = Math.max(element.height || 0, neededHeight);
-    if (parentFrameIndex === undefined && element.y + element.height > band.height) {
-      band.height = element.y + element.height;
+
+    if (parentFrameIndex === undefined) {
+      const desiredBandHeight = (element.y || 0) + element.height;
+      if (desiredBandHeight <= effectiveMax) {
+        // Fits within band maximum: expand band to enclose the content cleanly
+        if (desiredBandHeight > band.height) {
+          band.height = desiredBandHeight;
+        }
+      } else {
+        // Exceeds band maximum: cap band height at effectiveMax and warn user
+        if (band.height < effectiveMax) {
+          band.height = effectiveMax;
+        }
+        const bandDisplayName = getBandDisplayName(currentBandType);
+        notification.info(
+          `${bandDisplayName} reached its maximum height limit (${effectiveMax}px). Long text exceeds this band. You can reduce font size, enable 'Shrink font size to fit', or move the content to the Detail band.`,
+        );
+      }
     }
+
     updateJRXML();
     ensureBandsFitPage();
+    updateOutOfBoundsElements();
   }
 };
 

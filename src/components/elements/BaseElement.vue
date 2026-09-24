@@ -3,7 +3,8 @@
     class="design-element"
     :class="{ 
       'selected': isSelected,
-      'out-of-bounds': isOutOfBounds
+      'out-of-bounds': isOutOfBounds,
+      'is-dragging': isDragging
     }"
     @click.stop="handleSelect"
     :style="elementStyle"
@@ -368,10 +369,8 @@ const handleMouseDown = (event: MouseEvent) => {
     const deltaX = Math.abs(moveEvent.clientX - startX);
     const deltaY = Math.abs(moveEvent.clientY - startY);
 
-    // Only allow dragging once the mouse has been held down for more than 100ms
-    const elapsed = Date.now() - startTime;
-
-    if (elapsed > 100 && (deltaX > 5 || deltaY > 5)) {
+    // Start dragging smoothly once moved beyond 3px threshold
+    if (deltaX > 3 || deltaY > 3) {
       if (!isDragging) {
         isDragging = true;
         // Emit the drag start event
@@ -429,7 +428,7 @@ const handleDoubleClick = () => {
   cursor: move;
   position: relative;
   box-sizing: border-box;
-  z-index: 1;
+  z-index: 10;
   /* Add a small click-area extension to improve selection accuracy */
   transform-origin: center;
   transition: outline 0.1s ease;
@@ -439,11 +438,8 @@ const handleDoubleClick = () => {
   white-space: pre-wrap;
 }
 
-.design-element.selected {
-  outline: 2px solid #1890ff;
-  outline-offset: -1px;
-  /* Raise the z-index of the selected element to ensure correct interaction */
-  z-index: 10;
+.design-element:hover {
+  z-index: 35;
 }
 
 .design-element.out-of-bounds {
@@ -452,12 +448,25 @@ const handleDoubleClick = () => {
   outline-offset: -1px;
   background-color: rgba(255, 77, 79, 0.1);
   box-shadow: 0 0 5px rgba(255, 77, 79, 0.5);
+  z-index: 40;
+}
+
+.design-element.selected {
+  outline: 2px solid #1890ff;
+  outline-offset: -1px;
+  /* Raise the z-index of the selected element to ensure correct interaction */
+  z-index: 50;
+}
+
+.design-element.is-dragging {
+  pointer-events: none;
+  z-index: 100;
 }
 
 .resize-handle {
   position: absolute;
   background-color: #1890ff;
-  z-index: 20;
+  z-index: 60;
   box-sizing: border-box;
   border: 1px solid #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);

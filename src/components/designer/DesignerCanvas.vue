@@ -1258,7 +1258,6 @@ onBeforeUnmount(() => {
 
 .band:hover {
   background-color: rgba(240, 240, 255, 0.8);
-  z-index: 5;
 }
 
 .band.dragging-target {
@@ -1296,7 +1295,6 @@ onBeforeUnmount(() => {
 .band-content {
   position: relative;
   min-height: 0;
-  z-index: 1;
 }
 
 .band-resize-handle {
@@ -1311,14 +1309,14 @@ onBeforeUnmount(() => {
   transition:
     opacity 0.2s ease,
     background-color 0.2s ease;
-  z-index: 25;
+  z-index: 2;
 }
 
 .band:hover .band-resize-handle,
 .band-resize-handle:hover {
   opacity: 1;
   background-color: rgba(74, 144, 226, 0.95);
-  z-index: 30;
+  z-index: 4;
 }
 
 /* Bottom bands: handle is located at the TOP edge so dragging up expands the band */
@@ -1381,6 +1379,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   min-height: 60px;
+  pointer-events: none;
 }
 
 .empty-state-text {
