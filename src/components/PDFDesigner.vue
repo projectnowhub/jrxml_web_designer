@@ -711,7 +711,6 @@ import {
   BAND_CONSTANTS,
   BAND_HEIGHT_CONSTANTS,
   BAND_TYPE_CONSTANTS,
-  DEFAULT_BAND_LIMITS,
   getEffectiveDefaultBandLimits,
   getEffectiveDefaultBandConfig,
   ELEMENT_CONSTANTS,
@@ -753,8 +752,8 @@ import {
 import { syncTableColumns } from "../utils/table/ColumnTreeSync";
 
 // Import the default JRXML example file
-import defaultJrxmlContent from "../../tests/build_by_jasper_studio_jrxml/grouped_header_column_table_example.jrxml?raw";
 import { logout } from "../services/authService";
+import { PDF_PREVIEW_API } from "@/config/apiConfig.ts";
 
 const { t, locale } = useI18n();
 
@@ -5495,7 +5494,7 @@ const showPdfPreview = ref(false);
 const showPreviewServerSettings = ref(false);
 const previewServerUrl = ref(
   localStorage.getItem("previewServerUrl") ||
-    "https://preview.report.projectnowcdp.com/api/pdf/generateForm",
+  `${PDF_PREVIEW_API}/api/pdf/generateForm`,
 );
 
 // Field management related state
