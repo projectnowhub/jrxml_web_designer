@@ -1265,7 +1265,7 @@ onBeforeUnmount(() => {
   <PdfPreviewModal
     :visible="showPdfPreview"
     :jrxml-content="localJrxmlContent"
-    :preview-server-url="props.previewServerUrl"
+    :preview-server-url="props.previewServerUrl || ''"
     @update:visible="showPdfPreview = $event"
   />
 </template>

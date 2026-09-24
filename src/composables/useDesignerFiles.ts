@@ -22,6 +22,9 @@ function normalizeContent(content: unknown): string {
   return JSON.stringify(content);
 }
 
+const sharedFiles = ref<DesignerFile[]>([]);
+let isFilesLoaded = false;
+
 export function useDesignerFiles(options?: {
   currentFileName?: Ref<string>;
   currentFileId?: Ref<string | null>;
@@ -29,19 +32,22 @@ export function useDesignerFiles(options?: {
 }) {
   const currentFileName = options?.currentFileName ?? ref(options?.defaultFileName ?? 'Untitled Report');
   const currentFileId = options?.currentFileId ?? ref<string | null>(null);
-  const files = ref<DesignerFile[]>([]);
+  const files = sharedFiles;
 
   function loadFilesFromStorage() {
     try {
       const storedFiles = localStorage.getItem(STORAGE_KEYS.FILES);
       if (!storedFiles) {
         files.value = [];
+        isFilesLoaded = true;
         return;
       }
       const parsedFiles = JSON.parse(storedFiles) as DesignerFile[];
       files.value = parsedFiles.map(parseFileDates);
+      isFilesLoaded = true;
     } catch {
       files.value = [];
+      isFilesLoaded = true;
     }
   }
 
@@ -92,6 +98,9 @@ export function useDesignerFiles(options?: {
   }
 
   function saveCurrentFileContent(content: unknown) {
+    if (!sharedFiles.value.length && !isFilesLoaded) {
+      loadFilesFromStorage();
+    }
     const timestamp = Date.now();
     const id = currentFileId.value || `file_${timestamp}`;
     currentFileId.value = id;

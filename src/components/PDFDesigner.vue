@@ -13,7 +13,7 @@
           </div>
         </div>
 
-        <!-- 2. File Name (Inline Editable Google Docs Style) -->
+        <!-- 2. File Name (Inline Editable Google Docs Style) & Auto-save Status -->
         <div class="document-title-wrap">
           <input
             v-model="headerFileName"
@@ -24,6 +24,21 @@
             placeholder="Untitled Report"
             :title="t('fileManager.renameFile') || 'Click to rename report'"
           />
+          <div class="auto-save-badge" :title="saveStatusTitle">
+            <span v-if="saveStatus === 'saving'" class="save-status-text saving">
+              <span class="save-spinner"></span>
+              Saving...
+            </span>
+            <span v-else-if="saveStatus === 'error'" class="save-status-text error">
+              Save failed
+            </span>
+            <span v-else class="save-status-text saved">
+              <svg class="saved-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Saved
+            </span>
+          </div>
         </div>
 
         <span class="toolbar-divider"></span>
@@ -34,8 +49,6 @@
           :current-file-id="currentFileId"
           @create-new-file="createNewFile"
           @load-file="loadFile"
-          @save-current-file="saveCurrentFileToStorage"
-          @save-as-file="saveAsLocalFile"
           @update:currentFileName="currentFileName = $event"
           @update:currentFileId="currentFileId = $event"
         />
@@ -883,6 +896,49 @@ function handleHeaderTitleCommit() {
     renameFile(currentFileId.value, trimmed);
   }
   currentFileName.value = trimmed;
+  if (reportProperties.value) {
+    reportProperties.value.name = trimmed;
+  }
+  scheduleAutoSave(true);
+}
+
+// Auto-save state and helpers
+const saveStatus = ref<"saved" | "saving" | "error">("saved");
+const isLoadingFile = ref(false);
+let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+const saveStatusTitle = computed(() => {
+  if (saveStatus.value === "saving") return "Saving changes...";
+  if (saveStatus.value === "error") return "Auto-save failed";
+  return "Auto-save compulsory: All changes saved automatically";
+});
+
+function flushAutoSave(): boolean {
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = null;
+  }
+  return saveCurrentFileToStorage(false);
+}
+
+function scheduleAutoSave(immediate = false) {
+  if (isLoadingFile.value) return;
+
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = null;
+  }
+
+  saveStatus.value = "saving";
+
+  if (immediate) {
+    saveCurrentFileToStorage(false);
+  } else {
+    autoSaveTimer = setTimeout(() => {
+      saveCurrentFileToStorage(false);
+      autoSaveTimer = null;
+    }, 400);
+  }
 }
 
 function onTitleEnter(e: Event) {
@@ -915,6 +971,9 @@ const handleSignOut = () => {
 };
 
 function createNewFile() {
+  flushAutoSave();
+  isLoadingFile.value = true;
+
   // Logic for creating a new file
   const timestamp = new Date().getTime();
   currentFileName.value = `${t("fileManager.untitledReport")}${timestamp}`;
@@ -1008,26 +1067,64 @@ function createNewFile() {
   reportFields.value = [];
   reportParameters.value = [];
   subDatasets.value = [];
+  reportVariables.value = [];
+  reportGroups.value = [];
   jrxmlContent.value = "";
 
   // Clear the currently selected element
   selectedElement.value = null;
   selectedBandIndex.value = null;
+
+  nextTick(() => {
+    isLoadingFile.value = false;
+    updateJRXML();
+    saveCurrentFileToStorage(false);
+  });
 }
 
-function saveCurrentFileToStorage() {
-  const fileData = saveCurrentFile();
+function saveCurrentFileToStorage(showNotification = false): boolean {
+  if (isLoadingFile.value) {
+    return false;
+  }
 
-  const ok = saveCurrentFileContent(fileData);
-  if (ok) {
-    notification.success(t("notifications.fileSavedSuccess"));
-  } else {
-    notification.error(t("notifications.fileSaveFailed"));
+  try {
+    saveStatus.value = "saving";
+
+    if (!currentFileId.value) {
+      currentFileId.value = `file_${Date.now()}`;
+    }
+
+    const fileData = saveCurrentFile();
+    const ok = saveCurrentFileContent(fileData);
+    saveToLocalStorageWrapper();
+
+    if (ok) {
+      saveStatus.value = "saved";
+      if (showNotification) {
+        notification.success(t("notifications.fileSavedSuccess"));
+      }
+    } else {
+      saveStatus.value = "error";
+      if (showNotification) {
+        notification.error(t("notifications.fileSaveFailed"));
+      }
+    }
+    return ok;
+  } catch (error) {
+    console.error("Auto-save error:", error);
+    saveStatus.value = "error";
+    if (showNotification) {
+      notification.error(t("notifications.fileSaveFailed"));
+    }
+    return false;
   }
 }
 
 function loadFile(fileData: DesignerFile | any) {
   try {
+    flushAutoSave();
+    isLoadingFile.value = true;
+
     // Parse the file content
     const fileContent =
       typeof fileData.content === "string"
@@ -1074,13 +1171,25 @@ function loadFile(fileData: DesignerFile | any) {
       subDatasets.value = fileContent.subDatasets;
     }
 
+    if (fileContent.reportVariables) {
+      reportVariables.value = fileContent.reportVariables;
+    }
+
+    if (fileContent.reportGroups) {
+      reportGroups.value = fileContent.reportGroups;
+    }
+
+    if (fileContent.reportStyles) {
+      reportStyles.value = fileContent.reportStyles;
+    }
+
     if (fileContent.jrxmlContent) {
       jrxmlContent.value = fileContent.jrxmlContent;
     }
 
     // Update the current file info
     currentFileName.value = fileData.name || t("fileManager.untitledReport");
-    currentFileId.value = fileData.id || null;
+    currentFileId.value = fileData.id || `file_${Date.now()}`;
     if (fileData.id) {
       setLastFile({ id: fileData.id, name: fileData.name });
     }
@@ -1088,25 +1197,25 @@ function loadFile(fileData: DesignerFile | any) {
     // Clear the currently selected element
     selectedElement.value = null;
     selectedBandIndex.value = null;
+
+    nextTick(() => {
+      isLoadingFile.value = false;
+      updateJRXML();
+      updateOutOfBoundsElements();
+      saveStatus.value = "saved";
+    });
   } catch (error) {
+    isLoadingFile.value = false;
     console.error("Failed to load file:", error);
     notification.error(t("fileManager.invalidFileFormat"));
   }
 }
 
-function saveAsLocalFile() {
-  const newName = prompt(
-    t("fileManager.enterNewFileName"),
-    currentFileName.value,
-  );
-  if (!newName) return;
-  const timestamp = Date.now();
-  currentFileName.value = newName;
-  currentFileId.value = `file_${timestamp}`;
-  saveCurrentFileToStorage();
-}
-
 function saveCurrentFile() {
+  if (!currentFileId.value) {
+    currentFileId.value = `file_${Date.now()}`;
+  }
+
   // Create a deep clone of bands so border properties can be processed
   const processedBands = JSON.parse(JSON.stringify(bands.value));
 
@@ -1145,6 +1254,9 @@ function saveCurrentFile() {
     reportFields: reportFields.value,
     reportParameters: reportParameters.value,
     subDatasets: subDatasets.value,
+    reportVariables: reportVariables.value,
+    reportGroups: reportGroups.value,
+    reportStyles: reportStyles.value,
     jrxmlContent: jrxmlContent.value,
     lastModified: new Date().toISOString(),
   };
@@ -3348,7 +3460,7 @@ const downloadJRXML = () => {
   URL.revokeObjectURL(url);
 
   // Save the data
-  saveToLocalStorageWrapper();
+  flushAutoSave();
 };
 
 // Panel visibility control functions
@@ -3694,7 +3806,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
   // CTRL/CMD+S saves the current file
   if (isCtrlOrMetaPressed && event.key === "s") {
     event.preventDefault();
-    saveCurrentFileToStorage();
+    saveCurrentFileToStorage(true);
     return;
   }
 
@@ -3951,6 +4063,7 @@ const moveElementByKeyboard = (direction: string) => {
 
 // Load data when the component mounts
 onMounted(() => {
+  isLoadingFile.value = true;
   console.log("Component mount started...");
   const hasLocalData = loadFromLocalStorageWrapper();
   console.log("Local data load complete");
@@ -3967,11 +4080,20 @@ onMounted(() => {
     }
   }
 
+  if (!hasFileData) {
+    if (!currentFileId.value) {
+      currentFileId.value = `file_${Date.now()}`;
+    }
+    saveCurrentFileToStorage(false);
+  }
+
   // Update JRXML after the initial load; use setTimeout to ensure all data has finished loading
   setTimeout(() => {
+    isLoadingFile.value = false;
     ensureBandsFitPage();
     console.log("Starting initial JRXML generation...");
     updateJRXML();
+    saveStatus.value = "saved";
   }, 100);
 
   // Initial zoom setup - automatically fit the window
@@ -4004,10 +4126,15 @@ onMounted(() => {
   (window as any).pdfDesignerKeydownListener = handleKeyDown;
   (window as any).pdfDesignerSetFocused = setDesignAreaFocused;
   (window as any).pdfDesignerRemoveFocused = removeDesignAreaFocused;
+
+  window.addEventListener("beforeunload", flushAutoSave);
 });
 
 // Clean up event listeners when the component unmounts
 onUnmounted(() => {
+  flushAutoSave();
+  window.removeEventListener("beforeunload", flushAutoSave);
+
   // Remove the keyboard event listener
   const keydownListener = (window as any).pdfDesignerKeydownListener;
   if (keydownListener) {
@@ -4023,24 +4150,34 @@ onUnmounted(() => {
 
 // Watch for changes to key data, auto-saving and updating JRXML
 watch(
-  [reportProperties, bands, reportFields, reportParameters],
+  [
+    reportProperties,
+    bands,
+    reportFields,
+    reportParameters,
+    subDatasets,
+    reportVariables,
+    reportGroups,
+    reportStyles,
+  ],
   () => {
-    // Only update while not dragging/resizing and not already in the middle of a JRXML update
-    if (!isDraggingOrResizing.value && !isUpdatingJRXML.value) {
-      saveToLocalStorageWrapper();
+    // Only update while not dragging/resizing, not already in JRXML update, and not loading a file
+    if (!isDraggingOrResizing.value && !isUpdatingJRXML.value && !isLoadingFile.value) {
       updateJRXML();
       // Update the out-of-bounds elements
       updateOutOfBoundsElements();
+      scheduleAutoSave(false);
     }
   },
   { deep: true },
 );
 
-// Watch for drag-state changes, updating out-of-bounds elements once dragging ends
+// Watch for drag-state changes, updating out-of-bounds elements and auto-saving once dragging ends
 watch(isDraggingOrResizing, (newValue, oldValue) => {
-  // Update the out-of-bounds elements when transitioning from dragging to not dragging
-  if (oldValue === true && newValue === false) {
+  if (oldValue === true && newValue === false && !isLoadingFile.value) {
+    updateJRXML();
     updateOutOfBoundsElements();
+    scheduleAutoSave(true);
   }
 });
 
@@ -4064,6 +4201,7 @@ const regenerateJRXML = (): void => {
 
 // Open the PDF preview
 const openPdfPreview = (): void => {
+  flushAutoSave();
   try {
     if (!jrxmlContent.value) {
       // Generate the JRXML content directly, without downloading it
@@ -6715,6 +6853,62 @@ const handleBandSelectionChange = (): void => {
   border-color: #2563eb;
   background-color: #ffffff;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+.auto-save-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  font-size: 11px;
+  user-select: none;
+}
+
+.save-status-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.save-status-text.saved {
+  color: #16a34a;
+  background-color: rgba(22, 163, 74, 0.1);
+}
+
+.save-status-text.saving {
+  color: #d97706;
+  background-color: rgba(217, 119, 6, 0.1);
+}
+
+.save-status-text.error {
+  color: #dc2626;
+  background-color: rgba(220, 38, 38, 0.1);
+}
+
+.saved-icon {
+  flex-shrink: 0;
+}
+
+.save-spinner {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid rgba(217, 119, 6, 0.3);
+  border-top-color: #d97706;
+  border-radius: 50%;
+  animation: save-spin 0.8s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@keyframes save-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .header-undo-redo {
