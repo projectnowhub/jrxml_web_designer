@@ -107,6 +107,44 @@ export const ELEMENT_CONSTANTS = {
   MIN_HEIGHT: 10,
 };
 
+// Compact default sizes used when a new element is added to a band.
+// Keeping new elements small avoids stretching them across the whole band.
+export const ELEMENT_DEFAULT_SIZES: Record<
+  string,
+  { width: number; height: number }
+> = {
+  [ELEMENT_TYPE_CONSTANTS.STATIC_TEXT]: { width: 100, height: 20 },
+  [ELEMENT_TYPE_CONSTANTS.TEXT_FIELD]: { width: 100, height: 20 },
+  [ELEMENT_TYPE_CONSTANTS.IMAGE]: { width: 100, height: 100 },
+  [ELEMENT_TYPE_CONSTANTS.LINE]: { width: 100, height: 2 },
+  [ELEMENT_TYPE_CONSTANTS.RECTANGLE]: { width: 100, height: 60 },
+  [ELEMENT_TYPE_CONSTANTS.ELLIPSE]: { width: 80, height: 60 },
+  [ELEMENT_TYPE_CONSTANTS.FRAME]: { width: 200, height: 100 },
+};
+
+// Resolve the compact default size for an element type. When a band height is
+// provided the height is clamped so a new element never overflows its band.
+export function getDefaultElementSize(
+  type: string,
+  bandHeight?: number,
+): { width: number; height: number } {
+  const size = ELEMENT_DEFAULT_SIZES[type] || {
+    width: UI_CONSTANTS.DEFAULT_ELEMENT_WIDTH,
+    height: UI_CONSTANTS.DEFAULT_ELEMENT_HEIGHT,
+  };
+
+  const result = { ...size };
+  if (
+    typeof bandHeight === "number" &&
+    bandHeight > 0 &&
+    result.height > bandHeight
+  ) {
+    result.height = bandHeight;
+  }
+
+  return result;
+}
+
 // Band type constants
 export const BAND_TYPE_CONSTANTS = {
   PAGE_HEADER: "pageHeader",

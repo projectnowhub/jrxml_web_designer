@@ -1,4 +1,5 @@
 import type { DesignElement } from "../../types";
+import { ELEMENT_DEFAULT_SIZES } from "../../constants/constants";
 
 // Element configuration interface
 export interface ElementConfig {
@@ -76,8 +77,7 @@ export class ElementRegistry {
         type: "image",
         x: 0,
         y: 0,
-        width: 100,
-        height: 100,
+        ...ELEMENT_DEFAULT_SIZES.image,
         imageExpression: "",
         scaleType: "FillFrame",
         hAlign: "Center",
@@ -121,8 +121,7 @@ export class ElementRegistry {
         type: "rectangle",
         x: 0,
         y: 0,
-        width: 100,
-        height: 100,
+        ...ELEMENT_DEFAULT_SIZES.rectangle,
         mode: "Transparent",
         // New properties
         isPrintRepeatedValues: true,
@@ -142,8 +141,7 @@ export class ElementRegistry {
         type: "ellipse",
         x: 0,
         y: 0,
-        width: 100,
-        height: 100,
+        ...ELEMENT_DEFAULT_SIZES.ellipse,
         mode: "Transparent",
         // New properties
         isPrintRepeatedValues: true,

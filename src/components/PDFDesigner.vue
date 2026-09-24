@@ -728,6 +728,7 @@ import {
   getEffectiveDefaultBandConfig,
   ELEMENT_CONSTANTS,
   FONT_CONSTANTS,
+  getDefaultElementSize,
   HISTORY_CONSTANTS,
   KEYBOARD_CONSTANTS,
   PANEL_CONSTANTS,
@@ -2229,9 +2230,12 @@ const handleElementDoubleClick = (element: any) => {
     }
   }
 
-  // For rectangles, ellipses, frames, and images, default the height to half the band's height
+  // For rectangles, ellipses, frames, and images, use a compact default size
+  // instead of stretching the element across the whole band
   if (["rectangle", "ellipse", "frame", "image"].includes(element.type)) {
-    newElement.height = Math.round(targetBand.height / 2);
+    const defaultSize = getDefaultElementSize(element.type, targetBand.height);
+    newElement.width = defaultSize.width;
+    newElement.height = defaultSize.height;
   }
 
   // Ensure the band has an elements array
@@ -2314,11 +2318,13 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
     }
 
     // Create the new element
+    // Center it on the cursor using its own compact default size
+    const droppedSize = getDefaultElementSize(elementData.type);
     let newElement: DesignElement = {
       ...createElement(elementData.type),
       uuid: crypto.randomUUID(), // Generate a UUID
-      x: Math.round(Math.max(0, scaledX - 50)), // Subtract half the element width to center it, and ensure an integer
-      y: Math.round(Math.max(0, scaledY - 10)), // Position relative to the band, and ensure an integer
+      x: Math.round(Math.max(0, scaledX - droppedSize.width / 2)), // Center horizontally on the cursor
+      y: Math.round(Math.max(0, scaledY - droppedSize.height / 2)), // Center vertically on the cursor
       ...getDefaultElementProperties(elementData.type),
     } as DesignElement;
 
@@ -2353,11 +2359,17 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
 
     const targetBand = bands.value[bandIndex];
     if (targetBand && targetBand.elements) {
-      // For rectangles, ellipses, frames, and images, default the height to half the band's height
+      // For rectangles, ellipses, frames, and images, apply a compact default
+      // size instead of stretching the element across the whole band
       if (
         ["rectangle", "ellipse", "frame", "image"].includes(elementData.type)
       ) {
-        newElement.height = Math.round(targetBand.height / 2);
+        const defaultSize = getDefaultElementSize(
+          elementData.type,
+          targetBand.height,
+        );
+        newElement.width = defaultSize.width;
+        newElement.height = defaultSize.height;
       }
       // Save state to history
       saveStateToHistory();
