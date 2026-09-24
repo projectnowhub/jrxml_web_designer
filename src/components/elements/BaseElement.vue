@@ -459,7 +459,6 @@ const handleDoubleClick = () => {
 }
 
 .design-element.is-dragging {
-  pointer-events: none;
   z-index: 100;
 }
 

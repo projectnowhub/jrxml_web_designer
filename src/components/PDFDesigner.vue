@@ -2445,9 +2445,13 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
           newElement.width = Math.round(availableWidth);
         }
 
-        // Ensure the element doesn't exceed the band's height
-        if (newElement.y + newElement.height > targetBand.height) {
-          newElement.y = Math.round(targetBand.height - newElement.height);
+        // Ensure the element's Y coordinate does not turn negative
+        if (newElement.height <= targetBand.height) {
+          if (newElement.y + newElement.height > targetBand.height) {
+            newElement.y = Math.max(0, Math.round(targetBand.height - newElement.height));
+          }
+        } else {
+          newElement.y = Math.max(0, newElement.y);
         }
 
         targetBand.elements.push(newElement);
@@ -2572,8 +2576,14 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
   }
 };
 
+// Guard flag to prevent drag/resize release from inadvertently unselecting the active element
+const isJustDraggedOrResized = ref(false);
+
 // Select a band
 const selectBand = (index: number) => {
+  if (isJustDraggedOrResized.value) {
+    return;
+  }
   setDesignAreaFocused();
   selectedBandIndex.value = index;
   selectedElement.value = null;
@@ -2949,10 +2959,9 @@ const startDragging = (
               clearAlignmentLines();
             }
 
-            // Calculate reference client Y for target band detection:
-            // If the element's origin (newY) is still within the current band [0, currentBand.height),
-            // keep the current band as target so tall elements don't get misattributed to neighbor bands.
-            let checkClientY = e.clientY;
+            // Target band and sheet detection:
+            // Use the visual position of the element's top to prevent accidental reparenting
+            // when grabbing the lower portion of a tall or overflowing element
             const sourceSheet =
               document.querySelector(
                 `.page-sheet[data-page-index="${draggingInfo.value.sourcePageIndex}"]`,
@@ -2963,19 +2972,14 @@ const startDragging = (
               `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
             ) as HTMLElement | null;
 
-            if (sourceBandEl && draggingInfo.value.parentFrameIndex === undefined) {
-              const sourceRect = sourceBandEl.getBoundingClientRect();
-              const bandH = currentBand.height || 20;
-              if (newY >= 0 && newY < bandH) {
-                checkClientY = sourceRect.top + Math.min(newY * currentZoom + 5, Math.max(5, sourceRect.height - 5));
-              } else {
-                checkClientY = sourceRect.top + newY * currentZoom + 5;
-              }
+            let checkY = e.clientY;
+            if (sourceBandEl) {
+              const sRect = sourceBandEl.getBoundingClientRect();
+              checkY = sRect.top + newY * currentZoom;
             }
 
-            // Target band and sheet detection
             const { bandUnderMouse, sheetUnderMouse } =
-              getTargetBandAndSheetUnderPoint(e.clientX, checkClientY);
+              getTargetBandAndSheetUnderPoint(e.clientX, checkY);
 
             let targetBandIndex = draggingInfo.value.bandIndex;
             if (
@@ -3077,34 +3081,32 @@ const startDragging = (
           }
 
           if (currentBand && currentElement) {
-            // Calculate reference client Y for target band detection:
-            // Use the element's actual origin to prevent misattributing tall elements
             const currentZoom = zoomLevel.value;
-            let checkClientY = e.clientY;
-            const originSheet =
+            const sourcePageIndex = draggingInfo.value.sourcePageIndex ?? 0;
+
+            const sourceSheet =
               document.querySelector(
                 `.page-sheet[data-page-index="${draggingInfo.value.sourcePageIndex}"]`,
               ) ||
               document.querySelector(".page-sheet") ||
               document.querySelector(".paper");
-            const originBandEl = originSheet?.querySelector(
-              `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
-            ) as HTMLElement | null;
+            const sourceBandEl =
+              (sourceSheet?.querySelector(
+                `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
+              ) as HTMLElement | null) ||
+              (document.querySelectorAll(".band")[
+                draggingInfo.value.bandIndex
+              ] as HTMLElement | undefined);
 
-            if (originBandEl && draggingInfo.value.parentFrameIndex === undefined) {
-              const sourceRect = originBandEl.getBoundingClientRect();
-              const bandH = currentBand.height || 20;
-              const elY = currentElement.y;
-              if (elY >= 0 && elY < bandH) {
-                checkClientY = sourceRect.top + Math.min(elY * currentZoom + 5, Math.max(5, sourceRect.height - 5));
-              } else {
-                checkClientY = sourceRect.top + elY * currentZoom + 5;
-              }
+            let checkY = e.clientY;
+            if (sourceBandEl) {
+              const sRect = sourceBandEl.getBoundingClientRect();
+              checkY = sRect.top + currentElement.y * currentZoom;
             }
 
             // Target band and sheet identification
             const { bandUnderMouse, sheetUnderMouse } =
-              getTargetBandAndSheetUnderPoint(e.clientX, checkClientY);
+              getTargetBandAndSheetUnderPoint(e.clientX, checkY);
 
             let targetBandIndex =
               draggingInfo.value.lastTargetBandIndex ??
@@ -3149,15 +3151,6 @@ const startDragging = (
             const elementRelSourceBandX = sourceParentRelX + currentElement.x;
             const elementRelSourceBandY = sourceParentRelY + currentElement.y;
 
-            // Coordinate conversion between source band and target band/sheet
-            const sourcePageIndex = draggingInfo.value.sourcePageIndex ?? 0;
-
-            const sourceSheetEl =
-              document.querySelector(
-                `.page-sheet[data-page-index="${sourcePageIndex}"]`,
-              ) ||
-              document.querySelector(".page-sheet") ||
-              document.querySelector(".paper");
             const targetSheetEl =
               document.querySelector(
                 `.page-sheet[data-page-index="${targetSheetPageIndex}"]`,
@@ -3165,11 +3158,6 @@ const startDragging = (
               document.querySelector(".page-sheet") ||
               document.querySelector(".paper");
 
-            const sourceBandEl =
-              (sourceSheetEl?.querySelector(
-                `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
-              ) as HTMLElement) ||
-              document.querySelectorAll(".band")[draggingInfo.value.bandIndex];
             const targetBandEl =
               (targetSheetEl?.querySelector(
                 `.band[data-band-index="${targetBandIndex}"]`,
@@ -3316,6 +3304,14 @@ const startDragging = (
                 currentElement.x = Math.max(0, Math.round(currentElement.x));
                 currentElement.y = Math.max(0, Math.round(currentElement.y));
               }
+
+              // Ensure the element remains selected after moving within the same container
+              selectElement(
+                draggingInfo.value.bandIndex,
+                draggingInfo.value.elementIndex,
+                false,
+                draggingInfo.value.parentFrameIndex,
+              );
             }
 
             if (targetSheetPageIndex >= pageCount.value) {
@@ -3330,6 +3326,10 @@ const startDragging = (
         clearAlignmentLines();
         draggingInfo.value = null;
         isDraggingOrResizing.value = false;
+        isJustDraggedOrResized.value = true;
+        setTimeout(() => {
+          isJustDraggedOrResized.value = false;
+        }, 150);
 
         // Remove event listeners
         if (cachedMouseMoveHandler) {
@@ -5671,6 +5671,10 @@ const startResizingElement = (
 
       resizingInfo.value = null;
       isDraggingOrResizing.value = false;
+      isJustDraggedOrResized.value = true;
+      setTimeout(() => {
+        isJustDraggedOrResized.value = false;
+      }, 150);
 
       // Update JRXML
       updateJRXML();
@@ -5708,63 +5712,35 @@ const autoFitElementHeight = (
   const neededHeight = calculateTextElementHeight(element as any);
   if (neededHeight > 0) {
     saveStateToHistory();
-
-    const currentBandType = band.type;
-    const isDetail = currentBandType === BAND_TYPE_CONSTANTS.DETAIL;
-    const bandLimitsConfig =
-      reportProperties.value?.bandLimits?.[currentBandType] ||
-      getEffectiveDefaultBandLimits()[currentBandType] ||
-      { min: 20, max: 70 };
-    const maxHeight =
-      typeof bandLimitsConfig.max === "number" ? bandLimitsConfig.max : 70;
-
-    // Available space in printable area
-    const topMargin = reportProperties.value?.topMargin || 0;
-    const bottomMargin = reportProperties.value?.bottomMargin || 0;
-    const availableHeight = paperHeight.value - topMargin - bottomMargin;
-    const detailIndex = bands.value.findIndex(
-      (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
-    );
-    let otherBandsHeight = 0;
-    bands.value.forEach((b, i) => {
-      if (
-        i !== bandIndex &&
-        i !== detailIndex &&
-        b.type !== BAND_TYPE_CONSTANTS.BACKGROUND
-      ) {
-        otherBandsHeight += b.height || 0;
-      }
-    });
-    const detailMinHeight = BAND_CONSTANTS.MIN_HEIGHT || 20;
-    const maxPossibleHeight = Math.max(
-      band.height || 20,
-      availableHeight - otherBandsHeight - detailMinHeight,
-    );
-    const effectiveMax = isDetail
-      ? maxPossibleHeight
-      : Math.min(maxHeight, maxPossibleHeight);
-
     element.height = Math.max(element.height || 0, neededHeight);
-
     if (parentFrameIndex === undefined) {
-      const desiredBandHeight = (element.y || 0) + element.height;
-      if (desiredBandHeight <= effectiveMax) {
-        // Fits within band maximum: expand band to enclose the content cleanly
-        if (desiredBandHeight > band.height) {
-          band.height = desiredBandHeight;
+      const bandLimitsConfig =
+        reportProperties.value?.bandLimits?.[band.type] ||
+        getEffectiveDefaultBandLimits()[band.type] || { min: 20, max: 70 };
+      const maxBandHeight =
+        typeof bandLimitsConfig.max === "number" ? bandLimitsConfig.max : 70;
+
+      const isDetailBand = band.type === BAND_TYPE_CONSTANTS.DETAIL;
+
+      if (isDetailBand) {
+        if (element.y + element.height > band.height) {
+          band.height = element.y + element.height;
         }
       } else {
-        // Exceeds band maximum: cap band height at effectiveMax and warn user
-        if (band.height < effectiveMax) {
-          band.height = effectiveMax;
+        const requiredHeight = element.y + element.height;
+        if (requiredHeight > band.height) {
+          const clampedHeight = Math.min(maxBandHeight, requiredHeight);
+          if (clampedHeight > band.height) {
+            band.height = clampedHeight;
+          }
+          if (requiredHeight > maxBandHeight) {
+            notification.warning(
+              `${getBandDisplayName(band.type)} reached its maximum limit (${maxBandHeight}px). Text content exceeds band capacity. Consider widening the element or placing lengthy text in the Detail band.`,
+            );
+          }
         }
-        const bandDisplayName = getBandDisplayName(currentBandType);
-        notification.info(
-          `${bandDisplayName} reached its maximum height limit (${effectiveMax}px). Long text exceeds this band. You can reduce font size, enable 'Shrink font size to fit', or move the content to the Detail band.`,
-        );
       }
     }
-
     updateJRXML();
     ensureBandsFitPage();
     updateOutOfBoundsElements();
