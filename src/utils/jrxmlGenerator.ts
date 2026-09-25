@@ -939,8 +939,11 @@ function generateStaticTextXML(element: any): string {
 
   // Markup attribute: explicit or auto-detected if HTML tags exist
   let markup = element.markup;
-  if (!markup && element.expression && /<(b|strong|i|em|u|s|strike|del|font|a|span)\b[^>]*>/i.test(element.expression)) {
-    markup = "html";
+  const staticContent = element.expression || element.text || "";
+  if (!markup || markup === "none") {
+    if (staticContent && /<(b|strong|i|em|u|s|strike|del|font|a|span)\b[^>]*>/i.test(staticContent)) {
+      markup = "html";
+    }
   }
 
   if (markup && markup !== "none") {
@@ -1081,9 +1084,14 @@ function generateTextFieldXML(element: any): string {
     textElementAttrs += ` verticalAlignment="${element.verticalAlignment}"`;
   }
 
-  // Markup attribute: explicit or auto-detected if HTML tags exist
+  // Markup attribute: default to html, or auto-detect if HTML tags exist
   let markup = element.markup;
-  if (!markup && element.expression && /<(b|strong|i|em|u|s|strike|del|font|a|span)\b[^>]*>/i.test(element.expression)) {
+  if (!markup || markup === "none") {
+    if (element.expression && /<(b|strong|i|em|u|s|strike|del|font|a|span)\b[^>]*>/i.test(element.expression)) {
+      markup = "html";
+    }
+  }
+  if (!markup) {
     markup = "html";
   }
 

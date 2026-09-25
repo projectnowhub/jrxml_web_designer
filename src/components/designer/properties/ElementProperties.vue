@@ -368,23 +368,6 @@
               ></textarea>
             </div>
             <div class="form-group">
-              <label>{{ t("properties.textAdjust") || "When Text Is Too Long" }}</label>
-              <select v-model="currentElement.textAdjust">
-                <option value="">{{ t("properties.default") || "Default (Cut off excess text)" }}</option>
-                <option value="StretchHeight">
-                  Wrap text and expand height
-                </option>
-                <option value="CutText">Cut off excess text</option>
-                <option value="ShrinkToFit">Shrink font size to fit</option>
-              </select>
-              <small
-                v-if="currentElement.textAdjust === 'StretchHeight'"
-                style="display: block; font-size: 11px; color: #1890ff; margin-top: 3px;"
-              >
-                ℹ Field and band height will expand dynamically during PDF generation.
-              </small>
-            </div>
-            <div class="form-group">
               <label>Rotation</label>
               <select v-model="currentElement.rotation">
                 <option value="">Default</option>
@@ -392,14 +375,6 @@
                 <option value="Left">Left - Rotate Left 90°</option>
                 <option value="Right">Right - Rotate Right 90°</option>
                 <option value="UpsideDown">UpsideDown - Upside Down</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>{{ t("properties.markup") || "Markup" }}</label>
-              <select v-model="currentElement.markup">
-                <option value="none">None (Plain Text)</option>
-                <option value="html">HTML (Rich Text & Links)</option>
-                <option value="styled">Styled</option>
               </select>
             </div>
             <div class="form-group">
@@ -2893,6 +2868,9 @@ function updateTextFieldDisplay(val: string) {
   if (!currentElement.value || currentElement.value.type !== "textField") return;
   emit("save-state");
   const elem = currentElement.value as any;
+  if (!elem.markup) {
+    elem.markup = "html";
+  }
   const trimmed = val.trim();
   if (!trimmed) {
     elem.expression = '""';

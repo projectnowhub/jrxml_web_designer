@@ -896,6 +896,26 @@ const rgbToHex = (str: string): string => {
   });
 };
 
+// Clean and normalize HTML specifically for JasperReports markup="html"
+const cleanHtmlForJasper = (html: string): string => {
+  let clean = rgbToHex(html);
+  // 1. Standardize standalone color spans to <font color="...">
+  clean = clean.replace(/<span\s+style="color:\s*([^";]+);?">([\s\S]*?)<\/span>/gi, '<font color="$1">$2</font>');
+  // 2. Remove web-only class attributes (e.g. class="text-hyperlink")
+  clean = clean.replace(/\s*class="[^"]*"/gi, '');
+  // 3. Remove web-only rel attributes (e.g. rel="noopener noreferrer")
+  clean = clean.replace(/\s*rel="[^"]*"/gi, '');
+  // 4. Remove web-only target attributes
+  clean = clean.replace(/\s*target="[^"]*"/gi, '');
+  // 5. Remove redundant color style on <a> tags
+  clean = clean.replace(/(<a\s+[^>]*?)\s+style="color:\s*[^";]+;?"/gi, '$1');
+  // 6. Clean empty spans or wrapper spans without style
+  clean = clean.replace(/<span>([\s\S]*?)<\/span>/gi, '$1');
+  // 7. Escape double quotes for Java string literal
+  clean = clean.replace(/\\"/g, '"').replace(/"/g, '\\"');
+  return clean;
+};
+
 // Format commands from toolbar
 const handleFormat = (command: string, value?: string) => {
   if (savedSelectionRange.value) {
@@ -1298,17 +1318,10 @@ const handleFinishEditing = () => {
 
   if (hasHtmlTags(html)) {
     props.element.markup = 'html';
-    // Format HTML for JasperReports:
-    // 1. Convert rgb colors to clean hex
-    // 2. Standardize standalone color spans to <font color="...">
-    // 3. Escape double quotes for Java string literal
-    let safeHtml = rgbToHex(html);
-    safeHtml = safeHtml
-      .replace(/<span\s+style="color:\s*([^";]+);?">([\s\S]*?)<\/span>/gi, '<font color="$1">$2</font>')
-      .replace(/\\"/g, '"')
-      .replace(/"/g, '\\"');
+    const safeHtml = cleanHtmlForJasper(html);
     props.element.expression = `"${safeHtml}"`;
   } else {
+    props.element.markup = 'html';
     const plain = textContent.replace(/\r\n|\r|\n/g, '\\n');
     props.element.expression = `"${plain}"`;
   }
