@@ -3,7 +3,7 @@ import { ref } from 'vue';
 interface NotificationItem {
   id: number;
   message: string;
-  type: 'success' | 'error' | 'info';
+  type: 'success' | 'error' | 'info' | 'warning';
   duration?: number;
 }
 
@@ -32,6 +32,14 @@ const createNotificationElement = (notification: NotificationItem) => {
   
   const notificationElement = document.createElement('div');
   notificationElement.className = `notification notification-${notification.type}`;
+  const borderColor =
+    notification.type === 'success'
+      ? '#52c41a'
+      : notification.type === 'error'
+      ? '#ff4d4f'
+      : notification.type === 'warning'
+      ? '#faad14'
+      : '#1890ff';
   notificationElement.style.cssText = `
     position: relative;
     margin-bottom: 10px;
@@ -42,7 +50,7 @@ const createNotificationElement = (notification: NotificationItem) => {
     min-width: 300px;
     max-width: 500px;
     animation: slideIn 0.3s ease-out;
-    border-left: 4px solid ${notification.type === 'success' ? '#52c41a' : notification.type === 'error' ? '#ff4d4f' : '#1890ff'};
+    border-left: 4px solid ${borderColor};
   `;
   
   const contentElement = document.createElement('div');
@@ -58,9 +66,16 @@ const createNotificationElement = (notification: NotificationItem) => {
     margin-right: 8px;
     font-weight: bold;
     font-size: 16px;
-    color: ${notification.type === 'success' ? '#52c41a' : notification.type === 'error' ? '#ff4d4f' : '#1890ff'};
+    color: ${borderColor};
   `;
-  iconElement.textContent = notification.type === 'success' ? '✓' : notification.type === 'error' ? '✕' : 'ℹ';
+  iconElement.textContent =
+    notification.type === 'success'
+      ? '✓'
+      : notification.type === 'error'
+      ? '✕'
+      : notification.type === 'warning'
+      ? '⚠'
+      : 'ℹ';
   
   const messageElement = document.createElement('div');
   messageElement.className = 'notification-message';
@@ -119,7 +134,7 @@ const removeNotification = (id: number) => {
 // Show a notification
 const showNotification = (
   message: string, 
-  type: 'success' | 'error' | 'info' = 'info',
+  type: 'success' | 'error' | 'info' | 'warning' = 'info',
   duration = 3000
 ) => {
   const notification: NotificationItem = {
@@ -150,9 +165,15 @@ const info = (message: string, duration?: number) => {
   return showNotification(message, 'info', duration);
 };
 
+// Warning notification
+const warning = (message: string, duration?: number) => {
+  return showNotification(message, 'warning', duration);
+};
+
 export default {
   show: showNotification,
   success,
   error,
-  info
+  info,
+  warning
 };

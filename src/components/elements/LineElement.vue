@@ -4,6 +4,7 @@
     :band-index="bandIndex"
     :element-index="elementIndex"
     :selected-element="selectedElement"
+    :selected-elements="selectedElements"
     :is-dragging="isDragging"
     :is-out-of-bounds="isOutOfBounds"
     :report-font-family="reportFontFamily"
@@ -15,6 +16,7 @@
     @select="handleSelect"
     @drag-start="handleDragStart"
     @resize-start="handleResizeStart"
+    @contextmenu="handleContextMenu"
   >
     <div 
       class="line-element"
@@ -34,6 +36,7 @@ const props = defineProps<{
   bandIndex: number;
   elementIndex: number;
   selectedElement: SelectedElementInfo | null;
+  selectedElements?: { bandIndex: number; elementIndex: number; parentFrameIndex?: number }[];
   isDragging?: boolean;
   isOutOfBounds?: boolean;
   reportFontFamily?: string;
@@ -48,7 +51,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number];
   dragStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
+  contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
 // Line style
@@ -100,8 +104,13 @@ const handleDragStart = (event: MouseEvent, bandIndex: number, elementIndex: num
 };
 
 // Handle resize start
-const handleResizeStart = (event: MouseEvent, bandIndex: number, elementIndex: number) => {
-  emit('resizeStart', event, bandIndex, elementIndex, props.parentFrameIndex);
+const handleResizeStart = (event: MouseEvent, bandIndex: number, elementIndex: number, _parentFrameIndex?: number, direction?: string) => {
+  emit('resizeStart', event, bandIndex, elementIndex, props.parentFrameIndex, direction);
+};
+
+// Handle context menu
+const handleContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: number) => {
+  emit('contextmenu', event, bandIndex, elementIndex, props.parentFrameIndex);
 };
 </script>
 

@@ -82,8 +82,7 @@ jrxml_web_designer/
 │   │       ├── VariableManagementModal.vue  # Variable management
 │   │       ├── SubDatasetManagementModal.vue # Sub-dataset management
 │   │       ├── HelpModal.vue / HelpModalEn.vue # Help modal
-│   │       ├── InputModal.vue / ConfirmModal.vue # Generic input/confirm modals
-│   │       └── RewardModal.vue / RewardModalEn.vue # Donation/reward modal
+│   │       └── InputModal.vue / ConfirmModal.vue # Generic input/confirm modals
 │   ├── composables/              # Vue composables
 │   │   ├── useZoom.ts            # Zoom control
 │   │   ├── useUndoRedo.ts        # Undo/redo

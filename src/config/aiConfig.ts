@@ -1,7 +1,7 @@
 /**
- * AI Configuration - OpenAI-compatible API configuration
+ * AI Configuration - Anthropic Claude API configuration
  *
- * Supports the local LMStudio interface, the OpenAI API, or other compatible services
+ * Supports Anthropic Claude Messages API natively
  */
 
 export interface AIConfig {
@@ -23,16 +23,16 @@ export interface AIConfig {
   REQUEST_TIMEOUT_MS: number;
 }
 
-// Default configuration: local LMStudio interface
+// Default configuration: Anthropic Claude Messages API
 export const DEFAULT_AI_CONFIG: AIConfig = {
-  // Local LMStudio address (default)
-  API_ENDPOINT: 'http://127.0.0.1:1234/v1',
+  // Anthropic API address (default)
+  API_ENDPOINT: "https://api.anthropic.com/v1",
 
-  // Local models don't require an API key
-  API_KEY: 'lm-studio',
+  // API key (defaults to empty, populated from .env or UI)
+  API_KEY: "",
 
-  // Model name (LMStudio detects this automatically)
-  MODEL_NAME: 'local-model',
+  // Default Claude model
+  MODEL_NAME: "claude-3-5-sonnet-20241022",
 
   // Token limit
   MAX_TOKENS: 4096,
@@ -46,17 +46,30 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
   MAX_TOOL_CALLS: 5,
 
   // 5-minute timeout
-  REQUEST_TIMEOUT_MS: 300000
+  REQUEST_TIMEOUT_MS: 300000,
 };
 
 // Load configuration from environment variables
 export const AI_CONFIG: AIConfig = {
   ...DEFAULT_AI_CONFIG,
-  API_ENDPOINT: import.meta.env.VITE_AI_API_ENDPOINT || DEFAULT_AI_CONFIG.API_ENDPOINT,
-  API_KEY: import.meta.env.VITE_AI_API_KEY || DEFAULT_AI_CONFIG.API_KEY,
-  MODEL_NAME: import.meta.env.VITE_AI_MODEL_NAME || DEFAULT_AI_CONFIG.MODEL_NAME,
-  MAX_TOKENS: parseInt(import.meta.env.VITE_AI_MAX_TOKENS || '') || DEFAULT_AI_CONFIG.MAX_TOKENS,
-  TEMPERATURE: parseFloat(import.meta.env.VITE_AI_TEMPERATURE || '') || DEFAULT_AI_CONFIG.TEMPERATURE,
+  API_ENDPOINT: (
+    import.meta.env.VITE_AI_API_ENDPOINT || DEFAULT_AI_CONFIG.API_ENDPOINT
+  ).trim(),
+  API_KEY: (
+    import.meta.env.VITE_AI_ACCESS_TOKEN ||
+    import.meta.env.VITE_AI_API_KEY ||
+    import.meta.env.ANTHROPIC_API_KEY ||
+    DEFAULT_AI_CONFIG.API_KEY
+  ).trim(),
+  MODEL_NAME: (
+    import.meta.env.VITE_AI_MODEL_NAME || DEFAULT_AI_CONFIG.MODEL_NAME
+  ).trim(),
+  MAX_TOKENS:
+    parseInt(import.meta.env.VITE_AI_MAX_TOKENS || "") ||
+    DEFAULT_AI_CONFIG.MAX_TOKENS,
+  TEMPERATURE:
+    parseFloat(import.meta.env.VITE_AI_TEMPERATURE || "") ||
+    DEFAULT_AI_CONFIG.TEMPERATURE,
 };
 
 // System prompt
@@ -118,7 +131,7 @@ Important notes:
 3. Units are in pixels (px)
 4. Only call a tool when it is genuinely needed
 5. Tool execution results will be automatically fed back to you
-6. Valid bandType values include: title, pageHeader, pageFooter, columnHeader, columnFooter, detail, summary
+6. Valid bandType values include: pageHeader, pageFooter, columnHeader, columnFooter, detail.
 7. When the user refers to "this element" or "the title" or similar, use the UUID from [Current Design State] to locate the element
 8. When modifying an element, use the update_element tool and provide the element's UUID
 9. If the user hasn't clearly specified an element, ask the user which element they want to modify

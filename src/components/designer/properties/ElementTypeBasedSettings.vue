@@ -3,7 +3,7 @@
     <!-- Show style settings based on element type -->
     <div v-if="element">
       <!-- Font style settings -->
-      <template v-if="['staticText', 'textField'].includes(element.type)">
+      <template v-if="element.type === 'textField'">
         <FontStyleSettings
           v-model="element"
           @update:modelValue="emit('update:modelValue', element)"
@@ -18,17 +18,9 @@
           @change="emit('update:modelValue', element)"
         />
       </template>
-
-      <!-- Static text specific properties -->
-      <template v-if="element.type === 'staticText'">
-        <div class="form-group">
-          <label>{{ t('properties.textContent') }}</label>
-          <textarea v-model="element.text" @change="emit('update:modelValue', element)"></textarea>
-        </div>
-      </template>
       
       <!-- Text field specific properties -->
-      <template v-else-if="element.type === 'textField'">
+      <template v-if="element.type === 'textField'">
         <div class="form-group">
           <label>{{ t('properties.expression') }}</label>
           <input v-model="element.expression" type="text" @change="emit('update:modelValue', element)" />

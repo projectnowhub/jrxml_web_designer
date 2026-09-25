@@ -10,7 +10,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue';
 import { elementRegistry } from './ElementRegistry';
-import StaticTextElement from './StaticTextElement.vue';
 import TextFieldElement from './TextFieldElement.vue';
 import ImageElement from './ImageElement.vue';
 import LineElement from './LineElement.vue';
@@ -36,7 +35,6 @@ import type {
 
 // Component cache - use a plain object instead of a ref to avoid components being converted into reactive objects
 const componentCache: Record<string, any> = {
-  staticText: StaticTextElement,
   textField: TextFieldElement,
   image: ImageElement,
   line: LineElement,
@@ -102,13 +100,15 @@ const props = defineProps<{
     columnFooter: string;
     detailCell: string;
   };
+  pageNumber?: number;
+  totalPages?: number;
 }>();
 
 // Emits
 const emit = defineEmits<{
   select: [bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number];
   dragStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   startEditing: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   finishEditing: [];
@@ -118,6 +118,7 @@ const emit = defineEmits<{
   addColumnsToGroup: [elementIndex: number, columnIndices: number[], bandIndex: number, parentFrameIndex?: number];
   joinColumnsToExistingGroup: [elementIndex: number, columnIndices: number[], bandIndex: number, parentFrameIndex?: number];
   'update-jrxml': [];
+  autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
 // Get the corresponding component based on the element type
@@ -133,7 +134,7 @@ const getElementComponent = computed(() => {
   loadComponent(type);
 
   // Default component
-  return StaticTextElement;
+  return TextFieldElement;
 });
 
 // Common props - add a type assertion to ensure compatibility with what the component expects
@@ -154,7 +155,9 @@ const commonProps = computed(() => ({
   parentFrameIndex: props.parentFrameIndex,
   zoomLevel: props.zoomLevel,
   reportStyles: props.reportStyles,
-  tableStyles: props.tableStyles
+  tableStyles: props.tableStyles,
+  pageNumber: props.pageNumber,
+  totalPages: props.totalPages
 }));
 
 
@@ -167,8 +170,11 @@ const commonEvents = {
   dragStart: (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
     emit('dragStart', event, bandIndex, elementIndex, parentFrameIndex);
   },
-  resizeStart: (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
-    emit('resizeStart', event, bandIndex, elementIndex, parentFrameIndex);
+  resizeStart: (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string) => {
+    emit('resizeStart', event, bandIndex, elementIndex, parentFrameIndex, direction);
+  },
+  autoFitHeight: (bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
+    emit('autoFitHeight', bandIndex, elementIndex, parentFrameIndex);
   },
   contextmenu: (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
     emit('contextmenu', event, bandIndex, elementIndex, parentFrameIndex);

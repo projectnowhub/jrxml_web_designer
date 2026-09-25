@@ -188,7 +188,7 @@ Contributions are welcome! You can:
 
 Thanks to all developers and users who have contributed to the project!
 
-If this tool is helpful for your work, please feel free to like, share, contribute, or scan the QR code in the upper right corner of the interface to reward us. Thank you for your support.
+If this tool is helpful for your work, please feel free to like, share, and contribute. Thank you for your support.
 
 ## 📞 Contact Information
 

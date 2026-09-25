@@ -21,7 +21,10 @@
     </div>
 
     <!-- Autocomplete dropdown -->
-    <div v-if="showAutocomplete && filteredSuggestions.length > 0" class="autocomplete-dropdown">
+    <div
+      v-if="showAutocomplete && filteredSuggestions.length > 0"
+      class="autocomplete-dropdown"
+    >
       <div
         v-for="(item, index) in filteredSuggestions"
         :key="item.value"
@@ -30,9 +33,13 @@
         @mousedown.prevent="selectSuggestion(item)"
         @mouseenter="activeSuggestionIndex = index"
       >
-        <span class="autocomplete-type" :class="item.type">{{ item.typeLabel }}</span>
+        <span class="autocomplete-type" :class="item.type">{{
+          item.typeLabel
+        }}</span>
         <span class="autocomplete-value">{{ item.value }}</span>
-        <span v-if="item.description" class="autocomplete-desc">{{ item.description }}</span>
+        <span v-if="item.description" class="autocomplete-desc">{{
+          item.description
+        }}</span>
       </div>
     </div>
 
@@ -58,71 +65,21 @@
         <div class="help-items">
           <div class="help-item" @click="insertExpression('$F{fieldName}')">
             <span class="expression-text">$F{fieldName}</span>
-            <span class="expression-desc">Field reference</span>
-          </div>
-          <div class="help-item" @click="insertExpression('$P{paramName}')">
-            <span class="expression-text">$P{paramName}</span>
-            <span class="expression-desc">Parameter reference</span>
-          </div>
-          <div class="help-item" @click="insertExpression('$V{variableName}')">
-            <span class="expression-text">$V{variableName}</span>
-            <span class="expression-desc">Variable reference</span>
+            <span class="expression-desc">Data field reference</span>
           </div>
         </div>
       </div>
 
       <div class="help-section">
-        <h5>Built-in variables</h5>
+        <h5>Page numbering</h5>
         <div class="help-items">
-          <div class="help-item" @click="insertExpression('$V{REPORT_COUNT}')">
-            <span class="expression-text">$V{REPORT_COUNT}</span>
-            <span class="expression-desc">Total number of records read from the data source</span>
-          </div>
           <div class="help-item" @click="insertExpression('$V{PAGE_NUMBER}')">
             <span class="expression-text">$V{PAGE_NUMBER}</span>
-            <span class="expression-desc">Current page number (total page count once filling finishes)</span>
+            <span class="expression-desc">Current page number</span>
           </div>
-          <div class="help-item" @click="insertExpression('$V{PAGE_COUNT}')">
-            <span class="expression-text">$V{PAGE_COUNT}</span>
-            <span class="expression-desc">Number of records processed while generating the current page</span>
-          </div>
-          <div class="help-item" @click="insertExpression('$V{COLUMN_NUMBER}')">
-            <span class="expression-text">$V{COLUMN_NUMBER}</span>
-            <span class="expression-desc">Current column number</span>
-          </div>
-          <div class="help-item" @click="insertExpression('$V{COLUMN_COUNT}')">
-            <span class="expression-text">$V{COLUMN_COUNT}</span>
-            <span class="expression-desc">Number of records processed while generating the current column</span>
-          </div>
-          <div class="help-item" @click="insertExpression('$V{MASTER_CURRENT_PAGE}')">
-            <span class="expression-text">$V{MASTER_CURRENT_PAGE}</span>
-            <span class="expression-desc">Current page number of the master report (Master evaluation time only)</span>
-          </div>
-          <div class="help-item" @click="insertExpression('$V{MASTER_TOTAL_PAGES}')">
-            <span class="expression-text">$V{MASTER_TOTAL_PAGES}</span>
-            <span class="expression-desc">Total page count of the master report (Master evaluation time only)</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="help-section">
-        <h5>Built-in parameters</h5>
-        <div class="help-items">
-          <div class="help-item" @click="insertExpression('$P{REPORT_CONNECTION}')">
-            <span class="expression-text">$P{REPORT_CONNECTION}</span>
-            <span class="expression-desc">JDBC connection</span>
-          </div>
-          <div class="help-item" @click="insertExpression('$P{REPORT_DATA_SOURCE}')">
-            <span class="expression-text">$P{REPORT_DATA_SOURCE}</span>
-            <span class="expression-desc">Report data source</span>
-          </div>
-          <div class="help-item" @click="insertExpression('$P{REPORT_LOCALE}')">
-            <span class="expression-text">$P{REPORT_LOCALE}</span>
-            <span class="expression-desc">Report locale</span>
-          </div>
-          <div class="help-item" @click="insertExpression('$P{REPORT_SCRIPTLET}')">
-            <span class="expression-text">$P{REPORT_SCRIPTLET}</span>
-            <span class="expression-desc">Report scriptlet</span>
+          <div class="help-item" @click="insertExpression('$V{REPORT_COUNT}')">
+            <span class="expression-text">$V{REPORT_COUNT}</span>
+            <span class="expression-desc">Total records count</span>
           </div>
         </div>
       </div>
@@ -190,11 +147,21 @@
             <span class="expression-text">Double.valueOf()</span>
             <span class="expression-desc">Convert to double</span>
           </div>
-          <div class="help-item" @click="insertExpression('new java.util.Date()')">
+          <div
+            class="help-item"
+            @click="insertExpression('new java.util.Date()')"
+          >
             <span class="expression-text">new java.util.Date()</span>
             <span class="expression-desc">Create the current date</span>
           </div>
-          <div class="help-item" @click="insertExpression('new java.text.SimpleDateFormat(&quot;yyyy-MM-dd&quot;).format()')">
+          <div
+            class="help-item"
+            @click="
+              insertExpression(
+                'new java.text.SimpleDateFormat(&quot;yyyy-MM-dd&quot;).format()',
+              )
+            "
+          >
             <span class="expression-text">SimpleDateFormat.format()</span>
             <span class="expression-desc">Date formatting</span>
           </div>
@@ -205,11 +172,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick } from "vue";
 
 interface SuggestionItem {
   value: string;
-  type: 'field' | 'parameter' | 'variable' | 'method';
+  type: "field" | "parameter" | "variable" | "method";
   typeLabel: string;
   description?: string;
 }
@@ -223,7 +190,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string];
+  "update:modelValue": [value: string];
 }>();
 
 const editorRef = ref<HTMLElement>();
@@ -231,8 +198,10 @@ const inputRef = ref<HTMLInputElement>();
 const showHelp = ref(false);
 const showAutocomplete = ref(false);
 const activeSuggestionIndex = ref(0);
-const currentPrefix = ref<'$F{' | '$P{' | '$V{' | 'method' | 'any' | null>(null);
-const currentFilter = ref('');
+const currentPrefix = ref<"$F{" | "$P{" | "$V{" | "method" | "any" | null>(
+  null,
+);
+const currentFilter = ref("");
 
 const allSuggestions = computed<SuggestionItem[]>(() => {
   const items: SuggestionItem[] = [];
@@ -241,8 +210,8 @@ const allSuggestions = computed<SuggestionItem[]>(() => {
     for (const field of props.reportFields) {
       items.push({
         value: field.name,
-        type: 'field',
-        typeLabel: 'F',
+        type: "field",
+        typeLabel: "F",
         description: field.class,
       });
     }
@@ -252,8 +221,8 @@ const allSuggestions = computed<SuggestionItem[]>(() => {
     for (const param of props.reportParameters) {
       items.push({
         value: param.name,
-        type: 'parameter',
-        typeLabel: 'P',
+        type: "parameter",
+        typeLabel: "P",
         description: param.class,
       });
     }
@@ -261,46 +230,117 @@ const allSuggestions = computed<SuggestionItem[]>(() => {
 
   // Built-in parameters (from JRParameter.java)
   const builtInParams = [
-    { value: 'REPORT_PARAMETERS_MAP', description: 'Map of report parameters passed in when the user fills the report' },
-    { value: 'JASPER_REPORTS_CONTEXT', description: 'The current report-filling context' },
-    { value: 'JASPER_REPORT', description: 'The JasperReport template object currently being filled' },
-    { value: 'REPORT_CONNECTION', description: 'The JDBC connection needed to run the default report query' },
-    { value: 'REPORT_MAX_COUNT', description: 'Limits the number of records processed from the data source' },
-    { value: 'REPORT_DATA_SOURCE', description: 'The report data source instance' },
-    { value: 'REPORT_SCRIPTLET', description: 'The user-supplied report scriptlet instance' },
-    { value: 'REPORT_LOCALE', description: 'The locale required for the resource bundle' },
-    { value: 'REPORT_RESOURCE_BUNDLE', description: 'The resource bundle containing localized messages' },
-    { value: 'REPORT_TIME_ZONE', description: 'The time zone used for date formatting' },
-    { value: 'REPORT_VIRTUALIZER', description: 'The virtualizer used for page virtualization' },
-    { value: 'REPORT_CLASS_LOADER', description: 'The class loader used to load resources during filling' },
-    { value: 'REPORT_FORMAT_FACTORY', description: 'The format factory used to create DateFormat and NumberFormat instances' },
-    { value: 'IS_IGNORE_PAGINATION', description: 'Whether to ignore the pagination flag' },
-    { value: 'REPORT_TEMPLATES', description: 'The collection of report templates passed in while filling' },
+    {
+      value: "REPORT_PARAMETERS_MAP",
+      description:
+        "Map of report parameters passed in when the user fills the report",
+    },
+    {
+      value: "JASPER_REPORTS_CONTEXT",
+      description: "The current report-filling context",
+    },
+    {
+      value: "JASPER_REPORT",
+      description: "The JasperReport template object currently being filled",
+    },
+    {
+      value: "REPORT_CONNECTION",
+      description: "The JDBC connection needed to run the default report query",
+    },
+    {
+      value: "REPORT_MAX_COUNT",
+      description:
+        "Limits the number of records processed from the data source",
+    },
+    {
+      value: "REPORT_DATA_SOURCE",
+      description: "The report data source instance",
+    },
+    {
+      value: "REPORT_SCRIPTLET",
+      description: "The user-supplied report scriptlet instance",
+    },
+    {
+      value: "REPORT_LOCALE",
+      description: "The locale required for the resource bundle",
+    },
+    {
+      value: "REPORT_RESOURCE_BUNDLE",
+      description: "The resource bundle containing localized messages",
+    },
+    {
+      value: "REPORT_TIME_ZONE",
+      description: "The time zone used for date formatting",
+    },
+    {
+      value: "REPORT_VIRTUALIZER",
+      description: "The virtualizer used for page virtualization",
+    },
+    {
+      value: "REPORT_CLASS_LOADER",
+      description: "The class loader used to load resources during filling",
+    },
+    {
+      value: "REPORT_FORMAT_FACTORY",
+      description:
+        "The format factory used to create DateFormat and NumberFormat instances",
+    },
+    {
+      value: "IS_IGNORE_PAGINATION",
+      description: "Whether to ignore the pagination flag",
+    },
+    {
+      value: "REPORT_TEMPLATES",
+      description: "The collection of report templates passed in while filling",
+    },
   ];
   for (const p of builtInParams) {
     items.push({
       value: p.value,
-      type: 'parameter',
-      typeLabel: 'P',
+      type: "parameter",
+      typeLabel: "P",
       description: p.description,
     });
   }
 
   // Built-in variables (from JRVariable.java)
   const builtInVars = [
-    { value: 'REPORT_COUNT', description: 'Total number of records read from the data source' },
-    { value: 'PAGE_COUNT', description: 'Number of records processed while generating the current page' },
-    { value: 'COLUMN_COUNT', description: 'Number of records processed while generating the current column' },
-    { value: 'PAGE_NUMBER', description: 'Current page number (total page count once report filling finishes)' },
-    { value: 'COLUMN_NUMBER', description: 'Current column number' },
-    { value: 'MASTER_CURRENT_PAGE', description: 'Current page number of the master report (Master evaluation time only)' },
-    { value: 'MASTER_TOTAL_PAGES', description: 'Total page count of the master report (Master evaluation time only)' },
+    {
+      value: "REPORT_COUNT",
+      description: "Total number of records read from the data source",
+    },
+    {
+      value: "PAGE_COUNT",
+      description:
+        "Number of records processed while generating the current page",
+    },
+    {
+      value: "COLUMN_COUNT",
+      description:
+        "Number of records processed while generating the current column",
+    },
+    {
+      value: "PAGE_NUMBER",
+      description:
+        "Current page number (total page count once report filling finishes)",
+    },
+    { value: "COLUMN_NUMBER", description: "Current column number" },
+    {
+      value: "MASTER_CURRENT_PAGE",
+      description:
+        "Current page number of the master report (Master evaluation time only)",
+    },
+    {
+      value: "MASTER_TOTAL_PAGES",
+      description:
+        "Total page count of the master report (Master evaluation time only)",
+    },
   ];
   for (const v of builtInVars) {
     items.push({
       value: v.value,
-      type: 'variable',
-      typeLabel: 'V',
+      type: "variable",
+      typeLabel: "V",
       description: v.description,
     });
   }
@@ -310,8 +350,8 @@ const allSuggestions = computed<SuggestionItem[]>(() => {
     for (const variable of props.reportVariables) {
       items.push({
         value: variable.name,
-        type: 'variable',
-        typeLabel: 'V',
+        type: "variable",
+        typeLabel: "V",
         description: variable.class,
       });
     }
@@ -319,19 +359,22 @@ const allSuggestions = computed<SuggestionItem[]>(() => {
 
   // Built-in methods
   const builtInMethods = [
-    { value: 'NOW()', description: 'Current time' },
-    { value: 'TODAY()', description: "Today's date" },
-    { value: 'String.valueOf(', description: 'Convert to string' },
-    { value: 'Integer.valueOf(', description: 'Convert to integer' },
-    { value: 'Double.valueOf(', description: 'Convert to double' },
-    { value: 'new java.util.Date()', description: 'Create the current date' },
-    { value: 'new java.text.SimpleDateFormat("yyyy-MM-dd").format(', description: 'Date formatting' },
+    { value: "NOW()", description: "Current time" },
+    { value: "TODAY()", description: "Today's date" },
+    { value: "String.valueOf(", description: "Convert to string" },
+    { value: "Integer.valueOf(", description: "Convert to integer" },
+    { value: "Double.valueOf(", description: "Convert to double" },
+    { value: "new java.util.Date()", description: "Create the current date" },
+    {
+      value: 'new java.text.SimpleDateFormat("yyyy-MM-dd").format(',
+      description: "Date formatting",
+    },
   ];
   for (const m of builtInMethods) {
     items.push({
       value: m.value,
-      type: 'method',
-      typeLabel: 'M',
+      type: "method",
+      typeLabel: "M",
       description: m.description,
     });
   }
@@ -342,14 +385,14 @@ const allSuggestions = computed<SuggestionItem[]>(() => {
 const filteredSuggestions = computed(() => {
   const filter = currentFilter.value.toLowerCase();
   let typeFilter: string | null = null;
-  if (currentPrefix.value === '$F{') typeFilter = 'field';
-  else if (currentPrefix.value === '$P{') typeFilter = 'parameter';
-  else if (currentPrefix.value === '$V{') typeFilter = 'variable';
-  else if (currentPrefix.value === 'method') typeFilter = 'method';
-  else if (currentPrefix.value === 'any') typeFilter = null;
+  if (currentPrefix.value === "$F{") typeFilter = "field";
+  else if (currentPrefix.value === "$P{") typeFilter = "parameter";
+  else if (currentPrefix.value === "$V{") typeFilter = "variable";
+  else if (currentPrefix.value === "method") typeFilter = "method";
+  else if (currentPrefix.value === "any") typeFilter = null;
 
   return allSuggestions.value
-    .filter(item => {
+    .filter((item) => {
       if (typeFilter && item.type !== typeFilter) return false;
       if (filter && !item.value.toLowerCase().includes(filter)) return false;
       return true;
@@ -361,8 +404,8 @@ function detectAutocompleteContext(value: string, cursorPos: number) {
   const beforeCursor = value.substring(0, cursorPos);
   const match = beforeCursor.match(/\$(F|P|V)\{([^}]*)$/);
   if (match) {
-    currentPrefix.value = `$${match[1]}{` as '$F{' | '$P{' | '$V{';
-    currentFilter.value = match[2] || '';
+    currentPrefix.value = `$${match[1]}{` as "$F{" | "$P{" | "$V{";
+    currentFilter.value = match[2] || "";
     showAutocomplete.value = true;
     activeSuggestionIndex.value = 0;
   } else {
@@ -370,14 +413,14 @@ function detectAutocompleteContext(value: string, cursorPos: number) {
     const wordMatch = beforeCursor.match(/([A-Za-z][A-Za-z0-9_.]*)$/);
     const word = wordMatch?.[1];
     if (word && word.length >= 1) {
-      currentPrefix.value = 'any';
+      currentPrefix.value = "any";
       currentFilter.value = word;
       showAutocomplete.value = true;
       activeSuggestionIndex.value = 0;
     } else {
       showAutocomplete.value = false;
       currentPrefix.value = null;
-      currentFilter.value = '';
+      currentFilter.value = "";
     }
   }
 }
@@ -385,7 +428,7 @@ function detectAutocompleteContext(value: string, cursorPos: number) {
 function handleInput(event: Event) {
   const target = event.target as HTMLInputElement;
   const value = target.value;
-  emit('update:modelValue', value);
+  emit("update:modelValue", value);
   nextTick(() => {
     detectAutocompleteContext(value, target.selectionStart || value.length);
   });
@@ -394,16 +437,16 @@ function handleInput(event: Event) {
 function handleKeydown(event: KeyboardEvent) {
   if (!showAutocomplete.value) return;
 
-  if (event.key === 'ArrowDown') {
+  if (event.key === "ArrowDown") {
     event.preventDefault();
     activeSuggestionIndex.value = Math.min(
       activeSuggestionIndex.value + 1,
-      filteredSuggestions.value.length - 1
+      filteredSuggestions.value.length - 1,
     );
-  } else if (event.key === 'ArrowUp') {
+  } else if (event.key === "ArrowUp") {
     event.preventDefault();
     activeSuggestionIndex.value = Math.max(activeSuggestionIndex.value - 1, 0);
-  } else if (event.key === 'Enter' || event.key === 'Tab') {
+  } else if (event.key === "Enter" || event.key === "Tab") {
     if (filteredSuggestions.value.length > 0) {
       event.preventDefault();
       const selected = filteredSuggestions.value[activeSuggestionIndex.value];
@@ -411,7 +454,7 @@ function handleKeydown(event: KeyboardEvent) {
         selectSuggestion(selected);
       }
     }
-  } else if (event.key === 'Escape') {
+  } else if (event.key === "Escape") {
     showAutocomplete.value = false;
   }
 }
@@ -420,43 +463,48 @@ function selectSuggestion(item: SuggestionItem) {
   const input = inputRef.value;
   if (!input) return;
 
-  const value = props.modelValue || '';
+  const value = props.modelValue || "";
   const cursorPos = input.selectionStart || value.length;
   const beforeCursor = value.substring(0, cursorPos);
   const afterCursor = value.substring(cursorPos);
 
-  if (item.type === 'method') {
+  if (item.type === "method") {
     // Replace the partial word before cursor with the full method text
     const wordMatch = beforeCursor.match(/([A-Za-z][A-Za-z0-9_.]*)$/);
     if (wordMatch) {
       const prefixStart = beforeCursor.length - wordMatch[0].length;
-      const newValue = beforeCursor.substring(0, prefixStart) + item.value + afterCursor;
-      emit('update:modelValue', newValue);
+      const newValue =
+        beforeCursor.substring(0, prefixStart) + item.value + afterCursor;
+      emit("update:modelValue", newValue);
     }
-  } else if (currentPrefix.value === 'any') {
+  } else if (currentPrefix.value === "any") {
     // For 'any' mode, replace the partial word with the appropriate reference
     const wordMatch = beforeCursor.match(/([A-Za-z][A-Za-z0-9_.]*)$/);
     if (wordMatch) {
       const prefixStart = beforeCursor.length - wordMatch[0].length;
-      let replacement = '';
-      if (item.type === 'field') {
+      let replacement = "";
+      if (item.type === "field") {
         replacement = `$F{${item.value}}`;
-      } else if (item.type === 'parameter') {
+      } else if (item.type === "parameter") {
         replacement = `$P{${item.value}}`;
-      } else if (item.type === 'variable') {
+      } else if (item.type === "variable") {
         replacement = `$V{${item.value}}`;
       } else {
         replacement = item.value;
       }
-      const newValue = beforeCursor.substring(0, prefixStart) + replacement + afterCursor;
-      emit('update:modelValue', newValue);
+      const newValue =
+        beforeCursor.substring(0, prefixStart) + replacement + afterCursor;
+      emit("update:modelValue", newValue);
     }
   } else {
     const prefixMatch = beforeCursor.match(/\$(F|P|V)\{[^}]*$/);
     if (prefixMatch) {
-      const prefixStart = beforeCursor.lastIndexOf('$');
-      const newValue = beforeCursor.substring(0, prefixStart) + `$${prefixMatch[1]}{${item.value}}` + afterCursor;
-      emit('update:modelValue', newValue);
+      const prefixStart = beforeCursor.lastIndexOf("$");
+      const newValue =
+        beforeCursor.substring(0, prefixStart) +
+        `$${prefixMatch[1]}{${item.value}}` +
+        afterCursor;
+      emit("update:modelValue", newValue);
     }
   }
 
@@ -471,8 +519,8 @@ function selectSuggestion(item: SuggestionItem) {
 function handleFocus() {
   if (inputRef.value) {
     detectAutocompleteContext(
-      props.modelValue || '',
-      inputRef.value.selectionStart || 0
+      props.modelValue || "",
+      inputRef.value.selectionStart || 0,
     );
   }
 }
@@ -485,17 +533,29 @@ function handleBlur() {
 }
 
 const commonExpressions = [
-  { expression: '$F{field}.equals("value")', description: 'Field equals a specific value' },
-  { expression: '$F{field} != null', description: 'Field is not null' },
-  { expression: '$F{field} > 0', description: 'Field is greater than 0' },
-  { expression: '$V{PAGE_NUMBER} > 1', description: 'Page number is greater than 1' },
-  { expression: '$F{status}.equals("active")', description: 'Status equals "active"' },
-  { expression: '$F{amount}.doubleValue() > 100', description: 'Amount is greater than 100' },
+  {
+    expression: '$F{field}.equals("value")',
+    description: "Field equals a specific value",
+  },
+  { expression: "$F{field} != null", description: "Field is not null" },
+  { expression: "$F{field} > 0", description: "Field is greater than 0" },
+  {
+    expression: "$V{PAGE_NUMBER} > 1",
+    description: "Page number is greater than 1",
+  },
+  {
+    expression: '$F{status}.equals("active")',
+    description: 'Status equals "active"',
+  },
+  {
+    expression: "$F{amount}.doubleValue() > 100",
+    description: "Amount is greater than 100",
+  },
 ];
 
 const insertExpression = (expression: string) => {
-  const currentValue = props.modelValue || '';
-  emit('update:modelValue', currentValue + expression);
+  const currentValue = props.modelValue || "";
+  emit("update:modelValue", currentValue + expression);
   showHelp.value = false;
 };
 </script>
@@ -519,7 +579,9 @@ const insertExpression = (expression: string) => {
   font-size: var(--prop-font-size-sm);
   color: var(--prop-text-primary);
   background-color: var(--prop-bg-primary);
-  transition: border-color var(--prop-transition-fast), box-shadow var(--prop-transition-fast);
+  transition:
+    border-color var(--prop-transition-fast),
+    box-shadow var(--prop-transition-fast);
 }
 
 .expression-input:hover {
@@ -541,7 +603,9 @@ const insertExpression = (expression: string) => {
   cursor: pointer;
   font-weight: bold;
   color: var(--prop-text-secondary);
-  transition: background-color var(--prop-transition-fast), border-color var(--prop-transition-fast);
+  transition:
+    background-color var(--prop-transition-fast),
+    border-color var(--prop-transition-fast);
 }
 
 .help-button:hover {

@@ -19,8 +19,10 @@
     "downloadJRXML": "下载JRXML",
     "previewPDF": "预览PDF",
     "setPreviewServer": "设置预览服务器",
-    "donate": "打赏",
-    "help": "使用说明"
+    "help": "使用说明",
+    "delete": "删除",
+    "copy": "复制",
+    "paste": "粘贴"
   },
   "fileManager": {
     "title": "文件管理",
@@ -129,7 +131,7 @@
   },
   "elementNames": {
     "staticText": "静态文本",
-    "textField": "动态文本",
+    "textField": "文本",
     "image": "图片",
     "line": "线条",
     "rectangle": "矩形",
@@ -155,6 +157,7 @@
   },
   "properties": {
     "title": "属性设置",
+    "markup": "标记模式",
     "reportProperties": "报表属性",
     "bandHeightSettings": "Band高度设置",
     "basicProperties": "基本属性",
@@ -192,7 +195,7 @@
     "underline": "下划线",
     "expression": "表达式",
     "expressionHint": "例如: {fieldHolder} 或 \"固定文字\"",
-    "defaultTextFieldExpression": "文本域",
+    "defaultTextFieldExpression": "文本",
     "defaultStaticText": "静态文本",
     "pattern": "格式模式",
     "patternHint": "例如: 日期格式 \"yyyy-MM-dd\"，数字格式 \"#,##0.00\"",
@@ -348,7 +351,8 @@
     "marginsPx": "页边距 (px)",
     "defaultFontSettings": "默认字体设置",
     "bandSelection": "Band选择",
-    "bandSelectionHint": "勾选的band将自动添加到报表中，取消勾选的band将从报表中移除",
+    "bandSelectionHint": "勾选的band将自动添加到报表中，取消勾选的band将从报表中移除。Detail主体区域为主画布，始终生效。",
+    "detailBandAlwaysRequired": "Detail主体区域是报表主画布，始终需要",
     "copy": "复制",
     "apply": "应用",
     "regenerate": "重新生成",

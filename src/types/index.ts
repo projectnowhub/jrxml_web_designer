@@ -88,16 +88,12 @@ export interface ReportProperty {
 
 // Band type enum
 export type BandType =
-  | "detail"
   | "pageHeader"
-  | "pageFooter"
-  | "title"
-  | "summary"
   | "columnHeader"
+  | "detail"
   | "columnFooter"
-  | "background"
-  | "lastPageFooter"
-  | "noData";
+  | "pageFooter"
+  | "background";
 
 // Pen style interface
 export interface Pen {
@@ -260,6 +256,8 @@ export interface ReportProperties {
   bottomMargin: number;
   defaultFont: FontSettings;
   orientation?: "portrait" | "landscape";
+  pageCount?: number;
+  bandLimits?: Record<string, { min: number; max: number }>;
 }
 
 // Base design element interface
@@ -292,11 +290,17 @@ export interface DesignElementBase {
   // Common reportElement attributes
   key?: string;
   positionType?: "Float" | "FixRelativeToTop" | "FixRelativeToBottom";
-  stretchType?: "NoStretch" | "ElementGroupBottom" | "ElementGroupHeight" | "ContainerBottom" | "ContainerHeight";
+  stretchType?:
+    | "NoStretch"
+    | "ElementGroupBottom"
+    | "ElementGroupHeight"
+    | "ContainerBottom"
+    | "ContainerHeight";
   isPrintRepeatedValues?: boolean;
   isRemoveLineWhenBlank?: boolean;
   printWhenExpression?: string;
   styleExpression?: string;
+  pageIndex?: number;
   // Custom properties
   properties?: Array<{ name: string; value: string }>;
   propertyExpressions?: Array<{ name: string; valueExpression: string }>;
@@ -308,7 +312,7 @@ export interface StaticTextElement extends DesignElementBase {
   text?: string;
   markup?: "none" | "html" | "rtf" | "styledtext";
   textAdjust?: "StretchHeight" | "CutText" | "ShrinkToFit";
-  rotation?: "None" | "Left" | "Right";
+  rotation?: "None" | "Left" | "Right" | "UpsideDown";
   pattern?: string;
   xml_lang?: string;
   printWhenExpression?: string;
@@ -318,6 +322,7 @@ export interface StaticTextElement extends DesignElementBase {
 export interface TextFieldElement extends DesignElementBase {
   type: "textField";
   expression?: string;
+  rotation?: "None" | "Left" | "Right" | "UpsideDown";
   evaluationTime?:
     | "Now"
     | "Report"
@@ -512,7 +517,15 @@ export interface SubreportElement extends DesignElementBase {
   printWhenExpression?: string;
   isUsingCache?: boolean;
   runToBottom?: boolean;
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto" | "Master";
+  evaluationTime?:
+    | "Now"
+    | "Report"
+    | "Page"
+    | "Column"
+    | "Group"
+    | "Band"
+    | "Auto"
+    | "Master";
   evaluationGroup?: string;
   isIgnorePagination?: boolean;
 }
@@ -535,7 +548,14 @@ export interface ListElement extends DesignElementBase {
   // Conditional display
   printWhenExpression?: string;
   // Evaluation settings
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
+  evaluationTime?:
+    | "Now"
+    | "Report"
+    | "Page"
+    | "Column"
+    | "Group"
+    | "Band"
+    | "Auto";
   evaluationGroup?: string;
   // Pagination settings
   splitType?: "Stretch" | "Prevent" | "Immediate";
@@ -545,7 +565,29 @@ export interface ListElement extends DesignElementBase {
 // Chart element interface
 export interface ChartElement extends DesignElementBase {
   type: "chart";
-  chartType: "pie" | "pie3D" | "bar" | "bar3D" | "xyBar" | "stackedBar" | "stackedBar3D" | "line" | "xyLine" | "area" | "xyArea" | "scatter" | "bubble" | "timeSeries" | "highLow" | "candlestick" | "meter" | "thermometer" | "multiAxis" | "stackedArea" | "gantt" | "spider";
+  chartType:
+    | "pie"
+    | "pie3D"
+    | "bar"
+    | "bar3D"
+    | "xyBar"
+    | "stackedBar"
+    | "stackedBar3D"
+    | "line"
+    | "xyLine"
+    | "area"
+    | "xyArea"
+    | "scatter"
+    | "bubble"
+    | "timeSeries"
+    | "highLow"
+    | "candlestick"
+    | "meter"
+    | "thermometer"
+    | "multiAxis"
+    | "stackedArea"
+    | "gantt"
+    | "spider";
   // Chart title
   title?: string;
   titleExpression?: string;
@@ -560,11 +602,26 @@ export interface ChartElement extends DesignElementBase {
   // Hyperlink
   hyperlinkTooltipExpression?: string;
   hyperlinkTarget?: "Self" | "Blank" | "Top" | "Parent";
-  hyperlinkType?: "None" | "Reference" | "LocalAnchor" | "LocalPage" | "RemoteAnchor" | "RemotePage" | "Tooltip";
+  hyperlinkType?:
+    | "None"
+    | "Reference"
+    | "LocalAnchor"
+    | "LocalPage"
+    | "RemoteAnchor"
+    | "RemotePage"
+    | "Tooltip";
   hyperlinkExpression?: string;
   bookmarkLevel?: number;
   // Evaluation settings
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto" | "Master";
+  evaluationTime?:
+    | "Now"
+    | "Report"
+    | "Page"
+    | "Column"
+    | "Group"
+    | "Band"
+    | "Auto"
+    | "Master";
   evaluationGroup?: string;
   printWhenExpression?: string;
   // Dataset
@@ -600,10 +657,32 @@ export interface ChartElement extends DesignElementBase {
 // Barcode element interface
 export interface BarcodeElement extends DesignElementBase {
   type: "barcode";
-  barcodeType: "Code128" | "Code39" | "EAN13" | "EAN8" | "UPCA" | "UPCE" | "QRCode" | "DataMatrix" | "Interleaved2Of5" | "Codabar" | "EAN128" | "PDF417" | "POSTNET" | "RoyalMailCustomer" | "USPSIntelligentMail";
+  barcodeType:
+    | "Code128"
+    | "Code39"
+    | "EAN13"
+    | "EAN8"
+    | "UPCA"
+    | "UPCE"
+    | "QRCode"
+    | "DataMatrix"
+    | "Interleaved2Of5"
+    | "Codabar"
+    | "EAN128"
+    | "PDF417"
+    | "POSTNET"
+    | "RoyalMailCustomer"
+    | "USPSIntelligentMail";
   codeExpression?: string;
   printWhenExpression?: string;
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
+  evaluationTime?:
+    | "Now"
+    | "Report"
+    | "Page"
+    | "Column"
+    | "Group"
+    | "Band"
+    | "Auto";
 }
 
 // Map element interface
@@ -615,7 +694,14 @@ export interface MapElement extends DesignElementBase {
   zoomExpression?: string;
   languageExpression?: string;
   printWhenExpression?: string;
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
+  evaluationTime?:
+    | "Now"
+    | "Report"
+    | "Page"
+    | "Column"
+    | "Group"
+    | "Band"
+    | "Auto";
 }
 
 // Crosstab element interface
@@ -624,8 +710,20 @@ export interface CrosstabElement extends DesignElementBase {
   crosstabWidth?: number;
   crosstabHeight?: number;
   printWhenExpression?: string;
-  whenNoDataType?: "AllSectionsNoDetail" | "AllSectionsWithDetail" | "NoDataCell" | "Blank";
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto" | "Master";
+  whenNoDataType?:
+    | "AllSectionsNoDetail"
+    | "AllSectionsWithDetail"
+    | "NoDataCell"
+    | "Blank";
+  evaluationTime?:
+    | "Now"
+    | "Report"
+    | "Page"
+    | "Column"
+    | "Group"
+    | "Band"
+    | "Auto"
+    | "Master";
 }
 
 // Icon label element interface
@@ -635,7 +733,14 @@ export interface IconLabelElement extends DesignElementBase {
   label?: string;
   labelExpression?: string;
   printWhenExpression?: string;
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
+  evaluationTime?:
+    | "Now"
+    | "Report"
+    | "Page"
+    | "Column"
+    | "Group"
+    | "Band"
+    | "Auto";
 }
 
 // Generic element interface
@@ -643,7 +748,14 @@ export interface GenericElement extends DesignElementBase {
   type: "genericElement";
   namespace?: string;
   printWhenExpression?: string;
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
+  evaluationTime?:
+    | "Now"
+    | "Report"
+    | "Page"
+    | "Column"
+    | "Group"
+    | "Band"
+    | "Auto";
 }
 
 // Sort element interface
@@ -654,12 +766,18 @@ export interface SortElement extends DesignElementBase {
     order?: "Ascending" | "Descending";
   }>;
   printWhenExpression?: string;
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
+  evaluationTime?:
+    | "Now"
+    | "Report"
+    | "Page"
+    | "Column"
+    | "Group"
+    | "Band"
+    | "Auto";
 }
 
 // Design element union type
 export type DesignElement =
-  | StaticTextElement
   | TextFieldElement
   | ImageElement
   | LineElement
@@ -719,8 +837,12 @@ export interface DraggingInfo {
   parentFrameIndex?: number;
   startX: number;
   startY: number;
+  origElementX?: number;
+  origElementY?: number;
   lastTargetBandIndex?: number;
   lastTargetFrameIndex?: number; // records the index of the most recent target Frame
+  sourcePageIndex?: number;
+  lastTargetPageIndex?: number;
 }
 
 // Selection box interface

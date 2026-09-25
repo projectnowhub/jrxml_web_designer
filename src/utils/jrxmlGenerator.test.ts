@@ -574,7 +574,7 @@ describe('jrxmlGenerator', () => {
             x: 20,
             y: 10,
             width: 100,
-            height: 0,
+            height: 20,
             lineDirection: 'TopDown'
           } as DesignElement
         ]
@@ -1229,5 +1229,110 @@ describe('jrxmlGenerator', () => {
     const standaloneMatch = generated.match(/<jr:column[^>]*uuid="col-standalone"[^>]*>[\s\S]*?<jr:columnHeader\s+height="(\d+)"\s+rowSpan="(\d+)"/)
     expect(standaloneMatch).toBeDefined()
     expect(standaloneMatch?.[2]).toBe('2')
+  })
+
+  it('should generate textElement markup="html" when markup is set to html', () => {
+    const bands: Band[] = [{
+      type: 'detail',
+      height: 60,
+      elements: [{
+        type: 'textField',
+        x: 0,
+        y: 0,
+        width: 300,
+        height: 30,
+        markup: 'html',
+        expression: '"Hello <b>World</b> and <font color=\\"#ff0000\\">Red Text</font>"'
+      }]
+    }]
+
+    const generated = generateJRXMLContent(mockReportProperties, bands, [])
+    expect(generated).toContain('markup="html"')
+    expect(generated).toContain('<textFieldExpression><![CDATA["Hello <b>World</b> and <font color=\\"#ff0000\\">Red Text</font>"]]></textFieldExpression>')
+  })
+
+  it('should auto-detect HTML tags in expression and generate markup="html" with properly escaped quotes', () => {
+    const bands: Band[] = [{
+      type: 'detail',
+      height: 60,
+      elements: [{
+        type: 'textField',
+        x: 0,
+        y: 0,
+        width: 300,
+        height: 30,
+        expression: '"Contact us at <a href="mailto:support@example.com">support</a> or call <a href="tel:+1234567890">phone</a>"'
+      }]
+    }]
+
+    const generated = generateJRXMLContent(mockReportProperties, bands, [])
+    expect(generated).toContain('markup="html"')
+    expect(generated).toContain('<textFieldExpression><![CDATA["Contact us at <a href=\\"mailto:support@example.com\\">support</a> or call <a href=\\"tel:+1234567890\\">phone</a>"]]></textFieldExpression>')
+  })
+
+  it('should round-trip parse and regenerate rich text with HTML markup and links', () => {
+    const originalJRXML = `<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="RichTextTest" pageWidth="595" pageHeight="842" columnWidth="555"
+              leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
+  <detail>
+    <band height="100">
+      <textField>
+        <reportElement x="10" y="10" width="300" height="40" uuid="rich1"/>
+        <textElement markup="html">
+          <font fontName="Arial" size="12"/>
+        </textElement>
+        <textFieldExpression><![CDATA["Visit <a href=\\"https://google.com\\">Google</a> or <u>underline</u>"]]></textFieldExpression>
+      </textField>
+    </band>
+  </detail>
+</jasperReport>`
+
+    const parsed = parseJRXMLContent(originalJRXML)
+    expect(parsed.bands[0].elements[0].markup).toBe('html')
+
+    const regenerated = generateJRXMLContent(
+      parsed.reportProperties,
+      parsed.bands,
+      parsed.fields,
+      parsed.parameters,
+      parsed.variables,
+      parsed.subDatasets,
+      parsed.styles
+    )
+
+    expect(regenerated).toContain('markup="html"')
+    expect(regenerated).toContain('<a href=\\"https://google.com\\">Google</a>')
+    expect(regenerated).toContain('<u>underline</u>')
+  })
+
+  it('should auto-detect HTML markup and properly generate JRXML for highlighted text and mailto/tel links', () => {
+    const bandsWithHighlightAndLinks: Band[] = [
+      {
+        type: 'detail',
+        height: 80,
+        elements: [
+          {
+            type: 'textField',
+            x: 10,
+            y: 10,
+            width: 300,
+            height: 30,
+            expression: '"Contact us at <a href=\\"mailto:info@example.com\\" target=\\"_blank\\">Support Team</a> or call <a href=\\"tel:+1234567890\\">+1 234 567 890</a> with <span style=\\"background-color: #fff566\\">Urgent Note</span>"'
+          } as DesignElement
+        ]
+      }
+    ]
+
+    const jrxml = generateJRXMLContent(mockReportProperties, bandsWithHighlightAndLinks, [], [])
+
+    expect(jrxml).toContain('markup="html"')
+    expect(jrxml).toContain('mailto:info@example.com')
+    expect(jrxml).toContain('Support Team')
+    expect(jrxml).toContain('tel:+1234567890')
+    expect(jrxml).toContain('background-color: #fff566')
+    expect(jrxml).toContain('Urgent Note')
   })
 })

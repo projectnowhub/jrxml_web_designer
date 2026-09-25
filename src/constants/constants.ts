@@ -3,9 +3,9 @@
 // Zoom-related constants
 export const ZOOM_CONSTANTS = {
   DEFAULT_ZOOM: 1,
-  ZOOM_LEVELS: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2],
+  ZOOM_LEVELS: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3],
   MIN_ZOOM: 0.25,
-  MAX_ZOOM: 2,
+  MAX_ZOOM: 3,
   OPTIMAL_ZOOM_MARGIN: 0.9, // margin coefficient used when calculating the optimal zoom ratio
 };
 
@@ -49,12 +49,12 @@ export const DOM_CONSTANTS = {
 
 // Border style constants
 export const BORDER_CONSTANTS = {
-  THIN: 'Thin',
-  MEDIUM: 'Medium',
-  THICK: 'Thick',
-  DASHED: 'Dashed',
-  DOTTED: 'Dotted',
-  DOUBLE: 'Double',
+  THIN: "Thin",
+  MEDIUM: "Medium",
+  THICK: "Thick",
+  DASHED: "Dashed",
+  DOTTED: "Dotted",
+  DOUBLE: "Double",
   // Border width constants
   THIN_WIDTH: 1,
   MEDIUM_WIDTH: 2,
@@ -63,22 +63,22 @@ export const BORDER_CONSTANTS = {
 
 // Text alignment constants
 export const TEXT_ALIGN_CONSTANTS = {
-  LEFT: 'Left',
-  CENTER: 'Center',
-  RIGHT: 'Right',
-  JUSTIFIED: 'Justified',
+  LEFT: "Left",
+  CENTER: "Center",
+  RIGHT: "Right",
+  JUSTIFIED: "Justified",
 };
 
 // Vertical alignment constants
 export const VERTICAL_ALIGN_CONSTANTS = {
-  TOP: 'Top',
-  MIDDLE: 'Middle',
-  BOTTOM: 'Bottom',
+  TOP: "Top",
+  MIDDLE: "Middle",
+  BOTTOM: "Bottom",
 };
 
 // Font constants
 export const FONT_CONSTANTS = {
-  DEFAULT_FONT_FAMILY: 'Noto Serif SC',
+  DEFAULT_FONT_FAMILY: "Noto Serif SC",
   // Font size constants
   DEFAULT_SIZE: 12,
   MIN_SIZE: 8,
@@ -91,14 +91,14 @@ export const FONT_CONSTANTS = {
 
 // Element type constants
 export const ELEMENT_TYPE_CONSTANTS = {
-  STATIC_TEXT: 'staticText',
-  TEXT_FIELD: 'textField',
-  IMAGE: 'image',
-  LINE: 'line',
-  RECTANGLE: 'rectangle',
-  ELLIPSE: 'ellipse',
-  BREAK: 'break',
-  FRAME: 'frame',
+  STATIC_TEXT: "staticText",
+  TEXT_FIELD: "textField",
+  IMAGE: "image",
+  LINE: "line",
+  RECTANGLE: "rectangle",
+  ELLIPSE: "ellipse",
+  BREAK: "break",
+  FRAME: "frame",
 };
 
 // Element size constants
@@ -107,32 +107,62 @@ export const ELEMENT_CONSTANTS = {
   MIN_HEIGHT: 10,
 };
 
+// Compact default sizes used when a new element is added to a band.
+// Keeping new elements small avoids stretching them across the whole band.
+export const ELEMENT_DEFAULT_SIZES: Record<
+  string,
+  { width: number; height: number }
+> = {
+  [ELEMENT_TYPE_CONSTANTS.STATIC_TEXT]: { width: 100, height: 20 },
+  [ELEMENT_TYPE_CONSTANTS.TEXT_FIELD]: { width: 100, height: 20 },
+  [ELEMENT_TYPE_CONSTANTS.IMAGE]: { width: 100, height: 100 },
+  [ELEMENT_TYPE_CONSTANTS.LINE]: { width: 100, height: 2 },
+  [ELEMENT_TYPE_CONSTANTS.RECTANGLE]: { width: 100, height: 60 },
+  [ELEMENT_TYPE_CONSTANTS.ELLIPSE]: { width: 80, height: 60 },
+  [ELEMENT_TYPE_CONSTANTS.FRAME]: { width: 200, height: 100 },
+};
+
+// Resolve the compact default size for an element type. When a band height is
+// provided the height is clamped so a new element never overflows its band.
+export function getDefaultElementSize(
+  type: string,
+  bandHeight?: number,
+): { width: number; height: number } {
+  const size = ELEMENT_DEFAULT_SIZES[type] || {
+    width: UI_CONSTANTS.DEFAULT_ELEMENT_WIDTH,
+    height: UI_CONSTANTS.DEFAULT_ELEMENT_HEIGHT,
+  };
+
+  const result = { ...size };
+  if (
+    typeof bandHeight === "number" &&
+    bandHeight > 0 &&
+    result.height > bandHeight
+  ) {
+    result.height = bandHeight;
+  }
+
+  return result;
+}
+
 // Band type constants
 export const BAND_TYPE_CONSTANTS = {
-  TITLE: 'title',
-  PAGE_HEADER: 'pageHeader',
-  COLUMN_HEADER: 'columnHeader',
-  DETAIL: 'detail',
-  COLUMN_FOOTER: 'columnFooter',
-  PAGE_FOOTER: 'pageFooter',
-  SUMMARY: 'summary',
-  BACKGROUND: 'background',
-  LAST_PAGE_FOOTER: 'lastPageFooter',
-  NO_DATA: 'noData',
+  PAGE_HEADER: "pageHeader",
+  COLUMN_HEADER: "columnHeader",
+  DETAIL: "detail",
+  COLUMN_FOOTER: "columnFooter",
+  PAGE_FOOTER: "pageFooter",
+  BACKGROUND: "background",
 };
 
 // Band default height constants
 export const BAND_HEIGHT_CONSTANTS = {
-  [BAND_TYPE_CONSTANTS.TITLE]: 80,
   [BAND_TYPE_CONSTANTS.PAGE_HEADER]: 50,
   [BAND_TYPE_CONSTANTS.COLUMN_HEADER]: 30,
   [BAND_TYPE_CONSTANTS.DETAIL]: 100,
   [BAND_TYPE_CONSTANTS.COLUMN_FOOTER]: 30,
   [BAND_TYPE_CONSTANTS.PAGE_FOOTER]: 40,
-  [BAND_TYPE_CONSTANTS.SUMMARY]: 60,
   [BAND_TYPE_CONSTANTS.BACKGROUND]: 0,
-  [BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER]: 40,
-  [BAND_TYPE_CONSTANTS.NO_DATA]: 50,
 };
 
 // Band-related constants
@@ -143,15 +173,129 @@ export const BAND_CONSTANTS = {
   SPACING: 0, // spacing between bands
 };
 
+// All configurable bands definition
+export const ALL_CONFIGURABLE_BANDS = [
+  {
+    type: BAND_TYPE_CONSTANTS.PAGE_HEADER,
+    name: "Page Header",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.COLUMN_HEADER,
+    name: "Column Header",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.DETAIL,
+    name: "Detail",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER,
+    name: "Column Footer",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.PAGE_FOOTER,
+    name: "Page Footer",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
+  },
+  {
+    type: BAND_TYPE_CONSTANTS.BACKGROUND,
+    name: "Background",
+    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.BACKGROUND] || 0,
+  },
+];
+
+// Developer default band configuration (default height, min, max in px)
+export const DEVELOPER_DEFAULT_BAND_CONFIG: Record<
+  string,
+  { defaultHeight: number; min: number; max: number }
+> = {
+  [BAND_TYPE_CONSTANTS.PAGE_HEADER]: { defaultHeight: 50, min: 20, max: 70 },
+  [BAND_TYPE_CONSTANTS.COLUMN_HEADER]: { defaultHeight: 30, min: 20, max: 70 },
+  [BAND_TYPE_CONSTANTS.COLUMN_FOOTER]: { defaultHeight: 30, min: 20, max: 70 },
+  [BAND_TYPE_CONSTANTS.PAGE_FOOTER]: { defaultHeight: 40, min: 20, max: 70 },
+};
+
+// Default band constraints (min and max heights in px)
+export const DEFAULT_BAND_LIMITS: Record<string, { min: number; max: number }> =
+  {
+    [BAND_TYPE_CONSTANTS.PAGE_HEADER]: { min: 20, max: 70 },
+    [BAND_TYPE_CONSTANTS.COLUMN_HEADER]: { min: 20, max: 70 },
+    [BAND_TYPE_CONSTANTS.COLUMN_FOOTER]: { min: 20, max: 70 },
+    [BAND_TYPE_CONSTANTS.PAGE_FOOTER]: { min: 20, max: 70 },
+  };
+
+// Storage key and loader for user-configured global default band config
+export const GLOBAL_BAND_LIMITS_STORAGE_KEY = "jrxml_global_band_limits";
+
+export function getEffectiveDefaultBandConfig(): Record<
+  string,
+  { defaultHeight: number; min: number; max: number }
+> {
+  const result: Record<string, { defaultHeight: number; min: number; max: number }> = {};
+  for (const key of Object.keys(DEVELOPER_DEFAULT_BAND_CONFIG)) {
+    const dev = DEVELOPER_DEFAULT_BAND_CONFIG[key];
+    if (dev) {
+      result[key] = { ...dev };
+    }
+  }
+
+  try {
+    if (typeof localStorage !== "undefined") {
+      const saved = localStorage.getItem(GLOBAL_BAND_LIMITS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        for (const key of Object.keys(DEVELOPER_DEFAULT_BAND_CONFIG)) {
+          const dev = DEVELOPER_DEFAULT_BAND_CONFIG[key];
+          if (!dev) continue;
+          const item = parsed?.[key];
+          if (item) {
+            result[key] = {
+              defaultHeight:
+                typeof item.defaultHeight === "number"
+                  ? item.defaultHeight
+                  : typeof item.height === "number"
+                  ? item.height
+                  : dev.defaultHeight,
+              min: typeof item.min === "number" ? item.min : dev.min,
+              max: typeof item.max === "number" ? item.max : dev.max,
+            };
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to load saved band limits from localStorage:", e);
+  }
+  return result;
+}
+
+export function getEffectiveDefaultBandLimits(): Record<
+  string,
+  { min: number; max: number }
+> {
+  const config = getEffectiveDefaultBandConfig();
+  const limits: Record<string, { min: number; max: number }> = {};
+  for (const key of Object.keys(config)) {
+    const item = config[key];
+    if (item) {
+      limits[key] = { min: item.min, max: item.max };
+    }
+  }
+  return limits;
+}
+
 // Evaluation time constants
 export const EVALUATION_TIME_CONSTANTS = {
-  NOW: 'Now',
-  REPORT: 'Report',
-  PAGE: 'Page',
-  COLUMN: 'Column',
-  GROUP: 'Group',
-  BAND: 'Band',
-  AUTO: 'Auto',
+  NOW: "Now",
+  REPORT: "Report",
+  PAGE: "Page",
+  COLUMN: "Column",
+  GROUP: "Group",
+  BAND: "Band",
+  AUTO: "Auto",
 };
 
 // Ruler-related constants
@@ -215,8 +359,8 @@ export const UI_CONSTANTS = {
   SMALL_GAP: 5,
   MEDIUM_GAP: 15,
   // Input field padding
-  INPUT_PADDING_SMALL: '6px 12px',
-  INPUT_PADDING_MEDIUM: '8px 16px',
+  INPUT_PADDING_SMALL: "6px 12px",
+  INPUT_PADDING_MEDIUM: "8px 16px",
   // Panel padding
   PANEL_PADDING: 16,
   // DOM operation delay

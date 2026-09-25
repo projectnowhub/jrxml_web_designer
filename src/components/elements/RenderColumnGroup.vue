@@ -32,43 +32,15 @@
                                 :style="getCellContentStyle(cell, type)"
                             >
                                 <template v-if="cell.content.tableHeader">
-                                    <template
-                                        v-if="
+                                    <div class="text-field">
+                                        {{
                                             cell.content.tableHeader.element
-                                                ?.type === 'staticText'
-                                        "
-                                    >
-                                        <div class="static-text">
-                                            {{
-                                                cell.content.tableHeader.element
-                                                    ?.text || ""
-                                            }}
-                                        </div>
-                                    </template>
-                                    <template
-                                        v-else-if="
-                                            cell.content.tableHeader.element
-                                                ?.type === 'textField'
-                                        "
-                                    >
-                                        <div class="text-field">
-                                            {{
-                                                cell.content.tableHeader.element
-                                                    ?.expression || ""
-                                            }}
-                                        </div>
-                                    </template>
-                                    <template v-else>
-                                        <div class="static-text">
-                                            {{
-                                                cell.content.tableHeader.element
-                                                    ?.text || ""
-                                            }}
-                                        </div>
-                                    </template>
+                                                ?.expression || ""
+                                        }}
+                                    </div>
                                 </template>
                                 <template v-else>
-                                    <div class="static-text"></div>
+                                    <div class="text-field"></div>
                                 </template>
                             </div>
                         </th>
@@ -92,40 +64,17 @@
                                 :style="getCellContentStyle(cell, type)"
                             >
                                 <template v-if="cell.content.columnHeader">
-                                    <template
-                                        v-if="
+                                    <div class="text-field">
+                                        {{
                                             cell.content.columnHeader.element
-                                                ?.type === 'staticText'
-                                        "
-                                    >
-                                        <div class="static-text">
-                                            {{
-                                                cell.content.columnHeader
-                                                    .element?.text || ""
-                                            }}
-                                        </div>
-                                    </template>
-                                    <template
-                                        v-else-if="
-                                            cell.content.columnHeader.element
-                                                ?.type === 'textField'
-                                        "
-                                    >
-                                        <div class="text-field">
-                                            {{
-                                                cell.content.columnHeader
-                                                    .element?.expression || ""
-                                            }}
-                                        </div>
-                                    </template>
-                                    <template v-else>
-                                        <div class="column-name">
-                                            {{ cell.content.name }}
-                                        </div>
-                                    </template>
+                                                ?.expression ||
+                                            cell.content.name ||
+                                            ""
+                                        }}
+                                    </div>
                                 </template>
                                 <template v-else>
-                                    <div class="static-text"></div>
+                                    <div class="text-field"></div>
                                 </template>
                             </div>
                         </th>
@@ -149,43 +98,15 @@
                                 :style="getCellContentStyle(cell, type)"
                             >
                                 <template v-if="cell.content.columnFooter">
-                                    <template
-                                        v-if="
+                                    <div class="text-field">
+                                        {{
                                             cell.content.columnFooter.element
-                                                ?.type === 'staticText'
-                                        "
-                                    >
-                                        <div class="static-text">
-                                            {{
-                                                cell.content.columnFooter
-                                                    .element?.text || ""
-                                            }}
-                                        </div>
-                                    </template>
-                                    <template
-                                        v-else-if="
-                                            cell.content.columnFooter.element
-                                                ?.type === 'textField'
-                                        "
-                                    >
-                                        <div class="text-field">
-                                            {{
-                                                cell.content.columnFooter
-                                                    .element?.expression || ""
-                                            }}
-                                        </div>
-                                    </template>
-                                    <template v-else>
-                                        <div class="static-text">
-                                            {{
-                                                cell.content.columnFooter
-                                                    .element?.text || ""
-                                            }}
-                                        </div>
-                                    </template>
+                                                ?.expression || ""
+                                        }}
+                                    </div>
                                 </template>
                                 <template v-else>
-                                    <div class="static-text"></div>
+                                    <div class="text-field"></div>
                                 </template>
                             </div>
                         </th>
@@ -209,43 +130,15 @@
                                 :style="getCellContentStyle(cell, type)"
                             >
                                 <template v-if="cell.content.tableFooter">
-                                    <template
-                                        v-if="
+                                    <div class="text-field">
+                                        {{
                                             cell.content.tableFooter.element
-                                                ?.type === 'staticText'
-                                        "
-                                    >
-                                        <div class="static-text">
-                                            {{
-                                                cell.content.tableFooter.element
-                                                    ?.text || ""
-                                            }}
-                                        </div>
-                                    </template>
-                                    <template
-                                        v-else-if="
-                                            cell.content.tableFooter.element
-                                                ?.type === 'textField'
-                                        "
-                                    >
-                                        <div class="text-field">
-                                            {{
-                                                cell.content.tableFooter.element
-                                                    ?.expression || ""
-                                            }}
-                                        </div>
-                                    </template>
-                                    <template v-else>
-                                        <div class="static-text">
-                                            {{
-                                                cell.content.tableFooter.element
-                                                    ?.text || ""
-                                            }}
-                                        </div>
-                                    </template>
+                                                ?.expression || ""
+                                        }}
+                                    </div>
                                 </template>
                                 <template v-else>
-                                    <div class="static-text"></div>
+                                    <div class="text-field"></div>
                                 </template>
                             </div>
                         </th>

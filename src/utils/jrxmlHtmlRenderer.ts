@@ -7,7 +7,6 @@ import type {
   Band,
   DesignElement,
   ReportProperties,
-  StaticTextElement,
   TextFieldElement,
   ImageElement,
   LineElement,
@@ -198,16 +197,6 @@ function buildTextStyle(element: DesignElement): string {
   return style;
 }
 
-function renderStaticText(
-  element: StaticTextElement,
-  baseStyle: string,
-  scale: number,
-): string {
-  const fontStyle = buildFontStyle(element, scale);
-  const textStyle = buildTextStyle(element);
-  return `<div class="element static-text" style="${baseStyle}${textStyle}"><span style="${fontStyle}">${escapeHtml(element.text || "")}</span></div>`;
-}
-
 function renderTextField(
   element: TextFieldElement,
   baseStyle: string,
@@ -313,8 +302,6 @@ function renderElement(
   const baseStyle = buildElementBaseStyle(element, scale, showElementBorders);
 
   switch (element.type) {
-    case "staticText":
-      return renderStaticText(element, baseStyle, scale);
     case "textField":
       return renderTextField(element, baseStyle, scale);
     case "image":

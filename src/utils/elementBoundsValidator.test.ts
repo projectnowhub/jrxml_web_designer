@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { getOutOfBoundsElements, validateElementBounds, isReportDesignValid, getReportDesignValidationErrors } from '@/utils/elementBoundsValidator'
-import type { Band, ReportProperties, StaticTextElement } from '@/types'
+import type { Band, ReportProperties, TextFieldElement } from '@/types'
 
 describe('elementBoundsValidator', () => {
   const mockReportProperties: ReportProperties = {
@@ -21,13 +21,13 @@ describe('elementBoundsValidator', () => {
     orientation: 'portrait'
   }
 
-  const mockStaticTextElement: StaticTextElement = {
-    type: 'staticText',
+  const mockTextFieldElement: TextFieldElement = {
+    type: 'textField',
     x: 20,
     y: 10,
     width: 100,
     height: 20,
-    text: 'Test Text',
+    expression: '"Test Text"',
     fontFamily: 'Arial',
     fontSize: 12,
     isBold: false,
@@ -39,14 +39,14 @@ describe('elementBoundsValidator', () => {
     {
       type: 'title',
       height: 80,
-      elements: [mockStaticTextElement]
+      elements: [mockTextFieldElement]
     },
     {
       type: 'detail',
       height: 100,
       elements: [
         {
-          ...mockStaticTextElement,
+          ...mockTextFieldElement,
           x: 500,
           text: 'Out of bounds text'
         }
@@ -67,7 +67,7 @@ describe('elementBoundsValidator', () => {
     it('should return false for element outside left margin', () => {
       // Element coordinates are relative to the band, so x=0 corresponds to the band's left boundary (i.e. the page's leftMargin position)
       // Therefore x=-10 is the case that exceeds the band's left boundary
-      const element = { ...mockStaticTextElement, x: -10 }
+      const element = { ...mockTextFieldElement, x: -10 }
       const band = mockBands[0]
       
       if (band) {
@@ -78,7 +78,7 @@ describe('elementBoundsValidator', () => {
     it('should return false for element outside right margin', () => {
       // Element coordinates are relative to the band; the available width is pageWidth - leftMargin - rightMargin = 595 - 20 - 20 = 555
       // So with x=500, width=100, the element's right edge is 600, which exceeds the available width of 555
-      const element = { ...mockStaticTextElement, x: 500, width: 100 }
+      const element = { ...mockTextFieldElement, x: 500, width: 100 }
       const band = mockBands[0]
       
       if (band) {
@@ -87,7 +87,7 @@ describe('elementBoundsValidator', () => {
     })
 
     it('should return false for element outside top of band', () => {
-      const element = { ...mockStaticTextElement, y: -10 }
+      const element = { ...mockTextFieldElement, y: -10 }
       const band = mockBands[0]
       
       if (band) {
@@ -96,7 +96,7 @@ describe('elementBoundsValidator', () => {
     })
 
     it('should return false for element outside bottom of band', () => {
-      const element = { ...mockStaticTextElement, y: 70, height: 20 }
+      const element = { ...mockTextFieldElement, y: 70, height: 20 }
       const band = mockBands[0]
       
       if (band) {
@@ -106,7 +106,7 @@ describe('elementBoundsValidator', () => {
 
     it('should return true for element in first band exceeding page top', () => {
       // An element in the first band exceeds the top of the page
-      const element = { ...mockStaticTextElement, y: -30 } // A negative y coordinate within the band will exceed the top of the page
+      const element = { ...mockTextFieldElement, y: -30 } // A negative y coordinate within the band will exceed the top of the page
       const band = mockBands[0]
       
       if (band) {
@@ -120,7 +120,7 @@ describe('elementBoundsValidator', () => {
       // First band height 80, second band height 100, total height 180
       // Page height 842, top/bottom margins 20 each, available height 802
       // The second band's element has y=750, height=50; its actual position is 80+750=830, bottom is 830+50=880, exceeding the page bottom boundary of 842-20=822
-      const element = { ...mockStaticTextElement, y: 750, height: 50 }
+      const element = { ...mockTextFieldElement, y: 750, height: 50 }
       const band = mockBands[1] // Use the second band (the last one)
       
       if (band) {
@@ -134,7 +134,7 @@ describe('elementBoundsValidator', () => {
       // First band height 80, second band height 100, total height 180
       // Page height 842, top/bottom margins 20 each, available height 802
       // The second band's element has y=672, height=50; its actual position is 80+672=752, bottom is 752+50=802, exactly touching the page bottom boundary of 842-20=822
-      const element = { ...mockStaticTextElement, y: 672, height: 50 }
+      const element = { ...mockTextFieldElement, y: 672, height: 50 }
       const band = mockBands[1] // Use the second band (the last one)
       
       if (band) {
@@ -150,7 +150,7 @@ describe('elementBoundsValidator', () => {
       // Page height 842, top/bottom margins 20 each, available height 802
       // The second band's element has y=100, height=602; its actual position is 80+100=180, bottom is 180+602=782, not exceeding the page bottom boundary of 842-20=822
       // However, the element's height 602 > band height 100, so it exceeds the band's bottom
-      const element = { ...mockStaticTextElement, y: 100, height: 602 }
+      const element = { ...mockTextFieldElement, y: 100, height: 602 }
       const band = mockBands[1] // Use the second band (the last one)
 
       if (band) {
@@ -167,7 +167,7 @@ describe('elementBoundsValidator', () => {
         {
           type: 'title',
           height: 80,
-          elements: [mockStaticTextElement]
+          elements: [mockTextFieldElement]
         }
       ]
       
@@ -210,7 +210,7 @@ describe('elementBoundsValidator', () => {
         {
           type: 'title',
           height: 80,
-          elements: [mockStaticTextElement]
+          elements: [mockTextFieldElement]
         }
       ]
       
@@ -235,7 +235,7 @@ describe('elementBoundsValidator', () => {
         {
           type: 'title',
           height: 80,
-          elements: [mockStaticTextElement]
+          elements: [mockTextFieldElement]
         }
       ]
       
@@ -255,12 +255,12 @@ describe('elementBoundsValidator', () => {
         {
           type: 'title',
           height: 800,
-          elements: [mockStaticTextElement]
+          elements: [mockTextFieldElement]
         },
         {
           type: 'detail',
           height: 200,
-          elements: [mockStaticTextElement]
+          elements: [mockTextFieldElement]
         }
       ]
       
@@ -277,11 +277,11 @@ describe('elementBoundsValidator', () => {
           height: 80,
           elements: [
             {
-              ...mockStaticTextElement,
+              ...mockTextFieldElement,
               x: -10 // exceeds the left boundary
             },
             {
-              ...mockStaticTextElement,
+              ...mockTextFieldElement,
               x: 500, // exceeds the right boundary
               width: 100
             }

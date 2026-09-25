@@ -1,7 +1,8 @@
 <template>
   <div class="pdf-designer">
     <div class="designer-header">
-      <div class="header-left">
+      <div class="header-left header-workflow">
+        <!-- 1. Logo & App Name (Option C) -->
         <div class="brand-wrap">
           <div class="brand-img">
             <img src="/assets/cdp-logo.png" alt="ProjectNow CDP" />
@@ -11,115 +12,106 @@
             <span class="brand-badge">REPORT STUDIO</span>
           </div>
         </div>
+
+        <!-- 2. File Name (Inline Editable Google Docs Style) & Auto-save Status -->
+        <div class="document-title-wrap">
+          <input
+            v-model="headerFileName"
+            class="document-title-input"
+            @focus="isTitleEditing = true"
+            @blur="handleHeaderTitleCommit"
+            @keydown.enter.prevent="onTitleEnter"
+            placeholder="Untitled Report"
+            :title="t('fileManager.renameFile') || 'Click to rename report'"
+          />
+          <div class="auto-save-badge" :title="saveStatusTitle">
+            <span v-if="saveStatus === 'saving'" class="save-status-text saving">
+              <span class="save-spinner"></span>
+              Saving...
+            </span>
+            <span v-else-if="saveStatus === 'error'" class="save-status-text error">
+              Save failed
+            </span>
+            <span v-else class="save-status-text saved">
+              <svg class="saved-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Saved
+            </span>
+          </div>
+        </div>
+
+        <span class="toolbar-divider"></span>
+
+        <!-- 3. File Manager -->
+        <FileManager
+          :current-file-name="currentFileName"
+          :current-file-id="currentFileId"
+          @create-new-file="createNewFile"
+          @load-file="loadFile"
+          @update:currentFileName="currentFileName = $event"
+          @update:currentFileId="currentFileId = $event"
+        />
+
+        <span class="toolbar-divider"></span>
+
+        <!-- 4. Undo / Redo -->
         <div class="header-undo-redo">
           <n-button
             @click="undo"
             type="default"
             quaternary
             circle
-            :title="t('actions.undo')"
+            :title="t('actions.undo') + ' (Ctrl+Z)'"
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              width="16"
-              height="16"
-            >
-              <path d="M3 10h10a5 5 0 0 1 0 10H9" />
-              <polyline points="7 14 3 10 7 6" />
-            </svg>
+            <Undo2 :size="16" :stroke-width="2" aria-hidden="true" />
           </n-button>
           <n-button
             @click="redo"
             type="default"
             quaternary
             circle
-            :title="t('actions.redo')"
+            :title="t('actions.redo') + ' (Ctrl+Y)'"
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              width="16"
-              height="16"
-            >
-              <path d="M21 10H11a5 5 0 0 0 0 10h4" />
-              <polyline points="17 14 21 10 17 6" />
-            </svg>
+            <Redo2 :size="16" :stroke-width="2" aria-hidden="true" />
           </n-button>
         </div>
+
+        <span class="toolbar-divider"></span>
+
+        <!-- 5. Delete, Copy, Paste, Add Page -->
         <div class="header-toolbar-ops">
-          <span class="toolbar-divider"></span>
-          <button class="toolbar-btn" @click="deleteElement" title="Delete">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              width="16"
-              height="16"
-            >
-              <path
-                d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-              />
-            </svg>
+           <button
+            class="toolbar-btn add-page-btn"
+            @click="addNewPage"
+            title="Add New Page"
+          >
+            <FilePlus :size="16" :stroke-width="2" aria-hidden="true" />
           </button>
-          <button class="toolbar-btn" @click="copyElement" title="Copy">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              width="16"
-              height="16"
-            >
-              <rect x="9" y="9" width="13" height="13" rx="2" />
-              <path
-                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-              />
-            </svg>
+          <button class="toolbar-btn" @click="deleteElement" :title="t('actions.delete') || 'Delete'">
+            <Trash2 :size="16" :stroke-width="2" aria-hidden="true" />
           </button>
-          <button class="toolbar-btn" @click="pasteElement" title="Paste">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              width="16"
-              height="16"
-            >
-              <path
-                d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
-              />
-              <rect x="8" y="2" width="8" height="4" rx="1" />
-            </svg>
+          <button class="toolbar-btn" @click="copyElement" :title="t('actions.copy') || 'Copy'">
+            <Copy :size="16" :stroke-width="2" aria-hidden="true" />
+          </button>
+          <button class="toolbar-btn" @click="pasteElement" :title="t('actions.paste') || 'Paste'">
+            <ClipboardPaste :size="16" :stroke-width="2" aria-hidden="true" />
           </button>
         </div>
-      </div>
-      <div class="header-actions">
-        <!-- Zoom controls -->
+
+        <span class="toolbar-divider"></span>
+
+        <!-- 6. Zoom controls -->
         <ZoomControls
           :zoom-level="zoomLevel"
           :paper-width="reportProperties.pageWidth"
           @update:zoomLevel="setZoomLevel($event)"
         />
 
-        <!-- File manager component -->
-        <FileManager
-          :current-file-name="currentFileName"
-          :current-file-id="currentFileId"
-          @create-new-file="createNewFile"
-          @load-file="loadFile"
-          @save-current-file="saveCurrentFileToStorage"
-          @save-as-file="saveAsLocalFile"
-          @update:currentFileName="currentFileName = $event"
-          @update:currentFileId="currentFileId = $event"
-        />
+        <span class="toolbar-divider"></span>
 
-        <n-button @click="toggleBottomPanel" type="default">
+        <!-- 7. Show Bottom Panel -->
+        <n-button @click="toggleBottomPanel" type="default" size="small" class="bottom-panel-btn">
           {{
             showBottomPanel
               ? t("actions.hideBottomPanel")
@@ -127,7 +119,9 @@
           }}
         </n-button>
 
-        <!-- Snap controls -->
+        <span class="toolbar-divider"></span>
+
+        <!-- 8. Snap controls -->
         <div class="snap-controls-header">
           <n-checkbox
             :checked="enableSnapToGrid"
@@ -139,7 +133,10 @@
           <n-checkbox
             :checked="enableSnapToAlignment"
             size="small"
-            @update:checked="enableSnapToAlignment = $event"
+            @update:checked="
+              enableSnapToAlignment = $event;
+              if (!$event) clearAlignmentLines();
+            "
           >
             {{ t("actions.snapToAlignment") }}
           </n-checkbox>
@@ -151,7 +148,11 @@
             {{ t("actions.showGrid") }}
           </n-checkbox>
         </div>
+        <span class="toolbar-divider"></span>
+      </div>
 
+      <div class="header-actions">
+        <!-- 9. Preview PDF -->
         <SplitButton
           :actions="[
             {
@@ -171,13 +172,17 @@
             },
           ]"
         />
-        <!-- <n-button @click="showHelp = true" type="default">{{ t('actions.help') }}</n-button> -->
-        <!-- <LanguageSwitcher /> -->
 
+        <!-- 10. My Act -->
         <div class="my-act-menu">
           <n-button type="default" @click="showMyActMenu = !showMyActMenu">
             My Act
-            <span class="dropdown-arrow">▾</span>
+            <ChevronDown
+              class="dropdown-arrow"
+              :size="14"
+              :stroke-width="2.25"
+              aria-hidden="true"
+            />
           </n-button>
 
           <div v-if="showMyActMenu" class="my-act-dropdown">
@@ -186,16 +191,7 @@
               class="my-act-dropdown-item"
               @click="handleSignOut"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <path d="M16 17l5-5-5-5" />
-                <path d="M21 12H9" />
-              </svg>
+              <LogOut :size="16" :stroke-width="2.25" aria-hidden="true" />
               <span>Sign out</span>
             </button>
           </div>
@@ -256,6 +252,7 @@
           @edit-style="handleEditStyle"
           @delete-style="handleDeleteStyle"
           @delete-element="deleteElement"
+          @update-element-value="handleUpdateElementValue"
           @add-sub-dataset="handleAddSubDataset"
           @edit-sub-dataset="handleEditSubDataset"
           @delete-sub-dataset="handleDeleteSubDataset"
@@ -312,11 +309,13 @@
           :show-grid="showGrid"
           :report-styles="reportStyles"
           :table-styles="tableStyles"
+          :total-pages="totalPages"
           @set-design-area-focused="setDesignAreaFocused"
           @select-band="selectBand"
           @select-element="selectElement"
           @start-dragging="startDragging"
           @start-resizing-element="startResizingElement"
+          @auto-fit-height="autoFitElementHeight"
           @start-editing="startEditing"
           @finish-editing="finishEditing"
           @cancel-editing="cancelEditing"
@@ -324,7 +323,7 @@
           @handle-drag-over="handleDragOver"
           @handle-drag-leave="handleDragLeave"
           @start-resizing-band="startResizingBand"
-          @zoom-change="(newZoom) => (zoomLevel = newZoom)"
+          @zoom-change="handleZoomChange"
           @select-elements-in-rect="selectElementsInRect"
           @clear-selection="clearSelection"
           @check-fields="handleCheckFields"
@@ -338,6 +337,8 @@
           @update:enable-snap-to-alignment="enableSnapToAlignment = $event"
           @update:show-grid="showGrid = $event"
           @update:table-styles="tableStyles = $event"
+          @add-page="addNewPage"
+          @delete-page="deletePage"
         />
       </div>
 
@@ -439,10 +440,6 @@
 
     <!-- Drag feedback layer -->
     <DragFeedbackLayer :feedback="dragFeedback" />
-
-    <!-- Donation modal -->
-    <RewardModal v-if="locale === 'zh'" v-model:visible="showReward" />
-    <RewardModalEn v-else v-model:visible="showReward" />
 
     <!-- Help modal -->
     <HelpModal v-if="locale === 'zh'" v-model:visible="showHelp" />
@@ -658,8 +655,6 @@
 <script setup lang="ts">
 import ResizablePanel from "./panels/ResizablePanel.vue";
 import DesignerCanvas from "./designer/DesignerCanvas.vue";
-import RewardModal from "./modals/RewardModal.vue";
-import RewardModalEn from "./modals/RewardModalEn.vue";
 import HelpModal from "./modals/HelpModal.vue";
 import HelpModalEn from "./modals/HelpModalEn.vue";
 import FieldManagementModal from "./modals/FieldManagementModal.vue";
@@ -682,6 +677,16 @@ import MultiSelectToolbar from "./designer/MultiSelectToolbar.vue";
 import AlignmentGuides from "./designer/AlignmentGuides.vue";
 import DragFeedbackLayer from "./designer/DragFeedbackLayer.vue";
 import { NButton, NSelect, NCheckbox } from "naive-ui";
+import {
+  ChevronDown,
+  ClipboardPaste,
+  Copy,
+  FilePlus,
+  LogOut,
+  Redo2,
+  Trash2,
+  Undo2,
+} from "@lucide/vue";
 import type {
   Band,
   BandType,
@@ -691,6 +696,7 @@ import type {
   FrameElement,
   ReportField,
   ReportParameter,
+  ReportProperties,
   ReportVariable,
   SelectedElementInfo,
   TableDataset,
@@ -714,11 +720,15 @@ import { useUndoRedo } from "@/composables/useUndoRedo";
 import { useZoom } from "@/composables/useZoom";
 import { useSnapAlignment } from "@/composables/useSnapAlignment";
 import {
+  ALL_CONFIGURABLE_BANDS,
   BAND_CONSTANTS,
   BAND_HEIGHT_CONSTANTS,
   BAND_TYPE_CONSTANTS,
+  getEffectiveDefaultBandLimits,
+  getEffectiveDefaultBandConfig,
   ELEMENT_CONSTANTS,
   FONT_CONSTANTS,
+  getDefaultElementSize,
   HISTORY_CONSTANTS,
   KEYBOARD_CONSTANTS,
   PANEL_CONSTANTS,
@@ -735,6 +745,7 @@ import { loadFromLocalStorage, saveToLocalStorage } from "../utils/fileUtils";
 
 // Import element bounds validation utility
 import { getOutOfBoundsElements } from "../utils/elementBoundsValidator";
+import { calculateTextElementHeight } from "../utils/elementUtils";
 import { useBoundaryDetection } from "@/composables/useBoundaryDetection";
 import { useAlignmentSystem } from "@/composables/useAlignmentSystem";
 import { useDragFeedback } from "@/composables/useDragFeedback";
@@ -755,8 +766,8 @@ import {
 import { syncTableColumns } from "../utils/table/ColumnTreeSync";
 
 // Import the default JRXML example file
-import defaultJrxmlContent from "../../tests/build_by_jasper_studio_jrxml/grouped_header_column_table_example.jrxml?raw";
 import { logout } from "../services/authService";
+import { PDF_PREVIEW_API } from "@/config/apiConfig.ts";
 
 const { t, locale } = useI18n();
 
@@ -833,7 +844,7 @@ const bottomPanelHeight = ref(PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT); // D
 const jrxmlContent = ref("");
 
 // Report properties
-const reportProperties = ref({
+const reportProperties = ref<ReportProperties>({
   name: "NewReport",
   pageWidth: REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH,
   pageHeight: REPORT_CONSTANTS.DEFAULT_PAGE_HEIGHT,
@@ -848,6 +859,7 @@ const reportProperties = ref({
     isItalic: false,
     isUnderline: false,
   },
+  bandLimits: getEffectiveDefaultBandLimits(),
 });
 
 // File management related state
@@ -859,9 +871,80 @@ const {
   findFileById,
   saveCurrentFileContent,
   setLastFile,
+  renameFile,
 } = useDesignerFiles({
   defaultFileName: t("fileManager.untitledReport"),
 });
+
+// Editable document title in header (Google Docs style)
+const headerFileName = ref(currentFileName.value);
+const isTitleEditing = ref(false);
+
+watch(currentFileName, (newVal) => {
+  if (newVal !== headerFileName.value) {
+    headerFileName.value = newVal;
+  }
+});
+
+function handleHeaderTitleCommit() {
+  isTitleEditing.value = false;
+  const trimmed = headerFileName.value.trim();
+  if (!trimmed) {
+    headerFileName.value = currentFileName.value || t("fileManager.untitledReport");
+    return;
+  }
+  if (currentFileId.value) {
+    renameFile(currentFileId.value, trimmed);
+  }
+  currentFileName.value = trimmed;
+  if (reportProperties.value) {
+    reportProperties.value.name = trimmed;
+  }
+  scheduleAutoSave(true);
+}
+
+// Auto-save state and helpers
+const saveStatus = ref<"saved" | "saving" | "error">("saved");
+const isLoadingFile = ref(false);
+let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+const saveStatusTitle = computed(() => {
+  if (saveStatus.value === "saving") return "Saving changes...";
+  if (saveStatus.value === "error") return "Auto-save failed";
+  return "Auto-save compulsory: All changes saved automatically";
+});
+
+function flushAutoSave(): boolean {
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = null;
+  }
+  return saveCurrentFileToStorage(false);
+}
+
+function scheduleAutoSave(immediate = false) {
+  if (isLoadingFile.value) return;
+
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = null;
+  }
+
+  saveStatus.value = "saving";
+
+  if (immediate) {
+    saveCurrentFileToStorage(false);
+  } else {
+    autoSaveTimer = setTimeout(() => {
+      saveCurrentFileToStorage(false);
+      autoSaveTimer = null;
+    }, 400);
+  }
+}
+
+function onTitleEnter(e: Event) {
+  (e.target as HTMLInputElement)?.blur();
+}
 
 // Update the page title
 watch(
@@ -889,6 +972,9 @@ const handleSignOut = () => {
 };
 
 function createNewFile() {
+  flushAutoSave();
+  isLoadingFile.value = true;
+
   // Logic for creating a new file
   const timestamp = new Date().getTime();
   currentFileName.value = `${t("fileManager.untitledReport")}${timestamp}`;
@@ -910,45 +996,71 @@ function createNewFile() {
       isItalic: false,
       isUnderline: false,
     },
+    bandLimits: getEffectiveDefaultBandLimits(),
   };
+
+  const defaultBandConfig = getEffectiveDefaultBandConfig();
+  const pageHeaderH =
+    defaultBandConfig[BAND_TYPE_CONSTANTS.PAGE_HEADER]?.defaultHeight ??
+    (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50);
+  const columnHeaderH =
+    defaultBandConfig[BAND_TYPE_CONSTANTS.COLUMN_HEADER]?.defaultHeight ??
+    (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30);
+  const columnFooterH =
+    defaultBandConfig[BAND_TYPE_CONSTANTS.COLUMN_FOOTER]?.defaultHeight ??
+    (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30);
+  const pageFooterH =
+    defaultBandConfig[BAND_TYPE_CONSTANTS.PAGE_FOOTER]?.defaultHeight ??
+    (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40);
+  const detailH = Math.max(
+    50,
+    802 - (pageHeaderH + columnHeaderH + columnFooterH + pageFooterH),
+  );
 
   bands.value = [
     {
-      type: BAND_TYPE_CONSTANTS.TITLE as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 50,
-      elements: [],
-    },
-    {
       type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
+      height: pageHeaderH,
       elements: [],
     },
     {
       type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30,
+      height: columnHeaderH,
       elements: [],
     },
     {
       type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100,
+      height: detailH,
       elements: [],
     },
     {
       type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30,
+      height: columnFooterH,
       elements: [],
     },
     {
       type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
-      elements: [],
-    },
-    {
-      type: BAND_TYPE_CONSTANTS.SUMMARY as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60,
-      elements: [],
+      height: pageFooterH,
+      elements: [
+        {
+          uuid: crypto.randomUUID(),
+          type: "textField",
+          name: "PageNumberField",
+          x: 435,
+          y: 10,
+          width: 120,
+          height: 20,
+          expression: '"Page " + $V{PAGE_NUMBER}',
+          fontName: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
+          fontSize: 10,
+          hAlign: "Right",
+          vAlign: "Middle",
+        } as any,
+      ],
     },
   ];
+
+  pageCount.value = 1;
 
   // Update selectedBandTypes to match the new bands
   selectedBandTypes.value = bands.value.map((band) => band.type);
@@ -956,26 +1068,64 @@ function createNewFile() {
   reportFields.value = [];
   reportParameters.value = [];
   subDatasets.value = [];
+  reportVariables.value = [];
+  reportGroups.value = [];
   jrxmlContent.value = "";
 
   // Clear the currently selected element
   selectedElement.value = null;
   selectedBandIndex.value = null;
+
+  nextTick(() => {
+    isLoadingFile.value = false;
+    updateJRXML();
+    saveCurrentFileToStorage(false);
+  });
 }
 
-function saveCurrentFileToStorage() {
-  const fileData = saveCurrentFile();
+function saveCurrentFileToStorage(showNotification = false): boolean {
+  if (isLoadingFile.value) {
+    return false;
+  }
 
-  const ok = saveCurrentFileContent(fileData);
-  if (ok) {
-    notification.success(t("notifications.fileSavedSuccess"));
-  } else {
-    notification.error(t("notifications.fileSaveFailed"));
+  try {
+    saveStatus.value = "saving";
+
+    if (!currentFileId.value) {
+      currentFileId.value = `file_${Date.now()}`;
+    }
+
+    const fileData = saveCurrentFile();
+    const ok = saveCurrentFileContent(fileData);
+    saveToLocalStorageWrapper();
+
+    if (ok) {
+      saveStatus.value = "saved";
+      if (showNotification) {
+        notification.success(t("notifications.fileSavedSuccess"));
+      }
+    } else {
+      saveStatus.value = "error";
+      if (showNotification) {
+        notification.error(t("notifications.fileSaveFailed"));
+      }
+    }
+    return ok;
+  } catch (error) {
+    console.error("Auto-save error:", error);
+    saveStatus.value = "error";
+    if (showNotification) {
+      notification.error(t("notifications.fileSaveFailed"));
+    }
+    return false;
   }
 }
 
 function loadFile(fileData: DesignerFile | any) {
   try {
+    flushAutoSave();
+    isLoadingFile.value = true;
+
     // Parse the file content
     const fileContent =
       typeof fileData.content === "string"
@@ -996,6 +1146,18 @@ function loadFile(fileData: DesignerFile | any) {
       selectedBandTypes.value = fileContent.bands.map(
         (band: Band) => band.type,
       );
+      const detailBand = fileContent.bands.find(
+        (band: Band) => band.type === BAND_TYPE_CONSTANTS.DETAIL,
+      );
+      if (detailBand && detailBand.elements) {
+        const maxPage = Math.max(
+          0,
+          ...detailBand.elements.map((e: any) => e.pageIndex || 0),
+        );
+        pageCount.value = maxPage + 1;
+      } else {
+        pageCount.value = 1;
+      }
     }
 
     if (fileContent.reportFields) {
@@ -1010,13 +1172,25 @@ function loadFile(fileData: DesignerFile | any) {
       subDatasets.value = fileContent.subDatasets;
     }
 
+    if (fileContent.reportVariables) {
+      reportVariables.value = fileContent.reportVariables;
+    }
+
+    if (fileContent.reportGroups) {
+      reportGroups.value = fileContent.reportGroups;
+    }
+
+    if (fileContent.reportStyles) {
+      reportStyles.value = fileContent.reportStyles;
+    }
+
     if (fileContent.jrxmlContent) {
       jrxmlContent.value = fileContent.jrxmlContent;
     }
 
     // Update the current file info
     currentFileName.value = fileData.name || t("fileManager.untitledReport");
-    currentFileId.value = fileData.id || null;
+    currentFileId.value = fileData.id || `file_${Date.now()}`;
     if (fileData.id) {
       setLastFile({ id: fileData.id, name: fileData.name });
     }
@@ -1024,25 +1198,25 @@ function loadFile(fileData: DesignerFile | any) {
     // Clear the currently selected element
     selectedElement.value = null;
     selectedBandIndex.value = null;
+
+    nextTick(() => {
+      isLoadingFile.value = false;
+      updateJRXML();
+      updateOutOfBoundsElements();
+      saveStatus.value = "saved";
+    });
   } catch (error) {
+    isLoadingFile.value = false;
     console.error("Failed to load file:", error);
     notification.error(t("fileManager.invalidFileFormat"));
   }
 }
 
-function saveAsLocalFile() {
-  const newName = prompt(
-    t("fileManager.enterNewFileName"),
-    currentFileName.value,
-  );
-  if (!newName) return;
-  const timestamp = Date.now();
-  currentFileName.value = newName;
-  currentFileId.value = `file_${timestamp}`;
-  saveCurrentFileToStorage();
-}
-
 function saveCurrentFile() {
+  if (!currentFileId.value) {
+    currentFileId.value = `file_${Date.now()}`;
+  }
+
   // Create a deep clone of bands so border properties can be processed
   const processedBands = JSON.parse(JSON.stringify(bands.value));
 
@@ -1081,6 +1255,9 @@ function saveCurrentFile() {
     reportFields: reportFields.value,
     reportParameters: reportParameters.value,
     subDatasets: subDatasets.value,
+    reportVariables: reportVariables.value,
+    reportGroups: reportGroups.value,
+    reportStyles: reportStyles.value,
     jrxmlContent: jrxmlContent.value,
     lastModified: new Date().toISOString(),
   };
@@ -1113,100 +1290,113 @@ const elements = computed(() =>
 // Using the interfaces imported from types/index.ts
 
 // Report bands
+const initDefaultBandConfig = getEffectiveDefaultBandConfig();
+const initPageHeaderH =
+  initDefaultBandConfig[BAND_TYPE_CONSTANTS.PAGE_HEADER]?.defaultHeight ??
+  (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50);
+const initColumnHeaderH =
+  initDefaultBandConfig[BAND_TYPE_CONSTANTS.COLUMN_HEADER]?.defaultHeight ??
+  (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30);
+const initColumnFooterH =
+  initDefaultBandConfig[BAND_TYPE_CONSTANTS.COLUMN_FOOTER]?.defaultHeight ??
+  (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30);
+const initPageFooterH =
+  initDefaultBandConfig[BAND_TYPE_CONSTANTS.PAGE_FOOTER]?.defaultHeight ??
+  (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40);
+const initDetailH = Math.max(
+  50,
+  802 - (initPageHeaderH + initColumnHeaderH + initColumnFooterH + initPageFooterH),
+);
+
 const bands = ref<Band[]>([
   {
-    type: BAND_TYPE_CONSTANTS.TITLE as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 50,
-    elements: [],
-  },
-  {
     type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
+    height: initPageHeaderH,
     elements: [],
   },
   {
     type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30,
+    height: initColumnHeaderH,
     elements: [],
   },
   {
     type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100,
+    height: initDetailH,
     elements: [],
-  }, // Default the detail band to a height of 100
+  },
   {
     type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30,
+    height: initColumnFooterH,
     elements: [],
   },
   {
     type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
-    elements: [],
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.SUMMARY as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60,
-    elements: [],
+    height: initPageFooterH,
+    elements: [
+      {
+        uuid: crypto.randomUUID(),
+        type: "textField",
+        name: "PageNumberField",
+        x: 435,
+        y: 10,
+        width: 120,
+        height: 20,
+        expression: '"Page " + $V{PAGE_NUMBER}',
+        fontName: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
+        fontSize: 10,
+        hAlign: "Right",
+        vAlign: "Middle",
+      } as any,
+    ],
   },
 ]);
 
+// Multi-page state and methods
+const pageCount = ref(1);
+
+const maxDetailPageIndex = computed(() => {
+  const detailBand = bands.value.find(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+  if (!detailBand || !detailBand.elements) return 0;
+  return Math.max(0, ...detailBand.elements.map((e: any) => e.pageIndex || 0));
+});
+
+const totalPages = computed(() =>
+  Math.max(pageCount.value, maxDetailPageIndex.value + 1),
+);
+
+const addNewPage = () => {
+  saveStateToHistory();
+  pageCount.value++;
+  notification.success(`Page ${pageCount.value} added`);
+  updateJRXML();
+};
+
+const deletePage = (pageIndex: number) => {
+  if (pageIndex <= 0) return;
+  saveStateToHistory();
+  const detailBand = bands.value.find(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+  if (detailBand && detailBand.elements) {
+    detailBand.elements = detailBand.elements.filter(
+      (el: any) => (el.pageIndex ?? 0) !== pageIndex,
+    );
+    detailBand.elements.forEach((el: any) => {
+      if ((el.pageIndex ?? 0) > pageIndex) {
+        el.pageIndex = (el.pageIndex ?? 0) - 1;
+      }
+    });
+  }
+  selectedElement.value = null;
+  pageCount.value = Math.max(1, pageCount.value - 1);
+  notification.info(`Page ${pageIndex + 1} deleted`);
+  updateJRXML();
+};
+
 // All possible band types
-const allBandTypes = [
-  {
-    type: BAND_TYPE_CONSTANTS.TITLE as BandType,
-    name: "Title",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 80,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
-    name: "Page Header",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType,
-    name: "Column Header",
-    defaultHeight:
-      BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
-    name: "Detail",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType,
-    name: "Column Footer",
-    defaultHeight:
-      BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
-    name: "Page Footer",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.SUMMARY as BandType,
-    name: "Summary",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.BACKGROUND as BandType,
-    name: "Background",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.BACKGROUND] || 0,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER as BandType,
-    name: "Last Page Footer",
-    defaultHeight:
-      BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER] || 40,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.NO_DATA as BandType,
-    name: "No Data",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.NO_DATA] || 50,
-  },
-];
+const allBandTypes = ALL_CONFIGURABLE_BANDS;
 
 // The currently selected band type
 const selectedBandTypes = ref<BandType[]>(bands.value.map((band) => band.type));
@@ -1690,11 +1880,66 @@ const paperHeight = computed(
   () =>
     reportProperties.value?.pageHeight || REPORT_CONSTANTS.DEFAULT_PAGE_HEIGHT,
 );
-const { zoomLevel, resetZoom, calculateOptimalZoom, handleZoomChange } =
-  useZoom({
-    paperWidth,
-    zoomConstants: ZOOM_CONSTANTS,
+
+// Ensure the bands fit within the page height and detail takes the remaining space
+const ensureBandsFitPage = () => {
+  const topMargin = reportProperties.value?.topMargin || 0;
+  const bottomMargin = reportProperties.value?.bottomMargin || 0;
+  const availableHeight = paperHeight.value - topMargin - bottomMargin;
+
+  const detailIndex = bands.value.findIndex(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+  if (detailIndex === -1) return;
+
+  let otherBandsHeight = 0;
+  bands.value.forEach((b, i) => {
+    // Exclude detail itself, and non-stacking band (background underlay)
+    if (i !== detailIndex && b.type !== BAND_TYPE_CONSTANTS.BACKGROUND) {
+      otherBandsHeight += b.height || 0;
+    }
   });
+
+  const remaining = Math.max(
+    BAND_CONSTANTS.MIN_HEIGHT,
+    availableHeight - otherBandsHeight,
+  );
+  if (bands.value[detailIndex]) {
+    bands.value[detailIndex].height = remaining;
+  }
+};
+
+// Watch paper dimensions, margins, and non-detail band heights to ensure Detail always fits remaining space
+watch(
+  [
+    () => paperHeight.value,
+    () => reportProperties.value?.topMargin,
+    () => reportProperties.value?.bottomMargin,
+    () =>
+      bands.value
+        .filter(
+          (b) =>
+            b.type !== BAND_TYPE_CONSTANTS.DETAIL &&
+            b.type !== BAND_TYPE_CONSTANTS.BACKGROUND,
+        )
+        .map((b) => b.height)
+        .join(","),
+  ],
+  () => {
+    ensureBandsFitPage();
+  },
+);
+const {
+  zoomLevel,
+  resetZoom,
+  calculateOptimalZoom,
+  handleZoomChange,
+  zoomIn,
+  zoomOut,
+} = useZoom({
+  paperWidth,
+  zoomConstants: ZOOM_CONSTANTS,
+});
 
 // Function to set the zoom level
 const setZoomLevel = (newZoom: number) => {
@@ -1773,13 +2018,18 @@ const horizontalRulerLabels = computed(() => {
 const verticalRulerTicks = computed(() => {
   const ticks = [];
   const height = paperHeight.value;
-  const unit = RULER_CONSTANTS.UNIT_SIZE; // Reduced base unit, from 10px to 5px, to increase tick density
+  const unit = RULER_CONSTANTS.UNIT_SIZE;
+  const pages = totalPages.value;
+  const pageGap = 32;
 
-  for (let i = 0; i <= height; i += unit) {
-    ticks.push({
-      position: i, // Do not apply the zoom scale, keep the actual position
-      major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0, // One major tick every 25px, changed from 50px to 25px
-    });
+  for (let p = 0; p < pages; p++) {
+    const pageOffset = p * (height + pageGap);
+    for (let i = 0; i <= height; i += unit) {
+      ticks.push({
+        position: pageOffset + i,
+        major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0,
+      });
+    }
   }
 
   return ticks;
@@ -1788,13 +2038,17 @@ const verticalRulerTicks = computed(() => {
 const verticalRulerLabels = computed(() => {
   const labels = [];
   const height = paperHeight.value;
+  const pages = totalPages.value;
+  const pageGap = 32;
 
-  for (let i = 0; i <= height; i += RULER_CONSTANTS.LABEL_INTERVAL) {
-    // Show a label every 25px, changed from 50px to 25px
-    labels.push({
-      position: i, // Do not apply the zoom scale, keep the actual position
-      value: i.toString(),
-    });
+  for (let p = 0; p < pages; p++) {
+    const pageOffset = p * (height + pageGap);
+    for (let i = 0; i <= height; i += RULER_CONSTANTS.LABEL_INTERVAL) {
+      labels.push({
+        position: pageOffset + i,
+        value: i.toString(),
+      });
+    }
   }
 
   return labels;
@@ -1833,11 +2087,15 @@ const resizingBandInfoRef = ref(resizingBandInfo);
 const resizingInfo = ref<{
   bandIndex: number;
   elementIndex: number;
+  direction?: string;
   startX: number;
   startY: number;
+  startElementX: number;
+  startElementY: number;
   startWidth: number;
   startHeight: number;
   parentFrameIndex?: number;
+  targetSheet?: HTMLElement;
 } | null>(null);
 
 // Tracks the last-clicked band
@@ -1862,12 +2120,12 @@ function generateTableColumnsFromDataset(defaultTableWidth: number = 555) {
           tableHeader: {
             enable: false,
             element: {
-              type: "staticText",
+              type: "textField",
               x: 0,
               y: 0,
               width: columnWidth,
               height: 30,
-              text: field.name,
+              expression: `"${field.name}"`,
               forecolor: "#000000",
               backcolor: "#FFFFFF",
               fontFamily: "SansSerif",
@@ -1880,12 +2138,12 @@ function generateTableColumnsFromDataset(defaultTableWidth: number = 555) {
           columnHeader: {
             enable: true,
             element: {
-              type: "staticText",
+              type: "textField",
               x: 0,
               y: 0,
               width: columnWidth,
               height: 30,
-              text: field.name,
+              expression: `"${field.name}"`,
               textAlignment: "Center",
               verticalAlignment: "Middle",
             },
@@ -1972,9 +2230,12 @@ const handleElementDoubleClick = (element: any) => {
     }
   }
 
-  // For rectangles, ellipses, frames, and images, default the height to half the band's height
+  // For rectangles, ellipses, frames, and images, use a compact default size
+  // instead of stretching the element across the whole band
   if (["rectangle", "ellipse", "frame", "image"].includes(element.type)) {
-    newElement.height = Math.round(targetBand.height / 2);
+    const defaultSize = getDefaultElementSize(element.type, targetBand.height);
+    newElement.width = defaultSize.width;
+    newElement.height = defaultSize.height;
   }
 
   // Ensure the band has an elements array
@@ -1998,7 +2259,7 @@ const handleElementDoubleClick = (element: any) => {
   console.log("Element added to band:", newElement);
 };
 
-const handleDrop = (event: DragEvent) => {
+const handleDrop = (event: DragEvent, pageIndex?: number) => {
   event.preventDefault();
 
   let elementData = null;
@@ -2019,44 +2280,58 @@ const handleDrop = (event: DragEvent) => {
   }
 
   if (elementData) {
-    // Get the paper element as a reference point
-    const paper = document.querySelector(".paper") as HTMLElement;
-    if (!paper) return;
+    // Get the target page sheet
+    const targetSheet =
+      ((event.target as HTMLElement)?.closest(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".paper") as HTMLElement);
+    if (!targetSheet) return;
 
-    const paperRect = paper.getBoundingClientRect();
-    // Calculate coordinates relative to the paper
-    const x = event.clientX - paperRect.left;
-    const y = event.clientY - paperRect.top;
+    let targetPageIndex = pageIndex ?? 0;
+    if (targetSheet.dataset.pageIndex !== undefined) {
+      targetPageIndex = parseInt(targetSheet.dataset.pageIndex, 10);
+    }
 
-    // Account for the zoom scale
     const currentZoom = zoomLevel.value;
-    const scaledX = x / currentZoom;
-    const scaledY = y / currentZoom;
+    const targetBandEl = (event.target as HTMLElement)?.closest(
+      ".band",
+    ) as HTMLElement;
 
-    // Find the corresponding band
     let bandIndex = 0;
-    let currentY = 0;
-    if (bands.value && Array.isArray(bands.value)) {
-      for (let i = 0; i < bands.value.length; i++) {
-        const band = bands.value[i];
-        if (band && scaledY >= currentY && scaledY <= currentY + band.height) {
-          bandIndex = i;
-          break;
-        }
-        if (band) {
-          currentY += band.height;
-        }
-      }
+    let scaledX = 0;
+    let scaledY = 0;
+
+    if (targetBandEl && targetBandEl.dataset.bandIndex !== undefined) {
+      bandIndex = parseInt(targetBandEl.dataset.bandIndex, 10);
+      const bandRect = targetBandEl.getBoundingClientRect();
+      scaledX = (event.clientX - bandRect.left) / currentZoom;
+      scaledY = (event.clientY - bandRect.top) / currentZoom;
+    } else {
+      // Fallback: Find detail band
+      const dIndex = bands.value.findIndex(
+        (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+      );
+      bandIndex = dIndex !== -1 ? dIndex : 0;
+      const sheetRect = targetSheet.getBoundingClientRect();
+      scaledX = (event.clientX - sheetRect.left) / currentZoom;
+      scaledY = (event.clientY - sheetRect.top) / currentZoom;
     }
 
     // Create the new element
+    // Center it on the cursor using its own compact default size
+    const droppedSize = getDefaultElementSize(elementData.type);
     let newElement: DesignElement = {
       ...createElement(elementData.type),
       uuid: crypto.randomUUID(), // Generate a UUID
-      x: Math.round(Math.max(0, scaledX - 50)), // Subtract half the element width to center it, and ensure an integer
-      y: Math.round(Math.max(0, scaledY - currentY)), // Position relative to the band, and ensure an integer
+      x: Math.round(Math.max(0, scaledX - droppedSize.width / 2)), // Center horizontally on the cursor
+      y: Math.round(Math.max(0, scaledY - droppedSize.height / 2)), // Center vertically on the cursor
       ...getDefaultElementProperties(elementData.type),
     } as DesignElement;
+
+    // For detail band elements, assign pageIndex
+    if (bands.value[bandIndex]?.type === BAND_TYPE_CONSTANTS.DETAIL) {
+      newElement.pageIndex = targetPageIndex;
+    }
 
     // For table elements, check for/create the default dataset, then generate the corresponding columns
     if (elementData.type === "table") {
@@ -2084,11 +2359,17 @@ const handleDrop = (event: DragEvent) => {
 
     const targetBand = bands.value[bandIndex];
     if (targetBand && targetBand.elements) {
-      // For rectangles, ellipses, frames, and images, default the height to half the band's height
+      // For rectangles, ellipses, frames, and images, apply a compact default
+      // size instead of stretching the element across the whole band
       if (
         ["rectangle", "ellipse", "frame", "image"].includes(elementData.type)
       ) {
-        newElement.height = Math.round(targetBand.height / 2);
+        const defaultSize = getDefaultElementSize(
+          elementData.type,
+          targetBand.height,
+        );
+        newElement.width = defaultSize.width;
+        newElement.height = defaultSize.height;
       }
       // Save state to history
       saveStateToHistory();
@@ -2164,9 +2445,13 @@ const handleDrop = (event: DragEvent) => {
           newElement.width = Math.round(availableWidth);
         }
 
-        // Ensure the element doesn't exceed the band's height
-        if (newElement.y + newElement.height > targetBand.height) {
-          newElement.y = Math.round(targetBand.height - newElement.height);
+        // Ensure the element's Y coordinate does not turn negative
+        if (newElement.height <= targetBand.height) {
+          if (newElement.y + newElement.height > targetBand.height) {
+            newElement.y = Math.max(0, Math.round(targetBand.height - newElement.height));
+          }
+        } else {
+          newElement.y = Math.max(0, newElement.y);
         }
 
         targetBand.elements.push(newElement);
@@ -2260,11 +2545,6 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
   };
 
   switch (type) {
-    case "staticText":
-      return {
-        text: t("properties.defaultStaticText"),
-        ...defaultFontProps,
-      };
     case "textField":
       return {
         expression: `"${t("properties.defaultTextFieldExpression")}"`,
@@ -2278,8 +2558,7 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
       };
     case "image":
       return {
-        imageExpression:
-          '"https://raw.githubusercontent.com/fengyunhe/jrxml_web_designer/refs/heads/master/src/assets/FIREGOD_CN.jpg"',
+        imageExpression: "",
       };
     case "line":
       return { lineDirection: "TopDown", lineWidth: 1 };
@@ -2297,8 +2576,15 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
   }
 };
 
+// Guard flag to prevent drag/resize release from inadvertently unselecting the active element
+const isJustDraggedOrResized = ref(false);
+
 // Select a band
 const selectBand = (index: number) => {
+  if (isJustDraggedOrResized.value) {
+    return;
+  }
+  setDesignAreaFocused();
   selectedBandIndex.value = index;
   selectedElement.value = null;
   selectedElements.value = []; // Clear the multi-selection
@@ -2306,6 +2592,8 @@ const selectBand = (index: number) => {
   lastClickedBandIndex.value = index;
   // Automatically hide the bottom panel
   showBottomPanel.value = false;
+  // Automatically switch to the properties tab
+  rightPanelTab.value = "properties";
 };
 
 // Select an element
@@ -2476,6 +2764,63 @@ const selectElementsInRect = (rect: {
 let cachedMouseMoveHandler: ((e: MouseEvent) => void) | null = null;
 let cachedMouseUpHandler: ((e: MouseEvent) => void) | null = null;
 
+// Detect target band and sheet under coordinates (combines elementFromPoint with geometric fallback)
+const getTargetBandAndSheetUnderPoint = (clientX: number, clientY: number) => {
+  const elUnderPoint = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+  let bandUnderMouse = elUnderPoint?.closest(".band") as HTMLElement | null;
+  let sheetUnderMouse = (elUnderPoint?.closest(".page-sheet") ||
+    bandUnderMouse?.closest(".page-sheet")) as HTMLElement | null;
+
+  // Geometric fallback when elementFromPoint hits an element instead of band surface
+  if (!bandUnderMouse) {
+    const sheets = Array.from(document.querySelectorAll<HTMLElement>(".page-sheet"));
+    let targetSheet: HTMLElement | null = null;
+    for (const sheet of sheets) {
+      const rect = sheet.getBoundingClientRect();
+      if (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+      ) {
+        targetSheet = sheet;
+        break;
+      }
+    }
+    if (!targetSheet && sheets.length > 0) {
+      targetSheet =
+        sheets.find((sheet) => {
+          const rect = sheet.getBoundingClientRect();
+          return clientY >= rect.top && clientY <= rect.bottom;
+        }) ?? sheets[0] ?? null;
+    }
+    sheetUnderMouse = targetSheet;
+
+    if (sheetUnderMouse) {
+      const bandEls = Array.from(sheetUnderMouse.querySelectorAll<HTMLElement>(".band"));
+      for (const bandEl of bandEls) {
+        const rect = bandEl.getBoundingClientRect();
+        if (clientY >= rect.top && clientY <= rect.bottom) {
+          bandUnderMouse = bandEl;
+          break;
+        }
+      }
+      if (!bandUnderMouse && bandEls.length > 0) {
+        const firstEl = bandEls[0];
+        const lastEl = bandEls[bandEls.length - 1];
+        if (firstEl && lastEl) {
+          const firstRect = firstEl.getBoundingClientRect();
+          const lastRect = lastEl.getBoundingClientRect();
+          if (clientY < firstRect.top) bandUnderMouse = firstEl;
+          else if (clientY > lastRect.bottom) bandUnderMouse = lastEl;
+        }
+      }
+    }
+  }
+
+  return { bandUnderMouse, sheetUnderMouse };
+};
+
 // Start dragging an element
 const startDragging = (
   event: MouseEvent,
@@ -2490,7 +2835,7 @@ const startDragging = (
   showBottomPanel.value = false;
 
   const band = bands.value[bandIndex];
-  let draggedElement;
+  let draggedElement: DesignElement | undefined;
 
   if (parentFrameIndex !== undefined) {
     const frame = band?.elements[parentFrameIndex] as FrameElement;
@@ -2502,44 +2847,43 @@ const startDragging = (
   }
 
   if (draggedElement) {
-    // Get the current zoom scale
     const currentZoom = zoomLevel.value;
 
-    // Get the paper element's position info, for more accurate coordinate calculations
-    const paperEl = document.querySelector(".paper") as HTMLElement;
-    let paperOffsetX = 0;
-    let paperOffsetY = 0;
-
-    if (paperEl) {
-      const paperRect = paperEl.getBoundingClientRect();
-      // Offset accounting for the zoom scale
-      paperOffsetX = paperRect.left;
-      paperOffsetY = paperRect.top;
+    const targetSheet =
+      ((event.target as HTMLElement)?.closest(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".paper") as HTMLElement);
+    let sourcePageIndex = 0;
+    if (targetSheet && targetSheet.dataset.pageIndex !== undefined) {
+      sourcePageIndex = parseInt(targetSheet.dataset.pageIndex, 10);
+    } else if ((draggedElement as any).pageIndex !== undefined) {
+      sourcePageIndex = (draggedElement as any).pageIndex;
     }
 
-    // Store the drag info, accounting for the zoom scale
     draggingInfo.value = {
       bandIndex,
       elementIndex,
       parentFrameIndex,
-      startX: (event.clientX - paperOffsetX) / currentZoom - draggedElement.x,
-      startY: (event.clientY - paperOffsetY) / currentZoom - draggedElement.y,
-      lastTargetBandIndex: bandIndex, // Initialize to the current band index
+      startX: event.clientX,
+      startY: event.clientY,
+      origElementX: draggedElement.x,
+      origElementY: draggedElement.y,
+      lastTargetBandIndex: bandIndex,
+      sourcePageIndex,
+      lastTargetPageIndex: sourcePageIndex,
     };
 
     isDraggingOrResizing.value = true;
 
-    // Use the cached event handler functions to avoid creating new ones on every drag
     if (!cachedMouseMoveHandler) {
       cachedMouseMoveHandler = (e: MouseEvent) => {
         if (draggingInfo.value) {
           const currentBand = bands.value[draggingInfo.value.bandIndex];
-          let currentElement;
+          let currentElement: DesignElement | undefined;
           let containerWidth =
             paperWidth.value -
             (reportProperties.value?.leftMargin || 0) -
             (reportProperties.value?.rightMargin || 0);
-          let containerHeight = null; // Frame height limit
 
           if (draggingInfo.value.parentFrameIndex !== undefined) {
             const frame =
@@ -2547,7 +2891,6 @@ const startDragging = (
             if (frame && frame.type === "frame" && frame.elements) {
               currentElement = frame.elements[draggingInfo.value.elementIndex];
               containerWidth = frame.width;
-              containerHeight = frame.height;
             }
           } else {
             currentElement =
@@ -2555,322 +2898,154 @@ const startDragging = (
           }
 
           if (currentBand && currentElement) {
-            // Get the current zoom scale
             const currentZoom = zoomLevel.value;
 
-            // Calculate the element's position relative to the paper, accounting for the zoom scale
-            // Note: since padding is now used, element coordinates are relative to the content area
-            // Calculate the available width; no need to divide by currentZoom since the newX calculation already accounts for zoom
-            // const availableWidth = ... (already calculated above as containerWidth)
+            // Direct delta from starting mouse position (1:1 cursor following, zero jitter)
+            const deltaX =
+              (e.clientX - draggingInfo.value.startX) / currentZoom;
+            const deltaY =
+              (e.clientY - draggingInfo.value.startY) / currentZoom;
 
-            // Get the paper element's position info, for more accurate coordinate calculations
-            let paperOffsetX = 0;
-            let paperOffsetY = 0;
-            const paperEl = document.querySelector(".paper") as HTMLElement;
+            let newX = (draggingInfo.value.origElementX ?? 0) + deltaX;
+            let newY = (draggingInfo.value.origElementY ?? 0) + deltaY;
 
-            if (paperEl) {
-              const paperRect = paperEl.getBoundingClientRect();
-              // Offset accounting for the zoom scale
-              paperOffsetX = paperRect.left;
-              paperOffsetY = paperRect.top;
-            }
-
-            // Calculate the new X and Y coordinates, accounting for zoom and offset
-            let newX =
-              (e.clientX - paperOffsetX) / currentZoom -
-              draggingInfo.value.startX;
-            let newY =
-              (e.clientY - paperOffsetY) / currentZoom -
-              draggingInfo.value.startY; // Remove the lower bound on the Y coordinate
-
-            // If inside a Frame, don't constrain the coordinates, allowing the element to move outside the Frame
-            if (draggingInfo.value.parentFrameIndex !== undefined) {
-              // No constraint applied
-            } else {
-              // Inside a Band, constrain the X coordinate
+            // Inside band, constrain X coordinate to container width
+            if (draggingInfo.value.parentFrameIndex === undefined) {
               newX = Math.max(
                 0,
                 Math.min(newX, containerWidth - currentElement.width),
               );
-
-              // Original Band Y-constraint logic
-              // Get the position info of the first and last bands
-              const firstBandElement = document.querySelectorAll(
-                ".band",
-              )[0] as HTMLElement;
-              const lastBandElement = document.querySelectorAll(".band")[
-                bands.value.length - 1
-              ] as HTMLElement;
-
-              // Calculate the position of the current band on the page
-              const currentBandElement = document.querySelectorAll(".band")[
-                draggingInfo.value.bandIndex
-              ] as HTMLElement;
-              let currentBandTopInPage = 0;
-
-              if (
-                firstBandElement &&
-                lastBandElement &&
-                currentBandElement &&
-                paperEl
-              ) {
-                const firstBandRect = firstBandElement.getBoundingClientRect();
-                const lastBandRect = lastBandElement.getBoundingClientRect();
-                const currentBandRect =
-                  currentBandElement.getBoundingClientRect();
-                const paperRect = paperEl.getBoundingClientRect();
-
-                // Calculate the positions of the first and last bands relative to the page
-                const firstBandTopInPage =
-                  (firstBandRect.top - paperRect.top) / currentZoom;
-                const lastBandBottomInPage =
-                  (lastBandRect.bottom - paperRect.top) / currentZoom;
-                currentBandTopInPage =
-                  (currentBandRect.top - paperRect.top) / currentZoom;
-
-                // Calculate the element's absolute position on the page (relative to the entire page)
-                const elementTopInPage = currentBandTopInPage + newY;
-
-                // Constrain the element's top so it doesn't exceed the first band's top boundary
-                if (elementTopInPage < firstBandTopInPage) {
-                  const adjustment = firstBandTopInPage - elementTopInPage;
-                  newY += adjustment;
-                }
-
-                // For elements in the last band, constrain their bottom so it doesn't exceed the last band's bottom boundary
-                if (draggingInfo.value.bandIndex === bands.value.length - 1) {
-                  // Calculate the element's maximum Y coordinate within the last band
-                  const maxRelativeY =
-                    lastBandBottomInPage -
-                    currentBandTopInPage -
-                    currentElement.height;
-                  newY = Math.min(newY, maxRelativeY);
-                }
-              }
             }
 
-            // Apply auto-snap functionality
+            // Apply auto-snap to grid
             if (enableSnapToGrid.value) {
-              // Define the grid size as 3 pixels, reducing the snap distance
-              const gridSize = 3;
-
-              // Snap the X coordinate
+              const gridSize = UI_CONSTANTS.GRID_SIZE;
               const remainderX = newX % gridSize;
-              if (remainderX < gridSize / 2) {
-                newX = newX - remainderX;
-              } else {
-                newX = newX + (gridSize - remainderX);
-              }
-
-              // Snap the Y coordinate
+              newX =
+                remainderX < gridSize / 2
+                  ? newX - remainderX
+                  : newX + (gridSize - remainderX);
               const remainderY = newY % gridSize;
-              if (remainderY < gridSize / 2) {
-                newY = newY - remainderY;
-              } else {
-                newY = newY + (gridSize - remainderY);
-              }
+              newY =
+                remainderY < gridSize / 2
+                  ? newY - remainderY
+                  : newY + (gridSize - remainderY);
             }
 
             // Apply alignment-line snapping
             if (enableSnapToAlignment.value) {
-              // Create a temporary element object for alignment-line detection
               const tempElement = { ...currentElement, x: newX, y: newY };
               const snapInfo = detectAlignmentLines(
                 tempElement,
                 draggingInfo.value.bandIndex,
                 false,
               );
-
-              // Apply horizontal snapping
               if (snapInfo.horizontal) {
                 newX += snapInfo.horizontal.offset;
               }
-
-              // Apply vertical snapping
               if (snapInfo.vertical) {
                 newY += snapInfo.vertical.offset;
               }
             }
 
-            // Ensure the coordinate values are integers
+            // Update current element position
             currentElement.x = Math.round(newX);
             currentElement.y = Math.round(newY);
 
-            // If the element moves into a different band, constrain the Y coordinate so it doesn't exceed the band's height
-            if (
-              highlightedBandIndex.value !== null &&
-              highlightedBandIndex.value !== draggingInfo.value.bandIndex
-            ) {
-              const targetBand = bands.value[highlightedBandIndex.value];
-              if (targetBand) {
-                const maxY = targetBand.height - currentElement.height;
-                // Calculate the element's Y coordinate relative to the target band
-                const bandElements = document.querySelectorAll(".band");
-                const currentBandElement = bandElements[
-                  draggingInfo.value.bandIndex
-                ] as HTMLElement;
-                const targetBandElement = bandElements[
-                  highlightedBandIndex.value
-                ] as HTMLElement;
-
-                if (currentBandElement && targetBandElement) {
-                  const currentBandRect =
-                    currentBandElement.getBoundingClientRect();
-                  const targetBandRect =
-                    targetBandElement.getBoundingClientRect();
-                  const relativeY =
-                    newY +
-                    (currentBandRect.top - targetBandRect.top) / currentZoom;
-
-                  // Constrain the relative Y coordinate
-                  if (relativeY > maxY) {
-                    // Adjust the element's actual Y coordinate
-                    currentElement.y = newY - (relativeY - maxY);
-                  }
-                }
-              }
+            // Detect alignment lines (using the final position)
+            if (enableSnapToAlignment.value) {
+              detectAlignmentLines(currentElement, draggingInfo.value.bandIndex);
+            } else {
+              clearAlignmentLines();
             }
 
-            // Detect alignment lines (using the final position)
-            // Use the band index the element currently belongs to, ensuring consistent alignment-line detection
-            detectAlignmentLines(currentElement, draggingInfo.value.bandIndex);
+            // Target band and sheet detection:
+            // Use the visual position of the element's top to prevent accidental reparenting
+            // when grabbing the lower portion of a tall or overflowing element
+            const sourceSheet =
+              document.querySelector(
+                `.page-sheet[data-page-index="${draggingInfo.value.sourcePageIndex}"]`,
+              ) ||
+              document.querySelector(".page-sheet") ||
+              document.querySelector(".paper");
+            const sourceBandEl = sourceSheet?.querySelector(
+              `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
+            ) as HTMLElement | null;
 
-            // Update and display the coordinate info
-            // Show the element's relative coordinate values
-            let relativeX = Math.round(newX);
+            let checkY = e.clientY;
+            if (sourceBandEl) {
+              const sRect = sourceBandEl.getBoundingClientRect();
+              checkY = sRect.top + newY * currentZoom;
+            }
+
+            const { bandUnderMouse, sheetUnderMouse } =
+              getTargetBandAndSheetUnderPoint(e.clientX, checkY);
+
+            let targetBandIndex = draggingInfo.value.bandIndex;
+            if (
+              bandUnderMouse &&
+              bandUnderMouse.dataset.bandIndex !== undefined
+            ) {
+              targetBandIndex = parseInt(bandUnderMouse.dataset.bandIndex, 10);
+              highlightedBandIndex.value = targetBandIndex;
+              draggingInfo.value.lastTargetBandIndex = targetBandIndex;
+            }
+
+            if (
+              sheetUnderMouse &&
+              sheetUnderMouse.dataset.pageIndex !== undefined
+            ) {
+              draggingInfo.value.lastTargetPageIndex = parseInt(
+                sheetUnderMouse.dataset.pageIndex,
+                10,
+              );
+            }
+
+            // Display coordinates relative to target band
+            let relativeX = Math.max(0, Math.round(newX));
             let relativeY = Math.round(newY);
 
-            // Reuse the already-retrieved paperElement variable
-            if (paperEl) {
-              const bandElements = document.querySelectorAll(".band");
-
-              // Calculate the element's coordinates relative to the target band while dragging
-              if (
-                highlightedBandIndex.value !== null &&
-                bandElements[highlightedBandIndex.value]
-              ) {
-                // If there's a highlighted band (the band the mouse is currently over), calculate the element's coordinates relative to it
-                const targetBandElement = bandElements[
-                  highlightedBandIndex.value
-                ] as HTMLElement;
-                const targetBandRect =
-                  targetBandElement.getBoundingClientRect();
-
-                // Fix: use the element's actual Y coordinate (newY) rather than the mouse position to calculate the relative Y coordinate
-                // Get the top position of the band the current element belongs to
-                const currentBandElement = bandElements[
-                  draggingInfo.value.bandIndex
-                ] as HTMLElement;
-                const currentBandRect =
-                  currentBandElement.getBoundingClientRect();
-
-                // If the element is in a different band, the calculation must be adjusted
-                if (
-                  highlightedBandIndex.value !== draggingInfo.value.bandIndex
-                ) {
-                  // The element moved to a different band; calculate the Y coordinate relative to the new band
-                  relativeY = Math.round(
-                    newY +
-                      (currentBandRect.top - targetBandRect.top) / currentZoom,
-                  );
-                } else {
-                  // The element is within the same band; use the element's Y coordinate
-                  relativeY = Math.round(newY);
-                }
-
-                // Ensure the Y coordinate is relative to the target band
-                if (relativeY < 0) {
-                  relativeY = 0;
-                }
-
-                // Constrain the moved element's relative Y value so it doesn't exceed the target band's height minus the element's height
-                const targetBand = bands.value[highlightedBandIndex.value];
-                if (targetBand && currentElement) {
-                  const maxY = targetBand.height - currentElement.height;
-                  if (relativeY > maxY) {
-                    relativeY = maxY;
-                  }
-                }
+            if (
+              bandUnderMouse &&
+              targetBandIndex !== draggingInfo.value.bandIndex
+            ) {
+              const sourceSheet =
+                document.querySelector(
+                  `.page-sheet[data-page-index="${draggingInfo.value.sourcePageIndex}"]`,
+                ) ||
+                document.querySelector(".page-sheet") ||
+                document.querySelector(".paper");
+              const sourceBandEl = sourceSheet?.querySelector(
+                `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
+              ) as HTMLElement | null;
+              if (sourceBandEl) {
+                const sourceRect = sourceBandEl.getBoundingClientRect();
+                const targetRect = bandUnderMouse.getBoundingClientRect();
+                relativeY = Math.round(
+                  newY + (sourceRect.top - targetRect.top) / currentZoom,
+                );
               }
             }
+            if (relativeY < 0) relativeY = 0;
+
+            const targetBand = bands.value[targetBandIndex];
+            const bandName = targetBand
+              ? getBandDisplayName(targetBand.type) + " - "
+              : "";
 
             dragCoordinates.value = {
               x: relativeX,
               y: relativeY,
               visible: true,
-              bandName: "",
+              bandName,
             };
 
-            // Use the DOM elements' actual positions to calculate the target band, for greater accuracy
-            // Reuse the already-retrieved paperElement variable
-            if (paperEl) {
-              let targetBandIndex = draggingInfo.value.bandIndex;
-              let isOverBand = false;
-
-              // Get all band elements
-              const bandElements = document.querySelectorAll(".band");
-              for (let i = 0; i < bandElements.length; i++) {
-                const bandElement = bandElements[i] as HTMLElement;
-                const bandRect = bandElement.getBoundingClientRect();
-
-                // Check whether the mouse position falls within the current band's bounds
-                if (e.clientY >= bandRect.top && e.clientY <= bandRect.bottom) {
-                  targetBandIndex = i;
-                  isOverBand = true;
-                  break;
-                }
-              }
-
-              // Only update the highlighted band when the mouse is over some band
-              if (isOverBand) {
-                highlightedBandIndex.value = targetBandIndex;
-              }
-
-              // Log once the dragged element has moved into the target band
-              if (
-                isOverBand &&
-                targetBandIndex !== draggingInfo.value.bandIndex &&
-                targetBandIndex !== draggingInfo.value.lastTargetBandIndex
-              ) {
-                const sourceBand = bands.value[draggingInfo.value.bandIndex];
-                const targetBand = bands.value[targetBandIndex];
-                if (sourceBand && targetBand) {
-                  console.log(
-                    `Element moved from ${getBandDisplayName(sourceBand.type)} to ${getBandDisplayName(targetBand.type)}`,
-                  );
-                  // Update the last target band index
-                  draggingInfo.value.lastTargetBandIndex = targetBandIndex;
-
-                  // TODO: also constrain the moved element's relative Y value so it doesn't exceed the target band's height minus the element's height
-                }
-              }
-            }
-
-            // Update the position of the coordinate-display element so it follows the mouse
             const coordinatesElement = document.querySelector(
               ".coordinates-display",
             ) as HTMLElement;
             if (coordinatesElement) {
-              // Get the name of the band the mouse is currently over
-              let bandName = "";
-              if (
-                highlightedBandIndex.value !== null &&
-                bands.value[highlightedBandIndex.value] !== undefined
-              ) {
-                const currentBand = bands.value[highlightedBandIndex.value];
-                if (currentBand) {
-                  bandName = getBandDisplayName(currentBand.type) + " - ";
-                }
-              }
-
-              // Coordinate display accounting for the zoom scale
               coordinatesElement.style.left = e.clientX + 10 + "px";
               coordinatesElement.style.top = e.clientY - 30 + "px";
-
-              // Update dragCoordinates so the template shows the correct coordinates and band name
-              dragCoordinates.value.x = relativeX;
-              dragCoordinates.value.y = relativeY;
-              dragCoordinates.value.bandName = bandName;
             }
           }
         }
@@ -2879,15 +3054,13 @@ const startDragging = (
 
     if (!cachedMouseUpHandler) {
       cachedMouseUpHandler = (e: MouseEvent) => {
-        // Save state to history
         saveStateToHistory();
 
         if (draggingInfo.value) {
           const currentBand = bands.value[draggingInfo.value.bandIndex];
-          let currentElement;
+          let currentElement: DesignElement | undefined;
 
           if (draggingInfo.value.parentFrameIndex !== undefined) {
-            // Add a safety check
             if (
               currentBand &&
               currentBand.elements &&
@@ -2908,39 +3081,60 @@ const startDragging = (
           }
 
           if (currentBand && currentElement) {
-            // 1. Get the target Band
-            let targetBandIndex = draggingInfo.value.bandIndex;
+            const currentZoom = zoomLevel.value;
+            const sourcePageIndex = draggingInfo.value.sourcePageIndex ?? 0;
 
-            // If there is a last-highlighted band index and it's valid, use it
+            const sourceSheet =
+              document.querySelector(
+                `.page-sheet[data-page-index="${draggingInfo.value.sourcePageIndex}"]`,
+              ) ||
+              document.querySelector(".page-sheet") ||
+              document.querySelector(".paper");
+            const sourceBandEl =
+              (sourceSheet?.querySelector(
+                `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
+              ) as HTMLElement | null) ||
+              (document.querySelectorAll(".band")[
+                draggingInfo.value.bandIndex
+              ] as HTMLElement | undefined);
+
+            let checkY = e.clientY;
+            if (sourceBandEl) {
+              const sRect = sourceBandEl.getBoundingClientRect();
+              checkY = sRect.top + currentElement.y * currentZoom;
+            }
+
+            // Target band and sheet identification
+            const { bandUnderMouse, sheetUnderMouse } =
+              getTargetBandAndSheetUnderPoint(e.clientX, checkY);
+
+            let targetBandIndex =
+              draggingInfo.value.lastTargetBandIndex ??
+              draggingInfo.value.bandIndex;
             if (
-              draggingInfo.value.lastTargetBandIndex !== undefined &&
-              draggingInfo.value.lastTargetBandIndex >= 0 &&
-              draggingInfo.value.lastTargetBandIndex < bands.value.length
+              bandUnderMouse &&
+              bandUnderMouse.dataset.bandIndex !== undefined
             ) {
-              targetBandIndex = draggingInfo.value.lastTargetBandIndex;
-            } else {
-              // Otherwise, use the mouse position to determine the target band
-              const paperEl = document.querySelector(".paper") as HTMLElement;
-              if (paperEl) {
-                const bandElements = document.querySelectorAll(".band");
-                for (let i = 0; i < bandElements.length; i++) {
-                  const bandElement = bandElements[i] as HTMLElement;
-                  const bandRect = bandElement.getBoundingClientRect();
-                  if (
-                    e.clientY >= bandRect.top &&
-                    e.clientY <= bandRect.bottom
-                  ) {
-                    targetBandIndex = i;
-                    break;
-                  }
-                }
-              }
+              targetBandIndex = parseInt(bandUnderMouse.dataset.bandIndex, 10);
+            }
+
+            let targetSheetPageIndex =
+              draggingInfo.value.lastTargetPageIndex ??
+              draggingInfo.value.sourcePageIndex ??
+              0;
+            if (
+              sheetUnderMouse &&
+              sheetUnderMouse.dataset.pageIndex !== undefined
+            ) {
+              targetSheetPageIndex = parseInt(
+                sheetUnderMouse.dataset.pageIndex,
+                10,
+              );
             }
 
             const targetBand = bands.value[targetBandIndex];
 
-            // 2. Calculate the element's absolute coordinates on the page (or its coordinates relative to the target Band)
-            // Calculate the Source Parent's coordinates relative to the Source Band
+            // Source parent coordinates if inside a frame
             let sourceParentRelX = 0;
             let sourceParentRelY = 0;
             if (draggingInfo.value.parentFrameIndex !== undefined) {
@@ -2954,33 +3148,42 @@ const startDragging = (
               }
             }
 
-            // Calculate the element's coordinates relative to the Source Band
             const elementRelSourceBandX = sourceParentRelX + currentElement.x;
             const elementRelSourceBandY = sourceParentRelY + currentElement.y;
 
-            // Calculate the Source Band's offset relative to the Target Band
-            const sourceBandEl =
-              document.querySelectorAll(".band")[draggingInfo.value.bandIndex];
+            const targetSheetEl =
+              document.querySelector(
+                `.page-sheet[data-page-index="${targetSheetPageIndex}"]`,
+              ) ||
+              document.querySelector(".page-sheet") ||
+              document.querySelector(".paper");
+
             const targetBandEl =
+              (targetSheetEl?.querySelector(
+                `.band[data-band-index="${targetBandIndex}"]`,
+              ) as HTMLElement) ||
               document.querySelectorAll(".band")[targetBandIndex];
 
-            if (!sourceBandEl || !targetBandEl) return;
+            let elementRelTargetBandX = elementRelSourceBandX;
+            let elementRelTargetBandY = elementRelSourceBandY;
 
-            const sourceBandElement = sourceBandEl.getBoundingClientRect();
-            const targetBandElement = targetBandEl.getBoundingClientRect();
-            const currentZoom = zoomLevel.value;
-            const bandOffsetY =
-              (sourceBandElement.top - targetBandElement.top) / currentZoom;
+            if (
+              sourceBandEl &&
+              targetBandEl &&
+              (draggingInfo.value.bandIndex !== targetBandIndex ||
+                sourcePageIndex !== targetSheetPageIndex)
+            ) {
+              const sourceBandRect = sourceBandEl.getBoundingClientRect();
+              const targetBandRect = targetBandEl.getBoundingClientRect();
+              const bandOffsetY =
+                (sourceBandRect.top - targetBandRect.top) / currentZoom;
+              elementRelTargetBandY = elementRelSourceBandY + bandOffsetY;
+            }
 
-            const elementRelTargetBandX = elementRelSourceBandX;
-            const elementRelTargetBandY = elementRelSourceBandY + bandOffsetY;
-
-            // 3. Look for a target Frame within the Target Band
+            // Find target frame within target band (if dropped inside a frame)
             let targetFrameIndex = -1;
             if (targetBand && targetBand.elements) {
-              // Iterate over the Frames in the Target Band
               for (let i = targetBand.elements.length - 1; i >= 0; i--) {
-                // Avoid dropping a Frame into itself: if we're in the same Band and the Frame being iterated is the one being dragged, skip it
                 if (
                   targetBandIndex === draggingInfo.value.bandIndex &&
                   draggingInfo.value.parentFrameIndex === undefined &&
@@ -2992,7 +3195,6 @@ const startDragging = (
                 const el = targetBand.elements[i];
                 if (!el) continue;
                 if (el.type === "frame") {
-                  // Check intersection using element center
                   const centerX =
                     elementRelTargetBandX + currentElement.width / 2;
                   const centerY =
@@ -3011,16 +3213,14 @@ const startDragging = (
               }
             }
 
-            // 4. Determine whether the container changed
             const isSameBand = draggingInfo.value.bandIndex === targetBandIndex;
             const isSameFrame =
               draggingInfo.value.parentFrameIndex ===
               (targetFrameIndex === -1 ? undefined : targetFrameIndex);
+            const isSamePage = sourcePageIndex === targetSheetPageIndex;
 
             if ((!isSameBand || !isSameFrame) && targetBand) {
               // Reparenting
-
-              // Grab the target Frame reference up front (splice would otherwise shift the indices)
               let targetFrame: FrameElement | null = null;
               if (targetFrameIndex !== -1) {
                 targetFrame = targetBand.elements[
@@ -3028,8 +3228,8 @@ const startDragging = (
                 ] as FrameElement;
               }
 
-              // Remove from Source
-              let element;
+              // Remove from source
+              let element: DesignElement | undefined;
               if (draggingInfo.value.parentFrameIndex !== undefined) {
                 const frame = bands.value[draggingInfo.value.bandIndex]
                   ?.elements[
@@ -3048,15 +3248,10 @@ const startDragging = (
               }
 
               if (element) {
-                // Add to Target
                 if (targetFrame) {
                   if (!targetFrame.elements) targetFrame.elements = [];
-
-                  // Convert to Frame Rel Coords
                   element.x = Math.round(elementRelTargetBandX - targetFrame.x);
                   element.y = Math.round(elementRelTargetBandY - targetFrame.y);
-
-                  // Limit
                   element.x = Math.max(0, element.x);
                   element.y = Math.max(0, element.y);
                   if (element.x + element.width > targetFrame.width)
@@ -3066,6 +3261,7 @@ const startDragging = (
                       0,
                       targetFrame.height - element.height,
                     );
+                  delete (element as any).pageIndex;
 
                   targetFrame.elements.push(element);
                   selectElement(
@@ -3075,12 +3271,14 @@ const startDragging = (
                     targetFrameIndex,
                   );
                 } else {
-                  // Add to Band
-                  element.x = Math.round(elementRelTargetBandX);
-                  element.y = Math.round(elementRelTargetBandY);
+                  element.x = Math.max(0, Math.round(elementRelTargetBandX));
+                  element.y = Math.max(0, Math.round(elementRelTargetBandY));
 
-                  // Limit Y >= 0
-                  element.y = Math.max(0, element.y);
+                  if (targetBand.type === BAND_TYPE_CONSTANTS.DETAIL) {
+                    (element as any).pageIndex = targetSheetPageIndex;
+                  } else {
+                    delete (element as any).pageIndex;
+                  }
 
                   targetBand.elements.push(element);
                   selectElement(
@@ -3090,37 +3288,61 @@ const startDragging = (
                 }
               }
             } else {
-              // Moved within the same container; use the coordinate values shown while dragging
-              // Note: dragCoordinates may only have updated the displayed value — the actual value was already updated in mousemove via the currentElement reference
-              // This mainly just ensures integers and bounds
-              currentElement.x = Math.round(currentElement.x);
-              currentElement.y = Math.round(currentElement.y);
-              if (currentElement.y < 0) currentElement.y = 0;
+              // Within the same container
+              if (
+                isSameBand &&
+                !isSamePage &&
+                currentBand.type === BAND_TYPE_CONSTANTS.DETAIL
+              ) {
+                // Moved detail element across pages
+                currentElement.y = Math.max(
+                  0,
+                  Math.round(elementRelTargetBandY),
+                );
+                (currentElement as any).pageIndex = targetSheetPageIndex;
+              } else {
+                currentElement.x = Math.max(0, Math.round(currentElement.x));
+                currentElement.y = Math.max(0, Math.round(currentElement.y));
+              }
+
+              // Ensure the element remains selected after moving within the same container
+              selectElement(
+                draggingInfo.value.bandIndex,
+                draggingInfo.value.elementIndex,
+                false,
+                draggingInfo.value.parentFrameIndex,
+              );
+            }
+
+            if (targetSheetPageIndex >= pageCount.value) {
+              pageCount.value = targetSheetPageIndex + 1;
             }
           }
         }
 
-        // Clear the highlight and coordinate display
+        // Clear highlight and coordinate display
         highlightedBandIndex.value = null;
         dragCoordinates.value.visible = false;
-
-        // Clear the alignment lines
         clearAlignmentLines();
-
         draggingInfo.value = null;
         isDraggingOrResizing.value = false;
+        isJustDraggedOrResized.value = true;
+        setTimeout(() => {
+          isJustDraggedOrResized.value = false;
+        }, 150);
 
-        // Update JRXML
-        updateJRXML();
-
-        // Remove the event listeners
+        // Remove event listeners
         if (cachedMouseMoveHandler) {
           document.removeEventListener("mousemove", cachedMouseMoveHandler);
+          cachedMouseMoveHandler = null;
         }
         if (cachedMouseUpHandler) {
           document.removeEventListener("mouseup", cachedMouseUpHandler);
           cachedMouseUpHandler = null;
         }
+
+        // Update JRXML
+        updateJRXML();
       };
     }
 
@@ -3129,7 +3351,6 @@ const startDragging = (
     document.addEventListener("mouseup", cachedMouseUpHandler);
 
     // Immediately fire a mousemove event once, so the element follows the mouse right away
-    // This fixes the issue where moving the mouse within 100ms of pressing the mouse button left the element lagging behind the mouse position
     setTimeout(() => {
       if (cachedMouseMoveHandler) {
         cachedMouseMoveHandler(event);
@@ -3244,7 +3465,12 @@ const saveToLocalStorageWrapper = () => {
 const loadFromLocalStorageWrapper = () => {
   const loadedData = loadFromLocalStorage();
   if (loadedData && loadedData.reportData) {
-    reportProperties.value = loadedData.reportData.reportProperties;
+    reportProperties.value = {
+      ...loadedData.reportData.reportProperties,
+      bandLimits:
+        loadedData.reportData.reportProperties.bandLimits ||
+        getEffectiveDefaultBandLimits(),
+    };
     bands.value = loadedData.reportData.bands;
     reportFields.value = loadedData.reportData.reportFields;
     jrxmlContent.value = loadedData.reportData.jrxmlContent;
@@ -3306,7 +3532,10 @@ const initBox = () => {
 // Download the JRXML file
 const downloadJRXML = () => {
   const content = generateJRXMLContent(
-    reportProperties.value,
+    {
+      ...reportProperties.value,
+      pageCount: totalPages.value,
+    },
     bands.value,
     reportFields.value,
     reportParameters.value,
@@ -3315,6 +3544,7 @@ const downloadJRXML = () => {
     reportVariables.value,
     [],
     reportGroups.value,
+    totalPages.value,
   );
   jrxmlContent.value = content;
 
@@ -3333,7 +3563,7 @@ const downloadJRXML = () => {
   URL.revokeObjectURL(url);
 
   // Save the data
-  saveToLocalStorageWrapper();
+  flushAutoSave();
 };
 
 // Panel visibility control functions
@@ -3408,8 +3638,14 @@ const updateJRXML = () => {
       return;
     }
 
+    // Ensure bands fit within the A4 page height and detail takes the remaining space
+    ensureBandsFitPage();
+
     const content = generateJRXMLContent(
-      reportProperties.value,
+      {
+        ...reportProperties.value,
+        pageCount: totalPages.value,
+      },
       bands.value,
       reportFields.value,
       reportParameters.value,
@@ -3418,6 +3654,7 @@ const updateJRXML = () => {
       reportVariables.value,
       [],
       reportGroups.value,
+      totalPages.value,
     );
 
     // If the content changed, save it to history
@@ -3655,10 +3892,24 @@ const handleKeyDown = (event: KeyboardEvent) => {
     return;
   }
 
+  // CTRL/CMD+Plus/Equal zooms in
+  if (isCtrlOrMetaPressed && (event.key === "=" || event.key === "+")) {
+    event.preventDefault();
+    zoomIn();
+    return;
+  }
+
+  // CTRL/CMD+Minus zooms out
+  if (isCtrlOrMetaPressed && (event.key === "-" || event.key === "_")) {
+    event.preventDefault();
+    zoomOut();
+    return;
+  }
+
   // CTRL/CMD+S saves the current file
   if (isCtrlOrMetaPressed && event.key === "s") {
     event.preventDefault();
-    saveCurrentFileToStorage();
+    saveCurrentFileToStorage(true);
     return;
   }
 
@@ -3881,12 +4132,15 @@ const moveElementByKeyboard = (direction: string) => {
     case "ArrowUp":
       newY = Math.max(0, currentElement.y - MOVE_STEP);
       break;
-    case "ArrowDown":
-      newY = Math.min(
-        currentBand.height - currentElement.height,
-        currentElement.y + MOVE_STEP,
-      );
+    case "ArrowDown": {
+      const maxDown = currentBand.height - currentElement.height;
+      if (maxDown > 0) {
+        newY = Math.min(maxDown, currentElement.y + MOVE_STEP);
+      } else {
+        newY = currentElement.y + MOVE_STEP;
+      }
       break;
+    }
     case "ArrowLeft":
       newX = Math.max(0, currentElement.x - MOVE_STEP);
       break;
@@ -3913,15 +4167,9 @@ const moveElementByKeyboard = (direction: string) => {
   updateOutOfBoundsElements();
 };
 
-// Handle click events on the report area, clearing the selection
-const handlePaperClick = () => {
-  // Only clear the selection if no other element was clicked
-  selectedElement.value = null;
-  selectedBandIndex.value = null;
-};
-
 // Load data when the component mounts
 onMounted(() => {
+  isLoadingFile.value = true;
   console.log("Component mount started...");
   const hasLocalData = loadFromLocalStorageWrapper();
   console.log("Local data load complete");
@@ -3938,10 +4186,20 @@ onMounted(() => {
     }
   }
 
+  if (!hasFileData) {
+    if (!currentFileId.value) {
+      currentFileId.value = `file_${Date.now()}`;
+    }
+    saveCurrentFileToStorage(false);
+  }
+
   // Update JRXML after the initial load; use setTimeout to ensure all data has finished loading
   setTimeout(() => {
+    isLoadingFile.value = false;
+    ensureBandsFitPage();
     console.log("Starting initial JRXML generation...");
     updateJRXML();
+    saveStatus.value = "saved";
   }, 100);
 
   // Initial zoom setup - automatically fit the window
@@ -3962,7 +4220,7 @@ onMounted(() => {
       wheelEvent.preventDefault();
 
       // Zoom according to the wheel direction
-      const delta = wheelEvent.deltaY < 0 ? 0.1 : -0.1;
+      const delta = wheelEvent.deltaY < 0 ? 1 : -1;
       handleZoomChange(delta);
     }
   };
@@ -3970,24 +4228,19 @@ onMounted(() => {
   document.addEventListener("wheel", handleWheel, { passive: false });
   (window as any).pdfDesignerWheelListener = handleWheel;
 
-  // Get the paper element and add a click event listener
-  const paperElement = document.querySelector(".paper");
-  if (paperElement) {
-    paperElement.addEventListener("click", () => {
-      handlePaperClick();
-      setDesignAreaFocused();
-    });
-  }
-
   // Store listener references so they can be removed when the component unmounts
   (window as any).pdfDesignerKeydownListener = handleKeyDown;
-  (window as any).pdfDesignerPaperClickListener = handlePaperClick;
   (window as any).pdfDesignerSetFocused = setDesignAreaFocused;
   (window as any).pdfDesignerRemoveFocused = removeDesignAreaFocused;
+
+  window.addEventListener("beforeunload", flushAutoSave);
 });
 
 // Clean up event listeners when the component unmounts
 onUnmounted(() => {
+  flushAutoSave();
+  window.removeEventListener("beforeunload", flushAutoSave);
+
   // Remove the keyboard event listener
   const keydownListener = (window as any).pdfDesignerKeydownListener;
   if (keydownListener) {
@@ -3999,35 +4252,38 @@ onUnmounted(() => {
   if (wheelListener) {
     document.removeEventListener("wheel", wheelListener);
   }
-
-  // Remove the paper click event listener
-  const handlePaperClick = (window as any).pdfDesignerPaperClickListener;
-  const paperElement = document.querySelector(".paper");
-  if (handlePaperClick && paperElement) {
-    paperElement.removeEventListener("click", handlePaperClick);
-  }
 });
 
 // Watch for changes to key data, auto-saving and updating JRXML
 watch(
-  [reportProperties, bands, reportFields, reportParameters],
+  [
+    reportProperties,
+    bands,
+    reportFields,
+    reportParameters,
+    subDatasets,
+    reportVariables,
+    reportGroups,
+    reportStyles,
+  ],
   () => {
-    // Only update while not dragging/resizing and not already in the middle of a JRXML update
-    if (!isDraggingOrResizing.value && !isUpdatingJRXML.value) {
-      saveToLocalStorageWrapper();
+    // Only update while not dragging/resizing, not already in JRXML update, and not loading a file
+    if (!isDraggingOrResizing.value && !isUpdatingJRXML.value && !isLoadingFile.value) {
       updateJRXML();
       // Update the out-of-bounds elements
       updateOutOfBoundsElements();
+      scheduleAutoSave(false);
     }
   },
   { deep: true },
 );
 
-// Watch for drag-state changes, updating out-of-bounds elements once dragging ends
+// Watch for drag-state changes, updating out-of-bounds elements and auto-saving once dragging ends
 watch(isDraggingOrResizing, (newValue, oldValue) => {
-  // Update the out-of-bounds elements when transitioning from dragging to not dragging
-  if (oldValue === true && newValue === false) {
+  if (oldValue === true && newValue === false && !isLoadingFile.value) {
+    updateJRXML();
     updateOutOfBoundsElements();
+    scheduleAutoSave(true);
   }
 });
 
@@ -4051,11 +4307,15 @@ const regenerateJRXML = (): void => {
 
 // Open the PDF preview
 const openPdfPreview = (): void => {
+  flushAutoSave();
   try {
     if (!jrxmlContent.value) {
       // Generate the JRXML content directly, without downloading it
       const content = generateJRXMLContent(
-        reportProperties.value,
+        {
+          ...reportProperties.value,
+          pageCount: totalPages.value,
+        },
         bands.value,
         reportFields.value,
         reportParameters.value,
@@ -4064,6 +4324,7 @@ const openPdfPreview = (): void => {
         reportVariables.value,
         [],
         reportGroups.value,
+        totalPages.value,
       );
       jrxmlContent.value = content;
     }
@@ -4072,16 +4333,8 @@ const openPdfPreview = (): void => {
       const extracted: TableDataset[] = [];
       for (const band of bands.value) {
         for (const el of band.elements || []) {
-          if (el.type === "table" && (el as any).dataset?.fields?.length > 0) {
-            const ds = (el as any).dataset;
-            if (!extracted.find((d) => d.name === ds.name)) {
-              extracted.push({
-                uuid: ds.uuid || crypto.randomUUID(),
-                name: ds.name,
-                fields: ds.fields,
-                query: ds.query,
-              });
-            }
+          if (el.type === "table" && (el as any).dataset) {
+            extracted.push((el as any).dataset);
           }
         }
       }
@@ -4089,6 +4342,7 @@ const openPdfPreview = (): void => {
         subDatasets.value = extracted;
       }
     }
+
     showPdfPreview.value = false;
     nextTick(() => {
       showPdfPreview.value = true;
@@ -4108,6 +4362,10 @@ const saveJRXML = (): void => {
     // Update the report properties
     reportProperties.value = {
       ...parsedData.properties,
+      orientation:
+        parsedData.properties?.orientation === "landscape"
+          ? "landscape"
+          : "portrait",
       defaultFont: reportProperties.value?.defaultFont || {
         name: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
         size: REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
@@ -4115,7 +4373,21 @@ const saveJRXML = (): void => {
         isItalic: false,
         isUnderline: false,
       },
+      bandLimits:
+        reportProperties.value?.bandLimits || getEffectiveDefaultBandLimits(),
     };
+
+    if (parsedData.properties?.pageCount) {
+      pageCount.value = parsedData.properties.pageCount;
+    } else {
+      const detailBand = parsedData.bands.find(
+        (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+      );
+      const maxIdx = detailBand?.elements
+        ? Math.max(0, ...detailBand.elements.map((e: any) => e.pageIndex || 0))
+        : 0;
+      pageCount.value = maxIdx + 1;
+    }
 
     // Update the field definitions
     reportFields.value = parsedData.fields;
@@ -4153,6 +4425,20 @@ const saveJRXML = (): void => {
 
     // Update the selected band types
     selectedBandTypes.value = parsedData.bands.map((band) => band.type);
+
+    // Update pageCount based on loaded elements
+    const detailBand = parsedData.bands.find(
+      (b: Band) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+    );
+    if (detailBand && detailBand.elements) {
+      const maxPage = Math.max(
+        0,
+        ...detailBand.elements.map((e: any) => e.pageIndex || 0),
+      );
+      pageCount.value = Math.max(1, maxPage + 1);
+    } else {
+      pageCount.value = 1;
+    }
 
     // Add a default border to rectangle elements to ensure they render correctly
     bands.value.forEach((band) => {
@@ -4839,50 +5125,137 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   const startY = event.clientY;
   if (!bands.value || !bands.value[bandIndex]) return;
 
-  // Get the current zoom scale
   const currentZoom = zoomLevel.value;
-  const startHeight = bands.value[bandIndex].height;
+  const targetBand = bands.value[bandIndex];
+  const currentBandType = targetBand.type;
 
-  // Get the paper element's position info, for more accurate coordinate calculations
-  const paperElement = document.querySelector(".paper") as HTMLElement;
-  let paperOffsetY = 0;
+  // Detail band does not have its own resize handle; it occupies whatever space remains
+  const detailIndex = bands.value.findIndex(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+  if (bandIndex === detailIndex) return;
 
-  if (paperElement) {
-    const paperRect = paperElement.getBoundingClientRect();
-    // Offset accounting for the zoom scale
-    paperOffsetY = paperRect.top;
-  }
+  // Retrieve configurable min and max constraints (default 20px min, 70px max)
+  const bandLimitsConfig = reportProperties.value?.bandLimits?.[
+    currentBandType
+  ] ||
+    getEffectiveDefaultBandLimits()[currentBandType] || { min: 20, max: 70 };
+  const minHeight =
+    typeof bandLimitsConfig.min === "number" ? bandLimitsConfig.min : 20;
+  const maxHeight =
+    typeof bandLimitsConfig.max === "number" ? bandLimitsConfig.max : 70;
+
+  // Bottom bands (Column Footer, Summary, Page Footer, Last Page Footer) have handle at TOP edge:
+  // Dragging UP (deltaY < 0) increases height; dragging DOWN (deltaY > 0) decreases height.
+  // Top bands (Page Header, Column Header) have handle at BOTTOM edge:
+  // Dragging DOWN (deltaY > 0) increases height; dragging UP (deltaY < 0) decreases height.
+  const isBottomBand =
+    currentBandType === BAND_TYPE_CONSTANTS.COLUMN_FOOTER ||
+    currentBandType === BAND_TYPE_CONSTANTS.PAGE_FOOTER;
+
+  // Available height in the A4 printable area
+  const topMargin = reportProperties.value?.topMargin || 0;
+  const bottomMargin = reportProperties.value?.bottomMargin || 0;
+  const availableHeight = paperHeight.value - topMargin - bottomMargin;
+
+  // Snapshot starting heights of all bands
+  const startHeights: number[] = bands.value.map((b) => b.height || 0);
+  const startTargetHeight: number = startHeights[bandIndex] ?? minHeight;
+
+  // Total height of all other fixed bands (excluding target band and Detail)
+  let otherBandsHeight = 0;
+  bands.value.forEach((b, i) => {
+    if (i !== bandIndex && i !== detailIndex) {
+      otherBandsHeight += startHeights[i] || 0;
+    }
+  });
+
+  // Detail band minimum height
+  const detailMinHeight = BAND_CONSTANTS.MIN_HEIGHT || 20;
+  // Detail-constrained upper limit for this band
+  const maxPossibleHeight = Math.max(
+    minHeight,
+    availableHeight - otherBandsHeight - detailMinHeight,
+  );
+  const effectiveMax = Math.min(maxHeight, maxPossibleHeight);
 
   // Show the band height adjustment tooltip
-  const band = bands.value[bandIndex];
+  const bandDisplayName = getBandDisplayName(currentBandType);
   resizingBandInfo.visible = true;
-  resizingBandInfo.bandName = getBandDisplayName(band.type);
-  resizingBandInfo.height = startHeight;
+  resizingBandInfo.bandName = bandDisplayName;
+  resizingBandInfo.height = startTargetHeight;
+
+  // Toast notification throttling state
+  let lastToastType: "min" | "max" | null = null;
+  let lastToastTime = 0;
+
+  const showLimitToast = (
+    type: "min" | "max",
+    reason?: "page_full" | "template_limit",
+  ) => {
+    const now = Date.now();
+    if (lastToastType === type && now - lastToastTime < 2000) {
+      return;
+    }
+    lastToastType = type;
+    lastToastTime = now;
+
+    if (type === "max") {
+      if (reason === "page_full") {
+        notification.info(
+          `You don't have space to extend ${bandDisplayName}. Detail band has reached its minimum height (${detailMinHeight}px).`,
+        );
+      } else {
+        notification.info(
+          `${bandDisplayName} space is exceeded, change the template band setting for more space.`,
+        );
+      }
+    } else {
+      notification.info(
+        `Min height reached, if you don't want this ${bandDisplayName} band, please remove them.`,
+      );
+    }
+  };
 
   const handleMouseMove = (e: MouseEvent): void => {
     if (!bands.value || !bands.value[bandIndex]) return;
-    // Calculate the height change accounting for the zoom scale, using paperOffsetY for more accuracy
-    const deltaY =
-      (e.clientY - paperOffsetY) / currentZoom -
-      (startY - paperOffsetY) / currentZoom;
-    const newHeight = Math.max(
-      BAND_CONSTANTS.MIN_HEIGHT,
-      Math.round(startHeight + deltaY),
+    const deltaY = (e.clientY - startY) / currentZoom;
+
+    // For bottom bands (handle at top edge): dragging UP (-deltaY) expands
+    // For top bands (handle at bottom edge): dragging DOWN (+deltaY) expands
+    const effectiveDelta = isBottomBand ? -deltaY : deltaY;
+    const requestedHeight = Math.round(startTargetHeight + effectiveDelta);
+
+    if (requestedHeight > effectiveMax) {
+      const reason =
+        effectiveMax === maxPossibleHeight && maxPossibleHeight < maxHeight
+          ? "page_full"
+          : "template_limit";
+      showLimitToast("max", reason);
+    } else if (requestedHeight < minHeight) {
+      showLimitToast("min");
+    } else {
+      lastToastType = null;
+    }
+
+    const newTargetHeight = Math.max(
+      minHeight,
+      Math.min(effectiveMax, requestedHeight),
     );
 
-    // Update the band height
+    const newDetailHeight = Math.max(
+      detailMinHeight,
+      availableHeight - otherBandsHeight - newTargetHeight,
+    );
+
     bands.value = bands.value.map((b, i) => {
-      if (i === bandIndex) {
-        return { ...b, height: newHeight };
-      }
+      if (i === bandIndex) return { ...b, height: newTargetHeight };
+      if (i === detailIndex) return { ...b, height: newDetailHeight };
       return b;
     });
 
-    // Update the band height adjustment tooltip
-    resizingBandInfo.bandName = bands.value[bandIndex]
-      ? getBandDisplayName(bands.value[bandIndex].type)
-      : "";
-    resizingBandInfo.height = newHeight;
+    resizingBandInfo.height = newTargetHeight;
+    resizingBandInfo.bandName = bandDisplayName;
 
     // Position the band-height display element so it follows the mouse
     const bandHeightElement = document.querySelector(
@@ -4893,13 +5266,12 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
       bandHeightElement.style.top = e.clientY - 30 + "px";
     }
 
-    // Adjust the positions of elements within this band so they don't exceed the band's bounds
-    const band = bands.value[bandIndex];
-    if (band && band.elements) {
-      band.elements.forEach((element) => {
-        // Adjust the element's position accounting for the zoom scale
-        if (element.y + element.height > newHeight) {
-          element.y = Math.max(0, newHeight - element.height);
+    // Adjust elements within resized band so they don't exceed the band's bounds
+    const currentResizedBand = bands.value[bandIndex];
+    if (currentResizedBand && currentResizedBand.elements) {
+      currentResizedBand.elements.forEach((element) => {
+        if (element.y + element.height > newTargetHeight) {
+          element.y = Math.max(0, newTargetHeight - element.height);
         }
       });
     }
@@ -4912,6 +5284,10 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
     resizingBandInfo.height = 0;
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("mouseup", handleMouseUp);
+    ensureBandsFitPage();
+    updateOutOfBoundsElements();
+    saveStateToHistory();
+    updateJRXML();
   };
 
   document.addEventListener("mousemove", handleMouseMove);
@@ -4956,13 +5332,16 @@ const startResizingElement = (
     // Get the current zoom scale
     const currentZoom = zoomLevel.value;
 
-    // Get the paper element's position info, for more accurate coordinate calculations
-    const paperElement = document.querySelector(".paper") as HTMLElement;
+    // Get the page sheet element's position info, for more accurate coordinate calculations
+    const targetSheet =
+      ((event.target as HTMLElement)?.closest(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".paper") as HTMLElement);
     let paperOffsetX = 0;
     let paperOffsetY = 0;
 
-    if (paperElement) {
-      const paperRect = paperElement.getBoundingClientRect();
+    if (targetSheet) {
+      const paperRect = targetSheet.getBoundingClientRect();
       // Offset accounting for the zoom scale
       paperOffsetX = paperRect.left;
       paperOffsetY = paperRect.top;
@@ -4971,11 +5350,15 @@ const startResizingElement = (
     resizingInfo.value = {
       bandIndex,
       elementIndex,
+      direction: direction || "se",
       startX: (event.clientX - paperOffsetX) / currentZoom,
       startY: (event.clientY - paperOffsetY) / currentZoom,
+      startElementX: element.x,
+      startElementY: element.y,
       startWidth: element.width,
       startHeight: element.height,
       parentFrameIndex,
+      targetSheet,
     };
 
     isDraggingOrResizing.value = true;
@@ -5010,7 +5393,10 @@ const startResizingElement = (
       const currentZoom = zoomLevel.value;
 
       // Get the paper element's current position info, for more accurate coordinate calculations
-      const paperEl = document.querySelector(".paper") as HTMLElement;
+      const paperEl =
+        resizingInfo.value.targetSheet ||
+        (document.querySelector(".page-sheet") as HTMLElement) ||
+        (document.querySelector(".paper") as HTMLElement);
       let currentPaperOffsetX = 0;
       let currentPaperOffsetY = 0;
 
@@ -5021,89 +5407,134 @@ const startResizingElement = (
         currentPaperOffsetY = paperRect.top;
       }
 
-      // Calculate the new width and height, accounting for the zoom scale
-      let newWidth =
-        resizingInfo.value.startWidth +
-        ((e.clientX - currentPaperOffsetX) / currentZoom -
-          resizingInfo.value.startX);
-      let newHeight =
-        resizingInfo.value.startHeight +
-        ((e.clientY - currentPaperOffsetY) / currentZoom -
-          resizingInfo.value.startY);
+      // Calculate the new width, height, and position, accounting for zoom scale and 8-way direction
+      const dir = resizingInfo.value.direction || "se";
+      const startElementX = resizingInfo.value.startElementX ?? element.x;
+      const startElementY = resizingInfo.value.startElementY ?? element.y;
+      const startWidth = resizingInfo.value.startWidth;
+      const startHeight = resizingInfo.value.startHeight;
 
-      // Constrain the minimum size
-      const minSize = 1;
-      newWidth = Math.max(minSize, newWidth);
-      newHeight = Math.max(minSize, newHeight);
+      const currentMouseX = (e.clientX - currentPaperOffsetX) / currentZoom;
+      const currentMouseY = (e.clientY - currentPaperOffsetY) / currentZoom;
+      const deltaX = currentMouseX - resizingInfo.value.startX;
+      const deltaY = currentMouseY - resizingInfo.value.startY;
 
-      // Get the report's margin settings
-      const { leftMargin = 0, rightMargin = 0 } = reportProperties.value;
-      // Constrain the size so it doesn't exceed the paper's right boundary or the band's bottom boundary
-      let maxElementWidth;
-      if (resizingInfo.value.parentFrameIndex !== undefined) {
-        maxElementWidth = containerWidth - element.x;
-      } else {
-        maxElementWidth =
-          paperWidth.value - leftMargin - rightMargin - element.x;
+      const minSize = 5;
+
+      let newX = startElementX;
+      let newY = startElementY;
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+
+      // Horizontal resize
+      if (dir.includes("e")) {
+        // Dragging right edge: left edge (newX) is fixed at startElementX
+        const maxRight = containerWidth;
+        const candidateRight = startElementX + startWidth + deltaX;
+        const clampedRight = Math.min(maxRight, Math.max(startElementX + minSize, candidateRight));
+        newWidth = clampedRight - startElementX;
+        newX = startElementX;
+      } else if (dir.includes("w")) {
+        // Dragging left edge: right edge is fixed at (startElementX + startWidth)
+        const rightEdge = startElementX + startWidth;
+        const candidateLeft = startElementX + deltaX;
+        const clampedLeft = Math.max(0, Math.min(rightEdge - minSize, candidateLeft));
+        newX = clampedLeft;
+        newWidth = rightEdge - clampedLeft;
       }
 
-      const availableHeight = containerHeight - element.y;
-      newWidth = Math.min(newWidth, maxElementWidth);
-      newHeight = Math.min(newHeight, availableHeight);
+      // Vertical resize
+      if (dir.includes("s")) {
+        // Dragging bottom edge: top edge (newY) is fixed at startElementY
+        const maxBottom = containerHeight;
+        const candidateBottom = startElementY + startHeight + deltaY;
+        const clampedBottom = Math.min(maxBottom, Math.max(startElementY + minSize, candidateBottom));
+        newHeight = clampedBottom - startElementY;
+        newY = startElementY;
+      } else if (dir.includes("n")) {
+        // Dragging top edge: bottom edge is fixed at (startElementY + startHeight)
+        const bottomEdge = startElementY + startHeight;
+        const candidateTop = startElementY + deltaY;
+        const clampedTop = Math.max(0, Math.min(bottomEdge - minSize, candidateTop));
+        newY = clampedTop;
+        newHeight = bottomEdge - clampedTop;
+      }
 
       // If the SHIFT key is held, preserve the original aspect ratio
       if (e.shiftKey) {
-        // Calculate the original aspect ratio
-        const aspectRatio =
-          resizingInfo.value.startWidth / resizingInfo.value.startHeight;
-
-        // Calculate the height derived from the width, and the width derived from the height
+        const aspectRatio = startWidth / startHeight;
         const heightBasedOnWidth = newWidth / aspectRatio;
         const widthBasedOnHeight = newHeight * aspectRatio;
 
-        // Choose whichever dimension is closer to the original ratio
         if (
           Math.abs(newHeight - heightBasedOnWidth) <
           Math.abs(newWidth - widthBasedOnHeight)
         ) {
-          // Use the width as the basis, and adjust the height
-          newHeight = heightBasedOnWidth;
+          newHeight = Math.max(minSize, heightBasedOnWidth);
+          if (dir.includes("n")) {
+            newY = startElementY + startHeight - newHeight;
+            if (newY < 0) {
+              newY = 0;
+              newHeight = startElementY + startHeight;
+              newWidth = newHeight * aspectRatio;
+              if (dir.includes("w")) {
+                newX = startElementX + startWidth - newWidth;
+              }
+            }
+          }
         } else {
-          // Use the height as the basis, and adjust the width
-          newWidth = widthBasedOnHeight;
+          newWidth = Math.max(minSize, widthBasedOnHeight);
+          if (dir.includes("w")) {
+            newX = startElementX + startWidth - newWidth;
+            if (newX < 0) {
+              newX = 0;
+              newWidth = startElementX + startWidth;
+              newHeight = newWidth / aspectRatio;
+              if (dir.includes("n")) {
+                newY = startElementY + startHeight - newHeight;
+              }
+            }
+          }
         }
-
-        // Constrain the size again to ensure it doesn't exceed the bounds
-        newWidth = Math.max(minSize, Math.min(newWidth, maxElementWidth));
-        newHeight = Math.max(minSize, Math.min(newHeight, availableHeight));
       } else if (e.altKey) {
-        // If the ALT key is held, lock the aspect ratio to 1:1
-        // Calculate the 1:1 height derived from the width, and the 1:1 width derived from the height
-        const size1x1FromWidth = newWidth;
-        const size1x1FromHeight = newHeight;
-
-        // Use whichever dimension changed more as the basis
-        const widthChange = Math.abs(newWidth - resizingInfo.value.startWidth);
-        const heightChange = Math.abs(
-          newHeight - resizingInfo.value.startHeight,
-        );
+        // If ALT key is held, lock aspect ratio to 1:1
+        const widthChange = Math.abs(newWidth - startWidth);
+        const heightChange = Math.abs(newHeight - startHeight);
 
         if (widthChange >= heightChange) {
-          // Use the width as the basis; height equals width
-          newHeight = size1x1FromWidth;
+          newHeight = newWidth;
+          if (dir.includes("n")) {
+            newY = startElementY + startHeight - newHeight;
+            if (newY < 0) {
+              newY = 0;
+              newHeight = startElementY + startHeight;
+              newWidth = newHeight;
+              if (dir.includes("w")) {
+                newX = startElementX + startWidth - newWidth;
+              }
+            }
+          }
         } else {
-          // Use the height as the basis; width equals height
-          newWidth = size1x1FromHeight;
+          newWidth = newHeight;
+          if (dir.includes("w")) {
+            newX = startElementX + startWidth - newWidth;
+            if (newX < 0) {
+              newX = 0;
+              newWidth = startElementX + startWidth;
+              newHeight = newWidth;
+              if (dir.includes("n")) {
+                newY = startElementY + startHeight - newHeight;
+              }
+            }
+          }
         }
-
-        // Constrain the size again to ensure it doesn't exceed the bounds
-        newWidth = Math.max(minSize, Math.min(newWidth, maxElementWidth));
-        newHeight = Math.max(minSize, Math.min(newHeight, availableHeight));
       }
 
-      // First, store the temporary size
+      // First, store the temporary size and position
       const tempWidth = Math.round(newWidth);
       const tempHeight = Math.round(newHeight);
+      const tempX = Math.round(newX);
+      const tempY = Math.round(newY);
 
       // Special handling for table elements: automatically adjust column widths when the table width changes
       if (element.type === "table") {
@@ -5218,12 +5649,16 @@ const startResizingElement = (
         element.width = tempWidth;
       }
 
-      // Apply the height adjustment
+      // Apply the position and height adjustments
+      element.x = tempX;
+      element.y = tempY;
       element.height = tempHeight;
 
       // Re-run alignment-line detection using the final size (to ensure alignment lines display correctly)
       if (enableSnapToAlignment.value) {
         detectAlignmentLines(element, resizingInfo.value.bandIndex);
+      } else {
+        clearAlignmentLines();
       }
     };
 
@@ -5236,6 +5671,10 @@ const startResizingElement = (
 
       resizingInfo.value = null;
       isDraggingOrResizing.value = false;
+      isJustDraggedOrResized.value = true;
+      setTimeout(() => {
+        isJustDraggedOrResized.value = false;
+      }, 150);
 
       // Update JRXML
       updateJRXML();
@@ -5246,6 +5685,65 @@ const startResizingElement = (
 
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
+  }
+};
+
+// Auto-fit element height to its text content
+const autoFitElementHeight = (
+  bandIndex: number,
+  elementIndex: number,
+  parentFrameIndex?: number,
+) => {
+  const band = bands.value[bandIndex];
+  if (!band) return;
+
+  let element: DesignElement | undefined;
+  if (parentFrameIndex !== undefined) {
+    const frame = band.elements[parentFrameIndex];
+    if (frame && frame.type === "frame" && frame.elements) {
+      element = frame.elements[elementIndex];
+    }
+  } else {
+    element = band.elements[elementIndex];
+  }
+
+  if (!element) return;
+
+  const neededHeight = calculateTextElementHeight(element as any);
+  if (neededHeight > 0) {
+    saveStateToHistory();
+    element.height = Math.max(element.height || 0, neededHeight);
+    if (parentFrameIndex === undefined) {
+      const bandLimitsConfig =
+        reportProperties.value?.bandLimits?.[band.type] ||
+        getEffectiveDefaultBandLimits()[band.type] || { min: 20, max: 70 };
+      const maxBandHeight =
+        typeof bandLimitsConfig.max === "number" ? bandLimitsConfig.max : 70;
+
+      const isDetailBand = band.type === BAND_TYPE_CONSTANTS.DETAIL;
+
+      if (isDetailBand) {
+        if (element.y + element.height > band.height) {
+          band.height = element.y + element.height;
+        }
+      } else {
+        const requiredHeight = element.y + element.height;
+        if (requiredHeight > band.height) {
+          const clampedHeight = Math.min(maxBandHeight, requiredHeight);
+          if (clampedHeight > band.height) {
+            band.height = clampedHeight;
+          }
+          if (requiredHeight > maxBandHeight) {
+            notification.warning(
+              `${getBandDisplayName(band.type)} reached its maximum limit (${maxBandHeight}px). Text content exceeds band capacity. Consider widening the element or placing lengthy text in the Detail band.`,
+            );
+          }
+        }
+      }
+    }
+    updateJRXML();
+    ensureBandsFitPage();
+    updateOutOfBoundsElements();
   }
 };
 
@@ -5260,9 +5758,6 @@ onUnmounted(() => {
   }
 });
 
-// Donation-related state
-const showReward = ref(false);
-
 // Help-related state
 const showHelp = ref(false);
 
@@ -5273,7 +5768,7 @@ const showPdfPreview = ref(false);
 const showPreviewServerSettings = ref(false);
 const previewServerUrl = ref(
   localStorage.getItem("previewServerUrl") ||
-    "https://preview.report.projectnowcdp.com/api/pdf/generateForm",
+  `${PDF_PREVIEW_API}/api/pdf/generateForm`,
 );
 
 // Field management related state
@@ -5294,6 +5789,17 @@ const openPreviewServerSettings = (): void => {
 const updatePreviewServerUrl = (url: string): void => {
   previewServerUrl.value = url;
   localStorage.setItem("previewServerUrl", url);
+};
+
+// Handle updating element value from report elements list
+const handleUpdateElementValue = (
+  _elementItem: any,
+  _newValue: string,
+  _oldValue: string,
+): void => {
+  saveStateToHistory();
+  updateJRXML();
+  saveToLocalStorageWrapper();
 };
 const isEditingParameter = ref(false);
 
@@ -5752,8 +6258,8 @@ const handleColumnSelectionConfirm = (
     newGroup.tableHeader = {
       enable: true,
       element: {
-        type: "staticText",
-        text: textContent,
+        type: "textField",
+        expression: `"${textContent}"`,
         x: 0,
         y: 0,
         width: groupWidth,
@@ -5766,8 +6272,8 @@ const handleColumnSelectionConfirm = (
     newGroup.columnHeader = {
       enable: true,
       element: {
-        type: "staticText",
-        text: textContent,
+        type: "textField",
+        expression: `"${textContent}"`,
         x: 0,
         y: 0,
         width: groupWidth,
@@ -5780,8 +6286,8 @@ const handleColumnSelectionConfirm = (
     newGroup.columnFooter = {
       enable: true,
       element: {
-        type: "staticText",
-        text: textContent,
+        type: "textField",
+        expression: `"${textContent}"`,
         x: 0,
         y: 0,
         width: groupWidth,
@@ -5794,8 +6300,8 @@ const handleColumnSelectionConfirm = (
     newGroup.tableFooter = {
       enable: true,
       element: {
-        type: "staticText",
-        text: textContent,
+        type: "textField",
+        expression: `"${textContent}"`,
         x: 0,
         y: 0,
         width: groupWidth,
@@ -6027,8 +6533,8 @@ const confirmJoinColumnsToGroup = (): void => {
       tableHeader: {
         enable: true,
         element: {
-          type: "staticText",
-          text: selectedGroupName,
+          type: "textField",
+          expression: `"${selectedGroupName}"`,
           x: 0,
           y: 0,
           width: groupWidth,
@@ -6160,8 +6666,11 @@ const handleBandSelectionChange = (): void => {
   );
 
   // Determine which bands need to be removed (present in currentBandTypes but not in selectedBandTypes)
+  // Detail band is the fundamental report canvas and must never be removed
   const bandsToRemove = currentBandTypes.filter(
-    (type) => !currentSelectedTypes.includes(type),
+    (type) =>
+      !currentSelectedTypes.includes(type) &&
+      type !== BAND_TYPE_CONSTANTS.DETAIL,
   );
 
   // Remove the bands that are no longer needed
@@ -6173,11 +6682,15 @@ const handleBandSelectionChange = (): void => {
 
   // Add the new bands
   if (bandsToAdd.length > 0) {
+    const defaultBandConfig = getEffectiveDefaultBandConfig();
     const newBands = bandsToAdd.map((type) => {
       const bandTypeConfig = allBandTypes.find((bt) => bt.type === type);
+      const defaultHeight =
+        defaultBandConfig[type]?.defaultHeight ??
+        (bandTypeConfig ? bandTypeConfig.defaultHeight : 50);
       return {
         type: type as BandType,
-        height: bandTypeConfig ? bandTypeConfig.defaultHeight : 50,
+        height: defaultHeight,
         elements: [],
       };
     });
@@ -6212,6 +6725,9 @@ const handleBandSelectionChange = (): void => {
     });
   }
 
+  // Ensure bands fit within the A4 page height
+  ensureBandsFitPage();
+
   // Save state to history
   saveStateToHistory();
 
@@ -6224,43 +6740,43 @@ const handleBandSelectionChange = (): void => {
 .brand-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  padding: 3px 6px;
+  flex-shrink: 0;
 }
 
 .brand-img img {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   filter: drop-shadow(0 2px 8px rgba(124, 92, 247, 0.2));
+  border-radius: 4px;
 }
 .brand-name {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   line-height: 1;
   min-width: 0;
 }
 .brand-text {
   color: #1c1b26;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 .brand-badge {
   display: inline-flex;
   align-self: flex-start;
-  padding: 2px 6px;
+  padding: 1.5px 5px;
   border: 1px solid rgba(124, 92, 247, 0.28);
   border-radius: 4px;
   color: #6440f4;
   background: rgba(124, 92, 247, 0.14);
-  font-size: 8.5px;
+  font-size: 8px;
   font-weight: 800;
-  letter-spacing: 0.1em;
-}
-@media (max-width: 1023px) {
-  .brand-badge {
-    display: none;
-  }
+  letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
 .my-act-menu {
@@ -6270,7 +6786,8 @@ const handleBandSelectionChange = (): void => {
 
 .dropdown-arrow {
   margin-left: 6px;
-  font-size: 12px;
+  flex-shrink: 0;
+  align-self: center;
 }
 
 .my-act-dropdown {
@@ -6415,46 +6932,148 @@ const handleBandSelectionChange = (): void => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 1rem;
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #ddd;
-  height: 60px;
+  padding: 0 14px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  height: 56px;
   flex-shrink: 0;
+  gap: 12px;
+  position: relative;
+  z-index: 1000;
 }
 
 .designer-header h1 {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
 }
 
-.header-left {
+.header-left.header-workflow {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
 
+/* Google Docs style editable document title */
+.document-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.document-title-input {
+  font-size: 15px;
+  font-weight: 500;
+  color: #111827;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  outline: none;
+  min-width: 120px;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  border-color: #d1d5db;
+  background-color: #f9fafb;
+}
+
+.document-title-input:focus {
+  border-color: #2563eb;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+.auto-save-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  font-size: 11px;
+  user-select: none;
+}
+
+.save-status-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.save-status-text.saved {
+  color: #16a34a;
+  background-color: rgba(22, 163, 74, 0.1);
+}
+
+.save-status-text.saving {
+  color: #d97706;
+  background-color: rgba(217, 119, 6, 0.1);
+}
+
+.save-status-text.error {
+  color: #dc2626;
+  background-color: rgba(220, 38, 38, 0.1);
+}
+
+.saved-icon {
+  flex-shrink: 0;
+}
+
+.save-spinner {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid rgba(217, 119, 6, 0.3);
+  border-top-color: #d97706;
+  border-radius: 50%;
+  animation: save-spin 0.8s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@keyframes save-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .header-undo-redo {
   display: flex;
   gap: 2px;
   align-items: center;
+  flex-shrink: 0;
+}
+
+.bottom-panel-btn {
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .header-actions {
   display: flex;
-  gap: 6px;
+  gap: 10px;
   align-items: center;
+  flex: 1 1 auto;
+  justify-content: flex-end;
 }
 
 .snap-controls-header {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  padding: 0 8px;
-  border-left: 1px solid #ddd;
-  border-right: 1px solid #ddd;
-  margin: 0 4px;
+  padding: 0 4px;
+  flex-shrink: 0;
 }
 
 .designer-layout {
@@ -6559,14 +7178,15 @@ const handleBandSelectionChange = (): void => {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-left: 12px;
+  flex-shrink: 0;
 }
 
 .toolbar-divider {
   width: 1px;
   height: 20px;
-  background: var(--prop-divider-color, #f0f0f0);
-  margin: 0 4px;
+  background: #e5e7eb;
+  margin: 0 2px;
+  flex-shrink: 0;
 }
 
 .toolbar-btn {
@@ -6580,10 +7200,18 @@ const handleBandSelectionChange = (): void => {
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  transition: background-color 0.1s;
+  color: #4b5563;
+  transition: all 0.15s ease;
 }
 
 .toolbar-btn:hover {
-  background-color: var(--prop-bg-hover, #f0f0f0);
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.toolbar-btn.add-page-btn {
+  width: auto;
+  padding: 0 6px;
+  gap: 4px;
 }
 </style>

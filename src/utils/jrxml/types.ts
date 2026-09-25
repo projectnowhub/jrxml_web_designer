@@ -21,6 +21,7 @@ export interface ReportProperties {
   isFloatColumnFooter?: boolean;
   isIgnorePagination?: boolean;
   query?: { language: string; text: string };
+  pageCount?: number;
 }
 
 export interface Field {
@@ -85,5 +86,3 @@ export interface ConditionalStyle {
   conditionExpression: string;
   properties: Partial<ReportStyle>;
 }
-
-

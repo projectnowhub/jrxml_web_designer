@@ -201,23 +201,23 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             id="apiEndpoint"
             v-model="configForm.apiEndpoint"
             type="url"
-            placeholder="http://127.0.0.1:1234/v1"
+            placeholder="https://api.anthropic.com/v1"
             class="form-input"
           />
-          <span class="form-hint">LMStudio default: http://127.0.0.1:1234/v1</span>
+          <span class="form-hint">Claude default: https://api.anthropic.com/v1</span>
         </div>
 
         <!-- API key -->
         <div class="form-group">
-          <label for="apiKey">API Key</label>
+          <label for="apiKey">Claude API Key / Access Token</label>
           <input
             id="apiKey"
             v-model="configForm.apiKey"
             type="password"
-            placeholder="lm-studio"
+            placeholder="sk-ant-api03-..."
             class="form-input"
           />
-          <span class="form-hint">Local models can use the default value: lm-studio</span>
+          <span class="form-hint">Anthropic Claude API Key (starts with sk-ant-)</span>
         </div>
 
         <!-- Model name -->
@@ -227,10 +227,10 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             id="modelName"
             v-model="configForm.modelName"
             type="text"
-            placeholder="local-model"
+            placeholder="claude-3-5-sonnet-20241022"
             class="form-input"
           />
-          <span class="form-hint">LMStudio detects the model automatically</span>
+          <span class="form-hint">Default: claude-3-5-sonnet-20241022</span>
         </div>
 
         <!-- Token limit -->

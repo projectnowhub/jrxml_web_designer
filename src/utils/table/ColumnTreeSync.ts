@@ -105,12 +105,12 @@ export function createDefaultColumn(name: string, width: number = 100): Column {
     columnHeader: {
       enable: true,
       element: {
-        type: "staticText",
+        type: "textField",
         x: 0,
         y: 0,
         width,
         height: 30,
-        text: name,
+        expression: `"${name}"`,
         textAlignment: "Center",
         verticalAlignment: "Middle",
       },
@@ -142,12 +142,12 @@ export function createDefaultColumnGroup(name: string): ColumnGroup {
     columnHeader: {
       enable: true,
       element: {
-        type: "staticText",
+        type: "textField",
         x: 0,
         y: 0,
         width: 0,
         height: 30,
-        text: name,
+        expression: `"${name}"`,
         textAlignment: "Center",
         verticalAlignment: "Middle",
       },

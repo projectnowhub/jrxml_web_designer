@@ -286,7 +286,7 @@ const props = defineProps<{
   reportParameters?: ReportParameter[];
   reportFields?: ReportField[];
   subDatasets?: TableDataset[];
-  previewServerUrl?: string;
+  previewServerUrl: string;
 }>();
 
 const emit = defineEmits(["update:visible"]);
@@ -299,9 +299,6 @@ const showEditor = ref(true);
 const isGenerating = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 const previewUrl = ref<string>("about:blank");
-
-const API_URL_DEFAULT =
-  "https://preview.report.projectnowcdp.com/api/pdf/generateForm";
 
 function shortType(className: string): string {
   const parts = className.split(".");
@@ -510,7 +507,7 @@ function convertSubDataSourcesTypes(): Record<string, Record<string, any>[]> {
 }
 
 function generatePreview() {
-  const apiUrl = props.previewServerUrl || API_URL_DEFAULT;
+  const apiUrl = props.previewServerUrl;
   isGenerating.value = true;
 
   const escapeHtml = (str: string) =>

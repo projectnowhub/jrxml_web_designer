@@ -3,7 +3,8 @@
     class="design-element"
     :class="{ 
       'selected': isSelected,
-      'out-of-bounds': isOutOfBounds
+      'out-of-bounds': isOutOfBounds,
+      'is-dragging': isDragging
     }"
     @click.stop="handleSelect"
     :style="elementStyle"
@@ -14,18 +15,61 @@
     <!-- Child components will override this content -->
     <slot></slot>
 
-    <!-- Resize handle -->
-    <div 
-      v-if="isSelected"
-      class="resize-handle resize-handle-se"
-      @mousedown.stop="(event) => handleResize('se', event)"
-    ></div>
+    <!-- 8 Resize handles (Figma / Google Docs style) -->
+    <template v-if="isSelected">
+      <!-- 4 Corners -->
+      <div 
+        class="resize-handle resize-handle-nw"
+        title="Resize Top-Left"
+        @mousedown.stop="(event) => handleResize('nw', event)"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-ne"
+        title="Resize Top-Right"
+        @mousedown.stop="(event) => handleResize('ne', event)"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-sw"
+        title="Resize Bottom-Left"
+        @mousedown.stop="(event) => handleResize('sw', event)"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-se"
+        title="Resize Bottom-Right"
+        @mousedown.stop="(event) => handleResize('se', event)"
+      ></div>
+
+      <!-- 4 Edges -->
+      <div 
+        class="resize-handle resize-handle-n"
+        title="Resize Top (Double-click to Auto-fit)"
+        @mousedown.stop="(event) => handleResize('n', event)"
+        @dblclick.stop="handleAutoFitHeight"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-s"
+        title="Resize Bottom (Double-click to Auto-fit)"
+        @mousedown.stop="(event) => handleResize('s', event)"
+        @dblclick.stop="handleAutoFitHeight"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-w"
+        title="Resize Left"
+        @mousedown.stop="(event) => handleResize('w', event)"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-e"
+        title="Resize Right"
+        @mousedown.stop="(event) => handleResize('e', event)"
+      ></div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { DesignElement, SelectedElementInfo } from '../../types';
+import { getElementBoxPadding } from '../../utils/elementUtils';
 
 // Props
 const props = defineProps<{
@@ -48,9 +92,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number];
   dragStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   startEditing: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
 // Whether selected
@@ -132,10 +177,10 @@ const elementStyle = computed(() => {
     height: `${props.element.height}px`,
     backgroundColor: (props.element.mode === 'Opaque' && props.element.backcolor) ? props.element.backcolor : 'transparent',
     color: props.element.type !== 'table' ? props.element.forecolor : undefined,
-    paddingTop: props.element.box?.topPadding ? `${props.element.box.topPadding}px` : (props.element.box?.padding ? `${props.element.box.padding}px` : undefined),
-    paddingLeft: props.element.box?.leftPadding ? `${props.element.box.leftPadding}px` : (props.element.box?.padding ? `${props.element.box.padding}px` : undefined),
-    paddingBottom: props.element.box?.bottomPadding ? `${props.element.box.bottomPadding}px` : (props.element.box?.padding ? `${props.element.box.padding}px` : undefined),
-    paddingRight: props.element.box?.rightPadding ? `${props.element.box.rightPadding}px` : (props.element.box?.padding ? `${props.element.box.padding}px` : undefined),
+    paddingTop: `${getElementBoxPadding(props.element.box).top}px`,
+    paddingLeft: `${getElementBoxPadding(props.element.box).left}px`,
+    paddingBottom: `${getElementBoxPadding(props.element.box).bottom}px`,
+    paddingRight: `${getElementBoxPadding(props.element.box).right}px`,
     borderTop: calculateBorder('top'),
     borderLeft: calculateBorder('left'),
     borderBottom: calculateBorder('bottom'),
@@ -296,6 +341,19 @@ const handleMouseDown = (event: MouseEvent) => {
     return;
   }
 
+  // Do not initiate element drag if clicking inside an active inline editor, contenteditable, or text input
+  const target = event.target as HTMLElement | null;
+  if (
+    target &&
+    (target.isContentEditable ||
+      target.closest?.('[contenteditable="true"]') ||
+      target.closest?.('.inline-edit-contenteditable') ||
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA')
+  ) {
+    return;
+  }
+
   // Record the initial position and time of the mouse down
   const startX = event.clientX;
   const startY = event.clientY;
@@ -311,10 +369,8 @@ const handleMouseDown = (event: MouseEvent) => {
     const deltaX = Math.abs(moveEvent.clientX - startX);
     const deltaY = Math.abs(moveEvent.clientY - startY);
 
-    // Only allow dragging once the mouse has been held down for more than 100ms
-    const elapsed = Date.now() - startTime;
-
-    if (elapsed > 100 && (deltaX > 5 || deltaY > 5)) {
+    // Start dragging smoothly once moved beyond 3px threshold
+    if (deltaX > 3 || deltaY > 3) {
       if (!isDragging) {
         isDragging = true;
         // Emit the drag start event
@@ -342,12 +398,17 @@ const handleMouseDown = (event: MouseEvent) => {
 };
 
 // Handle resize
-const handleResize = (_direction: string, event?: MouseEvent) => {
+const handleResize = (direction: string, event?: MouseEvent) => {
   // Get the current event object
-  const resizeEvent = event || window.event as MouseEvent;
+  const resizeEvent = event || (window.event as MouseEvent);
   if (resizeEvent && resizeEvent.button === 0) {
-    emit('resizeStart', resizeEvent, props.bandIndex, props.elementIndex, props.parentFrameIndex);
+    emit('resizeStart', resizeEvent, props.bandIndex, props.elementIndex, props.parentFrameIndex, direction);
   }
+};
+
+// Handle auto-fit height (from double-clicking the bottom handle)
+const handleAutoFitHeight = () => {
+  emit('autoFitHeight', props.bandIndex, props.elementIndex, props.parentFrameIndex);
 };
 
 // Handle context menu
@@ -367,19 +428,18 @@ const handleDoubleClick = () => {
   cursor: move;
   position: relative;
   box-sizing: border-box;
-  z-index: 1;
+  z-index: 10;
   /* Add a small click-area extension to improve selection accuracy */
   transform-origin: center;
   transition: outline 0.1s ease;
-  /* Add text wrapping style */
-  word-break: break-all;
+  /* Natural typography wrapping */
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
 }
 
-.design-element.selected {
-  outline: 2px solid #1890ff;
-  outline-offset: -1px;
-  /* Raise the z-index of the selected element to ensure correct interaction */
-  z-index: 10;
+.design-element:hover {
+  z-index: 35;
 }
 
 .design-element.out-of-bounds {
@@ -388,16 +448,107 @@ const handleDoubleClick = () => {
   outline-offset: -1px;
   background-color: rgba(255, 77, 79, 0.1);
   box-shadow: 0 0 5px rgba(255, 77, 79, 0.5);
+  z-index: 40;
+}
+
+.design-element.selected {
+  outline: 2px solid #1890ff;
+  outline-offset: -1px;
+  /* Raise the z-index of the selected element to ensure correct interaction */
+  z-index: 50;
+}
+
+.design-element.is-dragging {
+  z-index: 100;
 }
 
 .resize-handle {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 10px;
-  height: 10px;
   background-color: #1890ff;
+  z-index: 60;
+  box-sizing: border-box;
+  border: 1px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: background-color 0.1s ease;
+}
+
+.resize-handle:hover {
+  background-color: #40a9ff;
+}
+
+.resize-handle-nw {
+  top: -4px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  cursor: nw-resize;
+  border-radius: 1px;
+}
+
+.resize-handle-ne {
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  cursor: ne-resize;
+  border-radius: 1px;
+}
+
+.resize-handle-sw {
+  bottom: -4px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  cursor: sw-resize;
+  border-radius: 1px;
+}
+
+.resize-handle-se {
+  bottom: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
   cursor: se-resize;
-  z-index: 20;
+  border-radius: 1px;
+}
+
+.resize-handle-n {
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 6px;
+  cursor: n-resize;
+  border-radius: 2px;
+}
+
+.resize-handle-s {
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 6px;
+  cursor: s-resize;
+  border-radius: 2px;
+}
+
+.resize-handle-w {
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 14px;
+  cursor: w-resize;
+  border-radius: 2px;
+}
+
+.resize-handle-e {
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 14px;
+  cursor: e-resize;
+  border-radius: 2px;
 }
 </style>

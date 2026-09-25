@@ -6,6 +6,7 @@
       <div
         v-for="(categoryElements, categoryKey) in groupedElements"
         :key="categoryKey"
+        v-show="categoryElements.length > 0"
         class="element-category"
       >
         <div class="category-header" @click="toggleCategory(categoryKey)">
@@ -74,6 +75,7 @@
             <div
               class="element-info-container"
               @click="selectElementFromList(element, selectElement)"
+              @dblclick.stop="handleReportElementDblClick(element)"
             >
               <span
                 class="element-icon"
@@ -82,9 +84,31 @@
                   getElementIcon(element.element.type)
                 "
               ></span>
-              <span class="element-info">{{
-                getElementDisplayInfoWithoutBand(element.element)
-              }}</span>
+              <input
+                v-if="editingElementKey === getElementKey(element)"
+                :ref="setInlineEditInputRef"
+                v-model="editingValue"
+                class="report-element-inline-input"
+                @click.stop
+                @dblclick.stop
+                @input="handleInlineInput(element)"
+                @keydown.enter.prevent="finishInlineEdit(element)"
+                @keydown.esc.prevent="cancelInlineEdit(element)"
+                @blur="finishInlineEdit(element)"
+              />
+              <span
+                v-else
+                class="element-info"
+                :title="
+                  getElementDisplayInfoWithoutBand(element.element) ||
+                  t(getElementTypeName(element.element.type))
+                "
+              >
+                {{
+                  getElementDisplayInfoWithoutBand(element.element) ||
+                  t(getElementTypeName(element.element.type))
+                }}
+              </span>
             </div>
             <n-button
               class="action-button delete-button"
@@ -113,129 +137,39 @@
       </div>
     </div>
 
-    <!-- Report parameters section -->
-    <div class="data-parameters-section">
-      <div class="section-header">
-        <h4>{{ t("elementLibrary.reportParameters") }}</h4>
-        <n-button
-          class="add-button"
-          @click="handleAddParameter"
-          type="default"
-          quaternary
-          circle
-          size="small"
-          :title="t('elementLibrary.addReportParameter')"
-          >+</n-button
-        >
-      </div>
-      <div class="parameters-mini-view">
-        <div
-          v-for="(param, index) in reportParameters"
-          :key="index"
-          class="field-mini-item"
-          @click="selectElementsByParameterWrapper(param.name)"
-        >
-          <div class="field-info">
-            <span class="field-name">$P{ {{ param.name }} }</span>
-            <span class="field-type"
-              >({{ getFieldTypeName(param.class) }})</span
-            >
-          </div>
-          <div class="field-actions">
-            <n-button
-              class="action-button edit-button"
-              @click.stop="handleEditParameter(param)"
-              type="default"
-              quaternary
-              circle
-              size="small"
-              :title="t('elementLibrary.editParameter')"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                width="14"
-                height="14"
-              >
-                <path
-                  d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                />
-                <path
-                  d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                />
-              </svg>
-            </n-button>
-            <n-button
-              class="action-button delete-button"
-              @click.stop="handleDeleteParameter(param.name)"
-              type="error"
-              quaternary
-              circle
-              size="small"
-              :title="t('elementLibrary.deleteParameter')"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                width="14"
-                height="14"
-              >
-                <path
-                  d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                />
-              </svg>
-            </n-button>
-          </div>
-        </div>
-        <div v-if="reportParameters.length === 0" class="empty-state">
-          <p>{{ t("elementLibrary.noReportParameters") }}</p>
-          <p class="empty-hint">
-            {{ t("elementLibrary.clickToAddParameter") }}
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Report variables section -->
+    <!-- Tables (Sub-datasets) section -->
     <div class="data-fields-section">
       <div class="section-header">
-        <h4>{{ t("elementLibrary.reportVariables") }}</h4>
+        <h4>{{ t("elementLibrary.subDatasets") }}</h4>
         <n-button
           class="add-button"
-          @click="handleAddVariable"
+          @click="handleAddSubDataset"
           type="default"
           quaternary
           circle
           size="small"
-          :title="t('elementLibrary.addReportVariable')"
+          :title="t('elementLibrary.addSubDataset')"
           >+</n-button
         >
       </div>
-      <div class="parameters-mini-view">
+      <div class="fields-mini-view">
         <div
-          v-for="(variable, index) in reportVariables"
+          v-for="(dataset, index) in subDatasets"
           :key="index"
           class="field-mini-item"
         >
           <div class="field-info">
-            <span class="field-name">$V{ {{ variable.name }} }</span>
-            <span class="field-type"
-              >({{ getFieldTypeName(variable.class) }})</span
-            >
+            <span class="field-name">{{ dataset.name }}</span>
           </div>
           <div class="field-actions">
             <n-button
               class="action-button edit-button"
-              @click.stop="handleEditVariable(variable)"
+              @click.stop="handleEditSubDataset(dataset, index)"
               type="default"
               quaternary
               circle
               size="small"
-              :title="t('elementLibrary.editVariable')"
+              :title="t('elementLibrary.editSubDataset')"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -255,12 +189,12 @@
             </n-button>
             <n-button
               class="action-button delete-button"
-              @click.stop="handleDeleteVariable(variable.name)"
+              @click.stop="handleDeleteSubDataset(index)"
               type="error"
               quaternary
               circle
               size="small"
-              :title="t('elementLibrary.deleteVariable')"
+              :title="t('elementLibrary.deleteSubDataset')"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -277,9 +211,11 @@
             </n-button>
           </div>
         </div>
-        <div v-if="reportVariables.length === 0" class="empty-state">
-          <p>{{ t("elementLibrary.noReportVariables") }}</p>
-          <p class="empty-hint">{{ t("elementLibrary.clickToAddVariable") }}</p>
+        <div v-if="subDatasets.length === 0" class="empty-state">
+          <p>{{ t("elementLibrary.noSubDatasets") }}</p>
+          <p class="empty-hint">
+            {{ t("elementLibrary.clickToAddSubDataset") }}
+          </p>
         </div>
       </div>
     </div>
@@ -367,177 +303,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Sub-datasets section -->
-    <div class="data-fields-section">
-      <div class="section-header">
-        <h4>{{ t("elementLibrary.subDatasets") }}</h4>
-        <n-button
-          class="add-button"
-          @click="handleAddSubDataset"
-          type="default"
-          quaternary
-          circle
-          size="small"
-          :title="t('elementLibrary.addSubDataset')"
-          >+</n-button
-        >
-      </div>
-      <div class="fields-mini-view">
-        <div
-          v-for="(dataset, index) in subDatasets"
-          :key="index"
-          class="field-mini-item"
-        >
-          <div class="field-info">
-            <span class="field-name">{{ dataset.name }}</span>
-          </div>
-          <div class="field-actions">
-            <n-button
-              class="action-button edit-button"
-              @click.stop="handleEditSubDataset(dataset, index)"
-              type="default"
-              quaternary
-              circle
-              size="small"
-              :title="t('elementLibrary.editSubDataset')"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                width="14"
-                height="14"
-              >
-                <path
-                  d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                />
-                <path
-                  d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                />
-              </svg>
-            </n-button>
-            <n-button
-              class="action-button delete-button"
-              @click.stop="handleDeleteSubDataset(index)"
-              type="error"
-              quaternary
-              circle
-              size="small"
-              :title="t('elementLibrary.deleteSubDataset')"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                width="14"
-                height="14"
-              >
-                <path
-                  d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                />
-              </svg>
-            </n-button>
-          </div>
-        </div>
-        <div v-if="subDatasets.length === 0" class="empty-state">
-          <p>{{ t("elementLibrary.noSubDatasets") }}</p>
-          <p class="empty-hint">
-            {{ t("elementLibrary.clickToAddSubDataset") }}
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Data fields section -->
-    <div class="data-fields-section">
-      <div class="section-header">
-        <h4>{{ t("elementLibrary.dataFields") }}</h4>
-        <n-button
-          class="add-button"
-          @click="handleAddField"
-          type="default"
-          quaternary
-          circle
-          size="small"
-          :title="t('elementLibrary.addDataField')"
-          >+</n-button
-        >
-      </div>
-      <div class="fields-mini-view">
-        <div
-          v-for="field in reportFields"
-          :key="field.name"
-          class="field-mini-item"
-        >
-          <div
-            class="field-info"
-            @click="selectElementsByFieldWrapper(field.name)"
-          >
-            <span class="field-name">$F{ {{ field.name }} }</span>
-            <span class="field-type"
-              >({{ getFieldTypeName(field.class) }})</span
-            >
-          </div>
-          <div class="field-actions">
-            <n-button
-              class="action-button edit-button"
-              @click.stop="handleEditField(field)"
-              type="default"
-              quaternary
-              circle
-              size="small"
-              :title="t('elementLibrary.editField')"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                width="14"
-                height="14"
-              >
-                <path
-                  d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                />
-                <path
-                  d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                />
-              </svg>
-            </n-button>
-            <n-button
-              class="action-button delete-button"
-              @click.stop="handleDeleteField(field.name)"
-              type="error"
-              quaternary
-              circle
-              size="small"
-              :title="t('elementLibrary.deleteField')"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                width="14"
-                height="14"
-              >
-                <path
-                  d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                />
-              </svg>
-            </n-button>
-          </div>
-        </div>
-        <div v-if="reportFields.length === 0" class="empty-state">
-          <p>{{ t("elementLibrary.noDataFields") }}</p>
-          <p class="empty-hint">{{ t("elementLibrary.clickToAddField") }}</p>
-        </div>
-      </div>
-    </div>
-
     <!-- Confirmation dialog -->
     <ConfirmModal
       v-model:visible="showConfirmModal"
@@ -549,14 +314,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, nextTick, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
 import ConfirmModal from "./modals/ConfirmModal.vue";
 import { ElementRegistry } from "./elements/ElementRegistry";
 import type {
   DesignElement,
-  StaticTextElement,
   TextFieldElement,
   ReportField,
   ReportParameter,
@@ -568,10 +332,11 @@ import {
   getElementIcon,
   getElementIconSvg,
   getElementKey,
+  getElementTypeName,
   isElementSelected,
+  quoteExpressionValue,
   selectElementFromList,
-  selectElementsByField,
-  selectElementsByParameter,
+  stripExpressionQuotes,
 } from "../utils/elementUtils";
 
 const { t } = useI18n();
@@ -585,9 +350,9 @@ interface SubDataset {
 // Define component props
 interface Props {
   elements: Array<{ type: string; name: string }>;
-  reportFields: ReportField[];
-  reportParameters: ReportParameter[];
-  reportVariables: ReportVariable[];
+  reportFields?: ReportField[];
+  reportParameters?: ReportParameter[];
+  reportVariables?: ReportVariable[];
   reportStyles: ReportStyle[];
   bands: Array<{ type: string; name?: string; elements: DesignElement[] }>;
   selectedElement: any;
@@ -605,15 +370,6 @@ interface Emits {
     isMultiSelect?: boolean,
     parentFrameIndex?: number,
   ): void;
-  (e: "add-field"): void;
-  (e: "edit-field", field: ReportField): void;
-  (e: "delete-field", fieldName: string): void;
-  (e: "add-parameter"): void;
-  (e: "edit-parameter", parameter: ReportParameter): void;
-  (e: "delete-parameter", parameterName: string): void;
-  (e: "add-variable"): void;
-  (e: "edit-variable", variable: ReportVariable): void;
-  (e: "delete-variable", variableName: string): void;
   (e: "add-style"): void;
   (e: "edit-style", style: ReportStyle): void;
   (e: "delete-style", styleName: string): void;
@@ -625,6 +381,12 @@ interface Emits {
     bandIndex: number,
     elementIndex: number,
     parentFrameIndex?: number,
+  ): void;
+  (
+    e: "update-element-value",
+    element: any,
+    newValue: string,
+    oldValue: string,
   ): void;
 }
 
@@ -694,11 +456,6 @@ const groupedReportElements = computed(() => {
           element.type
             .toLowerCase()
             .includes(elementFilterText.value.toLowerCase()) ||
-          (element.type === "staticText" &&
-            (element as StaticTextElement).text &&
-            ((element as StaticTextElement).text || "")
-              .toLowerCase()
-              .includes(elementFilterText.value.toLowerCase())) ||
           (element.type === "textField" &&
             ((element as TextFieldElement).expression || "")
               .toLowerCase()
@@ -842,61 +599,6 @@ function selectElement(
   );
 }
 
-// Select elements by parameter (wrapper function)
-function selectElementsByParameterWrapper(paramName: string): void {
-  selectElementsByParameter(props.bands, paramName, selectElement);
-}
-
-// Select elements by field (wrapper function)
-function selectElementsByFieldWrapper(fieldName: string): void {
-  selectElementsByField(props.bands, fieldName, selectElement);
-}
-
-// Handle adding a field
-function handleAddField(): void {
-  emit("add-field");
-}
-
-// Handle editing a field
-function handleEditField(field: ReportField): void {
-  emit("edit-field", field);
-}
-
-// Handle deleting a field
-function handleDeleteField(fieldName: string): void {
-  emit("delete-field", fieldName);
-}
-
-// Handle adding a parameter
-function handleAddParameter(): void {
-  emit("add-parameter");
-}
-
-// Handle editing a parameter
-function handleEditParameter(parameter: ReportParameter): void {
-  emit("edit-parameter", parameter);
-}
-
-// Handle deleting a parameter
-function handleDeleteParameter(parameterName: string): void {
-  emit("delete-parameter", parameterName);
-}
-
-// Handle adding a variable
-function handleAddVariable(): void {
-  emit("add-variable");
-}
-
-// Handle editing a variable
-function handleEditVariable(variable: ReportVariable): void {
-  emit("edit-variable", variable);
-}
-
-// Handle deleting a variable
-function handleDeleteVariable(variableName: string): void {
-  emit("delete-variable", variableName);
-}
-
 // Handle adding a style
 function handleAddStyle(): void {
   emit("add-style");
@@ -952,6 +654,161 @@ function handleConfirmDelete(): void {
     pendingDeleteElement.value = null;
   }
 }
+
+// ==================== Report Element Inline Editing ====================
+const editingElementKey = ref<string | null>(null);
+const editingValue = ref<string>("");
+const originalValue = ref<string>("");
+const inlineEditInputRef = ref<HTMLInputElement | null>(null);
+
+const setInlineEditInputRef = (el: any) => {
+  if (el) {
+    inlineEditInputRef.value = el as HTMLInputElement;
+  }
+};
+
+// Check whether an element type supports text/expression inline editing
+function isElementTextEditable(element: DesignElement): boolean {
+  if (!element) return false;
+  return ["textField", "image", "barcode", "subreport"].includes(
+    element.type,
+  );
+}
+
+// Get the editable value from an element
+function getElementEditableValue(element: DesignElement): string {
+  if (!element) return "";
+  if (element.type === "textField") {
+    const tf = element as TextFieldElement;
+    if (
+      tf.expression !== undefined &&
+      tf.expression !== null &&
+      tf.expression !== ""
+    ) {
+      // Show static text without the quotes added automatically by the designer;
+      // the user can type quotes manually when a literal string is needed.
+      return stripExpressionQuotes(tf.expression);
+    }
+    if ((tf as any).fieldName) {
+      return `$F{${(tf as any).fieldName}}`;
+    }
+    return "";
+  }
+  if (element.type === "image") {
+    return (element as any).imagePath || (element as any).imageExpression || "";
+  }
+  if (element.type === "barcode") {
+    return (element as any).codeExpression || "";
+  }
+  if (element.type === "subreport") {
+    return (element as any).subreportExpression || "";
+  }
+  return (element as any).expression || "";
+}
+
+// Set the editable value on an element
+function setElementEditableValue(element: DesignElement, val: string): void {
+  if (!element) return;
+  if (element.type === "textField") {
+    const tf = element as TextFieldElement;
+    // Keep the stored JRXML expression valid: plain text is saved as a quoted literal,
+    // while `$F{...}` expressions, concatenations and values the user quoted manually
+    // (e.g. `"Hello"`) are stored exactly as typed.
+    const expression = quoteExpressionValue(val);
+    tf.expression = expression;
+    // If the expression matches $F{field}, also sync fieldName
+    const fieldMatch = expression.trim().match(/^\$F\{([^}]+)\}$/);
+    if (fieldMatch && fieldMatch[1]) {
+      (tf as any).fieldName = fieldMatch[1].trim();
+    }
+  } else if (element.type === "image") {
+    (element as any).imagePath = val;
+  } else if (element.type === "barcode") {
+    (element as any).codeExpression = val;
+  } else if (element.type === "subreport") {
+    (element as any).subreportExpression = val;
+  } else if ((element as any).text !== undefined) {
+    (element as any).text = val;
+  } else if ((element as any).expression !== undefined) {
+    (element as any).expression = val;
+  }
+}
+
+// Handle double-clicking a report element item
+function handleReportElementDblClick(item: any): void {
+  // Always select the element first so editor/properties sync selection
+  selectElementFromList(item, selectElement);
+
+  if (!isElementTextEditable(item.element)) {
+    return;
+  }
+
+  const key = getElementKey(item);
+  editingElementKey.value = key;
+  const val = getElementEditableValue(item.element);
+  editingValue.value = val;
+  originalValue.value = val;
+
+  nextTick(() => {
+    if (inlineEditInputRef.value) {
+      inlineEditInputRef.value.focus();
+      inlineEditInputRef.value.select();
+    }
+  });
+}
+
+// Live update while typing so canvas and properties panel update in real-time
+function handleInlineInput(item: any): void {
+  setElementEditableValue(item.element, editingValue.value);
+}
+
+// Finish editing on Enter or blur
+function finishInlineEdit(item: any): void {
+  if (
+    !editingElementKey.value ||
+    editingElementKey.value !== getElementKey(item)
+  ) {
+    return;
+  }
+  const newValue = editingValue.value;
+  const oldValue = originalValue.value;
+  setElementEditableValue(item.element, newValue);
+  editingElementKey.value = null;
+
+  if (newValue !== oldValue) {
+    emit("update-element-value", item, newValue, oldValue);
+  }
+}
+
+// Cancel editing on Escape
+function cancelInlineEdit(item: any): void {
+  if (
+    !editingElementKey.value ||
+    editingElementKey.value !== getElementKey(item)
+  ) {
+    return;
+  }
+  setElementEditableValue(item.element, originalValue.value);
+  editingValue.value = originalValue.value;
+  editingElementKey.value = null;
+}
+
+// Watch selectedElement: if selection moves to another element, close edit mode
+watch(
+  () => props.selectedElement,
+  (newVal) => {
+    if (editingElementKey.value && newVal) {
+      const currentItemKey = editingElementKey.value;
+      const expectedKeySuffix =
+        newVal.parentFrameIndex !== undefined
+          ? `-${newVal.bandIndex}-${newVal.parentFrameIndex}-${newVal.elementIndex}`
+          : `-${newVal.bandIndex}-${newVal.elementIndex}`;
+      if (!currentItemKey.endsWith(expectedKeySuffix)) {
+        editingElementKey.value = null;
+      }
+    }
+  },
+);
 </script>
 
 <style scoped>
@@ -1083,7 +940,6 @@ function handleConfirmDelete(): void {
 }
 
 .report-elements-section,
-.data-parameters-section,
 .data-fields-section {
   background-color: #f9f9f9;
   border: 1px solid #ddd;
@@ -1150,6 +1006,22 @@ function handleConfirmDelete(): void {
   display: flex;
   align-items: center;
   cursor: pointer;
+  min-width: 0;
+}
+
+.report-element-inline-input {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  padding: 1px 6px;
+  font-size: 12px;
+  border: 1px solid #1890ff;
+  border-radius: 3px;
+  background-color: #ffffff;
+  color: #333333;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  box-sizing: border-box;
 }
 
 .report-element-item .element-icon {
@@ -1197,9 +1069,8 @@ function handleConfirmDelete(): void {
   background-color: #ffe6e6;
 }
 
-.parameters-mini-view,
 .fields-mini-view {
-  max-height: 150px;
+  max-height: 160px;
   overflow-y: auto;
 }
 
@@ -1294,27 +1165,23 @@ function handleConfirmDelete(): void {
 
 /* Scrollbar style */
 .report-elements-list::-webkit-scrollbar,
-.parameters-mini-view::-webkit-scrollbar,
 .fields-mini-view::-webkit-scrollbar {
   width: 6px;
 }
 
 .report-elements-list::-webkit-scrollbar-track,
-.parameters-mini-view::-webkit-scrollbar-track,
 .fields-mini-view::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 3px;
 }
 
 .report-elements-list::-webkit-scrollbar-thumb,
-.parameters-mini-view::-webkit-scrollbar-thumb,
 .fields-mini-view::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 3px;
 }
 
 .report-elements-list::-webkit-scrollbar-thumb:hover,
-.parameters-mini-view::-webkit-scrollbar-thumb:hover,
 .fields-mini-view::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }

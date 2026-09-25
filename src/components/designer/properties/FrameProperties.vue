@@ -8,75 +8,11 @@
         :model-value="element.layout || 'FreeLayout'"
         @update:model-value="updateProperty('layout', $event)"
         :options="layoutOptions"
-        label="Layout mode"
-        description="Choose how the Frame lays out its content"
+        label="Container Layout"
+        description="Choose how items inside are arranged"
       />
     </div>
 
-    <!-- Print-when expression -->
-    <div class="form-group">
-      <label>Print-when expression</label>
-      <ExpressionEditor
-        :model-value="element.printWhenExpression || ''"
-        @update:model-value="updateProperty('printWhenExpression', $event)"
-        placeholder="e.g.: $F{status}.equals(&quot;active&quot;)"
-        :report-fields="reportFields"
-        :report-parameters="reportParameters"
-        :report-variables="reportVariables"
-      />
-      <span class="form-hint">This Frame prints when the expression evaluates to true</span>
-    </div>
-
-    <!-- Pagination control -->
-    <div class="form-group">
-      <SwitchControl
-        :model-value="element.isIgnorePagination || false"
-        @update:model-value="updateProperty('isIgnorePagination', $event)"
-        label="Ignore pagination"
-        description="Frame content will not be split across pages"
-      />
-    </div>
-
-    <!-- Split control -->
-    <div class="form-group">
-      <SwitchControl
-        :model-value="element.isSplitAllowed !== false"
-        @update:model-value="updateProperty('isSplitAllowed', $event)"
-        label="Allow split"
-        description="Allow the Frame to be split across pages"
-      />
-    </div>
-
-    <!-- Split type -->
-    <div v-if="element.isSplitAllowed !== false" class="form-group">
-      <SelectControl
-        :model-value="element.splitType || 'Stretch'"
-        @update:model-value="updateProperty('splitType', $event)"
-        :options="splitTypeOptions"
-        label="Split type"
-        description="Choose how the Frame is handled when split"
-      />
-    </div>
-
-    <!-- Print control -->
-    <div class="form-group">
-      <SwitchControl
-        :model-value="element.isPrintRepeatedValues !== false"
-        @update:model-value="updateProperty('isPrintRepeatedValues', $event)"
-        label="Print repeated values"
-        description="Whether to print repeated values"
-      />
-    </div>
-
-    <!-- Remove blank line -->
-    <div class="form-group">
-      <SwitchControl
-        :model-value="element.isRemoveLineWhenBlank || false"
-        @update:model-value="updateProperty('isRemoveLineWhenBlank', $event)"
-        label="Remove line when blank"
-        description="Remove the entire row when the Frame content is empty"
-      />
-    </div>
 
     <!-- Background color -->
     <div class="form-group">
@@ -112,8 +48,6 @@
 </template>
 
 <script setup lang="ts">
-import ExpressionEditor from './common/ExpressionEditor.vue';
-import SwitchControl from './common/SwitchControl.vue';
 import SelectControl from './common/SelectControl.vue';
 
 const props = defineProps<{
@@ -128,15 +62,9 @@ const emit = defineEmits<{
 }>();
 
 const layoutOptions = [
-  { value: 'FreeLayout', label: 'Free layout' },
-  { value: 'HorizontalLayout', label: 'Horizontal layout' },
-  { value: 'VerticalLayout', label: 'Vertical layout' }
-];
-
-const splitTypeOptions = [
-  { value: 'Stretch', label: 'Stretch' },
-  { value: 'Prevent', label: 'Prevent' },
-  { value: 'Immediate', label: 'Immediate' }
+  { value: 'FreeLayout', label: '🖐️ Freeform (Drag anywhere)' },
+  { value: 'HorizontalLayout', label: '↔️ Row (Side-by-side)' },
+  { value: 'VerticalLayout', label: '↕️ Stack (Top-to-bottom)' }
 ];
 
 const modeOptions = [

@@ -60,7 +60,7 @@ export const FIND_ELEMENTS_SCHEMA: MCPToolSchema = {
       elementType: {
         type: 'string',
         description: 'Find by element type',
-        enum: ['staticText', 'textField', 'image', 'line', 'rectangle', 'ellipse', 'break', 'frame', 'table']
+        enum: ['textField', 'image', 'line', 'rectangle', 'ellipse', 'break', 'frame', 'table']
       },
       text: {
         type: 'string',

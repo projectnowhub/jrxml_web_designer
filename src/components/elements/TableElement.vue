@@ -137,42 +137,15 @@
                                                     "
                                                 >
                                                     <!-- Render header content -->
-                                                    <template
-                                                        v-if="
-                                                            column.tableHeader
-                                                                .element
-                                                                ?.type ===
-                                                            'staticText'
-                                                        "
-                                                    >
-                                                        <div
-                                                            class="static-text"
-                                                        >
-                                                            {{
+                                                    <div class="text-field">
+                                                        {{
+                                                            getElementExpression(
                                                                 column
                                                                     .tableHeader
-                                                                    .element
-                                                                    ?.text
-                                                            }}
-                                                        </div>
-                                                    </template>
-                                                    <template
-                                                        v-else-if="
-                                                            column.tableHeader
-                                                                .element
-                                                                ?.type ===
-                                                            'textField'
-                                                        "
-                                                    >
-                                                        <div class="text-field">
-                                                            {{
-                                                                column
-                                                                    .tableHeader
-                                                                    .element
-                                                                    ?.expression
-                                                            }}
-                                                        </div>
-                                                    </template>
+                                                                    ?.element,
+                                                            )
+                                                        }}
+                                                    </div>
                                                 </div>
                                                 <div
                                                     v-else-if="
@@ -278,24 +251,10 @@
                                                     <input
                                                         ref="cellEditInput"
                                                         :value="
-                                                            column.columnHeader
-                                                                ?.element
-                                                                ?.type ===
-                                                            'staticText'
-                                                                ? column
-                                                                      .columnHeader
-                                                                      .element
-                                                                      .text
-                                                                : column
-                                                                        .columnHeader
-                                                                        ?.element
-                                                                        ?.type ===
-                                                                    'textField'
-                                                                  ? column
-                                                                        .columnHeader
-                                                                        .element
-                                                                        .expression
-                                                                  : ''
+                                                            getElementExpression(
+                                                                column.columnHeader
+                                                                    ?.element,
+                                                            )
                                                         "
                                                         @input="
                                                             updateCellEditingValue(
@@ -323,63 +282,21 @@
                                                         )
                                                     "
                                                 >
-                                                    <!-- Render column header content, taking the actual static text or dynamic text expression from columnHeader -->
+                                                    <!-- Render column header content -->
                                                     <template
                                                         v-if="
                                                             column.columnHeader
                                                         "
                                                     >
-                                                        <template
-                                                            v-if="
-                                                                column
-                                                                    .columnHeader
-                                                                    .element
-                                                                    ?.type ===
-                                                                'staticText'
-                                                            "
-                                                        >
-                                                            <div
-                                                                class="static-text"
-                                                            >
-                                                                {{
+                                                        <div class="text-field">
+                                                            {{
+                                                                getElementExpression(
                                                                     column
                                                                         .columnHeader
-                                                                        .element
-                                                                        ?.text ||
-                                                                    ""
-                                                                }}
-                                                            </div>
-                                                        </template>
-                                                        <template
-                                                            v-else-if="
-                                                                column
-                                                                    .columnHeader
-                                                                    .element
-                                                                    ?.type ===
-                                                                'textField'
-                                                            "
-                                                        >
-                                                            <div
-                                                                class="text-field"
-                                                            >
-                                                                {{
-                                                                    column
-                                                                        .columnHeader
-                                                                        .element
-                                                                        ?.expression ||
-                                                                    ""
-                                                                }}
-                                                            </div>
-                                                        </template>
-                                                        <template v-else>
-                                                            <div
-                                                                class="column-name"
-                                                            >
-                                                                {{
-                                                                    column.name
-                                                                }}
-                                                            </div>
-                                                        </template>
+                                                                        ?.element,
+                                                                ) || column.name
+                                                            }}
+                                                        </div>
                                                     </template>
                                                     <template v-else>
                                                         <div
@@ -461,18 +378,10 @@
                                             <input
                                                 ref="cellEditInput"
                                                 :value="
-                                                    column.detailCell?.element
-                                                        ?.type === 'staticText'
-                                                        ? column.detailCell
-                                                              .element.text
-                                                        : column.detailCell
-                                                                ?.element
-                                                                ?.type ===
-                                                            'textField'
-                                                          ? column.detailCell
-                                                                .element
-                                                                .expression
-                                                          : ''
+                                                    getElementExpression(
+                                                        column.detailCell
+                                                            ?.element,
+                                                    )
                                                 "
                                                 @input="
                                                     updateCellEditingValue(
@@ -503,35 +412,14 @@
                                             <template
                                                 v-if="column.detailCell.element"
                                             >
-                                                <template
-                                                    v-if="
-                                                        column.detailCell
-                                                            .element.type ===
-                                                        'staticText'
-                                                    "
-                                                >
-                                                    <div class="static-text">
-                                                        {{
+                                                <div class="text-field">
+                                                    {{
+                                                        getElementExpression(
                                                             column.detailCell
-                                                                .element.text
-                                                        }}
-                                                    </div>
-                                                </template>
-                                                <template
-                                                    v-else-if="
-                                                        column.detailCell
-                                                            .element.type ===
-                                                        'textField'
-                                                    "
-                                                >
-                                                    <div class="text-field">
-                                                        {{
-                                                            column.detailCell
-                                                                .element
-                                                                .expression
-                                                        }}
-                                                    </div>
-                                                </template>
+                                                                .element,
+                                                        )
+                                                    }}
+                                                </div>
                                             </template>
                                         </div>
                                         <div
@@ -591,40 +479,15 @@
                                                     column.columnFooter.element
                                                 "
                                             >
-                                                <template
-                                                    v-if="
-                                                        column.columnFooter
-                                                            .element.type ===
-                                                        'staticText'
-                                                    "
-                                                >
-                                                    <div class="static-text">
-                                                        {{
-                                                            (
-                                                                column
-                                                                    .columnFooter
-                                                                    .element as StaticTextElement
-                                                            ).text || ""
-                                                        }}
-                                                    </div>
-                                                </template>
-                                                <template
-                                                    v-else-if="
-                                                        column.columnFooter
-                                                            .element.type ===
-                                                        'textField'
-                                                    "
-                                                >
-                                                    <div class="text-field">
-                                                        {{
-                                                            (
-                                                                column
-                                                                    .columnFooter
-                                                                    .element as TextFieldElement
-                                                            ).expression || ""
-                                                        }}
-                                                    </div>
-                                                </template>
+                                                <div class="text-field">
+                                                    {{
+                                                        (
+                                                            column
+                                                                .columnFooter
+                                                                .element as TextFieldElement
+                                                        ).expression || ""
+                                                    }}
+                                                </div>
                                             </template>
                                         </div>
                                         <div
@@ -681,40 +544,15 @@
                                                     column.tableFooter.element
                                                 "
                                             >
-                                                <template
-                                                    v-if="
-                                                        column.tableFooter
-                                                            .element.type ===
-                                                        'staticText'
-                                                    "
-                                                >
-                                                    <div class="static-text">
-                                                        {{
-                                                            (
-                                                                column
-                                                                    .tableFooter
-                                                                    .element as StaticTextElement
-                                                            ).text || ""
-                                                        }}
-                                                    </div>
-                                                </template>
-                                                <template
-                                                    v-else-if="
-                                                        column.tableFooter
-                                                            .element.type ===
-                                                        'textField'
-                                                    "
-                                                >
-                                                    <div class="text-field">
-                                                        {{
-                                                            (
-                                                                column
-                                                                    .tableFooter
-                                                                    .element as TextFieldElement
-                                                            ).expression || ""
-                                                        }}
-                                                    </div>
-                                                </template>
+                                                <div class="text-field">
+                                                    {{
+                                                        (
+                                                            column
+                                                                .tableFooter
+                                                                .element as TextFieldElement
+                                                        ).expression || ""
+                                                    }}
+                                                </div>
                                             </template>
                                         </div>
                                         <div
@@ -759,7 +597,6 @@ import type {
     SelectedElementInfo,
     EditingElementInfo,
     TableElement as TableElementType,
-    StaticTextElement,
     TextFieldElement,
 } from "../../types";
 
@@ -800,12 +637,7 @@ const emit = defineEmits<{
         elementIndex: number,
         parentFrameIndex?: number,
     ];
-    resizeStart: [
-        event: MouseEvent,
-        bandIndex: number,
-        elementIndex: number,
-        parentFrameIndex?: number,
-    ];
+    resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
     resizeEnd: [];
     contextmenu: [
         event: MouseEvent,
@@ -825,6 +657,8 @@ function moveColumn(index: number, direction: "left" | "right") {
     // Emit move column event to parent component
     emit("moveColumn", props.elementIndex, index, newIndex);
 }
+
+const getElementExpression = (elem: any): string => elem?.expression || "";
 
 const isResizing = ref(false);
 const tableElement = computed(() => props.element as TableElementType);
@@ -1003,8 +837,7 @@ function startCellEditing(columnIndex: number, cellType: string) {
     if (!elem) return;
 
     editingCell.value = { columnIndex, cellType };
-    cellEditValue.value =
-        elem.type === "staticText" ? elem.text || "" : elem.expression || "";
+    cellEditValue.value = elem.expression || "";
 
     nextTick(() => {
         if (cellEditInput.value) {
@@ -1035,9 +868,7 @@ function finishCellEditing() {
 
     const elem = cell?.element;
     if (elem) {
-        if (elem.type === "staticText") elem.text = cellEditValue.value;
-        else if (elem.type === "textField")
-            elem.expression = cellEditValue.value;
+        elem.expression = cellEditValue.value;
     }
 
     editingCell.value = null;
@@ -1261,9 +1092,10 @@ const handleResizeStart = (
     bandIndex: number,
     elementIndex: number,
     parentFrameIndex?: number,
+    direction?: string,
 ) => {
     event.stopPropagation();
-    emit("resizeStart", event, bandIndex, elementIndex, parentFrameIndex);
+    emit("resizeStart", event, bandIndex, elementIndex, parentFrameIndex, direction);
     isResizing.value = true;
 };
 
