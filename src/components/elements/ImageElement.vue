@@ -76,6 +76,7 @@
           <button
             type="button"
             class="change-image-btn"
+            :class="{ 'icon-only': !showChangeImageText }"
             @click.stop="triggerFileInput"
             :title="t('properties.changeImage') || 'Change Image'"
           >
@@ -91,7 +92,7 @@
               <polyline points="17 8 12 3 7 8" />
               <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
-            <span>{{ t("properties.changeImage")}}</span>
+            <span v-if="showChangeImageText">{{ t("properties.changeImage") }}</span>
           </button>
         </div>
       </div>
@@ -180,6 +181,13 @@ const isSelected = computed(() => {
     props.selectedElement.elementIndex === props.elementIndex &&
     props.selectedElement.parentFrameIndex === props.parentFrameIndex
   );
+});
+
+// Show change image text only if width >= 90px and height >= 70px
+const showChangeImageText = computed(() => {
+  const width = Number(props.element.width) || 0;
+  const height = Number(props.element.height) || 0;
+  return width >= 90 && height >= 70;
 });
 
 // Image style - based on the scaleType property
@@ -470,6 +478,7 @@ const handleContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: n
 .change-image-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 3px;
   background: rgba(0, 0, 0, 0.6);
   color: #ffffff;
@@ -480,6 +489,10 @@ const handleContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: n
   cursor: pointer;
   backdrop-filter: blur(2px);
   transition: background 0.2s;
+}
+
+.change-image-btn.icon-only {
+  padding: 3px 4px;
 }
 
 .change-image-btn:hover {
