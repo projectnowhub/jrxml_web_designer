@@ -12,7 +12,7 @@
     :zoom-level="zoomLevel"
     @select="(b, e, m, p) => emit('select', b, e, m, p)"
     @drag-start="(ev, b, e, p) => emit('dragStart', ev, b, e, p)"
-    @resize-start="(ev, b, e, p) => emit('resizeStart', ev, b, e, p)"
+    @resize-start="(ev, b, e, p, d) => emit('resizeStart', ev, b, e, p, d)"
     @contextmenu="(ev, b, e, p) => emit('contextmenu', ev, b, e, p)"
   >
     <div class="subreport-element">
@@ -48,7 +48,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number];
   dragStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 </script>

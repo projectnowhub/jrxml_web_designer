@@ -637,12 +637,7 @@ const emit = defineEmits<{
         elementIndex: number,
         parentFrameIndex?: number,
     ];
-    resizeStart: [
-        event: MouseEvent,
-        bandIndex: number,
-        elementIndex: number,
-        parentFrameIndex?: number,
-    ];
+    resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
     resizeEnd: [];
     contextmenu: [
         event: MouseEvent,
@@ -1097,9 +1092,10 @@ const handleResizeStart = (
     bandIndex: number,
     elementIndex: number,
     parentFrameIndex?: number,
+    direction?: string,
 ) => {
     event.stopPropagation();
-    emit("resizeStart", event, bandIndex, elementIndex, parentFrameIndex);
+    emit("resizeStart", event, bandIndex, elementIndex, parentFrameIndex, direction);
     isResizing.value = true;
 };
 

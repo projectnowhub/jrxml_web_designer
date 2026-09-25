@@ -89,7 +89,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number];
   dragStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   startEditing: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   finishEditing: [];
@@ -108,8 +108,8 @@ const handleDragStart = (event: MouseEvent, bandIndex: number, elementIndex: num
 };
 
 // Handle resize start
-const handleResizeStart = (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
-  emit('resizeStart', event, bandIndex, elementIndex, parentFrameIndex);
+const handleResizeStart = (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string) => {
+  emit('resizeStart', event, bandIndex, elementIndex, parentFrameIndex, direction);
 };
 
 // Handle context menu
@@ -128,9 +128,9 @@ const handleChildDragStart = (event: MouseEvent, bIndex: number, childIndex: num
   emit('dragStart', event, props.bandIndex, childIndex, props.elementIndex);
 };
 
-const handleChildResizeStart = (event: MouseEvent, bIndex: number, childIndex: number) => {
+const handleChildResizeStart = (event: MouseEvent, bIndex: number, childIndex: number, _parentFrameIndex?: number, direction?: string) => {
   event.stopPropagation(); // Prevent the event from bubbling up to the Frame
-  emit('resizeStart', event, props.bandIndex, childIndex, props.elementIndex);
+  emit('resizeStart', event, props.bandIndex, childIndex, props.elementIndex, direction);
 };
 
 const handleChildContextMenu = (event: MouseEvent, bIndex: number, childIndex: number) => {
