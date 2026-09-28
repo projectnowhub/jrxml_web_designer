@@ -119,6 +119,7 @@ const emit = defineEmits<{
   joinColumnsToExistingGroup: [elementIndex: number, columnIndices: number[], bandIndex: number, parentFrameIndex?: number];
   'update-jrxml': [];
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
 // Get the corresponding component based on the element type
@@ -175,6 +176,9 @@ const commonEvents = {
   },
   autoFitHeight: (bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
     emit('autoFitHeight', bandIndex, elementIndex, parentFrameIndex);
+  },
+  rotate: (bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
+    emit('rotate', bandIndex, elementIndex, parentFrameIndex);
   },
   contextmenu: (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
     emit('contextmenu', event, bandIndex, elementIndex, parentFrameIndex);

@@ -272,13 +272,44 @@
             </div>
             <div class="form-group">
               <label>Rotation</label>
-              <select v-model="currentElement.rotation">
-                <option value="">Default</option>
-                <option value="None">None - No Rotation</option>
-                <option value="Left">Left - Rotate Left 90°</option>
-                <option value="Right">Right - Rotate Right 90°</option>
-                <option value="UpsideDown">UpsideDown - Upside Down</option>
-              </select>
+              <div class="rotation-segmented-group">
+                <button
+                  type="button"
+                  class="rotation-btn"
+                  :class="{ active: !currentElement.rotation || currentElement.rotation === 'None' }"
+                  @click="setElementRotation('None')"
+                  title="0° - No Rotation"
+                >
+                  <span>0°</span>
+                </button>
+                <button
+                  type="button"
+                  class="rotation-btn"
+                  :class="{ active: currentElement.rotation === 'Right' }"
+                  @click="setElementRotation('Right')"
+                  title="90° Clockwise"
+                >
+                  <span>90° ↷</span>
+                </button>
+                <button
+                  type="button"
+                  class="rotation-btn"
+                  :class="{ active: currentElement.rotation === 'UpsideDown' }"
+                  @click="setElementRotation('UpsideDown')"
+                  title="180° Inverted"
+                >
+                  <span>180° ⟲</span>
+                </button>
+                <button
+                  type="button"
+                  class="rotation-btn"
+                  :class="{ active: currentElement.rotation === 'Left' }"
+                  @click="setElementRotation('Left')"
+                  title="270° Counter-Clockwise"
+                >
+                  <span>270° ↶</span>
+                </button>
+              </div>
             </div>
             <div class="form-group">
               <label>Horizontal Alignment</label>
@@ -318,12 +349,83 @@
           <!-- Line properties -->
           <template v-if="currentElement && currentElement.type === 'line'">
             <div class="form-group">
-              <label>Line Direction</label>
-              <select v-model="currentElement.lineDirection">
-                <option value="">Default (TopDown)</option>
-                <option value="TopDown">TopDown - Top to Bottom</option>
-                <option value="BottomUp">BottomUp - Bottom to Top</option>
+              <label>Line Orientation</label>
+              <div class="line-orientation-group">
+                <button
+                  type="button"
+                  class="line-orientation-btn"
+                  :class="{ active: currentLineOrientation === 'horizontal' }"
+                  @click="setLineOrientation('horizontal')"
+                  title="Horizontal line (0°)"
+                >
+                  <span>─ Horiz</span>
+                </button>
+                <button
+                  type="button"
+                  class="line-orientation-btn"
+                  :class="{ active: currentLineOrientation === 'vertical' }"
+                  @click="setLineOrientation('vertical')"
+                  title="Vertical line (90°)"
+                >
+                  <span>│ Vert</span>
+                </button>
+                <button
+                  type="button"
+                  class="line-orientation-btn"
+                  :class="{ active: currentLineOrientation === 'topdown' }"
+                  @click="setLineOrientation('topdown')"
+                  title="Diagonal Top-Left to Bottom-Right (↘)"
+                >
+                  <span>╲ TopDown</span>
+                </button>
+                <button
+                  type="button"
+                  class="line-orientation-btn"
+                  :class="{ active: currentLineOrientation === 'bottomup' }"
+                  @click="setLineOrientation('bottomup')"
+                  title="Diagonal Bottom-Left to Top-Right (↗)"
+                >
+                  <span>╱ BottomUp</span>
+                </button>
+              </div>
+              <button
+                type="button"
+                class="btn-cross-line"
+                @click="addCrossingLine"
+                title="Create opposing diagonal line to make an 'X' cross"
+              >
+                <span>✕ Add Crossing Line (Make X)</span>
+              </button>
+            </div>
+
+            <div class="form-group">
+              <label>Line Style</label>
+              <select v-model="currentElement.lineStyle" @change="emit('update-jrxml')">
+                <option value="Solid">Solid</option>
+                <option value="Dashed">Dashed</option>
+                <option value="Dotted">Dotted</option>
               </select>
+            </div>
+
+            <div class="form-group">
+              <label>Line Thickness</label>
+              <input
+                v-model.number="currentElement.lineWidth"
+                type="number"
+                min="0.5"
+                step="0.5"
+                placeholder="1"
+                @change="emit('update-jrxml')"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Line Color</label>
+              <input
+                v-model="currentElement.lineColor"
+                type="color"
+                @change="emit('update-jrxml')"
+              />
             </div>
           </template>
 
@@ -368,39 +470,45 @@
               ></textarea>
             </div>
             <div class="form-group">
-              <label>{{ t("properties.textAdjust") || "When Text Is Too Long" }}</label>
-              <select v-model="currentElement.textAdjust">
-                <option value="">{{ t("properties.default") || "Default (Cut off excess text)" }}</option>
-                <option value="StretchHeight">
-                  Wrap text and expand height
-                </option>
-                <option value="CutText">Cut off excess text</option>
-                <option value="ShrinkToFit">Shrink font size to fit</option>
-              </select>
-              <small
-                v-if="currentElement.textAdjust === 'StretchHeight'"
-                style="display: block; font-size: 11px; color: #1890ff; margin-top: 3px;"
-              >
-                ℹ Field and band height will expand dynamically during PDF generation.
-              </small>
-            </div>
-            <div class="form-group">
               <label>Rotation</label>
-              <select v-model="currentElement.rotation">
-                <option value="">Default</option>
-                <option value="None">None - No Rotation</option>
-                <option value="Left">Left - Rotate Left 90°</option>
-                <option value="Right">Right - Rotate Right 90°</option>
-                <option value="UpsideDown">UpsideDown - Upside Down</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>{{ t("properties.markup") || "Markup" }}</label>
-              <select v-model="currentElement.markup">
-                <option value="none">None (Plain Text)</option>
-                <option value="html">HTML (Rich Text & Links)</option>
-                <option value="styled">Styled</option>
-              </select>
+              <div class="rotation-segmented-group">
+                <button
+                  type="button"
+                  class="rotation-btn"
+                  :class="{ active: !currentElement.rotation || currentElement.rotation === 'None' }"
+                  @click="setElementRotation('None')"
+                  title="0° - No Rotation"
+                >
+                  <span>0°</span>
+                </button>
+                <button
+                  type="button"
+                  class="rotation-btn"
+                  :class="{ active: currentElement.rotation === 'Right' }"
+                  @click="setElementRotation('Right')"
+                  title="90° Clockwise"
+                >
+                  <span>90° ↷</span>
+                </button>
+                <button
+                  type="button"
+                  class="rotation-btn"
+                  :class="{ active: currentElement.rotation === 'UpsideDown' }"
+                  @click="setElementRotation('UpsideDown')"
+                  title="180° Inverted"
+                >
+                  <span>180° ⟲</span>
+                </button>
+                <button
+                  type="button"
+                  class="rotation-btn"
+                  :class="{ active: currentElement.rotation === 'Left' }"
+                  @click="setElementRotation('Left')"
+                  title="270° Counter-Clockwise"
+                >
+                  <span>270° ↶</span>
+                </button>
+              </div>
             </div>
             <div class="form-group">
               <label>{{ t("properties.fontSize") }}</label>
@@ -1333,6 +1441,47 @@
               @input="updateBarcodeValue(($event.target as HTMLInputElement).value)"
               placeholder="e.g. 1234567890"
             />
+          </div>
+          <div class="form-group">
+            <label>Rotation</label>
+            <div class="rotation-segmented-group">
+              <button
+                type="button"
+                class="rotation-btn"
+                :class="{ active: !currentElement.rotation || currentElement.rotation === 'None' }"
+                @click="setElementRotation('None')"
+                title="0° - No Rotation"
+              >
+                <span>0°</span>
+              </button>
+              <button
+                type="button"
+                class="rotation-btn"
+                :class="{ active: currentElement.rotation === 'Right' }"
+                @click="setElementRotation('Right')"
+                title="90° Clockwise"
+              >
+                <span>90° ↷</span>
+              </button>
+              <button
+                type="button"
+                class="rotation-btn"
+                :class="{ active: currentElement.rotation === 'UpsideDown' }"
+                @click="setElementRotation('UpsideDown')"
+                title="180° Inverted"
+              >
+                <span>180° ⟲</span>
+              </button>
+              <button
+                type="button"
+                class="rotation-btn"
+                :class="{ active: currentElement.rotation === 'Left' }"
+                @click="setElementRotation('Left')"
+                title="270° Counter-Clockwise"
+              >
+                <span>270° ↶</span>
+              </button>
+            </div>
           </div>
         </n-tab-pane>
       </n-tabs>
@@ -2893,6 +3042,9 @@ function updateTextFieldDisplay(val: string) {
   if (!currentElement.value || currentElement.value.type !== "textField") return;
   emit("save-state");
   const elem = currentElement.value as any;
+  if (!elem.markup) {
+    elem.markup = "html";
+  }
   const trimmed = val.trim();
   if (!trimmed) {
     elem.expression = '""';
@@ -2920,6 +3072,85 @@ function insertFieldIntoTextField(fieldExpr: string) {
   if (!fieldExpr || !currentElement.value || currentElement.value.type !== "textField") return;
   emit("save-state");
   currentElement.value.expression = fieldExpr;
+  emit("update-jrxml");
+}
+
+// Set rotation for text, image, and barcode elements
+function setElementRotation(rot: "None" | "Right" | "UpsideDown" | "Left") {
+  if (!currentElement.value) return;
+  emit("save-state");
+  (currentElement.value as any).rotation = rot;
+  emit("update-jrxml");
+}
+
+// Current orientation of selected line element
+const currentLineOrientation = computed(() => {
+  if (!currentElement.value || currentElement.value.type !== "line") return "";
+  const el = currentElement.value as any;
+  if (el.height <= 1) return "horizontal";
+  if (el.width <= 1) return "vertical";
+  return el.lineDirection === "BottomUp" ? "bottomup" : "topdown";
+});
+
+// Set orientation for line element
+function setLineOrientation(type: "horizontal" | "vertical" | "topdown" | "bottomup") {
+  if (!currentElement.value || currentElement.value.type !== "line") return;
+  emit("save-state");
+  const el = currentElement.value as any;
+  if (type === "horizontal") {
+    el.height = 1;
+    if (el.width <= 1) el.width = 150;
+    el.lineDirection = "TopDown";
+  } else if (type === "vertical") {
+    el.width = 1;
+    if (el.height <= 1) el.height = 100;
+    el.lineDirection = "TopDown";
+  } else if (type === "topdown") {
+    if (el.height <= 1) el.height = 50;
+    if (el.width <= 1) el.width = 100;
+    el.lineDirection = "TopDown";
+  } else if (type === "bottomup") {
+    if (el.height <= 1) el.height = 50;
+    if (el.width <= 1) el.width = 100;
+    el.lineDirection = "BottomUp";
+  }
+  emit("update-jrxml");
+}
+
+// Add a crossing line element to form an "X"
+function addCrossingLine() {
+  if (
+    !currentElement.value ||
+    currentElement.value.type !== "line" ||
+    !props.selectedElement ||
+    !props.bands
+  )
+    return;
+  emit("save-state");
+  const el = currentElement.value as any;
+  if (el.width <= 1) el.width = 100;
+  if (el.height <= 1) el.height = 60;
+
+  const currentDir = el.lineDirection || "TopDown";
+  const oppositeDir = currentDir === "BottomUp" ? "TopDown" : "BottomUp";
+
+  const crossLine: any = {
+    ...JSON.parse(JSON.stringify(el)),
+    uuid: crypto.randomUUID(),
+    lineDirection: oppositeDir,
+  };
+
+  const band = props.bands[props.selectedElement.bandIndex];
+  if (band && band.elements) {
+    if (props.selectedElement.parentFrameIndex !== undefined) {
+      const frame = band.elements[props.selectedElement.parentFrameIndex];
+      if (frame && frame.type === "frame" && frame.elements) {
+        frame.elements.push(crossLine);
+      }
+    } else {
+      band.elements.push(crossLine);
+    }
+  }
   emit("update-jrxml");
 }
 
@@ -4945,6 +5176,72 @@ function addPropertyExpression() {
   background-color: #1890ff;
   color: #ffffff;
   border-color: #1890ff;
+}
+
+.rotation-segmented-group,
+.line-orientation-group {
+  display: flex;
+  gap: 4px;
+  background-color: var(--prop-bg-secondary, #f5f5f5);
+  padding: 3px;
+  border-radius: 4px;
+  border: 1px solid var(--prop-border-color, #e8e8e8);
+}
+
+.rotation-btn,
+.line-orientation-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--prop-text-secondary, #595959);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.rotation-btn:hover,
+.line-orientation-btn:hover {
+  color: var(--prop-text-primary, #262626);
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+.rotation-btn.active,
+.line-orientation-btn.active {
+  background-color: #ffffff;
+  color: #1890ff;
+  border-color: #1890ff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  font-weight: 600;
+}
+
+.btn-cross-line {
+  margin-top: 6px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 4px;
+  border: 1px dashed #1890ff;
+  background-color: #f0f7ff;
+  color: #1890ff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cross-line:hover {
+  background-color: #1890ff;
+  color: #ffffff;
 }
 
 @media (max-width: 768px) {

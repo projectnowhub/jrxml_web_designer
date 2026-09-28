@@ -841,6 +841,12 @@ function parseComponentElement(componentElem: Element): any {
           ? codeExprElem.textContent?.trim() || ""
           : "";
 
+        const orientation = child.getAttribute("orientation");
+        let rotation: "None" | "Left" | "Right" | "UpsideDown" = "None";
+        if (orientation === "90") rotation = "Right";
+        else if (orientation === "180") rotation = "UpsideDown";
+        else if (orientation === "270") rotation = "Left";
+
         return {
           type: "barcode",
           uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
@@ -850,6 +856,7 @@ function parseComponentElement(componentElem: Element): any {
           height: parseInt(reportElement.getAttribute("height") || "30"),
           barcodeType: barcodeType,
           codeExpression: codeExpression,
+          rotation: rotation,
           printWhenExpression: "",
         };
       }

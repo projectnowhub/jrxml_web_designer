@@ -17,9 +17,11 @@
     @drag-start="handleDragStart"
     @resize-start="handleResizeStart"
     @contextmenu="handleContextMenu"
+    @rotate="(b, e, p) => emit('rotate', b, e, p)"
   >
     <div
       class="image-container"
+      :style="rotationStyle"
       @mouseenter="isHovered = true"
       @mouseleave="isHovered = false"
     >
@@ -76,6 +78,7 @@
           <button
             type="button"
             class="change-image-btn"
+            :class="{ 'icon-only': !showChangeImageText }"
             @click.stop="triggerFileInput"
             :title="t('properties.changeImage') || 'Change Image'"
           >
@@ -91,7 +94,7 @@
               <polyline points="17 8 12 3 7 8" />
               <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
-            <span>{{ t("properties.changeImage")}}</span>
+            <span v-if="showChangeImageText">{{ t("properties.changeImage") }}</span>
           </button>
         </div>
       </div>
@@ -157,7 +160,49 @@ const emit = defineEmits<{
   ];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   "update-jrxml": [];
+  rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
+
+// Visual 90-degree step rotation style
+const rotationStyle = computed(() => {
+  const rot = props.element.rotation;
+  if (!rot || rot === 'None') return {};
+
+  const w = props.element.width;
+  const h = props.element.height;
+
+  if (rot === 'Right') {
+    return {
+      position: 'absolute' as const,
+      width: `${h}px`,
+      height: `${w}px`,
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%) rotate(90deg)',
+      transformOrigin: 'center center',
+    };
+  }
+  if (rot === 'Left') {
+    return {
+      position: 'absolute' as const,
+      width: `${h}px`,
+      height: `${w}px`,
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%) rotate(-90deg)',
+      transformOrigin: 'center center',
+    };
+  }
+  if (rot === 'UpsideDown') {
+    return {
+      width: '100%',
+      height: '100%',
+      transform: 'rotate(180deg)',
+      transformOrigin: 'center center',
+    };
+  }
+  return {};
+});
 
 // UI state
 const isHovered = ref(false);
@@ -180,6 +225,13 @@ const isSelected = computed(() => {
     props.selectedElement.elementIndex === props.elementIndex &&
     props.selectedElement.parentFrameIndex === props.parentFrameIndex
   );
+});
+
+// Show change image text only if width >= 90px and height >= 70px
+const showChangeImageText = computed(() => {
+  const width = Number(props.element.width) || 0;
+  const height = Number(props.element.height) || 0;
+  return width >= 90 && height >= 70;
 });
 
 // Image style - based on the scaleType property
@@ -470,6 +522,7 @@ const handleContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: n
 .change-image-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 3px;
   background: rgba(0, 0, 0, 0.6);
   color: #ffffff;
@@ -480,6 +533,10 @@ const handleContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: n
   cursor: pointer;
   backdrop-filter: blur(2px);
   transition: background 0.2s;
+}
+
+.change-image-btn.icon-only {
+  padding: 3px 4px;
 }
 
 .change-image-btn:hover {

@@ -253,13 +253,29 @@ function renderImage(
 }
 
 function renderLine(element: LineElement, scale: number): string {
-  const lineWidth = (element.lineWidth || 1) * scale;
-  const isHorizontal = element.width > element.height;
-  const innerStyle = isHorizontal
-    ? `width:100%;height:${lineWidth}px;border-top:${lineWidth}px solid ${element.forecolor || "#000"};margin-top:${-lineWidth / 2}px;`
-    : `height:100%;width:${lineWidth}px;border-left:${lineWidth}px solid ${element.forecolor || "#000"};margin-left:${-lineWidth / 2}px;`;
+  const strokeWidth = (element.lineWidth || 1) * scale;
+  const strokeColor = element.lineColor || (element as any).forecolor || "#000000";
+  const w = Math.max(1, element.width * scale);
+  const h = Math.max(1, element.height * scale);
+  const dir = element.lineDirection || "TopDown";
 
-  return `<div class="element line" style="position:absolute;left:${element.x * scale}px;top:${element.y * scale}px;width:${element.width * scale}px;height:${element.height * scale}px;overflow:visible;"><div style="${innerStyle}"></div></div>`;
+  let x1 = 0, y1 = 0, x2 = w, y2 = h;
+  if (dir === "BottomUp") {
+    x1 = 0; y1 = h;
+    x2 = w; y2 = 0;
+  } else if (h <= 1) {
+    x1 = 0; y1 = h / 2;
+    x2 = w; y2 = h / 2;
+  } else if (w <= 1) {
+    x1 = w / 2; y1 = 0;
+    x2 = w / 2; y2 = h;
+  }
+
+  let dashAttr = "";
+  if (element.lineStyle === "Dashed") dashAttr = ` stroke-dasharray="${6 * scale},${4 * scale}"`;
+  else if (element.lineStyle === "Dotted") dashAttr = ` stroke-dasharray="${2 * scale},${2 * scale}"`;
+
+  return `<div class="element line" style="position:absolute;left:${element.x * scale}px;top:${element.y * scale}px;width:${w}px;height:${h}px;overflow:visible;"><svg width="${w}" height="${h}" style="overflow:visible;display:block;"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${strokeColor}" stroke-width="${strokeWidth}"${dashAttr} stroke-linecap="square"/></svg></div>`;
 }
 
 function renderRectangle(

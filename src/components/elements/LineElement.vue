@@ -18,10 +18,25 @@
     @resize-start="handleResizeStart"
     @contextmenu="handleContextMenu"
   >
-    <div 
-      class="line-element"
-      :style="lineStyle"
-    ></div>
+    <div class="line-element-container">
+      <svg
+        class="line-svg"
+        :width="Math.max(1, element.width)"
+        :height="Math.max(1, element.height)"
+        style="overflow: visible; display: block; width: 100%; height: 100%; pointer-events: none;"
+      >
+        <line
+          :x1="lineCoords.x1"
+          :y1="lineCoords.y1"
+          :x2="lineCoords.x2"
+          :y2="lineCoords.y2"
+          :stroke="element.lineColor || '#000000'"
+          :stroke-width="element.lineWidth || 1"
+          :stroke-dasharray="dashArray"
+          stroke-linecap="square"
+        />
+      </svg>
+    </div>
   </BaseElement>
 </template>
 
@@ -55,42 +70,53 @@ const emit = defineEmits<{
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
-// Line style
-const lineStyle = computed(() => {
+// Line SVG Coordinates calculation
+const lineCoords = computed(() => {
+  const w = Math.max(1, props.element.width);
+  const h = Math.max(1, props.element.height);
   const direction = props.element.lineDirection || 'TopDown';
-  const width = props.element.lineWidth || 1;
-  const color = props.element.lineColor || '#000000';
 
-  // Per the XSD spec, the line is a diagonal
-  // TopDown: diagonal from top-left to bottom-right
-  // BottomUp: diagonal from bottom-left to top-right
-  const diagonalLength = Math.sqrt(props.element.width ** 2 + props.element.height ** 2);
-
-  if (direction === 'TopDown') {
-    // Diagonal from top-left to bottom-right
+  if (direction === 'BottomUp') {
     return {
-      position: 'absolute' as const,
-      top: '0',
-      left: '0',
-      width: `${diagonalLength}px`,
-      height: `${width}px`,
-      backgroundColor: color,
-      transformOrigin: '0 0',
-      transform: `rotate(${Math.atan2(props.element.height, props.element.width)}rad)`
-    };
-  } else {
-    // BottomUp - diagonal from bottom-left to top-right
-    return {
-      position: 'absolute' as const,
-      bottom: '0',
-      left: '0',
-      width: `${diagonalLength}px`,
-      height: `${width}px`,
-      backgroundColor: color,
-      transformOrigin: '0 0',
-      transform: `rotate(${-Math.atan2(props.element.height, props.element.width)}rad)`
+      x1: 0,
+      y1: h,
+      x2: w,
+      y2: 0,
     };
   }
+
+  // TopDown (default)
+  if (h <= 1) {
+    return {
+      x1: 0,
+      y1: h / 2,
+      x2: w,
+      y2: h / 2,
+    };
+  }
+  if (w <= 1) {
+    return {
+      x1: w / 2,
+      y1: 0,
+      x2: w / 2,
+      y2: h,
+    };
+  }
+
+  return {
+    x1: 0,
+    y1: 0,
+    x2: w,
+    y2: h,
+  };
+});
+
+// Stroke dash array for dashed / dotted styles
+const dashArray = computed(() => {
+  const style = props.element.lineStyle;
+  if (style === 'Dashed') return '6,4';
+  if (style === 'Dotted') return '2,2';
+  return undefined;
 });
 
 // Handle selection
@@ -115,7 +141,9 @@ const handleContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: n
 </script>
 
 <style scoped>
-.line-element {
-  background-color: #000;
+.line-element-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
 }
 </style>

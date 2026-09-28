@@ -223,6 +223,7 @@
                           handleJoinColumnsToExistingGroup
                         "
                         @update-jrxml="emit('update-jrxml')"
+                        @rotate="(b, e, p) => emit('rotate', b, e, p)"
                       />
                       <div
                         v-if="
@@ -278,6 +279,7 @@
                           handleJoinColumnsToExistingGroup
                         "
                         @update-jrxml="emit('update-jrxml')"
+                        @rotate="(b, e, p) => emit('rotate', b, e, p)"
                       />
                       <!-- Default page number indicator if page footer is empty -->
                       <div
@@ -495,6 +497,7 @@ const emit = defineEmits([
   "add-page",
   "delete-page",
   "auto-fit-height",
+  "rotate",
 ]);
 
 // Computed detail band index

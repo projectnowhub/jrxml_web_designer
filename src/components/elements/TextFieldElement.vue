@@ -18,10 +18,11 @@
     @resize-start="handleResizeStart"
     @start-editing="handleStartEditing"
     @auto-fit-height="handleAutoFit"
+    @rotate="(b, e, p) => emit('rotate', b, e, p)"
   >
     <div
       class="text-element-inner"
-      :style="{ justifyContent: verticalFlexJustify }"
+      :style="[{ justifyContent: verticalFlexJustify }, rotationStyle]"
       @mousedown="isEditing ? $event.stopPropagation() : undefined"
     >
       <!-- Rich contenteditable inline editor -->
@@ -208,7 +209,49 @@ const emit = defineEmits<{
   finishEditing: [];
   cancelEditing: [];
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
+
+// Visual 90-degree step rotation style
+const rotationStyle = computed(() => {
+  const rot = props.element.rotation;
+  if (!rot || rot === 'None') return {};
+
+  const w = props.element.width;
+  const h = props.element.height;
+
+  if (rot === 'Right') {
+    return {
+      position: 'absolute' as const,
+      width: `${h}px`,
+      height: `${w}px`,
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%) rotate(90deg)',
+      transformOrigin: 'center center',
+    };
+  }
+  if (rot === 'Left') {
+    return {
+      position: 'absolute' as const,
+      width: `${h}px`,
+      height: `${w}px`,
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%) rotate(-90deg)',
+      transformOrigin: 'center center',
+    };
+  }
+  if (rot === 'UpsideDown') {
+    return {
+      width: '100%',
+      height: '100%',
+      transform: 'rotate(180deg)',
+      transformOrigin: 'center center',
+    };
+  }
+  return {};
+});
 
 // Helper to check if string contains rich HTML formatting tags
 const hasHtmlTags = (str: string): boolean => {
@@ -896,6 +939,26 @@ const rgbToHex = (str: string): string => {
   });
 };
 
+// Clean and normalize HTML specifically for JasperReports markup="html"
+const cleanHtmlForJasper = (html: string): string => {
+  let clean = rgbToHex(html);
+  // 1. Standardize standalone color spans to <font color="...">
+  clean = clean.replace(/<span\s+style="color:\s*([^";]+);?">([\s\S]*?)<\/span>/gi, '<font color="$1">$2</font>');
+  // 2. Remove web-only class attributes (e.g. class="text-hyperlink")
+  clean = clean.replace(/\s*class="[^"]*"/gi, '');
+  // 3. Remove web-only rel attributes (e.g. rel="noopener noreferrer")
+  clean = clean.replace(/\s*rel="[^"]*"/gi, '');
+  // 4. Remove web-only target attributes
+  clean = clean.replace(/\s*target="[^"]*"/gi, '');
+  // 5. Remove redundant color style on <a> tags
+  clean = clean.replace(/(<a\s+[^>]*?)\s+style="color:\s*[^";]+;?"/gi, '$1');
+  // 6. Clean empty spans or wrapper spans without style
+  clean = clean.replace(/<span>([\s\S]*?)<\/span>/gi, '$1');
+  // 7. Escape double quotes for Java string literal
+  clean = clean.replace(/\\"/g, '"').replace(/"/g, '\\"');
+  return clean;
+};
+
 // Format commands from toolbar
 const handleFormat = (command: string, value?: string) => {
   if (savedSelectionRange.value) {
@@ -1298,17 +1361,10 @@ const handleFinishEditing = () => {
 
   if (hasHtmlTags(html)) {
     props.element.markup = 'html';
-    // Format HTML for JasperReports:
-    // 1. Convert rgb colors to clean hex
-    // 2. Standardize standalone color spans to <font color="...">
-    // 3. Escape double quotes for Java string literal
-    let safeHtml = rgbToHex(html);
-    safeHtml = safeHtml
-      .replace(/<span\s+style="color:\s*([^";]+);?">([\s\S]*?)<\/span>/gi, '<font color="$1">$2</font>')
-      .replace(/\\"/g, '"')
-      .replace(/"/g, '\\"');
+    const safeHtml = cleanHtmlForJasper(html);
     props.element.expression = `"${safeHtml}"`;
   } else {
+    props.element.markup = 'html';
     const plain = textContent.replace(/\r\n|\r|\n/g, '\\n');
     props.element.expression = `"${plain}"`;
   }

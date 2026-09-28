@@ -675,6 +675,7 @@ export interface BarcodeElement extends DesignElementBase {
     | "USPSIntelligentMail";
   codeExpression?: string;
   printWhenExpression?: string;
+  rotation?: "None" | "Left" | "Right" | "UpsideDown";
   evaluationTime?:
     | "Now"
     | "Report"
