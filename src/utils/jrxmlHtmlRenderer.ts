@@ -271,6 +271,27 @@ function renderLine(element: LineElement, scale: number): string {
     x2 = w / 2; y2 = h;
   }
 
+  if (element.lineStyle === "Double") {
+    const dWidth = Math.max(0.75, strokeWidth / 3);
+    const offset = Math.max(1.5 * scale, strokeWidth / 2);
+    let l1x1 = x1, l1y1 = y1, l1x2 = x2, l1y2 = y2;
+    let l2x1 = x1, l2y1 = y1, l2x2 = x2, l2y2 = y2;
+    if (h <= 1) {
+      l1y1 = y1 - offset; l1y2 = y2 - offset;
+      l2y1 = y1 + offset; l2y2 = y2 + offset;
+    } else if (w <= 1) {
+      l1x1 = x1 - offset; l1x2 = x2 - offset;
+      l2x1 = x1 + offset; l2x2 = x2 + offset;
+    } else {
+      const len = Math.hypot(x2 - x1, y2 - y1);
+      const nx = (-(y2 - y1) / len) * offset;
+      const ny = ((x2 - x1) / len) * offset;
+      l1x1 = x1 + nx; l1y1 = y1 + ny; l1x2 = x2 + nx; l1y2 = y2 + ny;
+      l2x1 = x1 - nx; l2y1 = y1 - ny; l2x2 = x2 - nx; l2y2 = y2 - ny;
+    }
+    return `<div class="element line" style="position:absolute;left:${element.x * scale}px;top:${element.y * scale}px;width:${w}px;height:${h}px;overflow:visible;"><svg width="${w}" height="${h}" style="overflow:visible;display:block;"><line x1="${l1x1}" y1="${l1y1}" x2="${l1x2}" y2="${l1y2}" stroke="${strokeColor}" stroke-width="${dWidth}" stroke-linecap="square"/><line x1="${l2x1}" y1="${l2y1}" x2="${l2x2}" y2="${l2y2}" stroke="${strokeColor}" stroke-width="${dWidth}" stroke-linecap="square"/></svg></div>`;
+  }
+
   let dashAttr = "";
   if (element.lineStyle === "Dashed") dashAttr = ` stroke-dasharray="${6 * scale},${4 * scale}"`;
   else if (element.lineStyle === "Dotted") dashAttr = ` stroke-dasharray="${2 * scale},${2 * scale}"`;
