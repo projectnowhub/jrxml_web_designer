@@ -118,7 +118,7 @@ const emit = defineEmits<{
 }>();
 
 const isRotatableElement = computed(() => 
-  ['textField', 'staticText', 'image', 'barcode'].includes(props.element.type)
+  ['textField', 'image', 'barcode'].includes(props.element.type)
 );
 
 // Quick 90-degree step rotation
