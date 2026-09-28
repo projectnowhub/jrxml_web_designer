@@ -207,15 +207,18 @@
           <!-- Image properties -->
           <template v-if="currentElement && currentElement.type === 'image'">
             <div class="form-group">
-              <label>Image Expression</label>
-              <ExpressionEditor
-                :model-value="currentElement.imageExpression || ''"
-                @update:model-value="currentElement.imageExpression = $event"
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder='e.g.: $P{imagePath} or "logo.png"'
+              <label>{{ t("properties.imageName") || "Image Name" }}</label>
+              <input
+                type="text"
+                class="readonly-input"
+                :value="getImageDisplayName(currentElement)"
+                readonly
+                :title="getImageDisplayName(currentElement)"
               />
+              <small>{{
+                t("properties.imageNameHint") ||
+                "Read-only: taken from the uploaded image file"
+              }}</small>
               <div
                 style="
                   margin-top: 6px;
@@ -1638,7 +1641,7 @@ import { useI18n } from "vue-i18n";
 import { NButton, NTabs, NTabPane, NRadioGroup, NRadioButton } from "naive-ui";
 import type { Band, SelectedElementInfo, TableDataset } from "../../../types";
 import { getAvailableFonts } from "../../../utils/fontUtils";
-import { calculateTextElementHeight } from "../../../utils/elementUtils";
+import { calculateTextElementHeight, getImageDisplayName, setImageName } from "../../../utils/elementUtils";
 import {
   getEffectiveDefaultBandLimits,
   getEffectiveDefaultBandConfig,
@@ -1651,7 +1654,6 @@ import ElementTypeBasedSettings from "./ElementTypeBasedSettings.vue";
 import FrameProperties from "./FrameProperties.vue";
 import TableProperties from "./TableProperties.vue";
 import ColumnTreeNode from "./ColumnTreeNode.vue";
-import ExpressionEditor from "./common/ExpressionEditor.vue";
 import { useLivePreview } from "@/composables/useLivePreview";
 import {
   syncTableColumns,
@@ -3189,6 +3191,9 @@ function triggerPropertiesImageUpload() {
   }
 }
 
+// Image name handling for Image elements in the Properties panel.
+// The name is read-only: it is filled in automatically when an image is uploaded
+// and is never edited manually, so the image expression is never modified.
 function handlePropertiesImageUpload(event: Event) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
@@ -3217,6 +3222,8 @@ function handlePropertiesImageUpload(event: Event) {
     ) {
       emit("save-state");
       (currentElement.value as any).imageExpression = `"${dataUrl}"`;
+      // Use the uploaded file name as the image name shown in the panels
+      setImageName(currentElement.value, file.name || "");
       emit("update-jrxml");
     }
   };
@@ -5034,6 +5041,21 @@ function addPropertyExpression() {
   background-color: var(--prop-bg-disabled);
   color: var(--prop-text-secondary);
   cursor: default;
+}
+
+/* Read-only inputs placed inside a .form-group (e.g. the image name) need to win
+   over the default .form-group input styling */
+.form-group input.readonly-input {
+  background-color: var(--prop-bg-disabled);
+  color: var(--prop-text-secondary);
+  cursor: default;
+}
+
+.form-group input.readonly-input:focus,
+.form-group input.readonly-input:hover {
+  border-color: var(--prop-border-color);
+  background-color: var(--prop-bg-disabled);
+  box-shadow: none;
 }
 
 /* Width hint style */

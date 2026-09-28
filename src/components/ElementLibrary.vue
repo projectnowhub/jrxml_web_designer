@@ -667,12 +667,11 @@ const setInlineEditInputRef = (el: any) => {
   }
 };
 
-// Check whether an element type supports text/expression inline editing
+// Check whether an element type supports text/expression inline editing.
+// Image elements are read-only: their name is taken from the uploaded image file.
 function isElementTextEditable(element: DesignElement): boolean {
   if (!element) return false;
-  return ["textField", "image", "barcode", "subreport"].includes(
-    element.type,
-  );
+  return ["textField", "barcode", "subreport"].includes(element.type);
 }
 
 // Get the editable value from an element
@@ -693,9 +692,6 @@ function getElementEditableValue(element: DesignElement): string {
       return `$F{${(tf as any).fieldName}}`;
     }
     return "";
-  }
-  if (element.type === "image") {
-    return (element as any).imagePath || (element as any).imageExpression || "";
   }
   if (element.type === "barcode") {
     return (element as any).codeExpression || "";
@@ -721,8 +717,6 @@ function setElementEditableValue(element: DesignElement, val: string): void {
     if (fieldMatch && fieldMatch[1]) {
       (tf as any).fieldName = fieldMatch[1].trim();
     }
-  } else if (element.type === "image") {
-    (element as any).imagePath = val;
   } else if (element.type === "barcode") {
     (element as any).codeExpression = val;
   } else if (element.type === "subreport") {

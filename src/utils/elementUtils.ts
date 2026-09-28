@@ -60,6 +60,96 @@ export function quoteExpressionValue(value: string): string {
   return `"${value}"`;
 }
 
+// Property name used to persist the user-defined image name inside <reportElement>,
+// so the image label survives a JRXML save/reload round-trip.
+export const IMAGE_NAME_PROPERTY = "com.cdp.image.name";
+
+// Label shown for images that are embedded as base64 data URLs and have no user-defined name
+export const EMBEDDED_IMAGE_LABEL = "[Embedded Image]";
+
+// Get a reportElement level property value (used by the image name persistence)
+function getElementPropertyValue(element: any, propertyName: string): string {
+  const properties = element?.properties;
+  if (!Array.isArray(properties)) return "";
+  const match = properties.find((prop: any) => prop?.name === propertyName);
+  return match && typeof match.value === "string" ? match.value.trim() : "";
+}
+
+// Create, update or remove a reportElement level property
+function setElementPropertyValue(
+  element: any,
+  propertyName: string,
+  value: string,
+): void {
+  if (!element) return;
+
+  if (!Array.isArray(element.properties)) {
+    if (!value) return;
+    element.properties = [];
+  }
+
+  const index = element.properties.findIndex(
+    (prop: any) => prop?.name === propertyName,
+  );
+
+  if (!value) {
+    if (index !== -1) {
+      element.properties.splice(index, 1);
+    }
+    if (element.properties.length === 0) {
+      delete element.properties;
+    }
+    return;
+  }
+
+  if (index === -1) {
+    element.properties.push({ name: propertyName, value });
+  } else {
+    element.properties[index].value = value;
+  }
+}
+
+// Label derived from the image expression, used when the element has no image name
+// (e.g. `"logo.png"` -> `logo.png`, `$P{imagePath}` -> `$P{imagePath}`,
+//  embedded base64 data -> `[Embedded Image]`).
+export function getImageExpressionLabel(element: DesignElement): string {
+  const expression = stripExpressionQuotes(
+    String((element as any)?.imageExpression || ""),
+  ).trim();
+  if (!expression) return "";
+  if (expression.startsWith("data:image/")) return EMBEDDED_IMAGE_LABEL;
+  return expression;
+}
+
+// Get the user-defined name of an image element (empty when the image has no name)
+export function getImageName(element: DesignElement): string {
+  if (!element || element.type !== "image") return "";
+  const image = element as any;
+  const imagePath =
+    typeof image.imagePath === "string" ? image.imagePath.trim() : "";
+  if (imagePath) return imagePath;
+  return getElementPropertyValue(image, IMAGE_NAME_PROPERTY);
+}
+
+// Get the name displayed for an image element: the user-defined name when it exists,
+// otherwise a label derived from the image expression
+export function getImageDisplayName(element: DesignElement): string {
+  return getImageName(element) || getImageExpressionLabel(element);
+}
+
+// Set (or clear) the user-defined name of an image element. The name is a design-time
+// label only: the image expression is never modified, so `$F{}`/`$P{}` expressions and
+// embedded base64 data are preserved. A name that is identical to the label derived from
+// the expression is not stored, because it would not add any information.
+export function setImageName(element: DesignElement, name: string): void {
+  if (!element || element.type !== "image") return;
+  const image = element as any;
+  const trimmed = (name || "").trim();
+  const value = trimmed === getImageExpressionLabel(element) ? "" : trimmed;
+  image.imagePath = value;
+  setElementPropertyValue(image, IMAGE_NAME_PROPERTY, value);
+}
+
 // Helper to parse box padding or border dimension safely
 function parseBoxDimension(val: any): number | undefined {
   if (val === undefined || val === null || val === '') return undefined;
@@ -248,16 +338,15 @@ export function getElementDisplayInfoWithoutBand(
       info = `$F{${(element as any).fieldName}}`;
     }
   } else if (element.type === "image") {
-    if ((element as any).imagePath) {
-      info = (element as any).imagePath;
-    } else if ((element as any).imageExpression) {
-      const expr = ((element as any).imageExpression || "").trim();
-      if (expr.startsWith('"data:image/') || expr.startsWith("data:image/")) {
-        info = "[Embedded Image]";
-      } else {
-        const cleaned = expr.replace(/^"|"$/g, "");
-        info = `${cleaned.substring(0, 15)}${cleaned.length > 15 ? "..." : ""}`;
-      }
+    const imageName = getImageName(element);
+    if (imageName) {
+      info = imageName;
+    } else {
+      const label = getImageExpressionLabel(element);
+      info =
+        label === EMBEDDED_IMAGE_LABEL
+          ? label
+          : `${label.substring(0, 15)}${label.length > 15 ? "..." : ""}`;
     }
   } else if (element.type === "barcode" && (element as any).codeExpression) {
     info = `${(element as any).codeExpression.substring(0, 15)}${(element as any).codeExpression.length > 15 ? "..." : ""}`;

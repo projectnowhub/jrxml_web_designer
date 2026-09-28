@@ -238,6 +238,8 @@
     },
     "imageExpression": "Image Expression",
     "imageExpressionHint": "e.g., \"logo.png\" or {imageFileHolder}",
+    "imageName": "Image Name",
+    "imageNameHint": "Read-only: taken from the uploaded image file",
     "radius": "Radius",
     "breakType": "Break Type",
     "pageBreak": "Page Break",

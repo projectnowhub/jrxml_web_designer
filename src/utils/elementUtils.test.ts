@@ -17,6 +17,12 @@ import {
   getElementBoxPadding,
   getElementBoxBorderWidths,
   getElementBoxInsets,
+  EMBEDDED_IMAGE_LABEL,
+  IMAGE_NAME_PROPERTY,
+  getImageDisplayName,
+  getImageExpressionLabel,
+  getImageName,
+  setImageName,
 } from "@/utils/elementUtils";
 import type { DesignElement } from "@/types";
 import { ELEMENT_TYPE_CONSTANTS } from "@/constants/constants";
@@ -151,6 +157,50 @@ describe("elementUtils", () => {
       );
     });
 
+    it("should return the image name for a named image element", () => {
+      const element = {
+        type: "image" as any,
+        x: 10,
+        y: 20,
+        width: 100,
+        height: 30,
+        imageExpression: '"data:image/png;base64,AAAA"',
+        properties: [{ name: IMAGE_NAME_PROPERTY, value: "squirrel.jpg" }],
+      };
+
+      expect(getElementDisplayInfoWithoutBand(element)).toBe("squirrel.jpg");
+    });
+
+    it("should label an unnamed embedded image", () => {
+      const element = {
+        type: "image" as any,
+        x: 10,
+        y: 20,
+        width: 100,
+        height: 30,
+        imageExpression: '"data:image/png;base64,AAAA"',
+      };
+
+      expect(getElementDisplayInfoWithoutBand(element)).toBe(
+        EMBEDDED_IMAGE_LABEL,
+      );
+    });
+
+    it("should truncate a long image expression label", () => {
+      const element = {
+        type: "image" as any,
+        x: 10,
+        y: 20,
+        width: 100,
+        height: 30,
+        imageExpression: '"/path/to/a/very/long/image-name.png"',
+      };
+
+      expect(getElementDisplayInfoWithoutBand(element)).toBe(
+        "/path/to/a/very...",
+      );
+    });
+
     it("should return empty string for elements without display info", () => {
       const element = {
         type: "rectangle" as any,
@@ -161,6 +211,130 @@ describe("elementUtils", () => {
       };
 
       expect(getElementDisplayInfoWithoutBand(element)).toBe("");
+    });
+  });
+
+  describe("image name helpers", () => {
+    const createImageElement = (overrides: Record<string, any> = {}) =>
+      ({
+        type: "image",
+        x: 10,
+        y: 20,
+        width: 100,
+        height: 100,
+        imageExpression: '"data:image/png;base64,AAAA"',
+        ...overrides,
+      }) as DesignElement;
+
+    it("should return an empty name when the image has no name", () => {
+      expect(getImageName(createImageElement())).toBe("");
+    });
+
+    it("should return imagePath as the image name", () => {
+      const element = createImageElement({ imagePath: "squirrel.jpg" });
+
+      expect(getImageName(element)).toBe("squirrel.jpg");
+    });
+
+    it("should return the persisted image name property", () => {
+      const element = createImageElement({
+        properties: [{ name: IMAGE_NAME_PROPERTY, value: "squirrel.jpg" }],
+      });
+
+      expect(getImageName(element)).toBe("squirrel.jpg");
+    });
+
+    it("should return empty string for elements that are not images", () => {
+      expect(getImageName({ type: "textField" } as any)).toBe("");
+    });
+
+    it("should derive a label from the image expression", () => {
+      expect(
+        getImageExpressionLabel(
+          createImageElement({ imageExpression: '"logo.png"' }),
+        ),
+      ).toBe("logo.png");
+      expect(
+        getImageExpressionLabel(
+          createImageElement({ imageExpression: "$P{imagePath}" }),
+        ),
+      ).toBe("$P{imagePath}");
+      expect(getImageExpressionLabel(createImageElement())).toBe(
+        EMBEDDED_IMAGE_LABEL,
+      );
+    });
+
+    it("should prefer the image name over the expression label", () => {
+      expect(
+        getImageDisplayName(
+          createImageElement({
+            imageExpression: '"logo.png"',
+            imagePath: "custom-logo.png",
+          }),
+        ),
+      ).toBe("custom-logo.png");
+    });
+
+    it("should store the image name without touching the expression", () => {
+      const element = createImageElement();
+      const expression = element.imageExpression;
+
+      setImageName(element, "  squirrel.jpg  ");
+
+      expect(getImageName(element)).toBe("squirrel.jpg");
+      expect((element as any).imagePath).toBe("squirrel.jpg");
+      expect((element as any).properties).toEqual([
+        { name: IMAGE_NAME_PROPERTY, value: "squirrel.jpg" },
+      ]);
+      expect(element.imageExpression).toBe(expression);
+    });
+
+    it("should update an existing image name property", () => {
+      const element = createImageElement({
+        imagePath: "old.png",
+        properties: [
+          { name: "com.jaspersoft.studio.layout", value: "FreeLayout" },
+          { name: IMAGE_NAME_PROPERTY, value: "old.png" },
+        ],
+      });
+
+      setImageName(element, "new.png");
+
+      expect((element as any).properties).toEqual([
+        { name: "com.jaspersoft.studio.layout", value: "FreeLayout" },
+        { name: IMAGE_NAME_PROPERTY, value: "new.png" },
+      ]);
+      expect(getImageName(element)).toBe("new.png");
+    });
+
+    it("should clear the image name and its property", () => {
+      const element = createImageElement({ imagePath: "squirrel.jpg" });
+      setImageName(element, "squirrel.jpg");
+
+      setImageName(element, "");
+
+      expect(getImageName(element)).toBe("");
+      expect((element as any).imagePath).toBe("");
+      expect((element as any).properties).toBeUndefined();
+      expect(getImageDisplayName(element)).toBe(EMBEDDED_IMAGE_LABEL);
+    });
+
+    it("should not store a name that only repeats the expression label", () => {
+      const element = createImageElement({ imageExpression: '"logo.png"' });
+
+      setImageName(element, "logo.png");
+
+      expect(getImageName(element)).toBe("");
+      expect((element as any).properties).toBeUndefined();
+    });
+
+    it("should ignore elements that are not images", () => {
+      const element = { type: "textField" } as any;
+
+      setImageName(element, "ignored.png");
+
+      expect((element as any).imagePath).toBeUndefined();
+      expect((element as any).properties).toBeUndefined();
     });
   });
 

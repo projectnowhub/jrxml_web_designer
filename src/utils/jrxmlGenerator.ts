@@ -33,15 +33,11 @@ function generateReportElementAttrs(element: any): string {
   return attrs;
 }
 
-// Generate reportElement child elements (printWhenExpression, styleExpression, property, propertyExpression)
+// Generate reportElement child elements.
+// The order follows the XSD sequence: property, propertyExpression, printWhenExpression,
+// styleExpression (so persisted properties such as the image name stay schema valid).
 function generateReportElementChildren(element: any): string {
   let xml = "";
-  if (element.printWhenExpression) {
-    xml += `<printWhenExpression><![CDATA[${element.printWhenExpression}]]></printWhenExpression>`;
-  }
-  if (element.styleExpression) {
-    xml += `<styleExpression><![CDATA[${element.styleExpression}]]></styleExpression>`;
-  }
   // Generate property elements
   if (element.properties && element.properties.length > 0) {
     element.properties.forEach((prop: any) => {
@@ -57,6 +53,12 @@ function generateReportElementChildren(element: any): string {
         xml += `<propertyExpression name="${prop.name}"><![CDATA[${prop.valueExpression || ""}]]></propertyExpression>`;
       }
     });
+  }
+  if (element.printWhenExpression) {
+    xml += `<printWhenExpression><![CDATA[${element.printWhenExpression}]]></printWhenExpression>`;
+  }
+  if (element.styleExpression) {
+    xml += `<styleExpression><![CDATA[${element.styleExpression}]]></styleExpression>`;
   }
   return xml;
 }
