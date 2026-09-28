@@ -15,7 +15,7 @@
     <!-- Child components will override this content -->
     <slot></slot>
 
-    <!-- 8 Resize handles (consistent across all elements: text, line, rectangle, etc.) -->
+    <!-- 8 Resize handles (box UI used for all elements) -->
     <template v-if="isSelected">
       <!-- 4 Corners -->
       <div 
@@ -63,6 +63,24 @@
         @mousedown.stop="(event) => handleResize('e', event)"
       ></div>
     </template>
+
+    <!-- Quick Rotate Handle for rotatable elements (Text, Image, Barcode) -->
+    <template v-if="isSelected && isRotatableElement">
+      <div class="element-rotate-widget">
+        <button
+          type="button"
+          class="element-rotate-btn"
+          :title="`Rotate 90° Clockwise (Current: ${(element as any).rotation || '0° / None'})`"
+          @click.stop="handleQuickRotate"
+          @mousedown.stop
+        >
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+        </button>
+        <div class="element-rotate-stem"></div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -98,6 +116,23 @@ const emit = defineEmits<{
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
+
+const isRotatableElement = computed(() => 
+  ['textField', 'staticText', 'image', 'barcode'].includes(props.element.type)
+);
+
+// Quick 90-degree step rotation
+const handleQuickRotate = () => {
+  const cur = (props.element as any).rotation || 'None';
+  let next: 'None' | 'Right' | 'UpsideDown' | 'Left' = 'Right';
+  if (cur === 'Right') next = 'UpsideDown';
+  else if (cur === 'UpsideDown') next = 'Left';
+  else if (cur === 'Left') next = 'None';
+  else next = 'Right';
+
+  (props.element as any).rotation = next;
+  emit('rotate', props.bandIndex, props.elementIndex, props.parentFrameIndex);
+};
 
 // Whether selected
 const isSelected = computed(() => {
@@ -551,5 +586,46 @@ const handleDoubleClick = () => {
   height: 14px;
   cursor: e-resize;
   border-radius: 2px;
+}
+
+/* Rotatable element 90° quick rotate widget */
+.element-rotate-widget {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 70;
+  pointer-events: auto;
+}
+
+.element-rotate-stem {
+  width: 1px;
+  height: 6px;
+  background-color: #1890ff;
+}
+
+.element-rotate-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #1890ff;
+  color: #1890ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: all 0.15s ease;
+}
+
+.element-rotate-btn:hover {
+  background: #1890ff;
+  color: #ffffff;
+  transform: scale(1.15);
 }
 </style>
