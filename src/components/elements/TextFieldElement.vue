@@ -18,10 +18,11 @@
     @resize-start="handleResizeStart"
     @start-editing="handleStartEditing"
     @auto-fit-height="handleAutoFit"
+    @rotate="(b, e, p) => emit('rotate', b, e, p)"
   >
     <div
       class="text-element-inner"
-      :style="{ justifyContent: verticalFlexJustify }"
+      :style="[{ justifyContent: verticalFlexJustify }, rotationStyle]"
       @mousedown="isEditing ? $event.stopPropagation() : undefined"
     >
       <!-- Rich contenteditable inline editor -->
@@ -208,7 +209,49 @@ const emit = defineEmits<{
   finishEditing: [];
   cancelEditing: [];
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
+
+// Visual 90-degree step rotation style
+const rotationStyle = computed(() => {
+  const rot = props.element.rotation;
+  if (!rot || rot === 'None') return {};
+
+  const w = props.element.width;
+  const h = props.element.height;
+
+  if (rot === 'Right') {
+    return {
+      position: 'absolute' as const,
+      width: `${h}px`,
+      height: `${w}px`,
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%) rotate(90deg)',
+      transformOrigin: 'center center',
+    };
+  }
+  if (rot === 'Left') {
+    return {
+      position: 'absolute' as const,
+      width: `${h}px`,
+      height: `${w}px`,
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%) rotate(-90deg)',
+      transformOrigin: 'center center',
+    };
+  }
+  if (rot === 'UpsideDown') {
+    return {
+      width: '100%',
+      height: '100%',
+      transform: 'rotate(180deg)',
+      transformOrigin: 'center center',
+    };
+  }
+  return {};
+});
 
 // Helper to check if string contains rich HTML formatting tags
 const hasHtmlTags = (str: string): boolean => {

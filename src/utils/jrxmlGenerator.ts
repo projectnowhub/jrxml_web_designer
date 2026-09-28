@@ -1950,8 +1950,14 @@ function generateBarcodeXML(element: any): string {
   xml += `${generateReportElementChildren(element)}`;
   xml += "</reportElement>";
 
+  let orientationAttr = "";
+  if (element.rotation === "Right") orientationAttr = ' orientation="90"';
+  else if (element.rotation === "UpsideDown") orientationAttr = ' orientation="180"';
+  else if (element.rotation === "Left") orientationAttr = ' orientation="270"';
+  else if (element.rotation === "None") orientationAttr = ' orientation="0"';
+
   // Barcode4j uses the components namespace
-  xml += `<c:${barcodeType} xmlns:c="http://jasperreports.sourceforge.net/jasperreports/components">`;
+  xml += `<c:${barcodeType} xmlns:c="http://jasperreports.sourceforge.net/jasperreports/components"${orientationAttr}>`;
   if (element.codeExpression) {
     xml += `<c:codeExpression><![CDATA[${element.codeExpression}]]></c:codeExpression>`;
   }

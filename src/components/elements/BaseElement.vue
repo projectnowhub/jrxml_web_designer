@@ -15,8 +15,24 @@
     <!-- Child components will override this content -->
     <slot></slot>
 
-    <!-- 8 Resize handles (Figma / Google Docs style) -->
-    <template v-if="isSelected">
+    <!-- Line elements: 2 Endpoint Handles -->
+    <template v-if="isSelected && isLineElement">
+      <div 
+        class="line-endpoint-handle"
+        :style="lineStartHandleStyle"
+        title="Drag Start Point (Hold Shift to lock angle)"
+        @mousedown.stop="(event) => handleResize('line-start', event)"
+      ></div>
+      <div 
+        class="line-endpoint-handle"
+        :style="lineEndHandleStyle"
+        title="Drag End Point (Hold Shift to lock angle)"
+        @mousedown.stop="(event) => handleResize('line-end', event)"
+      ></div>
+    </template>
+
+    <!-- Standard elements: 8 Bounding Box Resize handles -->
+    <template v-else-if="isSelected">
       <!-- 4 Corners -->
       <div 
         class="resize-handle resize-handle-nw"
@@ -63,6 +79,24 @@
         @mousedown.stop="(event) => handleResize('e', event)"
       ></div>
     </template>
+
+    <!-- Quick Rotate Handle for rotatable elements (Text, Image, Barcode) -->
+    <template v-if="isSelected && isRotatableElement">
+      <div class="element-rotate-widget">
+        <button
+          type="button"
+          class="element-rotate-btn"
+          :title="`Rotate 90° Clockwise (Current: ${(element as any).rotation || '0° / None'})`"
+          @click.stop="handleQuickRotate"
+          @mousedown.stop
+        >
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+        </button>
+        <div class="element-rotate-stem"></div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -96,7 +130,56 @@ const emit = defineEmits<{
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   startEditing: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
+
+const isLineElement = computed(() => props.element.type === 'line');
+
+const isRotatableElement = computed(() => 
+  ['textField', 'staticText', 'image', 'barcode'].includes(props.element.type)
+);
+
+// Line endpoint handle positions
+const lineStartHandleStyle = computed(() => {
+  const dir = (props.element as any).lineDirection || 'TopDown';
+  if (dir === 'BottomUp') {
+    return {
+      left: '-6px',
+      bottom: '-6px',
+    };
+  }
+  return {
+    left: '-6px',
+    top: '-6px',
+  };
+});
+
+const lineEndHandleStyle = computed(() => {
+  const dir = (props.element as any).lineDirection || 'TopDown';
+  if (dir === 'BottomUp') {
+    return {
+      right: '-6px',
+      top: '-6px',
+    };
+  }
+  return {
+    right: '-6px',
+    bottom: '-6px',
+  };
+});
+
+// Quick 90-degree step rotation
+const handleQuickRotate = () => {
+  const cur = (props.element as any).rotation || 'None';
+  let next: 'None' | 'Right' | 'UpsideDown' | 'Left' = 'Right';
+  if (cur === 'Right') next = 'UpsideDown';
+  else if (cur === 'UpsideDown') next = 'Left';
+  else if (cur === 'Left') next = 'None';
+  else next = 'Right';
+
+  (props.element as any).rotation = next;
+  emit('rotate', props.bandIndex, props.elementIndex, props.parentFrameIndex);
+};
 
 // Whether selected
 const isSelected = computed(() => {
@@ -550,5 +633,70 @@ const handleDoubleClick = () => {
   height: 14px;
   cursor: e-resize;
   border-radius: 2px;
+}
+
+/* Line 2-Point Endpoint Handles */
+.line-endpoint-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: #ffffff;
+  border: 2px solid #1890ff;
+  border-radius: 50%;
+  z-index: 70;
+  box-sizing: border-box;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  cursor: crosshair;
+  transition: transform 0.12s ease, background-color 0.12s ease;
+}
+
+.line-endpoint-handle:hover {
+  background-color: #1890ff;
+  transform: scale(1.3);
+}
+
+.line-endpoint-handle:active {
+  cursor: grabbing;
+}
+
+/* Rotatable element 90° quick rotate widget */
+.element-rotate-widget {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 70;
+  pointer-events: auto;
+}
+
+.element-rotate-stem {
+  width: 1px;
+  height: 6px;
+  background-color: #1890ff;
+}
+
+.element-rotate-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #1890ff;
+  color: #1890ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: all 0.15s ease;
+}
+
+.element-rotate-btn:hover {
+  background: #1890ff;
+  color: #ffffff;
+  transform: scale(1.15);
 }
 </style>

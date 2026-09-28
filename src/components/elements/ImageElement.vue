@@ -17,9 +17,11 @@
     @drag-start="handleDragStart"
     @resize-start="handleResizeStart"
     @contextmenu="handleContextMenu"
+    @rotate="(b, e, p) => emit('rotate', b, e, p)"
   >
     <div
       class="image-container"
+      :style="rotationStyle"
       @mouseenter="isHovered = true"
       @mouseleave="isHovered = false"
     >
@@ -158,7 +160,49 @@ const emit = defineEmits<{
   ];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   "update-jrxml": [];
+  rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
+
+// Visual 90-degree step rotation style
+const rotationStyle = computed(() => {
+  const rot = props.element.rotation;
+  if (!rot || rot === 'None') return {};
+
+  const w = props.element.width;
+  const h = props.element.height;
+
+  if (rot === 'Right') {
+    return {
+      position: 'absolute' as const,
+      width: `${h}px`,
+      height: `${w}px`,
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%) rotate(90deg)',
+      transformOrigin: 'center center',
+    };
+  }
+  if (rot === 'Left') {
+    return {
+      position: 'absolute' as const,
+      width: `${h}px`,
+      height: `${w}px`,
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%) rotate(-90deg)',
+      transformOrigin: 'center center',
+    };
+  }
+  if (rot === 'UpsideDown') {
+    return {
+      width: '100%',
+      height: '100%',
+      transform: 'rotate(180deg)',
+      transformOrigin: 'center center',
+    };
+  }
+  return {};
+});
 
 // UI state
 const isHovered = ref(false);

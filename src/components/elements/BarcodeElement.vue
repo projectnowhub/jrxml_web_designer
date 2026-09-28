@@ -14,9 +14,10 @@
     @drag-start="(ev, b, e, p) => emit('dragStart', ev, b, e, p)"
     @resize-start="(ev, b, e, p, d) => emit('resizeStart', ev, b, e, p, d)"
     @contextmenu="(ev, b, e, p) => emit('contextmenu', ev, b, e, p)"
+    @rotate="(b, e, p) => emit('rotate', b, e, p)"
   >
     <div class="barcode-element">
-      <div class="barcode-content">
+      <div class="barcode-content" :style="rotationStyle">
         <svg class="barcode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
           <template v-if="element.barcodeType === 'QRCode' || element.barcodeType === 'DataMatrix'">
             <rect x="3" y="3" width="18" height="18" rx="1" />
@@ -42,6 +43,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import BaseElement from './BaseElement.vue';
 import type { BarcodeElement, SelectedElementInfo, EditingElementInfo } from '../../types';
 
@@ -63,7 +65,49 @@ const emit = defineEmits<{
   dragStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
+
+// Visual 90-degree step rotation style
+const rotationStyle = computed(() => {
+  const rot = props.element.rotation;
+  if (!rot || rot === 'None') return {};
+
+  const w = props.element.width;
+  const h = props.element.height;
+
+  if (rot === 'Right') {
+    return {
+      position: 'absolute' as const,
+      width: `${h}px`,
+      height: `${w}px`,
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%) rotate(90deg)',
+      transformOrigin: 'center center',
+    };
+  }
+  if (rot === 'Left') {
+    return {
+      position: 'absolute' as const,
+      width: `${h}px`,
+      height: `${w}px`,
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%) rotate(-90deg)',
+      transformOrigin: 'center center',
+    };
+  }
+  if (rot === 'UpsideDown') {
+    return {
+      width: '100%',
+      height: '100%',
+      transform: 'rotate(180deg)',
+      transformOrigin: 'center center',
+    };
+  }
+  return {};
+});
 </script>
 
 <style scoped>

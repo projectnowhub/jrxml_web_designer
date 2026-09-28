@@ -339,6 +339,7 @@
           @update:table-styles="tableStyles = $event"
           @add-page="addNewPage"
           @delete-page="deletePage"
+          @rotate="handleElementRotate"
         />
       </div>
 
@@ -2096,6 +2097,7 @@ const resizingInfo = ref<{
   startHeight: number;
   parentFrameIndex?: number;
   targetSheet?: HTMLElement;
+  startLineDirection?: "TopDown" | "BottomUp";
 } | null>(null);
 
 // Tracks the last-clicked band
@@ -2561,7 +2563,7 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
         imageExpression: "",
       };
     case "line":
-      return { lineDirection: "TopDown", lineWidth: 1 };
+      return { lineDirection: "TopDown", lineWidth: 1, height: 1 };
     case "rectangle":
       return {
         mode: "Transparent",
@@ -5303,6 +5305,16 @@ const getBandOffsetY = (bandIndex: number): number => {
   return offset;
 };
 
+// Handle element rotation
+const handleElementRotate = (
+  _bandIndex: number,
+  _elementIndex: number,
+  _parentFrameIndex?: number,
+): void => {
+  saveStateToHistory();
+  updateJRXML();
+};
+
 // Start resizing an element
 const startResizingElement = (
   event: MouseEvent,
@@ -5359,6 +5371,7 @@ const startResizingElement = (
       startHeight: element.height,
       parentFrameIndex,
       targetSheet,
+      startLineDirection: (element as any).lineDirection || "TopDown",
     };
 
     isDraggingOrResizing.value = true;
@@ -5419,7 +5432,76 @@ const startResizingElement = (
       const deltaX = currentMouseX - resizingInfo.value.startX;
       const deltaY = currentMouseY - resizingInfo.value.startY;
 
-      const minSize = 5;
+      // 2-point endpoint resizing for line elements
+      if (dir === "line-start" || dir === "line-end") {
+        const startLineDir = (resizingInfo.value as any).startLineDirection || "TopDown";
+        let p1x = startElementX;
+        let p1y = startElementY;
+        let p2x = startElementX + startWidth;
+        let p2y = startElementY + startHeight;
+
+        if (startLineDir === "BottomUp") {
+          p1x = startElementX;
+          p1y = startElementY + startHeight;
+          p2x = startElementX + startWidth;
+          p2y = startElementY;
+        }
+
+        const fixedX = dir === "line-start" ? p2x : p1x;
+        const fixedY = dir === "line-start" ? p2y : p1y;
+        let movingX = Math.max(0, Math.min(containerWidth, currentMouseX));
+        let movingY = Math.max(0, Math.min(containerHeight, currentMouseY));
+
+        let dx = movingX - fixedX;
+        let dy = movingY - fixedY;
+
+        if (e.shiftKey) {
+          const absDx = Math.abs(dx);
+          const absDy = Math.abs(dy);
+          if (absDy < absDx * 0.4) {
+            dy = 0;
+            movingY = fixedY;
+          } else if (absDx < absDy * 0.4) {
+            dx = 0;
+            movingX = fixedX;
+          } else {
+            const dist = Math.max(absDx, absDy);
+            dx = Math.sign(dx) * dist;
+            dy = Math.sign(dy) * dist;
+            movingX = fixedX + dx;
+            movingY = fixedY + dy;
+          }
+        } else {
+          if (Math.abs(dy) <= 8) {
+            dy = 0;
+            movingY = fixedY;
+          } else if (Math.abs(dx) <= 8) {
+            dx = 0;
+            movingX = fixedX;
+          }
+        }
+
+        const newCalculatedX = Math.round(Math.min(fixedX, movingX));
+        const newCalculatedY = Math.round(Math.min(fixedY, movingY));
+        const newCalculatedWidth = Math.max(1, Math.round(Math.abs(dx)));
+        const newCalculatedHeight = Math.max(1, Math.round(Math.abs(dy)));
+        const computedDir = dx * dy >= 0 ? "TopDown" : "BottomUp";
+
+        element.x = newCalculatedX;
+        element.y = newCalculatedY;
+        element.width = newCalculatedWidth;
+        element.height = newCalculatedHeight;
+        (element as any).lineDirection = computedDir;
+
+        if (enableSnapToAlignment.value) {
+          detectAlignmentLines(element, resizingInfo.value.bandIndex);
+        } else {
+          clearAlignmentLines();
+        }
+        return;
+      }
+
+      const minSize = element.type === "line" ? 1 : 5;
 
       let newX = startElementX;
       let newY = startElementY;
