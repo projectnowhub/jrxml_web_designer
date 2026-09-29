@@ -61,16 +61,20 @@ const ellipseStyle = computed(() => {
     borderRadius: '50%' // Ellipse shape
   };
 
-  // Border setting - prefer the pen property
-  if (props.element.pen) {
-    const width = props.element.pen.lineWidth || 0;
-    const color = props.element.pen.lineColor || '#000000';
+  // Border setting - prefer the pen property or direct properties
+  const pen = props.element.pen;
+  const hasPenOrBorder = pen || (props.element as any).lineColor || (props.element as any).lineWidth !== undefined || (props.element as any).lineStyle;
+
+  if (hasPenOrBorder) {
+    const width = pen?.lineWidth !== undefined ? pen.lineWidth : ((props.element as any).lineWidth !== undefined ? (props.element as any).lineWidth : 1);
+    const color = pen?.lineColor || (props.element as any).lineColor || '#000000';
     let lineStyle = 'solid';
 
-    if (props.element.pen.lineStyle) {
-      if (props.element.pen.lineStyle === 'Dashed') lineStyle = 'dashed';
-      else if (props.element.pen.lineStyle === 'Dotted') lineStyle = 'dotted';
-      else if (props.element.pen.lineStyle === 'Double') lineStyle = 'double';
+    const styleVal = pen?.lineStyle || (props.element as any).lineStyle;
+    if (styleVal) {
+      if (styleVal === 'Dashed') lineStyle = 'dashed';
+      else if (styleVal === 'Dotted') lineStyle = 'dotted';
+      else if (styleVal === 'Double') lineStyle = 'double';
     }
 
     // No border if the line width is 0

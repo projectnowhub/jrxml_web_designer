@@ -727,16 +727,30 @@
                       <label class="side-label">{{
                         t("properties.color")
                       }}</label>
-                      <input
-                        :value="getRectangleBorderColor()"
-                        @input="
-                          setRectangleBorderColor(
-                            ($event.target as HTMLInputElement).value,
-                          )
-                        "
-                        type="color"
-                        class="color-control compact"
-                      />
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <input
+                          :value="getRectangleBorderColor()"
+                          @input="
+                            setRectangleBorderColor(
+                              ($event.target as HTMLInputElement).value,
+                            )
+                          "
+                          type="color"
+                          class="color-control compact"
+                          style="width: 40px; height: 32px; padding: 2px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"
+                        />
+                        <input
+                          :value="getRectangleBorderColor()"
+                          @input="
+                            setRectangleBorderColor(
+                              ($event.target as HTMLInputElement).value,
+                            )
+                          "
+                          type="text"
+                          placeholder="#000000"
+                          style="width: 80px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1129,6 +1143,54 @@
                 <input
                   :value="currentElement.lineColor || '#000000'"
                   @input="currentElement.lineColor = ($event.target as HTMLInputElement).value; emit('update-jrxml')"
+                  type="text"
+                  placeholder="#000000"
+                  style="flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;"
+                />
+              </div>
+            </div>
+
+            <!-- Rectangle Color setting for Rectangle element -->
+            <div
+              v-if="currentElement && currentElement.type === 'rectangle'"
+              class="form-group"
+            >
+              <label>{{ t("properties.rectangleColor") || "Rectangle Color" }}</label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input
+                  :value="getRectangleBorderColor()"
+                  @input="setRectangleBorderColor(($event.target as HTMLInputElement).value)"
+                  type="color"
+                  class="color-control compact"
+                  style="width: 40px; height: 32px; padding: 2px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"
+                />
+                <input
+                  :value="getRectangleBorderColor()"
+                  @input="setRectangleBorderColor(($event.target as HTMLInputElement).value)"
+                  type="text"
+                  placeholder="#000000"
+                  style="flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;"
+                />
+              </div>
+            </div>
+
+            <!-- Ellipses Color setting for Ellipse element -->
+            <div
+              v-if="currentElement && currentElement.type === 'ellipse'"
+              class="form-group"
+            >
+              <label>{{ t("properties.ellipsesColor") || "Ellipses Color" }}</label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input
+                  :value="getRectangleBorderColor()"
+                  @input="setRectangleBorderColor(($event.target as HTMLInputElement).value)"
+                  type="color"
+                  class="color-control compact"
+                  style="width: 40px; height: 32px; padding: 2px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"
+                />
+                <input
+                  :value="getRectangleBorderColor()"
+                  @input="setRectangleBorderColor(($event.target as HTMLInputElement).value)"
                   type="text"
                   placeholder="#000000"
                   style="flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;"
@@ -4116,8 +4178,8 @@ function deleteElement() {
 // Rectangle border related helper functions
 function getRectangleBorderWidth(): number {
   const el = currentElement.value as any;
-  if (!el?.pen) return 1;
-  return el.pen.lineWidth || 0;
+  if (!el?.pen) return el?.lineWidth !== undefined ? el.lineWidth : 1;
+  return el.pen.lineWidth !== undefined ? el.pen.lineWidth : 1;
 }
 
 function setRectangleBorderWidth(value: string) {
@@ -4129,13 +4191,14 @@ function setRectangleBorderWidth(value: string) {
     el.pen = {};
   }
   el.pen.lineWidth = numValue;
+  el.lineWidth = numValue;
   emit("update-jrxml");
 }
 
 function getRectangleBorderStyle(): string {
   const el = currentElement.value as any;
-  if (!el?.pen) return "Solid";
-  return el.pen.lineStyle || "Solid";
+  if (!el?.pen) return el?.lineStyle || "Solid";
+  return el.pen.lineStyle || el.lineStyle || "Solid";
 }
 
 function setRectangleBorderStyle(value: string) {
@@ -4146,13 +4209,14 @@ function setRectangleBorderStyle(value: string) {
     el.pen = {};
   }
   el.pen.lineStyle = value;
+  el.lineStyle = value;
   emit("update-jrxml");
 }
 
 function getRectangleBorderColor(): string {
   const el = currentElement.value as any;
-  if (!el?.pen) return "#000000";
-  return el.pen.lineColor || "#000000";
+  if (!el) return "#000000";
+  return el.pen?.lineColor || el.lineColor || "#000000";
 }
 
 function setRectangleBorderColor(value: string) {
@@ -4163,6 +4227,11 @@ function setRectangleBorderColor(value: string) {
     el.pen = {};
   }
   el.pen.lineColor = value;
+  el.lineColor = value;
+  if (el.pen.lineWidth === undefined) {
+    el.pen.lineWidth = 1;
+  }
+  el.lineWidth = el.pen.lineWidth;
   emit("update-jrxml");
 }
 

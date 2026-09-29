@@ -1388,20 +1388,23 @@ function generateRectangleXML(element: any): string {
   graphicElementXml += ">";
 
   // Generate pen
+  const rectPenLineWidth = element.pen?.lineWidth ?? element.lineWidth;
+  const rectPenLineStyle = element.pen?.lineStyle || element.lineStyle;
+  const rectPenLineColor = element.pen?.lineColor || element.lineColor;
+
   if (
-    element.pen &&
-    (element.pen.lineWidth !== undefined ||
-      element.pen.lineStyle ||
-      element.pen.lineColor)
+    rectPenLineWidth !== undefined ||
+    rectPenLineStyle ||
+    rectPenLineColor
   ) {
     hasGraphicElement = true;
     graphicElementXml += "<pen";
-    if (element.pen.lineWidth !== undefined)
-      graphicElementXml += ` lineWidth="${element.pen.lineWidth}"`;
-    if (element.pen.lineStyle)
-      graphicElementXml += ` lineStyle="${element.pen.lineStyle}"`;
-    if (element.pen.lineColor)
-      graphicElementXml += ` lineColor="${element.pen.lineColor}"`;
+    if (rectPenLineWidth !== undefined)
+      graphicElementXml += ` lineWidth="${rectPenLineWidth}"`;
+    if (rectPenLineStyle)
+      graphicElementXml += ` lineStyle="${rectPenLineStyle}"`;
+    if (rectPenLineColor)
+      graphicElementXml += ` lineColor="${rectPenLineColor}"`;
     graphicElementXml += "/>";
   }
 
@@ -1433,20 +1436,23 @@ function generateEllipseXML(element: any): string {
   graphicElementXml += ">";
 
   // Generate pen
+  const ellipsePenLineWidth = element.pen?.lineWidth ?? element.lineWidth;
+  const ellipsePenLineStyle = element.pen?.lineStyle || element.lineStyle;
+  const ellipsePenLineColor = element.pen?.lineColor || element.lineColor;
+
   if (
-    element.pen &&
-    (element.pen.lineWidth !== undefined ||
-      element.pen.lineStyle ||
-      element.pen.lineColor)
+    ellipsePenLineWidth !== undefined ||
+    ellipsePenLineStyle ||
+    ellipsePenLineColor
   ) {
     hasGraphicElement = true;
     graphicElementXml += "<pen";
-    if (element.pen.lineWidth !== undefined)
-      graphicElementXml += ` lineWidth="${element.pen.lineWidth}"`;
-    if (element.pen.lineStyle)
-      graphicElementXml += ` lineStyle="${element.pen.lineStyle}"`;
-    if (element.pen.lineColor)
-      graphicElementXml += ` lineColor="${element.pen.lineColor}"`;
+    if (ellipsePenLineWidth !== undefined)
+      graphicElementXml += ` lineWidth="${ellipsePenLineWidth}"`;
+    if (ellipsePenLineStyle)
+      graphicElementXml += ` lineStyle="${ellipsePenLineStyle}"`;
+    if (ellipsePenLineColor)
+      graphicElementXml += ` lineColor="${ellipsePenLineColor}"`;
     graphicElementXml += "/>";
   }
 

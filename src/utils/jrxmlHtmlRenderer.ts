@@ -309,11 +309,34 @@ function renderRectangle(
   if (radius > 0) extra += `border-radius:${radius}px;`;
   if (element.fill === "Solid" && element.backcolor)
     extra += `background-color:${element.backcolor};`;
+  const penColor = element.pen?.lineColor || (element as any).lineColor;
+  const penWidth = element.pen?.lineWidth ?? (element as any).lineWidth;
+  const penStyle = element.pen?.lineStyle || (element as any).lineStyle;
+  if (penWidth !== undefined || penColor || penStyle) {
+    const w = (penWidth !== undefined ? penWidth : 1) * scale;
+    let s = "solid";
+    if (penStyle === "Dashed") s = "dashed";
+    else if (penStyle === "Dotted") s = "dotted";
+    else if (penStyle === "Double") s = "double";
+    extra += `border:${w}px ${s} ${penColor || "#000000"};`;
+  }
   return `<div class="element rectangle" style="${baseStyle}${extra}"></div>`;
 }
 
-function renderEllipse(_element: EllipseElement, baseStyle: string): string {
-  return `<div class="element ellipse" style="${baseStyle}border-radius:50%;"></div>`;
+function renderEllipse(element: EllipseElement, baseStyle: string): string {
+  let extra = "border-radius:50%;";
+  const penColor = element.pen?.lineColor || (element as any).lineColor;
+  const penWidth = element.pen?.lineWidth ?? (element as any).lineWidth;
+  const penStyle = element.pen?.lineStyle || (element as any).lineStyle;
+  if (penWidth !== undefined || penColor || penStyle) {
+    const w = penWidth !== undefined ? penWidth : 1;
+    let s = "solid";
+    if (penStyle === "Dashed") s = "dashed";
+    else if (penStyle === "Dotted") s = "dotted";
+    else if (penStyle === "Double") s = "double";
+    extra += `border:${w}px ${s} ${penColor || "#000000"};`;
+  }
+  return `<div class="element ellipse" style="${baseStyle}${extra}"></div>`;
 }
 
 function renderFrame(
