@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Malay (`ms`) translation, with an EN / BM language switcher on the login page, the home header and the editor header; the choice is saved in localStorage
+- Malay (`ms`) translation, with an EN / BM language switcher on the login page and in the account menu; the choice is saved in localStorage
 - All editor text is translatable: properties panel, text toolbar, expression editor, AI assistant, dialogs, canvas tooltips and messages
 - DejaVu Sans, DejaVu Serif and DejaVu Sans Mono are bundled with the app (`public/fonts/dejavu/`), matching the fonts JasperReports embeds in PDFs
 
@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - English is now the default language, instead of following the browser language
 - The default report font is now DejaVu Sans (was Noto Sans SC / Noto Serif SC)
 - Mock preview data is English-only (names, addresses, companies, fictional 555 phone numbers)
+- The editor's "My Act" button is replaced by the same avatar account menu as the home page (name, email, language, my profile, sign out)
 
 ### Deprecated
 

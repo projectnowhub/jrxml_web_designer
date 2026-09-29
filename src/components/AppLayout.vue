@@ -34,44 +34,13 @@
         <kbd>/</kbd>
       </label>
       <div class="topbar-actions">
-        <LanguageSwitcher />
         <button class="icon-button" type="button" :aria-label="t('layout.help')">
           <CircleHelp :size="20" :stroke-width="2.25" aria-hidden="true" />
         </button>
         <button class="icon-button" type="button" :aria-label="t('layout.notifications')">
           <Bell :size="20" :stroke-width="2.25" aria-hidden="true" />
         </button>
-        <div ref="accountMenuRef" class="account-menu">
-          <button
-            class="account-button"
-            type="button"
-            @click="isAccountOpen = !isAccountOpen"
-          >
-            <span class="avatar">{{ userInitial }}</span>
-          </button>
-          <div v-if="isAccountOpen" class="account-popover">
-            <div class="account-popover-header">
-              <span class="avatar">{{ userInitial }}</span>
-              <div>
-                <strong>{{ userName }}</strong>
-                <span>{{ userEmail }}</span>
-              </div>
-            </div>
-            <div class="account-popover-divider" />
-            <button class="account-action" type="button" @click="goToMyProfile">
-              <UserRound :size="17" :stroke-width="2.25" aria-hidden="true" />
-              <span>{{ t("layout.myProfile") }}</span>
-            </button>
-            <button
-              class="account-action sign-out"
-              type="button"
-              @click="signOut"
-            >
-              <LogOut :size="17" :stroke-width="2.25" aria-hidden="true" />
-              <span>{{ t("layout.signOut") }}</span>
-            </button>
-          </div>
-        </div>
+        <AccountMenu />
       </div>
     </header>
 
@@ -116,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { ref } from "vue";
 import { RouterView, useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import {
@@ -125,14 +94,10 @@ import {
   CircleHelp,
   Files,
   LayoutTemplate,
-  LogOut,
   Menu,
   Search,
-  UserRound,
 } from "@lucide/vue";
-import { getStoredUser } from "../utils/auth";
-import { logout } from "../services/authService";
-import LanguageSwitcher from "./common/LanguageSwitcher.vue";
+import AccountMenu from "./common/AccountMenu.vue";
 
 const { t } = useI18n();
 
@@ -159,43 +124,8 @@ const sidebarMenus = [
 
 const router = useRouter();
 const route = useRoute();
-const isAccountOpen = ref(false);
 const isSidebarCollapsed = ref(false);
 const searchQuery = ref("");
-const storedUser = getStoredUser();
-const userName =
-  storedUser.firstName || storedUser.name || storedUser.username || "Designer";
-const userEmail = storedUser.email || "Your CDP workspace";
-const userInitial = userName.charAt(0).toUpperCase();
-
-function goToMyProfile() {
-  isAccountOpen.value = false;
-  router.push("/myprofile");
-}
-
-function signOut() {
-  isAccountOpen.value = false;
-  void logout();
-}
-
-const accountMenuRef = ref<HTMLElement | null>(null);
-
-const handleClickOutside = (event: MouseEvent): void => {
-  if (
-    accountMenuRef.value &&
-    !accountMenuRef.value.contains(event.target as Node)
-  ) {
-    isAccountOpen.value = false;
-  }
-};
-
-onMounted(() => {
-  document.addEventListener("click", handleClickOutside);
-});
-
-onBeforeUnmount(() => {
-  document.removeEventListener("click", handleClickOutside);
-});
 </script>
 
 <style scoped>
@@ -274,13 +204,9 @@ button:active {
   box-sizing: border-box;
 }
 .brand-wrap,
-.topbar-actions,
-.account-button {
+.topbar-actions {
   display: flex;
   align-items: center;
-}
-.topbar-actions > .language-switcher {
-  margin-right: 8px;
 }
 .brand-wrap {
 }
@@ -321,115 +247,6 @@ button:active {
   }
 }
 
-.account-button {
-  border: 0;
-  color: #6e6a80;
-  background: transparent;
-  cursor: pointer;
-}
-
-.account-button {
-  gap: 10px;
-  text-align: left;
-}
-.avatar {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border: 2px solid #7c5cf7;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #7c5cf7, #6366f1);
-  color: white;
-  font-size: 14px;
-  font-weight: 800;
-  box-shadow: 0 3px 12px rgba(99, 102, 241, 0.32);
-}
-.account-menu {
-  position: relative;
-}
-.account-popover {
-  position: absolute;
-  z-index: 2;
-  top: 46px;
-  right: 0;
-  width: 238px;
-  padding: 8px;
-  border: 1px solid rgba(28, 27, 38, 0.1);
-  border-radius: 12px;
-  background: #ffffff;
-  box-shadow:
-    0 18px 38px rgba(23, 20, 44, 0.16),
-    0 2px 6px rgba(23, 20, 44, 0.08);
-  animation: popover-in 0.16s ease;
-}
-@keyframes popover-in {
-  from {
-    opacity: 0;
-    transform: translateY(-3px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-.account-popover-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px;
-}
-.account-popover-header > div {
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-.account-popover-header strong,
-.account-popover-header span:not(.avatar) {
-  overflow: hidden;
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.account-popover-header strong {
-  color: #1c1b26;
-  font-size: 13px;
-  font-weight: 700;
-}
-.account-popover-header span:not(.avatar) {
-  color: #77718a;
-}
-.account-popover-divider {
-  height: 1px;
-  margin: 4px 0;
-  background: rgba(28, 27, 38, 0.08);
-}
-.account-action {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 8px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: #45425a;
-  font-size: 12.5px;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.14s ease;
-}
-.account-action:hover {
-  background: rgba(124, 92, 247, 0.08);
-}
-.account-action.sign-out {
-  color: #e5484d;
-}
-.account-action.sign-out:hover {
-  background: rgba(229, 72, 77, 0.09);
-  color: #d0342e;
-}
 .workspace-layout {
   display: flex;
   min-height: calc(100vh - 74px);

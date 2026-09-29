@@ -3,6 +3,8 @@ import { useI18n } from 'vue-i18n'
 import { Languages } from '@lucide/vue'
 import { setAppLocale, type AppLocale } from '../../i18n'
 
+withDefaults(defineProps<{ showIcon?: boolean }>(), { showIcon: true })
+
 const { locale, t } = useI18n()
 
 // Short labels shown on the buttons; the full names come from the locale files
@@ -13,8 +15,19 @@ const languages: { code: AppLocale; short: string; nameKey: string }[] = [
 </script>
 
 <template>
-  <div class="language-switcher" role="group" :aria-label="t('language.label')">
-    <Languages class="language-icon" :size="15" :stroke-width="2.25" aria-hidden="true" />
+  <div
+    class="language-switcher"
+    :class="{ 'no-icon': !showIcon }"
+    role="group"
+    :aria-label="t('language.label')"
+  >
+    <Languages
+      v-if="showIcon"
+      class="language-icon"
+      :size="15"
+      :stroke-width="2.25"
+      aria-hidden="true"
+    />
     <button
       v-for="lang in languages"
       :key="lang.code"
@@ -41,6 +54,10 @@ const languages: { code: AppLocale; short: string; nameKey: string }[] = [
   background: #fff;
   color: #5b6272;
   flex-shrink: 0;
+}
+
+.language-switcher.no-icon {
+  padding-left: 3px;
 }
 
 .language-icon {

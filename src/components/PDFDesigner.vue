@@ -168,32 +168,8 @@
           ]"
         />
 
-        <!-- 10. Language -->
-        <LanguageSwitcher />
-
-        <!-- 11. My Act -->
-        <div class="my-act-menu">
-          <n-button type="default" @click="showMyActMenu = !showMyActMenu">
-            {{ t("editorHeader.myAccount") }}
-            <ChevronDown
-              class="dropdown-arrow"
-              :size="14"
-              :stroke-width="2.25"
-              aria-hidden="true"
-            />
-          </n-button>
-
-          <div v-if="showMyActMenu" class="my-act-dropdown">
-            <button
-              type="button"
-              class="my-act-dropdown-item"
-              @click="handleSignOut"
-            >
-              <LogOut :size="16" :stroke-width="2.25" aria-hidden="true" />
-              <span>{{ t("editorHeader.signOut") }}</span>
-            </button>
-          </div>
-        </div>
+        <!-- 10. Account menu (language, profile, sign out) -->
+        <AccountMenu />
       </div>
     </div>
 
@@ -664,18 +640,16 @@ import ElementLibrary from "./ElementLibrary.vue";
 import FileManager from "./designer/controls/FileManager.vue";
 import ZoomControls from "./designer/controls/ZoomControls.vue";
 import ElementProperties from "./designer/properties/ElementProperties.vue";
-import LanguageSwitcher from "./common/LanguageSwitcher.vue";
+import AccountMenu from "./common/AccountMenu.vue";
 import SplitButton from "./common/SplitButton.vue";
 import MultiSelectToolbar from "./designer/MultiSelectToolbar.vue";
 import AlignmentGuides from "./designer/AlignmentGuides.vue";
 import DragFeedbackLayer from "./designer/DragFeedbackLayer.vue";
 import { NButton, NSelect, NCheckbox } from "naive-ui";
 import {
-  ChevronDown,
   ClipboardPaste,
   Copy,
   FilePlus,
-  LogOut,
   Redo2,
   Trash2,
   Undo2,
@@ -759,13 +733,11 @@ import {
 import { syncTableColumns } from "../utils/table/ColumnTreeSync";
 
 // Import the default JRXML example file
-import { logout } from "../services/authService";
 
 const { t } = useI18n();
 
 // Tab-related state
 const activeTab = ref("pageSettings");
-const showMyActMenu = ref(false);
 
 // Panel visibility state
 const showLeftPanel = ref(true);
@@ -957,11 +929,6 @@ watch(
     document.title = name ? `${name} - ${t("app.title")}` : t("app.title");
   },
 );
-
-const handleSignOut = () => {
-  showMyActMenu.value = false;
-  void logout();
-};
 
 function createNewFile() {
   flushAutoSave();
@@ -6825,55 +6792,6 @@ const handleBandSelectionChange = (): void => {
   font-weight: 800;
   letter-spacing: 0.08em;
   white-space: nowrap;
-}
-
-.my-act-menu {
-  position: relative;
-  display: inline-block;
-}
-
-.dropdown-arrow {
-  margin-left: 6px;
-  flex-shrink: 0;
-  align-self: center;
-}
-
-.my-act-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  min-width: 150px;
-  padding: 6px;
-  background: rgba(18, 19, 28, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
-  z-index: 1000;
-}
-
-.my-act-dropdown-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
-  border: none;
-  border-radius: 7px;
-  background: transparent;
-  color: rgba(244, 244, 245, 0.9);
-  cursor: pointer;
-  text-align: left;
-  font-size: 13px;
-}
-
-.my-act-dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.my-act-dropdown-item svg {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
 }
 
 /* Group name input dialog styles */

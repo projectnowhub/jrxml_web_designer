@@ -778,7 +778,9 @@
     "myTemplates": "My templates",
     "activity": "Activity",
     "allSystemsOperational": "All systems operational",
-    "closeNavigation": "Close navigation"
+    "closeNavigation": "Close navigation",
+    "accountMenu": "Account menu",
+    "defaultWorkspace": "Your CDP workspace"
   },
   "home": {
     "eyebrow": "Template workspace",
@@ -824,8 +826,6 @@
     "saveFailedTitle": "Auto-save failed",
     "savedTitle": "All changes are saved automatically",
     "addNewPage": "Add New Page",
-    "myAccount": "My Act",
-    "signOut": "Sign out",
     "bandHeight": "{bandName} Height: {height}px"
   },
   "help": {

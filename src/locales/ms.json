@@ -778,7 +778,9 @@
     "myTemplates": "Templat saya",
     "activity": "Aktiviti",
     "allSystemsOperational": "Semua sistem beroperasi",
-    "closeNavigation": "Tutup navigasi"
+    "closeNavigation": "Tutup navigasi",
+    "accountMenu": "Menu akaun",
+    "defaultWorkspace": "Ruang kerja CDP anda"
   },
   "home": {
     "eyebrow": "Ruang kerja templat",
@@ -824,8 +826,6 @@
     "saveFailedTitle": "Simpan automatik gagal",
     "savedTitle": "Semua perubahan disimpan secara automatik",
     "addNewPage": "Tambah Halaman Baharu",
-    "myAccount": "Akaun Saya",
-    "signOut": "Log keluar",
     "bandHeight": "Ketinggian {bandName}: {height}px"
   },
   "help": {
