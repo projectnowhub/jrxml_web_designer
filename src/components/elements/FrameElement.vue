@@ -55,7 +55,7 @@
       
       <!-- Currently empty; nested elements may be supported in the future -->
       <div v-else class="frame-placeholder">
-        <span class="frame-label">Frame</span>
+        <span class="frame-label"></span>
       </div>
     </div>
   </BaseElement>
