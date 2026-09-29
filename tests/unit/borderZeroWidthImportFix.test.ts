@@ -16,7 +16,7 @@ describe('JRXML zero-width border import test', () => {
           <rightPen lineWidth="0" lineStyle="Solid" lineColor="#000000"/>
         </box>
         <textElement textAlignment="Center" verticalAlignment="Middle">
-          <font fontName="Noto Serif SC" size="19"/>
+          <font fontName="DejaVu Serif" size="19"/>
         </textElement>
         <text><![CDATA[Passenger Center Verification Receipt]]></text>
       </staticText>
@@ -61,7 +61,7 @@ describe('JRXML zero-width border import test', () => {
           <rightPen lineWidth="0" lineStyle="Solid" lineColor="#000000"/>
         </box>
         <textElement textAlignment="Center" verticalAlignment="Middle">
-          <font fontName="Noto Serif SC" size="19"/>
+          <font fontName="DejaVu Serif" size="19"/>
         </textElement>
         <text><![CDATA[Partial Border Test]]></text>
       </staticText>
@@ -100,7 +100,7 @@ describe('JRXML zero-width border import test', () => {
       <staticText>
         <reportElement x="0" y="0" width="800" height="50"/>
         <textElement textAlignment="Center" verticalAlignment="Middle">
-          <font fontName="Noto Serif SC" size="19"/>
+          <font fontName="DejaVu Serif" size="19"/>
         </textElement>
         <text><![CDATA[No Border Test]]></text>
       </staticText>

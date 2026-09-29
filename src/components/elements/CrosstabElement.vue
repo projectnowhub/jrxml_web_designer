@@ -23,7 +23,7 @@
           <line x1="8" y1="2" x2="8" y2="22" />
           <line x1="14" y1="2" x2="14" y2="22" />
         </svg>
-        <span class="crosstab-label">Crosstab</span>
+        <span class="crosstab-label">{{ $t("elementNames.crosstab") }}</span>
       </div>
     </div>
   </BaseElement>

@@ -1,51 +1,51 @@
-# JRXML双向转换一致性分析
+# JRXML Bidirectional Conversion Consistency Analysis
 
-## 概述
+## Overview
 
-本分析检查JRXML解析（JRXML → JSON）和生成（JSON → JRXML）两个过程的一致性。
+This analysis checks the consistency between JRXML parsing (JRXML → JSON) and generation (JSON → JRXML).
 
-**解析入口**: `src/utils/jrxml/parse.ts` → `parseJRXMLContent()`
-**生成入口**: `src/utils/jrxmlGenerator.ts` → `generateJRXMLContent()`
-
----
-
-## 一、当前一致性状态
-
-### 一致性评分: 70%
-
-**完全一致的部分**: 60%
-**不一致的部分**: 40%
+**Parser entry point**: `src/utils/jrxml/parse.ts` → `parseJRXMLContent()`
+**Generator entry point**: `src/utils/jrxmlGenerator.ts` → `generateJRXMLContent()`
 
 ---
 
-## 二、关键不一致问题
+## 1. Current consistency status
 
-### 🔴 问题1: UUID不一致（严重）
+### Consistency score: 70%
 
-**生成器**: ✅ 为所有主要元素生成UUID
-- Parameters: 有uuid
-- Fields: 有uuid
-- Variables: 有uuid
-- Groups: 有uuid
-- Bands: 有uuid
-
-**解析器**: ❌ 没有提取UUID
-- Parameters: 未提取uuid
-- Fields: 未提取uuid
-- Variables: 未提取uuid
-- Groups: 未提取uuid
-- Bands: 未提取uuid
-
-**影响**:
-- JRXML → JSON 会丢失UUID信息
-- JSON → JRXML 会重新生成新的UUID
-- 双向转换不完全一致
+**Fully consistent parts**: 60%
+**Inconsistent parts**: 40%
 
 ---
 
-### 🟡 问题2: 根元素属性不一致（中等）
+## 2. Key inconsistencies
 
-**解析器解析的属性** (8个):
+### 🔴 Issue 1: Inconsistent UUIDs (critical)
+
+**Generator**: ✅ generates UUIDs for all main elements
+- Parameters: have uuid
+- Fields: have uuid
+- Variables: have uuid
+- Groups: have uuid
+- Bands: have uuid
+
+**Parser**: ❌ does not extract UUIDs
+- Parameters: uuid not extracted
+- Fields: uuid not extracted
+- Variables: uuid not extracted
+- Groups: uuid not extracted
+- Bands: uuid not extracted
+
+**Impact**:
+- JRXML → JSON loses UUID information
+- JSON → JRXML generates new UUIDs
+- Bidirectional conversion is not fully consistent
+
+---
+
+### 🟡 Issue 2: Inconsistent root element attributes (medium)
+
+**Attributes parsed by the parser** (8):
 - ✅ name
 - ✅ pageWidth
 - ✅ pageHeight
@@ -55,7 +55,7 @@
 - ✅ bottomMargin
 - ✅ whenNoDataType
 
-**生成器生成的属性** (7个):
+**Attributes written by the generator** (7):
 - ✅ name
 - ✅ pageWidth
 - ✅ pageHeight
@@ -63,64 +63,64 @@
 - ✅ rightMargin
 - ✅ topMargin
 - ✅ bottomMargin
-- ❌ whenNoDataType (未生成)
+- ❌ whenNoDataType (not generated)
 
-**未处理的属性** (15+个):
-- ❌ language (默认"java")
-- ❌ columnCount (默认1)
-- ❌ printOrder (默认"Vertical")
-- ❌ columnDirection (默认"LTR")
-- ❌ orientation (默认"Portrait")
-- ❌ sectionType (默认"Band")
-- ❌ columnWidth (默认555)
-- ❌ columnSpacing (默认0)
-- ❌ isTitleNewPage (默认false)
-- ❌ isSummaryNewPage (默认false)
-- ❌ isSummaryWithPageHeaderAndFooter (默认false)
-- ❌ isFloatColumnFooter (默认false)
-- ❌ isIgnorePagination (默认false)
-
----
-
-### 🟡 问题3: Fields属性不一致（中等）
-
-**解析器解析的内容**:
-- ✅ name
-- ✅ class
-
-**生成器生成的内容**:
-- ✅ name
-- ✅ class
-- ✅ uuid (新添加)
-- ✅ properties (如果有)
-
-**不一致**:
-- ⚠️ 生成了uuid但未解析
-- ⚠️ 生成了properties但未解析
+**Unhandled attributes** (15+):
+- ❌ language (default "java")
+- ❌ columnCount (default 1)
+- ❌ printOrder (default "Vertical")
+- ❌ columnDirection (default "LTR")
+- ❌ orientation (default "Portrait")
+- ❌ sectionType (default "Band")
+- ❌ columnWidth (default 555)
+- ❌ columnSpacing (default 0)
+- ❌ isTitleNewPage (default false)
+- ❌ isSummaryNewPage (default false)
+- ❌ isSummaryWithPageHeaderAndFooter (default false)
+- ❌ isFloatColumnFooter (default false)
+- ❌ isIgnorePagination (default false)
 
 ---
 
-### 🟡 问题4: Parameters属性不一致（中等）
+### 🟡 Issue 3: Inconsistent Field attributes (medium)
 
-**解析器解析的内容**:
+**Parsed by the parser**:
 - ✅ name
 - ✅ class
-- ✅ defaultValue (从defaultValueExpression)
 
-**生成器生成的内容**:
+**Written by the generator**:
 - ✅ name
 - ✅ class
-- ✅ uuid (新添加)
-- ✅ defaultValue (作为defaultValueExpression)
+- ✅ uuid (newly added)
+- ✅ properties (if present)
 
-**不一致**:
-- ⚠️ 生成了uuid但未解析
+**Inconsistencies**:
+- ⚠️ uuid is generated but not parsed
+- ⚠️ properties are generated but not parsed
 
 ---
 
-### 🟢 问题5: Variables属性不一致（低）
+### 🟡 Issue 4: Inconsistent Parameter attributes (medium)
 
-**解析器解析的内容** (7个):
+**Parsed by the parser**:
+- ✅ name
+- ✅ class
+- ✅ defaultValue (from defaultValueExpression)
+
+**Written by the generator**:
+- ✅ name
+- ✅ class
+- ✅ uuid (newly added)
+- ✅ defaultValue (as defaultValueExpression)
+
+**Inconsistencies**:
+- ⚠️ uuid is generated but not parsed
+
+---
+
+### 🟢 Issue 5: Inconsistent Variable attributes (low)
+
+**Parsed by the parser** (7):
 - ✅ name
 - ✅ class
 - ✅ calculationType
@@ -129,24 +129,24 @@
 - ✅ expression
 - ✅ initialValueExpression
 
-**生成器生成的内容** (7个+uuid):
+**Written by the generator** (7 + uuid):
 - ✅ name
 - ✅ class
-- ✅ uuid (新添加)
+- ✅ uuid (newly added)
 - ✅ calculationType
 - ✅ resetType
 - ✅ resetGroup
 - ✅ expression
 - ✅ initialValueExpression
 
-**不一致**:
-- ⚠️ 生成了uuid但未解析
+**Inconsistencies**:
+- ⚠️ uuid is generated but not parsed
 
 ---
 
-### 🟢 问题6: Groups属性不一致（低）
+### 🟢 Issue 6: Inconsistent Group attributes (low)
 
-**解析器解析的内容** (8个):
+**Parsed by the parser** (8):
 - ✅ name
 - ✅ expression
 - ✅ isStartNewPage
@@ -155,9 +155,9 @@
 - ✅ header
 - ✅ footer
 
-**生成器生成的内容** (8个+uuid):
+**Written by the generator** (8 + uuid):
 - ✅ name
-- ✅ uuid (新添加)
+- ✅ uuid (newly added)
 - ✅ expression
 - ✅ isStartNewPage
 - ✅ isRepeatHeader
@@ -165,16 +165,16 @@
 - ✅ header
 - ✅ footer
 
-**不一致**:
-- ⚠️ 生成了uuid但未解析
+**Inconsistencies**:
+- ⚠️ uuid is generated but not parsed
 
 ---
 
-## 三、详细对比表
+## 3. Detailed comparison
 
-| 属性类别 | 解析器 | 生成器 | 一致性 |
+| Attribute category | Parser | Generator | Consistent |
 |---------|--------|--------|--------|
-| **根元素** | | | |
+| **Root element** | | | |
 | name | ✅ | ✅ | ✅ |
 | pageWidth | ✅ | ✅ | ✅ |
 | pageHeight | ✅ | ✅ | ✅ |
@@ -183,19 +183,19 @@
 | topMargin | ✅ | ✅ | ✅ |
 | bottomMargin | ✅ | ✅ | ✅ |
 | whenNoDataType | ✅ | ❌ | ❌ |
-| language | ❌ | ❌ | ✅ (都未处理) |
-| columnCount | ❌ | ❌ | ✅ (都未处理) |
-| printOrder | ❌ | ❌ | ✅ (都未处理) |
-| columnDirection | ❌ | ❌ | ✅ (都未处理) |
-| orientation | ❌ | ❌ | ✅ (都未处理) |
-| sectionType | ❌ | ❌ | ✅ (都未处理) |
-| columnWidth | ❌ | ❌ | ✅ (都未处理) |
-| columnSpacing | ❌ | ❌ | ✅ (都未处理) |
-| isTitleNewPage | ❌ | ❌ | ✅ (都未处理) |
-| isSummaryNewPage | ❌ | ❌ | ✅ (都未处理) |
-| isSummaryWithPageHeaderAndFooter | ❌ | ❌ | ✅ (都未处理) |
-| isFloatColumnFooter | ❌ | ❌ | ✅ (都未处理) |
-| isIgnorePagination | ❌ | ❌ | ✅ (都未处理) |
+| language | ❌ | ❌ | ✅ (neither handles it) |
+| columnCount | ❌ | ❌ | ✅ (neither handles it) |
+| printOrder | ❌ | ❌ | ✅ (neither handles it) |
+| columnDirection | ❌ | ❌ | ✅ (neither handles it) |
+| orientation | ❌ | ❌ | ✅ (neither handles it) |
+| sectionType | ❌ | ❌ | ✅ (neither handles it) |
+| columnWidth | ❌ | ❌ | ✅ (neither handles it) |
+| columnSpacing | ❌ | ❌ | ✅ (neither handles it) |
+| isTitleNewPage | ❌ | ❌ | ✅ (neither handles it) |
+| isSummaryNewPage | ❌ | ❌ | ✅ (neither handles it) |
+| isSummaryWithPageHeaderAndFooter | ❌ | ❌ | ✅ (neither handles it) |
+| isFloatColumnFooter | ❌ | ❌ | ✅ (neither handles it) |
+| isIgnorePagination | ❌ | ❌ | ✅ (neither handles it) |
 | **Fields** | | | |
 | name | ✅ | ✅ | ✅ |
 | class | ✅ | ✅ | ✅ |
@@ -227,37 +227,37 @@
 
 ---
 
-## 四、改进建议
+## 4. Recommendations
 
-### 优先级1: 修复UUID不一致（必须）
+### Priority 1: Fix inconsistent UUIDs (required)
 
-**解析器修改** (`src/utils/jrxml/parse.ts`):
+**Parser change** (`src/utils/jrxml/parse.ts`):
 
 ```typescript
-// 在解析Fields时添加uuid提取
+// Extract uuid when parsing Fields
 const uuid = child.getAttribute("uuid");
 if (uuid) field.uuid = uuid;
 
-// 在解析Parameters时添加uuid提取
+// Extract uuid when parsing Parameters
 const uuid = child.getAttribute("uuid");
 if (uuid) param.uuid = uuid;
 
-// 在解析Variables时添加uuid提取
+// Extract uuid when parsing Variables
 const uuid = child.getAttribute("uuid");
 if (uuid) variable.uuid = uuid;
 
-// 在解析Groups时添加uuid提取
+// Extract uuid when parsing Groups
 const uuid = child.getAttribute("uuid");
 if (uuid) group.uuid = uuid;
 ```
 
-### 优先级2: 修复根元素属性不一致（应该）
+### Priority 2: Fix inconsistent root element attributes (recommended)
 
-**解析器修改** (`src/utils/jrxml/parse.ts`):
+**Parser change** (`src/utils/jrxml/parse.ts`):
 
 ```typescript
 const properties: ReportProperties = {
-  // ... 现有属性
+  // ... existing attributes
   language: jasperReportElem.getAttribute("language") || "java",
   columnCount: parseInt(jasperReportElem.getAttribute("columnCount") || "1"),
   printOrder: jasperReportElem.getAttribute("printOrder") || "Vertical",
@@ -274,25 +274,25 @@ const properties: ReportProperties = {
 };
 ```
 
-**生成器修改** (`src/utils/jrxmlGenerator.ts`):
+**Generator change** (`src/utils/jrxmlGenerator.ts`):
 
 ```typescript
-// 在buildJasperReportOpenTag中生成所有属性
+// Generate all attributes in buildJasperReportOpenTag
 if (safeProperties.language && safeProperties.language \!== "java") {
   attrs += ` language="${safeProperties.language}"`;
 }
 if (safeProperties.whenNoDataType && safeProperties.whenNoDataType \!== "AllSectionsNoDetail") {
   attrs += ` whenNoDataType="${safeProperties.whenNoDataType}"`;
 }
-// ... 等等
+// ... and so on
 ```
 
-### 优先级3: 修复Fields属性不一致（可选）
+### Priority 3: Fix inconsistent Field attributes (optional)
 
-**解析器修改** (`src/utils/jrxml/parse.ts`):
+**Parser change** (`src/utils/jrxml/parse.ts`):
 
 ```typescript
-// 在解析Fields时添加properties提取
+// Extract properties when parsing Fields
 const properties: Record<string, string> = {};
 const propertyElems = child.querySelectorAll("property");
 propertyElems.forEach((propElem) => {
@@ -309,12 +309,12 @@ if (Object.keys(properties).length > 0) {
 
 ---
 
-## 五、测试验证方案
+## 5. Verification plan
 
-### 5.1 双向转换测试
+### 5.1 Round-trip test
 
 ```typescript
-// 测试UUID保留
+// Test UUID preservation
 const jrxmlWithUUID = `
 <jasperReport name="Test">
   <field name="f1" class="String" uuid="12345678-1234-1234-1234-123456789012"/>
@@ -322,59 +322,59 @@ const jrxmlWithUUID = `
 `;
 
 const json = parseJRXMLContent(jrxmlWithUUID);
-console.log("解析的UUID:", json.fields[0].uuid);
+console.log("Parsed UUID:", json.fields[0].uuid);
 
 const regenerated = generateJRXMLContent(json.properties, [], json.fields);
-console.log("重新生成的UUID:", regenerated.includes("12345678-1234-1234-1234-123456789012"));
+console.log("Regenerated UUID:", regenerated.includes("12345678-1234-1234-1234-123456789012"));
 ```
 
-### 5.2 完整双向转换测试
+### 5.2 Full round-trip test
 
 ```typescript
 const originalJRXML = `<jasperReport name="Test" pageWidth="595" pageHeight="842" ...>...</jasperReport>`;
 
-// 解析
+// Parse
 const json = parseJRXMLContent(originalJRXML);
 
-// 生成
+// Generate
 const regeneratedJRXML = generateJRXMLContent(json.properties, json.bands, json.fields, json.parameters);
 
-// 验证核心结构
-console.log("字段数量一致:", json.fields.length === countFields(regeneratedJRXML));
-console.log("参数数量一致:", json.parameters.length === countParameters(regeneratedJRXML));
-console.log("分组数量一致:", json.groups.length === countGroups(regeneratedJRXML));
+// Verify the core structure
+console.log("Same number of fields:", json.fields.length === countFields(regeneratedJRXML));
+console.log("Same number of parameters:", json.parameters.length === countParameters(regeneratedJRXML));
+console.log("Same number of groups:", json.groups.length === countGroups(regeneratedJRXML));
 ```
 
 ---
 
-## 六、预期改进效果
+## 6. Expected improvement
 
-### 改进前
-- 一致性评分: 70%
-- UUID: 生成但未解析
-- 根元素属性: 部分丢失
-- Fields properties: 丢失
+### Before
+- Consistency score: 70%
+- UUID: generated but not parsed
+- Root element attributes: partly lost
+- Field properties: lost
 
-### 改进后
-- 一致性评分: **95-100%**
-- UUID: ✅ 完全保留
-- 根元素属性: ✅ 完全保留
-- Fields properties: ✅ 完全保留
-
----
-
-## 七、相关文件
-
-### 需要修改的文件
-1. `src/utils/jrxml/parse.ts` - 解析器（需要添加UUID和其他属性提取）
-2. `src/utils/jrxmlGenerator.ts` - 生成器（需要生成所有解析的属性）
-
-### 参考文件
-1. `schemas/jrxml-schema.json` - JSON Schema规格
-2. `jrxml-reference.md` - JRXML参考文档
-3. `CODE_COMPLIANCE_CHECK.md` - 合规性分析
+### After
+- Consistency score: **95-100%**
+- UUID: ✅ fully preserved
+- Root element attributes: ✅ fully preserved
+- Field properties: ✅ fully preserved
 
 ---
 
-*分析完成时间: 2026-06-09*
-*当前状态: 发现6个不一致问题，需要修复*
+## 7. Related files
+
+### Files to change
+1. `src/utils/jrxml/parse.ts` - parser (add UUID and other attribute extraction)
+2. `src/utils/jrxmlGenerator.ts` - generator (generate every parsed attribute)
+
+### Reference files
+1. `schemas/jrxml-schema.json` - JSON Schema specification
+2. `jrxml-reference.md` - JRXML reference documentation
+3. `CODE_COMPLIANCE_CHECK.md` - compliance analysis
+
+---
+
+*Analysis completed: 2026-06-09*
+*Current status: 6 inconsistencies found that need fixing*

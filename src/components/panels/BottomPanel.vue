@@ -79,7 +79,8 @@ const emit = defineEmits<Emits>();
 
 // Tab-related state
 const activeTab = ref("pageSettings");
-const tabs = ref([
+// Computed so the labels follow a language switch
+const tabs = computed(() => [
   { id: "pageSettings", name: t("bottomPanel.jrxmlTabs.pageSettings") },
   { id: "jrxml", name: t("bottomPanel.jrxmlContent") },
 ]);
@@ -798,7 +799,7 @@ onBeforeUnmount(() => {
                   :key="size.name"
                   :value="size.name"
                 >
-                  {{ size.name }}
+                  {{ size.name === "Custom" ? t("bottomPanel.customPaperSize") : size.name }}
                 </option>
               </select>
             </div>
@@ -931,9 +932,9 @@ onBeforeUnmount(() => {
                 <span
                   v-if="bandType.type === BAND_TYPE_CONSTANTS.DETAIL"
                   class="band-required-tag"
-                  :title="t('bottomPanel.detailBandAlwaysRequired') || 'Main report canvas (always required)'"
+                  :title="t('bottomPanel.detailBandAlwaysRequired')"
                 >
-                  {{ t("common.required") || "Required" }}
+                  {{ t("common.required") }}
                 </span>
               </label>
             </div>
@@ -1026,9 +1027,9 @@ onBeforeUnmount(() => {
             <!-- Detail Band (Auto-Calculated Remaining A4 Space) -->
             <div class="band-limit-card band-limit-card-detail">
               <div class="band-limit-title">
-                <span>{{ t("bandNames.detail") || "Detail" }}</span>
+                <span>{{ t("bandNames.detail") }}</span>
                 <span class="band-badge-auto">{{
-                  t("properties.detailAutoCalculated") || "Auto Calculated"
+                  t("properties.detailAutoCalculated")
                 }}</span>
               </div>
               <div class="band-limit-inputs">
@@ -1036,7 +1037,7 @@ onBeforeUnmount(() => {
                   <label>{{ t("bottomPanel.defaultHeight") }}</label>
                   <div
                     class="input-unit-wrapper is-disabled"
-                    title="Detail height is automatically calculated from remaining A4 page space"
+                    :title="t('properties.detailAutoCalculatedHint')"
                   >
                     <input
                       :value="defaultDetailCalculatedHeight"
@@ -1100,7 +1101,7 @@ onBeforeUnmount(() => {
                 ref="searchInputRef"
                 v-model="searchQuery"
                 class="inline-search-input"
-                placeholder="Search... (Ctrl+F)"
+                :placeholder="t('bottomPanel.search')"
                 @input="performSearch"
                 @keydown.enter="findNext"
                 @keydown.shift.enter="findPrevious"
@@ -1110,21 +1111,21 @@ onBeforeUnmount(() => {
                 @click="findPrevious"
                 type="default"
                 size="small"
-                title="Previous"
+                :title="t('bottomPanel.searchPrevious')"
                 >↑</n-button
               >
               <n-button
                 @click="findNext"
                 type="default"
                 size="small"
-                title="Next"
+                :title="t('bottomPanel.searchNext')"
                 >↓</n-button
               >
               <n-button
                 @click="closeSearch"
                 type="default"
                 size="small"
-                title="Close"
+                :title="t('properties.close')"
                 >×</n-button
               >
               <span v-if="searchResultsCount > 0" class="search-status">

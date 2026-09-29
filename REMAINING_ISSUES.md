@@ -1,155 +1,155 @@
-# JRXML修复 - 剩余未修复问题清单
+# JRXML Fixes - Remaining Open Issues
 
-## 📊 已修复 vs 未修复
+## 📊 Fixed vs open
 
-### ✅ 已修复（4个问题）
-1. ✅ 子元素顺序问题 - 已修复
-2. ✅ UUID不一致问题 - 已修复
-3. ✅ Fields properties不一致 - 已修复
-4. ✅ 语法错误 - 已修复
+### ✅ Fixed (4 issues)
+1. ✅ Child element order - fixed
+2. ✅ Inconsistent UUIDs - fixed
+3. ✅ Inconsistent Field properties - fixed
+4. ✅ Syntax error - fixed
 
-### ❌ 未修复（3个问题）
-1. ❌ 根元素高级属性不一致 - 未修复（中等）
-2. ❌ Parameters其他属性不一致 - 未修复（低）
-3. ❌ Variables/Groups其他属性不一致 - 未修复（低）
+### ❌ Open (3 issues)
+1. ❌ Inconsistent advanced root element attributes - open (medium)
+2. ❌ Inconsistent other Parameter attributes - open (low)
+3. ❌ Inconsistent other Variable/Group attributes - open (low)
 
 ---
 
-## 🔍 详细未修复问题
+## 🔍 Open issue details
 
-### 问题1: 根元素高级属性不一致（中等）
+### Issue 1: Inconsistent advanced root element attributes (medium)
 
-**当前状态**:
-- ✅ 解析器解析了8个属性
-- ❌ 生成器只生成了7个属性
-- ❌ 15+个可选属性未处理
+**Current state**:
+- ✅ The parser reads 8 attributes
+- ❌ The generator writes only 7 attributes
+- ❌ 15+ optional attributes are not handled
 
-**具体问题**:
+**Details**:
 
-#### 1.1 whenNoDataType属性
-**解析器**: ✅ 已解析（第90行）
+#### 1.1 whenNoDataType attribute
+**Parser**: ✅ parsed (line 90)
 ```typescript
 whenNoDataType: jasperReportElem.getAttribute("whenNoDataType") || "AllSectionsNoDetail",
 ```
 
-**生成器**: ❌ 未生成
-- 问题: 这个属性在JSON → JRXML转换中会丢失
-- 影响: 生成的JRXML会使用默认值，而不是原始值
+**Generator**: ❌ not generated
+- Problem: the attribute is lost in the JSON → JRXML conversion
+- Impact: the generated JRXML uses the default value instead of the original
 
-**修复方案**:
-在`buildJasperReportOpenTag()`中添加：
+**Fix**:
+Add to `buildJasperReportOpenTag()`:
 ```typescript
 if (safeProperties.whenNoDataType && safeProperties.whenNoDataType \!== "AllSectionsNoDetail") {
   attrs += ` whenNoDataType="${safeProperties.whenNoDataType}"`;
 }
 ```
 
-#### 1.2 其他未处理的属性（15+个）
-**解析器**: ❌ 未解析
-**生成器**: ❌ 未生成
+#### 1.2 Other unhandled attributes (15+)
+**Parser**: ❌ not parsed
+**Generator**: ❌ not generated
 
-这些属性包括：
-- language (默认"java")
-- columnCount (默认1)
-- printOrder (默认"Vertical")
-- columnDirection (默认"LTR")
-- orientation (默认"Portrait")
-- sectionType (默认"Band")
-- columnWidth (默认555)
-- columnSpacing (默认0)
-- isTitleNewPage (默认false)
-- isSummaryNewPage (默认false)
-- isSummaryWithPageHeaderAndFooter (默认false)
-- isFloatColumnFooter (默认false)
-- isIgnorePagination (默认false)
+These attributes include:
+- language (default "java")
+- columnCount (default 1)
+- printOrder (default "Vertical")
+- columnDirection (default "LTR")
+- orientation (default "Portrait")
+- sectionType (default "Band")
+- columnWidth (default 555)
+- columnSpacing (default 0)
+- isTitleNewPage (default false)
+- isSummaryNewPage (default false)
+- isSummaryWithPageHeaderAndFooter (default false)
+- isFloatColumnFooter (default false)
+- isIgnorePagination (default false)
 
-**影响**: 这些属性在双向转换中会丢失，使用默认值
+**Impact**: these attributes are lost in the round trip and fall back to defaults
 
-**修复方案**:
-1. 在解析器中添加这些属性的解析
-2. 在类型定义ReportProperties中添加这些属性
-3. 在生成器中生成这些属性（如果与默认值不同）
+**Fix**:
+1. Parse these attributes in the parser
+2. Add them to the ReportProperties type
+3. Generate them in the generator (when they differ from the default)
 
 ---
 
-### 问题2: Parameters其他属性不一致（低）
+### Issue 2: Inconsistent other Parameter attributes (low)
 
-**当前状态**:
-- ✅ name, class, defaultValue, uuid - 已处理
-- ❌ 其他属性未处理
+**Current state**:
+- ✅ name, class, defaultValue, uuid - handled
+- ❌ other attributes not handled
 
-**未处理的属性**:
-- isForPrompting (默认true)
-- nested (默认false)
+**Unhandled attributes**:
+- isForPrompting (default true)
+- nested (default false)
 - parameterDescription
 
-**影响**: 这些属性在双向转换中会丢失
+**Impact**: these attributes are lost in the round trip
 
-**修复方案**:
-在解析器中添加这些属性的解析，在生成器中生成（如果与默认值不同）
+**Fix**:
+Parse these attributes in the parser and generate them in the generator (when they differ from the default)
 
 ---
 
-### 问题3: Variables/Groups其他属性不一致（低）
+### Issue 3: Inconsistent other Variable/Group attributes (low)
 
-**当前状态**:
-- ✅ 核心属性已处理
-- ❌ 部分可选属性未处理
+**Current state**:
+- ✅ Core attributes handled
+- ❌ Some optional attributes not handled
 
-**Variables未处理的属性**:
-- incrementType (默认"None")
+**Unhandled Variable attributes**:
+- incrementType (default "None")
 - incrementGroup
 - calculationGroup
-- isInitialized (默认false)
+- isInitialized (default false)
 
-**Groups未处理的属性**:
-- isStartNewColumn (默认false)
-- isReprintHeaderOnEachPage (默认false)
-- isHideColumnHeader (默认false)
-- isKeepTogether (默认false)
-- isKeepFooterTogether (默认false)
-- minHeightToStartNewPage (默认0)
+**Unhandled Group attributes**:
+- isStartNewColumn (default false)
+- isReprintHeaderOnEachPage (default false)
+- isHideColumnHeader (default false)
+- isKeepTogether (default false)
+- isKeepFooterTogether (default false)
+- minHeightToStartNewPage (default 0)
 
-**影响**: 这些属性在双向转换中会丢失
-
----
-
-## 📊 修复优先级
-
-### 优先级1: 修复whenNoDataType属性（必须）
-**预计时间**: 10分钟
-**影响**: 中等
-**难度**: 低
-
-**修改位置**:
-1. `src/utils/jrxml/xmlBuilder.ts` - 生成器
-2. 无需修改解析器（已解析）
-
-### 优先级2: 修复其他根元素属性（应该）
-**预计时间**: 1-2小时
-**影响**: 中等
-**难度**: 中等
-
-**修改位置**:
-1. `src/utils/jrxml/parse.ts` - 添加解析
-2. `src/utils/jrxml/types.ts` - 添加类型
-3. `src/utils/jrxml/xmlBuilder.ts` - 生成器
-
-### 优先级3: 修复Parameters/Variables/Groups其他属性（可选）
-**预计时间**: 2-3小时
-**影响**: 低
-**难度**: 中等
-
-**修改位置**:
-1. `src/utils/jrxml/parse.ts` - 添加解析
-2. `src/utils/jrxml/types.ts` - 添加类型
-3. `src/utils/jrxmlGenerator.ts` - 生成器
+**Impact**: these attributes are lost in the round trip
 
 ---
 
-## 🧪 测试验证
+## 📊 Fix priority
 
-### 测试1: whenNoDataType保留测试
+### Priority 1: Fix the whenNoDataType attribute (required)
+**Estimated time**: 10 minutes
+**Impact**: medium
+**Difficulty**: low
+
+**Locations**:
+1. `src/utils/jrxml/xmlBuilder.ts` - generator
+2. No parser change needed (already parsed)
+
+### Priority 2: Fix the other root element attributes (recommended)
+**Estimated time**: 1-2 hours
+**Impact**: medium
+**Difficulty**: medium
+
+**Locations**:
+1. `src/utils/jrxml/parse.ts` - add parsing
+2. `src/utils/jrxml/types.ts` - add types
+3. `src/utils/jrxml/xmlBuilder.ts` - generator
+
+### Priority 3: Fix the other Parameter/Variable/Group attributes (optional)
+**Estimated time**: 2-3 hours
+**Impact**: low
+**Difficulty**: medium
+
+**Locations**:
+1. `src/utils/jrxml/parse.ts` - add parsing
+2. `src/utils/jrxml/types.ts` - add types
+3. `src/utils/jrxmlGenerator.ts` - generator
+
+---
+
+## 🧪 Verification
+
+### Test 1: whenNoDataType preservation
 ```typescript
 const jrxml = `
 <jasperReport name="Test" whenNoDataType="NoPages">
@@ -158,13 +158,13 @@ const jrxml = `
 `;
 
 const json = parseJRXMLContent(jrxml);
-console.log("解析的whenNoDataType:", json.properties.whenNoDataType);
+console.log("Parsed whenNoDataType:", json.properties.whenNoDataType);
 
 const regenerated = generateJRXMLContent(json.properties);
-console.log("whenNoDataType保留:", regenerated.includes('whenNoDataType="NoPages"'));
+console.log("whenNoDataType preserved:", regenerated.includes('whenNoDataType="NoPages"'));
 ```
 
-### 测试2: 其他属性保留测试
+### Test 2: Other attribute preservation
 ```typescript
 const jrxml = `
 <jasperReport name="Test" 
@@ -178,121 +178,121 @@ const jrxml = `
 const json = parseJRXMLContent(jrxml);
 const regenerated = generateJRXMLContent(json.properties);
 
-console.log("language保留:", regenerated.includes('language="groovy"'));
-console.log("orientation保留:", regenerated.includes('orientation="Landscape"'));
-console.log("isTitleNewPage保留:", regenerated.includes('isTitleNewPage="true"'));
+console.log("language preserved:", regenerated.includes('language="groovy"'));
+console.log("orientation preserved:", regenerated.includes('orientation="Landscape"'));
+console.log("isTitleNewPage preserved:", regenerated.includes('isTitleNewPage="true"'));
 ```
 
 ---
 
-## 📈 修复后预期效果
+## 📈 Expected result after the fix
 
-### 当前状态
-- 双向转换一致性: 90%
-- 根元素属性: 7/22个处理
-- Parameters属性: 4/7个处理
-- Variables属性: 7/11个处理
-- Groups属性: 7/13个处理
+### Current state
+- Bidirectional consistency: 90%
+- Root element attributes: 7/22 handled
+- Parameter attributes: 4/7 handled
+- Variable attributes: 7/11 handled
+- Group attributes: 7/13 handled
 
-### 修复后预期
-- 双向转换一致性: **95-100%**
-- 根元素属性: **22/22个处理**
-- Parameters属性: **7/7个处理**
-- Variables属性: **11/11个处理**
-- Groups属性: **13/13个处理**
-
----
-
-## 📝 修复清单总结
-
-### 必须修复（1个问题）
-1. ❌ whenNoDataType属性未生成
-   - 位置: xmlBuilder.ts
-   - 时间: 10分钟
-   - 影响: 中等
-
-### 应该修复（2个问题）
-2. ❌ 其他15+个根元素属性未处理
-   - 位置: parse.ts, types.ts, xmlBuilder.ts
-   - 时间: 1-2小时
-   - 影响: 中等
-
-3. ❌ Parameters其他属性未处理
-   - 位置: parse.ts, types.ts, jrxmlGenerator.ts
-   - 时间: 30分钟
-   - 影响: 低
-
-### 可选修复（1个问题）
-4. ❌ Variables/Groups其他属性未处理
-   - 位置: parse.ts, types.ts, jrxmlGenerator.ts
-   - 时间: 1-2小时
-   - 影响: 低
+### Expected after the fix
+- Bidirectional consistency: **95-100%**
+- Root element attributes: **22/22 handled**
+- Parameter attributes: **7/7 handled**
+- Variable attributes: **11/11 handled**
+- Group attributes: **13/13 handled**
 
 ---
 
-## 🎯 建议执行顺序
+## 📝 Fix list summary
 
-### 第一步（10分钟）
-修复whenNoDataType属性
-- 修改xmlBuilder.ts
-- 添加属性生成逻辑
+### Must fix (1 issue)
+1. ❌ whenNoDataType attribute not generated
+   - Location: xmlBuilder.ts
+   - Time: 10 minutes
+   - Impact: medium
 
-### 第二步（1-2小时）
-修复其他根元素属性
-- 在parse.ts中添加解析
-- 在types.ts中添加类型
-- 在xmlBuilder.ts中添加生成
+### Should fix (2 issues)
+2. ❌ 15+ other root element attributes not handled
+   - Location: parse.ts, types.ts, xmlBuilder.ts
+   - Time: 1-2 hours
+   - Impact: medium
 
-### 第三步（30分钟）
-修复Parameters其他属性
-- 在parse.ts中添加解析
-- 在types.ts中添加类型
-- 在jrxmlGenerator.ts中添加生成
+3. ❌ Other Parameter attributes not handled
+   - Location: parse.ts, types.ts, jrxmlGenerator.ts
+   - Time: 30 minutes
+   - Impact: low
 
-### 第四步（1-2小时，可选）
-修复Variables/Groups其他属性
-- 在parse.ts中添加解析
-- 在types.ts中添加类型
-- 在jrxmlGenerator.ts中添加生成
-
----
-
-## 📊 总计工作量
-
-### 必须修复
-- 时间: 10分钟
-- 影响: 中等
-
-### 应该修复
-- 时间: 2-3小时
-- 影响: 中等
-
-### 可选修复
-- 时间: 1-2小时
-- 影响: 低
-
-### 总计
-- **必须**: 10分钟
-- **应该**: 2-3小时
-- **可选**: 1-2小时
-- **总计**: 3-5小时
+### Optional (1 issue)
+4. ❌ Other Variable/Group attributes not handled
+   - Location: parse.ts, types.ts, jrxmlGenerator.ts
+   - Time: 1-2 hours
+   - Impact: low
 
 ---
 
-## 🏆 修复完成后的状态
+## 🎯 Suggested order
 
-### 预期成果
-- ✅ 双向转换一致性: 95-100%
-- ✅ 所有属性都可以保留
-- ✅ 完全符合XSD规范
-- ✅ 可以通过JasperReports严格验证
+### Step 1 (10 minutes)
+Fix the whenNoDataType attribute
+- Change xmlBuilder.ts
+- Add the attribute generation logic
 
-### 项目状态
-- 当前: 90%完成
-- 修复后: **100%完成**
+### Step 2 (1-2 hours)
+Fix the other root element attributes
+- Add parsing in parse.ts
+- Add types in types.ts
+- Add generation in xmlBuilder.ts
+
+### Step 3 (30 minutes)
+Fix the other Parameter attributes
+- Add parsing in parse.ts
+- Add types in types.ts
+- Add generation in jrxmlGenerator.ts
+
+### Step 4 (1-2 hours, optional)
+Fix the other Variable/Group attributes
+- Add parsing in parse.ts
+- Add types in types.ts
+- Add generation in jrxmlGenerator.ts
 
 ---
 
-*剩余问题清单*
-*创建时间: 2026-06-09*
-*当前状态: 4个问题已修复，3个问题未修复*
+## 📊 Total effort
+
+### Must fix
+- Time: 10 minutes
+- Impact: medium
+
+### Should fix
+- Time: 2-3 hours
+- Impact: medium
+
+### Optional
+- Time: 1-2 hours
+- Impact: low
+
+### Total
+- **Must**: 10 minutes
+- **Should**: 2-3 hours
+- **Optional**: 1-2 hours
+- **Total**: 3-5 hours
+
+---
+
+## 🏆 State after the fixes
+
+### Expected results
+- ✅ Bidirectional consistency: 95-100%
+- ✅ All attributes preserved
+- ✅ Fully XSD-compliant
+- ✅ Passes strict JasperReports validation
+
+### Project status
+- Now: 90% complete
+- After the fixes: **100% complete**
+
+---
+
+*Remaining issue list*
+*Created: 2026-06-09*
+*Current status: 4 issues fixed, 3 issues open*

@@ -146,7 +146,7 @@
             box-shadow: 0 0 6px var(--green, #22c55e);
           "
         />
-        Secure connection
+        {{ t("callback.secureConnection") }}
       </div>
     </header>
 
@@ -270,12 +270,12 @@
         <h1
           class="cb-shimmer text-[26px] font-bold tracking-tight leading-tight"
         >
-          Securing your session
+          {{ t("callback.securingSession") }}
         </h1>
         <p
           class="mt-1.5 text-[13.5px] text-i2 max-w-xs mx-auto leading-relaxed"
         >
-          Verifying your credentials and establishing a protected workspace
+          {{ t("callback.securingSessionDescription") }}
         </p>
       </div>
 
@@ -337,7 +337,7 @@
               border: 1px solid rgba(34, 197, 94, 0.2);
             "
           >
-            <CheckTiny /> Done
+            <CheckTiny /> {{ t("callback.done") }}
           </span>
 
           <span
@@ -349,7 +349,7 @@
               border: 1px solid var(--a-18, rgba(99, 102, 241, 0.2));
             "
           >
-            Active
+            {{ t("callback.active") }}
           </span>
         </div>
       </div>
@@ -360,7 +360,7 @@
       >
         <div class="flex justify-between items-center mb-2">
           <span class="text-[11.5px] text-i3 font-medium"
-            >Authentication progress</span
+            >{{ t("callback.authProgress") }}</span
           >
           <span class="text-[11.5px] font-bold" style="color: var(--a)"
             >62%</span
@@ -400,12 +400,12 @@
     >
       <div class="flex items-center gap-1.5 text-[11px] text-i3">
         <LockTiny />
-        <span>PKCE secured</span>
+        <span>{{ t("callback.pkceSecured") }}</span>
       </div>
       <div class="w-px h-3 bg-b1" />
       <div class="flex items-center gap-1.5 text-[11px] text-i3">
         <CheckTiny />
-        <span>End-to-end encrypted</span>
+        <span>{{ t("callback.endToEndEncrypted") }}</span>
       </div>
       <div class="w-px h-3 bg-b1" />
       <div
@@ -416,7 +416,7 @@
           class="w-1.5 h-1.5 rounded-full"
           style="background: var(--green, #22c55e)"
         />
-        <span>Secure channel active</span>
+        <span>{{ t("callback.secureChannelActive") }}</span>
       </div>
     </footer>
   </div>
@@ -425,10 +425,12 @@
 <script setup lang="ts">
 import { computed, h, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { exchangeCode, fetchUser } from "../services/authService";
 import { closeTab } from "../utils/closeTab";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
 
+const { t } = useI18n();
 const router = useRouter();
 const status = ref("Verifying your credentials...");
 
@@ -443,22 +445,22 @@ const ptcls = [
 const steps = computed(() => [
   {
     icon: StepCheck,
-    label: "Authorization code received",
-    sub: "PKCE code verified",
+    label: t("callback.authCodeReceived"),
+    sub: t("callback.pkceCodeVerified"),
     state: "done",
     delay: "0.38s",
   },
   {
     icon: StepSpin,
-    label: "Exchanging token securely",
-    sub: "Communicating with server",
+    label: t("callback.exchangingToken"),
+    sub: t("callback.communicatingWithServer"),
     state: "active",
     delay: "0.52s",
   },
   {
     icon: StepPending,
-    label: "Loading your workspace",
-    sub: "Fetching account details",
+    label: t("callback.loadingWorkspace"),
+    sub: t("callback.fetchingAccountDetails"),
     state: "pending",
     delay: "0.66s",
   },

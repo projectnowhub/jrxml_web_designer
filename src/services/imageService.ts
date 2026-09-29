@@ -8,13 +8,30 @@ const ALLOWED_EXTENSIONS = [".png", ".jpg", ".jpeg"];
 
 export type ImageUploadErrorCode = "INVALID_FORMAT" | "TOO_LARGE" | "UPLOAD_FAILED";
 
+// Translation keys (under "imageUpload") for each error; the UI shows t(messageKey, params)
+const ERROR_MESSAGE_KEYS: Record<ImageUploadErrorCode, string> = {
+  INVALID_FORMAT: "imageUpload.invalidFormat",
+  TOO_LARGE: "imageUpload.tooLarge",
+  UPLOAD_FAILED: "imageUpload.uploadFailed",
+};
+
 export class ImageUploadError extends Error {
   readonly code: ImageUploadErrorCode;
+  readonly messageKey: string;
+  readonly params: Record<string, string | number>;
 
-  constructor(code: ImageUploadErrorCode, message: string) {
+  // `message` is the English text kept for logs; users see the translated messageKey
+  constructor(
+    code: ImageUploadErrorCode,
+    message: string,
+    params: Record<string, string | number> = {},
+    messageKey = ERROR_MESSAGE_KEYS[code],
+  ) {
     super(message);
     this.name = "ImageUploadError";
     this.code = code;
+    this.messageKey = messageKey;
+    this.params = params;
   }
 }
 
@@ -43,9 +60,12 @@ export async function validateImageFile(file: File): Promise<void> {
     );
   }
   if (file.size > MAX_IMAGE_SIZE_BYTES) {
+    const size = (file.size / 1024 / 1024).toFixed(1);
     throw new ImageUploadError(
       "TOO_LARGE",
-      `Image is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum size is 4 MB.`,
+      `Image is too large (${size} MB). Maximum size is 4 MB.`,
+      { size },
+      "imageUpload.tooLargeWithSize",
     );
   }
 }
@@ -181,7 +201,12 @@ export async function uploadImage(file: File, signal?: AbortSignal): Promise<str
 
   const url = extractUrl(body);
   if (!url) {
-    throw new ImageUploadError("UPLOAD_FAILED", "Upload response did not contain an image URL");
+    throw new ImageUploadError(
+      "UPLOAD_FAILED",
+      "Upload response did not contain an image URL",
+      {},
+      "imageUpload.invalidResponse",
+    );
   }
   // Show the just-uploaded file right away instead of downloading it back
   if (isFileRef(url)) rememberLocalImage(url, file);

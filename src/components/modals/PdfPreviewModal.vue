@@ -538,7 +538,8 @@ async function generatePreview() {
     if ((error as Error).name === "AbortError") return;
     // 401 is already handled by apiClient (redirect to login)
     if (error instanceof ReportGenerationError && error.status === 401) return;
-    notification.error((error as Error).message || "PDF generation failed");
+    // Server messages are shown as sent; the fallback is translated
+    notification.error((error as Error).message || t("pdfPreview.generationFailed"));
   } finally {
     if (previewController === controller) {
       previewController = null;

@@ -1,6 +1,6 @@
 <template>
   <div class="frame-properties">
-    <h4>Frame Properties</h4>
+    <h4>{{ t("frame.title") }}</h4>
 
     <!-- Layout mode -->
     <div class="form-group">
@@ -8,15 +8,15 @@
         :model-value="element.layout || 'FreeLayout'"
         @update:model-value="updateProperty('layout', $event)"
         :options="layoutOptions"
-        label="Container Layout"
-        description="Choose how items inside are arranged"
+        :label="t('frame.layout')"
+        :description="t('frame.layoutDescription')"
       />
     </div>
 
 
     <!-- Background color -->
     <div class="form-group">
-      <label>Background color</label>
+      <label>{{ t("properties.backgroundColor") }}</label>
       <div class="color-input-group">
         <input
           type="color"
@@ -40,14 +40,16 @@
         :model-value="element.mode || 'Transparent'"
         @update:model-value="updateProperty('mode', $event)"
         :options="modeOptions"
-        label="Display mode"
-        description="Opaque shows the background, Transparent is see-through"
+        :label="t('frame.mode')"
+        :description="t('frame.modeDescription')"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import SelectControl from './common/SelectControl.vue';
 
 const props = defineProps<{
@@ -61,16 +63,18 @@ const emit = defineEmits<{
   'update:element': [element: any];
 }>();
 
-const layoutOptions = [
-  { value: 'FreeLayout', label: '🖐️ Freeform (Drag anywhere)' },
-  { value: 'HorizontalLayout', label: '↔️ Row (Side-by-side)' },
-  { value: 'VerticalLayout', label: '↕️ Stack (Top-to-bottom)' }
-];
+const { t } = useI18n();
 
-const modeOptions = [
-  { value: 'Opaque', label: 'Opaque' },
-  { value: 'Transparent', label: 'Transparent' }
-];
+const layoutOptions = computed(() => [
+  { value: 'FreeLayout', label: `🖐️ ${t('frame.layoutFree')}` },
+  { value: 'HorizontalLayout', label: `↔️ ${t('frame.layoutRow')}` },
+  { value: 'VerticalLayout', label: `↕️ ${t('frame.layoutStack')}` }
+]);
+
+const modeOptions = computed(() => [
+  { value: 'Opaque', label: t('properties.opaque') },
+  { value: 'Transparent', label: t('properties.transparent') }
+]);
 
 const updateProperty = (property: string, value: any) => {
   const updatedElement = { ...props.element };

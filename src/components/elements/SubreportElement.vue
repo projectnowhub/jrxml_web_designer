@@ -22,7 +22,7 @@
           <rect x="5" y="5" width="14" height="14" rx="1" stroke-dasharray="3 2" />
           <text x="12" y="13" text-anchor="middle" font-size="6" fill="currentColor" stroke="none">SR</text>
         </svg>
-        <span class="subreport-label">Subreport</span>
+        <span class="subreport-label">{{ $t("elementNames.subreport") }}</span>
       </div>
     </div>
   </BaseElement>

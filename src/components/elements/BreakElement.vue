@@ -21,7 +21,7 @@
     <!-- Break element content -->
     <div class="break-content" :class="{ 'column-break': element.breakType === 'Column' }">
       <div class="break-line"></div>
-      <div class="break-label">{{ element.breakType === 'Column' ? 'Column Break' : 'Page Break' }}</div>
+      <div class="break-label">{{ element.breakType === 'Column' ? $t('properties.columnBreak') : $t('properties.pageBreak') }}</div>
     </div>
   </BaseElement>
 </template>

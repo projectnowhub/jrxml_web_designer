@@ -98,14 +98,14 @@
             >
               <!-- Floating Page Sheet Header / Badge in margin -->
               <div class="page-sheet-header">
-                <span class="page-sheet-badge"
-                  >Page {{ pIndex }} of {{ totalPages }}</span
-                >
+                <span class="page-sheet-badge">{{
+                  t("canvas.pageOf", { page: pIndex, total: totalPages })
+                }}</span>
                 <button
                   v-if="pIndex > 1"
                   class="delete-page-btn"
                   @click.stop="emit('delete-page', pIndex - 1)"
-                  title="Delete Page"
+                  :title="t('canvas.deletePage')"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -119,7 +119,7 @@
                       d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
                     />
                   </svg>
-                  Delete Page
+                  {{ t("canvas.deletePage") }}
                 </button>
               </div>
 
@@ -233,7 +233,7 @@
                         class="canvas-empty-state"
                       >
                         <div class="empty-state-text">
-                          Drag elements onto Page {{ pIndex }}
+                          {{ t("canvas.dragOntoPage", { page: pIndex }) }}
                         </div>
                       </div>
                     </template>
@@ -292,7 +292,7 @@
                         "
                         class="footer-page-indicator"
                       >
-                        <span>Page {{ pIndex }} of {{ totalPages }}</span>
+                        <span>{{ t("canvas.pageOf", { page: pIndex, total: totalPages }) }}</span>
                       </div>
                     </template>
                   </div>
@@ -349,7 +349,7 @@
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
-              <span>Add New Page</span>
+              <span>{{ t("editorHeader.addNewPage") }}</span>
             </button>
           </div>
         </div>

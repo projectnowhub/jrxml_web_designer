@@ -537,16 +537,11 @@ const groupedReportElements = computed(() => {
 
 // Get the band's display name
 function getBandDisplayName(bandType: string): string {
-  const bandNameKey =
-    bandType as keyof (typeof import("../locales/zh.json"))["bandNames"];
-  // We can't directly access the JSON type safely here without more complex TS setup,
-  // but we can assume the key exists if it's a valid BandType.
-  // Using t() is the correct way.
   return t(`bandNames.${bandType}`);
 }
 
 // List of allowed field types
-const allowedFieldTypes = [
+const allowedFieldTypes = computed(() => [
   { label: t("fieldManagement.fieldTypes.string"), value: "java.lang.String" },
   {
     label: t("fieldManagement.fieldTypes.integer"),
@@ -565,11 +560,11 @@ const allowedFieldTypes = [
     value: "java.sql.Timestamp",
   },
   { label: t("fieldManagement.fieldTypes.byteArray"), value: "byte[]" },
-];
+]);
 
 // Get the localized field type name
 function getFieldTypeName(className: string): string {
-  const fieldType = allowedFieldTypes.find((type) => type.value === className);
+  const fieldType = allowedFieldTypes.value.find((type) => type.value === className);
   return fieldType ? fieldType.label : className;
 }
 

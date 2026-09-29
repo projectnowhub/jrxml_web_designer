@@ -9,7 +9,7 @@ import { generateUUID } from "./jrxml/uuidGenerator";
 ```
 
 ### 2. 🔄 Function Refactoring
-The `generateJRXMLContent()` function has been refactored to follow XSD规范.
+The `generateJRXMLContent()` function has been refactored to follow the XSD specification.
 
 **Key Changes**:
 1. **Corrected Child Element Ordering**

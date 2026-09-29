@@ -174,7 +174,7 @@
                                             </th>
                                         </template>
                                         <template #default>
-                                            Width: {{ column.width }}px
+                                            {{ t("tableElement.columnWidth", { width: column.width }) }}
                                         </template>
                                     </n-tooltip>
                                 </tr>
@@ -323,7 +323,7 @@
                                             </th>
                                         </template>
                                         <template #default>
-                                            Width: {{ column.width }}px
+                                            {{ t("tableElement.columnWidth", { width: column.width }) }}
                                         </template>
                                     </n-tooltip>
                                 </tr>
@@ -429,7 +429,7 @@
                                     </td>
                                 </template>
                                 <template #default>
-                                    Width: {{ column.width }}px
+                                    {{ t("tableElement.columnWidth", { width: column.width }) }}
                                 </template>
                             </n-tooltip>
                         </tr>
@@ -497,7 +497,7 @@
                                     </td>
                                 </template>
                                 <template #default>
-                                    Width: {{ column.width }}px
+                                    {{ t("tableElement.columnWidth", { width: column.width }) }}
                                 </template>
                             </n-tooltip>
                         </tr>
@@ -562,7 +562,7 @@
                                     </td>
                                 </template>
                                 <template #default>
-                                    Width: {{ column.width }}px
+                                    {{ t("tableElement.columnWidth", { width: column.width }) }}
                                 </template>
                             </n-tooltip>
                         </tr>

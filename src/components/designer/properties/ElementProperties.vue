@@ -192,11 +192,11 @@
             v-if="reportStyles && reportStyles.length > 0"
           >
             <label>{{
-              t("properties.styleReference") || "Style Reference"
+              t("properties.styleReference")
             }}</label>
             <select v-model="currentElement.style" class="form-select">
               <option value="">
-                {{ t("properties.noStyle") || "No Style" }}
+                {{ t("properties.noStyle") }}
               </option>
               <option v-for="s in reportStyles" :key="s.name" :value="s.name">
                 {{ s.name }}
@@ -207,7 +207,7 @@
           <!-- Image properties -->
           <template v-if="currentElement && currentElement.type === 'image'">
             <div class="form-group">
-              <label>{{ t("properties.imageName") || "Image Name" }}</label>
+              <label>{{ t("properties.imageName") }}</label>
               <input
                 type="text"
                 class="readonly-input"
@@ -216,8 +216,7 @@
                 :title="getImageDisplayName(currentElement)"
               />
               <small>{{
-                t("properties.imageNameHint") ||
-                "Read-only: taken from the uploaded image file"
+                t("properties.imageNameHint")
               }}</small>
               <div
                 style="
@@ -255,7 +254,7 @@
                   {{
                     isPropertiesImageUploading
                       ? t("properties.uploadingImage")
-                      : "Upload Image (PNG, JPG · max 4 MB)"
+                      : t("properties.uploadImageButton")
                   }}
                 </button>
                 <input
@@ -268,14 +267,14 @@
               </div>
             </div>
             <div class="form-group">
-              <label>Rotation</label>
+              <label>{{ t("properties.rotation") }}</label>
               <div class="rotation-segmented-group">
                 <button
                   type="button"
                   class="rotation-btn"
                   :class="{ active: !currentElement.rotation || currentElement.rotation === 'None' }"
                   @click="setElementRotation('None')"
-                  title="0° - No Rotation"
+                  :title="t('properties.rotationNone')"
                 >
                   <span>0°</span>
                 </button>
@@ -284,7 +283,7 @@
                   class="rotation-btn"
                   :class="{ active: currentElement.rotation === 'Right' }"
                   @click="setElementRotation('Right')"
-                  title="90° Clockwise"
+                  :title="t('properties.rotationRight')"
                 >
                   <span>90° ↷</span>
                 </button>
@@ -293,7 +292,7 @@
                   class="rotation-btn"
                   :class="{ active: currentElement.rotation === 'UpsideDown' }"
                   @click="setElementRotation('UpsideDown')"
-                  title="180° Inverted"
+                  :title="t('properties.rotationUpsideDown')"
                 >
                   <span>180° ⟲</span>
                 </button>
@@ -302,7 +301,7 @@
                   class="rotation-btn"
                   :class="{ active: currentElement.rotation === 'Left' }"
                   @click="setElementRotation('Left')"
-                  title="270° Counter-Clockwise"
+                  :title="t('properties.rotationLeft')"
                 >
                   <span>270° ↶</span>
                 </button>
@@ -315,7 +314,7 @@
             v-if="currentElement && currentElement.type === 'rectangle'"
           >
             <div class="form-group">
-              <label>Corner Radius</label>
+              <label>{{ t("properties.cornerRadius") }}</label>
               <input
                 v-model.number="currentElement.radius"
                 type="number"
@@ -328,67 +327,67 @@
           <!-- Line properties -->
           <template v-if="currentElement && currentElement.type === 'line'">
             <div class="form-group">
-              <label>Line Orientation</label>
+              <label>{{ t("properties.lineOrientation") }}</label>
               <div class="line-orientation-group">
                 <button
                   type="button"
                   class="line-orientation-btn"
                   :class="{ active: currentLineOrientation === 'horizontal' }"
                   @click="setLineOrientation('horizontal')"
-                  title="Horizontal line (0°)"
+                  :title="t('properties.lineHorizontalTitle')"
                 >
-                  <span>─ Horiz</span>
+                  <span>─ {{ t("properties.lineHorizontal") }}</span>
                 </button>
                 <button
                   type="button"
                   class="line-orientation-btn"
                   :class="{ active: currentLineOrientation === 'vertical' }"
                   @click="setLineOrientation('vertical')"
-                  title="Vertical line (90°)"
+                  :title="t('properties.lineVerticalTitle')"
                 >
-                  <span>│ Vert</span>
+                  <span>│ {{ t("properties.lineVertical") }}</span>
                 </button>
                 <button
                   type="button"
                   class="line-orientation-btn"
                   :class="{ active: currentLineOrientation === 'topdown' }"
                   @click="setLineOrientation('topdown')"
-                  title="Diagonal Top-Left to Bottom-Right (↘)"
+                  :title="t('properties.lineTopDownTitle')"
                 >
-                  <span>╲ TopDown</span>
+                  <span>╲ {{ t("properties.lineTopDown") }}</span>
                 </button>
                 <button
                   type="button"
                   class="line-orientation-btn"
                   :class="{ active: currentLineOrientation === 'bottomup' }"
                   @click="setLineOrientation('bottomup')"
-                  title="Diagonal Bottom-Left to Top-Right (↗)"
+                  :title="t('properties.lineBottomUpTitle')"
                 >
-                  <span>╱ BottomUp</span>
+                  <span>╱ {{ t("properties.lineBottomUp") }}</span>
                 </button>
               </div>
               <button
                 type="button"
                 class="btn-cross-line"
                 @click="addCrossingLine"
-                title="Create opposing diagonal line to make an 'X' cross"
+                :title="t('properties.crossLineTitle')"
               >
-                <span>✕ Add Crossing Line (Make X)</span>
+                <span>✕ {{ t("properties.crossLine") }}</span>
               </button>
             </div>
 
             <div class="form-group">
-              <label>Line Style</label>
+              <label>{{ t("properties.lineStyle") }}</label>
               <select v-model="currentElement.lineStyle" @change="emit('update-jrxml')">
-                <option value="Solid">Solid</option>
-                <option value="Dashed">Dashed</option>
-                <option value="Dotted">Dotted</option>
-                <option value="Double">Double</option>
+                <option value="Solid">{{ t("properties.solid") }}</option>
+                <option value="Dashed">{{ t("properties.dashed") }}</option>
+                <option value="Dotted">{{ t("properties.dotted") }}</option>
+                <option value="Double">{{ t("properties.double") }}</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label>Line Thickness</label>
+              <label>{{ t("properties.lineThickness") }}</label>
               <input
                 v-model.number="currentElement.lineWidth"
                 type="number"
@@ -400,7 +399,7 @@
             </div>
 
             <div class="form-group">
-              <label>Line Color</label>
+              <label>{{ t("properties.lineColor") }}</label>
               <input
                 v-model="currentElement.lineColor"
                 type="color"
@@ -423,17 +422,17 @@
                   <button
                     type="button"
                     class="btn-autofit-height"
-                    title="Auto-fit element height to content"
+                    :title="t('properties.autoFitHeightTitle')"
                     @click="autoFitCurrentElementHeight"
                   >
-                    Auto-fit Height
+                    {{ t("properties.autoFitHeight") }}
                   </button>
                   <select
                     v-if="reportFields && reportFields.length > 0"
                     style="font-size: 11px; padding: 2px 6px; width: auto; max-width: 120px;"
                     @change="insertFieldIntoTextField(($event.target as HTMLSelectElement).value); ($event.target as HTMLSelectElement).value = ''"
                   >
-                    <option value="">+ Insert Field...</option>
+                    <option value="">+ {{ t("properties.insertField") }}</option>
                     <option v-for="f in reportFields" :key="f.name" :value="`$F{${f.name}}`">
                       {{ f.name }}
                     </option>
@@ -444,20 +443,20 @@
                 v-if="currentElement"
                 :value="getTextFieldDisplay(currentElement)"
                 @input="updateTextFieldDisplay(($event.target as HTMLTextAreaElement).value)"
-                placeholder="Enter text or $F{field_name}"
+                :placeholder="t('properties.textFieldPlaceholder', { example: '$F{field_name}' })"
                 rows="3"
                 style="white-space: pre-wrap;"
               ></textarea>
             </div>
             <div class="form-group">
-              <label>Rotation</label>
+              <label>{{ t("properties.rotation") }}</label>
               <div class="rotation-segmented-group">
                 <button
                   type="button"
                   class="rotation-btn"
                   :class="{ active: !currentElement.rotation || currentElement.rotation === 'None' }"
                   @click="setElementRotation('None')"
-                  title="0° - No Rotation"
+                  :title="t('properties.rotationNone')"
                 >
                   <span>0°</span>
                 </button>
@@ -466,7 +465,7 @@
                   class="rotation-btn"
                   :class="{ active: currentElement.rotation === 'Right' }"
                   @click="setElementRotation('Right')"
-                  title="90° Clockwise"
+                  :title="t('properties.rotationRight')"
                 >
                   <span>90° ↷</span>
                 </button>
@@ -475,7 +474,7 @@
                   class="rotation-btn"
                   :class="{ active: currentElement.rotation === 'UpsideDown' }"
                   @click="setElementRotation('UpsideDown')"
-                  title="180° Inverted"
+                  :title="t('properties.rotationUpsideDown')"
                 >
                   <span>180° ⟲</span>
                 </button>
@@ -484,7 +483,7 @@
                   class="rotation-btn"
                   :class="{ active: currentElement.rotation === 'Left' }"
                   @click="setElementRotation('Left')"
-                  title="270° Counter-Clockwise"
+                  :title="t('properties.rotationLeft')"
                 >
                   <span>270° ↶</span>
                 </button>
@@ -549,28 +548,28 @@
 
           <!-- Column management -->
           <div class="form-group">
-            <h5>Column Management</h5>
+            <h5>{{ t("properties.columnManagement") }}</h5>
             <div class="column-tree-toolbar">
               <button
                 class="prop-btn-primary"
                 @click="handleAddRootColumn"
-                title="Add Column"
+                :title="t('properties.addColumn')"
               >
-                + Column
+                + {{ t("properties.column") }}
               </button>
               <button
                 class="prop-btn-primary"
                 @click="handleAddRootGroup"
-                title="Add Group"
+                :title="t('properties.addGroup')"
               >
-                + Group
+                + {{ t("properties.group") }}
               </button>
               <button
                 class="prop-btn-default"
                 @click="addColumnGroup"
-                title="Select Column Combination"
+                :title="t('properties.combineColumnsTitle')"
               >
-                Combine Columns
+                {{ t("properties.combineColumns") }}
               </button>
             </div>
 
@@ -597,7 +596,7 @@
                 v-if="tableChildren.length === 0"
                 class="column-tree-empty-hint"
               >
-                Click the button above to add a column
+                {{ t("properties.noColumnsHint") }}
               </div>
             </div>
           </div>
@@ -607,10 +606,10 @@
             class="form-group"
             v-if="currentElement && currentElement.type === 'table'"
           >
-            <h5>Row Height Settings</h5>
+            <h5>{{ t("properties.rowHeightSettings") }}</h5>
             <div class="prop-table-column-props">
               <div class="form-group">
-                <label>Header Row Height</label>
+                <label>{{ t("properties.headerRowHeight") }}</label>
                 <input
                   v-model.number="tableRowHeights.tableHeader"
                   type="number"
@@ -619,7 +618,7 @@
                 />
               </div>
               <div class="form-group">
-                <label>Column Header Row Height</label>
+                <label>{{ t("properties.columnHeaderRowHeight") }}</label>
                 <input
                   v-model.number="tableRowHeights.columnHeader"
                   type="number"
@@ -628,7 +627,7 @@
                 />
               </div>
               <div class="form-group">
-                <label>Data Row Height</label>
+                <label>{{ t("properties.dataRowHeight") }}</label>
                 <input
                   v-model.number="tableRowHeights.detailCell"
                   type="number"
@@ -637,7 +636,7 @@
                 />
               </div>
               <div class="form-group">
-                <label>Column Footer Row Height</label>
+                <label>{{ t("properties.columnFooterRowHeight") }}</label>
                 <input
                   v-model.number="tableRowHeights.columnFooter"
                   type="number"
@@ -646,7 +645,7 @@
                 />
               </div>
               <div class="form-group">
-                <label>Table Footer Row Height</label>
+                <label>{{ t("properties.tableFooterRowHeight") }}</label>
                 <input
                   v-model.number="tableRowHeights.tableFooter"
                   type="number"
@@ -1136,7 +1135,7 @@
               v-if="currentElement && currentElement.type === 'line'"
               class="form-group"
             >
-              <label>{{ t("properties.lineColor") || "Line Color" }}</label>
+              <label>{{ t("properties.lineColor") }}</label>
               <div style="display: flex; gap: 8px; align-items: center;">
                 <input
                   :value="currentElement.lineColor || '#000000'"
@@ -1160,7 +1159,7 @@
               v-if="currentElement && currentElement.type === 'rectangle'"
               class="form-group"
             >
-              <label>{{ t("properties.rectangleColor") || "Rectangle Color" }}</label>
+              <label>{{ t("properties.rectangleColor") }}</label>
               <div style="display: flex; gap: 8px; align-items: center;">
                 <input
                   :value="getRectangleBorderColor()"
@@ -1184,7 +1183,7 @@
               v-if="currentElement && currentElement.type === 'ellipse'"
               class="form-group"
             >
-              <label>{{ t("properties.ellipsesColor") || "Ellipses Color" }}</label>
+              <label>{{ t("properties.ellipsesColor") }}</label>
               <div style="display: flex; gap: 8px; align-items: center;">
                 <input
                   :value="getRectangleBorderColor()"
@@ -1477,10 +1476,10 @@
         <n-tab-pane
           v-if="currentElement && currentElement.type === 'barcode'"
           name="barcode"
-          :tab="'Barcode Properties'"
+          :tab="t('properties.barcodeProperties')"
         >
           <div class="form-group">
-            <label>Barcode Type</label>
+            <label>{{ t("properties.barcodeType") }}</label>
             <select v-model="currentElement.barcodeType">
               <option value="Code128">Code128</option>
               <option value="Code39">Code39</option>
@@ -1497,23 +1496,23 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Barcode Value</label>
+            <label>{{ t("properties.barcodeValue") }}</label>
             <input
               type="text"
               :value="getBarcodeValue(currentElement)"
               @input="updateBarcodeValue(($event.target as HTMLInputElement).value)"
-              placeholder="e.g. 1234567890"
+              :placeholder="t('properties.barcodeValuePlaceholder')"
             />
           </div>
           <div class="form-group">
-            <label>Rotation</label>
+            <label>{{ t("properties.rotation") }}</label>
             <div class="rotation-segmented-group">
               <button
                 type="button"
                 class="rotation-btn"
                 :class="{ active: !currentElement.rotation || currentElement.rotation === 'None' }"
                 @click="setElementRotation('None')"
-                title="0° - No Rotation"
+                :title="t('properties.rotationNone')"
               >
                 <span>0°</span>
               </button>
@@ -1522,7 +1521,7 @@
                 class="rotation-btn"
                 :class="{ active: currentElement.rotation === 'Right' }"
                 @click="setElementRotation('Right')"
-                title="90° Clockwise"
+                :title="t('properties.rotationRight')"
               >
                 <span>90° ↷</span>
               </button>
@@ -1531,7 +1530,7 @@
                 class="rotation-btn"
                 :class="{ active: currentElement.rotation === 'UpsideDown' }"
                 @click="setElementRotation('UpsideDown')"
-                title="180° Inverted"
+                :title="t('properties.rotationUpsideDown')"
               >
                 <span>180° ⟲</span>
               </button>
@@ -1540,7 +1539,7 @@
                 class="rotation-btn"
                 :class="{ active: currentElement.rotation === 'Left' }"
                 @click="setElementRotation('Left')"
-                title="270° Counter-Clockwise"
+                :title="t('properties.rotationLeft')"
               >
                 <span>270° ↶</span>
               </button>
@@ -3312,7 +3311,12 @@ async function handlePropertiesImageUpload(event: Event) {
     fitElementToImage(element, dimensions);
     emit("update-jrxml");
   } catch (error) {
-    alert(error instanceof ImageUploadError ? error.message : "Image upload failed");
+    console.error("Image upload failed:", error);
+    alert(
+      error instanceof ImageUploadError
+        ? t(error.messageKey, error.params)
+        : t("imageUpload.uploadFailed"),
+    );
   } finally {
     isPropertiesImageUploading.value = false;
   }

@@ -17,7 +17,7 @@
   >
     <div class="generic-element">
       <div class="generic-content">
-        <span class="generic-label">Generic</span>
+        <span class="generic-label">{{ $t("elementNames.genericElement") }}</span>
       </div>
     </div>
   </BaseElement>

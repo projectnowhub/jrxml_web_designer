@@ -1174,7 +1174,7 @@ describe('jrxmlGenerator', () => {
       marginRight: 20,
       marginTop: 20,
       marginBottom: 20,
-      defaultFontName: 'Noto Sans SC',
+      defaultFontName: 'DejaVu Sans',
       defaultFontSize: 12
     }
 

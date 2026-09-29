@@ -1,249 +1,249 @@
 # JRXML Generator Consistency Check Report
 
-## 检查日期
+## Check date
 2026-06-09
 
-## 检查范围
-`src/utils/jrxmlGenerator.ts` 的 `generateJRXMLContent()` 函数
+## Scope
+The `generateJRXMLContent()` function in `src/utils/jrxmlGenerator.ts`
 
-## 检查结果
+## Results
 
-### 发现的问题总数: 6
+### Total issues found: 6
 
 ---
 
-## 问题清单
+## Issue list
 
-### 🔴 问题1: 子元素顺序不符合XSD规范
+### 🔴 Issue 1: Child element order does not follow the XSD
 
-**严重性**: HIGH  
-**影响**: JRXML无法通过XSD验证  
-**位置**: 第75-265行
+**Severity**: HIGH  
+**Impact**: The JRXML fails XSD validation  
+**Location**: lines 75-265
 
-**当前顺序**:
+**Current order**:
 ```
-1. reportFont (75行)
-2. properties (78-85行)
-3. styles (87-96行)
-4. parameters (98-110行)
-5. queryString (112-115行)
-6. subDatasets (117-166行)
-7. fields (168-191行)
-8. variables (193-221行)
-9. groups (223-265行)
+1. reportFont (line 75)
+2. properties (lines 78-85)
+3. styles (lines 87-96)
+4. parameters (lines 98-110)
+5. queryString (lines 112-115)
+6. subDatasets (lines 117-166)
+7. fields (lines 168-191)
+8. variables (lines 193-221)
+9. groups (lines 223-265)
 ```
 
-**正确顺序** (XSD规范):
+**Correct order** (per the XSD):
 ```
-1. properties ← 应该在最前
-2. propertyExpressions (暂未实现)
-3. imports (暂未实现)
-4. templates (暂未实现)
-5. reportFonts ← 应该在styles之前
+1. properties ← should come first
+2. propertyExpressions (not implemented yet)
+3. imports (not implemented yet)
+4. templates (not implemented yet)
+5. reportFonts ← should come before styles
 6. styles
-7. subDatasets ← 应该在parameters之前
-8. scriptlets (暂未实现)
-9. parameters ← 应该在subDatasets之后
+7. subDatasets ← should come before parameters
+8. scriptlets (not implemented yet)
+9. parameters ← should come after subDatasets
 10. queryString
 11. fields
-12. sortFields (暂未实现)
+12. sortFields (not implemented yet)
 13. variables
-14. filterExpression (暂未实现)
+14. filterExpression (not implemented yet)
 15. groups
 ```
 
 ---
 
-### 🔴 问题2: Parameter缺少UUID属性
+### 🔴 Issue 2: Parameter is missing the UUID attribute
 
-**严重性**: HIGH  
-**影响**: 无法通过JasperReports严格验证  
-**位置**: 第103行
+**Severity**: HIGH  
+**Impact**: Fails strict JasperReports validation  
+**Location**: line 103
 
-**当前代码**:
+**Current code**:
 ```typescript
 jrxml += `  <parameter name="${param.name}" class="${param.class}">\n`;
 ```
 
-**修复方案**:
+**Fix**:
 ```typescript
 jrxml += `  <parameter name="${param.name}" class="${param.class}" uuid="${generateUUID()}">\n`;
 ```
 
 ---
 
-### 🔴 问题3: Field缺少UUID属性
+### 🔴 Issue 3: Field is missing the UUID attribute
 
-**严重性**: HIGH  
-**影响**: 无法通过JasperReports严格验证  
-**位置**: 第179行和第187行
+**Severity**: HIGH  
+**Impact**: Fails strict JasperReports validation  
+**Location**: lines 179 and 187
 
-**当前代码**:
+**Current code**:
 ```typescript
-// 第179行
+// Line 179
 jrxml += `  <field name="${field.name}" class="${field.class}">\n`;
-// 第187行
+// Line 187
 jrxml += `  <field name="${field.name}" class="${field.class}"/>\n`;
 ```
 
-**修复方案**:
+**Fix**:
 ```typescript
-// 第179行
+// Line 179
 jrxml += `  <field name="${field.name}" class="${field.class}" uuid="${generateUUID()}">\n`;
-// 第187行
+// Line 187
 jrxml += `  <field name="${field.name}" class="${field.class}" uuid="${generateUUID()}"/>\n`;
 ```
 
 ---
 
-### 🔴 问题4: Variable缺少UUID属性
+### 🔴 Issue 4: Variable is missing the UUID attribute
 
-**严重性**: HIGH  
-**影响**: 无法通过JasperReports严格验证  
-**位置**: 第198行
+**Severity**: HIGH  
+**Impact**: Fails strict JasperReports validation  
+**Location**: line 198
 
-**当前代码**:
+**Current code**:
 ```typescript
 let attrs = `name="${variable.name}" class="${variable.class}"`;
 ```
 
-**修复方案**:
+**Fix**:
 ```typescript
 let attrs = `name="${variable.name}" class="${variable.class}" uuid="${generateUUID()}"`;
 ```
 
 ---
 
-### 🔴 问题5: Group缺少UUID属性
+### 🔴 Issue 5: Group is missing the UUID attribute
 
-**严重性**: HIGH  
-**影响**: 无法通过JasperReports严格验证  
-**位置**: 第228行
+**Severity**: HIGH  
+**Impact**: Fails strict JasperReports validation  
+**Location**: line 228
 
-**当前代码**:
+**Current code**:
 ```typescript
 let groupAttrs = `name="${group.name}"`;
 ```
 
-**修复方案**:
+**Fix**:
 ```typescript
 let groupAttrs = `name="${group.name}" uuid="${generateUUID()}"`;
 ```
 
 ---
 
-### 🔴 问题6: Band缺少UUID属性
+### 🔴 Issue 6: Band is missing the UUID attribute
 
-**严重性**: HIGH  
-**影响**: 无法通过JasperReports严格验证  
-**位置**: 第273行
+**Severity**: HIGH  
+**Impact**: Fails strict JasperReports validation  
+**Location**: line 273
 
-**当前代码**:
+**Current code**:
 ```typescript
 let bandAttributes = `height="${band.height}"`;
 ```
 
-**修复方案**:
+**Fix**:
 ```typescript
 let bandAttributes = `height="${band.height}" uuid="${generateUUID()}"`;
 ```
 
 ---
 
-### 🟡 问题7: SubDataset使用crypto.randomUUID()而非generateUUID()
+### 🟡 Issue 7: SubDataset uses crypto.randomUUID() instead of generateUUID()
 
-**严重性**: MEDIUM  
-**影响**: 代码不一致，降级逻辑不生效  
-**位置**: 第122行
+**Severity**: MEDIUM  
+**Impact**: Inconsistent code; the fallback logic is not used  
+**Location**: line 122
 
-**当前代码**:
+**Current code**:
 ```typescript
 let subDatasetAttrs = `name="${dataset.name}" uuid="${dataset.uuid || crypto.randomUUID()}"`;
 ```
 
-**修复方案**:
+**Fix**:
 ```typescript
 let subDatasetAttrs = `name="${dataset.name}" uuid="${dataset.uuid || generateUUID()}"`;
 ```
 
 ---
 
-### 🟡 问题8: SubDataset内部字段缺少UUID属性
+### 🟡 Issue 8: Fields inside a SubDataset are missing the UUID attribute
 
-**严重性**: MEDIUM  
-**影响**: 无法通过JasperReports严格验证  
-**位置**: 第150行
+**Severity**: MEDIUM  
+**Impact**: Fails strict JasperReports validation  
+**Location**: line 150
 
-**当前代码**:
+**Current code**:
 ```typescript
 jrxml += `    <field name="${field.name}" class="${field.class}">\n`;
 ```
 
-**修复方案**:
+**Fix**:
 ```typescript
 jrxml += `    <field name="${field.name}" class="${field.class}" uuid="${generateUUID()}">\n`;
 ```
 
 ---
 
-## 修复优先级
+## Fix priority
 
-### 第一优先级（必须修复）
-1. 子元素顺序 - 问题1
-2. UUID添加 - 问题2, 3, 4, 5, 6
+### Priority 1 (must fix)
+1. Child element order - issue 1
+2. Add UUIDs - issues 2, 3, 4, 5, 6
 
-### 第二优先级（建议修复）
-7. SubDataset的UUID使用 - 问题7
-8. SubDataset内部字段UUID - 问题8
-
----
-
-## 修复方案
-
-### 修复步骤1: 重构子元素顺序
-
-需要将generateJRXMLContent()函数重写，按照XSD规范的顺序排列。
-
-**修改位置**: 第74-296行
-
-### 修复步骤2: 添加UUID属性
-
-在所有主要元素上添加UUID属性。
-
-**修改位置**:
-- 第103行: Parameter
-- 第150行: SubDataset内部Field
-- 第179行: Field (有属性)
-- 第187行: Field (无属性)
-- 第198行: Variable
-- 第228行: Group
-- 第273行: Band
-
-### 修复步骤3: 修复SubDataset的UUID调用
-
-**修改位置**: 第122行
+### Priority 2 (recommended)
+7. SubDataset UUID call - issue 7
+8. UUIDs for fields inside a SubDataset - issue 8
 
 ---
 
-## 修复后预期效果
+## Fix plan
 
-✅ 子元素顺序符合XSD规范
-✅ 所有主要元素都有UUID属性
-✅ 可以通过XSD验证
-✅ 可以通过JasperReports严格验证模式
-✅ 代码风格一致（统一使用generateUUID()）
+### Step 1: Restructure the child element order
+
+Rewrite generateJRXMLContent() to follow the order defined by the XSD.
+
+**Location**: lines 74-296
+
+### Step 2: Add UUID attributes
+
+Add UUID attributes to all main elements.
+
+**Locations**:
+- Line 103: Parameter
+- Line 150: Field inside a SubDataset
+- Line 179: Field (with properties)
+- Line 187: Field (without properties)
+- Line 198: Variable
+- Line 228: Group
+- Line 273: Band
+
+### Step 3: Fix the SubDataset UUID call
+
+**Location**: line 122
 
 ---
 
-## 测试验证
+## Expected result after the fix
 
-修复后需要运行以下测试：
-
-1. 元素顺序测试
-2. UUID生成测试
-3. JSON Schema验证测试
-4. 生成JRXML并在JasperReports中测试
+✅ Child element order follows the XSD
+✅ All main elements have UUID attributes
+✅ Passes XSD validation
+✅ Passes strict JasperReports validation mode
+✅ Consistent code style (generateUUID() used everywhere)
 
 ---
 
-*检查报告生成时间: 2026-06-09*
+## Verification
+
+After the fix, run these tests:
+
+1. Element order test
+2. UUID generation test
+3. JSON Schema validation test
+4. Generate JRXML and test it in JasperReports
+
+---
+
+*Report generated: 2026-06-09*

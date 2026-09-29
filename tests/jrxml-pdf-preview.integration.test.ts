@@ -252,15 +252,15 @@ const UNICODE_JRXML = `<?xml version="1.0" encoding="UTF-8"?>
     <band height="100">
       <staticText>
         <reportElement x="0" y="0" width="300" height="25"/>
-        <text><![CDATA[中文测试 - Chinese Text]]></text>
+        <text><![CDATA[Punctuation: “quotes” – dashes — ellipsis…]]></text>
       </staticText>
       <staticText>
         <reportElement x="0" y="30" width="300" height="25"/>
-        <text><![CDATA[日本語テスト - Japanese Text]]></text>
+        <text><![CDATA[Accented Latin: café, naïve, résumé, Müller]]></text>
       </staticText>
       <staticText>
         <reportElement x="0" y="60" width="300" height="25"/>
-        <text><![CDATA[한국어 테스트 - Korean Text]]></text>
+        <text><![CDATA[Symbols: RM 1,234.50 · © ® ™ € £ ¥]]></text>
       </staticText>
     </band>
   </title>
@@ -821,7 +821,7 @@ describe("jrxml-pdf-preview.firegod.cn - JRXML Validity Integration Tests", () =
   // 7. Unicode / Multilingual
   // -----------------------------------------------------------------------
   describe("7. Unicode and Multilingual Text", () => {
-    it("should accept JRXML with Chinese, Japanese, Korean text", async () => {
+    it("should accept JRXML with non-ASCII text (punctuation, accented Latin, symbols)", async () => {
       const res = requireResponse(await safeSend({ jrxml: UNICODE_JRXML }));
       expect(res.ok).toBe(true);
       const buffer = await res.arrayBuffer();
@@ -1023,14 +1023,14 @@ describe("jrxml-pdf-preview.firegod.cn - JRXML Validity Integration Tests", () =
           jrxml: FIELDS_JRXML,
           dataSource: [
             {
-              userName: "张三",
+              userName: "Zoë Brontë",
               age: 28,
               salary: 50000.0,
               isVip: true,
               userId: 1001,
             },
             {
-              userName: "田中太郎",
+              userName: "José Müller",
               age: 35,
               salary: 60000.0,
               isVip: false,

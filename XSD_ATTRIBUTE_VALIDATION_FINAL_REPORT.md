@@ -1,53 +1,53 @@
-# JRXML属性验证报告（最终版）
+# JRXML Attribute Validation Report (Final)
 
-**生成时间:** 2026-06-09
-**验证方法:** XSD文件分析 + JasperReports源码分析
+**Generated:** 2026-06-09
+**Method:** XSD file analysis + JasperReports source analysis
 
 ---
 
-## 📊 验证状态
+## 📊 Validation status
 
-| 状态 | 说明 |
+| Status | Meaning |
 |------|------|
-| ✅ 已验证 | 通过XSD文件分析确认 |
-| ⚠️ 需本地验证 | 需要完整依赖库进行编译测试 |
-| 🔄 待远程验证 | 需要远程JasperReports服务器 |
+| ✅ Verified | confirmed by XSD file analysis |
+| ⚠️ Needs local verification | needs the full dependency set for compilation tests |
+| 🔄 Pending remote verification | needs a remote JasperReports server |
 
 ---
 
-## 🔴 严重问题（XSD分析确认）
+## 🔴 Critical issues (confirmed by XSD analysis)
 
-### 1. uuid属性不一致
+### 1. Inconsistent uuid attributes
 
-**证据来源:** jasperreport.xsd文件分析
+**Source:** analysis of jasperreport.xsd
 
-| 元素 | XSD定义 | JSON Schema | XSD证据 | 结论 |
+| Element | XSD definition | JSON Schema | XSD evidence | Conclusion |
 |------|---------|-------------|---------|------|
-| **field** | 无uuid | 有uuid | XSD第1509行未定义uuid | ❌ Schema多余 |
-| **variable** | 无uuid | 有uuid | XSD第1548行未定义uuid | ❌ Schema多余 |
-| **sortField** | 无uuid | 有uuid | XSD第1602行未定义uuid | ❌ Schema多余 |
-| **group** | 无uuid | 有uuid | XSD第1724行未定义uuid | ❌ Schema多余 |
-| **parameter** | 有uuid | 无uuid | XSD第1257行定义uuid | ❌ Schema缺失 |
-| **band** | 无uuid | 有uuid | XSD第1039行未定义uuid | ❌ Schema多余 (已修复) |
-| **subDataset** | 有uuid | 有uuid | XSD第1257行定义uuid | ✅ 一致 |
-| **reportElement** | 有uuid | 有uuid | 通过attributeGroup继承 | ✅ 一致 |
+| **field** | no uuid | has uuid | uuid not defined at XSD line 1509 | ❌ extra in schema |
+| **variable** | no uuid | has uuid | uuid not defined at XSD line 1548 | ❌ extra in schema |
+| **sortField** | no uuid | has uuid | uuid not defined at XSD line 1602 | ❌ extra in schema |
+| **group** | no uuid | has uuid | uuid not defined at XSD line 1724 | ❌ extra in schema |
+| **parameter** | has uuid | no uuid | uuid defined at XSD line 1257 | ❌ missing from schema |
+| **band** | no uuid | has uuid | uuid not defined at XSD line 1039 | ❌ extra in schema (fixed) |
+| **subDataset** | has uuid | has uuid | uuid defined at XSD line 1257 | ✅ consistent |
+| **reportElement** | has uuid | has uuid | inherited through attributeGroup | ✅ consistent |
 
-**结论:** 必须修正
+**Conclusion:** must be fixed
 
 ---
 
-## 🟡 中等问题（XSD分析确认）
+## 🟡 Medium issues (confirmed by XSD analysis)
 
-### 2. positionType枚举值
+### 2. positionType enum
 
-**XSD定义 (第2384-2410行):**
+**XSD definition (lines 2384-2410):**
 ```xml
 <enumeration value="Float"/>
 <enumeration value="FixRelativeToTop"/>
 <enumeration value="FixRelativeToBottom"/>
 ```
 
-**JSON Schema定义:**
+**JSON Schema definition:**
 ```json
 "positionType": {
   "enum": ["FixRelativeToBand", "Float"],
@@ -55,35 +55,35 @@
 }
 ```
 
-**不一致:**
-- ❌ Schema使用`FixRelativeToBand`，XSD使用`FixRelativeToTop`
-- ❌ Schema缺少`FixRelativeToBottom`
-- ❌ 默认值不一致（XSD: FixRelativeToTop, Schema: FixRelativeToBand）
+**Inconsistencies:**
+- ❌ The schema uses `FixRelativeToBand`; the XSD uses `FixRelativeToTop`
+- ❌ The schema is missing `FixRelativeToBottom`
+- ❌ Different defaults (XSD: FixRelativeToTop, schema: FixRelativeToBand)
 
-**结论:** 必须修正
+**Conclusion:** must be fixed
 
-### 3. scaleImage枚举值
+### 3. scaleImage enum
 
-**XSD定义 (第2111行):**
+**XSD definition (line 2111):**
 ```xml
 <enumeration value="RetainShape"/>
 ```
 
-**JSON Schema定义:**
+**JSON Schema definition:**
 ```json
 "scaleImage": {
   "enum": ["Clip", "FillFrame", "RetainImage", "RealHeight", "RealSize"]
 }
 ```
 
-**不一致:**
-- ❌ Schema使用`RetainImage`，XSD使用`RetainShape`
+**Inconsistencies:**
+- ❌ The schema uses `RetainImage`; the XSD uses `RetainShape`
 
-**结论:** 必须修正
+**Conclusion:** must be fixed
 
-### 4. resetType枚举值
+### 4. resetType enum
 
-**XSD定义 (第1499-1538行):**
+**XSD definition (lines 1499-1538):**
 ```xml
 <enumeration value="None"/>
 <enumeration value="Report"/>
@@ -93,7 +93,7 @@
 <enumeration value="Master"/>
 ```
 
-**JSON Schema定义:**
+**JSON Schema definition:**
 ```json
 "resetType": {
   "enum": ["None", "Report", "Page", "Column", "Group"],
@@ -101,26 +101,26 @@
 }
 ```
 
-**不一致:**
-- ❌ Schema缺少`Master`枚举值
+**Inconsistencies:**
+- ❌ The schema is missing the `Master` value
 
-**结论:** 必须修正
+**Conclusion:** must be fixed
 
-### 5. 缺失属性定义
+### 5. Missing attribute definitions
 
-**XSD中存在但Schema缺失的属性:**
+**Attributes in the XSD but missing from the schema:**
 
-| 元素 | 缺失属性 | XSD证据 | 结论 |
+| Element | Missing attribute | XSD evidence | Conclusion |
 |------|---------|---------|------|
-| **elementBase** | `stretchType` | XSD第2417-2464行 | ❌ 必须添加 |
-| **textElement** | `textAdjust` | XSD第2504-2550行 | ❌ 必须添加 |
-| **group** | `isReprintHeaderOnEachColumn` | XSD第1812行 | ❌ 建议添加 |
-| **group** | `minDetailsToStartFromTop` | XSD第1830行 | ❌ 建议添加 |
-| **group** | `footerPosition` | XSD第1848行 | ❌ 建议添加 |
-| **line** | `direction` | XSD第1189行 | ❌ 建议添加 |
+| **elementBase** | `stretchType` | XSD lines 2417-2464 | ❌ must add |
+| **textElement** | `textAdjust` | XSD lines 2504-2550 | ❌ must add |
+| **group** | `isReprintHeaderOnEachColumn` | XSD line 1812 | ❌ recommended |
+| **group** | `minDetailsToStartFromTop` | XSD line 1830 | ❌ recommended |
+| **group** | `footerPosition` | XSD line 1848 | ❌ recommended |
+| **line** | `direction` | XSD line 1189 | ❌ recommended |
 
-**stretchType枚举值 (XSD第2417-2464行):**
-- `NoStretch` (默认)
+**stretchType values (XSD lines 2417-2464):**
+- `NoStretch` (default)
 - `RelativeToTallestObject`
 - `RelativeToBandHeight`
 - `ElementGroupBottom`
@@ -128,48 +128,48 @@
 - `ContainerBottom`
 - `ContainerHeight`
 
-**textAdjust枚举值 (XSD第2504-2550行):**
-- `CutText` (默认)
+**textAdjust values (XSD lines 2504-2550):**
+- `CutText` (default)
 - `StretchHeight`
 - `StretchHeightRatio`
 - `StretchWidth`
 - `FillHeight`
 - `FillWidthRatio`
 
-**line direction枚举值 (XSD第1189行):**
-- `TopDown` (默认)
+**line direction values (XSD line 1189):**
+- `TopDown` (default)
 - `LeftRight`
 - `BottomUp`
 - `RightLeft`
 
-**group footerPosition枚举值 (XSD第1848行):**
-- `Normal` (默认)
+**group footerPosition values (XSD line 1848):**
+- `Normal` (default)
 - `AtBottom`
 - `KeepTogether`
 
-**结论:** 必须添加
+**Conclusion:** must be added
 
-### 6. Schema中存在但XSD中没有的属性
+### 6. Attributes in the schema but not in the XSD
 
-**JSON Schema中多余属性:**
+**Extra attributes in the JSON Schema:**
 
-| 元素 | 多余属性 | XSD证据 | 结论 |
+| Element | Extra attribute | XSD evidence | Conclusion |
 |------|---------|---------|------|
-| **variable** | `calculationGroup` | XSD第1548行未定义 | ❌ 应移除 |
-| **variable** | `isInitialized` | XSD第1548行未定义 | ❌ 应移除 |
-| **group** | `isKeepTogether` | XSD第1724行未定义 | ❌ 应移除 |
-| **group** | `isKeepFooterTogether` | XSD第1724行未定义 | ❌ 应移除 |
-| **group** | `isHideColumnHeader` | XSD第1724行未定义 | ❌ 应移除 |
+| **variable** | `calculationGroup` | not defined at XSD line 1548 | ❌ should remove |
+| **variable** | `isInitialized` | not defined at XSD line 1548 | ❌ should remove |
+| **group** | `isKeepTogether` | not defined at XSD line 1724 | ❌ should remove |
+| **group** | `isKeepFooterTogether` | not defined at XSD line 1724 | ❌ should remove |
+| **group** | `isHideColumnHeader` | not defined at XSD line 1724 | ❌ should remove |
 
-**结论:** 应移除
+**Conclusion:** should be removed
 
 ---
 
-## 🟢 轻微问题（XSD分析确认）
+## 🟢 Minor issues (confirmed by XSD analysis)
 
-### 7. pen属性名和枚举值
+### 7. pen attribute name and values
 
-**XSD定义 (第663-678行):**
+**XSD definition (lines 663-678):**
 ```xml
 <attribute name="pen">
   <simpleType>
@@ -185,82 +185,82 @@
 </attribute>
 ```
 
-**JSON Schema定义:**
+**JSON Schema definition:**
 ```json
 "penetration": {
   "enum": ["None", "1Point", "2Points", "4Points"]
 }
 ```
 
-**不一致:**
-- ❌ Schema使用`penetration`，XSD使用`pen`
-- ❌ Schema枚举值缺少`Thin`和`Dotted`
-- ❌ Schema使用`2Points`/`4Points`，XSD使用`2Point`/`4Point`
+**Inconsistencies:**
+- ❌ The schema uses `penetration`; the XSD uses `pen`
+- ❌ The schema values are missing `Thin` and `Dotted`
+- ❌ The schema uses `2Points`/`4Points`; the XSD uses `2Point`/`4Point`
 
-**结论:** 应修正
+**Conclusion:** should be fixed
 
 ---
 
-## ⚠️ 待验证项目
+## ⚠️ Items to verify
 
-### 需要完整依赖库验证
+### Needs the full dependency set
 
-以下项目需要完整的JasperReports依赖库进行编译验证：
+These items need the full JasperReports dependency set for compilation verification:
 
-1. **所有uuid属性验证** - 需要commons-digester等依赖
-2. **所有枚举值验证** - 需要运行时验证
-3. **所有缺失属性验证** - 需要编译测试
+1. **All uuid attributes** - need commons-digester and other dependencies
+2. **All enum values** - need runtime verification
+3. **All missing attributes** - need compilation tests
 
-**依赖缺失:**
+**Missing dependencies:**
 - `commons-digester`
 - `commons-beanutils`
 - `commons-logging`
-- 其他JasperReports依赖
+- other JasperReports dependencies
 
 ---
 
-## 📝 修复建议清单
+## 📝 Fix checklist
 
-### 立即修复（影响编译）
+### Fix now (affects compilation)
 
-1. ✅ 移除band的uuid (已完成)
-2. 移除field/variable/sortField/group的uuid
-3. 添加parameter的uuid
-4. 修正positionType枚举值
-5. 修正scaleImage枚举值
-6. 添加resetType的Master值
-7. 添加stretchType属性完整定义
-8. 添加textAdjust属性完整定义
+1. ✅ Remove uuid from band (done)
+2. Remove uuid from field/variable/sortField/group
+3. Add uuid to parameter
+4. Correct the positionType enum
+5. Correct the scaleImage enum
+6. Add the Master value to resetType
+7. Add a complete stretchType definition
+8. Add a complete textAdjust definition
 
-### 建议修复（提高一致性）
+### Recommended (improves consistency)
 
-9. 修正pen属性名和枚举值
-10. 添加缺失的group属性
-11. 移除多余的variable/group属性
-12. 添加line的direction属性
+9. Correct the pen attribute name and values
+10. Add the missing group attributes
+11. Remove the extra variable/group attributes
+12. Add the line direction attribute
 
-### 可选修复
+### Optional
 
-13. 决策markup属性处理方式
-14. 考虑调整required属性策略
+13. Decide how to handle the markup attribute
+14. Consider adjusting the required-attribute strategy
 
 ---
 
-## 🎯 总结
+## 🎯 Summary
 
-| 类别 | 已确认不一致 | 优先级 | 建议操作 |
+| Category | Confirmed inconsistencies | Priority | Suggested action |
 |------|-------------|--------|---------|
-| uuid属性 | 6项 | 🔴 高 | 立即修正 |
-| 枚举值 | 3项 | 🔴 高 | 立即修正 |
-| 缺失属性 | 6项 | 🟡 中 | 建议添加 |
-| 多余属性 | 5项 | 🟡 中 | 建议移除 |
-| 结构问题 | 3项 | 🟢 低 | 考虑修正 |
-| **总计** | **23项** | - | - |
+| uuid attributes | 6 | 🔴 high | fix now |
+| Enum values | 3 | 🔴 high | fix now |
+| Missing attributes | 6 | 🟡 medium | add |
+| Extra attributes | 5 | 🟡 medium | remove |
+| Structural issues | 3 | 🟢 low | consider fixing |
+| **Total** | **23** | - | - |
 
-**基于XSD文件分析，已确认23项不一致问题。**
+**XSD file analysis confirmed 23 inconsistencies.**
 
-**下一步:** 
-1. 下载完整的JasperReports依赖库进行本地编译验证
-2. 或启动远程编译服务器进行验证
-3. 根据验证结果更新报告
-4. 按照修复建议清单逐步修正JSON Schema
+**Next steps:** 
+1. Download the full JasperReports dependency set for local compilation verification
+2. Or start a remote compilation server for verification
+3. Update this report based on the verification results
+4. Fix the JSON Schema step by step following the fix checklist

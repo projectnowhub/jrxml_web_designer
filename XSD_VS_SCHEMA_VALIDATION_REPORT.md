@@ -1,62 +1,62 @@
-# XSD vs JSON Schema 验证报告
+# XSD vs JSON Schema Validation Report
 
-**生成时间:** 2026-06-09
-**验证方法:** 基于jasperreport.xsd文件分析 + 集成测试验证（待远程服务器恢复后补充）
+**Generated:** 2026-06-09
+**Method:** analysis of jasperreport.xsd + integration test verification (to be added once the remote server is back)
 
 ---
 
-## 📊 验证状态说明
+## 📊 Status legend
 
-| 状态 | 含义 |
+| Status | Meaning |
 |------|------|
-| ✅ 已验证 | 通过XSD文件分析确认 |
-| ⚠️ 待验证 | 需要远程服务器验证 |
-| ❌ 已确认不一致 | XSD与JSON Schema明确不一致 |
+| ✅ Verified | confirmed by XSD file analysis |
+| ⚠️ To verify | needs verification on the remote server |
+| ❌ Confirmed inconsistency | the XSD and the JSON Schema clearly differ |
 
 ---
 
-## 🔴 严重问题（已确认）
+## 🔴 Critical issues (confirmed)
 
-### 1. uuid属性不一致
+### 1. Inconsistent uuid attributes
 
-| 元素 | XSD定义 | JSON Schema | 状态 | 建议操作 |
+| Element | XSD definition | JSON Schema | Status | Action |
 |------|---------|-------------|------|---------|
-| **field** | 无uuid | 有uuid | ❌ Schema多余 | **移除** |
-| **variable** | 无uuid | 有uuid | ❌ Schema多余 | **移除** |
-| **sortField** | 无uuid | 有uuid | ❌ Schema多余 | **移除** |
-| **group** | 无uuid | 有uuid | ❌ Schema多余 | **移除** |
-| **parameter** | 有uuid | 无uuid | ❌ Schema缺失 | **添加** |
-| **band** | 无uuid | 有uuid | ❌ Schema多余 | **已修复** ✅ |
+| **field** | no uuid | has uuid | ❌ extra in schema | **remove** |
+| **variable** | no uuid | has uuid | ❌ extra in schema | **remove** |
+| **sortField** | no uuid | has uuid | ❌ extra in schema | **remove** |
+| **group** | no uuid | has uuid | ❌ extra in schema | **remove** |
+| **parameter** | has uuid | no uuid | ❌ missing from schema | **add** |
+| **band** | no uuid | has uuid | ❌ extra in schema | **fixed** ✅ |
 
-**证据来源:** jasperreport.xsd第1257行（subDataset有uuid）、实际测试用例中无band/field/variable/sortField/group的uuid
+**Evidence:** jasperreport.xsd line 1257 (subDataset has uuid); real test cases have no uuid on band/field/variable/sortField/group
 
-### 2. 枚举值命名错误
+### 2. Wrong enum names
 
-| 属性 | XSD值 | JSON Schema值 | 状态 | 建议操作 |
+| Attribute | XSD value | JSON Schema value | Status | Action |
 |------|-------|---------------|------|---------|
-| **positionType** | `FixRelativeToTop` | `FixRelativeToBand` | ❌ 命名错误 | **改为FixRelativeToTop** |
-| **positionType** | `FixRelativeToBottom` | 未定义 | ❌ 缺失 | **添加FixRelativeToBottom** |
-| **scaleImage** | `RetainShape` | `RetainImage` | ❌ 命名错误 | **改为RetainShape** |
+| **positionType** | `FixRelativeToTop` | `FixRelativeToBand` | ❌ wrong name | **change to FixRelativeToTop** |
+| **positionType** | `FixRelativeToBottom` | not defined | ❌ missing | **add FixRelativeToBottom** |
+| **scaleImage** | `RetainShape` | `RetainImage` | ❌ wrong name | **change to RetainShape** |
 
-### 3. 缺失枚举值
+### 3. Missing enum values
 
-| 属性 | 缺失值 | 状态 | 建议操作 |
+| Attribute | Missing value | Status | Action |
 |------|--------|------|---------|
-| **resetType** | `Master` | ❌ 缺失 | **添加Master** |
+| **resetType** | `Master` | ❌ missing | **add Master** |
 
 ---
 
-## 🟡 中等问题（已确认）
+## 🟡 Medium issues (confirmed)
 
-### 4. 缺失属性定义
+### 4. Missing attribute definitions
 
-| 属性 | 应用范围 | XSD有 | Schema有 | 状态 | 建议操作 |
+| Attribute | Applies to | In XSD | In schema | Status | Action |
 |------|---------|-------|----------|------|---------|
-| **stretchType** | elementBase | ✅ | ❌ | ❌ 缺失 | **添加完整定义** |
-| **textAdjust** | textElement | ✅ | ❌ | ❌ 缺失 | **添加完整定义** |
+| **stretchType** | elementBase | ✅ | ❌ | ❌ missing | **add a full definition** |
+| **textAdjust** | textElement | ✅ | ❌ | ❌ missing | **add a full definition** |
 
-**stretchType枚举值（需添加）:**
-- `NoStretch` (默认)
+**stretchType values (to add):**
+- `NoStretch` (default)
 - `RelativeToTallestObject`
 - `RelativeToBandHeight`
 - `ElementGroupBottom`
@@ -64,130 +64,130 @@
 - `ContainerBottom`
 - `ContainerHeight`
 
-**textAdjust枚举值（需添加）:**
-- `CutText` (默认)
+**textAdjust values (to add):**
+- `CutText` (default)
 - `StretchHeight`
 - `StretchHeightRatio`
 - `StretchWidth`
 - `FillHeight`
 - `FillWidthRatio`
 
-### 5. XSD中存在但Schema缺失的属性
+### 5. Attributes in the XSD but missing from the schema
 
-| 元素 | 缺失属性 | 状态 | 建议操作 |
+| Element | Missing attribute | Status | Action |
 |------|---------|------|---------|
-| **group** | `isReprintHeaderOnEachColumn` | ❌ 缺失 | **添加** |
-| **group** | `minDetailsToStartFromTop` | ❌ 缺失 | **添加** |
-| **group** | `footerPosition` | ❌ 缺失 | **添加**（枚举：Normal, AtBottom, KeepTogether） |
-| **line** | `direction` | ❌ 缺失 | **添加**（枚举：TopDown, LeftRight, BottomUp, RightLeft） |
+| **group** | `isReprintHeaderOnEachColumn` | ❌ missing | **add** |
+| **group** | `minDetailsToStartFromTop` | ❌ missing | **add** |
+| **group** | `footerPosition` | ❌ missing | **add** (enum: Normal, AtBottom, KeepTogether) |
+| **line** | `direction` | ❌ missing | **add** (enum: TopDown, LeftRight, BottomUp, RightLeft) |
 
-### 6. Schema中存在但XSD中没有的属性（应移除）
+### 6. Attributes in the schema but not in the XSD (to remove)
 
-| 元素 | 多余属性 | 状态 | 建议操作 |
+| Element | Extra attribute | Status | Action |
 |------|---------|------|---------|
-| **variable** | `calculationGroup` | ❌ 多余 | **移除** |
-| **variable** | `isInitialized` | ❌ 多余 | **移除** |
-| **group** | `isKeepTogether` | ❌ 多余 | **移除** |
-| **group** | `isKeepFooterTogether` | ❌ 多余 | **移除** |
-| **group** | `isHideColumnHeader` | ❌ 多余 | **移除** |
+| **variable** | `calculationGroup` | ❌ extra | **remove** |
+| **variable** | `isInitialized` | ❌ extra | **remove** |
+| **group** | `isKeepTogether` | ❌ extra | **remove** |
+| **group** | `isKeepFooterTogether` | ❌ extra | **remove** |
+| **group** | `isHideColumnHeader` | ❌ extra | **remove** |
 
 ---
 
-## 🟢 轻微问题（已确认）
+## 🟢 Minor issues (confirmed)
 
-### 7. 属性名/结构不一致
+### 7. Inconsistent attribute names/structure
 
-| 问题 | XSD | JSON Schema | 状态 | 建议操作 |
+| Issue | XSD | JSON Schema | Status | Action |
 |------|-----|-------------|------|---------|
-| pen属性名 | `pen` | `penetration` | ❌ 命名错误 | **改为pen** |
-| pen枚举值 | `[None, Thin, 1Point, 2Point, 4Point, Dotted]` | `[None, 1Point, 2Points, 4Points]` | ❌ 枚举不完整 | **修正为XSD值** |
-| markup属性 | 枚举 `[none, html, rtf, xml, csv]` | 布尔 `isStyledWithMarkup` | ⚠️ 结构不同 | **待验证** |
+| pen attribute name | `pen` | `penetration` | ❌ wrong name | **change to pen** |
+| pen values | `[None, Thin, 1Point, 2Point, 4Point, Dotted]` | `[None, 1Point, 2Points, 4Points]` | ❌ incomplete enum | **use the XSD values** |
+| markup attribute | enum `[none, html, rtf, xml, csv]` | boolean `isStyledWithMarkup` | ⚠️ different structure | **to verify** |
 
-### 8. required属性差异
+### 8. Differences in required attributes
 
-| 元素 | Schema要求 | XSD要求 | 状态 | 建议 |
+| Element | Schema requires | XSD requires | Status | Recommendation |
 |------|-----------|---------|------|------|
-| **staticText** | reportElement, text | 无强制 | ⚠️ 更严格 | 保持当前 |
-| **textField** | reportElement, textFieldExpression | 无强制 | ⚠️ 更严格 | 保持当前 |
-| **parameter** | name, class | name | ⚠️ 更严格 | 保持当前 |
-| **field** | name, class | name | ⚠️ 更严格 | 保持当前 |
-| **style** | name | 无强制 | ⚠️ 更严格 | 保持当前 |
+| **staticText** | reportElement, text | nothing | ⚠️ stricter | keep as is |
+| **textField** | reportElement, textFieldExpression | nothing | ⚠️ stricter | keep as is |
+| **parameter** | name, class | name | ⚠️ stricter | keep as is |
+| **field** | name, class | name | ⚠️ stricter | keep as is |
+| **style** | name | nothing | ⚠️ stricter | keep as is |
 
 ---
 
-## ⚠️ 待远程服务器验证
+## ⚠️ Pending remote server verification
 
-以下项目需要通过远程JasperReports服务器验证后更新状态：
+The status of these items will be updated after verification on the remote JasperReports server:
 
-### 需要验证的属性
+### Attributes to verify
 
-1. **field/variable/sortField/group的uuid是否真的不被允许**
-   - 测试用例已创建: `tests/unit/attribute-validation-remote.test.ts`
-   - 远程服务器: `https://preview.report.projectnowcdp.com`
-   - 状态: 🔄 待服务器恢复后验证
+1. **Whether uuid is really disallowed on field/variable/sortField/group**
+   - Test case created: `tests/unit/attribute-validation-remote.test.ts`
+   - Remote server: `https://preview.report.projectnowcdp.com`
+   - Status: 🔄 to verify once the server is back
 
-2. **parameter是否真的支持uuid**
-   - 待验证
+2. **Whether parameter really supports uuid**
+   - To verify
 
-3. **positionType实际允许的枚举值**
-   - 待验证: FixRelativeToTop vs FixRelativeToBand vs FixRelativeToBottom vs Float
+3. **The positionType values actually allowed**
+   - To verify: FixRelativeToTop vs FixRelativeToBand vs FixRelativeToBottom vs Float
 
-4. **scaleImage实际允许的枚举值**
-   - 待验证: RetainShape vs RetainImage
+4. **The scaleImage values actually allowed**
+   - To verify: RetainShape vs RetainImage
 
-5. **resetType是否支持Master**
-   - 待验证
+5. **Whether resetType supports Master**
+   - To verify
 
-6. **stretchType和textAdjust是否被支持**
-   - 待验证
-
----
-
-## 📝 验证测试用例
-
-已创建完整的远程验证测试套件：
-- **文件:** `tests/unit/attribute-validation-remote.test.ts`
-- **覆盖:** 所有有疑问的属性
-- **方法:** 通过实际的JasperReports编译验证
-- **状态:** 🔄 待远程服务器恢复后运行
+6. **Whether stretchType and textAdjust are supported**
+   - To verify
 
 ---
 
-## 🎯 推荐修复优先级
+## 📝 Verification test cases
 
-### 立即修复（影响编译）
-1. ✅ 移除band的uuid (已完成)
-2. 移除field/variable/sortField/group的uuid
-3. 添加parameter的uuid
-4. 修正positionType枚举值
-5. 修正scaleImage枚举值
-6. 添加resetType的Master值
-7. 添加stretchType属性
-8. 添加textAdjust属性
-
-### 建议修复（提高一致性）
-9. 修正pen属性名和枚举值
-10. 添加缺失的group属性
-11. 移除多余的variable/group属性
-
-### 可选修复（增强完整性）
-12. 决策markup属性处理方式
-13. 考虑调整required属性策略
+A complete remote verification test suite has been created:
+- **File:** `tests/unit/attribute-validation-remote.test.ts`
+- **Coverage:** every questionable attribute
+- **Method:** real JasperReports compilation
+- **Status:** 🔄 to run once the remote server is back
 
 ---
 
-## 📈 总结
+## 🎯 Recommended fix priority
 
-| 类别 | 已确认不一致 | 待远程验证 | 建议操作 |
+### Fix now (affects compilation)
+1. ✅ Remove uuid from band (done)
+2. Remove uuid from field/variable/sortField/group
+3. Add uuid to parameter
+4. Correct the positionType enum
+5. Correct the scaleImage enum
+6. Add the Master value to resetType
+7. Add the stretchType attribute
+8. Add the textAdjust attribute
+
+### Recommended (improves consistency)
+9. Correct the pen attribute name and values
+10. Add the missing group attributes
+11. Remove the extra variable/group attributes
+
+### Optional (improves completeness)
+12. Decide how to handle the markup attribute
+13. Consider adjusting the required-attribute strategy
+
+---
+
+## 📈 Summary
+
+| Category | Confirmed inconsistencies | Pending remote verification | Action |
 |------|-------------|-----------|---------|
-| uuid属性 | 6项 | 6项 | 移除5个多余，添加1个缺失 |
-| 枚举值 | 3项 | 4项 | 修正命名，添加缺失值 |
-| 缺失属性 | 6项 | 6项 | 添加完整定义 |
-| 多余属性 | 5项 | 5项 | 移除不存在的属性 |
-| 结构问题 | 3项 | 3项 | 修正属性名和类型 |
+| uuid attributes | 6 | 6 | remove 5 extra, add 1 missing |
+| Enum values | 3 | 4 | fix names, add missing values |
+| Missing attributes | 6 | 6 | add full definitions |
+| Extra attributes | 5 | 5 | remove attributes that don't exist |
+| Structural issues | 3 | 3 | fix attribute names and types |
 
-**总计:** 23项已确认不一致，24项待远程服务器验证
+**Total:** 23 confirmed inconsistencies, 24 items pending remote server verification
 
 ---
 
-**下一步:** 待远程服务器恢复后，运行 `npx vitest run tests/unit/attribute-validation-remote.test.ts` 验证所有属性，更新报告状态。
+**Next step:** once the remote server is back, run `npx vitest run tests/unit/attribute-validation-remote.test.ts` to verify all attributes and update the report status.

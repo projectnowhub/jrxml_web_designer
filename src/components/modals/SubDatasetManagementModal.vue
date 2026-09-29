@@ -267,7 +267,7 @@ const localField = ref<{
 const fieldErrors = ref<{ name?: string }>({});
 
 // Allowed field types
-const allowedFieldTypes = [
+const allowedFieldTypes = computed(() => [
   { label: t('fieldManagement.fieldTypes.string'), value: 'java.lang.String' },
   { label: t('fieldManagement.fieldTypes.integer'), value: 'java.lang.Integer' },
   { label: t('fieldManagement.fieldTypes.long'), value: 'java.lang.Long' },
@@ -277,11 +277,11 @@ const allowedFieldTypes = [
   { label: t('fieldManagement.fieldTypes.date'), value: 'java.util.Date' },
   { label: t('fieldManagement.fieldTypes.timestamp'), value: 'java.sql.Timestamp' },
   { label: t('fieldManagement.fieldTypes.byteArray'), value: 'byte[]' }
-];
+]);
 
 // Get localized field type name
 function getFieldTypeName(className: string): string {
-  const fieldType = allowedFieldTypes.find(type => type.value === className);
+  const fieldType = allowedFieldTypes.value.find(type => type.value === className);
   return fieldType ? fieldType.label : className;
 }
 

@@ -1,3 +1,4 @@
+import { DEFAULT_REPORT_FONT } from "../config/fonts.config";
 // Import type definitions
 import type { DesignElement, BandType, Band, ReportGroup } from "../types";
 import type { ReportProperties, Field, Parameter } from "./jrxml/types";
@@ -7,7 +8,7 @@ import { generateUUID } from "./jrxml/uuidGenerator";
 export type { ReportProperties, Field, Parameter } from "./jrxml/types";
 
 // Default font name
-const DEFAULT_FONT = "Noto Sans SC";
+const DEFAULT_FONT = DEFAULT_REPORT_FONT;
 
 // Helper function: ensure a coordinate value is an integer
 function toInt(value: any): number {
@@ -976,7 +977,7 @@ function generateStaticTextXML(element: any): string {
         <font`;
 
   let fontAttrs = "";
-  // Add the font name attribute (defaults to Noto Sans SC)
+  // Add the font name attribute (defaults to DEFAULT_FONT)
   fontAttrs += ` fontName="${element.fontFamily || DEFAULT_FONT}"`;
   if (element.fontSize) {
     fontAttrs += ` size="${element.fontSize}"`;
@@ -1108,7 +1109,7 @@ function generateTextFieldXML(element: any): string {
 
   // Add the font configuration
   let fontAttrs = "";
-  // Add the font name attribute (defaults to Noto Sans SC)
+  // Add the font name attribute (defaults to DEFAULT_FONT)
   fontAttrs += ` fontName="${element.fontFamily || DEFAULT_FONT}"`;
   if (element.fontSize) {
     fontAttrs += ` size="${element.fontSize}"`;

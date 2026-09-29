@@ -1,4 +1,4 @@
-import { SYSTEM_FONTS } from '../config/fonts.config';
+import { BUNDLED_FONTS, SYSTEM_FONTS } from '../config/fonts.config';
 
 const testFont = (fontFamily: string): boolean => {
   const canvas = document.createElement('canvas');
@@ -26,10 +26,10 @@ const testFont = (fontFamily: string): boolean => {
 
 export const getAvailableFonts = async (): Promise<string[]> => {
   if (typeof document === 'undefined') {
-    return [...SYSTEM_FONTS];
+    return [...BUNDLED_FONTS, ...SYSTEM_FONTS];
   }
 
-  const availableFonts: string[] = [];
+  const availableFonts: string[] = [...BUNDLED_FONTS];
 
   for (const font of SYSTEM_FONTS) {
     if (testFont(font)) {

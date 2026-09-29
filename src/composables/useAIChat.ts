@@ -5,6 +5,7 @@
  */
 
 import { ref, computed } from 'vue';
+import i18n from '@/i18n';
 import { ALL_MCP_TOOL_SCHEMAS, executeMCPTool, type MCPContext } from '@/mcp';
 import { processUserInput, type Message } from '@/mcp/aiService';
 import { useAIConfigManager } from '@/composables/useAIConfigManager';
@@ -175,7 +176,7 @@ export function useAIChat(getMcpContext?: () => MCPContext | undefined, onUpdate
       // Add a loading indicator
       const loadingMessage = addMessage({
         role: 'system',
-        content: 'AI is processing...',
+        content: i18n.global.t('ai.chat.processing'),
         isLoading: true
       });
 
@@ -204,7 +205,7 @@ export function useAIChat(getMcpContext?: () => MCPContext | undefined, onUpdate
           // Show that a tool is executing
           addMessage({
             role: 'system',
-            content: `Executing tool: ${toolCall.name}`
+            content: i18n.global.t('ai.chat.executingTool', { tool: toolCall.name })
           });
 
           // Actually execute the tool
@@ -219,8 +220,8 @@ export function useAIChat(getMcpContext?: () => MCPContext | undefined, onUpdate
           addMessage({
             role: 'tool',
             content: toolResult.success
-              ? `✅ Tool ${toolCall.name} executed successfully`
-              : `❌ Tool ${toolCall.name} failed: ${toolResult.error}`,
+              ? `✅ ${i18n.global.t('ai.chat.toolSucceeded', { tool: toolCall.name })}`
+              : `❌ ${i18n.global.t('ai.chat.toolFailed', { tool: toolCall.name, error: toolResult.error ?? '' })}`,
             toolCall,
             toolResult
           });
@@ -246,7 +247,7 @@ export function useAIChat(getMcpContext?: () => MCPContext | undefined, onUpdate
     } catch (error) {
       addMessage({
         role: 'error',
-        content: error instanceof Error ? error.message : 'Unknown error'
+        content: error instanceof Error ? error.message : i18n.global.t('common.unknownError')
       });
     } finally {
       isLoading.value = false;

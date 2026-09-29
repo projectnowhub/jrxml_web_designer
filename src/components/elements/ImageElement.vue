@@ -37,7 +37,7 @@
         @drop.prevent.stop="handleDrop"
         :title="getImageName(element) || storedFileRef"
       >
-        <span class="upload-text">{{ getImageName(element) || "Stored image" }}</span>
+        <span class="upload-text">{{ getImageName(element) || t("properties.storedImage") }}</span>
         <span class="upload-hint">{{
           isResolvingStoredImage ? t("properties.loadingImage") : t("properties.storedImagePreviewUnavailable")
         }}</span>
@@ -54,7 +54,7 @@
         @dragleave.prevent.stop="handleDragLeave"
         @drop.prevent.stop="handleDrop"
         :title="
-          t('properties.dropOrClickToUpload') || 'Drop image or click to upload'
+          t('properties.dropOrClickToUpload')
         "
       >
         <svg
@@ -69,10 +69,10 @@
           <line x1="12" y1="3" x2="12" y2="15" />
         </svg>
         <span class="upload-text">{{
-          t("properties.dropOrClickToUpload") || "Drop image or click to upload"
+          t("properties.dropOrClickToUpload")
         }}</span>
         <span class="upload-hint">{{
-          isUploading ? t("properties.uploadingImage") : "PNG, JPG, JPEG · max 4 MB"
+          isUploading ? t("properties.uploadingImage") : t("properties.imageUploadHint")
         }}</span>
       </div>
 
@@ -92,7 +92,7 @@
           class="preview-image"
           :class="{ 'is-cropped': !!croppedImageStyle }"
           :style="croppedImageStyle || imageStyle"
-          alt="Preview"
+          :alt="t('properties.imagePreview')"
           @error="handleImageError"
           @dragstart.prevent=""
         />
@@ -103,7 +103,7 @@
             class="change-image-btn"
             :class="{ 'icon-only': !showChangeImageText }"
             @click.stop="triggerFileInput"
-            :title="t('properties.changeImage') || 'Change Image'"
+            :title="t('properties.changeImage')"
           >
             <svg
               viewBox="0 0 24 24"
@@ -499,8 +499,11 @@ async function processImageFile(file: File) {
     imageError.value = false;
     emit("update-jrxml");
   } catch (error) {
+    console.error("Image upload failed:", error);
     showUploadError(
-      error instanceof ImageUploadError ? error.message : "Image upload failed",
+      error instanceof ImageUploadError
+        ? t(error.messageKey, error.params)
+        : t("imageUpload.uploadFailed"),
     );
   } finally {
     isUploading.value = false;

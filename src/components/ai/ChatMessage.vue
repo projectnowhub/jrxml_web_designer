@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { LOCALE_TAGS, type AppLocale } from '@/i18n';
 import type { ChatMessage } from '@/composables/useAIChat';
 import ToolCallDisplay from './ToolCallDisplay.vue';
 
@@ -34,9 +36,11 @@ const roleIcon = computed(() => {
   }
 });
 
+const { locale, t } = useI18n();
+
 // Format time
 const formattedTime = computed(() => {
-  return props.message.timestamp.toLocaleTimeString('zh-CN', {
+  return props.message.timestamp.toLocaleTimeString(LOCALE_TAGS[locale.value as AppLocale] ?? 'en-US', {
     hour: '2-digit',
     minute: '2-digit'
   });
@@ -69,13 +73,13 @@ async function copyMessage() {
       <!-- Header -->
       <div class="message-header">
         <span class="role-icon">{{ roleIcon }}</span>
-        <span class="role-name">{{ message.role === 'user' ? 'You' : 'AI Assistant' }}</span>
+        <span class="role-name">{{ message.role === 'user' ? t('ai.message.you') : t('ai.title') }}</span>
         <span class="timestamp">{{ formattedTime }}</span>
         <button
           v-if="message.role === 'assistant' && message.content"
           class="copy-btn"
           @click="copyMessage"
-          :title="copied ? 'Copied' : 'Copy message'"
+          :title="copied ? t('ai.message.copied') : t('ai.message.copy')"
         >
           <svg v-if="!copied" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           <span v-else>✓</span>

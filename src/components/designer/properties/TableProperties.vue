@@ -1,15 +1,15 @@
 <template>
   <div class="prop-panel table-properties">
-    <h4 class="prop-heading-md">Table Properties</h4>
+    <h4 class="prop-heading-md">{{ t("properties.tableProperties") }}</h4>
 
     <!-- Data Source Info -->
     <div class="prop-form-group">
-      <label class="prop-label">Table Data Source</label>
+      <label class="prop-label">{{ t("table.dataSource") }}</label>
       <input
         :value="element.dataset?.name || 'Main Table Data'"
         @input="updateDatasetProperty('name', ($event.target as HTMLInputElement).value)"
         type="text"
-        placeholder="e.g. Sales Orders"
+        :placeholder="t('table.dataSourcePlaceholder')"
         class="prop-input"
       />
     </div>
@@ -19,12 +19,12 @@
 
     <!-- Table styles -->
     <div class="prop-form-group">
-      <h5 class="prop-heading-sm">Table styles</h5>
+      <h5 class="prop-heading-sm">{{ t("table.styles") }}</h5>
 
       <div class="prop-style-select">
         <!-- Table header style -->
         <div>
-          <label>Table header style</label>
+          <label>{{ t("table.tableHeaderStyle") }}</label>
           <select
             :value="element.styles?.tableHeader || 'Table_TH'"
             @input="updateStyleProperty('tableHeader', ($event.target as HTMLSelectElement).value)"
@@ -36,7 +36,7 @@
 
         <!-- Column header style -->
         <div>
-          <label>Column header style</label>
+          <label>{{ t("table.columnHeaderStyle") }}</label>
           <select
             :value="element.styles?.columnHeader || 'Table_CH'"
             @input="updateStyleProperty('columnHeader', ($event.target as HTMLSelectElement).value)"
@@ -48,7 +48,7 @@
 
         <!-- Detail style -->
         <div>
-          <label>Detail style</label>
+          <label>{{ t("table.detailStyle") }}</label>
           <select
             :value="element.styles?.detail || 'Table_TD'"
             @input="updateStyleProperty('detail', ($event.target as HTMLSelectElement).value)"
@@ -60,7 +60,7 @@
 
         <!-- Column footer style -->
         <div>
-          <label>Column footer style</label>
+          <label>{{ t("table.columnFooterStyle") }}</label>
           <select
             :value="element.styles?.columnFooter || 'Table_CH'"
             @input="updateStyleProperty('columnFooter', ($event.target as HTMLSelectElement).value)"
@@ -72,7 +72,7 @@
 
         <!-- Table footer style -->
         <div>
-          <label>Table footer style</label>
+          <label>{{ t("table.tableFooterStyle") }}</label>
           <select
             :value="element.styles?.tableFooter || 'Table_TH'"
             @input="updateStyleProperty('tableFooter', ($event.target as HTMLSelectElement).value)"
@@ -92,8 +92,8 @@
       <SwitchControl
         :model-value="element.printHeaders !== false"
         @update:model-value="updateProperty('printHeaders', $event)"
-        label="Print headers"
-        description="Whether to print the table headers"
+        :label="t('table.printHeaders')"
+        :description="t('table.printHeadersDescription')"
       />
     </div>
 
@@ -102,21 +102,21 @@
 
     <!-- Row group management -->
     <div class="prop-form-group">
-      <h5 class="prop-heading-sm">Row groups</h5>
+      <h5 class="prop-heading-sm">{{ t("table.rowGroups") }}</h5>
       <div class="prop-list">
         <div
           v-for="(group, index) in element.rowGroups || []"
           :key="index"
           class="prop-list-item"
         >
-          <span class="prop-list-item-name">{{ group.name || `Group ${Number(index) + 1}` }}</span>
+          <span class="prop-list-item-name">{{ group.name || t('table.groupName', { number: Number(index) + 1 }) }}</span>
           <div class="prop-list-item-actions">
-            <button @click="removeRowGroup(Number(index))" class="prop-btn-danger prop-btn-sm">Delete</button>
+            <button @click="removeRowGroup(Number(index))" class="prop-btn-danger prop-btn-sm">{{ t("actions.delete") }}</button>
           </div>
         </div>
-        <div v-if="!element.rowGroups || element.rowGroups.length === 0" class="prop-hint" style="padding: 8px 12px;">No row groups yet</div>
+        <div v-if="!element.rowGroups || element.rowGroups.length === 0" class="prop-hint" style="padding: 8px 12px;">{{ t("table.noRowGroups") }}</div>
       </div>
-      <button @click="addRowGroup" class="prop-btn-default" style="width: 100%; margin-top: 8px;">Add row group</button>
+      <button @click="addRowGroup" class="prop-btn-default" style="width: 100%; margin-top: 8px;">{{ t("table.addRowGroup") }}</button>
     </div>
 
     <!-- Divider -->
@@ -124,13 +124,13 @@
 
     <!-- Style inheritance -->
     <div class="prop-form-group">
-      <label class="prop-label">Parent style</label>
+      <label class="prop-label">{{ t("styleManagement.parentStyle") }}</label>
       <select
         :value="element.parentStyle || ''"
         @input="updateProperty('parentStyle', ($event.target as HTMLSelectElement).value)"
         class="prop-select"
       >
-        <option value="">None</option>
+        <option value="">{{ t("properties.none") }}</option>
         <option v-for="style in availableStyles" :key="style" :value="style">{{ style }}</option>
       </select>
     </div>
@@ -138,7 +138,10 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import SwitchControl from './common/SwitchControl.vue';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   element: any;

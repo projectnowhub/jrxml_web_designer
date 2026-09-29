@@ -39,11 +39,13 @@ vi.mock('vue-i18n', () => {
   // Create a simple mock i18n instance
   const mockI18nInstance = {
     global: {
+      t: mockT,
+      te: () => true,
       locale: {
-        value: 'zh-CN'
+        value: 'en'
       },
       messages: {
-        'zh-CN': {
+        en: {
           app: {
             title: 'PDF Template Designer'
           }
@@ -56,8 +58,9 @@ vi.mock('vue-i18n', () => {
     createI18n: () => mockI18nInstance,
     useI18n: () => ({
       t: mockT,
-      locale: 'zh-CN',
-      availableLocales: ['zh-CN', 'en']
+      te: () => true,
+      locale: 'en',
+      availableLocales: ['en', 'ms']
     })
   }
 })

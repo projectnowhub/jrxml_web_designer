@@ -101,6 +101,8 @@ npm run test:watch   # Watch mode
 - TypeScript strict mode
 - Vue 3 `<script setup>` composition API
 - No external state management library — reactive refs in components
-- i18n via vue-i18n (zh-CN default)
+- i18n via vue-i18n: English (`en`, default) and Malay (`ms`); all text outside `src/locales/ms.json` is English; locale files in `src/locales/`, choice stored in localStorage (`appLocale`)
+- User-visible text always goes through a translation key; never hard-code UI text
+- Default report font: DejaVu Sans (`DEFAULT_REPORT_FONT` in `src/config/fonts.config.ts`), bundled in `public/fonts/dejavu/` and shipped with JasperReports
 - JRXML namespace: `http://jasperreports.sourceforge.net/jasperreports`
 - Element UUIDs required by JasperReports XSD

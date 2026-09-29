@@ -2,23 +2,23 @@
   <div class="home-content">
     <div class="content-heading">
       <div>
-        <span class="eyebrow">Template workspace</span>
-        <h1>Good morning, {{ userName }}</h1>
-        <p>Create, organize, and manage your report templates.</p>
+        <span class="eyebrow">{{ t("home.eyebrow") }}</span>
+        <h1>{{ t("home.greeting", { name: displayName }) }}</h1>
+        <p>{{ t("home.subtitle") }}</p>
       </div>
     </div>
     <section class="section-block">
       <div class="section-heading">
-        <h2>Recent templates</h2>
+        <h2>{{ t("home.recentTemplates") }}</h2>
         <button class="view-all" type="button">
-          View all <ArrowRight :size="15" :stroke-width="2.25" />
+          {{ t("home.viewAll") }} <ArrowRight :size="15" :stroke-width="2.25" />
         </button>
       </div>
       <div class="template-grid">
         <article class="template-card new-card" @click="goToDesigner">
           <div class="new-icon">+</div>
-          <strong>Create a new template</strong
-          ><span>Start with a blank JRXML report</span>
+          <strong>{{ t("home.createNewTemplate") }}</strong
+          ><span>{{ t("home.createNewTemplateHint") }}</span>
         </article>
         <article
           v-for="template in templates"
@@ -32,14 +32,14 @@
           <div class="template-info">
             <div class="template-title">
               <strong>{{ template.name }}</strong
-              ><button type="button" aria-label="More options">
+              ><button type="button" :aria-label="t('home.moreOptions')">
                 <MoreHorizontal :size="17" :stroke-width="2.25" />
               </button>
             </div>
             <span>{{ template.updated }}</span>
             <div class="owner-row">
-              <i>{{ template.owner.charAt(0) }}</i> Created by
-              {{ template.owner }}
+              <i>{{ template.owner.charAt(0) }}</i>
+              {{ t("home.createdBy", { name: template.owner }) }}
             </div>
           </div>
         </article>
@@ -47,25 +47,27 @@
     </section>
     <section class="section-block shared-section">
       <div class="section-heading">
-        <h2>Shared with you</h2>
-        <span class="muted-label">Recently accessed</span>
+        <h2>{{ t("home.sharedWithYou") }}</h2>
+        <span class="muted-label">{{ t("home.recentlyAccessed") }}</span>
       </div>
       <div class="empty-state">
         <div><Inbox :size="32" :stroke-width="2" /></div>
-        <strong>No shared templates yet</strong
-        ><span>Templates shared with you will appear here.</span>
+        <strong>{{ t("home.noSharedTemplates") }}</strong
+        ><span>{{ t("home.noSharedTemplatesHint") }}</span>
       </div>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { ArrowRight, Inbox, MoreHorizontal } from "@lucide/vue";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
 import { getTemplates } from "../services";
 
+const { t } = useI18n();
 const router = useRouter();
 const storedUser = JSON.parse(
   localStorage.getItem(AUTH_USER_KEY) ?? "{}",
@@ -75,27 +77,30 @@ const storedUser = JSON.parse(
   username?: string;
   email?: string;
 };
-const userName = storedUser.firstName ?? "Designer";
-const templates = [
+const displayName = computed(
+  () => storedUser.firstName ?? t("home.defaultUserName"),
+);
+// Placeholder cards until the templates API is wired up
+const templates = computed(() => [
   {
-    name: "Monthly sales report",
-    updated: "Edited today at 10:24 AM",
-    owner: userName,
+    name: t("home.sampleTemplates.monthlySales"),
+    updated: t("home.sampleTemplates.editedTodayAt", { time: "10:24 AM" }),
+    owner: displayName.value,
     tone: "violet",
   },
   {
-    name: "Customer invoice",
-    updated: "Edited yesterday",
+    name: t("home.sampleTemplates.customerInvoice"),
+    updated: t("home.sampleTemplates.editedYesterday"),
     owner: "Ava Morgan",
     tone: "blue",
   },
   {
-    name: "Operations summary",
-    updated: "Edited Sep 02, 2026",
+    name: t("home.sampleTemplates.operationsSummary"),
+    updated: t("home.sampleTemplates.editedOn", { date: "Sep 02, 2026" }),
     owner: "Liam Chen",
     tone: "green",
   },
-];
+]);
 
 const goToDesigner = () => {
   router.push("/designer");

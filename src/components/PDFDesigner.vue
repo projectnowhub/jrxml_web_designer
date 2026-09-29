@@ -21,22 +21,22 @@
             @focus="isTitleEditing = true"
             @blur="handleHeaderTitleCommit"
             @keydown.enter.prevent="onTitleEnter"
-            placeholder="Untitled Report"
-            :title="t('fileManager.renameFile') || 'Click to rename report'"
+            :placeholder="t('editorHeader.untitledReport')"
+            :title="t('editorHeader.renameReport')"
           />
           <div class="auto-save-badge" :title="saveStatusTitle">
             <span v-if="saveStatus === 'saving'" class="save-status-text saving">
               <span class="save-spinner"></span>
-              Saving...
+              {{ t("editorHeader.saving") }}
             </span>
             <span v-else-if="saveStatus === 'error'" class="save-status-text error">
-              Save failed
+              {{ t("editorHeader.saveFailed") }}
             </span>
             <span v-else class="save-status-text saved">
               <svg class="saved-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              Saved
+              {{ t("editorHeader.saved") }}
             </span>
           </div>
         </div>
@@ -84,17 +84,17 @@
            <button
             class="toolbar-btn add-page-btn"
             @click="addNewPage"
-            title="Add New Page"
+            :title="t('editorHeader.addNewPage')"
           >
             <FilePlus :size="16" :stroke-width="2" aria-hidden="true" />
           </button>
-          <button class="toolbar-btn" @click="deleteElement" :title="t('actions.delete') || 'Delete'">
+          <button class="toolbar-btn" @click="deleteElement" :title="t('actions.delete')">
             <Trash2 :size="16" :stroke-width="2" aria-hidden="true" />
           </button>
-          <button class="toolbar-btn" @click="copyElement" :title="t('actions.copy') || 'Copy'">
+          <button class="toolbar-btn" @click="copyElement" :title="t('actions.copy')">
             <Copy :size="16" :stroke-width="2" aria-hidden="true" />
           </button>
-          <button class="toolbar-btn" @click="pasteElement" :title="t('actions.paste') || 'Paste'">
+          <button class="toolbar-btn" @click="pasteElement" :title="t('actions.paste')">
             <ClipboardPaste :size="16" :stroke-width="2" aria-hidden="true" />
           </button>
         </div>
@@ -168,10 +168,13 @@
           ]"
         />
 
-        <!-- 10. My Act -->
+        <!-- 10. Language -->
+        <LanguageSwitcher />
+
+        <!-- 11. My Act -->
         <div class="my-act-menu">
           <n-button type="default" @click="showMyActMenu = !showMyActMenu">
-            My Act
+            {{ t("editorHeader.myAccount") }}
             <ChevronDown
               class="dropdown-arrow"
               :size="14"
@@ -187,7 +190,7 @@
               @click="handleSignOut"
             >
               <LogOut :size="16" :stroke-width="2.25" aria-hidden="true" />
-              <span>Sign out</span>
+              <span>{{ t("editorHeader.signOut") }}</span>
             </button>
           </div>
         </div>
@@ -207,7 +210,12 @@
 
     <!-- Band height adjustment tooltip -->
     <div v-if="resizingBandInfo.visible" class="band-height-display">
-      {{ resizingBandInfo.bandName }} Height: {{ resizingBandInfo.height }}px
+      {{
+        t("editorHeader.bandHeight", {
+          bandName: resizingBandInfo.bandName,
+          height: resizingBandInfo.height,
+        })
+      }}
     </div>
 
     <div class="designer-layout">
@@ -359,20 +367,20 @@
             :class="{ active: rightPanelTab === 'properties' }"
             @click="rightPanelTab = 'properties'"
           >
-            Properties
+            {{ t("properties.title") }}
           </button>
           <button
             class="right-panel-tab"
             :class="{ active: rightPanelTab === 'ai' }"
             @click="rightPanelTab = 'ai'"
           >
-            🤖 AI Assistant
+            🤖 {{ t("ai.title") }}
           </button>
           <button
             v-if="rightPanelTab === 'ai'"
             class="right-panel-settings-btn"
             @click="toggleAISettings"
-            title="Configure AI service"
+            :title="t('ai.configure')"
           >
             ⚙️
           </button>
@@ -439,8 +447,7 @@
     <DragFeedbackLayer :feedback="dragFeedback" />
 
     <!-- Help modal -->
-    <HelpModal v-if="locale === 'zh'" v-model:visible="showHelp" />
-    <HelpModalEn v-else v-model:visible="showHelp" />
+    <HelpModal v-model:visible="showHelp" />
 
     <!-- Field management modal -->
     <FieldManagementModal
@@ -489,14 +496,14 @@
     <!-- Group name input dialog -->
     <BaseModal
       v-model:visible="showGroupDialog"
-      title="Add columns to group"
+      :title="t('editor.groupDialog.title')"
       :contentClass="'group-dialog'"
       :useVShow="true"
       @confirm="confirmJoinColumnsToGroup"
     >
       <div class="group-dialog-content">
         <div class="form-group">
-          <label>Select an existing group or enter a new group name:</label>
+          <label>{{ t("editor.groupDialog.label") }}</label>
           <n-select
             v-model:value="groupDialogState.selectedGroupName"
             :options="
@@ -505,7 +512,7 @@
                 value: group.name,
               }))
             "
-            placeholder="Select an existing group or enter a new name"
+            :placeholder="t('editor.groupDialog.placeholder')"
             filterable
             tag
             style="width: 100%; margin-top: 8px"
@@ -557,7 +564,7 @@
                 d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
               />
             </svg>
-            Copy
+            {{ t("actions.copy") }}
           </div>
           <div
             class="context-menu-item"
@@ -575,7 +582,7 @@
               />
               <rect x="8" y="2" width="8" height="4" rx="1" />
             </svg>
-            Paste
+            {{ t("actions.paste") }}
           </div>
           <div class="context-menu-divider"></div>
           <div
@@ -593,7 +600,7 @@
                 d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
               />
             </svg>
-            Delete
+            {{ t("actions.delete") }}
           </div>
           <div class="context-menu-divider"></div>
           <div
@@ -609,7 +616,7 @@
             >
               <path d="M12 19V5M5 12l7-7 7 7" />
             </svg>
-            Bring to Front
+            {{ t("editor.contextMenu.bringToFront") }}
           </div>
           <div
             class="context-menu-item"
@@ -624,7 +631,7 @@
             >
               <path d="M12 5v14M19 12l-7 7-7-7" />
             </svg>
-            Send to Back
+            {{ t("editor.contextMenu.sendToBack") }}
           </div>
         </div>
         <div v-else class="context-menu-items">
@@ -632,7 +639,7 @@
             class="context-menu-item"
             @click="handleContextMenuAction('paste')"
           >
-            <span class="menu-icon">📎</span> Paste
+            <span class="menu-icon">📎</span> {{ t("actions.paste") }}
           </div>
         </div>
       </div>
@@ -644,7 +651,6 @@
 import ResizablePanel from "./panels/ResizablePanel.vue";
 import DesignerCanvas from "./designer/DesignerCanvas.vue";
 import HelpModal from "./modals/HelpModal.vue";
-import HelpModalEn from "./modals/HelpModalEn.vue";
 import FieldManagementModal from "./modals/FieldManagementModal.vue";
 import PdfPreviewModal from "./modals/PdfPreviewModal.vue";
 import SubDatasetManagementModal from "./modals/SubDatasetManagementModal.vue";
@@ -755,7 +761,7 @@ import { syncTableColumns } from "../utils/table/ColumnTreeSync";
 // Import the default JRXML example file
 import { logout } from "../services/authService";
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 
 // Tab-related state
 const activeTab = ref("pageSettings");
@@ -895,9 +901,9 @@ const isLoadingFile = ref(false);
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 const saveStatusTitle = computed(() => {
-  if (saveStatus.value === "saving") return "Saving changes...";
-  if (saveStatus.value === "error") return "Auto-save failed";
-  return "Auto-save compulsory: All changes saved automatically";
+  if (saveStatus.value === "saving") return t("editorHeader.savingTitle");
+  if (saveStatus.value === "error") return t("editorHeader.saveFailedTitle");
+  return t("editorHeader.savedTitle");
 });
 
 function flushAutoSave(): boolean {
@@ -1355,7 +1361,7 @@ const totalPages = computed(() =>
 const addNewPage = () => {
   saveStateToHistory();
   pageCount.value++;
-  notification.success(`Page ${pageCount.value} added`);
+  notification.success(t("editor.pageAdded", { page: pageCount.value }));
   updateJRXML();
 };
 
@@ -1377,7 +1383,7 @@ const deletePage = (pageIndex: number) => {
   }
   selectedElement.value = null;
   pageCount.value = Math.max(1, pageCount.value - 1);
-  notification.info(`Page ${pageIndex + 1} deleted`);
+  notification.info(t("editor.pageDeleted", { page: pageIndex + 1 }));
   updateJRXML();
 };
 
@@ -4289,7 +4295,7 @@ const copyJRXML = async (): Promise<void> => {
 const regenerateJRXML = (): void => {
   updateJRXML();
   // Show a notification message
-  notification.info("JRXML has been regenerated");
+  notification.info(t("editor.jrxmlRegenerated"));
 };
 
 // Open the PDF preview
@@ -4336,7 +4342,7 @@ const openPdfPreview = (): void => {
     });
   } catch (error) {
     console.error("Failed to preview PDF:", error);
-    alert("Failed to preview PDF, please check the console for error details");
+    alert(t("editor.previewFailed"));
   }
 };
 
@@ -4726,7 +4732,7 @@ const saveJRXML = (): void => {
     console.error("Failed to save JRXML:", error);
     notification.error(
       t("notifications.jrxmlEditSaveFailed", {
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : t("common.unknownError"),
       }),
     );
   }
@@ -5190,17 +5196,13 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
     if (type === "max") {
       if (reason === "page_full") {
         notification.info(
-          `You don't have space to extend ${bandDisplayName}. Detail band has reached its minimum height (${detailMinHeight}px).`,
+          t("editor.bandLimits.noSpace", { band: bandDisplayName, height: detailMinHeight }),
         );
       } else {
-        notification.info(
-          `${bandDisplayName} space is exceeded, change the template band setting for more space.`,
-        );
+        notification.info(t("editor.bandLimits.maxReached", { band: bandDisplayName }));
       }
     } else {
-      notification.info(
-        `Min height reached, if you don't want this ${bandDisplayName} band, please remove them.`,
-      );
+      notification.info(t("editor.bandLimits.minReached", { band: bandDisplayName }));
     }
   };
 
@@ -5802,7 +5804,10 @@ const autoFitElementHeight = (
           }
           if (requiredHeight > maxBandHeight) {
             notification.warning(
-              `${getBandDisplayName(band.type)} reached its maximum limit (${maxBandHeight}px). Text content exceeds band capacity. Consider widening the element or placing lengthy text in the Detail band.`,
+              t("editor.bandLimits.textOverflow", {
+                band: getBandDisplayName(band.type),
+                height: maxBandHeight,
+              }),
             );
           }
         }
@@ -5868,7 +5873,7 @@ const handleEditField = (field: ReportField): void => {
 
 // Handle deleting a field
 const handleDeleteField = (fieldName: string): void => {
-  if (confirm(`Are you sure you want to delete field "${fieldName}"?`)) {
+  if (confirm(t("editor.confirmDelete.field", { name: fieldName }))) {
     const fieldIndex = reportFields.value.findIndex(
       (field) => field.name === fieldName,
     );
@@ -5898,7 +5903,7 @@ const handleEditParameter = (parameter: ReportParameter): void => {
 // Handle deleting a report parameter
 const handleDeleteParameter = (parameterName: string): void => {
   if (
-    confirm(`Are you sure you want to delete parameter "${parameterName}"?`)
+    confirm(t("editor.confirmDelete.parameter", { name: parameterName }))
   ) {
     const parameterIndex = reportParameters.value.findIndex(
       (param) => param.name === parameterName,
@@ -5925,7 +5930,7 @@ const handleEditVariable = (variable: ReportVariable): void => {
 
 // Handle deleting a variable
 const handleDeleteVariable = (variableName: string): void => {
-  if (confirm(`Are you sure you want to delete variable "${variableName}"?`)) {
+  if (confirm(t("editor.confirmDelete.variable", { name: variableName }))) {
     const variableIndex = reportVariables.value.findIndex(
       (v) => v.name === variableName,
     );
@@ -5943,9 +5948,7 @@ const handleVariableSave = (variable: ReportVariable): void => {
     (v) => v.name === variable.name,
   );
   if (existingIndex !== -1 && editingVariable.value?.name !== variable.name) {
-    alert(
-      "A variable with this name already exists, please use a different name",
-    );
+    alert(t("editor.duplicateName.variable"));
     return;
   }
   if (existingIndex !== -1) {
@@ -5978,7 +5981,7 @@ const handleEditStyle = (style: any): void => {
 
 // Handle deleting a style
 const handleDeleteStyle = (styleName: string): void => {
-  if (confirm(`Are you sure you want to delete style "${styleName}"?`)) {
+  if (confirm(t("editor.confirmDelete.style", { name: styleName }))) {
     const styleIndex = reportStyles.value.findIndex(
       (s) => s.name === styleName,
     );
@@ -5996,7 +5999,7 @@ const handleStyleSave = (style: any): void => {
     (s) => s.name === style.name,
   );
   if (existingIndex !== -1 && editingStyle.value?.name !== style.name) {
-    alert("A style with this name already exists, please use a different name");
+    alert(t("editor.duplicateName.style"));
     return;
   }
   if (existingIndex !== -1) {
@@ -6040,9 +6043,7 @@ const handleFieldSave = (fieldOrParam: ReportField | ReportParameter): void => {
       editingParameter.value?.name !== fieldOrParam.name
     ) {
       // If editing and a parameter with this name already exists, show an error
-      alert(
-        "A parameter with this name already exists, please use a different name",
-      );
+      alert(t("editor.duplicateName.parameter"));
       return;
     }
 
@@ -6065,9 +6066,7 @@ const handleFieldSave = (fieldOrParam: ReportField | ReportParameter): void => {
       editingField.value?.name !== fieldOrParam.name
     ) {
       // If editing and a field with this name already exists, show an error
-      alert(
-        "A field with this name already exists, please use a different name",
-      );
+      alert(t("editor.duplicateName.field"));
       return;
     }
 

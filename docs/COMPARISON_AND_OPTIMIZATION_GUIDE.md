@@ -629,7 +629,7 @@ export class JRXMLParser {
 1. ✅ Lightweight, no installation needed, runs directly in the browser
 2. ✅ Modern UI, good user experience
 3. ✅ Complete set of basic element types (9 types)
-4. ✅ Supports Chinese/English internationalization
+4. ✅ Supports English/Malay internationalization
 5. ✅ Open-source code, easy to extend
 
 ### Main Gaps

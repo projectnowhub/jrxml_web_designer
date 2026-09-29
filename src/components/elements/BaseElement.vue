@@ -20,46 +20,46 @@
       <!-- 4 Corners -->
       <div 
         class="resize-handle resize-handle-nw"
-        title="Resize Top-Left"
+        :title="$t('resize.topLeft')"
         @mousedown.stop="(event) => handleResize('nw', event)"
       ></div>
       <div 
         class="resize-handle resize-handle-ne"
-        title="Resize Top-Right"
+        :title="$t('resize.topRight')"
         @mousedown.stop="(event) => handleResize('ne', event)"
       ></div>
       <div 
         class="resize-handle resize-handle-sw"
-        title="Resize Bottom-Left"
+        :title="$t('resize.bottomLeft')"
         @mousedown.stop="(event) => handleResize('sw', event)"
       ></div>
       <div 
         class="resize-handle resize-handle-se"
-        title="Resize Bottom-Right"
+        :title="$t('resize.bottomRight')"
         @mousedown.stop="(event) => handleResize('se', event)"
       ></div>
 
       <!-- 4 Edges -->
       <div 
         class="resize-handle resize-handle-n"
-        title="Resize Top (Double-click to Auto-fit)"
+        :title="$t('resize.topAutoFit')"
         @mousedown.stop="(event) => handleResize('n', event)"
         @dblclick.stop="handleAutoFitHeight"
       ></div>
       <div 
         class="resize-handle resize-handle-s"
-        title="Resize Bottom (Double-click to Auto-fit)"
+        :title="$t('resize.bottomAutoFit')"
         @mousedown.stop="(event) => handleResize('s', event)"
         @dblclick.stop="handleAutoFitHeight"
       ></div>
       <div 
         class="resize-handle resize-handle-w"
-        title="Resize Left"
+        :title="$t('resize.left')"
         @mousedown.stop="(event) => handleResize('w', event)"
       ></div>
       <div 
         class="resize-handle resize-handle-e"
-        title="Resize Right"
+        :title="$t('resize.right')"
         @mousedown.stop="(event) => handleResize('e', event)"
       ></div>
     </template>

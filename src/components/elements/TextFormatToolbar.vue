@@ -18,7 +18,7 @@
           type="button"
           class="format-btn"
           :class="{ 'is-active': activeFormats.bold }"
-          title="Bold (Ctrl+B)"
+          :title="t('textToolbar.bold')"
           @click="emitFormat('bold')"
         >
           <Bold :size="14" :stroke-width="2.5" />
@@ -29,7 +29,7 @@
           type="button"
           class="format-btn"
           :class="{ 'is-active': activeFormats.italic }"
-          title="Italic (Ctrl+I)"
+          :title="t('textToolbar.italic')"
           @click="emitFormat('italic')"
         >
           <Italic :size="14" :stroke-width="2.5" />
@@ -40,7 +40,7 @@
           type="button"
           class="format-btn"
           :class="{ 'is-active': activeFormats.underline }"
-          title="Underline (Ctrl+U)"
+          :title="t('textToolbar.underline')"
           @click="emitFormat('underline')"
         >
           <Underline :size="14" :stroke-width="2.5" />
@@ -51,7 +51,7 @@
           type="button"
           class="format-btn"
           :class="{ 'is-active': activeFormats.strike }"
-          title="Strikethrough"
+          :title="t('textToolbar.strikethrough')"
           @click="emitFormat('strikeThrough')"
         >
           <Strikethrough :size="14" :stroke-width="2.5" />
@@ -64,7 +64,7 @@
           type="button"
           class="format-btn color-trigger-btn"
           :class="{ 'is-active': showColorPicker || !!activeFormats.color }"
-          title="Text Color"
+          :title="t('textToolbar.textColor')"
           @click="openColorPicker"
         >
           <Palette :size="14" :stroke-width="2" />
@@ -82,7 +82,7 @@
           type="button"
           class="format-btn color-trigger-btn"
           :class="{ 'is-active': showHighlightPicker || !!activeFormats.highlight }"
-          title="Highlight Color (Background)"
+          :title="t('textToolbar.highlightTitle')"
           @click="openHighlightPicker"
         >
           <Highlighter :size="14" :stroke-width="2" />
@@ -102,7 +102,7 @@
           type="button"
           class="format-btn link-btn"
           :class="{ 'is-active': activeFormats.link || showLinkPopover }"
-          title="Insert or Edit Link (Ctrl+K)"
+          :title="t('textToolbar.link')"
           @click="openLinkPopover()"
         >
           <Link :size="14" :stroke-width="2.5" />
@@ -112,7 +112,7 @@
         <button
           type="button"
           class="format-btn"
-          title="Clear Formatting"
+          :title="t('textToolbar.clearFormatting')"
           @click="emitFormat('removeFormat')"
         >
           <RemoveFormatting :size="14" :stroke-width="2" />
@@ -122,11 +122,11 @@
       <!-- Text Color picker popover (White Theme) -->
       <div v-else-if="showColorPicker" class="color-picker-popover" @mousedown.stop>
         <div class="popover-header">
-          <span class="popover-title">Text Color</span>
+          <span class="popover-title">{{ t("textToolbar.textColor") }}</span>
           <button
             type="button"
             class="close-popover-btn"
-            title="Back"
+            :title="t('textToolbar.back')"
             @click="showColorPicker = false"
           >
             <X :size="13" />
@@ -138,11 +138,11 @@
           type="button"
           class="clear-highlight-btn"
           :class="{ 'is-active-none': !activeFormats.color }"
-          title="Automatic (Default color)"
+          :title="t('textToolbar.automaticTitle')"
           @click="applyColor('inherit')"
         >
           <span class="no-color-icon">⊘</span>
-          <span>Automatic</span>
+          <span>{{ t("textToolbar.automatic") }}</span>
         </button>
 
         <div class="color-swatches-grid">
@@ -159,7 +159,7 @@
         </div>
 
         <div class="custom-color-section">
-          <div class="custom-color-label">Custom Color</div>
+          <div class="custom-color-label">{{ t("textToolbar.customColor") }}</div>
           <div class="custom-color-controls">
             <input
               v-model="customColorInput"
@@ -180,7 +180,7 @@
               class="action-btn-primary custom-apply-btn"
               @click="applyColor(customColorInput)"
             >
-              Apply
+              {{ t("bottomPanel.apply") }}
             </button>
           </div>
         </div>
@@ -189,11 +189,11 @@
       <!-- Highlight Color popover (Background Highlighting - White Theme) -->
       <div v-else-if="showHighlightPicker" class="color-picker-popover highlight-popover" @mousedown.stop>
         <div class="popover-header">
-          <span class="popover-title">Highlight Color</span>
+          <span class="popover-title">{{ t("textToolbar.highlight") }}</span>
           <button
             type="button"
             class="close-popover-btn"
-            title="Back"
+            :title="t('textToolbar.back')"
             @click="showHighlightPicker = false"
           >
             <X :size="13" />
@@ -205,11 +205,11 @@
           type="button"
           class="clear-highlight-btn"
           :class="{ 'is-active-none': !activeFormats.highlight }"
-          title="Remove highlight"
+          :title="t('textToolbar.removeHighlight')"
           @click="applyHighlight('transparent')"
         >
           <span class="no-color-icon">⊘</span>
-          <span>No color</span>
+          <span>{{ t("textToolbar.noColor") }}</span>
         </button>
 
         <div class="color-swatches-grid highlight-swatches-grid">
@@ -220,13 +220,13 @@
             class="color-swatch-btn"
             :class="{ 'is-selected': !!activeFormats.highlight && color.value.toLowerCase() === activeFormats.highlight.toLowerCase() }"
             :style="{ backgroundColor: color.value }"
-            :title="color.name"
+            :title="t(`textToolbar.colors.${color.key}`)"
             @click="applyHighlight(color.value)"
           ></button>
         </div>
 
         <div class="custom-color-section">
-          <div class="custom-color-label">Custom Color</div>
+          <div class="custom-color-label">{{ t("textToolbar.customColor") }}</div>
           <div class="custom-color-controls">
             <input
               v-model="customHighlightInput"
@@ -247,7 +247,7 @@
               class="action-btn-primary custom-apply-btn"
               @click="applyHighlight(customHighlightInput)"
             >
-              Apply
+              {{ t("bottomPanel.apply") }}
             </button>
           </div>
         </div>
@@ -263,7 +263,7 @@
               :class="{ 'is-active': linkType === 'url' }"
               @click="switchLinkType('url')"
             >
-              <Globe :size="12" /> Web
+              <Globe :size="12" /> {{ t("textToolbar.linkWeb") }}
             </button>
             <button
               type="button"
@@ -271,7 +271,7 @@
               :class="{ 'is-active': linkType === 'email' }"
               @click="switchLinkType('email')"
             >
-              <Mail :size="12" /> Email
+              <Mail :size="12" /> {{ t("textToolbar.linkEmail") }}
             </button>
             <button
               type="button"
@@ -279,13 +279,13 @@
               :class="{ 'is-active': linkType === 'phone' }"
               @click="switchLinkType('phone')"
             >
-              <Phone :size="12" /> Phone
+              <Phone :size="12" /> {{ t("textToolbar.linkPhone") }}
             </button>
           </div>
           <button
             type="button"
             class="close-popover-btn"
-            title="Back"
+            :title="t('textToolbar.back')"
             @click="closeLinkPopover"
           >
             <X :size="13" />
@@ -295,12 +295,12 @@
         <div class="link-inputs-body">
           <!-- Text / Label Field (Google Docs style) -->
           <div class="link-input-group">
-            <label class="field-label">Text</label>
+            <label class="field-label">{{ t("textToolbar.linkText") }}</label>
             <input
               v-model="linkTextValue"
               type="text"
               class="link-text-input"
-              placeholder="Display label (optional)"
+              :placeholder="t('textToolbar.linkTextPlaceholder')"
               @keydown.enter.prevent="applyLink"
               @keydown.esc.prevent="closeLinkPopover"
               @mousedown.stop
@@ -309,7 +309,7 @@
 
           <!-- Link / Destination Field -->
           <div class="link-input-group">
-            <label class="field-label">Link</label>
+            <label class="field-label">{{ t("textToolbar.linkLabel") }}</label>
             <div class="input-row">
               <span class="input-prefix-label">{{ linkPrefixLabel }}</span>
               <input
@@ -353,10 +353,10 @@
               v-if="activeFormats.link"
               type="button"
               class="action-btn-danger"
-              title="Remove Hyperlink"
+              :title="t('textToolbar.removeLink')"
               @click="removeLink"
             >
-              <Unlink :size="13" /> Remove
+              <Unlink :size="13" /> {{ t("textToolbar.remove") }}
             </button>
             <div class="spacer"></div>
             <button
@@ -364,7 +364,7 @@
               class="action-btn-secondary"
               @click="closeLinkPopover"
             >
-              Cancel
+              {{ t("common.cancel") }}
             </button>
             <button
               type="button"
@@ -372,7 +372,7 @@
               :disabled="!currentTargetValue.trim() && !linkTextValue.trim()"
               @click="applyLink"
             >
-              Apply
+              {{ t("bottomPanel.apply") }}
             </button>
           </div>
         </div>
@@ -383,6 +383,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   Bold,
   Italic,
@@ -398,6 +399,8 @@ import {
   Mail,
   Phone,
 } from "@lucide/vue";
+
+const { t } = useI18n();
 
 // Props
 const props = defineProps<{
@@ -470,19 +473,20 @@ const presetColors = [
 ];
 
 // Google Docs inspired highlight pastel colors
+// key: translation key under textToolbar.colors
 const highlightColors = [
-  { name: "Yellow", value: "#fff566" },
-  { name: "Lime", value: "#b7eb8f" },
-  { name: "Cyan", value: "#91caff" },
-  { name: "Orange", value: "#ffd591" },
-  { name: "Pink", value: "#ffadd2" },
-  { name: "Purple", value: "#d3adf7" },
-  { name: "Soft Red", value: "#ffa39e" },
-  { name: "Light Gray", value: "#e8e8e8" },
-  { name: "Deep Yellow", value: "#faad14" },
-  { name: "Green", value: "#52c41a" },
-  { name: "Blue", value: "#1890ff" },
-  { name: "Violet", value: "#722ed1" },
+  { key: "yellow", value: "#fff566" },
+  { key: "lime", value: "#b7eb8f" },
+  { key: "cyan", value: "#91caff" },
+  { key: "orange", value: "#ffd591" },
+  { key: "pink", value: "#ffadd2" },
+  { key: "purple", value: "#d3adf7" },
+  { key: "softRed", value: "#ffa39e" },
+  { key: "lightGray", value: "#e8e8e8" },
+  { key: "deepYellow", value: "#faad14" },
+  { key: "green", value: "#52c41a" },
+  { key: "blue", value: "#1890ff" },
+  { key: "violet", value: "#722ed1" },
 ];
 
 const isNearTop = computed(() => {

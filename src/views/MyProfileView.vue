@@ -1,8 +1,8 @@
 <template>
   <section class="my-profile-view">
-    <span class="eyebrow">Account</span>
-    <h1>My Profile</h1>
-    <p>Manage your profile information and workspace identity.</p>
+    <span class="eyebrow">{{ $t("pages.account") }}</span>
+    <h1>{{ $t("pages.myProfile") }}</h1>
+    <p>{{ $t("pages.myProfileDescription") }}</p>
   </section>
 </template>
 

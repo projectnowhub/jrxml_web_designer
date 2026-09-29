@@ -2,7 +2,7 @@
   <BaseModal
     v-bind:visible="localVisible"
     @update:visible="updateVisible"
-    title="Select the columns to group"
+    :title="t('columnSelection.title')"
     :contentClass="'column-selection-dialog'"
     :useVShow="true"
     @confirm="handleConfirm"
@@ -10,20 +10,20 @@
   >
     <div class="column-selection-content">
       <div class="form-group">
-        <label>Select the region to group:</label>
+        <label>{{ t("columnSelection.region") }}</label>
         <n-radio-group v-model:value="selectedRegion" name="region">
-          <n-radio-button value="tableHeader">Table Header</n-radio-button>
-          <n-radio-button value="columnHeader">Column Header</n-radio-button>
-          <n-radio-button value="columnFooter">Column Footer</n-radio-button>
-          <n-radio-button value="tableFooter">Table Footer</n-radio-button>
+          <n-radio-button value="tableHeader">{{ t("properties.tableHeader") }}</n-radio-button>
+          <n-radio-button value="columnHeader">{{ t("properties.columnHeader") }}</n-radio-button>
+          <n-radio-button value="columnFooter">{{ t("properties.columnFooter") }}</n-radio-button>
+          <n-radio-button value="tableFooter">{{ t("properties.tableFooter") }}</n-radio-button>
         </n-radio-group>
       </div>
       <div class="form-group">
-        <label>Combined column text:</label>
-        <n-input v-model:value="groupText" placeholder="Enter the text content for the combined column" />
+        <label>{{ t("columnSelection.text") }}</label>
+        <n-input v-model:value="groupText" :placeholder="t('columnSelection.textPlaceholder')" />
       </div>
       <div class="form-group">
-        <label>Select the columns to group (only adjacent columns can be selected):</label>
+        <label>{{ t("columnSelection.columns") }}</label>
         <div class="column-list">
           <!-- Recursively display columns and groups -->
           <template v-for="(item, index) in renderItems" :key="index">
@@ -92,8 +92,8 @@
                           :disabled="true"
                         />
                       </div>
-                      <div class="child-name group-name">{{ child.name || ('Group ' + (Number(childIndex) + 1)) }}</div>
-                      <div class="group-count">({{ child.children.length }} items)</div>
+                      <div class="child-name group-name">{{ child.name || t('table.groupName', { number: Number(childIndex) + 1 }) }}</div>
+                      <div class="group-count">({{ t("columnSelection.itemCount", { count: child.children.length }) }})</div>
                     </div>
                     <div class="nested-group-children">
                       <template v-for="(nestedChild, nestedIndex) in child.children" :key="nestedChild.uuid || nestedIndex">
@@ -122,8 +122,8 @@
                                 :disabled="true"
                               />
                             </div>
-                            <div class="child-name group-name">{{ nestedChild.name || ('Group ' + (Number(nestedIndex) + 1)) }}</div>
-                            <div class="group-count">({{ nestedChild.children.length }} items)</div>
+                            <div class="child-name group-name">{{ nestedChild.name || t('table.groupName', { number: Number(nestedIndex) + 1 }) }}</div>
+                            <div class="group-count">({{ t("columnSelection.itemCount", { count: nestedChild.children.length }) }})</div>
                           </div>
                           <div class="nested-group-children">
                             <!-- Continue recursively displaying deeper nested items -->
@@ -154,11 +154,11 @@
       </div>
       
       <div v-if="errorMessage" class="error-message">
-        {{ errorMessage }}
+        {{ errorMessage ? t(errorMessage) : "" }}
       </div>
       
       <div class="selected-info" v-if="selectedColumns.length > 0">
-        {{ selectedColumns.length }} column(s) selected
+        {{ t("columnSelection.selectedCount", { count: selectedColumns.length }) }}
       </div>
     </div>
   </BaseModal>
@@ -166,6 +166,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, defineComponent } from 'vue';
+import { useI18n } from 'vue-i18n';
 import BaseModal from './BaseModal.vue';
 import { NCheckbox, NRadioGroup, NRadio, NRadioButton, NInput } from 'naive-ui';
 
@@ -194,7 +195,7 @@ const RecursiveColumnItem = defineComponent({
           :disabled="true"
         />
       </div>
-      <div class="child-name">{{ item.name || 'Column' }}</div>
+      <div class="child-name">{{ item.name || $t('properties.column') }}</div>
     </div>
     <div 
       v-else 
@@ -210,8 +211,8 @@ const RecursiveColumnItem = defineComponent({
             :disabled="true"
           />
         </div>
-        <div class="child-name group-name">{{ item.name || 'Group' }}</div>
-        <div class="group-count">({{ item.children.length }} items)</div>
+        <div class="child-name group-name">{{ item.name || $t('properties.group') }}</div>
+        <div class="group-count">({{ $t("columnSelection.itemCount", { count: item.children.length }) }})</div>
       </div>
       <div class="nested-group-children">
         <RecursiveColumnItem 
@@ -224,6 +225,8 @@ const RecursiveColumnItem = defineComponent({
     </div>
   `
 });
+
+const { t } = useI18n();
 
 // Props
 const props = defineProps<{
@@ -240,6 +243,7 @@ const emit = defineEmits<{
 
 // State
 const selectedColumns = ref<number[]>([]);
+// Translation key of the current validation error
 const errorMessage = ref('');
 const localVisible = ref(props.visible);
 const selectedRegion = ref('tableHeader');
@@ -304,7 +308,7 @@ function toggleItemSelection(item: any, index: number): void {
       selectedColumns.value.sort((a, b) => a - b);
       errorMessage.value = '';
     } else {
-      errorMessage.value = 'Only adjacent columns or groups can be selected';
+      errorMessage.value = 'columnSelection.adjacentOnly';
     }
   }
 }
@@ -321,7 +325,7 @@ function handleItemCheckboxChange(checked: boolean, item: any, index: number): v
 // Handle confirm
 function handleConfirm(): void {
   if (selectedColumns.value.length < 2) {
-    errorMessage.value = 'At least two items must be selected to group';
+    errorMessage.value = 'columnSelection.minTwo';
     return;
   }
   
@@ -331,7 +335,7 @@ function handleConfirm(): void {
     const current = sortedItems[i];
     const previous = sortedItems[i - 1];
     if (current !== undefined && previous !== undefined && current - previous !== 1) {
-      errorMessage.value = 'Only adjacent columns or groups can be selected';
+      errorMessage.value = 'columnSelection.adjacentOnly';
       return;
     }
   }

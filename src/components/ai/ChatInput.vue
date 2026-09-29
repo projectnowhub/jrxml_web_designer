@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 // Props
 const props = withDefaults(defineProps<{
@@ -8,9 +9,11 @@ const props = withDefaults(defineProps<{
   maxlength?: number;
 }>(), {
   disabled: false,
-  placeholder: 'Enter a command, e.g.: create a text field in the detail band to display the customer name',
+  placeholder: '',
   maxlength: 1000
 });
+
+const { t } = useI18n();
 
 // Emits
 const emit = defineEmits<{
@@ -63,7 +66,7 @@ function handleBlur() {
     <textarea
       :value="inputValue"
       :disabled="disabled"
-      :placeholder="placeholder"
+      :placeholder="placeholder || t('ai.input.placeholder')"
       :maxlength="maxlength"
       class="chat-input"
       @input="handleInput"
@@ -78,7 +81,7 @@ function handleBlur() {
         class="submit-btn"
         :disabled="!canSubmit"
         @click="handleSubmit"
-        title="Send message (Ctrl+Enter)"
+        :title="t('ai.input.send')"
       >
         <span class="btn-icon">➤</span>
       </button>

@@ -74,7 +74,7 @@
               @click="removeCondition(index)"
               type="button"
               class="remove-cond-btn"
-              title="Remove condition"
+              :title="t('displayRules.removeCondition')"
             >
               ✕
             </button>

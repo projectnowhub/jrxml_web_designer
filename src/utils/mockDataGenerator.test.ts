@@ -8,28 +8,27 @@ import type { ReportParameter, ReportField } from '../types';
 
 describe('mockDataGenerator', () => {
   describe('generateMockValue', () => {
-    it('generates Chinese name for name-like fields', () => {
+    it('generates a full name for name-like fields', () => {
       const value = generateMockValue('customerName', 'java.lang.String');
       expect(typeof value).toBe('string');
-      expect(value.length).toBeGreaterThanOrEqual(2);
-      expect(value.length).toBeLessThanOrEqual(4);
+      expect(value).toMatch(/^\S+( \S+)+$/);
     });
 
-    it('generates Chinese name for 姓名 field', () => {
-      const value = generateMockValue('姓名', 'java.lang.String');
+    it('generates a full name for employee fields', () => {
+      const value = generateMockValue('employee', 'java.lang.String');
       expect(typeof value).toBe('string');
-      expect(value.length).toBeGreaterThanOrEqual(2);
+      expect(value).toMatch(/^\S+( \S+)+$/);
     });
 
-    it('generates phone number for phone-like fields', () => {
+    it('generates a phone number for phone-like fields', () => {
       const value = generateMockValue('phone', 'java.lang.String');
       expect(typeof value).toBe('string');
-      expect(value).toMatch(/^1[3-9]\d{9}$/);
+      expect(value).toMatch(/^555-\d{3}-\d{4}$/);
     });
 
-    it('generates phone for 电话 field', () => {
-      const value = generateMockValue('联系电话', 'java.lang.String');
-      expect(value).toMatch(/^1[3-9]\d{9}$/);
+    it('generates a phone number for mobile fields', () => {
+      const value = generateMockValue('mobileNo', 'java.lang.String');
+      expect(value).toMatch(/^555-\d{3}-\d{4}$/);
     });
 
     it('generates email for email-like fields', () => {

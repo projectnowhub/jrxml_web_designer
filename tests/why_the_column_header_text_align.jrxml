@@ -252,7 +252,7 @@
                     <rightPen lineWidth="1" lineStyle="Solid" lineColor="#000000"/>
                   </box>
                   <textElement textAlignment="Center" verticalAlignment="Middle">
-                    <font fontName="Noto Serif SC" isUnderline="true"/>
+                    <font fontName="DejaVu Serif" isUnderline="true"/>
                   </textElement>
                   <text><![CDATA[Time Field]]></text>
                 </staticText>

@@ -1,5 +1,6 @@
 import { createApp } from "vue";
 import "./style.css";
+import "./styles/fonts.css";
 import "./styles/properties-panel.css";
 import App from "./App.vue";
 import i18n from "./i18n";

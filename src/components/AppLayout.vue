@@ -6,7 +6,9 @@
           class="menu-button"
           type="button"
           :aria-label="
-            isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'
+            isSidebarCollapsed
+              ? t('layout.expandSidebar')
+              : t('layout.collapseSidebar')
           "
           :aria-expanded="!isSidebarCollapsed"
           @click="isSidebarCollapsed = !isSidebarCollapsed"
@@ -26,16 +28,17 @@
         <input
           v-model="searchQuery"
           type="search"
-          placeholder="Search templates"
-          aria-label="Search templates"
+          :placeholder="t('layout.searchTemplates')"
+          :aria-label="t('layout.searchTemplates')"
         />
         <kbd>/</kbd>
       </label>
       <div class="topbar-actions">
-        <button class="icon-button" type="button" aria-label="Help">
+        <LanguageSwitcher />
+        <button class="icon-button" type="button" :aria-label="t('layout.help')">
           <CircleHelp :size="20" :stroke-width="2.25" aria-hidden="true" />
         </button>
-        <button class="icon-button" type="button" aria-label="Notifications">
+        <button class="icon-button" type="button" :aria-label="t('layout.notifications')">
           <Bell :size="20" :stroke-width="2.25" aria-hidden="true" />
         </button>
         <div ref="accountMenuRef" class="account-menu">
@@ -57,7 +60,7 @@
             <div class="account-popover-divider" />
             <button class="account-action" type="button" @click="goToMyProfile">
               <UserRound :size="17" :stroke-width="2.25" aria-hidden="true" />
-              <span>My profile</span>
+              <span>{{ t("layout.myProfile") }}</span>
             </button>
             <button
               class="account-action sign-out"
@@ -65,7 +68,7 @@
               @click="signOut"
             >
               <LogOut :size="17" :stroke-width="2.25" aria-hidden="true" />
-              <span>Sign out</span>
+              <span>{{ t("layout.signOut") }}</span>
             </button>
           </div>
         </div>
@@ -84,7 +87,7 @@
             class="nav-item"
             :class="{ active: route.name === menu.routeName }"
             type="button"
-            :title="menu.label"
+            :title="t(menu.labelKey)"
             @click="router.push(menu.route)"
           >
             <component
@@ -93,16 +96,16 @@
               :size="19"
               :stroke-width="2.25"
             />
-            <span>{{ menu.label }}</span>
+            <span>{{ t(menu.labelKey) }}</span>
           </button>
         </nav>
-        <div class="sidebar-footer"><i /> All systems operational</div>
+        <div class="sidebar-footer"><i /> {{ t("layout.allSystemsOperational") }}</div>
       </aside>
       <button
         v-if="!isSidebarCollapsed"
         class="sidebar-backdrop"
         type="button"
-        aria-label="Close navigation"
+        :aria-label="t('layout.closeNavigation')"
         @click="isSidebarCollapsed = true"
       />
       <main class="main-content">
@@ -115,6 +118,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import { RouterView, useRoute, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import {
   Activity,
   Bell,
@@ -128,22 +132,25 @@ import {
 } from "@lucide/vue";
 import { getStoredUser } from "../utils/auth";
 import { logout } from "../services/authService";
+import LanguageSwitcher from "./common/LanguageSwitcher.vue";
+
+const { t } = useI18n();
 
 const sidebarMenus = [
   {
-    label: "Templates",
+    labelKey: "layout.templates",
     route: "/",
     routeName: "home",
     icon: LayoutTemplate,
   },
   {
-    label: "My templates",
+    labelKey: "layout.myTemplates",
     route: "/mytemplates",
     routeName: "mytemplates",
     icon: Files,
   },
   {
-    label: "Activity",
+    labelKey: "layout.activity",
     route: "/activity",
     routeName: "activity",
     icon: Activity,
@@ -271,6 +278,9 @@ button:active {
 .account-button {
   display: flex;
   align-items: center;
+}
+.topbar-actions > .language-switcher {
+  margin-right: 8px;
 }
 .brand-wrap {
 }
@@ -703,7 +713,7 @@ button:active {
   .search-box kbd {
     display: none;
   }
-  .topbar-actions .icon-button:first-child {
+  .topbar-actions .icon-button:first-of-type {
     display: none;
   }
   .sidebar-collapsed .sidebar {

@@ -39,7 +39,7 @@ textarea {
   line-height: inherit;
 }
 
-/* 防止拖拽时的默认行为 */
+/* Prevent the default behaviour while dragging */
 * {
   user-select: none;
   -webkit-user-select: none;
@@ -47,7 +47,7 @@ textarea {
   -ms-user-select: none;
 }
 
-/* 允许输入框文本选择 */
+/* Allow text selection in inputs */
 input,
 textarea {
   user-select: text;

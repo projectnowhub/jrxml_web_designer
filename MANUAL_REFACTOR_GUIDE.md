@@ -1,58 +1,58 @@
-# 子元素顺序重构 - 需要手动执行
+# Child Element Order Restructure - Manual Steps Required
 
-## ⚠️ 重要说明
+## ⚠️ Important
 
-由于Edit工具限制，子元素顺序重构**未能自动应用**。需要手动修改。
+Because of Edit tool limitations, the child element order restructure **could not be applied automatically**. It has to be changed by hand.
 
-## 📋 当前代码问题
+## 📋 Current code issues
 
-### 当前顺序（不正确）
+### Current order (incorrect)
 ```
-1. reportFont (75行) ← 应该在第5位
-2. properties (78-85行) ← 应该在第1位
-3. styles (87-96行) ← 位置正确
-4. parameters (98-110行) ← 应该在第9位
-5. queryString (112-115行) ← 位置正确
-6. subDatasets (117-166行) ← 应该在第7位
-7. fields (168行) ← 位置正确
-8. variables (193行) ← 位置正确
-9. groups (223行) ← 位置正确
+1. reportFont (line 75) ← should be 5th
+2. properties (lines 78-85) ← should be 1st
+3. styles (lines 87-96) ← correct position
+4. parameters (lines 98-110) ← should be 9th
+5. queryString (lines 112-115) ← correct position
+6. subDatasets (lines 117-166) ← should be 7th
+7. fields (line 168) ← correct position
+8. variables (line 193) ← correct position
+9. groups (line 223) ← correct position
 ```
 
-### XSD规范要求的正确顺序
+### Correct order required by the XSD
 ```
-1. properties ← 应该在最前
-2-4. propertyExpressions, imports, templates (暂未实现)
-5. reportFonts ← 应该在styles之前
+1. properties ← should come first
+2-4. propertyExpressions, imports, templates (not implemented yet)
+5. reportFonts ← should come before styles
 6. styles
-7. subDatasets ← 应该在parameters之前
-8. scriptlets (暂未实现)
-9. parameters ← 应该在subDatasets之后
+7. subDatasets ← should come before parameters
+8. scriptlets (not implemented yet)
+9. parameters ← should come after subDatasets
 10. queryString
 11. fields
-12. sortFields (暂未实现)
+12. sortFields (not implemented yet)
 13. variables
-14. filterExpression (暂未实现)
+14. filterExpression (not implemented yet)
 15. groups
 16-25. Bands
 ```
 
 ---
 
-## 🔧 手动修改指南
+## 🔧 Manual change guide
 
-### 步骤1: 交换reportFont和properties的位置
+### Step 1: Swap reportFont and properties
 
-**当前代码（第72-85行）**:
+**Current code (lines 72-85)**:
 ```typescript
 let jrxml = buildJasperReportOpenTag(safeProperties);
 
-// 报表级默认字体
+// Report-level default font
 jrxml += `  <reportFont name="reportFont" fontName="${DEFAULT_FONT}"/>\n`;
 
-// 添加报表属性（property元素）
+// Add report properties (property elements)
 if (reportProperties && reportProperties.length > 0) {
-  jrxml += "\n  <!-- 报表属性 -->\n";
+  jrxml += "\n  <!-- Report properties -->\n";
   reportProperties.forEach((prop) => {
     if (prop.name && prop.value) {
       jrxml += `  <property name="${prop.name}" value="${prop.value}"/>\n`;
@@ -61,15 +61,15 @@ if (reportProperties && reportProperties.length > 0) {
 }
 ```
 
-**应该改为**:
+**Change to**:
 ```typescript
 let jrxml = buildJasperReportOpenTag(safeProperties);
 
 // ============================================================
-// 顺序1: properties (报表属性)
+// Order 1: properties (report properties)
 // ============================================================
 if (reportProperties && reportProperties.length > 0) {
-  jrxml += "\n  <!-- 报表属性 -->\n";
+  jrxml += "\n  <!-- Report properties -->\n";
   reportProperties.forEach((prop) => {
     if (prop.name && prop.value) {
       jrxml += `  <property name="${prop.name}" value="${prop.value}"/>\n`;
@@ -78,117 +78,117 @@ if (reportProperties && reportProperties.length > 0) {
 }
 
 // ============================================================
-// 顺序2-4: propertyExpressions, imports, templates (暂未实现)
+// Order 2-4: propertyExpressions, imports, templates (not implemented yet)
 // ============================================================
 
 // ============================================================
-// 顺序5: reportFonts (报表字体定义)
+// Order 5: reportFonts (report font definitions)
 // ============================================================
-jrxml += "\n  <!-- 报表字体定义 -->\n";
+jrxml += "\n  <!-- Report font definitions -->\n";
 jrxml += `  <reportFont name="reportFont" fontName="${DEFAULT_FONT}"/>\n`;
 ```
 
-### 步骤2: 交换parameters和subDatasets的位置
+### Step 2: Swap parameters and subDatasets
 
-**当前顺序**:
+**Current order**:
 ```
-4. parameters (98-110行)
-5. queryString (112-115行)
-6. subDatasets (117-166行)
+4. parameters (lines 98-110)
+5. queryString (lines 112-115)
+6. subDatasets (lines 117-166)
 ```
 
-**应该改为**:
+**Change to**:
 ```
-7. subDatasets (移到parameters之前)
-8. scriptlets (暂未实现)
-9. parameters (移到queryString之前)
+7. subDatasets (moved before parameters)
+8. scriptlets (not implemented yet)
+9. parameters (moved before queryString)
 10. queryString
 ```
 
-### 步骤3: 添加注释标记
+### Step 3: Add section comments
 
-在每个部分添加清晰的注释标记：
+Add a clear comment to each section:
 ```typescript
 // ============================================================
-// 顺序1: properties (报表属性)
+// Order 1: properties (report properties)
 // ============================================================
 
 // ============================================================
-// 顺序5: reportFonts (报表字体定义)
+// Order 5: reportFonts (report font definitions)
 // ============================================================
 
 // ============================================================
-// 顺序6: styles (样式定义)
+// Order 6: styles (style definitions)
 // ============================================================
 
-// ... 等等
+// ... and so on
 ```
 
 ---
 
-## 📊 修改影响
+## 📊 Impact
 
-### 修改位置
-- 第72-85行: 交换reportFont和properties
-- 第98-166行: 交换parameters和subDatasets
-- 总计约100行代码需要重排
+### Locations
+- Lines 72-85: swap reportFont and properties
+- Lines 98-166: swap parameters and subDatasets
+- About 100 lines of code in total to reorder
 
-### 修改效果
-- ✅ 子元素顺序符合XSD规范
-- ✅ 可以通过XSD验证
-- ✅ JasperReports可以正确解析
-- ✅ 代码结构清晰，有明确的顺序标记
+### Result
+- ✅ Child element order follows the XSD
+- ✅ Passes XSD validation
+- ✅ JasperReports parses the file correctly
+- ✅ Clear code structure with explicit order markers
 
 ---
 
-## 🧪 验证方法
+## 🧪 Verification
 
-修改完成后，验证顺序：
+After the change, verify the order:
 
 ```bash
-# 检查元素顺序
-grep -n "顺序\|<property\|<reportFont\|<style\|<parameter\|<field\|<variable" src/utils/jrxmlGenerator.ts | head -30
+# Check the element order
+grep -n "Order\|<property\|<reportFont\|<style\|<parameter\|<field\|<variable" src/utils/jrxmlGenerator.ts | head -30
 
-# 期望的行号顺序
-# 1. <property (约20行)
-# 2. <reportFont (约30行)
-# 3. <style (约35行)
-# 4. <subDataset (约50行)
-# 5. <parameter (约65行)
-# 6. <field (约80行)
-# 7. <variable (约95行)
+# Expected line order
+# 1. <property (around line 20)
+# 2. <reportFont (around line 30)
+# 3. <style (around line 35)
+# 4. <subDataset (around line 50)
+# 5. <parameter (around line 65)
+# 6. <field (around line 80)
+# 7. <variable (around line 95)
 ```
 
 ---
 
-## ⏱️ 预计工作量
+## ⏱️ Estimated effort
 
-- 交换reportFont和properties: 5分钟
-- 交换parameters和subDatasets: 5分钟
-- 添加注释标记: 5分钟
-- 验证测试: 5分钟
-- **总计: 20分钟**
-
----
-
-## 📝 修改注意事项
-
-1. **保持代码逻辑不变**: 只改变顺序，不改变功能
-2. **保留所有UUID**: 已添加的UUID属性不要删除
-3. **保持注释清晰**: 每个部分都要有明确的顺序标记
-4. **测试验证**: 修改后运行 `npm run build` 验证
+- Swap reportFont and properties: 5 minutes
+- Swap parameters and subDatasets: 5 minutes
+- Add section comments: 5 minutes
+- Verification: 5 minutes
+- **Total: 20 minutes**
 
 ---
 
-## 🎯 修改完成后的好处
+## 📝 Notes
 
-1. ✅ 完全符合XSD规范
-2. ✅ 可以通过XSD验证
-3. ✅ JasperReports兼容性更好
-4. ✅ 代码结构清晰，易于维护
-5. ✅ 合规性从95%提升至100%
+1. **Keep the logic unchanged**: only change the order, not the behaviour
+2. **Keep all UUIDs**: don't remove the UUID attributes already added
+3. **Keep comments clear**: every section needs an explicit order marker
+4. **Verify**: run `npm run build` after the change
 
 ---
 
-*需要手动执行的修改指南*
-*创建时间: 2026-06-09*
+## 🎯 Benefits after the change
+
+1. ✅ Fully XSD-compliant
+2. ✅ Passes XSD validation
+3. ✅ Better JasperReports compatibility
+4. ✅ Clear, maintainable code structure
+5. ✅ Compliance raised from 95% to 100%
+
+---
+
+*Manual change guide*
+*Created: 2026-06-09*

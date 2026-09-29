@@ -8,12 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Malay (`ms`) translation, with an EN / BM language switcher on the login page, the home header and the editor header; the choice is saved in localStorage
+- All editor text is translatable: properties panel, text toolbar, expression editor, AI assistant, dialogs, canvas tooltips and messages
+- DejaVu Sans, DejaVu Serif and DejaVu Sans Mono are bundled with the app (`public/fonts/dejavu/`), matching the fonts JasperReports embeds in PDFs
 
 ### Changed
+- English is now the default language, instead of following the browser language
+- The default report font is now DejaVu Sans (was Noto Sans SC / Noto Serif SC)
+- Mock preview data is English-only (names, addresses, companies, fictional 555 phone numbers)
 
 ### Deprecated
 
 ### Removed
+- Chinese translation (`zh`), the Chinese help dialog and all Chinese text, comments and sample data
+- Chinese fonts from the font list (Noto SC, PingFang, Microsoft YaHei, SimHei, SimSun, STSong, WenQuanYi, Droid Sans Fallback)
 
 ### Fixed
 
@@ -22,69 +30,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2026-01-21
 
 ### Added
-- 实现多语言支持并添加相关翻译
-- 添加英文版帮助和打赏弹窗，完善国际化支持
-- 添加子数据集解析功能
-- 集成Naive UI框架并重构UI组件
-- 添加表格组件支持及表格列拖拽排序功能
-- 支持从数据集添加表格列功能
-- 添加Dependabot配置用于依赖更新
-- 添加英文版README文档
+- Implemented multi-language support and added translations
+- Added English versions of the help and donation dialogs, improving internationalization
+- Added sub-dataset parsing
+- Integrated the Naive UI framework and refactored UI components
+- Added table component support and drag-and-drop column reordering
+- Added support for adding table columns from a dataset
+- Added Dependabot configuration for dependency updates
+- Added an English README
 
 ### Changed
-- 移除未使用的CSS样式并优化组件结构
-- 优化样式代码结构并移除未使用的CSS规则
-- 更新项目规则文档，添加提交代码时使用英文消息的规则
-- 更新依赖包版本：@tauri-apps/cli、@types/node、vue-tsc、@vitejs/plugin-vue、vue
-- 更新项目文档和变更日志
-- 更新和删除静态资源文件
+- Removed unused CSS and improved component structure
+- Reorganized style code and removed unused CSS rules
+- Updated the project rules document with a rule to write commit messages in English
+- Updated dependencies: @tauri-apps/cli, @types/node, vue-tsc, @vitejs/plugin-vue, vue
+- Updated project documentation and the changelog
+- Updated and removed static asset files
 
 ### Fixed
-- 修正翻译字符串中的变量格式
-- 修复解析带命名空间的JRXML文件问题
-- 修复JRXML解析中CSS选择器的命名空间问题
-- 更新表达式提示文本的占位符格式
-- 修复表达式提示中的字段名显示并添加转义配置
-- 更新默认图片URL路径
-- 移除图片预览区域的背景色
+- Fixed variable formatting in translation strings
+- Fixed parsing of JRXML files with namespaces
+- Fixed a namespace issue with CSS selectors in JRXML parsing
+- Updated the placeholder format in expression hint text
+- Fixed field name display in expression hints and added escaping configuration
+- Updated the default image URL path
+- Removed the background color of the image preview area
 
 ### Security
 
 ## [0.3.0] - 2026-01-20
 
 ### Added
-- 添加预览服务器设置功能
-- 添加报表参数管理功能
-- 添加图片预览功能并设置默认高度
-- 实现多语言支持，中英文切换功能
-- 增强设计画布和纸张尺寸支持
-- 添加模态对话框组件
+- Added preview server settings
+- Added report parameter management
+- Added image preview with a default height
+- Implemented multi-language support with a language switcher
+- Improved the design canvas and paper size support
+- Added a modal dialog component
 
 ### Changed
-- 更新测试用例以使用i18n键和更准确的选择器
-- 移除图片路径显示和计算逻辑
-- 优化默认文本显示
-- 将DesignerCanvas中bands类型从any[]替换为Band类型
-- 清理未使用的依赖项
-- 更新应用版本号至0.2.1
+- Updated tests to use i18n keys and more precise selectors
+- Removed image path display and calculation logic
+- Improved default text display
+- Replaced the `any[]` type of `bands` in DesignerCanvas with the `Band` type
+- Removed unused dependencies
+- Bumped the app version to 0.2.1
 
 ### Fixed
-- 解决中文斜体字体显示问题
+- Fixed italic font rendering for CJK text
 
 ### Security
 
 ## [0.2.1] - 2026-01-19
 
 ### Fixed
-- 解决中文斜体字体显示问题
+- Fixed italic font rendering for CJK text
 
 ## [0.2.0] - 2026-01-19
 
 ### Added
-- 实现自动数据字段创建：当动态文本元素表达式引用不存在的字段时自动添加
-- 添加报表元素列表的删除功能
-- 支持macOS上的Command键作为Ctrl键的替代
-- image元素支持imageExpression属性，可在属性面板中设置图片表达式
+- Automatic data field creation: a field is added when a text element's expression references a field that doesn't exist
+- Added delete buttons to the report element list
+- Support for the Command key as an alternative to Ctrl on macOS
+- Image elements support the `imageExpression` attribute, which can be set in the properties panel
 
 ### Changed
 
@@ -93,17 +101,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ### Fixed
-- 修复表达式在属性设置中不显示的问题
-- 避免删除元素时的重复确认对话框
-- 修复TypeScript语法错误
-- 修复输入框中复制粘贴快捷键的默认行为
+- Fixed expressions not showing in the properties panel
+- Avoided a duplicate confirmation dialog when deleting elements
+- Fixed TypeScript syntax errors
+- Fixed the default behaviour of copy/paste shortcuts in input fields
 
 ### Security
 
 ## [0.1.0] - 2026-01-15
 
 ### Added
-- 项目初始化
-- Vue 3 + TypeScript 基础架构
-- PDF元素设计组件
-- JRXML生成功能
+- Project initialization
+- Vue 3 + TypeScript foundation
+- PDF element design components
+- JRXML generation

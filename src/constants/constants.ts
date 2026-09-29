@@ -1,3 +1,4 @@
+import { DEFAULT_REPORT_FONT } from "../config/fonts.config";
 // Designer constant definitions
 
 // Zoom-related constants
@@ -78,7 +79,7 @@ export const VERTICAL_ALIGN_CONSTANTS = {
 
 // Font constants
 export const FONT_CONSTANTS = {
-  DEFAULT_FONT_FAMILY: "Noto Serif SC",
+  DEFAULT_FONT_FAMILY: DEFAULT_REPORT_FONT,
   // Font size constants
   DEFAULT_SIZE: 12,
   MIN_SIZE: 8,

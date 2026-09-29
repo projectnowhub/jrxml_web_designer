@@ -34,7 +34,7 @@
         :style="typographyStyle"
         contenteditable="true"
         spellcheck="false"
-        placeholder="Enter text..."
+        :placeholder="t('textField.placeholder')"
         @mousedown.stop="handleEditorMouseDown"
         @mouseup="handleEditorMouseUp"
         @dblclick.stop
@@ -56,7 +56,7 @@
       >
         <span v-if="hasRichMarkup" class="rich-html-span" v-html="renderedHtmlContent"></span>
         <template v-else>
-          {{ hasContent ? displayText : (t('properties.defaultTextFieldExpression') || 'Text') }}
+          {{ hasContent ? displayText : (t('properties.defaultTextFieldExpression')) }}
         </template>
       </div>
     </div>
@@ -65,12 +65,12 @@
     <div
       v-if="showOverflowBadge"
       class="text-overflow-badge"
-      title="Text exceeds element height. Click to auto-fit height"
+      :title="t('textField.overflowTitle')"
       @click.stop="handleAutoFit"
       @mousedown.stop
     >
       <span class="overflow-badge-icon">⚠</span>
-      <span class="overflow-badge-text">Fit</span>
+      <span class="overflow-badge-text">{{ t("textField.fit") }}</span>
     </div>
 
     <!-- Floating Rich-Text & Hyperlink Toolbar -->
@@ -113,7 +113,7 @@
         <button
           type="button"
           class="chip-action-btn"
-          title="Open Link"
+          :title="t('textField.openLink')"
           @click.stop="openPreviewLink(activeLinkPreview.url)"
         >
           <ExternalLink :size="12" />
@@ -121,7 +121,7 @@
         <button
           type="button"
           class="chip-action-btn"
-          :title="copiedFeedback ? 'Copied!' : 'Copy Link'"
+          :title="copiedFeedback ? t('textField.copied') : t('textField.copyLink')"
           @click.stop="copyPreviewLink(activeLinkPreview.url)"
         >
           <Check v-if="copiedFeedback" :size="12" class="copy-success-icon" />
@@ -130,7 +130,7 @@
         <button
           type="button"
           class="chip-action-btn"
-          title="Edit Link"
+          :title="t('textField.editLink')"
           @click.stop="editPreviewLink"
         >
           <Pencil :size="12" />
@@ -138,7 +138,7 @@
         <button
           type="button"
           class="chip-action-btn chip-unlink-btn"
-          title="Remove Link"
+          :title="t('textField.removeLink')"
           @click.stop="unlinkPreviewLink"
         >
           <Unlink :size="12" />
@@ -146,7 +146,7 @@
         <button
           type="button"
           class="chip-close-btn"
-          title="Close"
+          :title="t('properties.close')"
           @click.stop="activeLinkPreview = null"
         >
           <X :size="11" />

@@ -1,53 +1,53 @@
-# JRXML属性验证结果（实际编译测试）
+# JRXML Attribute Validation Results (Real Compilation Tests)
 
-**测试时间:** $(date)
-**测试环境:** JasperReports 6.21.5 + Maven依赖
-**测试方法:** 本地编译验证
+**Test time:** $(date)
+**Test environment:** JasperReports 6.21.5 + Maven dependencies
+**Test method:** local compilation
 
 ---
 
-## ✅ 已验证结果
+## ✅ Verified results
 
-### 1. uuid属性验证
+### 1. uuid attribute verification
 
-| 元素 | 带uuid | 不带uuid | XSD是否允许uuid | JSON Schema状态 |
+| Element | With uuid | Without uuid | uuid allowed by XSD | JSON Schema status |
 |------|--------|----------|----------------|-----------------|
-| **band** | ❌ 失败 | ✅ 成功 | ❌ 不允许 | Schema多余（已修复）✅ |
-| **parameter** | ❌ 失败 | ✅ 成功 | ❌ 不允许 | Schema多余（需移除） |
-| **field** | ❌ 失败 | ✅ 成功 | ❌ 不允许 | Schema多余（需移除） |
-| **variable** | ❌ 失败 | ✅ 成功 | ❌ 不允许 | Schema多余（需移除） |
-| **sortField** | ❌ 失败 | ✅ 成功 | ❌ 不允许 | Schema多余（需移除） |
-| **group** | ❌ 失败 | ✅ 成功 | ❌ 不允许 | Schema多余（需移除） |
+| **band** | ❌ fails | ✅ succeeds | ❌ not allowed | extra in schema (fixed) ✅ |
+| **parameter** | ❌ fails | ✅ succeeds | ❌ not allowed | extra in schema (to remove) |
+| **field** | ❌ fails | ✅ succeeds | ❌ not allowed | extra in schema (to remove) |
+| **variable** | ❌ fails | ✅ succeeds | ❌ not allowed | extra in schema (to remove) |
+| **sortField** | ❌ fails | ✅ succeeds | ❌ not allowed | extra in schema (to remove) |
+| **group** | ❌ fails | ✅ succeeds | ❌ not allowed | extra in schema (to remove) |
 
-**关键发现:**
-- ❌ **parameter也不允许uuid属性**（与之前XSD分析不一致）
-- ❌ 所有6个元素都不允许uuid属性
-- ✅ JSON Schema中的uuid定义都需要移除
+**Key findings:**
+- ❌ **parameter doesn't allow uuid either** (unlike the earlier XSD analysis)
+- ❌ None of the 6 elements allow the uuid attribute
+- ✅ All uuid definitions in the JSON Schema need to be removed
 
-### 2. positionType枚举值验证
+### 2. positionType enum verification
 
-| 枚举值 | 编译结果 | XSD是否允许 |
+| Value | Compilation result | Allowed by XSD |
 |--------|----------|------------|
-| `FixRelativeToTop` | ✅ 成功 | ✅ 允许 |
-| `FixRelativeToBottom` | ✅ 成功 | ✅ 允许 |
-| `Float` | ✅ 成功 | ✅ 允许 |
-| `FixRelativeToBand` | ❌ 失败 | ❌ 不允许 |
+| `FixRelativeToTop` | ✅ succeeds | ✅ allowed |
+| `FixRelativeToBottom` | ✅ succeeds | ✅ allowed |
+| `Float` | ✅ succeeds | ✅ allowed |
+| `FixRelativeToBand` | ❌ fails | ❌ not allowed |
 
-**关键发现:**
-- ✅ XSD允许: `FixRelativeToTop`, `FixRelativeToBottom`, `Float`
-- ❌ XSD不允许: `FixRelativeToBand`
-- ❌ JSON Schema使用了错误的枚举值
+**Key findings:**
+- ✅ Allowed by the XSD: `FixRelativeToTop`, `FixRelativeToBottom`, `Float`
+- ❌ Not allowed by the XSD: `FixRelativeToBand`
+- ❌ The JSON Schema used a wrong enum value
 
 ---
 
-## 📊 修正后的XSD规范
+## 📊 Corrected XSD rules
 
-基于实际编译测试，XSD规范允许的属性如下：
+Based on the real compilation tests, the XSD allows the following:
 
-### 允许uuid的元素
-**无** - 所有元素都不允许uuid属性
+### Elements that allow uuid
+**None** - none of these elements allow the uuid attribute
 
-### 不允许uuid的元素
+### Elements that don't allow uuid
 - band
 - parameter
 - field
@@ -55,28 +55,28 @@
 - sortField
 - group
 
-### positionType枚举值
-- `FixRelativeToTop` (默认)
+### positionType values
+- `FixRelativeToTop` (default)
 - `FixRelativeToBottom`
 - `Float`
 
 ---
 
-## 🎯 修复建议（基于实际测试）
+## 🎯 Recommended fixes (based on real tests)
 
-### 必须修复
+### Must fix
 
-1. ✅ 移除band的uuid（已完成）
-2. 移除parameter的uuid
-3. 移除field的uuid
-4. 移除variable的uuid
-5. 移除sortField的uuid
-6. 移除group的uuid
-7. 修正positionType枚举值
-8. 修正scaleImage枚举值
-9. 添加缺失的属性定义
+1. ✅ Remove uuid from band (done)
+2. Remove uuid from parameter
+3. Remove uuid from field
+4. Remove uuid from variable
+5. Remove uuid from sortField
+6. Remove uuid from group
+7. Correct the positionType enum
+8. Correct the scaleImage enum
+9. Add the missing attribute definitions
 
-### 测试环境依赖
+### Test environment dependencies
 - Java: OpenJDK 1.8.0_492
 - JasperReports: 6.21.5
 - Commons-Digester: 2.1

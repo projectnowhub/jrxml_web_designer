@@ -22,7 +22,7 @@
           <rect x="3" y="10" width="18" height="6" rx="1" />
           <rect x="3" y="18" width="18" height="6" rx="1" />
         </svg>
-        <span class="list-label">List</span>
+        <span class="list-label">{{ $t("elementNames.list") }}</span>
       </div>
     </div>
   </BaseElement>

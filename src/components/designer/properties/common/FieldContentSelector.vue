@@ -65,8 +65,8 @@
         >
           <span class="preset-icon">{{ preset.icon }}</span>
           <div class="preset-info">
-            <span class="preset-name">{{ preset.label }}</span>
-            <span class="preset-sample">{{ preset.sample }}</span>
+            <span class="preset-name">{{ t(preset.labelKey) }}</span>
+            <span class="preset-sample">{{ preset.sampleKey ? t(preset.sampleKey) : preset.sample }}</span>
           </div>
         </button>
       </div>
@@ -127,10 +127,10 @@ const templateText = ref<string>('');
 const templateInputRef = ref<HTMLTextAreaElement | null>(null);
 
 const docInfoPresets = [
-  { id: 'page_num', icon: '📄', label: 'Page Number', sample: '1', expr: '$V{PAGE_NUMBER}' },
-  { id: 'page_x_of_y', icon: '📑', label: 'Page X of Y', sample: 'Page 1 of 5', expr: '"Page " + $V{PAGE_NUMBER} + " of " + $V{PAGE_COUNT}' },
-  { id: 'current_date', icon: '📅', label: 'Current Date', sample: '2026-09-22', expr: 'new java.util.Date()' },
-  { id: 'record_count', icon: '🔢', label: 'Total Records', sample: '150', expr: '$V{REPORT_COUNT}' },
+  { id: 'page_num', icon: '📄', labelKey: 'elementNames.pageNumber', sample: '1', expr: '$V{PAGE_NUMBER}' },
+  { id: 'page_x_of_y', icon: '📑', labelKey: 'elementNames.pageXofY', sampleKey: 'fieldContent.pageXofYSample', sample: 'Page 1 of 5', expr: '"Page " + $V{PAGE_NUMBER} + " of " + $V{PAGE_COUNT}' },
+  { id: 'current_date', icon: '📅', labelKey: 'elementNames.currentDate', sample: '2026-09-22', expr: 'new java.util.Date()' },
+  { id: 'record_count', icon: '🔢', labelKey: 'fieldContent.totalRecords', sample: '150', expr: '$V{REPORT_COUNT}' },
 ];
 
 const availableFieldNames = computed(() => {
@@ -138,12 +138,12 @@ const availableFieldNames = computed(() => {
 });
 
 function getFriendlyType(javaClass?: string): string {
-  if (!javaClass) return 'Text';
-  if (javaClass.includes('Integer') || javaClass.includes('Long')) return 'Number';
-  if (javaClass.includes('Double') || javaClass.includes('BigDecimal') || javaClass.includes('Float')) return 'Decimal/Currency';
-  if (javaClass.includes('Date') || javaClass.includes('Timestamp')) return 'Date';
-  if (javaClass.includes('Boolean')) return 'Yes/No';
-  return 'Text';
+  if (!javaClass) return t('fieldContent.types.text');
+  if (javaClass.includes('Integer') || javaClass.includes('Long')) return t('fieldContent.types.number');
+  if (javaClass.includes('Double') || javaClass.includes('BigDecimal') || javaClass.includes('Float')) return t('fieldContent.types.decimal');
+  if (javaClass.includes('Date') || javaClass.includes('Timestamp')) return t('fieldContent.types.date');
+  if (javaClass.includes('Boolean')) return t('fieldContent.types.boolean');
+  return t('fieldContent.types.text');
 }
 
 function detectMode(expr: string | undefined | null) {

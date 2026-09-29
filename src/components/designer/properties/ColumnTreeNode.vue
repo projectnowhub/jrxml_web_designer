@@ -11,7 +11,7 @@
         class="column-tree-expand-btn"
         :class="{ collapsed: !expanded }"
         @click="expanded = !expanded"
-        :title="expanded ? 'Collapse' : 'Expand'"
+        :title="expanded ? $t('columnTree.collapse') : $t('columnTree.expand')"
       >
         ▶
       </button>
@@ -28,12 +28,12 @@
         :value="node.name"
         @input="handleNameChange(($event.target as HTMLInputElement).value)"
         @blur="handleNameBlur"
-        placeholder="Name"
+        :placeholder="$t('columnTree.name')"
       />
 
       <!-- Width -->
       <template v-if="isGroup">
-        <span class="column-tree-node-width-display" :title="`Width: ${node.width}px (auto-calculated)`">
+        <span class="column-tree-node-width-display" :title="$t('columnTree.autoWidth', { width: node.width })">
           {{ node.width }}
         </span>
       </template>
@@ -44,7 +44,7 @@
           :value="(node as Column).width"
           @change="handleWidthChange(($event.target as HTMLInputElement).value)"
           min="1"
-          title="Column width (px)"
+          :title="$t('columnTree.columnWidth')"
         />
       </template>
 
@@ -54,40 +54,40 @@
           v-if="canMoveUp"
           class="column-tree-action-btn"
           @click.stop="$emit('move-node', node.uuid, 'up')"
-          title="Move up"
+          :title="$t('columnTree.moveUp')"
         >↑</button>
         <button
           v-if="canMoveDown"
           class="column-tree-action-btn"
           @click.stop="$emit('move-node', node.uuid, 'down')"
-          title="Move down"
+          :title="$t('columnTree.moveDown')"
         >↓</button>
         <button
           v-if="isGroup"
           class="column-tree-action-btn"
           @click.stop="$emit('add-column-child', node.uuid)"
-          title="Add column inside group"
+          :title="$t('columnTree.addColumnInside')"
         >⊕</button>
         <button
           class="column-tree-action-btn"
           @click.stop="$emit('add-column-after', node.uuid)"
-          title="Add column after"
+          :title="$t('columnTree.addColumnAfter')"
         >+</button>
         <button
           class="column-tree-action-btn"
           @click.stop="$emit('add-column-group-after', node.uuid)"
-          title="Add group after"
+          :title="$t('columnTree.addGroupAfter')"
         >⧉</button>
         <button
           v-if="isGroup"
           class="column-tree-action-btn"
           @click.stop="$emit('ungroup-node', node.uuid)"
-          title="Ungroup"
+          :title="$t('columnTree.ungroup')"
         >⊟</button>
         <button
           class="column-tree-action-btn danger"
           @click.stop="$emit('delete-node', node.uuid)"
-          title="Delete"
+          :title="$t('actions.delete')"
         >×</button>
       </div>
     </div>
@@ -113,7 +113,7 @@
       />
       <!-- Empty-group hint -->
       <div v-if="(node as ColumnGroup).children.length === 0" class="column-tree-empty-hint">
-        Click ⊕ to add a column inside the group
+        {{ $t("columnTree.emptyGroupHint") }}
       </div>
     </div>
   </div>

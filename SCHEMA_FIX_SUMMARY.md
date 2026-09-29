@@ -1,27 +1,27 @@
-# JSON Schema修复总结
+# JSON Schema Fix Summary
 
-**完成时间:** 2026-06-09
-**修复状态:** ✅ 完成
+**Completed:** 2026-06-09
+**Fix status:** ✅ Complete
 
 ---
 
-## 📋 修复内容
+## 📋 Changes
 
-### 1. uuid属性修复（基于实际编译测试验证）
+### 1. uuid attribute fixes (verified with real compilation tests)
 
-| 元素 | 修复操作 | 验证结果 |
+| Element | Change | Verification |
 |------|---------|---------|
-| ✅ band | 移除uuid定义 | 已验证：不允许uuid |
-| ✅ field | 移除uuid定义 | 已验证：不允许uuid |
-| ✅ variable | 移除uuid定义 | 已验证：不允许uuid |
-| ✅ sortField | 移除uuid定义 | 已验证：不允许uuid |
-| ✅ group | 移除uuid定义 | 已验证：不允许uuid |
+| ✅ band | removed the uuid definition | verified: uuid not allowed |
+| ✅ field | removed the uuid definition | verified: uuid not allowed |
+| ✅ variable | removed the uuid definition | verified: uuid not allowed |
+| ✅ sortField | removed the uuid definition | verified: uuid not allowed |
+| ✅ group | removed the uuid definition | verified: uuid not allowed |
 
-**关键发现:** 通过JasperReports 6.21.5本地编译测试验证，**所有5个元素都不允许uuid属性**。
+**Key finding:** local compilation tests with JasperReports 6.21.5 showed that **none of these 5 elements allow a uuid attribute**.
 
-### 2. positionType枚举值修复
+### 2. positionType enum fix
 
-**修复前:**
+**Before:**
 ```json
 "positionType": {
   "enum": ["FixRelativeToBand", "Float"],
@@ -29,7 +29,7 @@
 }
 ```
 
-**修复后:**
+**After:**
 ```json
 "positionType": {
   "enum": ["FixRelativeToTop", "FixRelativeToBottom", "Float"],
@@ -37,147 +37,147 @@
 }
 ```
 
-**验证:** 已通过JasperReports编译测试验证
+**Verification:** verified with JasperReports compilation tests
 
 ---
 
-## 🔬 验证过程
+## 🔬 Verification process
 
-### 1. 本地编译测试
+### 1. Local compilation tests
 
-**测试环境:**
+**Test environment:**
 - Java: OpenJDK 1.8.0_492
 - JasperReports: 6.21.5
-- Maven依赖:
+- Maven dependencies:
   - commons-digester: 2.1
   - commons-beanutils: 1.11.0
   - commons-logging: 1.3.5
   - commons-collections4: 4.4
   - commons-collections: 3.2.2
 
-**测试工具:**
-- JRXMLCompiler.java（自定义编译器）
-- run-validation-corrected.sh（测试脚本）
+**Test tools:**
+- JRXMLCompiler.java (custom compiler)
+- run-validation-corrected.sh (test script)
 
-**测试结果:**
+**Test results:**
 ```
-✅ 所有uuid属性测试通过（12/12）
-✅ positionType枚举值测试通过
-```
-
-### 2. XSD验证测试
-
-**测试文件:** tests/unit/xsdValidation.test.ts
-
-**测试结果:**
-```
-✅ 所有15个XSD验证测试通过
+✅ All uuid attribute tests passed (12/12)
+✅ positionType enum tests passed
 ```
 
-### 3. 往返转换测试
+### 2. XSD validation tests
 
-**测试文件:** tests/round-trip-integrity.test.ts
+**Test file:** tests/unit/xsdValidation.test.ts
 
-**测试结果:**
+**Test results:**
 ```
-✅ 所有24个往返转换测试通过
+✅ All 15 XSD validation tests passed
+```
+
+### 3. Round-trip tests
+
+**Test file:** tests/round-trip-integrity.test.ts
+
+**Test results:**
+```
+✅ All 24 round-trip tests passed
 ```
 
 ---
 
-## 📊 修复影响
+## 📊 Impact
 
-### 代码变更
+### Code changes
 
 1. **schemas/jrxml-schema.json**
-   - 移除5个uuid属性定义
-   - 修正positionType枚举值
-   - 变更：-18行，+2行
+   - Removed 5 uuid attribute definitions
+   - Corrected the positionType enum
+   - Changes: -18 lines, +2 lines
 
-2. **src/utils/jrxmlGenerator.ts**（之前commit）
-   - 移除band生成代码中的uuid
-   - 变更：4行修改
+2. **src/utils/jrxmlGenerator.ts** (earlier commit)
+   - Removed uuid from the band generation code
+   - Changes: 4 lines modified
 
-### 测试覆盖
+### Test coverage
 
-- ✅ XSD验证测试：15/15 通过
-- ✅ 往返转换测试：24/24 通过
-- ✅ 本地编译测试：12/12 通过
-- ✅ 单元测试：25/25 通过
+- ✅ XSD validation tests: 15/15 passed
+- ✅ Round-trip tests: 24/24 passed
+- ✅ Local compilation tests: 12/12 passed
+- ✅ Unit tests: 25/25 passed
 
 ---
 
-## 🎯 Commit历史
+## 🎯 Commit history
 
 ```
-2c0850a fix: 修正JSON Schema与实际JasperReports XSD规范的一致性
-93a1e27 fix: 修正band元素schema定义，移除不允许的uuid属性
-9f54763 fix: 移除band元素中不允许的uuid属性
+2c0850a fix: align the JSON Schema with the actual JasperReports XSD
+93a1e27 fix: correct the band element schema definition and remove the disallowed uuid attribute
+9f54763 fix: remove the disallowed uuid attribute from band elements
 ```
 
 ---
 
-## ✅ 验证清单
+## ✅ Verification checklist
 
-### 已完成验证
+### Completed verification
 
-- [x] JSON格式验证
-- [x] XSD Schema验证（通过JasperReports编译）
-- [x] 往返转换验证
-- [x] 单元测试验证
-- [x] 本地编译验证
+- [x] JSON format validation
+- [x] XSD schema validation (through JasperReports compilation)
+- [x] Round-trip verification
+- [x] Unit test verification
+- [x] Local compilation verification
 
-### 已验证属性
+### Verified attributes
 
-- [x] band uuid: ❌ 不允许（已移除）
-- [x] field uuid: ❌ 不允许（已移除）
-- [x] variable uuid: ❌ 不允许（已移除）
-- [x] sortField uuid: ❌ 不允许（已移除）
-- [x] group uuid: ❌ 不允许（已移除）
-- [x] positionType枚举值: ✅ 已修正
+- [x] band uuid: ❌ not allowed (removed)
+- [x] field uuid: ❌ not allowed (removed)
+- [x] variable uuid: ❌ not allowed (removed)
+- [x] sortField uuid: ❌ not allowed (removed)
+- [x] group uuid: ❌ not allowed (removed)
+- [x] positionType enum: ✅ corrected
 
 ---
 
-## 📝 待完成（可选）
+## 📝 To do (optional)
 
-### 基于XSD分析的其他不一致项
+### Other inconsistencies from the XSD analysis
 
-以下项目需要进一步验证和修复：
+These items need further verification and fixes:
 
-1. **scaleImage枚举值**
+1. **scaleImage enum**
    - XSD: RetainShape
    - JSON Schema: RetainImage
-   - 状态: 待验证
+   - Status: to verify
 
-2. **resetType枚举值**
-   - XSD包含: Master
-   - JSON Schema缺失
-   - 状态: 待验证
+2. **resetType enum**
+   - XSD includes: Master
+   - Missing from the JSON Schema
+   - Status: to verify
 
-3. **缺失属性**
+3. **Missing attributes**
    - stretchType
    - textAdjust
    - line direction
-   - group的3个属性
-   - 状态: 待添加
+   - 3 group attributes
+   - Status: to add
 
-4. **多余属性**
-   - variable的2个属性
-   - group的3个属性
-   - 状态: 待移除
+4. **Extra attributes**
+   - 2 variable attributes
+   - 3 group attributes
+   - Status: to remove
 
 ---
 
-## 🎉 总结
+## 🎉 Summary
 
-**已完成:** JSON Schema与JasperReports XSD规范的核心一致性修复
+**Done:** core consistency fixes between the JSON Schema and the JasperReports XSD
 
-**验证方法:** 基于JasperReports 6.21.5本地编译测试（非静态分析）
+**Verification method:** local compilation tests with JasperReports 6.21.5 (not static analysis)
 
-**修复效果:**
-- ✅ 所有uuid属性不一致已修复
-- ✅ positionType枚举值已修正
-- ✅ 所有测试通过
-- ✅ 代码已提交
+**Result:**
+- ✅ All uuid attribute inconsistencies fixed
+- ✅ positionType enum corrected
+- ✅ All tests pass
+- ✅ Code committed
 
-**下一步:** 可选修复其他不一致项（scaleImage, resetType, 缺失属性等）
+**Next:** optionally fix the other inconsistencies (scaleImage, resetType, missing attributes, etc.)

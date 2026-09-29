@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { getAvailableFonts, getSystemFonts } from './fontUtils';
-import { SYSTEM_FONTS } from '../config/fonts.config';
+import { BUNDLED_FONTS, SYSTEM_FONTS } from '../config/fonts.config';
 
 describe('fontUtils', () => {
   // Mock SYSTEM_FONTS for testing
@@ -105,7 +105,8 @@ describe('fontUtils', () => {
       });
 
       const result = await getAvailableFonts();
-      expect(result).toEqual([]); // No fonts available if canvas context is null
+      // Only the bundled fonts, which don't need detection, when the canvas can't measure
+      expect(result).toEqual([...BUNDLED_FONTS]);
       expect(mockCanvas.getContext).toHaveBeenCalledWith('2d');
     });
 

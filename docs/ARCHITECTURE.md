@@ -41,7 +41,7 @@ jrxml_web_designer/
 │   ├── main.ts                   # Application entry point
 │   ├── App.vue                   # Root component
 │   ├── i18n.ts                   # vue-i18n internationalization config
-│   ├── locales/                  # Translation files (zh-CN, en)
+│   ├── locales/                  # Translation files (en, ms)
 │   ├── types/                    # TypeScript type definitions
 │   │   ├── index.ts              # UI layer types (DesignElement, Band, ReportProperties, etc.)
 │   │   └── table.ts              # Internal table types (Column, ColumnGroup, Cell, TableElement)
@@ -491,9 +491,9 @@ All modals inherit from `BaseModal.vue`, which provides consistent open/close/ov
 ## 9. Internationalization
 
 - Framework: vue-i18n
-- Default locale: zh-CN
-- Translation files: `src/locales/` directory
-- Supports Chinese and English
+- Default locale: English (`en`)
+- Translation files: `src/locales/` directory (`en.json`, `ms.json`)
+- Supports English and Malay; the EN / BM switcher is on the login page, the home header and the editor header, and the choice is stored in localStorage (`appLocale`)
 
 ---
 

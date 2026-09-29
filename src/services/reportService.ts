@@ -1,5 +1,9 @@
 import apiClient, { ApiError } from "./apiClient";
 import { PDF_PREVIEW_API } from "@/config/apiConfig";
+import i18n from "@/i18n";
+
+// Messages here are shown to the user, so they are translated
+const t = i18n.global.t;
 
 const GENERATE_PDF_PATH = "api/pdf/generateForm";
 
@@ -60,7 +64,7 @@ const extractPdfFromJson = (json: unknown): Uint8Array<ArrayBuffer> | null => {
 
 // Error Message Reader: Tries to read a meaningful error message from the server response, falling back to a generic message if not possible.
 const readErrorMessage = async (error: ApiError): Promise<{ message: string; code?: string }> => {
-  const fallback = `PDF generation failed (HTTP ${error.status ?? "?"})`;
+  const fallback = t("pdfPreview.errors.httpFailure", { status: error.status ?? "?" });
   const response = error.response;
   if (!response) return { message: error.message || fallback };
 
@@ -118,7 +122,7 @@ export async function generatePdf(
     try {
       json = JSON.parse(new TextDecoder().decode(bytes));
     } catch {
-      throw new ReportGenerationError("Server returned invalid JSON instead of a PDF");
+      throw new ReportGenerationError(t("pdfPreview.errors.invalidJson"));
     }
     const pdf = extractPdfFromJson(json);
     if (pdf) return new Blob([pdf], { type: "application/pdf" });
@@ -126,11 +130,11 @@ export async function generatePdf(
     const body = json as Record<string, unknown>;
     const message = body?.detail ?? body?.message ?? body?.error;
     throw new ReportGenerationError(
-      typeof message === "string" ? message : "Server response did not contain a PDF",
+      typeof message === "string" ? message : t("pdfPreview.errors.noPdf"),
     );
   }
 
   throw new ReportGenerationError(
-    `Server response is not a PDF (content-type: ${blob.type || "unknown"})`,
+    t("pdfPreview.errors.notPdf", { type: blob.type || "unknown" }),
   );
 }

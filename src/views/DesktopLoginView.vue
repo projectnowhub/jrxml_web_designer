@@ -3,21 +3,24 @@
     <div class="desktop-login-overlay" role="status" aria-live="polite">
       <div class="desktop-login-card">
         <div class="desktop-login-spinner" aria-hidden="true" />
-        <p class="desktop-login-title">Redirecting to Login</p>
-        <p class="desktop-login-message">Please wait...</p>
+        <p class="desktop-login-title">{{ t("auth.redirectingToLogin") }}</p>
+        <p class="desktop-login-message">{{ t("auth.pleaseWait") }}</p>
       </div>
     </div>
 
     <div class="desktop-login-background" aria-hidden="true">
       <h1>CDP Platform</h1>
-      <p>Desktop application authentication</p>
+      <p>{{ t("auth.desktopAuthentication") }}</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { login } from "../services/authService";
+
+const { t } = useI18n();
 
 onMounted(() => {
   void login({ state: "DESKTOP" });

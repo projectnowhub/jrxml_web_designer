@@ -1,201 +1,199 @@
-# JRXML Web 设计器
+# JRXML Web Designer
 
-这是一个基于 Vue 3 的 JasperReport 模板设计器，完全在浏览器中运行，无需安装任何软件。设计完成后可直接下载或复制 JRXML 文件内容，随用随走。
+This is a JasperReport template designer based on Vue 3, running entirely in the browser without any software installation. After design completion, you can directly download or copy the JRXML file content, ready to use anytime, anywhere.
 
-[English README](README_EN.md)
+## 🎯 Project Positioning
 
-## 🎯 项目定位
+Due to export control restrictions on the official JasperReport Studio, this project aims to provide a lightweight, easy-to-use alternative that meets basic JRXML design needs.
 
-由于官方 JasperReport Studio 受到出口管制限制，本项目旨在提供一个轻量级、易用的替代方案，满足基本的 JRXML 设计需求。
+## ✨ Core Features
 
-## ✨ 核心功能
+### Design Features
+- 📋 Support for multiple report bands: Title, Page Header, Column Header, Detail, Column Footer, Page Footer, Summary
+- 🎨 Rich element library: Static Text, Text Field, Rectangle, Ellipse, Line, Image, Frame, Break
+- 📐 Precise grid alignment and snap-to functionality
+- 🔄 Complete undo/redo mechanism
+- 🔍 Canvas zoom support (25% - 400%)
+- 🎯 Precise element positioning and resizing
+- 📏 Real-time element property editing
+- 🔧 Support for element copy, paste, delete
+- ⚡ Drag-and-drop element addition and layout
 
-### 设计功能
-- 📋 支持多种报表带区：Title、Page Header、Column Header、Detail、Column Footer、Page Footer、Summary
-- 🎨 丰富的元素库：静态文本、文本字段、矩形、椭圆、线条、图像、框架、分页符
-- 📐 精确的网格对齐与磁吸功能
-- 🔄 完整的撤销/重做机制
-- 🔍 支持画布缩放（25% - 400%）
-- 🎯 精确的元素定位与大小调整
-- 📏 实时元素属性编辑
-- 🔧 支持元素复制、粘贴、删除
-- ⚡ 拖拽式元素添加与布局
+### Element Property Support
+- 📄 Static Text: Content, font, color, alignment
+- 🔤 Text Field: Data source field binding, expression support
+- 🖼️ Image: URL or Base64 support
+- 📐 Graphic elements: Border, fill, rounded corners
+- 🔗 Frame: Container support, can nest other elements
 
-### 元素属性支持
-- 📄 静态文本：内容、字体、颜色、对齐方式
-- 🔤 文本字段：数据源字段绑定、表达式支持
-- 🖼️ 图像：URL 或 Base64 支持
-- 📐 图形元素：边框、填充、圆角
-- 🔗 框架：容器支持，可嵌套其他元素
+### File Management
+- 💾 Local storage of design files
+- 📁 Support for multi-file management
+- 📤 Export JRXML files
+- 📥 Import JRXML files
+- 🔄 Support for design file version management
 
-### 文件管理
-- 💾 本地存储设计文件
-- 📁 支持多文件管理
-- 📤 导出 JRXML 文件
-- 📥 导入 JRXML 文件
-- 🔄 支持设计文件的版本管理
+### Preview and Testing
+- 🖨️ PDF preview functionality (requires preview server configuration)
+- 🔍 Real-time JRXML syntax validation
 
-### 预览与测试
-- 🖨️ PDF 预览功能（需要配置预览服务器）
-- 🔍 实时验证 JRXML 语法
+### Internationalization
+- 🌐 English (default) and Malay, switchable from the login page, the home header and the editor header (EN / BM); the choice is remembered in the browser
 
-### 国际化
-- 🌐 支持中英文切换
+## 📦 Supported Element Types
 
-## 📦 支持的元素类型
+| Element Type | Description | Main Properties |
+|-------------|-------------|----------------|
+| **Static Text** | Fixed content text | Text content, font, size, color, alignment |
+| **Text Field** | Dynamic data binding | Data source field, expression, font style, formatting |
+| **Rectangle** | Rectangle shape | Width, height, border, fill, rounded corners |
+| **Ellipse** | Ellipse shape | Width, height, border, fill |
+| **Line** | Straight line element | Start point, end point, line style, color |
+| **Image** | Image element | Image URL, size, scaling mode |
+| **Frame** | Container element | Width, height, border, can nest other elements |
+| **Break** | Force page break | Break position |
 
-| 元素类型 | 描述 | 主要属性 |
-|---------|------|---------|
-| **静态文本** | 固定内容的文本 | 文本内容、字体、大小、颜色、对齐方式 |
-| **文本字段** | 动态数据绑定 | 数据源字段、表达式、字体样式、格式化 |
-| **矩形** | 矩形图形 | 宽度、高度、边框、填充、圆角 |
-| **椭圆** | 椭圆图形 | 宽度、高度、边框、填充 |
-| **线条** | 直线元素 | 起点、终点、线条样式、颜色 |
-| **图像** | 图片元素 | 图片 URL、尺寸、缩放模式 |
-| **框架** | 容器元素 | 宽度、高度、边框、可嵌套其他元素 |
-| **分页符** | 强制分页 | 分页位置 |
+## 🛠️ Technical Features
 
-## 🛠️ 技术特性
+- 📱 Developed with Vue 3 + TypeScript
+- 🎨 Built with Vite, supporting hot update
+- 📦 Component-based design, easy to extend
+- 🧪 Comprehensive unit tests
+- 📝 Compliant with JasperReport XSD specifications
+- 🔒 Runs entirely in the browser, secure data control
+- 🚀 Lightweight, fast loading speed
 
-- 📱 基于 Vue 3 + TypeScript 开发
-- 🎨 使用 Vite 构建，支持热更新
-- 📦 组件化设计，易于扩展
-- 🧪 完善的单元测试
-- 📝 符合 JasperReport XSD 规范
-- 🔒 完全在浏览器中运行，数据安全可控
-- 🚀 轻量级，加载速度快
+## 🚀 Quick Start
 
-## 🚀 快速开始
+### Online Experience
+Visit [Online Demo](https://fengyunhe.github.io/jrxml_web_designer/) to experience the designer immediately.
 
-### 在线体验
-访问 [在线演示](https://fengyunhe.github.io/jrxml_web_designer/) 立即体验设计器功能。
+### Local Development
 
-### 本地开发
-
-1. 克隆仓库
+1. Clone the repository
 ```bash
 git clone https://github.com/fengyunhe/jrxml_web_designer.git
 cd jrxml_web_designer
 ```
 
-2. 安装依赖
+2. Install dependencies
 ```bash
 pnpm install
 ```
 
-3. 启动开发服务器
+3. Start development server
 ```bash
 pnpm run dev
 ```
 
-4. 打开浏览器访问
+4. Open browser and visit
 ```
 http://localhost:1420
 ```
 
-### 构建生产版本
+### Build Production Version
 ```bash
 pnpm run build
 ```
 
-## 📖 使用指南
+## 📖 User Guide
 
-### 1. 创建新报表
-- 点击左侧"新建文件"按钮
-- 输入报表名称
-- 选择报表方向（横向/纵向）
-- 设置页面尺寸
+### 1. Create a New Report
+- Click the "New File" button on the left
+- Enter report name
+- Select report orientation (landscape/portrait)
+- Set page size
 
-### 2. 添加元素
-- 从左侧元素库拖拽元素到画布
-- 调整元素位置和大小
-- 在右侧属性面板编辑元素属性
+### 2. Add Elements
+- Drag elements from the left element library to the canvas
+- Adjust element position and size
+- Edit element properties in the right property panel
 
-### 3. 配置数据源字段
-- 点击顶部"字段管理"按钮
-- 添加或编辑数据源字段
-- 在文本字段属性中绑定字段
+### 3. Configure Data Source Fields
+- Click the "Field Management" button at the top
+- Add or edit data source fields
+- Bind fields in text field properties
 
-### 4. 预览报表
-- 点击顶部"PDF 预览"按钮
-- 配置预览服务器地址（如果需要）
-- 查看生成的 PDF 效果
+### 4. Preview Report
+- Click the "PDF Preview" button at the top
+- Configure preview server address (if needed)
+- View the generated PDF effect
 
-### 5. 导出 JRXML
-- 完成设计后，点击"导出"按钮
-- 选择保存位置，获取 JRXML 文件
+### 5. Export JRXML
+- After completing the design, click the "Export" button
+- Choose save location to get the JRXML file
 
-## 🔧 开发指南
+## 🔧 Development Guide
 
-### 项目结构
+### Project Structure
 ```
 src/
-├── components/          # Vue 组件
-│   ├── common/         # 通用组件
-│   ├── designer/       # 设计器核心组件
-│   ├── elements/       # 报表元素组件
-│   ├── modals/         # 模态框组件
-│   └── panels/         # 面板组件
-├── composables/        # 组合式函数
-├── config/             # 配置文件
-├── constants/          # 常量定义
-├── locales/            # 国际化资源
-├── types/              # TypeScript 类型定义
-└── utils/              # 工具函数
-    └── jrxml/          # JRXML 生成与解析
+├── components/          # Vue components
+│   ├── common/         # Common components
+│   ├── designer/       # Designer core components
+│   ├── elements/       # Report element components
+│   ├── modals/         # Modal components
+│   └── panels/         # Panel components
+├── composables/        # Composables
+├── config/             # Configuration files
+├── constants/          # Constant definitions
+├── locales/            # Internationalization resources
+├── types/              # TypeScript type definitions
+└── utils/              # Utility functions
+    └── jrxml/          # JRXML generation and parsing
 ```
 
-### 添加新元素类型
-1. 在 `src/components/elements/` 目录下创建新元素组件
-2. 继承 `BaseElement.vue` 或实现相同接口
-3. 在 `ElementRegistry.ts` 中注册新元素
-4. 在元素库中添加新元素
+### Add New Element Type
+1. Create a new element component in `src/components/elements/` directory
+2. Inherit `BaseElement.vue` or implement the same interface
+3. Register the new element in `ElementRegistry.ts`
+4. Add the new element to the element library
 
-### 运行测试
+### Run Tests
 ```bash
 pnpm run test
 ```
 
-### 代码规范
-- 使用 TypeScript 编写
-- 遵循 Vue 3 组合式 API 风格
-- 组件化设计，保持单一职责
-- 编写单元测试覆盖核心功能
+### Code Specifications
+- Write in TypeScript
+- Follow Vue 3 Composition API style
+- Component-based design, maintain single responsibility
+- Write unit tests to cover core functionality
 
-## 📝 变更记录
+## 📝 Changelog
 
-本项目遵循 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 规范维护变更记录。
+This project follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) specification for maintaining changelogs.
 
-### 查看变更历史
-请查看 [CHANGELOG.md](CHANGELOG.md) 文件获取详细的版本变更历史。
+### View Changelog History
+Please check the [CHANGELOG.md](CHANGELOG.md) file for detailed version changelog history.
 
-## 📄 许可证
+## 📄 License
 
-本项目采用 MIT 许可证 - 详情请查看 [LICENSE](LICENSE) 文件。
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-- 生成的 JRXML 文件版权归您所有，可自由使用、修改、分发和商业使用
-- JasperReport 版权归 [Jaspersoft 公司](https://www.jaspersoft.com/) 所有
+- The copyright of generated JRXML files belongs to you, and you can freely use, modify, distribute, and commercially use them.
+- JasperReport is copyrighted by [Jaspersoft Corporation](https://www.jaspersoft.com/).
 
-## 🤝 贡献指南
+## 🤝 Contribution Guide
 
-欢迎大家参与贡献！您可以：
-- 提交 Issue 报告 bug 或建议新功能
-- 提交 Pull Request 修复问题或添加功能
-- 改进文档
-- 分享使用经验
+Contributions are welcome! You can:
+- Submit Issues to report bugs or suggest new features
+- Submit Pull Requests to fix issues or add features
+- Improve documentation
+- Share usage experience
 
-## 🙏 致谢
+## 🙏 Acknowledgments
 
-感谢所有为项目做出贡献的开发者和用户！
+Thanks to all developers and users who have contributed to the project!
 
-如果本工具对您的工作有帮助，欢迎点赞、分享、参与贡献，感谢您的支持。
+If this tool is helpful for your work, please feel free to like, share, and contribute. Thank you for your support.
 
-## 📞 联系方式
+## 📞 Contact Information
 
-如有问题或建议，欢迎通过以下方式联系：
+For questions or suggestions, please contact us through:
 - GitHub Issues: [https://github.com/fengyunhe/jrxml_web_designer/issues](https://github.com/fengyunhe/jrxml_web_designer/issues)
-- 项目地址: [https://github.com/fengyunhe/jrxml_web_designer](https://github.com/fengyunhe/jrxml_web_designer)
+- Project Address: [https://github.com/fengyunhe/jrxml_web_designer](https://github.com/fengyunhe/jrxml_web_designer)
 
 ---
 
-**JRXML Web 设计器** - 让 JasperReport 设计更简单！ 🎉
+**JRXML Web Designer** - Making JasperReport Design Easier! 🎉
