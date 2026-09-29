@@ -37,7 +37,7 @@
         <button class="icon-button" type="button" :aria-label="t('layout.help')">
           <CircleHelp :size="20" :stroke-width="2.25" aria-hidden="true" />
         </button>
-        <button class="icon-button" type="button" :aria-label="t('layout.notifications')">
+        <button class="icon-button notification-icon" type="button" :aria-label="t('layout.notifications')">
           <Bell :size="20" :stroke-width="2.25" aria-hidden="true" />
         </button>
         <AccountMenu />
@@ -208,7 +208,8 @@ button:active {
   display: flex;
   align-items: center;
 }
-.brand-wrap {
+.notification-icon {
+  margin-right: 12px;
 }
 .brand-img img {
   width: 34px;
