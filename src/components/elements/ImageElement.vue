@@ -117,6 +117,7 @@ import { useI18n } from "vue-i18n";
 import { createDiscreteApi } from "naive-ui";
 import BaseElement from "./BaseElement.vue";
 import type { ImageElement, SelectedElementInfo } from "../../types";
+import { setImageName } from "../../utils/elementUtils";
 
 const { t } = useI18n();
 
@@ -345,6 +346,8 @@ function processImageFile(file: File) {
     const dataUrl = e.target?.result as string;
     if (dataUrl) {
       props.element.imageExpression = `"${dataUrl}"`;
+      // Remember the uploaded file name so the panels can show it
+      setImageName(props.element, file.name || "");
       imageError.value = false;
       emit("update-jrxml");
     }

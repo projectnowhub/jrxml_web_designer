@@ -271,6 +271,27 @@ function renderLine(element: LineElement, scale: number): string {
     x2 = w / 2; y2 = h;
   }
 
+  if (element.lineStyle === "Double") {
+    const dWidth = Math.max(0.75, strokeWidth / 3);
+    const offset = Math.max(1.5 * scale, strokeWidth / 2);
+    let l1x1 = x1, l1y1 = y1, l1x2 = x2, l1y2 = y2;
+    let l2x1 = x1, l2y1 = y1, l2x2 = x2, l2y2 = y2;
+    if (h <= 1) {
+      l1y1 = y1 - offset; l1y2 = y2 - offset;
+      l2y1 = y1 + offset; l2y2 = y2 + offset;
+    } else if (w <= 1) {
+      l1x1 = x1 - offset; l1x2 = x2 - offset;
+      l2x1 = x1 + offset; l2x2 = x2 + offset;
+    } else {
+      const len = Math.hypot(x2 - x1, y2 - y1);
+      const nx = (-(y2 - y1) / len) * offset;
+      const ny = ((x2 - x1) / len) * offset;
+      l1x1 = x1 + nx; l1y1 = y1 + ny; l1x2 = x2 + nx; l1y2 = y2 + ny;
+      l2x1 = x1 - nx; l2y1 = y1 - ny; l2x2 = x2 - nx; l2y2 = y2 - ny;
+    }
+    return `<div class="element line" style="position:absolute;left:${element.x * scale}px;top:${element.y * scale}px;width:${w}px;height:${h}px;overflow:visible;"><svg width="${w}" height="${h}" style="overflow:visible;display:block;"><line x1="${l1x1}" y1="${l1y1}" x2="${l1x2}" y2="${l1y2}" stroke="${strokeColor}" stroke-width="${dWidth}" stroke-linecap="square"/><line x1="${l2x1}" y1="${l2y1}" x2="${l2x2}" y2="${l2y2}" stroke="${strokeColor}" stroke-width="${dWidth}" stroke-linecap="square"/></svg></div>`;
+  }
+
   let dashAttr = "";
   if (element.lineStyle === "Dashed") dashAttr = ` stroke-dasharray="${6 * scale},${4 * scale}"`;
   else if (element.lineStyle === "Dotted") dashAttr = ` stroke-dasharray="${2 * scale},${2 * scale}"`;
@@ -288,11 +309,34 @@ function renderRectangle(
   if (radius > 0) extra += `border-radius:${radius}px;`;
   if (element.fill === "Solid" && element.backcolor)
     extra += `background-color:${element.backcolor};`;
+  const penColor = element.pen?.lineColor || (element as any).lineColor;
+  const penWidth = element.pen?.lineWidth ?? (element as any).lineWidth;
+  const penStyle = element.pen?.lineStyle || (element as any).lineStyle;
+  if (penWidth !== undefined || penColor || penStyle) {
+    const w = (penWidth !== undefined ? penWidth : 1) * scale;
+    let s = "solid";
+    if (penStyle === "Dashed") s = "dashed";
+    else if (penStyle === "Dotted") s = "dotted";
+    else if (penStyle === "Double") s = "double";
+    extra += `border:${w}px ${s} ${penColor || "#000000"};`;
+  }
   return `<div class="element rectangle" style="${baseStyle}${extra}"></div>`;
 }
 
-function renderEllipse(_element: EllipseElement, baseStyle: string): string {
-  return `<div class="element ellipse" style="${baseStyle}border-radius:50%;"></div>`;
+function renderEllipse(element: EllipseElement, baseStyle: string): string {
+  let extra = "border-radius:50%;";
+  const penColor = element.pen?.lineColor || (element as any).lineColor;
+  const penWidth = element.pen?.lineWidth ?? (element as any).lineWidth;
+  const penStyle = element.pen?.lineStyle || (element as any).lineStyle;
+  if (penWidth !== undefined || penColor || penStyle) {
+    const w = penWidth !== undefined ? penWidth : 1;
+    let s = "solid";
+    if (penStyle === "Dashed") s = "dashed";
+    else if (penStyle === "Dotted") s = "dotted";
+    else if (penStyle === "Double") s = "double";
+    extra += `border:${w}px ${s} ${penColor || "#000000"};`;
+  }
+  return `<div class="element ellipse" style="${baseStyle}${extra}"></div>`;
 }
 
 function renderFrame(

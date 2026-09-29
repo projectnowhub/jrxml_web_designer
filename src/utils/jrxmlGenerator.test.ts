@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { generateJRXMLContent } from '@/utils/jrxmlGenerator'
 import { parseJRXMLContent } from '@/utils/jrxml/parse'
+import { IMAGE_NAME_PROPERTY, getImageName } from '@/utils/elementUtils'
 import type { Band, ReportProperties, DesignElement } from '@/types'
 
 describe('jrxmlGenerator', () => {
@@ -561,6 +562,46 @@ describe('jrxmlGenerator', () => {
     expect(jrxml).toContain('<reportElement x="20" y="10" width="100" height="50"')
     expect(jrxml).toContain('<imageExpression><![CDATA["/path/to/image.png"]]></imageExpression>')
     expect(jrxml).toContain('</image>')
+  })
+
+  it('should persist and restore the image name of an image element', () => {
+    const bandsWithNamedImage: Band[] = [
+      {
+        type: 'detail',
+        height: 100,
+        elements: [
+          {
+            type: 'image',
+            x: 20,
+            y: 10,
+            width: 100,
+            height: 50,
+            imageExpression: '"data:image/png;base64,AAAA"',
+            imagePath: 'squirrel.jpg',
+            properties: [{ name: IMAGE_NAME_PROPERTY, value: 'squirrel.jpg' }],
+            printWhenExpression: '$F{showImage}'
+          } as DesignElement
+        ]
+      }
+    ]
+
+    const jrxml = generateJRXMLContent(mockReportProperties, bandsWithNamedImage, [], [])
+
+    // The property has to be written before printWhenExpression to stay XSD valid
+    const propertyIndex = jrxml.indexOf(`<property name="${IMAGE_NAME_PROPERTY}"`)
+    const printWhenIndex = jrxml.indexOf('<printWhenExpression>')
+    expect(propertyIndex).toBeGreaterThan(-1)
+    expect(printWhenIndex).toBeGreaterThan(-1)
+    expect(propertyIndex).toBeLessThan(printWhenIndex)
+
+    // The image name must survive a JRXML round-trip
+    const parsedData = parseJRXMLContent(jrxml)
+    const imageElement = parsedData.bands
+      .flatMap((band: any) => band.elements || [])
+      .find((element: any) => element.type === 'image')
+
+    expect(imageElement).toBeTruthy()
+    expect(getImageName(imageElement as DesignElement)).toBe('squirrel.jpg')
   })
 
   it('should generate line elements', () => {

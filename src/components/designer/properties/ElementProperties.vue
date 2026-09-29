@@ -207,15 +207,18 @@
           <!-- Image properties -->
           <template v-if="currentElement && currentElement.type === 'image'">
             <div class="form-group">
-              <label>Image Expression</label>
-              <ExpressionEditor
-                :model-value="currentElement.imageExpression || ''"
-                @update:model-value="currentElement.imageExpression = $event"
-                :report-fields="reportFields"
-                :report-parameters="reportParameters"
-                :report-variables="reportVariables"
-                placeholder='e.g.: $P{imagePath} or "logo.png"'
+              <label>{{ t("properties.imageName") || "Image Name" }}</label>
+              <input
+                type="text"
+                class="readonly-input"
+                :value="getImageDisplayName(currentElement)"
+                readonly
+                :title="getImageDisplayName(currentElement)"
               />
+              <small>{{
+                t("properties.imageNameHint") ||
+                "Read-only: taken from the uploaded image file"
+              }}</small>
               <div
                 style="
                   margin-top: 6px;
@@ -260,17 +263,6 @@
               </div>
             </div>
             <div class="form-group">
-              <label>Scale Type</label>
-              <select v-model="currentElement.scaleType">
-                <option value="">Default</option>
-                <option value="Clip">Clip - Clip</option>
-                <option value="FillFrame">FillFrame - Fill Frame</option>
-                <option value="RetainShape">RetainShape - Retain Shape</option>
-                <option value="RealHeight">RealHeight - Real Height</option>
-                <option value="RealSize">RealSize - Real Size</option>
-              </select>
-            </div>
-            <div class="form-group">
               <label>Rotation</label>
               <div class="rotation-segmented-group">
                 <button
@@ -310,24 +302,6 @@
                   <span>270° ↶</span>
                 </button>
               </div>
-            </div>
-            <div class="form-group">
-              <label>Horizontal Alignment</label>
-              <select v-model="currentElement.hAlign">
-                <option value="">Default</option>
-                <option value="Left">Left - Align Left</option>
-                <option value="Center">Center - Center</option>
-                <option value="Right">Right - Align Right</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Vertical Alignment</label>
-              <select v-model="currentElement.vAlign">
-                <option value="">Default</option>
-                <option value="Top">Top - Align Top</option>
-                <option value="Middle">Middle - Center</option>
-                <option value="Bottom">Bottom - Align Bottom</option>
-              </select>
             </div>
           </template>
 
@@ -404,6 +378,7 @@
                 <option value="Solid">Solid</option>
                 <option value="Dashed">Dashed</option>
                 <option value="Dotted">Dotted</option>
+                <option value="Double">Double</option>
               </select>
             </div>
 
@@ -677,26 +652,13 @@
             </div>
           </div>
         </n-tab-pane>
-        <n-tab-pane
-          v-if="currentElement && currentElement.type === 'frame'"
-          name="frame"
-          :tab="'Frame Properties'"
-        >
-          <FrameProperties
-            :element="currentElement"
-            :report-fields="reportFields"
-            :report-parameters="reportParameters"
-            :report-variables="reportVariables"
-            @update:element="handleFramePropertyUpdate"
-          />
-        </n-tab-pane>
-
+ 
         <!-- Style settings tab -->
         <n-tab-pane name="style" :tab="t('properties.styleSettings')">
           <h4>{{ t("properties.styleSettings") }}</h4>
 
-            <!-- Border settings (not supported for table elements) -->
-            <template v-if="currentElement.type !== 'table'">
+            <!-- Border settings (not supported for table and line elements) -->
+            <template v-if="currentElement.type !== 'table' && currentElement.type !== 'line'">
               <!-- Border settings for rectangle/ellipse elements (unified) -->
               <template
                 v-if="
@@ -765,16 +727,30 @@
                       <label class="side-label">{{
                         t("properties.color")
                       }}</label>
-                      <input
-                        :value="getRectangleBorderColor()"
-                        @input="
-                          setRectangleBorderColor(
-                            ($event.target as HTMLInputElement).value,
-                          )
-                        "
-                        type="color"
-                        class="color-control compact"
-                      />
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <input
+                          :value="getRectangleBorderColor()"
+                          @input="
+                            setRectangleBorderColor(
+                              ($event.target as HTMLInputElement).value,
+                            )
+                          "
+                          type="color"
+                          class="color-control compact"
+                          style="width: 40px; height: 32px; padding: 2px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"
+                        />
+                        <input
+                          :value="getRectangleBorderColor()"
+                          @input="
+                            setRectangleBorderColor(
+                              ($event.target as HTMLInputElement).value,
+                            )
+                          "
+                          type="text"
+                          placeholder="#000000"
+                          style="width: 80px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1150,7 +1126,83 @@
                 </div>
               </template>
             </template>
-            <div class="form-group-row">
+            <!-- Line Color setting for Line element -->
+            <div
+              v-if="currentElement && currentElement.type === 'line'"
+              class="form-group"
+            >
+              <label>{{ t("properties.lineColor") || "Line Color" }}</label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input
+                  :value="currentElement.lineColor || '#000000'"
+                  @input="currentElement.lineColor = ($event.target as HTMLInputElement).value; emit('update-jrxml')"
+                  type="color"
+                  class="color-control compact"
+                  style="width: 40px; height: 32px; padding: 2px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"
+                />
+                <input
+                  :value="currentElement.lineColor || '#000000'"
+                  @input="currentElement.lineColor = ($event.target as HTMLInputElement).value; emit('update-jrxml')"
+                  type="text"
+                  placeholder="#000000"
+                  style="flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;"
+                />
+              </div>
+            </div>
+
+            <!-- Rectangle Color setting for Rectangle element -->
+            <div
+              v-if="currentElement && currentElement.type === 'rectangle'"
+              class="form-group"
+            >
+              <label>{{ t("properties.rectangleColor") || "Rectangle Color" }}</label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input
+                  :value="getRectangleBorderColor()"
+                  @input="setRectangleBorderColor(($event.target as HTMLInputElement).value)"
+                  type="color"
+                  class="color-control compact"
+                  style="width: 40px; height: 32px; padding: 2px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"
+                />
+                <input
+                  :value="getRectangleBorderColor()"
+                  @input="setRectangleBorderColor(($event.target as HTMLInputElement).value)"
+                  type="text"
+                  placeholder="#000000"
+                  style="flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;"
+                />
+              </div>
+            </div>
+
+            <!-- Ellipses Color setting for Ellipse element -->
+            <div
+              v-if="currentElement && currentElement.type === 'ellipse'"
+              class="form-group"
+            >
+              <label>{{ t("properties.ellipsesColor") || "Ellipses Color" }}</label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input
+                  :value="getRectangleBorderColor()"
+                  @input="setRectangleBorderColor(($event.target as HTMLInputElement).value)"
+                  type="color"
+                  class="color-control compact"
+                  style="width: 40px; height: 32px; padding: 2px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"
+                />
+                <input
+                  :value="getRectangleBorderColor()"
+                  @input="setRectangleBorderColor(($event.target as HTMLInputElement).value)"
+                  type="text"
+                  placeholder="#000000"
+                  style="flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;"
+                />
+              </div>
+            </div>
+
+            <!-- Text Color and Background Color settings -->
+            <div
+              v-if="showTextColor && showBackgroundColor"
+              class="form-group-row"
+            >
               <div class="form-group half-width">
                 <label>{{ t("properties.forecolor") }}</label>
                 <ColorPickerWithOpacity
@@ -1172,23 +1224,32 @@
               </div>
             </div>
 
-            <div class="form-group">
-              <label>{{ t("properties.backgroundMode") }}</label>
-              <select
-                v-if="currentElement"
-                v-model="currentElement.mode"
-                @change="emit('update-jrxml')"
-              >
-                <option :value="undefined">
-                  {{ t("properties.defaultTransparent") }}
-                </option>
-                <option value="Transparent">
-                  {{ t("properties.transparent") }}
-                </option>
-                <option value="Opaque">
-                  {{ t("properties.opaque") }}
-                </option>
-              </select>
+            <!-- Only Text Color -->
+            <div
+              v-else-if="showTextColor"
+              class="form-group"
+            >
+              <label>{{ t("properties.forecolor") }}</label>
+              <ColorPickerWithOpacity
+                v-model="currentElement.forecolor"
+                v-model:mode="currentElement.forecolorMode"
+                @update:modelValue="emit('update-jrxml')"
+                @update:mode="emit('update-jrxml')"
+              />
+            </div>
+
+            <!-- Only Background Color -->
+            <div
+              v-else-if="showBackgroundColor"
+              class="form-group"
+            >
+              <label>{{ t("properties.backgroundColor") }}</label>
+              <ColorPickerWithOpacity
+                v-model="currentElement.backcolor"
+                v-model:mode="currentElement.mode"
+                @update:modelValue="emit('update-jrxml')"
+                @update:mode="emit('update-jrxml')"
+              />
             </div>
 
             <!-- Table-specific style settings -->
@@ -1297,36 +1358,33 @@
               </div>
             </template>
 
-            <!-- Style settings for other elements -->
-            <template
-              v-else-if="
-                currentElement &&
-                currentElement.type !== 'line' &&
-                currentElement.type !== 'image' &&
-                currentElement.type !== 'frame'
-              "
+            <!-- Font Name setting (excluded for line, image, frame, rectangle, ellipse, barcode, table) -->
+            <div
+              v-if="showFontName"
+              class="form-group"
             >
-              <div class="form-group">
-                <label>{{ t("properties.fontName") }}</label>
-                <select
-                  v-if="currentElement"
-                  v-model="currentElement.fontFamily"
-                  style="appearance: none; -webkit-appearance: none"
+              <label>{{ t("properties.fontName") }}</label>
+              <select
+                v-if="currentElement"
+                v-model="currentElement.fontFamily"
+                style="appearance: none; -webkit-appearance: none"
+              >
+                <option value="">
+                  {{ t("properties.useDefaultFont") }}
+                </option>
+                <option
+                  v-for="font in availableFonts"
+                  :key="font"
+                  :value="font"
                 >
-                  <option value="">
-                    {{ t("properties.useDefaultFont") }}
-                  </option>
-                  <option
-                    v-for="font in availableFonts"
-                    :key="font"
-                    :value="font"
-                  >
-                    {{ font }}
-                  </option>
-                </select>
-                <small class="font-hint">{{ t("properties.fontHint") }}</small>
-              </div>
+                  {{ font }}
+                </option>
+              </select>
+              <small class="font-hint">{{ t("properties.fontHint") }}</small>
+            </div>
 
+            <!-- Alignment and Font Style settings (excluded for line, image, frame, rectangle, ellipse, barcode, chart, table) -->
+            <template v-if="showTextAlignmentAndStyle">
               <div class="form-group-row">
                 <div class="form-group half-width">
                   <label>{{ t("properties.textAlignment") }}</label>
@@ -1638,7 +1696,7 @@ import { useI18n } from "vue-i18n";
 import { NButton, NTabs, NTabPane, NRadioGroup, NRadioButton } from "naive-ui";
 import type { Band, SelectedElementInfo, TableDataset } from "../../../types";
 import { getAvailableFonts } from "../../../utils/fontUtils";
-import { calculateTextElementHeight } from "../../../utils/elementUtils";
+import { calculateTextElementHeight, getImageDisplayName, setImageName } from "../../../utils/elementUtils";
 import {
   getEffectiveDefaultBandLimits,
   getEffectiveDefaultBandConfig,
@@ -1651,7 +1709,6 @@ import ElementTypeBasedSettings from "./ElementTypeBasedSettings.vue";
 import FrameProperties from "./FrameProperties.vue";
 import TableProperties from "./TableProperties.vue";
 import ColumnTreeNode from "./ColumnTreeNode.vue";
-import ExpressionEditor from "./common/ExpressionEditor.vue";
 import { useLivePreview } from "@/composables/useLivePreview";
 import {
   syncTableColumns,
@@ -1847,6 +1904,27 @@ const currentElement = computed(() => {
 // Compute the current element type
 const elementType = computed(() => {
   return currentElement.value?.type || "";
+});
+
+// Style property visibility computed properties
+const showTextColor = computed(() => {
+  if (!currentElement.value) return false;
+  return !["image", "line", "rectangle", "ellipse", "frame", "barcode"].includes(currentElement.value.type);
+});
+
+const showBackgroundColor = computed(() => {
+  if (!currentElement.value) return false;
+  return !["line", "barcode"].includes(currentElement.value.type);
+});
+
+const showFontName = computed(() => {
+  if (!currentElement.value) return false;
+  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "table"].includes(currentElement.value.type);
+});
+
+const showTextAlignmentAndStyle = computed(() => {
+  if (!currentElement.value) return false;
+  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "chart", "table"].includes(currentElement.value.type);
 });
 
 // Table row height settings
@@ -3189,6 +3267,9 @@ function triggerPropertiesImageUpload() {
   }
 }
 
+// Image name handling for Image elements in the Properties panel.
+// The name is read-only: it is filled in automatically when an image is uploaded
+// and is never edited manually, so the image expression is never modified.
 function handlePropertiesImageUpload(event: Event) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
@@ -3217,6 +3298,8 @@ function handlePropertiesImageUpload(event: Event) {
     ) {
       emit("save-state");
       (currentElement.value as any).imageExpression = `"${dataUrl}"`;
+      // Use the uploaded file name as the image name shown in the panels
+      setImageName(currentElement.value, file.name || "");
       emit("update-jrxml");
     }
   };
@@ -4095,8 +4178,8 @@ function deleteElement() {
 // Rectangle border related helper functions
 function getRectangleBorderWidth(): number {
   const el = currentElement.value as any;
-  if (!el?.pen) return 1;
-  return el.pen.lineWidth || 0;
+  if (!el?.pen) return el?.lineWidth !== undefined ? el.lineWidth : 1;
+  return el.pen.lineWidth !== undefined ? el.pen.lineWidth : 1;
 }
 
 function setRectangleBorderWidth(value: string) {
@@ -4108,13 +4191,14 @@ function setRectangleBorderWidth(value: string) {
     el.pen = {};
   }
   el.pen.lineWidth = numValue;
+  el.lineWidth = numValue;
   emit("update-jrxml");
 }
 
 function getRectangleBorderStyle(): string {
   const el = currentElement.value as any;
-  if (!el?.pen) return "Solid";
-  return el.pen.lineStyle || "Solid";
+  if (!el?.pen) return el?.lineStyle || "Solid";
+  return el.pen.lineStyle || el.lineStyle || "Solid";
 }
 
 function setRectangleBorderStyle(value: string) {
@@ -4125,13 +4209,14 @@ function setRectangleBorderStyle(value: string) {
     el.pen = {};
   }
   el.pen.lineStyle = value;
+  el.lineStyle = value;
   emit("update-jrxml");
 }
 
 function getRectangleBorderColor(): string {
   const el = currentElement.value as any;
-  if (!el?.pen) return "#000000";
-  return el.pen.lineColor || "#000000";
+  if (!el) return "#000000";
+  return el.pen?.lineColor || el.lineColor || "#000000";
 }
 
 function setRectangleBorderColor(value: string) {
@@ -4142,6 +4227,11 @@ function setRectangleBorderColor(value: string) {
     el.pen = {};
   }
   el.pen.lineColor = value;
+  el.lineColor = value;
+  if (el.pen.lineWidth === undefined) {
+    el.pen.lineWidth = 1;
+  }
+  el.lineWidth = el.pen.lineWidth;
   emit("update-jrxml");
 }
 
@@ -5034,6 +5124,21 @@ function addPropertyExpression() {
   background-color: var(--prop-bg-disabled);
   color: var(--prop-text-secondary);
   cursor: default;
+}
+
+/* Read-only inputs placed inside a .form-group (e.g. the image name) need to win
+   over the default .form-group input styling */
+.form-group input.readonly-input {
+  background-color: var(--prop-bg-disabled);
+  color: var(--prop-text-secondary);
+  cursor: default;
+}
+
+.form-group input.readonly-input:focus,
+.form-group input.readonly-input:hover {
+  border-color: var(--prop-border-color);
+  background-color: var(--prop-bg-disabled);
+  box-shadow: none;
 }
 
 /* Width hint style */

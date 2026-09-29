@@ -91,7 +91,6 @@ export const FONT_CONSTANTS = {
 
 // Element type constants
 export const ELEMENT_TYPE_CONSTANTS = {
-  STATIC_TEXT: "staticText",
   TEXT_FIELD: "textField",
   IMAGE: "image",
   LINE: "line",
@@ -113,7 +112,6 @@ export const ELEMENT_DEFAULT_SIZES: Record<
   string,
   { width: number; height: number }
 > = {
-  [ELEMENT_TYPE_CONSTANTS.STATIC_TEXT]: { width: 100, height: 20 },
   [ELEMENT_TYPE_CONSTANTS.TEXT_FIELD]: { width: 100, height: 20 },
   [ELEMENT_TYPE_CONSTANTS.IMAGE]: { width: 100, height: 100 },
   [ELEMENT_TYPE_CONSTANTS.LINE]: { width: 100, height: 2 },

@@ -25,7 +25,28 @@
         :height="Math.max(1, element.height)"
         style="overflow: visible; display: block; width: 100%; height: 100%; pointer-events: none;"
       >
+        <template v-if="element.lineStyle === 'Double'">
+          <line
+            :x1="doubleLineCoords.line1.x1"
+            :y1="doubleLineCoords.line1.y1"
+            :x2="doubleLineCoords.line1.x2"
+            :y2="doubleLineCoords.line1.y2"
+            :stroke="element.lineColor || '#000000'"
+            :stroke-width="doubleLineWidth"
+            stroke-linecap="square"
+          />
+          <line
+            :x1="doubleLineCoords.line2.x1"
+            :y1="doubleLineCoords.line2.y1"
+            :x2="doubleLineCoords.line2.x2"
+            :y2="doubleLineCoords.line2.y2"
+            :stroke="element.lineColor || '#000000'"
+            :stroke-width="doubleLineWidth"
+            stroke-linecap="square"
+          />
+        </template>
         <line
+          v-else
           :x1="lineCoords.x1"
           :y1="lineCoords.y1"
           :x2="lineCoords.x2"
@@ -117,6 +138,53 @@ const dashArray = computed(() => {
   if (style === 'Dashed') return '6,4';
   if (style === 'Dotted') return '2,2';
   return undefined;
+});
+
+// Stroke width for double line style
+const doubleLineWidth = computed(() => {
+  const lw = props.element.lineWidth || 1;
+  return Math.max(0.75, lw / 3);
+});
+
+// Double line SVG coordinates calculation
+const doubleLineCoords = computed(() => {
+  const lw = props.element.lineWidth || 1;
+  const offset = Math.max(1.5, lw / 2);
+  const w = Math.max(1, props.element.width);
+  const h = Math.max(1, props.element.height);
+  const direction = props.element.lineDirection || 'TopDown';
+
+  if (direction === 'BottomUp') {
+    const len = Math.hypot(w, h);
+    const nx = (h / len) * offset;
+    const ny = (w / len) * offset;
+    return {
+      line1: { x1: nx, y1: h + ny, x2: w + nx, y2: ny },
+      line2: { x1: -nx, y1: h - ny, x2: w - nx, y2: -ny },
+    };
+  }
+
+  if (h <= 1) {
+    return {
+      line1: { x1: 0, y1: h / 2 - offset, x2: w, y2: h / 2 - offset },
+      line2: { x1: 0, y1: h / 2 + offset, x2: w, y2: h / 2 + offset },
+    };
+  }
+
+  if (w <= 1) {
+    return {
+      line1: { x1: w / 2 - offset, y1: 0, x2: w / 2 - offset, y2: h },
+      line2: { x1: w / 2 + offset, y1: 0, x2: w / 2 + offset, y2: h },
+    };
+  }
+
+  const len = Math.hypot(w, h);
+  const nx = (-h / len) * offset;
+  const ny = (w / len) * offset;
+  return {
+    line1: { x1: nx, y1: ny, x2: w + nx, y2: h + ny },
+    line2: { x1: -nx, y1: -ny, x2: w - nx, y2: h - ny },
+  };
 });
 
 // Handle selection

@@ -238,6 +238,8 @@
     },
     "imageExpression": "Image Expression",
     "imageExpressionHint": "e.g., \"logo.png\" or {imageFileHolder}",
+    "imageName": "Image Name",
+    "imageNameHint": "Read-only: taken from the uploaded image file",
     "radius": "Radius",
     "breakType": "Break Type",
     "pageBreak": "Page Break",
@@ -360,7 +362,10 @@
     "stretchNone": "Fixed height",
     "stretchGroup": "Match tallest item in row",
     "stretchContainer": "Fill entire section height",
-    "advancedSettings": "Advanced Settings (Optional)"
+    "advancedSettings": "Advanced Settings (Optional)",
+    "lineColor": "Line Color",
+    "rectangleColor": "Rectangle Color",
+    "ellipsesColor": "Ellipses Color"
   },
   "bottomPanel": {
     "pageSettings": "Page Settings",

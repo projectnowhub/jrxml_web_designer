@@ -227,6 +227,8 @@
     },
     "imageExpression": "图片表达式",
     "imageExpressionHint": "例如: \"logo.png\" 或 {imageFileHolder}",
+    "imageName": "图片名称",
+    "imageNameHint": "只读：来自上传的图片文件名",
     "radius": "圆角半径",
     "breakType": "分页符类型",
     "pageBreak": "分页 (Page Break)",
@@ -334,7 +336,10 @@
     "selectStyle": "选择样式",
     "printWhenExpression": "条件打印表达式",
     "styleReference": "样式引用",
-    "noStyle": "无样式"
+    "noStyle": "无样式",
+    "lineColor": "线条颜色",
+    "rectangleColor": "矩形颜色",
+    "ellipsesColor": "椭圆颜色"
   },
   "bottomPanel": {
     "pageSettings": "页面设置",

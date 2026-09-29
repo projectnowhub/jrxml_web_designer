@@ -64,16 +64,20 @@ const rectangleStyle = computed(() => {
     style.borderRadius = `${props.element.radius}px`;
   }
 
-  // Border setting - prefer the pen property
-  if (props.element.pen) {
-    const width = props.element.pen.lineWidth || 0;
-    const color = props.element.pen.lineColor || '#000000';
+  // Border setting - prefer the pen property or direct properties
+  const pen = props.element.pen;
+  const hasPenOrBorder = pen || (props.element as any).lineColor || (props.element as any).lineWidth !== undefined || (props.element as any).lineStyle;
+
+  if (hasPenOrBorder) {
+    const width = pen?.lineWidth !== undefined ? pen.lineWidth : ((props.element as any).lineWidth !== undefined ? (props.element as any).lineWidth : 1);
+    const color = pen?.lineColor || (props.element as any).lineColor || '#000000';
     let lineStyle = 'solid';
 
-    if (props.element.pen.lineStyle) {
-      if (props.element.pen.lineStyle === 'Dashed') lineStyle = 'dashed';
-      else if (props.element.pen.lineStyle === 'Dotted') lineStyle = 'dotted';
-      else if (props.element.pen.lineStyle === 'Double') lineStyle = 'double';
+    const styleVal = pen?.lineStyle || (props.element as any).lineStyle;
+    if (styleVal) {
+      if (styleVal === 'Dashed') lineStyle = 'dashed';
+      else if (styleVal === 'Dotted') lineStyle = 'dotted';
+      else if (styleVal === 'Double') lineStyle = 'double';
     }
 
     // No border if the line width is 0
@@ -89,9 +93,6 @@ const rectangleStyle = computed(() => {
     const box = props.element.box;
     if (box && (box.borderWidth || box.pen?.lineWidth)) {
       // BaseElement handles the box property, so no need to duplicate that here
-      // But we would need to disable BaseElement's default border rendering, or override it here
-      // Since BaseElement's style is applied to the container while this style is applied to the inner div,
-      // we should really let BaseElement handle the border, unless radius needs to apply to the border
     } else {
       // Default border
       style.border = '1px solid #000000';
