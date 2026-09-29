@@ -150,6 +150,47 @@ export function setImageName(element: DesignElement, name: string): void {
   setElementPropertyValue(image, IMAGE_NAME_PROPERTY, value);
 }
 
+// Property used to persist a non-destructive image crop inside <reportElement>. The original
+// image is kept; only the visible part is stored, as "left,top,right,bottom" insets that are
+// fractions (0..1) of the original image, e.g. "0.1,0,0.25,0.05".
+export const IMAGE_CROP_PROPERTY = "com.cdp.image.crop";
+
+export interface ImageCrop {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+const CROP_EPSILON = 0.0005;
+
+// Get the crop of an image element, or null when the whole image is shown
+export function getImageCrop(element: DesignElement): ImageCrop | null {
+  if (!element || element.type !== "image") return null;
+  const raw = getElementPropertyValue(element, IMAGE_CROP_PROPERTY);
+  if (!raw) return null;
+  const parts = raw.split(",").map((part) => Number(part.trim()));
+  if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n) || n < 0 || n >= 1)) {
+    return null;
+  }
+  const [left = 0, top = 0, right = 0, bottom = 0] = parts;
+  if (left + right >= 1 || top + bottom >= 1) return null;
+  if (parts.every((n) => n < CROP_EPSILON)) return null;
+  return { left, top, right, bottom };
+}
+
+// Set (or clear, with null / an empty crop) the crop of an image element
+export function setImageCrop(element: DesignElement, crop: ImageCrop | null): void {
+  if (!element || element.type !== "image") return;
+  const values = crop ? [crop.left, crop.top, crop.right, crop.bottom] : [];
+  const isEmpty = values.length === 0 || values.every((n) => n < CROP_EPSILON);
+  setElementPropertyValue(
+    element,
+    IMAGE_CROP_PROPERTY,
+    isEmpty ? "" : values.map((n) => Math.max(0, n).toFixed(4)).join(","),
+  );
+}
+
 // Helper to parse box padding or border dimension safely
 function parseBoxDimension(val: any): number | undefined {
   if (val === undefined || val === null || val === '') return undefined;

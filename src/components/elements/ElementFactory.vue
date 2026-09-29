@@ -118,6 +118,7 @@ const emit = defineEmits<{
   addColumnsToGroup: [elementIndex: number, columnIndices: number[], bandIndex: number, parentFrameIndex?: number];
   joinColumnsToExistingGroup: [elementIndex: number, columnIndices: number[], bandIndex: number, parentFrameIndex?: number];
   'update-jrxml': [];
+  'save-state': [];
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
@@ -206,6 +207,10 @@ const commonEvents = {
   },
   'update-jrxml': () => {
     emit('update-jrxml');
+  },
+  // Snapshot for undo, sent by an element right before it changes the model itself
+  'save-state': () => {
+    emit('save-state');
   }
 };
 </script>

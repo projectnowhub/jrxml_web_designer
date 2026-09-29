@@ -259,7 +259,6 @@
           ref="iframeRef"
           class="pdf-iframe"
           :src="previewUrl"
-          @load="handleIframeLoad"
         ></iframe>
       </div>
     </div>
@@ -268,7 +267,7 @@
 
 <script setup lang="ts">
 import BaseModal from "./BaseModal.vue";
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, NTabs, NTabPane, NTag } from "naive-ui";
 import type { ReportParameter, ReportField, TableDataset } from "../../types";
@@ -277,6 +276,8 @@ import {
   generateMockParameters,
   generateMockDataSource,
 } from "../../utils/mockDataGenerator";
+import { generatePdf, ReportGenerationError } from "../../services/reportService";
+import notification from "../../utils/notification";
 
 const { t } = useI18n();
 
@@ -286,7 +287,6 @@ const props = defineProps<{
   reportParameters?: ReportParameter[];
   reportFields?: ReportField[];
   subDatasets?: TableDataset[];
-  previewServerUrl: string;
 }>();
 
 const emit = defineEmits(["update:visible"]);
@@ -299,6 +299,7 @@ const showEditor = ref(true);
 const isGenerating = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 const previewUrl = ref<string>("about:blank");
+let previewController: AbortController | null = null;
 
 function shortType(className: string): string {
   const parts = className.split(".");
@@ -306,7 +307,8 @@ function shortType(className: string): string {
 }
 
 function initializeEditor() {
-  previewUrl.value = "about:blank";
+  previewController?.abort();
+  setPreviewUrl("about:blank");
   isGenerating.value = false;
 
   const params = props.reportParameters || [];
@@ -506,40 +508,53 @@ function convertSubDataSourcesTypes(): Record<string, Record<string, any>[]> {
   return result;
 }
 
-function generatePreview() {
-  const apiUrl = props.previewServerUrl;
+function setPreviewUrl(url: string) {
+  if (previewUrl.value.startsWith("blob:")) {
+    URL.revokeObjectURL(previewUrl.value);
+  }
+  previewUrl.value = url;
+}
+
+async function generatePreview() {
+  // Cancel an in-flight request so a slower, older response can't overwrite a newer one
+  previewController?.abort();
+  const controller = new AbortController();
+  previewController = controller;
   isGenerating.value = true;
 
-  const escapeHtml = (str: string) =>
-    str
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-
-  const typedSubDataSources = convertSubDataSourcesTypes();
-  const formHtml = `<!DOCTYPE html><html><body onload="document.getElementById('pdfForm').submit()">
-    <form id="pdfForm" action="${escapeHtml(apiUrl)}" method="POST" target="_self">
-      <input type="hidden" name="jrxml" value="${escapeHtml(props.jrxmlContent)}">
-      <input type="hidden" name="parameters" value="${escapeHtml(JSON.stringify(editableParams.value))}">
-      <input type="hidden" name="dataSource" value="${escapeHtml(JSON.stringify(editableDataSource.value))}">
-      ${
-        Object.keys(typedSubDataSources).length > 0
-          ? `<input type="hidden" name="subDataSources" value="${escapeHtml(JSON.stringify(typedSubDataSources))}">`
-          : ""
-      }
-    </form></body></html>`;
-
-  previewUrl.value = `data:text/html;charset=utf-8,${encodeURIComponent(formHtml)}`;
+  try {
+    const pdf = await generatePdf(
+      {
+        jrxml: props.jrxmlContent,
+        parameters: editableParams.value,
+        dataSource: editableDataSource.value,
+        subDataSources: convertSubDataSourcesTypes(),
+      },
+      controller.signal,
+    );
+    if (controller.signal.aborted) return;
+    setPreviewUrl(URL.createObjectURL(pdf));
+  } catch (error) {
+    if ((error as Error).name === "AbortError") return;
+    // 401 is already handled by apiClient (redirect to login)
+    if (error instanceof ReportGenerationError && error.status === 401) return;
+    notification.error((error as Error).message || "PDF generation failed");
+  } finally {
+    if (previewController === controller) {
+      previewController = null;
+      isGenerating.value = false;
+    }
+  }
 }
 
 const closeModal = () => {
   emit("update:visible", false);
 };
 
-const handleIframeLoad = () => {
-  isGenerating.value = false;
-};
+onUnmounted(() => {
+  previewController?.abort();
+  setPreviewUrl("about:blank");
+});
 
 watch(
   () => props.visible,

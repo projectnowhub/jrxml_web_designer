@@ -19,6 +19,7 @@
     @start-editing="handleStartEditing"
     @auto-fit-height="handleAutoFit"
     @rotate="(b, e, p) => emit('rotate', b, e, p)"
+    @save-state="emit('save-state')"
   >
     <div
       class="text-element-inner"
@@ -210,6 +211,7 @@ const emit = defineEmits<{
   cancelEditing: [];
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  'save-state': [];
 }>();
 
 // Visual 90-degree step rotation style

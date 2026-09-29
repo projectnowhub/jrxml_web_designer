@@ -48,6 +48,8 @@
           @finish-editing="handleChildFinishEditing"
           @cancel-editing="handleChildCancelEditing"
           @check-fields="handleChildCheckFields"
+          @update-jrxml="emit('update-jrxml')"
+          @save-state="emit('save-state')"
         />
       </template>
       
@@ -95,6 +97,8 @@ const emit = defineEmits<{
   finishEditing: [];
   cancelEditing: [];
   checkFields: [fields: string[]];
+  'update-jrxml': [];
+  'save-state': [];
 }>();
 
 // Handle selection

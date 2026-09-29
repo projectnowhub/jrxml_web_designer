@@ -223,6 +223,7 @@
                           handleJoinColumnsToExistingGroup
                         "
                         @update-jrxml="emit('update-jrxml')"
+                        @save-state="emit('save-state')"
                         @rotate="(b, e, p) => emit('rotate', b, e, p)"
                       />
                       <div
@@ -279,6 +280,7 @@
                           handleJoinColumnsToExistingGroup
                         "
                         @update-jrxml="emit('update-jrxml')"
+                        @save-state="emit('save-state')"
                         @rotate="(b, e, p) => emit('rotate', b, e, p)"
                       />
                       <!-- Default page number indicator if page footer is empty -->
@@ -493,6 +495,7 @@ const emit = defineEmits([
   "update:table-styles", // Added table style update event
   "reset-zoom", // Added reset zoom event
   "update-jrxml", // Added JRXML update event
+  "save-state", // Undo snapshot requested by an element before it changes itself
   "canvas-contextmenu", // Added canvas context menu event
   "add-page",
   "delete-page",

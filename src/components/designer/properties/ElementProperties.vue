@@ -237,6 +237,7 @@
                     align-items: center;
                     gap: 4px;
                   "
+                  :disabled="isPropertiesImageUploading"
                   @click="triggerPropertiesImageUpload"
                 >
                   <svg
@@ -251,7 +252,11 @@
                     <polyline points="17 8 12 3 7 8" />
                     <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
-                  Upload Image (PNG, JPG)
+                  {{
+                    isPropertiesImageUploading
+                      ? t("properties.uploadingImage")
+                      : "Upload Image (PNG, JPG · max 4 MB)"
+                  }}
                 </button>
                 <input
                   ref="propImageFileInputRef"
@@ -1696,7 +1701,19 @@ import { useI18n } from "vue-i18n";
 import { NButton, NTabs, NTabPane, NRadioGroup, NRadioButton } from "naive-ui";
 import type { Band, SelectedElementInfo, TableDataset } from "../../../types";
 import { getAvailableFonts } from "../../../utils/fontUtils";
-import { calculateTextElementHeight, getImageDisplayName, setImageName } from "../../../utils/elementUtils";
+import {
+  calculateTextElementHeight,
+  getImageDisplayName,
+  setImageCrop,
+  setImageName,
+} from "../../../utils/elementUtils";
+import {
+  fitElementToImage,
+  getImageDimensions,
+  ImageUploadError,
+  resolveImageSource,
+  toImageExpression,
+} from "../../../services/imageService";
 import {
   getEffectiveDefaultBandLimits,
   getEffectiveDefaultBandConfig,
@@ -3259,6 +3276,7 @@ function updateBarcodeValue(val: string) {
 
 // Image upload handling for Image elements in Properties panel
 const propImageFileInputRef = ref<HTMLInputElement | null>(null);
+const isPropertiesImageUploading = ref(false);
 
 function triggerPropertiesImageUpload() {
   if (propImageFileInputRef.value) {
@@ -3270,43 +3288,34 @@ function triggerPropertiesImageUpload() {
 // Image name handling for Image elements in the Properties panel.
 // The name is read-only: it is filled in automatically when an image is uploaded
 // and is never edited manually, so the image expression is never modified.
-function handlePropertiesImageUpload(event: Event) {
+async function handlePropertiesImageUpload(event: Event) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
-  if (!file || !currentElement.value) return;
+  const element = currentElement.value;
+  if (!file || !element || isPropertiesImageUploading.value) return;
 
-  const allowedMimes = ["image/png", "image/jpeg", "image/jpg"];
-  const allowedExts = [".png", ".jpg", ".jpeg"];
-  const mime = file.type ? file.type.toLowerCase() : "";
-  const name = file.name ? file.name.toLowerCase() : "";
-  const isValid =
-    allowedMimes.includes(mime) ||
-    allowedExts.some((ext) => name.endsWith(ext));
-
-  if (!isValid) {
-    alert("You cannot upload this file, image format does not support");
-    return;
+  isPropertiesImageUploading.value = true;
+  try {
+    const [source, dimensions] = await Promise.all([
+      resolveImageSource(file),
+      getImageDimensions(file),
+    ]);
+    // The upload is async: apply it to the element that started it, even if selection changed
+    if (element.type !== "image") return;
+    emit("save-state");
+    (element as any).imageExpression = toImageExpression(source);
+    // Use the uploaded file name as the image name shown in the panels
+    setImageName(element, file.name || "");
+    // A crop belongs to the previous picture
+    setImageCrop(element, null);
+    // Like Google Docs: the frame takes the picture's proportions, so there is no empty gap
+    fitElementToImage(element, dimensions);
+    emit("update-jrxml");
+  } catch (error) {
+    alert(error instanceof ImageUploadError ? error.message : "Image upload failed");
+  } finally {
+    isPropertiesImageUploading.value = false;
   }
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const dataUrl = e.target?.result as string;
-    if (
-      dataUrl &&
-      currentElement.value &&
-      currentElement.value.type === "image"
-    ) {
-      emit("save-state");
-      (currentElement.value as any).imageExpression = `"${dataUrl}"`;
-      // Use the uploaded file name as the image name shown in the panels
-      setImageName(currentElement.value, file.name || "");
-      emit("update-jrxml");
-    }
-  };
-  reader.onerror = () => {
-    alert("You cannot upload this file, image format does not support");
-  };
-  reader.readAsDataURL(file);
 }
 
 // Per-side border property accessor functions

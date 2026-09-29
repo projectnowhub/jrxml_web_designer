@@ -15,6 +15,7 @@
     @resize-start="(ev, b, e, p, d) => emit('resizeStart', ev, b, e, p, d)"
     @contextmenu="(ev, b, e, p) => emit('contextmenu', ev, b, e, p)"
     @rotate="(b, e, p) => emit('rotate', b, e, p)"
+    @save-state="emit('save-state')"
   >
     <div class="barcode-element">
       <div class="barcode-content" :style="rotationStyle">
@@ -66,6 +67,7 @@ const emit = defineEmits<{
   resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  'save-state': [];
 }>();
 
 // Visual 90-degree step rotation style

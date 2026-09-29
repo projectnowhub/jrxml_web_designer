@@ -165,11 +165,6 @@
               handler: downloadJRXML,
               class: 'btn-primary',
             },
-            {
-              label: t('actions.setPreviewServer'),
-              handler: openPreviewServerSettings,
-              class: 'btn-primary',
-            },
           ]"
         />
 
@@ -340,6 +335,8 @@
           @add-page="addNewPage"
           @delete-page="deletePage"
           @rotate="handleElementRotate"
+          @save-state="saveStateToHistory"
+          @update-jrxml="updateJRXML"
         />
       </div>
 
@@ -426,7 +423,6 @@
       :all-band-types="allBandTypes"
       :selected-band-types="selectedBandTypes"
       :jrxml-content="jrxmlContent"
-      :preview-server-url="previewServerUrl"
       @update:visible="showBottomPanel = $event"
       @size-change="handleBottomPanelSizeChange"
       @update:report-properties="reportProperties = $event"
@@ -479,16 +475,7 @@
       :report-parameters="reportParameters"
       :report-fields="reportFields"
       :sub-datasets="subDatasets"
-      :preview-server-url="previewServerUrl"
       @update:visible="showPdfPreview = $event"
-    />
-
-    <!-- Preview server settings modal -->
-    <PreviewServerSettingsModal
-      :visible="showPreviewServerSettings"
-      :current-url="previewServerUrl"
-      @update:visible="showPreviewServerSettings = $event"
-      @update:url="updatePreviewServerUrl"
     />
 
     <!-- Sub-dataset management modal -->
@@ -660,7 +647,6 @@ import HelpModal from "./modals/HelpModal.vue";
 import HelpModalEn from "./modals/HelpModalEn.vue";
 import FieldManagementModal from "./modals/FieldManagementModal.vue";
 import PdfPreviewModal from "./modals/PdfPreviewModal.vue";
-import PreviewServerSettingsModal from "./modals/PreviewServerSettingsModal.vue";
 import SubDatasetManagementModal from "./modals/SubDatasetManagementModal.vue";
 import VariableManagementModal from "./modals/VariableManagementModal.vue";
 import StyleManagementModal from "./modals/StyleManagementModal.vue";
@@ -768,7 +754,6 @@ import { syncTableColumns } from "../utils/table/ColumnTreeSync";
 
 // Import the default JRXML example file
 import { logout } from "../services/authService";
-import { PDF_PREVIEW_API } from "@/config/apiConfig.ts";
 
 const { t, locale } = useI18n();
 
@@ -5311,7 +5296,7 @@ const handleElementRotate = (
   _elementIndex: number,
   _parentFrameIndex?: number,
 ): void => {
-  saveStateToHistory();
+  // The undo snapshot was already taken via save-state, before the element rotated
   updateJRXML();
 };
 
@@ -5846,13 +5831,6 @@ const showHelp = ref(false);
 // PDF preview related state
 const showPdfPreview = ref(false);
 
-// Preview server settings related state
-const showPreviewServerSettings = ref(false);
-const previewServerUrl = ref(
-  localStorage.getItem("previewServerUrl") ||
-  `${PDF_PREVIEW_API}/api/pdf/generateForm`,
-);
-
 // Field management related state
 const showFieldModal = ref(false);
 const editingField = ref<ReportField | undefined>(undefined);
@@ -5861,17 +5839,6 @@ const editingParameter = ref<ReportParameter | undefined>(undefined);
 // Variable management related state
 const showVariableModal = ref(false);
 const editingVariable = ref<ReportVariable | undefined>(undefined);
-
-// Open the preview server settings
-const openPreviewServerSettings = (): void => {
-  showPreviewServerSettings.value = true;
-};
-
-// Update the preview server address
-const updatePreviewServerUrl = (url: string): void => {
-  previewServerUrl.value = url;
-  localStorage.setItem("previewServerUrl", url);
-};
 
 // Handle updating element value from report elements list
 const handleUpdateElementValue = (

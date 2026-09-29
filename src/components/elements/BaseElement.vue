@@ -115,6 +115,7 @@ const emit = defineEmits<{
   startEditing: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  'save-state': [];
 }>();
 
 const isRotatableElement = computed(() => 
@@ -130,6 +131,8 @@ const handleQuickRotate = () => {
   else if (cur === 'Left') next = 'None';
   else next = 'Right';
 
+  // Undo snapshot must be taken before the element changes
+  emit('save-state');
   (props.element as any).rotation = next;
   emit('rotate', props.bandIndex, props.elementIndex, props.parentFrameIndex);
 };

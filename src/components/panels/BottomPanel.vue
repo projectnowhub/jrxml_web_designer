@@ -53,7 +53,6 @@ interface Props {
   allBandTypes: any[];
   selectedBandTypes: BandType[];
   jrxmlContent: string;
-  previewServerUrl?: string;
 }
 
 // Define component events
@@ -1265,7 +1264,6 @@ onBeforeUnmount(() => {
   <PdfPreviewModal
     :visible="showPdfPreview"
     :jrxml-content="localJrxmlContent"
-    :preview-server-url="props.previewServerUrl || ''"
     @update:visible="showPdfPreview = $event"
   />
 </template>
