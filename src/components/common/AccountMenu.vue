@@ -130,8 +130,10 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   background: linear-gradient(135deg, #7c5cf7, #6366f1);
   color: white;
+  font-family: Arial, Helvetica, sans-serif;
   font-size: 14px;
   font-weight: 800;
+  line-height: 1;
   box-shadow: 0 3px 12px rgba(99, 102, 241, 0.32);
   box-sizing: border-box;
 }
