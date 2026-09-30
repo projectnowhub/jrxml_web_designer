@@ -428,7 +428,7 @@ const categoryLabels = computed<Record<string, string>>(() => ({
 
 const groupedElements = computed(() => {
   const registry = ElementRegistry.getInstance();
-  const categories: Record<string, any[]> = { basic: [], frames: [], composite: [] };
+  const categories: Record<string, any[]> = { basic: [], composite: [], frames: [] };
   for (const element of props.elements) {
     const config = registry.getElementConfig(element.type);
     const category = config?.category || "basic";

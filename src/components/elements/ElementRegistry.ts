@@ -609,7 +609,8 @@ export class ElementRegistry {
 
     // Frame templates: styled frames with placeholder content.
     // The actual element is built by buildFrameTemplate() in utils/framePresets.ts.
-    const frameTemplates: Array<{ type: string; name: string; iconSvg: string }> = [
+    // Element presets: ready-made boxes (a frame with its parts)
+    const elementPresets: Array<{ type: string; name: string; iconSvg: string }> = [
       {
         type: "frameKpiCard",
         name: "elementNames.frameKpiCard",
@@ -634,24 +635,29 @@ export class ElementRegistry {
         iconSvg:
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 15h18M6 12l3-3 3 3 2-2 4 4"/><path d="M6 18h8"/></svg>',
       },
-      {
-        type: "framePageBorder",
-        name: "elementNames.framePageBorder",
-        iconSvg:
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20"/><rect x="6.5" y="4.5" width="11" height="15" stroke-width="1"/></svg>',
-      },
     ];
-    frameTemplates.forEach(({ type, name, iconSvg }) =>
+    elementPresets.forEach(({ type, name, iconSvg }) =>
       this.registerElement({
         type,
         name,
         icon: "☐",
         iconSvg,
-        // The page border is a whole-page element, listed with the composite elements
-        category: type === "framePageBorder" ? "composite" : "frames",
+        category: "frames",
         defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
       }),
     );
+
+    // Composite elements
+    // Page border: a frame in the Background band around every page
+    this.registerElement({
+      type: "framePageBorder",
+      name: "elementNames.framePageBorder",
+      icon: "☐",
+      iconSvg:
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20"/><rect x="6.5" y="4.5" width="11" height="15" stroke-width="1"/></svg>',
+      category: "composite",
+      defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
+    });
   }
 
   // Register an element
