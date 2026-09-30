@@ -31,11 +31,10 @@
         </div>
         <div class="form-group small color-control">
           <label>{{ t('properties.color') }}</label>
-          <input 
-            v-model="borderColor" 
-            type="color" 
-            class="small-input color-picker"
+          <ColorSwatchPicker
+            v-model="borderColor"
             @change="handleChange"
+            class="small-input color-picker"
           />
         </div>
       </div>
@@ -44,6 +43,7 @@
 </template>
 
 <script setup lang="ts">
+import ColorSwatchPicker from '../../common/ColorSwatchPicker.vue';
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 

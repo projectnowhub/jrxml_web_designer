@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "Pereka Visual JRXML"
+    "title": "CDP Report Studio"
   },
   "actions": {
     "undo": "Buat Asal",
@@ -47,6 +47,7 @@
   "elementLibrary": {
     "title": "Pustaka Elemen",
     "basicElements": "Elemen Asas",
+    "frameElements": "Bingkai & Kad",
     "compositeElements": "Elemen Komposit",
     "reportElements": "Elemen Laporan",
     "filterElements": "Tapis elemen...",
@@ -138,6 +139,11 @@
     "ellipse": "Elips",
     "break": "Pemisah",
     "frame": "Bingkai",
+    "frameKpiCard": "Kad KPI",
+    "frameAlertBox": "Kotak Amaran",
+    "frameTitledSection": "Seksyen Bertajuk",
+    "framePhotoCard": "Kad Foto",
+    "framePageBorder": "Sempadan Halaman",
     "table": "Jadual",
     "subreport": "Sublaporan",
     "list": "Senarai",
@@ -415,7 +421,10 @@
     "barcodeProperties": "Sifat Kod Bar",
     "barcodeType": "Jenis Kod Bar",
     "barcodeValue": "Nilai Kod Bar",
-    "barcodeValuePlaceholder": "cth. 1234567890"
+    "barcodeValuePlaceholder": "cth. 1234567890",
+    "cornerRadiusHint": "Sempadan mengikut sudut bulat dalam satu warna padu, dan bahagian dalam diisi (putih melainkan bingkai mempunyai latar belakang).",
+    "roundedLineEnds": "Hujung garis bulat",
+    "roundedLineEndsHint": "Setiap garis dilukis sebagai bar padu dengan hujung bulat."
   },
   "bottomPanel": {
     "pageSettings": "Tetapan Halaman",
@@ -1004,7 +1013,8 @@
     "dropHere": "Lepaskan di sini",
     "aligned": "Dijajarkan",
     "pageOf": "Halaman {page} daripada {total}",
-    "dragOntoPage": "Seret elemen ke halaman {page}"
+    "dragOntoPage": "Seret elemen ke halaman {page}",
+    "selectPageBorder": "Klik untuk memilih sempadan halaman"
   },
   "alignment": {
     "left": "Jajar kiri",
@@ -1058,6 +1068,38 @@
     "layoutStack": "Tindanan (atas ke bawah)",
     "mode": "Mod paparan",
     "modeDescription": "Legap menunjukkan latar belakang, Lut Sinar boleh dilihat tembus"
+  },
+  "framePresets": {
+    "styleLabel": "Pratetap sempadan",
+    "pageBorderTitle": "Sempadan Halaman",
+    "custom": "Sempadan tersuai (tiada pratetap sepadan)",
+    "style": {
+      "none": "Tiada",
+      "hairline": "Garis halus",
+      "light": "Nipis",
+      "softDashed": "Sengkang lembut",
+      "outline": "Garis luar",
+      "thick": "Tebal",
+      "doubleRule": "Garis berganda",
+      "topAccent": "Aksen atas",
+      "leftAccent": "Aksen kiri",
+      "rightAccent": "Aksen kanan",
+      "bottomAccent": "Aksen bawah",
+      "underline": "Garis bawah"
+    },
+    "placeholder": {
+      "kpiLabel": "LABEL",
+      "kpiValue": "0.00%",
+      "kpiCaption": "Keterangan",
+      "alertTitle": "⚠ PERHATIAN",
+      "alertBody": "Terangkan isu dan tindakan yang diperlukan.",
+      "sectionTitle": "TAJUK SEKSYEN",
+      "photo": "[ Masukkan Foto ]",
+      "photoCaption": "Foto 1: Keterangan",
+      "photoMeta": "Tarikh: – · Lokasi: –"
+    },
+    "customizeHint": "Laraskan setiap sisi dan jejari sudut dalam Tetapan Gaya.",
+    "pageBorderExists": "Laporan ini sudah mempunyai sempadan halaman. Anda boleh edit sempadan halaman yang sedia ada berbanding menambah yang baru."
   },
   "table": {
     "dataSource": "Sumber Data Jadual",

@@ -713,6 +713,14 @@ import { loadFromLocalStorage, saveToLocalStorage } from "../utils/fileUtils";
 // Import element bounds validation utility
 import { getOutOfBoundsElements } from "../utils/elementBoundsValidator";
 import { calculateTextElementHeight } from "../utils/elementUtils";
+import {
+  buildFrameTemplate,
+  findPageBorder,
+  fitChildrenToFrame,
+  isFrameTemplateType,
+  PAGE_BORDER_TYPE,
+  type FrameTemplateContext,
+} from "../utils/framePresets";
 import { useBoundaryDetection } from "@/composables/useBoundaryDetection";
 import { useAlignmentSystem } from "@/composables/useAlignmentSystem";
 import { useDragFeedback } from "@/composables/useDragFeedback";
@@ -2138,8 +2146,85 @@ const handleDragStart = (event: DragEvent, element: any) => {
   }
 };
 
+// Printable page area (inside the margins) and translator, used to size frame templates
+const getFrameTemplateContext = (): FrameTemplateContext => ({
+  availableWidth: Math.round(
+    paperWidth.value -
+      (reportProperties.value?.leftMargin || 0) -
+      (reportProperties.value?.rightMargin || 0),
+  ),
+  availableHeight: Math.round(
+    paperHeight.value -
+      (reportProperties.value?.topMargin || 0) -
+      (reportProperties.value?.bottomMargin || 0),
+  ),
+  t,
+});
+
+// Base element for a library item: frame templates are built with their content,
+// everything else comes from the registry defaults
+const createLibraryElement = (type: string): DesignElement =>
+  isFrameTemplateType(type)
+    ? buildFrameTemplate(type, getFrameTemplateContext())
+    : ({
+        ...createElement(type),
+        ...getDefaultElementProperties(type),
+      } as DesignElement);
+
+// Add a border around the printable area of every page. It lives in the Background
+// band, which JasperReports prints behind all other content on each page.
+// Tell the user a page border already exists and select it for editing
+const rejectSecondPageBorder = (): boolean => {
+  const existing = findPageBorder(bands.value);
+  if (!existing) return false;
+  notification.warning(t("framePresets.pageBorderExists"));
+  selectElement(existing.bandIndex, existing.elementIndex);
+  return true;
+};
+
+const addPageBorder = () => {
+  if (rejectSecondPageBorder()) return;
+  saveStateToHistory();
+
+  const ctx = getFrameTemplateContext();
+  let bandIndex = bands.value.findIndex(
+    (b) => b.type === BAND_TYPE_CONSTANTS.BACKGROUND,
+  );
+  if (bandIndex === -1) {
+    bands.value.push({
+      type: BAND_TYPE_CONSTANTS.BACKGROUND as BandType,
+      height: ctx.availableHeight,
+      elements: [],
+    });
+    bandIndex = bands.value.length - 1;
+    selectedBandTypes.value = bands.value.map((band) => band.type);
+  }
+
+  const backgroundBand = bands.value[bandIndex]!;
+  backgroundBand.height = ctx.availableHeight;
+  if (!backgroundBand.elements) backgroundBand.elements = [];
+
+  const border = {
+    ...buildFrameTemplate(PAGE_BORDER_TYPE, ctx),
+    uuid: crypto.randomUUID(),
+    x: 0,
+    y: 0,
+  } as DesignElement;
+  backgroundBand.elements.push(border);
+
+  const elementIndex = backgroundBand.elements.length - 1;
+  selectElement(bandIndex, elementIndex);
+  handleElementCreated(border, bandIndex, elementIndex);
+  updateJRXML();
+};
+
 // Handle element double-click events
 const handleElementDoubleClick = (element: any) => {
+  if (element.type === PAGE_BORDER_TYPE) {
+    addPageBorder();
+    return;
+  }
+
   // Ensure there is a last-clicked band
   if (
     lastClickedBandIndex.value === null ||
@@ -2161,11 +2246,10 @@ const handleElementDoubleClick = (element: any) => {
 
   // Create the new element
   let newElement: DesignElement = {
-    ...createElement(element.type),
+    ...createLibraryElement(element.type),
     uuid: crypto.randomUUID(), // Generate a UUID
     x: 50, // Default position
     y: 20, // Default position
-    ...getDefaultElementProperties(element.type),
   } as DesignElement;
 
   // For table elements, check for/create the default dataset, then generate the corresponding columns
@@ -2277,15 +2361,24 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
       scaledY = (event.clientY - sheetRect.top) / currentZoom;
     }
 
+    // A page border always goes to the Background band, wherever it is dropped
+    if (elementData.type === PAGE_BORDER_TYPE) {
+      addPageBorder();
+      highlightedBandIndex.value = null;
+      return;
+    }
+
     // Create the new element
     // Center it on the cursor using its own compact default size
-    const droppedSize = getDefaultElementSize(elementData.type);
+    const baseElement = createLibraryElement(elementData.type);
+    const droppedSize = isFrameTemplateType(elementData.type)
+      ? { width: baseElement.width, height: baseElement.height }
+      : getDefaultElementSize(elementData.type);
     let newElement: DesignElement = {
-      ...createElement(elementData.type),
+      ...baseElement,
       uuid: crypto.randomUUID(), // Generate a UUID
       x: Math.round(Math.max(0, scaledX - droppedSize.width / 2)), // Center horizontally on the cursor
       y: Math.round(Math.max(0, scaledY - droppedSize.height / 2)), // Center vertically on the cursor
-      ...getDefaultElementProperties(elementData.type),
     } as DesignElement;
 
     // For detail band elements, assign pageIndex
@@ -2337,8 +2430,10 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
       // Detect whether it is being dropped on a Frame
       let targetFrameIndex = -1;
 
-      // Iterate over the Frames in the Band to check whether the new element lands on one
-      for (let i = targetBand.elements.length - 1; i >= 0; i--) {
+      // Iterate over the Frames in the Band to check whether the new element lands on one.
+      // Frames themselves are never nested: selection only supports one frame level.
+      const canNest = newElement.type !== "frame";
+      for (let i = targetBand.elements.length - 1; canNest && i >= 0; i--) {
         const el = targetBand.elements[i];
         if (!el) continue;
         if (el.type === "frame") {
@@ -2833,6 +2928,10 @@ const startDragging = (
       lastTargetPageIndex: sourcePageIndex,
     };
 
+    // Undo snapshot before the element moves (a drag only starts after the
+    // mouse has moved, so plain clicks add no undo step)
+    saveStateToHistory();
+
     isDraggingOrResizing.value = true;
 
     if (!cachedMouseMoveHandler) {
@@ -3014,8 +3113,6 @@ const startDragging = (
 
     if (!cachedMouseUpHandler) {
       cachedMouseUpHandler = (e: MouseEvent) => {
-        saveStateToHistory();
-
         if (draggingInfo.value) {
           const currentBand = bands.value[draggingInfo.value.bandIndex];
           let currentElement: DesignElement | undefined;
@@ -3140,9 +3237,10 @@ const startDragging = (
               elementRelTargetBandY = elementRelSourceBandY + bandOffsetY;
             }
 
-            // Find target frame within target band (if dropped inside a frame)
+            // Find target frame within target band (if dropped inside a frame).
+            // Frames themselves are never nested: selection only supports one frame level.
             let targetFrameIndex = -1;
-            if (targetBand && targetBand.elements) {
+            if (currentElement.type !== "frame" && targetBand && targetBand.elements) {
               for (let i = targetBand.elements.length - 1; i >= 0; i--) {
                 if (
                   targetBandIndex === draggingInfo.value.bandIndex &&
@@ -3763,6 +3861,15 @@ const pasteElement = async () => {
 
 // Handle the pasted element data (extracted into a separate function for reuse)
 const processPastedElement = (elementData: any) => {
+  // A frame pasted into the Background band would be a second page border
+  const pasteBand = bands.value[selectedBandIndex.value ?? 0];
+  if (
+    elementData?.type === "frame" &&
+    pasteBand?.type === BAND_TYPE_CONSTANTS.BACKGROUND &&
+    rejectSecondPageBorder()
+  ) {
+    return;
+  }
   saveStateToHistory();
 
   // Determine the paste location (use the currently selected band, or default to the first editable band)
@@ -5122,10 +5229,14 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   const startHeights: number[] = bands.value.map((b) => b.height || 0);
   const startTargetHeight: number = startHeights[bandIndex] ?? minHeight;
 
-  // Total height of all other fixed bands (excluding target band and Detail)
+  // Total height of all other fixed bands (excluding target band, Detail and the Background underlay)
   let otherBandsHeight = 0;
   bands.value.forEach((b, i) => {
-    if (i !== bandIndex && i !== detailIndex) {
+    if (
+      i !== bandIndex &&
+      i !== detailIndex &&
+      b.type !== BAND_TYPE_CONSTANTS.BACKGROUND
+    ) {
       otherBandsHeight += startHeights[i] || 0;
     }
   });
@@ -5328,13 +5439,31 @@ const startResizingElement = (
       startLineDirection: (element as any).lineDirection || "TopDown",
     };
 
+    // A frame's children are re-laid out from these start positions while resizing
+    const frameChildrenStart =
+      element.type === "frame"
+        ? ((element as FrameElement).elements ?? []).map(
+            ({ x, y, width, height }) => ({ x, y, width, height }),
+          )
+        : null;
+    const frameStartSize = { width: element.width, height: element.height };
+
     isDraggingOrResizing.value = true;
+
+    // Undo snapshot of the size before the resize, taken on the first move so a
+    // click on a handle without dragging adds no undo step
+    let historySaved = false;
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!resizingInfo.value) return;
 
       const currentBand = bands.value[resizingInfo.value.bandIndex];
       if (!currentBand) return;
+
+      if (!historySaved) {
+        saveStateToHistory();
+        historySaved = true;
+      }
 
       let element: DesignElement | undefined;
       let containerWidth =
@@ -5690,6 +5819,18 @@ const startResizingElement = (
       element.y = tempY;
       element.height = tempHeight;
 
+      // Keep a frame's content in step with the frame (stretch wide items, pin edge items)
+      if (frameChildrenStart && element.type === "frame") {
+        const fitted = fitChildrenToFrame(frameChildrenStart, frameStartSize, {
+          width: element.width,
+          height: element.height,
+        });
+        (element as FrameElement).elements?.forEach((child, i) => {
+          const rect = fitted[i];
+          if (rect) Object.assign(child, rect);
+        });
+      }
+
       // Re-run alignment-line detection using the final size (to ensure alignment lines display correctly)
       if (enableSnapToAlignment.value) {
         detectAlignmentLines(element, resizingInfo.value.bandIndex);
@@ -5701,9 +5842,6 @@ const startResizingElement = (
     const handleMouseUp = () => {
       // Clear the alignment lines
       clearAlignmentLines();
-
-      // Save state to history
-      saveStateToHistory();
 
       resizingInfo.value = null;
       isDraggingOrResizing.value = false;

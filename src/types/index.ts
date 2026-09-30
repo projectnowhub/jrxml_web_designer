@@ -455,6 +455,10 @@ export interface FrameElement extends DesignElementBase {
   // Frame-specific properties
   isRemoveLineWhenBlank?: boolean;
   isPrintRepeatedValues?: boolean;
+  // Corner radius (all four corners)
+  radius?: number;
+  // Lines of a partial border (accents) drawn as bars with rounded ends
+  roundedLineEnds?: boolean;
 }
 
 // Row group interface

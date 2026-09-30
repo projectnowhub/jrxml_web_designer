@@ -47,6 +47,18 @@ The central data structures live in `src/types/index.ts`:
 - `Field`, `ReportParameter`, `ReportVariable` — data model definitions
 - `ReportStyle`, `ConditionalStyle` — style system
 
+## Frames, Cards and Page Border
+
+Logic lives in `src/utils/framePresets.ts`: border presets, per-side pen helpers, the library templates ("Frames & Cards": KPI Card, Alert Box, Titled Section, Photo Card, Page Border), and fitting a card's children when it is resized.
+
+- **Page border** = a frame in the Background band, sized to the printable area. Only one is allowed (`findPageBorder`): the library tile is disabled once it exists, and add/paste show a warning and select the existing one. On the canvas the Background band is drawn over the bands (`mix-blend-mode: multiply`) and ignores the mouse, except a thin strip along the border line so it can be clicked. The Background band is never counted in band-height totals, and `<background>` is always written first.
+- **Borders are pens only** (`box.pen` / `topPen`…); fills are a separate feature. The Basic tab shows presets only; per-side editing is the Style Settings side-border controls.
+- **Rounded frames**: JasperReports can't round a frame border, so the generator writes marked rounded rectangles as the frame's first children, and the parser turns them back into the frame (`ROUNDED_BORDER_PROPERTY` marker, exact pens in `ROUNDED_BORDER_PENS_PROPERTY`):
+  - `radius` + the same line on all sides → one rounded rectangle carrying the pen and fill
+  - `radius` + a partial border (accents) → two stacked filled rounded rectangles (border colour behind, inside colour in front, inset by each side's width); solid, one colour, inside filled
+  - `roundedLineEnds` (radius 0, partial border) → each line is a filled rounded bar
+  Canvas and generator share the same helpers (`getLayeredBorder`, `getRoundedLineEndBars`) so they always match. No SVG or images.
+
 ## Project Structure
 
 ```
@@ -71,6 +83,7 @@ src/
 │   │   ├── xmlBuilder.ts        # XML tag builder helpers
 │   │   ├── validator.ts         # JRXML validation rules
 │   │   └── officialCompiler.ts  # (if exists) Reference compiler
+│   ├── framePresets.ts          # Frame border presets, card templates, rounded-border encoding
 │   └── jrxmlGenerator.ts        # JSON → JRXML generator
 ├── test/
 │   └── setup.ts                 # Vitest global mocks
@@ -103,6 +116,8 @@ npm run test:watch   # Watch mode
 - No external state management library — reactive refs in components
 - i18n via vue-i18n: English (`en`, default) and Malay (`ms`); all text outside `src/locales/ms.json` is English; locale files in `src/locales/`, choice stored in localStorage (`appLocale`)
 - User-visible text always goes through a translation key; never hard-code UI text
+- Colour inputs use `src/components/common/ColorSwatchPicker.vue` (Naive UI picker whose popover stays inside the window), not `<input type="color">`, whose native popup can open off-screen. Exception: the inline text toolbar (`TextFormatToolbar.vue`) keeps native inputs, because focus moving into a page popover would drop the text selection being formatted.
 - Default report font: DejaVu Sans (`DEFAULT_REPORT_FONT` in `src/config/fonts.config.ts`), bundled in `public/fonts/dejavu/` and shipped with JasperReports
 - JRXML namespace: `http://jasperreports.sourceforge.net/jasperreports`
 - Element UUIDs required by JasperReports XSD
+- **Undo/redo** (`src/composables/useUndoRedo.ts`) snapshots the whole model. Every editor change must take a snapshot **before** mutating: `saveStateToHistory()` in `PDFDesigner.vue`, `emit("save-state")` from property panels. One user action = one undo step: record once per action (not once per side or per keystroke; see `recordBorderEdit` in `ElementProperties.vue`), and for drags/resizes record at the start, not on mouse-up. New features must be checked with Ctrl+Z / Ctrl+Y.

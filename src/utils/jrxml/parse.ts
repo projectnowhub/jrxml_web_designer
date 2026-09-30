@@ -1,4 +1,12 @@
 import type { DesignElement, BandType, Band, ReportGroup } from "@/types";
+import {
+  decodeSidePens,
+  orUndefined,
+  ROUNDED_BORDER_PENS_PROPERTY,
+  ROUNDED_BORDER_PROPERTY,
+  ROUNDED_MARKER,
+  withoutLines,
+} from "../framePresets";
 import type {
   ReportProperties,
   Field,
@@ -1711,7 +1719,68 @@ function parseElement(element: Element, type: string): any {
     (result as any).radius = parseInt(element.getAttribute("radius") || "0");
   }
 
+  if (elementType === "frame") {
+    restoreRoundedFrameBorder(result);
+  }
+
   return result;
+}
+
+// A frame with rounded corners is written as a frame whose first children are
+// marked rounded rectangles; turn them back into a frame with a radius
+function restoreRoundedFrameBorder(frame: any): void {
+  const markerOf = (el: any): string | undefined =>
+    el?.type === "rectangle"
+      ? el.properties?.find((p: any) => p.name === ROUNDED_BORDER_PROPERTY)?.value
+      : undefined;
+  const first = frame.elements?.[0];
+  const marker = markerOf(first);
+  if (!marker) return;
+
+  const box = withoutLines(frame.box);
+  let fill: any = null;
+
+  if (marker === ROUNDED_MARKER.lineEnd) {
+    // Border lines drawn as bars with rounded ends; the frame keeps square corners
+    const pens =
+      first.properties.find((p: any) => p.name === ROUNDED_BORDER_PENS_PROPERTY)?.value ?? "";
+    Object.assign(box, decodeSidePens(pens));
+    while (markerOf(frame.elements[0]) === ROUNDED_MARKER.lineEnd) frame.elements.shift();
+    if (frame.elements.length === 0) delete frame.elements;
+    frame.roundedLineEnds = true;
+    frame.box = orUndefined(box);
+    return;
+  }
+
+  if (marker === ROUNDED_MARKER.layeredBack) {
+    // Back shape (border colour) + front shape (inside)
+    const front = frame.elements[1];
+    const frontMarker = markerOf(front);
+    const pens =
+      first.properties.find((p: any) => p.name === ROUNDED_BORDER_PENS_PROPERTY)?.value ?? "";
+    Object.assign(box, decodeSidePens(pens));
+    frame.elements.splice(0, frontMarker ? 2 : 1);
+    if (frontMarker === ROUNDED_MARKER.layeredFrontFill) fill = front;
+  } else {
+    // One rounded rectangle carrying the pen and fill
+    frame.elements.shift();
+    if ((first.pen?.lineWidth ?? 0) > 0) {
+      box.pen = {
+        lineWidth: first.pen.lineWidth,
+        lineStyle: first.pen.lineStyle || "Solid",
+        lineColor: first.pen.lineColor || "#000000",
+      };
+    }
+    fill = first;
+  }
+
+  if (frame.elements.length === 0) delete frame.elements;
+  frame.radius = first.radius;
+  frame.box = orUndefined(box);
+  if (fill?.mode === "Opaque" && fill.backcolor) {
+    frame.mode = "Opaque";
+    frame.backcolor = fill.backcolor;
+  }
 }
 
 function parseBoxElement(boxElement: Element): any {
@@ -2128,7 +2197,7 @@ function parseGraphicElement(element: Element): any {
     if (penElement) {
       const pen: any = {};
       if (penElement.hasAttribute("lineWidth")) {
-        pen.lineWidth = parseInt(penElement.getAttribute("lineWidth") || "0");
+        pen.lineWidth = parseFloat(penElement.getAttribute("lineWidth") || "0");
       }
       if (penElement.hasAttribute("lineStyle")) {
         pen.lineStyle = penElement.getAttribute("lineStyle");

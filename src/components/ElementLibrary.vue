@@ -20,7 +20,9 @@
             v-for="element in categoryElements"
             :key="element.type"
             class="element-item"
-            draggable="true"
+            :class="{ 'is-disabled': isUnavailable(element.type) }"
+            :title="isUnavailable(element.type) ? t('framePresets.pageBorderExists') : undefined"
+            :draggable="!isUnavailable(element.type)"
             @dragstart="handleDragStart($event, element)"
             @dblclick="handleElementDoubleClick(element)"
           >
@@ -319,6 +321,7 @@ import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
 import ConfirmModal from "./modals/ConfirmModal.vue";
 import { ElementRegistry } from "./elements/ElementRegistry";
+import { findPageBorder, PAGE_BORDER_TYPE } from "../utils/framePresets";
 import type {
   DesignElement,
   TextFieldElement,
@@ -410,6 +413,7 @@ const elementFilterText = ref("");
 // Element group expanded state
 const expandedCategories = ref<Record<string, boolean>>({
   basic: true,
+  frames: true,
   composite: true,
 });
 const toggleCategory = (key: string) => {
@@ -418,12 +422,13 @@ const toggleCategory = (key: string) => {
 
 const categoryLabels = computed<Record<string, string>>(() => ({
   basic: t("elementLibrary.basicElements"),
+  frames: t("elementLibrary.frameElements"),
   composite: t("elementLibrary.compositeElements"),
 }));
 
 const groupedElements = computed(() => {
   const registry = ElementRegistry.getInstance();
-  const categories: Record<string, any[]> = { basic: [], composite: [] };
+  const categories: Record<string, any[]> = { basic: [], frames: [], composite: [] };
   for (const element of props.elements) {
     const config = registry.getElementConfig(element.type);
     const category = config?.category || "basic";
@@ -569,7 +574,17 @@ function getFieldTypeName(className: string): string {
 }
 
 // Handle drag start
+// Only one page border per report; the tile stays clickable so the designer can
+// explain why and select the existing border
+const hasPageBorder = computed(() => findPageBorder(props.bands) !== null);
+const isUnavailable = (type: string) => type === PAGE_BORDER_TYPE && hasPageBorder.value;
+
 function handleDragStart(event: DragEvent, element: any): void {
+  if (isUnavailable(element.type)) {
+    event.preventDefault();
+    emit("element-double-click", element);
+    return;
+  }
   emit("drag-start", event, element);
 }
 
@@ -854,6 +869,12 @@ watch(
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   /* margin-bottom: 16px; */
+}
+
+.element-item.is-disabled,
+.element-item.is-disabled:hover {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .element-item {

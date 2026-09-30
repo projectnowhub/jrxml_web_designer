@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "JRXML Visual Designer"
+    "title": "CDP Report Studio"
   },
   "actions": {
     "undo": "Undo",
@@ -47,6 +47,7 @@
   "elementLibrary": {
     "title": "Element Library",
     "basicElements": "Basic Elements",
+    "frameElements": "Frames & Cards",
     "compositeElements": "Composite Elements",
     "reportElements": "Report Elements",
     "filterElements": "Filter elements...",
@@ -138,6 +139,11 @@
     "ellipse": "Ellipse",
     "break": "Break",
     "frame": "Frame",
+    "frameKpiCard": "KPI Card",
+    "frameAlertBox": "Alert Box",
+    "frameTitledSection": "Titled Section",
+    "framePhotoCard": "Photo Card",
+    "framePageBorder": "Page Border",
     "table": "Table",
     "subreport": "Subreport",
     "list": "List",
@@ -415,7 +421,10 @@
     "barcodeProperties": "Barcode Properties",
     "barcodeType": "Barcode Type",
     "barcodeValue": "Barcode Value",
-    "barcodeValuePlaceholder": "e.g. 1234567890"
+    "barcodeValuePlaceholder": "e.g. 1234567890",
+    "cornerRadiusHint": "The border follows the rounded corners in one solid colour, and the inside is filled (white unless the frame has a background).",
+    "roundedLineEnds": "Rounded line ends",
+    "roundedLineEndsHint": "Each line is drawn as a solid bar with rounded ends."
   },
   "bottomPanel": {
     "pageSettings": "Page Settings",
@@ -1004,7 +1013,8 @@
     "dropHere": "Drop here",
     "aligned": "Aligned",
     "pageOf": "Page {page} of {total}",
-    "dragOntoPage": "Drag elements onto page {page}"
+    "dragOntoPage": "Drag elements onto page {page}",
+    "selectPageBorder": "Click to select the page border"
   },
   "alignment": {
     "left": "Align left",
@@ -1058,6 +1068,38 @@
     "layoutStack": "Stack (top to bottom)",
     "mode": "Display mode",
     "modeDescription": "Opaque shows the background, Transparent is see-through"
+  },
+  "framePresets": {
+    "styleLabel": "Border presets",
+    "pageBorderTitle": "Page Border",
+    "custom": "Custom border (no preset matches)",
+    "style": {
+      "none": "None",
+      "hairline": "Hairline",
+      "light": "Light",
+      "softDashed": "Soft dashed",
+      "outline": "Outline",
+      "thick": "Thick",
+      "doubleRule": "Double rule",
+      "topAccent": "Top accent",
+      "leftAccent": "Left accent",
+      "rightAccent": "Right accent",
+      "bottomAccent": "Bottom accent",
+      "underline": "Underline"
+    },
+    "placeholder": {
+      "kpiLabel": "LABEL",
+      "kpiValue": "0.00%",
+      "kpiCaption": "Caption",
+      "alertTitle": "⚠ ATTENTION",
+      "alertBody": "Describe the issue and the action required.",
+      "sectionTitle": "SECTION TITLE",
+      "photo": "[ Insert Photo ]",
+      "photoCaption": "Photo 1: Caption",
+      "photoMeta": "Date: – · Location: –"
+    },
+    "customizeHint": "Fine-tune each side and the corner radius in Style Settings.",
+    "pageBorderExists": "This report already has a page border. You can edit the existing page border instead of adding a new one."
   },
   "table": {
     "dataSource": "Table Data Source",

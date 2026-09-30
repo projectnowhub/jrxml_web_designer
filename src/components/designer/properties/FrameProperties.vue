@@ -1,47 +1,38 @@
 <template>
   <div class="frame-properties">
-    <h4>{{ t("frame.title") }}</h4>
+    <h4>{{ isPageBorder ? t("framePresets.pageBorderTitle") : t("frame.title") }}</h4>
 
-    <!-- Layout mode -->
+    <!-- Border presets (one active at a time) -->
     <div class="form-group">
+      <label>{{ t("framePresets.styleLabel") }}</label>
+      <div class="preset-grid" role="radiogroup">
+        <button
+          v-for="preset in BORDER_PRESETS"
+          :key="preset.id"
+          type="button"
+          role="radio"
+          class="preset-swatch"
+          :class="{ active: activePreset === preset.id }"
+          :aria-checked="activePreset === preset.id"
+          :title="t(preset.labelKey)"
+          @click="applyPreset(preset)"
+        >
+          <span class="preset-sample" :style="previewStyle(preset)"></span>
+          <span class="preset-name">{{ t(preset.labelKey) }}</span>
+        </button>
+      </div>
+      <span v-if="!activePreset" class="form-hint">{{ t("framePresets.custom") }}</span>
+      <span class="form-hint">{{ t("framePresets.customizeHint") }}</span>
+    </div>
+
+    <!-- Layout of the items inside (a page border has none) -->
+    <div v-if="!isPageBorder" class="form-group">
       <SelectControl
         :model-value="element.layout || 'FreeLayout'"
         @update:model-value="updateProperty('layout', $event)"
         :options="layoutOptions"
         :label="t('frame.layout')"
         :description="t('frame.layoutDescription')"
-      />
-    </div>
-
-
-    <!-- Background color -->
-    <div class="form-group">
-      <label>{{ t("properties.backgroundColor") }}</label>
-      <div class="color-input-group">
-        <input
-          type="color"
-          :value="element.backcolor || '#FFFFFF'"
-          @input="updateProperty('backcolor', ($event.target as HTMLInputElement).value)"
-          class="color-input"
-        />
-        <input
-          type="text"
-          :value="element.backcolor || '#FFFFFF'"
-          @input="updateProperty('backcolor', ($event.target as HTMLInputElement).value)"
-          class="color-text"
-          placeholder="#FFFFFF"
-        />
-      </div>
-    </div>
-
-    <!-- Display mode -->
-    <div class="form-group">
-      <SelectControl
-        :model-value="element.mode || 'Transparent'"
-        @update:model-value="updateProperty('mode', $event)"
-        :options="modeOptions"
-        :label="t('frame.mode')"
-        :description="t('frame.modeDescription')"
       />
     </div>
   </div>
@@ -51,9 +42,19 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import SelectControl from './common/SelectControl.vue';
+import {
+  applyBorderPreset,
+  BORDER_PRESETS,
+  BORDER_SIDES,
+  getActiveBorderPreset,
+  getSidePen,
+  type BorderPreset,
+} from '../../../utils/framePresets';
 
 const props = defineProps<{
   element: any;
+  // Frame lives in the Background band (drawn on every page)
+  isPageBorder?: boolean;
   reportFields?: Array<{ name: string; class?: string }>;
   reportParameters?: Array<{ name: string; class?: string }>;
   reportVariables?: Array<{ name: string; class?: string }>;
@@ -71,21 +72,44 @@ const layoutOptions = computed(() => [
   { value: 'VerticalLayout', label: `↕️ ${t('frame.layoutStack')}` }
 ]);
 
-const modeOptions = computed(() => [
-  { value: 'Opaque', label: t('properties.opaque') },
-  { value: 'Transparent', label: t('properties.transparent') }
-]);
-
+const activePreset = computed(() => getActiveBorderPreset(props.element.box));
 const updateProperty = (property: string, value: any) => {
   const updatedElement = { ...props.element };
   updatedElement[property] = value;
   emit('update:element', updatedElement);
 };
+
+// Legacy root-level border fields (older imports) are dropped so they can't add
+// lines back on sides the preset leaves off
+const applyPreset = (preset: BorderPreset) => {
+  const box = applyBorderPreset(props.element.box, preset.id);
+  const { border, borderWidth, borderStyle, borderColor, ...rest } = props.element;
+  emit('update:element', { ...rest, box });
+};
+
+// Small swatch showing roughly what the preset looks like
+const previewStyle = (preset: BorderPreset) => {
+  const pens = preset.pens();
+  const css = (side: (typeof BORDER_SIDES)[number]) => {
+    const pen = getSidePen(pens, side);
+    if (!pen) return 'none';
+    const px = pen.lineStyle === 'Double' ? 3 : Math.max(1, Math.round(pen.lineWidth ?? 1));
+    return `${px}px ${pen.lineStyle!.toLowerCase()} ${pen.lineColor}`;
+  };
+  // "None" keeps the dashed placeholder outline from CSS
+  if (preset.id === 'none') return {};
+  return {
+    borderTop: css('top'),
+    borderRight: css('right'),
+    borderBottom: css('bottom'),
+    borderLeft: css('left'),
+  };
+};
 </script>
 
 <style scoped>
 .frame-properties {
-  padding: var(--prop-spacing-lg);
+  padding: var(--prop-spacing-lg) 0;
 }
 
 .frame-properties h4 {
@@ -101,7 +125,7 @@ const updateProperty = (property: string, value: any) => {
   margin-bottom: var(--prop-spacing-lg);
 }
 
-.form-group label {
+.form-group > label {
   display: block;
   margin-bottom: var(--prop-spacing-xs);
   font-size: var(--prop-font-size-sm);
@@ -116,38 +140,54 @@ const updateProperty = (property: string, value: any) => {
   color: var(--prop-text-tertiary);
 }
 
-.color-input-group {
-  display: flex;
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
   gap: var(--prop-spacing-sm);
-  align-items: center;
 }
 
-.color-input {
-  width: 32px;
-  height: 32px;
+.preset-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px;
+  background: transparent;
   border: 1px solid var(--prop-border-color);
   border-radius: var(--prop-border-radius-md);
   cursor: pointer;
-  padding: 2px;
-}
-
-.color-text {
-  flex: 1;
-  padding: 6px 8px;
-  border: 1px solid var(--prop-border-color);
-  border-radius: var(--prop-border-radius-md);
-  font-family: monospace;
-  font-size: var(--prop-font-size-sm);
   transition: border-color var(--prop-transition-fast), box-shadow var(--prop-transition-fast);
 }
 
-.color-text:hover {
+.preset-swatch:hover {
   border-color: var(--prop-border-hover);
 }
 
-.color-text:focus {
+.preset-swatch.active {
+  border-color: var(--prop-border-focus);
+  box-shadow: var(--prop-focus-ring);
+  background-color: rgba(24, 144, 255, 0.06);
+}
+
+.preset-swatch:focus-visible {
   outline: none;
   border-color: var(--prop-border-focus);
   box-shadow: var(--prop-focus-ring);
 }
+
+.preset-sample {
+  display: block;
+  width: 40px;
+  height: 26px;
+  box-sizing: border-box;
+  border: 1px dashed #d9d9d9;
+}
+
+.preset-name {
+  font-size: var(--prop-font-size-xs);
+  color: var(--prop-text-secondary);
+  text-align: center;
+  line-height: 1.2;
+}
+
 </style>

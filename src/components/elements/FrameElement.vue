@@ -19,6 +19,20 @@
   >
     <!-- Frame element content -->
     <div class="frame-content" :class="{ 'frame-empty': !element.elements || element.elements.length === 0 }">
+      <!-- Border lines with rounded ends, positioned from the frame's outer edge -->
+      <div
+        v-for="bar in lineEndBars"
+        :key="bar.side"
+        class="line-end-bar"
+        :style="{
+          left: `${bar.x - padding.left}px`,
+          top: `${bar.y - padding.top}px`,
+          width: `${bar.width}px`,
+          height: `${bar.height}px`,
+          borderRadius: `${bar.radius}px`,
+          backgroundColor: bar.color,
+        }"
+      ></div>
       <!-- Render child elements -->
       <template v-if="element.elements && element.elements.length > 0">
         <!-- Dynamically load ElementFactory to avoid circular reference -->
@@ -62,9 +76,11 @@
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent } from 'vue';
+import { computed, defineAsyncComponent } from 'vue';
 import BaseElement from './BaseElement.vue';
 import type { FrameElement, SelectedElementInfo, EditingElementInfo } from '../../types';
+import { getRoundedLineEndBars } from '../../utils/framePresets';
+import { getElementBoxPadding } from '../../utils/elementUtils';
 
 // Asynchronously import ElementFactory to avoid circular dependencies
 const ElementFactory = defineAsyncComponent(() => import('./ElementFactory.vue'));
@@ -86,6 +102,9 @@ const props = defineProps<{
   reportIsUnderline?: boolean;
   parentFrameIndex?: number; // Add the parentFrameIndex prop
 }>();
+
+const lineEndBars = computed(() => getRoundedLineEndBars(props.element) ?? []);
+const padding = computed(() => getElementBoxPadding(props.element.box));
 
 // Emits
 const emit = defineEmits<{
@@ -164,6 +183,11 @@ const handleChildCheckFields = (fields: string[]) => {
   width: 100%;
   height: 100%;
   position: relative;
+}
+
+.line-end-bar {
+  position: absolute;
+  pointer-events: none;
 }
 
 .frame-empty {

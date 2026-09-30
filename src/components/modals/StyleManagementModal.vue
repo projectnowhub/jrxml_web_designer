@@ -39,11 +39,19 @@
       <div class="color-row">
         <div class="form-group flex-1">
           <label for="forecolor">{{ t('styleManagement.forecolor') }}</label>
-          <input type="color" id="forecolor" v-model="localStyle.forecolor" class="form-color" />
+          <ColorSwatchPicker
+            v-model="localStyle.forecolor"
+            class="form-color"
+            id="forecolor"
+          />
         </div>
         <div class="form-group flex-1">
           <label for="backcolor">{{ t('styleManagement.backcolor') }}</label>
-          <input type="color" id="backcolor" v-model="localStyle.backcolor" class="form-color" />
+          <ColorSwatchPicker
+            v-model="localStyle.backcolor"
+            class="form-color"
+            id="backcolor"
+          />
         </div>
       </div>
 
@@ -98,6 +106,7 @@
 </template>
 
 <script setup lang="ts">
+import ColorSwatchPicker from '../common/ColorSwatchPicker.vue';
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import BaseModal from './BaseModal.vue';

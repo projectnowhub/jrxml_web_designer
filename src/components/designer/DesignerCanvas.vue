@@ -307,6 +307,61 @@
                   ></div>
                 </div>
 
+                <!-- Background band (page borders, watermarks), printed behind every page.
+                     Drawn over the bands with a multiply blend so the bands keep their white
+                     background while lines still show. Not interactive on the canvas; select
+                     its elements from Report Elements. -->
+                <div
+                  v-if="backgroundElements.length > 0"
+                  class="background-band-layer"
+                  :style="{
+                    top: (reportProperties.topMargin || 0) + 'px',
+                    left: (reportProperties.leftMargin || 0) + 'px',
+                    right: (reportProperties.rightMargin || 0) + 'px',
+                    height: (bands[backgroundBandIndex]?.height || 0) + 'px',
+                  }"
+                >
+                  <ElementFactory
+                    v-for="(item, index) in backgroundElements"
+                    :key="`page-${pIndex}-background-${item.uuid || index}`"
+                    :element="item"
+                    :band-index="backgroundBandIndex"
+                    :element-index="index"
+                    :selected-element="selectedElement"
+                    :selected-elements="selectedElements"
+                    :editing-element="null"
+                    :is-dragging="false"
+                    :report-font-family="reportProperties.defaultFont?.name"
+                    :report-font-size="reportProperties.defaultFont?.size"
+                    :report-is-bold="reportProperties.defaultFont?.isBold"
+                    :report-is-italic="reportProperties.defaultFont?.isItalic"
+                    :report-is-underline="reportProperties.defaultFont?.isUnderline"
+                    :is-out-of-bounds="false"
+                    :zoom-level="zoomLevel"
+                    :report-styles="props.reportStyles"
+                    :table-styles="props.tableStyles"
+                    :page-number="pIndex"
+                    :total-pages="totalPages"
+                  />
+                  <!-- Thin clickable strips along each edge, so a page border can be
+                       selected on the canvas while its inside stays click-through -->
+                  <template
+                    v-for="(item, index) in backgroundElements"
+                    :key="`page-${pIndex}-background-hit-${item.uuid || index}`"
+                  >
+                    <div
+                      v-for="side in EDGE_SIDES"
+                      :key="side"
+                      class="background-edge-hit"
+                      :class="`edge-${side}`"
+                      :style="edgeHitStyle(item, side)"
+                      :title="t('canvas.selectPageBorder')"
+                      @mousedown.stop
+                      @click.stop="selectElement(backgroundBandIndex, index, $event.ctrlKey || $event.metaKey || $event.shiftKey)"
+                    ></div>
+                  </template>
+                </div>
+
                 <!-- Alignment lines -->
                 <div
                   v-if="isDraggingOrResizing && enableSnapToAlignment"
@@ -509,6 +564,31 @@ const detailBandIndex = computed(() =>
 );
 
 const totalPages = computed(() => Math.max(1, props.totalPages || 1));
+
+// Background band is drawn as an underlay on every page, not in the stacked band flow
+const backgroundBandIndex = computed(() =>
+  props.bands.findIndex((b) => b.type === "background"),
+);
+const backgroundElements = computed(
+  () => props.bands[backgroundBandIndex.value]?.elements ?? [],
+);
+
+// Click targets for background elements: a strip centred on each edge
+const EDGE_SIDES = ["top", "right", "bottom", "left"] as const;
+const EDGE_HIT_SIZE = 6;
+const edgeHitStyle = (
+  el: { x: number; y: number; width: number; height: number },
+  side: (typeof EDGE_SIDES)[number],
+) => {
+  const half = EDGE_HIT_SIZE / 2;
+  const horizontal = side === "top" || side === "bottom";
+  return {
+    left: `${(side === "right" ? el.x + el.width : el.x) - half}px`,
+    top: `${(side === "bottom" ? el.y + el.height : el.y) - half}px`,
+    width: `${horizontal ? el.width + EDGE_HIT_SIZE : EDGE_HIT_SIZE}px`,
+    height: `${horizontal ? EDGE_HIT_SIZE : el.height + EDGE_HIT_SIZE}px`,
+  };
+};
 
 const totalRulerHeight = computed(() => {
   const pages = totalPages.value;
@@ -1248,6 +1328,42 @@ onBeforeUnmount(() => {
   background-image:
     linear-gradient(to right, #e0e0e0 1px, transparent 1px),
     linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
+}
+
+/* Sits above the bands; multiply keeps white areas white and lets the content
+   underneath show through fills, like ink printed on the page */
+.background-band-layer {
+  position: absolute;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+/* Nothing inside is clickable, including widgets that opt back in with pointer-events: auto */
+.background-band-layer :deep(*) {
+  pointer-events: none !important;
+}
+
+/* Page borders are sized from the page, not by dragging: no resize/rotate handles */
+.background-band-layer :deep(.resize-handle),
+.background-band-layer :deep(.element-rotate-widget) {
+  display: none;
+}
+
+/* Edge strips are the one clickable part of the layer */
+.background-band-layer .background-edge-hit {
+  position: absolute;
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+
+.background-band-layer .background-edge-hit:hover {
+  background-color: rgba(24, 144, 255, 0.35);
+}
+
+/* No empty-frame placeholder outline on page borders: it would look like the sides turned off */
+.background-band-layer :deep(.frame-empty) {
+  border-color: transparent;
+  background-color: transparent;
 }
 
 .band {

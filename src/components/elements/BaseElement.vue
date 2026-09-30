@@ -88,6 +88,7 @@
 import { computed } from 'vue';
 import type { DesignElement, SelectedElementInfo } from '../../types';
 import { getElementBoxPadding } from '../../utils/elementUtils';
+import { getLayeredBorder, getRoundedLineEndBars, type BorderSide } from '../../utils/framePresets';
 
 // Props
 const props = defineProps<{
@@ -196,7 +197,17 @@ const elementStyle = computed(() => {
   const textAlign = props.element.textAlignment === 'Justified' ? 'justify' : (props.element.textAlignment?.toLowerCase() || 'left');
   
   // Compute the border style
+  // Rounded frame with a partial border: drawn solid in one colour, as in the PDF
+  const layered = props.element.type === 'frame' ? getLayeredBorder(props.element as any) : null;
+  // Lines drawn as rounded bars by FrameElement instead of CSS borders
+  const lineEndBars = props.element.type === 'frame' ? getRoundedLineEndBars(props.element as any) : null;
+
   const calculateBorder = (side: string): string => {
+    if (lineEndBars) return 'none';
+    if (layered) {
+      const width = layered.widths[side as BorderSide];
+      return width > 0 ? `${width}px solid ${layered.color}` : 'none';
+    }
     // Prefer the getBorderStyle function, which already contains the full border handling logic
     const borderStyle = getBorderStyle(side, props.element.box);
     if (borderStyle && borderStyle !== 'none') {
@@ -224,7 +235,7 @@ const elementStyle = computed(() => {
     borderLeft: calculateBorder('left'),
     borderBottom: calculateBorder('bottom'),
     borderRight: calculateBorder('right'),
-    borderRadius: props.element.type === 'ellipse' ? '50%' : ((props.element.type === 'rectangle' && (props.element as any).radius) ? `${(props.element as any).radius}px` : undefined),
+    borderRadius: props.element.type === 'ellipse' ? '50%' : (((props.element.type === 'rectangle' || props.element.type === 'frame') && (props.element as any).radius) ? `${(props.element as any).radius}px` : undefined),
     fontFamily: props.element.fontFamily || props.reportFontFamily,
     fontSize: props.element.fontSize ? `${props.element.fontSize}px` : (props.reportFontSize ? `${props.reportFontSize}px` : '10px'),
     fontWeight: (props.element.isBold === true || (props.element.isBold === undefined && props.reportIsBold)) ? 'bold' : 'normal',
@@ -362,6 +373,9 @@ const getBorderStyle = (side: string, box?: any): string | undefined => {
 
   // If no color is set, use transparent
   const finalColor = color || 'transparent';
+
+  // Browsers draw a double border as a single line below 3px
+  if (style === 'double' && parseFloat(width) < 3) width = '3px';
 
   return `${width} ${style} ${finalColor}`;
 };

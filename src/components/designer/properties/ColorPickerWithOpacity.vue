@@ -1,10 +1,9 @@
 <template>
   <div class="color-picker-with-opacity">
     <div class="color-picker-row">
-      <input
-        v-model="localColor"
-        type="color"
-        @input="updateColor"
+      <ColorSwatchPicker
+        :model-value="localColor"
+        @update:model-value="localColor = $event; updateColor()"
         class="color-input"
       />
     </div>
@@ -23,6 +22,7 @@
 </template>
 
 <script setup lang="ts">
+import ColorSwatchPicker from '../../common/ColorSwatchPicker.vue';
 import { ref, watch } from 'vue';
 
 interface Props {

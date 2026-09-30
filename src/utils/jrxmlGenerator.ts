@@ -4,6 +4,20 @@ import type { DesignElement, BandType, Band, ReportGroup } from "../types";
 import type { ReportProperties, Field, Parameter } from "./jrxml/types";
 import { buildJasperReportOpenTag } from "./jrxml/xmlBuilder";
 import { generateUUID } from "./jrxml/uuidGenerator";
+import {
+  encodeSidePens,
+  getLayeredBorder,
+  getRoundedBorderPen,
+  getRoundedLineEndBars,
+  hasRoundedCorners,
+  type LineEndBar,
+  orUndefined,
+  PAPER_COLOR,
+  ROUNDED_BORDER_PENS_PROPERTY,
+  ROUNDED_BORDER_PROPERTY,
+  ROUNDED_MARKER,
+  withoutLines,
+} from "./framePresets";
 
 export type { ReportProperties, Field, Parameter } from "./jrxml/types";
 
@@ -360,8 +374,13 @@ export function generateJRXMLContent(
     });
   }
 
-  // Add report bands
-  bands.forEach((band) => {
+  // Add report bands. The XSD requires <background> before every other band,
+  // while the designer keeps it at the end of its band list.
+  const orderedBands = [
+    ...bands.filter((band) => band.type === "background"),
+    ...bands.filter((band) => band.type !== "background"),
+  ];
+  orderedBands.forEach((band) => {
     if (band.elements.length > 0 || band.height > 0) {
       if (band.type === "detail") {
         // Check for multi-page detail
@@ -1469,8 +1488,13 @@ function generateEllipseXML(element: any): string {
 
 // Generate frame (container) XML
 function generateFrameXML(element: any): string {
+  // Rounded corners: the frame's lines and fill move to a rounded rectangle
+  // drawn as its first child (see ROUNDED_BORDER_PROPERTY)
+  const rounded = hasRoundedCorners(element);
+  const frameAttrs = rounded ? { ...element, mode: "Transparent", backcolor: undefined } : element;
+
   let xml = `<frame>`;
-  xml += `<reportElement${generateReportElementAttrs(element)}>`;
+  xml += `<reportElement${generateReportElementAttrs(frameAttrs)}>`;
   xml += `${generateReportElementChildren(element)}`;
 
   // The layout attribute belongs on the property child element of reportElement
@@ -1481,7 +1505,16 @@ function generateFrameXML(element: any): string {
   xml += "</reportElement>";
 
   // Generate the box element
-  xml += generateBoxXML(element.box, element);
+  const lineEndBars = rounded ? null : getRoundedLineEndBars(element, true);
+  if (rounded || lineEndBars) {
+    const padding = orUndefined(withoutLines(element.box));
+    if (padding) xml += generateBoxXML(padding);
+    xml += rounded
+      ? generateRoundedFrameBorderXML(element)
+      : generateLineEndBarsXML(element, lineEndBars!);
+  } else {
+    xml += generateBoxXML(element.box, element);
+  }
 
   // Generate child elements
   if (element.elements && element.elements.length > 0) {
@@ -1492,6 +1525,90 @@ function generateFrameXML(element: any): string {
 
   xml += `</frame>`;
   return xml;
+}
+
+// Rounded rectangle(s) carrying a frame's border and fill (see ROUNDED_BORDER_PROPERTY)
+function generateRoundedFrameBorderXML(frame: any): string {
+  const opaque = frame.mode === "Opaque" && frame.backcolor;
+  const shape = (overrides: any, marker: string, extraProperties: any[] = []) =>
+    generateRectangleXML({
+      type: "rectangle",
+      uuid: generateUUID(),
+      x: 0,
+      y: 0,
+      width: frame.width,
+      height: frame.height,
+      radius: frame.radius,
+      // Grows with the frame when its content stretches
+      stretchType: "RelativeToBandHeight",
+      mode: "Transparent",
+      pen: { lineWidth: 0 },
+      properties: [{ name: ROUNDED_BORDER_PROPERTY, value: marker }, ...extraProperties],
+      ...overrides,
+    });
+
+  const layered = getLayeredBorder(frame);
+  if (!layered) {
+    return shape(
+      {
+        mode: opaque ? "Opaque" : "Transparent",
+        backcolor: opaque ? frame.backcolor : undefined,
+        pen: getRoundedBorderPen(frame.box) ?? { lineWidth: 0 },
+      },
+      ROUNDED_MARKER.outline,
+    );
+  }
+
+  // Positions are whole points in JRXML; a drawn side is at least 1pt wide
+  const inset = (side: keyof typeof layered.widths) =>
+    layered.widths[side] > 0 ? Math.max(1, Math.round(layered.widths[side])) : 0;
+  const left = inset("left");
+  const top = inset("top");
+  const back = shape(
+    { mode: "Opaque", backcolor: layered.color },
+    ROUNDED_MARKER.layeredBack,
+    [{ name: ROUNDED_BORDER_PENS_PROPERTY, value: encodeSidePens(frame.box) }],
+  );
+  const front = shape(
+    {
+      x: left,
+      y: top,
+      width: Math.max(1, frame.width - left - inset("right")),
+      height: Math.max(1, frame.height - top - inset("bottom")),
+      mode: "Opaque",
+      backcolor: opaque ? frame.backcolor : PAPER_COLOR,
+    },
+    opaque ? ROUNDED_MARKER.layeredFrontFill : ROUNDED_MARKER.layeredFrontPlain,
+  );
+  return back + front;
+}
+
+// Border lines drawn as bars with rounded ends; the first bar carries the exact
+// side pens so the border reads back unchanged
+function generateLineEndBarsXML(frame: any, bars: LineEndBar[]): string {
+  return bars
+    .map((bar, i) =>
+      generateRectangleXML({
+        type: "rectangle",
+        uuid: generateUUID(),
+        x: bar.x,
+        y: bar.y,
+        width: bar.width,
+        height: bar.height,
+        radius: bar.radius,
+        // Side bars grow with the frame when its content stretches
+        stretchType: bar.side === "left" || bar.side === "right" ? "RelativeToBandHeight" : undefined,
+        positionType: bar.side === "bottom" ? "FixRelativeToBottom" : undefined,
+        mode: "Opaque",
+        backcolor: bar.color,
+        pen: { lineWidth: 0 },
+        properties: [
+          { name: ROUNDED_BORDER_PROPERTY, value: ROUNDED_MARKER.lineEnd },
+          ...(i === 0 ? [{ name: ROUNDED_BORDER_PENS_PROPERTY, value: encodeSidePens(frame.box) }] : []),
+        ],
+      }),
+    )
+    .join("");
 }
 
 // Generate page break XML

@@ -606,6 +606,51 @@ export class ElementRegistry {
     //     textAlignment: 'Center', verticalAlignment: 'Middle'
     //   }
     // });
+
+    // Frame templates: styled frames with placeholder content.
+    // The actual element is built by buildFrameTemplate() in utils/framePresets.ts.
+    const frameTemplates: Array<{ type: string; name: string; iconSvg: string }> = [
+      {
+        type: "frameKpiCard",
+        name: "elementNames.frameKpiCard",
+        iconSvg:
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="1" fill="currentColor" fill-opacity="0.15" stroke="none"/><path d="M6 9h5M6 13h9M6 16h4"/></svg>',
+      },
+      {
+        type: "frameAlertBox",
+        name: "elementNames.frameAlertBox",
+        iconSvg:
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="1" fill="currentColor" fill-opacity="0.15" stroke="none"/><path d="M8 11l2-4 2 4z"/><path d="M6 15h12M6 18h8"/></svg>',
+      },
+      {
+        type: "frameTitledSection",
+        name: "elementNames.frameTitledSection",
+        iconSvg:
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="1"/><rect x="3" y="4" width="18" height="4" fill="currentColor"/></svg>',
+      },
+      {
+        type: "framePhotoCard",
+        name: "elementNames.framePhotoCard",
+        iconSvg:
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 15h18M6 12l3-3 3 3 2-2 4 4"/><path d="M6 18h8"/></svg>',
+      },
+      {
+        type: "framePageBorder",
+        name: "elementNames.framePageBorder",
+        iconSvg:
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20"/><rect x="6.5" y="4.5" width="11" height="15" stroke-width="1"/></svg>',
+      },
+    ];
+    frameTemplates.forEach(({ type, name, iconSvg }) =>
+      this.registerElement({
+        type,
+        name,
+        icon: "☐",
+        iconSvg,
+        category: "frames",
+        defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
+      }),
+    );
   }
 
   // Register an element
