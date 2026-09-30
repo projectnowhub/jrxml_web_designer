@@ -47,7 +47,7 @@
   "elementLibrary": {
     "title": "Element Library",
     "basicElements": "Basic Elements",
-    "frameElements": "Frames & Cards",
+    "frameElements": "Element Presets",
     "compositeElements": "Composite Elements",
     "reportElements": "Report Elements",
     "filterElements": "Filter elements...",
@@ -138,11 +138,11 @@
     "rectangle": "Rectangle",
     "ellipse": "Ellipse",
     "break": "Break",
-    "frame": "Frame",
-    "frameKpiCard": "KPI Card",
+    "frame": "Box",
+    "frameKpiCard": "Number Box",
     "frameAlertBox": "Alert Box",
-    "frameTitledSection": "Titled Section",
-    "framePhotoCard": "Photo Card",
+    "frameTitledSection": "Section Box",
+    "framePhotoCard": "Photo Box",
     "framePageBorder": "Page Border",
     "table": "Table",
     "subreport": "Subreport",
@@ -257,10 +257,6 @@
     "breakType": "Break Type",
     "pageBreak": "Page Break",
     "columnBreak": "Column Break",
-    "layoutMode": "Layout Mode",
-    "freeLayout": "Free Layout",
-    "horizontalLayout": "Horizontal Layout",
-    "verticalLayout": "Vertical Layout",
     "breakNoBorder": "Break element does not support border settings.",
     "unifiedBorder": "Unified Border Settings",
     "unifiedBorderHint": "This element only supports unified border settings",
@@ -953,7 +949,6 @@
       "create_static_text": "Create static text",
       "create_text_field": "Create dynamic text field",
       "create_rectangle": "Create rectangle",
-      "create_frame": "Create frame",
       "update_element": "Update element",
       "move_element": "Move element",
       "delete_element": "Delete element",
@@ -1060,14 +1055,7 @@
     "right": "Resize right"
   },
   "frame": {
-    "title": "Frame Properties",
-    "layout": "Container Layout",
-    "layoutDescription": "Choose how the items inside are arranged",
-    "layoutFree": "Freeform (drag anywhere)",
-    "layoutRow": "Row (side by side)",
-    "layoutStack": "Stack (top to bottom)",
-    "mode": "Display mode",
-    "modeDescription": "Opaque shows the background, Transparent is see-through"
+    "title": "Box Style"
   },
   "framePresets": {
     "styleLabel": "Border presets",
@@ -1094,12 +1082,20 @@
       "alertTitle": "⚠ ATTENTION",
       "alertBody": "Describe the issue and the action required.",
       "sectionTitle": "SECTION TITLE",
-      "photo": "[ Insert Photo ]",
       "photoCaption": "Photo 1: Caption",
       "photoMeta": "Date: – · Location: –"
     },
     "customizeHint": "Fine-tune each side and the corner radius in Style Settings.",
-    "pageBorderExists": "This report already has a page border. You can edit the existing page border instead of adding a new one."
+    "pageBorderExists": "This report already has a page border. You can edit the existing page border instead of adding a new one.",
+    "templateDescription": {
+      "frameKpiCard": "Shows one important number, with a small label above and a note below (for example: Progress 17.93%).",
+      "frameAlertBox": "A coloured box with a heading and a short message, for warnings or things readers must notice.",
+      "frameTitledSection": "A bordered area with a dark heading bar on top. Put related content inside it.",
+      "framePhotoCard": "A photo with a caption and a date line underneath.",
+      "framePageBorder": "A border around every page of the report."
+    },
+    "addToBox": "Add to box",
+    "moveOutOfBox": "Move out of box"
   },
   "table": {
     "dataSource": "Table Data Source",

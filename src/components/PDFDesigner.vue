@@ -609,6 +609,44 @@
             </svg>
             {{ t("editor.contextMenu.sendToBack") }}
           </div>
+          <!-- Item inside a box or frame: one of the two, never both -->
+          <template v-if="selectedBoxItem">
+            <div class="context-menu-divider"></div>
+            <div
+              v-if="selectedBoxItem.isPart"
+              class="context-menu-item"
+              @click="handleContextMenuAction('moveOutOfBox')"
+            >
+              <svg
+                class="menu-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="12" height="12" rx="1" />
+                <path d="M13 13l8 8M21 15v6h-6" />
+              </svg>
+              {{ t("framePresets.moveOutOfBox") }}
+            </div>
+            <div
+              v-else
+              class="context-menu-item"
+              @click="handleContextMenuAction('addToBox')"
+            >
+              <svg
+                class="menu-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="1" />
+                <path d="M12 8v8M8 12h8" />
+              </svg>
+              {{ t("framePresets.addToBox") }}
+            </div>
+          </template>
         </div>
         <div v-else class="context-menu-items">
           <div
@@ -712,10 +750,20 @@ import { loadFromLocalStorage, saveToLocalStorage } from "../utils/fileUtils";
 
 // Import element bounds validation utility
 import { getOutOfBoundsElements } from "../utils/elementBoundsValidator";
-import { calculateTextElementHeight } from "../utils/elementUtils";
 import {
+  calculateTextElementHeight,
+  ensureUniqueUuids,
+  refreshUuids,
+} from "../utils/elementUtils";
+import {
+  applyBorderPreset,
   buildFrameTemplate,
+  clampPositionInBox,
+  clampRectInBox,
   findPageBorder,
+  isBoxPart,
+  markBoxPart,
+  releaseBoxPart,
   fitChildrenToFrame,
   isFrameTemplateType,
   PAGE_BORDER_TYPE,
@@ -1109,6 +1157,8 @@ function loadFile(fileData: DesignerFile | any) {
 
     if (fileContent.bands) {
       bands.value = fileContent.bands;
+      // Repair copies that share IDs with their original (pasted before copies got their own)
+      ensureUniqueUuids(bands.value);
       // Update selectedBandTypes to match the loaded bands
       selectedBandTypes.value = fileContent.bands.map(
         (band: Band) => band.type,
@@ -2171,8 +2221,6 @@ const createLibraryElement = (type: string): DesignElement =>
         ...getDefaultElementProperties(type),
       } as DesignElement);
 
-// Add a border around the printable area of every page. It lives in the Background
-// band, which JasperReports prints behind all other content on each page.
 // Tell the user a page border already exists and select it for editing
 const rejectSecondPageBorder = (): boolean => {
   const existing = findPageBorder(bands.value);
@@ -2182,6 +2230,8 @@ const rejectSecondPageBorder = (): boolean => {
   return true;
 };
 
+// Add a border around the printable area of every page. It lives in the Background
+// band, which JasperReports prints behind all other content on each page.
 const addPageBorder = () => {
   if (rejectSecondPageBorder()) return;
   saveStateToHistory();
@@ -2622,6 +2672,10 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
         mode: "Transparent",
         border: "1px solid #ccc", // Add a default border for rectangle elements
       };
+    case "frame":
+      // A new Box starts with a thin light border so it can be seen (and is
+      // printed); a fresh object each time, since border edits change it in place
+      return { box: applyBorderPreset(undefined, "light") };
     case "table":
       return {
         width: calculateAvailableWidth(),
@@ -2877,6 +2931,50 @@ const getTargetBandAndSheetUnderPoint = (clientX: number, clientY: number) => {
 };
 
 // Start dragging an element
+// Drag an item inside its box, kept within the box's edges
+const startDraggingInsideBox = (
+  event: MouseEvent,
+  element: DesignElement,
+  box: FrameElement,
+) => {
+  const zoom = zoomLevel.value;
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const origX = element.x;
+  const origY = element.y;
+
+  // Undo snapshot before the item moves (a drag only starts after the mouse moved)
+  saveStateToHistory();
+  isDraggingOrResizing.value = true;
+
+  const onMove = (e: MouseEvent) => {
+    let x = origX + (e.clientX - startX) / zoom;
+    let y = origY + (e.clientY - startY) / zoom;
+    if (enableSnapToGrid.value) {
+      const grid = UI_CONSTANTS.GRID_SIZE;
+      x = Math.round(x / grid) * grid;
+      y = Math.round(y / grid) * grid;
+    }
+    const position = clampPositionInBox({ ...element, x, y }, box);
+    element.x = position.x;
+    element.y = position.y;
+  };
+
+  const onUp = () => {
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+    isDraggingOrResizing.value = false;
+    isJustDraggedOrResized.value = true;
+    setTimeout(() => {
+      isJustDraggedOrResized.value = false;
+    }, 150);
+    updateJRXML();
+  };
+
+  document.addEventListener("mousemove", onMove);
+  document.addEventListener("mouseup", onUp);
+};
+
 const startDragging = (
   event: MouseEvent,
   bandIndex: number,
@@ -2899,6 +2997,17 @@ const startDragging = (
     }
   } else {
     draggedElement = band?.elements[elementIndex];
+  }
+
+  // A ready-made box's own parts move only within the box; a drag never pulls
+  // them out. Other items in a box can be dragged anywhere.
+  if (draggedElement && parentFrameIndex !== undefined && isBoxPart(draggedElement)) {
+    startDraggingInsideBox(
+      event,
+      draggedElement,
+      band!.elements[parentFrameIndex] as FrameElement,
+    );
+    return;
   }
 
   if (draggedElement) {
@@ -3530,6 +3639,8 @@ const loadFromLocalStorageWrapper = () => {
         getEffectiveDefaultBandLimits(),
     };
     bands.value = loadedData.reportData.bands;
+    // Repair copies that share IDs with their original (pasted before copies got their own)
+    ensureUniqueUuids(bands.value);
     reportFields.value = loadedData.reportData.reportFields;
     jrxmlContent.value = loadedData.reportData.jrxmlContent;
     // Update selectedBandTypes to match the loaded bands
@@ -3548,36 +3659,11 @@ const loadFromLocalStorageWrapper = () => {
   return false;
 };
 
-// Initialize an element's Box property
+// Initialize an element's Box property: padding only. Borders are pens, written
+// by the border presets and Style Settings when the user sets one.
 const initBox = () => {
   if (currentElement.value) {
-    // Create a default box object
     currentElement.value.box = {
-      // Global border
-      border: "",
-      borderColor: "#000000",
-      borderWidth: 0,
-      borderStyle: "",
-
-      // Per-side borders - style defaults to an empty string, meaning "use the global setting"
-      topBorder: "",
-      topBorderColor: "#000000",
-      topBorderWidth: 0,
-      topBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
-      leftBorder: "",
-      leftBorderColor: "#000000",
-      leftBorderWidth: 0,
-      leftBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
-      bottomBorder: "",
-      bottomBorderColor: "#000000",
-      bottomBorderWidth: 0,
-      bottomBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
-      rightBorder: "",
-      rightBorderColor: "#000000",
-      rightBorderWidth: 0,
-      rightBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
-
-      // Margins
       padding: 0,
       topPadding: 0,
       leftPadding: 0,
@@ -3895,6 +3981,8 @@ const processPastedElement = (elementData: any) => {
 
   // Create the new element (deep clone)
   const newElement = JSON.parse(JSON.stringify(elementData));
+  // A copy is a separate element: new IDs for it and everything inside it
+  refreshUuids(newElement);
 
   // Offset the position slightly so it doesn't overlap the original element (shift down and to the right)
   newElement.x = Math.round(
@@ -4181,10 +4269,21 @@ const navigateElements = (direction: string) => {
 const moveElementByKeyboard = (direction: string) => {
   if (!selectedElement.value) return;
 
-  const { bandIndex: currentBandIndex, elementIndex: currentElementIndex } =
-    selectedElement.value;
+  const {
+    bandIndex: currentBandIndex,
+    elementIndex: currentElementIndex,
+    parentFrameIndex,
+  } = selectedElement.value;
   const currentBand = bands.value[currentBandIndex];
-  const currentElement = currentBand?.elements[currentElementIndex];
+  // An item in a box is found inside the box, and moves only within it
+  const parentBox =
+    parentFrameIndex !== undefined
+      ? (currentBand?.elements[parentFrameIndex] as FrameElement | undefined)
+      : undefined;
+  const currentElement =
+    parentFrameIndex !== undefined
+      ? parentBox?.elements?.[currentElementIndex]
+      : currentBand?.elements[currentElementIndex];
 
   if (!currentBand || !currentElement) return;
 
@@ -4217,6 +4316,13 @@ const moveElementByKeyboard = (direction: string) => {
         currentElement.x + MOVE_STEP,
       );
       break;
+  }
+
+  if (parentBox && isBoxPart(currentElement)) {
+    ({ x: newX, y: newY } = clampPositionInBox(
+      { ...currentElement, x: newX, y: newY },
+      parentBox,
+    ));
   }
 
   // Save the pre-move state to history (for undo)
@@ -4489,6 +4595,8 @@ const saveJRXML = (): void => {
 
     // Update the bands
     bands.value = parsedData.bands;
+    // Repair copies that share IDs with their original (pasted before copies got their own)
+    ensureUniqueUuids(bands.value);
 
     // Update the selected band types
     selectedBandTypes.value = parsedData.bands.map((band) => band.type);
@@ -4817,6 +4925,10 @@ watch(
   () => currentElement.value?.box?.border,
   (newBorderStyle) => {
     if (!currentElement.value || !currentElement.value.box) return;
+    // The field was removed (border presets and Style Settings write pens and
+    // drop these legacy fields); there is nothing to sync, and syncing would
+    // wipe the pen they just wrote
+    if (!("border" in currentElement.value.box)) return;
 
     const box = currentElement.value.box;
 
@@ -4864,6 +4976,10 @@ watch(
   () => currentElement.value?.box?.borderWidth,
   (newBorderWidth) => {
     if (!currentElement.value || !currentElement.value.box) return;
+    // The field was removed (border presets and Style Settings write pens and
+    // drop these legacy fields); there is nothing to sync, and syncing would
+    // wipe the pen they just wrote
+    if (!("borderWidth" in currentElement.value.box)) return;
 
     const box = currentElement.value.box;
 
@@ -4907,6 +5023,10 @@ watch(
   () => currentElement.value?.box?.borderStyle,
   (newBorderStyle, oldBorderStyle) => {
     if (!currentElement.value || !currentElement.value.box) return;
+    // The field was removed (border presets and Style Settings write pens and
+    // drop these legacy fields); there is nothing to sync, and syncing would
+    // wipe the pen they just wrote
+    if (!("borderStyle" in currentElement.value.box)) return;
 
     const box = currentElement.value.box;
 
@@ -4960,6 +5080,10 @@ watch(
   () => currentElement.value?.box?.borderColor,
   (newBorderColor) => {
     if (!currentElement.value || !currentElement.value.box) return;
+    // The field was removed (border presets and Style Settings write pens and
+    // drop these legacy fields); there is nothing to sync, and syncing would
+    // wipe the pen they just wrote
+    if (!("borderColor" in currentElement.value.box)) return;
 
     const box = currentElement.value.box;
 
@@ -5454,6 +5578,16 @@ const startResizingElement = (
     // click on a handle without dragging adds no undo step
     let historySaved = false;
 
+    // A ready-made box's own part is resized only up to the box's edges
+    const parentBox =
+      parentFrameIndex !== undefined
+        ? (band?.elements[parentFrameIndex] as FrameElement | undefined)
+        : undefined;
+    const keepInParentBox = (item: DesignElement) => {
+      if (!parentBox || !isBoxPart(item)) return;
+      Object.assign(item, clampRectInBox(item, parentBox));
+    };
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!resizingInfo.value) return;
 
@@ -5575,6 +5709,7 @@ const startResizingElement = (
         element.width = newCalculatedWidth;
         element.height = newCalculatedHeight;
         (element as any).lineDirection = computedDir;
+        keepInParentBox(element);
 
         if (enableSnapToAlignment.value) {
           detectAlignmentLines(element, resizingInfo.value.bandIndex);
@@ -5818,6 +5953,7 @@ const startResizingElement = (
       element.x = tempX;
       element.y = tempY;
       element.height = tempHeight;
+      keepInParentBox(element);
 
       // Keep a frame's content in step with the frame (stretch wide items, pin edge items)
       if (frameChildrenStart && element.type === "frame") {
@@ -5883,10 +6019,13 @@ const autoFitElementHeight = (
 
   if (!element) return;
 
-  const neededHeight = calculateTextElementHeight(element as any);
+  const neededHeight = calculateTextElementHeight(
+    element as any,
+    reportProperties.value?.defaultFont,
+  );
   if (neededHeight > 0) {
     saveStateToHistory();
-    element.height = Math.max(element.height || 0, neededHeight);
+    element.height = neededHeight;
     if (parentFrameIndex === undefined) {
       const bandLimitsConfig =
         reportProperties.value?.bandLimits?.[band.type] ||
@@ -6782,7 +6921,60 @@ const handleContextMenuAction = (action: string) => {
     case "sendToBack":
       moveElementZOrder("back");
       break;
+    case "moveOutOfBox":
+      moveElementOutOfBox();
+      break;
+    case "addToBox":
+      addElementToBox();
+      break;
   }
+};
+
+// The selected item when it sits inside a box or frame, with whether it is one
+// of the box's parts (kept inside) or an item that was dropped in (moves freely)
+const selectedBoxItem = computed(() => {
+  const selection = selectedElement.value;
+  if (!selection || selection.parentFrameIndex === undefined) return null;
+  const box = bands.value[selection.bandIndex]?.elements[selection.parentFrameIndex] as
+    | FrameElement
+    | undefined;
+  const item = box?.elements?.[selection.elementIndex];
+  if (!box || !item) return null;
+  return { box, item, isPart: isBoxPart(item) };
+});
+
+// Make an item that was dropped into a box one of its parts: it stays inside
+// the box and moves with it as one piece
+const addElementToBox = () => {
+  const target = selectedBoxItem.value;
+  if (!target || target.isPart) return;
+  const { box, item } = target;
+  saveStateToHistory();
+  markBoxPart(item);
+  Object.assign(item, clampPositionInBox(item, box));
+  Object.assign(item, clampRectInBox(item, box));
+  updateJRXML();
+};
+
+// Take the selected item out of its box and put it in the band at the same spot
+const moveElementOutOfBox = () => {
+  const selection = selectedElement.value;
+  if (!selection || selection.parentFrameIndex === undefined) return;
+  const band = bands.value[selection.bandIndex];
+  const box = band?.elements[selection.parentFrameIndex] as FrameElement | undefined;
+  const item = box?.elements?.[selection.elementIndex];
+  if (!band || !box || !item) return;
+
+  saveStateToHistory();
+  box.elements!.splice(selection.elementIndex, 1);
+  releaseBoxPart(item);
+  item.x = box.x + item.x;
+  item.y = box.y + item.y;
+  // Detail content is split into pages; the item stays on the box's page
+  if ((box as any).pageIndex !== undefined) (item as any).pageIndex = (box as any).pageIndex;
+  band.elements.push(item);
+  selectElement(selection.bandIndex, band.elements.length - 1);
+  updateJRXML();
 };
 
 // Move an element's Z-order

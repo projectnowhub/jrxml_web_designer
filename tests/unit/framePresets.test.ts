@@ -5,6 +5,11 @@ import {
   applyBorderPreset,
   BORDER_PRESETS,
   buildFrameTemplate,
+  clampPositionInBox,
+  clampRectInBox,
+  isBoxPart,
+  markBoxPart,
+  releaseBoxPart,
   fitChildrenToFrame,
   FRAME_TEMPLATE_TYPES,
   getActiveBorderPreset,
@@ -450,5 +455,79 @@ describe('rounded frames', () => {
   test('side pens encode and decode for the JRXML property', () => {
     const box = { leftPen: { lineWidth: 2.5, lineStyle: 'Solid', lineColor: '#7C5CF7' }, topPen: { lineWidth: 1, lineStyle: 'Dashed', lineColor: '#000000' } };
     expect(decodeSidePens(encodeSidePens(box))).toEqual(box);
+  });
+});
+
+describe('photo box', () => {
+  test('the photo area is an empty image that prints as a grey block until a picture is added', () => {
+    const photo = buildFrameTemplate('framePhotoCard', ctx).elements![0] as any;
+    expect(photo.type).toBe('image');
+    expect(photo.imageExpression).toBe('');
+    // An empty image source would otherwise stop the PDF
+    expect(photo.onErrorType).toBe('Blank');
+    expect(photo.scaleType).toBe('RetainShape');
+    expect(photo.mode).toBe('Opaque');
+  });
+
+  test('is written with an empty image expression and Blank on error', () => {
+    const card = withUuid(buildFrameTemplate('framePhotoCard', ctx));
+    const xml = generateJRXMLContent(properties, [{ type: 'detail', height: 200, elements: [card] }], []);
+    const image = toDom(xml).querySelector('detail frame > image')!;
+    expect(image.getAttribute('onErrorType')).toBe('Blank');
+    expect(image.getAttribute('scaleImage')).toBe('RetainShape');
+  });
+});
+
+describe('keeping items inside a box', () => {
+  const box = { width: 200, height: 100 };
+
+  test('moving pushes the item back inside, keeping its size', () => {
+    expect(clampPositionInBox({ x: 180, y: -10, width: 50, height: 20 }, box)).toEqual({ x: 150, y: 0 });
+    expect(clampPositionInBox({ x: 20, y: 30, width: 50, height: 20 }, box)).toEqual({ x: 20, y: 30 });
+    // Wider than the box: stays at the left edge
+    expect(clampPositionInBox({ x: 40, y: 0, width: 300, height: 20 }, box).x).toBe(0);
+  });
+
+  test('resizing trims the edges that go past the box', () => {
+    expect(clampRectInBox({ x: 150, y: 80, width: 100, height: 50 }, box)).toEqual({
+      x: 150, y: 80, width: 50, height: 20,
+    });
+    expect(clampRectInBox({ x: -30, y: -5, width: 100, height: 50 }, box)).toEqual({
+      x: 0, y: 0, width: 70, height: 45,
+    });
+  });
+});
+
+describe('box parts', () => {
+  test('every item a template builds is marked as part of its box', () => {
+    for (const type of FRAME_TEMPLATE_TYPES) {
+      for (const child of buildFrameTemplate(type, ctx).elements ?? []) {
+        expect(isBoxPart(child)).toBe(true);
+      }
+    }
+  });
+
+  test('the mark survives export and re-import', () => {
+    const card = withUuid(buildFrameTemplate('frameKpiCard', ctx));
+    const xml = generateJRXMLContent(properties, [{ type: 'detail', height: 200, elements: [card] }], []);
+    const frame = parseJRXMLContent(xml).bands.find((b) => b.type === 'detail')!.elements[0] as FrameElement;
+    expect(frame.elements!.every(isBoxPart)).toBe(true);
+  });
+
+  test('"Add to box" and "Move out of box" toggle the mark, keeping other properties', () => {
+    const item: any = { properties: [{ name: 'com.cdp.image.name', value: 'logo.png' }] };
+    markBoxPart(item);
+    markBoxPart(item);
+    expect(item.properties).toHaveLength(2);
+    expect(isBoxPart(item)).toBe(true);
+    releaseBoxPart(item);
+    expect(item.properties).toEqual([{ name: 'com.cdp.image.name', value: 'logo.png' }]);
+  });
+
+  test('moving a part out of its box makes it an ordinary item', () => {
+    const part = buildFrameTemplate('frameKpiCard', ctx).elements![0]! as any;
+    releaseBoxPart(part);
+    expect(isBoxPart(part)).toBe(false);
+    expect(part.properties).toBeUndefined();
   });
 });

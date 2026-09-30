@@ -647,7 +647,8 @@ export class ElementRegistry {
         name,
         icon: "☐",
         iconSvg,
-        category: "frames",
+        // The page border is a whole-page element, listed with the composite elements
+        category: type === "framePageBorder" ? "composite" : "frames",
         defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
       }),
     );

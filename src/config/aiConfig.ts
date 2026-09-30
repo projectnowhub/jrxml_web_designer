@@ -79,7 +79,6 @@ Available tools:
 - create_static_text: Create static text
 - create_text_field: Create a dynamic text field
 - create_rectangle: Create a rectangle
-- create_frame: Create a Frame container
 - update_element: Update element properties
 - move_element: Move an element's position
 - delete_element: Delete an element

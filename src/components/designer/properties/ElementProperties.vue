@@ -74,7 +74,7 @@
                   :class="{ 'is-disabled': band.type === 'detail' }"
                 >
                   <input
-                    v-model.number="band.height"
+                    :value="band.height"
                     type="number"
                     :min="
                       band.type !== 'detail' ? getBandLimit(band.type).min : 0
@@ -92,12 +92,8 @@
                         : ''
                     "
                     @change="
-                      ensureIntegerValue(band, 'height');
-                      updateBandHeight(index);
-                    "
-                    @blur="
-                      ensureIntegerValue(band, 'height');
-                      updateBandHeight(index);
+                      setIntegerValue(band, 'height', $event) &&
+                        updateBandHeight(index)
                     "
                   />
                   <span class="unit">px</span>
@@ -109,12 +105,14 @@
                   <label>{{ t("properties.minHeight") }}</label>
                   <div class="input-unit-wrapper">
                     <input
-                      v-model.number="getBandLimit(band.type).min"
+                      :value="getBandLimit(band.type).min"
                       type="number"
                       min="10"
                       step="1"
-                      @change="onTemplateMinChange(band.type)"
-                      @blur="onTemplateMinChange(band.type)"
+                      @change="
+                        setIntegerValue(getBandLimit(band.type), 'min', $event) &&
+                          onTemplateMinChange(band.type)
+                      "
                     />
                     <span class="unit">px</span>
                   </div>
@@ -123,13 +121,15 @@
                   <label>{{ t("properties.maxHeight") }}</label>
                   <div class="input-unit-wrapper">
                     <input
-                      v-model.number="getBandLimit(band.type).max"
+                      :value="getBandLimit(band.type).max"
                       type="number"
                       :min="getBandLimit(band.type).min || 10"
                       :max="getMaxAllowedLimit(band.type)"
                       step="1"
-                      @change="onTemplateMaxChange(band.type)"
-                      @blur="onTemplateMaxChange(band.type)"
+                      @change="
+                        setIntegerValue(getBandLimit(band.type), 'max', $event) &&
+                          onTemplateMaxChange(band.type)
+                      "
                     />
                     <span class="unit">px</span>
                   </div>
@@ -153,36 +153,36 @@
               <label>{{ t("properties.x") }}</label>
               <input
                 v-if="currentElement"
-                v-model.number="currentElement.x"
+                :value="currentElement.x"
                 type="number"
-                @change="ensureIntegerValue(currentElement, 'x')"
+                @change="setIntegerValue(currentElement, 'x', $event)"
               />
             </div>
             <div class="form-group">
               <label>{{ t("properties.y") }}</label>
               <input
                 v-if="currentElement"
-                v-model.number="currentElement.y"
+                :value="currentElement.y"
                 type="number"
-                @change="ensureIntegerValue(currentElement, 'y')"
+                @change="setIntegerValue(currentElement, 'y', $event)"
               />
             </div>
             <div class="form-group">
               <label>{{ t("properties.width") }}</label>
               <input
                 v-if="currentElement"
-                v-model.number="currentElement.width"
+                :value="currentElement.width"
                 type="number"
-                @change="ensureIntegerValue(currentElement, 'width')"
+                @change="setIntegerValue(currentElement, 'width', $event)"
               />
             </div>
             <div class="form-group">
               <label>{{ t("properties.height") }}</label>
               <input
                 v-if="currentElement"
-                v-model.number="currentElement.height"
+                :value="currentElement.height"
                 type="number"
-                @change="ensureIntegerValue(currentElement, 'height')"
+                @change="setIntegerValue(currentElement, 'height', $event)"
               />
             </div>
           </div>
@@ -1741,7 +1741,7 @@ import FontStyleSettings from "./FontStyleSettings.vue";
 import BorderStyleSettings from "./BorderStyleSettings.vue";
 import ElementTypeBasedSettings from "./ElementTypeBasedSettings.vue";
 import FrameProperties from "./FrameProperties.vue";
-import { isUniformBorder } from "../../../utils/framePresets";
+import { clampRectInBox, isBoxPart, isUniformBorder } from "../../../utils/framePresets";
 import TableProperties from "./TableProperties.vue";
 import ColumnTreeNode from "./ColumnTreeNode.vue";
 import { useLivePreview } from "@/composables/useLivePreview";
@@ -1855,7 +1855,7 @@ function onTemplateMinChange(bandType: string) {
   if (band && typeof band.height === "number" && band.height < limit.min) {
     band.height = limit.min;
   }
-  emit("save-state");
+  emit("update-jrxml");
 }
 
 function onTemplateMaxChange(bandType: string) {
@@ -1876,11 +1876,12 @@ function onTemplateMaxChange(bandType: string) {
   if (band && typeof band.height === "number" && band.height > limit.max) {
     band.height = limit.max;
   }
-  emit("save-state");
+  emit("update-jrxml");
 }
 
 function resetTemplateBandLimitsToDefault() {
   if (!props.reportProperties) return;
+  emit("save-state");
   const config = getEffectiveDefaultBandConfig();
   const limits: Record<string, { min: number; max: number }> = {};
   for (const key of Object.keys(config)) {
@@ -1900,7 +1901,6 @@ function resetTemplateBandLimitsToDefault() {
       }
     });
   }
-  emit("save-state");
 }
 
 // Live preview (used for transition animation)
@@ -3102,18 +3102,39 @@ function updateBandHeight(index: number) {
     detailBand.height = Math.max(20, availableH - otherBandsH);
   }
 
+  // Callers take the undo snapshot before changing the height
   const updatedBands = [...props.bands];
-  emit("save-state");
   emit("update:bands", updatedBands);
   emit("update-jrxml");
 }
 
-// Ensure the coordinate value is an integer
-function ensureIntegerValue(element: any, property: string) {
-  if (element[property] !== undefined) {
-    element[property] = Math.round(element[property]);
+// Apply a typed whole-number value (position, size, band height). The undo
+// snapshot is taken before the value changes, and only when it really changes,
+// so one edit is one undo step. Returns whether the value changed.
+function setIntegerValue(target: any, property: string, event: Event): boolean {
+  const input = event.target as HTMLInputElement;
+  const parsed = Math.round(parseFloat(input.value));
+  if (!Number.isFinite(parsed) || parsed === target[property]) {
+    // Show the stored value again (e.g. after an empty or invalid entry)
+    input.value = String(target[property] ?? "");
+    return false;
   }
   emit("save-state");
+  target[property] = parsed;
+  // A ready-made box's own part keeps inside the box when its position or size is typed
+  const parentIndex = props.selectedElement?.parentFrameIndex;
+  if (
+    parentIndex !== undefined &&
+    target === currentElement.value &&
+    isBoxPart(target) &&
+    ["x", "y", "width", "height"].includes(property)
+  ) {
+    const box = props.bands[props.selectedElement!.bandIndex]?.elements[parentIndex];
+    if (box?.type === "frame") Object.assign(target, clampRectInBox(target, box));
+  }
+  input.value = String(target[property]);
+  emit("update-jrxml");
+  return true;
 }
 
 // Set horizontal alignment
@@ -3188,7 +3209,10 @@ function updateTextFieldDisplay(val: string) {
 // Auto-fit element height to text content
 function autoFitCurrentElementHeight() {
   if (!currentElement.value || currentElement.value.type !== "textField") return;
-  const needed = calculateTextElementHeight(currentElement.value as any);
+  const needed = calculateTextElementHeight(
+    currentElement.value as any,
+    props.reportProperties?.defaultFont,
+  );
   if (needed > 0) {
     emit("save-state");
     currentElement.value.height = needed;

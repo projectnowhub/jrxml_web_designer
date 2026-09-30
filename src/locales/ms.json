@@ -47,7 +47,7 @@
   "elementLibrary": {
     "title": "Pustaka Elemen",
     "basicElements": "Elemen Asas",
-    "frameElements": "Bingkai & Kad",
+    "frameElements": "Preset Elemen",
     "compositeElements": "Elemen Komposit",
     "reportElements": "Elemen Laporan",
     "filterElements": "Tapis elemen...",
@@ -138,11 +138,11 @@
     "rectangle": "Segi Empat",
     "ellipse": "Elips",
     "break": "Pemisah",
-    "frame": "Bingkai",
-    "frameKpiCard": "Kad KPI",
+    "frame": "Kotak",
+    "frameKpiCard": "Kotak Nombor",
     "frameAlertBox": "Kotak Amaran",
-    "frameTitledSection": "Seksyen Bertajuk",
-    "framePhotoCard": "Kad Foto",
+    "frameTitledSection": "Kotak Seksyen",
+    "framePhotoCard": "Kotak Foto",
     "framePageBorder": "Sempadan Halaman",
     "table": "Jadual",
     "subreport": "Sublaporan",
@@ -257,10 +257,6 @@
     "breakType": "Jenis Pemisah",
     "pageBreak": "Pemisah Halaman",
     "columnBreak": "Pemisah Lajur",
-    "layoutMode": "Mod Susun Atur",
-    "freeLayout": "Susun Atur Bebas",
-    "horizontalLayout": "Susun Atur Mendatar",
-    "verticalLayout": "Susun Atur Menegak",
     "breakNoBorder": "Elemen pemisah tidak menyokong tetapan sempadan.",
     "unifiedBorder": "Tetapan Sempadan Seragam",
     "unifiedBorderHint": "Elemen ini hanya menyokong tetapan sempadan seragam",
@@ -953,7 +949,6 @@
       "create_static_text": "Cipta teks statik",
       "create_text_field": "Cipta medan teks dinamik",
       "create_rectangle": "Cipta segi empat",
-      "create_frame": "Cipta bingkai",
       "update_element": "Kemas kini elemen",
       "move_element": "Alih elemen",
       "delete_element": "Padam elemen",
@@ -1060,14 +1055,7 @@
     "right": "Ubah saiz kanan"
   },
   "frame": {
-    "title": "Sifat Bingkai",
-    "layout": "Susun Atur Bekas",
-    "layoutDescription": "Pilih cara item di dalam disusun",
-    "layoutFree": "Bebas (seret ke mana-mana)",
-    "layoutRow": "Baris (bersebelahan)",
-    "layoutStack": "Tindanan (atas ke bawah)",
-    "mode": "Mod paparan",
-    "modeDescription": "Legap menunjukkan latar belakang, Lut Sinar boleh dilihat tembus"
+    "title": "Gaya Kotak"
   },
   "framePresets": {
     "styleLabel": "Pratetap sempadan",
@@ -1094,12 +1082,20 @@
       "alertTitle": "⚠ PERHATIAN",
       "alertBody": "Terangkan isu dan tindakan yang diperlukan.",
       "sectionTitle": "TAJUK SEKSYEN",
-      "photo": "[ Masukkan Foto ]",
       "photoCaption": "Foto 1: Keterangan",
       "photoMeta": "Tarikh: – · Lokasi: –"
     },
     "customizeHint": "Laraskan setiap sisi dan jejari sudut dalam Tetapan Gaya.",
-    "pageBorderExists": "Laporan ini sudah mempunyai sempadan halaman. Anda boleh edit sempadan halaman yang sedia ada berbanding menambah yang baru."
+    "pageBorderExists": "Laporan ini sudah mempunyai sempadan halaman. Anda boleh edit sempadan halaman yang sedia ada berbanding menambah yang baru.",
+    "templateDescription": {
+      "frameKpiCard": "Memaparkan satu nombor penting, dengan label kecil di atas dan nota di bawah (contoh: Kemajuan 17.93%).",
+      "frameAlertBox": "Kotak berwarna dengan tajuk dan mesej ringkas, untuk amaran atau perkara yang mesti diberi perhatian.",
+      "frameTitledSection": "Kawasan bersempadan dengan jalur tajuk gelap di atas. Letakkan kandungan berkaitan di dalamnya.",
+      "framePhotoCard": "Foto dengan kapsyen dan baris tarikh di bawahnya.",
+      "framePageBorder": "Sempadan di sekeliling setiap halaman laporan."
+    },
+    "addToBox": "Tambah ke kotak",
+    "moveOutOfBox": "Keluarkan dari kotak"
   },
   "table": {
     "dataSource": "Sumber Data Jadual",

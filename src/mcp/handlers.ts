@@ -347,60 +347,6 @@ const createRectangleHandler: MCPToolHandler = {
   }
 };
 
-const createFrameHandler: MCPToolHandler = {
-  execute: async (params, context) => {
-    const {
-      bandType,
-      x,
-      y,
-      width,
-      height,
-      borderColor,
-      backgroundColor
-    } = params;
-
-    // Find the index of the target band
-    const bandIndex = context.bands.findIndex(b => b.type === bandType);
-    if (bandIndex === -1) {
-      return {
-        success: false,
-        error: `Band ${bandType} not found`
-      };
-    }
-
-    // Create the element
-    const newElement = createNewElement('frame', x, y) as any;
-    Object.assign(newElement, {
-      width,
-      height,
-      elements: [],
-      borderColor,
-      backgroundColor
-    });
-
-    // Mutate the reactive array directly
-    const band = context.bands[bandIndex];
-    if (band) {
-      if (!band.elements) {
-        band.elements = [];
-      }
-      band.elements.push(newElement);
-
-      // Save history and update the JRXML
-      context.saveStateToHistory();
-      context.updateJRXML();
-    }
-
-    return {
-      success: true,
-      data: {
-        uuid: newElement.uuid,
-        message: `Created frame in ${bandType} band`
-      }
-    };
-  }
-};
-
 // ============================================
 // Modify tool handlers
 // ============================================
@@ -1075,7 +1021,6 @@ export const MCPToolHandlers: Record<string, MCPToolHandler> = {
   'create_static_text': createStaticTextHandler,
   'create_text_field': createTextFieldHandler,
   'create_rectangle': createRectangleHandler,
-  'create_frame': createFrameHandler,
   // Modify tools
   'update_element': updateElementHandler,
   'move_element': moveElementHandler,

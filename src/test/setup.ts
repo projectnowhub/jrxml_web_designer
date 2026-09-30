@@ -29,7 +29,7 @@ const mockT = (key: string) => {
     'elementNames.rectangle': 'Rectangle',
     'elementNames.ellipse': 'Ellipse',
     'elementNames.break': 'Page Break',
-    'elementNames.frame': 'Frame'
+    'elementNames.frame': 'Box'
   }
   return translations[key] || key
 }

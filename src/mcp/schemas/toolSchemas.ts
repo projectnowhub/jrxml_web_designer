@@ -246,46 +246,6 @@ export const CREATE_RECTANGLE_SCHEMA: MCPToolSchema = {
   }
 };
 
-export const CREATE_FRAME_SCHEMA: MCPToolSchema = {
-  name: 'create_frame',
-  description: 'Create a Frame container element that can hold other elements',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      bandType: {
-        type: 'string',
-        description: 'Target band type',
-        enum: ['detail', 'pageHeader', 'pageFooter', 'title', 'summary', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
-      },
-      x: {
-        type: 'number',
-        description: 'X coordinate position'
-      },
-      y: {
-        type: 'number',
-        description: 'Y coordinate position'
-      },
-      width: {
-        type: 'number',
-        description: 'Frame width'
-      },
-      height: {
-        type: 'number',
-        description: 'Frame height'
-      },
-      borderColor: {
-        type: 'string',
-        description: 'Border color'
-      },
-      backgroundColor: {
-        type: 'string',
-        description: 'Background color'
-      }
-    },
-    required: ['bandType', 'x', 'y', 'width', 'height']
-  }
-};
-
 // ============================================
 // Modify tools
 // ============================================
@@ -665,7 +625,6 @@ export const ALL_MCP_TOOL_SCHEMAS: MCPToolSchema[] = [
   CREATE_STATIC_TEXT_SCHEMA,
   CREATE_TEXT_FIELD_SCHEMA,
   CREATE_RECTANGLE_SCHEMA,
-  CREATE_FRAME_SCHEMA,
   // Modify tools
   UPDATE_ELEMENT_SCHEMA,
   MOVE_ELEMENT_SCHEMA,

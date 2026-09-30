@@ -21,7 +21,7 @@
             :key="element.type"
             class="element-item"
             :class="{ 'is-disabled': isUnavailable(element.type) }"
-            :title="isUnavailable(element.type) ? t('framePresets.pageBorderExists') : undefined"
+            :title="tileHint(element.type)"
             :draggable="!isUnavailable(element.type)"
             @dragstart="handleDragStart($event, element)"
             @dblclick="handleElementDoubleClick(element)"
@@ -321,7 +321,7 @@ import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
 import ConfirmModal from "./modals/ConfirmModal.vue";
 import { ElementRegistry } from "./elements/ElementRegistry";
-import { findPageBorder, PAGE_BORDER_TYPE } from "../utils/framePresets";
+import { findPageBorder, isFrameTemplateType, PAGE_BORDER_TYPE } from "../utils/framePresets";
 import type {
   DesignElement,
   TextFieldElement,
@@ -578,6 +578,13 @@ function getFieldTypeName(className: string): string {
 // explain why and select the existing border
 const hasPageBorder = computed(() => findPageBorder(props.bands) !== null);
 const isUnavailable = (type: string) => type === PAGE_BORDER_TYPE && hasPageBorder.value;
+
+// Hover text: why a tile is disabled, or what a ready-made box is for
+const tileHint = (type: string): string | undefined => {
+  if (isUnavailable(type)) return t("framePresets.pageBorderExists");
+  if (isFrameTemplateType(type)) return t(`framePresets.templateDescription.${type}`);
+  return undefined;
+};
 
 function handleDragStart(event: DragEvent, element: any): void {
   if (isUnavailable(element.type)) {

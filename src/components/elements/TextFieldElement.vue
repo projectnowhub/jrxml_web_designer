@@ -174,7 +174,13 @@ import {
 import BaseElement from './BaseElement.vue';
 import TextFormatToolbar from './TextFormatToolbar.vue';
 import type { TextFieldElement, SelectedElementInfo, EditingElementInfo } from '../../types';
-import { getElementBoxInsets, calculateTextElementHeight } from '../../utils/elementUtils';
+import {
+  getElementBoxInsets,
+  calculateTextElementHeight,
+  hasHtmlTags,
+  isRichTextElement,
+  textExpressionToHtml,
+} from '../../utils/elementUtils';
 
 const { t } = useI18n();
 
@@ -255,33 +261,8 @@ const rotationStyle = computed(() => {
   return {};
 });
 
-// Helper to check if string contains rich HTML formatting tags
-const hasHtmlTags = (str: string): boolean => {
-  return /<\/?(b|strong|i|em|u|s|strike|del|font|a|span|p|div|br)\b[^>]*>/i.test(str);
-};
-
-// HTML sanitizer: allows safe formatting tags & attributes
-const sanitizeHtml = (html: string): string => {
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
-    .replace(/\s*on\w+\s*=\s*(['"]).*?\1/gi, '')
-    .replace(/\s*on\w+\s*=\s*[^>\s]+/gi, '')
-    .replace(/javascript:/gi, '');
-};
-
-// Rendered HTML content for canvas view
-const renderedHtmlContent = computed(() => {
-  let expr = props.element.expression || '';
-  const trimmed = expr.trim();
-  if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
-    expr = trimmed.slice(1, -1);
-  }
-  expr = expr.replace(/\\"/g, '"').replace(/\\n/g, '<br>');
-  return sanitizeHtml(expr);
-});
+// Rendered HTML content for canvas view (shared with the height measurement)
+const renderedHtmlContent = computed(() => textExpressionToHtml(props.element.expression || ''));
 
 // Clean display text for plain expressions (preserves linebreaks, strips literal quotes)
 const displayText = computed(() => {
@@ -325,9 +306,7 @@ const displayText = computed(() => {
   return '';
 });
 
-const hasRichMarkup = computed(() => {
-  return props.element.markup === 'html' || hasHtmlTags(props.element.expression || '');
-});
+const hasRichMarkup = computed(() => isRichTextElement(props.element));
 
 const hasContent = computed(() => {
   if (hasRichMarkup.value) {
@@ -1478,7 +1457,12 @@ const handleAutoFit = () => {
   if (contentHeight > 0) {
     targetHeight = Math.max(contentHeight + insets.vertical, 15);
   } else {
-    targetHeight = calculateTextElementHeight(props.element as any);
+    targetHeight = calculateTextElementHeight(props.element as any, {
+      name: props.reportFontFamily,
+      size: props.reportFontSize,
+      isBold: props.reportIsBold,
+      isItalic: props.reportIsItalic,
+    });
   }
 
   if (targetHeight > 0) {

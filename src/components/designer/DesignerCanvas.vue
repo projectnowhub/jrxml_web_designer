@@ -1360,12 +1360,6 @@ onBeforeUnmount(() => {
   background-color: rgba(24, 144, 255, 0.35);
 }
 
-/* No empty-frame placeholder outline on page borders: it would look like the sides turned off */
-.background-band-layer :deep(.frame-empty) {
-  border-color: transparent;
-  background-color: transparent;
-}
-
 .band {
   border: 1px solid #ddd;
   box-sizing: border-box;
@@ -1378,9 +1372,9 @@ onBeforeUnmount(() => {
     box-shadow 0.2s ease;
 }
 
-.band:hover {
+/* .band:hover {
   background-color: rgba(240, 240, 255, 0.8);
-}
+} */
 
 .band.dragging-target {
   border-color: #ff9500;
@@ -1424,7 +1418,7 @@ onBeforeUnmount(() => {
   bottom: -5px;
   left: 0;
   right: 0;
-  height: 10px;
+  height: 6px;
   cursor: ns-resize;
   background-color: rgba(74, 144, 226, 0.4);
   opacity: 0;

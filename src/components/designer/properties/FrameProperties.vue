@@ -24,24 +24,12 @@
       <span v-if="!activePreset" class="form-hint">{{ t("framePresets.custom") }}</span>
       <span class="form-hint">{{ t("framePresets.customizeHint") }}</span>
     </div>
-
-    <!-- Layout of the items inside (a page border has none) -->
-    <div v-if="!isPageBorder" class="form-group">
-      <SelectControl
-        :model-value="element.layout || 'FreeLayout'"
-        @update:model-value="updateProperty('layout', $event)"
-        :options="layoutOptions"
-        :label="t('frame.layout')"
-        :description="t('frame.layoutDescription')"
-      />
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import SelectControl from './common/SelectControl.vue';
 import {
   applyBorderPreset,
   BORDER_PRESETS,
@@ -66,18 +54,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const layoutOptions = computed(() => [
-  { value: 'FreeLayout', label: `🖐️ ${t('frame.layoutFree')}` },
-  { value: 'HorizontalLayout', label: `↔️ ${t('frame.layoutRow')}` },
-  { value: 'VerticalLayout', label: `↕️ ${t('frame.layoutStack')}` }
-]);
-
 const activePreset = computed(() => getActiveBorderPreset(props.element.box));
-const updateProperty = (property: string, value: any) => {
-  const updatedElement = { ...props.element };
-  updatedElement[property] = value;
-  emit('update:element', updatedElement);
-};
 
 // Legacy root-level border fields (older imports) are dropped so they can't add
 // lines back on sides the preset leaves off

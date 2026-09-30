@@ -319,6 +319,31 @@ interface TextOptions {
 const literal = (text: string) =>
   `"${text.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 
+// Items a ready-made box is built from (its label, number, photo...) carry this
+// JRXML property, so they stay part of the box after export and re-import.
+// Only these are kept inside the box; items the user drops in move freely.
+export const BOX_PART_PROPERTY = "com.cdp.box.part";
+
+const boxPartProperties = () => [{ name: BOX_PART_PROPERTY, value: "true" }];
+
+export function isBoxPart(element: unknown): boolean {
+  const properties = (element as { properties?: { name?: string }[] } | undefined)?.properties;
+  return Array.isArray(properties) && properties.some((p) => p?.name === BOX_PART_PROPERTY);
+}
+
+// "Add to box": an item dropped into a box becomes one of its parts
+export function markBoxPart(element: { properties?: { name?: string; value?: string }[] }): void {
+  if (isBoxPart(element)) return;
+  element.properties = [...(element.properties ?? []), ...boxPartProperties()];
+}
+
+// "Move out of box": the item becomes an ordinary element
+export function releaseBoxPart(element: { properties?: { name?: string }[] }): void {
+  if (!Array.isArray(element.properties)) return;
+  element.properties = element.properties.filter((p) => p?.name !== BOX_PART_PROPERTY);
+  if (element.properties.length === 0) delete element.properties;
+}
+
 function text(options: TextOptions): DesignElement {
   const box: Box | undefined = options.leftPadding
     ? { leftPadding: options.leftPadding }
@@ -343,8 +368,27 @@ function text(options: TextOptions): DesignElement {
       ? { mode: "Opaque", backcolor: options.backcolor }
       : {}),
     ...(box ? { box } : {}),
+    properties: boxPartProperties(),
   } as Partial<DesignElement>);
 }
+
+// Base settings of every box created from the library
+const FRAME_DEFAULTS: FrameElement = {
+  type: "frame",
+  x: 0,
+  y: 0,
+  width: 200,
+  height: 100,
+  backcolor: "#FFFFFF",
+  mode: "Transparent",
+  elements: [],
+  printWhenExpression: "",
+  isIgnorePagination: false,
+  isSplitAllowed: true,
+  splitType: "Stretch",
+  isRemoveLineWhenBlank: false,
+  isPrintRepeatedValues: true,
+};
 
 function frame(
   width: number,
@@ -353,7 +397,7 @@ function frame(
   elements: DesignElement[] = [],
 ): FrameElement {
   return {
-    ...(createElement("frame") as FrameElement),
+    ...FRAME_DEFAULTS,
     width,
     height,
     elements,
@@ -399,14 +443,32 @@ function titledSection({ t, availableWidth }: FrameTemplateContext): FrameElemen
 }
 
 // Gallery card: photo area on top, caption underneath
+// Photo area of the Photo Box: an image element. Until a picture is uploaded it
+// prints as a light grey block ("Blank" on error: an empty image source would
+// otherwise stop the PDF), and the picture keeps its shape when it arrives.
+function photo(width: number, height: number): DesignElement {
+  return createElement("image", {
+    uuid: crypto.randomUUID(),
+    x: 0,
+    y: 0,
+    width,
+    height,
+    imageExpression: "",
+    scaleType: "RetainShape",
+    hAlign: "Center",
+    vAlign: "Middle",
+    onErrorType: "Blank",
+    mode: "Opaque",
+    backcolor: FRAME_COLORS.placeholderFill,
+    properties: boxPartProperties(),
+  } as Partial<DesignElement>);
+}
+
 function photoCard({ t }: FrameTemplateContext): FrameElement {
   const w = 250;
   const photoH = 110;
   return frame(w, 158, lined({ pen: pen(0.75, FRAME_COLORS.borderLight) }, "#FFFFFF"), [
-    text({ x: 0, y: 0, width: w, height: photoH, fontSize: 8, isItalic: true,
-      forecolor: FRAME_COLORS.textMuted, backcolor: FRAME_COLORS.placeholderFill,
-      textAlignment: "Center", verticalAlignment: "Middle",
-      text: t("framePresets.placeholder.photo") }),
+    photo(w, photoH),
     text({ x: 8, y: photoH + 8, width: w - 16, height: 13, fontSize: 8, isBold: true,
       text: t("framePresets.placeholder.photoCaption") }),
     text({ x: 8, y: photoH + 22, width: w - 16, height: 11, fontSize: 7,
@@ -565,4 +627,35 @@ export function getRoundedLineEndBars(
     bars.push({ side, ...box, radius, color });
   }
   return bars;
+}
+
+// ---------------------------------------------------------------------------
+// Keeping a box's items inside it
+// ---------------------------------------------------------------------------
+// A box's own parts (isBoxPart) are positioned from the box's top-left corner and
+// can't leave it by dragging, resizing or nudging. "Move out of box" in the
+// right-click menu takes one out on purpose.
+
+type Size = { width: number; height: number };
+
+// Moving: the item keeps its size and is pushed back inside
+export function clampPositionInBox(item: Rect, box: Size): { x: number; y: number } {
+  return {
+    x: Math.round(Math.max(0, Math.min(item.x, box.width - item.width))),
+    y: Math.round(Math.max(0, Math.min(item.y, box.height - item.height))),
+  };
+}
+
+// Resizing: edges that go past the box are trimmed to it
+export function clampRectInBox(item: Rect, box: Size): Rect {
+  const x = Math.max(0, Math.min(item.x, box.width - 1));
+  const y = Math.max(0, Math.min(item.y, box.height - 1));
+  const right = Math.min(item.x + item.width, box.width);
+  const bottom = Math.min(item.y + item.height, box.height);
+  return {
+    x: Math.round(x),
+    y: Math.round(y),
+    width: Math.max(1, Math.round(right - x)),
+    height: Math.max(1, Math.round(bottom - y)),
+  };
 }

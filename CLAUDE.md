@@ -49,7 +49,9 @@ The central data structures live in `src/types/index.ts`:
 
 ## Frames, Cards and Page Border
 
-Logic lives in `src/utils/framePresets.ts`: border presets, per-side pen helpers, the library templates ("Frames & Cards": KPI Card, Alert Box, Titled Section, Photo Card, Page Border), and fitting a card's children when it is resized.
+Logic lives in `src/utils/framePresets.ts`: border presets, per-side pen helpers, the library templates ("Element Presets": Number Box, Alert Box, Section Box, Photo Box; Page Border is under "Composite Elements"), and fitting a box's children when it is resized. The plain Box tile (Basic Elements, a `frame`) lets users build their own boxes; parts work the same in it.
+
+- **Box parts**: the items a template builds (label, number, photo…) carry the `com.cdp.box.part` JRXML property (`isBoxPart`). Only these are kept inside their box when dragged, resized, nudged or typed; items the user drops into a box move freely. Parts act as a group, like PowerPoint (`FrameElement.vue`): dragging a part moves the whole box unless that part is already selected; a click on a part selects the box first, a second click the part; a right-click on a part opens the box's menu unless that part is already selected. Right-click on an item inside a box shows exactly one of "Add to box" (dropped-in item → part, `markBoxPart`) or "Move out of box" (part → ordinary item in the band, `releaseBoxPart`).
 
 - **Page border** = a frame in the Background band, sized to the printable area. Only one is allowed (`findPageBorder`): the library tile is disabled once it exists, and add/paste show a warning and select the existing one. On the canvas the Background band is drawn over the bands (`mix-blend-mode: multiply`) and ignores the mouse, except a thin strip along the border line so it can be clicked. The Background band is never counted in band-height totals, and `<background>` is always written first.
 - **Borders are pens only** (`box.pen` / `topPen`…); fills are a separate feature. The Basic tab shows presets only; per-side editing is the Style Settings side-border controls.
@@ -116,6 +118,7 @@ npm run test:watch   # Watch mode
 - No external state management library — reactive refs in components
 - i18n via vue-i18n: English (`en`, default) and Malay (`ms`); all text outside `src/locales/ms.json` is English; locale files in `src/locales/`, choice stored in localStorage (`appLocale`)
 - User-visible text always goes through a translation key; never hard-code UI text
+- Locale files stay in sync: whenever a key is added, changed, renamed or deleted in `src/locales/en.json`, make the same change in every other locale file (currently `ms.json`) in the same edit, with a real translation, not English copied over
 - Colour inputs use `src/components/common/ColorSwatchPicker.vue` (Naive UI picker whose popover stays inside the window), not `<input type="color">`, whose native popup can open off-screen. Exception: the inline text toolbar (`TextFormatToolbar.vue`) keeps native inputs, because focus moving into a page popover would drop the text selection being formatted.
 - Default report font: DejaVu Sans (`DEFAULT_REPORT_FONT` in `src/config/fonts.config.ts`), bundled in `public/fonts/dejavu/` and shipped with JasperReports
 - JRXML namespace: `http://jasperreports.sourceforge.net/jasperreports`

@@ -47,7 +47,6 @@ const RISK_LEVELS: Record<string, OperationRisk> = {
   'create_static_text': OperationRisk.LOW,
   'create_text_field': OperationRisk.LOW,
   'create_rectangle': OperationRisk.LOW,
-  'create_frame': OperationRisk.LOW,
 
   // Modify tools - low risk
   'update_element': OperationRisk.LOW,
@@ -146,9 +145,6 @@ function generateToolDescription(toolCall: MCPToolCall): string {
 
     case 'create_rectangle':
       return `Create a rectangle in the ${params.bandType} band`;
-
-    case 'create_frame':
-      return `Create a Frame container in the ${params.bandType} band`;
 
     case 'update_element':
       return `Update element ${params.uuid} properties: ${Object.keys(params.properties || {}).join(', ')}`;

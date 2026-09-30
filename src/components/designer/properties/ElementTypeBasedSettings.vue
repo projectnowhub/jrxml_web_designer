@@ -77,18 +77,7 @@
           </select>
         </div>
       </template>
-      
-      <!-- Frame specific properties -->
-      <template v-else-if="element.type === 'frame'">
-        <div class="form-group">
-          <label>{{ t('properties.layoutMode') }}</label>
-          <select v-model="element.layout" @change="emit('update:modelValue', element)">
-            <option :value="undefined">{{ t('properties.freeLayout') }}</option>
-            <option value="HorizontalLayout">{{ t('properties.horizontalLayout') }}</option>
-            <option value="VerticalLayout">{{ t('properties.verticalLayout') }}</option>
-          </select>
-        </div>
-      </template>
+
     </div>
   </div>
 </template>

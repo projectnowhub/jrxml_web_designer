@@ -303,16 +303,57 @@ export function getElementBoxInsets(box?: any): {
 }
 
 // Calculate the required rendered height for a text field based on its text, width, font, padding, and borders
-export function calculateTextElementHeight(element: {
-  expression?: string;
-  fieldName?: string;
-  width: number;
-  fontSize?: number;
-  fontFamily?: string;
+export interface TextFontDefaults {
+  name?: string;
+  size?: number;
   isBold?: boolean;
   isItalic?: boolean;
-  box?: any;
-}): number {
+}
+
+// Formatting tags the rich text editor writes into a text expression
+export const hasHtmlTags = (str: string): boolean =>
+  /<\/?(b|strong|i|em|u|s|strike|del|font|a|span|p|div|br)\b[^>]*>/i.test(str);
+
+export const isRichTextElement = (element: { markup?: string; expression?: string }): boolean =>
+  element.markup === 'html' || hasHtmlTags(element.expression || '');
+
+// Removes scripts, embedded content and event handlers from text HTML
+export const sanitizeHtml = (html: string): string =>
+  html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+    .replace(/\s*on\w+\s*=\s*(['"]).*?\1/gi, '')
+    .replace(/\s*on\w+\s*=\s*[^>\s]+/gi, '')
+    .replace(/javascript:/gi, '');
+
+// HTML the canvas shows for a formatted text expression
+export function textExpressionToHtml(expression: string): string {
+  let expr = expression || '';
+  const trimmed = expr.trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
+    expr = trimmed.slice(1, -1);
+  }
+  expr = expr.replace(/\\"/g, '"').replace(/\\n/g, '<br>');
+  return sanitizeHtml(expr);
+}
+
+export function calculateTextElementHeight(
+  element: {
+    expression?: string;
+    fieldName?: string;
+    markup?: string;
+    width: number;
+    fontSize?: number;
+    fontFamily?: string;
+    isBold?: boolean;
+    isItalic?: boolean;
+    box?: any;
+  },
+  // Report default font, used by the canvas when the element sets none
+  reportFont: TextFontDefaults = {},
+): number {
   if (typeof document === 'undefined') return 20;
 
   const insets = getElementBoxInsets(element.box);
@@ -323,10 +364,13 @@ export function calculateTextElementHeight(element: {
   div.style.left = '-9999px';
   div.style.top = '-9999px';
   div.style.width = `${Math.max(element.width || 100, 10)}px`;
-  div.style.fontSize = `${element.fontSize || 10}px`;
-  div.style.fontFamily = element.fontFamily || 'SansSerif';
-  div.style.fontWeight = element.isBold ? 'bold' : 'normal';
-  div.style.fontStyle = element.isItalic ? 'italic' : 'normal';
+  // Same font as the canvas draws (TextFieldElement typographyStyle)
+  div.style.fontSize = `${element.fontSize || reportFont.size || 10}px`;
+  div.style.fontFamily = element.fontFamily || reportFont.name || 'SansSerif';
+  div.style.fontWeight =
+    element.isBold === true || (element.isBold === undefined && reportFont.isBold) ? 'bold' : 'normal';
+  div.style.fontStyle =
+    element.isItalic === true || (element.isItalic === undefined && reportFont.isItalic) ? 'italic' : 'normal';
   div.style.whiteSpace = 'pre-wrap';
   div.style.wordBreak = 'break-word';
   div.style.overflowWrap = 'break-word';
@@ -345,7 +389,13 @@ export function calculateTextElementHeight(element: {
 
   let raw = element.expression || (element.fieldName ? `$F{${element.fieldName}}` : '');
   const displayText = stripExpressionQuotes(raw).replace(/\\n/g, '\n');
-  div.textContent = displayText || ' ';
+  // Formatted text is measured as the canvas shows it (tags as formatting,
+  // not as characters), otherwise it measures too long and too tall
+  if (isRichTextElement(element)) {
+    div.innerHTML = textExpressionToHtml(raw) || ' ';
+  } else {
+    div.textContent = displayText || ' ';
+  }
 
   document.body.appendChild(div);
   const domHeight = Math.ceil(div.getBoundingClientRect().height);
@@ -673,4 +723,92 @@ export function getElementsBounds(
     width: maxX - minX,
     height: maxY - minY,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Unique element IDs
+// ---------------------------------------------------------------------------
+// The canvas tells elements apart by UUID (selection, keys), and JasperReports
+// requires them to be unique. A copy needs new ones, including every item
+// inside a box and every column, group and cell of a table. A table's dataset
+// keeps its ID: a copied table reads the same data.
+
+type WithUuid = { uuid?: string; type?: string; elements?: WithUuid[]; [key: string]: any };
+
+const TABLE_CELLS = ["tableHeader", "columnHeader", "detailCell", "columnFooter", "tableFooter"];
+
+// Calls `visit` for every object with an ID inside a table: columns and column
+// groups (in `children` and the older `columns` list), row groups, and the
+// elements in its cells (with anything nested in them)
+function forEachTableInnerId(table: WithUuid, visit: (holder: WithUuid) => void): void {
+  const visitElement = (el: WithUuid) => {
+    if (el.uuid) visit(el);
+    el.elements?.forEach(visitElement);
+  };
+  const visitColumn = (col: WithUuid) => {
+    if (!col || typeof col !== "object") return;
+    if (col.uuid) visit(col);
+    for (const key of TABLE_CELLS) {
+      const cellElement = col[key]?.element;
+      if (cellElement) visitElement(cellElement);
+    }
+    col.children?.forEach(visitColumn);
+  };
+  [...(table.children ?? []), ...(table.columns ?? [])].forEach(visitColumn);
+  table.rowGroups?.forEach((group: WithUuid) => group?.uuid && visit(group));
+}
+
+// Replaces old IDs with new ones; the same old ID always gets the same new one,
+// so a column listed in both `children` and `columns` stays one column
+function idRenamer(): (old: string | undefined) => string {
+  const renamed = new Map<string, string>();
+  return (old) => {
+    if (!old) return crypto.randomUUID();
+    if (!renamed.has(old)) renamed.set(old, crypto.randomUUID());
+    return renamed.get(old)!;
+  };
+}
+
+export function refreshUuids(element: WithUuid): void {
+  const fresh = idRenamer();
+  const visit = (el: WithUuid) => {
+    el.uuid = fresh(el.uuid);
+    el.elements?.forEach(visit);
+    if (el.type === "table") forEachTableInnerId(el, (holder) => (holder.uuid = fresh(holder.uuid)));
+  };
+  visit(element);
+}
+
+// Gives new IDs where an element (or a table's inner part) reuses an ID that
+// another element already has, e.g. copies pasted before copies got their own.
+// The first one keeps its ID. Returns whether anything changed.
+export function ensureUniqueUuids(bands: { elements?: WithUuid[] }[] | undefined): boolean {
+  const seen = new Set<string>();
+  let changed = false;
+  const visit = (element: WithUuid) => {
+    if (element.uuid) {
+      if (seen.has(element.uuid)) {
+        element.uuid = crypto.randomUUID();
+        changed = true;
+      }
+      seen.add(element.uuid);
+    }
+    element.elements?.forEach(visit);
+    if (element.type === "table") {
+      // Inside one table the same column ID appears twice on purpose
+      // (children + columns); only a clash with another element counts
+      const inner = new Set<string>();
+      forEachTableInnerId(element, (holder) => inner.add(holder.uuid!));
+      if ([...inner].some((id) => seen.has(id))) {
+        const fresh = idRenamer();
+        forEachTableInnerId(element, (holder) => (holder.uuid = fresh(holder.uuid)));
+        inner.clear();
+        forEachTableInnerId(element, (holder) => inner.add(holder.uuid!));
+        changed = true;
+      }
+      inner.forEach((id) => seen.add(id));
+    }
+  };
+  bands?.forEach((band) => band.elements?.forEach(visit));
+  return changed;
 }
