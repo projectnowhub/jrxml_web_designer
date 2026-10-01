@@ -190,9 +190,9 @@
                     bItem.band.type === 'pageHeader' ? 'page-header-band' : '',
                     bItem.band.type === 'columnHeader' ? 'column-header-band' : '',
                     {
-                      'dragging-target':
-                        highlightedBandIndex === bItem.bandIndex,
-                      'drag-over': highlightedBandIndex === bItem.bandIndex,
+                      'drop-target': highlightedBandIndex === bItem.bandIndex,
+                      'drop-blocked':
+                        highlightedBandIndex === bItem.bandIndex && dropTargetBlocked,
                     },
                   ]"
                   :data-band-index="bItem.bandIndex"
@@ -511,6 +511,8 @@ interface Props {
   }[]; // Added multi-select support
   editingElement: any;
   isDraggingOrResizing: boolean;
+  // The highlighted band can't take the element being dragged (too tall)
+  dropTargetBlocked?: boolean;
   horizontalRulerTicks: any[];
   horizontalRulerLabels: any[];
   verticalRulerTicks: any[];
@@ -970,8 +972,18 @@ const startResizingBand = (event: MouseEvent, bandIndex: number) => {
   emit("start-resizing-band", event, bandIndex);
 };
 
-// Check whether the element is out of bounds
+// Check whether the element is out of bounds. Not for the element being moved
+// or resized: while it moves, the orange band shows where it will land, and the
+// check runs again once it is dropped.
 const isElementOutOfBounds = (bandIndex: number, elementIndex: number) => {
+  if (
+    props.isDraggingOrResizing &&
+    props.selectedElement?.bandIndex === bandIndex &&
+    props.selectedElement?.elementIndex === elementIndex &&
+    props.selectedElement?.parentFrameIndex === undefined
+  ) {
+    return false;
+  }
   return props.outOfBoundsElements.some(
     (item) =>
       item.bandIndex === bandIndex && item.elementIndex === elementIndex,
@@ -1480,14 +1492,16 @@ onBeforeUnmount(() => {
   background-color: rgba(240, 240, 255, 0.8);
 } */
 
-.band.dragging-target {
-  box-shadow: inset 0 0 0 1px #ff9500;
-  background-color: rgba(255, 248, 240, 0.8);
+/* While dragging: the band the element will land in (calm blue), or red when
+   it is too tall for that band and the drop would be refused */
+.band.drop-target {
+  box-shadow: inset 0 0 0 1.5px #2563eb;
+  background-color: rgba(37, 99, 235, 0.05);
 }
 
-.band.drag-over {
-  box-shadow: inset 0 0 0 1px #ff9500;
-  background-color: rgba(255, 248, 240, 0.9);
+.band.drop-target.drop-blocked {
+  box-shadow: inset 0 0 0 1.5px #dc2626;
+  background-color: rgba(220, 38, 38, 0.06);
 }
 
 .band-background-label-container {

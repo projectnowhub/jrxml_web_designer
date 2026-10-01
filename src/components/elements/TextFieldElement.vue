@@ -13,6 +13,7 @@
     :report-is-italic="reportIsItalic"
     :report-is-underline="reportIsUnderline"
     :parent-frame-index="parentFrameIndex"
+    :zoom-level="zoomLevel"
     @select="handleSelect"
     @drag-start="handleDragStart"
     @resize-start="handleResizeStart"
@@ -65,12 +66,13 @@
     <div
       v-if="showOverflowBadge"
       class="text-overflow-badge"
+      :style="overflowBadgeStyle"
       :title="t('textField.overflowTitle')"
       @click.stop="handleAutoFit"
       @mousedown.stop
     >
       <span class="overflow-badge-icon">⚠</span>
-      <span class="overflow-badge-text">{{ t("textField.fit") }}</span>
+      <span v-if="!compactOverflowBadge" class="overflow-badge-text">{{ t("textField.fit") }}</span>
     </div>
 
     <!-- Floating Rich-Text & Hyperlink Toolbar -->
@@ -202,6 +204,7 @@ const props = defineProps<{
   parentFrameIndex?: number;
   pageNumber?: number;
   totalPages?: number;
+  zoomLevel?: number;
 }>();
 
 // Emits
@@ -406,6 +409,20 @@ const isSelected = computed(() => {
 const showOverflowBadge = computed(() => {
   return isSelected.value && isOverflowing.value && !isEditing.value;
 });
+
+// The badge keeps the same small size on screen at any zoom (the canvas is
+// scaled), just below the element's right corner; on a narrow element it shows
+// only the icon so it doesn't stick out far past it
+const overflowBadgeStyle = computed(() => {
+  const zoom = props.zoomLevel || 1;
+  return {
+    top: `calc(100% + ${3 / zoom}px)`,
+    transform: `scale(${1 / zoom})`,
+  };
+});
+const compactOverflowBadge = computed(
+  () => props.element.width * (props.zoomLevel || 1) < 70,
+);
 
 // Check if content overflows current element height (taking margins & borders into account)
 const checkOverflow = () => {
@@ -1665,16 +1682,16 @@ const handleStartEditing = () => {
 /* Overflow Warning Badge */
 .text-overflow-badge {
   position: absolute;
-  bottom: -22px;
   right: 0;
+  transform-origin: top right;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   background: #ff4d4f;
   color: #ffffff;
   font-size: 10px;
   font-weight: 700;
-  padding: 2px 7px;
+  padding: 1px 5px;
   border-radius: 3px;
   cursor: pointer;
   z-index: 30;
@@ -1688,7 +1705,6 @@ const handleStartEditing = () => {
 
 .text-overflow-badge:hover {
   background: #ff7875;
-  transform: scale(1.05);
 }
 
 .overflow-badge-icon {

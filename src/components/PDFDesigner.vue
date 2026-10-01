@@ -271,6 +271,7 @@
           :bands="bands"
           :selected-band-index="selectedBandIndex"
           :highlighted-band-index="highlightedBandIndex"
+          :drop-target-blocked="dropTargetBlocked"
           :selected-element="selectedElement"
           :selected-elements="selectedElements"
           :editing-element="editingElement"
@@ -727,6 +728,7 @@ import { useUndoRedo } from "@/composables/useUndoRedo";
 import { useZoom } from "@/composables/useZoom";
 import { useSnapAlignment } from "@/composables/useSnapAlignment";
 import { fitContentToPage } from "@/utils/pageFit";
+import { planBandFit, type BandFitPlan } from "@/utils/bandFit";
 import {
   nextGridLine,
   snapEdge,
@@ -2157,6 +2159,104 @@ const getSnapOptions = (
   };
 };
 
+// The most a band may grow to when something is dropped in it: its maximum
+// height setting, and the room left on the page (Detail keeps its minimum).
+// Detail fills whatever space remains, so it can't grow on its own.
+const getBandMaxHeight = (bandIndex: number): number => {
+  const band = bands.value[bandIndex];
+  if (!band) return 0;
+  if (
+    band.type === BAND_TYPE_CONSTANTS.DETAIL ||
+    band.type === BAND_TYPE_CONSTANTS.BACKGROUND
+  ) {
+    return band.height;
+  }
+  const limits = reportProperties.value?.bandLimits?.[band.type] ||
+    getEffectiveDefaultBandLimits()[band.type] || { min: 20, max: 70 };
+  const maxSetting = typeof limits.max === "number" ? limits.max : 70;
+  const printableHeight =
+    paperHeight.value -
+    (reportProperties.value?.topMargin || 0) -
+    (reportProperties.value?.bottomMargin || 0);
+  let otherBands = 0;
+  bands.value.forEach((b, i) => {
+    if (
+      i !== bandIndex &&
+      b.type !== BAND_TYPE_CONSTANTS.DETAIL &&
+      b.type !== BAND_TYPE_CONSTANTS.BACKGROUND
+    ) {
+      otherBands += b.height || 0;
+    }
+  });
+  const pageRoom = printableHeight - otherBands - (BAND_CONSTANTS.MIN_HEIGHT || 20);
+  return Math.max(band.height, Math.min(maxSetting, pageRoom));
+};
+
+// Where an element would end up if dropped in a band (see planBandFit)
+const planDropInBand = (
+  bandIndex: number,
+  element: { y: number; height: number },
+): BandFitPlan =>
+  planBandFit(
+    element,
+    bands.value[bandIndex]?.height ?? 0,
+    getBandMaxHeight(bandIndex),
+  );
+
+// Put a dropped element in place, growing the band if the plan says so
+const applyDropInBand = (
+  bandIndex: number,
+  element: DesignElement,
+  plan: Exclude<BandFitPlan, { kind: "tooTall" }>,
+) => {
+  element.y = plan.y;
+  const band = bands.value[bandIndex];
+  if (plan.kind === "grow" && band) {
+    band.height = plan.bandHeight;
+    notification.info(
+      t("editor.bandLimits.grewToFit", {
+        band: getBandDisplayName(band.type),
+        height: plan.bandHeight,
+      }),
+    );
+  }
+};
+
+const warnTooTallForBand = (bandIndex: number, height: number, maxHeight: number) => {
+  const band = bands.value[bandIndex];
+  notification.warning(
+    t("editor.bandLimits.tooTallForBand", {
+      height: Math.round(height),
+      band: band ? getBandDisplayName(band.type) : "",
+      max: Math.round(maxHeight),
+    }),
+  );
+};
+
+// While dragging: the target band turns red when the element can't fit in it
+const dropTargetBlocked = ref(false);
+
+// Whether an element at (x, y) in a band would land in one of its boxes
+// (same rule as the drop: its centre is inside the box; boxes don't nest)
+const isOverBox = (
+  bandIndex: number,
+  element: { type: string; width: number; height: number },
+  x: number,
+  y: number,
+) => {
+  if (element.type === "frame") return false;
+  const cx = x + element.width / 2;
+  const cy = y + element.height / 2;
+  return (bands.value[bandIndex]?.elements ?? []).some(
+    (el) =>
+      el.type === "frame" &&
+      cx >= el.x &&
+      cx <= el.x + el.width &&
+      cy >= el.y &&
+      cy <= el.y + el.height,
+  );
+};
+
 // Show the lines an element has snapped to (in band coordinates)
 const showSnapGuides = (
   context: SnapContext,
@@ -2583,9 +2683,6 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
       newElement.x = Math.max(0, snappedDrop.x);
       newElement.y = Math.max(0, snappedDrop.y);
 
-      // Save state to history
-      saveStateToHistory();
-
       // Detect whether it is being dropped on a Frame
       let targetFrameIndex = -1;
 
@@ -2611,6 +2708,20 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
           }
         }
       }
+
+      // Dropped in the band itself: it must fit, growing the band up to its
+      // maximum if needed; too tall is refused before anything changes
+      const bandPlan =
+        targetFrameIndex === -1 ? planDropInBand(bandIndex, newElement) : null;
+      if (bandPlan?.kind === "tooTall") {
+        warnTooTallForBand(bandIndex, newElement.height, bandPlan.maxHeight);
+        highlightedBandIndex.value = null;
+        dropTargetBlocked.value = false;
+        return;
+      }
+
+      // Save state to history
+      saveStateToHistory();
 
       if (targetFrameIndex !== -1) {
         // Add it to the Frame
@@ -2659,14 +2770,8 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
           newElement.width = Math.round(availableWidth);
         }
 
-        // Ensure the element's Y coordinate does not turn negative
-        if (newElement.height <= targetBand.height) {
-          if (newElement.y + newElement.height > targetBand.height) {
-            newElement.y = Math.max(0, Math.round(targetBand.height - newElement.height));
-          }
-        } else {
-          newElement.y = Math.max(0, newElement.y);
-        }
+        // Inside the band: moved up, or the band grows (checked above)
+        if (bandPlan) applyDropInBand(bandIndex, newElement, bandPlan);
 
         targetBand.elements.push(newElement);
 
@@ -2685,6 +2790,7 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
 
   // Clear the highlight state
   highlightedBandIndex.value = null;
+  dropTargetBlocked.value = false;
 };
 
 // Handle visual feedback while dragging
@@ -2694,34 +2800,37 @@ const handleDragOver = (event: DragEvent) => {
     event.dataTransfer.dropEffect = "copy";
   }
 
-  // Get the paper element as a reference point
-  const paper = document.querySelector(".paper") as HTMLElement;
-  if (!paper) return;
-
-  const paperRect = paper.getBoundingClientRect();
-  // Calculate coordinates relative to the paper
-  const y = event.clientY - paperRect.top;
-
-  // Account for the zoom scale
-  const currentZoom = zoomLevel.value;
-  const scaledY = y / currentZoom;
-
-  // Find the corresponding band
-  let bandIndex = -1;
-  let currentY = 0;
-  for (let i = 0; i < bands.value.length; i++) {
-    const band = bands.value[i];
-    if (band && scaledY >= currentY && scaledY <= currentY + band.height) {
-      bandIndex = i;
-      break;
-    }
-    if (band) {
-      currentY += band.height;
-    }
-  }
-
-  // Update the highlight state
+  // The band under the pointer (same lookup as moving an element)
+  const { bandUnderMouse } = getTargetBandAndSheetUnderPoint(event.clientX, event.clientY);
+  const bandIndex =
+    bandUnderMouse?.dataset.bandIndex !== undefined
+      ? parseInt(bandUnderMouse.dataset.bandIndex, 10)
+      : -1;
   highlightedBandIndex.value = bandIndex;
+
+  // Red when the new element is too tall for that band (the drop is refused)
+  const type: string | undefined = draggedLibraryElement.value?.type;
+  const band = bands.value[bandIndex];
+  dropTargetBlocked.value =
+    !!type &&
+    !!band &&
+    type !== PAGE_BORDER_TYPE &&
+    getLibraryDropHeight(type, band.height) > getBandMaxHeight(bandIndex);
+};
+
+// Height a library item gets when dropped in a band of the given height
+// (same sizes as handleDrop); built items are cached for the drag
+const libraryHeightCache = new Map<string, number>();
+const getLibraryDropHeight = (type: string, bandHeight: number): number => {
+  if (["rectangle", "ellipse", "frame", "image"].includes(type)) {
+    return getDefaultElementSize(type, bandHeight).height;
+  }
+  let height = libraryHeightCache.get(type);
+  if (height === undefined) {
+    height = createLibraryElement(type).height;
+    libraryHeightCache.set(type, height);
+  }
+  return height;
 };
 
 // Handle the drag-leave event
@@ -2730,6 +2839,7 @@ const handleDragLeave = (event: DragEvent) => {
   const paper = document.querySelector(".paper") as HTMLElement;
   if (paper && !paper.contains(event.relatedTarget as Node)) {
     highlightedBandIndex.value = null;
+    dropTargetBlocked.value = false;
   }
 };
 
@@ -2982,56 +3092,43 @@ let cachedMouseMoveHandler: ((e: MouseEvent) => void) | null = null;
 let cachedMouseUpHandler: ((e: MouseEvent) => void) | null = null;
 
 // Detect target band and sheet under coordinates (combines elementFromPoint with geometric fallback)
+// The page sheet and band at a screen point, found from their positions on screen.
+// Not from what is drawn there: while dragging, that is usually the dragged
+// element itself, which still sits in its old band.
 const getTargetBandAndSheetUnderPoint = (clientX: number, clientY: number) => {
-  const elUnderPoint = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
-  let bandUnderMouse = elUnderPoint?.closest(".band") as HTMLElement | null;
-  let sheetUnderMouse = (elUnderPoint?.closest(".page-sheet") ||
-    bandUnderMouse?.closest(".page-sheet")) as HTMLElement | null;
-
-  // Geometric fallback when elementFromPoint hits an element instead of band surface
-  if (!bandUnderMouse) {
-    const sheets = Array.from(document.querySelectorAll<HTMLElement>(".page-sheet"));
-    let targetSheet: HTMLElement | null = null;
-    for (const sheet of sheets) {
+  const sheets = Array.from(document.querySelectorAll<HTMLElement>(".page-sheet"));
+  const sheetUnderMouse =
+    sheets.find((sheet) => {
       const rect = sheet.getBoundingClientRect();
-      if (
+      return (
         clientX >= rect.left &&
-        clientX <= rect.right &&
+        clientX < rect.right &&
         clientY >= rect.top &&
-        clientY <= rect.bottom
-      ) {
-        targetSheet = sheet;
-        break;
-      }
-    }
-    if (!targetSheet && sheets.length > 0) {
-      targetSheet =
-        sheets.find((sheet) => {
-          const rect = sheet.getBoundingClientRect();
-          return clientY >= rect.top && clientY <= rect.bottom;
-        }) ?? sheets[0] ?? null;
-    }
-    sheetUnderMouse = targetSheet;
+        clientY < rect.bottom
+      );
+    }) ??
+    sheets.find((sheet) => {
+      const rect = sheet.getBoundingClientRect();
+      return clientY >= rect.top && clientY < rect.bottom;
+    }) ??
+    sheets[0] ??
+    null;
 
-    if (sheetUnderMouse) {
-      const bandEls = Array.from(sheetUnderMouse.querySelectorAll<HTMLElement>(".band"));
-      for (const bandEl of bandEls) {
+  let bandUnderMouse: HTMLElement | null = null;
+  if (sheetUnderMouse) {
+    const bandEls = Array.from(sheetUnderMouse.querySelectorAll<HTMLElement>(".band"));
+    // Bands are stacked; a point on the line between two belongs to the lower
+    // one, so an element snapped to a band's bottom edge moves into the next band
+    bandUnderMouse =
+      bandEls.find((bandEl) => {
         const rect = bandEl.getBoundingClientRect();
-        if (clientY >= rect.top && clientY <= rect.bottom) {
-          bandUnderMouse = bandEl;
-          break;
-        }
-      }
-      if (!bandUnderMouse && bandEls.length > 0) {
-        const firstEl = bandEls[0];
-        const lastEl = bandEls[bandEls.length - 1];
-        if (firstEl && lastEl) {
-          const firstRect = firstEl.getBoundingClientRect();
-          const lastRect = lastEl.getBoundingClientRect();
-          if (clientY < firstRect.top) bandUnderMouse = firstEl;
-          else if (clientY > lastRect.bottom) bandUnderMouse = lastEl;
-        }
-      }
+        return clientY >= rect.top && clientY < rect.bottom;
+      }) ?? null;
+    if (!bandUnderMouse && bandEls.length > 0) {
+      // Above the first band or below the last (in the margins): the nearest one
+      const first = bandEls[0]!;
+      bandUnderMouse =
+        clientY < first.getBoundingClientRect().top ? first : bandEls[bandEls.length - 1]!;
     }
   }
 
@@ -3341,6 +3438,16 @@ const startDragging = (
             }
             if (relativeY < 0) relativeY = 0;
 
+            // Red target band when the element is too tall for it (the drop
+            // would be refused); not when it lands in a box in that band
+            dropTargetBlocked.value =
+              targetBandIndex !== draggingInfo.value.bandIndex &&
+              !isOverBox(targetBandIndex, currentElement, relativeX, relativeY) &&
+              planDropInBand(targetBandIndex, {
+                y: relativeY,
+                height: currentElement.height,
+              }).kind === "tooTall";
+
             const targetBand = bands.value[targetBandIndex];
             const bandName = targetBand
               ? getBandDisplayName(targetBand.type) + " - "
@@ -3533,7 +3640,34 @@ const startDragging = (
               (targetFrameIndex === -1 ? undefined : targetFrameIndex);
             const isSamePage = sourcePageIndex === targetSheetPageIndex;
 
-            if ((!isSameBand || !isSameFrame) && targetBand) {
+            // Y was snapped in the source band; snap it again to the grid of the
+            // band it lands in (bands start at different heights; X is shared)
+            const landingGrid = getSnapOptions(e).grid;
+            if (landingGrid && !isSameBand) {
+              elementRelTargetBandY = snapToGrid(elementRelTargetBandY, landingGrid);
+            }
+
+            // Landing in a band (not in a box): it must fit, growing the band up
+            // to its maximum if needed. Too tall for another band: refused.
+            const bandPlan =
+              targetFrameIndex === -1 && targetBand
+                ? planDropInBand(targetBandIndex, {
+                    y: elementRelTargetBandY,
+                    height: currentElement.height,
+                  })
+                : null;
+
+            if (bandPlan?.kind === "tooTall" && !isSameBand) {
+              currentElement.x = draggingInfo.value.origElementX ?? currentElement.x;
+              currentElement.y = draggingInfo.value.origElementY ?? currentElement.y;
+              warnTooTallForBand(targetBandIndex, currentElement.height, bandPlan.maxHeight);
+              selectElement(
+                draggingInfo.value.bandIndex,
+                draggingInfo.value.elementIndex,
+                false,
+                draggingInfo.value.parentFrameIndex,
+              );
+            } else if ((!isSameBand || !isSameFrame) && targetBand) {
               // Reparenting
               let targetFrame: FrameElement | null = null;
               if (targetFrameIndex !== -1) {
@@ -3561,13 +3695,6 @@ const startDragging = (
                 ]?.elements.splice(draggingInfo.value.elementIndex, 1)[0];
               }
 
-              // Y was snapped in the source band; snap it again to the grid of the
-              // band it lands in (bands start at different heights; X is shared)
-              const landingGrid = getSnapOptions(e).grid;
-              if (landingGrid && !isSameBand) {
-                elementRelTargetBandY = snapToGrid(elementRelTargetBandY, landingGrid);
-              }
-
               if (element) {
                 if (targetFrame) {
                   if (!targetFrame.elements) targetFrame.elements = [];
@@ -3593,7 +3720,11 @@ const startDragging = (
                   );
                 } else {
                   element.x = Math.max(0, Math.round(elementRelTargetBandX));
-                  element.y = Math.max(0, Math.round(elementRelTargetBandY));
+                  if (bandPlan && bandPlan.kind !== "tooTall") {
+                    applyDropInBand(targetBandIndex, element, bandPlan);
+                  } else {
+                    element.y = Math.max(0, Math.round(elementRelTargetBandY));
+                  }
 
                   if (targetBand.type === BAND_TYPE_CONSTANTS.DETAIL) {
                     (element as any).pageIndex = targetSheetPageIndex;
@@ -3610,20 +3741,22 @@ const startDragging = (
               }
             } else {
               // Within the same container
-              if (
+              const movedAcrossPages =
                 isSameBand &&
                 !isSamePage &&
-                currentBand.type === BAND_TYPE_CONSTANTS.DETAIL
-              ) {
-                // Moved detail element across pages
+                currentBand.type === BAND_TYPE_CONSTANTS.DETAIL;
+              if (movedAcrossPages) {
+                (currentElement as any).pageIndex = targetSheetPageIndex;
+              }
+              currentElement.x = Math.max(0, Math.round(currentElement.x));
+              if (bandPlan && bandPlan.kind !== "tooTall") {
+                // Kept inside its band (moved up, or the band grows)
+                applyDropInBand(targetBandIndex, currentElement, bandPlan);
+              } else {
                 currentElement.y = Math.max(
                   0,
-                  Math.round(elementRelTargetBandY),
+                  Math.round(movedAcrossPages ? elementRelTargetBandY : currentElement.y),
                 );
-                (currentElement as any).pageIndex = targetSheetPageIndex;
-              } else {
-                currentElement.x = Math.max(0, Math.round(currentElement.x));
-                currentElement.y = Math.max(0, Math.round(currentElement.y));
               }
 
               // Ensure the element remains selected after moving within the same container
@@ -3643,6 +3776,7 @@ const startDragging = (
 
         // Clear highlight and coordinate display
         highlightedBandIndex.value = null;
+        dropTargetBlocked.value = false;
         dragCoordinates.value.visible = false;
         clearAlignmentLines();
         draggingInfo.value = null;
@@ -4109,7 +4243,6 @@ const processPastedElement = (elementData: any) => {
   ) {
     return;
   }
-  saveStateToHistory();
 
   // Determine the paste location (use the currently selected band, or default to the first editable band)
   let targetBandIndex =
@@ -4157,6 +4290,20 @@ const processPastedElement = (elementData: any) => {
   if (newElement.id) {
     newElement.id = `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
+
+  // It must fit in the band, growing it up to its maximum if needed; too tall
+  // is refused before anything changes. (The Background band holds only the
+  // page border, which is sized to the page.)
+  const bandPlan =
+    targetBand.type === BAND_TYPE_CONSTANTS.BACKGROUND
+      ? null
+      : planDropInBand(targetBandIndex, newElement);
+  if (bandPlan?.kind === "tooTall") {
+    warnTooTallForBand(targetBandIndex, newElement.height, bandPlan.maxHeight);
+    return;
+  }
+  saveStateToHistory();
+  if (bandPlan) applyDropInBand(targetBandIndex, newElement, bandPlan);
 
   // Add it to the target band
   if (!targetBand.elements) {

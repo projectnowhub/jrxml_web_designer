@@ -994,7 +994,9 @@
       "noSpace": "You don't have space to extend {band}. The Detail band has reached its minimum height ({height}px).",
       "maxReached": "{band} space is exceeded. Change the template band settings for more space.",
       "minReached": "Minimum height reached. If you don't need the {band} band, remove it.",
-      "textOverflow": "{band} reached its maximum limit ({height}px). The text exceeds the band capacity. Consider widening the element or placing long text in the Detail band."
+      "textOverflow": "{band} reached its maximum limit ({height}px). The text exceeds the band capacity. Consider widening the element or placing long text in the Detail band.",
+      "grewToFit": "{band} grew to {height}px to fit the element.",
+      "tooTallForBand": "This element is {height}px tall, but {band} can be at most {max}px. Make the element smaller, or raise the band's maximum height in the template band settings."
     },
     "confirmDelete": {
       "field": "Are you sure you want to delete field \"{name}\"?",

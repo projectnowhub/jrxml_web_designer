@@ -994,7 +994,9 @@
       "noSpace": "Tiada ruang untuk membesarkan {band}. Jalur Butiran telah mencapai ketinggian minimumnya ({height}px).",
       "maxReached": "Ruang {band} telah melebihi had. Tukar tetapan jalur templat untuk mendapatkan lebih ruang.",
       "minReached": "Ketinggian minimum dicapai. Jika anda tidak memerlukan jalur {band}, buang jalur tersebut.",
-      "textOverflow": "{band} telah mencapai had maksimumnya ({height}px). Teks melebihi kapasiti jalur. Pertimbangkan untuk melebarkan elemen atau meletakkan teks panjang dalam jalur Butiran."
+      "textOverflow": "{band} telah mencapai had maksimumnya ({height}px). Teks melebihi kapasiti jalur. Pertimbangkan untuk melebarkan elemen atau meletakkan teks panjang dalam jalur Butiran.",
+      "grewToFit": "{band} telah dibesarkan kepada {height}px supaya elemen muat.",
+      "tooTallForBand": "Elemen ini setinggi {height}px, tetapi {band} hanya boleh setinggi {max}px. Kecilkan elemen, atau naikkan ketinggian maksimum jalur dalam tetapan jalur templat."
     },
     "confirmDelete": {
       "field": "Adakah anda pasti mahu memadam medan \"{name}\"?",
