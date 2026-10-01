@@ -5,6 +5,7 @@
 import type { Box, DesignElement, FrameElement, Pen } from "@/types";
 import { createElement } from "@/components/elements/ElementRegistry";
 import { DEFAULT_REPORT_FONT } from "@/config/fonts.config";
+import { CORNER_NAMES, type CornerRadii } from "@/utils/elementUtils";
 
 // Palette tuned for formal project/government reports: soft tints, thin rules
 export const FRAME_COLORS = {
@@ -15,7 +16,6 @@ export const FRAME_COLORS = {
   borderMuted: "#9CA3AF",
   textDark: "#1F2937",
   textMuted: "#6B7280",
-  placeholderFill: "#ECEEF2",
   tintInfo: "#EFEEFA",
   tintSuccess: "#E7F5EE",
   tintWarning: "#FCF3E3",
@@ -443,35 +443,36 @@ function titledSection({ t, availableWidth }: FrameTemplateContext): FrameElemen
 }
 
 // Gallery card: photo area on top, caption underneath
-// Photo area of the Photo Box: an image element. Until a picture is uploaded it
-// prints as a light grey block ("Blank" on error: an empty image source would
-// otherwise stop the PDF), and the picture keeps its shape when it arrives.
-function photo(width: number, height: number): DesignElement {
+// Photo area of the Photo Box: a normal image element (same settings as the
+// Image tile), so uploading works the same, fitting the picture's proportions.
+// "Blank" on error: an empty image source would otherwise stop the PDF.
+function photo(x: number, y: number, width: number, height: number): DesignElement {
   return createElement("image", {
     uuid: crypto.randomUUID(),
-    x: 0,
-    y: 0,
+    x,
+    y,
     width,
     height,
     imageExpression: "",
-    scaleType: "RetainShape",
-    hAlign: "Center",
-    vAlign: "Middle",
     onErrorType: "Blank",
-    mode: "Opaque",
-    backcolor: FRAME_COLORS.placeholderFill,
     properties: boxPartProperties(),
   } as Partial<DesignElement>);
 }
 
+// Product-card layout, 137 x 140: the photo sits inside the border with an even
+// margin all round, caption and date underneath
 function photoCard({ t }: FrameTemplateContext): FrameElement {
-  const w = 250;
-  const photoH = 110;
-  return frame(w, 158, lined({ pen: pen(0.75, FRAME_COLORS.borderLight) }, "#FFFFFF"), [
-    photo(w, photoH),
-    text({ x: 8, y: photoH + 8, width: w - 16, height: 13, fontSize: 8, isBold: true,
+  const w = 137;
+  const pad = 8;
+  const photoH = 90;
+  const captionY = pad + photoH + 8;
+  const metaY = captionY + 15;
+  const h = metaY + 11 + pad;
+  return frame(w, h, lined({ pen: pen(0.75, FRAME_COLORS.borderLight) }, "#FFFFFF"), [
+    photo(pad, pad, w - 2 * pad, photoH),
+    text({ x: pad, y: captionY, width: w - 2 * pad, height: 13, fontSize: 8, isBold: true,
       text: t("framePresets.placeholder.photoCaption") }),
-    text({ x: 8, y: photoH + 22, width: w - 16, height: 11, fontSize: 7,
+    text({ x: pad, y: metaY, width: w - 2 * pad, height: 11, fontSize: 7,
       forecolor: FRAME_COLORS.textMuted, text: t("framePresets.placeholder.photoMeta") }),
   ]);
 }
@@ -524,8 +525,6 @@ export const ROUNDED_MARKER = {
   layeredFrontFill: "inner-fill",
   // Front shape filled white because the frame has no background
   layeredFrontPlain: "inner",
-  // A border line drawn as a bar with rounded ends
-  lineEnd: "line-end",
 } as const;
 
 // Fill behind a frame with no background of its own (the paper)
@@ -585,51 +584,6 @@ export function decodeSidePens(text: string): Box {
 }
 
 // ---------------------------------------------------------------------------
-// Rounded line ends
-// ---------------------------------------------------------------------------
-// With `roundedLineEnds`, each line of a partial border (e.g. a left accent) is
-// drawn as a bar with semicircle ends: a rounded rectangle filled with the line's
-// colour, no pen. Applies to frames without rounded corners; with a corner
-// radius the border follows the corners instead (see getLayeredBorder).
-
-export interface LineEndBar {
-  side: BorderSide;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  radius: number;
-  color: string;
-}
-
-export function getRoundedLineEndBars(
-  element: { width: number; height: number; radius?: number; box?: Box; roundedLineEnds?: boolean },
-  // JRXML positions and radius are whole points
-  wholePoints = false,
-): LineEndBar[] | null {
-  if (!element.roundedLineEnds || hasRoundedCorners(element) || isUniformBorder(element.box)) {
-    return null;
-  }
-  const { width: W, height: H } = element;
-  const bars: LineEndBar[] = [];
-  for (const side of BORDER_SIDES) {
-    const p = getSidePen(element.box, side);
-    if (!p) continue;
-    const w = wholePoints ? Math.max(1, Math.round(p.lineWidth ?? 1)) : (p.lineWidth ?? 1);
-    const radius = wholePoints ? Math.floor(w / 2) : w / 2;
-    const color = p.lineColor ?? "#000000";
-    const box = {
-      top: { x: 0, y: 0, width: W, height: w },
-      bottom: { x: 0, y: H - w, width: W, height: w },
-      left: { x: 0, y: 0, width: w, height: H },
-      right: { x: W - w, y: 0, width: w, height: H },
-    }[side];
-    bars.push({ side, ...box, radius, color });
-  }
-  return bars;
-}
-
-// ---------------------------------------------------------------------------
 // Keeping a box's items inside it
 // ---------------------------------------------------------------------------
 // A box's own parts (isBoxPart) are positioned from the box's top-left corner and
@@ -658,4 +612,72 @@ export function clampRectInBox(item: Rect, box: Size): Rect {
     width: Math.max(1, Math.round(right - x)),
     height: Math.max(1, Math.round(bottom - y)),
   };
+}
+
+// Box photos uploaded with earlier versions were saved with "Retain shape"
+// scaling (and sometimes a grey fill), which leaves empty space beside the
+// picture. They are reset to a normal image, which fills its area. Only a box's
+// own photos are touched: the panel offers no scaling option, so these settings
+// can only have come from those versions.
+export function resetBoxPhotos(bands: { elements?: any[] }[] | undefined): void {
+  for (const band of bands ?? []) {
+    for (const element of band.elements ?? []) {
+      if (element?.type !== "frame") continue;
+      for (const item of element.elements ?? []) {
+        if (item?.type !== "image" || !isBoxPart(item)) continue;
+        if (item.scaleType === "RetainShape") item.scaleType = "FillFrame";
+        if (item.backcolor?.toUpperCase() === "#ECEEF2") {
+          delete item.backcolor;
+          item.mode = "Transparent";
+        }
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Box corner radius per corner
+// ---------------------------------------------------------------------------
+// The same radius on every corner is `radius`, drawn as a JasperReports rounded
+// rectangle (see ROUNDED_BORDER_PROPERTY). Different corners are `cornerRadii`:
+// shown on the canvas and stored in the JRXML as BOX_CORNER_RADIUS_PROPERTY
+// (CSS order, "12 0 6 0") for the report server; JasperReports itself has only
+// one radius per rectangle, so the box prints with square corners until the
+// server reads it.
+
+export const BOX_CORNER_RADIUS_PROPERTY = "com.cdp.box.cornerRadius";
+
+type BoxCorners = { radius?: number; cornerRadii?: CornerRadii };
+
+export function getBoxCornerRadii(box: BoxCorners): CornerRadii {
+  if (box.cornerRadii) return { ...box.cornerRadii };
+  const r = box.radius ?? 0;
+  return { topLeft: r, topRight: r, bottomRight: r, bottomLeft: r };
+}
+
+export function setBoxCornerRadii(box: BoxCorners, radii: CornerRadii): void {
+  const values = CORNER_NAMES.map((c) => Math.max(0, Math.round(radii[c] || 0)));
+  delete box.cornerRadii;
+  delete box.radius;
+  if (values.every((v) => v === values[0])) {
+    if (values[0]! > 0) box.radius = values[0];
+  } else {
+    box.cornerRadii = Object.fromEntries(CORNER_NAMES.map((c, i) => [c, values[i]])) as CornerRadii;
+  }
+}
+
+// CSS border-radius for the canvas, or undefined for square corners
+export function boxCornerRadiusCss(box: BoxCorners): string | undefined {
+  const radii = getBoxCornerRadii(box);
+  if (CORNER_NAMES.every((c) => radii[c] === 0)) return undefined;
+  return CORNER_NAMES.map((c) => `${radii[c]}px`).join(" ");
+}
+
+export const encodeCornerRadii = (radii: CornerRadii): string =>
+  CORNER_NAMES.map((c) => radii[c]).join(" ");
+
+export function decodeCornerRadii(value: string): CornerRadii | null {
+  const values = value.split(/\s+/).filter(Boolean).map((v) => Math.max(0, parseFloat(v) || 0));
+  if (values.length !== 4) return null;
+  return Object.fromEntries(CORNER_NAMES.map((c, i) => [c, values[i]])) as CornerRadii;
 }

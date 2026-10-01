@@ -419,8 +419,13 @@
     "barcodeValue": "Barcode Value",
     "barcodeValuePlaceholder": "e.g. 1234567890",
     "cornerRadiusHint": "The border follows the rounded corners in one solid colour, and the inside is filled (white unless the frame has a background).",
-    "roundedLineEnds": "Rounded line ends",
-    "roundedLineEndsHint": "Each line is drawn as a solid bar with rounded ends."
+    "cornerAll": "All corners",
+    "corner": {
+      "topLeft": "Top left",
+      "topRight": "Top right",
+      "bottomRight": "Bottom right",
+      "bottomLeft": "Bottom left"
+    }
   },
   "bottomPanel": {
     "pageSettings": "Page Settings",

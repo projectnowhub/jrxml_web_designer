@@ -87,8 +87,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { DesignElement, SelectedElementInfo } from '../../types';
-import { getElementBoxPadding } from '../../utils/elementUtils';
-import { getLayeredBorder, getRoundedLineEndBars, type BorderSide } from '../../utils/framePresets';
+import { getElementBoxPadding, imageCornerRadiusCss } from '../../utils/elementUtils';
+import { boxCornerRadiusCss, getLayeredBorder, type BorderSide } from '../../utils/framePresets';
 
 // Props
 const props = defineProps<{
@@ -199,11 +199,8 @@ const elementStyle = computed(() => {
   // Compute the border style
   // Rounded frame with a partial border: drawn solid in one colour, as in the PDF
   const layered = props.element.type === 'frame' ? getLayeredBorder(props.element as any) : null;
-  // Lines drawn as rounded bars by FrameElement instead of CSS borders
-  const lineEndBars = props.element.type === 'frame' ? getRoundedLineEndBars(props.element as any) : null;
 
   const calculateBorder = (side: string): string => {
-    if (lineEndBars) return 'none';
     if (layered) {
       const width = layered.widths[side as BorderSide];
       return width > 0 ? `${width}px solid ${layered.color}` : 'none';
@@ -235,7 +232,7 @@ const elementStyle = computed(() => {
     borderLeft: calculateBorder('left'),
     borderBottom: calculateBorder('bottom'),
     borderRight: calculateBorder('right'),
-    borderRadius: props.element.type === 'ellipse' ? '50%' : (((props.element.type === 'rectangle' || props.element.type === 'frame') && (props.element as any).radius) ? `${(props.element as any).radius}px` : undefined),
+    borderRadius: props.element.type === 'ellipse' ? '50%' : props.element.type === 'frame' ? boxCornerRadiusCss(props.element as any) : ((props.element.type === 'rectangle' && (props.element as any).radius) ? `${(props.element as any).radius}px` : props.element.type === 'image' ? imageCornerRadiusCss(props.element) : undefined),
     fontFamily: props.element.fontFamily || props.reportFontFamily,
     fontSize: props.element.fontSize ? `${props.element.fontSize}px` : (props.reportFontSize ? `${props.reportFontSize}px` : '10px'),
     fontWeight: (props.element.isBold === true || (props.element.isBold === undefined && props.reportIsBold)) ? 'bold' : 'normal',

@@ -137,50 +137,6 @@ export function resolveFileRefDisplayUrl(fileRef: string): Promise<string> {
   return pending;
 }
 
-// Natural pixel size of an image file (EXIF orientation applied), or null if it can't be decoded
-export async function getImageDimensions(
-  file: File,
-): Promise<{ width: number; height: number } | null> {
-  if (typeof createImageBitmap !== "function") return null;
-  try {
-    const bitmap = await createImageBitmap(file);
-    const size = { width: bitmap.width, height: bitmap.height };
-    bitmap.close();
-    return size.width > 0 && size.height > 0 ? size : null;
-  } catch {
-    return null;
-  }
-}
-
-// Largest box with the image's aspect ratio that fits inside the current element box,
-// so the frame hugs the picture (no empty bands, no distortion) and never grows past its band
-export function fitBoxToImage(
-  box: { width: number; height: number },
-  image: { width: number; height: number },
-): { width: number; height: number } {
-  const scale = Math.min(box.width / image.width, box.height / image.height);
-  return {
-    width: Math.max(1, Math.round(image.width * scale)),
-    height: Math.max(1, Math.round(image.height * scale)),
-  };
-}
-
-// Resizes an image element to hug the uploaded picture. A 90°-rotated element shows the image
-// with width and height swapped, so the image's aspect ratio is swapped to match.
-export function fitElementToImage(
-  element: { width: number; height: number; rotation?: string },
-  image: { width: number; height: number } | null,
-): void {
-  if (!image) return;
-  const quarterTurn = element.rotation === "Left" || element.rotation === "Right";
-  const fitted = fitBoxToImage(
-    element,
-    quarterTurn ? { width: image.height, height: image.width } : image,
-  );
-  element.width = fitted.width;
-  element.height = fitted.height;
-}
-
 // Sends the image as binary (multipart/form-data) and returns the stored image reference
 export async function uploadImage(file: File, signal?: AbortSignal): Promise<string> {
   const form = new FormData();

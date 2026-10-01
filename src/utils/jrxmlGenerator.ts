@@ -5,12 +5,12 @@ import type { ReportProperties, Field, Parameter } from "./jrxml/types";
 import { buildJasperReportOpenTag } from "./jrxml/xmlBuilder";
 import { generateUUID } from "./jrxml/uuidGenerator";
 import {
+  BOX_CORNER_RADIUS_PROPERTY,
+  encodeCornerRadii,
   encodeSidePens,
   getLayeredBorder,
   getRoundedBorderPen,
-  getRoundedLineEndBars,
   hasRoundedCorners,
-  type LineEndBar,
   orUndefined,
   PAPER_COLOR,
   ROUNDED_BORDER_PENS_PROPERTY,
@@ -1493,9 +1493,20 @@ function generateFrameXML(element: any): string {
   const rounded = hasRoundedCorners(element);
   const frameAttrs = rounded ? { ...element, mode: "Transparent", backcolor: undefined } : element;
 
+  // Different corner radii go with the frame's other properties
+  const withCorners = element.cornerRadii
+    ? {
+        ...element,
+        properties: [
+          ...(element.properties ?? []),
+          { name: BOX_CORNER_RADIUS_PROPERTY, value: encodeCornerRadii(element.cornerRadii) },
+        ],
+      }
+    : element;
+
   let xml = `<frame>`;
   xml += `<reportElement${generateReportElementAttrs(frameAttrs)}>`;
-  xml += `${generateReportElementChildren(element)}`;
+  xml += `${generateReportElementChildren(withCorners)}`;
 
   // The layout attribute belongs on the property child element of reportElement
   if (element.layout) {
@@ -1505,13 +1516,10 @@ function generateFrameXML(element: any): string {
   xml += "</reportElement>";
 
   // Generate the box element
-  const lineEndBars = rounded ? null : getRoundedLineEndBars(element, true);
-  if (rounded || lineEndBars) {
+  if (rounded) {
     const padding = orUndefined(withoutLines(element.box));
     if (padding) xml += generateBoxXML(padding);
-    xml += rounded
-      ? generateRoundedFrameBorderXML(element)
-      : generateLineEndBarsXML(element, lineEndBars!);
+    xml += generateRoundedFrameBorderXML(element);
   } else {
     xml += generateBoxXML(element.box, element);
   }
@@ -1581,34 +1589,6 @@ function generateRoundedFrameBorderXML(frame: any): string {
     opaque ? ROUNDED_MARKER.layeredFrontFill : ROUNDED_MARKER.layeredFrontPlain,
   );
   return back + front;
-}
-
-// Border lines drawn as bars with rounded ends; the first bar carries the exact
-// side pens so the border reads back unchanged
-function generateLineEndBarsXML(frame: any, bars: LineEndBar[]): string {
-  return bars
-    .map((bar, i) =>
-      generateRectangleXML({
-        type: "rectangle",
-        uuid: generateUUID(),
-        x: bar.x,
-        y: bar.y,
-        width: bar.width,
-        height: bar.height,
-        radius: bar.radius,
-        // Side bars grow with the frame when its content stretches
-        stretchType: bar.side === "left" || bar.side === "right" ? "RelativeToBandHeight" : undefined,
-        positionType: bar.side === "bottom" ? "FixRelativeToBottom" : undefined,
-        mode: "Opaque",
-        backcolor: bar.color,
-        pen: { lineWidth: 0 },
-        properties: [
-          { name: ROUNDED_BORDER_PROPERTY, value: ROUNDED_MARKER.lineEnd },
-          ...(i === 0 ? [{ name: ROUNDED_BORDER_PENS_PROPERTY, value: encodeSidePens(frame.box) }] : []),
-        ],
-      }),
-    )
-    .join("");
 }
 
 // Generate page break XML

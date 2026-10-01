@@ -22,20 +22,6 @@
       class="frame-content"
       @mousedown.capture="rememberSelectionAtPress"
     >
-      <!-- Border lines with rounded ends, positioned from the frame's outer edge -->
-      <div
-        v-for="bar in lineEndBars"
-        :key="bar.side"
-        class="line-end-bar"
-        :style="{
-          left: `${bar.x - padding.left}px`,
-          top: `${bar.y - padding.top}px`,
-          width: `${bar.width}px`,
-          height: `${bar.height}px`,
-          borderRadius: `${bar.radius}px`,
-          backgroundColor: bar.color,
-        }"
-      ></div>
       <!-- Render child elements -->
       <template v-if="element.elements && element.elements.length > 0">
         <!-- Dynamically load ElementFactory to avoid circular reference -->
@@ -82,7 +68,7 @@
 import { computed, defineAsyncComponent } from 'vue';
 import BaseElement from './BaseElement.vue';
 import type { FrameElement, SelectedElementInfo, EditingElementInfo } from '../../types';
-import { getRoundedLineEndBars, isBoxPart } from '../../utils/framePresets';
+import { isBoxPart } from '../../utils/framePresets';
 import { getElementBoxPadding } from '../../utils/elementUtils';
 
 // Asynchronously import ElementFactory to avoid circular dependencies
@@ -106,7 +92,6 @@ const props = defineProps<{
   parentFrameIndex?: number; // Add the parentFrameIndex prop
 }>();
 
-const lineEndBars = computed(() => getRoundedLineEndBars(props.element) ?? []);
 
 const padding = computed(() => getElementBoxPadding(props.element.box));
 
@@ -238,12 +223,5 @@ const handleChildCheckFields = (fields: string[]) => {
   height: 100%;
   position: relative;
 }
-
-.line-end-bar {
-  position: absolute;
-  pointer-events: none;
-}
-
-
 
 </style>

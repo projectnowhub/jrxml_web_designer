@@ -7,6 +7,10 @@ import {
   buildFrameTemplate,
   clampPositionInBox,
   clampRectInBox,
+  BOX_CORNER_RADIUS_PROPERTY,
+  boxCornerRadiusCss,
+  getBoxCornerRadii,
+  setBoxCornerRadii,
   isBoxPart,
   markBoxPart,
   releaseBoxPart,
@@ -19,7 +23,6 @@ import {
   decodeSidePens,
   encodeSidePens,
   getLayeredBorder,
-  getRoundedLineEndBars,
   PAPER_COLOR,
   PAGE_BORDER_TYPE,
   ROUNDED_BORDER_PROPERTY,
@@ -245,11 +248,27 @@ describe('fitChildrenToFrame', () => {
     const card = buildFrameTemplate('framePhotoCard', ctx);
     const [photo, caption] = fitChildrenToFrame(
       card.elements!,
-      { width: 250, height: 158 },
-      { width: 250, height: 208 },
+      { width: card.width, height: card.height },
+      { width: card.width, height: card.height + 50 },
     );
-    expect(photo!.height).toBe(160);
-    expect(caption!.y).toBe(168);
+    expect(photo!.height).toBe(card.elements![0]!.height + 50);
+    expect(caption!.y).toBe(card.elements![1]!.y + 50);
+  });
+
+  test('photo card: a new one is 137 x 140', () => {
+    const card = buildFrameTemplate('framePhotoCard', ctx);
+    expect([card.width, card.height]).toEqual([137, 140]);
+  });
+
+  test('photo card: the photo sits inside the border with an even margin', () => {
+    const card = buildFrameTemplate('framePhotoCard', ctx);
+    const photo = card.elements![0]!;
+    const meta = card.elements![2]!;
+    const margin = photo.x;
+    expect(margin).toBeGreaterThan(0);
+    expect(photo.y).toBe(margin);
+    expect(card.width - (photo.x + photo.width)).toBe(margin);
+    expect(card.height - (meta.y + meta.height)).toBe(margin);
   });
 
   test('shrinking never produces zero-size children', () => {
@@ -399,59 +418,6 @@ describe('rounded frames', () => {
     });
   });
 
-  describe('rounded line ends', () => {
-    const accent = (preset: 'leftAccent' | 'bottomAccent', width = 6): FrameElement => {
-      const box = applyBorderPreset(undefined, preset)!;
-      const key = preset === 'leftAccent' ? 'leftPen' : 'bottomPen';
-      return {
-        ...withUuid(buildFrameTemplate('frameKpiCard', ctx), 10, 10),
-        roundedLineEnds: true,
-        box: { [key]: { ...box[key]!, lineWidth: width } },
-      };
-    };
-    const bars = (frame: FrameElement) =>
-      Array.from(toDom(generate(frame)).querySelectorAll('detail frame > rectangle')).map((r) => {
-        const el = r.querySelector('reportElement')!;
-        return {
-          radius: r.getAttribute('radius'),
-          box: ['x', 'y', 'width', 'height'].map((a) => el.getAttribute(a)),
-          backcolor: el.getAttribute('backcolor'),
-          pen: r.querySelector('pen')?.getAttribute('lineWidth'),
-        };
-      });
-
-    test('left accent becomes a full-height bar with semicircle ends', () => {
-      expect(bars(accent('leftAccent'))).toEqual([
-        { radius: '3', box: ['0', '0', '6', '62'], backcolor: '#7C5CF7', pen: '0' },
-      ]);
-    });
-
-    test('bottom accent sits on the bottom edge', () => {
-      expect(bars(accent('bottomAccent'))[0]!.box).toEqual(['0', '56', '130', '6']);
-    });
-
-    test('the frame itself draws no lines', () => {
-      const frame = toDom(generate(accent('leftAccent'))).querySelector('detail frame')!;
-      expect(frame.querySelector(':scope > box pen, :scope > box leftPen')).toBeNull();
-    });
-
-    test('round-trips with the exact pen and the flag', () => {
-      const card = accent('leftAccent', 5.5);
-      const parsed = parseJRXMLContent(generate(card)).bands.find((b) => b.type === 'detail')!
-        .elements[0] as FrameElement;
-      expect(parsed.roundedLineEnds).toBe(true);
-      expect(parsed.box).toEqual(card.box);
-      expect(parsed.radius).toBeUndefined();
-      expect(parsed.elements).toHaveLength(card.elements!.length);
-    });
-
-    test('ignored for full borders and for rounded corners', () => {
-      expect(getRoundedLineEndBars({ width: 10, height: 10, roundedLineEnds: true, box: { pen: { lineWidth: 2 } } })).toBeNull();
-      expect(getRoundedLineEndBars({ ...accent('leftAccent'), radius: 8 })).toBeNull();
-      expect(getRoundedLineEndBars({ ...accent('leftAccent'), roundedLineEnds: false })).toBeNull();
-    });
-  });
-
   test('side pens encode and decode for the JRXML property', () => {
     const box = { leftPen: { lineWidth: 2.5, lineStyle: 'Solid', lineColor: '#7C5CF7' }, topPen: { lineWidth: 1, lineStyle: 'Dashed', lineColor: '#000000' } };
     expect(decodeSidePens(encodeSidePens(box))).toEqual(box);
@@ -459,14 +425,15 @@ describe('rounded frames', () => {
 });
 
 describe('photo box', () => {
-  test('the photo area is an empty image that prints as a grey block until a picture is added', () => {
+  test('the photo area is a normal empty image element', () => {
     const photo = buildFrameTemplate('framePhotoCard', ctx).elements![0] as any;
     expect(photo.type).toBe('image');
     expect(photo.imageExpression).toBe('');
+    // Same settings as the Image tile: no placeholder fill, fills its frame
+    expect(photo.scaleType).toBe('FillFrame');
+    expect(photo.backcolor).toBeUndefined();
     // An empty image source would otherwise stop the PDF
     expect(photo.onErrorType).toBe('Blank');
-    expect(photo.scaleType).toBe('RetainShape');
-    expect(photo.mode).toBe('Opaque');
   });
 
   test('is written with an empty image expression and Blank on error', () => {
@@ -474,7 +441,6 @@ describe('photo box', () => {
     const xml = generateJRXMLContent(properties, [{ type: 'detail', height: 200, elements: [card] }], []);
     const image = toDom(xml).querySelector('detail frame > image')!;
     expect(image.getAttribute('onErrorType')).toBe('Blank');
-    expect(image.getAttribute('scaleImage')).toBe('RetainShape');
   });
 });
 
@@ -529,5 +495,46 @@ describe('box parts', () => {
     releaseBoxPart(part);
     expect(isBoxPart(part)).toBe(false);
     expect(part.properties).toBeUndefined();
+  });
+});
+
+
+describe('box corner radius per corner', () => {
+  const generate = (frame: FrameElement) =>
+    generateJRXMLContent(properties, [{ type: 'detail', height: 200, elements: [frame] }], []);
+  const parseFirst = (xml: string) =>
+    parseJRXMLContent(xml).bands.find((b) => b.type === 'detail')!.elements[0] as FrameElement;
+
+  test('the same value on every corner stays a single radius (rounded in the PDF)', () => {
+    const box = withUuid(buildFrameTemplate('frameKpiCard', ctx)) as any;
+    setBoxCornerRadii(box, { topLeft: 10, topRight: 10, bottomRight: 10, bottomLeft: 10 });
+    expect(box.radius).toBe(10);
+    expect(box.cornerRadii).toBeUndefined();
+    const parsed = parseFirst(generate(box));
+    expect(parsed.radius).toBe(10);
+    expect(parsed.cornerRadii).toBeUndefined();
+  });
+
+  test('different corners are stored as a frame property and survive a round trip', () => {
+    const box = withUuid(buildFrameTemplate('frameKpiCard', ctx)) as any;
+    const radii = { topLeft: 12, topRight: 0, bottomRight: 6, bottomLeft: 0 };
+    setBoxCornerRadii(box, radii);
+    expect(box.radius).toBeUndefined();
+    const xml = generate(box);
+    expect(xml).toContain(`<property name="${BOX_CORNER_RADIUS_PROPERTY}" value="12 0 6 0"/>`);
+    const parsed = parseFirst(xml);
+    expect(getBoxCornerRadii(parsed)).toEqual(radii);
+    expect(boxCornerRadiusCss(parsed)).toBe('12px 0px 6px 0px');
+    // The property moves back into the model; the box parts keep theirs
+    expect((parsed as any).properties ?? []).toHaveLength(0);
+    expect(parsed.elements!.length).toBe(box.elements.length);
+  });
+
+  test('all corners at 0 clears both', () => {
+    const box: any = { radius: 8 };
+    setBoxCornerRadii(box, { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 });
+    expect(box.radius).toBeUndefined();
+    expect(box.cornerRadii).toBeUndefined();
+    expect(boxCornerRadiusCss(box)).toBeUndefined();
   });
 });

@@ -419,8 +419,13 @@
     "barcodeValue": "Nilai Kod Bar",
     "barcodeValuePlaceholder": "cth. 1234567890",
     "cornerRadiusHint": "Sempadan mengikut sudut bulat dalam satu warna padu, dan bahagian dalam diisi (putih melainkan bingkai mempunyai latar belakang).",
-    "roundedLineEnds": "Hujung garis bulat",
-    "roundedLineEndsHint": "Setiap garis dilukis sebagai bar padu dengan hujung bulat."
+    "cornerAll": "Semua bucu",
+    "corner": {
+      "topLeft": "Atas kiri",
+      "topRight": "Atas kanan",
+      "bottomRight": "Bawah kanan",
+      "bottomLeft": "Bawah kiri"
+    }
   },
   "bottomPanel": {
     "pageSettings": "Tetapan Halaman",

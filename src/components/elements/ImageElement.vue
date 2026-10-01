@@ -22,7 +22,7 @@
   >
     <div
       class="image-container"
-      :style="rotationStyle"
+      :style="[rotationStyle, cornerRadiusStyle]"
       @mouseenter="isHovered = true"
       @mouseleave="isHovered = false"
     >
@@ -215,20 +215,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, inject, onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { createDiscreteApi } from "naive-ui";
 import BaseElement from "./BaseElement.vue";
 import type { ImageElement, SelectedElementInfo } from "../../types";
 import {
+  imageCornerRadiusCss,
   getImageCrop,
   getImageName,
   setImageCrop,
   setImageName,
 } from "../../utils/elementUtils";
 import {
-  fitElementToImage,
-  getImageDimensions,
   ImageUploadError,
   isFileRef,
   resolveFileRefDisplayUrl,
@@ -254,6 +253,13 @@ const props = defineProps<{
   reportIsUnderline?: boolean;
   parentFrameIndex?: number;
 }>();
+
+
+// Rounded corners (Style Settings → Corner radius); the container clips the picture
+const cornerRadiusStyle = computed(() => {
+  const radius = imageCornerRadiusCss(props.element);
+  return radius ? { borderRadius: radius } : {};
+});
 
 // Emits
 const emit = defineEmits<{
@@ -483,10 +489,7 @@ async function processImageFile(file: File) {
   if (isUploading.value) return;
   isUploading.value = true;
   try {
-    const [source, dimensions] = await Promise.all([
-      resolveImageSource(file),
-      getImageDimensions(file),
-    ]);
+    const source = await resolveImageSource(file);
     // Undo snapshot before the element changes
     emit("save-state");
     props.element.imageExpression = toImageExpression(source);
@@ -494,8 +497,6 @@ async function processImageFile(file: File) {
     setImageName(props.element, file.name || "");
     // A crop belongs to the previous picture
     setImageCrop(props.element, null);
-    // Like Google Docs: the frame takes the picture's proportions, so there is no empty gap
-    fitElementToImage(props.element, dimensions);
     imageError.value = false;
     emit("update-jrxml");
   } catch (error) {

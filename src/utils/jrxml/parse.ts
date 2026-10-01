@@ -1,5 +1,7 @@
 import type { DesignElement, BandType, Band, ReportGroup } from "@/types";
 import {
+  BOX_CORNER_RADIUS_PROPERTY,
+  decodeCornerRadii,
   decodeSidePens,
   orUndefined,
   ROUNDED_BORDER_PENS_PROPERTY,
@@ -1721,9 +1723,20 @@ function parseElement(element: Element, type: string): any {
 
   if (elementType === "frame") {
     restoreRoundedFrameBorder(result);
+    restoreBoxCornerRadii(result);
   }
 
   return result;
+}
+
+// Different corner radii are stored as a frame property; move them back to the model
+function restoreBoxCornerRadii(frame: any): void {
+  const property = frame.properties?.find((p: any) => p.name === BOX_CORNER_RADIUS_PROPERTY);
+  if (!property) return;
+  frame.properties = frame.properties.filter((p: any) => p !== property);
+  if (frame.properties.length === 0) delete frame.properties;
+  const radii = decodeCornerRadii(property.value || "");
+  if (radii) frame.cornerRadii = radii;
 }
 
 // A frame with rounded corners is written as a frame whose first children are
@@ -1739,18 +1752,6 @@ function restoreRoundedFrameBorder(frame: any): void {
 
   const box = withoutLines(frame.box);
   let fill: any = null;
-
-  if (marker === ROUNDED_MARKER.lineEnd) {
-    // Border lines drawn as bars with rounded ends; the frame keeps square corners
-    const pens =
-      first.properties.find((p: any) => p.name === ROUNDED_BORDER_PENS_PROPERTY)?.value ?? "";
-    Object.assign(box, decodeSidePens(pens));
-    while (markerOf(frame.elements[0]) === ROUNDED_MARKER.lineEnd) frame.elements.shift();
-    if (frame.elements.length === 0) delete frame.elements;
-    frame.roundedLineEnds = true;
-    frame.box = orUndefined(box);
-    return;
-  }
 
   if (marker === ROUNDED_MARKER.layeredBack) {
     // Back shape (border colour) + front shape (inside)

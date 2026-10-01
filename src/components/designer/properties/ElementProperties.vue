@@ -1034,54 +1034,46 @@
                       </div>
                     </div>
 
-                    <!-- Frames: one corner radius for all four corners -->
-                    <div v-if="currentElement.type === 'frame'" class="border-side-item corner-radius-item">
-                      <label class="side-label">{{
-                        t("properties.cornerRadius")
-                      }}</label>
-                      <div class="border-side-controls">
-                        <input
-                          :value="currentElement.radius ?? 0"
-                          @change="
-                            setFrameRadius(($event.target as HTMLInputElement).value)
-                          "
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="1"
-                          class="width-control compact"
-                        />
+                    <!-- Images and boxes: corner radius for all corners at once, or each corner -->
+                    <template v-if="currentElement.type === 'image' || currentElement.type === 'frame'">
+                      <div class="border-side-item corner-radius-item">
+                        <label class="side-label">{{ t("properties.cornerRadius") }}</label>
+                        <div class="border-side-controls">
+                          <span class="corner-label">{{ t("properties.cornerAll") }}</span>
+                          <input
+                            :value="sharedCornerRadius"
+                            @change="setCornerRadius(null, ($event.target as HTMLInputElement).value)"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="1"
+                            class="width-control compact"
+                          />
+                        </div>
+                      </div>
+                      <div class="corner-grid">
+                        <label v-for="corner in CORNER_GRID" :key="corner" class="corner-field">
+                          <span class="corner-label">{{ t(`properties.corner.${corner}`) }}</span>
+                          <input
+                            :value="cornerRadii?.[corner] ?? 0"
+                            @change="setCornerRadius(corner, ($event.target as HTMLInputElement).value)"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="1"
+                            class="width-control compact"
+                          />
+                        </label>
                       </div>
                       <small
-                        v-if="(currentElement.radius ?? 0) > 0 && !isUniformBorder(currentElement.box)"
+                        v-if="
+                          currentElement.type === 'frame' &&
+                          (currentElement.radius ?? 0) > 0 &&
+                          !isUniformBorder(currentElement.box)
+                        "
                         class="corner-radius-hint"
                       >{{ t("properties.cornerRadiusHint") }}</small>
-                    </div>
-
-                    <!-- Frames with a partial border (accents) and square corners:
-                         lines drawn as bars with rounded ends -->
-                    <div
-                      v-if="
-                        currentElement.type === 'frame' &&
-                        (currentElement.radius ?? 0) === 0 &&
-                        !isUniformBorder(currentElement.box)
-                      "
-                      class="border-side-item corner-radius-item"
-                    >
-                      <label class="line-ends-toggle">
-                        <input
-                          type="checkbox"
-                          :checked="!!currentElement.roundedLineEnds"
-                          @change="
-                            setRoundedLineEnds(($event.target as HTMLInputElement).checked)
-                          "
-                        />
-                        {{ t("properties.roundedLineEnds") }}
-                      </label>
-                      <small v-if="currentElement.roundedLineEnds" class="corner-radius-hint">{{
-                        t("properties.roundedLineEndsHint")
-                      }}</small>
-                    </div>
+                    </template>
                   </div>
                 </div>
 
@@ -1720,13 +1712,16 @@ import type { Band, SelectedElementInfo, TableDataset } from "../../../types";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
   calculateTextElementHeight,
+  CORNER_NAMES,
+  getImageCornerRadii,
   getImageDisplayName,
+  setImageCornerRadii,
+  type CornerName,
+  type CornerRadii,
   setImageCrop,
   setImageName,
 } from "../../../utils/elementUtils";
 import {
-  fitElementToImage,
-  getImageDimensions,
   ImageUploadError,
   resolveImageSource,
   toImageExpression,
@@ -1741,7 +1736,13 @@ import FontStyleSettings from "./FontStyleSettings.vue";
 import BorderStyleSettings from "./BorderStyleSettings.vue";
 import ElementTypeBasedSettings from "./ElementTypeBasedSettings.vue";
 import FrameProperties from "./FrameProperties.vue";
-import { clampRectInBox, isBoxPart, isUniformBorder } from "../../../utils/framePresets";
+import {
+  getBoxCornerRadii,
+  setBoxCornerRadii,
+  clampRectInBox,
+  isBoxPart,
+  isUniformBorder,
+} from "../../../utils/framePresets";
 import TableProperties from "./TableProperties.vue";
 import ColumnTreeNode from "./ColumnTreeNode.vue";
 import { useLivePreview } from "@/composables/useLivePreview";
@@ -3354,10 +3355,7 @@ async function handlePropertiesImageUpload(event: Event) {
 
   isPropertiesImageUploading.value = true;
   try {
-    const [source, dimensions] = await Promise.all([
-      resolveImageSource(file),
-      getImageDimensions(file),
-    ]);
+    const source = await resolveImageSource(file);
     // The upload is async: apply it to the element that started it, even if selection changed
     if (element.type !== "image") return;
     emit("save-state");
@@ -3366,8 +3364,6 @@ async function handlePropertiesImageUpload(event: Event) {
     setImageName(element, file.name || "");
     // A crop belongs to the previous picture
     setImageCrop(element, null);
-    // Like Google Docs: the frame takes the picture's proportions, so there is no empty gap
-    fitElementToImage(element, dimensions);
     emit("update-jrxml");
   } catch (error) {
     console.error("Image upload failed:", error);
@@ -3386,27 +3382,40 @@ function ensureElementBox(): void {
   if (currentElement.value && !currentElement.value.box) currentElement.value.box = {};
 }
 
-// Frame corner radius. A border that isn't the same on all sides (e.g. an
-// accent) follows the rounded corners, drawn solid in one colour.
-function setRoundedLineEnds(on: boolean) {
-  const element = currentElement.value;
-  if (!element || element.type !== "frame") return;
-  emit("save-state");
-  if (on) element.roundedLineEnds = true;
-  else delete element.roundedLineEnds;
-  emit("update-jrxml");
-}
+// Corner radius of the selected image or box. Images store it as a JRXML property
+// (IMAGE_CORNER_RADIUS_PROPERTY); boxes as radius / cornerRadii (BOX_CORNER_RADIUS_PROPERTY).
+const readCornerRadii = (element: any): CornerRadii | null =>
+  element?.type === "image"
+    ? getImageCornerRadii(element)
+    : element?.type === "frame"
+      ? getBoxCornerRadii(element)
+      : null;
 
-function setFrameRadius(value: string) {
-  const element = currentElement.value;
-  if (!element || element.type !== "frame") return;
+const cornerRadii = computed(() => readCornerRadii(currentElement.value));
+
+// Corner fields laid out as they sit on the element: top row, then bottom row
+const CORNER_GRID: CornerName[] = ["topLeft", "topRight", "bottomLeft", "bottomRight"];
+
+// "All" shows the value only when every corner has it
+const sharedCornerRadius = computed(() => {
+  const radii = cornerRadii.value;
+  if (!radii) return "";
+  const first = radii.topLeft;
+  return CORNER_NAMES.every((c) => radii[c] === first) ? first : "";
+});
+
+// corner null = all four corners
+function setCornerRadius(corner: CornerName | null, value: string) {
+  const element = currentElement.value as any;
+  const current = readCornerRadii(element);
+  if (!current) return;
   const radius = Math.max(0, Math.round(parseFloat(value) || 0));
+  const next = { ...current };
+  for (const c of corner ? [corner] : CORNER_NAMES) next[c] = radius;
+  if (CORNER_NAMES.every((c) => next[c] === current[c])) return;
   emit("save-state");
-  if (radius > 0) {
-    element.radius = radius;
-  } else {
-    delete element.radius;
-  }
+  if (element.type === "image") setImageCornerRadii(element, next);
+  else setBoxCornerRadii(element, next);
   emit("update-jrxml");
 }
 
@@ -4940,13 +4949,24 @@ function addPropertyExpression() {
   white-space: nowrap;
 }
 
-.line-ends-toggle {
-  display: inline-flex;
+.corner-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px var(--prop-spacing-sm);
+  margin-top: 6px;
+}
+
+.corner-field {
+  display: flex;
   align-items: center;
   gap: 6px;
-  font-size: var(--prop-font-size-sm);
+}
+
+.corner-label {
+  font-size: var(--prop-font-size-xs);
   color: var(--prop-text-secondary);
-  cursor: pointer;
+  white-space: nowrap;
+  min-width: 64px;
 }
 
 .corner-radius-hint {

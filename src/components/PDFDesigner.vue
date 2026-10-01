@@ -762,6 +762,7 @@ import {
   clampRectInBox,
   findPageBorder,
   isBoxPart,
+  resetBoxPhotos,
   markBoxPart,
   releaseBoxPart,
   fitChildrenToFrame,
@@ -1159,6 +1160,7 @@ function loadFile(fileData: DesignerFile | any) {
       bands.value = fileContent.bands;
       // Repair copies that share IDs with their original (pasted before copies got their own)
       ensureUniqueUuids(bands.value);
+      resetBoxPhotos(bands.value);
       // Update selectedBandTypes to match the loaded bands
       selectedBandTypes.value = fileContent.bands.map(
         (band: Band) => band.type,
@@ -1962,11 +1964,17 @@ const {
 const setZoomLevel = (newZoom: number) => {
   zoomLevel.value = newZoom;
 };
+// The selected element; an item inside a box is looked up inside that box
 const currentElement = computed(() => {
-  if (selectedElement.value && bands.value && Array.isArray(bands.value)) {
-    const band = bands.value[selectedElement.value.bandIndex];
+  const selection = selectedElement.value;
+  if (selection && bands.value && Array.isArray(bands.value)) {
+    const band = bands.value[selection.bandIndex];
     if (band && band.elements && Array.isArray(band.elements)) {
-      return band.elements[selectedElement.value.elementIndex];
+      if (selection.parentFrameIndex !== undefined) {
+        const box = band.elements[selection.parentFrameIndex] as FrameElement | undefined;
+        return box?.type === "frame" ? (box.elements?.[selection.elementIndex] ?? null) : null;
+      }
+      return band.elements[selection.elementIndex];
     }
   }
   return null;
@@ -2780,8 +2788,7 @@ const selectElement = (
   showBottomPanel.value = false;
 
   if (element && !element.box) {
-    // Use initBox to initialize the box property
-    initBox();
+    initBox(element);
   }
 
   // Removed the expensive DOM queries and animation effects; selection state is now managed via Vue's reactivity system and CSS classes
@@ -3641,6 +3648,7 @@ const loadFromLocalStorageWrapper = () => {
     bands.value = loadedData.reportData.bands;
     // Repair copies that share IDs with their original (pasted before copies got their own)
     ensureUniqueUuids(bands.value);
+    resetBoxPhotos(bands.value);
     reportFields.value = loadedData.reportData.reportFields;
     jrxmlContent.value = loadedData.reportData.jrxmlContent;
     // Update selectedBandTypes to match the loaded bands
@@ -3661,16 +3669,14 @@ const loadFromLocalStorageWrapper = () => {
 
 // Initialize an element's Box property: padding only. Borders are pens, written
 // by the border presets and Style Settings when the user sets one.
-const initBox = () => {
-  if (currentElement.value) {
-    currentElement.value.box = {
-      padding: 0,
-      topPadding: 0,
-      leftPadding: 0,
-      bottomPadding: 0,
-      rightPadding: 0,
-    };
-  }
+const initBox = (element: DesignElement) => {
+  element.box = {
+    padding: 0,
+    topPadding: 0,
+    leftPadding: 0,
+    bottomPadding: 0,
+    rightPadding: 0,
+  };
 };
 
 // Download the JRXML file
@@ -4597,6 +4603,7 @@ const saveJRXML = (): void => {
     bands.value = parsedData.bands;
     // Repair copies that share IDs with their original (pasted before copies got their own)
     ensureUniqueUuids(bands.value);
+    resetBoxPhotos(bands.value);
 
     // Update the selected band types
     selectedBandTypes.value = parsedData.bands.map((band) => band.type);
