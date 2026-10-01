@@ -122,7 +122,7 @@
         <span class="toolbar-divider"></span>
 
         <!-- 8. Snap controls -->
-        <div class="snap-controls-header">
+        <div class="snap-controls-header" :title="t('actions.snapBypassHint')">
           <n-checkbox
             :checked="enableSnapToGrid"
             size="small"
@@ -410,6 +410,8 @@
       @update:visible="showBottomPanel = $event"
       @size-change="handleBottomPanelSizeChange"
       @update:report-properties="reportProperties = $event"
+      @save-state="saveStateToHistory"
+      @page-setup-change="handlePageSetupChange"
       @update:selected-band-types="selectedBandTypes = $event"
       @update:jrxml-content="jrxmlContent = $event"
       @copy-jrxml="copyJRXML"
@@ -724,6 +726,17 @@ import { useDesignerFiles } from "@/composables/useDesignerFiles";
 import { useUndoRedo } from "@/composables/useUndoRedo";
 import { useZoom } from "@/composables/useZoom";
 import { useSnapAlignment } from "@/composables/useSnapAlignment";
+import { fitContentToPage } from "@/utils/pageFit";
+import {
+  nextGridLine,
+  snapEdge,
+  snapMove,
+  snapToGrid,
+  type SnapGuides,
+  type SnapOptions,
+  type SnapRect,
+  type SnapTargets,
+} from "@/utils/snapping";
 import {
   ALL_CONFIGURABLE_BANDS,
   BAND_CONSTANTS,
@@ -738,13 +751,17 @@ import {
   KEYBOARD_CONSTANTS,
   PANEL_CONSTANTS,
   REPORT_CONSTANTS,
-  RULER_CONSTANTS,
   UI_CONSTANTS,
   ZOOM_CONSTANTS,
 } from "../constants/constants";
 
 // Import newly created utility functions and constants
 import { getBandDisplayName } from "../utils/bandUtils";
+import {
+  buildRulerMarks,
+  type RulerLabel,
+  type RulerTick,
+} from "../utils/rulerUtils";
 
 import { loadFromLocalStorage, saveToLocalStorage } from "../utils/fileUtils";
 
@@ -2009,75 +2026,37 @@ const groupedReportElements = computed(() => {
 });
 */
 
-// Ruler-related computed properties
-const horizontalRulerTicks = computed(() => {
-  const ticks = [];
-  const width = paperWidth.value;
-  const unit = RULER_CONSTANTS.UNIT_SIZE; // Reduced base unit, from 10px to 5px, to increase tick density
+// Ruler marks: numbered from the margins, so they read the same as element X/Y
+const horizontalRulerMarks = computed(() =>
+  buildRulerMarks(
+    paperWidth.value,
+    reportProperties.value.leftMargin,
+    reportProperties.value.rightMargin,
+  ),
+);
+const horizontalRulerTicks = computed(() => horizontalRulerMarks.value.ticks);
+const horizontalRulerLabels = computed(() => horizontalRulerMarks.value.labels);
 
-  for (let i = 0; i <= width; i += unit) {
-    ticks.push({
-      position: i, // Do not apply the zoom scale, keep the actual position
-      major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0, // One major tick every 25px, changed from 50px to 25px
-    });
-  }
-
-  return ticks;
-});
-
-const horizontalRulerLabels = computed(() => {
-  const labels = [];
-  const width = paperWidth.value;
-
-  for (let i = 0; i <= width; i += RULER_CONSTANTS.LABEL_INTERVAL) {
-    // Show a label every 25px, changed from 50px to 25px
-    labels.push({
-      position: i, // Do not apply the zoom scale, keep the actual position
-      value: i.toString(),
-    });
-  }
-
-  return labels;
-});
-
-const verticalRulerTicks = computed(() => {
-  const ticks = [];
+// One set of marks per page sheet; sheets are 32px apart on the canvas
+const verticalRulerMarks = computed(() => {
   const height = paperHeight.value;
-  const unit = RULER_CONSTANTS.UNIT_SIZE;
-  const pages = totalPages.value;
   const pageGap = 32;
-
-  for (let p = 0; p < pages; p++) {
-    const pageOffset = p * (height + pageGap);
-    for (let i = 0; i <= height; i += unit) {
-      ticks.push({
-        position: pageOffset + i,
-        major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0,
-      });
-    }
+  const ticks: RulerTick[] = [];
+  const labels: RulerLabel[] = [];
+  for (let p = 0; p < totalPages.value; p++) {
+    const marks = buildRulerMarks(
+      height,
+      reportProperties.value.topMargin,
+      reportProperties.value.bottomMargin,
+      p * (height + pageGap),
+    );
+    ticks.push(...marks.ticks);
+    labels.push(...marks.labels);
   }
-
-  return ticks;
+  return { ticks, labels };
 });
-
-const verticalRulerLabels = computed(() => {
-  const labels = [];
-  const height = paperHeight.value;
-  const pages = totalPages.value;
-  const pageGap = 32;
-
-  for (let p = 0; p < pages; p++) {
-    const pageOffset = p * (height + pageGap);
-    for (let i = 0; i <= height; i += RULER_CONSTANTS.LABEL_INTERVAL) {
-      labels.push({
-        position: pageOffset + i,
-        value: i.toString(),
-      });
-    }
-  }
-
-  return labels;
-});
+const verticalRulerTicks = computed(() => verticalRulerMarks.value.ticks);
+const verticalRulerLabels = computed(() => verticalRulerMarks.value.labels);
 
 // Drag-related state
 const draggingInfo = ref<DraggingInfo | null>(null);
@@ -2085,18 +2064,116 @@ const highlightedBandIndex = ref<number | null>(null); // Index of the highlight
 const {
   enableSnapToGrid,
   enableSnapToAlignment,
+  showGrid,
   alignmentLines,
-  detectAlignmentLines,
+  setAlignmentLines,
   clearAlignmentLines,
-} = useSnapAlignment({
-  bands,
-  reportProperties,
-  highlightedBandIndex,
-  bandSpacing: BAND_CONSTANTS.SPACING,
-});
+} = useSnapAlignment();
 
-// Controls whether the grid is shown or hidden
-const showGrid = ref(true);
+// How close (in screen pixels) an edge must come to another to align with it;
+// in screen pixels so it feels the same at every zoom
+const ALIGN_SNAP_SCREEN_PX = 6;
+
+const printableWidth = computed(
+  () =>
+    paperWidth.value -
+    (reportProperties.value?.leftMargin || 0) -
+    (reportProperties.value?.rightMargin || 0),
+);
+
+// What a moving element can snap to, in its container's coordinates (its band,
+// or its box for an item in a box: `offset` is then the box's position)
+interface SnapContext {
+  bandIndex: number;
+  pageIndex: number;
+  offset: { x: number; y: number };
+  targets: SnapTargets;
+}
+
+const buildSnapContext = (
+  bandIndex: number,
+  pageIndex: number,
+  parentFrameIndex: number | undefined,
+  moving: DesignElement,
+): SnapContext => {
+  const band = bands.value[bandIndex];
+  const box =
+    parentFrameIndex !== undefined
+      ? (band?.elements[parentFrameIndex] as FrameElement | undefined)
+      : undefined;
+  const offset = box ? { x: box.x, y: box.y } : { x: 0, y: 0 };
+  const width = printableWidth.value;
+  const height = band?.height ?? 0;
+
+  // Band coordinates; other bands share X but not Y (each band has its own top)
+  const xs = [0, width / 2, width];
+  const ys = [0, height / 2, height];
+  const add = (r: SnapRect, sameBand: boolean) => {
+    xs.push(r.x, r.x + r.width / 2, r.x + r.width);
+    if (sameBand) ys.push(r.y, r.y + r.height / 2, r.y + r.height);
+  };
+  bands.value.forEach((b, i) => {
+    if (b.type === BAND_TYPE_CONSTANTS.BACKGROUND) return;
+    for (const el of b.elements ?? []) {
+      // Moving element (and a moving box's own items) are not targets; nor is
+      // the detail content of other pages
+      if (el === moving) continue;
+      if (b.type === BAND_TYPE_CONSTANTS.DETAIL && (el.pageIndex ?? 0) !== pageIndex) continue;
+      add(el, i === bandIndex);
+      if (el.type === "frame") {
+        for (const child of (el as FrameElement).elements ?? []) {
+          if (child === moving) continue;
+          add({ ...child, x: el.x + child.x, y: el.y + child.y }, i === bandIndex);
+        }
+      }
+    }
+  });
+
+  return {
+    bandIndex,
+    pageIndex,
+    offset,
+    targets: {
+      x: [...new Set(xs)].map((v) => v - offset.x),
+      y: [...new Set(ys)].map((v) => v - offset.y),
+    },
+  };
+};
+
+// Snap settings for one mouse move or drop; holding Ctrl/Cmd skips snapping
+const getSnapOptions = (
+  event: { ctrlKey?: boolean; metaKey?: boolean } | null,
+  offset = { x: 0, y: 0 },
+): SnapOptions => {
+  const bypass = !!(event?.ctrlKey || event?.metaKey);
+  return {
+    grid: enableSnapToGrid.value && !bypass ? UI_CONSTANTS.GRID_SIZE : null,
+    threshold:
+      enableSnapToAlignment.value && !bypass
+        ? ALIGN_SNAP_SCREEN_PX / zoomLevel.value
+        : null,
+    gridOffsetX: offset.x,
+    gridOffsetY: offset.y,
+  };
+};
+
+// Show the lines an element has snapped to (in band coordinates)
+const showSnapGuides = (
+  context: SnapContext,
+  guides: SnapGuides,
+  options: SnapOptions,
+) => {
+  if (options.threshold === null) {
+    clearAlignmentLines();
+    return;
+  }
+  setAlignmentLines({
+    bandIndex: context.bandIndex,
+    pageIndex: context.pageIndex,
+    x: guides.x.map((v) => v + context.offset.x),
+    y: guides.y.map((v) => v + context.offset.y),
+  });
+};
 // Coordinate info shown while dragging
 const dragCoordinates = ref<{
   x: number;
@@ -2273,6 +2350,23 @@ const addPageBorder = () => {
   const elementIndex = backgroundBand.elements.length - 1;
   selectElement(bandIndex, elementIndex);
   handleElementCreated(border, bandIndex, elementIndex);
+  updateJRXML();
+};
+
+// After the paper size or margins change (already one undo step): resize the
+// page border to the new printable area and move elements that no longer fit
+const handlePageSetupChange = () => {
+  ensureBandsFitPage();
+  const ctx = getFrameTemplateContext();
+  const { borderResized, moved } = fitContentToPage(bands.value, {
+    width: ctx.availableWidth,
+    height: ctx.availableHeight,
+  });
+  const messages = [
+    borderResized ? t("canvas.pageBorderResized") : "",
+    moved > 0 ? t("canvas.elementsMovedToFit", moved) : "",
+  ].filter(Boolean);
+  if (messages.length) notification.info(messages.join(" "));
   updateJRXML();
 };
 
@@ -2482,6 +2576,13 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
         newElement.width = defaultSize.width;
         newElement.height = defaultSize.height;
       }
+
+      // Land on the grid, or in line with a nearby element, like a dragged one
+      const dropSnap = buildSnapContext(bandIndex, targetPageIndex, undefined, newElement);
+      const snappedDrop = snapMove(newElement, dropSnap.targets, getSnapOptions(event));
+      newElement.x = Math.max(0, snappedDrop.x);
+      newElement.y = Math.max(0, snappedDrop.y);
+
       // Save state to history
       saveStateToHistory();
 
@@ -2942,33 +3043,49 @@ const getTargetBandAndSheetUnderPoint = (clientX: number, clientY: number) => {
 const startDraggingInsideBox = (
   event: MouseEvent,
   element: DesignElement,
-  box: FrameElement,
+  bandIndex: number,
+  boxIndex: number,
 ) => {
+  const box = bands.value[bandIndex]!.elements[boxIndex] as FrameElement;
   const zoom = zoomLevel.value;
   const startX = event.clientX;
   const startY = event.clientY;
   const origX = element.x;
   const origY = element.y;
+  const snapContext = buildSnapContext(
+    bandIndex,
+    getEventPageIndex(event, element),
+    boxIndex,
+    element,
+  );
 
   // Undo snapshot before the item moves (a drag only starts after the mouse moved)
   saveStateToHistory();
   isDraggingOrResizing.value = true;
 
   const onMove = (e: MouseEvent) => {
-    let x = origX + (e.clientX - startX) / zoom;
-    let y = origY + (e.clientY - startY) / zoom;
-    if (enableSnapToGrid.value) {
-      const grid = UI_CONSTANTS.GRID_SIZE;
-      x = Math.round(x / grid) * grid;
-      y = Math.round(y / grid) * grid;
-    }
-    const position = clampPositionInBox({ ...element, x, y }, box);
+    const options = getSnapOptions(e, snapContext.offset);
+    const snapped = snapMove(
+      {
+        x: origX + (e.clientX - startX) / zoom,
+        y: origY + (e.clientY - startY) / zoom,
+        width: element.width,
+        height: element.height,
+      },
+      snapContext.targets,
+      options,
+    );
+    const position = clampPositionInBox({ ...element, ...snapped }, box);
     element.x = position.x;
     element.y = position.y;
+    showSnapGuides(snapContext, snapped.guides, options);
   };
+  const frameMove = throttleToAnimationFrame(onMove);
 
   const onUp = () => {
-    document.removeEventListener("mousemove", onMove);
+    frameMove.flush();
+    clearAlignmentLines();
+    document.removeEventListener("mousemove", frameMove);
     document.removeEventListener("mouseup", onUp);
     isDraggingOrResizing.value = false;
     isJustDraggedOrResized.value = true;
@@ -2978,8 +3095,41 @@ const startDraggingInsideBox = (
     updateJRXML();
   };
 
-  document.addEventListener("mousemove", onMove);
+  document.addEventListener("mousemove", frameMove);
   document.addEventListener("mouseup", onUp);
+};
+
+// The page sheet a mouse event happened on (detail content is per page)
+const getEventPageIndex = (event: Event, element?: DesignElement): number => {
+  const sheet = (event.target as HTMLElement | null)?.closest?.(
+    ".page-sheet",
+  ) as HTMLElement | null;
+  if (sheet?.dataset.pageIndex !== undefined) {
+    return parseInt(sheet.dataset.pageIndex, 10);
+  }
+  return element?.pageIndex ?? 0;
+};
+
+// Run a mouse-move handler at most once per screen frame, with the latest event:
+// the canvas never does more work than it can draw. `flush` applies a pending
+// move at once (call it on mouse-up so the final position is the last one).
+const throttleToAnimationFrame = (handler: (e: MouseEvent) => void) => {
+  let pending: MouseEvent | null = null;
+  let frame = 0;
+  const flush = () => {
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+    if (pending) {
+      const e = pending;
+      pending = null;
+      handler(e);
+    }
+  };
+  const onMove = (e: MouseEvent) => {
+    pending = e;
+    if (!frame) frame = requestAnimationFrame(flush);
+  };
+  return Object.assign(onMove, { flush });
 };
 
 const startDragging = (
@@ -3009,11 +3159,7 @@ const startDragging = (
   // A ready-made box's own parts move only within the box; a drag never pulls
   // them out. Other items in a box can be dragged anywhere.
   if (draggedElement && parentFrameIndex !== undefined && isBoxPart(draggedElement)) {
-    startDraggingInsideBox(
-      event,
-      draggedElement,
-      band!.elements[parentFrameIndex] as FrameElement,
-    );
+    startDraggingInsideBox(event, draggedElement, bandIndex, parentFrameIndex);
     return;
   }
 
@@ -3050,8 +3196,26 @@ const startDragging = (
 
     isDraggingOrResizing.value = true;
 
-    if (!cachedMouseMoveHandler) {
-      cachedMouseMoveHandler = (e: MouseEvent) => {
+    // Drop handlers left over from a drag whose mouse-up was missed
+    if (cachedMouseMoveHandler) {
+      document.removeEventListener("mousemove", cachedMouseMoveHandler);
+      cachedMouseMoveHandler = null;
+    }
+    if (cachedMouseUpHandler) {
+      document.removeEventListener("mouseup", cachedMouseUpHandler);
+      cachedMouseUpHandler = null;
+    }
+
+    // What the element can snap to; the other elements stay put during the drag
+    const snapContext = buildSnapContext(
+      bandIndex,
+      sourcePageIndex,
+      parentFrameIndex,
+      draggedElement,
+    );
+
+    {
+      const applyDragMove = (e: MouseEvent) => {
         if (draggingInfo.value) {
           const currentBand = bands.value[draggingInfo.value.bandIndex];
           let currentElement: DesignElement | undefined;
@@ -3081,8 +3245,20 @@ const startDragging = (
             const deltaY =
               (e.clientY - draggingInfo.value.startY) / currentZoom;
 
-            let newX = (draggingInfo.value.origElementX ?? 0) + deltaX;
-            let newY = (draggingInfo.value.origElementY ?? 0) + deltaY;
+            // Snap: line up with other elements first, else the grid
+            const snapOptions = getSnapOptions(e, snapContext.offset);
+            const snapped = snapMove(
+              {
+                x: (draggingInfo.value.origElementX ?? 0) + deltaX,
+                y: (draggingInfo.value.origElementY ?? 0) + deltaY,
+                width: currentElement.width,
+                height: currentElement.height,
+              },
+              snapContext.targets,
+              snapOptions,
+            );
+            let newX = snapped.x;
+            const newY = snapped.y;
 
             // Inside band, constrain X coordinate to container width
             if (draggingInfo.value.parentFrameIndex === undefined) {
@@ -3092,47 +3268,9 @@ const startDragging = (
               );
             }
 
-            // Apply auto-snap to grid
-            if (enableSnapToGrid.value) {
-              const gridSize = UI_CONSTANTS.GRID_SIZE;
-              const remainderX = newX % gridSize;
-              newX =
-                remainderX < gridSize / 2
-                  ? newX - remainderX
-                  : newX + (gridSize - remainderX);
-              const remainderY = newY % gridSize;
-              newY =
-                remainderY < gridSize / 2
-                  ? newY - remainderY
-                  : newY + (gridSize - remainderY);
-            }
-
-            // Apply alignment-line snapping
-            if (enableSnapToAlignment.value) {
-              const tempElement = { ...currentElement, x: newX, y: newY };
-              const snapInfo = detectAlignmentLines(
-                tempElement,
-                draggingInfo.value.bandIndex,
-                false,
-              );
-              if (snapInfo.horizontal) {
-                newX += snapInfo.horizontal.offset;
-              }
-              if (snapInfo.vertical) {
-                newY += snapInfo.vertical.offset;
-              }
-            }
-
-            // Update current element position
             currentElement.x = Math.round(newX);
             currentElement.y = Math.round(newY);
-
-            // Detect alignment lines (using the final position)
-            if (enableSnapToAlignment.value) {
-              detectAlignmentLines(currentElement, draggingInfo.value.bandIndex);
-            } else {
-              clearAlignmentLines();
-            }
+            showSnapGuides(snapContext, snapped.guides, snapOptions);
 
             // Target band and sheet detection:
             // Use the visual position of the element's top to prevent accidental reparenting
@@ -3225,10 +3363,12 @@ const startDragging = (
           }
         }
       };
-    }
+      const frameMove = throttleToAnimationFrame(applyDragMove);
+      cachedMouseMoveHandler = frameMove;
 
-    if (!cachedMouseUpHandler) {
       cachedMouseUpHandler = (e: MouseEvent) => {
+        // Apply the last mouse move before reading the final position
+        frameMove.flush();
         if (draggingInfo.value) {
           const currentBand = bands.value[draggingInfo.value.bandIndex];
           let currentElement: DesignElement | undefined;
@@ -3419,6 +3559,13 @@ const startDragging = (
                 element = bands.value[
                   draggingInfo.value.bandIndex
                 ]?.elements.splice(draggingInfo.value.elementIndex, 1)[0];
+              }
+
+              // Y was snapped in the source band; snap it again to the grid of the
+              // band it lands in (bands start at different heights; X is shared)
+              const landingGrid = getSnapOptions(e).grid;
+              if (landingGrid && !isSameBand) {
+                elementRelTargetBandY = snapToGrid(elementRelTargetBandY, landingGrid);
               }
 
               if (element) {
@@ -4164,7 +4311,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
     // If Shift is held and an element is selected, nudge its position
     if (event.shiftKey && selectedElement.value) {
-      moveElementByKeyboard(event.key);
+      moveElementByKeyboard(event.key, event.repeat);
     } else {
       // Otherwise, perform the original navigation behavior
       navigateElements(event.key);
@@ -4271,8 +4418,9 @@ const navigateElements = (direction: string) => {
   }
 };
 
-// Nudge an element's position using the keyboard
-const moveElementByKeyboard = (direction: string) => {
+// Nudge an element's position using the keyboard: to the next grid line with
+// Snap to Grid on, else 1px. Holding the key down is one undo step.
+const moveElementByKeyboard = (direction: string, repeat = false) => {
   if (!selectedElement.value) return;
 
   const {
@@ -4293,8 +4441,12 @@ const moveElementByKeyboard = (direction: string) => {
 
   if (!currentBand || !currentElement) return;
 
-  // Define the nudge step size (in pixels)
-  const MOVE_STEP = 1;
+  // The grid is drawn per band, so an item in a box steps to band grid lines
+  const grid = enableSnapToGrid.value ? UI_CONSTANTS.GRID_SIZE : null;
+  const offsetX = parentBox?.x ?? 0;
+  const offsetY = parentBox?.y ?? 0;
+  const step = (value: number, dir: 1 | -1, offset: number) =>
+    grid ? nextGridLine(value, grid, dir, offset) : value + dir;
 
   // Calculate the new position
   let newX = currentElement.x;
@@ -4302,26 +4454,25 @@ const moveElementByKeyboard = (direction: string) => {
 
   switch (direction) {
     case "ArrowUp":
-      newY = Math.max(0, currentElement.y - MOVE_STEP);
+      newY = Math.max(0, step(currentElement.y, -1, offsetY));
       break;
     case "ArrowDown": {
-      const maxDown = currentBand.height - currentElement.height;
-      if (maxDown > 0) {
-        newY = Math.min(maxDown, currentElement.y + MOVE_STEP);
-      } else {
-        newY = currentElement.y + MOVE_STEP;
-      }
+      const next = step(currentElement.y, 1, offsetY);
+      // Elements in a band stay within it (box parts are kept in their box below)
+      const maxDown = parentBox ? Infinity : currentBand.height - currentElement.height;
+      newY = maxDown > 0 ? Math.min(maxDown, next) : next;
       break;
     }
     case "ArrowLeft":
-      newX = Math.max(0, currentElement.x - MOVE_STEP);
+      newX = Math.max(0, step(currentElement.x, -1, offsetX));
       break;
-    case "ArrowRight":
-      newX = Math.min(
-        reportProperties.value.pageWidth - currentElement.width,
-        currentElement.x + MOVE_STEP,
-      );
+    case "ArrowRight": {
+      const next = step(currentElement.x, 1, offsetX);
+      newX = parentBox
+        ? next
+        : Math.min(Math.max(0, printableWidth.value - currentElement.width), next);
       break;
+    }
   }
 
   if (parentBox && isBoxPart(currentElement)) {
@@ -4331,8 +4482,10 @@ const moveElementByKeyboard = (direction: string) => {
     ));
   }
 
-  // Save the pre-move state to history (for undo)
-  saveStateToHistory();
+  if (newX === currentElement.x && newY === currentElement.y) return;
+
+  // Save the pre-move state to history (for undo), once per key press
+  if (!repeat) saveStateToHistory();
 
   // Update the element's position
   currentElement.x = newX;
@@ -5579,6 +5732,14 @@ const startResizingElement = (
         : null;
     const frameStartSize = { width: element.width, height: element.height };
 
+    // What the moving edges can snap to; the other elements stay put
+    const snapContext = buildSnapContext(
+      bandIndex,
+      getEventPageIndex(event, element),
+      parentFrameIndex,
+      element,
+    );
+
     isDraggingOrResizing.value = true;
 
     // Undo snapshot of the size before the resize, taken on the first move so a
@@ -5595,7 +5756,7 @@ const startResizingElement = (
       Object.assign(item, clampRectInBox(item, parentBox));
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const applyResizeMove = (e: MouseEvent) => {
       if (!resizingInfo.value) return;
 
       const currentBand = bands.value[resizingInfo.value.bandIndex];
@@ -5656,6 +5817,17 @@ const startResizingElement = (
       const deltaX = currentMouseX - resizingInfo.value.startX;
       const deltaY = currentMouseY - resizingInfo.value.startY;
 
+      // Moving edges snap to other elements, else the grid. Aspect-locked
+      // resizes (Shift, Alt) follow the mouse instead.
+      const snapOptions = getSnapOptions(e, snapContext.offset);
+      const snapGuides: SnapGuides = { x: [], y: [] };
+      const snapResizeEdge = (value: number, axis: "x" | "y") => {
+        if (e.shiftKey || e.altKey) return value;
+        const result = snapEdge(value, snapContext.targets[axis], snapOptions, axis);
+        snapGuides[axis].push(...result.lines);
+        return result.value;
+      };
+
       // 2-point endpoint resizing for line elements
       if (dir === "line-start" || dir === "line-end") {
         const startLineDir = (resizingInfo.value as any).startLineDirection || "TopDown";
@@ -5673,8 +5845,22 @@ const startResizingElement = (
 
         const fixedX = dir === "line-start" ? p2x : p1x;
         const fixedY = dir === "line-start" ? p2y : p1y;
-        let movingX = Math.max(0, Math.min(containerWidth, currentMouseX));
-        let movingY = Math.max(0, Math.min(containerHeight, currentMouseY));
+        // The dragged end follows the mouse from where it started (band
+        // coordinates, like the fixed end), snapped like an edge
+        const endX = snapEdge(
+          (dir === "line-start" ? p1x : p2x) + deltaX,
+          snapContext.targets.x,
+          snapOptions,
+          "x",
+        );
+        const endY = snapEdge(
+          (dir === "line-start" ? p1y : p2y) + deltaY,
+          snapContext.targets.y,
+          snapOptions,
+          "y",
+        );
+        let movingX = Math.max(0, Math.min(containerWidth, endX.value));
+        let movingY = Math.max(0, Math.min(containerHeight, endY.value));
 
         let dx = movingX - fixedX;
         let dy = movingY - fixedY;
@@ -5718,11 +5904,14 @@ const startResizingElement = (
         (element as any).lineDirection = computedDir;
         keepInParentBox(element);
 
-        if (enableSnapToAlignment.value) {
-          detectAlignmentLines(element, resizingInfo.value.bandIndex);
-        } else {
-          clearAlignmentLines();
-        }
+        showSnapGuides(
+          snapContext,
+          {
+            x: movingX === endX.value ? endX.lines : [],
+            y: movingY === endY.value ? endY.lines : [],
+          },
+          snapOptions,
+        );
         return;
       }
 
@@ -5737,14 +5926,14 @@ const startResizingElement = (
       if (dir.includes("e")) {
         // Dragging right edge: left edge (newX) is fixed at startElementX
         const maxRight = containerWidth;
-        const candidateRight = startElementX + startWidth + deltaX;
+        const candidateRight = snapResizeEdge(startElementX + startWidth + deltaX, "x");
         const clampedRight = Math.min(maxRight, Math.max(startElementX + minSize, candidateRight));
         newWidth = clampedRight - startElementX;
         newX = startElementX;
       } else if (dir.includes("w")) {
         // Dragging left edge: right edge is fixed at (startElementX + startWidth)
         const rightEdge = startElementX + startWidth;
-        const candidateLeft = startElementX + deltaX;
+        const candidateLeft = snapResizeEdge(startElementX + deltaX, "x");
         const clampedLeft = Math.max(0, Math.min(rightEdge - minSize, candidateLeft));
         newX = clampedLeft;
         newWidth = rightEdge - clampedLeft;
@@ -5754,14 +5943,14 @@ const startResizingElement = (
       if (dir.includes("s")) {
         // Dragging bottom edge: top edge (newY) is fixed at startElementY
         const maxBottom = containerHeight;
-        const candidateBottom = startElementY + startHeight + deltaY;
+        const candidateBottom = snapResizeEdge(startElementY + startHeight + deltaY, "y");
         const clampedBottom = Math.min(maxBottom, Math.max(startElementY + minSize, candidateBottom));
         newHeight = clampedBottom - startElementY;
         newY = startElementY;
       } else if (dir.includes("n")) {
         // Dragging top edge: bottom edge is fixed at (startElementY + startHeight)
         const bottomEdge = startElementY + startHeight;
-        const candidateTop = startElementY + deltaY;
+        const candidateTop = snapResizeEdge(startElementY + deltaY, "y");
         const clampedTop = Math.max(0, Math.min(bottomEdge - minSize, candidateTop));
         newY = clampedTop;
         newHeight = bottomEdge - clampedTop;
@@ -5974,16 +6163,13 @@ const startResizingElement = (
         });
       }
 
-      // Re-run alignment-line detection using the final size (to ensure alignment lines display correctly)
-      if (enableSnapToAlignment.value) {
-        detectAlignmentLines(element, resizingInfo.value.bandIndex);
-      } else {
-        clearAlignmentLines();
-      }
+      showSnapGuides(snapContext, snapGuides, snapOptions);
     };
+    const handleMouseMove = throttleToAnimationFrame(applyResizeMove);
 
     const handleMouseUp = () => {
-      // Clear the alignment lines
+      // Apply the last mouse move, then clear the alignment lines
+      handleMouseMove.flush();
       clearAlignmentLines();
 
       resizingInfo.value = null;

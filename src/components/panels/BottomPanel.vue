@@ -67,6 +67,9 @@ interface Emits {
   (e: "regenerate-jrxml"): void;
   (e: "download-jrxml"): void;
   (e: "band-selection-change"): void;
+  // Before a page size/margin change (undo snapshot), and after it (fit content)
+  (e: "save-state"): void;
+  (e: "page-setup-change"): void;
 }
 
 // Use defineProps and defineEmits
@@ -474,13 +477,46 @@ const handlePaperSizeChange = () => {
   if (!size) return;
 
   // Apply the size based on the current orientation
-  if (orientation.value === "Landscape") {
-    localReportProperties.value.pageWidth = size.height;
-    localReportProperties.value.pageHeight = size.width;
-  } else {
-    localReportProperties.value.pageWidth = size.width;
-    localReportProperties.value.pageHeight = size.height;
+  const landscape = orientation.value === "Landscape";
+  setPageSize(
+    landscape ? size.height : size.width,
+    landscape ? size.width : size.height,
+  );
+};
+
+// Change the page size as one undo step, then let the designer fit the content
+const setPageSize = (width: number, height: number) => {
+  const page = localReportProperties.value;
+  if (page.pageWidth === width && page.pageHeight === height) return;
+  emit("save-state");
+  page.pageWidth = width;
+  page.pageHeight = height;
+  emit("page-setup-change");
+};
+
+type PageSetting =
+  | "pageWidth"
+  | "pageHeight"
+  | "leftMargin"
+  | "rightMargin"
+  | "topMargin"
+  | "bottomMargin";
+
+// Page size and margins apply when the edit is committed (Enter or leaving the
+// field), not on every keystroke: typing "600" must not fit the content to a
+// 6px page on the way
+const setPageSetting = (key: PageSetting, event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const value = Number(input.value);
+  const isSize = key === "pageWidth" || key === "pageHeight";
+  if (input.value.trim() === "" || !Number.isFinite(value) || value < 0 || (isSize && value === 0)) {
+    input.value = String(localReportProperties.value[key] ?? "");
+    return;
   }
+  if (value === localReportProperties.value[key]) return;
+  emit("save-state");
+  localReportProperties.value[key] = value;
+  emit("page-setup-change");
 };
 
 // Handle orientation changes
@@ -488,18 +524,9 @@ const handleOrientationChange = () => {
   const w = localReportProperties.value.pageWidth;
   const h = localReportProperties.value.pageHeight;
 
-  if (orientation.value === "Landscape") {
-    // Switching to landscape: if currently portrait (width < height), swap them
-    if (w < h) {
-      localReportProperties.value.pageWidth = h;
-      localReportProperties.value.pageHeight = w;
-    }
-  } else {
-    // Switching to portrait: if currently landscape (width > height), swap them
-    if (w > h) {
-      localReportProperties.value.pageWidth = h;
-      localReportProperties.value.pageHeight = w;
-    }
+  // Landscape: swap a portrait page (width < height); portrait: the reverse
+  if (orientation.value === "Landscape" ? w < h : w > h) {
+    setPageSize(h, w);
   }
 };
 
@@ -819,14 +846,16 @@ onBeforeUnmount(() => {
             <div class="form-group flex-1">
               <label>{{ t("bottomPanel.pageWidth") }}</label>
               <input
-                v-model.number="localReportProperties.pageWidth"
+                :value="localReportProperties.pageWidth"
+                @change="setPageSetting('pageWidth', $event)"
                 type="number"
               />
             </div>
             <div class="form-group flex-1">
               <label>{{ t("bottomPanel.pageHeight") }}</label>
               <input
-                v-model.number="localReportProperties.pageHeight"
+                :value="localReportProperties.pageHeight"
+                @change="setPageSetting('pageHeight', $event)"
                 type="number"
               />
             </div>
@@ -839,22 +868,26 @@ onBeforeUnmount(() => {
             <label>{{ t("bottomPanel.marginsPx") }}</label>
             <div class="margin-inputs">
               <input
-                v-model.number="localReportProperties.leftMargin"
+                :value="localReportProperties.leftMargin"
+                @change="setPageSetting('leftMargin', $event)"
                 type="number"
                 :placeholder="t('properties.leftSide')"
               />
               <input
-                v-model.number="localReportProperties.rightMargin"
+                :value="localReportProperties.rightMargin"
+                @change="setPageSetting('rightMargin', $event)"
                 type="number"
                 :placeholder="t('properties.rightSide')"
               />
               <input
-                v-model.number="localReportProperties.topMargin"
+                :value="localReportProperties.topMargin"
+                @change="setPageSetting('topMargin', $event)"
                 type="number"
                 :placeholder="t('properties.topSide')"
               />
               <input
-                v-model.number="localReportProperties.bottomMargin"
+                :value="localReportProperties.bottomMargin"
+                @change="setPageSetting('bottomMargin', $event)"
                 type="number"
                 :placeholder="t('properties.bottomSide')"
               />

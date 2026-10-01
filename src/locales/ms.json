@@ -14,6 +14,7 @@
     "showGrid": "Tunjukkan Grid",
     "snapToGrid": "Jajar ke Grid",
     "snapToAlignment": "Jajar ke Penjajaran",
+    "snapBypassHint": "Tahan Ctrl (⌘ pada Mac) semasa menyeret atau mengubah saiz untuk meletakkan elemen secara bebas",
     "clearLocalData": "Kosongkan Data Tempatan",
     "generateJRXML": "Jana JRXML",
     "downloadJRXML": "Muat Turun JRXML",
@@ -1014,7 +1015,9 @@
     "aligned": "Dijajarkan",
     "pageOf": "Halaman {page} daripada {total}",
     "dragOntoPage": "Seret elemen ke halaman {page}",
-    "selectPageBorder": "Klik untuk memilih sempadan halaman"
+    "selectPageBorder": "Klik untuk memilih sempadan halaman",
+    "pageBorderResized": "Saiz sempadan halaman telah diubah supaya muat dengan halaman baharu.",
+    "elementsMovedToFit": "1 elemen telah dialihkan supaya muat di dalam halaman baharu. | {count} elemen telah dialihkan supaya muat di dalam halaman baharu."
   },
   "alignment": {
     "left": "Jajar kiri",

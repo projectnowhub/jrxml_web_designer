@@ -14,6 +14,7 @@
     "showGrid": "Show Grid",
     "snapToGrid": "Snap to Grid",
     "snapToAlignment": "Snap to Alignment",
+    "snapBypassHint": "Hold Ctrl (⌘ on Mac) while dragging or resizing to place an element freely",
     "clearLocalData": "Clear Local Data",
     "generateJRXML": "Generate JRXML",
     "downloadJRXML": "Download JRXML",
@@ -1014,7 +1015,9 @@
     "aligned": "Aligned",
     "pageOf": "Page {page} of {total}",
     "dragOntoPage": "Drag elements onto page {page}",
-    "selectPageBorder": "Click to select the page border"
+    "selectPageBorder": "Click to select the page border",
+    "pageBorderResized": "The page border was resized to fit the new page.",
+    "elementsMovedToFit": "1 element was moved to fit inside the new page. | {count} elements were moved to fit inside the new page."
   },
   "alignment": {
     "left": "Align left",

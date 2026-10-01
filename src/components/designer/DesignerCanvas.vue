@@ -13,8 +13,20 @@
       <div class="horizontal-ruler" ref="horizontalRulerRef">
         <div
           class="ruler-content"
-          :style="{ width: paperWidth * zoomLevel + 'px' }"
+          :style="{ width: paperWidth * zoomLevel + RULER_SCROLL_SLACK + 'px' }"
         >
+          <!-- Shaded margins; the numbers count from the left margin, like element X -->
+          <div
+            class="ruler-margin"
+            :style="{ left: 0, width: marginLeft * zoomLevel + 'px' }"
+          ></div>
+          <div
+            class="ruler-margin"
+            :style="{
+              left: (paperWidth - marginRight) * zoomLevel + 'px',
+              width: marginRight * zoomLevel + 'px',
+            }"
+          ></div>
           <div
             v-for="tick in horizontalRulerTicks"
             :key="tick.position"
@@ -26,6 +38,7 @@
             v-for="label in horizontalRulerLabels"
             :key="label.position"
             class="label"
+            :class="rulerLabelAlign(label.position, paperWidth)"
             :style="{ left: label.position * zoomLevel + 'px' }"
           >
             {{ label.value }}
@@ -41,8 +54,30 @@
         <div class="vertical-ruler" ref="verticalRulerRef">
           <div
             class="ruler-content"
-            :style="{ height: totalRulerHeight * zoomLevel + 'px' }"
+            :style="{
+              height: (totalRulerHeight + 32) * zoomLevel + RULER_SCROLL_SLACK + 'px',
+            }"
           >
+            <!-- Shaded top/bottom margins of each page; numbers count from the top margin -->
+            <template v-for="pIndex in totalPages" :key="'ruler-margin-' + pIndex">
+              <div
+                class="ruler-margin"
+                :style="{
+                  top: pageRulerOffset(pIndex) * zoomLevel + 'px',
+                  height: marginTop * zoomLevel + 'px',
+                }"
+              ></div>
+              <div
+                class="ruler-margin"
+                :style="{
+                  top:
+                    (pageRulerOffset(pIndex) + paperHeight - marginBottom) *
+                      zoomLevel +
+                    'px',
+                  height: marginBottom * zoomLevel + 'px',
+                }"
+              ></div>
+            </template>
             <div
               v-for="tick in verticalRulerTicks"
               :key="tick.position"
@@ -54,6 +89,7 @@
               v-for="label in verticalRulerLabels"
               :key="label.position"
               class="label"
+              :class="rulerLabelAlign(label.position % (paperHeight + 32), paperHeight)"
               :style="{ top: label.position * zoomLevel + 'px' }"
             >
               {{ label.value }}
@@ -140,15 +176,6 @@
                   height: '100%',
                   boxSizing: 'border-box',
                   position: 'relative',
-                  backgroundImage: showGrid
-                    ? 'linear-gradient(to right, #e0e0e0 1px, transparent 1px), linear-gradient(to bottom, #e0e0e0 1px, transparent 1px)'
-                    : 'none',
-                  backgroundSize: showGrid
-                    ? uiConstants.GRID_SIZE +
-                      'px ' +
-                      uiConstants.GRID_SIZE +
-                      'px'
-                    : 'auto',
                 }"
               >
                 <!-- Dynamic Bands for this Page -->
@@ -173,6 +200,40 @@
                   :style="{ height: bItem.effectiveHeight + 'px' }"
                   @click.stop="selectBand(bItem.bandIndex)"
                 >
+                  <!-- Grid from the band's top-left, the origin of element X/Y and of
+                       snap-to-grid; lines stay one screen pixel wide at any zoom -->
+                  <svg
+                    v-if="showGrid && bItem.effectiveHeight > 0"
+                    class="band-grid"
+                    :width="printableWidth"
+                    :height="bItem.effectiveHeight"
+                    aria-hidden="true"
+                  >
+                    <path
+                      :d="gridPath(printableWidth, bItem.effectiveHeight)"
+                      :stroke-width="1 / zoomLevel"
+                    />
+                  </svg>
+                  <!-- Horizontal alignment guides, in the band they belong to (Y is per band) -->
+                  <template
+                    v-if="
+                      alignmentLines &&
+                      alignmentLines.bandIndex === bItem.bandIndex &&
+                      alignmentLines.pageIndex === pIndex - 1
+                    "
+                  >
+                    <div
+                      v-for="line in alignmentLines.y"
+                      :key="'guide-y-' + line"
+                      class="alignment-line horizontal"
+                      :style="{
+                        top: line + 'px',
+                        left: -marginLeft + 'px',
+                        width: paperWidth + 'px',
+                        height: 1 / zoomLevel + 'px',
+                      }"
+                    ></div>
+                  </template>
                   <div class="band-background-label-container">
                     <span class="band-background-label">{{
                       bItem.displayLabel
@@ -362,24 +423,18 @@
                   </template>
                 </div>
 
-                <!-- Alignment lines -->
-                <div
-                  v-if="isDraggingOrResizing && enableSnapToAlignment"
-                  class="alignment-lines"
-                >
+                <!-- Vertical alignment guides, across the whole page (X is shared by all bands) -->
+                <template v-if="alignmentLines && alignmentLines.pageIndex === pIndex - 1">
                   <div
-                    v-for="(line, index) in alignmentLines.horizontal"
-                    :key="'h-' + index"
-                    class="alignment-line horizontal"
-                    :style="{ top: line + 'px' }"
-                  ></div>
-                  <div
-                    v-for="(line, index) in alignmentLines.vertical"
-                    :key="'v-' + index"
+                    v-for="line in alignmentLines.x"
+                    :key="'guide-x-' + line"
                     class="alignment-line vertical"
-                    :style="{ left: line + 'px' }"
+                    :style="{
+                      left: marginLeft + line + 'px',
+                      width: 1 / zoomLevel + 'px',
+                    }"
                   ></div>
-                </div>
+                </template>
               </div>
             </div>
           </div>
@@ -429,8 +484,10 @@ import SelectionBox from "./SelectionBox.vue";
 import DragFeedbackLayer from "./DragFeedbackLayer.vue";
 import { BAND_CONSTANTS } from "@/constants/constants";
 import { getBandDisplayName } from "@/utils/bandUtils";
+import { buildGridPath } from "@/utils/rulerUtils";
 import type { Band } from "@/types";
 import type { DragFeedback } from "@/composables/useDragFeedback";
+import type { AlignmentGuideLines } from "@/composables/useSnapAlignment";
 import { useI18n } from "vue-i18n";
 import { NCheckbox, NSpace } from "naive-ui";
 
@@ -458,7 +515,7 @@ interface Props {
   horizontalRulerLabels: any[];
   verticalRulerTicks: any[];
   verticalRulerLabels: any[];
-  alignmentLines: any;
+  alignmentLines: AlignmentGuideLines | null;
   isDesignAreaFocused: boolean;
   uiConstants: any;
   outOfBoundsElements: Array<{
@@ -496,7 +553,7 @@ const props = withDefaults(defineProps<Props>(), {
   horizontalRulerLabels: () => [],
   verticalRulerTicks: () => [],
   verticalRulerLabels: () => [],
-  alignmentLines: () => ({ horizontal: [], vertical: [] }),
+  alignmentLines: null,
   isDesignAreaFocused: false,
   uiConstants: () => ({}),
   outOfBoundsElements: () => [],
@@ -595,6 +652,42 @@ const totalRulerHeight = computed(() => {
   const pageGap = 32;
   return props.paperHeight * pages + Math.max(0, (pages - 1) * pageGap);
 });
+
+// Extra ruler length past the last page, so the rulers can scroll as far as the
+// canvas (which also holds the add-page button and its scrollbar)
+const RULER_SCROLL_SLACK = 120;
+
+const marginLeft = computed(() => props.reportProperties.leftMargin || 0);
+const marginRight = computed(() => props.reportProperties.rightMargin || 0);
+const marginTop = computed(() => props.reportProperties.topMargin || 0);
+const marginBottom = computed(() => props.reportProperties.bottomMargin || 0);
+const printableWidth = computed(() =>
+  Math.max(0, props.paperWidth - marginLeft.value - marginRight.value),
+);
+
+// Top of page sheet n (1-based) on the vertical ruler
+const pageRulerOffset = (pIndex: number) => (pIndex - 1) * (props.paperHeight + 32);
+
+// Ruler numbers are centred on their tick, except at the paper edges where
+// centring would cut them in half
+const rulerLabelAlign = (position: number, pageLength: number) => {
+  const edge = 10 / props.zoomLevel;
+  if (position < edge) return "label-start";
+  if (position > pageLength - edge) return "label-end";
+  return "";
+};
+
+const gridPathCache = new Map<string, string>();
+const gridPath = (width: number, height: number) => {
+  const key = `${width}x${height}@${props.zoomLevel}`;
+  let path = gridPathCache.get(key);
+  if (path === undefined) {
+    if (gridPathCache.size > 200) gridPathCache.clear();
+    path = buildGridPath(width, height, 1 / props.zoomLevel);
+    gridPathCache.set(key, path);
+  }
+  return path;
+};
 
 // Determine if a band is visible on the given page
 function isBandVisibleOnPage(
@@ -1184,7 +1277,6 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   background-color: #e8e8e8;
-  border-top: 1px solid #ccc;
   overflow-x: hidden;
   overflow-y: auto;
   /* Hide scrollbar */
@@ -1325,9 +1417,20 @@ onBeforeUnmount(() => {
 .pager {
   position: relative;
   box-sizing: border-box;
-  background-image:
-    linear-gradient(to right, #e0e0e0 1px, transparent 1px),
-    linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
+}
+
+.band-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  pointer-events: none;
+  shape-rendering: crispEdges;
+}
+
+.band-grid path {
+  fill: none;
+  stroke: #ececec;
 }
 
 /* Sits above the bands; multiply keeps white areas white and lets the content
@@ -1360,15 +1463,16 @@ onBeforeUnmount(() => {
   background-color: rgba(24, 144, 255, 0.35);
 }
 
+/* The outline is an inset shadow, not a border: a border would push the band's
+   contents 1px in, away from the margin where X/Y, the ruler and the grid start */
 .band {
-  border: 1px solid #ddd;
+  box-shadow: inset 0 0 0 1px #ddd;
   box-sizing: border-box;
   margin-bottom: 0;
   position: relative;
   background-color: rgba(255, 255, 255, 0.8);
   transition:
     background-color 0.2s ease,
-    border-color 0.2s ease,
     box-shadow 0.2s ease;
 }
 
@@ -1377,12 +1481,12 @@ onBeforeUnmount(() => {
 } */
 
 .band.dragging-target {
-  border-color: #ff9500;
+  box-shadow: inset 0 0 0 1px #ff9500;
   background-color: rgba(255, 248, 240, 0.8);
 }
 
 .band.drag-over {
-  border-color: #ff9500;
+  box-shadow: inset 0 0 0 1px #ff9500;
   background-color: rgba(255, 248, 240, 0.9);
 }
 
@@ -1460,30 +1564,15 @@ onBeforeUnmount(() => {
   background-color: rgba(74, 144, 226, 0.6);
 }
 
-.alignment-lines {
+/* Snap guides: one screen pixel wide at any zoom (set inline), above the content */
+.alignment-line {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  background-color: #f0047f;
   pointer-events: none;
   z-index: 100;
 }
 
-.alignment-line {
-  position: absolute;
-  background-color: rgba(24, 144, 255, 0.8);
-  opacity: 0.7;
-}
-
-.alignment-line.horizontal {
-  height: 1px;
-  left: 0;
-  right: 0;
-}
-
 .alignment-line.vertical {
-  width: 1px;
   top: 0;
   bottom: 0;
 }
@@ -1544,6 +1633,38 @@ onBeforeUnmount(() => {
 .vertical-ruler .label {
   left: 12px;
   transform: translateY(-50%);
+}
+
+.horizontal-ruler .label.label-start {
+  transform: translateX(2px);
+}
+
+.horizontal-ruler .label.label-end {
+  transform: translateX(calc(-100% - 2px));
+}
+
+.vertical-ruler .label.label-start {
+  transform: translateY(2px);
+}
+
+.vertical-ruler .label.label-end {
+  transform: translateY(calc(-100% - 2px));
+}
+
+/* Page margins on the rulers: outside the area X/Y count from */
+.ruler-margin {
+  position: absolute;
+  background-color: #d4d4d4;
+}
+
+.horizontal-ruler .ruler-margin {
+  top: 0;
+  height: 100%;
+}
+
+.vertical-ruler .ruler-margin {
+  left: 0;
+  width: 100%;
 }
 
 /* Right-side control panel container */
