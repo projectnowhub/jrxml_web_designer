@@ -421,9 +421,16 @@
           <template
             v-else-if="currentElement && currentElement.type === 'textField'"
           >
+            <!-- Page number: format and page range instead of free text -->
+            <PaginationProperties
+              v-if="isPagination(currentElement)"
+              :element="currentElement"
+              @save-state="emit('save-state')"
+              @update-jrxml="emit('update-jrxml')"
+            />
             <div
               class="form-group"
-              v-if="currentElement && currentElement.type === 'textField'"
+              v-else
             >
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <label style="margin-bottom: 0;">{{ t("properties.textContent") }}</label>
@@ -1034,8 +1041,8 @@
                       </div>
                     </div>
 
-                    <!-- Images and boxes: corner radius for all corners at once, or each corner -->
-                    <template v-if="currentElement.type === 'image' || currentElement.type === 'frame'">
+                    <!-- Images, boxes and page numbers: corner radius for all corners at once, or each corner -->
+                    <template v-if="cornerRadii">
                       <div class="border-side-item corner-radius-item">
                         <label class="side-label">{{ t("properties.cornerRadius") }}</label>
                         <div class="border-side-controls">
@@ -1712,9 +1719,9 @@ import type { Band, SelectedElementInfo, TableDataset } from "../../../types";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
   CORNER_NAMES,
-  getImageCornerRadii,
   getImageDisplayName,
-  setImageCornerRadii,
+  getPropertyCornerRadii,
+  setPropertyCornerRadii,
   type CornerName,
   type CornerRadii,
   setImageCrop,
@@ -1734,6 +1741,8 @@ import ColorPickerWithOpacity from "./ColorPickerWithOpacity.vue";
 import FontStyleSettings from "./FontStyleSettings.vue";
 import BorderStyleSettings from "./BorderStyleSettings.vue";
 import ElementTypeBasedSettings from "./ElementTypeBasedSettings.vue";
+import PaginationProperties from "./PaginationProperties.vue";
+import { isPagination } from "../../../utils/paginationPresets";
 import FrameProperties from "./FrameProperties.vue";
 import {
   getBoxCornerRadii,
@@ -3369,11 +3378,13 @@ function ensureElementBox(): void {
   if (currentElement.value && !currentElement.value.box) currentElement.value.box = {};
 }
 
-// Corner radius of the selected image or box. Images store it as a JRXML property
-// (IMAGE_CORNER_RADIUS_PROPERTY); boxes as radius / cornerRadii (BOX_CORNER_RADIUS_PROPERTY).
+// Corner radius of the selected image, page number or box. Images and page
+// numbers store it as a JRXML property (IMAGE_ / TEXT_CORNER_RADIUS_PROPERTY);
+// boxes as radius / cornerRadii (BOX_CORNER_RADIUS_PROPERTY). null = no corner
+// radius for this element.
 const readCornerRadii = (element: any): CornerRadii | null =>
-  element?.type === "image"
-    ? getImageCornerRadii(element)
+  element?.type === "image" || isPagination(element)
+    ? getPropertyCornerRadii(element)
     : element?.type === "frame"
       ? getBoxCornerRadii(element)
       : null;
@@ -3401,8 +3412,8 @@ function setCornerRadius(corner: CornerName | null, value: string) {
   for (const c of corner ? [corner] : CORNER_NAMES) next[c] = radius;
   if (CORNER_NAMES.every((c) => next[c] === current[c])) return;
   emit("save-state");
-  if (element.type === "image") setImageCornerRadii(element, next);
-  else setBoxCornerRadii(element, next);
+  if (element.type === "frame") setBoxCornerRadii(element, next);
+  else setPropertyCornerRadii(element, next);
   emit("update-jrxml");
 }
 

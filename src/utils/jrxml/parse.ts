@@ -9,6 +9,7 @@ import {
   ROUNDED_MARKER,
   withoutLines,
 } from "../framePresets";
+import { detectPagination } from "../paginationPresets";
 import type {
   ReportProperties,
   Field,
@@ -1599,8 +1600,13 @@ function parseElement(element: Element, type: string): any {
     }
   }
 
-  // Read the printWhenExpression and style attributes
-  if (reportElement.hasAttribute("printWhenExpression")) {
+  // Read the printWhenExpression (a reportElement child; older files may use an
+  // attribute) and the style attribute
+  const printWhenElem = findChildElement(reportElement, "printWhenExpression");
+  if (printWhenElem) {
+    (result as any).printWhenExpression =
+      printWhenElem.textContent?.trim() || undefined;
+  } else if (reportElement.hasAttribute("printWhenExpression")) {
     (result as any).printWhenExpression =
       reportElement.getAttribute("printWhenExpression") || undefined;
   }
@@ -1684,6 +1690,8 @@ function parseElement(element: Element, type: string): any {
       break;
     case "textField":
       parseTextFieldElement(element, result);
+      // A page number written by another tool becomes a page number here too
+      detectPagination(result as any);
       break;
     case "image":
       parseImageElement(element, result);

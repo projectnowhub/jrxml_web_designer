@@ -269,6 +269,8 @@
                         :zoom-level="zoomLevel"
                         :report-styles="props.reportStyles"
                         :table-styles="props.tableStyles"
+                        :page-number="pIndex"
+                        :total-pages="totalPages"
                         @select="selectElement"
                         @drag-start="startDragging"
                         @resize-start="startResizingElement"
@@ -344,17 +346,6 @@
                         @save-state="emit('save-state')"
                         @rotate="(b, e, p) => emit('rotate', b, e, p)"
                       />
-                      <!-- Default page number indicator if page footer is empty -->
-                      <div
-                        v-if="
-                          bItem.band.type === 'pageFooter' &&
-                          (!bItem.band.elements ||
-                            bItem.band.elements.length === 0)
-                        "
-                        class="footer-page-indicator"
-                      >
-                        <span>{{ t("canvas.pageOf", { page: pIndex, total: totalPages }) }}</span>
-                      </div>
                     </template>
                   </div>
 
@@ -1413,17 +1404,6 @@ onBeforeUnmount(() => {
   border-color: #3182ce;
   color: #2c5282;
   box-shadow: 0 2px 6px rgba(49, 130, 206, 0.2);
-}
-
-.footer-page-indicator {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  height: 100%;
-  padding: 0 16px;
-  font-size: 11px;
-  color: #a0aec0;
-  font-style: italic;
 }
 
 .pager {

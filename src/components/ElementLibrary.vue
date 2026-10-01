@@ -20,11 +20,16 @@
             v-for="element in categoryElements"
             :key="element.type"
             class="element-item"
-            :class="{ 'is-disabled': isUnavailable(element.type) }"
+            :class="{
+              'is-disabled': isUnavailable(element.type),
+              'is-open': element.type === PAGE_NUMBER_TYPE && pageNumberMenu !== null,
+            }"
             :title="tileHint(element.type)"
             :draggable="!isUnavailable(element.type)"
+            :aria-haspopup="element.type === PAGE_NUMBER_TYPE ? 'dialog' : undefined"
             @dragstart="handleDragStart($event, element)"
-            @dblclick="handleElementDoubleClick(element)"
+            @click="handleTileClick($event, element)"
+            @dblclick="handleElementDoubleClick($event, element)"
           >
             <span
               class="element-icon"
@@ -305,6 +310,44 @@
         </div>
       </div>
     </div>
+    <!-- Page Number tile: where on the page to put it -->
+    <Teleport to="body">
+      <div
+        v-if="pageNumberMenu"
+        ref="pageNumberMenuRef"
+        class="page-number-menu"
+        role="dialog"
+        :aria-label="t('pagination.choosePosition')"
+        :style="{ left: pageNumberMenu.x + 'px', top: pageNumberMenu.y + 'px' }"
+      >
+        <div class="page-number-menu-title">{{ t("pagination.choosePosition") }}</div>
+        <div class="page-number-menu-options">
+          <button
+            v-for="position in PAGINATION_POSITIONS"
+            :key="position.id"
+            type="button"
+            class="page-number-option"
+            @click="choosePageNumberPosition(position.id)"
+          >
+            <svg class="page-thumb" viewBox="0 0 40 52" aria-hidden="true">
+              <rect x="1" y="1" width="38" height="50" rx="2" class="page-thumb-sheet" />
+              <path d="M7 18h26M7 23h26M7 28h26M7 33h18" class="page-thumb-lines" />
+              <rect
+                :x="position.align === 'Center' ? 15 : 24"
+                :y="position.edge === 'top' ? 6 : 42"
+                width="10"
+                height="4"
+                rx="1"
+                class="page-thumb-number"
+              />
+            </svg>
+            <span>{{ t(`pagination.positions.${position.id}`) }}</span>
+          </button>
+        </div>
+        <div class="page-number-menu-hint">{{ t("pagination.dragHint") }}</div>
+      </div>
+    </Teleport>
+
     <!-- Confirmation dialog -->
     <ConfirmModal
       v-model:visible="showConfirmModal"
@@ -316,12 +359,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from "vue";
+import { ref, computed, nextTick, watch, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
 import ConfirmModal from "./modals/ConfirmModal.vue";
 import { ElementRegistry } from "./elements/ElementRegistry";
 import { findPageBorder, isFrameTemplateType, PAGE_BORDER_TYPE } from "../utils/framePresets";
+import {
+  isPagination,
+  PAGE_NUMBER_TYPE,
+  PAGINATION_POSITIONS,
+  type PaginationPosition,
+} from "../utils/paginationPresets";
+import notification from "../utils/notification";
 import type {
   DesignElement,
   TextFieldElement,
@@ -366,6 +416,7 @@ interface Props {
 interface Emits {
   (e: "drag-start", event: DragEvent, element: any): void;
   (e: "element-double-click", element: any): void;
+  (e: "insert-page-number", position: PaginationPosition): void;
   (
     e: "select-element",
     bandIndex: number,
@@ -583,10 +634,12 @@ const isUnavailable = (type: string) => type === PAGE_BORDER_TYPE && hasPageBord
 const tileHint = (type: string): string | undefined => {
   if (isUnavailable(type)) return t("framePresets.pageBorderExists");
   if (isFrameTemplateType(type)) return t(`framePresets.templateDescription.${type}`);
+  if (type === PAGE_NUMBER_TYPE) return t("pagination.tileHint");
   return undefined;
 };
 
 function handleDragStart(event: DragEvent, element: any): void {
+  closePageNumberMenu();
   if (isUnavailable(element.type)) {
     event.preventDefault();
     emit("element-double-click", element);
@@ -595,10 +648,82 @@ function handleDragStart(event: DragEvent, element: any): void {
   emit("drag-start", event, element);
 }
 
-// Handle element double-click
-function handleElementDoubleClick(element: any): void {
+// Handle element double-click (the Page Number tile asks for a position instead)
+function handleElementDoubleClick(event: MouseEvent, element: any): void {
+  if (element.type === PAGE_NUMBER_TYPE) {
+    openPageNumberMenu(event.currentTarget as HTMLElement);
+    return;
+  }
   emit("element-double-click", element);
 }
+
+function handleTileClick(event: MouseEvent, element: any): void {
+  if (element.type === PAGE_NUMBER_TYPE) openPageNumberMenu(event.currentTarget as HTMLElement);
+}
+
+// Page Number position popover: beside the tile, kept inside the window
+const pageNumberMenu = ref<{ x: number; y: number } | null>(null);
+const pageNumberMenuRef = ref<HTMLElement | null>(null);
+let pageNumberTile: HTMLElement | null = null;
+const MENU_GAP = 8;
+const WINDOW_MARGIN = 8;
+
+function openPageNumberMenu(tile: HTMLElement): void {
+  if (pageNumberMenu.value && pageNumberTile === tile) return;
+  pageNumberTile = tile;
+  const rect = tile.getBoundingClientRect();
+  pageNumberMenu.value = { x: rect.right + MENU_GAP, y: rect.top };
+  document.addEventListener("mousedown", handleOutsideMenuPress, true);
+  document.addEventListener("keydown", handleMenuKeydown, true);
+  window.addEventListener("resize", closePageNumberMenu);
+  window.addEventListener("scroll", closePageNumberMenu, true);
+  nextTick(() => {
+    const menu = pageNumberMenuRef.value;
+    if (!menu || !pageNumberMenu.value) return;
+    const { width, height } = menu.getBoundingClientRect();
+    let { x, y } = pageNumberMenu.value;
+    // No room on the right: open below the tile instead
+    if (x + width > window.innerWidth - WINDOW_MARGIN) {
+      x = rect.left;
+      y = rect.bottom + MENU_GAP;
+    }
+    x = Math.max(WINDOW_MARGIN, Math.min(x, window.innerWidth - width - WINDOW_MARGIN));
+    y = Math.max(WINDOW_MARGIN, Math.min(y, window.innerHeight - height - WINDOW_MARGIN));
+    pageNumberMenu.value = { x, y };
+    menu.querySelector<HTMLButtonElement>("button")?.focus();
+  });
+}
+
+function closePageNumberMenu(): void {
+  if (!pageNumberMenu.value) return;
+  pageNumberMenu.value = null;
+  document.removeEventListener("mousedown", handleOutsideMenuPress, true);
+  document.removeEventListener("keydown", handleMenuKeydown, true);
+  window.removeEventListener("resize", closePageNumberMenu);
+  window.removeEventListener("scroll", closePageNumberMenu, true);
+  pageNumberTile?.focus?.();
+  pageNumberTile = null;
+}
+
+function handleOutsideMenuPress(event: MouseEvent): void {
+  const target = event.target as Node;
+  if (pageNumberMenuRef.value?.contains(target) || pageNumberTile?.contains(target)) return;
+  closePageNumberMenu();
+}
+
+function handleMenuKeydown(event: KeyboardEvent): void {
+  if (event.key === "Escape") {
+    event.stopPropagation();
+    closePageNumberMenu();
+  }
+}
+
+function choosePageNumberPosition(position: PaginationPosition): void {
+  closePageNumberMenu();
+  emit("insert-page-number", position);
+}
+
+onBeforeUnmount(closePageNumberMenu);
 
 // Select an element
 function selectElement(
@@ -750,6 +875,11 @@ function handleReportElementDblClick(item: any): void {
   // Always select the element first so editor/properties sync selection
   selectElementFromList(item, selectElement);
 
+  // Page numbers are generated by the report (format and range: property panel)
+  if (isPagination(item.element)) {
+    notification.warning(t("pagination.cannotEdit"));
+    return;
+  }
   if (!isElementTextEditable(item.element)) {
     return;
   }
@@ -906,6 +1036,89 @@ watch(
 
 .element-item:active {
   cursor: grabbing;
+}
+
+.element-item.is-open {
+  border-color: #1890ff;
+  background-color: #e6f4ff;
+}
+
+.page-number-menu {
+  position: fixed;
+  z-index: 2000;
+  width: 264px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.page-number-menu-title {
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+}
+
+.page-number-menu-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.page-number-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: #555;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.page-number-option:hover,
+.page-number-option:focus-visible {
+  outline: none;
+  border-color: #1890ff;
+  background-color: #e6f4ff;
+  color: #1f2937;
+}
+
+.page-thumb {
+  width: 40px;
+  height: 52px;
+}
+
+.page-thumb-sheet {
+  fill: #fff;
+  stroke: #9ca3af;
+  stroke-width: 1.5;
+}
+
+.page-thumb-lines {
+  fill: none;
+  stroke: #d1d5db;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.page-thumb-number {
+  fill: #1890ff;
+}
+
+.page-number-menu-hint {
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #888;
 }
 
 .element-category {

@@ -59,7 +59,7 @@ Logic lives in `src/utils/framePresets.ts`: border presets, per-side pen helpers
   - `radius` + the same line on all sides → one rounded rectangle carrying the pen and fill
   - `radius` + a partial border (accents) → two stacked filled rounded rectangles (border colour behind, inside colour in front, inset by each side's width); solid, one colour, inside filled
   Canvas and generator share the same helpers (`getLayeredBorder`) so they always match. No SVG or images.
-- **Corner radius per corner** (boxes and images, Style Settings: "All corners" + one field per corner): stored in CSS order ("12 0 6 0"), one value when all match. Boxes: all equal → `radius` (rounded rectangle above, rounded in the PDF); different → `cornerRadii`, written as the `com.cdp.box.cornerRadius` frame property. Images: always the `com.cdp.image.cornerRadius` property. JasperReports has one radius per rectangle and none on images, so the canvas draws these and the report server is expected to read the properties.
+- **Corner radius per corner** (boxes, images and page numbers, Style Settings: "All corners" + one field per corner): stored in CSS order ("12 0 6 0"), one value when all match. Boxes: all equal → `radius` (rounded rectangle above, rounded in the PDF); different → `cornerRadii`, written as the `com.cdp.box.cornerRadius` frame property. Images: always the `com.cdp.image.cornerRadius` property; page numbers: always `com.cdp.text.cornerRadius`. JasperReports has one radius per rectangle and none on images or text fields, so the canvas draws these and the report server is expected to read the properties.
 
 ## Project Structure
 

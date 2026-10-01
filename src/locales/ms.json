@@ -1103,6 +1103,50 @@
     "addToBox": "Tambah ke kotak",
     "moveOutOfBox": "Keluarkan dari kotak"
   },
+  "pagination": {
+    "title": "Nombor Halaman",
+    "format": "Format",
+    "formats": {
+      "simple": "Nombor sahaja",
+      "prefixed": "\"Page\" dan nombor",
+      "pageXofY": "Nombor halaman dan jumlah halaman",
+      "slash": "Nombor / jumlah halaman"
+    },
+    "showOn": "Papar pada",
+    "ranges": {
+      "all": "Semua halaman",
+      "skipFirst": "Langkau halaman pertama",
+      "skipFirstTwo": "Langkau 2 halaman pertama",
+      "custom": "Julat tersuai"
+    },
+    "fromPage": "Dari halaman",
+    "toPage": "Hingga halaman",
+    "lastPage": "Akhir",
+    "toPageHint": "Biarkan \"Hingga halaman\" kosong untuk diteruskan hingga halaman terakhir.",
+    "rangeEmpty": "\"Dari halaman\" adalah selepas \"Hingga halaman\", jadi nombor halaman tidak akan dicetak pada mana-mana halaman.",
+    "expression": "Ungkapan (dijana)",
+    "expressionHint": "Ditetapkan oleh format dan julat halaman di atas.",
+    "cannotEdit": "Nombor halaman dijana secara dinamik dan tidak boleh disunting secara terus. Gunakan panel sifat untuk menukar format atau julat halaman.",
+    "lockedHint": "Nombor halaman – tukar format atau halamannya dalam panel sifat.",
+    "noBand": "Tambah satu jalur pada laporan sebelum memasukkan nombor halaman.",
+    "tileHint": "Klik untuk memilih kedudukan nombor halaman, atau seretnya ke halaman.",
+    "choosePosition": "Masukkan nombor halaman",
+    "positions": {
+      "topRight": "Atas kanan",
+      "bottomRight": "Bawah kanan",
+      "bottomCenter": "Bawah tengah"
+    },
+    "dragHint": "Atau seret jubin ke halaman untuk meletakkannya di mana-mana.",
+    "totalSymbol": "N",
+    "totalHint": "{n} ialah jumlah halaman, diisi apabila laporan dijana.",
+    "totalPreviewHint": "Jumlah di sini ialah bilangan halaman dalam pereka; PDF menunjukkan jumlah sebenar.",
+    "rangeHints": {
+      "skipFirst": "Halaman pertama tiada nombor; halaman 2 bernombor 1.",
+      "skipFirstTwo": "2 halaman pertama tiada nombor; halaman 3 bernombor 1.",
+      "custom": "Hanya halaman ini yang bernombor, bermula dengan 1 pada halaman \"Dari\"."
+    },
+    "startsLater": "Penomboran bermula pada halaman {page}, yang belum ada dalam reka bentuk ini. Dipaparkan pudar di sini supaya anda masih boleh memilihnya."
+  },
   "table": {
     "dataSource": "Sumber Data Jadual",
     "dataSourcePlaceholder": "cth. Pesanan Jualan",

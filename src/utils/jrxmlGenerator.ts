@@ -1043,6 +1043,7 @@ function generateTextFieldXML(element: any): string {
       "Group",
       "Band",
       "Auto",
+      "Master",
     ];
     if (validEvaluationTimes.includes(element.evaluationTime)) {
       xml += ` evaluationTime="${element.evaluationTime}"`;

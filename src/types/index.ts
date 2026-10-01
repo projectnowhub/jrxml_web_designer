@@ -330,7 +330,8 @@ export interface TextFieldElement extends DesignElementBase {
     | "Column"
     | "Group"
     | "Band"
-    | "Auto";
+    | "Auto"
+    | "Master";
   evaluationGroup?: string;
   pattern?: string;
   patternExpression?: string;

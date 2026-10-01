@@ -656,6 +656,18 @@ export class ElementRegistry {
       category: "composite",
       defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
     });
+
+    // Page number: a text field built by buildPaginationElement() in
+    // utils/paginationPresets.ts. Clicking the tile asks where on the page it goes.
+    this.registerElement({
+      type: "pageNumber",
+      name: "elementNames.pageNumber",
+      icon: "#",
+      iconSvg:
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="1"/><path d="M10.5 12.5l-1 6M14.5 12.5l-1 6M8.5 14.5h7M8 16.5h7" stroke-width="1.5"/></svg>',
+      category: "composite",
+      defaultProps: { type: "textField", x: 0, y: 0, width: 120, height: 20 },
+    });
   }
 
   // Register an element

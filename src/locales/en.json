@@ -1103,6 +1103,50 @@
     "addToBox": "Add to box",
     "moveOutOfBox": "Move out of box"
   },
+  "pagination": {
+    "title": "Page Number",
+    "format": "Format",
+    "formats": {
+      "simple": "Number only",
+      "prefixed": "\"Page\" and the number",
+      "pageXofY": "Page number and total pages",
+      "slash": "Number / total pages"
+    },
+    "showOn": "Show on",
+    "ranges": {
+      "all": "All pages",
+      "skipFirst": "Skip first page",
+      "skipFirstTwo": "Skip first 2 pages",
+      "custom": "Custom range"
+    },
+    "fromPage": "From page",
+    "toPage": "To page",
+    "lastPage": "Last",
+    "toPageHint": "Leave \"To page\" empty to continue to the last page.",
+    "rangeEmpty": "\"From page\" is after \"To page\", so the page number won't print on any page.",
+    "expression": "Expression (generated)",
+    "expressionHint": "Set by the format and page range above.",
+    "cannotEdit": "Page numbers are dynamically generated and cannot be edited directly. Use the property panel to change format or page range.",
+    "lockedHint": "Page number – change its format or pages in the property panel.",
+    "noBand": "Add a band to the report before inserting a page number.",
+    "tileHint": "Click to choose where the page number goes, or drag it onto the page.",
+    "choosePosition": "Insert page number",
+    "positions": {
+      "topRight": "Top right",
+      "bottomRight": "Bottom right",
+      "bottomCenter": "Bottom center"
+    },
+    "dragHint": "Or drag the tile onto the page to place it anywhere.",
+    "totalSymbol": "N",
+    "totalHint": "{n} is the total number of pages, filled in when the report is generated.",
+    "totalPreviewHint": "The total here is the designer's page count; the PDF shows its real total.",
+    "rangeHints": {
+      "skipFirst": "The first page has no number; page 2 is numbered 1.",
+      "skipFirstTwo": "The first 2 pages have no number; page 3 is numbered 1.",
+      "custom": "Only these pages are numbered, starting at 1 on the \"From\" page."
+    },
+    "startsLater": "Numbering starts on page {page}, which this design doesn't have yet. Shown faded here so you can still select it."
+  },
   "table": {
     "dataSource": "Table Data Source",
     "dataSourcePlaceholder": "e.g. Sales Orders",

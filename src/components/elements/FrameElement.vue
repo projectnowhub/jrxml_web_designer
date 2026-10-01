@@ -45,6 +45,8 @@
           :is-out-of-bounds="false"
           :parent-frame-index="elementIndex"
           :zoom-level="zoomLevel"
+          :page-number="pageNumber"
+          :total-pages="totalPages"
           @select="handleChildSelect"
           @drag-start="handleChildDragStart"
           @resize-start="handleChildResizeStart"
@@ -95,6 +97,9 @@ const props = defineProps<{
   reportIsUnderline?: boolean;
   parentFrameIndex?: number; // Add the parentFrameIndex prop
   zoomLevel?: number;
+  // Canvas page the box is drawn on (page numbers inside it show it)
+  pageNumber?: number;
+  totalPages?: number;
 }>();
 
 

@@ -68,6 +68,10 @@ export const IMAGE_NAME_PROPERTY = "com.cdp.image.name";
 // radius on images, so the canvas draws it and the report server reads it
 export const IMAGE_CORNER_RADIUS_PROPERTY = "com.cdp.image.cornerRadius";
 
+// Text field (page number) corner radius, kept the same way: JasperReports
+// can't round a text field, so the canvas draws it and the report server reads it
+export const TEXT_CORNER_RADIUS_PROPERTY = "com.cdp.text.cornerRadius";
+
 // Label shown for images that are embedded as base64 data URLs and have no user-defined name
 export const EMBEDDED_IMAGE_LABEL = "[Embedded Image]";
 
@@ -152,11 +156,18 @@ export type CornerRadii = Record<CornerName, number>;
 
 const NO_RADII: CornerRadii = { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 };
 
+// Elements whose corner radius is a reportElement property
+const CORNER_RADIUS_PROPERTIES: Record<string, string> = {
+  image: IMAGE_CORNER_RADIUS_PROPERTY,
+  textField: TEXT_CORNER_RADIUS_PROPERTY,
+};
+
 // Stored as one value when all corners match ("12"), else four in CSS order
 // ("12 0 12 0")
-export function getImageCornerRadii(element: DesignElement): CornerRadii {
-  if (!element || element.type !== "image") return { ...NO_RADII };
-  const values = getElementPropertyValue(element, IMAGE_CORNER_RADIUS_PROPERTY)
+export function getPropertyCornerRadii(element: DesignElement): CornerRadii {
+  const property = element && CORNER_RADIUS_PROPERTIES[element.type];
+  if (!property) return { ...NO_RADII };
+  const values = getElementPropertyValue(element, property)
     .split(/\s+/)
     .filter(Boolean)
     .map((v) => Math.max(0, parseFloat(v) || 0));
@@ -166,23 +177,29 @@ export function getImageCornerRadii(element: DesignElement): CornerRadii {
 }
 
 // All zero removes the property
-export function setImageCornerRadii(element: DesignElement, radii: CornerRadii): void {
-  if (!element || element.type !== "image") return;
+export function setPropertyCornerRadii(element: DesignElement, radii: CornerRadii): void {
+  const property = element && CORNER_RADIUS_PROPERTIES[element.type];
+  if (!property) return;
   const values = CORNER_NAMES.map((c) => Math.max(0, Math.round(radii[c] || 0)));
   const value = values.every((v) => v === 0)
     ? ""
     : values.every((v) => v === values[0])
       ? String(values[0])
       : values.join(" ");
-  setElementPropertyValue(element, IMAGE_CORNER_RADIUS_PROPERTY, value);
+  setElementPropertyValue(element, property, value);
 }
 
 // CSS border-radius for the canvas, or undefined for square corners
-export function imageCornerRadiusCss(element: DesignElement): string | undefined {
-  const radii = getImageCornerRadii(element);
+export function propertyCornerRadiusCss(element: DesignElement): string | undefined {
+  const radii = getPropertyCornerRadii(element);
   if (CORNER_NAMES.every((c) => radii[c] === 0)) return undefined;
   return CORNER_NAMES.map((c) => `${radii[c]}px`).join(" ");
 }
+
+// Images
+export const getImageCornerRadii = getPropertyCornerRadii;
+export const setImageCornerRadii = setPropertyCornerRadii;
+export const imageCornerRadiusCss = propertyCornerRadiusCss;
 
 export function setImageName(element: DesignElement, name: string): void {
   if (!element || element.type !== "image") return;

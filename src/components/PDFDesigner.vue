@@ -217,6 +217,7 @@
           :sub-datasets="subDatasets"
           @drag-start="handleDragStart"
           @element-double-click="handleElementDoubleClick"
+          @insert-page-number="addPageNumber"
           @select-element="selectElement"
           @add-field="handleAddField"
           @edit-field="handleEditField"
@@ -813,6 +814,14 @@ import {
 // Import the notification manager
 import notification from "../utils/notification";
 import {
+  buildPaginationElement,
+  findPaginationTargetBand,
+  isPagination,
+  PAGE_NUMBER_TYPE,
+  placePaginationInBand,
+  type PaginationPosition,
+} from "../utils/paginationPresets";
+import {
   createElement,
   getAllElements as getAllElementConfigs,
 } from "@/components/elements/ElementRegistry";
@@ -1086,22 +1095,7 @@ function createNewFile() {
     {
       type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
       height: pageFooterH,
-      elements: [
-        {
-          uuid: crypto.randomUUID(),
-          type: "textField",
-          name: "PageNumberField",
-          x: 435,
-          y: 10,
-          width: 120,
-          height: 20,
-          expression: '"Page " + $V{PAGE_NUMBER}',
-          fontName: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
-          fontSize: 10,
-          hAlign: "Right",
-          vAlign: "Middle",
-        } as any,
-      ],
+      elements: [],
     },
   ];
 
@@ -1380,22 +1374,7 @@ const bands = ref<Band[]>([
   {
     type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
     height: initPageFooterH,
-    elements: [
-      {
-        uuid: crypto.randomUUID(),
-        type: "textField",
-        name: "PageNumberField",
-        x: 435,
-        y: 10,
-        width: 120,
-        height: 20,
-        expression: '"Page " + $V{PAGE_NUMBER}',
-        fontName: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
-        fontSize: 10,
-        hAlign: "Right",
-        vAlign: "Middle",
-      } as any,
-    ],
+    elements: [],
   },
 ]);
 
@@ -2411,6 +2390,11 @@ const getFrameTemplateContext = (): FrameTemplateContext => ({
 const createLibraryElement = (type: string): DesignElement =>
   isFrameTemplateType(type)
     ? buildFrameTemplate(type, getFrameTemplateContext())
+    : type === PAGE_NUMBER_TYPE
+    ? buildPaginationElement(undefined, {
+        fontFamily: reportProperties.value?.defaultFont?.name,
+        fontSize: reportProperties.value?.defaultFont?.size,
+      })
     : ({
         ...createElement(type),
         ...getDefaultElementProperties(type),
@@ -2463,6 +2447,48 @@ const addPageBorder = () => {
   updateJRXML();
 };
 
+// Page Number tile, position picked: the page header (top) or footer (bottom),
+// aligned the way the position says. Dragging the tile drops it in any band.
+const addPageNumber = (position: PaginationPosition) => {
+  const bandIndex = findPaginationTargetBand(bands.value, position);
+  const band = bands.value[bandIndex];
+  if (!band) {
+    notification.warning(t("pagination.noBand"));
+    return;
+  }
+
+  const element = buildPaginationElement(position, {
+    fontFamily: reportProperties.value?.defaultFont?.name,
+    fontSize: reportProperties.value?.defaultFont?.size,
+  });
+  Object.assign(
+    element,
+    placePaginationInBand(
+      element,
+      position,
+      getFrameTemplateContext().availableWidth,
+      band.height,
+    ),
+  );
+
+  // Fits the band, growing it when it is too short; too tall is refused
+  const plan = planDropInBand(bandIndex, element);
+  if (plan.kind === "tooTall") {
+    warnTooTallForBand(bandIndex, element.height, plan.maxHeight);
+    return;
+  }
+
+  saveStateToHistory();
+  applyDropInBand(bandIndex, element, plan);
+  if (!band.elements) band.elements = [];
+  band.elements.push(element);
+
+  const elementIndex = band.elements.length - 1;
+  selectElement(bandIndex, elementIndex);
+  handleElementCreated(element, bandIndex, elementIndex);
+  updateJRXML();
+};
+
 // After the paper size or margins change (already one undo step): resize the
 // page border to the new printable area and move elements that no longer fit
 const handlePageSetupChange = () => {
@@ -2486,6 +2512,8 @@ const handleElementDoubleClick = (element: any) => {
     addPageBorder();
     return;
   }
+  // The library asks for a position first (insert-page-number)
+  if (element.type === PAGE_NUMBER_TYPE) return;
 
   // Ensure there is a last-clicked band
   if (
@@ -2633,7 +2661,8 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
     // Create the new element
     // Center it on the cursor using its own compact default size
     const baseElement = createLibraryElement(elementData.type);
-    const droppedSize = isFrameTemplateType(elementData.type)
+    const droppedSize =
+      isFrameTemplateType(elementData.type) || elementData.type === PAGE_NUMBER_TYPE
       ? { width: baseElement.width, height: baseElement.height }
       : getDefaultElementSize(elementData.type);
     let newElement: DesignElement = {
@@ -3884,6 +3913,20 @@ const startEditing = (
   elementIndex: number,
   parentFrameIndex?: number,
 ) => {
+  // Page numbers are generated by the report: only their format, range and
+  // style can change, from the property panel
+  const band = bands.value[bandIndex];
+  const target =
+    parentFrameIndex !== undefined
+      ? (band?.elements?.[parentFrameIndex] as FrameElement | undefined)
+          ?.elements?.[elementIndex]
+      : band?.elements?.[elementIndex];
+  if (isPagination(target)) {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    notification.warning(t("pagination.cannotEdit"));
+    return;
+  }
+
   editingElement.value = { bandIndex, elementIndex, parentFrameIndex };
   // Select the element
   selectElement(bandIndex, elementIndex, false, parentFrameIndex);

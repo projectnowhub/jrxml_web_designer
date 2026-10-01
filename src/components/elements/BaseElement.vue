@@ -87,7 +87,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { DesignElement, SelectedElementInfo } from '../../types';
-import { getElementBoxPadding, imageCornerRadiusCss } from '../../utils/elementUtils';
+import { getElementBoxPadding, propertyCornerRadiusCss } from '../../utils/elementUtils';
 import { boxCornerRadiusCss, getLayeredBorder, type BorderSide } from '../../utils/framePresets';
 
 // Props
@@ -232,7 +232,7 @@ const elementStyle = computed(() => {
     borderLeft: calculateBorder('left'),
     borderBottom: calculateBorder('bottom'),
     borderRight: calculateBorder('right'),
-    borderRadius: props.element.type === 'ellipse' ? '50%' : props.element.type === 'frame' ? boxCornerRadiusCss(props.element as any) : ((props.element.type === 'rectangle' && (props.element as any).radius) ? `${(props.element as any).radius}px` : props.element.type === 'image' ? imageCornerRadiusCss(props.element) : undefined),
+    borderRadius: props.element.type === 'ellipse' ? '50%' : props.element.type === 'frame' ? boxCornerRadiusCss(props.element as any) : ((props.element.type === 'rectangle' && (props.element as any).radius) ? `${(props.element as any).radius}px` : (props.element.type === 'image' || props.element.type === 'textField') ? propertyCornerRadiusCss(props.element) : undefined),
     fontFamily: props.element.fontFamily || props.reportFontFamily,
     fontSize: props.element.fontSize ? `${props.element.fontSize}px` : (props.reportFontSize ? `${props.reportFontSize}px` : '10px'),
     fontWeight: (props.element.isBold === true || (props.element.isBold === undefined && props.reportIsBold)) ? 'bold' : 'normal',
