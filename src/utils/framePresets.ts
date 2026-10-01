@@ -363,7 +363,8 @@ function text(options: TextOptions): DesignElement {
     textAlignment: options.textAlignment ?? "Left",
     verticalAlignment: options.verticalAlignment ?? "Top",
     markup: "none",
-    isStretchWithOverflow: options.stretch ?? false,
+    // Grows downward in the PDF when the text is longer than the box
+    ...(options.stretch ? { textAdjust: "StretchHeight" } : {}),
     ...(options.backcolor
       ? { mode: "Opaque", backcolor: options.backcolor }
       : {}),

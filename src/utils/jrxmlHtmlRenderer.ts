@@ -169,20 +169,6 @@ function buildTextStyle(element: DesignElement): string {
     style += `display: flex; align-items: ${valignMap[element.verticalAlignment] || "flex-start"};`;
   }
 
-  if (element.textAdjust) {
-    switch (element.textAdjust) {
-      case "StretchHeight":
-        style += "overflow: visible;";
-        break;
-      case "CutText":
-        style += "overflow: hidden;";
-        break;
-      case "ShrinkToFit":
-        style += "overflow: hidden; white-space: nowrap;";
-        break;
-    }
-  }
-
   if ("rotation" in element && element.rotation) {
     switch (element.rotation) {
       case "Left":

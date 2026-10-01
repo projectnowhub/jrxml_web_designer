@@ -1025,16 +1025,13 @@ function generateTextFieldXML(element: any): string {
   let xml = `<textField`;
 
   // Add textField-specific attributes, ensuring compliance with the XSD spec
-  // Prefer the non-deprecated textAdjust attribute; only fall back to the deprecated isStretchWithOverflow attribute if textAdjust is absent
+  // Text overflow is not edited in the designer; an imported report's setting
+  // is written back unchanged. Designs saved before textAdjust use the old
+  // isStretchWithOverflow flag (only "true" differs from the default, CutText).
   if (element.textAdjust) {
-    // If textAdjust is already specified, use it directly
     xml += ` textAdjust="${element.textAdjust}"`;
-  } else if (element.isStretchWithOverflow !== undefined) {
-    // Only use the deprecated isStretchWithOverflow attribute if textAdjust is absent
-    const textAdjustValue = element.isStretchWithOverflow
-      ? "StretchHeight"
-      : "CutText";
-    xml += ` textAdjust="${textAdjustValue}"`;
+  } else if (element.isStretchWithOverflow === true) {
+    xml += ` textAdjust="StretchHeight"`;
   }
 
   if (element.evaluationTime && element.evaluationTime !== "Now") {

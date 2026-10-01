@@ -431,10 +431,10 @@
                   <button
                     type="button"
                     class="btn-autofit-height"
-                    :title="t('properties.autoFitHeightTitle')"
-                    @click="autoFitCurrentElementHeight"
+                    :title="t('properties.fitToTextTitle')"
+                    @click="emit('fit-to-text')"
                   >
-                    {{ t("properties.autoFitHeight") }}
+                    {{ t("properties.fitToText") }}
                   </button>
                   <select
                     v-if="reportFields && reportFields.length > 0"
@@ -1711,7 +1711,6 @@ import { NButton, NTabs, NTabPane, NRadioGroup, NRadioButton } from "naive-ui";
 import type { Band, SelectedElementInfo, TableDataset } from "../../../types";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
-  calculateTextElementHeight,
   CORNER_NAMES,
   getImageCornerRadii,
   getImageDisplayName,
@@ -1781,6 +1780,8 @@ interface Emits {
   (e: "delete-element"): void;
   (e: "update-jrxml"): void;
   (e: "save-state"): void;
+  // Fit the selected text element's box to its text (done by the designer)
+  (e: "fit-to-text"): void;
   (e: "update:reportStyles", styles: any[]): void;
   (
     e: "add-columns-to-group",
@@ -3205,20 +3206,6 @@ function updateTextFieldDisplay(val: string) {
     elem.expression = `"${val}"`;
   }
   emit("update-jrxml");
-}
-
-// Auto-fit element height to text content
-function autoFitCurrentElementHeight() {
-  if (!currentElement.value || currentElement.value.type !== "textField") return;
-  const needed = calculateTextElementHeight(
-    currentElement.value as any,
-    props.reportProperties?.defaultFont,
-  );
-  if (needed > 0) {
-    emit("save-state");
-    currentElement.value.height = needed;
-    emit("update-jrxml");
-  }
 }
 
 // Insert a selected field into the text field

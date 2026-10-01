@@ -178,7 +178,6 @@ import TextFormatToolbar from './TextFormatToolbar.vue';
 import type { TextFieldElement, SelectedElementInfo, EditingElementInfo } from '../../types';
 import {
   getElementBoxInsets,
-  calculateTextElementHeight,
   hasHtmlTags,
   isRichTextElement,
   textExpressionToHtml,
@@ -1464,33 +1463,14 @@ const handleBlur = (e: FocusEvent) => {
 };
 
 // Auto-fit height to content with consideration of margins (box padding & borders)
+// Fit the box to the text: the designer sizes it (it knows the band or box
+// around it, and records the undo step)
 const handleAutoFit = () => {
-  const insets = getElementBoxInsets(props.element.box);
-  let contentHeight = 0;
-  if (contentContainer.value) {
-    contentHeight = Math.ceil(contentContainer.value.scrollHeight);
-  }
-  let targetHeight = 0;
-  if (contentHeight > 0) {
-    targetHeight = Math.max(contentHeight + insets.vertical, 15);
-  } else {
-    targetHeight = calculateTextElementHeight(props.element as any, {
-      name: props.reportFontFamily,
-      size: props.reportFontSize,
-      isBold: props.reportIsBold,
-      isItalic: props.reportIsItalic,
-    });
-  }
-
-  if (targetHeight > 0) {
-    props.element.height = targetHeight;
-    nextTick(() => {
-      checkOverflow();
-      emit('updateElement');
-      emit('update-jrxml');
-      emit('autoFitHeight', props.bandIndex, props.elementIndex, props.parentFrameIndex);
-    });
-  }
+  emit('autoFitHeight', props.bandIndex, props.elementIndex, props.parentFrameIndex);
+  nextTick(() => {
+    checkOverflow();
+    emit('updateElement');
+  });
 };
 
 // Element event forwards

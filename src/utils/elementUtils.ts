@@ -382,23 +382,24 @@ export function textExpressionToHtml(expression: string): string {
   return sanitizeHtml(expr);
 }
 
-export function calculateTextElementHeight(
-  element: {
-    expression?: string;
-    fieldName?: string;
-    markup?: string;
-    width: number;
-    fontSize?: number;
-    fontFamily?: string;
-    isBold?: boolean;
-    isItalic?: boolean;
-    box?: any;
-  },
-  // Report default font, used by the canvas when the element sets none
-  reportFont: TextFontDefaults = {},
-): number {
-  if (typeof document === 'undefined') return 20;
+export interface MeasurableTextElement {
+  expression?: string;
+  fieldName?: string;
+  markup?: string;
+  width: number;
+  fontSize?: number;
+  fontFamily?: string;
+  isBold?: boolean;
+  isItalic?: boolean;
+  box?: any;
+}
 
+// An off-screen box holding the element's text, styled the way the canvas
+// draws it (font, line height, padding, borders), for measuring
+function createTextMeasureBox(
+  element: MeasurableTextElement,
+  reportFont: TextFontDefaults,
+): { div: HTMLDivElement; displayText: string } {
   const insets = getElementBoxInsets(element.box);
 
   const div = document.createElement('div');
@@ -406,7 +407,6 @@ export function calculateTextElementHeight(
   div.style.position = 'absolute';
   div.style.left = '-9999px';
   div.style.top = '-9999px';
-  div.style.width = `${Math.max(element.width || 100, 10)}px`;
   // Same font as the canvas draws (TextFieldElement typographyStyle)
   div.style.fontSize = `${element.fontSize || reportFont.size || 10}px`;
   div.style.fontFamily = element.fontFamily || reportFont.name || 'SansSerif';
@@ -439,6 +439,19 @@ export function calculateTextElementHeight(
   } else {
     div.textContent = displayText || ' ';
   }
+  return { div, displayText };
+}
+
+export function calculateTextElementHeight(
+  element: MeasurableTextElement,
+  // Report default font, used by the canvas when the element sets none
+  reportFont: TextFontDefaults = {},
+): number {
+  if (typeof document === 'undefined') return 20;
+
+  const insets = getElementBoxInsets(element.box);
+  const { div, displayText } = createTextMeasureBox(element, reportFont);
+  div.style.width = `${Math.max(element.width || 100, 10)}px`;
 
   document.body.appendChild(div);
   const domHeight = Math.ceil(div.getBoundingClientRect().height);
@@ -453,6 +466,30 @@ export function calculateTextElementHeight(
   const approxLineHeight = (element.fontSize || 10) * 1.35;
   const estimated = Math.ceil(lineCount * approxLineHeight + insets.vertical);
   return Math.max(estimated, 15);
+}
+
+// Width the element needs to show its text on one line without wrapping,
+// including its padding and borders
+export function measureTextElementWidth(
+  element: MeasurableTextElement,
+  reportFont: TextFontDefaults = {},
+): number {
+  if (typeof document === 'undefined') return element.width;
+
+  const insets = getElementBoxInsets(element.box);
+  const { div, displayText } = createTextMeasureBox(element, reportFont);
+  div.style.display = 'inline-block';
+  div.style.whiteSpace = 'pre';
+
+  document.body.appendChild(div);
+  const domWidth = Math.ceil(div.getBoundingClientRect().width);
+  document.body.removeChild(div);
+
+  if (domWidth > 0) return domWidth;
+
+  // Fallback for environments without CSS layout engine (e.g. JSDOM in tests)
+  const longestLine = Math.max(...(displayText || ' ').split('\n').map((l) => l.length), 1);
+  return Math.ceil(longestLine * (element.fontSize || reportFont.size || 10) * 0.6 + insets.horizontal);
 }
 
 // Get element display info (excluding Band)

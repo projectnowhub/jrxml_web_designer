@@ -54,8 +54,6 @@ export class ElementRegistry {
         hyperlinkType: "None",
         bookmarkLevel: 0,
         markup: "html",
-        // Deprecated property (kept for backward compatibility)
-        isStretchWithOverflow: false,
         // Style properties
         fontFamily: "SansSerif",
         fontSize: 12,

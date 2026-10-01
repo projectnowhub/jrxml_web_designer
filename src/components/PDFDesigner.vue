@@ -379,6 +379,14 @@
             @delete-element="deleteElement"
             @update-jrxml="updateJRXML"
             @save-state="saveStateToHistory"
+            @fit-to-text="
+              selectedElement &&
+                autoFitElementHeight(
+                  selectedElement.bandIndex,
+                  selectedElement.elementIndex,
+                  selectedElement.parentFrameIndex,
+                )
+            "
             @update:reportStyles="reportStyles = $event"
             @add-columns-to-group="handleAddColumnsToGroup"
           />
@@ -729,6 +737,7 @@ import { useZoom } from "@/composables/useZoom";
 import { useSnapAlignment } from "@/composables/useSnapAlignment";
 import { fitContentToPage } from "@/utils/pageFit";
 import { planBandFit, type BandFitPlan } from "@/utils/bandFit";
+import { planTextFit, type TextFitElement } from "@/utils/textFit";
 import {
   nextGridLine,
   snapEdge,
@@ -771,6 +780,7 @@ import { loadFromLocalStorage, saveToLocalStorage } from "../utils/fileUtils";
 import { getOutOfBoundsElements } from "../utils/elementBoundsValidator";
 import {
   calculateTextElementHeight,
+  measureTextElementWidth,
   ensureUniqueUuids,
   refreshUuids,
 } from "../utils/elementUtils";
@@ -2872,7 +2882,6 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
     case "textField":
       return {
         expression: `"${t("properties.defaultTextFieldExpression")}"`,
-        isStretchWithOverflow: false,
         evaluationTime: "Now",
         pattern: "",
         isBlankWhenNull: false,
@@ -6338,7 +6347,10 @@ const startResizingElement = (
   }
 };
 
-// Auto-fit element height to its text content
+// "Fit to text" (the Fit badge, double-clicking the bottom handle, and the
+// Properties button): static one-line text gets the width of its text, keeping
+// its alignment edge and staying within its band or box; everything gets the
+// height its text needs. The band grows to fit, up to its maximum.
 const autoFitElementHeight = (
   bandIndex: number,
   elementIndex: number,
@@ -6347,60 +6359,47 @@ const autoFitElementHeight = (
   const band = bands.value[bandIndex];
   if (!band) return;
 
-  let element: DesignElement | undefined;
-  if (parentFrameIndex !== undefined) {
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    element = band.elements[elementIndex];
-  }
+  const box =
+    parentFrameIndex !== undefined
+      ? (band.elements[parentFrameIndex] as FrameElement | undefined)
+      : undefined;
+  const element =
+    parentFrameIndex !== undefined
+      ? box?.elements?.[elementIndex]
+      : band.elements[elementIndex];
+  if (!element || element.type !== "textField") return;
 
-  if (!element) return;
-
-  const neededHeight = calculateTextElementHeight(
-    element as any,
-    reportProperties.value?.defaultFont,
+  const font = reportProperties.value?.defaultFont;
+  const { x, width } = planTextFit(
+    element as TextFitElement,
+    // 1px spare so rounding in the browser never wraps the last word
+    measureTextElementWidth(element as any, font) + 1,
+    box ? box.width : printableWidth.value,
   );
-  if (neededHeight > 0) {
-    saveStateToHistory();
-    element.height = neededHeight;
-    if (parentFrameIndex === undefined) {
-      const bandLimitsConfig =
-        reportProperties.value?.bandLimits?.[band.type] ||
-        getEffectiveDefaultBandLimits()[band.type] || { min: 20, max: 70 };
-      const maxBandHeight =
-        typeof bandLimitsConfig.max === "number" ? bandLimitsConfig.max : 70;
+  const height = calculateTextElementHeight({ ...(element as any), width }, font);
+  if (x === element.x && width === element.width && height === element.height) return;
 
-      const isDetailBand = band.type === BAND_TYPE_CONSTANTS.DETAIL;
+  saveStateToHistory();
+  element.x = x;
+  element.width = width;
+  element.height = height;
 
-      if (isDetailBand) {
-        if (element.y + element.height > band.height) {
-          band.height = element.y + element.height;
-        }
-      } else {
-        const requiredHeight = element.y + element.height;
-        if (requiredHeight > band.height) {
-          const clampedHeight = Math.min(maxBandHeight, requiredHeight);
-          if (clampedHeight > band.height) {
-            band.height = clampedHeight;
-          }
-          if (requiredHeight > maxBandHeight) {
-            notification.warning(
-              t("editor.bandLimits.textOverflow", {
-                band: getBandDisplayName(band.type),
-                height: maxBandHeight,
-              }),
-            );
-          }
-        }
-      }
+  // A band grows to fit the text, up to its maximum; past that, warn
+  if (!box && element.y + height > band.height) {
+    const maxBandHeight = getBandMaxHeight(bandIndex);
+    band.height = Math.max(band.height, Math.min(maxBandHeight, element.y + height));
+    if (element.y + height > maxBandHeight) {
+      notification.warning(
+        t("editor.bandLimits.textOverflow", {
+          band: getBandDisplayName(band.type),
+          height: maxBandHeight,
+        }),
+      );
     }
-    updateJRXML();
-    ensureBandsFitPage();
-    updateOutOfBoundsElements();
   }
+  updateJRXML();
+  ensureBandsFitPage();
+  updateOutOfBoundsElements();
 };
 
 // Clean up event listeners when the component unmounts
