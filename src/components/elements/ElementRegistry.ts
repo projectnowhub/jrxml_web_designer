@@ -1,3 +1,21 @@
+import type { Component } from "vue";
+import {
+  Barcode,
+  ChartNoAxesColumn,
+  Circle,
+  FileDigit,
+  Image as ImageIcon,
+  Images,
+  Minus,
+  PanelTop,
+  Square,
+  SquareActivity,
+  SquareDashed,
+  SquareSquare,
+  Table as TableIcon,
+  TriangleAlert,
+  Type as TypeIcon,
+} from "@lucide/vue";
 import type { DesignElement } from "../../types";
 import { ELEMENT_DEFAULT_SIZES } from "../../constants/constants";
 
@@ -6,7 +24,7 @@ export interface ElementConfig {
   type: string;
   name: string;
   icon: string;
-  iconSvg?: string;
+  iconComponent?: Component;
   category?: string;
   defaultProps: Partial<DesignElement>;
   component?: any;
@@ -37,8 +55,7 @@ export class ElementRegistry {
       type: "textField",
       name: "elementNames.textField",
       icon: "T",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>',
+      iconComponent: TypeIcon,
       category: "basic",
       defaultProps: {
         type: "textField",
@@ -69,8 +86,7 @@ export class ElementRegistry {
       type: "image",
       name: "elementNames.image",
       icon: "◻",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
+      iconComponent: ImageIcon,
       category: "basic",
       defaultProps: {
         type: "image",
@@ -92,8 +108,7 @@ export class ElementRegistry {
       type: "line",
       name: "elementNames.line",
       icon: "─",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>',
+      iconComponent: Minus,
       category: "basic",
       defaultProps: {
         type: "line",
@@ -113,8 +128,7 @@ export class ElementRegistry {
       type: "rectangle",
       name: "elementNames.rectangle",
       icon: "▭",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/></svg>',
+      iconComponent: Square,
       category: "basic",
       defaultProps: {
         type: "rectangle",
@@ -133,8 +147,7 @@ export class ElementRegistry {
       type: "ellipse",
       name: "elementNames.ellipse",
       icon: "◯",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="8"/></svg>',
+      iconComponent: Circle,
       category: "basic",
       defaultProps: {
         type: "ellipse",
@@ -153,8 +166,7 @@ export class ElementRegistry {
       type: "frame",
       name: "elementNames.frame",
       icon: "☐",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/></svg>',
+      iconComponent: SquareDashed,
       category: "basic",
       defaultProps: {
         type: "frame",
@@ -180,8 +192,7 @@ export class ElementRegistry {
       type: "table",
       name: "elementNames.table",
       icon: "⊞",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>',
+      iconComponent: TableIcon,
       category: "basic",
       defaultProps: {
         type: "table",
@@ -307,8 +318,7 @@ export class ElementRegistry {
       type: "chart",
       name: "elementNames.chart",
       icon: "▊",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>',
+      iconComponent: ChartNoAxesColumn,
       category: "basic",
       defaultProps: {
         type: "chart",
@@ -331,8 +341,7 @@ export class ElementRegistry {
       type: "barcode",
       name: "elementNames.barcode",
       icon: "▐",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v20M10 2v20M14 2v20M18 2v20M22 2v20"/></svg>',
+      iconComponent: Barcode,
       category: "basic",
       defaultProps: {
         type: "barcode",
@@ -350,38 +359,34 @@ export class ElementRegistry {
     // Frame templates: styled frames with placeholder content.
     // The actual element is built by buildFrameTemplate() in utils/framePresets.ts.
     // Element presets: ready-made boxes (a frame with its parts)
-    const elementPresets: Array<{ type: string; name: string; iconSvg: string }> = [
+    const elementPresets: Array<{ type: string; name: string; iconComponent: Component }> = [
       {
         type: "frameKpiCard",
         name: "elementNames.frameKpiCard",
-        iconSvg:
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="1" fill="currentColor" fill-opacity="0.15" stroke="none"/><path d="M6 9h5M6 13h9M6 16h4"/></svg>',
+        iconComponent: SquareActivity,
       },
       {
         type: "frameAlertBox",
         name: "elementNames.frameAlertBox",
-        iconSvg:
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="1" fill="currentColor" fill-opacity="0.15" stroke="none"/><path d="M8 11l2-4 2 4z"/><path d="M6 15h12M6 18h8"/></svg>',
+        iconComponent: TriangleAlert,
       },
       {
         type: "frameTitledSection",
         name: "elementNames.frameTitledSection",
-        iconSvg:
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="1"/><rect x="3" y="4" width="18" height="4" fill="currentColor"/></svg>',
+        iconComponent: PanelTop,
       },
       {
         type: "framePhotoCard",
         name: "elementNames.framePhotoCard",
-        iconSvg:
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 15h18M6 12l3-3 3 3 2-2 4 4"/><path d="M6 18h8"/></svg>',
+        iconComponent: Images,
       },
     ];
-    elementPresets.forEach(({ type, name, iconSvg }) =>
+    elementPresets.forEach(({ type, name, iconComponent }) =>
       this.registerElement({
         type,
         name,
         icon: "☐",
-        iconSvg,
+        iconComponent,
         category: "frames",
         defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
       }),
@@ -393,8 +398,7 @@ export class ElementRegistry {
       type: "framePageBorder",
       name: "elementNames.framePageBorder",
       icon: "☐",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20"/><rect x="6.5" y="4.5" width="11" height="15" stroke-width="1"/></svg>',
+      iconComponent: SquareSquare,
       category: "composite",
       defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
     });
@@ -405,8 +409,7 @@ export class ElementRegistry {
       type: "pageNumber",
       name: "elementNames.pageNumber",
       icon: "#",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="1"/><path d="M10.5 12.5l-1 6M14.5 12.5l-1 6M8.5 14.5h7M8 16.5h7" stroke-width="1.5"/></svg>',
+      iconComponent: FileDigit,
       category: "composite",
       defaultProps: { type: "textField", x: 0, y: 0, width: 120, height: 20 },
     });

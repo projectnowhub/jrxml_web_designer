@@ -13,14 +13,16 @@
         @click="expanded = !expanded"
         :title="expanded ? $t('columnTree.collapse') : $t('columnTree.expand')"
       >
-        ▶
+        <ChevronDown :size="12" />
       </button>
       <span v-else class="column-tree-expand-placeholder"></span>
 
       <!-- Node type icon -->
-      <span class="column-tree-node-icon">
-        {{ isGroup ? '▦' : '☰' }}
-      </span>
+      <component
+        :is="isGroup ? Columns3 : RectangleVertical"
+        class="column-tree-node-icon"
+        :size="14"
+      />
 
       <!-- Name input -->
       <input
@@ -55,40 +57,40 @@
           class="column-tree-action-btn"
           @click.stop="$emit('move-node', node.uuid, 'up')"
           :title="$t('columnTree.moveUp')"
-        >↑</button>
+        ><ArrowUp :size="13" /></button>
         <button
           v-if="canMoveDown"
           class="column-tree-action-btn"
           @click.stop="$emit('move-node', node.uuid, 'down')"
           :title="$t('columnTree.moveDown')"
-        >↓</button>
+        ><ArrowDown :size="13" /></button>
         <button
           v-if="isGroup"
           class="column-tree-action-btn"
           @click.stop="$emit('add-column-child', node.uuid)"
           :title="$t('columnTree.addColumnInside')"
-        >⊕</button>
+        ><CirclePlus :size="13" /></button>
         <button
           class="column-tree-action-btn"
           @click.stop="$emit('add-column-after', node.uuid)"
           :title="$t('columnTree.addColumnAfter')"
-        >+</button>
+        ><Plus :size="13" /></button>
         <button
           class="column-tree-action-btn"
           @click.stop="$emit('add-column-group-after', node.uuid)"
           :title="$t('columnTree.addGroupAfter')"
-        >⧉</button>
+        ><Group :size="13" /></button>
         <button
           v-if="isGroup"
           class="column-tree-action-btn"
           @click.stop="$emit('ungroup-node', node.uuid)"
           :title="$t('columnTree.ungroup')"
-        >⊟</button>
+        ><Ungroup :size="13" /></button>
         <button
           class="column-tree-action-btn danger"
           @click.stop="$emit('delete-node', node.uuid)"
           :title="$t('actions.delete')"
-        >×</button>
+        ><X :size="13" /></button>
       </div>
     </div>
 
@@ -120,6 +122,18 @@
 </template>
 
 <script setup lang="ts">
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  CirclePlus,
+  Columns3,
+  Group,
+  Plus,
+  RectangleVertical,
+  Ungroup,
+  X,
+} from '@lucide/vue';
 import { ref, computed } from 'vue';
 import type { Column, ColumnGroup, BaseColumn } from '../../../types/table';
 

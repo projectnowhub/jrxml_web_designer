@@ -8,7 +8,8 @@
         :class="{ active: currentMode === 'data_field' }"
         @click="switchMode('data_field')"
       >
-        📊 {{ t("fieldContent.modeDataField") }}
+        <Database :size="14" aria-hidden="true" />
+        {{ t("fieldContent.modeDataField") }}
       </button>
       <button
         type="button"
@@ -16,7 +17,8 @@
         :class="{ active: currentMode === 'document_info' }"
         @click="switchMode('document_info')"
       >
-        📄 {{ t("fieldContent.modeDocInfo") }}
+        <FileText :size="14" aria-hidden="true" />
+        {{ t("fieldContent.modeDocInfo") }}
       </button>
       <button
         type="button"
@@ -24,7 +26,8 @@
         :class="{ active: currentMode === 'template' }"
         @click="switchMode('template')"
       >
-        ✏️ {{ t("fieldContent.modeTemplate") }}
+        <Pencil :size="14" aria-hidden="true" />
+        {{ t("fieldContent.modeTemplate") }}
       </button>
     </div>
 
@@ -63,7 +66,7 @@
           :class="{ selected: selectedPresetId === preset.id }"
           @click="applyDocInfoPreset(preset)"
         >
-          <span class="preset-icon">{{ preset.icon }}</span>
+          <component :is="preset.icon" class="preset-icon" :size="16" aria-hidden="true" />
           <div class="preset-info">
             <span class="preset-name">{{ t(preset.labelKey) }}</span>
             <span class="preset-sample">{{ preset.sampleKey ? t(preset.sampleKey) : preset.sample }}</span>
@@ -95,7 +98,8 @@
             class="field-pill"
             @click="insertFieldIntoTemplate(name)"
           >
-            + {{ name }}
+            <Plus :size="12" aria-hidden="true" />
+            {{ name }}
           </button>
         </div>
       </div>
@@ -104,6 +108,16 @@
 </template>
 
 <script setup lang="ts">
+import {
+  Calendar,
+  Database,
+  FileDigit,
+  FileText,
+  Files,
+  Hash,
+  Pencil,
+  Plus,
+} from '@lucide/vue';
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -127,10 +141,10 @@ const templateText = ref<string>('');
 const templateInputRef = ref<HTMLTextAreaElement | null>(null);
 
 const docInfoPresets = [
-  { id: 'page_num', icon: '📄', labelKey: 'elementNames.pageNumber', sample: '1', expr: '$V{PAGE_NUMBER}' },
-  { id: 'page_x_of_y', icon: '📑', labelKey: 'elementNames.pageXofY', sampleKey: 'fieldContent.pageXofYSample', sample: 'Page 1 of 5', expr: '"Page " + $V{PAGE_NUMBER} + " of " + $V{PAGE_COUNT}' },
-  { id: 'current_date', icon: '📅', labelKey: 'elementNames.currentDate', sample: '2026-09-22', expr: 'new java.util.Date()' },
-  { id: 'record_count', icon: '🔢', labelKey: 'fieldContent.totalRecords', sample: '150', expr: '$V{REPORT_COUNT}' },
+  { id: 'page_num', icon: FileDigit, labelKey: 'elementNames.pageNumber', sample: '1', expr: '$V{PAGE_NUMBER}' },
+  { id: 'page_x_of_y', icon: Files, labelKey: 'elementNames.pageXofY', sampleKey: 'fieldContent.pageXofYSample', sample: 'Page 1 of 5', expr: '"Page " + $V{PAGE_NUMBER} + " of " + $V{PAGE_COUNT}' },
+  { id: 'current_date', icon: Calendar, labelKey: 'elementNames.currentDate', sample: '2026-09-22', expr: 'new java.util.Date()' },
+  { id: 'record_count', icon: Hash, labelKey: 'fieldContent.totalRecords', sample: '150', expr: '$V{REPORT_COUNT}' },
 ];
 
 const availableFieldNames = computed(() => {
@@ -300,6 +314,10 @@ onMounted(() => {
 
 .mode-tab-btn {
   flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   padding: 5px 6px;
   border: none;
   background: transparent;
@@ -387,7 +405,7 @@ onMounted(() => {
 }
 
 .preset-icon {
-  font-size: 16px;
+  flex-shrink: 0;
 }
 
 .preset-info {
@@ -424,6 +442,9 @@ onMounted(() => {
 }
 
 .field-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   background: #e0f2fe;
   color: #0369a1;
   border: 1px solid #bae6fd;

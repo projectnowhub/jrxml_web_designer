@@ -141,7 +141,7 @@
           :title="t('textToolbar.automaticTitle')"
           @click="applyColor('inherit')"
         >
-          <span class="no-color-icon">⊘</span>
+          <Ban class="no-color-icon" :size="13" />
           <span>{{ t("textToolbar.automatic") }}</span>
         </button>
 
@@ -208,7 +208,7 @@
           :title="t('textToolbar.removeHighlight')"
           @click="applyHighlight('transparent')"
         >
-          <span class="no-color-icon">⊘</span>
+          <Ban class="no-color-icon" :size="13" />
           <span>{{ t("textToolbar.noColor") }}</span>
         </button>
 
@@ -385,19 +385,20 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import {
+  Ban,
   Bold,
-  Italic,
-  Underline,
-  Strikethrough,
-  Palette,
-  Highlighter,
-  Link,
-  Unlink,
-  RemoveFormatting,
-  X,
   Globe,
+  Highlighter,
+  Italic,
+  Link,
   Mail,
+  Palette,
   Phone,
+  RemoveFormatting,
+  Strikethrough,
+  Underline,
+  Unlink,
+  X,
 } from "@lucide/vue";
 
 const { t } = useI18n();
@@ -965,9 +966,8 @@ defineExpose({
 }
 
 .no-color-icon {
-  font-size: 13px;
   color: #ff4d4f;
-  line-height: 1;
+  flex-shrink: 0;
 }
 
 .color-swatches-grid {

@@ -9,26 +9,18 @@
     :aria-expanded="!collapsed"
     @click="emit('toggle')"
   >
-    <svg
-      viewBox="0 0 24 24"
-      width="15"
-      height="15"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+    <component
+      :is="side === 'left' ? PanelLeft : PanelRight"
+      :size="15"
       aria-hidden="true"
-    >
-      <rect x="3" y="4" width="18" height="16" rx="3" />
-      <path :d="side === 'left' ? 'M9 4v16' : 'M15 4v16'" />
-    </svg>
+    />
   </button>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { PanelLeft, PanelRight } from '@lucide/vue';
 
 const props = defineProps<{
   side: 'left' | 'right';

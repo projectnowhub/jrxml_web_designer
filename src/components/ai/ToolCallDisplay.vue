@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Check, Wrench, X } from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { MCPToolCall, MCPToolResult } from '@/mcp';
@@ -45,10 +46,11 @@ const statusClass = computed(() => ({
   <div :class="statusClass">
     <!-- Tool name -->
     <div class="tool-header">
-      <span class="tool-icon">🔧</span>
+      <Wrench class="tool-icon" :size="14" />
       <span class="tool-name">{{ displayName }}</span>
       <span v-if="toolResult" class="tool-status" :class="toolStatus">
-        {{ toolStatus === 'success' ? `✓ ${t('ai.tool.success')}` : `✗ ${t('ai.tool.failed')}` }}
+        <component :is="toolStatus === 'success' ? Check : X" :size="12" />
+        {{ toolStatus === 'success' ? t('ai.tool.success') : t('ai.tool.failed') }}
       </span>
     </div>
 
@@ -113,6 +115,9 @@ const statusClass = computed(() => ({
 }
 
 .tool-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: 0.85em;
   padding: 2px 6px;
   border-radius: 4px;

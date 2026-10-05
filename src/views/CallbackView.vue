@@ -76,45 +76,39 @@
       />
     </div>
 
-    <svg
-      class="absolute top-0 right-0 pointer-events-none"
-      width="340"
-      height="340"
-      viewBox="0 0 340 340"
-      fill="none"
-      aria-hidden
-      style="opacity: 0.07"
+    <div
+      class="absolute top-0 right-0 overflow-hidden pointer-events-none"
+      style="width: 340px; height: 340px; opacity: 0.07"
+      aria-hidden="true"
     >
-      <circle
-        v-for="(r, index) in [280, 200, 120]"
-        :key="index"
-        cx="340"
-        cy="0"
-        :r="r"
-        stroke="var(--a)"
-        stroke-width="1"
+      <span
+        class="absolute rounded-full"
+        style="width: 560px; height: 560px; left: 60px; top: -280px; border: 1px solid var(--a)"
       />
-    </svg>
+      <span
+        class="absolute rounded-full"
+        style="width: 400px; height: 400px; left: 140px; top: -200px; border: 1px solid var(--a)"
+      />
+      <span
+        class="absolute rounded-full"
+        style="width: 240px; height: 240px; left: 220px; top: -120px; border: 1px solid var(--a)"
+      />
+    </div>
 
-    <svg
-      class="absolute bottom-0 left-0 pointer-events-none"
-      width="280"
-      height="280"
-      viewBox="0 0 280 280"
-      fill="none"
-      aria-hidden
-      style="opacity: 0.07"
+    <div
+      class="absolute bottom-0 left-0 overflow-hidden pointer-events-none"
+      style="width: 280px; height: 280px; opacity: 0.07"
+      aria-hidden="true"
     >
-      <circle
-        v-for="(r, index) in [240, 160]"
-        :key="index"
-        cx="0"
-        cy="280"
-        :r="r"
-        stroke="var(--a)"
-        stroke-width="1"
+      <span
+        class="absolute rounded-full"
+        style="width: 480px; height: 480px; left: -240px; top: 40px; border: 1px solid var(--a)"
       />
-    </svg>
+      <span
+        class="absolute rounded-full"
+        style="width: 320px; height: 320px; left: -160px; top: 120px; border: 1px solid var(--a)"
+      />
+    </div>
 
     <header
       class="cb-hdr relative z-10 flex-shrink-0 flex items-center justify-between px-8"
@@ -128,7 +122,7 @@
             border: 1px solid var(--a-30, rgba(99, 102, 241, 0.25));
           "
         >
-          <ShieldSvg :size="15" />
+          <img src="/assets/cdp-logo.png" alt="" class="w-4 h-4 object-contain" />
         </div>
         <span class="text-sm font-semibold text-i1 tracking-tight"
           >ProjectNow CDP</span
@@ -171,69 +165,50 @@
         />
 
         <div class="cb-spin absolute inset-0">
-          <svg viewBox="0 0 168 168" class="w-full h-full">
-            <circle
-              cx="84"
-              cy="84"
-              r="78"
-              fill="none"
-              stroke="var(--a)"
-              stroke-width="1.4"
-              stroke-dasharray="14 7"
-              stroke-linecap="round"
-              opacity=".45"
+          <div class="relative w-full h-full" aria-hidden="true">
+            <span
+              class="absolute rounded-full"
+              style="inset: 6px; border: 1.4px dashed var(--a); opacity: .45"
             />
-            <circle
-              v-for="deg in [0, 120, 240]"
-              :key="deg"
-              :cx="84 + 78 * Math.cos(((deg - 90) * Math.PI) / 180)"
-              :cy="84 + 78 * Math.sin(((deg - 90) * Math.PI) / 180)"
-              r="4"
-              fill="var(--a)"
-              opacity=".85"
+            <span
+              class="absolute rounded-full"
+              style="width: 8px; height: 8px; left: 50%; top: 50%; margin: -4px; background: var(--a); opacity: .85; transform: rotate(0deg) translateY(-78px)"
             />
-          </svg>
+            <span
+              class="absolute rounded-full"
+              style="width: 8px; height: 8px; left: 50%; top: 50%; margin: -4px; background: var(--a); opacity: .85; transform: rotate(120deg) translateY(-78px)"
+            />
+            <span
+              class="absolute rounded-full"
+              style="width: 8px; height: 8px; left: 50%; top: 50%; margin: -4px; background: var(--a); opacity: .85; transform: rotate(240deg) translateY(-78px)"
+            />
+          </div>
         </div>
 
         <div class="cb-rspin absolute" style="inset: 18px">
-          <svg viewBox="0 0 132 132" class="w-full h-full">
-            <circle
-              cx="66"
-              cy="66"
-              r="60"
-              fill="none"
-              stroke="var(--a)"
-              stroke-width="1"
-              stroke-dasharray="5 13"
-              stroke-linecap="round"
-              opacity=".3"
+          <div class="relative w-full h-full" aria-hidden="true">
+            <span
+              class="absolute rounded-full"
+              style="inset: 6px; border: 1px dashed var(--a); opacity: .3"
             />
-            <circle
-              v-for="deg in [60, 300]"
-              :key="deg"
-              :cx="66 + 60 * Math.cos(((deg - 90) * Math.PI) / 180)"
-              :cy="66 + 60 * Math.sin(((deg - 90) * Math.PI) / 180)"
-              r="2.5"
-              fill="var(--a)"
-              opacity=".5"
+            <span
+              class="absolute rounded-full"
+              style="width: 5.0px; height: 5.0px; left: 50%; top: 50%; margin: -2.5px; background: var(--a); opacity: .5; transform: rotate(60deg) translateY(-60px)"
             />
-          </svg>
+            <span
+              class="absolute rounded-full"
+              style="width: 5.0px; height: 5.0px; left: 50%; top: 50%; margin: -2.5px; background: var(--a); opacity: .5; transform: rotate(300deg) translateY(-60px)"
+            />
+          </div>
         </div>
 
         <div class="cb-spin2 absolute" style="inset: 36px">
-          <svg viewBox="0 0 96 96" class="w-full h-full">
-            <circle
-              cx="48"
-              cy="48"
-              r="44"
-              fill="none"
-              stroke="var(--a)"
-              stroke-width="0.8"
-              stroke-dasharray="3 18"
-              stroke-linecap="round"
-              opacity=".2"
+          <div class="relative w-full h-full" aria-hidden="true">
+            <span
+              class="absolute rounded-full"
+              style="inset: 4px; border: 0.8px dotted var(--a); opacity: .2"
             />
-          </svg>
+          </div>
         </div>
 
         <div
@@ -262,7 +237,7 @@
               );
             "
           />
-          <ShieldSvg :size="34" />
+          <ShieldCheck :size="34" :stroke-width="1.5" style="color: var(--a)" aria-hidden="true" />
         </div>
       </div>
 
@@ -308,7 +283,13 @@
           }"
         >
           <span class="flex-shrink-0">
-            <component :is="step.icon" />
+            <component
+              :is="step.icon"
+              :size="16"
+              :class="step.iconClass"
+              :style="{ color: step.iconColor, display: 'block' }"
+              aria-hidden="true"
+            />
           </span>
 
           <div class="flex-1 min-w-0">
@@ -337,7 +318,7 @@
               border: 1px solid rgba(34, 197, 94, 0.2);
             "
           >
-            <CheckTiny /> {{ t("callback.done") }}
+            <Check :size="11" :stroke-width="2.5" aria-hidden="true" /> {{ t("callback.done") }}
           </span>
 
           <span
@@ -399,12 +380,12 @@
       style="height: 56px; animation-delay: 0.15s"
     >
       <div class="flex items-center gap-1.5 text-[11px] text-i3">
-        <LockTiny />
+        <Lock :size="11" aria-hidden="true" />
         <span>{{ t("callback.pkceSecured") }}</span>
       </div>
       <div class="w-px h-3 bg-b1" />
       <div class="flex items-center gap-1.5 text-[11px] text-i3">
-        <CheckTiny />
+        <Check :size="11" :stroke-width="2.5" aria-hidden="true" />
         <span>{{ t("callback.endToEndEncrypted") }}</span>
       </div>
       <div class="w-px h-3 bg-b1" />
@@ -423,7 +404,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import {
+  Check,
+  CircleCheck,
+  CircleDot,
+  LoaderCircle,
+  Lock,
+  ShieldCheck,
+} from "@lucide/vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { exchangeCode, fetchUser } from "../services/authService";
@@ -444,213 +433,33 @@ const ptcls = [
 
 const steps = computed(() => [
   {
-    icon: StepCheck,
+    icon: CircleCheck,
+    iconColor: "var(--green,#22c55e)",
+    iconClass: undefined,
     label: t("callback.authCodeReceived"),
     sub: t("callback.pkceCodeVerified"),
     state: "done",
     delay: "0.38s",
   },
   {
-    icon: StepSpin,
+    icon: LoaderCircle,
+    iconColor: "var(--a)",
+    iconClass: "cb-spin2",
     label: t("callback.exchangingToken"),
     sub: t("callback.communicatingWithServer"),
     state: "active",
     delay: "0.52s",
   },
   {
-    icon: StepPending,
+    icon: CircleDot,
+    iconColor: "var(--b1)",
+    iconClass: undefined,
     label: t("callback.loadingWorkspace"),
     sub: t("callback.fetchingAccountDetails"),
     state: "pending",
     delay: "0.66s",
   },
 ]);
-
-function ShieldSvg({ size = 36 }: { size?: number }) {
-  const s = size / 34;
-  return h(
-    "svg",
-    {
-      width: size,
-      height: size * (34 / 30),
-      viewBox: "0 0 30 34",
-      fill: "none",
-      "aria-hidden": true,
-    },
-    [
-      h("path", {
-        d: "M15 1.5L2.5 7v10.5C2.5 24.956 8.19 31.2 15 32.5c6.81-1.3 12.5-7.544 12.5-15V7L15 1.5Z",
-        fill: "var(--a-18,rgba(99,102,241,.15))",
-        stroke: "var(--a)",
-        strokeWidth: 1.5 / s,
-        strokeLinejoin: "round",
-      }),
-      h("rect", {
-        x: "10.5",
-        y: "16",
-        width: "9",
-        height: "8",
-        rx: "2",
-        fill: "var(--a)",
-        opacity: ".9",
-      }),
-      h("path", {
-        d: "M12.5 16v-3a2.5 2.5 0 015 0v3",
-        stroke: "var(--a)",
-        strokeWidth: 1.5 / s,
-        strokeLinecap: "round",
-      }),
-      h("circle", {
-        cx: "15",
-        cy: "20",
-        r: "1.3",
-        fill: "white",
-        opacity: ".9",
-      }),
-    ],
-  );
-}
-
-function LockTiny() {
-  return h(
-    "svg",
-    {
-      width: "11",
-      height: "11",
-      viewBox: "0 0 11 11",
-      fill: "none",
-      "aria-hidden": true,
-    },
-    [
-      h("rect", {
-        x: "2",
-        y: "5",
-        width: "7",
-        height: "5.5",
-        rx: "1.2",
-        stroke: "currentColor",
-        strokeWidth: "1.1",
-      }),
-      h("path", {
-        d: "M3.5 5V3.5a2 2 0 014 0V5",
-        stroke: "currentColor",
-        strokeWidth: "1.1",
-        strokeLinecap: "round",
-      }),
-    ],
-  );
-}
-
-function CheckTiny() {
-  return h(
-    "svg",
-    {
-      width: "11",
-      height: "11",
-      viewBox: "0 0 11 11",
-      fill: "none",
-      "aria-hidden": true,
-    },
-    [
-      h("path", {
-        d: "M2 5.5l2.5 2.5 4.5-4.5",
-        stroke: "currentColor",
-        strokeWidth: "1.4",
-        strokeLinecap: "round",
-        strokeLinejoin: "round",
-      }),
-    ],
-  );
-}
-
-function StepCheck() {
-  return h(
-    "svg",
-    {
-      width: "16",
-      height: "16",
-      viewBox: "0 0 16 16",
-      fill: "none",
-      "aria-hidden": true,
-    },
-    [
-      h("circle", {
-        cx: "8",
-        cy: "8",
-        r: "8",
-        fill: "var(--green,#22c55e)",
-        opacity: ".16",
-      }),
-      h("circle", {
-        cx: "8",
-        cy: "8",
-        r: "7",
-        stroke: "var(--green,#22c55e)",
-        strokeWidth: "1.3",
-      }),
-      h("path", {
-        d: "M5 8l2.2 2.2L11 5.5",
-        stroke: "var(--green,#22c55e)",
-        strokeWidth: "1.5",
-        strokeLinecap: "round",
-        strokeLinejoin: "round",
-      }),
-    ],
-  );
-}
-
-function StepSpin() {
-  return h(
-    "svg",
-    {
-      width: "16",
-      height: "16",
-      viewBox: "0 0 16 16",
-      fill: "none",
-      "aria-hidden": true,
-      class: "cb-spin2",
-      style: { display: "inline-block" },
-    },
-    [
-      h("circle", {
-        cx: "8",
-        cy: "8",
-        r: "7",
-        stroke: "var(--b1)",
-        strokeWidth: "1.4",
-      }),
-      h("path", {
-        d: "M8 1a7 7 0 017 7",
-        stroke: "var(--a)",
-        strokeWidth: "1.8",
-        strokeLinecap: "round",
-      }),
-    ],
-  );
-}
-
-function StepPending() {
-  return h(
-    "svg",
-    {
-      width: "16",
-      height: "16",
-      viewBox: "0 0 16 16",
-      fill: "none",
-      "aria-hidden": true,
-    },
-    [
-      h("circle", {
-        cx: "8",
-        cy: "8",
-        r: "7",
-        stroke: "var(--b1)",
-        strokeWidth: "1.4",
-      }),
-      h("circle", { cx: "8", cy: "8", r: "2.5", fill: "var(--b1)" }),
-    ],
-  );
-}
 
 onMounted(async () => {
   try {

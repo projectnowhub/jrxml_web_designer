@@ -33,9 +33,7 @@
               {{ t("editorHeader.saveFailed") }}
             </span>
             <span v-else class="save-status-text saved">
-              <svg class="saved-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
+              <Check class="saved-icon" :size="13" :stroke-width="2.5" />
               {{ t("editorHeader.saved") }}
             </span>
           </div>
@@ -574,36 +572,14 @@
             class="context-menu-item"
             @click="handleContextMenuAction('copy')"
           >
-            <svg
-              class="menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect x="9" y="9" width="13" height="13" rx="2" />
-              <path
-                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-              />
-            </svg>
+            <Copy class="menu-icon" :size="16" />
             {{ t("actions.copy") }}
           </div>
           <div
             class="context-menu-item"
             @click="handleContextMenuAction('paste')"
           >
-            <svg
-              class="menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
-              />
-              <rect x="8" y="2" width="8" height="4" rx="1" />
-            </svg>
+            <ClipboardPaste class="menu-icon" :size="16" />
             {{ t("actions.paste") }}
           </div>
           <div class="context-menu-divider"></div>
@@ -611,17 +587,7 @@
             class="context-menu-item"
             @click="handleContextMenuAction('delete')"
           >
-            <svg
-              class="menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-              />
-            </svg>
+            <Trash2 class="menu-icon" :size="16" />
             {{ t("actions.delete") }}
           </div>
           <div class="context-menu-divider"></div>
@@ -629,30 +595,14 @@
             class="context-menu-item"
             @click="handleContextMenuAction('bringToFront')"
           >
-            <svg
-              class="menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M12 19V5M5 12l7-7 7 7" />
-            </svg>
+            <BringToFront class="menu-icon" :size="16" />
             {{ t("editor.contextMenu.bringToFront") }}
           </div>
           <div
             class="context-menu-item"
             @click="handleContextMenuAction('sendToBack')"
           >
-            <svg
-              class="menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M12 5v14M19 12l-7 7-7-7" />
-            </svg>
+            <SendToBack class="menu-icon" :size="16" />
             {{ t("editor.contextMenu.sendToBack") }}
           </div>
           <!-- Item inside a box or frame: one of the two, never both -->
@@ -663,16 +613,7 @@
               class="context-menu-item"
               @click="handleContextMenuAction('moveOutOfBox')"
             >
-              <svg
-                class="menu-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <rect x="3" y="3" width="12" height="12" rx="1" />
-                <path d="M13 13l8 8M21 15v6h-6" />
-              </svg>
+              <SquareArrowOutDownRight class="menu-icon" :size="16" />
               {{ t("framePresets.moveOutOfBox") }}
             </div>
             <div
@@ -680,16 +621,7 @@
               class="context-menu-item"
               @click="handleContextMenuAction('addToBox')"
             >
-              <svg
-                class="menu-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="1" />
-                <path d="M12 8v8M8 12h8" />
-              </svg>
+              <SquarePlus class="menu-icon" :size="16" />
               {{ t("framePresets.addToBox") }}
             </div>
           </template>
@@ -699,7 +631,7 @@
             class="context-menu-item"
             @click="handleContextMenuAction('paste')"
           >
-            <span class="menu-icon">📎</span> {{ t("actions.paste") }}
+            <ClipboardPaste class="menu-icon" :size="16" /> {{ t("actions.paste") }}
           </div>
         </div>
       </div>
@@ -732,13 +664,18 @@ import AlignmentGuides from "./designer/AlignmentGuides.vue";
 import DragFeedbackLayer from "./designer/DragFeedbackLayer.vue";
 import { NButton, NSelect, NCheckbox } from "naive-ui";
 import {
+  BringToFront,
+  Check,
   ClipboardPaste,
   Copy,
   FilePlus,
   Redo2,
+  SendToBack,
   Settings,
   SlidersHorizontal,
   Sparkles,
+  SquareArrowOutDownRight,
+  SquarePlus,
   Trash2,
   Undo2,
 } from "@lucide/vue";

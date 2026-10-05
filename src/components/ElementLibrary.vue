@@ -14,9 +14,11 @@
         class="element-category"
       >
         <div class="category-header" @click="toggleCategory(categoryKey)">
-          <span class="category-arrow">{{
-            expandedCategories[categoryKey] ? "▼" : "▶"
-          }}</span>
+          <component
+            :is="expandedCategories[categoryKey] ? ChevronDown : ChevronRight"
+            class="category-arrow"
+            :size="12"
+          />
           <span>{{ categoryLabels[categoryKey] || categoryKey }}</span>
         </div>
         <div v-if="expandedCategories[categoryKey]" class="element-list">
@@ -35,12 +37,13 @@
             @click="handleTileClick($event, element)"
             @dblclick="handleElementDoubleClick($event, element)"
           >
-            <span
-              class="element-icon"
-              v-html="
-                getElementIconSvg(element.type) || getElementIcon(element.type)
-              "
-            ></span>
+            <span class="element-icon">
+              <component
+                :is="getElementIconComponent(element.type)"
+                v-if="getElementIconComponent(element.type)"
+              />
+              <template v-else>{{ getElementIcon(element.type) }}</template>
+            </span>
             <span class="element-name">{{ t(element.name) }}</span>
           </div>
         </div>
@@ -66,7 +69,7 @@
           size="small"
           :title="t('elementLibrary.filterElements')"
         >
-          ✕
+          <X :size="14" />
         </n-button>
       </div>
       <div class="report-elements-list">
@@ -88,13 +91,13 @@
               @click="selectElementFromList(element, selectElement)"
               @dblclick.stop="handleReportElementDblClick(element)"
             >
-              <span
-                class="element-icon"
-                v-html="
-                  getElementIconSvg(element.element.type) ||
-                  getElementIcon(element.element.type)
-                "
-              ></span>
+              <span class="element-icon">
+                <component
+                  :is="getElementIconComponent(element.element.type)"
+                  v-if="getElementIconComponent(element.element.type)"
+                />
+                <template v-else>{{ getElementIcon(element.element.type) }}</template>
+              </span>
               <input
                 v-if="editingElementKey === getElementKey(element)"
                 :ref="setInlineEditInputRef"
@@ -130,18 +133,7 @@
               size="small"
               :title="t('properties.deleteElement')"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                width="14"
-                height="14"
-              >
-                <path
-                  d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                />
-              </svg>
+              <Trash2 :size="14" />
             </n-button>
           </div>
         </div>
@@ -160,7 +152,7 @@
           circle
           size="small"
           :title="t('elementLibrary.addSubDataset')"
-          >+</n-button
+          ><Plus :size="14" /></n-button
         >
       </div>
       <div class="fields-mini-view">
@@ -182,21 +174,7 @@
               size="small"
               :title="t('elementLibrary.editSubDataset')"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                width="14"
-                height="14"
-              >
-                <path
-                  d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                />
-                <path
-                  d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                />
-              </svg>
+              <SquarePen :size="14" />
             </n-button>
             <n-button
               class="action-button delete-button"
@@ -207,18 +185,7 @@
               size="small"
               :title="t('elementLibrary.deleteSubDataset')"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                width="14"
-                height="14"
-              >
-                <path
-                  d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                />
-              </svg>
+              <Trash2 :size="14" />
             </n-button>
           </div>
         </div>
@@ -243,7 +210,7 @@
           circle
           size="small"
           :title="t('elementLibrary.addReportStyle')"
-          >+</n-button
+          ><Plus :size="14" /></n-button
         >
       </div>
       <div class="parameters-mini-view">
@@ -268,21 +235,7 @@
               size="small"
               :title="t('elementLibrary.editStyle')"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                width="14"
-                height="14"
-              >
-                <path
-                  d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                />
-                <path
-                  d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                />
-              </svg>
+              <SquarePen :size="14" />
             </n-button>
             <n-button
               class="action-button delete-button"
@@ -293,18 +246,7 @@
               size="small"
               :title="t('elementLibrary.deleteStyle')"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                width="14"
-                height="14"
-              >
-                <path
-                  d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                />
-              </svg>
+              <Trash2 :size="14" />
             </n-button>
           </div>
         </div>
@@ -333,18 +275,16 @@
             class="page-number-option"
             @click="choosePageNumberPosition(position.id)"
           >
-            <svg class="page-thumb" viewBox="0 0 40 52" aria-hidden="true">
-              <rect x="1" y="1" width="38" height="50" rx="2" class="page-thumb-sheet" />
-              <path d="M7 18h26M7 23h26M7 28h26M7 33h18" class="page-thumb-lines" />
-              <rect
-                :x="position.align === 'Center' ? 15 : 24"
-                :y="position.edge === 'top' ? 6 : 42"
-                width="10"
-                height="4"
-                rx="1"
+            <span class="page-thumb" aria-hidden="true">
+              <span class="page-thumb-lines" />
+              <span
                 class="page-thumb-number"
+                :class="[
+                  position.edge === 'top' ? 'is-top' : 'is-bottom',
+                  position.align === 'Center' ? 'is-center' : 'is-right',
+                ]"
               />
-            </svg>
+            </span>
             <span>{{ t(`pagination.positions.${position.id}`) }}</span>
           </button>
         </div>
@@ -366,6 +306,14 @@
 import { ref, computed, nextTick, watch, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
+import {
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  SquarePen,
+  Trash2,
+  X,
+} from "@lucide/vue";
 import ConfirmModal from "./modals/ConfirmModal.vue";
 import { ElementRegistry } from "./elements/ElementRegistry";
 import { findPageBorder, isFrameTemplateType, PAGE_BORDER_TYPE } from "../utils/framePresets";
@@ -387,7 +335,7 @@ import type {
 import {
   getElementDisplayInfoWithoutBand,
   getElementIcon,
-  getElementIconSvg,
+  getElementIconComponent,
   getElementKey,
   getElementTypeName,
   isElementSelected,
@@ -1099,26 +1047,54 @@ watch(
   color: #1f2937;
 }
 
+/* Mini page: where the page number goes */
 .page-thumb {
-  width: 40px;
-  height: 52px;
-}
-
-.page-thumb-sheet {
-  fill: #fff;
-  stroke: #9ca3af;
-  stroke-width: 1.5;
+  position: relative;
+  width: 38px;
+  height: 50px;
+  box-sizing: border-box;
+  border: 1.5px solid #9ca3af;
+  border-radius: 2px;
+  background: #fff;
 }
 
 .page-thumb-lines {
-  fill: none;
-  stroke: #d1d5db;
-  stroke-width: 2;
-  stroke-linecap: round;
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 16px;
+  height: 17px;
+  /* Four text lines, the last one shorter */
+  background:
+    linear-gradient(#d1d5db, #d1d5db) 0 0 / 100% 2px no-repeat,
+    linear-gradient(#d1d5db, #d1d5db) 0 5px / 100% 2px no-repeat,
+    linear-gradient(#d1d5db, #d1d5db) 0 10px / 100% 2px no-repeat,
+    linear-gradient(#d1d5db, #d1d5db) 0 15px / 70% 2px no-repeat;
 }
 
 .page-thumb-number {
-  fill: #1890ff;
+  position: absolute;
+  width: 10px;
+  height: 4px;
+  border-radius: 1px;
+  background: #1890ff;
+}
+
+.page-thumb-number.is-top {
+  top: 4px;
+}
+
+.page-thumb-number.is-bottom {
+  bottom: 4px;
+}
+
+.page-thumb-number.is-center {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.page-thumb-number.is-right {
+  right: 4px;
 }
 
 .page-number-menu-hint {
@@ -1151,8 +1127,7 @@ watch(
 }
 
 .category-arrow {
-  font-size: 10px;
-  width: 12px;
+  flex-shrink: 0;
   color: var(--prop-text-tertiary, #999);
 }
 

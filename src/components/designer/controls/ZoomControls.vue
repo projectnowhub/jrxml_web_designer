@@ -1,16 +1,17 @@
 <template>
   <div class="zoom-controls">
-    <n-button @click="zoomOut" type="default" quaternary circle size="small" :title="t('zoom.zoomOut')">-</n-button>
+    <n-button @click="zoomOut" type="default" quaternary circle size="small" :title="t('zoom.zoomOut')"><Minus :size="14" /></n-button>
     <select v-model.number="localZoomLevel" @change="applyZoom" class="zoom-select">
       <option v-for="level in ZOOM_LEVELS" :key="level" :value="level">{{ Math.round(level * 100) }}%</option>
     </select>
-    <n-button @click="zoomIn" type="default" quaternary circle size="small" :title="t('zoom.zoomIn')">+</n-button>
+    <n-button @click="zoomIn" type="default" quaternary circle size="small" :title="t('zoom.zoomIn')"><Plus :size="14" /></n-button>
     <n-button @click="resetZoom" type="default" quaternary size="small" :title="t('zoom.resetZoom')">{{ Math.round(DEFAULT_ZOOM * 100) }}%</n-button>
-    <n-button @click="calculateOptimalZoom" type="default" quaternary circle size="small" :title="t('zoom.fitWindow')">⊡</n-button>
+    <n-button @click="calculateOptimalZoom" type="default" quaternary circle size="small" :title="t('zoom.fitWindow')"><Maximize :size="14" /></n-button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Maximize, Minus, Plus } from '@lucide/vue';
 import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { NButton } from 'naive-ui';

@@ -135,9 +135,9 @@
                           <button
                             class="remove-row-btn"
                             @click="removeRow(rowIdx)"
-                            title="×"
+                            :title="t('actions.delete')"
                           >
-                            ×
+                            <X :size="14" />
                           </button>
                         </td>
                       </tr>
@@ -216,9 +216,9 @@
                         <button
                           class="remove-row-btn"
                           @click="removeSubRow(ds.name, rowIdx)"
-                          title="×"
+                          :title="t('actions.delete')"
                         >
-                          ×
+                          <X :size="14" />
                         </button>
                       </td>
                     </tr>
@@ -240,7 +240,7 @@
             : t('pdfPreview.editor.showPanel')
         "
       >
-        {{ showEditor ? "◀" : "▶" }}
+        <component :is="showEditor ? ChevronLeft : ChevronRight" :size="14" />
       </button>
 
       <!-- PDF Preview -->
@@ -266,6 +266,7 @@
 </template>
 
 <script setup lang="ts">
+import { ChevronLeft, ChevronRight, X } from "@lucide/vue";
 import BaseModal from "./BaseModal.vue";
 import { ref, computed, watch, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";

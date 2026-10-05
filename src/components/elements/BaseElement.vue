@@ -74,9 +74,7 @@
           @click.stop="handleQuickRotate"
           @mousedown.stop
         >
-          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-          </svg>
+          <RotateCw :size="11" :stroke-width="2.5" />
         </button>
         <div class="element-rotate-stem"></div>
       </div>
@@ -85,6 +83,7 @@
 </template>
 
 <script setup lang="ts">
+import { RotateCw } from '@lucide/vue';
 import { computed } from 'vue';
 import type { DesignElement, SelectedElementInfo } from '../../types';
 import { getElementBoxPadding, propertyCornerRadiusCss } from '../../utils/elementUtils';

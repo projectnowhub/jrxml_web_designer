@@ -13,7 +13,7 @@
       :class="primaryAction.class || 'btn-primary'"
       @click.stop="toggleDropdown"
     >
-      <span class="arrow" :class="{ 'open': isOpen }">▼</span>
+      <ChevronDown class="arrow" :class="{ 'open': isOpen }" :size="12" />
     </button>
     
     <div v-if="isOpen" class="dropdown-menu">
@@ -30,6 +30,7 @@
 </template>
 
 <script setup lang="ts">
+import { ChevronDown } from '@lucide/vue';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 interface ActionItem {

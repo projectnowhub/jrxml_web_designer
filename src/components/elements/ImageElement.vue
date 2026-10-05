@@ -57,17 +57,7 @@
           t('properties.dropOrClickToUpload')
         "
       >
-        <svg
-          class="upload-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.75"
-        >
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="17 8 12 3 7 8" />
-          <line x1="12" y1="3" x2="12" y2="15" />
-        </svg>
+        <Upload class="upload-icon" :stroke-width="1.75" />
         <span class="upload-text">{{
           t("properties.dropOrClickToUpload")
         }}</span>
@@ -105,18 +95,7 @@
             @click.stop="triggerFileInput"
             :title="t('properties.changeImage')"
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              width="12"
-              height="12"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
+            <Upload :size="12" />
             <span v-if="showChangeImageText">{{ t("properties.changeImage") }}</span>
           </button>
         </div>
@@ -181,9 +160,7 @@
           :aria-label="t('properties.cropDone')"
           @click.stop="applyCrop"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          <Check :stroke-width="2.5" />
         </button>
         <button
           type="button"
@@ -192,10 +169,7 @@
           :aria-label="t('properties.cropReset')"
           @click.stop="resetCrop"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 12a9 9 0 1 0 3-6.7" />
-            <polyline points="3 4 3 10 9 10" />
-          </svg>
+          <RotateCcw :stroke-width="2.2" />
         </button>
         <button
           type="button"
@@ -204,10 +178,7 @@
           :aria-label="t('properties.cropCancel')"
           @click.stop="cancelCrop"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <X :stroke-width="2.5" />
         </button>
       </div>
     </div>
@@ -215,6 +186,7 @@
 </template>
 
 <script setup lang="ts">
+import { Check, RotateCcw, Upload, X } from "@lucide/vue";
 import { computed, inject, onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { createDiscreteApi } from "naive-ui";

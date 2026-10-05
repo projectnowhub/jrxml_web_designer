@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import {
+  ChevronDown,
+  ChevronUp,
+  X,
+} from "@lucide/vue";
+import {
   ref,
   computed,
   nextTick,
@@ -806,9 +811,7 @@ onBeforeUnmount(() => {
         :aria-label="t('actions.hideBottomPanel')"
         @click="emit('update:visible', false)"
       >
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path d="M6 6l12 12M18 6L6 18" />
-        </svg>
+        <X :size="14" aria-hidden="true" />
       </button>
     </div>
 
@@ -1156,21 +1159,21 @@ onBeforeUnmount(() => {
                 type="default"
                 size="small"
                 :title="t('bottomPanel.searchPrevious')"
-                >↑</n-button
+                ><ChevronUp :size="14" /></n-button
               >
               <n-button
                 @click="findNext"
                 type="default"
                 size="small"
                 :title="t('bottomPanel.searchNext')"
-                >↓</n-button
+                ><ChevronDown :size="14" /></n-button
               >
               <n-button
                 @click="closeSearch"
                 type="default"
                 size="small"
                 :title="t('properties.close')"
-                >×</n-button
+                ><X :size="14" /></n-button
               >
               <span v-if="searchResultsCount > 0" class="search-status">
                 {{ currentSearchResult }} / {{ searchResultsCount }}

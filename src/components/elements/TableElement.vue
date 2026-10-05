@@ -94,7 +94,7 @@
                                                     circle
                                                     size="small"
                                                 >
-                                                    ◀
+                                                    <ChevronLeft :size="14" />
                                                 </n-button>
 
                                                 <!-- Move right button -->
@@ -120,7 +120,7 @@
                                                     circle
                                                     size="small"
                                                 >
-                                                    ▶
+                                                    <ChevronRight :size="14" />
                                                 </n-button>
 
                                                 <div
@@ -584,6 +584,7 @@
 </template>
 
 <script setup lang="ts">
+import { ChevronLeft, ChevronRight } from "@lucide/vue";
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { NButton, NTooltip } from "naive-ui";
 import { useI18n } from "vue-i18n";

@@ -9,38 +9,8 @@
     <div class="login-shell">
       <div class="login-card">
         <div class="brand-wrap">
-          <div class="brand-icon" :aria-label="t('auth.brandLogo')">
-            <svg viewBox="0 0 64 64" aria-hidden="true">
-              <defs>
-                <linearGradient
-                  id="brand-gradient"
-                  x1="0%"
-                  x2="100%"
-                  y1="0%"
-                  y2="100%"
-                >
-                  <stop offset="0%" stop-color="#7c5cf7" />
-                  <stop offset="100%" stop-color="#6366f1" />
-                </linearGradient>
-              </defs>
-              <rect
-                x="8"
-                y="10"
-                width="48"
-                height="42"
-                rx="14"
-                fill="url(#brand-gradient)"
-                opacity="0.18"
-              />
-              <path
-                d="M18 40V24h7v16M29 40V17h7v23M40 40V28h7v12"
-                fill="none"
-                stroke="url(#brand-gradient)"
-                stroke-width="4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+          <div class="brand-icon">
+            <img src="/assets/cdp-logo.png" :alt="t('auth.brandLogo')" />
           </div>
           <div class="brand-text">CDP PLATFORM</div>
         </div>
@@ -88,37 +58,14 @@
           @click="handleLogin"
         >
           <span class="icon"
-            ><svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M10 17l5-5-5-5M15 12H3M13 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              /></svg
-          ></span>
+            ><LogIn aria-hidden="true" /></span>
           {{ isLoading ? t("auth.signingIn") : t("auth.continueToCdp") }}
         </button>
 
         <div class="status-box" :class="{ error: isError }">
           <span class="status-icon" aria-hidden="true">
-            <svg v-if="isError" viewBox="0 0 24 24">
-              <path
-                d="M12 8v5M12 16h.01M9.09 3.6L2.7 16.2A2 2 0 004.6 19h14.8a2 2 0 001.9-2.8L14.91 3.6a2 2 0 00-3.82 0z"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <svg v-else viewBox="0 0 24 24">
-              <path
-                d="M12 2l8 4v5c0 5-3.4 9.7-8 11-4.6-1.3-8-6-8-11V6l8-4zm-1.1 12.2l-2.5-2.5L7 12.7l3.9 3.9 7-7L17 8.2l-6.1 6z"
-                fill="currentColor"
-              />
-            </svg>
+            <TriangleAlert v-if="isError" />
+            <ShieldCheck v-else />
           </span>
           <span>{{
             isError
@@ -135,23 +82,7 @@
         >
           <div class="tenant-info-main">
             <div class="tenant-info-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="9"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <path
-                  d="M12 8h.01M12 11v5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-              </svg>
+              <Info />
             </div>
             <div class="tenant-info-details">
               <p class="tenant-info-label">{{ t("auth.currentTenant") }}</p>
@@ -161,16 +92,7 @@
                 class="change-url-button"
                 @click="changeTenantUrl"
               >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
+                <SquarePen aria-hidden="true" />
                 {{ t("auth.changeTenantUrl") }}
               </button>
             </div>
@@ -196,6 +118,13 @@
 </template>
 
 <script setup lang="ts">
+import {
+  Info,
+  LogIn,
+  ShieldCheck,
+  SquarePen,
+  TriangleAlert,
+} from "@lucide/vue";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -442,9 +371,10 @@ const handleLogin = async () => {
     0 4px 16px rgba(23, 20, 44, 0.12);
 }
 
-.brand-icon svg {
+.brand-icon img {
   width: 34px;
   height: 34px;
+  object-fit: contain;
 }
 
 .brand-text {

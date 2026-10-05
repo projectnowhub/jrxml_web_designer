@@ -1,5 +1,6 @@
 // Element-related utility functions
 
+import type { Component } from "vue";
 import type { DesignElement } from "@/types";
 import {
   getElementConfig,
@@ -31,10 +32,10 @@ export function getElementIcon(type: string): string {
   return config?.icon || "?";
 }
 
-// Get the element SVG icon
-export function getElementIconSvg(type: string): string | undefined {
+// Get the element's Lucide icon component
+export function getElementIconComponent(type: string): Component | undefined {
   const config = getElementConfig(type);
-  return config?.iconSvg;
+  return config?.iconComponent;
 }
 
 // Strip the surrounding double quotes of a literal expression so the UI can show

@@ -213,19 +213,19 @@ describe('notification', () => {
       // Test success icon
       notification.success('Success with icon');
       let notificationContent = document.querySelector('.notification-content');
-      expect(notificationContent?.textContent).toContain('✓');
+      expect(notificationContent?.querySelector('.notification-icon svg.lucide-circle-check')).not.toBeNull();
       
       // Clear and test error icon
       document.body.innerHTML = '';
       notification.error('Error with icon');
       notificationContent = document.querySelector('.notification-content');
-      expect(notificationContent?.textContent).toContain('✕');
+      expect(notificationContent?.querySelector('.notification-icon svg.lucide-circle-x')).not.toBeNull();
       
       // Clear and test info icon
       document.body.innerHTML = '';
       notification.info('Info with icon');
       notificationContent = document.querySelector('.notification-content');
-      expect(notificationContent?.textContent).toContain('ℹ');
+      expect(notificationContent?.querySelector('.notification-icon svg.lucide-info')).not.toBeNull();
     });
 
     it('should have proper box-shadow and border-radius', () => {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { SendHorizontal } from '@lucide/vue';
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -83,7 +84,7 @@ function handleBlur() {
         @click="handleSubmit"
         :title="t('ai.input.send')"
       >
-        <span class="btn-icon">➤</span>
+        <SendHorizontal class="btn-icon" :size="16" />
       </button>
     </div>
   </div>

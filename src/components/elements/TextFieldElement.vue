@@ -82,7 +82,7 @@
       @click.stop="handleAutoFit"
       @mousedown.stop
     >
-      <span class="overflow-badge-icon">⚠</span>
+      <TriangleAlert class="overflow-badge-icon" :size="11" :stroke-width="2.5" />
       <span v-if="!compactOverflowBadge" class="overflow-badge-text">{{ t("textField.fit") }}</span>
     </div>
 
@@ -173,16 +173,17 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
-  Globe,
-  Mail,
-  Phone,
+  Check,
+  Copy,
   ExternalLink,
+  Globe,
   Link as LinkIcon,
+  Mail,
+  Pencil,
+  Phone,
+  TriangleAlert,
   Unlink,
   X,
-  Copy,
-  Check,
-  Pencil,
 } from '@lucide/vue';
 import BaseElement from './BaseElement.vue';
 import TextFormatToolbar from './TextFormatToolbar.vue';
@@ -1756,7 +1757,7 @@ const handleStartEditing = () => {
 }
 
 .overflow-badge-icon {
-  font-size: 11px;
+  flex-shrink: 0;
 }
 
 .overflow-badge-text {

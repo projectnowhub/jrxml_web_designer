@@ -220,8 +220,8 @@ export function useAIChat(getMcpContext?: () => MCPContext | undefined, onUpdate
           addMessage({
             role: 'tool',
             content: toolResult.success
-              ? `✅ ${i18n.global.t('ai.chat.toolSucceeded', { tool: toolCall.name })}`
-              : `❌ ${i18n.global.t('ai.chat.toolFailed', { tool: toolCall.name, error: toolResult.error ?? '' })}`,
+              ? i18n.global.t('ai.chat.toolSucceeded', { tool: toolCall.name })
+              : i18n.global.t('ai.chat.toolFailed', { tool: toolCall.name, error: toolResult.error ?? '' }),
             toolCall,
             toolResult
           });

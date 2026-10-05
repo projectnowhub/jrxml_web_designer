@@ -16,7 +16,7 @@
       </div>
       <div class="template-grid">
         <article class="template-card new-card" @click="goToDesigner">
-          <div class="new-icon">+</div>
+          <div class="new-icon"><Plus :size="22" /></div>
           <strong>{{ t("home.createNewTemplate") }}</strong
           ><span>{{ t("home.createNewTemplateHint") }}</span>
         </article>
@@ -63,7 +63,12 @@
 import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { ArrowRight, Inbox, MoreHorizontal } from "@lucide/vue";
+import {
+  ArrowRight,
+  Inbox,
+  MoreHorizontal,
+  Plus,
+} from "@lucide/vue";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
 import { getTemplates } from "../services";
 

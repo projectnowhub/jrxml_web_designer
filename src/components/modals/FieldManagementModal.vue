@@ -96,14 +96,14 @@ const modalTitle = computed(() => {
 
 // Allowed field types based on JRXML Schema with friendly manager labels
 const allowedFieldTypes = computed(() => [
-  { label: `🔤 ${t('dataTypes.text')}`, value: 'java.lang.String' },
-  { label: `🔢 ${t('dataTypes.integer')}`, value: 'java.lang.Integer' },
-  { label: `🔢 ${t('dataTypes.long')}`, value: 'java.lang.Long' },
-  { label: `💵 ${t('dataTypes.currency')}`, value: 'java.math.BigDecimal' },
-  { label: `🔢 ${t('dataTypes.decimal')}`, value: 'java.lang.Double' },
-  { label: `☑️ ${t('dataTypes.boolean')}`, value: 'java.lang.Boolean' },
-  { label: `📅 ${t('dataTypes.date')}`, value: 'java.util.Date' },
-  { label: `🕒 ${t('dataTypes.dateTime')}`, value: 'java.sql.Timestamp' }
+  { label: t('dataTypes.text'), value: 'java.lang.String' },
+  { label: t('dataTypes.integer'), value: 'java.lang.Integer' },
+  { label: t('dataTypes.long'), value: 'java.lang.Long' },
+  { label: t('dataTypes.currency'), value: 'java.math.BigDecimal' },
+  { label: t('dataTypes.decimal'), value: 'java.lang.Double' },
+  { label: t('dataTypes.boolean'), value: 'java.lang.Boolean' },
+  { label: t('dataTypes.date'), value: 'java.util.Date' },
+  { label: t('dataTypes.dateTime'), value: 'java.sql.Timestamp' }
 ]);
 
 // Watch for field prop changes

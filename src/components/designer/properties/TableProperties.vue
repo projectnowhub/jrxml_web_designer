@@ -25,61 +25,76 @@
         <!-- Table header style -->
         <div>
           <label>{{ t("table.tableHeaderStyle") }}</label>
-          <select
-            :value="element.styles?.tableHeader || 'Table_TH'"
-            @input="updateStyleProperty('tableHeader', ($event.target as HTMLSelectElement).value)"
-            class="prop-select"
-          >
-            <option v-for="style in availableStyles" :key="style" :value="style">{{ style }}</option>
-          </select>
+          <span class="prop-select-wrap">
+            <select
+              :value="element.styles?.tableHeader || 'Table_TH'"
+              @input="updateStyleProperty('tableHeader', ($event.target as HTMLSelectElement).value)"
+              class="prop-select"
+            >
+              <option v-for="style in availableStyles" :key="style" :value="style">{{ style }}</option>
+            </select>
+            <ChevronDown class="prop-select-chevron" :size="14" aria-hidden="true" />
+          </span>
         </div>
 
         <!-- Column header style -->
         <div>
           <label>{{ t("table.columnHeaderStyle") }}</label>
-          <select
-            :value="element.styles?.columnHeader || 'Table_CH'"
-            @input="updateStyleProperty('columnHeader', ($event.target as HTMLSelectElement).value)"
-            class="prop-select"
-          >
-            <option v-for="style in availableStyles" :key="style" :value="style">{{ style }}</option>
-          </select>
+          <span class="prop-select-wrap">
+            <select
+              :value="element.styles?.columnHeader || 'Table_CH'"
+              @input="updateStyleProperty('columnHeader', ($event.target as HTMLSelectElement).value)"
+              class="prop-select"
+            >
+              <option v-for="style in availableStyles" :key="style" :value="style">{{ style }}</option>
+            </select>
+            <ChevronDown class="prop-select-chevron" :size="14" aria-hidden="true" />
+          </span>
         </div>
 
         <!-- Detail style -->
         <div>
           <label>{{ t("table.detailStyle") }}</label>
-          <select
-            :value="element.styles?.detail || 'Table_TD'"
-            @input="updateStyleProperty('detail', ($event.target as HTMLSelectElement).value)"
-            class="prop-select"
-          >
-            <option v-for="style in availableStyles" :key="style" :value="style">{{ style }}</option>
-          </select>
+          <span class="prop-select-wrap">
+            <select
+              :value="element.styles?.detail || 'Table_TD'"
+              @input="updateStyleProperty('detail', ($event.target as HTMLSelectElement).value)"
+              class="prop-select"
+            >
+              <option v-for="style in availableStyles" :key="style" :value="style">{{ style }}</option>
+            </select>
+            <ChevronDown class="prop-select-chevron" :size="14" aria-hidden="true" />
+          </span>
         </div>
 
         <!-- Column footer style -->
         <div>
           <label>{{ t("table.columnFooterStyle") }}</label>
-          <select
-            :value="element.styles?.columnFooter || 'Table_CH'"
-            @input="updateStyleProperty('columnFooter', ($event.target as HTMLSelectElement).value)"
-            class="prop-select"
-          >
-            <option v-for="style in availableStyles" :key="style" :value="style">{{ style }}</option>
-          </select>
+          <span class="prop-select-wrap">
+            <select
+              :value="element.styles?.columnFooter || 'Table_CH'"
+              @input="updateStyleProperty('columnFooter', ($event.target as HTMLSelectElement).value)"
+              class="prop-select"
+            >
+              <option v-for="style in availableStyles" :key="style" :value="style">{{ style }}</option>
+            </select>
+            <ChevronDown class="prop-select-chevron" :size="14" aria-hidden="true" />
+          </span>
         </div>
 
         <!-- Table footer style -->
         <div>
           <label>{{ t("table.tableFooterStyle") }}</label>
-          <select
-            :value="element.styles?.tableFooter || 'Table_TH'"
-            @input="updateStyleProperty('tableFooter', ($event.target as HTMLSelectElement).value)"
-            class="prop-select"
-          >
-            <option v-for="style in availableStyles" :key="style" :value="style">{{ style }}</option>
-          </select>
+          <span class="prop-select-wrap">
+            <select
+              :value="element.styles?.tableFooter || 'Table_TH'"
+              @input="updateStyleProperty('tableFooter', ($event.target as HTMLSelectElement).value)"
+              class="prop-select"
+            >
+              <option v-for="style in availableStyles" :key="style" :value="style">{{ style }}</option>
+            </select>
+            <ChevronDown class="prop-select-chevron" :size="14" aria-hidden="true" />
+          </span>
         </div>
       </div>
     </div>
@@ -125,20 +140,24 @@
     <!-- Style inheritance -->
     <div class="prop-form-group">
       <label class="prop-label">{{ t("styleManagement.parentStyle") }}</label>
-      <select
-        :value="element.parentStyle || ''"
-        @input="updateProperty('parentStyle', ($event.target as HTMLSelectElement).value)"
-        class="prop-select"
-      >
-        <option value="">{{ t("properties.none") }}</option>
-        <option v-for="style in availableStyles" :key="style" :value="style">{{ style }}</option>
-      </select>
+      <span class="prop-select-wrap">
+        <select
+          :value="element.parentStyle || ''"
+          @input="updateProperty('parentStyle', ($event.target as HTMLSelectElement).value)"
+          class="prop-select"
+        >
+          <option value="">{{ t("properties.none") }}</option>
+          <option v-for="style in availableStyles" :key="style" :value="style">{{ style }}</option>
+        </select>
+        <ChevronDown class="prop-select-chevron" :size="14" aria-hidden="true" />
+      </span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import { ChevronDown } from '@lucide/vue';
 import SwitchControl from './common/SwitchControl.vue';
 
 const { t } = useI18n();

@@ -5,12 +5,7 @@
       <!-- What the panel is showing: the selected element, or the report -->
       <h3>{{ panelTitle }}</h3>
       <button type="button" class="chip-btn" @click="showStyleManagerModal = true">
-        <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
-          <path d="M12 3a9 9 0 1 0 0 18c1 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.8.7-1.4 1.5-1.4H16a5 5 0 0 0 5-5C21 6.5 17 3 12 3z" class="line-icon" />
-          <circle cx="7.5" cy="11.5" r="1" class="dot-icon" />
-          <circle cx="10.5" cy="7.5" r="1" class="dot-icon" />
-          <circle cx="15.5" cy="7.5" r="1" class="dot-icon" />
-        </svg>
+        <Palette :size="13" aria-hidden="true" />
         {{ t("properties.styleManagement") }}
       </button>
     </div>
@@ -33,19 +28,7 @@
             :title="t('properties.resetToDefaultTooltip')"
             @click="resetTemplateBandLimitsToDefault"
           >
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-              <path d="M3 3v5h5" />
-            </svg>
+            <RotateCcw :size="11" :stroke-width="2.2" />
             {{ t("properties.resetDefaults") }}
           </button>
         </div>
@@ -228,9 +211,7 @@
                   :disabled="isPropertiesImageUploading"
                   @click="triggerPropertiesImageUpload"
                 >
-                  <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" class="line-icon" />
-                  </svg>
+                  <Upload :size="13" aria-hidden="true" />
                   {{ isPropertiesImageUploading ? t("properties.uploadingImage") : t("properties.uploadImageButton") }}
                 </button>
               </div>
@@ -257,12 +238,7 @@
                   :title="t(rot.titleKey)"
                   @click="setElementRotation(rot.value)"
                 >
-                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                    <g :transform="`rotate(${rot.deg} 12 12)`">
-                      <rect x="6" y="4" width="12" height="16" rx="2" class="line-icon" />
-                      <path d="M9 9h6M9 12h4" class="line-icon" />
-                    </g>
-                  </svg>
+                  <FileText :size="16" aria-hidden="true" :style="{ transform: `rotate(${rot.deg}deg)` }" />
                   <span>{{ rot.deg }}°</span>
                 </button>
               </div>
@@ -376,12 +352,7 @@
                   :title="t(rot.titleKey)"
                   @click="setElementRotation(rot.value)"
                 >
-                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                    <g :transform="`rotate(${rot.deg} 12 12)`">
-                      <rect x="6" y="4" width="12" height="16" rx="2" class="line-icon" />
-                      <path d="M9 9h6M9 12h4" class="line-icon" />
-                    </g>
-                  </svg>
+                  <FileText :size="16" aria-hidden="true" :style="{ transform: `rotate(${rot.deg}deg)` }" />
                   <span>{{ rot.deg }}°</span>
                 </button>
               </div>
@@ -404,9 +375,7 @@
                   :title="t(dir.titleKey)"
                   @click="setLineOrientation(dir.value)"
                 >
-                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-                    <path :d="dir.icon" class="line-icon" />
-                  </svg>
+                  <component :is="dir.icon" :size="18" aria-hidden="true" :style="dir.iconStyle" />
                   <span>{{ t(dir.labelKey) }}</span>
                 </button>
               </div>
@@ -416,9 +385,7 @@
                 :title="t('properties.crossLineTitle')"
                 @click="addCrossingLine"
               >
-                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-                  <path d="M5 5l14 14M19 5L5 19" class="line-icon" />
-                </svg>
+                <X :size="14" aria-hidden="true" />
                 {{ t("properties.crossLine") }}
               </button>
             </div>
@@ -444,9 +411,7 @@
                   :title="t('properties.fitToTextTitle')"
                   @click="emit('fit-to-text')"
                 >
-                  <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
-                    <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" class="line-icon" />
-                  </svg>
+                  <Scan :size="13" aria-hidden="true" />
                   {{ t("properties.fitToText") }}
                 </button>
               </div>
@@ -482,12 +447,7 @@
                   :title="t(rot.titleKey)"
                   @click="setElementRotation(rot.value)"
                 >
-                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                    <g :transform="`rotate(${rot.deg} 12 12)`">
-                      <rect x="6" y="4" width="12" height="16" rx="2" class="line-icon" />
-                      <path d="M9 9h6M9 12h4" class="line-icon" />
-                    </g>
-                  </svg>
+                  <FileText :size="16" aria-hidden="true" :style="{ transform: `rotate(${rot.deg}deg)` }" />
                   <span>{{ rot.deg }}°</span>
                 </button>
               </div>
@@ -518,10 +478,12 @@
             <h5>{{ t("properties.columnManagement") }}</h5>
             <div class="column-tree-toolbar">
               <button type="button" class="chip-btn chip-btn-solid" :title="t('properties.addColumn')" @click="handleAddRootColumn">
-                + {{ t("properties.column") }}
+                <Plus :size="13" aria-hidden="true" />
+                {{ t("properties.column") }}
               </button>
               <button type="button" class="chip-btn" :title="t('properties.addGroup')" @click="handleAddRootGroup">
-                + {{ t("properties.group") }}
+                <Plus :size="13" aria-hidden="true" />
+                {{ t("properties.group") }}
               </button>
               <button type="button" class="chip-btn chip-btn-muted" :title="t('properties.combineColumnsTitle')" @click="addColumnGroup">
                 {{ t("properties.combineColumns") }}
@@ -599,9 +561,7 @@
                       :aria-checked="rectangleBorderStyle === line.value"
                       @click="setRectangleBorderStyle(line.value)"
                     >
-                      <svg viewBox="0 0 32 12" width="32" height="12" aria-hidden="true">
-                        <path d="M2 6h28" class="line-icon" :stroke-dasharray="line.dash" />
-                      </svg>
+                      <span class="pen-swatch" :class="penSwatchClass(line.value)" aria-hidden="true" />
                       <span>{{ t(line.labelKey) }}</span>
                     </button>
                   </div>
@@ -681,14 +641,8 @@
                           :aria-label="t(line.labelKey)"
                           @click="setRowBorderStyle(row, line.value)"
                         >
-                          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-                            <template v-if="line.value === ''">
-                              <circle cx="12" cy="12" r="7" class="line-icon" />
-                              <path d="M7 17L17 7" class="line-icon" />
-                            </template>
-                            <path v-else-if="line.value === 'Double'" d="M3 9.5h18M3 14.5h18" class="line-icon" />
-                            <path v-else d="M3 12h18" class="line-icon" :stroke-dasharray="line.dash" />
-                          </svg>
+                          <Ban v-if="line.value === ''" :size="18" aria-hidden="true" />
+                          <span v-else class="pen-swatch is-short" :class="penSwatchClass(line.value)" aria-hidden="true" />
                         </button>
                       </div>
                       <label class="unit-input">
@@ -815,10 +769,7 @@
                   :aria-checked="(currentElement.lineStyle || 'Solid') === line.value"
                   @click="setTextProperty('lineStyle', line.value)"
                 >
-                  <svg viewBox="0 0 32 12" width="32" height="12" aria-hidden="true">
-                    <path v-if="line.value === 'Double'" d="M2 3.5h28M2 8.5h28" class="line-icon" />
-                    <path v-else d="M2 6h28" class="line-icon" :stroke-dasharray="line.dash" />
-                  </svg>
+                  <span class="pen-swatch" :class="penSwatchClass(line.value)" aria-hidden="true" />
                   <span>{{ t(line.labelKey) }}</span>
                 </button>
               </div>
@@ -907,9 +858,7 @@
                       :aria-label="t(align.labelKey)"
                       @click="setHorizontalAlignment(align.value)"
                     >
-                      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                        <path :d="align.icon" class="line-icon" />
-                      </svg>
+                      <component :is="align.icon" :size="16" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -927,9 +876,7 @@
                       :aria-label="t(align.labelKey)"
                       @click="setVerticalAlignment(align.value)"
                     >
-                      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                        <path :d="align.icon" class="line-icon" />
-                      </svg>
+                      <component :is="align.icon" :size="16" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -980,9 +927,7 @@
 
       <div class="element-actions">
         <button type="button" class="delete-element-btn" @click="deleteElement">
-          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" class="line-icon" />
-          </svg>
+          <Trash2 :size="14" aria-hidden="true" />
           {{ t("properties.deleteElement") }}
         </button>
       </div>
@@ -1128,6 +1073,25 @@
 </template>
 
 <script setup lang="ts">
+import {
+  AlignVerticalJustifyCenter,
+  AlignVerticalJustifyEnd,
+  AlignVerticalJustifyStart,
+  Ban,
+  FileText,
+  Minus,
+  Palette,
+  Plus,
+  RotateCcw,
+  Scan,
+  Slash,
+  TextAlignCenter,
+  TextAlignEnd,
+  TextAlignStart,
+  Trash2,
+  Upload,
+  X,
+} from "@lucide/vue";
 import ColorSwatchPicker from '../../common/ColorSwatchPicker.vue';
 import { computed, ref, onMounted, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
@@ -2816,12 +2780,15 @@ const borderRowLabel = (row: BorderRow) =>
   row === "all" ? t("properties.all") : t(`properties.${row}Side`);
 
 const LINE_STYLES = [
-  { value: "", labelKey: "properties.none", dash: undefined },
-  { value: "Solid", labelKey: "properties.solid", dash: undefined },
-  { value: "Dashed", labelKey: "properties.dashed", dash: "5 3" },
-  { value: "Dotted", labelKey: "properties.dotted", dash: "0.5 3.5" },
-  { value: "Double", labelKey: "properties.double", dash: undefined },
+  { value: "", labelKey: "properties.none" },
+  { value: "Solid", labelKey: "properties.solid" },
+  { value: "Dashed", labelKey: "properties.dashed" },
+  { value: "Dotted", labelKey: "properties.dotted" },
+  { value: "Double", labelKey: "properties.double" },
 ];
+
+// Line-style sample drawn with a CSS border of that style
+const penSwatchClass = (value: string) => `is-${(value || "Solid").toLowerCase()}`;
 
 const getRowBorderStyle = (row: BorderRow) =>
   row === "all" ? getUnifiedBorderStyle() : getSideBorderStyle(row);
@@ -2891,10 +2858,10 @@ const ROTATIONS = [
   { value: "Left", deg: 270, titleKey: "properties.rotationLeft" },
 ] as const;
 const LINE_ORIENTATIONS = [
-  { value: "horizontal", icon: "M3 12h18", labelKey: "properties.lineHorizontal", titleKey: "properties.lineHorizontalTitle" },
-  { value: "vertical", icon: "M12 3v18", labelKey: "properties.lineVertical", titleKey: "properties.lineVerticalTitle" },
-  { value: "topdown", icon: "M5 5l14 14", labelKey: "properties.lineTopDown", titleKey: "properties.lineTopDownTitle" },
-  { value: "bottomup", icon: "M5 19L19 5", labelKey: "properties.lineBottomUp", titleKey: "properties.lineBottomUpTitle" },
+  { value: "horizontal", icon: Minus, iconStyle: undefined, labelKey: "properties.lineHorizontal", titleKey: "properties.lineHorizontalTitle" },
+  { value: "vertical", icon: Minus, iconStyle: { transform: "rotate(90deg)" }, labelKey: "properties.lineVertical", titleKey: "properties.lineVerticalTitle" },
+  { value: "topdown", icon: Slash, iconStyle: { transform: "scaleX(-1)" }, labelKey: "properties.lineTopDown", titleKey: "properties.lineTopDownTitle" },
+  { value: "bottomup", icon: Slash, iconStyle: undefined, labelKey: "properties.lineBottomUp", titleKey: "properties.lineBottomUpTitle" },
 ] as const;
 // A line is always drawn: no "None"
 const LINE_ONLY_STYLES = LINE_STYLES.filter((line) => line.value !== "");
@@ -3020,14 +2987,14 @@ const FONT_TOGGLES = [
   { key: "isUnderline", glyph: "U", labelKey: "properties.underline" },
 ] as const;
 const H_ALIGNS = [
-  { value: "Left", labelKey: "properties.left", icon: "M4 6h16M4 10h10M4 14h16M4 18h10" },
-  { value: "Center", labelKey: "properties.center", icon: "M4 6h16M7 10h10M4 14h16M7 18h10" },
-  { value: "Right", labelKey: "properties.right", icon: "M4 6h16M10 10h10M4 14h16M10 18h10" },
+  { value: "Left", labelKey: "properties.left", icon: TextAlignStart },
+  { value: "Center", labelKey: "properties.center", icon: TextAlignCenter },
+  { value: "Right", labelKey: "properties.right", icon: TextAlignEnd },
 ] as const;
 const V_ALIGNS = [
-  { value: "Top", labelKey: "properties.top", icon: "M4 4h16M9 8h6M9 12h6" },
-  { value: "Middle", labelKey: "properties.middle", icon: "M9 8h6M4 12h16M9 16h6" },
-  { value: "Bottom", labelKey: "properties.bottom", icon: "M9 12h6M9 16h6M4 20h16" },
+  { value: "Top", labelKey: "properties.top", icon: AlignVerticalJustifyStart },
+  { value: "Middle", labelKey: "properties.middle", icon: AlignVerticalJustifyCenter },
+  { value: "Bottom", labelKey: "properties.bottom", icon: AlignVerticalJustifyEnd },
 ] as const;
 
 // One undo step per change
@@ -4692,11 +4659,27 @@ function addPropertyExpression() {
   pointer-events: none;
 }
 
-.line-icon {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
+.pen-swatch {
+  display: inline-block;
+  width: 28px;
+  height: 0;
+  border-top: 2px solid currentColor;
+}
+
+.pen-swatch.is-short {
+  width: 18px;
+}
+
+.pen-swatch.is-dashed {
+  border-top-style: dashed;
+}
+
+.pen-swatch.is-dotted {
+  border-top-style: dotted;
+}
+
+.pen-swatch.is-double {
+  border-top: 6px double currentColor;
 }
 
 /* ---------- Borders: one row per side ---------- */
@@ -4985,10 +4968,6 @@ function addPropertyExpression() {
 
 .insert-field {
   margin-top: 10px;
-}
-
-.dot-icon {
-  fill: currentColor;
 }
 
 .card-input {

@@ -145,9 +145,7 @@
                   @click.stop="emit('add-page', pIndex)"
                   :title="t('canvas.addPageAfter')"
                 >
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
+                  <Plus :size="13" :stroke-width="2.2" aria-hidden="true" />
                   {{ t("canvas.addPageAfter") }}
                 </button>
                 <button
@@ -156,20 +154,7 @@
                   @click.stop="emit('delete-page', pIndex - 1)"
                   :title="t('canvas.deletePage')"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="13"
-                    height="13"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                    />
-                  </svg>
+                  <Trash2 :size="13" aria-hidden="true" />
                   {{ t("canvas.deletePage") }}
                 </button>
               </div>
@@ -461,6 +446,7 @@
 </template>
 
 <script setup lang="ts">
+import { Plus, Trash2 } from "@lucide/vue";
 import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import ElementFactory from "../elements/ElementFactory.vue";
 import SelectionBox from "./SelectionBox.vue";
