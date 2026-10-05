@@ -584,37 +584,29 @@
                     currentElement.type === 'ellipse')
                 "
               >
+                <!-- Outline: line style, then width / colour / corners in one row -->
                 <div class="box-section compact">
                   <h5>{{ t("properties.outline") }}</h5>
                   <span class="field-label">{{ t("properties.lineStyle") }}</span>
-                  <div class="line-style-names" aria-hidden="true">
-                    <span v-for="line in LINE_STYLES" :key="line.value">{{ t(line.labelKey) }}</span>
-                  </div>
-                  <div class="line-style-picker" role="radiogroup" :aria-label="t('properties.lineStyle')">
+                  <div class="style-tiles" role="radiogroup" :aria-label="t('properties.lineStyle')">
                     <button
-                      v-for="line in LINE_STYLES"
+                      v-for="line in SHAPE_STYLES"
                       :key="line.value"
                       type="button"
                       role="radio"
-                      class="line-style-btn"
+                      class="style-tile"
                       :class="{ active: rectangleBorderStyle === line.value }"
                       :aria-checked="rectangleBorderStyle === line.value"
-                      :title="t(line.labelKey)"
-                      :aria-label="t(line.labelKey)"
                       @click="setRectangleBorderStyle(line.value)"
                     >
-                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-                        <template v-if="line.value === ''">
-                          <circle cx="12" cy="12" r="7" class="line-icon" />
-                          <path d="M7 17L17 7" class="line-icon" />
-                        </template>
-                        <path v-else-if="line.value === 'Double'" d="M3 9.5h18M3 14.5h18" class="line-icon" />
-                        <path v-else d="M3 12h18" class="line-icon" :stroke-dasharray="line.dash" />
+                      <svg viewBox="0 0 32 12" width="32" height="12" aria-hidden="true">
+                        <path d="M2 6h28" class="line-icon" :stroke-dasharray="line.dash" />
                       </svg>
+                      <span>{{ t(line.labelKey) }}</span>
                     </button>
                   </div>
-                  <div class="field-row card-gap">
-                    <label class="field grow">
+                  <div class="value-row" :class="{ 'has-three': currentElement.type === 'rectangle' }">
+                    <label class="field">
                       <span class="field-label">{{ t("properties.width") }}</span>
                       <span class="unit-input">
                         <input
@@ -633,10 +625,10 @@
                       <ColorSwatchPicker
                         :model-value="getRectangleBorderColor()"
                         @update:model-value="setRectangleBorderColor($event)"
-                        class="color-control compact swatch-lg"
+                        class="swatch-fill"
                       />
                     </div>
-                    <label v-if="currentElement.type === 'rectangle'" class="field grow">
+                    <label v-if="currentElement.type === 'rectangle'" class="field">
                       <span class="field-label">{{ t("properties.cornerRadius") }}</span>
                       <span class="unit-input">
                         <input
@@ -808,34 +800,30 @@
                 </div>
               </template>
             </template>
-            <!-- Line: style, thickness and colour -->
+            <!-- Line: style, then thickness and colour in one row -->
             <div v-if="currentElement.type === 'line'" class="box-section compact">
               <h5>{{ t("properties.lineSettings") }}</h5>
               <span class="field-label">{{ t("properties.lineStyle") }}</span>
-              <div class="line-style-names line-style-names-4" aria-hidden="true">
-                <span v-for="line in LINE_ONLY_STYLES" :key="line.value">{{ t(line.labelKey) }}</span>
-              </div>
-              <div class="line-style-picker line-style-picker-4" role="radiogroup" :aria-label="t('properties.lineStyle')">
+              <div class="style-tiles style-tiles-4" role="radiogroup" :aria-label="t('properties.lineStyle')">
                 <button
                   v-for="line in LINE_ONLY_STYLES"
                   :key="line.value"
                   type="button"
                   role="radio"
-                  class="line-style-btn"
+                  class="style-tile"
                   :class="{ active: (currentElement.lineStyle || 'Solid') === line.value }"
                   :aria-checked="(currentElement.lineStyle || 'Solid') === line.value"
-                  :title="t(line.labelKey)"
-                  :aria-label="t(line.labelKey)"
                   @click="setTextProperty('lineStyle', line.value)"
                 >
-                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-                    <path v-if="line.value === 'Double'" d="M3 9.5h18M3 14.5h18" class="line-icon" />
-                    <path v-else d="M3 12h18" class="line-icon" :stroke-dasharray="line.dash" />
+                  <svg viewBox="0 0 32 12" width="32" height="12" aria-hidden="true">
+                    <path v-if="line.value === 'Double'" d="M2 3.5h28M2 8.5h28" class="line-icon" />
+                    <path v-else d="M2 6h28" class="line-icon" :stroke-dasharray="line.dash" />
                   </svg>
+                  <span>{{ t(line.labelKey) }}</span>
                 </button>
               </div>
-              <div class="field-row card-gap">
-                <label class="field grow">
+              <div class="value-row">
+                <label class="field">
                   <span class="field-label">{{ t("properties.lineThickness") }}</span>
                   <span class="unit-input">
                     <input
@@ -853,7 +841,7 @@
                   <ColorSwatchPicker
                     :model-value="currentElement.lineColor || '#000000'"
                     @update:model-value="setColorProperty('lineColor', 'lineColor', $event)"
-                    class="color-control compact swatch-lg"
+                    class="swatch-fill"
                   />
                 </div>
               </div>
@@ -2910,6 +2898,9 @@ const LINE_ORIENTATIONS = [
 ] as const;
 // A line is always drawn: no "None"
 const LINE_ONLY_STYLES = LINE_STYLES.filter((line) => line.value !== "");
+// Rectangle / ellipse outline: no "None" (always drawn) and no "Double",
+// which the canvas can't show on a thin outline
+const SHAPE_STYLES = LINE_STYLES.filter((line) => ["Solid", "Dashed", "Dotted"].includes(line.value));
 
 // Chart types offered in the picker (the ones the generator writes fully);
 // an imported chart of another type keeps its own type in the list
@@ -4668,7 +4659,8 @@ function addPropertyExpression() {
 .unit-input input {
   width: 100%;
   height: 30px;
-  padding: 0 24px 0 8px;
+  padding: 0 22px 0 8px;
+  -moz-appearance: textfield;
   border: 1px solid var(--prop-border-color, #e5e7eb);
   border-radius: 6px;
   font-size: 12px;
@@ -4683,6 +4675,13 @@ function addPropertyExpression() {
   outline: none;
   border-color: var(--prop-border-focus, #1890ff);
   box-shadow: var(--prop-focus-ring);
+}
+
+/* No spinner arrows: they hide the number in narrow fields */
+.unit-input input::-webkit-outer-spin-button,
+.unit-input input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .unit-input > span {
@@ -4703,7 +4702,7 @@ function addPropertyExpression() {
 /* ---------- Borders: one row per side ---------- */
 .border-table {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) 62px 36px;
+  grid-template-columns: 46px minmax(0, 1fr) 64px 34px;
   column-gap: 6px;
   column-gap: 8px;
   align-items: center;
@@ -4815,7 +4814,7 @@ function addPropertyExpression() {
 }
 
 .border-table .color-control.compact {
-  width: 36px;
+  width: 34px;
   height: 30px;
 }
 
@@ -5207,6 +5206,84 @@ function addPropertyExpression() {
   font-weight: 600;
   text-transform: uppercase;
   color: var(--prop-text-tertiary, #9ca3af);
+}
+
+/* Line style tiles: the line drawn above its name */
+.style-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--prop-bg-tertiary, #eef0f4);
+}
+
+.style-tiles-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.style-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  height: 46px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--prop-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.style-tile span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.style-tile:hover {
+  color: var(--prop-text-primary);
+}
+
+.style-tile.active {
+  background: #fff;
+  color: var(--prop-primary-color, #1890ff);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+}
+
+.style-tile:focus-visible {
+  outline: 2px solid var(--prop-border-focus, #1890ff);
+  outline-offset: 1px;
+}
+
+/* Width / colour (/ corner radius): equal columns, labels and fields aligned */
+.value-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.value-row.has-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.swatch-fill {
+  display: block;
+  width: 100%;
+  height: 30px;
+  border: 1px solid var(--prop-border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
 }
 
 .card-gap {
