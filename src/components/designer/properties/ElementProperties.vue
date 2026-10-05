@@ -550,7 +550,7 @@
                 <div class="box-section compact">
                   <h5>{{ t("properties.outline") }}</h5>
                   <span class="field-label">{{ t("properties.lineStyle") }}</span>
-                  <div class="style-tiles" role="radiogroup" :aria-label="t('properties.lineStyle')">
+                  <div class="style-tiles style-tiles-4" role="radiogroup" :aria-label="t('properties.lineStyle')">
                     <button
                       v-for="line in SHAPE_STYLES"
                       :key="line.value"
@@ -693,14 +693,17 @@
                         :class="'corner-input-' + corner"
                       >
                         <span class="field-label">{{ t(`properties.corner.${corner}`) }}</span>
-                        <input
-                          :value="cornerRadii?.[corner] ?? 0"
-                          @change="setCornerRadius(corner, ($event.target as HTMLInputElement).value)"
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="1"
-                        />
+                        <span class="unit-input">
+                          <input
+                            :value="cornerRadii?.[corner] ?? 0"
+                            @change="setCornerRadius(corner, ($event.target as HTMLInputElement).value)"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="1"
+                          />
+                          <span>px</span>
+                        </span>
                       </label>
                       <div class="corner-preview" :style="cornerPreviewStyle"></div>
                     </div>
@@ -740,12 +743,15 @@
                       :class="'margin-input-' + side"
                     >
                       <span class="field-label">{{ t(`properties.${side}Side`) }}</span>
-                      <input
-                        :value="getMarginValue(side)"
-                        @input="handleSideMarginInput(side, $event)"
-                        type="number"
-                        min="0"
-                      />
+                      <span class="unit-input">
+                        <input
+                          :value="getMarginValue(side)"
+                          @input="handleSideMarginInput(side, $event)"
+                          type="number"
+                          min="0"
+                        />
+                        <span>px</span>
+                      </span>
                     </label>
                     <div class="margin-preview">
                       <div class="margin-preview-content" :style="marginPreviewStyle"></div>
@@ -2865,9 +2871,11 @@ const LINE_ORIENTATIONS = [
 ] as const;
 // A line is always drawn: no "None"
 const LINE_ONLY_STYLES = LINE_STYLES.filter((line) => line.value !== "");
-// Rectangle / ellipse outline: no "None" (always drawn) and no "Double",
-// which the canvas can't show on a thin outline
-const SHAPE_STYLES = LINE_STYLES.filter((line) => ["Solid", "Dashed", "Dotted"].includes(line.value));
+// Rectangle / ellipse outline: no "None" (always drawn)
+const SHAPE_STYLES = LINE_ONLY_STYLES;
+// JasperReports draws a Double pen as two lines a third of the pen width each,
+// so below 3pt it prints (and shows on the canvas) as one solid line
+const MIN_DOUBLE_LINE_WIDTH = 3;
 
 // Chart types offered in the picker (the ones the generator writes fully);
 // an imported chart of another type keeps its own type in the list
@@ -3977,6 +3985,11 @@ function setRectangleBorderStyle(value: string) {
   }
   el.pen.lineStyle = value;
   el.lineStyle = value;
+  // Thicken a thin outline so the two lines of a double border are visible
+  if (value === "Double" && getRectangleBorderWidth() < MIN_DOUBLE_LINE_WIDTH) {
+    el.pen.lineWidth = MIN_DOUBLE_LINE_WIDTH;
+    el.lineWidth = MIN_DOUBLE_LINE_WIDTH;
+  }
   emit("update-jrxml");
 }
 
@@ -4637,7 +4650,6 @@ function addPropertyExpression() {
 }
 
 .unit-input input:focus,
-.pad-input input:focus,
 .text-card select:focus {
   outline: none;
   border-color: var(--prop-border-focus, #1890ff);
@@ -4666,7 +4678,8 @@ function addPropertyExpression() {
   border-top: 2px solid currentColor;
 }
 
-.pen-swatch.is-short {
+.pen-swatch.is-short,
+.style-tile .pen-swatch {
   width: 18px;
 }
 
@@ -4679,7 +4692,7 @@ function addPropertyExpression() {
 }
 
 .pen-swatch.is-double {
-  border-top: 6px double currentColor;
+  border-top: 5px double currentColor;
 }
 
 /* ---------- Borders: one row per side ---------- */
@@ -4844,18 +4857,6 @@ function addPropertyExpression() {
 .pad-input {
   display: block;
   min-width: 0;
-}
-
-.pad-input input {
-  width: 100%;
-  height: 28px;
-  padding: 0 6px;
-  border: 1px solid var(--prop-border-color, #e5e7eb);
-  border-radius: 6px;
-  font-size: 12px;
-  text-align: center;
-  background: #fff;
-  box-sizing: border-box;
 }
 
 .corner-pad {
@@ -5206,14 +5207,14 @@ function addPropertyExpression() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
-  height: 46px;
-  padding: 0 4px;
+  height: 34px;
+  padding: 0 2px;
   border: none;
   border-radius: 6px;
   background: transparent;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 500;
   color: var(--prop-text-secondary);
   cursor: pointer;
