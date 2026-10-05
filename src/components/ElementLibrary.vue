@@ -50,96 +50,6 @@
       </div>
     </div>
 
-    <!-- Report elements section -->
-    <div class="report-elements-section">
-      <h4>{{ t("elementLibrary.reportElements") }}</h4>
-      <div class="filter-input-container">
-        <input
-          v-model="elementFilterText"
-          type="text"
-          :placeholder="t('elementLibrary.filterElements')"
-          class="filter-input"
-        />
-        <n-button
-          v-if="elementFilterText"
-          @click="elementFilterText = ''"
-          type="default"
-          quaternary
-          circle
-          size="small"
-          :title="t('elementLibrary.filterElements')"
-        >
-          <X :size="14" />
-        </n-button>
-      </div>
-      <div class="report-elements-list">
-        <div
-          v-for="(elements, bandName) in groupedReportElements"
-          :key="bandName"
-          class="band-group"
-        >
-          <div class="band-group-header">{{ bandName }}</div>
-          <div
-            v-for="element in elements"
-            :key="getElementKey(element)"
-            class="report-element-item"
-            :class="{ selected: isElementSelected(element, selectedElement) }"
-            :style="{ paddingLeft: 6 + (element.level || 0) * 12 + 'px' }"
-          >
-            <div
-              class="element-info-container"
-              @click="selectElementFromList(element, selectElement)"
-              @dblclick.stop="handleReportElementDblClick(element)"
-            >
-              <span class="element-icon">
-                <component
-                  :is="getElementIconComponent(element.element.type)"
-                  v-if="getElementIconComponent(element.element.type)"
-                />
-                <template v-else>{{ getElementIcon(element.element.type) }}</template>
-              </span>
-              <input
-                v-if="editingElementKey === getElementKey(element)"
-                :ref="setInlineEditInputRef"
-                v-model="editingValue"
-                class="report-element-inline-input"
-                @click.stop
-                @dblclick.stop
-                @input="handleInlineInput(element)"
-                @keydown.enter.prevent="finishInlineEdit(element)"
-                @keydown.esc.prevent="cancelInlineEdit(element)"
-                @blur="finishInlineEdit(element)"
-              />
-              <span
-                v-else
-                class="element-info"
-                :title="
-                  getElementDisplayInfoWithoutBand(element.element) ||
-                  t(getElementTypeName(element.element.type))
-                "
-              >
-                {{
-                  getElementDisplayInfoWithoutBand(element.element) ||
-                  t(getElementTypeName(element.element.type))
-                }}
-              </span>
-            </div>
-            <n-button
-              class="action-button delete-button"
-              @click.stop="handleDeleteElement(element)"
-              type="error"
-              quaternary
-              circle
-              size="small"
-              :title="t('properties.deleteElement')"
-            >
-              <Trash2 :size="14" />
-            </n-button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Table Data: backend sources to drag onto tables -->
     <div class="data-fields-section">
       <TableDataList :bands="bands as Band[]" />
@@ -239,18 +149,11 @@
       </div>
     </Teleport>
 
-    <!-- Confirmation dialog -->
-    <ConfirmModal
-      v-model:visible="showConfirmModal"
-      :title="t('elementLibrary.deleteConfirm')"
-      :message="t('elementLibrary.deleteElementConfirm')"
-      @confirm="handleConfirmDelete"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch, onBeforeUnmount } from "vue";
+import { ref, computed, nextTick, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
 import {
@@ -259,39 +162,24 @@ import {
   Plus,
   SquarePen,
   Trash2,
-  X,
 } from "@lucide/vue";
-import ConfirmModal from "./modals/ConfirmModal.vue";
 import TableDataList from "./designer/TableDataList.vue";
 import { ElementRegistry } from "./elements/ElementRegistry";
 import { findPageBorder, isFrameTemplateType, PAGE_BORDER_TYPE } from "../utils/framePresets";
 import {
-  isPagination,
   PAGE_NUMBER_TYPE,
   PAGINATION_POSITIONS,
   type PaginationPosition,
 } from "../utils/paginationPresets";
-import notification from "../utils/notification";
 import type {
   Band,
   DesignElement,
-  TextFieldElement,
   ReportField,
   ReportParameter,
   ReportVariable,
   ReportStyle,
 } from "../types";
-import {
-  getElementDisplayInfoWithoutBand,
-  getElementIcon,
-  getElementIconComponent,
-  getElementKey,
-  getElementTypeName,
-  isElementSelected,
-  quoteExpressionValue,
-  selectElementFromList,
-  stripExpressionQuotes,
-} from "../utils/elementUtils";
+import { getElementIcon, getElementIconComponent } from "../utils/elementUtils";
 
 const { t } = useI18n();
 
@@ -304,7 +192,6 @@ interface Props {
   reportVariables?: ReportVariable[];
   reportStyles: ReportStyle[];
   bands: Array<{ type: string; name?: string; elements: DesignElement[] }>;
-  selectedElement: any;
 }
 
 // Define component events
@@ -312,28 +199,9 @@ interface Emits {
   (e: "drag-start", event: DragEvent, element: any): void;
   (e: "element-double-click", element: any): void;
   (e: "insert-page-number", position: PaginationPosition): void;
-  (
-    e: "select-element",
-    bandIndex: number,
-    elementIndex: number,
-    isMultiSelect?: boolean,
-    parentFrameIndex?: number,
-  ): void;
   (e: "add-style"): void;
   (e: "edit-style", style: ReportStyle): void;
   (e: "delete-style", styleName: string): void;
-  (
-    e: "delete-element",
-    bandIndex: number,
-    elementIndex: number,
-    parentFrameIndex?: number,
-  ): void;
-  (
-    e: "update-element-value",
-    element: any,
-    newValue: string,
-    oldValue: string,
-  ): void;
 }
 
 // Use default values
@@ -344,13 +212,9 @@ const props = withDefaults(defineProps<Props>(), {
   reportVariables: () => [],
   reportStyles: () => [],
   bands: () => [],
-  selectedElement: null,
 });
 
 const emit = defineEmits<Emits>();
-
-// Element filter text
-const elementFilterText = ref("");
 
 // Element group expanded state
 const expandedCategories = ref<Record<string, boolean>>({
@@ -379,113 +243,6 @@ const groupedElements = computed(() => {
   }
   return categories;
 });
-
-// Computed property: report elements grouped by band
-const groupedReportElements = computed(() => {
-  const grouped: Record<string, any[]> = {};
-
-  props.bands.forEach((band, bandIndex) => {
-    if (band.elements && band.elements.length > 0) {
-      const bandName = band.name || getBandDisplayName(band.type);
-      if (!grouped[bandName]) {
-        grouped[bandName] = [];
-      }
-
-      const processElement = (
-        element: DesignElement,
-        elementIndex: number,
-        parentFrameIndex?: number,
-        level: number = 0,
-      ) => {
-        // Filter logic
-        if (
-          !elementFilterText.value ||
-          element.type
-            .toLowerCase()
-            .includes(elementFilterText.value.toLowerCase()) ||
-          (element.type === "textField" &&
-            ((element as TextFieldElement).expression || "")
-              .toLowerCase()
-              .includes(elementFilterText.value.toLowerCase()))
-        ) {
-          grouped[bandName]?.push({
-            element,
-            bandIndex,
-            elementIndex,
-            parentFrameIndex,
-            level,
-          });
-        }
-
-        // Recursively process Frame child elements
-        // Regardless of whether the parent element matches the filter, its children are checked too
-        // (alternatively you could decide to only show children when the parent matches, but a search
-        // is generally expected to find elements at any nesting level).
-        // Simplified logic here: for a Frame, keep recursing, and let processElement itself decide
-        // whether to add the element.
-        if (element.type === "frame" && (element as any).elements) {
-          (element as any).elements.forEach(
-            (childElement: DesignElement, childIndex: number) => {
-              // For child elements, parentFrameIndex should be the current Frame's elementIndex
-              // (if the Frame is a direct child of the Band).
-              // But elementIndex is relative to its parent container.
-              // The issue here: parentFrameIndex refers to the index within Band.elements.
-              // If a Frame is nested inside another Frame, parentFrameIndex needs to point to the
-              // immediate parent Frame.
-              // However, the current data structure (SelectedElementInfo) only supports a single
-              // level of parentFrameIndex (a number).
-              // Supporting multiple nesting levels would require SelectedElementInfo to hold a path
-              // or a recursive structure instead.
-              // Assuming for now that only one level of Frame nesting is supported (a limitation of
-              // the current data structure), we need to confirm the definition of SelectedElementInfo.
-              // Recall types/index.ts: parentFrameIndex?: number; // If inside a Frame, this is the
-              // Frame's index within the Band
-
-              // If this is the first-level Frame (level === 0), parentFrameIndex is undefined, and
-              // elementIndex is passed down to the child element.
-              // If this is a nested Frame (level > 0), should parentFrameIndex point to the outermost
-              // Frame, or to the immediate parent Frame?
-              // Based on the existing logic:
-              // const frame = band.elements[parentFrameIndex];
-              // currentElement = frame.elements[elementIndex];
-              // This means the current implementation only supports one level of Frame nesting.
-              // If a Frame contains another Frame, the current selectedElement structure
-              // (parentFrameIndex: number) cannot pinpoint it precisely.
-              // For now, assume only one level of nesting is supported, or only render one level of
-              // child elements.
-
-              if (level === 0) {
-                processElement(
-                  childElement,
-                  childIndex,
-                  elementIndex,
-                  level + 1,
-                );
-              } else {
-                // If we're already at a nested level, and multi-level lookup isn't supported,
-                // selection may not work correctly.
-                // For display purposes we can keep recursing, but clicking to select may have issues.
-                // For now, only one level of nested display/selection is supported.
-                processElement(childElement, childIndex, undefined, level + 1); // undefined here is a placeholder since a multi-level parent can't be passed correctly
-              }
-            },
-          );
-        }
-      };
-
-      band.elements.forEach((element, elementIndex) => {
-        processElement(element, elementIndex, undefined, 0);
-      });
-    }
-  });
-
-  return grouped;
-});
-
-// Get the band's display name
-function getBandDisplayName(bandType: string): string {
-  return t(`bandNames.${bandType}`);
-}
 
 // List of allowed field types
 const allowedFieldTypes = computed(() => [
@@ -616,22 +373,6 @@ function choosePageNumberPosition(position: PaginationPosition): void {
 
 onBeforeUnmount(closePageNumberMenu);
 
-// Select an element
-function selectElement(
-  bandIndex: number,
-  elementIndex: number,
-  isMultiSelect?: boolean,
-  parentFrameIndex?: number,
-): void {
-  emit(
-    "select-element",
-    bandIndex,
-    elementIndex,
-    isMultiSelect,
-    parentFrameIndex,
-  );
-}
-
 // Handle adding a style
 function handleAddStyle(): void {
   emit("add-style");
@@ -647,180 +388,6 @@ function handleDeleteStyle(styleName: string): void {
   emit("delete-style", styleName);
 }
 
-// The element pending deletion
-const pendingDeleteElement = ref<any>(null);
-const showConfirmModal = ref(false);
-
-// Handle deleting an element
-function handleDeleteElement(element: any): void {
-  // First select the element to be deleted
-  selectElementFromList(element, selectElement);
-  pendingDeleteElement.value = element;
-  showConfirmModal.value = true;
-}
-
-// Confirm deletion
-function handleConfirmDelete(): void {
-  if (pendingDeleteElement.value) {
-    const element = pendingDeleteElement.value;
-    emit(
-      "delete-element",
-      element.bandIndex,
-      element.elementIndex,
-      element.parentFrameIndex,
-    );
-    pendingDeleteElement.value = null;
-  }
-}
-
-// ==================== Report Element Inline Editing ====================
-const editingElementKey = ref<string | null>(null);
-const editingValue = ref<string>("");
-const originalValue = ref<string>("");
-const inlineEditInputRef = ref<HTMLInputElement | null>(null);
-
-const setInlineEditInputRef = (el: any) => {
-  if (el) {
-    inlineEditInputRef.value = el as HTMLInputElement;
-  }
-};
-
-// Check whether an element type supports text/expression inline editing.
-// Image elements are read-only: their name is taken from the uploaded image file.
-function isElementTextEditable(element: DesignElement): boolean {
-  if (!element) return false;
-  return ["textField", "barcode"].includes(element.type);
-}
-
-// Get the editable value from an element
-function getElementEditableValue(element: DesignElement): string {
-  if (!element) return "";
-  if (element.type === "textField") {
-    const tf = element as TextFieldElement;
-    if (
-      tf.expression !== undefined &&
-      tf.expression !== null &&
-      tf.expression !== ""
-    ) {
-      // Show static text without the quotes added automatically by the designer;
-      // the user can type quotes manually when a literal string is needed.
-      return stripExpressionQuotes(tf.expression);
-    }
-    if ((tf as any).fieldName) {
-      return `$F{${(tf as any).fieldName}}`;
-    }
-    return "";
-  }
-  if (element.type === "barcode") {
-    return (element as any).codeExpression || "";
-  }
-  return (element as any).expression || "";
-}
-
-// Set the editable value on an element
-function setElementEditableValue(element: DesignElement, val: string): void {
-  if (!element) return;
-  if (element.type === "textField") {
-    const tf = element as TextFieldElement;
-    // Keep the stored JRXML expression valid: plain text is saved as a quoted literal,
-    // while `$F{...}` expressions, concatenations and values the user quoted manually
-    // (e.g. `"Hello"`) are stored exactly as typed.
-    const expression = quoteExpressionValue(val);
-    tf.expression = expression;
-    // If the expression matches $F{field}, also sync fieldName
-    const fieldMatch = expression.trim().match(/^\$F\{([^}]+)\}$/);
-    if (fieldMatch && fieldMatch[1]) {
-      (tf as any).fieldName = fieldMatch[1].trim();
-    }
-  } else if (element.type === "barcode") {
-    (element as any).codeExpression = val;
-  } else if ((element as any).text !== undefined) {
-    (element as any).text = val;
-  } else if ((element as any).expression !== undefined) {
-    (element as any).expression = val;
-  }
-}
-
-// Handle double-clicking a report element item
-function handleReportElementDblClick(item: any): void {
-  // Always select the element first so editor/properties sync selection
-  selectElementFromList(item, selectElement);
-
-  // Page numbers are generated by the report (format and range: property panel)
-  if (isPagination(item.element)) {
-    notification.warning(t("pagination.cannotEdit"));
-    return;
-  }
-  if (!isElementTextEditable(item.element)) {
-    return;
-  }
-
-  const key = getElementKey(item);
-  editingElementKey.value = key;
-  const val = getElementEditableValue(item.element);
-  editingValue.value = val;
-  originalValue.value = val;
-
-  nextTick(() => {
-    if (inlineEditInputRef.value) {
-      inlineEditInputRef.value.focus();
-      inlineEditInputRef.value.select();
-    }
-  });
-}
-
-// Live update while typing so canvas and properties panel update in real-time
-function handleInlineInput(item: any): void {
-  setElementEditableValue(item.element, editingValue.value);
-}
-
-// Finish editing on Enter or blur
-function finishInlineEdit(item: any): void {
-  if (
-    !editingElementKey.value ||
-    editingElementKey.value !== getElementKey(item)
-  ) {
-    return;
-  }
-  const newValue = editingValue.value;
-  const oldValue = originalValue.value;
-  setElementEditableValue(item.element, newValue);
-  editingElementKey.value = null;
-
-  if (newValue !== oldValue) {
-    emit("update-element-value", item, newValue, oldValue);
-  }
-}
-
-// Cancel editing on Escape
-function cancelInlineEdit(item: any): void {
-  if (
-    !editingElementKey.value ||
-    editingElementKey.value !== getElementKey(item)
-  ) {
-    return;
-  }
-  setElementEditableValue(item.element, originalValue.value);
-  editingValue.value = originalValue.value;
-  editingElementKey.value = null;
-}
-
-// Watch selectedElement: if selection moves to another element, close edit mode
-watch(
-  () => props.selectedElement,
-  (newVal) => {
-    if (editingElementKey.value && newVal) {
-      const currentItemKey = editingElementKey.value;
-      const expectedKeySuffix =
-        newVal.parentFrameIndex !== undefined
-          ? `-${newVal.bandIndex}-${newVal.parentFrameIndex}-${newVal.elementIndex}`
-          : `-${newVal.bandIndex}-${newVal.elementIndex}`;
-      if (!currentItemKey.endsWith(expectedKeySuffix)) {
-        editingElementKey.value = null;
-      }
-    }
-  },
-);
 </script>
 
 <style scoped>
@@ -842,7 +409,6 @@ watch(
 }
 
 .element-list-container h3,
-.report-elements-section h4,
 .data-parameters-section h4,
 .data-fields-section h4 {
   margin-top: 0;
@@ -1075,134 +641,12 @@ watch(
   word-break: break-word;
 }
 
-.report-elements-section,
 .data-fields-section {
   background-color: #f9f9f9;
   border: 1px solid #ddd;
   border-radius: 4px;
   padding: 8px;
   margin-bottom: 10px;
-}
-
-.filter-input-container {
-  position: relative;
-  margin-bottom: 8px;
-}
-
-.filter-input {
-  width: 100%;
-  padding: 6px 30px 6px 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 12px;
-  box-sizing: border-box;
-}
-
-.report-elements-list {
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.band-group {
-  margin-bottom: 8px;
-}
-
-.band-group-header {
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 4px;
-  padding-bottom: 3px;
-  border-bottom: 1px solid #e0e0e0;
-  color: #666;
-}
-
-.report-element-item {
-  display: flex;
-  align-items: center;
-  padding: 6px;
-  margin-bottom: 4px;
-  background-color: #f0f0f0;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  font-size: 12px;
-  transition: all 0.2s ease;
-}
-
-.report-element-item:hover {
-  background-color: #e0e0e0;
-}
-
-.report-element-item.selected {
-  background-color: #d0e6ff;
-  border-color: #4a90e2;
-}
-
-.element-info-container {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  min-width: 0;
-}
-
-.report-element-inline-input {
-  flex: 1;
-  min-width: 0;
-  height: 22px;
-  padding: 1px 6px;
-  font-size: 12px;
-  border: 1px solid #1890ff;
-  border-radius: 3px;
-  background-color: #ffffff;
-  color: #333333;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-  box-sizing: border-box;
-}
-
-.report-element-item .element-icon {
-  font-size: 16px;
-  margin-right: 8px;
-  margin-bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.report-element-item .element-icon :deep(svg) {
-  width: 16px;
-  height: 16px;
-  color: currentColor;
-}
-
-.report-element-item .element-info {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.report-element-item .action-button {
-  width: 20px;
-  height: 20px;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  transition: all 0.2s;
-  margin-left: 4px;
-}
-
-.report-element-item .delete-button {
-  background-color: #f0f0f0;
-  color: #e74c3c;
-}
-
-.report-element-item .delete-button:hover {
-  background-color: #ffe6e6;
 }
 
 .fields-mini-view {
@@ -1300,24 +744,20 @@ watch(
 }
 
 /* Scrollbar style */
-.report-elements-list::-webkit-scrollbar,
 .fields-mini-view::-webkit-scrollbar {
   width: 6px;
 }
 
-.report-elements-list::-webkit-scrollbar-track,
 .fields-mini-view::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 3px;
 }
 
-.report-elements-list::-webkit-scrollbar-thumb,
 .fields-mini-view::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 3px;
 }
 
-.report-elements-list::-webkit-scrollbar-thumb:hover,
 .fields-mini-view::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }

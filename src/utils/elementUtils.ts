@@ -7,19 +7,6 @@ import {
   createElement,
 } from "@/components/elements/ElementRegistry";
 
-// Get the unique key for an element
-export function getElementKey(element: {
-  element: DesignElement;
-  bandIndex: number;
-  elementIndex: number;
-  parentFrameIndex?: number;
-}): string {
-  if (element.parentFrameIndex !== undefined) {
-    return `${element.element.type}-${element.bandIndex}-${element.parentFrameIndex}-${element.elementIndex}`;
-  }
-  return `${element.element.type}-${element.bandIndex}-${element.elementIndex}`;
-}
-
 // Get the element type name
 export function getElementTypeName(type: string): string {
   const config = getElementConfig(type);
@@ -508,91 +495,6 @@ export function measureTextElementWidth(
   // Fallback for environments without CSS layout engine (e.g. JSDOM in tests)
   const longestLine = Math.max(...(displayText || ' ').split('\n').map((l) => l.length), 1);
   return Math.ceil(longestLine * (element.fontSize || reportFont.size || 10) * 0.6 + insets.horizontal);
-}
-
-// Get element display info (excluding Band)
-export function getElementDisplayInfoWithoutBand(
-  element: DesignElement,
-): string {
-  let info = "";
-
-  // Add type-specific info based on the element type
-  if (element.type === "textField") {
-    if ((element as any).expression) {
-      // Static text is stored as a quoted literal (e.g. `"Hello"`); show it without
-      // the quotes so the element list matches what the user actually typed.
-      const cleaned = stripExpressionQuotes((element as any).expression);
-      info = `${cleaned.substring(0, 15)}${cleaned.length > 15 ? "..." : ""}`;
-    } else if ((element as any).fieldName) {
-      info = `$F{${(element as any).fieldName}}`;
-    }
-  } else if (element.type === "image") {
-    const imageName = getImageName(element);
-    if (imageName) {
-      info = imageName;
-    } else {
-      const label = getImageExpressionLabel(element);
-      info =
-        label === EMBEDDED_IMAGE_LABEL
-          ? label
-          : `${label.substring(0, 15)}${label.length > 15 ? "..." : ""}`;
-    }
-  } else if (element.type === "barcode" && (element as any).codeExpression) {
-    info = `${(element as any).codeExpression.substring(0, 15)}${(element as any).codeExpression.length > 15 ? "..." : ""}`;
-  }
-
-  return info;
-}
-
-// Check whether an element is selected
-export function isElementSelected(
-  element: {
-    element: DesignElement;
-    bandIndex: number;
-    elementIndex: number;
-    parentFrameIndex?: number;
-  },
-  selectedElement:
-    | { bandIndex: number; elementIndex: number; parentFrameIndex?: number }
-    | null
-    | undefined,
-): boolean {
-  if (!selectedElement) return false;
-
-  // If both elements have a UUID, prefer comparing by UUID
-  if (element.element.uuid && (selectedElement as any).uuid) {
-    return element.element.uuid === (selectedElement as any).uuid;
-  }
-
-  // Otherwise fall back to position-based comparison
-  return (
-    selectedElement.bandIndex === element.bandIndex &&
-    selectedElement.elementIndex === element.elementIndex &&
-    selectedElement.parentFrameIndex === element.parentFrameIndex
-  );
-}
-
-// Select an element from the list
-export function selectElementFromList(
-  element: {
-    element: DesignElement;
-    bandIndex: number;
-    elementIndex: number;
-    parentFrameIndex?: number;
-  },
-  selectElement: (
-    bandIndex: number,
-    elementIndex: number,
-    isMultiSelect?: boolean,
-    parentFrameIndex?: number,
-  ) => void,
-): void {
-  selectElement(
-    element.bandIndex,
-    element.elementIndex,
-    false,
-    element.parentFrameIndex,
-  );
 }
 
 // Recursively find elements

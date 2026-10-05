@@ -43,7 +43,7 @@ The most important invariant: **edit in designer → export JRXML → re-import 
 The central data structures live in `src/types/index.ts`:
 
 - `ReportProperties` — page size, margins, default font
-- `Band` — layout region (title, detail, pageHeader, etc.) containing elements
+- `Band` — layout region (detail, pageHeader, columnHeader, background…) containing elements; no title or summary
 - `DesignElement` — union of `TextFieldElement | ImageElement | LineElement | RectangleElement | EllipseElement | FrameElement | TableElement | ChartElement | BarcodeElement` (the element library offers exactly these, plus the frame templates, Page Border and Page Number)
 - `Field`, `ReportParameter`, `ReportVariable` — data model definitions
 - `ReportStyle`, `ConditionalStyle` — style system
@@ -77,6 +77,8 @@ A table shows rows of a backend **source** (Procurement, Products…). Users dra
 
 ## Project Structure
 
+Full map: `docs/ARCHITECTURE.md`.
+
 ```
 jasperreport6Fork/           # OFFICIAL JasperReports Library source — REFERENCE ONLY, DO NOT MODIFY
 ├── ...                      # (JasperStudio Library fork, not part of this project)
@@ -86,12 +88,15 @@ src/
 │   ├── PDFDesigner.vue          # Main orchestrator component
 │   ├── designer/                 # Canvas sub-components (elements, bands)
 │   ├── modals/                   # PdfPreviewModal, PreviewServerSettingsModal, etc.
-│   └── BottomPanel.vue           # Bottom toolbar with preview button
+│   ├── panels/BottomPanel.vue    # Page Settings + JRXML Content (validate, preview, download)
+│   ├── ai/                       # AI Assistant chat panel
+│   └── elements/                 # Element components + ElementRegistry.ts
 ├── composables/                  # Vue composables (useLivePreview, etc.)
 ├── config/
 │   └── apiConfig.ts             # API endpoint configuration
 ├── types/
-│   └── index.ts                 # All TypeScript interfaces
+│   ├── index.ts                 # All TypeScript interfaces
+│   └── dataSource.ts            # Table data types
 ├── utils/
 │   ├── jrxml/
 │   │   ├── parse.ts             # JRXML → JSON parser
@@ -116,7 +121,7 @@ npm run build        # Production build (vue-tsc + vite)
 
 The repo has no test framework and no test files, on purpose. **Never add test files, test folders, test config or test packages** (Vitest, Jest, jsdom, @vue/test-utils…).
 
-**Keep the JRXML validation tools**: Validate XSD / Auto Fix / Preview PDF in the app, `tools/`, `validator/`, `test-attribute-validation/`, and the scripts and sample reports in `tests/` (`jrxml-compatibility-test.ts`, `test_autofix.spec.ts` + its `.jrxml` files, `preview-server-test.html`). They are standalone checkers, not a test framework. Never delete them as "test files".
+**Keep the JRXML validation tools**: Validate XSD / Auto Fix / Preview PDF in the app, `tools/`, `validator/`, `test-attribute-validation/`, and the scripts and sample reports in `tests/` (`jrxml-compatibility-test.ts`, `test_autofix.spec.ts` + its `.jrxml` files, `preview-server-test.html`). They are standalone checkers, not a test framework. Never delete them as "test files". How to run them: `docs/VALIDATION.md`. JRXML element order and attributes: `docs/JRXML_REFERENCE.md`.
 
 To check a change, verify it with a throwaway script in the session scratchpad (outside the repo) and delete it once done. Run it with plain Node/`tsx`, or for the JasperReports engine check use the compile-and-fill harness with the jars in `~/.m2`. If a quick check really must sit inside `src/` (for the `@/` imports), delete it in the same session and make sure `git status` shows nothing left behind. Then confirm in the app itself.
 

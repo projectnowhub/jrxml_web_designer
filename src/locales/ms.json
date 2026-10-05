@@ -50,8 +50,6 @@
     "basicElements": "Elemen Asas",
     "frameElements": "Preset Elemen",
     "compositeElements": "Elemen Komposit",
-    "reportElements": "Elemen Laporan",
-    "filterElements": "Tapis elemen...",
     "reportParameters": "Parameter Laporan",
     "dataFields": "Medan Data",
     "addDataField": "Tambah Medan Data",
@@ -108,8 +106,6 @@
     "deleteStyle": "Padam Gaya",
     "noReportStyles": "Tiada gaya",
     "clickToAddStyle": "Klik '+' di atas untuk menambah gaya",
-    "deleteConfirm": "Pengesahan Padam",
-    "deleteElementConfirm": "Adakah anda pasti mahu memadam elemen ini?",
     "fieldNameRequired": "Nama medan diperlukan",
     "duplicateFieldName": "Nama medan sudah wujud, sila gunakan nama lain"
   },
@@ -1009,20 +1005,6 @@
     "sameSize": "Saiz sama",
     "selectedCount": "{count} elemen dipilih"
   },
-  "columnTree": {
-    "collapse": "Kuncupkan",
-    "expand": "Kembangkan",
-    "name": "Nama",
-    "autoWidth": "Lebar: {width}px (dikira secara automatik)",
-    "columnWidth": "Lebar lajur (px)",
-    "moveUp": "Alih ke atas",
-    "moveDown": "Alih ke bawah",
-    "addColumnInside": "Tambah lajur dalam kumpulan",
-    "addColumnAfter": "Tambah lajur selepas",
-    "addGroupAfter": "Tambah kumpulan selepas",
-    "ungroup": "Nyahkumpulkan",
-    "emptyGroupHint": "Klik ⊕ untuk menambah lajur dalam kumpulan"
-  },
   "resize": {
     "topLeft": "Ubah saiz atas-kiri",
     "topRight": "Ubah saiz atas-kanan",
@@ -1232,20 +1214,6 @@
       "violet": "Ungu lembayung"
     },
     "remove": "Buang"
-  },
-  "columnSelection": {
-    "title": "Pilih lajur untuk dikumpulkan",
-    "region": "Pilih kawasan untuk dikumpulkan:",
-    "text": "Teks lajur gabungan:",
-    "textPlaceholder": "Masukkan teks untuk lajur gabungan",
-    "columns": "Pilih lajur untuk dikumpulkan (hanya lajur bersebelahan boleh dipilih):",
-    "itemCount": "{count} item",
-    "adjacentOnly": "Hanya lajur atau kumpulan bersebelahan boleh dipilih",
-    "minTwo": "Pilih sekurang-kurangnya dua item untuk dikumpulkan",
-    "selectedCount": "{count} lajur dipilih"
-  },
-  "tableElement": {
-    "columnWidth": "Lebar: {width}px"
   },
   "dataTypes": {
     "text": "Teks",

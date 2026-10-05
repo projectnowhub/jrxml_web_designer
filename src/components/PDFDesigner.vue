@@ -214,11 +214,9 @@
           :report-variables="reportVariables"
           :report-styles="reportStyles"
           :bands="bands"
-          :selected-element="selectedElement"
           @drag-start="handleDragStart"
           @element-double-click="handleElementDoubleClick"
           @insert-page-number="addPageNumber"
-          @select-element="selectElement"
           @add-field="handleAddField"
           @edit-field="handleEditField"
           @delete-field="handleDeleteField"
@@ -231,8 +229,6 @@
           @add-style="handleAddStyle"
           @edit-style="handleEditStyle"
           @delete-style="handleDeleteStyle"
-          @delete-element="deleteElement"
-          @update-element-value="handleUpdateElementValue"
         >
           <template #header-actions>
             <PanelToggleButton side="left" :collapsed="false" @toggle="toggleCollapse" />
@@ -1752,35 +1748,6 @@ const currentElement = computed(() => {
   }
   return null;
 });
-
-// Get all report elements
-
-// Report elements grouped by band - temporarily commented out since it's unused
-/*
-const groupedReportElements = computed(() => {
-  const groups: Record<string, Array<{ element: DesignElement, bandIndex: number, elementIndex: number }>> = {};
-
-  if (!filteredReportElements.value || !bands.value || !Array.isArray(bands.value)) {
-    return groups;
-  }
-
-  filteredReportElements.value.forEach(item => {
-    if (!bands.value || item.bandIndex >= bands.value.length) return;
-    const band = bands.value[item.bandIndex];
-    if (!band) return;
-    const bandType = band.type;
-    const bandName = getBandDisplayName(bandType);
-
-    if (!groups[bandName]) {
-      groups[bandName] = [];
-    }
-
-    groups[bandName].push(item);
-  });
-
-  return groups;
-});
-*/
 
 // Ruler marks: numbered from the margins, so they read the same as element X/Y
 const horizontalRulerMarks = computed(() =>
@@ -6253,15 +6220,6 @@ const showVariableModal = ref(false);
 const editingVariable = ref<ReportVariable | undefined>(undefined);
 
 // Handle updating element value from report elements list
-const handleUpdateElementValue = (
-  _elementItem: any,
-  _newValue: string,
-  _oldValue: string,
-): void => {
-  saveStateToHistory();
-  updateJRXML();
-  saveToLocalStorageWrapper();
-};
 const isEditingParameter = ref(false);
 
 // Handle adding a field

@@ -50,8 +50,6 @@
     "basicElements": "Basic Elements",
     "frameElements": "Element Presets",
     "compositeElements": "Composite Elements",
-    "reportElements": "Report Elements",
-    "filterElements": "Filter elements...",
     "reportParameters": "Report Parameters",
     "dataFields": "Data Fields",
     "addDataField": "Add Data Field",
@@ -108,8 +106,6 @@
     "deleteStyle": "Delete Style",
     "noReportStyles": "No styles",
     "clickToAddStyle": "Click '+' above to add styles",
-    "deleteConfirm": "Delete Confirmation",
-    "deleteElementConfirm": "Are you sure you want to delete this element?",
     "fieldNameRequired": "Field name is required",
     "duplicateFieldName": "Field name already exists, please use another name"
   },
@@ -1009,20 +1005,6 @@
     "sameSize": "Same size",
     "selectedCount": "{count} element(s) selected"
   },
-  "columnTree": {
-    "collapse": "Collapse",
-    "expand": "Expand",
-    "name": "Name",
-    "autoWidth": "Width: {width}px (auto-calculated)",
-    "columnWidth": "Column width (px)",
-    "moveUp": "Move up",
-    "moveDown": "Move down",
-    "addColumnInside": "Add column inside group",
-    "addColumnAfter": "Add column after",
-    "addGroupAfter": "Add group after",
-    "ungroup": "Ungroup",
-    "emptyGroupHint": "Click ⊕ to add a column inside the group"
-  },
   "resize": {
     "topLeft": "Resize top-left",
     "topRight": "Resize top-right",
@@ -1232,20 +1214,6 @@
       "violet": "Violet"
     },
     "remove": "Remove"
-  },
-  "columnSelection": {
-    "title": "Select the columns to group",
-    "region": "Select the region to group:",
-    "text": "Combined column text:",
-    "textPlaceholder": "Enter the text for the combined column",
-    "columns": "Select the columns to group (only adjacent columns can be selected):",
-    "itemCount": "{count} items",
-    "adjacentOnly": "Only adjacent columns or groups can be selected",
-    "minTwo": "Select at least two items to group",
-    "selectedCount": "{count} column(s) selected"
-  },
-  "tableElement": {
-    "columnWidth": "Width: {width}px"
   },
   "dataTypes": {
     "text": "Text",

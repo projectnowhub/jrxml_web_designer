@@ -57,8 +57,6 @@ export const AI_CONFIG: AIConfig = {
   ).trim(),
   API_KEY: (
     import.meta.env.VITE_AI_ACCESS_TOKEN ||
-    import.meta.env.VITE_AI_API_KEY ||
-    import.meta.env.ANTHROPIC_API_KEY ||
     DEFAULT_AI_CONFIG.API_KEY
   ).trim(),
   MODEL_NAME: (

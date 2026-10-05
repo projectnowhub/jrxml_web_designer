@@ -1,192 +1,75 @@
-# JRXML Web Designer
+# CDP Report Studio (JRXML Web Designer)
 
-This is a JasperReport template designer based on Vue 3, running entirely in the browser without any software installation. After design completion, you can directly download or copy the JRXML file content, ready to use anytime, anywhere.
+A browser-based visual designer for JasperReports templates (JRXML), part of ProjectNow CDP. Users sign in with their tenant, design a report on a drag-and-drop canvas, fill tables from backend data without writing expressions, preview the PDF, and download the JRXML. A desktop build (Tauri) is also available.
 
-## 🎯 Project Positioning
+## Features
 
-Due to export control restrictions on the official JasperReport Studio, this project aims to provide a lightweight, easy-to-use alternative that meets basic JRXML design needs.
+### Workspace
+- Sign-in with your tenant URL (OAuth 2.0 + PKCE), also from the desktop app
+- Home page with recent templates and "Create a new template"; My Templates, Activity and My Profile pages (being built)
+- English and Malay (EN / BM switch on the login page, home header and editor header)
 
-## ✨ Core Features
+### Designer
+- **Pages**: multiple pages per report ("Add page after"), each a Detail section; Page Header, Column Header, Column Footer and Page Footer bands; a Background band for the page border. No Title or Summary sections
+- **Element library**
+  - Basic: Text, Image, Line, Rectangle, Ellipse, Box, Table, Chart, Barcode
+  - Composite: Page Border, Page Number (simple, "Page X", "Page X of Y"…, with page ranges)
+  - Element presets: Number Box, Alert Box, Section Box, Photo Box
+- **Data tables**: drag a source (e.g. Procurement, Products) from "Table Data" onto a table, then pick columns, rename headers, filter, sort, limit rows, add totals and choose a theme (Corporate Blue, Minimal, Emerald). Several independent tables per report; rows are fetched from the backend each time
+- **Styling**: fonts, colours, borders per side (Solid, Dashed, Dotted, Double), rounded corners per corner, padding, named styles in Style Management
+- **Text**: inline rich-text editing with a formatting toolbar, fit-to-text
+- **Images**: upload, crop, rounded corners
+- **Layout**: grid, snap to grid and to alignment guides, rulers, zoom, multi-select with align and distribute, copy/paste, undo/redo (`Ctrl+Z` / `Ctrl+Y`)
+- **AI Assistant**: a chat panel that edits the design through tools (create, move, resize, align, style elements, add fields…)
+- **Auto-save** in the browser
 
-### Design Features
-- 📋 Support for multiple report bands: Title, Page Header, Column Header, Detail, Column Footer, Page Footer, Summary
-- 🎨 Rich element library: Static Text, Text Field, Rectangle, Ellipse, Line, Image, Frame, Break
-- 📐 Precise grid alignment and snap-to functionality
-- 🔄 Complete undo/redo mechanism
-- 🔍 Canvas zoom support (25% - 400%)
-- 🎯 Precise element positioning and resizing
-- 📏 Real-time element property editing
-- 🔧 Support for element copy, paste, delete
-- ⚡ Drag-and-drop element addition and layout
+### JRXML and preview
+- Live JRXML in the bottom panel: edit, Apply, Format, Copy, Download
+- **Validate XSD** against the JasperReports 6.21.5 schema, with **Auto Fix**
+- **Preview PDF** on the report server, with each table's rows; the preview window shows the tables read-only and links back to the designer
+- Import JRXML from JasperReports / Jaspersoft Studio (unsupported parts such as subreports and crosstabs are dropped)
 
-### Element Property Support
-- 📄 Static Text: Content, font, color, alignment
-- 🔤 Text Field: Data source field binding, expression support
-- 🖼️ Image: URL or Base64 support
-- 📐 Graphic elements: Border, fill, rounded corners
-- 🔗 Frame: Container support, can nest other elements
+## Getting started
 
-### File Management
-- 💾 Local storage of design files
-- 📁 Support for multi-file management
-- 📤 Export JRXML files
-- 📥 Import JRXML files
-- 🔄 Support for design file version management
-
-### Preview and Validation
-- 🖨️ PDF preview functionality (requires preview server configuration)
-- 🔍 Real-time JRXML syntax validation
-
-### Internationalization
-- 🌐 English (default) and Malay, switchable from the login page, the home header and the editor header (EN / BM); the choice is remembered in the browser
-
-## 📦 Supported Element Types
-
-| Element Type | Description | Main Properties |
-|-------------|-------------|----------------|
-| **Static Text** | Fixed content text | Text content, font, size, color, alignment |
-| **Text Field** | Dynamic data binding | Data source field, expression, font style, formatting |
-| **Rectangle** | Rectangle shape | Width, height, border, fill, rounded corners |
-| **Ellipse** | Ellipse shape | Width, height, border, fill |
-| **Line** | Straight line element | Start point, end point, line style, color |
-| **Image** | Image element | Image URL, size, scaling mode |
-| **Frame** | Container element | Width, height, border, can nest other elements |
-| **Break** | Force page break | Break position |
-
-## 🛠️ Technical Features
-
-- 📱 Developed with Vue 3 + TypeScript
-- 🎨 Built with Vite, supporting hot update
-- 📦 Component-based design, easy to extend
-- 📝 Compliant with JasperReport XSD specifications
-- 🔒 Runs entirely in the browser, secure data control
-- 🚀 Lightweight, fast loading speed
-
-## 🚀 Quick Start
-
-### Online Experience
-Visit [Online Demo](https://fengyunhe.github.io/jrxml_web_designer/) to experience the designer immediately.
-
-### Local Development
-
-1. Clone the repository
-```bash
-git clone https://github.com/fengyunhe/jrxml_web_designer.git
-cd jrxml_web_designer
-```
-
-2. Install dependencies
 ```bash
 pnpm install
+cp .env.example .env     # then fill in the values (see below)
+pnpm dev                 # http://localhost:1420
 ```
 
-3. Start development server
-```bash
-pnpm run dev
-```
+| Command | Purpose |
+|---------|---------|
+| `pnpm dev` | Dev server |
+| `pnpm build` | Type check (`vue-tsc`) + production build |
+| `pnpm preview` | Serve the production build |
+| `pnpm tauri:dev` / `pnpm tauri:build` | Desktop app |
+| `pnpm release` | Bump the version, build, commit |
 
-4. Open browser and visit
-```
-http://localhost:1420
-```
+### Environment variables
 
-### Build Production Version
-```bash
-pnpm run build
-```
+| Variable | Purpose |
+|----------|---------|
+| `VITE_OAUTH_BASE_URL`, `VITE_OAUTH_CLIENT_ID`, `VITE_OAUTH_AUTH_URL`, `VITE_OAUTH_TOKEN_URL`, `VITE_OAUTH_USER_URL`, `VITE_OAUTH_LOGOUT_URI` | Sign-in (OAuth). The base URL also serves image uploads |
+| `VITE_PDF_PREVIEW_API` | Report server used by Preview PDF |
+| `VITE_DATA_SOURCE_API` | Backend for table data. Empty: built-in dummy data |
+| `VITE_AI_API_ENDPOINT`, `VITE_AI_MODEL_NAME`, `VITE_AI_MAX_TOKENS`, `VITE_AI_TEMPERATURE` | AI Assistant (any OpenAI-compatible API) |
 
-## 📖 User Guide
+`VITE_` values are compiled into the JavaScript sent to browsers, so never put a secret key in them. The AI key should move behind a backend proxy.
 
-### 1. Create a New Report
-- Click the "New File" button on the left
-- Enter report name
-- Select report orientation (landscape/portrait)
-- Set page size
+## Documentation
 
-### 2. Add Elements
-- Drag elements from the left element library to the canvas
-- Adjust element position and size
-- Edit element properties in the right property panel
+| Document | Contents |
+|----------|----------|
+| [CLAUDE.md](CLAUDE.md) | Rules and conventions for working on the code (boxes, tables, styles, undo, icons, i18n, JRXML validity) |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the app is built: folders, data flow, components, services |
+| [docs/JRXML_REFERENCE.md](docs/JRXML_REFERENCE.md) | JRXML elements, attributes and order |
+| [docs/VALIDATION.md](docs/VALIDATION.md) | How to check JRXML, validation tools, schema findings |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Docker image, Kubernetes, GitHub deploy workflow |
 
-### 3. Configure Data Source Fields
-- Click the "Field Management" button at the top
-- Add or edit data source fields
-- Bind fields in text field properties
+## Tech stack
 
-### 4. Preview Report
-- Click the "PDF Preview" button at the top
-- Configure preview server address (if needed)
-- View the generated PDF effect
+Vue 3 + TypeScript + Vite, Naive UI, vue-i18n, CodeMirror, Lucide icons, Tauri 2. JRXML targets JasperReports 6.21.5.
 
-### 5. Export JRXML
-- After completing the design, click the "Export" button
-- Choose save location to get the JRXML file
+## License
 
-## 🔧 Development Guide
-
-### Project Structure
-```
-src/
-├── components/          # Vue components
-│   ├── common/         # Common components
-│   ├── designer/       # Designer core components
-│   ├── elements/       # Report element components
-│   ├── modals/         # Modal components
-│   └── panels/         # Panel components
-├── composables/        # Composables
-├── config/             # Configuration files
-├── constants/          # Constant definitions
-├── locales/            # Internationalization resources
-├── types/              # TypeScript type definitions
-└── utils/              # Utility functions
-    └── jrxml/          # JRXML generation and parsing
-```
-
-### Add New Element Type
-1. Create a new element component in `src/components/elements/` directory
-2. Inherit `BaseElement.vue` or implement the same interface
-3. Register the new element in `ElementRegistry.ts`
-4. Add the new element to the element library
-
-### Code Specifications
-- Write in TypeScript
-- Follow Vue 3 Composition API style
-- Component-based design, maintain single responsibility
-
-## 📝 Changelog
-
-This project follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) specification for maintaining changelogs.
-
-### View Changelog History
-Please check the [CHANGELOG.md](CHANGELOG.md) file for detailed version changelog history.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-- The copyright of generated JRXML files belongs to you, and you can freely use, modify, distribute, and commercially use them.
-- JasperReport is copyrighted by [Jaspersoft Corporation](https://www.jaspersoft.com/).
-
-## 🤝 Contribution Guide
-
-Contributions are welcome! You can:
-- Submit Issues to report bugs or suggest new features
-- Submit Pull Requests to fix issues or add features
-- Improve documentation
-- Share usage experience
-
-## 🙏 Acknowledgments
-
-Thanks to all developers and users who have contributed to the project!
-
-If this tool is helpful for your work, please feel free to like, share, and contribute. Thank you for your support.
-
-## 📞 Contact Information
-
-For questions or suggestions, please contact us through:
-- GitHub Issues: [https://github.com/fengyunhe/jrxml_web_designer/issues](https://github.com/fengyunhe/jrxml_web_designer/issues)
-- Project Address: [https://github.com/fengyunhe/jrxml_web_designer](https://github.com/fengyunhe/jrxml_web_designer)
-
----
-
-**JRXML Web Designer** - Making JasperReport Design Easier! 🎉
+MIT (see [LICENSE](LICENSE)). Based on the open-source [JRXML Web Designer](https://github.com/fengyunhe/jrxml_web_designer). JasperReports is a trademark of Jaspersoft Corporation.

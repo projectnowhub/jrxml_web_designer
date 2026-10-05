@@ -63,7 +63,7 @@ is a floating human alias. `production` waits for the Environment reviewer.
 ## Required GitHub configuration
 
 One cluster and one preview server serve all three environments, so everything lives at
-**repo level** — GitHub resolves repo-level secrets inside environment jobs
+**repo level** (sign-in uses per-environment secrets, see below) — GitHub resolves repo-level secrets inside environment jobs
 automatically, no per-environment copies needed.
 
 ### Repository secrets  (Settings → Secrets and variables → Actions → Secrets)
@@ -75,10 +75,27 @@ Reuses the same names as the `projectnowcdp` reference repo:
 | `DOCKER_REGISTRY_USERNAME` | registry login                                   |
 | `DOCKER_REGISTRY_PASSWORD` | registry password / token                        |
 | `KUBE_CONFIG`              | the Rancher kubeconfig as **raw YAML** (written straight to `~/.kube/config`, same as the reference) |
-| `VITE_PDF_PREVIEW_API`     | `https://preview.report.projectnowcdp.com` — **optional**; add later, only read after the 2-line source change. Absent ⇒ empty build arg ⇒ app uses its in-code default |
+| `VITE_PDF_PREVIEW_API`     | Report server for Preview PDF, e.g. `https://preview.report.projectnowcdp.com` (read by `src/config/apiConfig.ts`) |
 
-> `VITE_PDF_PREVIEW_API` is a build-time value compiled into the JS bundle (shipped to
-> browsers) — kept as a secret only for parity, the URL is not confidential.
+**Sign-in (OAuth), one set per environment.** The workflow picks the `_DEV` secret for
+dev, `_STAGING` for staging, and the unsuffixed one for production:
+
+| Secret (production) | dev / staging variants | Value |
+| ------------------- | ---------------------- | ----- |
+| `VITE_OAUTH_CLIENT_ID`  | `…_DEV`, `…_STAGING` | OAuth client ID of the report studio app |
+| `VITE_OAUTH_BASE_URL`   | `…_DEV`, `…_STAGING` | CDP base URL (also used for image uploads: `<base>/rest/files`) |
+| `VITE_OAUTH_AUTH_URL`   | `…_DEV`, `…_STAGING` | Authorize endpoint |
+| `VITE_OAUTH_TOKEN_URL`  | `…_DEV`, `…_STAGING` | Token endpoint |
+| `VITE_OAUTH_USER_URL`   | `…_DEV`, `…_STAGING` | Current-user endpoint |
+| `VITE_OAUTH_LOGOUT_URI` | `…_DEV`, `…_STAGING` | Logout redirect |
+
+> All `VITE_*` values are build-time: they are compiled into the JS bundle shipped to
+> browsers, so none of them is truly secret (they are stored as secrets for convenience).
+
+**Not passed yet:** `VITE_DATA_SOURCE_API` (table data backend) and the `VITE_AI_*`
+settings are not build args in `deploy.yml`/`deploy/Dockerfile`, so deployed builds use
+the dummy table data and no AI endpoint. Add them as build args when those backends
+exist; the AI key must go through a backend proxy rather than a `VITE_` value.
 
 ### Environments — create `dev`, `staging`, `production`
 Needed only for the **production reviewer gate** and per-environment deploy history —

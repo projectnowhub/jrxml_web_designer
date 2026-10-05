@@ -1,12 +1,12 @@
-# JRXML Specification Reference
-## Extracted from JasperReports Source Code
+# JRXML Reference
 
-> **Note**: This document is extracted from JasperReports 6.21.5 source code.
-> Some attributes marked as [Source Code] are defined in Java implementation but NOT in official XSD.
+> JasperReports 6.21.5 JRXML, taken from the JasperReports source code (`jasperreport6Fork/`). Attributes marked [Source Code] exist in the Java code but not in the official XSD.
+>
+> This designer writes a subset: no Title or Summary sections (content goes in Detail), and no subreports, lists, crosstabs or maps. They are listed here because JRXML from other tools may contain them.
 
----
+## Contents
 
-## Table of Contents
+0. [Quick Reference](#0-quick-reference)
 1. [Report Structure Hierarchy](#1-report-structure-hierarchy)
 2. [JasperReport Root Element](#2-jasperreport-root-element)
 3. [Data Definitions](#3-data-definitions)
@@ -14,6 +14,85 @@
 5. [Design Elements](#5-design-elements)
 6. [Table and Crosstab Components](#6-table-and-crosstab-components)
 7. [Attributes Missing from XSD](#7-attributes-missing-from-xsd)
+- Appendices: data types, format patterns, enumerations
+
+---
+
+## 0. Quick Reference
+
+### Child element order (XSD strict)
+```
+jasperReport →
+  1. properties
+  2. propertyExpressions
+  3. imports
+  4. templates
+  5. reportFonts
+  6. styles
+  7. subDatasets
+  8. scriptlets
+  9. parameters
+  10. queryString
+  11. fields
+  12. sortFields
+  13. variables
+  14. filterExpression
+  15. groups
+  16-25. Bands (background → title → pageHeader → columnHeader → detail → columnFooter → pageFooter → lastPageFooter → summary → noData)
+```
+
+### Required attributes
+
+- `jasperReport`: `name`
+- Every design element: `x`, `y`, `width`, `height` in `<reportElement>`, plus a `uuid` (lowercase `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`)
+- Parameters, fields, variables: `name`, `class`
+- Groups: `name`
+- Bands: `height` (a band takes no `uuid` in the designer's output)
+
+### Minimal report
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              name="TestReport"
+              pageWidth="595"
+              pageHeight="842"
+              columnWidth="555"
+              leftMargin="20"
+              rightMargin="20"
+              topMargin="30"
+              bottomMargin="30">
+  
+  <field name="fieldName" class="java.lang.String"/>
+  
+  <detail>
+    <band height="30">
+      <textField>
+        <reportElement x="0" y="0" width="200" height="20"/>
+        <textFieldExpression><![CDATA[$F{fieldName}]]></textFieldExpression>
+      </textField>
+    </band>
+  </detail>
+  
+</jasperReport>
+```
+
+### Common mistakes
+
+- Child elements out of XSD order (e.g. `<property>` after `<reportFont>`, bands before fields or variables)
+- Missing `x` / `y` / `width` / `height`, or text where a number is expected
+- Wrong enum case: `Vertical`, not `vertical` (enums are case-sensitive)
+- Unescaped `<`, `&` or quotes in attribute values, or `]]>` inside a CDATA expression
+
+### Checklist before writing JRXML
+
+- [ ] Element order matches the XSD sequence
+- [ ] Required attributes present, with the right types
+- [ ] Enum values valid (exact case)
+- [ ] Every design element has a UUID
+- [ ] Expressions use `$F{}`, `$V{}`, `$P{}` correctly
+- [ ] No duplicate names (fields, variables, styles, datasets)
+- [ ] Band heights positive; elements inside their band
 
 ---
 
