@@ -27,10 +27,6 @@ export default defineConfig({
           if (id.includes('node_modules/naive-ui')) return 'naive-ui';
         },
       },
-      external: (id) => {
-        // Exclude test files
-        return id.endsWith('.test.ts') || id.endsWith('.spec.ts');
-      },
     },
   },
 })

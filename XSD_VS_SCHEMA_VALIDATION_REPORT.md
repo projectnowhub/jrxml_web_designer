@@ -190,4 +190,4 @@ A complete remote verification test suite has been created:
 
 ---
 
-**Next step:** once the remote server is back, run `npx vitest run tests/unit/attribute-validation-remote.test.ts` to verify all attributes and update the report status.
+**Next step:** once the remote server is back, verify all attributes against it (Preview PDF, or the attribute-validation scripts in `tools/` with the samples in `test-attribute-validation/`) and update the report status.

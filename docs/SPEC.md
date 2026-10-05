@@ -297,23 +297,16 @@ ColumnGroup (level 0)
 |------|---------|
 | `src/config/apiConfig.ts` | API endpoint constants |
 | `vite.config.ts` | Build configuration |
-| `vitest.config.ts` | Test configuration |
 
-### 4.5 Tests
+### 4.5 Validation Tools
 
-| File | Purpose |
-|------|---------|
-| `src/utils/jrxmlGenerator.test.ts` | Generator unit tests |
-| `src/utils/jrxml/parse.test.ts` | Parser unit tests |
-| `tests/unit/*.test.ts` | Additional unit tests |
-| `tests/*.jrxml` | JRXML fixture files |
-| `tests/jrxml-pdf-preview.integration.test.ts` | Server integration tests |
+No unit tests or test framework (see CLAUDE.md). JRXML validation lives in `tools/`, `validator/`, `test-attribute-validation/` and `tests/` (compatibility checks, the Auto Fix script and its sample reports, the preview-server page), plus Validate XSD and Preview PDF in the app.
 
 ## 5. Round-Trip Testing Strategy
 
 Round-trip integrity is verified by:
 
-1. **Fixture-based tests**: Load `.jrxml` fixture → parse → generate → compare
+1. **Sample reports**: Load a `.jrxml` sample → parse → generate → compare (throwaway check, not kept in the repo)
 2. **Property preservation**: Parse JRXML → verify all element properties are captured in JSON
 3. **Expression preservation**: Expressions like `$F{fieldName}` and `$P{paramName}` must survive parse→generate unchanged
 4. **Table structure**: Complex table layouts with nested column groups must parse and regenerate correctly

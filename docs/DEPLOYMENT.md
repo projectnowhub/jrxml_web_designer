@@ -30,7 +30,7 @@ label routes to the same app; wildcard TLS covers it.
 There is **one** workflow, `deploy.yml`, and **nothing runs automatically** — no PR
 check, no push trigger, no test job. Type errors are still caught: the image build runs
 `pnpm build` (`vue-tsc -b && vite build`) and fails the deploy if types don't compile.
-`vitest` is not run in CI — run `pnpm test` locally.
+There are no unit tests; JRXML is checked in the app (Validate XSD, Preview PDF) and with the validation tools in `tools/` and `validator/`.
 
 ### `deploy.yml` — `workflow_dispatch` only
 

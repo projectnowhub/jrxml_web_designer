@@ -33,7 +33,7 @@ Due to export control restrictions on the official JasperReport Studio, this pro
 - 📥 Import JRXML files
 - 🔄 Support for design file version management
 
-### Preview and Testing
+### Preview and Validation
 - 🖨️ PDF preview functionality (requires preview server configuration)
 - 🔍 Real-time JRXML syntax validation
 
@@ -58,7 +58,6 @@ Due to export control restrictions on the official JasperReport Studio, this pro
 - 📱 Developed with Vue 3 + TypeScript
 - 🎨 Built with Vite, supporting hot update
 - 📦 Component-based design, easy to extend
-- 🧪 Comprehensive unit tests
 - 📝 Compliant with JasperReport XSD specifications
 - 🔒 Runs entirely in the browser, secure data control
 - 🚀 Lightweight, fast loading speed
@@ -149,16 +148,10 @@ src/
 3. Register the new element in `ElementRegistry.ts`
 4. Add the new element to the element library
 
-### Run Tests
-```bash
-pnpm run test
-```
-
 ### Code Specifications
 - Write in TypeScript
 - Follow Vue 3 Composition API style
 - Component-based design, maintain single responsibility
-- Write unit tests to cover core functionality
 
 ## 📝 Changelog
 

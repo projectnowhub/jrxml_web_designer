@@ -103,12 +103,6 @@ src/
 │   │   └── officialCompiler.ts  # (if exists) Reference compiler
 │   ├── framePresets.ts          # Frame border presets, card templates, rounded-border encoding
 │   └── jrxmlGenerator.ts        # JSON → JRXML generator
-├── test/
-│   └── setup.ts                 # Vitest global mocks
-└── tests/
-    ├── *.jrxml                   # Fixture JRXML files for testing
-    ├── unit/                     # Unit tests
-    └── jrxml-pdf-preview.integration.test.ts  # Server integration tests
 ```
 
 ## Development Commands
@@ -116,25 +110,23 @@ src/
 ```bash
 npm run dev          # Start dev server (Vite)
 npm run build        # Production build (vue-tsc + vite)
-npm run test         # Run tests once (vitest)
-npm run test:watch   # Watch mode
 ```
 
-## Testing
+## No tests in this repo
 
-- **Framework**: Vitest + jsdom + @vue/test-utils
-- **Test files**: Co-located `*.test.ts` or under `tests/`
-- **Fixtures**: `tests/*.jrxml` and `tests/build_by_*/`
-- **Run specific**: `npx vitest run tests/path/to/file.test.ts`
+The repo has no test framework and no test files, on purpose. **Never add test files, test folders, test config or test packages** (Vitest, Jest, jsdom, @vue/test-utils…).
+
+**Keep the JRXML validation tools**: Validate XSD / Auto Fix / Preview PDF in the app, `tools/`, `validator/`, `test-attribute-validation/`, and the scripts and sample reports in `tests/` (`jrxml-compatibility-test.ts`, `test_autofix.spec.ts` + its `.jrxml` files, `preview-server-test.html`). They are standalone checkers, not a test framework. Never delete them as "test files".
+
+To check a change, verify it with a throwaway script in the session scratchpad (outside the repo) and delete it once done. Run it with plain Node/`tsx`, or for the JasperReports engine check use the compile-and-fill harness with the jars in `~/.m2`. If a quick check really must sit inside `src/` (for the `@/` imports), delete it in the same session and make sure `git status` shows nothing left behind. Then confirm in the app itself.
 
 ### JRXML must stay valid: check it after every change
 
 Any change to the generator, the parser, an element, a template, a style or a table must be checked for broken JRXML before it is called done. One stray `<`, `&`, quote or `]]>` and the report server rejects the whole report (`SAXParseException … The content of elements must consist of well-formed character data or markup`), so the preview and the real report both fail.
 
 1. Every value the generator writes goes through `xmlAttr()` (attribute values) or `cdata()` (expressions) from `src/utils/jrxml/xmlEscape.ts`. Never write `="${value}"` or `<![CDATA[${value}]]>` directly.
-2. Run `npx vitest run tests/jrxmlWellFormed.test.ts`. It builds a report from every library element, with awkward text in every place a user can type, and checks it with a strict XML parser, including after a save and reload and after formatting in the JRXML panel. A new element type, template, property or text input must be added to that test.
-3. Run the round-trip and table tests (`tests/round-trip-integrity.test.ts`, `src/utils/jrxml/tableXml.test.ts`).
-4. In the app: JRXML Content → **Validate XSD**, then **Preview PDF**. Both must succeed.
+2. With a throwaway script (see above), build a report that uses what you changed, with awkward text (`<`, `&`, quotes, `]]>`) in every place a user can type. Check it with a strict XML parser as generated, after a save and reload (`parseJRXMLContent` → `generateJRXMLContent`) and after `formatXml()`. Then delete the script.
+3. In the app: JRXML Content → **Validate XSD**, then **Preview PDF**. Both must succeed.
 
 The JRXML panel shows, validates, previews and saves the *formatted* text, so formatting must never change the report: use `formatXml()` (`src/utils/jrxml/formatXml.ts`, whitespace between tags only). Never use an HTML beautifier (`html_beautify` rewrote `<![CDATA[` into `< ![CDATA[` and `$V{` into `$V {`, which broke every report).
 
