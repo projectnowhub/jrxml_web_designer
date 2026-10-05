@@ -55,12 +55,6 @@
     "reportParameters": "Report Parameters",
     "dataFields": "Data Fields",
     "addDataField": "Add Data Field",
-    "subDatasets": "Tables",
-    "addSubDataset": "Add Table",
-    "editSubDataset": "Edit Table",
-    "deleteSubDataset": "Delete Table",
-    "noSubDatasets": "No tables",
-    "clickToAddSubDataset": "Click + to add a table",
     "subDatasetName": "Table Name",
     "subDatasetNamePlaceholder": "Enter table name",
     "subDatasetNameRequired": "Table name is required",
@@ -120,13 +114,11 @@
     "duplicateFieldName": "Field name already exists, please use another name"
   },
   "bandNames": {
-    "title": "Title",
     "pageHeader": "Page Header",
     "columnHeader": "Column Header",
     "detail": "Detail",
     "columnFooter": "Column Footer",
     "pageFooter": "Page Footer",
-    "summary": "Summary",
     "background": "Background",
     "lastPageFooter": "Last Page Footer",
     "noData": "No Data"
@@ -583,26 +575,8 @@
     "title": "PDF Preview",
     "generateBtn": "Generate PDF",
     "editor": {
-      "showPanel": "Show Editor Panel",
-      "hidePanel": "Hide Editor Panel"
-    },
-    "parameters": {
-      "title": "Parameters",
-      "name": "Name",
-      "type": "Type",
-      "value": "Value",
-      "noParameters": "No parameters defined"
-    },
-    "dataSource": {
-      "title": "Data Source",
-      "rowCount": "Row Count",
-      "regenerate": "Regenerate",
-      "addRow": "Add Row",
-      "removeRow": "Remove Row",
-      "noFields": "No fields defined"
-    },
-    "subDataset": {
-      "title": "Sub Datasets"
+      "showPanel": "Show tables",
+      "hidePanel": "Hide tables"
     },
     "generationFailed": "PDF generation failed",
     "errors": {
@@ -610,6 +584,13 @@
       "invalidJson": "The server returned invalid JSON instead of a PDF",
       "noPdf": "The server response did not contain a PDF",
       "notPdf": "The server response is not a PDF (content type: {type})"
+    },
+    "tables": {
+      "title": "Tables in this report",
+      "readOnly": "Read-only — edit in the designer",
+      "none": "This report has no tables with data yet.",
+      "edit": "Edit in designer",
+      "rowsCapped": "first {shown} of {count} rows"
     }
   },
   "previewServerSettings": {
@@ -1139,22 +1120,6 @@
     },
     "startsLater": "Numbering starts on page {page}, which this design doesn't have yet. Shown faded here so you can still select it."
   },
-  "table": {
-    "dataSource": "Table Data Source",
-    "dataSourcePlaceholder": "e.g. Sales Orders",
-    "styles": "Table styles",
-    "tableHeaderStyle": "Table header style",
-    "columnHeaderStyle": "Column header style",
-    "detailStyle": "Detail style",
-    "columnFooterStyle": "Column footer style",
-    "tableFooterStyle": "Table footer style",
-    "printHeaders": "Print headers",
-    "printHeadersDescription": "Whether to print the table headers",
-    "rowGroups": "Row groups",
-    "groupName": "Group {number}",
-    "noRowGroups": "No row groups yet",
-    "addRowGroup": "Add row group"
-  },
   "expression": {
     "builtIn": {
       "REPORT_PARAMETERS_MAP": "Map of report parameters passed in when the user fills the report",
@@ -1338,6 +1303,124 @@
       "pie": "Each row adds its value to the slice named by the label.",
       "category": "Each row adds its value to a category (one bar or point); series splits them into groups.",
       "xy": "Each row is one point at (X, Y); series splits the points into lines or groups."
+    }
+  },
+  "dataTable": {
+    "dropHint": "Drag table data here",
+    "placeholderColumn": "Column {n}",
+    "moreRows": "+1 more row | +{count} more rows",
+    "loading": "Loading data…",
+    "loadFailed": "Couldn't load the data",
+    "noRows": "No records found",
+    "onlyInDetail": "Tables can only be placed in the Detail section.",
+    "columnAlreadyShown": "\"{column}\" is already in this table.",
+    "columnLimitReached": "This table is full: it fits at most {max} columns. Widen it or remove a column first.",
+    "totals": {
+      "label": "Total",
+      "sum": "Sum",
+      "avg": "Average",
+      "count": "Count"
+    },
+    "operators": {
+      "equals": "is",
+      "notEquals": "is not",
+      "contains": "contains",
+      "startsWith": "starts with",
+      "isEmpty": "is empty",
+      "isNotEmpty": "is not empty",
+      "greaterThan": "is more than",
+      "lessThan": "is less than",
+      "between": "is between",
+      "on": "is on",
+      "before": "is before",
+      "after": "is after"
+    },
+    "summary": {
+      "between": "{column} between {from} and {to}"
+    },
+    "types": {
+      "text": "Text",
+      "number": "Number",
+      "currency": "Amount",
+      "date": "Date"
+    },
+    "theme": {
+      "label": "Theme",
+      "corporateBlue": "Corporate Blue",
+      "minimal": "Minimal",
+      "emerald": "Emerald"
+    },
+    "panel": {
+      "data": "Data",
+      "tableName": "Table name",
+      "columnCount": "1 column | {count} columns",
+      "matchAll": "(all must match)",
+      "matchAny": "(any can match)",
+      "firstRows": "First row only | First {count} rows",
+      "editData": "Edit data",
+      "emptyHint": "Drag a source from Table Data onto this table, or choose one here.",
+      "chooseData": "Choose data",
+      "look": "Look",
+      "headerHeight": "Header height",
+      "rowHeight": "Row height"
+    },
+    "config": {
+      "title": "Set up {name}",
+      "source": "Source",
+      "chooseSource": "Choose a source",
+      "replacesData": "Apply replaces this table's current data ({source}).",
+      "sourceOption": "{name} ({count} rows)",
+      "columns": "Columns",
+      "columnCounter": "{count} of {max}",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "headerText": "Header text",
+      "total": "Total",
+      "noTotal": "No total",
+      "removeColumn": "Remove column",
+      "addColumn": "Add a column…",
+      "columnLimitHint": "No more columns fit. Remove one, or widen the table (landscape pages fit more).",
+      "filters": "Filters",
+      "match": {
+        "all": "All must match",
+        "any": "Any can match"
+      },
+      "value": "Value",
+      "value2": "and",
+      "removeFilter": "Remove filter",
+      "addFilter": "Add filter",
+      "sort": "Sort",
+      "sortBy": "Sort by",
+      "thenBy": "then by",
+      "ascending": "Ascending",
+      "descending": "Descending",
+      "removeSort": "Remove sort",
+      "addSort": "Add sort",
+      "rows": "Rows and totals",
+      "limitRows": "Show only the first",
+      "rowLimit": "Number of rows",
+      "showTotals": "Add a totals row",
+      "preview": "Preview",
+      "pickSourceFirst": "Choose a source to see its data",
+      "previewCapped": "Showing the first {shown} of {count} rows",
+      "rowCount": "1 row | {count} rows",
+      "needColumn": "Choose at least one column",
+      "tooManyColumns": "Too many columns: at most {max} fit",
+      "apply": "Apply"
+    },
+    "library": {
+      "title": "Table Data",
+      "reload": "Reload sources",
+      "search": "Search sources and columns",
+      "hint": "Drag a source onto a table (or the page) to show its data. Drag a column to add just that column.",
+      "retry": "Try again",
+      "noMatch": "No sources match",
+      "dragSource": "Drag onto a table or the page",
+      "expand": "Show columns",
+      "collapse": "Hide columns",
+      "rows": "1 row | {count} rows",
+      "usedIn": "Used in: {tables}",
+      "dragColumn": "Drag onto a table to add this column"
     }
   }
 }

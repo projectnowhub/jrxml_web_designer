@@ -1,3 +1,5 @@
+import type { TableDataBinding } from "./dataSource";
+
 // Element type enum
 export type ElementType =
   | "textField"
@@ -9,40 +11,6 @@ export type ElementType =
   | "table"
   | "chart"
   | "barcode";
-
-// Column group interface
-export interface ColumnGroup {
-  uuid: string;
-  name: string;
-  width: number;
-  hasTableHeader?: boolean;
-  tableHeader?: TableCell;
-  columnHeader?: TableCell;
-  columnFooter?: TableCell;
-  tableFooter?: TableCell;
-  // Sub-groups or columns
-  children: (ColumnGroup | TableColumn)[];
-}
-
-// Table cell interface
-export interface TableCell {
-  enable: boolean;
-  element?: DesignElement;
-}
-
-// Table column interface
-export interface TableColumn {
-  uuid: string;
-  width: number;
-  name: string;
-  hasTableHeader?: boolean;
-  tableHeader?: TableCell;
-  columnHeader?: TableCell;
-  detailCell?: TableCell;
-  columnFooter?: TableCell;
-  tableFooter?: TableCell;
-  children?: (ColumnGroup | TableColumn)[];
-}
 
 // Query interface
 export interface Query {
@@ -432,49 +400,13 @@ export interface FrameElement extends DesignElementBase {
   cornerRadii?: { topLeft: number; topRight: number; bottomRight: number; bottomLeft: number };
 }
 
-// Row group interface
-export interface RowGroup {
-  uuid: string;
-  name: string;
-  height: number;
-  header?: TableCell;
-  footer?: TableCell;
-  isStartNewPage?: boolean;
-  isRepeatHeader?: boolean;
-  expression?: string;
-}
-
-// Table element interface
+// Table element: shows rows of a backend source (see types/dataSource.ts).
+// Without a binding it is an empty table waiting for data to be dropped on it.
 export interface TableElement extends DesignElementBase {
   type: "table";
-  dataset: TableDataset;
-  // Supports a mixed structure of groups and columns
-  children?: (ColumnGroup | TableColumn)[];
-  // Kept for backward compatibility, supports the legacy columns array
-  columns: TableColumn[];
-  // Row groups
-  rowGroups?: RowGroup[];
-  styles?: {
-    tableHeader?: string;
-    columnHeader?: string;
-    detail?: string;
-    columnFooter?: string;
-    tableFooter?: string;
-  };
-  whenNoDataType?:
-    | "Blank"
-    | "NoDataCell"
-    | "AllSectionsNoDetail"
-    | "AllSectionsWithDetail";
-  // Table-level properties
-  printHeaders?: boolean;
-  ignoreWidth?: boolean;
-  isIgnorePagination?: boolean;
-  // Style inheritance
-  style?: string;
-  parentStyle?: string;
-  // Pagination control
-  splitType?: "Stretch" | "Prevent" | "Immediate";
+  binding?: TableDataBinding;
+  headerHeight?: number;
+  rowHeight?: number;
 }
 
 // Chart element interface

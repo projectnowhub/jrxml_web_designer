@@ -140,62 +140,9 @@
       </div>
     </div>
 
-    <!-- Tables (Sub-datasets) section -->
+    <!-- Table Data: backend sources to drag onto tables -->
     <div class="data-fields-section">
-      <div class="section-header">
-        <h4>{{ t("elementLibrary.subDatasets") }}</h4>
-        <n-button
-          class="add-button"
-          @click="handleAddSubDataset"
-          type="default"
-          quaternary
-          circle
-          size="small"
-          :title="t('elementLibrary.addSubDataset')"
-          ><Plus :size="14" /></n-button
-        >
-      </div>
-      <div class="fields-mini-view">
-        <div
-          v-for="(dataset, index) in subDatasets"
-          :key="index"
-          class="field-mini-item"
-        >
-          <div class="field-info">
-            <span class="field-name">{{ dataset.name }}</span>
-          </div>
-          <div class="field-actions">
-            <n-button
-              class="action-button edit-button"
-              @click.stop="handleEditSubDataset(dataset, index)"
-              type="default"
-              quaternary
-              circle
-              size="small"
-              :title="t('elementLibrary.editSubDataset')"
-            >
-              <SquarePen :size="14" />
-            </n-button>
-            <n-button
-              class="action-button delete-button"
-              @click.stop="handleDeleteSubDataset(index)"
-              type="error"
-              quaternary
-              circle
-              size="small"
-              :title="t('elementLibrary.deleteSubDataset')"
-            >
-              <Trash2 :size="14" />
-            </n-button>
-          </div>
-        </div>
-        <div v-if="subDatasets.length === 0" class="empty-state">
-          <p>{{ t("elementLibrary.noSubDatasets") }}</p>
-          <p class="empty-hint">
-            {{ t("elementLibrary.clickToAddSubDataset") }}
-          </p>
-        </div>
-      </div>
+      <TableDataList :bands="bands as Band[]" />
     </div>
 
     <!-- Report styles section -->
@@ -315,6 +262,7 @@ import {
   X,
 } from "@lucide/vue";
 import ConfirmModal from "./modals/ConfirmModal.vue";
+import TableDataList from "./designer/TableDataList.vue";
 import { ElementRegistry } from "./elements/ElementRegistry";
 import { findPageBorder, isFrameTemplateType, PAGE_BORDER_TYPE } from "../utils/framePresets";
 import {
@@ -325,6 +273,7 @@ import {
 } from "../utils/paginationPresets";
 import notification from "../utils/notification";
 import type {
+  Band,
   DesignElement,
   TextFieldElement,
   ReportField,
@@ -346,11 +295,6 @@ import {
 
 const { t } = useI18n();
 
-// Define the sub-dataset type
-interface SubDataset {
-  name: string;
-  uuid: string;
-}
 
 // Define component props
 interface Props {
@@ -361,7 +305,6 @@ interface Props {
   reportStyles: ReportStyle[];
   bands: Array<{ type: string; name?: string; elements: DesignElement[] }>;
   selectedElement: any;
-  subDatasets?: SubDataset[];
 }
 
 // Define component events
@@ -379,9 +322,6 @@ interface Emits {
   (e: "add-style"): void;
   (e: "edit-style", style: ReportStyle): void;
   (e: "delete-style", styleName: string): void;
-  (e: "add-sub-dataset"): void;
-  (e: "edit-sub-dataset", dataset: SubDataset, index: number): void;
-  (e: "delete-sub-dataset", index: number): void;
   (
     e: "delete-element",
     bandIndex: number,
@@ -405,7 +345,6 @@ const props = withDefaults(defineProps<Props>(), {
   reportStyles: () => [],
   bands: () => [],
   selectedElement: null,
-  subDatasets: () => [],
 });
 
 const emit = defineEmits<Emits>();
@@ -706,21 +645,6 @@ function handleEditStyle(style: ReportStyle): void {
 // Handle deleting a style
 function handleDeleteStyle(styleName: string): void {
   emit("delete-style", styleName);
-}
-
-// Handle adding a sub-dataset
-function handleAddSubDataset(): void {
-  emit("add-sub-dataset");
-}
-
-// Handle editing a sub-dataset
-function handleEditSubDataset(dataset: any, index: number): void {
-  emit("edit-sub-dataset", dataset, index);
-}
-
-// Handle deleting a sub-dataset
-function handleDeleteSubDataset(index: number): void {
-  emit("delete-sub-dataset", index);
 }
 
 // The element pending deletion

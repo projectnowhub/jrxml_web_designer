@@ -84,7 +84,7 @@ export const CREATE_STATIC_TEXT_SCHEMA: MCPToolSchema = {
       bandType: {
         type: 'string',
         description: 'Target band type',
-        enum: ['detail', 'pageHeader', 'pageFooter', 'title', 'summary', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
+        enum: ['detail', 'pageHeader', 'pageFooter', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
       },
       x: {
         type: 'number',
@@ -149,7 +149,7 @@ export const CREATE_TEXT_FIELD_SCHEMA: MCPToolSchema = {
       bandType: {
         type: 'string',
         description: 'Target band type',
-        enum: ['detail', 'pageHeader', 'pageFooter', 'title', 'summary', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
+        enum: ['detail', 'pageHeader', 'pageFooter', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
       },
       x: {
         type: 'number',
@@ -201,7 +201,7 @@ export const CREATE_RECTANGLE_SCHEMA: MCPToolSchema = {
       bandType: {
         type: 'string',
         description: 'Target band type',
-        enum: ['detail', 'pageHeader', 'pageFooter', 'title', 'summary', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
+        enum: ['detail', 'pageHeader', 'pageFooter', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
       },
       x: {
         type: 'number',
@@ -343,7 +343,7 @@ export const UPDATE_BAND_HEIGHT_SCHEMA: MCPToolSchema = {
       bandType: {
         type: 'string',
         description: 'Band type',
-        enum: ['detail', 'pageHeader', 'pageFooter', 'title', 'summary', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
+        enum: ['detail', 'pageHeader', 'pageFooter', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
       },
       height: {
         type: 'number',

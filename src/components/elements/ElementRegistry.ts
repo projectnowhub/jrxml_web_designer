@@ -17,6 +17,7 @@ import {
   Type as TypeIcon,
 } from "@lucide/vue";
 import type { DesignElement } from "../../types";
+import { TABLE_HEADER_HEIGHT, TABLE_ROW_HEIGHT } from "../../utils/table/dataTable";
 import { ELEMENT_DEFAULT_SIZES } from "../../constants/constants";
 
 // Element configuration interface
@@ -188,6 +189,8 @@ export class ElementRegistry {
       },
     });
 
+    // Table: starts empty (3 columns, one row); data is dropped on it from
+    // the "Table Data" list. Its size follows its content (utils/table/dataTable.ts).
     this.registerElement({
       type: "table",
       name: "elementNames.table",
@@ -199,117 +202,9 @@ export class ElementRegistry {
         x: 0,
         y: 0,
         width: 555,
-        height: 60,
-        dataset: {
-          uuid: crypto.randomUUID(),
-          name: "tableDataset",
-        },
-        columns: [
-          {
-            uuid: crypto.randomUUID(),
-            width: 160,
-            name: "Column1",
-            tableHeader: {
-              enable: false,
-              element: {
-                type: "textField",
-                x: 0,
-                y: 0,
-                width: 160,
-                height: 30,
-                expression: '"Header"',
-                forecolor: "#000000",
-                backcolor: "#FFFFFF",
-                fontFamily: "SansSerif",
-                fontSize: 19,
-                isBold: true,
-                textAlignment: "Center",
-                verticalAlignment: "Middle",
-              },
-            },
-            columnHeader: {
-              enable: true,
-              element: {
-                type: "textField",
-                x: 0,
-                y: 0,
-                width: 160,
-                height: 30,
-                expression: '"Column Header"',
-                textAlignment: "Center",
-                verticalAlignment: "Middle",
-              },
-            },
-            detailCell: {
-              enable: true,
-              element: {
-                type: "textField",
-                x: 0,
-                y: 0,
-                width: 160,
-                height: 30,
-                expression: "$F{FIELD_NAME}",
-                textAlignment: "Center",
-                verticalAlignment: "Middle",
-              },
-            },
-          },
-          {
-            uuid: crypto.randomUUID(),
-            width: 180,
-            name: "Column2",
-            tableHeader: {
-              enable: false,
-              element: {
-                type: "textField",
-                x: 0,
-                y: 0,
-                width: 180,
-                height: 30,
-                expression: '""',
-                forecolor: "#000000",
-                backcolor: "#FFFFFF",
-                fontFamily: "SansSerif",
-                fontSize: 19,
-                isBold: true,
-                textAlignment: "Center",
-                verticalAlignment: "Middle",
-              },
-            },
-            columnHeader: {
-              enable: true,
-              element: {
-                type: "textField",
-                x: 0,
-                y: 0,
-                width: 180,
-                height: 30,
-                expression: '"Column Header"',
-                textAlignment: "Center",
-                verticalAlignment: "Middle",
-              },
-            },
-            detailCell: {
-              enable: true,
-              element: {
-                type: "textField",
-                x: 0,
-                y: 0,
-                width: 180,
-                height: 30,
-                expression: "$F{FIELD_NAME}",
-                textAlignment: "Center",
-                verticalAlignment: "Middle",
-              },
-            },
-          },
-        ],
-        styles: {
-          tableHeader: "Table_TH",
-          columnHeader: "Table_CH",
-          detail: "Table_TD",
-        },
-        whenNoDataType: "AllSectionsNoDetail",
+        height: TABLE_HEADER_HEIGHT + TABLE_ROW_HEIGHT,
+        headerHeight: TABLE_HEADER_HEIGHT,
+        rowHeight: TABLE_ROW_HEIGHT,
       },
     });
 

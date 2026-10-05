@@ -27,7 +27,7 @@
 	<queryString>
 		<![CDATA[]]>
 	</queryString>
-	<summary>
+	<detail>
 		<band height="471" splitType="Stretch">
 			<property name="local_mesure_unitheight" value="pixel"/>
 			<componentElement>
@@ -155,5 +155,5 @@
 				</jr:table>
 			</componentElement>
 		</band>
-	</summary>
+	</detail>
 </jasperReport>

@@ -16,268 +16,106 @@
     :bodyStyle="{ padding: '0', overflow: 'hidden', display: 'flex' }"
   >
     <div class="pdf-preview-body">
-      <!-- Editor Panel -->
-      <div class="editor-panel" v-show="showEditor">
-        <div class="editor-header">
-          <n-button size="small" quaternary @click="regenerateAll">
-            {{ t("pdfPreview.dataSource.regenerate") }}
-          </n-button>
+      <!-- The report's tables and the rows each one prints (read-only) -->
+      <div class="tables-panel" v-show="showTables">
+        <div class="tables-head">
+          <h4>{{ t("pdfPreview.tables.title") }}</h4>
+          <span class="muted">{{ t("pdfPreview.tables.readOnly") }}</span>
         </div>
-        <n-tabs type="line" animated class="editor-tabs">
-          <!-- Parameters Tab -->
-          <n-tab-pane :tab="t('pdfPreview.parameters.title')" name="params">
-            <div class="tab-content">
-              <div v-if="!props.reportParameters?.length" class="empty-hint">
-                {{ t("pdfPreview.parameters.noParameters") }}
+        <div class="tables-list">
+          <div v-if="!tables.length" class="empty-hint">{{ t("pdfPreview.tables.none") }}</div>
+          <section v-for="item in tables" :key="item.table.uuid" class="table-card">
+            <div class="card-head">
+              <div class="card-title">
+                <Table2 :size="14" aria-hidden="true" />
+                <strong>{{ item.binding.tableName }}</strong>
               </div>
-              <div v-else class="param-list">
-                <div
-                  v-for="param in props.reportParameters"
-                  :key="param.name"
-                  class="param-row"
-                >
-                  <div class="param-label">
-                    <span class="param-name">{{ param.name }}</span>
-                    <n-tag size="tiny" :bordered="false" type="info">{{
-                      shortType(param.class)
-                    }}</n-tag>
-                  </div>
-                  <input
-                    v-if="param.class === 'java.lang.Boolean'"
-                    type="checkbox"
-                    :checked="editableParams[param.name]"
-                    @change="
-                      editableParams[param.name] = (
-                        $event.target as HTMLInputElement
-                      ).checked
-                    "
-                    class="param-checkbox"
-                  />
-                  <input
-                    v-else
-                    class="param-input"
-                    :value="editableParams[param.name]"
-                    @input="
-                      editableParams[param.name] = (
-                        $event.target as HTMLInputElement
-                      ).value
-                    "
-                    :placeholder="param.defaultValue || ''"
-                  />
-                </div>
-              </div>
+              <n-button size="tiny" quaternary @click="editTable(item.table.uuid ?? '')">
+                <template #icon><SquarePen :size="13" /></template>
+                {{ t("pdfPreview.tables.edit") }}
+              </n-button>
             </div>
-          </n-tab-pane>
-
-          <!-- DataSource Tab -->
-          <n-tab-pane :tab="t('pdfPreview.dataSource.title')" name="dataSource">
-            <div class="tab-content">
-              <div v-if="!props.reportFields?.length" class="empty-hint">
-                {{ t("pdfPreview.dataSource.noFields") }}
-              </div>
-              <div v-else>
-                <div class="ds-toolbar">
-                  <label class="row-count-label">
-                    {{ t("pdfPreview.dataSource.rowCount") }}
-                    <input
-                      type="number"
-                      class="row-count-input"
-                      :value="editableDataSource.length"
-                      min="1"
-                      max="100"
-                      @change="onRowCountChange($event)"
-                    />
-                  </label>
-                  <n-button size="small" quaternary @click="addRow">
-                    {{ t("pdfPreview.dataSource.addRow") }}
-                  </n-button>
-                </div>
-                <div class="ds-table-wrapper">
-                  <table class="ds-table">
-                    <thead>
-                      <tr>
-                        <th
-                          v-for="field in props.reportFields"
-                          :key="field.name"
-                          class="ds-th"
-                        >
-                          <div class="th-inner">
-                            <span>{{ field.name }}</span>
-                            <n-tag size="tiny" :bordered="false">{{
-                              shortType(field.class)
-                            }}</n-tag>
-                          </div>
-                        </th>
-                        <th class="ds-th ds-th-actions"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr
-                        v-for="(row, rowIdx) in editableDataSource"
-                        :key="rowIdx"
-                      >
-                        <td
-                          v-for="field in props.reportFields"
-                          :key="field.name"
-                          class="ds-td"
-                        >
-                          <input
-                            class="ds-cell-input"
-                            :value="row[field.name]"
-                            @input="
-                              row[field.name] = (
-                                $event.target as HTMLInputElement
-                              ).value
-                            "
-                          />
-                        </td>
-                        <td class="ds-td ds-td-actions">
-                          <button
-                            class="remove-row-btn"
-                            @click="removeRow(rowIdx)"
-                            :title="t('actions.delete')"
-                          >
-                            <X :size="14" />
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+            <div class="card-source">
+              <Database :size="12" aria-hidden="true" />
+              {{ item.binding.sourceName }}
+              <span class="muted">· {{ rowCountText(item.binding.datasetName) }}</span>
             </div>
-          </n-tab-pane>
-
-          <!-- Sub Dataset Tabs -->
-          <n-tab-pane
-            v-for="ds in visibleSubDatasets"
-            :key="ds.name"
-            :tab="ds.name"
-            :name="'sub_' + ds.name"
-          >
-            <div class="tab-content">
-              <div class="ds-toolbar">
-                <label class="row-count-label">
-                  {{ t("pdfPreview.dataSource.rowCount") }}
-                  <input
-                    type="number"
-                    class="row-count-input"
-                    :value="(editableSubDataSources[ds.name] || []).length"
-                    min="1"
-                    max="100"
-                    @change="onSubRowCountChange(ds.name, $event)"
-                  />
-                </label>
-                <n-button size="small" quaternary @click="addSubRow(ds.name)">
-                  {{ t("pdfPreview.dataSource.addRow") }}
-                </n-button>
-              </div>
-              <div class="ds-table-wrapper">
-                <table class="ds-table">
-                  <thead>
-                    <tr>
-                      <th
-                        v-for="field in ds.fields"
-                        :key="field.name"
-                        class="ds-th"
-                      >
-                        <div class="th-inner">
-                          <span>{{ field.name }}</span>
-                          <n-tag size="tiny" :bordered="false">{{
-                            shortType(field.class)
-                          }}</n-tag>
-                        </div>
-                      </th>
-                      <th class="ds-th ds-th-actions"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr
-                      v-for="(row, rowIdx) in editableSubDataSources[ds.name] ||
-                      []"
-                      :key="rowIdx"
-                    >
-                      <td
-                        v-for="field in ds.fields"
-                        :key="field.name"
-                        class="ds-td"
-                      >
-                        <input
-                          class="ds-cell-input"
-                          :value="row[field.name]"
-                          @input="
-                            row[field.name] = (
-                              $event.target as HTMLInputElement
-                            ).value
-                          "
-                        />
-                      </td>
-                      <td class="ds-td ds-td-actions">
-                        <button
-                          class="remove-row-btn"
-                          @click="removeSubRow(ds.name, rowIdx)"
-                          :title="t('actions.delete')"
-                        >
-                          <X :size="14" />
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+            <div class="chips">
+              <span class="chip">{{ t("dataTable.panel.columnCount", item.binding.columns.length) }}</span>
+              <span v-for="(f, i) in activeFilters(item.binding)" :key="`f${i}`" class="chip is-filter">
+                <Funnel :size="10" aria-hidden="true" />{{ describeFilter(item.binding, f, t) }}
+              </span>
+              <span v-for="(s, i) in describeSorts(item.binding)" :key="`s${i}`" class="chip">
+                {{ s.label }}
+                <component :is="s.direction === 'asc' ? ArrowUp : ArrowDown" :size="10" aria-hidden="true" />
+              </span>
+              <span v-if="item.binding.rowLimit" class="chip">
+                {{ t("dataTable.panel.firstRows", item.binding.rowLimit) }}
+              </span>
             </div>
-          </n-tab-pane>
-        </n-tabs>
+            <div class="card-grid">
+              <DataGrid
+                :columns="item.binding.columns"
+                :rows="tableRows[item.binding.datasetName]?.rows ?? []"
+                :theme="item.binding.theme"
+                :report-styles="reportStyles"
+                :show-totals="item.binding.showTotals"
+                :loading="tableRows[item.binding.datasetName]?.loading"
+                :failed="tableRows[item.binding.datasetName]?.failed"
+              />
+            </div>
+          </section>
+        </div>
       </div>
 
       <!-- Toggle Button -->
       <button
         class="panel-toggle"
-        @click="showEditor = !showEditor"
-        :title="
-          showEditor
-            ? t('pdfPreview.editor.hidePanel')
-            : t('pdfPreview.editor.showPanel')
-        "
+        @click="showTables = !showTables"
+        :title="showTables ? t('pdfPreview.editor.hidePanel') : t('pdfPreview.editor.showPanel')"
       >
-        <component :is="showEditor ? ChevronLeft : ChevronRight" :size="14" />
+        <component :is="showTables ? ChevronLeft : ChevronRight" :size="14" />
       </button>
 
       <!-- PDF Preview -->
       <div class="pdf-panel">
         <div class="pdf-toolbar">
-          <n-button
-            type="primary"
-            size="small"
-            @click="generatePreview"
-            :loading="isGenerating"
-          >
+          <n-button type="primary" size="small" @click="generatePreview" :loading="isGenerating">
+            <template #icon><RefreshCw :size="13" /></template>
             {{ t("pdfPreview.generateBtn") }}
           </n-button>
         </div>
-        <iframe
-          ref="iframeRef"
-          class="pdf-iframe"
-          :src="previewUrl"
-        ></iframe>
+        <iframe ref="iframeRef" class="pdf-iframe" :src="previewUrl"></iframe>
       </div>
     </div>
   </BaseModal>
 </template>
 
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight, X } from "@lucide/vue";
-import BaseModal from "./BaseModal.vue";
-import { ref, computed, watch, onUnmounted } from "vue";
-import { useI18n } from "vue-i18n";
-import { NButton, NTabs, NTabPane, NTag } from "naive-ui";
-import type { ReportParameter, ReportField, TableDataset } from "../../types";
 import {
-  generateMockValue,
-  generateMockParameters,
-  generateMockDataSource,
-} from "../../utils/mockDataGenerator";
+  ArrowDown,
+  ArrowUp,
+  ChevronLeft,
+  ChevronRight,
+  Database,
+  Funnel,
+  RefreshCw,
+  SquarePen,
+  Table2,
+} from "@lucide/vue";
+import BaseModal from "./BaseModal.vue";
+import DataGrid from "../common/DataGrid.vue";
+import { ref, computed, watch, onUnmounted, reactive } from "vue";
+import { useI18n } from "vue-i18n";
+import { NButton } from "naive-ui";
+import type { Band, ReportField, ReportParameter, ReportStyle } from "../../types";
+import type { DataRow } from "@/types/dataSource";
+import { generateMockParameters, generateMockDataSource } from "../../utils/mockDataGenerator";
 import { generatePdf, ReportGenerationError } from "../../services/reportService";
+import { fetchTableRows } from "@/composables/useTableRows";
+import { PREVIEW_ROW_LIMIT } from "@/utils/table/dataBinding";
+import { collectBoundTables } from "@/utils/table/tableDocument";
+import { activeFilters, describeFilter, describeSorts } from "@/utils/table/summary";
 import notification from "../../utils/notification";
 
 const { t } = useI18n();
@@ -285,228 +123,62 @@ const { t } = useI18n();
 const props = defineProps<{
   visible: boolean;
   jrxmlContent: string;
+  bands: Band[];
+  reportStyles: ReportStyle[];
   reportParameters?: ReportParameter[];
   reportFields?: ReportField[];
-  subDatasets?: TableDataset[];
 }>();
 
-const emit = defineEmits(["update:visible"]);
+const emit = defineEmits<{
+  "update:visible": [visible: boolean];
+  // Close the preview and open this table's Configure popup
+  "edit-table": [uuid: string];
+}>();
 
-const editableParams = ref<Record<string, any>>({});
-const editableDataSource = ref<Record<string, any>[]>([]);
-const editableSubDataSources = ref<Record<string, Record<string, any>[]>>({});
-const resolvedSubDatasets = ref<TableDataset[]>([]);
-const showEditor = ref(true);
+const showTables = ref(true);
 const isGenerating = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 const previewUrl = ref<string>("about:blank");
 let previewController: AbortController | null = null;
 
-function shortType(className: string): string {
-  const parts = className.split(".");
-  return parts[parts.length - 1] || className;
+const tables = computed(() =>
+  collectBoundTables(props.bands).map((table) => ({ table, binding: table.binding })),
+);
+
+// Rows per table, by dataset name (the report reads them by that name)
+interface TableRowsState {
+  rows: DataRow[];
+  totalCount: number;
+  loading: boolean;
+  failed: boolean;
+}
+const tableRows = reactive<Record<string, TableRowsState>>({});
+
+function rowCountText(datasetName: string): string {
+  const state = tableRows[datasetName];
+  if (!state || state.loading) return t("dataTable.loading");
+  if (state.failed) return t("dataTable.loadFailed");
+  if (state.totalCount > state.rows.length) {
+    return t("pdfPreview.tables.rowsCapped", { shown: state.rows.length, count: state.totalCount });
+  }
+  return t("dataTable.config.rowCount", state.rows.length);
 }
 
-function initializeEditor() {
-  previewController?.abort();
-  setPreviewUrl("about:blank");
-  isGenerating.value = false;
-
-  const params = props.reportParameters || [];
-  let fields = props.reportFields || [];
-  let subDatasets = props.subDatasets || [];
-
-  // If subDatasets is empty, parse it from the JRXML
-  if (subDatasets.length === 0 && props.jrxmlContent) {
-    try {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(props.jrxmlContent, "text/xml");
-      // JRXML uses the subDataset tag to define sub-datasets
-      const subDatasetEls = doc.querySelectorAll("subDataset");
-      for (const dsEl of subDatasetEls) {
-        const dsName = dsEl.getAttribute("name") || "unknown";
-        const fieldEls = dsEl.querySelectorAll("field");
-        if (fieldEls.length > 0) {
-          const dsFields = [...fieldEls].map((f) => ({
-            name: f.getAttribute("name") || "",
-            class: f.getAttribute("class") || "java.lang.String",
-          }));
-          subDatasets.push({
-            uuid: crypto.randomUUID(),
-            name: dsName,
-            fields: dsFields,
-          });
-        }
+// Every table's rows, fetched side by side; one failing doesn't stop the others
+async function loadAllRows(): Promise<void> {
+  Object.keys(tableRows).forEach((k) => delete tableRows[k]);
+  await Promise.all(
+    tables.value.map(async ({ binding }) => {
+      const state: TableRowsState = { rows: [], totalCount: 0, loading: true, failed: false };
+      tableRows[binding.datasetName] = state;
+      try {
+        const result = await fetchTableRows(binding, PREVIEW_ROW_LIMIT);
+        tableRows[binding.datasetName] = { ...state, rows: result.rows, totalCount: result.totalCount, loading: false };
+      } catch {
+        tableRows[binding.datasetName] = { ...state, loading: false, failed: true };
       }
-    } catch (e) {
-      console.warn("Failed to parse JRXML for sub-datasets:", e);
-    }
-  }
-
-  // If fields is empty, parse it from the JRXML
-  if (fields.length === 0 && props.jrxmlContent) {
-    try {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(props.jrxmlContent, "text/xml");
-      const fieldEls = doc.querySelectorAll("jasperReport > field");
-      if (fieldEls.length > 0) {
-        fields = [...fieldEls].map((f) => ({
-          name: f.getAttribute("name") || "",
-          class: f.getAttribute("class") || "java.lang.String",
-        }));
-      }
-    } catch (e) {
-      // ignore
-    }
-  }
-
-  editableParams.value = generateMockParameters(params);
-  editableDataSource.value = generateMockDataSource(fields, 1);
-
-  // Generate mock data for each table dataset
-  const subDataSources: Record<string, Record<string, any>[]> = {};
-  for (const ds of subDatasets) {
-    if (ds.fields && ds.fields.length > 0) {
-      const rows: Record<string, any>[] = [];
-      for (let i = 0; i < 5; i++) {
-        const row: Record<string, any> = {};
-        for (const f of ds.fields) {
-          row[f.name] = generateMockValue(f.name, f.class);
-        }
-        rows.push(row);
-      }
-      subDataSources[ds.name] = rows;
-    }
-  }
-  editableSubDataSources.value = subDataSources;
-  resolvedSubDatasets.value = subDatasets;
-}
-
-function regenerateAll() {
-  initializeEditor();
-}
-
-function addRow() {
-  const fields = props.reportFields || [];
-  const newRow: Record<string, any> = {};
-  for (const field of fields) {
-    newRow[field.name] = generateMockValue(field.name, field.class);
-  }
-  editableDataSource.value.push(newRow);
-}
-
-function removeRow(index: number) {
-  if (editableDataSource.value.length > 1) {
-    editableDataSource.value.splice(index, 1);
-  }
-}
-
-function onRowCountChange(event: Event) {
-  const input = event.target as HTMLInputElement;
-  let count = parseInt(input.value, 10);
-  if (isNaN(count) || count < 1) count = 1;
-  if (count > 100) count = 100;
-
-  const fields = props.reportFields || [];
-  const current = editableDataSource.value;
-
-  if (count > current.length) {
-    for (let i = current.length; i < count; i++) {
-      const row: Record<string, any> = {};
-      for (const field of fields) {
-        row[field.name] = generateMockValue(field.name, field.class);
-      }
-      current.push(row);
-    }
-  } else if (count < current.length) {
-    editableDataSource.value = current.slice(0, count);
-  }
-}
-
-const visibleSubDatasets = computed(() => {
-  return resolvedSubDatasets.value.filter(
-    (ds) => ds.fields && ds.fields.length > 0,
+    }),
   );
-});
-
-function addSubRow(dsName: string) {
-  const ds = resolvedSubDatasets.value.find((d) => d.name === dsName);
-  if (!ds?.fields) return;
-  const rows = editableSubDataSources.value[dsName] || [];
-  const newRow: Record<string, any> = {};
-  for (const field of ds.fields) {
-    newRow[field.name] = generateMockValue(field.name, field.class);
-  }
-  rows.push(newRow);
-  editableSubDataSources.value[dsName] = rows;
-}
-
-function removeSubRow(dsName: string, index: number) {
-  const rows = editableSubDataSources.value[dsName] || [];
-  if (rows.length > 1) {
-    rows.splice(index, 1);
-    editableSubDataSources.value[dsName] = rows;
-  }
-}
-
-function onSubRowCountChange(dsName: string, event: Event) {
-  const input = event.target as HTMLInputElement;
-  let count = parseInt(input.value, 10);
-  if (isNaN(count) || count < 1) count = 1;
-  if (count > 100) count = 100;
-
-  const ds = resolvedSubDatasets.value.find((d) => d.name === dsName);
-  if (!ds?.fields) return;
-  const current = editableSubDataSources.value[dsName] || [];
-
-  if (count > current.length) {
-    for (let i = current.length; i < count; i++) {
-      const row: Record<string, any> = {};
-      for (const field of ds.fields) {
-        row[field.name] = generateMockValue(field.name, field.class);
-      }
-      current.push(row);
-    }
-  } else if (count < current.length) {
-    editableSubDataSources.value[dsName] = current.slice(0, count);
-  }
-}
-
-function convertSubDataSourcesTypes(): Record<string, Record<string, any>[]> {
-  const result: Record<string, Record<string, any>[]> = {};
-  for (const [dsName, rows] of Object.entries(editableSubDataSources.value)) {
-    const ds = resolvedSubDatasets.value.find((d) => d.name === dsName);
-    if (!ds?.fields) {
-      result[dsName] = rows;
-      continue;
-    }
-    const fieldMap = new Map(ds.fields.map((f) => [f.name, f.class || ""]));
-    result[dsName] = rows.map((row) => {
-      const converted: Record<string, any> = {};
-      for (const [key, val] of Object.entries(row)) {
-        const cls = fieldMap.get(key) || "";
-        if (
-          cls === "java.lang.Integer" ||
-          cls === "java.lang.Short" ||
-          cls === "java.lang.Byte"
-        ) {
-          converted[key] = parseInt(String(val), 10);
-        } else if (
-          cls === "java.lang.Double" ||
-          cls === "java.lang.Float" ||
-          cls === "java.lang.BigDecimal"
-        ) {
-          converted[key] = parseFloat(String(val));
-        } else if (cls === "java.lang.Boolean") {
-          converted[key] = String(val) === "true";
-        } else {
-          converted[key] = val;
-        }
-      }
-      return converted;
-    });
-  }
-  return result;
 }
 
 function setPreviewUrl(url: string) {
@@ -524,12 +196,18 @@ async function generatePreview() {
   isGenerating.value = true;
 
   try {
+    const subDataSources: Record<string, DataRow[]> = {};
+    for (const [name, state] of Object.entries(tableRows)) {
+      if (!state.failed) subDataSources[name] = state.rows;
+    }
     const pdf = await generatePdf(
       {
         jrxml: props.jrxmlContent,
-        parameters: editableParams.value,
-        dataSource: editableDataSource.value,
-        subDataSources: convertSubDataSourcesTypes(),
+        // Fill-in values for anything else the report reads, so it still prints
+        parameters: generateMockParameters(props.reportParameters || []),
+        // One row: the Detail section (where tables live) prints once
+        dataSource: generateMockDataSource(props.reportFields || [], 1),
+        subDataSources,
       },
       controller.signal,
     );
@@ -549,6 +227,11 @@ async function generatePreview() {
   }
 }
 
+function editTable(uuid: string) {
+  emit("update:visible", false);
+  emit("edit-table", uuid);
+}
+
 const closeModal = () => {
   emit("update:visible", false);
 };
@@ -558,13 +241,19 @@ onUnmounted(() => {
   setPreviewUrl("about:blank");
 });
 
+// Opening the preview fetches every table's rows, then builds the PDF
 watch(
   () => props.visible,
-  (newVisible) => {
-    if (newVisible) {
-      initializeEditor();
+  async (open) => {
+    if (!open) {
+      previewController?.abort();
+      return;
     }
+    setPreviewUrl("about:blank");
+    await loadAllRows();
+    if (props.visible) generatePreview();
   },
+  { immediate: true },
 );
 </script>
 
@@ -584,48 +273,102 @@ watch(
   height: 100%;
 }
 
-/* Editor Panel */
-.editor-panel {
-  width: 420px;
-  min-width: 420px;
+.tables-panel {
+  width: 440px;
+  min-width: 440px;
   border-right: 1px solid var(--border-color, #e0e0e0);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: #fafbfc;
 }
 
-.editor-header {
-  padding: 8px 12px;
+.tables-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--border-color, #e0e0e0);
-  display: flex;
-  justify-content: flex-end;
 }
 
-.editor-tabs {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-:deep(.editor-tabs .n-tabs-tab) {
+.tables-head h4 {
+  margin: 0;
   font-size: 13px;
 }
 
-:deep(.editor-tabs .n-tab-pane) {
+.tables-list {
   flex: 1;
-  overflow: hidden;
-}
-
-:deep(.editor-tabs .n-tabs-content) {
-  flex: 1;
-  overflow: hidden;
-}
-
-.tab-content {
-  height: 100%;
   overflow-y: auto;
-  padding: 8px 12px;
+  padding: 12px;
+}
+
+.table-card {
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.card-source {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 0 8px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #374151;
+  background: #fff;
+}
+
+.chip.is-filter {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.card-grid {
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid #eef0f4;
+  border-radius: 6px;
+}
+
+.muted {
+  font-size: 11px;
+  color: #9ca3af;
 }
 
 .empty-hint {
@@ -635,159 +378,6 @@ watch(
   font-size: 13px;
 }
 
-/* Parameters */
-.param-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.param-row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.param-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.param-name {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-color-2, #666);
-}
-
-.param-input {
-  width: 100%;
-  padding: 6px 8px;
-  border: 1px solid var(--border-color, #d9d9d9);
-  border-radius: 4px;
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.2s;
-  box-sizing: border-box;
-}
-
-.param-input:focus {
-  border-color: var(--primary-color, #1890ff);
-}
-
-.param-checkbox {
-  margin: 4px 0;
-}
-
-/* DataSource */
-.ds-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-  gap: 8px;
-}
-
-.row-count-label {
-  font-size: 12px;
-  color: var(--text-color-2, #666);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.row-count-input {
-  width: 60px;
-  padding: 4px 6px;
-  border: 1px solid var(--border-color, #d9d9d9);
-  border-radius: 4px;
-  font-size: 13px;
-  text-align: center;
-}
-
-.ds-table-wrapper {
-  overflow: auto;
-  max-height: calc(90vh - 120px);
-  border: 1px solid var(--border-color, #e0e0e0);
-  border-radius: 4px;
-}
-
-.ds-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  min-width: max-content;
-}
-
-.ds-th {
-  position: sticky;
-  top: 0;
-  background: var(--bg-color, #fafafa);
-  padding: 6px 4px;
-  border-bottom: 2px solid var(--border-color, #e0e0e0);
-  text-align: left;
-  white-space: nowrap;
-  z-index: 1;
-}
-
-.th-inner {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.ds-th-actions {
-  width: 32px;
-  min-width: 32px;
-}
-
-.ds-td {
-  padding: 2px;
-  border-bottom: 1px solid var(--border-color, #f0f0f0);
-}
-
-.ds-td-actions {
-  text-align: center;
-  width: 32px;
-  min-width: 32px;
-}
-
-.ds-cell-input {
-  width: 100%;
-  padding: 4px 6px;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  font-size: 12px;
-  outline: none;
-  box-sizing: border-box;
-  transition: border-color 0.2s;
-}
-
-.ds-cell-input:hover {
-  border-color: var(--border-color, #d9d9d9);
-}
-
-.ds-cell-input:focus {
-  border-color: var(--primary-color, #1890ff);
-}
-
-.remove-row-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-color-3, #999);
-  font-size: 16px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  line-height: 1;
-}
-
-.remove-row-btn:hover {
-  color: var(--error-color, #ff4d4f);
-  background: rgba(255, 77, 79, 0.06);
-}
-
-/* Panel Toggle */
 .panel-toggle {
   width: 18px;
   min-width: 18px;
@@ -800,7 +390,6 @@ watch(
   border-left: 1px solid var(--border-color, #e0e0e0);
   border-right: 1px solid var(--border-color, #e0e0e0);
   color: var(--text-color-3, #999);
-  font-size: 10px;
   transition: background 0.2s;
 }
 
@@ -808,7 +397,6 @@ watch(
   background: var(--hover-color, #f0f0f0);
 }
 
-/* PDF Panel */
 .pdf-panel {
   flex: 1;
   display: flex;

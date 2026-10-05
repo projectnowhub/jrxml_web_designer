@@ -78,12 +78,6 @@ const props = defineProps<{
   parentFrameIndex?: number;
   zoomLevel?: number;
   reportStyles?: any[];
-  tableStyles?: {
-    tableHeader: string;
-    columnHeader: string;
-    columnFooter: string;
-    detailCell: string;
-  };
   pageNumber?: number;
   totalPages?: number;
 }>();
@@ -98,9 +92,6 @@ const emit = defineEmits<{
   finishEditing: [];
   cancelEditing: [];
   checkFields: [fields: string[]];
-  moveColumn: [elementIndex: number, fromIndex: number, toIndex: number, bandIndex: number, parentFrameIndex?: number];
-  addColumnsToGroup: [elementIndex: number, columnIndices: number[], bandIndex: number, parentFrameIndex?: number];
-  joinColumnsToExistingGroup: [elementIndex: number, columnIndices: number[], bandIndex: number, parentFrameIndex?: number];
   'update-jrxml': [];
   'save-state': [];
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
@@ -141,7 +132,6 @@ const commonProps = computed(() => ({
   parentFrameIndex: props.parentFrameIndex,
   zoomLevel: props.zoomLevel,
   reportStyles: props.reportStyles,
-  tableStyles: props.tableStyles,
   pageNumber: props.pageNumber,
   totalPages: props.totalPages
 }));
@@ -179,15 +169,6 @@ const commonEvents = {
   },
   checkFields: (fields: string[]) => {
     emit('checkFields', fields);
-  },
-  moveColumn: (elementIndex: number, fromIndex: number, toIndex: number) => {
-    emit('moveColumn', elementIndex, fromIndex, toIndex, props.bandIndex, props.parentFrameIndex);
-  },
-  addColumnsToGroup: (elementIndex: number, columnIndices: number[]) => {
-    emit('addColumnsToGroup', elementIndex, columnIndices, props.bandIndex, props.parentFrameIndex);
-  },
-  joinColumnsToExistingGroup: (elementIndex: number, columnIndices: number[]) => {
-    emit('joinColumnsToExistingGroup', elementIndex, columnIndices, props.bandIndex, props.parentFrameIndex);
   },
   'update-jrxml': () => {
     emit('update-jrxml');

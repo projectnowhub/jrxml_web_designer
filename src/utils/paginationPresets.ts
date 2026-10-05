@@ -333,7 +333,7 @@ export function findPaginationTargetBand(
     .filter((b) => b.type !== "background" && b.type !== "noData");
   const byType = (t: string) => usable.find((b) => b.type === t)?.index;
   if (positionOf(position).edge === "top") {
-    return byType("pageHeader") ?? byType("title") ?? usable[0]?.index ?? -1;
+    return byType("pageHeader") ?? usable[0]?.index ?? -1;
   }
   return (
     byType("pageFooter") ?? byType("lastPageFooter") ?? usable[usable.length - 1]?.index ?? -1

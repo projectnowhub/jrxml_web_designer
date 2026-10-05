@@ -268,7 +268,6 @@
                         "
                         :zoom-level="zoomLevel"
                         :report-styles="props.reportStyles"
-                        :table-styles="props.tableStyles"
                         :page-number="pIndex"
                         :total-pages="totalPages"
                         @select="selectElement"
@@ -280,11 +279,6 @@
                         @finish-editing="finishEditing"
                         @cancel-editing="cancelEditing"
                         @check-fields="checkFields"
-                        @move-column="handleMoveColumn"
-                        @add-columns-to-group="handleAddColumnsToGroup"
-                        @join-columns-to-existing-group="
-                          handleJoinColumnsToExistingGroup
-                        "
                         @update-jrxml="emit('update-jrxml')"
                         @save-state="emit('save-state')"
                         @rotate="(b, e, p) => emit('rotate', b, e, p)"
@@ -325,7 +319,6 @@
                         "
                         :zoom-level="zoomLevel"
                         :report-styles="props.reportStyles"
-                        :table-styles="props.tableStyles"
                         :page-number="pIndex"
                         :total-pages="totalPages"
                         @select="selectElement"
@@ -337,11 +330,6 @@
                         @finish-editing="finishEditing"
                         @cancel-editing="cancelEditing"
                         @check-fields="checkFields"
-                        @move-column="handleMoveColumn"
-                        @add-columns-to-group="handleAddColumnsToGroup"
-                        @join-columns-to-existing-group="
-                          handleJoinColumnsToExistingGroup
-                        "
                         @update-jrxml="emit('update-jrxml')"
                         @save-state="emit('save-state')"
                         @rotate="(b, e, p) => emit('rotate', b, e, p)"
@@ -391,7 +379,6 @@
                     :is-out-of-bounds="false"
                     :zoom-level="zoomLevel"
                     :report-styles="props.reportStyles"
-                    :table-styles="props.tableStyles"
                     :page-number="pIndex"
                     :total-pages="totalPages"
                   />
@@ -498,12 +485,6 @@ interface Props {
   enableSnapToAlignment: boolean;
   showGrid: boolean;
   reportStyles?: any[];
-  tableStyles?: {
-    tableHeader: string;
-    columnHeader: string;
-    columnFooter: string;
-    detailCell: string;
-  };
   dragFeedback?: DragFeedback; // New: drag feedback
 }
 
@@ -532,12 +513,6 @@ const props = withDefaults(defineProps<Props>(), {
   enableSnapToAlignment: false,
   showGrid: true,
   reportStyles: () => [],
-  tableStyles: () => ({
-    tableHeader: "Table_TH",
-    columnHeader: "Table_CH",
-    columnFooter: "Table_CH",
-    detailCell: "Table_TD",
-  }),
   dragFeedback: () => ({
     previewElement: null,
     previewPosition: null,
@@ -569,13 +544,9 @@ const emit = defineEmits([
   "clear-selection", // Added clear-selection event
   "check-fields", // Added field-check event
   "contextmenu", // Added context menu event
-  "move-column", // Added column-move event
-  "add-columns-to-group", // Added column-grouping event
-  "join-columns-to-existing-group", // Added join-column-to-existing-group event
   "update:enableSnapToGrid", // Added snap-to-grid toggle event
   "update:enableSnapToAlignment", // Added snap-to-alignment toggle event
   "update:showGrid", // Added show/hide grid event
-  "update:table-styles", // Added table style update event
   "reset-zoom", // Added reset zoom event
   "update-jrxml", // Added JRXML update event
   "save-state", // Undo snapshot requested by an element before it changes itself
@@ -870,56 +841,6 @@ const cancelEditing = () => {
 
 const checkFields = (fields: string[]) => {
   emit("check-fields", fields);
-};
-
-// Handle column move event
-const handleMoveColumn = (
-  elementIndex: number,
-  fromIndex: number,
-  toIndex: number,
-  bandIndex: number,
-  parentFrameIndex?: number,
-) => {
-  emit(
-    "move-column",
-    elementIndex,
-    fromIndex,
-    toIndex,
-    bandIndex,
-    parentFrameIndex,
-  );
-};
-
-// Handle adding selected columns to a group
-const handleAddColumnsToGroup = (
-  elementIndex: number,
-  columnIndices: number[],
-  bandIndex: number,
-  parentFrameIndex?: number,
-) => {
-  emit(
-    "add-columns-to-group",
-    elementIndex,
-    columnIndices,
-    bandIndex,
-    parentFrameIndex,
-  );
-};
-
-// Handle adding selected columns to an existing group
-const handleJoinColumnsToExistingGroup = (
-  elementIndex: number,
-  columnIndices: number[],
-  bandIndex: number,
-  parentFrameIndex?: number,
-) => {
-  emit(
-    "join-columns-to-existing-group",
-    elementIndex,
-    columnIndices,
-    bandIndex,
-    parentFrameIndex,
-  );
 };
 
 // Handle element context menu

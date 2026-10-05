@@ -84,22 +84,10 @@
 	<queryString>
 		<![CDATA[]]>
 	</queryString>
-	<title>
-		<band height="85">
-			<staticText>
-				<reportElement x="210" y="20" width="100" height="30" forecolor="#FF0905" uuid="18d6d4e6-7411-45cb-acbf-6a4f9af14872"/>
-				<text><![CDATA[6666666]]></text>
-			</staticText>
-			<textField>
-				<reportElement x="370" y="20" width="100" height="30" forecolor="#FF0905" uuid="71744b3f-0ef2-48df-a44e-76a867e5a92f"/>
-				<textFieldExpression><![CDATA["77777777"]]></textFieldExpression>
-			</textField>
-		</band>
-	</title>
 	<pageHeader>
 		<band height="13"/>
 	</pageHeader>
-	<summary>
+	<detail>
 		<band height="200" splitType="Stretch">
 			<property name="local_mesure_unitheight" value="pixel"/>
 			<componentElement>
@@ -286,5 +274,5 @@
 				</jr:table>
 			</componentElement>
 		</band>
-	</summary>
+	</detail>
 </jasperReport>

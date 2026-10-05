@@ -6,7 +6,7 @@ describe('Handling test for a border line width of 0 when importing from JRXML',
   it('when topPen lineWidth is 0 in the JRXML, the top border should not display after parsing', () => {
     const jrxmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test" pageWidth="595" pageHeight="842">
-  <title>
+  <detail>
     <band height="79">
       <staticText>
         <reportElement x="20" y="20" width="200" height="40"/>
@@ -19,7 +19,7 @@ describe('Handling test for a border line width of 0 when importing from JRXML',
         <text><![CDATA[Test Text]]></text>
       </staticText>
     </band>
-  </title>
+  </detail>
 </jasperReport>`;
 
     const result = parseJRXMLContent(jrxmlContent);
@@ -35,7 +35,7 @@ describe('Handling test for a border line width of 0 when importing from JRXML',
   it('when lineWidth is 0 on all sides in the JRXML, all borders should not display after parsing', () => {
     const jrxmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test" pageWidth="595" pageHeight="842">
-  <title>
+  <detail>
     <band height="79">
       <staticText>
         <reportElement x="20" y="20" width="200" height="40"/>
@@ -51,7 +51,7 @@ describe('Handling test for a border line width of 0 when importing from JRXML',
         <text><![CDATA[Test Text]]></text>
       </staticText>
     </band>
-  </title>
+  </detail>
 </jasperReport>`;
 
     const result = parseJRXMLContent(jrxmlContent);
@@ -74,7 +74,7 @@ describe('Handling test for a border line width of 0 when importing from JRXML',
   it('when lineWidth is 0 on only some sides in the JRXML, only the borders with lineWidth greater than 0 should display after parsing', () => {
     const jrxmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="test" pageWidth="595" pageHeight="842">
-  <title>
+  <detail>
     <band height="79">
       <staticText>
         <reportElement x="20" y="20" width="200" height="40"/>
@@ -90,7 +90,7 @@ describe('Handling test for a border line width of 0 when importing from JRXML',
         <text><![CDATA[Test Text]]></text>
       </staticText>
     </band>
-  </title>
+  </detail>
 </jasperReport>`;
 
     const result = parseJRXMLContent(jrxmlContent);

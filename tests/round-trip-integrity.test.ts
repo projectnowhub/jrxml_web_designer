@@ -51,7 +51,7 @@ const FORECOLOR_JRXML = `<?xml version="1.0" encoding="UTF-8"?>
               pageWidth="595" pageHeight="842"
               columnWidth="555" leftMargin="20" rightMargin="20"
               topMargin="20" bottomMargin="20">
-  <title>
+  <detail>
     <band height="100">
       <rectangle>
         <reportElement x="0" y="0" width="100" height="50" uuid="r1" forecolor="#FF0000" backcolor="#00FF00" mode="Opaque"/>
@@ -63,7 +63,7 @@ const FORECOLOR_JRXML = `<?xml version="1.0" encoding="UTF-8"?>
         <reportElement x="0" y="60" width="555" height="1" uuid="l1" forecolor="#333333" mode="Transparent"/>
       </line>
     </band>
-  </title>
+  </detail>
 </jasperReport>`;
 
 const FRAME_JRXML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -72,7 +72,7 @@ const FRAME_JRXML = `<?xml version="1.0" encoding="UTF-8"?>
               pageWidth="595" pageHeight="842"
               columnWidth="555" leftMargin="20" rightMargin="20"
               topMargin="20" bottomMargin="20">
-  <title>
+  <detail>
     <band height="150">
       <frame>
         <reportElement x="10" y="10" width="500" height="100" uuid="f1" forecolor="#AA00BB" backcolor="#112233"/>
@@ -82,7 +82,7 @@ const FRAME_JRXML = `<?xml version="1.0" encoding="UTF-8"?>
         </staticText>
       </frame>
     </band>
-  </title>
+  </detail>
 </jasperReport>`;
 
 const STATICTEXT_ROTATION_JRXML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -91,14 +91,14 @@ const STATICTEXT_ROTATION_JRXML = `<?xml version="1.0" encoding="UTF-8"?>
               pageWidth="595" pageHeight="842"
               columnWidth="555" leftMargin="20" rightMargin="20"
               topMargin="20" bottomMargin="20">
-  <title>
+  <detail>
     <band height="80">
       <staticText rotation="Left" textAdjust="StretchHeight" pattern="#,##0.00">
         <reportElement x="0" y="0" width="200" height="50" uuid="rs1"/>
         <text><![CDATA[Rotated Text]]></text>
       </staticText>
     </band>
-  </title>
+  </detail>
 </jasperReport>`;
 
 const REPORT_PROPERTY_JRXML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -109,7 +109,7 @@ const REPORT_PROPERTY_JRXML = `<?xml version="1.0" encoding="UTF-8"?>
               topMargin="20" bottomMargin="20">
   <property name="net.sf.jasperreports.print.keep.full.text" value="true"/>
   <property name="com.example.custom" value="testValue"/>
-  <title><band height="30"><staticText><reportElement x="0" y="0" width="100" height="20"/><text><![CDATA[Test]]></text></staticText></band></title>
+  <detail><band height="30"><staticText><reportElement x="0" y="0" width="100" height="20"/><text><![CDATA[Test]]></text></staticText></band></detail>
 </jasperReport>`;
 
 const SUBDATASET_PROPERTIES_JRXML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -124,7 +124,7 @@ const SUBDATASET_PROPERTIES_JRXML = `<?xml version="1.0" encoding="UTF-8"?>
       <property name="com.jaspersoft.studio.field.label" value="Field 1"/>
     </field>
   </subDataset>
-  <title><band height="30"/></title>
+  <detail><band height="30"/></detail>
 </jasperReport>`;
 
 const EXPRESSION_JRXML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -396,7 +396,7 @@ describe('Round-trip integrity: parse ↔ generate', () => {
               pageWidth="595" pageHeight="842"
               columnWidth="555" leftMargin="20" rightMargin="20"
               topMargin="20" bottomMargin="20">
-  <title>
+  <detail>
     <band height="150">
       <image scaleImage="FillFrame" isUsingCache="true" isLazy="true" onErrorType="Blank" evaluationTime="Page" hyperlinkType="Reference">
         <reportElement x="0" y="0" width="200" height="100" uuid="img1" forecolor="#112233"/>
@@ -404,7 +404,7 @@ describe('Round-trip integrity: parse ↔ generate', () => {
         <hyperlinkReferenceExpression><![CDATA["http://example.com"]]></hyperlinkReferenceExpression>
       </image>
     </band>
-  </title>
+  </detail>
 </jasperReport>`;
 
   it('should parse and regenerate image properties (isUsingCache, isLazy, onErrorType, evaluationTime, hyperlinkType)', () => {
@@ -439,7 +439,7 @@ describe('Round-trip integrity: parse ↔ generate', () => {
               pageWidth="595" pageHeight="842"
               columnWidth="555" leftMargin="20" rightMargin="20"
               topMargin="20" bottomMargin="20">
-  <title>
+  <detail>
     <band height="50">
       <line direction="BottomUp">
         <reportElement x="0" y="0" width="555" height="1" uuid="line1" forecolor="#FF0000" mode="Opaque"/>
@@ -448,7 +448,7 @@ describe('Round-trip integrity: parse ↔ generate', () => {
         </graphicElement>
       </line>
     </band>
-  </title>
+  </detail>
 </jasperReport>`;
 
   it('should parse and regenerate line graphicElement (pen with lineWidth, lineColor, lineStyle)', () => {
@@ -521,7 +521,7 @@ describe('Round-trip integrity: parse ↔ generate', () => {
               pageWidth="595" pageHeight="842"
               columnWidth="555" leftMargin="20" rightMargin="20"
               topMargin="20" bottomMargin="20">
-  <title>
+  <detail>
     <band height="100">
       <frame isIgnorePagination="true" splitType="Stretch">
         <reportElement x="10" y="10" width="500" height="80" uuid="frame1"/>
@@ -532,7 +532,7 @@ describe('Round-trip integrity: parse ↔ generate', () => {
         </staticText>
       </frame>
     </band>
-  </title>
+  </detail>
 </jasperReport>`;
 
   it('should parse and regenerate frame isIgnorePagination, splitType, and layout', () => {
@@ -561,13 +561,13 @@ describe('Round-trip integrity: parse ↔ generate', () => {
               pageWidth="595" pageHeight="842"
               columnWidth="555" leftMargin="20" rightMargin="20"
               topMargin="20" bottomMargin="20">
-  <title>
+  <detail>
     <band height="30">
       <break type="Page">
         <reportElement x="0" y="0" width="555" height="1" uuid="brk1" isResetPageNumber="true" isResetPageOverflow="true"/>
       </break>
     </band>
-  </title>
+  </detail>
 </jasperReport>`;
 
   it('drops page breaks outside the detail band (not an element)', () => {

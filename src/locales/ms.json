@@ -55,12 +55,6 @@
     "reportParameters": "Parameter Laporan",
     "dataFields": "Medan Data",
     "addDataField": "Tambah Medan Data",
-    "subDatasets": "Jadual",
-    "addSubDataset": "Tambah Jadual",
-    "editSubDataset": "Edit Jadual",
-    "deleteSubDataset": "Padam Jadual",
-    "noSubDatasets": "Tiada jadual",
-    "clickToAddSubDataset": "Klik + untuk menambah jadual",
     "subDatasetName": "Nama Jadual",
     "subDatasetNamePlaceholder": "Masukkan nama jadual",
     "subDatasetNameRequired": "Nama jadual diperlukan",
@@ -120,13 +114,11 @@
     "duplicateFieldName": "Nama medan sudah wujud, sila gunakan nama lain"
   },
   "bandNames": {
-    "title": "Tajuk",
     "pageHeader": "Pengepala Halaman",
     "columnHeader": "Pengepala Lajur",
     "detail": "Butiran",
     "columnFooter": "Pengaki Lajur",
     "pageFooter": "Pengaki Halaman",
-    "summary": "Ringkasan",
     "background": "Latar Belakang",
     "lastPageFooter": "Pengaki Halaman Terakhir",
     "noData": "Tiada Data"
@@ -583,26 +575,8 @@
     "title": "Pratonton PDF",
     "generateBtn": "Jana PDF",
     "editor": {
-      "showPanel": "Tunjukkan Panel Editor",
-      "hidePanel": "Sembunyikan Panel Editor"
-    },
-    "parameters": {
-      "title": "Parameter",
-      "name": "Nama",
-      "type": "Jenis",
-      "value": "Nilai",
-      "noParameters": "Tiada parameter ditakrifkan"
-    },
-    "dataSource": {
-      "title": "Sumber Data",
-      "rowCount": "Bilangan Baris",
-      "regenerate": "Jana Semula",
-      "addRow": "Tambah Baris",
-      "removeRow": "Buang Baris",
-      "noFields": "Tiada medan ditakrifkan"
-    },
-    "subDataset": {
-      "title": "Sub Set Data"
+      "showPanel": "Tunjukkan jadual",
+      "hidePanel": "Sembunyikan jadual"
     },
     "generationFailed": "Penjanaan PDF gagal",
     "errors": {
@@ -610,6 +584,13 @@
       "invalidJson": "Pelayan mengembalikan JSON yang tidak sah dan bukannya PDF",
       "noPdf": "Respons pelayan tidak mengandungi PDF",
       "notPdf": "Respons pelayan bukan PDF (jenis kandungan: {type})"
+    },
+    "tables": {
+      "title": "Jadual dalam laporan ini",
+      "readOnly": "Baca sahaja — edit dalam pereka",
+      "none": "Laporan ini belum ada jadual dengan data.",
+      "edit": "Edit dalam pereka",
+      "rowsCapped": "{shown} baris pertama daripada {count}"
     }
   },
   "previewServerSettings": {
@@ -1139,22 +1120,6 @@
     },
     "startsLater": "Penomboran bermula pada halaman {page}, yang belum ada dalam reka bentuk ini. Dipaparkan pudar di sini supaya anda masih boleh memilihnya."
   },
-  "table": {
-    "dataSource": "Sumber Data Jadual",
-    "dataSourcePlaceholder": "cth. Pesanan Jualan",
-    "styles": "Gaya jadual",
-    "tableHeaderStyle": "Gaya pengepala jadual",
-    "columnHeaderStyle": "Gaya pengepala lajur",
-    "detailStyle": "Gaya butiran",
-    "columnFooterStyle": "Gaya pengaki lajur",
-    "tableFooterStyle": "Gaya pengaki jadual",
-    "printHeaders": "Cetak pengepala",
-    "printHeadersDescription": "Sama ada untuk mencetak pengepala jadual",
-    "rowGroups": "Kumpulan baris",
-    "groupName": "Kumpulan {number}",
-    "noRowGroups": "Belum ada kumpulan baris",
-    "addRowGroup": "Tambah kumpulan baris"
-  },
   "expression": {
     "builtIn": {
       "REPORT_PARAMETERS_MAP": "Peta parameter laporan yang dihantar semasa laporan diisi",
@@ -1338,6 +1303,124 @@
       "pie": "Setiap baris menambah nilainya pada hirisan yang dinamakan oleh label.",
       "category": "Setiap baris menambah nilainya pada satu kategori (satu bar atau titik); siri membahagikannya kepada kumpulan.",
       "xy": "Setiap baris ialah satu titik pada (X, Y); siri membahagikan titik kepada garis atau kumpulan."
+    }
+  },
+  "dataTable": {
+    "dropHint": "Seret data jadual ke sini",
+    "placeholderColumn": "Lajur {n}",
+    "moreRows": "+1 baris lagi | +{count} baris lagi",
+    "loading": "Memuatkan data…",
+    "loadFailed": "Data tidak dapat dimuatkan",
+    "noRows": "Tiada rekod ditemui",
+    "onlyInDetail": "Jadual hanya boleh diletakkan dalam bahagian Butiran.",
+    "columnAlreadyShown": "\"{column}\" sudah ada dalam jadual ini.",
+    "columnLimitReached": "Jadual ini sudah penuh: paling banyak {max} lajur muat. Lebarkan jadual atau buang satu lajur dahulu.",
+    "totals": {
+      "label": "Jumlah",
+      "sum": "Hasil tambah",
+      "avg": "Purata",
+      "count": "Bilangan"
+    },
+    "operators": {
+      "equals": "ialah",
+      "notEquals": "bukan",
+      "contains": "mengandungi",
+      "startsWith": "bermula dengan",
+      "isEmpty": "kosong",
+      "isNotEmpty": "tidak kosong",
+      "greaterThan": "lebih daripada",
+      "lessThan": "kurang daripada",
+      "between": "antara",
+      "on": "pada",
+      "before": "sebelum",
+      "after": "selepas"
+    },
+    "summary": {
+      "between": "{column} antara {from} dan {to}"
+    },
+    "types": {
+      "text": "Teks",
+      "number": "Nombor",
+      "currency": "Amaun",
+      "date": "Tarikh"
+    },
+    "theme": {
+      "label": "Tema",
+      "corporateBlue": "Biru Korporat",
+      "minimal": "Minimal",
+      "emerald": "Zamrud"
+    },
+    "panel": {
+      "data": "Data",
+      "tableName": "Nama jadual",
+      "columnCount": "1 lajur | {count} lajur",
+      "matchAll": "(semua mesti sepadan)",
+      "matchAny": "(mana-mana boleh sepadan)",
+      "firstRows": "Baris pertama sahaja | {count} baris pertama",
+      "editData": "Edit data",
+      "emptyHint": "Seret sumber dari Data Jadual ke jadual ini, atau pilih satu di sini.",
+      "chooseData": "Pilih data",
+      "look": "Rupa",
+      "headerHeight": "Tinggi pengepala",
+      "rowHeight": "Tinggi baris"
+    },
+    "config": {
+      "title": "Sediakan {name}",
+      "source": "Sumber",
+      "chooseSource": "Pilih sumber",
+      "replacesData": "Guna akan menggantikan data semasa jadual ini ({source}).",
+      "sourceOption": "{name} ({count} baris)",
+      "columns": "Lajur",
+      "columnCounter": "{count} daripada {max}",
+      "moveUp": "Alih ke atas",
+      "moveDown": "Alih ke bawah",
+      "headerText": "Teks pengepala",
+      "total": "Jumlah",
+      "noTotal": "Tiada jumlah",
+      "removeColumn": "Buang lajur",
+      "addColumn": "Tambah lajur…",
+      "columnLimitHint": "Tiada lagi lajur yang muat. Buang satu, atau lebarkan jadual (halaman landskap memuatkan lebih banyak).",
+      "filters": "Penapis",
+      "match": {
+        "all": "Semua mesti sepadan",
+        "any": "Mana-mana boleh sepadan"
+      },
+      "value": "Nilai",
+      "value2": "dan",
+      "removeFilter": "Buang penapis",
+      "addFilter": "Tambah penapis",
+      "sort": "Isih",
+      "sortBy": "Isih mengikut",
+      "thenBy": "kemudian mengikut",
+      "ascending": "Menaik",
+      "descending": "Menurun",
+      "removeSort": "Buang isihan",
+      "addSort": "Tambah isihan",
+      "rows": "Baris dan jumlah",
+      "limitRows": "Tunjukkan hanya",
+      "rowLimit": "Bilangan baris",
+      "showTotals": "Tambah baris jumlah",
+      "preview": "Pratonton",
+      "pickSourceFirst": "Pilih sumber untuk melihat datanya",
+      "previewCapped": "Menunjukkan {shown} baris pertama daripada {count}",
+      "rowCount": "1 baris | {count} baris",
+      "needColumn": "Pilih sekurang-kurangnya satu lajur",
+      "tooManyColumns": "Terlalu banyak lajur: paling banyak {max} muat",
+      "apply": "Guna"
+    },
+    "library": {
+      "title": "Data Jadual",
+      "reload": "Muat semula sumber",
+      "search": "Cari sumber dan lajur",
+      "hint": "Seret sumber ke jadual (atau halaman) untuk memaparkan datanya. Seret lajur untuk menambah lajur itu sahaja.",
+      "retry": "Cuba lagi",
+      "noMatch": "Tiada sumber yang sepadan",
+      "dragSource": "Seret ke jadual atau halaman",
+      "expand": "Tunjukkan lajur",
+      "collapse": "Sembunyikan lajur",
+      "rows": "1 baris | {count} baris",
+      "usedIn": "Digunakan dalam: {tables}",
+      "dragColumn": "Seret ke jadual untuk menambah lajur ini"
     }
   }
 }

@@ -15,7 +15,6 @@ import {
 import { useI18n } from "vue-i18n";
 import { NButton, NAlert } from "naive-ui";
 import ResizablePanel from "./ResizablePanel.vue";
-import PdfPreviewModal from "../modals/PdfPreviewModal.vue";
 import CodeMirrorEditor from "../editor/CodeMirrorEditor.vue";
 
 import {
@@ -25,7 +24,7 @@ import {
   type ValidationError,
   type AutoFixResult,
 } from "../../utils/jrxml/xsdValidator";
-import { html_beautify } from "js-beautify";
+import { formatXml } from "../../utils/jrxml/formatXml";
 
 import type { Band, ReportProperties } from "../../types";
 import {
@@ -62,6 +61,7 @@ interface Props {
 
 // Define component events
 interface Emits {
+  (e: "open-preview"): void;
   (e: "update:visible", value: boolean): void;
   (e: "size-change", value: number): void;
   (e: "update:report-properties", value: any): void;
@@ -162,7 +162,6 @@ const orientation = ref("Portrait");
 const availableFonts = ref<string[]>([]);
 
 // PDF preview modal visibility state
-const showPdfPreview = ref(false);
 
 // Reference to the CodeMirrorEditor component
 const codeMirrorEditorRef = ref<InstanceType<typeof CodeMirrorEditor> | null>(
@@ -240,16 +239,13 @@ onMounted(async () => {
   availableFonts.value = await getAvailableFonts();
 });
 
-// Open the PDF preview
+// Open the PDF preview (the designer owns it, with the report's table data)
 const openPdfPreview = (): void => {
   if (!localJrxmlContent.value) {
     alert(t("bottomPanel.alerts.generateJrxmlFirst"));
     return;
   }
-  showPdfPreview.value = false;
-  nextTick(() => {
-    showPdfPreview.value = true;
-  });
+  emit("open-preview");
 };
 
 // Computed property: local binding for reportProperties
@@ -555,29 +551,7 @@ const localSelectedBandTypes = computed({
 const localJrxmlContent = computed({
   get: () => {
     if (!props.jrxmlContent) return props.jrxmlContent;
-    return html_beautify(props.jrxmlContent, {
-      indent_size: 2,
-      wrap_attributes: "auto",
-      wrap_line_length: 120,
-      content_unformatted: [
-        "text",
-        "textFieldExpression",
-        "parameterExpression",
-        "queryString",
-        "sortField",
-        "groupExpression",
-        "reportFont",
-        "property",
-        "propertyExpression",
-        "font",
-      ],
-      extra_liners: [
-        "text",
-        "textFieldExpression",
-        "parameterExpression",
-        "queryString",
-      ],
-    });
+    return formatXml(props.jrxmlContent);
   },
   set: (value) => emit("update:jrxml-content", value),
 });
@@ -1309,11 +1283,6 @@ onBeforeUnmount(() => {
     </div>
   </ResizablePanel>
 
-  <PdfPreviewModal
-    :visible="showPdfPreview"
-    :jrxml-content="localJrxmlContent"
-    @update:visible="showPdfPreview = $event"
-  />
 </template>
 
 <style scoped>

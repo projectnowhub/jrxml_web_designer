@@ -1,4 +1,7 @@
-import type { DesignElement, BandType, Band, ReportGroup } from "@/types";
+import type { DesignElement, BandType, Band, ReportGroup, TableElement } from "@/types";
+import { TABLE_BINDING_PROPERTY, parseBinding } from "../table/dataBinding";
+import { TABLE_HEADER_HEIGHT, TABLE_ROW_HEIGHT } from "../table/dataTable";
+import { collectBoundTables } from "./tableXml";
 import {
   BOX_CORNER_RADIUS_PROPERTY,
   decodeCornerRadii,
@@ -10,6 +13,7 @@ import {
   withoutLines,
 } from "../framePresets";
 import { detectPagination } from "../paginationPresets";
+import { withoutLegacyTableStyles } from "../table/tableThemes";
 import type {
   ReportProperties,
   Field,
@@ -190,14 +194,12 @@ export function parseJRXMLContent(jrxmlContent: string): {
   const bands: Band[] = [];
   const bandTypes = [
     "background",
-    "title",
     "pageHeader",
     "columnHeader",
     "detail",
     "columnFooter",
     "pageFooter",
     "lastPageFooter",
-    "summary",
     "noData",
   ];
 
@@ -319,12 +321,16 @@ export function parseJRXMLContent(jrxmlContent: string): {
     bands.push(band);
   });
 
-  // Parse sub-datasets
+  // Parse sub-datasets. A data table's own dataset is rebuilt from the
+  // table's setup when the report is written, so it isn't kept here.
+  const tableDatasetNames = new Set(
+    collectBoundTables(bands).map((table) => table.binding.datasetName),
+  );
   const datasets: SubDataset[] = [];
   Array.from(jasperReportElem.children).forEach((child) => {
     if (child.tagName === "subDataset" || child.localName === "subDataset") {
       const dataset = parseSubDataset(child);
-      datasets.push(dataset);
+      if (!tableDatasetNames.has(dataset.name)) datasets.push(dataset);
     }
   });
 
@@ -480,86 +486,20 @@ export function parseJRXMLContent(jrxmlContent: string): {
     if (child.tagName === "style" || child.localName === "style") {
       const name = child.getAttribute("name");
       if (!name) return;
-      const style: ReportStyle = { name };
-      if (child.hasAttribute("parentStyle"))
-        style.parentStyle = child.getAttribute("parentStyle") || undefined;
-      if (child.hasAttribute("mode"))
-        style.mode = child.getAttribute("mode") || undefined;
-      if (child.hasAttribute("backcolor"))
-        style.backcolor = child.getAttribute("backcolor") || undefined;
-      if (child.hasAttribute("forecolor"))
-        style.forecolor = child.getAttribute("forecolor") || undefined;
-      const condExpr = child.querySelector("conditionExpression");
-      if (condExpr && condExpr.textContent)
-        style.conditionExpression = condExpr.textContent.trim();
-      const boxElem = child.querySelector("box");
-      if (boxElem) style.box = parseBoxElement(boxElem);
-      const textElem = child.querySelector("textElement");
-      if (textElem) {
-        if (textElem.hasAttribute("textAlignment"))
-          style.textAlignment =
-            textElem.getAttribute("textAlignment") || undefined;
-        if (textElem.hasAttribute("verticalAlignment"))
-          style.verticalAlignment =
-            textElem.getAttribute("verticalAlignment") || undefined;
-        const fontElem = textElem.querySelector("font");
-        if (fontElem) {
-          if (fontElem.hasAttribute("fontName"))
-            style.fontFamily = fontElem.getAttribute("fontName") || undefined;
-          if (fontElem.hasAttribute("size"))
-            style.fontSize = parseInt(fontElem.getAttribute("size") || "12");
-          style.isBold = fontElem.getAttribute("isBold") === "true";
-          style.isItalic = fontElem.getAttribute("isItalic") === "true";
-          style.isUnderline = fontElem.getAttribute("isUnderline") === "true";
-        }
-      }
-      const conditionalStyleElems = child.querySelectorAll("conditionalStyle");
+      const style: ReportStyle = { name, ...readStyleLook(child) };
+      // Parent style: "style" in the schema; "parentStyle" in older designer files
+      const parent = child.getAttribute("style") || child.getAttribute("parentStyle");
+      if (parent) style.parentStyle = parent;
+      const conditionalStyleElems = directChildren(child, "conditionalStyle");
       if (conditionalStyleElems.length > 0) {
-        style.conditionalStyles = [];
-        conditionalStyleElems.forEach((csElem) => {
-          const cs: ConditionalStyle = {
-            conditionExpression: "",
-            properties: {},
-          };
-          const csCondExpr = csElem.querySelector("conditionExpression");
-          if (csCondExpr && csCondExpr.textContent)
-            cs.conditionExpression = csCondExpr.textContent.trim();
-          if (csElem.hasAttribute("forecolor"))
-            cs.properties.forecolor =
-              csElem.getAttribute("forecolor") || undefined;
-          if (csElem.hasAttribute("backcolor"))
-            cs.properties.backcolor =
-              csElem.getAttribute("backcolor") || undefined;
-          if (csElem.hasAttribute("mode"))
-            cs.properties.mode = csElem.getAttribute("mode") || undefined;
-          const csBox = csElem.querySelector("box");
-          if (csBox) cs.properties.box = parseBoxElement(csBox);
-          const csTextElem = csElem.querySelector("textElement");
-          if (csTextElem) {
-            if (csTextElem.hasAttribute("textAlignment"))
-              cs.properties.textAlignment =
-                csTextElem.getAttribute("textAlignment") || undefined;
-            if (csTextElem.hasAttribute("verticalAlignment"))
-              cs.properties.verticalAlignment =
-                csTextElem.getAttribute("verticalAlignment") || undefined;
-            const csFont = csTextElem.querySelector("font");
-            if (csFont) {
-              if (csFont.hasAttribute("fontName"))
-                cs.properties.fontFamily =
-                  csFont.getAttribute("fontName") || undefined;
-              if (csFont.hasAttribute("size"))
-                cs.properties.fontSize = parseInt(
-                  csFont.getAttribute("size") || "12",
-                );
-              cs.properties.isBold = csFont.getAttribute("isBold") === "true";
-              cs.properties.isItalic =
-                csFont.getAttribute("isItalic") === "true";
-              cs.properties.isUnderline =
-                csFont.getAttribute("isUnderline") === "true";
-            }
-          }
-          if (!style.conditionalStyles) style.conditionalStyles = [];
-          style.conditionalStyles.push(cs);
+        style.conditionalStyles = conditionalStyleElems.map((csElem) => {
+          const csCondExpr = directChildren(csElem, "conditionExpression")[0];
+          // The schema puts the look on a nested <style>; older files on the element itself
+          const look = directChildren(csElem, "style")[0] ?? csElem;
+          return {
+            conditionExpression: csCondExpr?.textContent?.trim() ?? "",
+            properties: readStyleLook(look),
+          } as ConditionalStyle;
         });
       }
       styles.push(style);
@@ -586,7 +526,7 @@ export function parseJRXMLContent(jrxmlContent: string): {
     datasets,
     variables,
     groups,
-    styles,
+    styles: withoutLegacyTableStyles(styles),
     reportProperties,
   };
 }
@@ -758,6 +698,9 @@ function parseBandElements(bandElem: Element): any[] {
       if (parsedElement) {
         elements.push(parsedElement);
       }
+    } else if (elementType === "frame" && isEmptyTableFrame(child)) {
+      const table = parseEmptyTable(child);
+      if (table) elements.push(table);
     } else if (validElementTypes.includes(elementType)) {
       const parsedElement = parseElement(child, elementType);
       if (parsedElement) {
@@ -816,8 +759,7 @@ function parseComponentElement(componentElem: Element): any {
   }
 
   if (tableElem) {
-    // Parse the table
-    return parseTableElement(tableElem, reportElement);
+    return parseDataTable(tableElem, reportElement);
   }
 
   // Find a barcode4j element - supports with or without a namespace prefix
@@ -878,497 +820,97 @@ function parseComponentElement(componentElem: Element): any {
   return null;
 }
 
-// Parse the contents of a table cell
-function parseCellContent(cellElem: Element): any {
-  // Parse the cell height
-  const height = parseInt(cellElem.getAttribute("height") || "30");
-
-  // Parse the elements inside the cell
-  const elements: any[] = [];
-  const validElementTypes = [
-    "staticText",
-    "textField",
-    "image",
-    "line",
-    "rectangle",
-    "ellipse",
-    "frame",
-    "chart",
-  ];
-
-  Array.from(cellElem.children).forEach((child) => {
-    const elementType = child.localName || child.tagName;
-    if (validElementTypes.includes(elementType)) {
-      const parsedElement = parseElement(child, elementType);
-      if (parsedElement) {
-        elements.push(parsedElement);
-      }
-    }
-  });
-
-  // Return wrapped in the { enable, element } format, matching what the generator expects
-  if (elements.length > 0) {
-    return {
-      enable: true,
-      element: {
-        ...elements[0],
-        height,
-      },
-    };
-  }
-
-  // Default text field element
-  return {
-    enable: true,
-    element: {
-      type: "textField",
-      x: 0,
-      y: 0,
-      width: 100,
-      height,
-      expression: "",
-      textAlignment: "Left",
-      verticalAlignment: "Middle",
-    },
-  };
-}
-
-// Parse a table column element
-function parseColumnElement(columnElem: Element, index: number): any {
-  const columnWidth = parseInt(columnElem.getAttribute("width") || "100");
-  const columnUuid = columnElem.getAttribute("uuid") || crypto.randomUUID();
-
-  // Parse the table header, column header, and detail cells - supports cell elements with or without a namespace
-  const tableHeaderElem = Array.from(columnElem.children).find(
-    (cell) => cell.localName === "tableHeader",
-  );
-  const columnHeaderElem = Array.from(columnElem.children).find(
-    (cell) => cell.localName === "columnHeader",
-  );
-  const tableFooterElem = Array.from(columnElem.children).find(
-    (cell) => cell.localName === "tableFooter",
-  );
-  const columnFooterElem = Array.from(columnElem.children).find(
-    (cell) => cell.localName === "columnFooter",
-  );
-  const detailCellElem = Array.from(columnElem.children).find(
-    (cell) => cell.localName === "detailCell",
-  );
-
-  // Parse the rowSpan attribute
-  const parseCellWithRowSpan = (cellElem: Element | undefined) => {
-    if (!cellElem) return null;
-    const cellContent = parseCellContent(cellElem);
-    // Capture the rowSpan attribute, defaulting to 1
-    cellContent.rowSpan = parseInt(cellElem.getAttribute("rowSpan") || "1");
-    return cellContent;
-  };
-
-  const tableHeader = tableHeaderElem
-    ? parseCellWithRowSpan(tableHeaderElem)
-    : null;
-  const columnHeader = columnHeaderElem
-    ? parseCellWithRowSpan(columnHeaderElem)
-    : null;
-  const tableFooter = tableFooterElem
-    ? parseCellWithRowSpan(tableFooterElem)
-    : null;
-  const columnFooter = columnFooterElem
-    ? parseCellWithRowSpan(columnFooterElem)
-    : null;
-  const detailCell = detailCellElem
-    ? parseCellWithRowSpan(detailCellElem)
-    : null;
-
-  // Get the column name - from a text element inside columnHeader
-  let columnName = "";
-
-  // First try to get the column name from columnHeader (accessed via the .element sub-object)
-  if (columnHeader) {
-    const elem = columnHeader.element || columnHeader;
-    if (elem.expression) {
-      // Strip the surrounding quotes from the expression value
-      columnName = elem.expression.replace(/^"|"$/g, "");
-    } else if (elem.text) {
-      columnName = elem.text;
-    }
-  }
-
-  // If no column name was found in columnHeader, fall back to the property element
-  if (!columnName) {
-    const columnNameProp = columnElem.querySelector(
-      'property[name="com.jaspersoft.studio.components.table.model.column.name"]',
-    );
-    columnName = columnNameProp?.getAttribute("value") || "";
-  }
-
-  // If still no column name was found, use a default column name
-  if (!columnName) {
-    columnName = `Column${index + 1}`;
-  }
-
-  // Set default values for cells with no content (using the { enable, element } wrapper format)
-  let tableHeaderWithDefaults = tableHeader;
-  if (!tableHeaderWithDefaults) {
-    tableHeaderWithDefaults = {
-      enable: true,
-      element: {
-        type: "textField",
-        x: 0,
-        y: 0,
-        width: columnWidth,
-        height: 30,
-        expression: "",
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-      rowSpan: 1,
-    };
-  }
-
-  let columnHeaderWithDefaults = columnHeader;
-  if (!columnHeaderWithDefaults) {
-    columnHeaderWithDefaults = {
-      enable: true,
-      element: {
-        type: "textField",
-        x: 0,
-        y: 0,
-        width: columnWidth,
-        height: 30,
-        expression: `"${columnName}"`,
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-      rowSpan: 1,
-    };
-  }
-
-  let tableFooterWithDefaults = tableFooter;
-  if (!tableFooterWithDefaults) {
-    tableFooterWithDefaults = {
-      enable: true,
-      element: {
-        type: "textField",
-        x: 0,
-        y: 0,
-        width: columnWidth,
-        height: 30,
-        expression: "",
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-      rowSpan: 1,
-    };
-  }
-
-  let columnFooterWithDefaults = columnFooter;
-  if (!columnFooterWithDefaults) {
-    columnFooterWithDefaults = {
-      enable: true,
-      element: {
-        type: "textField",
-        x: 0,
-        y: 0,
-        width: columnWidth,
-        height: 30,
-        expression: "",
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-      rowSpan: 1,
-    };
-  }
-
-  let detailCellWithDefaults = detailCell;
-  if (!detailCellWithDefaults) {
-    detailCellWithDefaults = {
-      enable: true,
-      element: {
-        type: "textField",
-        x: 0,
-        y: 0,
-        width: columnWidth,
-        height: 30,
-        expression: "",
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-      rowSpan: 1,
-    };
-  }
-
-  return {
-    type: "column",
-    uuid: columnUuid || crypto.randomUUID(),
-    width: columnWidth,
-    name: columnName,
-    hasTableHeader: !!tableHeaderElem,
-    hasColumnHeader: !!columnHeaderElem,
-    hasTableFooter: !!tableFooterElem,
-    hasColumnFooter: !!columnFooterElem,
-    hasDetailCell: !!detailCellElem,
-    tableHeader: tableHeaderWithDefaults,
-    columnHeader: columnHeaderWithDefaults,
-    tableFooter: tableFooterWithDefaults,
-    columnFooter: columnFooterWithDefaults,
-    detailCell: detailCellWithDefaults,
-  };
-}
-
-// Parse a column group element
-function parseColumnGroupElement(groupElem: Element, index: number): any {
-  const groupUuid = groupElem.getAttribute("uuid") || crypto.randomUUID();
-  const groupWidth = parseInt(groupElem.getAttribute("width") || "0");
-
-  // First parse the columnHeader element
-  const columnHeaderElem = Array.from(groupElem.children).find(
-    (cell) => cell.localName === "columnHeader",
-  );
-
-  // Helper function to parse the rowSpan attribute
-  const parseCellWithRowSpan = (cellElem: Element | undefined) => {
-    if (!cellElem) return undefined;
-    const cellContent = parseCellContent(cellElem);
-    // Capture the rowSpan attribute, defaulting to 1
-    cellContent.rowSpan = parseInt(cellElem.getAttribute("rowSpan") || "1");
-    return cellContent;
-  };
-
-  // Get the column name - from a text element inside columnHeader
-  let groupName = "";
-  const columnHeader = columnHeaderElem
-    ? parseCellWithRowSpan(columnHeaderElem)
-    : undefined;
-
-  // First try to get the column name from columnHeader (accessed via the .element sub-object)
-  if (columnHeader) {
-    const elem = columnHeader.element || columnHeader;
-    if (elem.expression) {
-      groupName = (elem.expression || "").replace(/^"|"$/g, "");
-    } else if (elem.text) {
-      groupName = elem.text;
-    }
-  }
-
-  // If no column name was found in columnHeader, fall back to the property element
-  if (!groupName) {
-    const groupNameProp = groupElem.querySelector(
-      'property[name="com.jaspersoft.studio.components.table.model.column.name"]',
-    );
-    groupName = groupNameProp?.getAttribute("value") || "";
-  }
-
-  // If still no column name was found, use a default column name
-  if (!groupName) {
-    groupName = `Group${index + 1}`;
-  }
-
-  const group: any = {
-    type: "columnGroup",
-    uuid: groupUuid,
-    width: groupWidth,
-    name: groupName,
-    children: [],
-  };
-
-  // Parse tableHeader
-  const tableHeaderElem = Array.from(groupElem.children).find(
-    (cell) => cell.localName === "tableHeader",
-  );
-  group.hasTableHeader = !!tableHeaderElem;
-  if (tableHeaderElem) {
-    group.tableHeader = parseCellWithRowSpan(tableHeaderElem);
-  }
-
-  // Parse tableFooter
-  const tableFooterElem = Array.from(groupElem.children).find(
-    (cell) => cell.localName === "tableFooter",
-  );
-  group.hasTableFooter = !!tableFooterElem;
-  if (tableFooterElem) {
-    group.tableFooter = parseCellWithRowSpan(tableFooterElem);
-  }
-
-  // Parse columnHeader
-  group.hasColumnHeader = !!columnHeaderElem;
-  if (columnHeader) {
-    group.columnHeader = columnHeader;
-  }
-
-  // Parse columnFooter
-  const columnFooterElem = Array.from(groupElem.children).find(
-    (cell) => cell.localName === "columnFooter",
-  );
-  group.hasColumnFooter = !!columnFooterElem;
-  if (columnFooterElem) {
-    group.columnFooter = parseCellWithRowSpan(columnFooterElem);
-  }
-
-  // Parse child groups and child columns
-  let childIndex = 0;
-  Array.from(groupElem.children).forEach((child) => {
-    // Check whether this is a column element
-    if (
-      child.tagName === "jr:column" ||
-      child.localName === "column" ||
-      child.tagName === "column"
-    ) {
-      group.children.push(parseColumnElement(child, childIndex++));
-    }
-    // Check whether this is a column group element
-    else if (
-      child.tagName === "jr:columnGroup" ||
-      child.localName === "columnGroup" ||
-      child.tagName === "columnGroup"
-    ) {
-      group.children.push(parseColumnGroupElement(child, childIndex++));
-    }
-  });
-
-  return group;
-}
-
-// Parse a table element
-function parseTableElement(tableElem: Element, reportElement: Element): any {
-  // Get the basic attributes
-  const x = parseInt(reportElement.getAttribute("x") || "0");
-  const y = parseInt(reportElement.getAttribute("y") || "0");
-  const width = parseInt(reportElement.getAttribute("width") || "555");
-  const height = parseInt(reportElement.getAttribute("height") || "200");
-  const uuid = reportElement.getAttribute("uuid") || crypto.randomUUID();
-
-  // Parse the color and mode attributes
-  const forecolor = reportElement.hasAttribute("forecolor")
-    ? reportElement.getAttribute("forecolor")
-    : undefined;
-  const backcolor = reportElement.hasAttribute("backcolor")
-    ? reportElement.getAttribute("backcolor")
-    : undefined;
-  const mode = reportElement.hasAttribute("mode")
-    ? reportElement.getAttribute("mode")
-    : undefined;
-
-  // Parse the table styles
-  const styles: any = {};
-  const tableHeaderStyle = reportElement.getAttribute(
-    "com.jaspersoft.studio.table.style.table_header",
-  );
-  const columnHeaderStyle = reportElement.getAttribute(
-    "com.jaspersoft.studio.table.style.column_header",
-  );
-  const detailStyle = reportElement.getAttribute(
-    "com.jaspersoft.studio.table.style.detail",
-  );
-
-  if (tableHeaderStyle) styles.tableHeader = tableHeaderStyle;
-  if (columnHeaderStyle) styles.columnHeader = columnHeaderStyle;
-  if (detailStyle) styles.detail = detailStyle;
-
-  // Parse the dataset
-  const datasetRunElem = tableElem.querySelector("datasetRun");
-  const subDataset =
-    datasetRunElem?.getAttribute("subDataset") || "tableDataset";
-
-  // Parse the table attributes - capture every attribute allowed by the XSD
-  const tableAttributes: any = {};
-  for (let i = 0; i < tableElem.attributes.length; i++) {
-    const attr = tableElem.attributes[i];
-    // Make sure attr isn't undefined
-    if (attr) {
-      // Skip namespace and schemaLocation attributes, since they're hardcoded during generation
-      if (attr.name.startsWith("xmlns") || attr.name === "xsi:schemaLocation") {
-        continue;
-      }
-      // Add the attribute to the table element object
-      tableAttributes[attr.name] = attr.value;
-    }
-  }
-
-  // Parse the table's connection expression
-  const connectionExprElem = datasetRunElem?.querySelector(
-    "connectionExpression",
-  );
-  const connectionExpression =
-    connectionExprElem?.textContent?.trim() || "$P{REPORT_CONNECTION}";
-
-  // Parse the table's columns and column groups - supports column elements with or without a namespace
-  const children: any[] = [];
-  const columns: any[] = [];
-  let childIndex = 0;
-
-  Array.from(tableElem.children).forEach((child) => {
-    // Check whether this is a column element
-    if (
-      child.tagName === "jr:column" ||
-      child.localName === "column" ||
-      child.tagName === "column"
-    ) {
-      const column = parseColumnElement(child, childIndex++);
-      children.push(column);
-      columns.push(column);
-    }
-    // Check whether this is a column group element
-    else if (
-      child.tagName === "jr:columnGroup" ||
-      child.localName === "columnGroup" ||
-      child.tagName === "columnGroup"
-    ) {
-      const group = parseColumnGroupElement(child, childIndex++);
-      children.push(group);
-      // Also collect every regular column into the columns array, for backward compatibility
-      const collectColumns = (group: any) => {
-        group.children.forEach((child: any) => {
-          if (child.detailCell) {
-            // Regular column
-            columns.push(child);
-          } else {
-            // Child group
-            collectColumns(child);
-          }
-        });
-      };
-      collectColumns(group);
-    }
-  });
-
-  // Build the table element
-  const tableElement: any = {
-    type: "table",
-    uuid,
-    x,
-    y,
-    width,
-    height,
-    styles,
-    dataset: {
-      uuid: datasetRunElem?.getAttribute("uuid") || crypto.randomUUID(),
-      name: subDataset,
-      type: "table",
-      connectionExpression,
-    },
-    children, // Supports a mixed structure of groups and columns
-    columns, // Kept for backward compatibility, supporting the legacy columns array
-    ...tableAttributes, // Includes every table attribute
-    forecolor,
-    backcolor,
-    mode,
-  };
-
-  return tableElement;
-}
-
-// Parse a table cell element
-function parseCellElement(cellElem: Element): any {
-  // Get the first element inside the cell
-  const childElement = cellElem.firstElementChild;
-  if (!childElement) return undefined;
-
-  // Parse the element inside the cell
-  return parseElement(childElement, childElement.tagName);
-}
-
 // Helper function: find a direct child element by name, accounting for namespaces
+function directChildren(parent: Element, localName: string): Element[] {
+  return Array.from(parent.children).filter((c) => (c.localName || c.tagName) === localName);
+}
+
+// Colours, alignment, font and box of a <style>: font and alignment are
+// attributes in the schema; older designer files wrote a <textElement> child
+function readStyleLook(el: Element): Partial<ReportStyle> {
+  const look: Partial<ReportStyle> = {};
+  const attr = (name: string) => el.getAttribute(name) || undefined;
+  if (attr("mode")) look.mode = attr("mode");
+  if (attr("backcolor")) look.backcolor = attr("backcolor");
+  if (attr("forecolor")) look.forecolor = attr("forecolor");
+  const textElem = directChildren(el, "textElement")[0];
+  const fontElem = textElem ? directChildren(textElem, "font")[0] : undefined;
+  const textAlignment = attr("hTextAlign") ?? attr("hAlign") ?? textElem?.getAttribute("textAlignment") ?? undefined;
+  const verticalAlignment = attr("vTextAlign") ?? attr("vAlign") ?? textElem?.getAttribute("verticalAlignment") ?? undefined;
+  if (textAlignment) look.textAlignment = textAlignment;
+  if (verticalAlignment) look.verticalAlignment = verticalAlignment;
+  const fontName = attr("fontName") ?? fontElem?.getAttribute("fontName") ?? undefined;
+  const fontSize = attr("fontSize") ?? fontElem?.getAttribute("size") ?? undefined;
+  if (fontName) look.fontFamily = fontName;
+  if (fontSize) look.fontSize = parseFloat(fontSize);
+  for (const flag of ["isBold", "isItalic", "isUnderline"] as const) {
+    const value = el.getAttribute(flag) ?? fontElem?.getAttribute(flag);
+    if (value === "true") look[flag] = true;
+  }
+  const boxElem = directChildren(el, "box")[0];
+  if (boxElem) look.box = parseBoxElement(boxElem);
+  return look;
+}
+
+// Position and size every element shares
+function readBounds(reportElement: Element) {
+  return {
+    uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
+    x: parseInt(reportElement.getAttribute("x") || "0"),
+    y: parseInt(reportElement.getAttribute("y") || "0"),
+    width: parseInt(reportElement.getAttribute("width") || "100"),
+    height: parseInt(reportElement.getAttribute("height") || "40"),
+  };
+}
+
+function readTableBinding(reportElement: Element) {
+  const property = Array.from(reportElement.children).find(
+    (c) => c.localName === "property" && c.getAttribute("name") === TABLE_BINDING_PROPERTY,
+  );
+  return property ? parseBinding(property.getAttribute("value")) : null;
+}
+
+// A data table: everything comes from its saved setup. Tables made elsewhere
+// (no setup) become empty tables at the same place, ready for data.
+function parseDataTable(tableElem: Element, reportElement: Element): TableElement {
+  const binding = readTableBinding(reportElement);
+  const firstColumn = Array.from(tableElem.children).find((c) => c.localName === "column");
+  const cellHeight = (name: string) => {
+    const cell = firstColumn
+      ? Array.from(firstColumn.children).find((c) => c.localName === name)
+      : undefined;
+    const h = parseInt(cell?.getAttribute("height") || "");
+    return Number.isNaN(h) ? undefined : h;
+  };
+  return {
+    type: "table",
+    ...readBounds(reportElement),
+    ...(binding ? { binding } : {}),
+    headerHeight: cellHeight("columnHeader") ?? TABLE_HEADER_HEIGHT,
+    rowHeight: cellHeight("detailCell") ?? TABLE_ROW_HEIGHT,
+  } as TableElement;
+}
+
+// An empty table is written as a marked, empty frame
+function isEmptyTableFrame(frame: Element): boolean {
+  const reportElement = findChildElement(frame, "reportElement");
+  return !!reportElement && Array.from(reportElement.children).some(
+    (c) => c.localName === "property" && c.getAttribute("name") === TABLE_BINDING_PROPERTY,
+  );
+}
+
+function parseEmptyTable(frame: Element): TableElement | null {
+  const reportElement = findChildElement(frame, "reportElement");
+  if (!reportElement) return null;
+  const bounds = readBounds(reportElement);
+  return {
+    type: "table",
+    ...bounds,
+    headerHeight: TABLE_HEADER_HEIGHT,
+    rowHeight: TABLE_ROW_HEIGHT,
+  } as TableElement;
+}
+
 function findChildElement(parent: Element, localName: string): Element | null {
   return (
     Array.from(parent.children).find(

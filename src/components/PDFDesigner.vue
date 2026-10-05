@@ -215,7 +215,6 @@
           :report-styles="reportStyles"
           :bands="bands"
           :selected-element="selectedElement"
-          :sub-datasets="subDatasets"
           @drag-start="handleDragStart"
           @element-double-click="handleElementDoubleClick"
           @insert-page-number="addPageNumber"
@@ -234,9 +233,6 @@
           @delete-style="handleDeleteStyle"
           @delete-element="deleteElement"
           @update-element-value="handleUpdateElementValue"
-          @add-sub-dataset="handleAddSubDataset"
-          @edit-sub-dataset="handleEditSubDataset"
-          @delete-sub-dataset="handleDeleteSubDataset"
         >
           <template #header-actions>
             <PanelToggleButton side="left" :collapsed="false" @toggle="toggleCollapse" />
@@ -295,7 +291,6 @@
           :enable-snap-to-alignment="enableSnapToAlignment"
           :show-grid="showGrid"
           :report-styles="reportStyles"
-          :table-styles="tableStyles"
           :total-pages="totalPages"
           @set-design-area-focused="setDesignAreaFocused"
           @select-band="selectBand"
@@ -317,13 +312,9 @@
           @contextmenu="handleElementContextMenu"
           @canvas-contextmenu="handleCanvasContextMenu"
           @reset-zoom="resetZoom"
-          @move-column="handleMoveColumn"
-          @add-columns-to-group="handleAddColumnsToGroup"
-          @join-columns-to-existing-group="handleJoinColumnsToExistingGroup"
           @update:enable-snap-to-grid="enableSnapToGrid = $event"
           @update:enable-snap-to-alignment="enableSnapToAlignment = $event"
           @update:show-grid="showGrid = $event"
-          @update:table-styles="tableStyles = $event"
           @add-page="addNewPage"
           @delete-page="deletePage"
           @rotate="handleElementRotate"
@@ -416,7 +407,7 @@
                 )
             "
             @update:reportStyles="reportStyles = $event"
-            @add-columns-to-group="handleAddColumnsToGroup"
+            @configure-table="openTableConfigForSelection"
           />
         </div>
 
@@ -460,6 +451,7 @@
       @save-jrxml="saveJRXML"
       @regenerate-jrxml="regenerateJRXML"
       @download-jrxml="downloadJRXML"
+      @open-preview="openPdfPreview"
       @band-selection-change="handleBandSelectionChange"
     />
 
@@ -499,61 +491,25 @@
     <PdfPreviewModal
       :visible="showPdfPreview"
       :jrxml-content="jrxmlContent"
+      :bands="bands"
+      :report-styles="reportStyles"
       :report-parameters="reportParameters"
       :report-fields="reportFields"
-      :sub-datasets="subDatasets"
       @update:visible="showPdfPreview = $event"
+      @edit-table="openTableConfigByUuid"
     />
 
-    <!-- Sub-dataset management modal -->
-    <SubDatasetManagementModal
-      :visible="showSubDatasetModal"
-      :dataset="editingSubDataset"
-      @update:visible="showSubDatasetModal = $event"
-      @save="handleSubDatasetSave"
-    />
-
-    <!-- Group name input dialog -->
-    <BaseModal
-      v-model:visible="showGroupDialog"
-      :title="t('editor.groupDialog.title')"
-      :contentClass="'group-dialog'"
-      :useVShow="true"
-      @confirm="confirmJoinColumnsToGroup"
-    >
-      <div class="group-dialog-content">
-        <div class="form-group">
-          <label>{{ t("editor.groupDialog.label") }}</label>
-          <n-select
-            v-model:value="groupDialogState.selectedGroupName"
-            :options="
-              groupDialogState.existingGroups.map((group) => ({
-                label: group.name,
-                value: group.name,
-              }))
-            "
-            :placeholder="t('editor.groupDialog.placeholder')"
-            filterable
-            tag
-            style="width: 100%; margin-top: 8px"
-          />
-        </div>
-      </div>
-    </BaseModal>
-
-    <!-- Column selection dialog -->
-    <ColumnSelectionModal
-      v-model:visible="showColumnSelectionModal"
-      :columns="columnSelectionState.columns"
-      :children="columnSelectionState.children"
-      @confirm="
-        (selectedColumnIndices, selectedRegion, groupText) =>
-          handleColumnSelectionConfirm(
-            selectedColumnIndices,
-            selectedRegion,
-            groupText,
-          )
-      "
+    <!-- Data table setup: source, columns, filters, sort, totals, theme -->
+    <TableConfigModal
+      v-model:visible="tableConfig.visible"
+      :table="tableConfigTable"
+      :table-width="tableConfigWidth"
+      :initial-source-id="tableConfig.sourceId"
+      :initial-column-key="tableConfig.columnKey"
+      :existing-table-names="usedTableNames(bands)"
+      :existing-dataset-names="usedDatasetNames(bands)"
+      :report-styles="reportStyles"
+      @apply="applyTableConfig"
     />
 
     <!-- Right-click context menu -->
@@ -645,11 +601,10 @@ import DesignerCanvas from "./designer/DesignerCanvas.vue";
 import HelpModal from "./modals/HelpModal.vue";
 import FieldManagementModal from "./modals/FieldManagementModal.vue";
 import PdfPreviewModal from "./modals/PdfPreviewModal.vue";
-import SubDatasetManagementModal from "./modals/SubDatasetManagementModal.vue";
+import TableConfigModal from "./modals/TableConfigModal.vue";
 import VariableManagementModal from "./modals/VariableManagementModal.vue";
 import StyleManagementModal from "./modals/StyleManagementModal.vue";
 import BaseModal from "./modals/BaseModal.vue";
-import ColumnSelectionModal from "./modals/ColumnSelectionModal.vue";
 import BottomPanel from "./panels/BottomPanel.vue";
 import PanelToggleButton from "./panels/PanelToggleButton.vue";
 import AIChatPanel from "./ai/AIChatPanel.vue";
@@ -692,7 +647,31 @@ import type {
   ReportVariable,
   SelectedElementInfo,
   TableDataset,
+  TableElement,
 } from "../types";
+import type { DataColumn, TableDataBinding, TableTheme } from "@/types/dataSource";
+import {
+  endDataSourceDrag,
+  isDataSourceDrag,
+  readDataSourceDrag,
+  type DataSourceDragPayload,
+} from "@/utils/table/dataDrag";
+import { MIN_TABLE_COLUMN_WIDTH, maxColumnsForWidth } from "@/utils/table/dataBinding";
+import {
+  PLACEHOLDER_COLUMN_COUNT,
+  evenColumnWidths,
+  scaleColumnWidths,
+  snapTableHeight,
+  tableHeight,
+  toColumnBinding,
+} from "@/utils/table/dataTable";
+import { ensureThemeStyles, syncThemeStyles, withoutLegacyTableStyles } from "@/utils/table/tableThemes";
+import {
+  collectBoundTables,
+  ensureUniqueTableDatasets,
+  usedDatasetNames,
+  usedTableNames,
+} from "@/utils/table/tableDocument";
 import type { DesignerFile } from "@/types/designerFile";
 import type { MCPContext } from "@/mcp";
 import { checkWebMCPSupport } from "@/utils/browserCompatibility";
@@ -800,7 +779,6 @@ import {
   createElement,
   getAllElements as getAllElementConfigs,
 } from "@/components/elements/ElementRegistry";
-import { syncTableColumns } from "../utils/table/ColumnTreeSync";
 
 // Import the default JRXML example file
 
@@ -1158,6 +1136,7 @@ function loadFile(fileData: DesignerFile | any) {
       bands.value = fileContent.bands;
       // Repair copies that share IDs with their original (pasted before copies got their own)
       ensureUniqueUuids(bands.value);
+      ensureUniqueTableDatasets(bands.value);
       resetBoxPhotos(bands.value);
       // Update selectedBandTypes to match the loaded bands
       selectedBandTypes.value = fileContent.bands.map(
@@ -1198,7 +1177,7 @@ function loadFile(fileData: DesignerFile | any) {
     }
 
     if (fileContent.reportStyles) {
-      reportStyles.value = fileContent.reportStyles;
+      reportStyles.value = withoutLegacyTableStyles(fileContent.reportStyles);
     }
 
     if (fileContent.jrxmlContent) {
@@ -1409,93 +1388,10 @@ const reportParameters = ref<ReportParameter[]>([]);
 
 // Sub-datasets
 const subDatasets = ref<TableDataset[]>([]);
-const showSubDatasetModal = ref(false);
-const editingSubDataset = ref<TableDataset | undefined>(undefined);
 
 // Report styles
-const reportStyles = ref<any[]>([
-  {
-    name: "Table_TH",
-    mode: "Opaque",
-    backcolor: "#F0F8FF",
-    box: {
-      pen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      topPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      leftPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      bottomPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      rightPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-    },
-  },
-  {
-    name: "Table_CH",
-    mode: "Opaque",
-    backcolor: "#BFE1FF",
-    box: {
-      pen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      topPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      leftPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      bottomPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      rightPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-    },
-  },
-  {
-    name: "Table_TD",
-    mode: "Opaque",
-    backcolor: "#FFFFFF",
-    box: {
-      pen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      topPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      leftPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      bottomPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      rightPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-    },
-  },
-]);
+// Report styles (table theme styles are added when a table first uses them)
+const reportStyles = ref<any[]>([]);
 
 // Report variables
 const reportVariables = ref<any[]>([]);
@@ -1511,94 +1407,6 @@ const contextMenu = ref({
   type: "element" as "element" | "canvas",
 });
 
-// Table styles
-const tableStyles = ref({
-  tableHeader: "Table_TH",
-  columnHeader: "Table_CH",
-  columnFooter: "Table_CH",
-  detailCell: "Table_TD",
-});
-
-// Handle adding a sub-dataset
-const handleAddSubDataset = () => {
-  editingSubDataset.value = undefined;
-  showSubDatasetModal.value = true;
-};
-
-// Handle editing a sub-dataset
-const handleEditSubDataset = (dataset: TableDataset, index: number) => {
-  editingSubDataset.value = dataset;
-  showSubDatasetModal.value = true;
-};
-
-// Handle deleting a sub-dataset
-const handleDeleteSubDataset = (index: number) => {
-  // Save state to history
-  saveStateToHistory();
-
-  // Remove the sub-dataset
-  subDatasets.value.splice(index, 1);
-
-  // Update JRXML
-  updateJRXML();
-};
-
-// Handle saving a sub-dataset
-const handleSubDatasetSave = (dataset: TableDataset) => {
-  // Save state to history
-  saveStateToHistory();
-
-  const existingIndex = subDatasets.value.findIndex(
-    (d: TableDataset) => d.uuid === dataset.uuid,
-  );
-
-  if (existingIndex >= 0) {
-    // Update the existing sub-dataset
-    subDatasets.value[existingIndex] = dataset;
-  } else {
-    // Add the new sub-dataset
-    subDatasets.value.push(dataset);
-  }
-
-  // Update JRXML
-  updateJRXML();
-
-  // Close the modal
-  showSubDatasetModal.value = false;
-};
-
-// Check for and create a default table dataset
-const checkAndCreateDefaultTableDataset = (
-  datasetName: string = "tableDataset",
-) => {
-  // Check whether a dataset with the same name already exists
-  const existingDataset = subDatasets.value.find(
-    (d: TableDataset) => d.name === datasetName,
-  );
-  if (existingDataset) {
-    return;
-  }
-
-  // Save state to history
-  saveStateToHistory();
-
-  // Create the default dataset
-  const defaultDataset: TableDataset = {
-    uuid: crypto.randomUUID(),
-    name: datasetName,
-    fields: [
-      { name: "FIELD_NAME", class: "java.lang.String" },
-      { name: "FIELD_NAME2", class: "java.lang.String" },
-      { name: "FIELD_NAME3", class: "java.lang.String" },
-    ],
-  };
-
-  // Add it to the sub-dataset list
-  subDatasets.value.push(defaultDataset);
-
-  // Update JRXML
-  updateJRXML();
-};
 
 // Element-created event handler
 const handleElementCreated = (
@@ -1638,6 +1446,7 @@ type HistoryState = {
   reportFields: typeof reportFields.value;
   reportParameters: typeof reportParameters.value;
   subDatasets: typeof subDatasets.value;
+  reportStyles: typeof reportStyles.value;
 };
 
 // Out-of-bounds elements
@@ -1812,6 +1621,7 @@ const { historyStack, redoStack, saveStateToHistory, undo, redo } =
       reportFields: reportFields.value,
       reportParameters: reportParameters.value,
       subDatasets: subDatasets.value,
+      reportStyles: reportStyles.value,
     }),
     applyState: (state) => {
       reportProperties.value = state.reportProperties;
@@ -1819,6 +1629,8 @@ const { historyStack, redoStack, saveStateToHistory, undo, redo } =
       reportFields.value = state.reportFields;
       reportParameters.value = state.reportParameters;
       subDatasets.value = state.subDatasets;
+      // Older snapshots (taken before styles were recorded) keep the current styles
+      if (state.reportStyles) reportStyles.value = state.reportStyles;
     },
     onAfterRestore: () => {
       updateJRXML();
@@ -1837,26 +1649,6 @@ const selectedElement = ref<SelectedElementInfo | null>(null);
 const selectedElements = ref<SelectedElementInfo[]>([]); // Element editing state
 const editingElement = ref<EditingElementInfo | null>(null);
 
-// Group name input dialog state
-const showGroupDialog = ref(false);
-const groupDialogState = ref({
-  elementIndex: 0,
-  columnIndices: [] as number[],
-  bandIndex: 0,
-  parentFrameIndex: undefined as number | undefined,
-  existingGroups: [] as any[],
-  selectedGroupName: "",
-});
-
-// Column selection dialog state
-const showColumnSelectionModal = ref(false);
-const columnSelectionState = ref({
-  elementIndex: 0,
-  bandIndex: 0,
-  parentFrameIndex: undefined as number | undefined,
-  columns: [] as any[],
-  children: [] as any[],
-});
 
 // Report design area focus state
 const isDesignAreaFocused = ref(true); // Focus the design area by default
@@ -2269,71 +2061,6 @@ const lastClickedBandIndex = ref<number>(3); // Defaults to the DETAIL band (ind
 // Tracks the element being dragged from the component library (works around dataTransfer sometimes failing in the Mac Tauri environment)
 const draggedLibraryElement = ref<any>(null);
 
-// Helper function: generate table columns from a dataset
-function generateTableColumnsFromDataset(defaultTableWidth: number = 555) {
-  // Prefer the sub-dataset if one exists
-  if (subDatasets.value.length > 0) {
-    const dataset = subDatasets.value[0];
-    if (dataset && dataset.fields && dataset.fields.length > 0) {
-      const fieldCount = dataset.fields.length;
-      const columnWidth = Math.round(defaultTableWidth / fieldCount); // Distribute column width evenly across the table width
-      return dataset.fields.map((field) => {
-        return {
-          uuid: crypto.randomUUID(),
-          width: columnWidth,
-          name: field.name,
-          tableHeader: {
-            enable: false,
-            element: {
-              type: "textField",
-              x: 0,
-              y: 0,
-              width: columnWidth,
-              height: 30,
-              expression: `"${field.name}"`,
-              forecolor: "#000000",
-              backcolor: "#FFFFFF",
-              fontFamily: "SansSerif",
-              fontSize: 19,
-              isBold: true,
-              textAlignment: "Center",
-              verticalAlignment: "Middle",
-            },
-          },
-          columnHeader: {
-            enable: true,
-            element: {
-              type: "textField",
-              x: 0,
-              y: 0,
-              width: columnWidth,
-              height: 30,
-              expression: `"${field.name}"`,
-              textAlignment: "Center",
-              verticalAlignment: "Middle",
-            },
-          },
-          detailCell: {
-            enable: true,
-            element: {
-              type: "textField",
-              x: 0,
-              y: 0,
-              width: columnWidth,
-              height: 30,
-              expression: `$F{${field.name}}`,
-              textAlignment: "Center",
-              verticalAlignment: "Middle",
-            },
-          },
-        };
-      });
-    }
-  }
-  // Default to returning an empty array, using the default columns from ElementRegistry
-  return [];
-}
-
 // Handle drag-and-drop
 const handleDragStart = (event: DragEvent, element: any) => {
   draggedLibraryElement.value = element;
@@ -2497,6 +2224,12 @@ const handleElementDoubleClick = (element: any) => {
     lastClickedBandIndex.value = 3; // Default to the DETAIL band
   }
 
+  // Tables always go in the Detail section (the one that grows onto new pages)
+  if (element.type === "table") {
+    const detailIndex = bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+    if (detailIndex !== -1) lastClickedBandIndex.value = detailIndex;
+  }
+
   // Get the target band
   const targetBand = bands.value[lastClickedBandIndex.value];
   if (!targetBand) {
@@ -2515,26 +2248,10 @@ const handleElementDoubleClick = (element: any) => {
     y: 20, // Default position
   } as DesignElement;
 
-  // For table elements, check for/create the default dataset, then generate the corresponding columns
+  // A table spans the printable width (its columns share it)
   if (element.type === "table") {
-    // Get the default table width
-    const defaultTableWidth = (newElement as any).width || 555;
-
-    // Check for and create the default dataset
-    const datasetName = (newElement as any).dataset?.name || "tableDataset";
-    checkAndCreateDefaultTableDataset(datasetName);
-
-    // Generate table columns from the dataset
-    const columns = generateTableColumnsFromDataset(defaultTableWidth);
-    if (columns.length > 0) {
-      (newElement as any).columns = columns;
-      // Calculate the total table width
-      const totalWidth = columns.reduce(
-        (sum, column) => sum + (column.width || 150),
-        0,
-      );
-      newElement.width = totalWidth;
-    }
+    newElement.x = 0;
+    newElement.width = Math.round(getFrameTemplateContext().availableWidth);
   }
 
   // For rectangles, ellipses, frames, and images, use a compact default size
@@ -2568,6 +2285,16 @@ const handleElementDoubleClick = (element: any) => {
 
 const handleDrop = (event: DragEvent, pageIndex?: number) => {
   event.preventDefault();
+
+  // A source or column from the "Table Data" list
+  const dataDrag = readDataSourceDrag(event);
+  if (dataDrag) {
+    endDataSourceDrag();
+    highlightedBandIndex.value = null;
+    dropTargetBlocked.value = false;
+    handleDataSourceDrop(event, dataDrag, pageIndex);
+    return;
+  }
 
   let elementData = null;
 
@@ -2650,28 +2377,16 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
       newElement.pageIndex = targetPageIndex;
     }
 
-    // For table elements, check for/create the default dataset, then generate the corresponding columns
+    // Tables live in the Detail section, the only one that grows onto new
+    // pages, and span the printable width
     if (elementData.type === "table") {
-      // Get the default table width
-      const defaultTableWidth = (newElement as any).width || 555;
-
-      // Check for and create the default dataset
-      const datasetName = (newElement as any).dataset?.name || "tableDataset";
-      checkAndCreateDefaultTableDataset(datasetName);
-
-      // Generate table columns from the dataset
-      const columns = generateTableColumnsFromDataset(defaultTableWidth);
-      if (columns.length > 0) {
-        (newElement as any).columns = columns;
-        // Calculate the total table width
-        const totalWidth = columns.reduce(
-          (sum, column) => sum + (column.width || 150),
-          0,
-        );
-        newElement.width = totalWidth;
-        // Update the x coordinate to center it
-        newElement.x = Math.round(Math.max(0, scaledX - totalWidth / 2));
+      if (bands.value[bandIndex]?.type !== BAND_TYPE_CONSTANTS.DETAIL) {
+        notification.warning(t("dataTable.onlyInDetail"));
+        highlightedBandIndex.value = null;
+        return;
       }
+      newElement.x = 0;
+      newElement.width = Math.round(getFrameTemplateContext().availableWidth);
     }
 
     const targetBand = bands.value[bandIndex];
@@ -2700,7 +2415,7 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
 
       // Iterate over the Frames in the Band to check whether the new element lands on one.
       // Frames themselves are never nested: selection only supports one frame level.
-      const canNest = newElement.type !== "frame";
+      const canNest = newElement.type !== "frame" && newElement.type !== "table";
       for (let i = targetBand.elements.length - 1; canNest && i >= 0; i--) {
         const el = targetBand.elements[i];
         if (!el) continue;
@@ -2823,11 +2538,16 @@ const handleDragOver = (event: DragEvent) => {
   // Red when the new element is too tall for that band (the drop is refused)
   const type: string | undefined = draggedLibraryElement.value?.type;
   const band = bands.value[bandIndex];
+  // A table (or data dropped beside one) can only go in the Detail section
+  const needsDetail =
+    type === "table" ||
+    (isDataSourceDrag(event) && !(event.target as HTMLElement)?.closest?.("[data-table-uuid]"));
   dropTargetBlocked.value =
-    !!type &&
-    !!band &&
-    type !== PAGE_BORDER_TYPE &&
-    getLibraryDropHeight(type, band.height) > getBandMaxHeight(bandIndex);
+    (needsDetail && !!band && band.type !== BAND_TYPE_CONSTANTS.DETAIL) ||
+    (!!type &&
+      !!band &&
+      type !== PAGE_BORDER_TYPE &&
+      getLibraryDropHeight(type, band.height) > getBandMaxHeight(bandIndex));
 };
 
 // Height a library item gets when dropped in a band of the given height
@@ -2843,6 +2563,194 @@ const getLibraryDropHeight = (type: string, bandHeight: number): number => {
     libraryHeightCache.set(type, height);
   }
   return height;
+};
+
+// ==================== Data tables ====================
+
+// Where a table sits in the model
+interface TableLocation {
+  bandIndex: number;
+  elementIndex: number;
+  parentFrameIndex?: number;
+}
+
+const findTableByUuid = (uuid: string): TableLocation | null => {
+  for (let b = 0; b < bands.value.length; b++) {
+    const elements = bands.value[b]?.elements ?? [];
+    for (let i = 0; i < elements.length; i++) {
+      const el = elements[i];
+      if (el?.type === "table" && el.uuid === uuid) return { bandIndex: b, elementIndex: i };
+      if (el?.type === "frame") {
+        const j = ((el as FrameElement).elements ?? []).findIndex(
+          (child) => child.type === "table" && child.uuid === uuid,
+        );
+        if (j !== -1) return { bandIndex: b, elementIndex: j, parentFrameIndex: i };
+      }
+    }
+  }
+  return null;
+};
+
+const tableAt = (loc: TableLocation | null): TableElement | null => {
+  if (!loc) return null;
+  const band = bands.value[loc.bandIndex];
+  const el =
+    loc.parentFrameIndex !== undefined
+      ? (band?.elements?.[loc.parentFrameIndex] as FrameElement | undefined)?.elements?.[loc.elementIndex]
+      : band?.elements?.[loc.elementIndex];
+  return el?.type === "table" ? (el as TableElement) : null;
+};
+
+// Style Management lists the styles of the themes the tables use, and no
+// others. Runs when a theme changes or a report is opened; part of the same
+// undo step as the change that switched the theme.
+watch(
+  () =>
+    [
+      [...new Set(collectBoundTables(bands.value).map((t) => t.binding.theme))].sort().join(","),
+      reportStyles.value,
+    ] as const,
+  ([themes]) => {
+    const synced = syncThemeStyles(reportStyles.value, themes ? (themes.split(",") as TableTheme[]) : []);
+    if (synced !== reportStyles.value) reportStyles.value = synced;
+  },
+  { immediate: true },
+);
+
+// The Configure popup: for an existing table, or for a new one created on Apply
+const tableConfig = ref<{
+  visible: boolean;
+  target: TableLocation | null;
+  newAt: { bandIndex: number; y: number; pageIndex?: number } | null;
+  sourceId?: string;
+  columnKey?: string;
+}>({ visible: false, target: null, newAt: null });
+
+const tableConfigTable = computed(() => tableAt(tableConfig.value.target));
+const tableConfigWidth = computed(
+  () => tableConfigTable.value?.width ?? Math.round(getFrameTemplateContext().availableWidth),
+);
+
+const openTableConfig = (
+  target: TableLocation | null,
+  options: { newAt?: { bandIndex: number; y: number; pageIndex?: number }; sourceId?: string; columnKey?: string } = {},
+) => {
+  tableConfig.value = {
+    visible: true,
+    target,
+    newAt: options.newAt ?? null,
+    sourceId: options.sourceId,
+    columnKey: options.columnKey,
+  };
+};
+
+const openTableConfigByUuid = (uuid: string) => {
+  const location = findTableByUuid(uuid);
+  if (!location) return;
+  selectElement(location.bandIndex, location.elementIndex, false, location.parentFrameIndex);
+  openTableConfig(location);
+};
+
+const openTableConfigForSelection = () => {
+  if (!selectedElement.value) return;
+  const { bandIndex, elementIndex, parentFrameIndex } = selectedElement.value;
+  if (tableAt({ bandIndex, elementIndex, parentFrameIndex })) {
+    openTableConfig({ bandIndex, elementIndex, parentFrameIndex });
+  }
+};
+
+// Apply the popup: one undo step, whether the table is new or not
+const applyTableConfig = (binding: TableDataBinding, rowCount: number) => {
+  const { target, newAt } = tableConfig.value;
+  let table = tableAt(target);
+  let location = target;
+  if (!table && !newAt) return;
+
+  saveStateToHistory();
+
+  if (!table && newAt) {
+    const band = bands.value[newAt.bandIndex];
+    if (!band) return;
+    table = {
+      ...(createLibraryElement("table") as TableElement),
+      uuid: crypto.randomUUID(),
+      x: 0,
+      y: newAt.y,
+      width: tableConfigWidth.value,
+    };
+    if (newAt.pageIndex !== undefined) table.pageIndex = newAt.pageIndex;
+    band.elements.push(table);
+    location = { bandIndex: newAt.bandIndex, elementIndex: band.elements.length - 1 };
+  }
+  if (!table || !location) return;
+
+  table.binding = binding;
+  table.height = tableHeight(binding, rowCount, table.headerHeight, table.rowHeight);
+  reportStyles.value = ensureThemeStyles(reportStyles.value, binding.theme);
+
+  // The table must still fit its section: moved up, or the section grows
+  if (location.parentFrameIndex === undefined) {
+    const plan = planDropInBand(location.bandIndex, table);
+    if (plan.kind !== "tooTall") applyDropInBand(location.bandIndex, table, plan);
+  }
+
+  selectElement(location.bandIndex, location.elementIndex, false, location.parentFrameIndex);
+  updateJRXML();
+};
+
+// A source or column dropped from the "Table Data" list
+const handleDataSourceDrop = (
+  event: DragEvent,
+  drag: DataSourceDragPayload,
+  pageIndex?: number,
+) => {
+  const tableEl = (event.target as HTMLElement)?.closest?.("[data-table-uuid]") as HTMLElement | null;
+  const location = tableEl ? findTableByUuid(tableEl.dataset.tableUuid || "") : null;
+  const table = tableAt(location);
+  const columnKey = drag.kind === "column" ? drag.column.key : undefined;
+
+  if (table && location) {
+    // One more column of the source the table already shows: added directly
+    if (drag.kind === "column" && table.binding?.sourceId === drag.sourceId) {
+      addColumnToTable(table, drag.column);
+      return;
+    }
+    openTableConfig(location, { sourceId: drag.sourceId, columnKey });
+    return;
+  }
+
+  // Dropped beside any table: a new table in the Detail section, made on Apply
+  const bandEl = (event.target as HTMLElement)?.closest?.(".band") as HTMLElement | null;
+  const bandIndex = bandEl?.dataset.bandIndex !== undefined ? parseInt(bandEl.dataset.bandIndex, 10) : -1;
+  const band = bands.value[bandIndex];
+  if (!band || band.type !== BAND_TYPE_CONSTANTS.DETAIL || !bandEl) {
+    notification.warning(t("dataTable.onlyInDetail"));
+    return;
+  }
+  const y = Math.max(0, Math.round((event.clientY - bandEl.getBoundingClientRect().top) / zoomLevel.value));
+  const sheet = (event.target as HTMLElement)?.closest?.(".page-sheet") as HTMLElement | null;
+  const sheetPage = sheet?.dataset.pageIndex !== undefined ? parseInt(sheet.dataset.pageIndex, 10) : undefined;
+  openTableConfig(null, {
+    newAt: { bandIndex, y, pageIndex: sheetPage ?? pageIndex },
+    sourceId: drag.sourceId,
+    columnKey,
+  });
+};
+
+const addColumnToTable = (table: TableElement, column: DataColumn) => {
+  const binding = table.binding;
+  if (!binding) return;
+  if (binding.columns.some((c) => c.key === column.key)) {
+    notification.info(t("dataTable.columnAlreadyShown", { column: column.label }));
+    return;
+  }
+  if (binding.columns.length >= maxColumnsForWidth(table.width)) {
+    notification.warning(t("dataTable.columnLimitReached", { max: maxColumnsForWidth(table.width) }));
+    return;
+  }
+  saveStateToHistory();
+  binding.columns = evenColumnWidths([...binding.columns, toColumnBinding(column, 0)], table.width);
+  updateJRXML();
 };
 
 // Handle the drag-leave event
@@ -3894,6 +3802,11 @@ const startEditing = (
       ? (band?.elements?.[parentFrameIndex] as FrameElement | undefined)
           ?.elements?.[elementIndex]
       : band?.elements?.[elementIndex];
+  if (target?.type === "table") {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    openTableConfig({ bandIndex, elementIndex, parentFrameIndex });
+    return;
+  }
   if (isPagination(target)) {
     selectElement(bandIndex, elementIndex, false, parentFrameIndex);
     notification.warning(t("pagination.cannotEdit"));
@@ -3954,6 +3867,7 @@ const loadFromLocalStorageWrapper = () => {
     bands.value = loadedData.reportData.bands;
     // Repair copies that share IDs with their original (pasted before copies got their own)
     ensureUniqueUuids(bands.value);
+    ensureUniqueTableDatasets(bands.value);
     resetBoxPhotos(bands.value);
     reportFields.value = loadedData.reportData.reportFields;
     jrxmlContent.value = loadedData.reportData.jrxmlContent;
@@ -3996,7 +3910,7 @@ const downloadJRXML = () => {
     reportFields.value,
     reportParameters.value,
     subDatasets.value,
-    [],
+    reportStyles.value,
     reportVariables.value,
     [],
     reportGroups.value,
@@ -4327,6 +4241,11 @@ const processPastedElement = (elementData: any) => {
     warnTooTallForBand(targetBandIndex, newElement.height, bandPlan.maxHeight);
     return;
   }
+  // Tables only live in the Detail section
+  if (newElement.type === "table" && targetBand.type !== BAND_TYPE_CONSTANTS.DETAIL) {
+    notification.warning(t("dataTable.onlyInDetail"));
+    return;
+  }
   saveStateToHistory();
   if (bandPlan) applyDropInBand(targetBandIndex, newElement, bandPlan);
 
@@ -4336,6 +4255,8 @@ const processPastedElement = (elementData: any) => {
   }
 
   targetBand.elements.push(newElement);
+  // A pasted table gets its own dataset and name
+  ensureUniqueTableDatasets(bands.value);
 
   // Select the newly added element
   const newElementIndex = targetBand.elements.length - 1;
@@ -4824,7 +4745,7 @@ const openPdfPreview = (): void => {
         reportFields.value,
         reportParameters.value,
         subDatasets.value,
-        [],
+        reportStyles.value,
         reportVariables.value,
         [],
         reportGroups.value,
@@ -4832,21 +4753,6 @@ const openPdfPreview = (): void => {
       );
       jrxmlContent.value = content;
     }
-    // If subDatasets is empty, extract it from the table elements
-    if (subDatasets.value.length === 0) {
-      const extracted: TableDataset[] = [];
-      for (const band of bands.value) {
-        for (const el of band.elements || []) {
-          if (el.type === "table" && (el as any).dataset) {
-            extracted.push((el as any).dataset);
-          }
-        }
-      }
-      if (extracted.length > 0) {
-        subDatasets.value = extracted;
-      }
-    }
-
     showPdfPreview.value = false;
     nextTick(() => {
       showPdfPreview.value = true;
@@ -4928,6 +4834,7 @@ const saveJRXML = (): void => {
     bands.value = parsedData.bands;
     // Repair copies that share IDs with their original (pasted before copies got their own)
     ensureUniqueUuids(bands.value);
+    ensureUniqueTableDatasets(bands.value);
     resetBoxPhotos(bands.value);
 
     // Update the selected band types
@@ -6204,123 +6111,24 @@ const startResizingElement = (
       const tempX = Math.round(newX);
       const tempY = Math.round(newY);
 
-      // Special handling for table elements: automatically adjust column widths when the table width changes
+      // A table keeps its columns' shares of the width (each at least the
+      // minimum column width) and its height in whole rows
       if (element.type === "table") {
-        // Look up the corresponding column within the children array (recursive search)
-        const findColumnInChildren = (
-          children: any[],
-          targetColumn: any,
-        ): any | null => {
-          for (const child of children) {
-            if (child.uuid === targetColumn.uuid) {
-              return child;
-            }
-            if (child.children) {
-              const found = findColumnInChildren(child.children, targetColumn);
-              if (found) {
-                return found;
-              }
-            }
-          }
-          return null;
-        };
-
-        if (element.columns && element.columns.length > 0) {
-          // Get the current width of each column
-          const columnWidths = element.columns.map((col) => col.width || 0);
-          const totalColumnWidth = columnWidths.reduce(
-            (sum, width) => sum + width,
-            0,
-          );
-
-          if (totalColumnWidth > 0) {
-            // Calculate the width ratio each column should receive
-            const ratios = columnWidths.map(
-              (width) => width / totalColumnWidth,
-            );
-
-            // Distribute column widths proportionally based on the new table width
-            const newColumnWidths = ratios.map((ratio) => {
-              // Distribute the new width proportionally
-              const newColWidth = tempWidth * ratio;
-              // Ensure every column has at least a minimum width
-              return Math.max(10, Math.round(newColWidth));
-            });
-
-            // Adjust the last column's width so the total matches the table width
-            const sumNewWidths = newColumnWidths.reduce(
-              (sum, width) => sum + width,
-              0,
-            );
-            if (sumNewWidths !== tempWidth && newColumnWidths.length > 0) {
-              const diff = tempWidth - sumNewWidths;
-              const lastIndex = newColumnWidths.length - 1;
-              // Ensure newColumnWidths[lastIndex] isn't undefined
-              newColumnWidths[lastIndex] =
-                (newColumnWidths[lastIndex] || 0) + diff;
-            }
-
-            // Update the width of every column
-            element.columns.forEach((col, index) => {
-              const newColWidth = newColumnWidths[index]!;
-              col.width = newColWidth;
-
-              // Also update the width of every cell within the column
-              if (col.tableHeader && col.tableHeader.element) {
-                col.tableHeader.element.width = newColWidth;
-              }
-              if (col.columnHeader && col.columnHeader.element) {
-                col.columnHeader.element.width = newColWidth;
-              }
-              if (col.detailCell && col.detailCell.element) {
-                col.detailCell.element.width = newColWidth;
-              }
-              if (col.columnFooter && col.columnFooter.element) {
-                col.columnFooter.element.width = newColWidth;
-              }
-              if (col.tableFooter && col.tableFooter.element) {
-                col.tableFooter.element.width = newColWidth;
-              }
-
-              // If the table has a children property, also update the width of the corresponding column within it
-              if (element.children) {
-                const childColumn = findColumnInChildren(element.children, col);
-                if (childColumn) {
-                  childColumn.width = newColWidth;
-
-                  // Also update the width of every related cell within childColumn
-                  if (childColumn.tableHeader) {
-                    childColumn.tableHeader.width = newColWidth;
-                  }
-                  if (childColumn.columnHeader) {
-                    childColumn.columnHeader.width = newColWidth;
-                  }
-                  if (childColumn.detailCell) {
-                    childColumn.detailCell.width = newColWidth;
-                  }
-                  if (childColumn.columnFooter) {
-                    childColumn.columnFooter.width = newColWidth;
-                  }
-                  if (childColumn.tableFooter) {
-                    childColumn.tableFooter.width = newColWidth;
-                  }
-                }
-              }
-            });
-          }
-        }
-
-        // Set the table's final width and height
-        element.width = tempWidth;
+        const table = element as TableElement;
+        const minWidth = (table.binding?.columns.length ?? PLACEHOLDER_COLUMN_COUNT) * MIN_TABLE_COLUMN_WIDTH;
+        const width = Math.max(tempWidth, minWidth);
+        const height = snapTableHeight(table, tempHeight);
+        if (table.binding) table.binding.columns = scaleColumnWidths(table.binding.columns, width);
+        element.width = width;
+        element.x = dir.includes("w") ? startElementX + startWidth - width : tempX;
+        element.y = dir.includes("n") ? startElementY + startHeight - height : tempY;
+        element.height = height;
       } else {
-        // Non-table element; apply the size adjustment directly
         element.width = tempWidth;
+        element.x = tempX;
+        element.y = tempY;
+        element.height = tempHeight;
       }
-
-      // Apply the position and height adjustments
-      element.x = tempX;
-      element.y = tempY;
-      element.height = tempHeight;
       keepInParentBox(element);
 
       // Keep a frame's content in step with the frame (stretch wide items, pin edge items)
@@ -6708,524 +6516,6 @@ const handleCheckFields = (fields: string[]): void => {
     // Update JRXML
     updateJRXML();
   }
-};
-
-// Handle moving a table column
-const handleMoveColumn = (
-  elementIndex: number,
-  fromIndex: number,
-  toIndex: number,
-  bandIndex: number,
-  parentFrameIndex?: number,
-): void => {
-  // Get the current band
-  const band = bands.value[bandIndex];
-  if (!band) return;
-
-  // Get the element to operate on
-  let element;
-  if (parentFrameIndex !== undefined) {
-    // Handle an element inside a Frame
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    // Handle an element directly within a Band
-    element = band.elements[elementIndex];
-  }
-
-  // Ensure it is a table element
-  if (!element || element.type !== "table") return;
-
-  const tableElement = element as any;
-  if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
-
-  // Save state to history
-  saveStateToHistory();
-
-  // Perform the column move
-  const columns = [...tableElement.columns];
-  const [movedColumn] = columns.splice(fromIndex, 1);
-  columns.splice(toIndex, 0, movedColumn);
-
-  // Update the table's columns
-  tableElement.columns = columns;
-
-  // Update JRXML
-  updateJRXML();
-};
-
-// Handle adding the selected columns to a group
-const handleAddColumnsToGroup = (params: {
-  elementIndex: number;
-  columnIndices: number[];
-  bandIndex: number;
-  parentFrameIndex?: number;
-}): void => {
-  const { elementIndex, columnIndices, bandIndex, parentFrameIndex } = params;
-
-  // Get the current band
-  const band = bands.value[bandIndex];
-  if (!band) return;
-
-  // Get the element to operate on
-  let element;
-  if (parentFrameIndex !== undefined) {
-    // Handle an element inside a Frame
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    // Handle an element directly within a Band
-    element = band.elements[elementIndex];
-  }
-
-  // Ensure it is a table element
-  if (!element || element.type !== "table") return;
-
-  const tableElement = element as any;
-  if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
-
-  // Collect all existing column groups
-  const existingGroups: any[] = [];
-
-  // Recursively collect all groups
-  const collectGroups = (items: any[]): void => {
-    items.forEach((item) => {
-      if (item.children) {
-        existingGroups.push(item);
-        collectGroups(item.children);
-      }
-    });
-  };
-
-  // Initialize the children property if it doesn't exist
-  if (!tableElement.children) {
-    tableElement.children = [...tableElement.columns];
-  }
-
-  // Collect the existing groups
-  collectGroups(tableElement.children);
-
-  // Update the column selection dialog state
-  columnSelectionState.value = {
-    elementIndex,
-    bandIndex,
-    parentFrameIndex,
-    columns: tableElement.columns,
-    children: tableElement.children || tableElement.columns,
-  };
-
-  // Show the column selection dialog
-  showColumnSelectionModal.value = true;
-};
-
-// Handle confirmation of the column selection
-const handleColumnSelectionConfirm = (
-  selectedColumnIndices: number[],
-  selectedRegion: string,
-  groupText: string,
-): void => {
-  const { elementIndex, bandIndex, parentFrameIndex } =
-    columnSelectionState.value;
-
-  // Get the current band
-  const band = bands.value[bandIndex];
-  if (!band) return;
-
-  // Get the element to operate on
-  let element;
-  if (parentFrameIndex !== undefined) {
-    // Handle an element inside a Frame
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    // Handle an element directly within a Band
-    element = band.elements[elementIndex];
-  }
-
-  // Ensure it is a table element
-  if (!element || element.type !== "table") return;
-
-  const tableElement = element as any;
-  if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
-
-  // Ensure at least 2 columns are selected
-  if (selectedColumnIndices.length < 2) return;
-
-  // Save state to history
-  saveStateToHistory();
-
-  // Sort the selected column indices to process them left to right
-  const sortedIndices = [...selectedColumnIndices].sort((a, b) => a - b);
-
-  // Ensure sortedIndices isn't empty
-  if (sortedIndices.length === 0) return;
-
-  // Get the selected columns or groups (from the children array, since it includes combined columns)
-  const selectedColumns = sortedIndices.map(
-    (index) => tableElement.children[index],
-  );
-
-  // Calculate the group's width (recursively, to handle combined columns)
-  function calculateWidth(item: any): number {
-    if (item.children) {
-      // A combined column; recursively sum the widths of all child columns
-      return item.children.reduce(
-        (sum: number, child: any) => sum + calculateWidth(child),
-        0,
-      );
-    } else {
-      // A regular column; use its width directly
-      return item.width || 0;
-    }
-  }
-
-  const groupWidth = selectedColumns.reduce(
-    (sum: number, column: any) => sum + calculateWidth(column),
-    0,
-  );
-
-  // Create the new column group (preserving the original combined-column structure)
-  const newGroup: any = {
-    uuid: crypto.randomUUID(),
-    name: `Group_${Date.now()}`,
-    width: groupWidth,
-    children: selectedColumns, // Use the selected items directly (including combined columns), rather than flattening the child columns
-  };
-
-  // Set the corresponding property based on the selected region
-  const textContent = groupText || newGroup.name;
-  if (selectedRegion === "tableHeader") {
-    newGroup.hasTableHeader = true;
-    newGroup.tableHeader = {
-      enable: true,
-      element: {
-        type: "textField",
-        expression: `"${textContent}"`,
-        x: 0,
-        y: 0,
-        width: groupWidth,
-        height: 30,
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-    };
-  } else if (selectedRegion === "columnHeader") {
-    newGroup.columnHeader = {
-      enable: true,
-      element: {
-        type: "textField",
-        expression: `"${textContent}"`,
-        x: 0,
-        y: 0,
-        width: groupWidth,
-        height: 30,
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-    };
-  } else if (selectedRegion === "columnFooter") {
-    newGroup.columnFooter = {
-      enable: true,
-      element: {
-        type: "textField",
-        expression: `"${textContent}"`,
-        x: 0,
-        y: 0,
-        width: groupWidth,
-        height: 30,
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-    };
-  } else if (selectedRegion === "tableFooter") {
-    newGroup.tableFooter = {
-      enable: true,
-      element: {
-        type: "textField",
-        expression: `"${textContent}"`,
-        x: 0,
-        y: 0,
-        width: groupWidth,
-        height: 30,
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-    };
-  }
-
-  // Initialize the children property if it doesn't exist
-  if (!tableElement.children) {
-    tableElement.children = [...tableElement.columns];
-  }
-
-  // Update the children array, removing the selected columns and adding the new group
-  const newChildren = [...tableElement.children];
-
-  // Remove the selected columns from last to first to avoid index shifting
-  for (let i = sortedIndices.length - 1; i >= 0; i--) {
-    const index = sortedIndices[i] as number;
-    newChildren.splice(index, 1);
-  }
-
-  // Insert the new group at the position of the first selected column
-  const firstIndex = sortedIndices[0] as number;
-  newChildren.splice(firstIndex, 0, newGroup);
-
-  // Update the table element
-  tableElement.children = newChildren;
-
-  // Calculate the maximum nesting depth of combined columns in the table
-  function calculateMaxDepth(node: any, depth: number = 0): number {
-    if (!node.children || node.children.length === 0) {
-      return depth;
-    }
-    let maxDepth = depth;
-    for (const child of node.children) {
-      const childDepth = calculateMaxDepth(child, depth + 1);
-      if (childDepth > maxDepth) {
-        maxDepth = childDepth;
-      }
-    }
-    return maxDepth;
-  }
-
-  // Calculate the maximum nesting depth
-  const maxDepth = calculateMaxDepth({ children: tableElement.children });
-  const requiredRowSpan = maxDepth;
-
-  // Update the rowSpan value of ungrouped columns
-  tableElement.children.forEach((child: any) => {
-    if (!child.children) {
-      // This is an ungrouped column
-      if (child.tableHeader) {
-        child.tableHeader.rowSpan = requiredRowSpan;
-      }
-      if (child.columnHeader) {
-        child.columnHeader.rowSpan = requiredRowSpan;
-      }
-    }
-  });
-
-  // Sync columns, rebuilding it from children
-  syncTableColumns(tableElement);
-
-  // Update JRXML
-  updateJRXML();
-};
-
-// Handle adding the selected columns to an existing group
-const handleJoinColumnsToExistingGroup = (
-  elementIndex: number,
-  columnIndices: number[],
-  bandIndex: number,
-  parentFrameIndex?: number,
-): void => {
-  // Get the current band
-  const band = bands.value[bandIndex];
-  if (!band) return;
-
-  // Get the element to operate on
-  let element;
-  if (parentFrameIndex !== undefined) {
-    // Handle an element inside a Frame
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    // Handle an element directly within a Band
-    element = band.elements[elementIndex];
-  }
-
-  // Ensure it is a table element
-  if (!element || element.type !== "table") return;
-
-  const tableElement = element as any;
-  if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
-
-  // Ensure at least 1 column is selected
-  if (columnIndices.length < 1) return;
-
-  // Collect all existing column groups
-  const existingGroups: any[] = [];
-
-  // Recursively collect all groups
-  const collectGroups = (items: any[]): void => {
-    items.forEach((item) => {
-      if (item.children) {
-        existingGroups.push(item);
-        collectGroups(item.children);
-      }
-    });
-  };
-
-  // Initialize the children property if it doesn't exist
-  if (!tableElement.children) {
-    tableElement.children = [...tableElement.columns];
-  }
-
-  // Collect the existing groups
-  collectGroups(tableElement.children);
-
-  // Update the dialog state
-  groupDialogState.value = {
-    elementIndex,
-    columnIndices,
-    bandIndex,
-    parentFrameIndex,
-    existingGroups,
-    selectedGroupName: "",
-  };
-
-  // Show the dialog
-  showGroupDialog.value = true;
-};
-
-// Confirm adding the columns to a group
-const confirmJoinColumnsToGroup = (): void => {
-  const {
-    elementIndex,
-    columnIndices,
-    bandIndex,
-    parentFrameIndex,
-    existingGroups,
-    selectedGroupName,
-  } = groupDialogState.value;
-
-  if (!selectedGroupName) {
-    // If the user didn't enter a group name, return immediately
-    return;
-  }
-
-  // Get the current band
-  const band = bands.value[bandIndex];
-  if (!band) return;
-
-  // Get the element to operate on
-  let element;
-  if (parentFrameIndex !== undefined) {
-    // Handle an element inside a Frame
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    // Handle an element directly within a Band
-    element = band.elements[elementIndex];
-  }
-
-  // Ensure it is a table element
-  if (!element || element.type !== "table") return;
-
-  const tableElement = element as any;
-  if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
-
-  // Save state to history
-  saveStateToHistory();
-
-  // Initialize the children array if it doesn't exist
-  if (!tableElement.children) {
-    tableElement.children = [...tableElement.columns];
-  }
-
-  // Sort the selected column indices to process them left to right
-  const sortedIndices = [...columnIndices].sort((a, b) => a - b);
-
-  // Get the selected columns from the children array (indices are derived from the children array)
-  const selectedColumns = sortedIndices.map(
-    (index) => tableElement.children[index],
-  );
-
-  // Look up the group specified by the user
-  let targetGroup = existingGroups.find(
-    (group) => group.name === selectedGroupName,
-  );
-
-  // Build the new children array first, to avoid index-shift issues
-  const newChildren = [...tableElement.children];
-
-  // Remove the selected columns from last to first to avoid index shifting
-  for (let i = sortedIndices.length - 1; i >= 0; i--) {
-    const index = sortedIndices[i] as number;
-    newChildren.splice(index, 1);
-  }
-
-  if (!targetGroup) {
-    // If the group doesn't exist, create a new one
-    const groupWidth = selectedColumns.reduce(
-      (sum: number, column: any) => sum + column.width,
-      0,
-    );
-
-    let defaultTableHeaderHeight = 30;
-    let defaultColumnHeaderHeight = 30;
-    if (selectedColumns.length > 0 && selectedColumns[0]) {
-      const firstColumn = selectedColumns[0];
-      defaultTableHeaderHeight = firstColumn.tableHeader?.element?.height || 30;
-      defaultColumnHeaderHeight =
-        firstColumn.columnHeader?.element?.height || 30;
-    }
-
-    targetGroup = {
-      uuid: crypto.randomUUID(),
-      name: selectedGroupName,
-      width: groupWidth,
-      hasTableHeader: true,
-      tableHeader: {
-        enable: true,
-        element: {
-          type: "textField",
-          expression: `"${selectedGroupName}"`,
-          x: 0,
-          y: 0,
-          width: groupWidth,
-          height: defaultTableHeaderHeight,
-          textAlignment: "Center",
-          verticalAlignment: "Middle",
-        },
-      },
-      children: [],
-    };
-
-    // Insert the new group at the position of the first selected column
-    const firstIndex = sortedIndices[0] as number;
-    newChildren.splice(firstIndex, 0, targetGroup);
-  }
-
-  // Add the selected columns to the target group
-  targetGroup.children.push(...selectedColumns);
-
-  // Recalculate the target group's width
-  targetGroup.width = targetGroup.children.reduce(
-    (sum: number, item: any) => sum + item.width,
-    0,
-  );
-
-  // Update the target group's header width
-  if (targetGroup.tableHeader && targetGroup.tableHeader.element) {
-    targetGroup.tableHeader.element.width = targetGroup.width;
-  }
-  if (targetGroup.columnHeader && targetGroup.columnHeader.element) {
-    targetGroup.columnHeader.element.width = targetGroup.width;
-  }
-
-  // Update the table element
-  tableElement.children = newChildren;
-
-  // Sync columns, rebuilding it from children (including rowSpan calculation)
-  syncTableColumns(tableElement);
-
-  // Update JRXML
-  updateJRXML();
-
-  // Close the dialog
-  showGroupDialog.value = false;
 };
 
 // Handle the element context menu

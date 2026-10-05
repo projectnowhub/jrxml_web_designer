@@ -27,26 +27,22 @@ export interface HtmlRendererOptions {
 }
 
 const BAND_DISPLAY_NAMES: Record<string, string> = {
-  title: "Title",
   pageHeader: "Page Header",
   columnHeader: "Column Header",
   detail: "Detail",
   columnFooter: "Column Footer",
   pageFooter: "Page Footer",
-  summary: "Summary",
   background: "Background",
   lastPageFooter: "Last Page Footer",
   noData: "No Data",
 };
 
 const BAND_ORDER = [
-  "title",
   "pageHeader",
   "columnHeader",
   "detail",
   "columnFooter",
   "pageFooter",
-  "summary",
   "background",
 ];
 
@@ -505,12 +501,10 @@ export function renderToMultiPageHtml(
 
   // Calculate fixed band heights
   const fixedBandTypes = [
-    "title",
     "pageHeader",
     "columnHeader",
     "columnFooter",
     "pageFooter",
-    "summary",
   ];
   let fixedHeight = 0;
   for (const bt of fixedBandTypes) {
@@ -546,17 +540,6 @@ export function renderToMultiPageHtml(
   for (let page = 0; page < totalPages; page++) {
     let bandsHtml = "";
 
-    // Title only on first page
-    if (page === 0 && bandsMap["title"]) {
-      bandsHtml += renderBand(
-        "title",
-        bandsMap["title"],
-        opts.scale,
-        opts.showBorders,
-        opts.showElementBorders,
-        opts.showBandLabels,
-      );
-    }
 
     // Page header on every page
     if (bandsMap["pageHeader"]) {
@@ -628,17 +611,6 @@ export function renderToMultiPageHtml(
       );
     }
 
-    // Summary only on last page
-    if (page === totalPages - 1 && bandsMap["summary"]) {
-      bandsHtml += renderBand(
-        "summary",
-        bandsMap["summary"],
-        opts.scale,
-        opts.showBorders,
-        opts.showElementBorders,
-        opts.showBandLabels,
-      );
-    }
 
     const pageHtml = `<!DOCTYPE html>
 <html>
@@ -711,12 +683,11 @@ function extractFieldsFromBands(
   for (const band of bands) {
     if (!band.elements) continue;
     for (const el of band.elements) {
-      if (el.type === "table" && (el as TableElement).columns) {
-        for (const col of (el as TableElement).columns) {
-          if (!seen.has(col.name)) {
-            seen.add(col.name);
-            fields.push({ name: col.name, label: col.name });
-          }
+      const binding = el.type === "table" ? (el as TableElement).binding : undefined;
+      for (const col of binding?.columns ?? []) {
+        if (!seen.has(col.key)) {
+          seen.add(col.key);
+          fields.push({ name: col.key, label: col.label });
         }
       }
     }

@@ -179,7 +179,7 @@ describe('fileUtils', () => {
     })
 
     it('should include the JRXML content', async () => {
-      const jrxmlContent = '<jasperReport><title>Test</title></jasperReport>'
+      const jrxmlContent = '<jasperReport><detail>Test</detail></jasperReport>'
       const blob = exportToJRXML(jrxmlContent)
 
       // Use FileReader to read the Blob content in the test environment
@@ -196,7 +196,7 @@ describe('fileUtils', () => {
 
   describe('importFromJRXML', () => {
     it('should read JRXML content from file', async () => {
-      const jrxmlContent = '<jasperReport><title>Test</title></jasperReport>'
+      const jrxmlContent = '<jasperReport><detail>Test</detail></jasperReport>'
       const file = mockFile(jrxmlContent, 'test.jrxml', 'application/xml')
       
       const importedContent = await importFromJRXML(file)
@@ -213,14 +213,14 @@ describe('fileUtils', () => {
                       xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports 
                                           http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
                       name="test" pageWidth="595" pageHeight="842">
-          <title>
+          <detail>
             <band height="80">
               <staticText>
                 <reportElement x="20" y="20" width="200" height="30"/>
                 <text><![CDATA[Test Title]]></text>
               </staticText>
             </band>
-          </title>
+          </detail>
         </jasperReport>
       `
       
@@ -233,14 +233,14 @@ describe('fileUtils', () => {
       const invalidJRXML = `
         <?xml version="1.0" encoding="UTF-8"?>
         <jasperReport>
-          <title>
+          <detail>
             <band height="80">
               <staticText>
                 <reportElement x="20" y="20" width="200" height="30"/>
                 <text><![CDATA[Test Title]]></text>
               </staticText>
             </band>
-          </title>
+          </detail>
         </jasperReport>  <!-- Extra closing tag -->
       `
       
