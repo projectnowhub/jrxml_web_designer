@@ -83,10 +83,11 @@
         <div class="header-toolbar-ops">
            <button
             class="toolbar-btn add-page-btn"
-            @click="addNewPage"
+            @click="addNewPage()"
             :title="t('editorHeader.addNewPage')"
           >
             <FilePlus :size="16" :stroke-width="2" aria-hidden="true" />
+            <span>{{ t("editorHeader.pageButton") }}</span>
           </button>
           <button class="toolbar-btn" @click="deleteElement" :title="t('actions.delete')">
             <Trash2 :size="16" :stroke-width="2" aria-hidden="true" />
@@ -205,7 +206,9 @@
         :collapsible="true"
         @size-change="handleLeftPanelSizeChange"
         @collapse-change="leftPanelCollapsed = $event"
+        :title="t('elementLibrary.title')"
       >
+        <template #default="{ toggleCollapse }">
         <ElementLibrary
           :elements="elements"
           :report-fields="reportFields"
@@ -236,7 +239,12 @@
           @add-sub-dataset="handleAddSubDataset"
           @edit-sub-dataset="handleEditSubDataset"
           @delete-sub-dataset="handleDeleteSubDataset"
-        />
+        >
+          <template #header-actions>
+            <PanelToggleButton side="left" :collapsed="false" @toggle="toggleCollapse" />
+          </template>
+        </ElementLibrary>
+        </template>
       </ResizablePanel>
 
       <!-- Center design area -->
@@ -337,34 +345,55 @@
         :auto-width="true"
         @size-change="handlePropertyPanelSizeChange"
         @collapse-change="rightPanelCollapsed = $event"
+        :title="rightPanelTab === 'ai' ? t('ai.title') : t('properties.title')"
       >
+        <template #default="{ toggleCollapse }">
         <!-- Right panel tabs -->
         <div class="right-panel-tabs">
-          <button
-            class="right-panel-tab"
-            :class="{ active: rightPanelTab === 'properties' }"
-            @click="rightPanelTab = 'properties'"
+          <div
+            class="right-panel-seg"
+            role="tablist"
+            :style="{ '--tab-index': rightPanelTab === 'ai' ? 1 : 0 }"
           >
-            {{ t("properties.title") }}
-          </button>
-          <button
-            class="right-panel-tab"
-            :class="{ active: rightPanelTab === 'ai' }"
-            @click="rightPanelTab = 'ai'"
-          >
-            🤖 {{ t("ai.title") }}
-          </button>
+            <span class="right-panel-indicator" aria-hidden="true"></span>
+            <button
+              type="button"
+              role="tab"
+              class="right-panel-tab"
+              :class="{ active: rightPanelTab === 'properties' }"
+              :aria-selected="rightPanelTab === 'properties'"
+              @click="rightPanelTab = 'properties'"
+            >
+              <SlidersHorizontal :size="14" :stroke-width="2" aria-hidden="true" />
+              {{ t("properties.title") }}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="right-panel-tab"
+              :class="{ active: rightPanelTab === 'ai' }"
+              :aria-selected="rightPanelTab === 'ai'"
+              @click="rightPanelTab = 'ai'"
+            >
+              <Sparkles :size="14" :stroke-width="2" aria-hidden="true" />
+              {{ t("ai.title") }}
+            </button>
+          </div>
           <button
             v-if="rightPanelTab === 'ai'"
+            type="button"
             class="right-panel-settings-btn"
-            @click="toggleAISettings"
             :title="t('ai.configure')"
+            :aria-label="t('ai.configure')"
+            @click="toggleAISettings"
           >
-            ⚙️
+            <Settings :size="15" :stroke-width="2" aria-hidden="true" />
           </button>
+          <PanelToggleButton side="right" :collapsed="false" @toggle="toggleCollapse" />
         </div>
 
         <!-- Element properties component -->
+        <Transition name="right-panel-fade">
         <div v-show="rightPanelTab === 'properties'">
           <ElementProperties
             :selected-band-index="selectedBandIndex"
@@ -393,7 +422,10 @@
           />
         </div>
 
+        </Transition>
+
         <!-- AI Assistant panel -->
+        <Transition name="right-panel-fade">
         <div v-show="rightPanelTab === 'ai'" class="ai-panel-container">
           <AIChatPanel
             :visible="rightPanelTab === 'ai'"
@@ -405,6 +437,8 @@
             @update:show-settings="showAISettings = $event"
           />
         </div>
+        </Transition>
+        </template>
       </ResizablePanel>
     </div>
 
@@ -685,6 +719,7 @@ import StyleManagementModal from "./modals/StyleManagementModal.vue";
 import BaseModal from "./modals/BaseModal.vue";
 import ColumnSelectionModal from "./modals/ColumnSelectionModal.vue";
 import BottomPanel from "./panels/BottomPanel.vue";
+import PanelToggleButton from "./panels/PanelToggleButton.vue";
 import AIChatPanel from "./ai/AIChatPanel.vue";
 import ElementLibrary from "./ElementLibrary.vue";
 import FileManager from "./designer/controls/FileManager.vue";
@@ -701,6 +736,9 @@ import {
   Copy,
   FilePlus,
   Redo2,
+  Settings,
+  SlidersHorizontal,
+  Sparkles,
   Trash2,
   Undo2,
 } from "@lucide/vue";
@@ -1308,21 +1346,9 @@ function saveCurrentFile() {
   return fileData;
 }
 
-// Incomplete elements, only visible on localhost
-const INCOMPLETE_ELEMENTS = [
-  "map",
-  "crosstab",
-  "iconLabel",
-  "genericElement",
-  "list",
-  "subreport",
-];
-const isDev = location.hostname === "localhost";
-
 // Available elements
 const elements = computed(() =>
   getAllElementConfigs()
-    .filter((config) => isDev || !INCOMPLETE_ELEMENTS.includes(config.type))
     .map((config) => ({ type: config.type, name: config.name })),
 );
 
@@ -1393,10 +1419,20 @@ const totalPages = computed(() =>
   Math.max(pageCount.value, maxDetailPageIndex.value + 1),
 );
 
-const addNewPage = () => {
+// afterPage: 1-based page the new one follows (default: at the end). Detail
+// content of later pages moves down one page.
+const addNewPage = (afterPage?: number) => {
   saveStateToHistory();
-  pageCount.value++;
-  notification.success(t("editor.pageAdded", { page: pageCount.value }));
+  const insertAt =
+    typeof afterPage === "number" ? Math.min(afterPage, totalPages.value) : totalPages.value;
+  const detailBand = bands.value.find(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+  detailBand?.elements?.forEach((el: any) => {
+    if ((el.pageIndex ?? 0) >= insertAt) el.pageIndex = (el.pageIndex ?? 0) + 1;
+  });
+  pageCount.value = totalPages.value + 1;
+  notification.success(t("editor.pageAdded", { page: insertAt + 1 }));
   updateJRXML();
 };
 
@@ -7553,49 +7589,114 @@ const handleBandSelectionChange = (): void => {
 }
 
 /* Right panel tab styles */
+/* Properties / AI Assistant: a segmented switch whose white highlight slides
+   to the open tab, then the settings (AI only) and collapse buttons */
 .right-panel-tabs {
   display: flex;
-  border-bottom: 1px solid var(--border-color);
-  background-color: #fafafa;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 8px 8px 10px;
+  border-bottom: 1px solid #eceef2;
+  background: #fff;
+}
+
+.right-panel-seg {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border-radius: 9px;
+  background: #eef0f4;
+}
+
+.right-panel-indicator {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / 2);
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+  transform: translateX(calc(100% * var(--tab-index)));
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .right-panel-tab {
-  flex: 1;
-  padding: 10px;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
   border: none;
+  border-radius: 7px;
   background: transparent;
-  cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: #666;
-  transition: all 0.2s;
-  border-bottom: 2px solid transparent;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+/* The tab being opened fades and rises in */
+.right-panel-fade-enter-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.right-panel-fade-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .right-panel-indicator,
+  .right-panel-fade-enter-active {
+    transition: none;
+  }
 }
 
 .right-panel-tab:hover {
-  background-color: #f0f0f0;
-  color: var(--primary-color);
+  color: #111827;
 }
 
 .right-panel-tab.active {
   color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
-  background-color: #fff;
+  font-weight: 600;
+}
+
+.right-panel-tab:focus-visible,
+.right-panel-settings-btn:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 1px;
 }
 
 .right-panel-settings-btn {
-  padding: 8px 12px;
-  border: none;
-  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  background: #fff;
+  color: #6b7280;
   cursor: pointer;
-  font-size: 16px;
-  color: #666;
-  transition: all 0.2s;
-  border-left: 1px solid #e0e0e0;
+  transition: all 0.15s ease;
 }
 
 .right-panel-settings-btn:hover {
-  background-color: #f0f0f0;
+  border-color: #93c5fd;
+  background: #eff6ff;
   color: var(--primary-color);
 }
 
@@ -7889,7 +7990,9 @@ const handleBandSelectionChange = (): void => {
 
 .toolbar-btn.add-page-btn {
   width: auto;
-  padding: 0 6px;
+  padding: 0 8px;
   gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
 }
 </style>

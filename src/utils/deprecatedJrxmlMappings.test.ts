@@ -27,12 +27,12 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
           height: 50,
           elements: [
             {
-              type: 'staticText',
+              type: 'textField',
               x: 10,
               y: 10,
               width: 100,
               height: 20,
-              text: 'Test Text',
+              expression: '"Test Text"',
               box: {
                 pen: {
                   lineWidth: 1,
@@ -48,7 +48,7 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
       const doc = parseJRXMLToDOM(jrxmlContent);
       
       // Check that the deprecated border and borderColor attributes are not used
-      const staticTextElements = doc.querySelectorAll('staticText');
+      const staticTextElements = doc.querySelectorAll('textField');
       expect(staticTextElements.length).toBeGreaterThan(0);
 
       const reportElement = staticTextElements[0].querySelector('reportElement');
@@ -162,12 +162,12 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
           height: 50,
           elements: [
             {
-              type: 'staticText',
+              type: 'textField',
               x: 10,
               y: 10,
               width: 100,
               height: 20,
-              text: 'Test Text',
+              expression: '"Test Text"',
               isStyledText: true
             }
           ]
@@ -178,7 +178,7 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
       const doc = parseJRXMLToDOM(jrxmlContent);
       
       // Check that the deprecated isStyledText attribute is not used, and markup is used instead
-      const staticTextElements = doc.querySelectorAll('staticText');
+      const staticTextElements = doc.querySelectorAll('textField');
       expect(staticTextElements.length).toBeGreaterThan(0);
 
       const textElement = staticTextElements[0].querySelector('textElement');
@@ -208,12 +208,12 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
           height: 50,
           elements: [
             {
-              type: 'staticText',
+              type: 'textField',
               x: 10,
               y: 10,
               width: 100,
               height: 20,
-              text: 'Test Text',
+              expression: '"Test Text"',
               box: {
                 borderStyle: '', // Border style is empty (none)
                 borderWidth: 0   // Border width is 0
@@ -228,7 +228,7 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
       const doc = parseJRXMLToDOM(jrxmlContent);
 
       // Check that no box tag was generated
-      const staticTextElements = doc.querySelectorAll('staticText');
+      const staticTextElements = doc.querySelectorAll('textField');
       expect(staticTextElements.length).toBeGreaterThan(0);
 
       const boxElement = staticTextElements[0].querySelector('box');
@@ -252,12 +252,12 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
           height: 50,
           elements: [
             {
-              type: 'staticText',
+              type: 'textField',
               x: 10,
               y: 10,
               width: 100,
               height: 20,
-              text: 'Test Text',
+              expression: '"Test Text"',
               box: {
                 borderStyle: 'Solid', // Border style is not empty
                 borderWidth: 1,      // Border width is not 0
@@ -272,7 +272,7 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
       const doc = parseJRXMLToDOM(jrxmlContent);
 
       // Check that a box tag was generated
-      const staticTextElements = doc.querySelectorAll('staticText');
+      const staticTextElements = doc.querySelectorAll('textField');
       expect(staticTextElements.length).toBeGreaterThan(0);
 
       const boxElement = staticTextElements[0].querySelector('box');
@@ -303,12 +303,12 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
           height: 50,
           elements: [
             {
-              type: 'staticText',
+              type: 'textField',
               x: 10,
               y: 10,
               width: 100,
               height: 20,
-              text: 'Test Text',
+              expression: '"Test Text"',
               box: {
                 borderWidth: 1,      // Border width is not 0, even without a border style
                 borderColor: '#000000'
@@ -322,7 +322,7 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
       const doc = parseJRXMLToDOM(jrxmlContent);
 
       // Check that a box tag was generated
-      const staticTextElements = doc.querySelectorAll('staticText');
+      const staticTextElements = doc.querySelectorAll('textField');
       expect(staticTextElements.length).toBeGreaterThan(0);
 
       const boxElement = staticTextElements[0].querySelector('box');
@@ -351,12 +351,12 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
           height: 50,
           elements: [
             {
-              type: 'staticText',
+              type: 'textField',
               x: 10,
               y: 10,
               width: 100,
               height: 20,
-              text: 'Test Text',
+              expression: '"Test Text"',
               box: {
                 padding: 5  // Only padding is set
               }
@@ -369,7 +369,7 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
       const doc = parseJRXMLToDOM(jrxmlContent);
       
       // Check that a box tag was generated
-      const staticTextElements = doc.querySelectorAll('staticText');
+      const staticTextElements = doc.querySelectorAll('textField');
       expect(staticTextElements.length).toBeGreaterThan(0);
 
       const boxElement = staticTextElements[0].querySelector('box');
@@ -506,7 +506,7 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
       expect(bandElements[0].getAttribute('isSplitAllowed')).toBeNull();
 
       // Check the staticText element
-      const staticTextElements = doc.querySelectorAll('staticText');
+      const staticTextElements = doc.querySelectorAll('textField');
       expect(staticTextElements.length).toBeGreaterThan(0);
 
       const staticText = staticTextElements[0];
@@ -523,11 +523,12 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
       expect(textElement!.getAttribute('markup')).toBe('styled');
       expect(textElement!.getAttribute('isStyledText')).toBeNull();
 
-      // Check the textField element
+      // Check the original textField (after the converted static text)
       const textFieldElements = doc.querySelectorAll('textField');
-      expect(textFieldElements.length).toBeGreaterThan(0);
-      expect(textFieldElements[0].getAttribute('textAdjust')).toBe('StretchHeight');
-      expect(textFieldElements[0].getAttribute('isStretchWithOverflow')).toBeNull();
+      expect(textFieldElements.length).toBeGreaterThan(1);
+      const originalTextField = textFieldElements[textFieldElements.length - 1];
+      expect(originalTextField.getAttribute('textAdjust')).toBe('StretchHeight');
+      expect(originalTextField.getAttribute('isStretchWithOverflow')).toBeNull();
 
       // Parse the regenerated JRXML again
       const { bands: finalBands } = parseJRXMLContent(regeneratedJrxml);
@@ -618,12 +619,12 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
     test('should prefer non-deprecated attributes over deprecated ones', () => {
       // Create an element that contains both the new attribute and the deprecated attribute
       const elementWithBothProperties = {
-        type: 'staticText',
+        type: 'textField',
         x: 10,
         y: 10,
         width: 100,
         height: 20,
-        text: 'Test Text',
+        expression: '"Test Text"',
         markup: 'html', // New attribute
         isStyledText: false, // Deprecated attribute
         box: {
@@ -678,7 +679,7 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
       expect(bandElements[0].getAttribute('isSplitAllowed')).toBeNull();
 
       // Check the staticText element
-      const staticTextElements = doc.querySelectorAll('staticText');
+      const staticTextElements = doc.querySelectorAll('textField');
       expect(staticTextElements.length).toBeGreaterThan(0);
 
       const textElement = staticTextElements[0].querySelector('textElement');
@@ -694,11 +695,12 @@ describe('JRXML deprecated tag and attribute conversion tests', () => {
       expect(penElement!.getAttribute('lineWidth')).toBe('2');
       expect(penElement!.getAttribute('lineColor')).toBe('#FF0000');
 
-      // Check the textField element
+      // Check the original textField (after the converted static text)
       const textFieldElements = doc.querySelectorAll('textField');
-      expect(textFieldElements.length).toBeGreaterThan(0);
-      expect(textFieldElements[0].getAttribute('textAdjust')).toBe('StretchHeight');
-      expect(textFieldElements[0].getAttribute('isStretchWithOverflow')).toBeNull();
+      expect(textFieldElements.length).toBeGreaterThan(1);
+      const originalTextField = textFieldElements[textFieldElements.length - 1];
+      expect(originalTextField.getAttribute('textAdjust')).toBe('StretchHeight');
+      expect(originalTextField.getAttribute('isStretchWithOverflow')).toBeNull();
     });
   });
 

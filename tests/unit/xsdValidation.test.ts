@@ -158,19 +158,19 @@ describe('jrxmlGenerator XSD Validation', () => {
   }
 
   // Test the static text element
-  it('JRXML generated for a staticText element should pass XSD validation', () => {
+  it('JRXML generated for a fixed-text element should pass XSD validation', () => {
     const bands: Band[] = [
       {
         type: 'detail',
         height: 100,
         elements: [
           {
-            type: 'staticText',
+            type: 'textField',
             x: 20,
             y: 10,
             width: 200,
             height: 30,
-            text: 'Static Text',
+            expression: '"Static Text"',
             fontFamily: 'Arial',
             fontSize: 12,
             isBold: true,
@@ -189,7 +189,7 @@ describe('jrxmlGenerator XSD Validation', () => {
     const result = validateAgainstXSD(jrxml, xsdContent)
 
     if (!result.valid) {
-      console.error('staticText validation errors:', result.errors)
+      console.error('fixed text validation errors:', result.errors)
     }
 
     expect(result.valid).toBe(true)
@@ -364,12 +364,12 @@ describe('jrxmlGenerator XSD Validation', () => {
             height: 50,
             elements: [
               {
-                type: 'staticText',
+                type: 'textField',
                 x: 10,
                 y: 10,
                 width: 130,
                 height: 30,
-                text: 'Text inside frame',
+                expression: '"Text inside frame"',
                 fontFamily: 'Arial',
                 fontSize: 12
               } as DesignElement
@@ -389,30 +389,18 @@ describe('jrxmlGenerator XSD Validation', () => {
     expect(result.valid).toBe(true)
   })
 
-  // Test the page-break element
-  it('JRXML generated for a break element should pass XSD validation', () => {
-    const bands: Band[] = [
-      {
-        type: 'detail',
-        height: 100,
-        elements: [
-          {
-            type: 'break',
-            x: 20,
-            y: 10,
-            width: 1,
-            height: 1,
-            breakType: 'Page'
-          } as DesignElement
-        ]
-      }
-    ]
+  // Designer pages are written as detail bands separated by page breaks
+  it('JRXML for a multi-page design (page breaks) should pass XSD validation', () => {
+    const page = (pageIndex: number) =>
+      ({ type: 'textField', x: 20, y: 10, width: 100, height: 20, expression: '"Page"', pageIndex }) as DesignElement
+    const bands: Band[] = [{ type: 'detail', height: 100, elements: [page(0), page(1)] }]
 
     const jrxml = generateJRXMLContent(mockReportProperties, bands, [], [])
+    expect(jrxml).toContain('<break type="Page">')
     const result = validateAgainstXSD(jrxml, xsdContent)
 
     if (!result.valid) {
-      console.error('break validation errors:', result.errors)
+      console.error('page break validation errors:', result.errors)
     }
 
     expect(result.valid).toBe(true)
@@ -426,12 +414,12 @@ describe('jrxmlGenerator XSD Validation', () => {
         height: 100,
         elements: [
           {
-            type: 'staticText',
+            type: 'textField',
             x: 20,
             y: 10,
             width: 100,
             height: 20,
-            text: 'Text with border',
+            expression: '"Text with border"',
             fontFamily: 'Arial',
             fontSize: 12,
             box: {
@@ -502,8 +490,8 @@ describe('jrxmlGenerator XSD Validation', () => {
           columnHeader: {
             enable: true,
             element: {
-              type: 'staticText',
-              text: 'Column Header',
+              type: 'textField',
+              expression: '"Column Header"',
               x: 0,
               y: 0,
               width: 100,
@@ -558,15 +546,15 @@ describe('jrxmlGenerator XSD Validation', () => {
   // Test all Band types
   it('JRXML generated for all Band types should pass XSD validation', () => {
     const allBandTypes: Band[] = [
-      { type: 'title', height: 80, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: 'Title', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
-      { type: 'pageHeader', height: 50, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: 'Page Header', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
-      { type: 'columnHeader', height: 30, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: 'Column Header', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
+      { type: 'title', height: 80, elements: [{ type: 'textField', x: 0, y: 0, width: 100, height: 30, expression: '"Title"', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
+      { type: 'pageHeader', height: 50, elements: [{ type: 'textField', x: 0, y: 0, width: 100, height: 30, expression: '"Page Header"', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
+      { type: 'columnHeader', height: 30, elements: [{ type: 'textField', x: 0, y: 0, width: 100, height: 30, expression: '"Column Header"', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
       { type: 'detail', height: 100, elements: [{ type: 'textField', x: 0, y: 0, width: 100, height: 30, expression: '$F{field}', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
-      { type: 'columnFooter', height: 30, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: 'Column Footer', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
-      { type: 'pageFooter', height: 40, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: 'Page Footer', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
-      { type: 'summary', height: 60, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: 'Summary', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
+      { type: 'columnFooter', height: 30, elements: [{ type: 'textField', x: 0, y: 0, width: 100, height: 30, expression: '"Column Footer"', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
+      { type: 'pageFooter', height: 40, elements: [{ type: 'textField', x: 0, y: 0, width: 100, height: 30, expression: '"Page Footer"', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
+      { type: 'summary', height: 60, elements: [{ type: 'textField', x: 0, y: 0, width: 100, height: 30, expression: '"Summary"', fontFamily: 'Arial', fontSize: 12 } as DesignElement] },
       { type: 'background', height: 100, elements: [{ type: 'rectangle', x: 0, y: 0, width: 100, height: 100 } as DesignElement] },
-      { type: 'noData', height: 50, elements: [{ type: 'staticText', x: 0, y: 0, width: 100, height: 30, text: 'No Data', fontFamily: 'Arial', fontSize: 12 } as DesignElement] }
+      { type: 'noData', height: 50, elements: [{ type: 'textField', x: 0, y: 0, width: 100, height: 30, expression: '"No Data"', fontFamily: 'Arial', fontSize: 12 } as DesignElement] }
     ]
 
     const fields = [{ name: 'field', class: 'java.lang.String' }]
@@ -588,12 +576,12 @@ describe('jrxmlGenerator XSD Validation', () => {
         height: 100,
         elements: [
           {
-            type: 'staticText',
+            type: 'textField',
             x: 20,
             y: 10,
             width: 100,
             height: 20,
-            text: 'Styled text',
+            expression: '"Styled text"',
             fontFamily: 'Arial',
             fontSize: 12,
             style: 'CustomStyle'
@@ -711,12 +699,12 @@ describe('jrxmlGenerator XSD Validation', () => {
         height: 80,
         elements: [
           {
-            type: 'staticText',
+            type: 'textField',
             x: 20,
             y: 10,
             width: 200,
             height: 30,
-            text: 'Report Title',
+            expression: '"Report Title"',
             fontFamily: 'Arial',
             fontSize: 16,
             isBold: true,

@@ -1,17 +1,22 @@
 <template>
   <div class="element-properties">
-    <h3>{{ t("properties.title") }}</h3>
-
-    <!-- Style management button -->
-    <div class="style-management-section">
-      <n-button type="primary" @click="showStyleManagerModal = true">
+    <!-- Panel header: title, with the report's style manager beside it -->
+    <div class="panel-header">
+      <!-- What the panel is showing: the selected element, or the report -->
+      <h3>{{ panelTitle }}</h3>
+      <button type="button" class="chip-btn" @click="showStyleManagerModal = true">
+        <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+          <path d="M12 3a9 9 0 1 0 0 18c1 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.8.7-1.4 1.5-1.4H16a5 5 0 0 0 5-5C21 6.5 17 3 12 3z" class="line-icon" />
+          <circle cx="7.5" cy="11.5" r="1" class="dot-icon" />
+          <circle cx="10.5" cy="7.5" r="1" class="dot-icon" />
+          <circle cx="15.5" cy="7.5" r="1" class="dot-icon" />
+        </svg>
         {{ t("properties.styleManagement") }}
-      </n-button>
+      </button>
     </div>
 
     <!-- Report properties -->
     <div v-if="!selectedElement || !currentElement" class="property-section">
-      <h4>{{ t("properties.reportProperties") }}</h4>
 
       <!-- Band height and template limits settings -->
       <div class="form-group">
@@ -144,66 +149,56 @@
     <!-- Element properties -->
     <div v-else-if="selectedElement && currentElement" class="property-section">
       <!-- Element properties tabs -->
-      <n-tabs type="segment">
+      <!-- Tabs: the highlight slides to the open tab (positioned by index) -->
+      <div
+        class="prop-tab-bar"
+        role="tablist"
+        :style="{ '--tab-count': availableTabs.length, '--tab-index': availableTabs.indexOf(activeTab) }"
+      >
+        <span class="prop-tab-indicator" aria-hidden="true"></span>
+        <button
+          v-for="tab in availableTabs"
+          :key="tab"
+          type="button"
+          role="tab"
+          class="prop-tab"
+          :class="{ active: activeTab === tab }"
+          :aria-selected="activeTab === tab"
+          @click="activeTab = tab"
+        >
+          {{ t(TAB_LABELS[tab] ?? tab) }}
+        </button>
+      </div>
+
+      <Transition name="prop-tab-fade" mode="out-in">
         <!-- Basic properties tab -->
-        <n-tab-pane name="basic" :tab="t('properties.basicProperties')">
-          <h4>{{ t("properties.basicProperties") }}</h4>
-          <div class="basic-properties-grid">
-            <div class="form-group">
-              <label>{{ t("properties.x") }}</label>
-              <input
-                v-if="currentElement"
-                :value="currentElement.x"
-                type="number"
-                @change="setIntegerValue(currentElement, 'x', $event)"
-              />
+        <div v-if="activeTab === 'basic'" key="basic" class="prop-tab-pane" role="tabpanel">
+          <div class="box-section compact">
+            <h5>{{ t("properties.positionSize") }}</h5>
+            <div class="geometry-grid">
+              <label v-for="dim in GEOMETRY_FIELDS" :key="dim" class="field">
+                <span class="field-label">{{ t(`properties.${dim}`) }}</span>
+                <span class="unit-input">
+                  <input
+                    :value="currentElement[dim]"
+                    type="number"
+                    @change="setIntegerValue(currentElement, dim, $event)"
+                  />
+                  <span>px</span>
+                </span>
+              </label>
             </div>
-            <div class="form-group">
-              <label>{{ t("properties.y") }}</label>
-              <input
-                v-if="currentElement"
-                :value="currentElement.y"
-                type="number"
-                @change="setIntegerValue(currentElement, 'y', $event)"
-              />
-            </div>
-            <div class="form-group">
-              <label>{{ t("properties.width") }}</label>
-              <input
-                v-if="currentElement"
-                :value="currentElement.width"
-                type="number"
-                @change="setIntegerValue(currentElement, 'width', $event)"
-              />
-            </div>
-            <div class="form-group">
-              <label>{{ t("properties.height") }}</label>
-              <input
-                v-if="currentElement"
-                :value="currentElement.height"
-                type="number"
-                @change="setIntegerValue(currentElement, 'height', $event)"
-              />
-            </div>
-          </div>
-
-
-          <!-- Style reference -->
-          <div
-            class="form-group"
-            v-if="reportStyles && reportStyles.length > 0"
-          >
-            <label>{{
-              t("properties.styleReference")
-            }}</label>
-            <select v-model="currentElement.style" class="form-select">
-              <option value="">
-                {{ t("properties.noStyle") }}
-              </option>
-              <option v-for="s in reportStyles" :key="s.name" :value="s.name">
-                {{ s.name }}
-              </option>
-            </select>
+            <label v-if="reportStyles && reportStyles.length > 0" class="field style-ref-field">
+              <span class="field-label">{{ t("properties.styleReference") }}</span>
+              <select
+                class="card-select"
+                :value="currentElement.style ?? ''"
+                @change="setTextProperty('style', ($event.target as HTMLSelectElement).value || undefined)"
+              >
+                <option value="">{{ t("properties.noStyle") }}</option>
+                <option v-for="st in reportStyles" :key="st.name" :value="st.name">{{ st.name }}</option>
+              </select>
+            </label>
           </div>
 
           <!-- Frame properties: border presets, border lines, layout -->
@@ -216,204 +211,216 @@
 
           <!-- Image properties -->
           <template v-if="currentElement && currentElement.type === 'image'">
-            <div class="form-group">
-              <label>{{ t("properties.imageName") }}</label>
-              <input
-                type="text"
-                class="readonly-input"
-                :value="getImageDisplayName(currentElement)"
-                readonly
-                :title="getImageDisplayName(currentElement)"
-              />
-              <small>{{
-                t("properties.imageNameHint")
-              }}</small>
-              <div
-                style="
-                  margin-top: 6px;
-                  display: flex;
-                  align-items: center;
-                  gap: 8px;
-                "
-              >
+            <div class="box-section compact">
+              <h5>{{ t("properties.imageName") }}</h5>
+              <div class="image-name-row">
+                <input
+                  type="text"
+                  class="card-input is-readonly"
+                  :value="getImageDisplayName(currentElement)"
+                  readonly
+                  :title="getImageDisplayName(currentElement)"
+                  :aria-label="t('properties.imageName')"
+                />
                 <button
                   type="button"
-                  class="prop-btn-primary"
-                  style="
-                    font-size: 12px;
-                    padding: 4px 10px;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 4px;
-                  "
+                  class="chip-btn chip-btn-solid"
                   :disabled="isPropertiesImageUploading"
                   @click="triggerPropertiesImageUpload"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    width="14"
-                    height="14"
-                  >
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="17 8 12 3 7 8" />
-                    <line x1="12" y1="3" x2="12" y2="15" />
+                  <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" class="line-icon" />
                   </svg>
-                  {{
-                    isPropertiesImageUploading
-                      ? t("properties.uploadingImage")
-                      : t("properties.uploadImageButton")
-                  }}
-                </button>
-                <input
-                  ref="propImageFileInputRef"
-                  type="file"
-                  accept=".png,.jpg,.jpeg,image/png,image/jpeg"
-                  style="display: none"
-                  @change="handlePropertiesImageUpload"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label>{{ t("properties.rotation") }}</label>
-              <div class="rotation-segmented-group">
-                <button
-                  type="button"
-                  class="rotation-btn"
-                  :class="{ active: !currentElement.rotation || currentElement.rotation === 'None' }"
-                  @click="setElementRotation('None')"
-                  :title="t('properties.rotationNone')"
-                >
-                  <span>0°</span>
-                </button>
-                <button
-                  type="button"
-                  class="rotation-btn"
-                  :class="{ active: currentElement.rotation === 'Right' }"
-                  @click="setElementRotation('Right')"
-                  :title="t('properties.rotationRight')"
-                >
-                  <span>90° ↷</span>
-                </button>
-                <button
-                  type="button"
-                  class="rotation-btn"
-                  :class="{ active: currentElement.rotation === 'UpsideDown' }"
-                  @click="setElementRotation('UpsideDown')"
-                  :title="t('properties.rotationUpsideDown')"
-                >
-                  <span>180° ⟲</span>
-                </button>
-                <button
-                  type="button"
-                  class="rotation-btn"
-                  :class="{ active: currentElement.rotation === 'Left' }"
-                  @click="setElementRotation('Left')"
-                  :title="t('properties.rotationLeft')"
-                >
-                  <span>270° ↶</span>
+                  {{ isPropertiesImageUploading ? t("properties.uploadingImage") : t("properties.uploadImageButton") }}
                 </button>
               </div>
-            </div>
-          </template>
-
-          <!-- Rectangle properties -->
-          <template
-            v-if="currentElement && currentElement.type === 'rectangle'"
-          >
-            <div class="form-group">
-              <label>{{ t("properties.cornerRadius") }}</label>
+              <small class="card-hint">{{ t("properties.imageNameHint") }}</small>
               <input
-                v-model.number="currentElement.radius"
-                type="number"
-                min="0"
-                placeholder="0"
+                ref="propImageFileInputRef"
+                type="file"
+                accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                style="display: none"
+                @change="handlePropertiesImageUpload"
               />
             </div>
+            <div class="box-section compact">
+              <h5>{{ t("properties.rotation") }}</h5>
+              <div class="seg" role="radiogroup" :aria-label="t('properties.rotation')">
+                <button
+                  v-for="rot in ROTATIONS"
+                  :key="rot.value"
+                  type="button"
+                  role="radio"
+                  class="seg-btn"
+                  :class="{ active: (currentElement.rotation || 'None') === rot.value }"
+                  :aria-checked="(currentElement.rotation || 'None') === rot.value"
+                  :title="t(rot.titleKey)"
+                  @click="setElementRotation(rot.value)"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                    <g :transform="`rotate(${rot.deg} 12 12)`">
+                      <rect x="6" y="4" width="12" height="16" rx="2" class="line-icon" />
+                      <path d="M9 9h6M9 12h4" class="line-icon" />
+                    </g>
+                  </svg>
+                  <span>{{ rot.deg }}°</span>
+                </button>
+              </div>
+            </div>
           </template>
 
-          <!-- Line properties -->
+          <!-- Chart: type, title and the data it plots -->
+          <template v-if="currentElement.type === 'chart'">
+            <div class="box-section compact">
+              <h5>{{ t("chart.title") }}</h5>
+              <label class="field">
+                <span class="field-label">{{ t("chart.type") }}</span>
+                <select
+                  class="card-select"
+                  :value="currentElement.chartType"
+                  @change="setTextProperty('chartType', ($event.target as HTMLSelectElement).value)"
+                >
+                  <option v-for="type in chartTypeOptions" :key="type" :value="type">{{ t(`chart.types.${type}`) }}</option>
+                </select>
+              </label>
+              <label class="field card-gap-sm">
+                <span class="field-label">{{ t("chart.chartTitle") }}</span>
+                <input
+                  class="card-input"
+                  type="text"
+                  :value="chartTitleText"
+                  :placeholder="t('chart.chartTitlePlaceholder')"
+                  @change="setChartTitle(($event.target as HTMLInputElement).value)"
+                />
+              </label>
+              <label class="toggle-row card-gap-sm">
+                <input
+                  type="checkbox"
+                  :checked="currentElement.isShowLegend !== false"
+                  @change="setTextProperty('isShowLegend', ($event.target as HTMLInputElement).checked)"
+                />
+                <span>{{ t("chart.showLegend") }}</span>
+              </label>
+            </div>
+
+            <div class="box-section compact">
+              <h5>{{ t("chart.data") }}</h5>
+              <label class="field">
+                <span class="field-label">{{ t("chart.dataFrom") }}</span>
+                <select
+                  class="card-select"
+                  :value="currentElement.subDataset ?? ''"
+                  @change="setTextProperty('subDataset', ($event.target as HTMLSelectElement).value || undefined)"
+                >
+                  <option value="">{{ t("chart.reportData") }}</option>
+                  <option v-for="ds in subDatasets || []" :key="ds.name" :value="ds.name">{{ ds.name }}</option>
+                </select>
+              </label>
+              <label v-for="field in chartDataFields" :key="field.key" class="field card-gap-sm">
+                <span class="field-label">{{ t(field.labelKey) }}</span>
+                <input
+                  class="card-input mono"
+                  type="text"
+                  list="chart-field-options"
+                  :value="(currentElement as any)[field.key] ?? ''"
+                  :placeholder="'$F{' + t('chart.fieldPlaceholder') + '}'"
+                  @change="setTextProperty(field.key, ($event.target as HTMLInputElement).value.trim() || undefined)"
+                />
+              </label>
+              <datalist id="chart-field-options">
+                <option v-for="f in reportFields || []" :key="f.name" :value="`$F{${f.name}}`" />
+              </datalist>
+              <small class="card-hint">{{ t(chartDataHintKey) }}</small>
+            </div>
+          </template>
+
+          <!-- Barcode: symbology and value -->
+          <template v-if="currentElement.type === 'barcode'">
+            <div class="box-section compact">
+              <h5>{{ t("properties.barcodeProperties") }}</h5>
+              <label class="field">
+                <span class="field-label">{{ t("properties.barcodeType") }}</span>
+                <select
+                  class="card-select"
+                  :value="currentElement.barcodeType"
+                  @change="setTextProperty('barcodeType', ($event.target as HTMLSelectElement).value)"
+                >
+                  <option v-for="code in BARCODE_TYPES" :key="code.value" :value="code.value">{{ code.label }}</option>
+                </select>
+              </label>
+              <label class="field card-gap-sm">
+                <span class="field-label">{{ t("properties.barcodeValue") }}</span>
+                <input
+                  class="card-input"
+                  type="text"
+                  :value="getBarcodeValue(currentElement)"
+                  @input="updateBarcodeValue(($event.target as HTMLInputElement).value)"
+                  :placeholder="t('properties.barcodeValuePlaceholder')"
+                />
+              </label>
+            </div>
+          </template>
+
+          <template v-if="currentElement.type === 'barcode'">
+            <div class="box-section compact">
+              <h5>{{ t("properties.rotation") }}</h5>
+              <div class="seg" role="radiogroup" :aria-label="t('properties.rotation')">
+                <button
+                  v-for="rot in ROTATIONS"
+                  :key="rot.value"
+                  type="button"
+                  role="radio"
+                  class="seg-btn"
+                  :class="{ active: (currentElement.rotation || 'None') === rot.value }"
+                  :aria-checked="(currentElement.rotation || 'None') === rot.value"
+                  :title="t(rot.titleKey)"
+                  @click="setElementRotation(rot.value)"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                    <g :transform="`rotate(${rot.deg} 12 12)`">
+                      <rect x="6" y="4" width="12" height="16" rx="2" class="line-icon" />
+                      <path d="M9 9h6M9 12h4" class="line-icon" />
+                    </g>
+                  </svg>
+                  <span>{{ rot.deg }}°</span>
+                </button>
+              </div>
+            </div>
+          </template>
+
+          <!-- Line: which way it runs (its look is in Style Settings) -->
           <template v-if="currentElement && currentElement.type === 'line'">
-            <div class="form-group">
-              <label>{{ t("properties.lineOrientation") }}</label>
-              <div class="line-orientation-group">
+            <div class="box-section compact">
+              <h5>{{ t("properties.lineOrientation") }}</h5>
+              <div class="seg" role="radiogroup" :aria-label="t('properties.lineOrientation')">
                 <button
+                  v-for="dir in LINE_ORIENTATIONS"
+                  :key="dir.value"
                   type="button"
-                  class="line-orientation-btn"
-                  :class="{ active: currentLineOrientation === 'horizontal' }"
-                  @click="setLineOrientation('horizontal')"
-                  :title="t('properties.lineHorizontalTitle')"
+                  role="radio"
+                  class="seg-btn seg-btn-stacked"
+                  :class="{ active: currentLineOrientation === dir.value }"
+                  :aria-checked="currentLineOrientation === dir.value"
+                  :title="t(dir.titleKey)"
+                  @click="setLineOrientation(dir.value)"
                 >
-                  <span>─ {{ t("properties.lineHorizontal") }}</span>
-                </button>
-                <button
-                  type="button"
-                  class="line-orientation-btn"
-                  :class="{ active: currentLineOrientation === 'vertical' }"
-                  @click="setLineOrientation('vertical')"
-                  :title="t('properties.lineVerticalTitle')"
-                >
-                  <span>│ {{ t("properties.lineVertical") }}</span>
-                </button>
-                <button
-                  type="button"
-                  class="line-orientation-btn"
-                  :class="{ active: currentLineOrientation === 'topdown' }"
-                  @click="setLineOrientation('topdown')"
-                  :title="t('properties.lineTopDownTitle')"
-                >
-                  <span>╲ {{ t("properties.lineTopDown") }}</span>
-                </button>
-                <button
-                  type="button"
-                  class="line-orientation-btn"
-                  :class="{ active: currentLineOrientation === 'bottomup' }"
-                  @click="setLineOrientation('bottomup')"
-                  :title="t('properties.lineBottomUpTitle')"
-                >
-                  <span>╱ {{ t("properties.lineBottomUp") }}</span>
+                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                    <path :d="dir.icon" class="line-icon" />
+                  </svg>
+                  <span>{{ t(dir.labelKey) }}</span>
                 </button>
               </div>
               <button
                 type="button"
-                class="btn-cross-line"
-                @click="addCrossingLine"
+                class="ghost-btn"
                 :title="t('properties.crossLineTitle')"
+                @click="addCrossingLine"
               >
-                <span>✕ {{ t("properties.crossLine") }}</span>
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                  <path d="M5 5l14 14M19 5L5 19" class="line-icon" />
+                </svg>
+                {{ t("properties.crossLine") }}
               </button>
-            </div>
-
-            <div class="form-group">
-              <label>{{ t("properties.lineStyle") }}</label>
-              <select v-model="currentElement.lineStyle" @change="emit('update-jrxml')">
-                <option value="Solid">{{ t("properties.solid") }}</option>
-                <option value="Dashed">{{ t("properties.dashed") }}</option>
-                <option value="Dotted">{{ t("properties.dotted") }}</option>
-                <option value="Double">{{ t("properties.double") }}</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label>{{ t("properties.lineThickness") }}</label>
-              <input
-                v-model.number="currentElement.lineWidth"
-                type="number"
-                min="0.5"
-                step="0.5"
-                placeholder="1"
-                @change="emit('update-jrxml')"
-              />
-            </div>
-
-            <div class="form-group">
-              <label>{{ t("properties.lineColor") }}</label>
-              <ColorSwatchPicker
-                v-model="currentElement.lineColor"
-                @change="emit('update-jrxml')"
-              />
             </div>
           </template>
 
@@ -428,126 +435,73 @@
               @save-state="emit('save-state')"
               @update-jrxml="emit('update-jrxml')"
             />
-            <div
-              class="form-group"
-              v-else
-            >
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <label style="margin-bottom: 0;">{{ t("properties.textContent") }}</label>
-                <div style="display: flex; gap: 4px; align-items: center;">
-                  <button
-                    type="button"
-                    class="btn-autofit-height"
-                    :title="t('properties.fitToTextTitle')"
-                    @click="emit('fit-to-text')"
-                  >
-                    {{ t("properties.fitToText") }}
-                  </button>
-                  <select
-                    v-if="reportFields && reportFields.length > 0"
-                    style="font-size: 11px; padding: 2px 6px; width: auto; max-width: 120px;"
-                    @change="insertFieldIntoTextField(($event.target as HTMLSelectElement).value); ($event.target as HTMLSelectElement).value = ''"
-                  >
-                    <option value="">+ {{ t("properties.insertField") }}</option>
-                    <option v-for="f in reportFields" :key="f.name" :value="`$F{${f.name}}`">
-                      {{ f.name }}
-                    </option>
-                  </select>
-                </div>
+            <div v-else class="box-section compact">
+              <div class="card-head">
+                <h5>{{ t("properties.textContent") }}</h5>
+                <button
+                  type="button"
+                  class="chip-btn"
+                  :title="t('properties.fitToTextTitle')"
+                  @click="emit('fit-to-text')"
+                >
+                  <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+                    <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" class="line-icon" />
+                  </svg>
+                  {{ t("properties.fitToText") }}
+                </button>
               </div>
               <textarea
-                v-if="currentElement"
+                class="card-textarea"
                 :value="getTextFieldDisplay(currentElement)"
                 @input="updateTextFieldDisplay(($event.target as HTMLTextAreaElement).value)"
                 :placeholder="t('properties.textFieldPlaceholder', { example: '$F{field_name}' })"
                 rows="3"
-                style="white-space: pre-wrap;"
               ></textarea>
+              <label v-if="reportFields && reportFields.length > 0" class="field insert-field">
+                <span class="field-label">{{ t("properties.insertFieldLabel") }}</span>
+                <select
+                  class="card-select"
+                  @change="insertFieldIntoTextField(($event.target as HTMLSelectElement).value); ($event.target as HTMLSelectElement).value = ''"
+                >
+                  <option value="">{{ t("properties.insertField") }}</option>
+                  <option v-for="f in reportFields" :key="f.name" :value="`$F{${f.name}}`">{{ f.name }}</option>
+                </select>
+              </label>
             </div>
-            <div class="form-group">
-              <label>{{ t("properties.rotation") }}</label>
-              <div class="rotation-segmented-group">
+            <div class="box-section compact">
+              <h5>{{ t("properties.rotation") }}</h5>
+              <div class="seg" role="radiogroup" :aria-label="t('properties.rotation')">
                 <button
+                  v-for="rot in ROTATIONS"
+                  :key="rot.value"
                   type="button"
-                  class="rotation-btn"
-                  :class="{ active: !currentElement.rotation || currentElement.rotation === 'None' }"
-                  @click="setElementRotation('None')"
-                  :title="t('properties.rotationNone')"
+                  role="radio"
+                  class="seg-btn"
+                  :class="{ active: (currentElement.rotation || 'None') === rot.value }"
+                  :aria-checked="(currentElement.rotation || 'None') === rot.value"
+                  :title="t(rot.titleKey)"
+                  @click="setElementRotation(rot.value)"
                 >
-                  <span>0°</span>
-                </button>
-                <button
-                  type="button"
-                  class="rotation-btn"
-                  :class="{ active: currentElement.rotation === 'Right' }"
-                  @click="setElementRotation('Right')"
-                  :title="t('properties.rotationRight')"
-                >
-                  <span>90° ↷</span>
-                </button>
-                <button
-                  type="button"
-                  class="rotation-btn"
-                  :class="{ active: currentElement.rotation === 'UpsideDown' }"
-                  @click="setElementRotation('UpsideDown')"
-                  :title="t('properties.rotationUpsideDown')"
-                >
-                  <span>180° ⟲</span>
-                </button>
-                <button
-                  type="button"
-                  class="rotation-btn"
-                  :class="{ active: currentElement.rotation === 'Left' }"
-                  @click="setElementRotation('Left')"
-                  :title="t('properties.rotationLeft')"
-                >
-                  <span>270° ↶</span>
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                    <g :transform="`rotate(${rot.deg} 12 12)`">
+                      <rect x="6" y="4" width="12" height="16" rx="2" class="line-icon" />
+                      <path d="M9 9h6M9 12h4" class="line-icon" />
+                    </g>
+                  </svg>
+                  <span>{{ rot.deg }}°</span>
                 </button>
               </div>
             </div>
-            <div class="form-group">
-              <label>{{ t("properties.fontSize") }}</label>
-              <input
-                v-if="currentElement"
-                v-model.number="currentElement.fontSize"
-                type="number"
-              />
-            </div>
-            <div class="checkbox-group">
-              <label>
-                <input
-                  v-if="currentElement"
-                  v-model="currentElement.isBold"
-                  type="checkbox"
-                />
-                {{ t("properties.bold") }}
-              </label>
-              <label>
-                <input
-                  v-if="currentElement"
-                  v-model="currentElement.isItalic"
-                  type="checkbox"
-                />
-                {{ t("properties.italic") }}
-              </label>
-              <label>
-                <input
-                  v-if="currentElement"
-                  v-model="currentElement.isUnderline"
-                  type="checkbox"
-                />
-                {{ t("properties.underline") }}
-              </label>
-            </div>
           </template>
-        </n-tab-pane>
+        </div>
 
 
         <!-- Table properties tab -->
-        <n-tab-pane
-          v-if="currentElement && currentElement.type === 'table'"
-          name="table"
-          :tab="t('properties.tableProperties')"
+        <div
+          v-else-if="activeTab === 'table' && currentElement.type === 'table'"
+          key="table"
+          class="prop-tab-pane"
+          role="tabpanel"
         >
           <!-- Table basic properties -->
           <TableProperties
@@ -559,37 +513,20 @@
             @update:element="handleTablePropertyUpdate"
           />
 
-          <!-- Divider -->
-          <div class="prop-divider"></div>
-
           <!-- Column management -->
-          <div class="form-group">
+          <div class="box-section compact">
             <h5>{{ t("properties.columnManagement") }}</h5>
             <div class="column-tree-toolbar">
-              <button
-                class="prop-btn-primary"
-                @click="handleAddRootColumn"
-                :title="t('properties.addColumn')"
-              >
+              <button type="button" class="chip-btn chip-btn-solid" :title="t('properties.addColumn')" @click="handleAddRootColumn">
                 + {{ t("properties.column") }}
               </button>
-              <button
-                class="prop-btn-primary"
-                @click="handleAddRootGroup"
-                :title="t('properties.addGroup')"
-              >
+              <button type="button" class="chip-btn" :title="t('properties.addGroup')" @click="handleAddRootGroup">
                 + {{ t("properties.group") }}
               </button>
-              <button
-                class="prop-btn-default"
-                @click="addColumnGroup"
-                :title="t('properties.combineColumnsTitle')"
-              >
+              <button type="button" class="chip-btn chip-btn-muted" :title="t('properties.combineColumnsTitle')" @click="addColumnGroup">
                 {{ t("properties.combineColumns") }}
               </button>
             </div>
-
-            <!-- Column tree -->
             <div class="column-tree">
               <ColumnTreeNode
                 v-for="(child, index) in tableChildren"
@@ -608,74 +545,34 @@
                 @ungroup-node="handleUngroupNode"
                 @move-node="handleMoveNode"
               />
-              <div
-                v-if="tableChildren.length === 0"
-                class="column-tree-empty-hint"
-              >
+              <div v-if="tableChildren.length === 0" class="column-tree-empty-hint">
                 {{ t("properties.noColumnsHint") }}
               </div>
             </div>
           </div>
 
-          <!-- Row height settings -->
-          <div
-            class="form-group"
-            v-if="currentElement && currentElement.type === 'table'"
-          >
+          <!-- Row heights -->
+          <div class="box-section compact">
             <h5>{{ t("properties.rowHeightSettings") }}</h5>
-            <div class="prop-table-column-props">
-              <div class="form-group">
-                <label>{{ t("properties.headerRowHeight") }}</label>
-                <input
-                  v-model.number="tableRowHeights.tableHeader"
-                  type="number"
-                  min="1"
-                  @change="updateAllColumnRowHeights"
-                />
-              </div>
-              <div class="form-group">
-                <label>{{ t("properties.columnHeaderRowHeight") }}</label>
-                <input
-                  v-model.number="tableRowHeights.columnHeader"
-                  type="number"
-                  min="1"
-                  @change="updateAllColumnRowHeights"
-                />
-              </div>
-              <div class="form-group">
-                <label>{{ t("properties.dataRowHeight") }}</label>
-                <input
-                  v-model.number="tableRowHeights.detailCell"
-                  type="number"
-                  min="1"
-                  @change="updateAllColumnRowHeights"
-                />
-              </div>
-              <div class="form-group">
-                <label>{{ t("properties.columnFooterRowHeight") }}</label>
-                <input
-                  v-model.number="tableRowHeights.columnFooter"
-                  type="number"
-                  min="1"
-                  @change="updateAllColumnRowHeights"
-                />
-              </div>
-              <div class="form-group">
-                <label>{{ t("properties.tableFooterRowHeight") }}</label>
-                <input
-                  v-model.number="tableRowHeights.tableFooter"
-                  type="number"
-                  min="1"
-                  @change="updateAllColumnRowHeights"
-                />
-              </div>
+            <div class="geometry-grid">
+              <label v-for="row in TABLE_ROW_HEIGHTS" :key="row.key" class="field">
+                <span class="field-label">{{ t(row.labelKey) }}</span>
+                <span class="unit-input">
+                  <input
+                    :value="tableRowHeights[row.key]"
+                    type="number"
+                    min="1"
+                    @change="setTableRowHeight(row.key, $event)"
+                  />
+                  <span>px</span>
+                </span>
+              </label>
             </div>
           </div>
-        </n-tab-pane>
+        </div>
  
         <!-- Style settings tab -->
-        <n-tab-pane name="style" :tab="t('properties.styleSettings')">
-          <h4>{{ t("properties.styleSettings") }}</h4>
+        <div v-else key="style" class="prop-tab-pane" role="tabpanel">
 
             <!-- Border settings (not supported for table and line elements) -->
             <template v-if="currentElement.type !== 'table' && currentElement.type !== 'line'">
@@ -688,365 +585,148 @@
                 "
               >
                 <div class="box-section compact">
-                  <h5>{{ t("properties.unifiedBorder") }}</h5>
-                  <p style="font-size: 12px; color: #666; margin-bottom: 8px">
-                    {{ t("properties.unifiedBorderHint") }}
-                  </p>
-
-                  <div class="border-group-row">
-                    <div class="border-group-item">
-                      <label class="side-label">{{
-                        t("properties.style")
-                      }}</label>
-                      <n-radio-group
-                        v-model:value="rectangleBorderStyle"
-                        @update:value="
-                          setRectangleBorderStyle(rectangleBorderStyle)
-                        "
-                        size="small"
-                      >
-                        <n-radio-button value="">{{
-                          t("properties.none")
-                        }}</n-radio-button>
-                        <n-radio-button value="Solid">{{
-                          t("properties.solid")
-                        }}</n-radio-button>
-                        <n-radio-button value="Dashed">{{
-                          t("properties.dashed")
-                        }}</n-radio-button>
-                        <n-radio-button value="Dotted">{{
-                          t("properties.dotted")
-                        }}</n-radio-button>
-                        <n-radio-button value="Double">{{
-                          t("properties.double")
-                        }}</n-radio-button>
-                      </n-radio-group>
-                    </div>
-
-                    <div class="border-group-item">
-                      <label class="side-label">{{
-                        t("properties.width")
-                      }}</label>
-                      <input
-                        :value="getRectangleBorderWidth()"
-                        @input="
-                          setRectangleBorderWidth(
-                            ($event.target as HTMLInputElement).value,
-                          )
-                        "
-                        type="number"
-                        min="0"
-                        max="10"
-                        step="0.5"
-                        class="width-control compact"
-                        :placeholder="t('properties.width')"
+                  <h5>{{ t("properties.outline") }}</h5>
+                  <span class="field-label">{{ t("properties.lineStyle") }}</span>
+                  <div class="line-style-names" aria-hidden="true">
+                    <span v-for="line in LINE_STYLES" :key="line.value">{{ t(line.labelKey) }}</span>
+                  </div>
+                  <div class="line-style-picker" role="radiogroup" :aria-label="t('properties.lineStyle')">
+                    <button
+                      v-for="line in LINE_STYLES"
+                      :key="line.value"
+                      type="button"
+                      role="radio"
+                      class="line-style-btn"
+                      :class="{ active: rectangleBorderStyle === line.value }"
+                      :aria-checked="rectangleBorderStyle === line.value"
+                      :title="t(line.labelKey)"
+                      :aria-label="t(line.labelKey)"
+                      @click="setRectangleBorderStyle(line.value)"
+                    >
+                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                        <template v-if="line.value === ''">
+                          <circle cx="12" cy="12" r="7" class="line-icon" />
+                          <path d="M7 17L17 7" class="line-icon" />
+                        </template>
+                        <path v-else-if="line.value === 'Double'" d="M3 9.5h18M3 14.5h18" class="line-icon" />
+                        <path v-else d="M3 12h18" class="line-icon" :stroke-dasharray="line.dash" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="field-row card-gap">
+                    <label class="field grow">
+                      <span class="field-label">{{ t("properties.width") }}</span>
+                      <span class="unit-input">
+                        <input
+                          :value="getRectangleBorderWidth()"
+                          @change="setRectangleBorderWidth(($event.target as HTMLInputElement).value)"
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.25"
+                        />
+                        <span>pt</span>
+                      </span>
+                    </label>
+                    <div class="field">
+                      <span class="field-label">{{ t("properties.color") }}</span>
+                      <ColorSwatchPicker
+                        :model-value="getRectangleBorderColor()"
+                        @update:model-value="setRectangleBorderColor($event)"
+                        class="color-control compact swatch-lg"
                       />
                     </div>
-
-                    <div class="border-group-item">
-                      <label class="side-label">{{
-                        t("properties.color")
-                      }}</label>
-                      <div style="display: flex; gap: 8px; align-items: center;">
-                        <ColorSwatchPicker
-                          :model-value="getRectangleBorderColor()"
-                          @update:model-value="setRectangleBorderColor($event)"
-                          class="color-control compact"
-                        />
+                    <label v-if="currentElement.type === 'rectangle'" class="field grow">
+                      <span class="field-label">{{ t("properties.cornerRadius") }}</span>
+                      <span class="unit-input">
                         <input
-                          :value="getRectangleBorderColor()"
-                          @input="
-                            setRectangleBorderColor(
-                              ($event.target as HTMLInputElement).value,
-                            )
-                          "
-                          type="text"
-                          placeholder="#000000"
-                          style="width: 80px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;"
+                          :value="currentElement.radius ?? 0"
+                          @change="setTextProperty('radius', Math.max(0, Math.round(parseFloat(($event.target as HTMLInputElement).value) || 0)))"
+                          type="number"
+                          min="0"
                         />
-                      </div>
-                    </div>
+                        <span>px</span>
+                      </span>
+                    </label>
                   </div>
                 </div>
               </template>
 
+
               <!-- Border settings for other elements (each side configurable independently) -->
               <template v-else>
-                <!-- Per-side border settings -->
-                <div class="box-section compact">
+                <!-- Borders: every side on its own row (All sets the four at once) -->
+                <div class="box-section compact border-designer">
                   <h5>{{ t("properties.sideBorders") }}</h5>
-
-                  <div class="border-sides-grid">
-                    <!-- Unified setting for all four sides -->
-                    <div class="border-side-item">
-                      <label class="side-label">{{
-                        t("properties.all")
-                      }}</label>
-                      <div class="border-side-controls">
-                        <n-radio-group
-                          v-if="currentElement"
-                          :value="getUnifiedBorderStyle()"
-                          @update:value="setUnifiedBorderStyle($event)"
-                          size="small"
+                  <div class="border-table" role="table" :aria-label="t('properties.sideBorders')">
+                    <div class="border-table-head" role="row">
+                      <span role="columnheader">{{ t("properties.side") }}</span>
+                      <!-- One name per icon column, so every line style is labelled -->
+                      <span role="columnheader" class="line-style-names" :aria-label="t('properties.lineStyle')">
+                        <span v-for="line in LINE_STYLES" :key="line.value">{{ t(line.labelKey) }}</span>
+                      </span>
+                      <span role="columnheader">{{ t("properties.width") }}</span>
+                      <span role="columnheader">{{ t("properties.color") }}</span>
+                    </div>
+                    <div
+                      v-for="row in BORDER_ROWS"
+                      :key="row"
+                      class="border-row"
+                      :class="{ 'is-all': row === 'all' }"
+                      role="row"
+                    >
+                      <span class="border-row-label" role="rowheader">{{ borderRowLabel(row) }}</span>
+                      <div class="line-style-picker" role="radiogroup" :aria-label="`${borderRowLabel(row)} ${t('properties.lineStyle')}`">
+                        <button
+                          v-for="line in LINE_STYLES"
+                          :key="line.value"
+                          type="button"
+                          role="radio"
+                          class="line-style-btn"
+                          :class="{ active: getRowBorderStyle(row) === line.value }"
+                          :aria-checked="getRowBorderStyle(row) === line.value"
+                          :title="t(line.labelKey)"
+                          :aria-label="t(line.labelKey)"
+                          @click="setRowBorderStyle(row, line.value)"
                         >
-                          <n-radio-button value="">{{
-                            t("properties.none")
-                          }}</n-radio-button>
-                          <n-radio-button value="Solid">{{
-                            t("properties.solid")
-                          }}</n-radio-button>
-                          <n-radio-button value="Dashed">{{
-                            t("properties.dashed")
-                          }}</n-radio-button>
-                          <n-radio-button value="Dotted">{{
-                            t("properties.dotted")
-                          }}</n-radio-button>
-                          <n-radio-button value="Double">{{
-                            t("properties.double")
-                          }}</n-radio-button>
-                        </n-radio-group>
+                          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                            <template v-if="line.value === ''">
+                              <circle cx="12" cy="12" r="7" class="line-icon" />
+                              <path d="M7 17L17 7" class="line-icon" />
+                            </template>
+                            <path v-else-if="line.value === 'Double'" d="M3 9.5h18M3 14.5h18" class="line-icon" />
+                            <path v-else d="M3 12h18" class="line-icon" :stroke-dasharray="line.dash" />
+                          </svg>
+                        </button>
+                      </div>
+                      <label class="unit-input">
                         <input
-                          v-if="currentElement"
-                          :value="getUnifiedBorderWidth()"
-                          @input="
-                            setUnifiedBorderWidth(
-                              ($event.target as HTMLInputElement).value,
-                            )
-                          "
+                          :value="getRowBorderWidth(row)"
+                          @input="setRowBorderWidth(row, ($event.target as HTMLInputElement).value)"
                           type="number"
                           min="0"
                           max="10"
-                          step="0.5"
-                          class="width-control compact"
-                          :placeholder="t('properties.width')"
+                          step="0.25"
+                          :aria-label="`${borderRowLabel(row)} ${t('properties.width')}`"
                         />
-                        <ColorSwatchPicker
-                          v-if="currentElement"
-                          :model-value="getUnifiedBorderColor()"
-                          @update:model-value="setUnifiedBorderColor($event)"
-                          class="color-control compact"
-                        />
-                      </div>
+                        <span>pt</span>
+                      </label>
+                      <ColorSwatchPicker
+                        :model-value="getRowBorderColor(row)"
+                        @update:model-value="setRowBorderColor(row, $event)"
+                        class="color-control compact"
+                        :aria-label="`${borderRowLabel(row)} ${t('properties.color')}`"
+                      />
                     </div>
+                  </div>
 
-                    <!-- Top -->
-                    <div class="border-side-item">
-                      <label class="side-label">{{
-                        t("properties.topSide")
-                      }}</label>
-                      <div class="border-side-controls">
-                        <n-radio-group
-                          v-if="currentElement"
-                          :value="getSideBorderStyle('top')"
-                          @update:value="setSideBorderStyle('top', $event)"
-                          size="small"
-                        >
-                          <n-radio-button value="">{{
-                            t("properties.none")
-                          }}</n-radio-button>
-                          <n-radio-button value="Solid">{{
-                            t("properties.solid")
-                          }}</n-radio-button>
-                          <n-radio-button value="Dashed">{{
-                            t("properties.dashed")
-                          }}</n-radio-button>
-                          <n-radio-button value="Dotted">{{
-                            t("properties.dotted")
-                          }}</n-radio-button>
-                          <n-radio-button value="Double">{{
-                            t("properties.double")
-                          }}</n-radio-button>
-                        </n-radio-group>
-                        <input
-                          v-if="currentElement"
-                          :value="getSideBorderWidth('top')"
-                          @input="
-                            setSideBorderWidth(
-                              'top',
-                              ($event.target as HTMLInputElement).value,
-                            )
-                          "
-                          type="number"
-                          min="0"
-                          max="10"
-                          step="0.5"
-                          class="width-control compact"
-                          :placeholder="t('properties.width')"
-                        />
-                        <ColorSwatchPicker
-                          v-if="currentElement"
-                          :model-value="getSideBorderColor('top')"
-                          @update:model-value="setSideBorderColor('top', $event)"
-                          class="color-control compact"
-                        />
-                      </div>
-                    </div>
-
-                    <!-- Left -->
-                    <div class="border-side-item">
-                      <label class="side-label">{{
-                        t("properties.leftSide")
-                      }}</label>
-                      <div class="border-side-controls">
-                        <n-radio-group
-                          v-if="currentElement"
-                          :value="getSideBorderStyle('left')"
-                          @update:value="setSideBorderStyle('left', $event)"
-                          size="small"
-                        >
-                          <n-radio-button value="">{{
-                            t("properties.none")
-                          }}</n-radio-button>
-                          <n-radio-button value="Solid">{{
-                            t("properties.solid")
-                          }}</n-radio-button>
-                          <n-radio-button value="Dashed">{{
-                            t("properties.dashed")
-                          }}</n-radio-button>
-                          <n-radio-button value="Dotted">{{
-                            t("properties.dotted")
-                          }}</n-radio-button>
-                          <n-radio-button value="Double">{{
-                            t("properties.double")
-                          }}</n-radio-button>
-                        </n-radio-group>
-                        <input
-                          v-if="currentElement"
-                          :value="getSideBorderWidth('left')"
-                          @input="
-                            setSideBorderWidth(
-                              'left',
-                              ($event.target as HTMLInputElement).value,
-                            )
-                          "
-                          type="number"
-                          min="0"
-                          max="10"
-                          step="0.5"
-                          class="width-control compact"
-                          :placeholder="t('properties.width')"
-                        />
-                        <ColorSwatchPicker
-                          v-if="currentElement"
-                          :model-value="getSideBorderColor('left')"
-                          @update:model-value="setSideBorderColor('left', $event)"
-                          class="color-control compact"
-                        />
-                      </div>
-                    </div>
-
-                    <!-- Bottom -->
-                    <div class="border-side-item">
-                      <label class="side-label">{{
-                        t("properties.bottomSide")
-                      }}</label>
-                      <div class="border-side-controls">
-                        <n-radio-group
-                          v-if="currentElement"
-                          :value="getSideBorderStyle('bottom')"
-                          @update:value="setSideBorderStyle('bottom', $event)"
-                          size="small"
-                        >
-                          <n-radio-button value="">{{
-                            t("properties.none")
-                          }}</n-radio-button>
-                          <n-radio-button value="Solid">{{
-                            t("properties.solid")
-                          }}</n-radio-button>
-                          <n-radio-button value="Dashed">{{
-                            t("properties.dashed")
-                          }}</n-radio-button>
-                          <n-radio-button value="Dotted">{{
-                            t("properties.dotted")
-                          }}</n-radio-button>
-                          <n-radio-button value="Double">{{
-                            t("properties.double")
-                          }}</n-radio-button>
-                        </n-radio-group>
-                        <input
-                          v-if="currentElement"
-                          :value="getSideBorderWidth('bottom')"
-                          @input="
-                            setSideBorderWidth(
-                              'bottom',
-                              ($event.target as HTMLInputElement).value,
-                            )
-                          "
-                          type="number"
-                          min="0"
-                          max="10"
-                          step="0.5"
-                          class="width-control compact"
-                          :placeholder="t('properties.width')"
-                        />
-                        <ColorSwatchPicker
-                          v-if="currentElement"
-                          :model-value="getSideBorderColor('bottom')"
-                          @update:model-value="setSideBorderColor('bottom', $event)"
-                          class="color-control compact"
-                        />
-                      </div>
-                    </div>
-
-                    <!-- Right -->
-                    <div class="border-side-item">
-                      <label class="side-label">{{
-                        t("properties.rightSide")
-                      }}</label>
-                      <div class="border-side-controls">
-                        <n-radio-group
-                          v-if="currentElement"
-                          :value="getSideBorderStyle('right')"
-                          @update:value="setSideBorderStyle('right', $event)"
-                          size="small"
-                        >
-                          <n-radio-button value="">{{
-                            t("properties.none")
-                          }}</n-radio-button>
-                          <n-radio-button value="Solid">{{
-                            t("properties.solid")
-                          }}</n-radio-button>
-                          <n-radio-button value="Dashed">{{
-                            t("properties.dashed")
-                          }}</n-radio-button>
-                          <n-radio-button value="Dotted">{{
-                            t("properties.dotted")
-                          }}</n-radio-button>
-                          <n-radio-button value="Double">{{
-                            t("properties.double")
-                          }}</n-radio-button>
-                        </n-radio-group>
-                        <input
-                          v-if="currentElement"
-                          :value="getSideBorderWidth('right')"
-                          @input="
-                            setSideBorderWidth(
-                              'right',
-                              ($event.target as HTMLInputElement).value,
-                            )
-                          "
-                          type="number"
-                          min="0"
-                          max="10"
-                          step="0.5"
-                          class="width-control compact"
-                          :placeholder="t('properties.width')"
-                        />
-                        <ColorSwatchPicker
-                          v-if="currentElement"
-                          :model-value="getSideBorderColor('right')"
-                          @update:model-value="setSideBorderColor('right', $event)"
-                          class="color-control compact"
-                        />
-                      </div>
-                    </div>
-
-                    <!-- Images, boxes and page numbers: corner radius for all corners at once, or each corner -->
-                    <template v-if="cornerRadii">
-                      <div class="border-side-item corner-radius-item">
-                        <label class="side-label">{{ t("properties.cornerRadius") }}</label>
-                        <div class="border-side-controls">
-                          <span class="corner-label">{{ t("properties.cornerAll") }}</span>
+                  <!-- Images, boxes and text: corner radius for all corners at once, or each corner -->
+                  <div v-if="cornerRadii" class="corner-designer">
+                    <div class="pad-head">
+                      <span class="pad-title">{{ t("properties.cornerRadius") }}</span>
+                      <label class="pad-all">
+                        <span class="field-label">{{ t("properties.cornerAll") }}</span>
+                        <span class="unit-input">
                           <input
                             :value="sharedCornerRadius"
                             @change="setCornerRadius(null, ($event.target as HTMLInputElement).value)"
@@ -1054,520 +734,269 @@
                             min="0"
                             max="100"
                             step="1"
-                            class="width-control compact"
                           />
-                        </div>
-                      </div>
-                      <div class="corner-grid">
-                        <label v-for="corner in CORNER_GRID" :key="corner" class="corner-field">
-                          <span class="corner-label">{{ t(`properties.corner.${corner}`) }}</span>
-                          <input
-                            :value="cornerRadii?.[corner] ?? 0"
-                            @change="setCornerRadius(corner, ($event.target as HTMLInputElement).value)"
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="1"
-                            class="width-control compact"
-                          />
-                        </label>
-                      </div>
-                      <small
-                        v-if="
-                          currentElement.type === 'frame' &&
-                          (currentElement.radius ?? 0) > 0 &&
-                          !isUniformBorder(currentElement.box)
-                        "
-                        class="corner-radius-hint"
-                      >{{ t("properties.cornerRadiusHint") }}</small>
-                    </template>
+                          <span>px</span>
+                        </span>
+                      </label>
+                    </div>
+                    <div class="corner-pad">
+                      <label
+                        v-for="corner in CORNER_GRID"
+                        :key="corner"
+                        class="pad-input"
+                        :class="'corner-input-' + corner"
+                      >
+                        <span class="field-label">{{ t(`properties.corner.${corner}`) }}</span>
+                        <input
+                          :value="cornerRadii?.[corner] ?? 0"
+                          @change="setCornerRadius(corner, ($event.target as HTMLInputElement).value)"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="1"
+                        />
+                      </label>
+                      <div class="corner-preview" :style="cornerPreviewStyle"></div>
+                    </div>
+                    <small
+                      v-if="
+                        currentElement.type === 'frame' &&
+                        (currentElement.radius ?? 0) > 0 &&
+                        !isUniformBorder(currentElement.box)
+                      "
+                      class="corner-radius-hint"
+                    >{{ t("properties.cornerRadiusHint") }}</small>
                   </div>
                 </div>
 
-                <!-- Padding settings (a page border has no content to pad) -->
+                <!-- Margins (space inside the element; a page border has no content to pad) -->
                 <div v-if="!isPageBorder" class="box-section compact">
-                  <h5>
-                    {{ t("properties.marginSettings") }}
-                  </h5>
-                  <div class="form-group compact">
-                    <label>{{ t("properties.globalMargin") }}</label>
-                    <input
-                      v-if="currentElement"
-                      :value="currentElement.box?.padding ?? ''"
-                      @input="handleGlobalMarginInput"
-                      type="number"
-                      min="0"
-                      :placeholder="t('properties.globalMargin')"
-                      class="small-input"
-                    />
-                    <small>{{ t("properties.globalMarginHint") }}</small>
+                  <div class="pad-head">
+                    <h5 class="pad-title">{{ t("properties.marginSettings") }}</h5>
+                    <label class="pad-all">
+                      <span class="field-label">{{ t("properties.allSides") }}</span>
+                      <span class="unit-input">
+                        <input
+                          :value="currentElement.box?.padding ?? ''"
+                          @input="handleGlobalMarginInput"
+                          type="number"
+                          min="0"
+                        />
+                        <span>px</span>
+                      </span>
+                    </label>
                   </div>
-
-                  <div class="padding-grid compact">
-                    <div class="form-group compact">
-                      <label>{{ t("properties.topMargin") }}</label>
+                  <div class="margin-pad">
+                    <label
+                      v-for="side in MARGIN_SIDES"
+                      :key="side"
+                      class="pad-input"
+                      :class="'margin-input-' + side"
+                    >
+                      <span class="field-label">{{ t(`properties.${side}Side`) }}</span>
                       <input
-                        v-if="currentElement"
-                        :value="currentElement.box?.topPadding ?? ''"
-                        @input="handleSideMarginInput('top', $event)"
+                        :value="getMarginValue(side)"
+                        @input="handleSideMarginInput(side, $event)"
                         type="number"
                         min="0"
-                        class="small-input"
                       />
-                    </div>
-                    <div class="form-group compact">
-                      <label>{{ t("properties.leftMargin") }}</label>
-                      <input
-                        v-if="currentElement"
-                        :value="currentElement.box?.leftPadding ?? ''"
-                        @input="handleSideMarginInput('left', $event)"
-                        type="number"
-                        min="0"
-                        class="small-input"
-                      />
-                    </div>
-                    <div class="form-group compact">
-                      <label>{{ t("properties.bottomMargin") }}</label>
-                      <input
-                        v-if="currentElement"
-                        :value="currentElement.box?.bottomPadding ?? ''"
-                        @input="handleSideMarginInput('bottom', $event)"
-                        type="number"
-                        min="0"
-                        class="small-input"
-                      />
-                    </div>
-                    <div class="form-group compact">
-                      <label>{{ t("properties.rightMargin") }}</label>
-                      <input
-                        v-if="currentElement"
-                        :value="currentElement.box?.rightPadding ?? ''"
-                        @input="handleSideMarginInput('right', $event)"
-                        type="number"
-                        min="0"
-                        class="small-input"
-                      />
+                    </label>
+                    <div class="margin-preview">
+                      <div class="margin-preview-content" :style="marginPreviewStyle"></div>
                     </div>
                   </div>
                 </div>
               </template>
             </template>
-            <!-- Line Color setting for Line element -->
-            <div
-              v-if="currentElement && currentElement.type === 'line'"
-              class="form-group"
-            >
-              <label>{{ t("properties.lineColor") }}</label>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <ColorSwatchPicker
-                  :model-value="currentElement.lineColor || '#000000'"
-                  @update:model-value="currentElement.lineColor = $event; emit('update-jrxml')"
-                  class="color-control compact"
-                />
-                <input
-                  :value="currentElement.lineColor || '#000000'"
-                  @input="currentElement.lineColor = ($event.target as HTMLInputElement).value; emit('update-jrxml')"
-                  type="text"
-                  placeholder="#000000"
-                  style="flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;"
-                />
+            <!-- Line: style, thickness and colour -->
+            <div v-if="currentElement.type === 'line'" class="box-section compact">
+              <h5>{{ t("properties.lineSettings") }}</h5>
+              <span class="field-label">{{ t("properties.lineStyle") }}</span>
+              <div class="line-style-names line-style-names-4" aria-hidden="true">
+                <span v-for="line in LINE_ONLY_STYLES" :key="line.value">{{ t(line.labelKey) }}</span>
+              </div>
+              <div class="line-style-picker line-style-picker-4" role="radiogroup" :aria-label="t('properties.lineStyle')">
+                <button
+                  v-for="line in LINE_ONLY_STYLES"
+                  :key="line.value"
+                  type="button"
+                  role="radio"
+                  class="line-style-btn"
+                  :class="{ active: (currentElement.lineStyle || 'Solid') === line.value }"
+                  :aria-checked="(currentElement.lineStyle || 'Solid') === line.value"
+                  :title="t(line.labelKey)"
+                  :aria-label="t(line.labelKey)"
+                  @click="setTextProperty('lineStyle', line.value)"
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                    <path v-if="line.value === 'Double'" d="M3 9.5h18M3 14.5h18" class="line-icon" />
+                    <path v-else d="M3 12h18" class="line-icon" :stroke-dasharray="line.dash" />
+                  </svg>
+                </button>
+              </div>
+              <div class="field-row card-gap">
+                <label class="field grow">
+                  <span class="field-label">{{ t("properties.lineThickness") }}</span>
+                  <span class="unit-input">
+                    <input
+                      :value="currentElement.lineWidth ?? 1"
+                      @change="setTextProperty('lineWidth', Math.max(0.25, parseFloat(($event.target as HTMLInputElement).value) || 1))"
+                      type="number"
+                      min="0.25"
+                      step="0.25"
+                    />
+                    <span>pt</span>
+                  </span>
+                </label>
+                <div class="field">
+                  <span class="field-label">{{ t("properties.lineColor") }}</span>
+                  <ColorSwatchPicker
+                    :model-value="currentElement.lineColor || '#000000'"
+                    @update:model-value="setColorProperty('lineColor', 'lineColor', $event)"
+                    class="color-control compact swatch-lg"
+                  />
+                </div>
               </div>
             </div>
 
-            <!-- Rectangle Color setting for Rectangle element -->
-            <div
-              v-if="currentElement && currentElement.type === 'rectangle'"
-              class="form-group"
-            >
-              <label>{{ t("properties.rectangleColor") }}</label>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <ColorSwatchPicker
-                  :model-value="getRectangleBorderColor()"
-                  @update:model-value="setRectangleBorderColor($event)"
-                  class="color-control compact"
-                />
-                <input
-                  :value="getRectangleBorderColor()"
-                  @input="setRectangleBorderColor(($event.target as HTMLInputElement).value)"
-                  type="text"
-                  placeholder="#000000"
-                  style="flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;"
-                />
+            <!-- Text: font, size, style, alignment and colour together -->
+            <div v-if="showFontName || showTextAlignmentAndStyle || showTextColor" class="box-section compact text-card">
+              <h5>{{ t("properties.textSettings") }}</h5>
+              <div v-if="showFontName" class="field-row">
+                <label class="field grow">
+                  <span class="field-label">{{ t("properties.fontName") }}</span>
+                  <select
+                    :value="currentElement.fontFamily ?? ''"
+                    @change="setTextProperty('fontFamily', ($event.target as HTMLSelectElement).value)"
+                  >
+                    <option value="">{{ t("properties.useDefaultFont") }}</option>
+                    <option v-for="font in availableFonts" :key="font" :value="font">{{ font }}</option>
+                  </select>
+                </label>
+                <label class="field font-size-field">
+                  <span class="field-label">{{ t("properties.fontSize") }}</span>
+                  <span class="unit-input">
+                    <input
+                      :value="currentElement.fontSize ?? ''"
+                      @change="setFontSize(($event.target as HTMLInputElement).value)"
+                      type="number"
+                      min="1"
+                      max="200"
+                    />
+                    <span>pt</span>
+                  </span>
+                </label>
               </div>
-            </div>
 
-            <!-- Ellipses Color setting for Ellipse element -->
-            <div
-              v-if="currentElement && currentElement.type === 'ellipse'"
-              class="form-group"
-            >
-              <label>{{ t("properties.ellipsesColor") }}</label>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <ColorSwatchPicker
-                  :model-value="getRectangleBorderColor()"
-                  @update:model-value="setRectangleBorderColor($event)"
-                  class="color-control compact"
-                />
-                <input
-                  :value="getRectangleBorderColor()"
-                  @input="setRectangleBorderColor(($event.target as HTMLInputElement).value)"
-                  type="text"
-                  placeholder="#000000"
-                  style="flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;"
-                />
+              <div v-if="showTextAlignmentAndStyle" class="field-row">
+                <div class="field">
+                  <span class="field-label">{{ t("properties.fontStyle") }}</span>
+                  <div class="icon-segment">
+                    <button
+                      v-for="fmt in FONT_TOGGLES"
+                      :key="fmt.key"
+                      type="button"
+                      class="icon-btn"
+                      :class="['icon-btn-' + fmt.key, { active: !!currentElement[fmt.key] }]"
+                      :aria-pressed="!!currentElement[fmt.key]"
+                      :title="t(fmt.labelKey)"
+                      :aria-label="t(fmt.labelKey)"
+                      @click="setTextProperty(fmt.key, !currentElement[fmt.key])"
+                    >{{ fmt.glyph }}</button>
+                  </div>
+                </div>
+                <div class="field">
+                  <span class="field-label">{{ t("properties.textAlignment") }}</span>
+                  <div class="icon-segment">
+                    <button
+                      v-for="align in H_ALIGNS"
+                      :key="align.value"
+                      type="button"
+                      class="icon-btn"
+                      :class="{ active: currentElement.textAlignment === align.value }"
+                      :aria-pressed="currentElement.textAlignment === align.value"
+                      :title="t(align.labelKey)"
+                      :aria-label="t(align.labelKey)"
+                      @click="setHorizontalAlignment(align.value)"
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                        <path :d="align.icon" class="line-icon" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="field">
+                  <span class="field-label">{{ t("properties.verticalAlignment") }}</span>
+                  <div class="icon-segment">
+                    <button
+                      v-for="align in V_ALIGNS"
+                      :key="align.value"
+                      type="button"
+                      class="icon-btn"
+                      :class="{ active: currentElement.verticalAlignment === align.value }"
+                      :aria-pressed="currentElement.verticalAlignment === align.value"
+                      :title="t(align.labelKey)"
+                      :aria-label="t(align.labelKey)"
+                      @click="setVerticalAlignment(align.value)"
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                        <path :d="align.icon" class="line-icon" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <!-- Text Color and Background Color settings -->
-            <div
-              v-if="showTextColor && showBackgroundColor"
-              class="form-group-row"
-            >
-              <div class="form-group half-width">
-                <label>{{ t("properties.forecolor") }}</label>
+              <div v-if="showTextColor" class="field">
+                <span class="field-label">{{ t("properties.forecolor") }}</span>
                 <ColorPickerWithOpacity
-                  v-model="currentElement.forecolor"
-                  v-model:mode="currentElement.forecolorMode"
-                  @update:modelValue="emit('update-jrxml')"
-                  @update:mode="emit('update-jrxml')"
-                />
-              </div>
-
-              <div class="form-group half-width">
-                <label>{{ t("properties.backgroundColor") }}</label>
-                <ColorPickerWithOpacity
-                  v-model="currentElement.backcolor"
-                  v-model:mode="currentElement.mode"
-                  @update:modelValue="emit('update-jrxml')"
-                  @update:mode="emit('update-jrxml')"
+                  :model-value="currentElement.forecolor || '#000000'"
+                  :mode="currentElement.forecolorMode"
+                  @update:model-value="setColorProperty('forecolor', 'forecolor', $event)"
+                  @update:mode="setColorProperty('forecolor', 'forecolorMode', $event)"
                 />
               </div>
             </div>
 
-            <!-- Only Text Color -->
-            <div
-              v-else-if="showTextColor"
-              class="form-group"
-            >
-              <label>{{ t("properties.forecolor") }}</label>
+            <!-- Fill -->
+            <div v-if="showBackgroundColor" class="box-section compact">
+              <h5>{{ t("properties.backgroundColor") }}</h5>
               <ColorPickerWithOpacity
-                v-model="currentElement.forecolor"
-                v-model:mode="currentElement.forecolorMode"
-                @update:modelValue="emit('update-jrxml')"
-                @update:mode="emit('update-jrxml')"
-              />
-            </div>
-
-            <!-- Only Background Color -->
-            <div
-              v-else-if="showBackgroundColor"
-              class="form-group"
-            >
-              <label>{{ t("properties.backgroundColor") }}</label>
-              <ColorPickerWithOpacity
-                v-model="currentElement.backcolor"
-                v-model:mode="currentElement.mode"
-                @update:modelValue="emit('update-jrxml')"
-                @update:mode="emit('update-jrxml')"
+                :model-value="currentElement.backcolor"
+                :mode="currentElement.mode"
+                @update:model-value="setColorProperty('backcolor', 'backcolor', $event)"
+                @update:mode="setColorProperty('backcolor', 'mode', $event)"
               />
             </div>
 
             <!-- Table-specific style settings -->
-            <template v-if="currentElement && currentElement.type === 'table'">
-              <div class="form-group">
-                <h5>
-                  {{ t("properties.tableStyleSettings") }}
-                </h5>
-                <div class="table-style-settings">
-                  <!-- Table header style selection -->
-                  <div class="table-style-section">
-                    <h6>
-                      {{ t("properties.tableHeader") }}
-                      {{ t("properties.style") }}
-                    </h6>
-                    <div class="box-section compact">
-                      <div class="form-group">
-                        <label>{{ t("properties.selectStyle") }}</label>
-                        <select
-                          v-model="tableStyles.tableHeader"
-                          @change="
-                            updateTableStyles();
-                            emit('update-jrxml');
-                          "
-                        >
-                          <option value="Table_TH">Table_TH</option>
-                          <option value="Table_CH">Table_CH</option>
-                          <option value="Table_TD">Table_TD</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Column header style selection -->
-                  <div class="table-style-section">
-                    <h6>
-                      {{ t("properties.columnHeader") }}
-                      {{ t("properties.style") }}
-                    </h6>
-                    <div class="box-section compact">
-                      <div class="form-group">
-                        <label>{{ t("properties.selectStyle") }}</label>
-                        <select
-                          v-model="tableStyles.columnHeader"
-                          @change="
-                            updateTableStyles();
-                            emit('update-jrxml');
-                          "
-                        >
-                          <option value="Table_TH">Table_TH</option>
-                          <option value="Table_CH">Table_CH</option>
-                          <option value="Table_TD">Table_TD</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Column footer style selection -->
-                  <div class="table-style-section">
-                    <h6>
-                      {{ t("properties.columnFooter") }}
-                      {{ t("properties.style") }}
-                    </h6>
-                    <div class="box-section compact">
-                      <div class="form-group">
-                        <label>{{ t("properties.selectStyle") }}</label>
-                        <select
-                          v-model="tableStyles.columnFooter"
-                          @change="
-                            updateTableStyles();
-                            emit('update-jrxml');
-                          "
-                        >
-                          <option value="Table_TH">Table_TH</option>
-                          <option value="Table_CH">Table_CH</option>
-                          <option value="Table_TD">Table_TD</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Detail cell style selection -->
-                  <div class="table-style-section">
-                    <h6>
-                      {{ t("properties.detailCell") }}
-                      {{ t("properties.style") }}
-                    </h6>
-                    <div class="box-section compact">
-                      <div class="form-group">
-                        <label>{{ t("properties.selectStyle") }}</label>
-                        <select
-                          v-model="tableStyles.detailCell"
-                          @change="
-                            updateTableStyles();
-                            emit('update-jrxml');
-                          "
-                        >
-                          <option value="Table_TH">Table_TH</option>
-                          <option value="Table_CH">Table_CH</option>
-                          <option value="Table_TD">Table_TD</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            <div v-if="currentElement.type === 'table'" class="box-section compact">
+              <h5>{{ t("properties.tableStyleSettings") }}</h5>
+              <div class="geometry-grid">
+                <label v-for="part in TABLE_STYLE_PARTS" :key="part.key" class="field">
+                  <span class="field-label">{{ t(part.labelKey) }}</span>
+                  <select
+                    class="card-select"
+                    :value="tableStyles[part.key]"
+                    @change="setTableStyle(part.key, ($event.target as HTMLSelectElement).value)"
+                  >
+                    <option v-for="name in ['Table_TH', 'Table_CH', 'Table_TD']" :key="name" :value="name">{{ name }}</option>
+                  </select>
+                </label>
               </div>
-            </template>
-
-            <!-- Font Name setting (excluded for line, image, frame, rectangle, ellipse, barcode, table) -->
-            <div
-              v-if="showFontName"
-              class="form-group"
-            >
-              <label>{{ t("properties.fontName") }}</label>
-              <select
-                v-if="currentElement"
-                v-model="currentElement.fontFamily"
-                style="appearance: none; -webkit-appearance: none"
-              >
-                <option value="">
-                  {{ t("properties.useDefaultFont") }}
-                </option>
-                <option
-                  v-for="font in availableFonts"
-                  :key="font"
-                  :value="font"
-                >
-                  {{ font }}
-                </option>
-              </select>
-              <small class="font-hint">{{ t("properties.fontHint") }}</small>
             </div>
 
-            <!-- Alignment and Font Style settings (excluded for line, image, frame, rectangle, ellipse, barcode, chart, table) -->
-            <template v-if="showTextAlignmentAndStyle">
-              <div class="form-group-row">
-                <div class="form-group half-width">
-                  <label>{{ t("properties.textAlignment") }}</label>
-                  <div class="alignment-controls compact">
-                    <n-button
-                      v-for="align in ['Left', 'Center', 'Right']"
-                      :key="align"
-                      @click="
-                        setHorizontalAlignment(
-                          align as 'Left' | 'Center' | 'Right',
-                        )
-                      "
-                      :type="
-                        currentElement && currentElement.textAlignment === align
-                          ? 'primary'
-                          : 'default'
-                      "
-                      :title="t(`properties.${align.toLowerCase()}`)"
-                      size="small"
-                    >
-                      {{ t(`properties.${align.toLowerCase()}`) }}
-                    </n-button>
-                  </div>
-                </div>
+        </div>
 
-                <div class="form-group half-width">
-                  <label>{{ t("properties.verticalAlignment") }}</label>
-                  <div class="alignment-controls compact">
-                    <n-button
-                      v-for="align in ['Top', 'Middle', 'Bottom']"
-                      :key="align"
-                      @click="
-                        setVerticalAlignment(
-                          align as 'Top' | 'Middle' | 'Bottom',
-                        )
-                      "
-                      :type="
-                        currentElement &&
-                        currentElement.verticalAlignment === align
-                          ? 'primary'
-                          : 'default'
-                      "
-                      :title="t(`properties.${align.toLowerCase()}`)"
-                      size="small"
-                    >
-                      {{ t(`properties.${align.toLowerCase()}`) }}
-                    </n-button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="form-group" style="margin-bottom: 8px">
-                <label>{{ t("properties.fontStyle") }}</label>
-                <div class="checkbox-group compact">
-                  <label>
-                    <input
-                      v-if="currentElement"
-                      v-model="currentElement.isBold"
-                      type="checkbox"
-                    />
-                    {{ t("properties.bold") }}
-                  </label>
-                  <label>
-                    <input
-                      v-if="currentElement"
-                      v-model="currentElement.isItalic"
-                      type="checkbox"
-                    />
-                    {{ t("properties.italic") }}
-                  </label>
-                  <label>
-                    <input
-                      v-if="currentElement"
-                      v-model="currentElement.isUnderline"
-                      type="checkbox"
-                    />
-                    {{ t("properties.underline") }}
-                  </label>
-                </div>
-              </div>
-            </template>
-        </n-tab-pane>
-
-        <!-- Barcode properties tab -->
-        <n-tab-pane
-          v-if="currentElement && currentElement.type === 'barcode'"
-          name="barcode"
-          :tab="t('properties.barcodeProperties')"
-        >
-          <div class="form-group">
-            <label>{{ t("properties.barcodeType") }}</label>
-            <select v-model="currentElement.barcodeType">
-              <option value="Code128">Code128</option>
-              <option value="Code39">Code39</option>
-              <option value="EAN13">EAN13</option>
-              <option value="EAN8">EAN8</option>
-              <option value="UPCA">UPC-A</option>
-              <option value="UPCE">UPC-E</option>
-              <option value="QRCode">QR Code</option>
-              <option value="DataMatrix">Data Matrix</option>
-              <option value="Interleaved2Of5">Interleaved 2 of 5</option>
-              <option value="Codabar">Codabar</option>
-              <option value="EAN128">EAN128</option>
-              <option value="PDF417">PDF417</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>{{ t("properties.barcodeValue") }}</label>
-            <input
-              type="text"
-              :value="getBarcodeValue(currentElement)"
-              @input="updateBarcodeValue(($event.target as HTMLInputElement).value)"
-              :placeholder="t('properties.barcodeValuePlaceholder')"
-            />
-          </div>
-          <div class="form-group">
-            <label>{{ t("properties.rotation") }}</label>
-            <div class="rotation-segmented-group">
-              <button
-                type="button"
-                class="rotation-btn"
-                :class="{ active: !currentElement.rotation || currentElement.rotation === 'None' }"
-                @click="setElementRotation('None')"
-                :title="t('properties.rotationNone')"
-              >
-                <span>0°</span>
-              </button>
-              <button
-                type="button"
-                class="rotation-btn"
-                :class="{ active: currentElement.rotation === 'Right' }"
-                @click="setElementRotation('Right')"
-                :title="t('properties.rotationRight')"
-              >
-                <span>90° ↷</span>
-              </button>
-              <button
-                type="button"
-                class="rotation-btn"
-                :class="{ active: currentElement.rotation === 'UpsideDown' }"
-                @click="setElementRotation('UpsideDown')"
-                :title="t('properties.rotationUpsideDown')"
-              >
-                <span>180° ⟲</span>
-              </button>
-              <button
-                type="button"
-                class="rotation-btn"
-                :class="{ active: currentElement.rotation === 'Left' }"
-                @click="setElementRotation('Left')"
-                :title="t('properties.rotationLeft')"
-              >
-                <span>270° ↶</span>
-              </button>
-            </div>
-          </div>
-        </n-tab-pane>
-      </n-tabs>
+      </Transition>
 
       <div class="element-actions">
-        <n-button @click="deleteElement" type="error">{{
-          t("properties.deleteElement")
-        }}</n-button>
+        <button type="button" class="delete-element-btn" @click="deleteElement">
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" class="line-icon" />
+          </svg>
+          {{ t("properties.deleteElement") }}
+        </button>
       </div>
     </div>
   </div>
@@ -1714,13 +1143,16 @@
 import ColorSwatchPicker from '../../common/ColorSwatchPicker.vue';
 import { computed, ref, onMounted, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import { NButton, NTabs, NTabPane, NRadioGroup, NRadioButton } from "naive-ui";
+import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
 import type { Band, SelectedElementInfo, TableDataset } from "../../../types";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
   CORNER_NAMES,
+  getElementTypeName,
   getImageDisplayName,
   getPropertyCornerRadii,
+  quoteExpressionValue,
+  stripExpressionQuotes,
   setPropertyCornerRadii,
   type CornerName,
   type CornerRadii,
@@ -1738,9 +1170,6 @@ import {
 } from "../../../constants/constants";
 import BaseModal from "../../modals/BaseModal.vue";
 import ColorPickerWithOpacity from "./ColorPickerWithOpacity.vue";
-import FontStyleSettings from "./FontStyleSettings.vue";
-import BorderStyleSettings from "./BorderStyleSettings.vue";
-import ElementTypeBasedSettings from "./ElementTypeBasedSettings.vue";
 import PaginationProperties from "./PaginationProperties.vue";
 import { isPagination } from "../../../utils/paginationPresets";
 import FrameProperties from "./FrameProperties.vue";
@@ -1955,7 +1384,7 @@ const elementType = computed(() => {
 // Style property visibility computed properties
 const showTextColor = computed(() => {
   if (!currentElement.value) return false;
-  return !["image", "line", "rectangle", "ellipse", "frame", "barcode"].includes(currentElement.value.type);
+  return !["image", "line", "rectangle", "ellipse", "frame", "barcode", "chart"].includes(currentElement.value.type);
 });
 
 // Frame in the Background band: a border drawn on every page, with no fill or padding
@@ -1974,7 +1403,7 @@ const showBackgroundColor = computed(() => {
 
 const showFontName = computed(() => {
   if (!currentElement.value) return false;
-  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "table"].includes(currentElement.value.type);
+  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "table", "chart"].includes(currentElement.value.type);
 });
 
 const showTextAlignmentAndStyle = computed(() => {
@@ -2719,7 +2148,7 @@ function updateColumnRowHeights(column: any) {
     column.tableHeader.height = tableHeaderHeight;
     console.log("Updating tableHeader height:", tableHeaderHeight);
 
-    // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+    // Update the inner element's height directly, since these elements directly contain a textField rather than going through an elements array
     // Check and update the reportElement's height
     if (column.tableHeader.reportElement) {
       column.tableHeader.reportElement.height = tableHeaderHeight;
@@ -2757,7 +2186,7 @@ function updateColumnRowHeights(column: any) {
       rowSpan: column.columnHeader.rowSpan,
     });
 
-    // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+    // Update the inner element's height directly, since these elements directly contain a textField rather than going through an elements array
     // Check and update the reportElement's height
     if (column.columnHeader.reportElement) {
       column.columnHeader.reportElement.height = columnHeaderHeight;
@@ -2794,7 +2223,7 @@ function updateColumnRowHeights(column: any) {
       "column:",
       column,
     );
-    // Update the inner element's height directly, since detailCell directly contains a textField or staticText rather than going through an elements array
+    // Update the inner element's height directly, since detailCell directly contains a textField rather than going through an elements array
     // Check and update the reportElement's height
     if (column.detailCell.reportElement) {
       column.detailCell.reportElement.height = tableRowHeights.value.detailCell;
@@ -2810,7 +2239,7 @@ function updateColumnRowHeights(column: any) {
     const columnFooterHeight = tableRowHeights.value.columnFooter;
     column.columnFooter.height = columnFooterHeight;
 
-    // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+    // Update the inner element's height directly, since these elements directly contain a textField rather than going through an elements array
     // Check and update the reportElement's height
     if (column.columnFooter.reportElement) {
       column.columnFooter.reportElement.height = columnFooterHeight;
@@ -2839,7 +2268,7 @@ function updateColumnRowHeights(column: any) {
     const tableFooterHeight = tableRowHeights.value.tableFooter;
     column.tableFooter.height = tableFooterHeight;
 
-    // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+    // Update the inner element's height directly, since these elements directly contain a textField rather than going through an elements array
     // Check and update the reportElement's height
     if (column.tableFooter.reportElement) {
       column.tableFooter.reportElement.height = tableFooterHeight;
@@ -2880,7 +2309,7 @@ function updateGroupHeaderHeights(group: any) {
     // Update the tableHeader's own height
     group.tableHeader.height = groupHeight;
 
-    // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+    // Update the inner element's height directly, since these elements directly contain a textField rather than going through an elements array
     // Check and update the reportElement's height
     if (group.tableHeader.reportElement) {
       group.tableHeader.reportElement.height = groupHeight;
@@ -2896,7 +2325,7 @@ function updateGroupHeaderHeights(group: any) {
     // Update the columnHeader's own height
     group.columnHeader.height = groupHeight;
 
-    // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+    // Update the inner element's height directly, since these elements directly contain a textField rather than going through an elements array
     // Check and update the reportElement's height
     if (group.columnHeader.reportElement) {
       group.columnHeader.reportElement.height = groupHeight;
@@ -2921,7 +2350,7 @@ function updateGroupRowHeights(group: any) {
     const tableHeaderHeight = tableRowHeights.value.tableHeader;
     group.tableHeader.height = tableHeaderHeight;
 
-    // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+    // Update the inner element's height directly, since these elements directly contain a textField rather than going through an elements array
     // Check and update the reportElement's height
     if (group.tableHeader.reportElement) {
       group.tableHeader.reportElement.height = tableHeaderHeight;
@@ -2951,7 +2380,7 @@ function updateGroupRowHeights(group: any) {
     const columnHeaderHeight = tableRowHeights.value.columnHeader;
     group.columnHeader.height = columnHeaderHeight;
 
-    // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+    // Update the inner element's height directly, since these elements directly contain a textField rather than going through an elements array
     // Check and update the reportElement's height
     if (group.columnHeader.reportElement) {
       group.columnHeader.reportElement.height = columnHeaderHeight;
@@ -2980,7 +2409,7 @@ function updateGroupRowHeights(group: any) {
     const columnFooterHeight = tableRowHeights.value.columnFooter;
     group.columnFooter.height = columnFooterHeight;
 
-    // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+    // Update the inner element's height directly, since these elements directly contain a textField rather than going through an elements array
     // Check and update the reportElement's height
     if (group.columnFooter.reportElement) {
       group.columnFooter.reportElement.height = columnFooterHeight;
@@ -3009,7 +2438,7 @@ function updateGroupRowHeights(group: any) {
     const tableFooterHeight = tableRowHeights.value.tableFooter;
     group.tableFooter.height = tableFooterHeight;
 
-    // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
+    // Update the inner element's height directly, since these elements directly contain a textField rather than going through an elements array
     // Check and update the reportElement's height
     if (group.tableFooter.reportElement) {
       group.tableFooter.reportElement.height = tableFooterHeight;
@@ -3317,7 +2746,8 @@ function getBarcodeValue(element: any) {
 // Update barcode value (wraps plain text in quotes, preserves $F{...} expressions)
 function updateBarcodeValue(val: string) {
   if (!currentElement.value || currentElement.value.type !== "barcode") return;
-  emit("save-state");
+  // Typing the value is one undo step
+  recordBorderEdit("barcode-value");
   const trimmed = val.trim();
   if (!trimmed) {
     currentElement.value.codeExpression = '""';
@@ -3378,18 +2808,268 @@ function ensureElementBox(): void {
   if (currentElement.value && !currentElement.value.box) currentElement.value.box = {};
 }
 
-// Corner radius of the selected image, page number or box. Images and page
-// numbers store it as a JRXML property (IMAGE_ / TEXT_CORNER_RADIUS_PROPERTY);
+// Corner radius of the selected image, text or box. Images and text fields
+// store it as a JRXML property (IMAGE_ / TEXT_CORNER_RADIUS_PROPERTY);
 // boxes as radius / cornerRadii (BOX_CORNER_RADIUS_PROPERTY). null = no corner
 // radius for this element.
 const readCornerRadii = (element: any): CornerRadii | null =>
-  element?.type === "image" || isPagination(element)
+  element?.type === "image" || element?.type === "textField"
     ? getPropertyCornerRadii(element)
     : element?.type === "frame"
       ? getBoxCornerRadii(element)
       : null;
 
 const cornerRadii = computed(() => readCornerRadii(currentElement.value));
+
+// Border editor: one row per side, "all" sets the four at once
+type BorderRow = "all" | "top" | "right" | "bottom" | "left";
+const BORDER_ROWS: BorderRow[] = ["all", "top", "right", "bottom", "left"];
+const borderRowLabel = (row: BorderRow) =>
+  row === "all" ? t("properties.all") : t(`properties.${row}Side`);
+
+const LINE_STYLES = [
+  { value: "", labelKey: "properties.none", dash: undefined },
+  { value: "Solid", labelKey: "properties.solid", dash: undefined },
+  { value: "Dashed", labelKey: "properties.dashed", dash: "5 3" },
+  { value: "Dotted", labelKey: "properties.dotted", dash: "0.5 3.5" },
+  { value: "Double", labelKey: "properties.double", dash: undefined },
+];
+
+const getRowBorderStyle = (row: BorderRow) =>
+  row === "all" ? getUnifiedBorderStyle() : getSideBorderStyle(row);
+const getRowBorderWidth = (row: BorderRow) =>
+  row === "all" ? getUnifiedBorderWidth() : getSideBorderWidth(row);
+const getRowBorderColor = (row: BorderRow) =>
+  row === "all" ? getUnifiedBorderColor() : getSideBorderColor(row);
+
+function setRowBorderStyle(row: BorderRow, value: string) {
+  if (row === "all") return setUnifiedBorderStyle(value);
+  ensureElementBox();
+  setSideBorderStyle(row, value);
+}
+function setRowBorderWidth(row: BorderRow, value: string) {
+  if (row === "all") return setUnifiedBorderWidth(value);
+  ensureElementBox();
+  setSideBorderWidth(row, value);
+}
+function setRowBorderColor(row: BorderRow, value: string) {
+  if (row === "all") return setUnifiedBorderColor(value);
+  ensureElementBox();
+  setSideBorderColor(row, value);
+}
+
+// Margins: one field per side around a preview of the inner area
+const MARGIN_SIDES = ["top", "left", "right", "bottom"] as const;
+const getMarginValue = (side: (typeof MARGIN_SIDES)[number]) => {
+  const box = currentElement.value?.box;
+  return box?.[`${side}Padding`] ?? box?.padding ?? "";
+};
+const marginPreviewStyle = computed(() => {
+  const inset = (side: (typeof MARGIN_SIDES)[number]) =>
+    `${Math.min(14, (Number(getMarginValue(side)) || 0) / 2)}px`;
+  return { top: inset("top"), left: inset("left"), right: inset("right"), bottom: inset("bottom") };
+});
+
+const panelTitle = computed(() => {
+  const el = currentElement.value as any;
+  if (!props.selectedElement || !el) return t("properties.reportProperties");
+  if (isPagination(el)) return t("elementNames.pageNumber");
+  if (isPageBorder.value) return t("elementNames.framePageBorder");
+  return t(getElementTypeName(el.type));
+});
+
+// Element tabs. The open tab is kept when another element is selected, unless
+// that element doesn't have it (e.g. Table Properties): then Basic opens, instead
+// of an empty panel.
+const activeTab = ref("basic");
+const TAB_LABELS: Record<string, string> = {
+  basic: "properties.basicProperties",
+  table: "properties.tableProperties",
+  style: "properties.styleSettings",
+};
+const availableTabs = computed(() =>
+  currentElement.value?.type === "table" ? ["basic", "table", "style"] : ["basic", "style"],
+);
+watch(availableTabs, (tabs) => {
+  if (!tabs.includes(activeTab.value)) activeTab.value = "basic";
+});
+
+// Basic tab
+const GEOMETRY_FIELDS = ["x", "y", "width", "height"] as const;
+const ROTATIONS = [
+  { value: "None", deg: 0, titleKey: "properties.rotationNone" },
+  { value: "Right", deg: 90, titleKey: "properties.rotationRight" },
+  { value: "UpsideDown", deg: 180, titleKey: "properties.rotationUpsideDown" },
+  { value: "Left", deg: 270, titleKey: "properties.rotationLeft" },
+] as const;
+const LINE_ORIENTATIONS = [
+  { value: "horizontal", icon: "M3 12h18", labelKey: "properties.lineHorizontal", titleKey: "properties.lineHorizontalTitle" },
+  { value: "vertical", icon: "M12 3v18", labelKey: "properties.lineVertical", titleKey: "properties.lineVerticalTitle" },
+  { value: "topdown", icon: "M5 5l14 14", labelKey: "properties.lineTopDown", titleKey: "properties.lineTopDownTitle" },
+  { value: "bottomup", icon: "M5 19L19 5", labelKey: "properties.lineBottomUp", titleKey: "properties.lineBottomUpTitle" },
+] as const;
+// A line is always drawn: no "None"
+const LINE_ONLY_STYLES = LINE_STYLES.filter((line) => line.value !== "");
+
+// Chart types offered in the picker (the ones the generator writes fully);
+// an imported chart of another type keeps its own type in the list
+const CHART_TYPES = [
+  "pie", "pie3D", "bar", "bar3D", "stackedBar", "stackedBar3D",
+  "line", "area", "stackedArea", "xyLine", "xyArea", "xyBar", "scatter",
+];
+const PIE_CHARTS = ["pie", "pie3D"];
+const XY_CHARTS = ["xyLine", "xyArea", "xyBar", "scatter", "bubble", "timeSeries", "highLow", "candlestick"];
+
+const chartTypeOptions = computed(() => {
+  const current = (currentElement.value as any)?.chartType;
+  return current && !CHART_TYPES.includes(current) ? [current, ...CHART_TYPES] : CHART_TYPES;
+});
+
+// The expressions a chart of this type reads (same split as the generator)
+const chartDataFields = computed(() => {
+  const type = (currentElement.value as any)?.chartType || "pie";
+  if (PIE_CHARTS.includes(type)) {
+    return [
+      { key: "keyExpression", labelKey: "chart.fields.key" },
+      { key: "valueExpression", labelKey: "chart.fields.value" },
+    ];
+  }
+  if (XY_CHARTS.includes(type)) {
+    return [
+      { key: "seriesExpression", labelKey: "chart.fields.series" },
+      { key: "xValueExpression", labelKey: "chart.fields.x" },
+      { key: "yValueExpression", labelKey: "chart.fields.y" },
+    ];
+  }
+  return [
+    { key: "seriesExpression", labelKey: "chart.fields.series" },
+    { key: "categoryExpression", labelKey: "chart.fields.category" },
+    { key: "valueExpression", labelKey: "chart.fields.value" },
+  ];
+});
+const chartDataHintKey = computed(() => {
+  const type = (currentElement.value as any)?.chartType || "pie";
+  if (PIE_CHARTS.includes(type)) return "chart.hints.pie";
+  if (XY_CHARTS.includes(type)) return "chart.hints.xy";
+  return "chart.hints.category";
+});
+
+// Title: plain text is stored as a quoted expression, $F{}/$P{} as typed
+const chartTitleText = computed(() => {
+  const el = currentElement.value as any;
+  if (!el) return "";
+  return el.titleExpression ? stripExpressionQuotes(el.titleExpression) : el.title || "";
+});
+function setChartTitle(value: string) {
+  const el = currentElement.value as any;
+  const text = value.trim();
+  const expression = text ? quoteExpressionValue(text) : "";
+  if (!el || (el.titleExpression || "") === expression) return;
+  emit("save-state");
+  el.titleExpression = expression;
+  el.title = undefined;
+  emit("update-jrxml");
+}
+
+// Barcode symbologies (value = JasperReports barcode type)
+const BARCODE_TYPES = [
+  { value: "Code128", label: "Code 128" },
+  { value: "Code39", label: "Code 39" },
+  { value: "EAN13", label: "EAN-13" },
+  { value: "EAN8", label: "EAN-8" },
+  { value: "UPCA", label: "UPC-A" },
+  { value: "UPCE", label: "UPC-E" },
+  { value: "QRCode", label: "QR Code" },
+  { value: "DataMatrix", label: "Data Matrix" },
+  { value: "Interleaved2Of5", label: "Interleaved 2 of 5" },
+  { value: "Codabar", label: "Codabar" },
+  { value: "EAN128", label: "EAN-128" },
+  { value: "PDF417", label: "PDF417" },
+];
+
+// Table tab
+const TABLE_ROW_HEIGHTS = [
+  { key: "tableHeader", labelKey: "properties.headerRowHeight" },
+  { key: "columnHeader", labelKey: "properties.columnHeaderRowHeight" },
+  { key: "detailCell", labelKey: "properties.dataRowHeight" },
+  { key: "columnFooter", labelKey: "properties.columnFooterRowHeight" },
+  { key: "tableFooter", labelKey: "properties.tableFooterRowHeight" },
+] as const;
+const TABLE_STYLE_PARTS = [
+  { key: "tableHeader", labelKey: "properties.tableHeader" },
+  { key: "columnHeader", labelKey: "properties.columnHeader" },
+  { key: "columnFooter", labelKey: "properties.columnFooter" },
+  { key: "detailCell", labelKey: "properties.detailCell" },
+] as const;
+
+function setTableRowHeight(key: (typeof TABLE_ROW_HEIGHTS)[number]["key"], event: Event) {
+  const input = event.target as HTMLInputElement;
+  const value = Math.round(parseFloat(input.value));
+  if (!Number.isFinite(value) || value < 1 || value === tableRowHeights.value[key]) {
+    input.value = String(tableRowHeights.value[key]);
+    return;
+  }
+  emit("save-state");
+  tableRowHeights.value[key] = value;
+  updateAllColumnRowHeights();
+}
+
+function setTableStyle(key: (typeof TABLE_STYLE_PARTS)[number]["key"], value: string) {
+  if (tableStyles.value[key] === value) return;
+  emit("save-state");
+  tableStyles.value[key] = value;
+  updateTableStyles();
+  emit("update-jrxml");
+}
+
+// Text card
+const FONT_TOGGLES = [
+  { key: "isBold", glyph: "B", labelKey: "properties.bold" },
+  { key: "isItalic", glyph: "I", labelKey: "properties.italic" },
+  { key: "isUnderline", glyph: "U", labelKey: "properties.underline" },
+] as const;
+const H_ALIGNS = [
+  { value: "Left", labelKey: "properties.left", icon: "M4 6h16M4 10h10M4 14h16M4 18h10" },
+  { value: "Center", labelKey: "properties.center", icon: "M4 6h16M7 10h10M4 14h16M7 18h10" },
+  { value: "Right", labelKey: "properties.right", icon: "M4 6h16M10 10h10M4 14h16M10 18h10" },
+] as const;
+const V_ALIGNS = [
+  { value: "Top", labelKey: "properties.top", icon: "M4 4h16M9 8h6M9 12h6" },
+  { value: "Middle", labelKey: "properties.middle", icon: "M9 8h6M4 12h16M9 16h6" },
+  { value: "Bottom", labelKey: "properties.bottom", icon: "M9 12h6M9 16h6M4 20h16" },
+] as const;
+
+// One undo step per change
+function setTextProperty(key: string, value: unknown) {
+  const element = currentElement.value as any;
+  if (!element || element[key] === value) return;
+  emit("save-state");
+  element[key] = value;
+  emit("update-jrxml");
+}
+
+function setFontSize(value: string) {
+  const size = Math.round(parseFloat(value));
+  setTextProperty("fontSize", Number.isFinite(size) && size > 0 ? size : undefined);
+}
+
+// Colour pickers send the colour and then the mode (and repeat while the
+// opacity slider moves): these share one undo step per colour
+function setColorProperty(group: string, key: string, value: unknown) {
+  const element = currentElement.value as any;
+  if (!element || element[key] === value) return;
+  recordBorderEdit(`color-${group}`);
+  element[key] = value;
+  emit("update-jrxml");
+}
+
+// Corner preview: the radii, scaled down to fit the small box
+const cornerPreviewRadius = computed(() => {
+  const radii = cornerRadii.value;
+  if (!radii) return undefined;
+  return CORNER_NAMES.map((c) => `${Math.min(16, radii[c] / 2)}px`).join(" ");
+});
+const cornerPreviewStyle = computed(() => ({ borderRadius: cornerPreviewRadius.value }));
 
 // Corner fields laid out as they sit on the element: top row, then bottom row
 const CORNER_GRID: CornerName[] = ["topLeft", "topRight", "bottomLeft", "bottomRight"];
@@ -4516,68 +4196,6 @@ function updateTableStyles() {
   }
 }
 
-// Sort field management
-function addSortField() {
-  if (!currentElement.value || currentElement.value.type !== "sort") return;
-  if (!currentElement.value.sortFields) {
-    currentElement.value.sortFields = [];
-  }
-  currentElement.value.sortFields.push({
-    name: "",
-    order: "Ascending",
-  });
-  emit("update-jrxml");
-}
-
-function removeSortField(index: number) {
-  if (!currentElement.value || currentElement.value.type !== "sort") return;
-  if (!currentElement.value.sortFields) return;
-  currentElement.value.sortFields.splice(index, 1);
-  emit("update-jrxml");
-}
-
-// List contents height
-const listContentsHeight = ref(0);
-const listContentsWidth = ref(0);
-
-// Sync the list contents height to currentElement
-watch(
-  () => currentElement.value,
-  (el) => {
-    if (el && el.type === "list" && el.listContents) {
-      listContentsHeight.value = el.listContents.height || 0;
-      listContentsWidth.value = el.listContents.width || 0;
-    }
-  },
-  { immediate: true },
-);
-
-function updateListContentsHeight() {
-  if (!currentElement.value || currentElement.value.type !== "list") return;
-  if (!currentElement.value.listContents) {
-    currentElement.value.listContents = {
-      elements: [],
-      height: 0,
-      width: 0,
-    };
-  }
-  currentElement.value.listContents.height = listContentsHeight.value;
-  emit("update-jrxml");
-}
-
-function updateListContentsWidth() {
-  if (!currentElement.value || currentElement.value.type !== "list") return;
-  if (!currentElement.value.listContents) {
-    currentElement.value.listContents = {
-      elements: [],
-      height: 0,
-      width: 0,
-    };
-  }
-  currentElement.value.listContents.width = listContentsWidth.value;
-  emit("update-jrxml");
-}
-
 function addProperty() {
   if (!currentElement.value) return;
   if (!currentElement.value.properties) {
@@ -4605,13 +4223,114 @@ function addPropertyExpression() {
   padding: var(--prop-spacing-md);
 }
 
-.element-properties h3 {
-  margin: 0 0 var(--prop-spacing-md) 0;
-  padding: 0 0 var(--prop-spacing-xs) 0;
-  font-size: var(--prop-font-size-md);
-  font-weight: var(--prop-font-weight-semibold);
-  color: var(--prop-text-primary);
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--prop-divider-color);
+}
+
+.element-properties .panel-header h3 {
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--prop-text-primary);
+}
+
+.section-title {
+  font-size: 13px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--prop-text-tertiary) !important;
+}
+
+/* Segmented tabs: same look as the controls inside the cards. The white
+   highlight is one element moved by the open tab's index, so it slides. */
+.prop-tab-bar {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--tab-count), minmax(0, 1fr));
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--prop-bg-tertiary, #eef0f4);
+}
+
+.prop-tab-indicator {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / var(--tab-count));
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+  transform: translateX(calc(100% * var(--tab-index)));
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.prop-tab {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 6px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--prop-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.prop-tab:hover {
+  color: var(--prop-text-primary);
+}
+
+.prop-tab.active {
+  font-weight: 600;
+  color: var(--prop-primary-color, #1890ff);
+}
+
+.prop-tab:focus-visible {
+  outline: 2px solid var(--prop-border-focus, #1890ff);
+  outline-offset: 1px;
+  border-radius: 7px;
+}
+
+.prop-tab-pane {
+  padding-top: 14px;
+}
+
+/* The new tab's content fades and rises in */
+.prop-tab-fade-enter-active,
+.prop-tab-fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.prop-tab-fade-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.prop-tab-fade-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prop-tab-indicator,
+  .prop-tab-fade-enter-active,
+  .prop-tab-fade-leave-active {
+    transition: none;
+  }
 }
 
 .element-properties h4 {
@@ -4719,6 +4438,7 @@ function addPropertyExpression() {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   margin-bottom: 10px;
 }
 
@@ -4726,43 +4446,47 @@ function addPropertyExpression() {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
 }
 
 .band-settings-title-group h4 {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--prop-text-primary);
+  white-space: nowrap;
 }
 
 .template-scope-pill {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(24, 144, 255, 0.1);
   font-size: 10px;
-  font-weight: 500;
-  padding: 1px 6px;
-  background-color: #f1f5f9;
-  color: #475569;
-  border-radius: 4px;
-  letter-spacing: 0.2px;
+  font-weight: 600;
+  color: var(--prop-primary-color, #1890ff);
+  white-space: nowrap;
 }
 
 .reset-template-limits-btn {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  font-size: 10.5px;
+  gap: 4px;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--prop-border-color);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 11px;
   font-weight: 500;
-  color: #64748b;
-  background: transparent;
-  border: none;
+  color: var(--prop-text-secondary);
   cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
+  white-space: nowrap;
   transition: all 0.15s ease;
 }
 
 .reset-template-limits-btn:hover {
-  color: #0284c7;
-  background: #f0f9ff;
+  border-color: var(--prop-primary-color, #1890ff);
+  color: var(--prop-primary-color, #1890ff);
 }
 
 .band-cards-grid {
@@ -4771,23 +4495,21 @@ function addPropertyExpression() {
   gap: 8px;
 }
 
+/* One card per band, with a coloured edge so the bands are easy to tell apart */
 .template-band-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-  transition: all 0.2s ease;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--prop-border-radius-md);
+  background: var(--prop-bg-secondary);
+  border-left: 3px solid var(--prop-primary-color, #1890ff);
+  transition: background-color 0.15s ease;
 }
 
 .template-band-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  background: #f3f6fa;
 }
-
 
 .template-band-header {
   display: flex;
@@ -4796,37 +4518,37 @@ function addPropertyExpression() {
 }
 
 .template-band-title {
-  font-weight: 600;
   font-size: 12px;
-  color: #1e293b;
+  font-weight: 600;
+  color: var(--prop-text-primary);
 }
 
 .band-badge-auto {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.12);
   font-size: 10px;
-  color: #0284c7;
-  background: #f0f9ff;
-  border: 1px solid #e0f2fe;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-weight: 500;
+  font-weight: 600;
+  color: #059669;
 }
 
 .band-limit-inputs {
-  display: flex;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .band-limit-input-group {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+  min-width: 0;
 }
 
 .band-limit-input-group label {
-  font-size: 10.5px;
-  color: #64748b;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--prop-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4835,44 +4557,52 @@ function addPropertyExpression() {
 .input-unit-wrapper {
   display: flex;
   align-items: center;
-  border: none;
-  border-radius: 4px;
-  padding: 3px 6px;
-  background-color: #f1f5f9;
-  transition: background-color 0.15s ease;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--prop-border-color);
+  border-radius: 6px;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.input-unit-wrapper:hover,
+.input-unit-wrapper:hover {
+  border-color: var(--prop-border-hover);
+}
+
 .input-unit-wrapper:focus-within {
-  background-color: #e2e8f0;
+  border-color: var(--prop-border-focus);
+  box-shadow: var(--prop-focus-ring);
 }
 
 .input-unit-wrapper.is-disabled {
-  opacity: 0.65;
-  background-color: #f8fafc;
+  background: var(--prop-bg-disabled);
   cursor: not-allowed;
 }
 
-.input-unit-wrapper input {
+.input-unit-wrapper input,
+.form-group .input-unit-wrapper input {
+  height: auto;
   width: 100%;
+  min-width: 0;
+  padding: 0;
   border: none;
   background: transparent;
-  font-size: 11.5px;
-  font-weight: 500;
-  color: #1e293b;
+  font-size: 12px;
+  color: var(--prop-text-primary);
   outline: none;
-  padding: 0;
+  box-shadow: none;
 }
 
 .input-unit-wrapper input:disabled {
   cursor: not-allowed;
-  color: #64748b;
+  color: var(--prop-text-tertiary);
 }
 
 .input-unit-wrapper .unit {
-  font-size: 10px;
-  color: #94a3b8;
-  margin-left: 2px;
+  margin-left: 4px;
+  font-size: 11px;
+  color: var(--prop-text-tertiary);
   user-select: none;
 }
 
@@ -4911,70 +4641,674 @@ function addPropertyExpression() {
 
 .border-sides-grid {
   display: grid;
-  gap: var(--prop-spacing-sm);
+  gap: 0;
 }
 
-.border-side-item {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--prop-spacing-sm);
+/* ---------- Style Settings: shared field parts ---------- */
+.field-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--prop-text-secondary, #6b7280);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.border-side-controls {
-  flex: 1;
-  display: flex;
-  gap: var(--prop-spacing-sm);
+/* Number field with its unit inside */
+.unit-input {
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
 }
 
-.border-side-group {
-  display: flex;
+.unit-input input {
+  width: 100%;
+  height: 30px;
+  padding: 0 24px 0 8px;
+  border: 1px solid var(--prop-border-color, #e5e7eb);
+  border-radius: 6px;
+  font-size: 12px;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.unit-input input:focus,
+.pad-input input:focus,
+.text-card select:focus {
+  outline: none;
+  border-color: var(--prop-border-focus, #1890ff);
+  box-shadow: var(--prop-focus-ring);
+}
+
+.unit-input > span {
+  position: absolute;
+  right: 8px;
+  font-size: 11px;
+  color: var(--prop-text-tertiary, #9ca3af);
+  pointer-events: none;
+}
+
+.line-icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* ---------- Borders: one row per side ---------- */
+.border-table {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 62px 36px;
+  column-gap: 6px;
+  column-gap: 8px;
   align-items: center;
-  gap: var(--prop-spacing-sm);
-  margin-bottom: var(--prop-spacing-sm);
-  flex-wrap: wrap;
 }
 
-/* Corner radius: label too long for the side-label column; hint on its own line */
-.corner-radius-item {
-  flex-wrap: wrap;
-  align-items: center;
+.border-table-head,
+.border-row {
+  display: contents;
 }
 
-.corner-radius-item .side-label {
-  width: auto;
+.border-table-head > span {
+  padding-bottom: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--prop-text-tertiary, #9ca3af);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.border-row > * {
+  margin: 3px 0;
+}
+
+.border-row-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--prop-text-primary, #374151);
   white-space: nowrap;
 }
 
-.corner-grid {
+/* "All" stands apart from the four sides below it */
+.border-row.is-all > * {
+  margin-bottom: 9px;
+}
+
+.border-row.is-all .border-row-label {
+  font-weight: 700;
+}
+
+.line-style-picker {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--prop-bg-tertiary, #f3f4f6);
+  min-width: 0;
+}
+
+.line-style-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--prop-text-tertiary, #9ca3af);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.line-style-btn:hover {
+  color: var(--prop-text-primary, #111827);
+}
+
+.line-style-btn.active {
+  background: #fff;
+  color: var(--prop-border-focus, #1890ff);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+}
+
+.line-style-btn:focus-visible,
+.icon-btn:focus-visible {
+  outline: 2px solid var(--prop-border-focus, #1890ff);
+  outline-offset: 1px;
+}
+
+.border-table-head > .line-style-names {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  padding: 0 2px 6px;
+  overflow: visible;
+}
+
+.line-style-names > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: 9px;
+  letter-spacing: 0.02em;
+}
+
+.border-table-head > span:last-child {
+  overflow: visible;
+  text-align: center;
+}
+
+.border-table-head > .line-style-names > span {
+  letter-spacing: 0;
+  text-overflow: clip;
+}
+
+.border-table .color-control.compact {
+  width: 36px;
+  height: 30px;
+}
+
+/* ---------- Corner radius and margins: fields around a preview ---------- */
+.corner-designer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--prop-divider-color, #eee);
+}
+
+.pad-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.pad-title {
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-size: var(--prop-font-size-sm);
+  font-weight: 600;
+  color: var(--prop-text-primary, #374151);
+  white-space: nowrap;
+}
+
+/* "All corners" / "All sides": label beside its field */
+.pad-all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pad-all .field-label {
+  margin: 0;
+}
+
+.pad-all .unit-input {
+  width: 76px;
+}
+
+.pad-input {
+  display: block;
+  min-width: 0;
+}
+
+.pad-input input {
+  width: 100%;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--prop-border-color, #e5e7eb);
+  border-radius: 6px;
+  font-size: 12px;
+  text-align: center;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.corner-pad {
+  display: grid;
+  grid-template-columns: 76px 1fr 76px;
+  grid-template-rows: auto auto;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.corner-input-topLeft { grid-column: 1; grid-row: 1; }
+.corner-input-topRight { grid-column: 3; grid-row: 1; }
+.corner-input-bottomLeft { grid-column: 1; grid-row: 2; }
+.corner-input-bottomRight { grid-column: 3; grid-row: 2; }
+
+.corner-preview {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: stretch;
+  min-height: 70px;
+  border: 2px solid var(--prop-border-focus, #1890ff);
+  background: rgba(24, 144, 255, 0.06);
+  transition: border-radius 0.2s ease;
+}
+
+.margin-pad {
+  display: grid;
+  grid-template-columns: 76px 1fr 76px;
+  grid-template-rows: auto auto auto;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.margin-input-top { grid-column: 2; grid-row: 1; justify-self: center; width: 76px; }
+.margin-input-left { grid-column: 1; grid-row: 2; }
+.margin-input-right { grid-column: 3; grid-row: 2; }
+.margin-input-bottom { grid-column: 2; grid-row: 3; justify-self: center; width: 76px; }
+
+.margin-preview {
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+  height: 56px;
+  border: 2px solid var(--prop-border-color, #d1d5db);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.margin-preview-content {
+  position: absolute;
+  border: 1.5px dashed var(--prop-border-focus, #1890ff);
+  border-radius: 3px;
+  background: rgba(24, 144, 255, 0.08);
+  transition: all 0.2s ease;
+}
+
+/* ---------- Basic tab cards ---------- */
+.geometry-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px var(--prop-spacing-sm);
-  margin-top: 6px;
+  gap: 10px 12px;
 }
 
-.corner-field {
+.style-ref-field {
+  margin-top: 12px;
+}
+
+.card-select,
+.card-textarea {
+  width: 100%;
+  border: 1px solid var(--prop-border-color, #e5e7eb);
+  border-radius: 6px;
+  font-size: 12px;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card-select {
+  height: 30px;
+  padding: 0 8px;
+}
+
+.card-textarea {
+  display: block;
+  padding: 8px;
+  resize: vertical;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.card-select:focus,
+.card-textarea:focus {
+  outline: none;
+  border-color: var(--prop-border-focus, #1890ff);
+  box-shadow: var(--prop-focus-ring);
+}
+
+.card-head {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
-.corner-label {
-  font-size: var(--prop-font-size-xs);
-  color: var(--prop-text-secondary);
-  white-space: nowrap;
-  min-width: 64px;
+.card-head h5 {
+  margin: 0;
 }
+
+.insert-field {
+  margin-top: 10px;
+}
+
+.dot-icon {
+  fill: currentColor;
+}
+
+.card-input {
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--prop-border-color);
+  border-radius: 6px;
+  font-size: 12px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.card-input:focus {
+  outline: none;
+  border-color: var(--prop-border-focus);
+  box-shadow: var(--prop-focus-ring);
+}
+
+.card-input.is-readonly {
+  background: var(--prop-bg-disabled);
+  color: var(--prop-text-secondary);
+}
+
+.card-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: var(--prop-font-size-xs);
+  color: var(--prop-text-tertiary);
+}
+
+.card-gap-sm {
+  margin-top: 10px;
+}
+
+.card-input.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--prop-text-primary);
+  cursor: pointer;
+}
+
+.toggle-row input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--prop-primary-color, #1890ff);
+}
+
+.image-name-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.image-name-row .card-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.box-section .column-tree-toolbar {
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+/* Small pill action in a card header */
+.chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid rgba(24, 144, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(24, 144, 255, 0.06);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--prop-border-focus, #1890ff);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.chip-btn:hover:not(:disabled) {
+  background: var(--prop-border-focus, #1890ff);
+  border-color: var(--prop-border-focus, #1890ff);
+  color: #fff;
+}
+
+.chip-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.chip-btn-solid {
+  background: var(--prop-border-focus, #1890ff);
+  border-color: var(--prop-border-focus, #1890ff);
+  color: #fff;
+}
+
+.chip-btn-solid:hover:not(:disabled) {
+  background: var(--prop-primary-active, #096dd9);
+}
+
+.chip-btn-muted {
+  border-color: var(--prop-border-color);
+  background: #fff;
+  color: var(--prop-text-secondary);
+}
+
+/* Full-width segmented control (rotation, line direction) */
+.seg {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--prop-bg-tertiary, #f3f4f6);
+}
+
+.seg-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  height: 30px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--prop-text-secondary, #6b7280);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.seg-btn-stacked {
+  flex-direction: column;
+  gap: 2px;
+  height: 46px;
+}
+
+.seg-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seg-btn:hover {
+  color: var(--prop-text-primary, #111827);
+}
+
+.seg-btn.active {
+  background: #fff;
+  color: var(--prop-border-focus, #1890ff);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+  font-weight: 600;
+}
+
+.seg-btn:focus-visible,
+.chip-btn:focus-visible,
+.ghost-btn:focus-visible {
+  outline: 2px solid var(--prop-border-focus, #1890ff);
+  outline-offset: 1px;
+}
+
+.ghost-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 30px;
+  margin-top: 10px;
+  border: 1px dashed var(--prop-border-color, #d1d5db);
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  color: var(--prop-text-secondary, #6b7280);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ghost-btn:hover {
+  border-color: var(--prop-border-focus, #1890ff);
+  border-style: solid;
+  color: var(--prop-border-focus, #1890ff);
+  background: rgba(24, 144, 255, 0.05);
+}
+
+/* Line style names above an icon picker outside the border table */
+.box-section > .line-style-names {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  padding: 0 2px 4px;
+}
+
+.box-section > .line-style-names-4,
+.line-style-picker-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.box-section > .line-style-names > span {
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--prop-text-tertiary, #9ca3af);
+}
+
+.card-gap {
+  margin-top: 12px;
+  align-items: flex-end;
+}
+
+.swatch-lg.color-control.compact {
+  width: 44px;
+  height: 30px;
+}
+
+/* ---------- Text card ---------- */
+.text-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.text-card h5 {
+  margin-bottom: 0;
+}
+
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.field {
+  display: block;
+  min-width: 0;
+}
+
+.field.grow {
+  flex: 1 1 160px;
+}
+
+.font-size-field {
+  flex: 0 0 84px;
+}
+
+.text-card select {
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--prop-border-color, #e5e7eb);
+  border-radius: 6px;
+  font-size: 12px;
+  background: #fff;
+}
+
+.icon-segment {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--prop-bg-tertiary, #f3f4f6);
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  font-size: 13px;
+  color: var(--prop-text-secondary, #6b7280);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.icon-btn:hover {
+  color: var(--prop-text-primary, #111827);
+}
+
+.icon-btn.active {
+  background: #fff;
+  color: var(--prop-border-focus, #1890ff);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+}
+
+.icon-btn-isBold { font-weight: 800; }
+.icon-btn-isItalic { font-style: italic; font-family: Georgia, serif; }
+.icon-btn-isUnderline { text-decoration: underline; }
 
 .corner-radius-hint {
-  flex-basis: 100%;
+  display: block;
+  margin-top: 8px;
   font-size: var(--prop-font-size-xs);
   color: var(--prop-text-tertiary);
 }
 
 .side-label {
-  width: 20px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: var(--prop-font-size-sm);
   font-weight: var(--prop-font-weight-medium);
   color: var(--prop-text-secondary);
@@ -4997,8 +5331,8 @@ function addPropertyExpression() {
 }
 
 .width-control.compact {
-  width: 50px;
-  height: 24px;
+  width: 56px;
+  height: 26px;
   padding: 2px 6px;
   font-size: 11px;
 }
@@ -5014,7 +5348,7 @@ function addPropertyExpression() {
 
 .color-control.compact {
   width: 40px;
-  height: 24px;
+  height: 26px;
 }
 
 .form-group.compact {
@@ -5124,9 +5458,37 @@ function addPropertyExpression() {
 }
 
 .element-actions {
-  margin-top: var(--prop-spacing-xl);
-  padding-top: var(--prop-spacing-lg);
+  margin-top: var(--prop-spacing-lg);
+  padding-top: var(--prop-spacing-md);
   border-top: 1px solid var(--prop-divider-color);
+}
+
+.delete-element-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 34px;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  color: #dc2626;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.delete-element-btn:hover {
+  border-color: #dc2626;
+  background: #dc2626;
+  color: #fff;
+}
+
+.delete-element-btn:focus-visible {
+  outline: 2px solid #dc2626;
+  outline-offset: 2px;
 }
 
 .font-hint {

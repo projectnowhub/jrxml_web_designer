@@ -1,10 +1,9 @@
 <template>
   <div class="pagination-properties">
-    <h4>{{ t("pagination.title") }}</h4>
-
     <!-- Format: each option shows what the report prints -->
-    <div class="form-group">
-      <label>{{ t("pagination.format") }}</label>
+    <div class="card">
+      <h5>{{ t("pagination.title") }}</h5>
+      <span class="field-label">{{ t("pagination.format") }}</span>
       <div class="format-grid" role="radiogroup">
         <button
           v-for="format in PAGINATION_FORMATS"
@@ -24,9 +23,10 @@
     </div>
 
     <!-- Pages the number is printed on -->
-    <div class="form-group">
-      <label>{{ t("pagination.showOn") }}</label>
+    <div class="card">
+      <h5>{{ t("pagination.showOn") }}</h5>
       <select
+        :aria-label="t('pagination.showOn')"
         :value="settings.range"
         @change="update({ range: ($event.target as HTMLSelectElement).value as PaginationRange })"
       >
@@ -37,9 +37,8 @@
       <span v-if="settings.range !== 'all' && settings.range !== 'custom'" class="form-hint">
         {{ t(`pagination.rangeHints.${settings.range}`) }}
       </span>
-    </div>
 
-    <div v-if="settings.range === 'custom'" class="form-group">
+      <template v-if="settings.range === 'custom'">
       <div class="range-row">
         <label class="range-field">
           <span>{{ t("pagination.fromPage") }}</span>
@@ -68,6 +67,7 @@
       <template v-else>
         <span class="form-hint">{{ t("pagination.rangeHints.custom") }}</span>
         <span class="form-hint">{{ t("pagination.toPageHint") }}</span>
+      </template>
       </template>
     </div>
 
@@ -133,87 +133,93 @@ const updatePage = (side: 'from' | 'to', event: Event) => {
 </script>
 
 <style scoped>
-.pagination-properties {
-  padding: var(--prop-spacing-sm) 0;
+/* Cards, matching the rest of the property panel */
+.card {
+  margin-bottom: var(--prop-spacing-md);
+  padding: var(--prop-spacing-sm) 10px 10px;
+  border-radius: var(--prop-border-radius-md);
+  background: var(--prop-bg-secondary);
 }
 
-.pagination-properties h4 {
-  margin: 0 0 var(--prop-spacing-lg) 0;
-  padding: 0 0 var(--prop-spacing-sm) 0;
-  font-size: var(--prop-font-size-md);
+.card h5 {
+  margin: 0 0 8px;
+  font-size: var(--prop-font-size-sm);
+  font-weight: 600;
   color: var(--prop-text-primary);
-  font-weight: var(--prop-font-weight-semibold);
-  border-bottom: 1px solid var(--prop-divider-color);
 }
 
-.form-group {
-  margin-bottom: var(--prop-spacing-lg);
-}
-
-.form-group > label,
+.field-label,
 .range-field > span {
   display: block;
-  margin-bottom: var(--prop-spacing-xs);
-  font-size: var(--prop-font-size-sm);
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 500;
   color: var(--prop-text-secondary);
-  font-weight: var(--prop-font-weight-medium);
 }
 
-.form-group select,
-.form-group input,
-.form-group textarea {
+.card select,
+.card input {
   width: 100%;
-  padding: 6px 8px;
+  height: 30px;
+  padding: 0 8px;
   border: 1px solid var(--prop-border-color);
-  border-radius: var(--prop-border-radius-md);
-  font-size: var(--prop-font-size-sm);
+  border-radius: 6px;
+  font-size: 12px;
+  background: #fff;
   box-sizing: border-box;
 }
 
-.form-group select:focus,
-.form-group input:focus {
+.card select:focus,
+.card input:focus {
   outline: none;
   border-color: var(--prop-border-focus);
   box-shadow: var(--prop-focus-ring);
 }
 
+/* Formats as a segmented 2×2 picker */
 .format-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--prop-spacing-sm);
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--prop-bg-tertiary, #eef0f4);
 }
 
 .format-option {
-  padding: 6px 4px;
+  height: 30px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 6px;
   background: transparent;
-  border: 1px solid var(--prop-border-color);
-  border-radius: var(--prop-border-radius-md);
-  font-size: var(--prop-font-size-sm);
-  color: var(--prop-text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--prop-text-secondary);
   cursor: pointer;
   white-space: nowrap;
-  transition: border-color var(--prop-transition-fast), box-shadow var(--prop-transition-fast);
+  transition: all 0.15s ease;
 }
 
 .format-option:hover {
-  border-color: var(--prop-border-hover);
-}
-
-.format-option.active,
-.format-option:focus-visible {
-  outline: none;
-  border-color: var(--prop-border-focus);
-  box-shadow: var(--prop-focus-ring);
+  color: var(--prop-text-primary);
 }
 
 .format-option.active {
-  background-color: rgba(24, 144, 255, 0.06);
-  font-weight: var(--prop-font-weight-semibold);
+  background: #fff;
+  color: var(--prop-primary-color, #1890ff);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+}
+
+.format-option:focus-visible {
+  outline: 2px solid var(--prop-border-focus);
+  outline-offset: 1px;
 }
 
 .range-row {
   display: flex;
   gap: var(--prop-spacing-sm);
+  margin-top: 10px;
 }
 
 .range-field {
@@ -221,17 +227,9 @@ const updatePage = (side: 'from' | 'to', event: Event) => {
   min-width: 0;
 }
 
-.locked-expression {
-  font-family: monospace;
-  resize: none;
-  color: var(--prop-text-secondary);
-  background: var(--prop-bg-disabled);
-  cursor: not-allowed;
-}
-
 .form-hint {
   display: block;
-  margin-top: var(--prop-spacing-xs);
+  margin-top: 6px;
   font-size: var(--prop-font-size-xs);
   color: var(--prop-text-tertiary);
 }

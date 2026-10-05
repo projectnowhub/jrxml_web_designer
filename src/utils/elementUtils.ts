@@ -68,7 +68,7 @@ export const IMAGE_NAME_PROPERTY = "com.cdp.image.name";
 // radius on images, so the canvas draws it and the report server reads it
 export const IMAGE_CORNER_RADIUS_PROPERTY = "com.cdp.image.cornerRadius";
 
-// Text field (page number) corner radius, kept the same way: JasperReports
+// Text field corner radius, kept the same way: JasperReports
 // can't round a text field, so the canvas draws it and the report server reads it
 export const TEXT_CORNER_RADIUS_PROPERTY = "com.cdp.text.cornerRadius";
 
@@ -538,11 +538,6 @@ export function getElementDisplayInfoWithoutBand(
     }
   } else if (element.type === "barcode" && (element as any).codeExpression) {
     info = `${(element as any).codeExpression.substring(0, 15)}${(element as any).codeExpression.length > 15 ? "..." : ""}`;
-  } else if (
-    element.type === "subreport" &&
-    (element as any).subreportExpression
-  ) {
-    info = `${(element as any).subreportExpression.substring(0, 15)}${(element as any).subreportExpression.length > 15 ? "..." : ""}`;
   }
 
   return info;

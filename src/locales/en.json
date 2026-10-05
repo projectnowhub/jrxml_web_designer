@@ -132,13 +132,11 @@
     "noData": "No Data"
   },
   "elementNames": {
-    "staticText": "Static Text",
     "textField": "Text",
     "image": "Image",
     "line": "Line",
     "rectangle": "Rectangle",
     "ellipse": "Ellipse",
-    "break": "Break",
     "frame": "Box",
     "frameKpiCard": "Number Box",
     "frameAlertBox": "Alert Box",
@@ -146,20 +144,10 @@
     "framePhotoCard": "Photo Box",
     "framePageBorder": "Page Border",
     "table": "Table",
-    "subreport": "Subreport",
-    "list": "List",
     "chart": "Chart",
     "barcode": "Barcode",
-    "map": "Map",
-    "crosstab": "Crosstab",
-    "iconLabel": "Icon Label",
-    "genericElement": "Generic Element",
-    "sort": "Sort",
     "pageNumber": "Page Number",
-    "totalPages": "Total Pages",
     "currentDate": "Current Date",
-    "currentTime": "Time",
-    "percentage": "Percentage",
     "pageXofY": "Page X of Y"
   },
   "properties": {
@@ -221,7 +209,6 @@
     "expression": "Expression",
     "expressionHint": "e.g., {fieldHolder} or \"Fixed text\"",
     "defaultTextFieldExpression": "Text",
-    "defaultStaticText": "Static Text",
     "pattern": "Pattern",
     "patternHint": "e.g., Date: \"yyyy-MM-dd\", Number: \"#,##0.00\"",
     "textAlignment": "Text Alignment",
@@ -255,8 +242,6 @@
     "imageName": "Image Name",
     "imageNameHint": "Read-only: taken from the uploaded image file",
     "radius": "Radius",
-    "breakType": "Break Type",
-    "pageBreak": "Page Break",
     "columnBreak": "Column Break",
     "breakNoBorder": "Break element does not support border settings.",
     "unifiedBorder": "Unified Border Settings",
@@ -271,7 +256,7 @@
     "quickSettings": "Quick Settings",
     "noBorders": "No Borders",
     "allBorders": "All Borders (1px Solid)",
-    "sideBorders": "Side Border Settings",
+    "sideBorders": "Borders",
     "topSide": "Top",
     "leftSide": "Left",
     "bottomSide": "Bottom",
@@ -422,7 +407,14 @@
       "topRight": "Top right",
       "bottomRight": "Bottom right",
       "bottomLeft": "Bottom left"
-    }
+    },
+    "side": "Side",
+    "textSettings": "Text",
+    "allSides": "All sides",
+    "positionSize": "Position & size",
+    "insertFieldLabel": "Insert a data field",
+    "outline": "Outline",
+    "lineSettings": "Line"
   },
   "bottomPanel": {
     "pageSettings": "Page Settings",
@@ -833,7 +825,8 @@
     "saveFailedTitle": "Auto-save failed",
     "savedTitle": "All changes are saved automatically",
     "addNewPage": "Add New Page",
-    "bandHeight": "{bandName} Height: {height}px"
+    "bandHeight": "{bandName} Height: {height}px",
+    "pageButton": "Page"
   },
   "help": {
     "title": "JRXML Visual Designer User Guide",
@@ -856,7 +849,6 @@
     },
     "elementsTitle": "3. Supported Element Types",
     "elements": {
-      "staticText": "Static text: displays fixed text content",
       "textField": "Text field: displays a dynamic data field",
       "image": "Image: inserts an image element",
       "line": "Line: adds a divider line",
@@ -891,7 +883,6 @@
     "notes": {
       "bounds": "Elements cannot extend beyond the page boundary",
       "textEditing": "While editing text, press Enter to confirm or Esc to cancel",
-      "staticTextEdit": "Double-click a static text box to edit its text",
       "textFieldEdit": "Double-click a text field to edit its expression",
       "dragUpdate": "The JRXML updates when you release the mouse after dragging an element",
       "autoSave": "All changes are automatically saved to local storage"
@@ -1015,7 +1006,8 @@
     "dragOntoPage": "Drag elements onto page {page}",
     "selectPageBorder": "Click to select the page border",
     "pageBorderResized": "The page border was resized to fit the new page.",
-    "elementsMovedToFit": "1 element was moved to fit inside the new page. | {count} elements were moved to fit inside the new page."
+    "elementsMovedToFit": "1 element was moved to fit inside the new page. | {count} elements were moved to fit inside the new page.",
+    "addPageAfter": "Add page after"
   },
   "alignment": {
     "left": "Align left",
@@ -1299,5 +1291,53 @@
     "boolean": "Yes / No (Boolean)",
     "date": "Date",
     "dateTime": "Date & Time"
+  },
+  "chart": {
+    "title": "Chart",
+    "type": "Chart type",
+    "chartTitle": "Title",
+    "chartTitlePlaceholder": "e.g. Sales by region",
+    "showLegend": "Show legend",
+    "data": "Chart data",
+    "dataFrom": "Data from",
+    "reportData": "Report data",
+    "fieldPlaceholder": "field",
+    "types": {
+      "pie": "Pie",
+      "pie3D": "Pie (3D)",
+      "bar": "Bar",
+      "bar3D": "Bar (3D)",
+      "stackedBar": "Stacked bar",
+      "stackedBar3D": "Stacked bar (3D)",
+      "line": "Line",
+      "area": "Area",
+      "stackedArea": "Stacked area",
+      "xyLine": "XY line",
+      "xyArea": "XY area",
+      "xyBar": "XY bar",
+      "scatter": "Scatter",
+      "bubble": "Bubble",
+      "timeSeries": "Time series",
+      "highLow": "High-low",
+      "candlestick": "Candlestick",
+      "meter": "Meter",
+      "thermometer": "Thermometer",
+      "multiAxis": "Multi-axis",
+      "gantt": "Gantt",
+      "spider": "Spider"
+    },
+    "fields": {
+      "key": "Slice label",
+      "value": "Value",
+      "series": "Series",
+      "category": "Category",
+      "x": "X value",
+      "y": "Y value"
+    },
+    "hints": {
+      "pie": "Each row adds its value to the slice named by the label.",
+      "category": "Each row adds its value to a category (one bar or point); series splits them into groups.",
+      "xy": "Each row is one point at (X, Y); series splits the points into lines or groups."
+    }
   }
 }

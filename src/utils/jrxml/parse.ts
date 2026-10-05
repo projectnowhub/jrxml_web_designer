@@ -259,7 +259,8 @@ export function parseJRXMLContent(jrxmlContent: string): {
           }
           const pageElems = parseBandElements(bElem);
           pageElems.forEach((el) => {
-            if (el.type === "break" && el.y === 0 && pIdx > 0) {
+            // Each <band> is a designer page; its breaks aren't elements
+            if (el.type === "break") {
               return;
             }
             (el as any).pageIndex = pIdx;
@@ -301,10 +302,11 @@ export function parseJRXMLContent(jrxmlContent: string): {
       properties.pageCount = breaks.length + 1;
     }
 
+    // Breaks only mark page starts (used above); they aren't elements
     const band: any = {
       type: type as BandType,
       height,
-      elements,
+      elements: elements.filter((el) => el.type !== "break"),
     };
 
     if (bandElem.hasAttribute("splitType")) {
@@ -705,6 +707,8 @@ function parseSubDataset(subDatasetElem: Element): SubDataset {
 
 function parseBandElements(bandElem: Element): any[] {
   const elements: any[] = [];
+  // Static text is read as a Text element; a page break only marks where the
+  // next designer page starts (see parseBands) and is never kept as an element
   const validElementTypes = [
     "staticText",
     "textField",
@@ -714,10 +718,7 @@ function parseBandElements(bandElem: Element): any[] {
     "ellipse",
     "break",
     "frame",
-    "subreport",
-    "list",
     "chart",
-    "crosstab",
   ];
 
   // Mapping of chart tag names to chart types
@@ -874,82 +875,6 @@ function parseComponentElement(componentElem: Element): any {
     }
   }
 
-  // Find a map element
-  for (const child of Array.from(componentElem.children)) {
-    const childLocalName = child.localName || child.tagName;
-    if (childLocalName === "map" || child.tagName === "m:map") {
-      const latExprElem = child.querySelector("latExpression");
-      const lngExprElem = child.querySelector("lngExpression");
-      const zoomExprElem = child.querySelector("zoomExpression");
-      const langExprElem = child.querySelector("languageExpression");
-
-      return {
-        type: "map",
-        uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
-        x: parseInt(reportElement.getAttribute("x") || "0"),
-        y: parseInt(reportElement.getAttribute("y") || "0"),
-        width: parseInt(reportElement.getAttribute("width") || "100"),
-        height: parseInt(reportElement.getAttribute("height") || "100"),
-        mapType: "html",
-        latExpression: latExprElem ? latExprElem.textContent?.trim() || "" : "",
-        lngExpression: lngExprElem ? lngExprElem.textContent?.trim() || "" : "",
-        zoomExpression: zoomExprElem
-          ? zoomExprElem.textContent?.trim() || ""
-          : "",
-        languageExpression: langExprElem
-          ? langExprElem.textContent?.trim() || ""
-          : "",
-        printWhenExpression: "",
-      };
-    }
-  }
-
-  // Find an iconLabel element
-  for (const child of Array.from(componentElem.children)) {
-    const childLocalName = child.localName || child.tagName;
-    if (childLocalName === "iconLabel" || child.tagName === "c:iconLabel") {
-      const labelExprElem = child.querySelector("labelExpression");
-
-      return {
-        type: "iconLabel",
-        uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
-        x: parseInt(reportElement.getAttribute("x") || "0"),
-        y: parseInt(reportElement.getAttribute("y") || "0"),
-        width: parseInt(reportElement.getAttribute("width") || "100"),
-        height: parseInt(reportElement.getAttribute("height") || "30"),
-        labelExpression: labelExprElem
-          ? labelExprElem.textContent?.trim() || ""
-          : "",
-        printWhenExpression: "",
-      };
-    }
-  }
-
-  // Find a sort element
-  for (const child of Array.from(componentElem.children)) {
-    const childLocalName = child.localName || child.tagName;
-    if (childLocalName === "sort" || child.tagName === "c:sort") {
-      const sortFields: Array<{ name: string; order?: string }> = [];
-      const sortFieldElems = child.querySelectorAll("sortField");
-      sortFieldElems.forEach((fieldElem) => {
-        const name = fieldElem.getAttribute("name") || "";
-        const order = fieldElem.getAttribute("order") || "Ascending";
-        sortFields.push({ name, order });
-      });
-
-      return {
-        type: "sort",
-        uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
-        x: parseInt(reportElement.getAttribute("x") || "0"),
-        y: parseInt(reportElement.getAttribute("y") || "0"),
-        width: parseInt(reportElement.getAttribute("width") || "100"),
-        height: parseInt(reportElement.getAttribute("height") || "30"),
-        sortFields: sortFields,
-        printWhenExpression: "",
-      };
-    }
-  }
-
   return null;
 }
 
@@ -967,12 +892,8 @@ function parseCellContent(cellElem: Element): any {
     "line",
     "rectangle",
     "ellipse",
-    "break",
     "frame",
-    "subreport",
-    "list",
     "chart",
-    "crosstab",
   ];
 
   Array.from(cellElem.children).forEach((child) => {
@@ -1499,21 +1420,8 @@ function parseElement(element: Element, type: string): any {
   }
   if (!reportElement) return null;
 
-  const validElementTypes: Array<
-    | "staticText"
-    | "textField"
-    | "image"
-    | "line"
-    | "rectangle"
-    | "ellipse"
-    | "break"
-    | "frame"
-    | "table"
-    | "subreport"
-    | "list"
-    | "chart"
-    | "crosstab"
-  > = [
+  // "break" is read only so the band can split pages at it (it is not kept)
+  const validElementTypes = [
     "staticText",
     "textField",
     "image",
@@ -1523,10 +1431,7 @@ function parseElement(element: Element, type: string): any {
     "break",
     "frame",
     "table",
-    "subreport",
-    "list",
     "chart",
-    "crosstab",
   ];
   const elementType = validElementTypes.includes(type as any)
     ? (type as any)
@@ -1687,6 +1592,7 @@ function parseElement(element: Element, type: string): any {
   switch (type) {
     case "staticText":
       parseStaticTextElement(element, result);
+      staticTextToTextField(result);
       break;
     case "textField":
       parseTextFieldElement(element, result);
@@ -1706,22 +1612,13 @@ function parseElement(element: Element, type: string): any {
       parseEllipseElement(element, result);
       break;
     case "break":
-      parseBreakElement(element, result);
+      (result as any).breakType = element.getAttribute("type") || "Page";
       break;
     case "frame":
       parseFrameElement(element, result);
       break;
-    case "subreport":
-      parseSubreportElement(element, result);
-      break;
-    case "list":
-      parseListElement(element, result);
-      break;
     case "chart":
       parseChartElement(element, result);
-      break;
-    case "crosstab":
-      parseCrosstabElement(element, result);
       break;
   }
 
@@ -1949,6 +1846,21 @@ function parseStaticTextElement(element: Element, result: any): void {
   if (element.hasAttribute("pattern")) {
     result.pattern = element.getAttribute("pattern");
   }
+}
+
+// Static text is shown and edited as a Text element: its text becomes a
+// string literal expression, so it prints the same
+function staticTextToTextField(result: any): void {
+  const text = String(result.text ?? "");
+  delete result.text;
+  result.type = "textField";
+  result.expression = `"${text
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\r?\n/g, "\\n")}"`;
+  result.evaluationTime = "Now";
+  result.isBlankWhenNull = false;
+  if (!result.markup) result.markup = "none";
 }
 
 function parseTextFieldElement(element: Element, result: any): void {
@@ -2235,15 +2147,6 @@ function parseEllipseElement(element: Element, result: any): void {
   }
 }
 
-function parseBreakElement(element: Element, result: any): void {
-  if (element.hasAttribute("type")) {
-    result.breakType = element.getAttribute("type");
-  } else {
-    result.breakType = "Page";
-  }
-  // BreakElement-specific reportElement attributes are handled by the shared code in parseElement
-}
-
 function parseFrameElement(element: Element, result: any): void {
   // Parse the attributes on the frame tag
   if (element.hasAttribute("isIgnorePagination")) {
@@ -2274,12 +2177,8 @@ function parseFrameElement(element: Element, result: any): void {
     "line",
     "rectangle",
     "ellipse",
-    "break",
     "frame",
-    "subreport",
-    "list",
     "chart",
-    "crosstab",
   ];
 
   // Iterate direct child elements
@@ -2312,149 +2211,6 @@ function parseFrameElement(element: Element, result: any): void {
       }
     }
   });
-}
-
-// Parse a subreport element
-function parseSubreportElement(element: Element, result: any): void {
-  // Parse subreportExpression
-  const subreportExprElem = element.querySelector("subreportExpression");
-  if (subreportExprElem) {
-    result.subreportExpression = subreportExprElem.textContent?.trim() || "";
-  }
-
-  // Parse parametersMapExpression
-  const paramsMapExprElem = element.querySelector("parametersMapExpression");
-  if (paramsMapExprElem) {
-    result.parametersMapExpression =
-      paramsMapExprElem.textContent?.trim() || "";
-  }
-
-  // Parse connectionExpression
-  const connExprElem = element.querySelector("connectionExpression");
-  if (connExprElem) {
-    result.connectionExpression = connExprElem.textContent?.trim() || "";
-  }
-
-  // Parse dataSourceExpression
-  const dsExprElem = element.querySelector("dataSourceExpression");
-  if (dsExprElem) {
-    result.dataSourceExpression = dsExprElem.textContent?.trim() || "";
-  }
-
-  // Parse evaluationTime
-  if (element.hasAttribute("evaluationTime")) {
-    result.evaluationTime = element.getAttribute("evaluationTime");
-  }
-
-  // Parse isUsingCache
-  if (element.hasAttribute("isUsingCache")) {
-    result.isUsingCache = element.getAttribute("isUsingCache") === "true";
-  }
-
-  // Parse runToBottom
-  if (element.hasAttribute("runToBottom")) {
-    result.runToBottom = element.getAttribute("runToBottom") === "true";
-  }
-}
-
-// Parse a list element
-function parseListElement(element: Element, result: any): void {
-  // Parse printOrder
-  if (element.hasAttribute("printOrder")) {
-    result.printOrder = element.getAttribute("printOrder");
-  }
-
-  // Parse ignoreWidth
-  if (element.hasAttribute("ignoreWidth")) {
-    result.ignoreWidth = element.getAttribute("ignoreWidth") === "true";
-  }
-
-  // Parse evaluationTime
-  if (element.hasAttribute("evaluationTime")) {
-    result.evaluationTime = element.getAttribute("evaluationTime");
-  }
-
-  // Parse splitType
-  if (element.hasAttribute("splitType")) {
-    result.splitType = element.getAttribute("splitType");
-  }
-
-  // Parse isIgnorePagination
-  if (element.hasAttribute("isIgnorePagination")) {
-    result.isIgnorePagination =
-      element.getAttribute("isIgnorePagination") === "true";
-  }
-
-  // Parse datasetRun (dataset run configuration)
-  const datasetRunElem = element.querySelector("datasetRun");
-  if (datasetRunElem) {
-    // Parse subDataset
-    if (datasetRunElem.hasAttribute("subDataset")) {
-      result.subDataset = datasetRunElem.getAttribute("subDataset");
-    }
-
-    // Parse dataSourceExpression
-    const dsExprElem = datasetRunElem.querySelector("dataSourceExpression");
-    if (dsExprElem) {
-      result.dataSourceExpression = dsExprElem.textContent?.trim() || "";
-    }
-
-    // Parse connectionExpression
-    const connExprElem = datasetRunElem.querySelector("connectionExpression");
-    if (connExprElem) {
-      result.connectionExpression = connExprElem.textContent?.trim() || "";
-    }
-  }
-
-  // Backward compatibility with the old format: dataSourceExpression directly under the list element
-  if (!result.dataSourceExpression) {
-    const dsExprElem = element.querySelector("dataSourceExpression");
-    if (dsExprElem) {
-      result.dataSourceExpression = dsExprElem.textContent?.trim() || "";
-    }
-  }
-
-  // Parse listContents
-  const listContentsElem = element.querySelector("listContents");
-  if (listContentsElem) {
-    const contentsHeight = parseInt(
-      listContentsElem.getAttribute("height") || "0",
-    );
-    const contentsWidth = parseInt(
-      listContentsElem.getAttribute("width") || "0",
-    );
-    const elements: any[] = [];
-
-    // Parse the child elements inside the list contents
-    Array.from(listContentsElem.children).forEach((child) => {
-      const childType = child.localName || child.tagName;
-      const validElementTypes = [
-        "staticText",
-        "textField",
-        "image",
-        "line",
-        "rectangle",
-        "ellipse",
-        "break",
-        "frame",
-        "subreport",
-        "list",
-        "chart",
-        "crosstab",
-      ];
-      if (validElementTypes.includes(childType)) {
-        const parsedElement = parseElement(child, childType);
-        if (parsedElement) {
-          elements.push(parsedElement);
-        }
-      }
-    });
-
-    result.listContents = {
-      elements: elements,
-      height: contentsHeight,
-    };
-  }
 }
 
 // Parse a chart element
@@ -2781,28 +2537,6 @@ function parseChartPlot(element: Element, result: any): void {
 
       break;
     }
-  }
-}
-
-// Parse a crosstab element
-function parseCrosstabElement(element: Element, result: any): void {
-  // Parse crosstabDataset
-  const datasetElem = element.querySelector("crosstabDataset");
-  if (datasetElem) {
-    result.whenNoDataType =
-      datasetElem.getAttribute("whenNoDataType") || "AllSectionsNoDetail";
-  }
-
-  // Parse crosstabWidth and crosstabHeight
-  if (element.hasAttribute("crosstabWidth")) {
-    result.crosstabWidth = parseInt(
-      element.getAttribute("crosstabWidth") || "0",
-    );
-  }
-  if (element.hasAttribute("crosstabHeight")) {
-    result.crosstabHeight = parseInt(
-      element.getAttribute("crosstabHeight") || "0",
-    );
   }
 }
 

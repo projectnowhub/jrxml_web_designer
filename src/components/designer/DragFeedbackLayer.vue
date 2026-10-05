@@ -126,13 +126,11 @@ const getDraggedElementType = () => {
   if (!props.feedback.draggedElementInfo) return '';
 
   const typeMap: Record<string, string> = {
-    'staticText': 'Static Text',
     'textField': 'Text Field',
     'image': 'Image',
     'line': 'Line',
     'rectangle': 'Rectangle',
     'ellipse': 'Ellipse',
-    'break': 'Page Break',
     'frame': 'Frame',
     'table': 'Table',
   };

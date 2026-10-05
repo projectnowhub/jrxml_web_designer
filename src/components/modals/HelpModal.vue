@@ -83,8 +83,8 @@ const emit = defineEmits(['update:visible']);
 const { t } = useI18n();
 
 const STEPS = ['modify', 'add', 'layout', 'properties', 'data', 'generate'];
-const ELEMENTS = ['staticText', 'textField', 'image', 'line', 'rectangle'];
-const NOTES = ['bounds', 'textEditing', 'staticTextEdit', 'textFieldEdit', 'dragUpdate', 'autoSave'];
+const ELEMENTS = ['textField', 'image', 'line', 'rectangle'];
+const NOTES = ['bounds', 'textEditing', 'textFieldEdit', 'dragUpdate', 'autoSave'];
 
 // "joiner" separates the keys: "+" for a combination, "/" for alternatives, " " for a list
 const SHORTCUTS = [

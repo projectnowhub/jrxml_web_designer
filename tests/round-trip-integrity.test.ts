@@ -183,11 +183,12 @@ describe('Round-trip integrity: parse ↔ generate', () => {
     expect(parsed.parameters[0].class).toBe('java.lang.String');
   });
 
-  it('should parse staticText with font properties', () => {
+  it('should read staticText as a text element, keeping its font', () => {
     const parsed = parseJRXMLContent(MINIMAL_JRXML);
-    const staticText = parsed.bands[0]?.elements.find((e: any) => e.type === 'staticText');
+    const staticText = parsed.bands[0]?.elements.find((e: any) => e.uuid === 's1');
     expect(staticText).toBeDefined();
-    expect((staticText as any).text).toBe('Static Text');
+    expect(staticText!.type).toBe('textField');
+    expect((staticText as any).expression).toBe('"Static Text"');
     expect((staticText as any).fontFamily).toBe('Arial');
     expect((staticText as any).fontSize).toBe(14);
     expect((staticText as any).isBold).toBe(true);
@@ -195,7 +196,7 @@ describe('Round-trip integrity: parse ↔ generate', () => {
 
   it('should parse textField with $F{} expression and extract fieldName', () => {
     const parsed = parseJRXMLContent(MINIMAL_JRXML);
-    const textField = parsed.bands[0]?.elements.find((e: any) => e.type === 'textField');
+    const textField = parsed.bands[0]?.elements.find((e: any) => e.uuid === 't1');
     expect(textField).toBeDefined();
     expect((textField as any).expression).toBe('$F{userName}');
     // This was the broken regex bug - should now work
@@ -241,7 +242,7 @@ describe('Round-trip integrity: parse ↔ generate', () => {
 
   it('should parse staticText rotation, textAdjust, pattern', () => {
     const parsed = parseJRXMLContent(STATICTEXT_ROTATION_JRXML);
-    const staticText = parsed.bands[0]?.elements.find((e: any) => e.type === 'staticText');
+    const staticText = parsed.bands[0]?.elements.find((e: any) => e.type === 'textField');
     expect(staticText).toBeDefined();
     expect((staticText as any).rotation).toBe('Left');
     expect((staticText as any).textAdjust).toBe('StretchHeight');
@@ -348,7 +349,7 @@ describe('Round-trip integrity: parse ↔ generate', () => {
     expect(generated).toContain('forecolor="#AA00BB"');
   });
 
-  it('should regenerate staticText rotation, textAdjust, pattern', () => {
+  it('should regenerate imported staticText rotation, textAdjust, pattern', () => {
     const parsed = parseJRXMLContent(STATICTEXT_ROTATION_JRXML);
     const generated = generateJRXMLContent(
       parsed.properties,
@@ -360,10 +361,11 @@ describe('Round-trip integrity: parse ↔ generate', () => {
       [],
       parsed.reportProperties
     );
+    // Written back as a text field, where textAdjust and pattern are valid
     expect(generated).toContain('<textElement rotation="Left"');
-    expect(generated).not.toContain('textAdjust="StretchHeight"');
-    expect(generated).not.toContain('pattern="#,##0.00"');
-    expect(generated).not.toMatch(/<staticText[^>]*rotation=/);
+    expect(generated).toContain('textAdjust="StretchHeight"');
+    expect(generated).toContain('pattern="#,##0.00"');
+    expect(generated).not.toContain('<staticText');
     expect(generated).not.toMatch(/<reportElement[^>]*rotation=/);
   });
 
@@ -568,20 +570,8 @@ describe('Round-trip integrity: parse ↔ generate', () => {
   </title>
 </jasperReport>`;
 
-  it('should parse and regenerate break isResetPageNumber and isResetPageOverflow', () => {
+  it('drops page breaks outside the detail band (not an element)', () => {
     const parsed = parseJRXMLContent(BREAK_JRXML);
-    const brk = parsed.bands[0]?.elements.find((e: any) => e.type === 'break') as any;
-    expect(brk).toBeDefined();
-    expect(brk.breakType).toBe('Page');
-    expect(brk.isResetPageNumber).toBe(true);
-    expect(brk.isResetPageOverflow).toBe(true);
-
-    // Generate and verify round-trip
-    const generated = generateJRXMLContent(
-      parsed.properties, parsed.bands, parsed.fields, parsed.parameters,
-      parsed.datasets, parsed.styles, [], parsed.reportProperties
-    );
-    expect(generated).toContain('isResetPageNumber="true"');
-    expect(generated).toContain('isResetPageOverflow="true"');
+    expect(parsed.bands[0]?.elements.some((e: any) => e.type === 'break')).toBe(false);
   });
 });

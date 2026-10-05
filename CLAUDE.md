@@ -16,13 +16,14 @@ UI (Vue Canvas) ⇄ Structured JSON ⇄ JRXML (XML)
 - **XML header**: `src/utils/jrxml/xmlBuilder.ts` → `buildJasperReportOpenTag()`
 - **Types**: `src/utils/jrxml/types.ts` (`ReportProperties`, `Field`, `Parameter`)
 - Flattens the visual JSON model into JasperReports-compatible XML
-- Handles all element types: staticText, textField, image, line, rectangle, ellipse, frame, table
+- Handles all element types: textField, image, line, rectangle, ellipse, frame, table, chart, barcode. Designer pages are written as detail bands separated by `<break type="Page">`
 
 ### Critical Path 2: JRXML → JSON (Parsing)
 
 - **Entry**: `src/utils/jrxml/parse.ts` → `parseJRXMLContent()`
 - Uses browser `DOMParser` to parse XML
 - Extracts: `properties`, `bands`, `fields`, `parameters`, `datasets`, `variables`, `styles`
+- `<staticText>` is read as a Text element (`textField` with a quoted literal expression); `<break>` only splits detail pages and is never kept; subreport, list, crosstab, map, icon label, sort and generic elements are not supported and are dropped on import
 - Handles multiple namespace resolution strategies (direct children, namespace-aware, localName)
 
 ### Critical Path 3: JSON → UI Binding (Designer Canvas)
@@ -43,7 +44,7 @@ The central data structures live in `src/types/index.ts`:
 
 - `ReportProperties` — page size, margins, default font
 - `Band` — layout region (title, detail, pageHeader, etc.) containing elements
-- `DesignElement` — union of `StaticTextElement | TextFieldElement | ImageElement | LineElement | RectangleElement | EllipseElement | BreakElement | FrameElement | TableElement`
+- `DesignElement` — union of `TextFieldElement | ImageElement | LineElement | RectangleElement | EllipseElement | FrameElement | TableElement | ChartElement | BarcodeElement` (the element library offers exactly these, plus the frame templates, Page Border and Page Number)
 - `Field`, `ReportParameter`, `ReportVariable` — data model definitions
 - `ReportStyle`, `ConditionalStyle` — style system
 
@@ -59,7 +60,7 @@ Logic lives in `src/utils/framePresets.ts`: border presets, per-side pen helpers
   - `radius` + the same line on all sides → one rounded rectangle carrying the pen and fill
   - `radius` + a partial border (accents) → two stacked filled rounded rectangles (border colour behind, inside colour in front, inset by each side's width); solid, one colour, inside filled
   Canvas and generator share the same helpers (`getLayeredBorder`) so they always match. No SVG or images.
-- **Corner radius per corner** (boxes, images and page numbers, Style Settings: "All corners" + one field per corner): stored in CSS order ("12 0 6 0"), one value when all match. Boxes: all equal → `radius` (rounded rectangle above, rounded in the PDF); different → `cornerRadii`, written as the `com.cdp.box.cornerRadius` frame property. Images: always the `com.cdp.image.cornerRadius` property; page numbers: always `com.cdp.text.cornerRadius`. JasperReports has one radius per rectangle and none on images or text fields, so the canvas draws these and the report server is expected to read the properties.
+- **Corner radius per corner** (boxes, images and text, Style Settings: "All corners" + one field per corner): stored in CSS order ("12 0 6 0"), one value when all match. Boxes: all equal → `radius` (rounded rectangle above, rounded in the PDF); different → `cornerRadii`, written as the `com.cdp.box.cornerRadius` frame property. Images: always the `com.cdp.image.cornerRadius` property; text fields (page numbers included): always `com.cdp.text.cornerRadius`. JasperReports has one radius per rectangle and none on images or text fields, so the canvas draws these and the report server is expected to read the properties.
 
 ## Project Structure
 

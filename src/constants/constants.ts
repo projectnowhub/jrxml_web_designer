@@ -97,7 +97,6 @@ export const ELEMENT_TYPE_CONSTANTS = {
   LINE: "line",
   RECTANGLE: "rectangle",
   ELLIPSE: "ellipse",
-  BREAK: "break",
   FRAME: "frame",
 };
 

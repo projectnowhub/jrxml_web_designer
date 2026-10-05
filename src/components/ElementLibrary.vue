@@ -2,7 +2,11 @@
   <div class="element-library">
     <!-- Basic element library -->
     <div class="element-list-container">
-      <h3>{{ t("elementLibrary.title") }}</h3>
+      <div class="library-header">
+        <h3>{{ t("elementLibrary.title") }}</h3>
+        <!-- e.g. the panel's collapse button -->
+        <slot name="header-actions"></slot>
+      </div>
       <div
         v-for="(categoryElements, categoryKey) in groupedElements"
         :key="categoryKey"
@@ -813,7 +817,7 @@ const setInlineEditInputRef = (el: any) => {
 // Image elements are read-only: their name is taken from the uploaded image file.
 function isElementTextEditable(element: DesignElement): boolean {
   if (!element) return false;
-  return ["textField", "barcode", "subreport"].includes(element.type);
+  return ["textField", "barcode"].includes(element.type);
 }
 
 // Get the editable value from an element
@@ -838,9 +842,6 @@ function getElementEditableValue(element: DesignElement): string {
   if (element.type === "barcode") {
     return (element as any).codeExpression || "";
   }
-  if (element.type === "subreport") {
-    return (element as any).subreportExpression || "";
-  }
   return (element as any).expression || "";
 }
 
@@ -861,8 +862,6 @@ function setElementEditableValue(element: DesignElement, val: string): void {
     }
   } else if (element.type === "barcode") {
     (element as any).codeExpression = val;
-  } else if (element.type === "subreport") {
-    (element as any).subreportExpression = val;
   } else if ((element as any).text !== undefined) {
     (element as any).text = val;
   } else if ((element as any).expression !== undefined) {
@@ -960,6 +959,14 @@ watch(
   overflow-y: auto;
   padding: 6px;
   gap: 10px;
+}
+
+.library-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
 .element-list-container h3,

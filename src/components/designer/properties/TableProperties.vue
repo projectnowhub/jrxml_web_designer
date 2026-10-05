@@ -206,7 +206,7 @@ const removeRowGroup = (index: number) => {
 
 <style scoped>
 .table-properties {
-  padding: var(--prop-spacing-lg);
+  padding: 0;
 }
 
 /* Style select items use vertical layout (label above select) within prop-style-select */
@@ -217,7 +217,8 @@ const removeRowGroup = (index: number) => {
 }
 
 .prop-style-select > div label {
-  font-size: var(--prop-font-size-sm);
+  font-size: 11px;
+  font-weight: 500;
   color: var(--prop-text-secondary);
 }
 </style>

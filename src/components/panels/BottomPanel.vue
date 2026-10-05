@@ -786,7 +786,7 @@ onBeforeUnmount(() => {
     :initial-size="bottomPanelHeight"
     :min-size="150"
     :max-size="currentMaxSize"
-    :collapsible="true"
+    :collapsible="false"
     @size-change="handleBottomPanelSizeChange"
   >
     <div class="tab-navigation">
@@ -798,6 +798,17 @@ onBeforeUnmount(() => {
         @click="activeTab = tab.id"
       >
         {{ tab.name }}
+      </button>
+      <button
+        type="button"
+        class="panel-close-button"
+        :title="t('actions.hideBottomPanel')"
+        :aria-label="t('actions.hideBottomPanel')"
+        @click="emit('update:visible', false)"
+      >
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
       </button>
     </div>
 
@@ -1331,6 +1342,30 @@ onBeforeUnmount(() => {
   font-size: 13px;
   border-bottom: 2px solid transparent;
   transition: all 0.3s ease;
+}
+
+.panel-close-button {
+  margin-left: auto;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: #666;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.panel-close-button:hover,
+.panel-close-button:focus-visible {
+  outline: none;
+  background-color: #dcdcdc;
+  color: #222;
 }
 
 .tab-button.active {

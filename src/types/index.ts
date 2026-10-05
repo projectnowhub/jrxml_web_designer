@@ -1,23 +1,14 @@
 // Element type enum
 export type ElementType =
-  | "staticText"
   | "textField"
   | "image"
   | "line"
   | "rectangle"
   | "ellipse"
-  | "break"
   | "frame"
   | "table"
-  | "subreport"
-  | "list"
   | "chart"
-  | "barcode"
-  | "map"
-  | "crosstab"
-  | "iconLabel"
-  | "genericElement"
-  | "sort";
+  | "barcode";
 
 // Column group interface
 export interface ColumnGroup {
@@ -306,18 +297,6 @@ export interface DesignElementBase {
   propertyExpressions?: Array<{ name: string; valueExpression: string }>;
 }
 
-// Static text element interface
-export interface StaticTextElement extends DesignElementBase {
-  type: "staticText";
-  text?: string;
-  markup?: "none" | "html" | "rtf" | "styledtext";
-  textAdjust?: "StretchHeight" | "CutText" | "ShrinkToFit";
-  rotation?: "None" | "Left" | "Right" | "UpsideDown";
-  pattern?: string;
-  xml_lang?: string;
-  printWhenExpression?: string;
-}
-
 // Text field element interface
 export interface TextFieldElement extends DesignElementBase {
   type: "textField";
@@ -424,15 +403,6 @@ export interface EllipseElement extends DesignElementBase {
   printWhenExpression?: string;
 }
 
-// Break element interface
-export interface BreakElement extends DesignElementBase {
-  type: "break";
-  breakType?: "Page" | "Column";
-  // Newly added properties
-  isResetPageNumber?: boolean;
-  isResetPageOverflow?: boolean;
-}
-
 // Frame (container) element interface
 export interface FrameElement extends DesignElementBase {
   type: "frame";
@@ -505,66 +475,6 @@ export interface TableElement extends DesignElementBase {
   parentStyle?: string;
   // Pagination control
   splitType?: "Stretch" | "Prevent" | "Immediate";
-}
-
-// Subreport element interface
-export interface SubreportElement extends DesignElementBase {
-  type: "subreport";
-  subreportExpression?: string;
-  parametersMapExpression?: string;
-  connectionExpression?: string;
-  dataSourceExpression?: string;
-  returnValue?: {
-    subreportVariable: string;
-    toVariable: string;
-    calculationType?: string;
-  }[];
-  printWhenExpression?: string;
-  isUsingCache?: boolean;
-  runToBottom?: boolean;
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto"
-    | "Master";
-  evaluationGroup?: string;
-  isIgnorePagination?: boolean;
-}
-
-// List element interface
-export interface ListElement extends DesignElementBase {
-  type: "list";
-  listContents?: {
-    elements: DesignElement[];
-    height?: number;
-    width?: number;
-  };
-  // Sub-dataset run configuration
-  subDataset?: string;
-  dataSourceExpression?: string;
-  connectionExpression?: string;
-  // List settings
-  printOrder?: "Vertical" | "Horizontal";
-  ignoreWidth?: boolean;
-  // Conditional display
-  printWhenExpression?: string;
-  // Evaluation settings
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto";
-  evaluationGroup?: string;
-  // Pagination settings
-  splitType?: "Stretch" | "Prevent" | "Immediate";
-  isIgnorePagination?: boolean;
 }
 
 // Chart element interface
@@ -691,97 +601,6 @@ export interface BarcodeElement extends DesignElementBase {
     | "Auto";
 }
 
-// Map element interface
-export interface MapElement extends DesignElementBase {
-  type: "map";
-  mapType?: "html" | "image" | "pdf";
-  latExpression?: string;
-  lngExpression?: string;
-  zoomExpression?: string;
-  languageExpression?: string;
-  printWhenExpression?: string;
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto";
-}
-
-// Crosstab element interface
-export interface CrosstabElement extends DesignElementBase {
-  type: "crosstab";
-  crosstabWidth?: number;
-  crosstabHeight?: number;
-  printWhenExpression?: string;
-  whenNoDataType?:
-    | "AllSectionsNoDetail"
-    | "AllSectionsWithDetail"
-    | "NoDataCell"
-    | "Blank";
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto"
-    | "Master";
-}
-
-// Icon label element interface
-export interface IconLabelElement extends DesignElementBase {
-  type: "iconLabel";
-  icon?: string;
-  label?: string;
-  labelExpression?: string;
-  printWhenExpression?: string;
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto";
-}
-
-// Generic element interface
-export interface GenericElement extends DesignElementBase {
-  type: "genericElement";
-  namespace?: string;
-  printWhenExpression?: string;
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto";
-}
-
-// Sort element interface
-export interface SortElement extends DesignElementBase {
-  type: "sort";
-  sortFields?: Array<{
-    name: string;
-    order?: "Ascending" | "Descending";
-  }>;
-  printWhenExpression?: string;
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto";
-}
-
 // Design element union type
 export type DesignElement =
   | TextFieldElement
@@ -789,18 +608,10 @@ export type DesignElement =
   | LineElement
   | RectangleElement
   | EllipseElement
-  | BreakElement
   | FrameElement
   | TableElement
-  | SubreportElement
-  | ListElement
   | ChartElement
-  | BarcodeElement
-  | MapElement
-  | CrosstabElement
-  | IconLabelElement
-  | GenericElement
-  | SortElement;
+  | BarcodeElement;
 
 // Report band interface
 export interface Band {

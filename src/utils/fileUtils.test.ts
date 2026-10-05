@@ -77,12 +77,12 @@ describe('fileUtils', () => {
             height: 80,
             elements: [
               {
-                type: 'staticText',
+                type: 'textField',
                 x: 10,
                 y: 10,
                 width: 100,
                 height: 20,
-                text: 'Test',
+                expression: '"Test"',
                 fontFamily: 'Arial',
                 fontSize: 12,
                 isBold: false,
@@ -114,7 +114,7 @@ describe('fileUtils', () => {
       expect(parsedData.bands).toHaveLength(1)
       expect(parsedData.bands[0].type).toBe('title')
       expect(parsedData.bands[0].elements).toHaveLength(1)
-      expect(parsedData.bands[0].elements[0].text).toBe('Test')
+      expect(parsedData.bands[0].elements[0].expression).toBe('"Test"')
       expect(parsedData.reportFields).toHaveLength(1)
       expect(parsedData.jrxmlContent).toBe('<test></test>')
     })

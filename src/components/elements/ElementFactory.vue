@@ -15,18 +15,10 @@ import ImageElement from './ImageElement.vue';
 import LineElement from './LineElement.vue';
 import RectangleElement from './RectangleElement.vue';
 import EllipseElement from './EllipseElement.vue';
-import BreakElement from './BreakElement.vue';
 import FrameElement from './FrameElement.vue';
 import TableElement from './TableElement.vue';
-import SubreportElement from './SubreportElement.vue';
-import ListElement from './ListElement.vue';
 import ChartElement from './ChartElement.vue';
 import BarcodeElement from './BarcodeElement.vue';
-import MapElement from './MapElement.vue';
-import CrosstabElement from './CrosstabElement.vue';
-import IconLabelElement from './IconLabelElement.vue';
-import GenericElement from './GenericElement.vue';
-import SortElement from './SortElement.vue';
 import type { 
   DesignElement,
   SelectedElementInfo,
@@ -40,18 +32,10 @@ const componentCache: Record<string, any> = {
   line: LineElement,
   rectangle: RectangleElement,
   ellipse: EllipseElement,
-  break: BreakElement,
   frame: FrameElement,
   table: TableElement,
-  subreport: SubreportElement,
-  list: ListElement,
   chart: ChartElement,
-  barcode: BarcodeElement,
-  map: MapElement,
-  crosstab: CrosstabElement,
-  iconLabel: IconLabelElement,
-  genericElement: GenericElement,
-  sort: SortElement
+  barcode: BarcodeElement
 };
 
 // Preload components

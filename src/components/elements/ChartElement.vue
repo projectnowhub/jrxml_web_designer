@@ -68,8 +68,12 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import BaseElement from './BaseElement.vue';
+import { stripExpressionQuotes } from '../../utils/elementUtils';
 import type { ChartElement, SelectedElementInfo, EditingElementInfo } from '../../types';
+
+const { t, te } = useI18n();
 
 const props = defineProps<{
   element: ChartElement;
@@ -91,18 +95,13 @@ const emit = defineEmits<{
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
+// The chart's title when it has one, else its type
 function getChartLabel(): string {
-  const chartTypeLabels: Record<string, string> = {
-    pie: 'Pie', pie3D: 'Pie3D',
-    bar: 'Bar', bar3D: 'Bar3D', xyBar: 'XYBar', stackedBar: 'StackedBar', stackedBar3D: 'StackedBar3D',
-    line: 'Line', xyLine: 'XYLine',
-    area: 'Area', xyArea: 'XYArea', stackedArea: 'StackedArea',
-    scatter: 'Scatter', bubble: 'Bubble',
-    timeSeries: 'TimeSeries', highLow: 'HighLow', candlestick: 'Candlestick',
-    meter: 'Meter', thermometer: 'Thermometer',
-    multiAxis: 'MultiAxis', gantt: 'Gantt', spider: 'Spider'
-  };
-  return chartTypeLabels[props.element.chartType] || 'Chart';
+  const el = props.element as any;
+  const title = el.titleExpression ? stripExpressionQuotes(el.titleExpression) : el.title;
+  if (title) return title;
+  const key = `chart.types.${props.element.chartType}`;
+  return te(key) ? t(key) : t('chart.title');
 }
 </script>
 

@@ -51,7 +51,7 @@ describe('JRXML border consistency test', () => {
 
     // Verify that the generated JRXML contains the same border settings
     const doc = parseJRXMLToDOM(generatedJRXML);
-    const staticTextElements = doc.querySelectorAll('staticText');
+    const staticTextElements = doc.querySelectorAll('textField');
     expect(staticTextElements.length).toBeGreaterThan(0);
 
     const boxElement = staticTextElements[0].querySelector('box');
@@ -129,7 +129,7 @@ describe('JRXML border consistency test', () => {
     // Verify that the generated JRXML contains the same border settings
     // Note: when all lineWidth values are 0, no pen element is generated at all — this is the current implementation's behavior
     const doc = parseJRXMLToDOM(generatedJRXML);
-    const staticTextElements = doc.querySelectorAll('staticText');
+    const staticTextElements = doc.querySelectorAll('textField');
     expect(staticTextElements.length).toBeGreaterThan(0);
 
     const boxElement = staticTextElements[0].querySelector('box');

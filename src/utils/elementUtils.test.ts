@@ -342,7 +342,7 @@ describe("elementUtils", () => {
     it("should return true when element is selected", () => {
       const element = {
         element: {
-          type: "staticText" as any,
+          type: "textField" as any,
           x: 10,
           y: 20,
           width: 100,
@@ -360,7 +360,7 @@ describe("elementUtils", () => {
     it("should return false when element is not selected", () => {
       const element = {
         element: {
-          type: "staticText" as any,
+          type: "textField" as any,
           x: 10,
           y: 20,
           width: 100,
@@ -378,7 +378,7 @@ describe("elementUtils", () => {
     it("should return false when no element is selected", () => {
       const element = {
         element: {
-          type: "staticText" as any,
+          type: "textField" as any,
           x: 10,
           y: 20,
           width: 100,
@@ -396,7 +396,7 @@ describe("elementUtils", () => {
     it("should call selectElement with correct indices", () => {
       const element = {
         element: {
-          type: "staticText" as any,
+          type: "textField" as any,
           x: 10,
           y: 20,
           width: 100,

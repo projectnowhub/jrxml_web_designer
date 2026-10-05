@@ -52,12 +52,12 @@ describe('PDFDesigner - Element Dragging and Coordinates', () => {
           height: 80,
           elements: [
             {
-              type: 'staticText',
+              type: 'textField',
               x: 100,
               y: 50,
               width: 200,
               height: 30,
-              text: 'Test Element',
+              expression: '"Test Element"',
               id: 'test-element-1'
             }
           ]

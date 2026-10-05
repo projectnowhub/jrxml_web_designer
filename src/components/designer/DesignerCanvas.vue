@@ -133,10 +133,23 @@
               @mousedown="startSelection"
             >
               <!-- Floating Page Sheet Header / Badge in margin -->
-              <div class="page-sheet-header">
+              <div
+                class="page-sheet-header"
+                :style="{ transform: `scale(${1 / zoomLevel})` }"
+              >
                 <span class="page-sheet-badge">{{
                   t("canvas.pageOf", { page: pIndex, total: totalPages })
                 }}</span>
+                <button
+                  class="add-page-after-btn"
+                  @click.stop="emit('add-page', pIndex)"
+                  :title="t('canvas.addPageAfter')"
+                >
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  {{ t("canvas.addPageAfter") }}
+                </button>
                 <button
                   v-if="pIndex > 1"
                   class="delete-page-btn"
@@ -145,11 +158,13 @@
                 >
                   <svg
                     viewBox="0 0 24 24"
-                    width="12"
-                    height="12"
+                    width="13"
+                    height="13"
                     fill="none"
                     stroke="currentColor"
                     stroke-width="2"
+                    stroke-linecap="round"
+                    aria-hidden="true"
                   >
                     <path
                       d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
@@ -430,29 +445,6 @@
             </div>
           </div>
 
-          <!-- Add New Page Button at bottom of sheets -->
-          <div
-            class="add-page-container"
-            :style="{
-              width: paperWidth * zoomLevel + 'px',
-              paddingTop: '8px',
-            }"
-          >
-            <button class="add-page-btn" @click="emit('add-page')">
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              <span>{{ t("editorHeader.addNewPage") }}</span>
-            </button>
-          </div>
         </div>
       </div>
 
@@ -1334,76 +1326,75 @@ onBeforeUnmount(() => {
     0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
+/* Page tools: a small pill above the page's top-right corner, the same size
+   at any zoom (the sheet is scaled, so it is scaled back) */
 .page-sheet-header {
   position: absolute;
-  top: 4px;
+  top: 6px;
   right: 8px;
   z-index: 20;
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  gap: 2px;
+  padding: 3px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  transform-origin: top right;
   user-select: none;
+  backdrop-filter: blur(4px);
 }
 
 .page-sheet-badge {
+  padding: 0 10px 0 8px;
   font-size: 11px;
   font-weight: 600;
-  color: #718096;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  color: #6b7280;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  border-right: 1px solid #e5e7eb;
+  margin-right: 2px;
 }
 
+.add-page-after-btn,
 .delete-page-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px;
   font-size: 11px;
-  color: #e53e3e;
+  font-weight: 500;
   background: transparent;
-  border: 1px solid rgba(229, 62, 62, 0.3);
-  border-radius: 4px;
+  border: none;
+  border-radius: 999px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.add-page-after-btn {
+  color: #1d4ed8;
+}
+
+.add-page-after-btn:hover {
+  background: #eff6ff;
+}
+
+.delete-page-btn {
+  color: #6b7280;
 }
 
 .delete-page-btn:hover {
-  background: #fff5f5;
-  border-color: #e53e3e;
+  background: #fef2f2;
+  color: #dc2626;
 }
 
-.add-page-container {
-  display: flex;
-  justify-content: flex-start;
-  padding: 16px 0;
-}
-
-.add-page-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 24px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #2b6cb0;
-  background: #ffffff;
-  border: 1.5px dashed #63b3ed;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.add-page-btn:hover {
-  background: #ebf8ff;
-  border-color: #3182ce;
-  color: #2c5282;
-  box-shadow: 0 2px 6px rgba(49, 130, 206, 0.2);
+.add-page-after-btn:focus-visible,
+.delete-page-btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
 }
 
 .pager {

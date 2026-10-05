@@ -29,12 +29,12 @@ describe('jrxmlGenerator', () => {
       height: 80,
       elements: [
         {
-          type: 'staticText',
+          type: 'textField',
           x: 20,
           y: 10,
           width: 200,
           height: 30,
-          text: 'Report Title',
+          expression: '"Report Title"',
           fontFamily: 'Arial',
           fontSize: 16,
           isBold: true,
@@ -48,12 +48,12 @@ describe('jrxmlGenerator', () => {
       height: 50,
       elements: [
         {
-          type: 'staticText',
+          type: 'textField',
           x: 20,
           y: 10,
           width: 100,
           height: 20,
-          text: 'Page Header',
+          expression: '"Page Header"',
           fontFamily: 'Arial',
           fontSize: 12,
           isBold: false,
@@ -112,14 +112,12 @@ describe('jrxmlGenerator', () => {
     expect(jrxml).toContain('</band>')
   })
 
-  it('should generate static text elements correctly', () => {
+  it('should generate fixed text as a text field with a literal expression', () => {
     const jrxml = generateJRXMLContent(mockReportProperties, mockBands, [], [])
-    
-    // Check that static text elements are generated correctly
-    expect(jrxml).toContain('<staticText>')
+
+    expect(jrxml).not.toContain('<staticText')
     expect(jrxml).toContain('<reportElement x="20" y="10" width="200" height="30"')
-    expect(jrxml).toContain('<text><![CDATA[Report Title]]></text>')
-    expect(jrxml).toContain('</staticText>')
+    expect(jrxml).toContain('<textFieldExpression><![CDATA["Report Title"]]></textFieldExpression>')
   })
 
   it('should generate text field elements correctly', () => {
@@ -436,12 +434,12 @@ describe('jrxmlGenerator', () => {
         height: 150,
         elements: [
           {
-            type: 'staticText',
+            type: 'textField',
             x: 20,
             y: 10,
             width: 100,
             height: 20,
-            text: 'Static Text',
+            expression: '"Static Text"',
             fontFamily: 'Arial',
             fontSize: 12,
             isBold: false,
@@ -467,9 +465,8 @@ describe('jrxmlGenerator', () => {
     
     const jrxml = generateJRXMLContent(mockReportProperties, mixedElementsBands, [], [])
     
-    // Should include both element types
-    expect(jrxml).toContain('<staticText>')
-    expect(jrxml).toContain('<textField>')
+    // Both are text fields now
+    expect(jrxml.match(/<textField[ >]/g)?.length).toBeGreaterThanOrEqual(2)
   })
 
   it('should generate box elements with borders', () => {
@@ -479,12 +476,12 @@ describe('jrxmlGenerator', () => {
         height: 100,
         elements: [
           {
-            type: 'staticText',
+            type: 'textField',
             x: 20,
             y: 10,
             width: 100,
             height: 20,
-            text: 'Text with Border',
+            expression: '"Text with Border"',
             fontFamily: 'Arial',
             fontSize: 12,
             box: {
@@ -514,12 +511,12 @@ describe('jrxmlGenerator', () => {
         height: 100,
         elements: [
           {
-            type: 'staticText',
+            type: 'textField',
             x: 20,
             y: 10,
             width: 100,
             height: 20,
-            text: 'Text with Padding',
+            expression: '"Text with Padding"',
             fontFamily: 'Arial',
             fontSize: 12,
             box: {
@@ -663,12 +660,12 @@ describe('jrxmlGenerator', () => {
         height: 100,
         elements: [
           {
-            type: 'staticText',
+            type: 'textField',
             x: 20,
             y: 10,
             width: 100,
             height: 20,
-            text: 'Text with Individual Borders',
+            expression: '"Text with Individual Borders"',
             fontFamily: 'Arial',
             fontSize: 12,
             box: {
@@ -704,12 +701,12 @@ describe('jrxmlGenerator', () => {
         height: 100,
         elements: [
           {
-            type: 'staticText',
+            type: 'textField',
             x: 20,
             y: 10,
             width: 100,
             height: 20,
-            text: 'Text with Directional Padding',
+            expression: '"Text with Directional Padding"',
             fontFamily: 'Arial',
             fontSize: 12,
             box: {
@@ -760,30 +757,15 @@ describe('jrxmlGenerator', () => {
     expect(jrxml).toContain('</ellipse>')
   })
 
-  it('should generate break elements', () => {
-    const bandsWithBreak: Band[] = [
-      {
-        type: 'detail',
-        height: 100,
-        elements: [
-          {
-            type: 'break',
-            x: 20,
-            y: 10,
-            width: 1,
-            height: 1,
-            breakType: 'Page'
-          } as DesignElement
-        ]
-      }
-    ]
-    
-    const jrxml = generateJRXMLContent(mockReportProperties, bandsWithBreak, [], [])
-    
-    // Should include break element
-    expect(jrxml).toContain('<break type="Page">')
-    expect(jrxml).toContain('<reportElement x="20" y="10" width="1" height="1"')
-    expect(jrxml).toContain('</break>')
+  it('starts each designer page after the first with a page break', () => {
+    const page = (pageIndex: number) =>
+      ({ type: 'textField', x: 0, y: 0, width: 100, height: 20, expression: '"P"', pageIndex }) as DesignElement
+    const twoPages: Band[] = [{ type: 'detail', height: 100, elements: [page(0), page(1)] }]
+
+    const jrxml = generateJRXMLContent(mockReportProperties, twoPages, [], [])
+
+    expect(jrxml.match(/<break type="Page">/g)).toHaveLength(1)
+    expect(jrxml.match(/<band /g)?.length).toBeGreaterThanOrEqual(2)
   })
 
   it('should generate frame elements', () => {
@@ -800,12 +782,12 @@ describe('jrxmlGenerator', () => {
             height: 50,
             elements: [
               {
-                type: 'staticText',
+                type: 'textField',
                 x: 10,
                 y: 10,
                 width: 130,
                 height: 30,
-                text: 'Text inside Frame',
+                expression: '"Text inside Frame"',
                 fontFamily: 'Arial',
                 fontSize: 12
               } as DesignElement
@@ -847,8 +829,8 @@ describe('jrxmlGenerator', () => {
           tableHeader: {
             enable: true,
             element: {
-              type: 'staticText',
-              text: 'Group Header',
+              type: 'textField',
+              expression: '"Group Header"',
               x: 0,
               y: 0,
               width: 200,
@@ -858,8 +840,8 @@ describe('jrxmlGenerator', () => {
           columnHeader: {
             enable: true,
             element: {
-              type: 'staticText',
-              text: 'Group1',
+              type: 'textField',
+              expression: '"Group1"',
               x: 0,
               y: 0,
               width: 200,
@@ -876,8 +858,8 @@ describe('jrxmlGenerator', () => {
               columnHeader: {
                 enable: true,
                 element: {
-                  type: 'staticText',
-                  text: 'Column1',
+                  type: 'textField',
+                  expression: '"Column1"',
                   x: 0,
                   y: 0,
                   width: 100,
@@ -905,8 +887,8 @@ describe('jrxmlGenerator', () => {
               columnHeader: {
                 enable: true,
                 element: {
-                  type: 'staticText',
-                  text: 'Column2',
+                  type: 'textField',
+                  expression: '"Column2"',
                   x: 0,
                   y: 0,
                   width: 100,
@@ -936,8 +918,8 @@ describe('jrxmlGenerator', () => {
           columnHeader: {
             enable: true,
             element: {
-              type: 'staticText',
-              text: 'Column3',
+              type: 'textField',
+              expression: '"Column3"',
               x: 0,
               y: 0,
               width: 100,
@@ -1038,8 +1020,8 @@ describe('jrxmlGenerator', () => {
           columnHeader: {
             enable: true,
             element: {
-              type: 'staticText',
-              text: 'Group1',
+              type: 'textField',
+              expression: '"Group1"',
               x: 0,
               y: 0,
               width: 200,
@@ -1055,8 +1037,8 @@ describe('jrxmlGenerator', () => {
               columnHeader: {
                 enable: true,
                 element: {
-                  type: 'staticText',
-                  text: 'A',
+                  type: 'textField',
+                  expression: '"A"',
                   x: 0,
                   y: 0,
                   width: 100,
@@ -1083,8 +1065,8 @@ describe('jrxmlGenerator', () => {
               columnHeader: {
                 enable: true,
                 element: {
-                  type: 'staticText',
-                  text: 'B',
+                  type: 'textField',
+                  expression: '"B"',
                   x: 0,
                   y: 0,
                   width: 100,
@@ -1113,8 +1095,8 @@ describe('jrxmlGenerator', () => {
           columnHeader: {
             enable: true,
             element: {
-              type: 'staticText',
-              text: 'C',
+              type: 'textField',
+              expression: '"C"',
               x: 0,
               y: 0,
               width: 100,
@@ -1193,8 +1175,8 @@ describe('jrxmlGenerator', () => {
             columnHeader: {
               enable: true,
               element: {
-                type: 'staticText',
-                text: 'Group A',
+                type: 'textField',
+                expression: '"Group A"',
                 x: 0, y: 0, width: 200, height: 30,
                 textAlignment: 'Center', verticalAlignment: 'Middle'
               }
@@ -1207,8 +1189,8 @@ describe('jrxmlGenerator', () => {
                 columnHeader: {
                   enable: true,
                   element: {
-                    type: 'staticText',
-                    text: 'Col1',
+                    type: 'textField',
+                    expression: '"Col1"',
                     x: 0, y: 0, width: 100, height: 30
                   }
                 },
@@ -1224,8 +1206,8 @@ describe('jrxmlGenerator', () => {
                 columnHeader: {
                   enable: true,
                   element: {
-                    type: 'staticText',
-                    text: 'Col2',
+                    type: 'textField',
+                    expression: '"Col2"',
                     x: 0, y: 0, width: 100, height: 30
                   }
                 },
@@ -1243,8 +1225,8 @@ describe('jrxmlGenerator', () => {
             columnHeader: {
               enable: true,
               element: {
-                type: 'staticText',
-                text: 'Standalone',
+                type: 'textField',
+                expression: '"Standalone"',
                 x: 0, y: 0, width: 100, height: 30
               }
             },

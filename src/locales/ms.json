@@ -132,13 +132,11 @@
     "noData": "Tiada Data"
   },
   "elementNames": {
-    "staticText": "Teks Statik",
     "textField": "Teks",
     "image": "Imej",
     "line": "Garisan",
     "rectangle": "Segi Empat",
     "ellipse": "Elips",
-    "break": "Pemisah",
     "frame": "Kotak",
     "frameKpiCard": "Kotak Nombor",
     "frameAlertBox": "Kotak Amaran",
@@ -146,20 +144,10 @@
     "framePhotoCard": "Kotak Foto",
     "framePageBorder": "Sempadan Halaman",
     "table": "Jadual",
-    "subreport": "Sublaporan",
-    "list": "Senarai",
     "chart": "Carta",
     "barcode": "Kod Bar",
-    "map": "Peta",
-    "crosstab": "Jadual Silang",
-    "iconLabel": "Label Ikon",
-    "genericElement": "Elemen Generik",
-    "sort": "Isih",
     "pageNumber": "Nombor Halaman",
-    "totalPages": "Jumlah Halaman",
     "currentDate": "Tarikh Semasa",
-    "currentTime": "Masa",
-    "percentage": "Peratusan",
     "pageXofY": "Halaman X daripada Y"
   },
   "properties": {
@@ -221,7 +209,6 @@
     "expression": "Ungkapan",
     "expressionHint": "cth., {fieldHolder} atau \"Teks tetap\"",
     "defaultTextFieldExpression": "Teks",
-    "defaultStaticText": "Teks Statik",
     "pattern": "Corak",
     "patternHint": "cth., Tarikh: \"yyyy-MM-dd\", Nombor: \"#,##0.00\"",
     "textAlignment": "Penjajaran Teks",
@@ -255,8 +242,6 @@
     "imageName": "Nama Imej",
     "imageNameHint": "Baca sahaja: diambil daripada fail imej yang dimuat naik",
     "radius": "Jejari",
-    "breakType": "Jenis Pemisah",
-    "pageBreak": "Pemisah Halaman",
     "columnBreak": "Pemisah Lajur",
     "breakNoBorder": "Elemen pemisah tidak menyokong tetapan sempadan.",
     "unifiedBorder": "Tetapan Sempadan Seragam",
@@ -271,7 +256,7 @@
     "quickSettings": "Tetapan Pantas",
     "noBorders": "Tiada Sempadan",
     "allBorders": "Semua Sempadan (1px Padu)",
-    "sideBorders": "Tetapan Sempadan Sisi",
+    "sideBorders": "Sempadan",
     "topSide": "Atas",
     "leftSide": "Kiri",
     "bottomSide": "Bawah",
@@ -422,7 +407,14 @@
       "topRight": "Atas kanan",
       "bottomRight": "Bawah kanan",
       "bottomLeft": "Bawah kiri"
-    }
+    },
+    "side": "Sisi",
+    "textSettings": "Teks",
+    "allSides": "Semua sisi",
+    "positionSize": "Kedudukan & saiz",
+    "insertFieldLabel": "Masukkan medan data",
+    "outline": "Garis luar",
+    "lineSettings": "Garisan"
   },
   "bottomPanel": {
     "pageSettings": "Tetapan Halaman",
@@ -833,7 +825,8 @@
     "saveFailedTitle": "Simpan automatik gagal",
     "savedTitle": "Semua perubahan disimpan secara automatik",
     "addNewPage": "Tambah Halaman Baharu",
-    "bandHeight": "Ketinggian {bandName}: {height}px"
+    "bandHeight": "Ketinggian {bandName}: {height}px",
+    "pageButton": "Halaman"
   },
   "help": {
     "title": "Panduan Pengguna Pereka Visual JRXML",
@@ -856,7 +849,6 @@
     },
     "elementsTitle": "3. Jenis Elemen yang Disokong",
     "elements": {
-      "staticText": "Teks statik: memaparkan kandungan teks tetap",
       "textField": "Medan teks: memaparkan medan data dinamik",
       "image": "Imej: menyisipkan elemen imej",
       "line": "Garisan: menambah garisan pemisah",
@@ -891,7 +883,6 @@
     "notes": {
       "bounds": "Elemen tidak boleh melepasi sempadan halaman",
       "textEditing": "Semasa mengedit teks, tekan Enter untuk mengesahkan atau Esc untuk membatalkan",
-      "staticTextEdit": "Klik dua kali pada kotak teks statik untuk mengedit teksnya",
       "textFieldEdit": "Klik dua kali pada medan teks untuk mengedit ungkapannya",
       "dragUpdate": "JRXML dikemas kini apabila anda melepaskan tetikus selepas menyeret elemen",
       "autoSave": "Semua perubahan disimpan secara automatik ke storan tempatan"
@@ -1015,7 +1006,8 @@
     "dragOntoPage": "Seret elemen ke halaman {page}",
     "selectPageBorder": "Klik untuk memilih sempadan halaman",
     "pageBorderResized": "Saiz sempadan halaman telah diubah supaya muat dengan halaman baharu.",
-    "elementsMovedToFit": "1 elemen telah dialihkan supaya muat di dalam halaman baharu. | {count} elemen telah dialihkan supaya muat di dalam halaman baharu."
+    "elementsMovedToFit": "1 elemen telah dialihkan supaya muat di dalam halaman baharu. | {count} elemen telah dialihkan supaya muat di dalam halaman baharu.",
+    "addPageAfter": "Tambah halaman selepas"
   },
   "alignment": {
     "left": "Jajar kiri",
@@ -1299,5 +1291,53 @@
     "boolean": "Ya / Tidak (Boolean)",
     "date": "Tarikh",
     "dateTime": "Tarikh & Masa"
+  },
+  "chart": {
+    "title": "Carta",
+    "type": "Jenis carta",
+    "chartTitle": "Tajuk",
+    "chartTitlePlaceholder": "cth. Jualan mengikut wilayah",
+    "showLegend": "Tunjukkan petunjuk",
+    "data": "Data carta",
+    "dataFrom": "Data daripada",
+    "reportData": "Data laporan",
+    "fieldPlaceholder": "medan",
+    "types": {
+      "pie": "Pai",
+      "pie3D": "Pai (3D)",
+      "bar": "Bar",
+      "bar3D": "Bar (3D)",
+      "stackedBar": "Bar bertindan",
+      "stackedBar3D": "Bar bertindan (3D)",
+      "line": "Garis",
+      "area": "Kawasan",
+      "stackedArea": "Kawasan bertindan",
+      "xyLine": "Garis XY",
+      "xyArea": "Kawasan XY",
+      "xyBar": "Bar XY",
+      "scatter": "Serakan",
+      "bubble": "Gelembung",
+      "timeSeries": "Siri masa",
+      "highLow": "Tinggi-rendah",
+      "candlestick": "Batang lilin",
+      "meter": "Meter",
+      "thermometer": "Termometer",
+      "multiAxis": "Berbilang paksi",
+      "gantt": "Gantt",
+      "spider": "Labah-labah"
+    },
+    "fields": {
+      "key": "Label hirisan",
+      "value": "Nilai",
+      "series": "Siri",
+      "category": "Kategori",
+      "x": "Nilai X",
+      "y": "Nilai Y"
+    },
+    "hints": {
+      "pie": "Setiap baris menambah nilainya pada hirisan yang dinamakan oleh label.",
+      "category": "Setiap baris menambah nilainya pada satu kategori (satu bar atau titik); siri membahagikannya kepada kumpulan.",
+      "xy": "Setiap baris ialah satu titik pada (X, Y); siri membahagikan titik kepada garis atau kumpulan."
+    }
   }
 }

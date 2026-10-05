@@ -37,7 +37,7 @@ describe('Test that no box tag is generated when the border width is 0', () => {
 
     // Verify that the generated JRXML does not contain a box tag
     const doc = parseJRXMLToDOM(generatedJRXML);
-    const staticTextElements = doc.querySelectorAll('staticText');
+    const staticTextElements = doc.querySelectorAll('textField');
     expect(staticTextElements.length).toBeGreaterThan(0);
 
     // Check that no box tag was generated
@@ -76,7 +76,7 @@ describe('Test that no box tag is generated when the border width is 0', () => {
 
     // Verify that the generated JRXML does not contain any pen tags
     const doc = parseJRXMLToDOM(generatedJRXML);
-    const staticTextElements = doc.querySelectorAll('staticText');
+    const staticTextElements = doc.querySelectorAll('textField');
     expect(staticTextElements.length).toBeGreaterThan(0);
 
     // Check that no box tag was generated

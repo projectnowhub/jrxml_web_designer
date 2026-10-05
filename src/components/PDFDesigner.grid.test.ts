@@ -51,21 +51,21 @@ describe('PDFDesigner - Grid Snapping and Alignment Lines', () => {
           height: 80,
           elements: [
             {
-              type: 'staticText',
+              type: 'textField',
               x: 100,
               y: 50,
               width: 200,
               height: 30,
-              text: 'Test Element 1',
+              expression: '"Test Element 1"',
               id: 'test-element-1'
             },
             {
-              type: 'staticText',
+              type: 'textField',
               x: 300,
               y: 50,
               width: 150,
               height: 30,
-              text: 'Test Element 2',
+              expression: '"Test Element 2"',
               id: 'test-element-2'
             }
           ]
@@ -75,12 +75,12 @@ describe('PDFDesigner - Grid Snapping and Alignment Lines', () => {
           height: 100,
           elements: [
             {
-              type: 'staticText',
+              type: 'textField',
               x: 150,
               y: 20,
               width: 180,
               height: 25,
-              text: 'Test Element 3',
+              expression: '"Test Element 3"',
               id: 'test-element-3'
             }
           ]

@@ -74,8 +74,8 @@ describe('parseJRXMLContent', () => {
     expect(tableElement.columns).toHaveLength(2)
     expect(tableElement.columns[0].width).toBe(100)
     expect(tableElement.columns[1].width).toBe(100)
-    expect(tableElement.columns[0].columnHeader.element.text).toBe('Column 1')
-    expect(tableElement.columns[1].columnHeader.element.text).toBe('Column 2')
+    expect(tableElement.columns[0].columnHeader.element.expression).toBe('"Column 1"')
+    expect(tableElement.columns[1].columnHeader.element.expression).toBe('"Column 2"')
   })
 
   it('should parse basic JRXML properties', () => {
@@ -184,7 +184,7 @@ describe('parseJRXMLContent', () => {
     expect(pageHeaderBand?.height).toBe(40)
   })
 
-  it('should parse staticText and textField elements', () => {
+  it('should read staticText as a text element with a literal expression', () => {
     const jrxmlContent = `
       <jasperReport name="TestReport" pageWidth="595" pageHeight="842">
         <detail>
@@ -207,14 +207,14 @@ describe('parseJRXMLContent', () => {
     expect(result.bands).toHaveLength(1)
     expect(result.bands[0].elements).toHaveLength(2)
     
-    // Verify the staticText element
+    // Static text becomes a text element whose expression is the quoted text
     const staticTextElement = result.bands[0].elements[0]
-    expect(staticTextElement.type).toBe('staticText')
+    expect(staticTextElement.type).toBe('textField')
     expect(staticTextElement.x).toBe(20)
     expect(staticTextElement.y).toBe(10)
     expect(staticTextElement.width).toBe(100)
     expect(staticTextElement.height).toBe(20)
-    expect(staticTextElement.text).toBe('Static Text')
+    expect(staticTextElement.expression).toBe('"Static Text"')
 
     // Verify the textField element
     const textFieldElement = result.bands[0].elements[1]
@@ -274,8 +274,8 @@ describe('parseJRXMLContent', () => {
     expect(result.bands[0].elements).toHaveLength(1)
     
     const staticTextElement = result.bands[0].elements[0]
-    expect(staticTextElement.type).toBe('staticText')
-    expect(staticTextElement.text).toBe('Static Text with Namespace')
+    expect(staticTextElement.type).toBe('textField')
+    expect(staticTextElement.expression).toBe('"Static Text with Namespace"')
   })
 
   it('should handle empty JRXML elements', () => {
@@ -444,24 +444,36 @@ describe('parseJRXMLContent', () => {
     expect(result.bands[0].elements[0].height).toBe(50)
   })
 
-  it('should parse break elements', () => {
+  it('uses page breaks only to split pages, never as elements', () => {
     const jrxmlContent = `
       <jasperReport name="TestReport" pageWidth="595" pageHeight="842">
         <detail>
           <band height="100">
+            <textField>
+              <reportElement x="0" y="10" width="100" height="20"/>
+              <textFieldExpression><![CDATA["Page one"]]></textFieldExpression>
+            </textField>
             <break type="Page">
-              <reportElement x="20" y="20" width="1" height="1"/>
+              <reportElement x="0" y="40" width="1" height="1"/>
+            </break>
+            <textField>
+              <reportElement x="0" y="60" width="100" height="20"/>
+              <textFieldExpression><![CDATA["Page two"]]></textFieldExpression>
+            </textField>
+            <break type="Column">
+              <reportElement x="0" y="90" width="1" height="1"/>
             </break>
           </band>
         </detail>
       </jasperReport>
     `
-    
+
     const result = parseJRXMLContent(jrxmlContent)
-    
-    expect(result.bands[0].elements).toHaveLength(1)
-    expect(result.bands[0].elements[0].type).toBe('break')
-    expect(result.bands[0].elements[0].breakType).toBe('Page')
+
+    const elements = result.bands[0].elements as any[]
+    expect(elements.map((el) => el.type)).toEqual(['textField', 'textField'])
+    expect(elements.map((el) => el.pageIndex)).toEqual([0, 1])
+    expect(result.properties.pageCount).toBe(2)
   })
 
   it('should parse frame elements', () => {
@@ -931,13 +943,13 @@ describe('parseJRXMLContent', () => {
 
     // Verify the column group's table header
     expect(tableElement.children[0].tableHeader).toBeDefined()
-    expect(tableElement.children[0].tableHeader.element.text).toBe('ROW 1+CELL 1')
+    expect(tableElement.children[0].tableHeader.element.expression).toBe('"ROW 1+CELL 1"')
     expect(tableElement.children[0].tableHeader.element.height).toBe(30)
     expect(tableElement.children[0].tableHeader.rowSpan).toBe(1)
 
     // Verify the column group's child columns
     expect(tableElement.children[0].children[0].tableHeader).toBeDefined()
-    expect(tableElement.children[0].children[0].tableHeader.element.text).toBe('ROW 2 CELL 1')
+    expect(tableElement.children[0].children[0].tableHeader.element.expression).toBe('"ROW 2 CELL 1"')
     expect(tableElement.children[0].children[0].tableHeader.element.height).toBe(30)
     expect(tableElement.children[0].children[0].tableHeader.rowSpan).toBe(1)
     expect(tableElement.children[0].children[0].tableHeader.element.textAlignment).toBe('Center')
@@ -945,7 +957,7 @@ describe('parseJRXMLContent', () => {
     expect(tableElement.children[0].children[0].tableHeader.element.box).toBeDefined()
 
     expect(tableElement.children[0].children[1].tableHeader).toBeDefined()
-    expect(tableElement.children[0].children[1].tableHeader.element.text).toBe('ROW 2 CELL 2')
+    expect(tableElement.children[0].children[1].tableHeader.element.expression).toBe('"ROW 2 CELL 2"')
     expect(tableElement.children[0].children[1].tableHeader.element.height).toBe(30)
     expect(tableElement.children[0].children[1].tableHeader.rowSpan).toBe(1)
     expect(tableElement.children[0].children[1].tableHeader.element.textAlignment).toBe('Center')
@@ -954,7 +966,7 @@ describe('parseJRXMLContent', () => {
 
     // Verify the regular column's table header
     expect(tableElement.children[1].tableHeader).toBeDefined()
-    expect(tableElement.children[1].tableHeader.element.text).toBe('ROW 1+CELL 2+ROWSPAN2')
+    expect(tableElement.children[1].tableHeader.element.expression).toBe('"ROW 1+CELL 2+ROWSPAN2"')
     expect(tableElement.children[1].tableHeader.element.height).toBe(60)
     expect(tableElement.children[1].tableHeader.rowSpan).toBe(2)
     expect(tableElement.children[1].tableHeader.element.textAlignment).toBe('Center')
@@ -997,7 +1009,7 @@ describe('parseJRXMLContent', () => {
           // Regular column, add the cell directly
           if (item[headerLevel]) {
             result.push({
-              content: item[headerLevel].element?.text || item[headerLevel].element?.expression,
+              content: String(item[headerLevel].element?.expression ?? '').replace(/^"|"$/g, ''),
               rowSpan: item[headerLevel].rowSpan,
               colSpan: 1,
               width: item.width,
@@ -1009,7 +1021,7 @@ describe('parseJRXMLContent', () => {
           const colSpan = calculateColumnsCount(item);
           if (item[headerLevel]) {
             result.push({
-              content: item[headerLevel].element?.text || item[headerLevel].element?.expression,
+              content: String(item[headerLevel].element?.expression ?? '').replace(/^"|"$/g, ''),
               rowSpan: item[headerLevel].rowSpan,
               colSpan: colSpan,
               width: item.width,
@@ -1043,15 +1055,15 @@ describe('parseJRXMLContent', () => {
     const columnHeaders = buildHeaderStructure(tableElement.children, 'columnHeader');
     expect(columnHeaders).toHaveLength(3);
     // The column header consists of the column group's child columns and the regular column
-    expect(columnHeaders[0].content).toBe('"Text Field"');
+    expect(columnHeaders[0].content).toBe('Text Field');
     expect(columnHeaders[0].rowSpan).toBe(1);
     expect(columnHeaders[0].colSpan).toBe(1);
     
-    expect(columnHeaders[1].content).toBe('"Text Field"');
+    expect(columnHeaders[1].content).toBe('Text Field');
     expect(columnHeaders[1].rowSpan).toBe(1);
     expect(columnHeaders[1].colSpan).toBe(1);
     
-    expect(columnHeaders[2].content).toBe('"Text Field"');
+    expect(columnHeaders[2].content).toBe('Text Field');
     expect(columnHeaders[2].rowSpan).toBe(1);
     expect(columnHeaders[2].colSpan).toBe(1);
     
@@ -1100,7 +1112,7 @@ describe('parseJRXMLContent', () => {
             if (item.tableHeader) {
               const { rowSpan, element } = item.tableHeader;
               const cell = {
-                content: element?.text || element?.expression,
+                content: String(element?.expression ?? '').replace(/^"|"$/g, ''),
                 rowSpan: rowSpan,
                 colSpan: 1,
                 width: item.width,
@@ -1116,7 +1128,7 @@ describe('parseJRXMLContent', () => {
               const { rowSpan, element } = item.tableHeader;
               const colSpan = calculateColumnsCount(item);
               const cell = {
-                content: element?.text || element?.expression,
+                content: String(element?.expression ?? '').replace(/^"|"$/g, ''),
                 rowSpan: rowSpan,
                 colSpan: colSpan,
                 width: item.width,
@@ -1173,13 +1185,13 @@ describe('parseJRXMLContent', () => {
 
     // The column header row (corresponds to the third row in the preview)
     expect(columnHeaderRow).toHaveLength(3);
-    expect(columnHeaderRow[0].content).toBe('"Text Field"');
+    expect(columnHeaderRow[0].content).toBe('Text Field');
     expect(columnHeaderRow[0].rowSpan).toBe(1);
     expect(columnHeaderRow[0].colSpan).toBe(1);
-    expect(columnHeaderRow[1].content).toBe('"Text Field"');
+    expect(columnHeaderRow[1].content).toBe('Text Field');
     expect(columnHeaderRow[1].rowSpan).toBe(1);
     expect(columnHeaderRow[1].colSpan).toBe(1);
-    expect(columnHeaderRow[2].content).toBe('"Text Field"');
+    expect(columnHeaderRow[2].content).toBe('Text Field');
     expect(columnHeaderRow[2].rowSpan).toBe(1);
     expect(columnHeaderRow[2].colSpan).toBe(1);
 
