@@ -120,7 +120,7 @@
     "rectangle": "Rectangle",
     "ellipse": "Ellipse",
     "frame": "Box",
-    "frameKpiCard": "Number Box",
+    "frameKpiCard": "KPI Box",
     "frameAlertBox": "Alert Box",
     "frameTitledSection": "Section Box",
     "framePhotoCard": "Photo Box",

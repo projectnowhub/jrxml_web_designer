@@ -4,12 +4,12 @@ import {
   ChartNoAxesColumn,
   Circle,
   FileDigit,
+  Gauge,
   Image as ImageIcon,
   Images,
   Minus,
   PanelTop,
   Square,
-  SquareActivity,
   SquareDashed,
   SquareSquare,
   Table as TableIcon,
@@ -258,7 +258,7 @@ export class ElementRegistry {
       {
         type: "frameKpiCard",
         name: "elementNames.frameKpiCard",
-        iconComponent: SquareActivity,
+        iconComponent: Gauge,
       },
       {
         type: "frameAlertBox",
