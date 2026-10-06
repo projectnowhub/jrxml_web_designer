@@ -2203,10 +2203,13 @@ const handleElementDoubleClick = (element: any) => {
     y: 20, // Default position
   } as DesignElement;
 
-  // A table spans the printable width (its columns share it)
+  // A table is horizontally centered with equal space on left and right sides
   if (element.type === "table") {
-    newElement.x = 0;
-    newElement.width = Math.round(getFrameTemplateContext().availableWidth);
+    const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+    const sideMargin = 50;
+    newElement.width = Math.max(100, availableWidth - sideMargin * 2);
+    newElement.x = Math.round((availableWidth - newElement.width) / 2);
+    newElement.y = 20;
   }
 
   // For rectangles, ellipses, frames, and images, use a compact default size
@@ -2317,7 +2320,7 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
     // Center it on the cursor using its own compact default size
     const baseElement = createLibraryElement(elementData.type);
     const droppedSize =
-      isFrameTemplateType(elementData.type) || elementData.type === PAGE_NUMBER_TYPE
+      isFrameTemplateType(elementData.type) || elementData.type === PAGE_NUMBER_TYPE || elementData.type === "table"
       ? { width: baseElement.width, height: baseElement.height }
       : getDefaultElementSize(elementData.type);
     let newElement: DesignElement = {
@@ -2333,15 +2336,17 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
     }
 
     // Tables live in the Detail section, the only one that grows onto new
-    // pages, and span the printable width
+    // pages, and are centered with equal space on left and right sides
     if (elementData.type === "table") {
       if (bands.value[bandIndex]?.type !== BAND_TYPE_CONSTANTS.DETAIL) {
         notification.warning(t("dataTable.onlyInDetail"));
         highlightedBandIndex.value = null;
         return;
       }
-      newElement.x = 0;
-      newElement.width = Math.round(getFrameTemplateContext().availableWidth);
+      const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+      const sideMargin = 50;
+      newElement.width = Math.max(100, availableWidth - sideMargin * 2);
+      newElement.x = Math.round((availableWidth - newElement.width) / 2);
     }
 
     const targetBand = bands.value[bandIndex];
@@ -2364,6 +2369,12 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
       const snappedDrop = snapMove(newElement, dropSnap.targets, getSnapOptions(event));
       newElement.x = Math.max(0, snappedDrop.x);
       newElement.y = Math.max(0, snappedDrop.y);
+
+      // Keep table horizontally centered with equal space on left and right
+      if (newElement.type === "table") {
+        const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+        newElement.x = Math.round((availableWidth - newElement.width) / 2);
+      }
 
       // Detect whether it is being dropped on a Frame
       let targetFrameIndex = -1;
@@ -2566,9 +2577,12 @@ const tableConfig = ref<{
 }>({ visible: false, target: null, newAt: null });
 
 const tableConfigTable = computed(() => tableAt(tableConfig.value.target));
-const tableConfigWidth = computed(
-  () => tableConfigTable.value?.width ?? Math.round(getFrameTemplateContext().availableWidth),
-);
+const tableConfigWidth = computed(() => {
+  if (tableConfigTable.value?.width) return tableConfigTable.value.width;
+  const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+  const sideMargin = 50;
+  return Math.max(100, availableWidth - sideMargin * 2);
+});
 
 const openTableConfig = (
   target: TableLocation | null,
@@ -2610,12 +2624,14 @@ const applyTableConfig = (binding: TableDataBinding, rowCount: number) => {
   if (!table && newAt) {
     const band = bands.value[newAt.bandIndex];
     if (!band) return;
+    const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+    const width = tableConfigWidth.value;
     table = {
       ...(createLibraryElement("table") as TableElement),
       uuid: crypto.randomUUID(),
-      x: 0,
+      x: Math.round((availableWidth - width) / 2),
       y: newAt.y,
-      width: tableConfigWidth.value,
+      width,
     };
     if (newAt.pageIndex !== undefined) table.pageIndex = newAt.pageIndex;
     band.elements.push(table);

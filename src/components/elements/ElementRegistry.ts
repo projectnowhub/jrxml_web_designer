@@ -199,9 +199,9 @@ export class ElementRegistry {
       category: "basic",
       defaultProps: {
         type: "table",
-        x: 0,
-        y: 0,
-        width: 555,
+        x: 50,
+        y: 20,
+        width: 455,
         height: TABLE_HEADER_HEIGHT + TABLE_ROW_HEIGHT,
         headerHeight: TABLE_HEADER_HEIGHT,
         rowHeight: TABLE_ROW_HEIGHT,
