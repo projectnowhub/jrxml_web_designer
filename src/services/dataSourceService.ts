@@ -1,26 +1,33 @@
-// Sources for data tables: what can be dropped on a table, its columns, and
-// its rows (filtered, sorted and limited). Uses dummy data until
-// VITE_DATA_SOURCE_API is set; callers never need to know which.
+// Report data from the backend: projects, each project's details (name, logo,
+// introduction…) and its table sources with their columns and rows (filtered,
+// sorted and limited). Uses dummy data until VITE_DATA_SOURCE_API is set;
+// callers never need to know which.
 //
 // Backend contract:
-//   GET  {api}/sources               -> DataSourceSummary[]
-//   GET  {api}/sources/{id}/schema   -> DataSourceSchema
-//   GET  {api}/sources/{id}/facets   -> SourceFacets (filter choices per column)
-//   POST {api}/sources/{id}/query    body: DataQuery -> DataQueryResult
+//   GET  {api}/projects                              -> ProjectSummary[]
+//   GET  {api}/projects/{pid}                        -> ProjectDetails (fields + values)
+//   GET  {api}/projects/{pid}/sources                -> DataSourceSummary[]
+//   GET  {api}/projects/{pid}/sources/{id}/schema    -> DataSourceSchema
+//   GET  {api}/projects/{pid}/sources/{id}/facets    -> SourceFacets (filter choices per column)
+//   POST {api}/projects/{pid}/sources/{id}/query     body: DataQuery -> DataQueryResult
 //
-// DataQuery filters: every filter must match. "in" = the cell equals one of
-// `values` (case-insensitive); "between" = value <= cell <= value2, either end
-// optional (dates as ISO yyyy-mm-dd). At most one sort; empty cells sort last.
+// Project values are ready to print (dates and amounts formatted); an image's
+// value is its location. DataQuery filters: every filter must match. "in" =
+// the cell equals one of `values` (case-insensitive); "between" = value <=
+// cell <= value2, either end optional (dates as ISO yyyy-mm-dd). At most one
+// sort; empty cells sort last.
 
 import apiClient from "./apiClient";
 import { DATA_SOURCE_API } from "@/config/apiConfig";
-import { MOCK_DATA_SOURCES } from "@/mocks/dataSources";
+import { MOCK_PROJECTS } from "@/mocks/projects";
 import { columnFacets, queryRows as queryMockRows } from "@/mocks/queryDataSource";
 import type {
   DataQuery,
   DataQueryResult,
   DataSourceSchema,
   DataSourceSummary,
+  ProjectDetails,
+  ProjectSummary,
   SourceFacets,
 } from "@/types/dataSource";
 
@@ -31,22 +38,65 @@ const MOCK_DELAY_MS = 150;
 const mockDelay = () =>
   new Promise<void>((resolve) => setTimeout(resolve, MOCK_DELAY_MS));
 
-const findMockSource = (id: string) => {
-  const source = MOCK_DATA_SOURCES.find((s) => s.id === id);
-  if (!source) throw new Error(`Unknown data source: ${id}`);
+const findMockProject = (projectId: string) => {
+  const project = MOCK_PROJECTS.find((p) => p.id === projectId);
+  if (!project) throw new Error(`Unknown project: ${projectId}`);
+  return project;
+};
+
+const findMockSource = (projectId: string, sourceId: string) => {
+  const source = findMockProject(projectId).sources.find((s) => s.id === sourceId);
+  if (!source) throw new Error(`Unknown data source: ${projectId}/${sourceId}`);
   return source;
 };
 
-export async function listSources(): Promise<DataSourceSummary[]> {
+const projectPath = (projectId: string) => `projects/${encodeURIComponent(projectId)}`;
+const sourcePath = (projectId: string, sourceId: string) =>
+  `${projectPath(projectId)}/sources/${encodeURIComponent(sourceId)}`;
+
+// Fetched once per key; a failed fetch is tried again next time
+function cached<T>(cache: Map<string, Promise<T>>, key: string, load: () => Promise<T>): Promise<T> {
+  let result = cache.get(key);
+  if (!result) {
+    result = load();
+    result.catch(() => cache.delete(key));
+    cache.set(key, result);
+  }
+  return result;
+}
+
+export async function listProjects(): Promise<ProjectSummary[]> {
   if (usesMockDataSources()) {
     await mockDelay();
-    return MOCK_DATA_SOURCES.map(({ id, name, rows }) => ({
+    return MOCK_PROJECTS.map(({ id, name, code }) => ({ id, name, code }));
+  }
+  return apiClient.get<ProjectSummary[]>("projects", { baseURL: DATA_SOURCE_API });
+}
+
+// A project's details: every text and image item showing one asks for them
+const projectCache = new Map<string, Promise<ProjectDetails>>();
+
+export function getProject(projectId: string): Promise<ProjectDetails> {
+  return cached(projectCache, projectId, async () => {
+    if (usesMockDataSources()) {
+      await mockDelay();
+      const { sources: _sources, ...details } = findMockProject(projectId);
+      return JSON.parse(JSON.stringify(details)) as ProjectDetails;
+    }
+    return apiClient.get<ProjectDetails>(projectPath(projectId), { baseURL: DATA_SOURCE_API });
+  });
+}
+
+export async function listSources(projectId: string): Promise<DataSourceSummary[]> {
+  if (usesMockDataSources()) {
+    await mockDelay();
+    return findMockProject(projectId).sources.map(({ id, name, rows }) => ({
       id,
       name,
       rowCount: rows.length,
     }));
   }
-  return apiClient.get<DataSourceSummary[]>("sources", {
+  return apiClient.get<DataSourceSummary[]>(`${projectPath(projectId)}/sources`, {
     baseURL: DATA_SOURCE_API,
   });
 }
@@ -54,60 +104,45 @@ export async function listSources(): Promise<DataSourceSummary[]> {
 // Several tables can use one source, so its columns are fetched only once
 const schemaCache = new Map<string, Promise<DataSourceSchema>>();
 
-export function getSchema(sourceId: string): Promise<DataSourceSchema> {
-  let schema = schemaCache.get(sourceId);
-  if (!schema) {
-    schema = fetchSchema(sourceId);
-    // A failed fetch is retried next time
-    schema.catch(() => schemaCache.delete(sourceId));
-    schemaCache.set(sourceId, schema);
-  }
-  return schema;
+export function getSchema(projectId: string, sourceId: string): Promise<DataSourceSchema> {
+  return cached(schemaCache, `${projectId}/${sourceId}`, async () => {
+    if (usesMockDataSources()) {
+      await mockDelay();
+      const { id, name, columns } = findMockSource(projectId, sourceId);
+      return { id, name, columns: columns.map((c) => ({ ...c })) };
+    }
+    return apiClient.get<DataSourceSchema>(`${sourcePath(projectId, sourceId)}/schema`, {
+      baseURL: DATA_SOURCE_API,
+    });
+  });
 }
 
 // Filter choices of a source, fetched once per source like its columns
 const facetsCache = new Map<string, Promise<SourceFacets>>();
 
-export function getFacets(sourceId: string): Promise<SourceFacets> {
-  let facets = facetsCache.get(sourceId);
-  if (!facets) {
-    facets = fetchFacets(sourceId);
-    facets.catch(() => facetsCache.delete(sourceId));
-    facetsCache.set(sourceId, facets);
-  }
-  return facets;
-}
-
-async function fetchFacets(sourceId: string): Promise<SourceFacets> {
-  if (usesMockDataSources()) {
-    await mockDelay();
-    const source = findMockSource(sourceId);
-    return columnFacets(source.rows, source.columns);
-  }
-  return apiClient.get<SourceFacets>(`sources/${encodeURIComponent(sourceId)}/facets`, {
-    baseURL: DATA_SOURCE_API,
+export function getFacets(projectId: string, sourceId: string): Promise<SourceFacets> {
+  return cached(facetsCache, `${projectId}/${sourceId}`, async () => {
+    if (usesMockDataSources()) {
+      await mockDelay();
+      const source = findMockSource(projectId, sourceId);
+      return columnFacets(source.rows, source.columns);
+    }
+    return apiClient.get<SourceFacets>(`${sourcePath(projectId, sourceId)}/facets`, {
+      baseURL: DATA_SOURCE_API,
+    });
   });
 }
 
-// Forget cached columns and filter choices (e.g. after the backend changed a source)
+// Forget cached project details, columns and filter choices (e.g. after the
+// backend changed them)
 export function clearSchemaCache(): void {
+  projectCache.clear();
   schemaCache.clear();
   facetsCache.clear();
 }
 
-async function fetchSchema(sourceId: string): Promise<DataSourceSchema> {
-  if (usesMockDataSources()) {
-    await mockDelay();
-    const { id, name, columns } = findMockSource(sourceId);
-    return { id, name, columns: columns.map((c) => ({ ...c })) };
-  }
-  return apiClient.get<DataSourceSchema>(
-    `sources/${encodeURIComponent(sourceId)}/schema`,
-    { baseURL: DATA_SOURCE_API },
-  );
-}
-
 export async function queryRows(
+  projectId: string,
   sourceId: string,
   query: DataQuery,
   signal?: AbortSignal,
@@ -115,11 +150,11 @@ export async function queryRows(
   if (usesMockDataSources()) {
     await mockDelay();
     signal?.throwIfAborted();
-    const source = findMockSource(sourceId);
+    const source = findMockSource(projectId, sourceId);
     return queryMockRows(source.rows, source.columns, query);
   }
   return apiClient.post<DataQueryResult>(
-    `sources/${encodeURIComponent(sourceId)}/query`,
+    `${sourcePath(projectId, sourceId)}/query`,
     JSON.stringify(query),
     { baseURL: DATA_SOURCE_API, signal },
   );

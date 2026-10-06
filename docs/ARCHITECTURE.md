@@ -54,8 +54,8 @@ jrxml_web_designer/
     ├── composables/          # useUndoRedo, useZoom, useTableRows, useDesignerFiles, useLivePreview, alignment/snap/drag…
     ├── components/
     │   ├── PDFDesigner.vue           # ★ Orchestrator: holds the whole model
-    │   ├── ElementLibrary.vue        # Left panel: element tiles, Table Data, Styles
-    │   ├── designer/                 # DesignerCanvas, TableDataList, selection/alignment layers
+    │   ├── ElementLibrary.vue        # Left panel: element tiles, Report Data, Styles
+    │   ├── designer/                 # DesignerCanvas, ReportDataPanel, selection/alignment layers
     │   │   └── properties/           # ElementProperties (right panel), TableDataPanel, FrameProperties, PaginationProperties…
     │   ├── elements/                 # One component per element type + ElementRegistry.ts (library tiles, defaults)
     │   ├── modals/                   # BaseModal, PdfPreviewModal, TableConfigModal…
@@ -123,7 +123,7 @@ Entry: `parseJRXMLContent()` in `src/utils/jrxml/parse.ts`, using the browser `D
 
 ### 5.1 Layout
 
-- **Left**: `ElementLibrary.vue`, with element tiles (Basic, Composite, Element Presets), the Table Data source list and Styles
+- **Left**: `ElementLibrary.vue`, with element tiles (Basic, Composite, Element Presets), the Report Data list (projects, their details and tables) and Styles
 - **Centre**: `DesignerCanvas.vue`, with page sheets, bands, element components, rulers and grid
 - **Right**: `ElementProperties.vue`, with the selected element's properties (Basic / Style Settings / Table tabs), or report and band settings when nothing is selected
 - **Bottom**: `BottomPanel.vue`, with Page Settings and JRXML Content (CodeMirror editor, Validate XSD, Auto Fix, Preview PDF, Download)
@@ -137,7 +137,8 @@ Entry: `parseJRXMLContent()` in `src/utils/jrxml/parse.ts`, using the browser `D
 | Page Number | `utils/paginationPresets.ts`, `properties/PaginationProperties.vue` |
 | Text editing | `elements/TextFieldElement.vue`, `TextFormatToolbar.vue`, `utils/textFit.ts` |
 | Images | `services/imageService.ts` (upload to `<VITE_OAUTH_BASE_URL>/rest/files`), crop and corner radius in `utils/elementUtils.ts` |
-| Data tables | `utils/table/`, `jrxml/tableXml.ts`, `modals/TableConfigModal.vue`, `designer/TableDataList.vue` |
+| Data tables | `utils/table/`, `jrxml/tableXml.ts`, `modals/TableConfigModal.vue`, `designer/ReportDataPanel.vue` |
+| Project details on the page | `utils/projectFields.ts` (a dropped detail becomes plain text or a fixed image) |
 | Band fitting | `utils/bandFit.ts`, `utils/pageFit.ts`, `properties/BandHeightControls.vue` |
 | Undo / redo | `composables/useUndoRedo.ts` (whole-model snapshots) |
 | Auto-save, files | `composables/useDesignerFiles.ts`, `utils/fileUtils.ts` (browser localStorage) |
@@ -158,7 +159,7 @@ All are built on `BaseModal.vue`: `TableConfigModal` (table setup), `PdfPreviewM
 
 ## 6. Data Tables
 
-Tables show rows from a backend source (dummy data in `src/mocks/` until `VITE_DATA_SOURCE_API` is set). The user drags a source from Table Data onto a table and sets columns, filters, sort and totals in `TableConfigModal` (filters in `TableFilterPanel.vue`); the table's Basic Properties tab picks the style, its Style Settings tab customizes it (`TableDataPanel.vue`). The JRXML gets one sub-dataset per table, and the setup is saved as JSON in the `com.cdp.table.binding` property. Full rules: `CLAUDE.md`, "Data Tables".
+Report data comes from the backend per project (dummy projects in `src/mocks/` until `VITE_DATA_SOURCE_API` is set). The user picks the report's projects in Report Data; each project offers its details (name, logo, introduction…; dragged onto the page, the value is copied into a normal Text or Image element) and its table sources. Tables show rows from a project's source: the user drags a source from Report Data onto a table and sets columns, filters, sort and totals in `TableConfigModal` (filters in `TableFilterPanel.vue`); the table's Basic Properties tab picks the style, its Style Settings tab customizes it (`TableDataPanel.vue`). The JRXML gets one sub-dataset per table, and the setup is saved as JSON in the `com.cdp.table.binding` property. Full rules: `CLAUDE.md`, "Data Tables".
 
 ## 7. External Services
 

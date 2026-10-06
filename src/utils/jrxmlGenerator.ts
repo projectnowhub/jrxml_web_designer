@@ -5,6 +5,7 @@ import type { DesignElement, BandType, Band, ReportGroup } from "../types";
 import type { ReportProperties, Field, Parameter } from "./jrxml/types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { SAVED_TABLE_STYLES_PROPERTY } from "./table/tableThemes";
+import { REPORT_PROJECTS_PROPERTY } from "./projectFields";
 import { buildJasperReportOpenTag } from "./jrxml/xmlBuilder";
 import { generateUUID } from "./jrxml/uuidGenerator";
 import {
@@ -151,9 +152,18 @@ export function generateJRXMLContent(
   // Order 1: properties (report properties)
   // ============================================================
   // Saved table styles travel with the report as one JSON property
-  const allProperties = [...(reportProperties || [])].filter((p) => p?.name !== SAVED_TABLE_STYLES_PROPERTY);
+  const allProperties = [...(reportProperties || [])].filter(
+    (p) => p?.name !== SAVED_TABLE_STYLES_PROPERTY && p?.name !== REPORT_PROJECTS_PROPERTY,
+  );
   if (tableStyles.length) {
     allProperties.push({ name: SAVED_TABLE_STYLES_PROPERTY, value: JSON.stringify(tableStyles) });
+  }
+  // The projects chosen in the Report Data list
+  if (properties.projects?.length) {
+    allProperties.push({
+      name: REPORT_PROJECTS_PROPERTY,
+      value: JSON.stringify(properties.projects.map(({ id, name }) => ({ id, name }))),
+    });
   }
   if (allProperties.length > 0) {
     jrxml += "<!-- Report properties -->";
@@ -181,25 +191,6 @@ export function generateJRXMLContent(
     allStyles.forEach((style) => {
       jrxml += generateStyleXML(style);
     });
-  }
-
-  // Add parameter definitions
-  if (parameters.length > 0) {
-    jrxml += "<!-- Report parameter definitions -->";
-    parameters.forEach((param) => {
-      if (param.name && param.class) {
-        jrxml += `<parameter name="${xmlAttr(param.name)}" class="${xmlAttr(param.class)}">`;
-        if (param.defaultValue !== undefined) {
-          jrxml += `<defaultValueExpression>${cdata(param.defaultValue)}</defaultValueExpression>`;
-        }
-        jrxml += "</parameter>";
-      }
-    });
-  }
-
-  // Add the main report's query statement
-  if (properties.query && properties.query.text) {
-    jrxml += `<queryString language="${xmlAttr(properties.query.language || "sql")}">${cdata(properties.query.text)}</queryString>`;
   }
 
   // Add sub-dataset definitions
@@ -255,6 +246,25 @@ export function generateJRXMLContent(
 
   // Each data table has its own dataset; its rows are passed in by its name
   jrxml += generateTableDatasetsXML(bands);
+
+  // Add parameter definitions (after every subDataset, as the schema requires)
+  if (parameters.length > 0) {
+    jrxml += "<!-- Report parameter definitions -->";
+    parameters.forEach((param) => {
+      if (param.name && param.class) {
+        jrxml += `<parameter name="${xmlAttr(param.name)}" class="${xmlAttr(param.class)}">`;
+        if (param.defaultValue !== undefined) {
+          jrxml += `<defaultValueExpression>${cdata(param.defaultValue)}</defaultValueExpression>`;
+        }
+        jrxml += "</parameter>";
+      }
+    });
+  }
+
+  // Add the main report's query statement
+  if (properties.query && properties.query.text) {
+    jrxml += `<queryString language="${xmlAttr(properties.query.language || "sql")}">${cdata(properties.query.text)}</queryString>`;
+  }
 
   // Add field definitions
   if (updatedFields.length > 0) {
@@ -954,9 +964,9 @@ function generateTextFieldXML(element: any): string {
     markup = "html";
   }
 
-  if (markup !== "none") {
-    textElementAttrs += ` markup="${xmlAttr(markup)}"`;
-  }
+  // Plain text is written too ("none"), so a reload keeps it plain instead of
+  // falling back to the html default above
+  textElementAttrs += ` markup="${xmlAttr(markup)}"`;
 
   xml += `<textElement${textElementAttrs}>`;
 

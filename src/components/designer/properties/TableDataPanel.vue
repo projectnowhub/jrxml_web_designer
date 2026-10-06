@@ -17,7 +17,9 @@
 
       <div class="tdp-source">
         <Database :size="14" aria-hidden="true" />
-        <span class="tdp-source-name">{{ binding.sourceName }}</span>
+        <span class="tdp-source-name">{{
+          t("reportData.projectSource", { project: binding.projectName, source: binding.sourceName })
+        }}</span>
         <span class="tdp-muted">{{ t("dataTable.panel.columnCount", binding.columns.length) }}</span>
       </div>
 

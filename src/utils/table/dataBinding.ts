@@ -90,6 +90,10 @@ export function parseBinding(json: string | null | undefined): TableDataBinding 
     return {
       tableName: typeof b.tableName === "string" ? b.tableName : "",
       datasetName: b.datasetName,
+      // Tables set up before projects existed have none: they keep their
+      // setup and get a project when the user edits their data
+      projectId: typeof b.projectId === "string" ? b.projectId : "",
+      projectName: typeof b.projectName === "string" ? b.projectName : "",
       sourceId: b.sourceId,
       sourceName: typeof b.sourceName === "string" ? b.sourceName : b.sourceId,
       columns: b.columns,

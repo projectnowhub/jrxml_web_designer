@@ -129,17 +129,20 @@ export function toColumnBinding(column: DataColumn, width: number): TableColumnB
 
 // A first setup for a source dropped on a table: as many of its columns as fit
 export function createBinding(options: {
+  project: { id: string; name: string };
   schema: DataSourceSchema;
   tableName: string;
   datasetName: string;
   tableWidth: number;
 }): TableDataBinding {
-  const { schema, tableName, datasetName, tableWidth } = options;
+  const { project, schema, tableName, datasetName, tableWidth } = options;
   const columns = schema.columns.slice(0, maxColumnsForWidth(tableWidth));
   const widths = distributeColumnWidths(columns.length, tableWidth);
   return {
     tableName,
     datasetName,
+    projectId: project.id,
+    projectName: project.name,
     sourceId: schema.id,
     sourceName: schema.name,
     columns: columns.map((c, i) => toColumnBinding(c, widths[i] ?? 0)),

@@ -35,6 +35,9 @@ importers:
       '@tauri-apps/plugin-opener':
         specifier: ^2.5.5
         version: 2.5.5
+      '@vueform/multiselect':
+        specifier: ^2.6.11
+        version: 2.6.11
       js-beautify:
         specifier: ^1.15.4
         version: 1.15.4
@@ -768,6 +771,9 @@ packages:
         optional: true
       vue:
         optional: true
+
+  '@vueform/multiselect@2.6.11':
+    resolution: {integrity: sha512-iG4TGfqE3baftbSGF0PhoS+xZOCnV0ChkDo9rwhJ/Qi2YlCdb6tyQCjvyug3jnzncga8+d85kx0WvG7rDYFqiA==}
 
   abbrev@2.0.0:
     resolution: {integrity: sha512-6/mh1E2u2YgEsCHdY0Yx5oW+61gZU+1vXaoiHHrpKeuRNNgFvS+/jrwHiQhB5apAf5oB7UB7E19ol2R2LKH8hQ==}
@@ -1942,6 +1948,8 @@ snapshots:
     optionalDependencies:
       typescript: 5.9.3
       vue: 3.5.28(typescript@5.9.3)
+
+  '@vueform/multiselect@2.6.11': {}
 
   abbrev@2.0.0: {}
 

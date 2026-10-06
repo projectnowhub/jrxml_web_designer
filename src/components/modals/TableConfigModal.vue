@@ -9,8 +9,20 @@
     <div class="tcm">
       <!-- Settings -->
       <div class="tcm-settings">
-        <!-- Source -->
+        <!-- Project, then one of its sources -->
         <section class="tcm-section">
+          <h4><FolderKanban :size="14" aria-hidden="true" />{{ t("dataTable.config.project") }}</h4>
+          <p v-if="!projectOptions.length" class="tcm-note">{{ t("dataTable.config.noProjects") }}</p>
+          <div v-else class="tcm-select-wrap">
+            <select class="tcm-select" :value="projectId" @change="changeProject(($event.target as HTMLSelectElement).value)">
+              <option value="" disabled>{{ t("dataTable.config.chooseProject") }}</option>
+              <option v-for="p in projectOptions" :key="p.id" :value="p.id">{{ p.name }}</option>
+            </select>
+            <ChevronDown class="tcm-chevron" :size="14" aria-hidden="true" />
+          </div>
+        </section>
+
+        <section v-if="projectId" class="tcm-section">
           <h4><Database :size="14" aria-hidden="true" />{{ t("dataTable.config.source") }}</h4>
           <div class="tcm-select-wrap">
             <select class="tcm-select" :value="sourceId" @change="changeSource(($event.target as HTMLSelectElement).value)">
@@ -174,6 +186,7 @@ import {
   ChevronUp,
   Columns3,
   Database,
+  FolderKanban,
   DatabaseZap,
   DollarSign,
   Funnel,
@@ -204,6 +217,7 @@ import type {
   DataRow,
   DataSourceSchema,
   DataSourceSummary,
+  ReportProject,
   TableColumnBinding,
   TableDataBinding,
   TableFilter,
@@ -217,7 +231,10 @@ const props = defineProps<{
   // The table being set up; null when the table is created on Apply
   table: TableElement | null;
   tableWidth: number;
-  // Source (and column) dragged onto the table, if it was opened by a drop
+  // The report's projects (the Report Data list)
+  projects: ReportProject[];
+  // Project, source (and column) dragged onto the table, if it was opened by a drop
+  initialProjectId?: string;
   initialSourceId?: string;
   initialColumnKey?: string;
   existingTableNames: string[];
@@ -239,7 +256,21 @@ const TYPE_ICONS: Record<DataColumnType, Component> = {
 };
 
 const sources = ref<DataSourceSummary[]>([]);
+const projectId = ref("");
 const sourceId = ref("");
+
+// The report's projects, plus the table's own if it was removed from the list
+const projectOptions = computed<ReportProject[]>(() => {
+  const list = [...props.projects];
+  const own = props.table?.binding;
+  if (own?.projectId && !list.some((p) => p.id === own.projectId)) {
+    list.push({ id: own.projectId, name: own.projectName });
+  }
+  return list;
+});
+const projectName = computed(
+  () => projectOptions.value.find((p) => p.id === projectId.value)?.name ?? projectId.value,
+);
 const schema = ref<DataSourceSchema | null>(null);
 const loadError = ref(false);
 
@@ -256,7 +287,11 @@ const maxColumns = computed(() => maxColumnsForWidth(props.tableWidth));
 // Another source than the table shows: Apply replaces its data, like a new image
 const replacedSource = computed(() => {
   const current = props.table?.binding;
-  return current && sourceId.value && sourceId.value !== current.sourceId ? current.sourceName : "";
+  return current &&
+    sourceId.value &&
+    (sourceId.value !== current.sourceId || projectId.value !== current.projectId)
+    ? current.sourceName
+    : "";
 });
 const unusedColumns = computed(() =>
   (schema.value?.columns ?? []).filter((c) => !columns.value.some((col) => col.key === c.key)),
@@ -278,13 +313,14 @@ function loadDraft(binding: TableDataBinding) {
 // Filter choices of the source (values with counts, ranges)
 const facets = ref<SourceFacets | null>(null);
 
-async function loadFacets(id: string) {
+async function loadFacets(project: string, id: string) {
   facets.value = null;
+  const stillCurrent = () => projectId.value === project && sourceId.value === id;
   try {
-    const loaded = await getFacets(id);
-    if (sourceId.value === id) facets.value = loaded;
+    const loaded = await getFacets(project, id);
+    if (stillCurrent()) facets.value = loaded;
   } catch {
-    if (sourceId.value === id) facets.value = {};
+    if (stillCurrent()) facets.value = {};
   }
 }
 
@@ -293,14 +329,17 @@ const look = computed(() => resolveLook(props.table?.binding));
 
 async function useSchema(id: string, freshColumns: boolean) {
   loadError.value = false;
+  const project = projectId.value;
+  const stillCurrent = () => projectId.value === project && sourceId.value === id;
   try {
-    const loaded = await getSchema(id);
-    if (sourceId.value !== id) return;
+    const loaded = await getSchema(project, id);
+    if (!stillCurrent()) return;
     schema.value = loaded;
-    loadFacets(id);
+    loadFacets(project, id);
     if (freshColumns) {
       // A new source: start with as many of its columns as fit; keep the look
       const start = createBinding({
+        project: { id: project, name: projectName.value },
         schema: loaded,
         tableName: draftName.value,
         datasetName: datasetName.value,
@@ -312,8 +351,18 @@ async function useSchema(id: string, freshColumns: boolean) {
       sort.value = [];
     }
   } catch {
-    if (sourceId.value === id) loadError.value = true;
+    if (stillCurrent()) loadError.value = true;
   }
+}
+
+function loadSources(project: string) {
+  sources.value = [];
+  if (!project) return;
+  listSources(project)
+    .then((list) => {
+      if (projectId.value === project) sources.value = list;
+    })
+    .catch(() => (loadError.value = true));
 }
 
 // Fill the draft each time the popup opens
@@ -334,15 +383,31 @@ watch(
       rowLimit.value = undefined;
       showTotals.value = false;
     }
-    const id = props.initialSourceId ?? current?.sourceId ?? "";
+    // A dropped source, the table's own, or the only project there is
+    const project =
+      props.initialProjectId ??
+      (current?.projectId || undefined) ??
+      (projectOptions.value.length === 1 ? projectOptions.value[0]!.id : "");
+    const id = props.initialSourceId ?? (project === current?.projectId ? current?.sourceId : "") ?? "";
+    projectId.value = project;
     sourceId.value = id;
-    listSources()
-      .then((list) => (sources.value = list))
-      .catch(() => (loadError.value = true));
-    if (id) await useSchema(id, id !== current?.sourceId);
+    loadError.value = false;
+    loadSources(project);
+    if (project && id) {
+      await useSchema(id, id !== current?.sourceId || project !== current?.projectId);
+    }
   },
   { immediate: true },
 );
+
+// Another project: choose one of its sources again
+function changeProject(id: string) {
+  projectId.value = id;
+  sourceId.value = "";
+  schema.value = null;
+  loadError.value = false;
+  loadSources(id);
+}
 
 function changeSource(id: string) {
   sourceId.value = id;
@@ -393,10 +458,12 @@ const current = computed(() => props.table?.binding);
 
 // The setup as it would be applied
 const draftBinding = computed<TableDataBinding | null>(() => {
-  if (!schema.value || !sourceId.value) return null;
+  if (!schema.value || !sourceId.value || !projectId.value) return null;
   return {
     tableName: draftName.value,
     datasetName: datasetName.value,
+    projectId: projectId.value,
+    projectName: projectName.value,
     sourceId: sourceId.value,
     sourceName: schema.value.name,
     columns: evenColumnWidths(
@@ -423,7 +490,10 @@ let previewTimer: ReturnType<typeof setTimeout> | undefined;
 let previewController: AbortController | null = null;
 
 watch(
-  () => (draftBinding.value ? JSON.stringify([sourceId.value, toDataQuery(draftBinding.value, PREVIEW_ROW_LIMIT)]) : ""),
+  () =>
+    draftBinding.value
+      ? JSON.stringify([projectId.value, sourceId.value, toDataQuery(draftBinding.value, PREVIEW_ROW_LIMIT)])
+      : "",
   (key) => {
     clearTimeout(previewTimer);
     previewController?.abort();
@@ -439,7 +509,12 @@ watch(
       const controller = new AbortController();
       previewController = controller;
       try {
-        const result = await queryRows(binding.sourceId, toDataQuery(binding, PREVIEW_ROW_LIMIT), controller.signal);
+        const result = await queryRows(
+          binding.projectId,
+          binding.sourceId,
+          toDataQuery(binding, PREVIEW_ROW_LIMIT),
+          controller.signal,
+        );
         if (controller.signal.aborted) return;
         previewRows.value = result.rows;
         previewTotal.value = result.totalCount;

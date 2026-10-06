@@ -1270,6 +1270,9 @@
     },
     "config": {
       "title": "Set up {name}",
+      "project": "Project",
+      "chooseProject": "Choose a project",
+      "noProjects": "Add a project in Report Data (left panel) first.",
       "source": "Source",
       "chooseSource": "Choose a source",
       "replacesData": "Apply replaces this table's current data ({source}).",
@@ -1295,20 +1298,6 @@
       "needColumn": "Choose at least one column",
       "tooManyColumns": "Too many columns: at most {max} fit",
       "apply": "Apply"
-    },
-    "library": {
-      "title": "Table Data",
-      "reload": "Reload sources",
-      "search": "Search sources and columns",
-      "hint": "Drag a source onto a table (or the page) to show its data. Drag a column to add just that column.",
-      "retry": "Try again",
-      "noMatch": "No sources match",
-      "dragSource": "Drag onto a table or the page",
-      "expand": "Show columns",
-      "collapse": "Hide columns",
-      "rows": "1 row | {count} rows",
-      "usedIn": "Used in: {tables}",
-      "dragColumn": "Drag onto a table to add this column"
     },
     "filter": {
       "title": "Filter & sort",
@@ -1400,5 +1389,35 @@
       "needData": "Add data to the table first, then change its look here.",
       "usingStyle": "Using {name}"
     }
+  },
+  "reportData": {
+    "title": "Report Data",
+    "reload": "Reload projects and data",
+    "projects": "Projects",
+    "chooseProjects": "Choose projects…",
+    "removeProject": "Remove {project} from this report",
+    "noProjectMatch": "No projects match",
+    "noProjects": "Choose the projects this report uses. A report can show data from several projects.",
+    "search": "Search details, tables and columns",
+    "hint": "Drag a detail (name, date, introduction…) onto a text element, or the logo onto an image element, to fill it; drop it on empty space for a new one. It becomes normal text or a normal image. Drag a table onto the Detail section or onto a table; drag a column to add just that column.",
+    "details": "Details",
+    "tables": "Tables",
+    "dragDetail": "Drag onto the page to add this as text",
+    "dragImage": "Drag onto the page to add this image",
+    "dragSource": "Drag onto a table or the Detail section",
+    "dragColumn": "Drag onto a table to add this column",
+    "expand": "Show columns",
+    "collapse": "Hide columns",
+    "rows": "1 row | {count} rows",
+    "usedIn": "Used in: {tables}",
+    "noMatch": "Nothing matches",
+    "loadFailed": "Couldn't load this project's data.",
+    "retry": "Try again",
+    "dropTextOnText": "Drop text details (name, dates, budget…) on a text element, or on empty space.",
+    "dropImageOnImage": "Drop the logo on an image element, or on empty space.",
+    "dropNotOnPageNumber": "A page number can't show project data. Drop it on another text element.",
+    "projectInUse": "{project} is still used by {count} table(s) on this report. Delete them, or choose another project in their data, before removing it.",
+    "projectSource": "{project} · {source}",
+    "noValue": "{project} has no {label} to add."
   }
 }

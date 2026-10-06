@@ -32,10 +32,10 @@
         class="image-upload-zone is-stored"
         @click.stop
         @dblclick.stop="triggerFileInput"
-        @dragover.prevent.stop="handleDragOver"
-        @dragenter.prevent.stop="handleDragOver"
-        @dragleave.prevent.stop="handleDragLeave"
-        @drop.prevent.stop="handleDrop"
+        @dragover="handleDragOver"
+        @dragenter="handleDragOver"
+        @dragleave="handleDragLeave"
+        @drop="handleDrop"
         :title="getImageName(element) || storedFileRef"
       >
         <span class="upload-text">{{ getImageName(element) || t("properties.storedImage") }}</span>
@@ -51,10 +51,10 @@
         :class="{ 'is-drag-over': isDraggingOver, 'is-uploading': isUploading }"
         @click.stop
         @dblclick.stop="triggerFileInput"
-        @dragover.prevent.stop="handleDragOver"
-        @dragenter.prevent.stop="handleDragOver"
-        @dragleave.prevent.stop="handleDragLeave"
-        @drop.prevent.stop="handleDrop"
+        @dragover="handleDragOver"
+        @dragenter="handleDragOver"
+        @dragleave="handleDragLeave"
+        @drop="handleDrop"
         :title="
           t('properties.dropOrDoubleClickToUpload')
         "
@@ -73,10 +73,10 @@
         v-else
         class="image-preview-wrapper"
         :title="t('properties.doubleClickToCrop')"
-        @dragover.prevent.stop="handleDragOver"
-        @dragenter.prevent.stop="handleDragOver"
-        @dragleave.prevent.stop="handleDragLeave"
-        @drop.prevent.stop="handleDrop"
+        @dragover="handleDragOver"
+        @dragenter="handleDragOver"
+        @dragleave="handleDragLeave"
+        @drop="handleDrop"
         @dblclick.stop="startCropping"
       >
         <img
@@ -208,6 +208,7 @@ import {
   resolveImageSource,
   toImageExpression,
 } from "../../services/imageService";
+import { readDataSourceDrag } from "../../utils/table/dataDrag";
 
 const { t } = useI18n();
 
@@ -501,19 +502,32 @@ function handleFileInputChange(event: Event) {
   }
 }
 
+// Drags from the Report Data list are for the designer (link this image to a
+// project's logo); only dropped files are handled here
+const isReportDataDrag = (event: DragEvent) => !!readDataSourceDrag(event);
+
 function handleDragOver(event: DragEvent) {
+  if (isReportDataDrag(event)) return;
+  event.preventDefault();
+  event.stopPropagation();
   if (event.dataTransfer) {
     event.dataTransfer.dropEffect = "copy";
   }
   isDraggingOver.value = true;
 }
 
-function handleDragLeave() {
+function handleDragLeave(event: DragEvent) {
   isDraggingOver.value = false;
+  if (isReportDataDrag(event)) return;
+  event.preventDefault();
+  event.stopPropagation();
 }
 
 function handleDrop(event: DragEvent) {
   isDraggingOver.value = false;
+  if (isReportDataDrag(event)) return;
+  event.preventDefault();
+  event.stopPropagation();
   const file = event.dataTransfer?.files?.[0];
   if (file) {
     processImageFile(file);

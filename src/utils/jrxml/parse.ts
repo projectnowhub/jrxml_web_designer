@@ -14,6 +14,7 @@ import {
 } from "../framePresets";
 import { detectPagination } from "../paginationPresets";
 import { SAVED_TABLE_STYLES_PROPERTY, parseSavedTableStyles } from "../table/tableThemes";
+import { REPORT_PROJECTS_PROPERTY, parseReportProjects } from "../projectFields";
 import type { SavedTableStyle } from "@/types/dataSource";
 import type {
   ReportProperties,
@@ -491,6 +492,12 @@ export function parseJRXMLContent(jrxmlContent: string): {
     }
   });
 
+  // The projects chosen in the Report Data list
+  const projects = parseReportProjects(
+    reportProperties.find((p) => p.name === REPORT_PROJECTS_PROPERTY)?.value,
+  );
+  if (projects.length) properties.projects = projects;
+
   return {
     properties,
     bands,
@@ -504,7 +511,9 @@ export function parseJRXMLContent(jrxmlContent: string): {
     tableStyles: parseSavedTableStyles(
       reportProperties.find((p) => p.name === SAVED_TABLE_STYLES_PROPERTY)?.value,
     ),
-    reportProperties: reportProperties.filter((p) => p.name !== SAVED_TABLE_STYLES_PROPERTY),
+    reportProperties: reportProperties.filter(
+      (p) => p.name !== SAVED_TABLE_STYLES_PROPERTY && p.name !== REPORT_PROJECTS_PROPERTY,
+    ),
   };
 }
 

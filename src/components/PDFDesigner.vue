@@ -213,9 +213,11 @@
           :report-parameters="reportParameters"
           :report-variables="reportVariables"
           :bands="bands"
+          :projects="reportProjects"
           @drag-start="handleDragStart"
           @element-double-click="handleElementDoubleClick"
           @insert-page-number="addPageNumber"
+          @update-projects="setReportProjects"
           @add-field="handleAddField"
           @edit-field="handleEditField"
           @delete-field="handleDeleteField"
@@ -489,6 +491,8 @@
       v-model:visible="tableConfig.visible"
       :table="tableConfigTable"
       :table-width="tableConfigWidth"
+      :projects="reportProjects"
+      :initial-project-id="tableConfig.projectId"
       :initial-source-id="tableConfig.sourceId"
       :initial-column-key="tableConfig.columnKey"
       :existing-table-names="usedTableNames(bands)"
@@ -632,7 +636,20 @@ import type {
   TableDataset,
   TableElement,
 } from "../types";
-import type { DataColumn, SavedTableStyle, TableDataBinding, TableLook } from "@/types/dataSource";
+import type {
+  DataColumn,
+  ProjectField,
+  ReportProject,
+  SavedTableStyle,
+  TableDataBinding,
+  TableLook,
+} from "@/types/dataSource";
+import {
+  applyProjectValue,
+  canTakeProjectField,
+  countProjectUsage,
+  projectFieldSize,
+} from "@/utils/projectFields";
 import {
   endDataSourceDrag,
   isDataSourceDrag,
@@ -1112,6 +1129,8 @@ function loadFile(fileData: DesignerFile | any) {
       reportProperties.value = {
         ...reportProperties.value,
         ...fileContent.reportProperties,
+        // Each report has its own projects
+        projects: fileContent.reportProperties.projects ?? [],
       };
     }
 
@@ -1376,6 +1395,23 @@ const subDatasets = ref<TableDataset[]>([]);
 // Report styles (table theme styles are added when a table first uses them)
 // Table styles the user saved in this report (built-in ones are not listed)
 const tableStyles = ref<SavedTableStyle[]>([]);
+
+// Projects chosen in the Report Data list (kept with the report properties,
+// so undo and saving cover them)
+const reportProjects = computed<ReportProject[]>(() => reportProperties.value?.projects ?? []);
+
+// A project still shown on the report can't be removed from the list
+const setReportProjects = (projects: ReportProject[]) => {
+  const removed = reportProjects.value.find((p) => !projects.some((n) => n.id === p.id));
+  const usage = removed ? countProjectUsage(bands.value, removed.id) : 0;
+  if (removed && usage > 0) {
+    notification.warning(t("reportData.projectInUse", { project: removed.name, count: usage }));
+    return;
+  }
+  saveStateToHistory();
+  reportProperties.value = { ...reportProperties.value, projects };
+  updateJRXML();
+};
 
 // Report variables
 const reportVariables = ref<any[]>([]);
@@ -2244,9 +2280,31 @@ const handleElementDoubleClick = (element: any) => {
 const handleDrop = (event: DragEvent, pageIndex?: number) => {
   event.preventDefault();
 
-  // A source or column from the "Table Data" list
+  // A source, column or project detail from the "Report Data" list
   const dataDrag = readDataSourceDrag(event);
-  if (dataDrag) {
+  let elementData = null;
+  if (dataDrag?.kind === "projectField") {
+    endDataSourceDrag();
+    highlightedBandIndex.value = null;
+    dropTargetBlocked.value = false;
+    // A detail without a value has nothing to copy
+    if (!dataDrag.value) {
+      notification.info(t("reportData.noValue", { project: dataDrag.projectName, label: dataDrag.field.label }));
+      return;
+    }
+    // Onto an existing text or image element: its content becomes the value
+    if (fillDroppedProjectValue(event, dataDrag)) return;
+    // Elsewhere: a new Text element (or an Image for the logo) placed like a
+    // library element, holding the value
+    elementData = {
+      type: dataDrag.field.type === "image" ? "image" : "textField",
+      projectValue: {
+        project: { id: dataDrag.projectId, name: dataDrag.projectName },
+        field: dataDrag.field,
+        value: dataDrag.value,
+      },
+    };
+  } else if (dataDrag) {
     endDataSourceDrag();
     highlightedBandIndex.value = null;
     dropTargetBlocked.value = false;
@@ -2254,10 +2312,10 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
     return;
   }
 
-  let elementData = null;
-
   // Prefer reading from internal state (works around dataTransfer sometimes being unavailable in the Mac Tauri environment)
-  if (draggedLibraryElement.value) {
+  if (elementData) {
+    // Already known (a project detail)
+  } else if (draggedLibraryElement.value) {
     elementData = draggedLibraryElement.value;
     draggedLibraryElement.value = null; // Reset the state
   } else if (event.dataTransfer) {
@@ -2362,6 +2420,22 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
         );
         newElement.width = defaultSize.width;
         newElement.height = defaultSize.height;
+      }
+
+      // A project detail: its value as the content, sized for what it shows,
+      // centred on the cursor
+      if (elementData.projectValue) {
+        const { project, field, value } = elementData.projectValue as {
+          project: ReportProject;
+          field: ProjectField;
+          value: string;
+        };
+        applyProjectValue(newElement, project, field, value);
+        const size = projectFieldSize(field);
+        newElement.width = Math.min(size.width, Math.round(printableWidth.value));
+        newElement.height = size.height;
+        newElement.x = Math.round(Math.max(0, scaledX - newElement.width / 2));
+        newElement.y = Math.round(Math.max(0, scaledY - newElement.height / 2));
       }
 
       // Land on the grid, or in line with a nearby element, like a dragged one
@@ -2540,6 +2614,61 @@ interface TableLocation {
   parentFrameIndex?: number;
 }
 
+// Any element (boxes' contents included) by its uuid
+const findElementByUuid = (uuid: string): TableLocation | null => {
+  for (let b = 0; b < bands.value.length; b++) {
+    const elements = bands.value[b]?.elements ?? [];
+    for (let i = 0; i < elements.length; i++) {
+      const el = elements[i];
+      if (el?.uuid === uuid) return { bandIndex: b, elementIndex: i };
+      if (el?.type === "frame") {
+        const j = ((el as FrameElement).elements ?? []).findIndex((child) => child.uuid === uuid);
+        if (j !== -1) return { bandIndex: b, elementIndex: j, parentFrameIndex: i };
+      }
+    }
+  }
+  return null;
+};
+
+const elementAtLocation = (location: TableLocation): DesignElement | undefined => {
+  const band = bands.value[location.bandIndex];
+  return location.parentFrameIndex !== undefined
+    ? (band?.elements[location.parentFrameIndex] as FrameElement | undefined)?.elements?.[location.elementIndex]
+    : band?.elements[location.elementIndex];
+};
+
+// A project detail dropped onto a text or image element: its content becomes
+// the value, keeping its place, size and look (one undo step). Text details go
+// in text elements, the logo in image elements; the wrong kind is refused with
+// a message. Returns false when the drop wasn't on such an element.
+const fillDroppedProjectValue = (
+  event: DragEvent,
+  drag: Extract<DataSourceDragPayload, { kind: "projectField" }>,
+): boolean => {
+  const target = (event.target as HTMLElement)?.closest?.("[data-element-uuid]") as HTMLElement | null;
+  const location = target?.dataset.elementUuid ? findElementByUuid(target.dataset.elementUuid) : null;
+  const element = location ? elementAtLocation(location) : undefined;
+  if (!location || !element || (element.type !== "textField" && element.type !== "image")) return false;
+
+  if (!canTakeProjectField(element, drag.field)) {
+    notification.warning(
+      t(
+        drag.field.type === "image"
+          ? "reportData.dropImageOnImage"
+          : isPagination(element)
+            ? "reportData.dropNotOnPageNumber"
+            : "reportData.dropTextOnText",
+      ),
+    );
+    return true;
+  }
+  saveStateToHistory();
+  applyProjectValue(element, { id: drag.projectId, name: drag.projectName }, drag.field, drag.value ?? "");
+  selectElement(location.bandIndex, location.elementIndex, false, location.parentFrameIndex);
+  updateJRXML();
+  return true;
+};
+
 const findTableByUuid = (uuid: string): TableLocation | null => {
   for (let b = 0; b < bands.value.length; b++) {
     const elements = bands.value[b]?.elements ?? [];
@@ -2572,6 +2701,8 @@ const tableConfig = ref<{
   visible: boolean;
   target: TableLocation | null;
   newAt: { bandIndex: number; y: number; pageIndex?: number } | null;
+  // Project and source dragged onto the table, if it was opened by a drop
+  projectId?: string;
   sourceId?: string;
   columnKey?: string;
 }>({ visible: false, target: null, newAt: null });
@@ -2586,12 +2717,18 @@ const tableConfigWidth = computed(() => {
 
 const openTableConfig = (
   target: TableLocation | null,
-  options: { newAt?: { bandIndex: number; y: number; pageIndex?: number }; sourceId?: string; columnKey?: string } = {},
+  options: {
+    newAt?: { bandIndex: number; y: number; pageIndex?: number };
+    projectId?: string;
+    sourceId?: string;
+    columnKey?: string;
+  } = {},
 ) => {
   tableConfig.value = {
     visible: true,
     target,
     newAt: options.newAt ?? null,
+    projectId: options.projectId,
     sourceId: options.sourceId,
     columnKey: options.columnKey,
   };
@@ -2652,10 +2789,10 @@ const applyTableConfig = (binding: TableDataBinding, rowCount: number) => {
   updateJRXML();
 };
 
-// A source or column dropped from the "Table Data" list
+// A source or column dropped from the "Report Data" list
 const handleDataSourceDrop = (
   event: DragEvent,
-  drag: DataSourceDragPayload,
+  drag: Exclude<DataSourceDragPayload, { kind: "projectField" }>,
   pageIndex?: number,
 ) => {
   const tableEl = (event.target as HTMLElement)?.closest?.("[data-table-uuid]") as HTMLElement | null;
@@ -2665,11 +2802,15 @@ const handleDataSourceDrop = (
 
   if (table && location) {
     // One more column of the source the table already shows: added directly
-    if (drag.kind === "column" && table.binding?.sourceId === drag.sourceId) {
+    if (
+      drag.kind === "column" &&
+      table.binding?.projectId === drag.projectId &&
+      table.binding?.sourceId === drag.sourceId
+    ) {
       addColumnToTable(table, drag.column);
       return;
     }
-    openTableConfig(location, { sourceId: drag.sourceId, columnKey });
+    openTableConfig(location, { projectId: drag.projectId, sourceId: drag.sourceId, columnKey });
     return;
   }
 
@@ -2686,6 +2827,7 @@ const handleDataSourceDrop = (
   const sheetPage = sheet?.dataset.pageIndex !== undefined ? parseInt(sheet.dataset.pageIndex, 10) : undefined;
   openTableConfig(null, {
     newAt: { bandIndex, y, pageIndex: sheetPage ?? pageIndex },
+    projectId: drag.projectId,
     sourceId: drag.sourceId,
     columnKey,
   });

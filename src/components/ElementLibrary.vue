@@ -50,9 +50,13 @@
       </div>
     </div>
 
-    <!-- Table Data: backend sources to drag onto tables -->
+    <!-- Report Data: the report's projects, their details and tables -->
     <div class="data-fields-section">
-      <TableDataList :bands="bands as Band[]" />
+      <ReportDataPanel
+        :bands="bands as Band[]"
+        :projects="projects ?? []"
+        @update-projects="emit('update-projects', $event)"
+      />
     </div>
 
     <!-- Page Number tile: where on the page to put it -->
@@ -102,7 +106,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from "@lucide/vue";
-import TableDataList from "./designer/TableDataList.vue";
+import ReportDataPanel from "./designer/ReportDataPanel.vue";
 import { ElementRegistry } from "./elements/ElementRegistry";
 import { findPageBorder, isFrameTemplateType, PAGE_BORDER_TYPE } from "../utils/framePresets";
 import {
@@ -117,6 +121,7 @@ import type {
   ReportParameter,
   ReportVariable,
 } from "../types";
+import type { ReportProject } from "../types/dataSource";
 import { getElementIcon, getElementIconComponent } from "../utils/elementUtils";
 
 const { t } = useI18n();
@@ -129,6 +134,8 @@ interface Props {
   reportParameters?: ReportParameter[];
   reportVariables?: ReportVariable[];
   bands: Array<{ type: string; name?: string; elements: DesignElement[] }>;
+  // Projects chosen for the report
+  projects?: ReportProject[];
 }
 
 // Define component events
@@ -136,6 +143,7 @@ interface Emits {
   (e: "drag-start", event: DragEvent, element: any): void;
   (e: "element-double-click", element: any): void;
   (e: "insert-page-number", position: PaginationPosition): void;
+  (e: "update-projects", projects: ReportProject[]): void;
 }
 
 // Use default values

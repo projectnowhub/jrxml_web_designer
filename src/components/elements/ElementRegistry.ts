@@ -190,7 +190,7 @@ export class ElementRegistry {
     });
 
     // Table: starts empty (3 columns, one row); data is dropped on it from
-    // the "Table Data" list. Its size follows its content (utils/table/dataTable.ts).
+    // the "Report Data" list. Its size follows its content (utils/table/dataTable.ts).
     this.registerElement({
       type: "table",
       name: "elementNames.table",

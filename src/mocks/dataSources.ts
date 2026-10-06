@@ -1,4 +1,5 @@
-// Dummy sources for the "Table Data" list until the backend API is ready.
+// Dummy table sources for each dummy project (mocks/projects.ts) until the
+// backend API is ready. Every project has the same sources with its own rows.
 // Dates are ISO strings (YYYY-MM-DD), as the API is expected to send them.
 
 import type { DataRow, DataSourceSchema } from "@/types/dataSource";
@@ -65,41 +66,90 @@ const vendorRows = toRows(["vendor_code", "vendor_name", "country", "rating"], [
   ["V-10", "Desert Steelworks", "UAE", 4],
 ]);
 
-export const MOCK_DATA_SOURCES: MockDataSource[] = [
-  {
-    id: "procurement",
-    name: "Procurement",
-    columns: [
-      { key: "po_number", label: "PO Number", type: "text" },
-      { key: "vendor_name", label: "Vendor", type: "text" },
-      { key: "status", label: "Status", type: "text" },
-      { key: "quantity", label: "Quantity", type: "number" },
-      { key: "amount", label: "Amount", type: "currency" },
-      { key: "order_date", label: "Order Date", type: "date" },
-    ],
-    rows: procurementRows,
-  },
-  {
-    id: "products",
-    name: "Products",
-    columns: [
-      { key: "sku", label: "SKU", type: "text" },
-      { key: "product_name", label: "Product", type: "text" },
-      { key: "category", label: "Category", type: "text" },
-      { key: "unit_price", label: "Unit Price", type: "currency" },
-      { key: "stock_qty", label: "Stock", type: "number" },
-    ],
-    rows: productRows,
-  },
-  {
-    id: "vendors",
-    name: "Vendors",
-    columns: [
-      { key: "vendor_code", label: "Code", type: "text" },
-      { key: "vendor_name", label: "Vendor", type: "text" },
-      { key: "country", label: "Country", type: "text" },
-      { key: "rating", label: "Rating", type: "number" },
-    ],
-    rows: vendorRows,
-  },
-];
+const milestoneKeys = ["milestone", "phase", "owner", "status", "progress", "due_date"];
+
+// How one project's rows differ from the shared sample rows
+export interface ProjectDataVariant {
+  // Prefix for PO numbers and SKUs (e.g. "KLM")
+  prefix: string;
+  // Amounts and prices are multiplied by this
+  priceFactor: number;
+  // Order dates move by this many days
+  dayShift: number;
+  // Rows kept from each sample list
+  rowCount: number;
+  milestones: (string | number)[][];
+}
+
+const shiftDate = (iso: string, days: number) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+// The sources of one project, built from the sample rows
+export function buildProjectSources(variant: ProjectDataVariant): MockDataSource[] {
+  const { prefix, priceFactor, dayShift, rowCount } = variant;
+  return [
+    {
+      id: "procurement",
+      name: "Procurement",
+      columns: [
+        { key: "po_number", label: "PO Number", type: "text" },
+        { key: "vendor_name", label: "Vendor", type: "text" },
+        { key: "status", label: "Status", type: "text" },
+        { key: "quantity", label: "Quantity", type: "number" },
+        { key: "amount", label: "Amount", type: "currency" },
+        { key: "order_date", label: "Order Date", type: "date" },
+      ],
+      rows: procurementRows.slice(0, rowCount).map((row) => ({
+        ...row,
+        po_number: String(row.po_number).replace("PO-", `${prefix}-PO-`),
+        amount: round2(Number(row.amount) * priceFactor),
+        order_date: shiftDate(String(row.order_date), dayShift),
+      })),
+    },
+    {
+      id: "products",
+      name: "Materials",
+      columns: [
+        { key: "sku", label: "SKU", type: "text" },
+        { key: "product_name", label: "Material", type: "text" },
+        { key: "category", label: "Category", type: "text" },
+        { key: "unit_price", label: "Unit Price", type: "currency" },
+        { key: "stock_qty", label: "Stock", type: "number" },
+      ],
+      rows: productRows.slice(0, Math.max(6, rowCount - 5)).map((row) => ({
+        ...row,
+        sku: String(row.sku).replace("SKU-", `${prefix}-`),
+        unit_price: round2(Number(row.unit_price) * priceFactor),
+      })),
+    },
+    {
+      id: "vendors",
+      name: "Vendors",
+      columns: [
+        { key: "vendor_code", label: "Code", type: "text" },
+        { key: "vendor_name", label: "Vendor", type: "text" },
+        { key: "country", label: "Country", type: "text" },
+        { key: "rating", label: "Rating", type: "number" },
+      ],
+      rows: vendorRows.slice(0, Math.max(5, rowCount - 10)),
+    },
+    {
+      id: "milestones",
+      name: "Milestones",
+      columns: [
+        { key: "milestone", label: "Milestone", type: "text" },
+        { key: "phase", label: "Phase", type: "text" },
+        { key: "owner", label: "Owner", type: "text" },
+        { key: "status", label: "Status", type: "text" },
+        { key: "progress", label: "Progress %", type: "number" },
+        { key: "due_date", label: "Due Date", type: "date" },
+      ],
+      rows: toRows(milestoneKeys, variant.milestones),
+    },
+  ];
+}

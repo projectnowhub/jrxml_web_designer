@@ -1,3 +1,5 @@
+import type { ReportProject } from "../../types/dataSource";
+
 export interface ReportProperties {
   name: string;
   pageWidth: number;
@@ -22,6 +24,8 @@ export interface ReportProperties {
   isIgnorePagination?: boolean;
   query?: { language: string; text: string };
   pageCount?: number;
+  // Projects whose data the report uses (written as `com.cdp.projects`)
+  projects?: ReportProject[];
 }
 
 export interface Field {

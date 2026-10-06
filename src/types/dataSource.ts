@@ -1,10 +1,44 @@
-// Data tables: sources from the backend and how a table uses one.
-// Rows are never stored in the design; they are fetched each time.
+// Report data from the backend: projects, their details (name, logo,
+// introduction…) and their table sources, and how a table uses one.
+// Rows and values are never stored in the design; they are fetched each time.
+
+// A project the user can pick for a report. A report can use several.
+export interface ProjectSummary {
+  id: string;
+  name: string;
+  // Short reference shown next to the name (e.g. "KL-MRT3")
+  code: string;
+}
+
+// What a project detail holds: text and long text go in Text elements, an
+// image (the logo) in an Image element
+export type ProjectFieldType = "text" | "longText" | "image";
+
+// One detail of a project (name, logo, introduction…)
+export interface ProjectField {
+  key: string;
+  label: string;
+  type: ProjectFieldType;
+}
+
+// A project with its details. Values are ready to print (dates and amounts
+// already formatted); an image's value is its location (URL or stored file).
+export interface ProjectDetails extends ProjectSummary {
+  fields: ProjectField[];
+  values: Record<string, string | null>;
+}
+
+// A project chosen for the report (kept in the report as `com.cdp.projects`)
+export interface ReportProject {
+  id: string;
+  name: string;
+}
+
 
 // Column types the backend reports; they decide formatting and filter operators
 export type DataColumnType = "text" | "number" | "currency" | "date";
 
-// A source in the "Table Data" list (e.g. Procurement)
+// A table source of a project (e.g. Procurement)
 export interface DataSourceSummary {
   id: string;
   name: string;
@@ -104,6 +138,9 @@ export interface TableDataBinding {
   tableName: string;
   // Unique and stable per table; rows are passed to the report under this name
   datasetName: string;
+  // The project the rows come from; each table can use a different project
+  projectId: string;
+  projectName: string;
   sourceId: string;
   sourceName: string;
   columns: TableColumnBinding[];

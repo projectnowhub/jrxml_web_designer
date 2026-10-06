@@ -4,8 +4,14 @@
     :class="{ 
       'selected': isSelected,
       'out-of-bounds': isOutOfBounds,
-      'is-dragging': isDragging
+      'is-dragging': isDragging,
+      'is-project-drop': projectDrop === 'ok',
+      'is-project-drop-blocked': projectDrop === 'blocked'
     }"
+    :data-element-uuid="element.uuid"
+    @dragover="handleProjectDragOver"
+    @dragleave="handleProjectDragLeave"
+    @drop="projectDrop = null"
     @click.stop="handleSelect"
     :style="elementStyle"
     @mousedown.stop="handleMouseDown"
@@ -84,7 +90,9 @@
 
 <script setup lang="ts">
 import { RotateCw } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import { canTakeProjectField } from '../../utils/projectFields';
+import { readDataSourceDrag } from '../../utils/table/dataDrag';
 import type { DesignElement, SelectedElementInfo } from '../../types';
 import { getElementBoxPadding, propertyCornerRadiusCss } from '../../utils/elementUtils';
 import { boxCornerRadiusCss, getLayeredBorder, type BorderSide } from '../../utils/framePresets';
@@ -469,6 +477,30 @@ const handleContextMenu = (event: MouseEvent) => {
 const handleDoubleClick = () => {
   emit('startEditing', props.bandIndex, props.elementIndex, props.parentFrameIndex);
 };
+
+// ---- Project details (Report Data) ------------------------------------------
+
+// While a project detail is dragged over this item: can it take it? Only text
+// and image items react; the drop itself is handled by the designer.
+const projectDrop = ref<'ok' | 'blocked' | null>(null);
+
+const handleProjectDragOver = (event: DragEvent) => {
+  if (props.element.type !== 'textField' && props.element.type !== 'image') return;
+  const drag = readDataSourceDrag(event);
+  if (drag?.kind !== 'projectField') return;
+  // The innermost item under the pointer decides (an item inside a box)
+  event.stopPropagation();
+  event.preventDefault();
+  const ok = canTakeProjectField(props.element, drag.field);
+  projectDrop.value = ok ? 'ok' : 'blocked';
+  // A refused drop still reaches the designer, which says why
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+};
+
+const handleProjectDragLeave = (event: DragEvent) => {
+  const next = event.relatedTarget as Node | null;
+  if (!next || !(event.currentTarget as HTMLElement).contains(next)) projectDrop.value = null;
+};
 </script>
 
 <style scoped>
@@ -509,6 +541,36 @@ const handleDoubleClick = () => {
 
 .design-element.is-dragging {
   z-index: 100;
+}
+
+/* A project detail dragged over: blue dotted when it can be dropped here, red
+   when not. After the other states and more specific, so it also shows on a
+   selected element; the tint is an overlay because elements paint their own
+   background colour. */
+.design-element.design-element.is-project-drop,
+.design-element.design-element.is-project-drop-blocked {
+  outline: 2px dashed #2563eb;
+  outline-offset: 1px;
+  z-index: 60;
+}
+
+.design-element.design-element.is-project-drop-blocked {
+  outline-color: #dc2626;
+  cursor: no-drop;
+}
+
+.design-element.is-project-drop::after,
+.design-element.is-project-drop-blocked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: rgba(37, 99, 235, 0.08);
+  pointer-events: none;
+}
+
+.design-element.is-project-drop-blocked::after {
+  background: rgba(220, 38, 38, 0.08);
 }
 
 .resize-handle {

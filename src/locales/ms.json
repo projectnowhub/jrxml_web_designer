@@ -1270,6 +1270,9 @@
     },
     "config": {
       "title": "Sediakan {name}",
+      "project": "Projek",
+      "chooseProject": "Pilih projek",
+      "noProjects": "Tambah projek dalam Data Laporan (panel kiri) dahulu.",
       "source": "Sumber",
       "chooseSource": "Pilih sumber",
       "replacesData": "Guna akan menggantikan data semasa jadual ini ({source}).",
@@ -1295,20 +1298,6 @@
       "needColumn": "Pilih sekurang-kurangnya satu lajur",
       "tooManyColumns": "Terlalu banyak lajur: paling banyak {max} muat",
       "apply": "Guna"
-    },
-    "library": {
-      "title": "Data Jadual",
-      "reload": "Muat semula sumber",
-      "search": "Cari sumber dan lajur",
-      "hint": "Seret sumber ke jadual (atau halaman) untuk memaparkan datanya. Seret lajur untuk menambah lajur itu sahaja.",
-      "retry": "Cuba lagi",
-      "noMatch": "Tiada sumber yang sepadan",
-      "dragSource": "Seret ke jadual atau halaman",
-      "expand": "Tunjukkan lajur",
-      "collapse": "Sembunyikan lajur",
-      "rows": "1 baris | {count} baris",
-      "usedIn": "Digunakan dalam: {tables}",
-      "dragColumn": "Seret ke jadual untuk menambah lajur ini"
     },
     "filter": {
       "title": "Tapis & isih",
@@ -1400,5 +1389,35 @@
       "needData": "Tambah data pada jadual dahulu, kemudian ubah rupanya di sini.",
       "usingStyle": "Menggunakan {name}"
     }
+  },
+  "reportData": {
+    "title": "Data Laporan",
+    "reload": "Muat semula projek dan data",
+    "projects": "Projek",
+    "chooseProjects": "Pilih projek…",
+    "removeProject": "Alih keluar {project} daripada laporan ini",
+    "noProjectMatch": "Tiada projek yang sepadan",
+    "noProjects": "Pilih projek yang digunakan oleh laporan ini. Satu laporan boleh memaparkan data daripada beberapa projek.",
+    "search": "Cari butiran, jadual dan lajur",
+    "hint": "Seret butiran (nama, tarikh, pengenalan…) ke elemen teks, atau logo ke elemen imej, untuk mengisinya; lepaskan di ruang kosong untuk yang baharu. Ia menjadi teks atau imej biasa. Seret jadual ke bahagian Butiran atau ke jadual; seret lajur untuk menambah lajur itu sahaja.",
+    "details": "Butiran",
+    "tables": "Jadual",
+    "dragDetail": "Seret ke halaman untuk menambahnya sebagai teks",
+    "dragImage": "Seret ke halaman untuk menambah imej ini",
+    "dragSource": "Seret ke jadual atau bahagian Butiran",
+    "dragColumn": "Seret ke jadual untuk menambah lajur ini",
+    "expand": "Tunjukkan lajur",
+    "collapse": "Sembunyikan lajur",
+    "rows": "1 baris | {count} baris",
+    "usedIn": "Digunakan dalam: {tables}",
+    "noMatch": "Tiada yang sepadan",
+    "loadFailed": "Data projek ini tidak dapat dimuatkan.",
+    "retry": "Cuba lagi",
+    "dropTextOnText": "Lepaskan butiran teks (nama, tarikh, bajet…) pada elemen teks, atau di ruang kosong.",
+    "dropImageOnImage": "Lepaskan logo pada elemen imej, atau di ruang kosong.",
+    "dropNotOnPageNumber": "Nombor halaman tidak boleh memaparkan data projek. Lepaskannya pada elemen teks lain.",
+    "projectInUse": "{project} masih digunakan oleh {count} jadual dalam laporan ini. Padam jadual tersebut, atau pilih projek lain dalam datanya, sebelum mengalih keluarnya.",
+    "projectSource": "{project} · {source}",
+    "noValue": "{project} tiada {label} untuk ditambah."
   }
 }

@@ -1,4 +1,4 @@
-import type { TableDataBinding } from "./dataSource";
+import type { ReportProject, TableDataBinding } from "./dataSource";
 
 // Element type enum
 export type ElementType =
@@ -216,6 +216,8 @@ export interface ReportProperties {
   orientation?: "portrait" | "landscape";
   pageCount?: number;
   bandLimits?: Record<string, { min: number; max: number }>;
+  // Projects whose data the report uses (the "Report Data" list)
+  projects?: ReportProject[];
 }
 
 // Base design element interface

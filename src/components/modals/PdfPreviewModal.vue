@@ -37,7 +37,7 @@
             </div>
             <div class="card-source">
               <Database :size="12" aria-hidden="true" />
-              {{ item.binding.sourceName }}
+              {{ t("reportData.projectSource", { project: item.binding.projectName, source: item.binding.sourceName }) }}
               <span class="muted">· {{ rowCountText(item.binding.datasetName) }}</span>
             </div>
             <div class="chips">
