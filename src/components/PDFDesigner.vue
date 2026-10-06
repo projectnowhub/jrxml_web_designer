@@ -93,7 +93,7 @@
           <button class="toolbar-btn" @click="copyElement" :title="t('actions.copy')">
             <Copy :size="16" :stroke-width="2" aria-hidden="true" />
           </button>
-          <button class="toolbar-btn" @click="pasteElement" :title="t('actions.paste')">
+          <button class="toolbar-btn" @click="pasteElement()" :title="t('actions.paste')">
             <ClipboardPaste :size="16" :stroke-width="2" aria-hidden="true" />
           </button>
         </div>
@@ -4027,6 +4027,8 @@ const copyElement = async () => {
           type: "PDF_DESIGNER_ELEMENT",
           version: "1.0",
           elementData: elementData,
+          // Ctrl+V pastes back into the section it was copied from
+          sourceBandType: band.type,
         };
         // Convert the data to a JSON string and write it to the clipboard
         await navigator.clipboard.writeText(JSON.stringify(clipboardData));
@@ -4068,6 +4070,7 @@ const copyElement = async () => {
             type: "PDF_DESIGNER_ELEMENT",
             version: "1.0",
             elementData: elementData,
+            sourceBandType: band.type,
           }),
         );
       }
@@ -4075,108 +4078,227 @@ const copyElement = async () => {
   }
 };
 
-// Paste an element from the clipboard
-const pasteElement = async () => {
+// Paste an element from the clipboard. With a screen point (right-click → Paste)
+// it lands there; otherwise (Ctrl+V, toolbar) next to the original.
+const pasteElement = async (at?: { clientX: number; clientY: number }) => {
+  const isOurs = (data: any) =>
+    data?.type === "PDF_DESIGNER_ELEMENT" && data.elementData;
   try {
     // First try reading from the clipboard
-    const clipboardText = await navigator.clipboard.readText();
-    const clipboardData = JSON.parse(clipboardText);
-
-    // Verify this is our own PDF Designer element data
-    if (
-      clipboardData.type === "PDF_DESIGNER_ELEMENT" &&
-      clipboardData.elementData
-    ) {
-      processPastedElement(clipboardData.elementData);
-    }
+    const clipboardData = JSON.parse(await navigator.clipboard.readText());
+    if (isOurs(clipboardData)) processPastedElement(clipboardData, at);
   } catch (err) {
     console.error("Failed to read from clipboard:", err);
     // Fallback: try reading from sessionStorage
     try {
       const savedData = sessionStorage.getItem("pdfDesignerCopiedElement");
-      if (savedData) {
-        const clipboardData = JSON.parse(savedData);
-        if (
-          clipboardData.type === "PDF_DESIGNER_ELEMENT" &&
-          clipboardData.elementData
-        ) {
-          processPastedElement(clipboardData.elementData);
-        }
-      }
+      const clipboardData = savedData ? JSON.parse(savedData) : null;
+      if (isOurs(clipboardData)) processPastedElement(clipboardData, at);
     } catch (sessionErr) {
       console.error("Failed to read from sessionStorage:", sessionErr);
     }
   }
 };
 
-// Handle the pasted element data (extracted into a separate function for reuse)
-const processPastedElement = (elementData: any) => {
-  // A frame pasted into the Background band would be a second page border
-  const pasteBand = bands.value[selectedBandIndex.value ?? 0];
-  if (
-    elementData?.type === "frame" &&
-    pasteBand?.type === BAND_TYPE_CONSTANTS.BACKGROUND &&
-    rejectSecondPageBorder()
-  ) {
-    return;
-  }
+// Screen rectangles of a band on the canvas: one per page sheet it shows on
+// (a Detail band only on its own page)
+const getBandScreenRects = (bandIndex: number, pageIndex?: number): DOMRect[] => {
+  const sheetSelector =
+    pageIndex === undefined ? ".page-sheet" : `.page-sheet[data-page-index="${pageIndex}"]`;
+  return Array.from(
+    document.querySelectorAll<HTMLElement>(
+      `${sheetSelector} .band[data-band-index="${bandIndex}"]`,
+    ),
+  ).map((el) => el.getBoundingClientRect());
+};
 
-  // Determine the paste location (use the currently selected band, or default to the first editable band)
-  let targetBandIndex =
-    selectedBandIndex.value !== null ? selectedBandIndex.value : 0;
+// The part of the canvas the user can see right now
+const getCanvasViewportRect = (): DOMRect | null =>
+  document.querySelector<HTMLElement>(".paper-container")?.getBoundingClientRect() ?? null;
 
-  // Find the first band that has an elements array
-  if (targetBandIndex === null) {
-    targetBandIndex = bands.value.findIndex(
-      (band) => band.elements && Array.isArray(band.elements),
+// Whether the middle of an element at (x, y) in a band is on screen
+const isBandSpotOnScreen = (
+  bandIndex: number,
+  pageIndex: number | undefined,
+  element: { x: number; y: number; width: number; height: number },
+): boolean => {
+  const view = getCanvasViewportRect();
+  if (!view) return true;
+  const zoom = zoomLevel.value;
+  return getBandScreenRects(bandIndex, pageIndex).some((rect) => {
+    const cx = rect.left + (element.x + element.width / 2) * zoom;
+    const cy = rect.top + (element.y + element.height / 2) * zoom;
+    return cx >= view.left && cx <= view.right && cy >= view.top && cy <= view.bottom;
+  });
+};
+
+// The middle of the visible part of the Detail section: the page showing the
+// most of it, in that band's coordinates
+const getVisibleDetailCentre = (
+  detailIndex: number,
+): { pageIndex: number; x: number; y: number } | null => {
+  const view = getCanvasViewportRect();
+  if (!view) return null;
+  let best: { pageIndex: number; x: number; y: number; area: number } | null = null;
+  document.querySelectorAll<HTMLElement>(".page-sheet").forEach((sheet) => {
+    const bandEl = sheet.querySelector<HTMLElement>(
+      `.band[data-band-index="${detailIndex}"]`,
     );
-    // If none is found, use the detail band (usually index 3)
-    if (targetBandIndex === -1) {
-      targetBandIndex = 3;
+    if (!bandEl || sheet.dataset.pageIndex === undefined) return;
+    const rect = bandEl.getBoundingClientRect();
+    const left = Math.max(rect.left, view.left);
+    const right = Math.min(rect.right, view.right);
+    const top = Math.max(rect.top, view.top);
+    const bottom = Math.min(rect.bottom, view.bottom);
+    const area = Math.max(0, right - left) * Math.max(0, bottom - top);
+    if (area > 0 && (!best || area > best.area)) {
+      best = {
+        pageIndex: parseInt(sheet.dataset.pageIndex, 10),
+        x: ((left + right) / 2 - rect.left) / zoomLevel.value,
+        y: ((top + bottom) / 2 - rect.top) / zoomLevel.value,
+        area,
+      };
     }
-  }
+  });
+  return best;
+};
 
-  const targetBand = bands.value[targetBandIndex];
-  if (!targetBand) {
-    console.error("Target band does not exist");
-    return;
+// Keep an element inside the printable width (and below the band's top)
+const fitInPrintableWidth = (element: DesignElement) => {
+  const maxX = Math.max(0, printableWidth.value - (element.width || 0));
+  element.x = Math.min(Math.max(0, element.x), Math.round(maxX));
+  element.y = Math.max(0, element.y);
+};
+
+// Step a pasted element down and right past copies already at its spot, so
+// repeated pastes fan out instead of stacking exactly on top of each other
+const stepPastCopies = (element: DesignElement, bandIndex: number, pageIndex: number) => {
+  const band = bands.value[bandIndex];
+  if (!band) return;
+  const isDetail = band.type === BAND_TYPE_CONSTANTS.DETAIL;
+  const offset = KEYBOARD_CONSTANTS.ELEMENT_PASTE_OFFSET;
+  const isTaken = () =>
+    band.elements.some(
+      (el) =>
+        (!isDetail || (el.pageIndex ?? 0) === pageIndex) &&
+        Math.abs(el.x - element.x) < 1 &&
+        Math.abs(el.y - element.y) < 1,
+    );
+  for (let i = 0; i < 100 && isTaken(); i++) {
+    const before = { x: element.x, y: element.y };
+    element.x += offset;
+    element.y += offset;
+    fitInPrintableWidth(element);
+    if (element.x === before.x && element.y === before.y) break;
   }
+};
+
+// Handle the pasted clipboard data (extracted into a separate function for reuse)
+const processPastedElement = (
+  clipboardData: { elementData: any; sourceBandType?: string },
+  at?: { clientX: number; clientY: number },
+) => {
+  const detailIndex = bands.value.findIndex(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
 
   // Create the new element (deep clone)
-  const newElement = JSON.parse(JSON.stringify(elementData));
+  const newElement = JSON.parse(JSON.stringify(clipboardData.elementData));
   // A copy is a separate element: new IDs for it and everything inside it
   refreshUuids(newElement);
-
-  // Offset the position slightly so it doesn't overlap the original element (shift down and to the right)
-  newElement.x = Math.round(
-    newElement.x + KEYBOARD_CONSTANTS.ELEMENT_PASTE_OFFSET,
-  );
-  newElement.y = Math.round(
-    newElement.y + KEYBOARD_CONSTANTS.ELEMENT_PASTE_OFFSET,
-  );
-
-  // Ensure the element's width and height are also integers
-  if (newElement.width) {
-    newElement.width = Math.round(newElement.width);
-  }
-  if (newElement.height) {
-    newElement.height = Math.round(newElement.height);
-  }
-
-  // Ensure the element's ID is unique
   if (newElement.id) {
     newElement.id = `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
+  // Ensure the element's position and size are integers
+  newElement.x = Math.round(newElement.x || 0);
+  newElement.y = Math.round(newElement.y || 0);
+  if (newElement.width) newElement.width = Math.round(newElement.width);
+  if (newElement.height) newElement.height = Math.round(newElement.height);
 
-  // It must fit in the band, growing it up to its maximum if needed; too tall
-  // is refused before anything changes. (The Background band holds only the
-  // page border, which is sized to the page.)
-  const bandPlan =
-    targetBand.type === BAND_TYPE_CONSTANTS.BACKGROUND
-      ? null
-      : planDropInBand(targetBandIndex, newElement);
-  if (bandPlan?.kind === "tooTall") {
-    warnTooTallForBand(targetBandIndex, newElement.height, bandPlan.maxHeight);
+  // A page border goes back to the Background band, where only one is allowed
+  if (clipboardData.sourceBandType === BAND_TYPE_CONSTANTS.BACKGROUND) {
+    if (rejectSecondPageBorder()) return;
+    const backgroundIndex = bands.value.findIndex(
+      (b) => b.type === BAND_TYPE_CONSTANTS.BACKGROUND,
+    );
+    const background = bands.value[backgroundIndex];
+    if (!background) return;
+    saveStateToHistory();
+    background.elements.push(newElement);
+    selectElement(backgroundIndex, background.elements.length - 1);
+    updateJRXML();
+    return;
+  }
+
+  // Right-click → Paste on a page: the element's top-left corner at the
+  // clicked point. A click in the grey area around the pages pastes like Ctrl+V.
+  let target: { bandIndex: number; pageIndex: number } | null = null;
+  if (at) {
+    const { bandUnderMouse, sheetUnderMouse } = getTargetBandAndSheetUnderPoint(
+      at.clientX,
+      at.clientY,
+    );
+    const sheetRect = sheetUnderMouse?.getBoundingClientRect();
+    const onPage =
+      !!sheetRect &&
+      at.clientX >= sheetRect.left &&
+      at.clientX < sheetRect.right &&
+      at.clientY >= sheetRect.top &&
+      at.clientY < sheetRect.bottom;
+    if (onPage && bandUnderMouse?.dataset.bandIndex !== undefined) {
+      const bandRect = bandUnderMouse.getBoundingClientRect();
+      target = {
+        bandIndex: parseInt(bandUnderMouse.dataset.bandIndex, 10),
+        pageIndex: parseInt(sheetUnderMouse?.dataset.pageIndex ?? "0", 10),
+      };
+      newElement.x = Math.round((at.clientX - bandRect.left) / zoomLevel.value);
+      newElement.y = Math.round((at.clientY - bandRect.top) / zoomLevel.value);
+      fitInPrintableWidth(newElement);
+    }
+  }
+
+  if (!target) {
+    // Ctrl+V / toolbar: back into the section it was copied from, next to the
+    // original. Tables only live in Detail; an unknown section (an older copy,
+    // or one from another report) means Detail as well.
+    let bandIndex =
+      newElement.type === "table"
+        ? detailIndex
+        : bands.value.findIndex(
+            (b) =>
+              b.type === clipboardData.sourceBandType &&
+              b.type !== BAND_TYPE_CONSTANTS.BACKGROUND,
+          );
+    if (bandIndex === -1) bandIndex = detailIndex;
+    target = {
+      bandIndex,
+      pageIndex: Math.min(newElement.pageIndex ?? 0, Math.max(0, totalPages.value - 1)),
+    };
+    fitInPrintableWidth(newElement);
+    stepPastCopies(newElement, target.bandIndex, target.pageIndex);
+
+    // Out of sight (scrolled away, or on another page): the middle of the
+    // visible part of Detail instead, so the user sees what was pasted
+    const isDetail = bands.value[bandIndex]?.type === BAND_TYPE_CONSTANTS.DETAIL;
+    if (
+      detailIndex !== -1 &&
+      !isBandSpotOnScreen(bandIndex, isDetail ? target.pageIndex : undefined, newElement)
+    ) {
+      const centre = getVisibleDetailCentre(detailIndex);
+      if (centre) {
+        target = { bandIndex: detailIndex, pageIndex: centre.pageIndex };
+        newElement.x = Math.round(centre.x - (newElement.width || 0) / 2);
+        newElement.y = Math.round(centre.y - (newElement.height || 0) / 2);
+        fitInPrintableWidth(newElement);
+        stepPastCopies(newElement, target.bandIndex, target.pageIndex);
+      }
+    }
+  }
+
+  const targetBandIndex = target.bandIndex;
+  const targetBand = bands.value[targetBandIndex];
+  if (!targetBand) {
+    console.error("Target band does not exist");
     return;
   }
   // Tables only live in the Detail section
@@ -4184,8 +4306,22 @@ const processPastedElement = (elementData: any) => {
     notification.warning(t("dataTable.onlyInDetail"));
     return;
   }
+  // Detail elements belong to a page; other sections repeat on every page
+  if (targetBand.type === BAND_TYPE_CONSTANTS.DETAIL) {
+    newElement.pageIndex = target.pageIndex;
+  } else {
+    delete newElement.pageIndex;
+  }
+
+  // It must fit in the band, growing it up to its maximum if needed; too tall
+  // is refused before anything changes
+  const bandPlan = planDropInBand(targetBandIndex, newElement);
+  if (bandPlan.kind === "tooTall") {
+    warnTooTallForBand(targetBandIndex, newElement.height, bandPlan.maxHeight);
+    return;
+  }
   saveStateToHistory();
-  if (bandPlan) applyDropInBand(targetBandIndex, newElement, bandPlan);
+  applyDropInBand(targetBandIndex, newElement, bandPlan);
 
   // Add it to the target band
   if (!targetBand.elements) {
@@ -4202,8 +4338,6 @@ const processPastedElement = (elementData: any) => {
 
   // Update JRXML
   updateJRXML();
-
-  console.log("Element pasted:", newElement);
 };
 
 // Define the handleKeyDown function at the top level of the component
@@ -6494,7 +6628,7 @@ const handleContextMenuAction = (action: string) => {
       copyElement();
       break;
     case "paste":
-      pasteElement();
+      pasteElement({ clientX: contextMenu.value.x, clientY: contextMenu.value.y });
       break;
     case "delete":
       deleteElement();

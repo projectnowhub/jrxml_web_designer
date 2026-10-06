@@ -171,7 +171,7 @@
     "downloadJRXML": "Download JRXML",
     "saveJRXML": "Save JRXML",
     "changeImage": "Change Image",
-    "dropOrClickToUpload": "Drop image or click to upload",
+    "dropOrDoubleClickToUpload": "Drop image or double-click to upload",
     "uploadingImage": "Uploading...",
     "loadingImage": "Loading...",
     "storedImagePreviewUnavailable": "Preview unavailable",

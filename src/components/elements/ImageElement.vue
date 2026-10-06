@@ -30,7 +30,8 @@
       <div
         v-if="!imageUrl && storedFileRef"
         class="image-upload-zone is-stored"
-        @click.stop="triggerFileInput"
+        @click.stop
+        @dblclick.stop="triggerFileInput"
         @dragover.prevent.stop="handleDragOver"
         @dragenter.prevent.stop="handleDragOver"
         @dragleave.prevent.stop="handleDragLeave"
@@ -48,18 +49,19 @@
         v-else-if="!imageUrl"
         class="image-upload-zone"
         :class="{ 'is-drag-over': isDraggingOver, 'is-uploading': isUploading }"
-        @click.stop="triggerFileInput"
+        @click.stop
+        @dblclick.stop="triggerFileInput"
         @dragover.prevent.stop="handleDragOver"
         @dragenter.prevent.stop="handleDragOver"
         @dragleave.prevent.stop="handleDragLeave"
         @drop.prevent.stop="handleDrop"
         :title="
-          t('properties.dropOrClickToUpload')
+          t('properties.dropOrDoubleClickToUpload')
         "
       >
         <Upload class="upload-icon" :stroke-width="1.75" />
         <span class="upload-text">{{
-          t("properties.dropOrClickToUpload")
+          t("properties.dropOrDoubleClickToUpload")
         }}</span>
         <span class="upload-hint">{{
           isUploading ? t("properties.uploadingImage") : t("properties.imageUploadHint")

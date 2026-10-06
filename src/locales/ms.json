@@ -171,7 +171,7 @@
     "downloadJRXML": "Muat Turun JRXML",
     "saveJRXML": "Simpan JRXML",
     "changeImage": "Tukar Imej",
-    "dropOrClickToUpload": "Lepaskan imej atau klik untuk memuat naik",
+    "dropOrDoubleClickToUpload": "Lepaskan imej atau klik dua kali untuk memuat naik",
     "uploadingImage": "Memuat naik...",
     "loadingImage": "Memuatkan...",
     "storedImagePreviewUnavailable": "Pratonton tidak tersedia",
