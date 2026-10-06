@@ -55,3 +55,12 @@ textarea {
   -moz-user-select: text;
   -ms-user-select: text;
 }
+
+/* Number fields always show their up/down arrows (browsers otherwise show
+   them only on hover), so it's clear the value can be stepped. Fields with a
+   unit inside (px, pt) keep the unit in their right padding, beside the arrows. */
+input[type="number"]::-webkit-inner-spin-button {
+  opacity: 1;
+  margin-left: 2px;
+  cursor: pointer;
+}

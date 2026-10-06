@@ -568,13 +568,6 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
 
 .tdp-unit input {
   padding-right: 24px;
-  -moz-appearance: textfield;
-}
-
-.tdp-unit input::-webkit-outer-spin-button,
-.tdp-unit input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
 }
 
 .tdp-unit > span {

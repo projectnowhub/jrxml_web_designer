@@ -134,16 +134,6 @@
   cursor: not-allowed;
 }
 
-/* Number input */
-.prop-input[type="number"] {
-  -moz-appearance: textfield;
-}
-
-.prop-input[type="number"]::-webkit-outer-spin-button,
-.prop-input[type="number"]::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
 
 /* Textarea */
 .prop-textarea {
@@ -694,7 +684,6 @@
   background: var(--prop-bg-primary);
   font-family: var(--prop-font-family);
   flex-shrink: 0;
-  -moz-appearance: textfield;
 }
 
 .column-tree-node-width:focus {

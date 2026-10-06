@@ -2555,7 +2555,6 @@ function addPropertyExpression() {
   width: 100%;
   height: 30px;
   padding: 0 22px 0 8px;
-  -moz-appearance: textfield;
   border: 1px solid var(--prop-border-color, #e5e7eb);
   border-radius: 6px;
   font-size: 12px;
@@ -2571,12 +2570,6 @@ function addPropertyExpression() {
   box-shadow: var(--prop-focus-ring);
 }
 
-/* No spinner arrows: they hide the number in narrow fields */
-.unit-input input::-webkit-outer-spin-button,
-.unit-input input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
 
 .unit-input > span {
   position: absolute;
@@ -2613,7 +2606,7 @@ function addPropertyExpression() {
 /* ---------- Borders: one row per side ---------- */
 .border-table {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) 64px 34px;
+  grid-template-columns: 46px minmax(0, 1fr) 72px 34px;
   column-gap: 6px;
   column-gap: 8px;
   align-items: center;
@@ -2766,7 +2759,7 @@ function addPropertyExpression() {
 }
 
 .pad-all .unit-input {
-  width: 76px;
+  width: 84px;
 }
 
 .pad-input {
@@ -2776,7 +2769,7 @@ function addPropertyExpression() {
 
 .corner-pad {
   display: grid;
-  grid-template-columns: 76px 1fr 76px;
+  grid-template-columns: 84px 1fr 84px;
   grid-template-rows: auto auto;
   gap: 8px 12px;
   align-items: center;
@@ -2799,13 +2792,13 @@ function addPropertyExpression() {
 
 .margin-pad {
   display: grid;
-  grid-template-columns: 76px 1fr 76px;
+  grid-template-columns: 84px 1fr 84px;
   grid-template-rows: auto auto auto;
   gap: 8px 12px;
   align-items: center;
 }
 
-.margin-input-top { grid-column: 2; grid-row: 1; justify-self: center; width: 76px; }
+.margin-input-top { grid-column: 2; grid-row: 1; justify-self: center; width: 84px; }
 .margin-input-left { grid-column: 1; grid-row: 2; }
 .margin-input-right { grid-column: 3; grid-row: 2; }
 .margin-input-bottom { grid-column: 2; grid-row: 3; justify-self: center; width: 76px; }
