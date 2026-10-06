@@ -2,13 +2,8 @@
 // generator/parser and the preview. Each table on a report has its own
 // TableDataBinding, so several tables can use the same source independently.
 
-import type {
-  DataColumnType,
-  DataQuery,
-  FilterOperator,
-  TableDataBinding,
-  TableFilter,
-} from "@/types/dataSource";
+import type { DataQuery, TableDataBinding, TableFilter } from "@/types/dataSource";
+import { normalizeLook } from "./tableThemes";
 
 // JRXML property on the table's <reportElement> holding its TableDataBinding
 export const TABLE_BINDING_PROPERTY = "com.cdp.table.binding";
@@ -19,26 +14,15 @@ export const MIN_TABLE_COLUMN_WIDTH = 60;
 // Preview fetches at most this many rows per table; real reports have no limit
 export const PREVIEW_ROW_LIMIT = 500;
 
-// Filter operators offered for each column type
-export const FILTER_OPERATORS: Record<DataColumnType, FilterOperator[]> = {
-  text: ["equals", "notEquals", "contains", "startsWith", "isEmpty", "isNotEmpty"],
-  number: ["equals", "notEquals", "greaterThan", "lessThan", "between", "isEmpty", "isNotEmpty"],
-  currency: ["equals", "notEquals", "greaterThan", "lessThan", "between", "isEmpty", "isNotEmpty"],
-  date: ["on", "before", "after", "between", "isEmpty", "isNotEmpty"],
-};
-
-const NO_VALUE_OPERATORS = new Set<FilterOperator>(["isEmpty", "isNotEmpty"]);
 const isBlank = (value: unknown) =>
   value === null || value === undefined || String(value).trim() === "";
 
-export const operatorNeedsValue = (op: FilterOperator) => !NO_VALUE_OPERATORS.has(op);
-
-// A filter still being filled in (no value yet) doesn't filter anything
+// A filter with nothing ticked or no bound set doesn't filter anything
 export function isActiveFilter(filter: TableFilter): boolean {
-  if (!filter.column || !filter.operator) return false;
-  if (!operatorNeedsValue(filter.operator)) return true;
-  if (isBlank(filter.value)) return false;
-  return filter.operator !== "between" || !isBlank(filter.value2);
+  if (!filter.column) return false;
+  if (filter.operator === "in") return (filter.values?.length ?? 0) > 0;
+  if (filter.operator === "between") return !isBlank(filter.value) || !isBlank(filter.value2);
+  return false;
 }
 
 export function maxColumnsForWidth(tableWidth: number): number {
@@ -80,9 +64,8 @@ export function toDataQuery(binding: TableDataBinding, limit?: number): DataQuer
   );
   return {
     columns: binding.columns.map((c) => c.key),
-    filters: binding.filters,
-    filterMatch: binding.filterMatch,
-    sort: binding.sort,
+    filters: binding.filters.filter(isActiveFilter),
+    sort: binding.sort.slice(0, 1),
     limit: caps.length ? Math.min(...caps) : undefined,
   };
 }
@@ -110,14 +93,15 @@ export function parseBinding(json: string | null | undefined): TableDataBinding 
       sourceId: b.sourceId,
       sourceName: typeof b.sourceName === "string" ? b.sourceName : b.sourceId,
       columns: b.columns,
-      filters: Array.isArray(b.filters) ? b.filters : [],
-      filterMatch: b.filterMatch === "any" ? "any" : "all",
-      sort: Array.isArray(b.sort) ? b.sort : [],
+      filters: Array.isArray(b.filters)
+        ? b.filters.filter((f: TableFilter) => f && (f.operator === "in" || f.operator === "between"))
+        : [],
+      sort: Array.isArray(b.sort) ? b.sort.slice(0, 1) : [],
       rowLimit: typeof b.rowLimit === "number" ? b.rowLimit : undefined,
       showTotals: b.showTotals === true,
-      theme: ["corporateBlue", "minimal", "emerald"].includes(b.theme)
-        ? b.theme
-        : "corporateBlue",
+      theme: typeof b.theme === "string" && b.theme ? b.theme : "corporateBlue",
+      look: b.look && typeof b.look === "object" ? normalizeLook(b.look) : undefined,
+      customized: b.customized === true,
     };
   } catch {
     return null;

@@ -77,7 +77,6 @@ const props = defineProps<{
   isOutOfBounds?: boolean;
   parentFrameIndex?: number;
   zoomLevel?: number;
-  reportStyles?: any[];
   pageNumber?: number;
   totalPages?: number;
 }>();
@@ -131,7 +130,6 @@ const commonProps = computed(() => ({
   isOutOfBounds: props.isOutOfBounds,
   parentFrameIndex: props.parentFrameIndex,
   zoomLevel: props.zoomLevel,
-  reportStyles: props.reportStyles,
   pageNumber: props.pageNumber,
   totalPages: props.totalPages
 }));

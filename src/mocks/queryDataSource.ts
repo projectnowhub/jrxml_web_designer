@@ -7,6 +7,7 @@ import type {
   DataQuery,
   DataQueryResult,
   DataRow,
+  SourceFacets,
   TableFilter,
 } from "@/types/dataSource";
 import { isActiveFilter } from "@/utils/table/dataBinding";
@@ -16,53 +17,25 @@ export { isActiveFilter };
 const isBlank = (value: unknown) =>
   value === null || value === undefined || String(value).trim() === "";
 
-function matchesFilter(
-  row: DataRow,
-  filter: TableFilter,
-  type: DataColumnType,
-): boolean {
+const asDate = (value: unknown) => String(value ?? "").slice(0, 10);
+
+function matchesFilter(row: DataRow, filter: TableFilter, type: DataColumnType): boolean {
   const cell = row[filter.column];
-  if (filter.operator === "isEmpty") return isBlank(cell);
-  if (filter.operator === "isNotEmpty") return !isBlank(cell);
-  if (isBlank(cell)) return false;
-
-  if (type === "number" || type === "currency") {
-    const n = Number(cell);
-    const a = Number(filter.value);
-    const b = Number(filter.value2);
-    switch (filter.operator) {
-      case "equals": return n === a;
-      case "notEquals": return n !== a;
-      case "greaterThan": return n > a;
-      case "lessThan": return n < a;
-      case "between": return n >= Math.min(a, b) && n <= Math.max(a, b);
-      default: return true;
-    }
+  if (filter.operator === "in") {
+    const wanted = new Set((filter.values ?? []).map((v) => v.trim().toLowerCase()));
+    return !isBlank(cell) && wanted.has(String(cell).trim().toLowerCase());
   }
-
+  // "between": inclusive, either end may be empty
+  if (isBlank(cell)) return false;
+  const hasFrom = !isBlank(filter.value);
+  const hasTo = !isBlank(filter.value2);
   if (type === "date") {
     // ISO dates compare correctly as text
-    const d = String(cell).slice(0, 10);
-    const a = String(filter.value).slice(0, 10);
-    const b = String(filter.value2 ?? "").slice(0, 10);
-    switch (filter.operator) {
-      case "on": return d === a;
-      case "before": return d < a;
-      case "after": return d > a;
-      case "between": return d >= (a < b ? a : b) && d <= (a < b ? b : a);
-      default: return true;
-    }
+    const d = asDate(cell);
+    return (!hasFrom || d >= asDate(filter.value)) && (!hasTo || d <= asDate(filter.value2));
   }
-
-  const text = String(cell).trim().toLowerCase();
-  const value = String(filter.value).trim().toLowerCase();
-  switch (filter.operator) {
-    case "equals": return text === value;
-    case "notEquals": return text !== value;
-    case "contains": return text.includes(value);
-    case "startsWith": return text.startsWith(value);
-    default: return true;
-  }
+  const n = Number(cell);
+  return (!hasFrom || n >= Number(filter.value)) && (!hasTo || n <= Number(filter.value2));
 }
 
 function compareCells(a: unknown, b: unknown, type: DataColumnType): number {
@@ -83,15 +56,12 @@ export function queryRows(
 
   const filters = query.filters.filter(isActiveFilter);
   let rows = filters.length
-    ? allRows.filter((row) => {
-        const test = (f: TableFilter) => matchesFilter(row, f, typeOf(f.column));
-        return query.filterMatch === "any" ? filters.some(test) : filters.every(test);
-      })
+    ? allRows.filter((row) => filters.every((f) => matchesFilter(row, f, typeOf(f.column))))
     : [...allRows];
 
   if (query.sort.length) {
     rows.sort((a, b) => {
-      for (const s of query.sort) {
+      for (const s of query.sort.slice(0, 1)) {
         const diff = compareCells(a[s.column], b[s.column], typeOf(s.column));
         if (diff !== 0) {
           // Descending reverses the values, but empty cells stay last
@@ -111,4 +81,34 @@ export function queryRows(
     rows: rows.map((row) => Object.fromEntries(keys.map((k) => [k, row[k] ?? null]))),
     totalCount,
   };
+}
+
+// The filter panel's choices: each text column's values with how many rows
+// have them (most common first), each number, amount or date column's range
+export function columnFacets(allRows: DataRow[], schema: DataColumn[]): SourceFacets {
+  const facets: SourceFacets = {};
+  for (const col of schema) {
+    const cells = allRows.map((r) => r[col.key]).filter((v) => !isBlank(v));
+    if (col.type === "text") {
+      const counts = new Map<string, number>();
+      for (const v of cells) counts.set(String(v), (counts.get(String(v)) ?? 0) + 1);
+      facets[col.key] = {
+        kind: "values",
+        values: [...counts]
+          .map(([value, count]) => ({ value, count }))
+          .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value)),
+      };
+    } else if (col.type === "date") {
+      const days = cells.map(asDate).sort();
+      facets[col.key] = { kind: "range", min: days[0] ?? null, max: days[days.length - 1] ?? null };
+    } else {
+      const nums = cells.map(Number).filter(Number.isFinite);
+      facets[col.key] = {
+        kind: "range",
+        min: nums.length ? Math.min(...nums) : null,
+        max: nums.length ? Math.max(...nums) : null,
+      };
+    }
+  }
+  return facets;
 }

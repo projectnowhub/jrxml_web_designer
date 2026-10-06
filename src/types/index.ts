@@ -179,7 +179,6 @@ export interface ConditionalStyle {
 // Report style interface
 export interface ReportStyle {
   name: string;
-  parentStyle?: string;
   mode?: string;
   backcolor?: string;
   forecolor?: string;
@@ -245,7 +244,6 @@ export interface DesignElementBase {
   textAdjust?: string;
   isStyledText?: boolean;
   isStretchWithOverflow?: boolean;
-  style?: string;
   // Common reportElement attributes
   key?: string;
   positionType?: "Float" | "FixRelativeToTop" | "FixRelativeToBottom";

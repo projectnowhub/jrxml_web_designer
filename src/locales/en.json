@@ -100,12 +100,6 @@
     "deleteVariable": "Delete Variable",
     "noReportVariables": "No report variables",
     "clickToAddVariable": "Click '+' above to add variables",
-    "reportStyles": "Styles",
-    "addReportStyle": "Add Style",
-    "editStyle": "Edit Style",
-    "deleteStyle": "Delete Style",
-    "noReportStyles": "No styles",
-    "clickToAddStyle": "Click '+' above to add styles",
     "fieldNameRequired": "Field name is required",
     "duplicateFieldName": "Field name already exists, please use another name"
   },
@@ -276,7 +270,6 @@
     "tableHeader": "Table Header",
     "tableHeaderPlaceholder": "Enter table header text",
     "includeTableHeader": "Include Table Header",
-    "tableProperties": "Table Properties",
     "tableFooter": "Table Footer",
     "tableFooterPlaceholder": "Enter table footer expression",
     "moveColumnLeft": "Move column left",
@@ -326,11 +319,8 @@
     "tableStyleSettings": "Table Style Settings",
     "rowHeightSettings": "Row Height Settings",
     "detailCell": "Detail Cell",
-    "styleManagement": "Style Management",
     "selectStyle": "Select Style",
     "printWhenExpression": "Display Condition / Rules",
-    "styleReference": "Style Reference",
-    "noStyle": "No Style",
     "contentSource": "Data Content",
     "displayFormat": "Display Format",
     "positionType": "When Content Above Grows",
@@ -532,39 +522,6 @@
     "errors": {
       "nameRequired": "Variable name is required",
       "classRequired": "Variable type is required"
-    }
-  },
-  "styleManagement": {
-    "title": "Style Management",
-    "addStyle": "Add Style",
-    "editStyle": "Edit Style",
-    "styleName": "Style Name",
-    "styleNamePlaceholder": "Enter style name",
-    "parentStyle": "Parent Style",
-    "noParent": "None (Top-level style)",
-    "mode": "Mode",
-    "modeDefault": "Default",
-    "modeOpaque": "Opaque",
-    "modeTransparent": "Transparent",
-    "forecolor": "Foreground Color",
-    "backcolor": "Background Color",
-    "fontFamily": "Font Family",
-    "fontSize": "Font Size",
-    "fontStyle": "Font Style",
-    "bold": "Bold",
-    "italic": "Italic",
-    "underline": "Underline",
-    "textAlignment": "Text Alignment",
-    "alignLeft": "Left",
-    "alignCenter": "Center",
-    "alignRight": "Right",
-    "alignJustified": "Justified",
-    "verticalAlignment": "Vertical Alignment",
-    "valignTop": "Top",
-    "valignMiddle": "Middle",
-    "valignBottom": "Bottom",
-    "errors": {
-      "nameRequired": "Style name is required"
     }
   },
   "pdfPreview": {
@@ -965,12 +922,10 @@
     "confirmDelete": {
       "field": "Are you sure you want to delete field \"{name}\"?",
       "parameter": "Are you sure you want to delete parameter \"{name}\"?",
-      "variable": "Are you sure you want to delete variable \"{name}\"?",
-      "style": "Are you sure you want to delete style \"{name}\"?"
+      "variable": "Are you sure you want to delete variable \"{name}\"?"
     },
     "duplicateName": {
       "variable": "A variable with this name already exists, please use a different name",
-      "style": "A style with this name already exists, please use a different name",
       "parameter": "A parameter with this name already exists, please use a different name",
       "field": "A field with this name already exists, please use a different name"
     }
@@ -1289,23 +1244,6 @@
       "avg": "Average",
       "count": "Count"
     },
-    "operators": {
-      "equals": "is",
-      "notEquals": "is not",
-      "contains": "contains",
-      "startsWith": "starts with",
-      "isEmpty": "is empty",
-      "isNotEmpty": "is not empty",
-      "greaterThan": "is more than",
-      "lessThan": "is less than",
-      "between": "is between",
-      "on": "is on",
-      "before": "is before",
-      "after": "is after"
-    },
-    "summary": {
-      "between": "{column} between {from} and {to}"
-    },
     "types": {
       "text": "Text",
       "number": "Number",
@@ -1313,7 +1251,6 @@
       "date": "Date"
     },
     "theme": {
-      "label": "Theme",
       "corporateBlue": "Corporate Blue",
       "minimal": "Minimal",
       "emerald": "Emerald"
@@ -1322,15 +1259,14 @@
       "data": "Data",
       "tableName": "Table name",
       "columnCount": "1 column | {count} columns",
-      "matchAll": "(all must match)",
-      "matchAny": "(any can match)",
       "firstRows": "First row only | First {count} rows",
       "editData": "Edit data",
       "emptyHint": "Drag a source from Table Data onto this table, or choose one here.",
       "chooseData": "Choose data",
       "look": "Look",
       "headerHeight": "Header height",
-      "rowHeight": "Row height"
+      "rowHeight": "Row height",
+      "rowSizes": "Row sizes"
     },
     "config": {
       "title": "Set up {name}",
@@ -1348,22 +1284,6 @@
       "removeColumn": "Remove column",
       "addColumn": "Add a column…",
       "columnLimitHint": "No more columns fit. Remove one, or widen the table (landscape pages fit more).",
-      "filters": "Filters",
-      "match": {
-        "all": "All must match",
-        "any": "Any can match"
-      },
-      "value": "Value",
-      "value2": "and",
-      "removeFilter": "Remove filter",
-      "addFilter": "Add filter",
-      "sort": "Sort",
-      "sortBy": "Sort by",
-      "thenBy": "then by",
-      "ascending": "Ascending",
-      "descending": "Descending",
-      "removeSort": "Remove sort",
-      "addSort": "Add sort",
       "rows": "Rows and totals",
       "limitRows": "Show only the first",
       "rowLimit": "Number of rows",
@@ -1389,6 +1309,96 @@
       "rows": "1 row | {count} rows",
       "usedIn": "Used in: {tables}",
       "dragColumn": "Drag onto a table to add this column"
+    },
+    "filter": {
+      "title": "Filter & sort",
+      "applied": "Applied filters",
+      "remove": "Remove",
+      "sortBy": "Sort by",
+      "defaultOrder": "Default order",
+      "search": "Search {column}",
+      "selectAll": "Select all",
+      "clear": "Clear",
+      "clearAll": "Clear all",
+      "noValues": "Nothing to choose",
+      "noMatchingValues": "No value matches your search",
+      "rangeHint": "In this data: {from} to {to}",
+      "quickPicks": "Quick picks",
+      "min": "Min",
+      "max": "Max",
+      "from": "From",
+      "to": "To",
+      "under": "Under {value}",
+      "andAbove": "{value} and above",
+      "range": "{from} – {to}",
+      "atLeast": "{value} or more",
+      "atMost": "Up to {value}",
+      "onOrAfter": "From {value}",
+      "onOrBefore": "Until {value}",
+      "moreValues": "{values} +{count}",
+      "matchCount": "1 row matches | {count} rows match"
+    },
+    "sort": {
+      "text": {
+        "asc": "A to Z",
+        "desc": "Z to A"
+      },
+      "number": {
+        "asc": "Low to high",
+        "desc": "High to low"
+      },
+      "date": {
+        "asc": "Oldest first",
+        "desc": "Newest first"
+      }
+    },
+    "style": {
+      "label": "Table style",
+      "preset": "Built-in style (can't be changed)",
+      "customize": "Customize",
+      "customizeHint": "Changes apply to this table only. The style it came from stays as it is; save your changes as a table style to reuse them.",
+      "customizedFrom": "Changed from {name} for this table",
+      "reset": "Reset",
+      "parts": {
+        "header": "Header",
+        "rows": "Rows",
+        "totals": "Totals",
+        "lines": "Lines"
+      },
+      "fields": {
+        "headerBackground": "Background",
+        "headerText": "Text",
+        "rowBackground": "Background",
+        "rowText": "Text",
+        "stripe": "Stripe",
+        "totalsBackground": "Background",
+        "totalsText": "Text",
+        "lineColor": "Lines",
+        "ruleColor": "Header line"
+      },
+      "bold": "Bold",
+      "stripes": "Striped rows",
+      "lines": {
+        "grid": "Grid",
+        "rows": "Rows only",
+        "none": "None"
+      },
+      "fontSize": "Text size",
+      "onlyThisTable": "These changes are kept for this table only. Save them as a table style to use them on other tables.",
+      "saveAs": "Save as table style",
+      "update": "Update \"{name}\"",
+      "name": "Style name",
+      "namePlaceholder": "e.g. Finance blue",
+      "save": "Save",
+      "defaultName": "My style",
+      "saved": "Table style \"{name}\" saved",
+      "updated": "Table style \"{name}\" updated",
+      "rename": "Rename",
+      "delete": "Delete",
+      "deleteConfirm": "Delete \"{name}\"?",
+      "savedStyle": "Saved style: {name}",
+      "needData": "Add data to the table first, then change its look here.",
+      "usingStyle": "Using {name}"
     }
   }
 }

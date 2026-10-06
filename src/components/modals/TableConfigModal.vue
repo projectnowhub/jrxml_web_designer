@@ -89,92 +89,18 @@
             </p>
           </section>
 
-          <!-- Filters -->
+          <!-- Filter & sort, like a shop's filter panel -->
           <section class="tcm-section">
-            <h4><Funnel :size="14" aria-hidden="true" />{{ t("dataTable.config.filters") }}</h4>
-            <div v-if="filters.length > 1" class="tcm-segment" role="radiogroup">
-              <button
-                v-for="m in (['all', 'any'] as const)"
-                :key="m"
-                type="button"
-                role="radio"
-                :aria-checked="filterMatch === m"
-                :class="{ active: filterMatch === m }"
-                @click="filterMatch = m"
-              >
-                {{ t(`dataTable.config.match.${m}`) }}
-              </button>
-            </div>
-            <ul class="tcm-list">
-              <li v-for="(f, i) in filters" :key="i" class="tcm-filter">
-                <div class="tcm-select-wrap">
-                  <select class="tcm-select" :value="f.column" @change="setFilterColumn(f, ($event.target as HTMLSelectElement).value)">
-                    <option v-for="c in schema.columns" :key="c.key" :value="c.key">{{ c.label }}</option>
-                  </select>
-                  <ChevronDown class="tcm-chevron" :size="12" aria-hidden="true" />
-                </div>
-                <div class="tcm-select-wrap">
-                  <select class="tcm-select" :value="f.operator" @change="f.operator = ($event.target as HTMLSelectElement).value as FilterOperator">
-                    <option v-for="op in FILTER_OPERATORS[typeOf(f.column)]" :key="op" :value="op">{{ t(`dataTable.operators.${op}`) }}</option>
-                  </select>
-                  <ChevronDown class="tcm-chevron" :size="12" aria-hidden="true" />
-                </div>
-                <template v-if="operatorNeedsValue(f.operator)">
-                  <input
-                    class="tcm-input"
-                    :type="inputType(f.column)"
-                    :value="f.value ?? ''"
-                    :placeholder="t('dataTable.config.value')"
-                    @input="f.value = ($event.target as HTMLInputElement).value"
-                  />
-                  <input
-                    v-if="f.operator === 'between'"
-                    class="tcm-input"
-                    :type="inputType(f.column)"
-                    :value="f.value2 ?? ''"
-                    :placeholder="t('dataTable.config.value2')"
-                    @input="f.value2 = ($event.target as HTMLInputElement).value"
-                  />
-                </template>
-                <button type="button" class="tcm-icon-btn danger" :title="t('dataTable.config.removeFilter')" @click="filters.splice(i, 1)">
-                  <X :size="14" />
-                </button>
-              </li>
-            </ul>
-            <button type="button" class="tcm-add" @click="addFilter">
-              <Plus :size="13" aria-hidden="true" />{{ t("dataTable.config.addFilter") }}
-            </button>
-          </section>
-
-          <!-- Sort -->
-          <section class="tcm-section">
-            <h4><ArrowDownUp :size="14" aria-hidden="true" />{{ t("dataTable.config.sort") }}</h4>
-            <ul class="tcm-list">
-              <li v-for="(s, i) in sort" :key="i" class="tcm-sort">
-                <span class="tcm-muted">{{ i === 0 ? t("dataTable.config.sortBy") : t("dataTable.config.thenBy") }}</span>
-                <div class="tcm-select-wrap">
-                  <select class="tcm-select" :value="s.column" @change="s.column = ($event.target as HTMLSelectElement).value">
-                    <option v-for="c in schema.columns" :key="c.key" :value="c.key">{{ c.label }}</option>
-                  </select>
-                  <ChevronDown class="tcm-chevron" :size="12" aria-hidden="true" />
-                </div>
-                <button
-                  type="button"
-                  class="tcm-dir"
-                  :title="t(s.direction === 'asc' ? 'dataTable.config.ascending' : 'dataTable.config.descending')"
-                  @click="s.direction = s.direction === 'asc' ? 'desc' : 'asc'"
-                >
-                  <component :is="s.direction === 'asc' ? ArrowUpNarrowWide : ArrowDownWideNarrow" :size="14" />
-                  {{ t(s.direction === "asc" ? "dataTable.config.ascending" : "dataTable.config.descending") }}
-                </button>
-                <button type="button" class="tcm-icon-btn danger" :title="t('dataTable.config.removeSort')" @click="sort.splice(i, 1)">
-                  <X :size="14" />
-                </button>
-              </li>
-            </ul>
-            <button type="button" class="tcm-add" :disabled="sort.length >= schema.columns.length" @click="addSort">
-              <Plus :size="13" aria-hidden="true" />{{ t("dataTable.config.addSort") }}
-            </button>
+            <h4><SlidersHorizontal :size="14" aria-hidden="true" />{{ t("dataTable.filter.title") }}</h4>
+            <TableFilterPanel
+              :columns="schema.columns"
+              :facets="facets"
+              :filters="filters"
+              :sort="sort"
+              :match-count="previewLoading ? null : previewTotal"
+              @update:filters="filters = $event"
+              @update:sort="sort = $event"
+            />
           </section>
 
           <!-- Rows, totals -->
@@ -199,29 +125,6 @@
             </label>
           </section>
 
-          <!-- Theme -->
-          <section class="tcm-section">
-            <h4><Palette :size="14" aria-hidden="true" />{{ t("dataTable.theme.label") }}</h4>
-            <div class="tcm-themes" role="radiogroup">
-              <button
-                v-for="th in TABLE_THEMES"
-                :key="th"
-                type="button"
-                role="radio"
-                class="tcm-theme"
-                :class="{ active: theme === th }"
-                :aria-checked="theme === th"
-                @click="theme = th"
-              >
-                <span class="tcm-swatch" aria-hidden="true">
-                  <span :style="{ background: themeSwatch(th).header }"></span>
-                  <span style="background: #fff"></span>
-                  <span :style="{ background: themeSwatch(th).stripe }"></span>
-                </span>
-                {{ t(`dataTable.theme.${th}`) }}
-              </button>
-            </div>
-          </section>
         </template>
       </div>
 
@@ -241,8 +144,7 @@
           <DataGrid
             :columns="columns"
             :rows="previewRows"
-            :theme="theme"
-            :report-styles="reportStyles"
+            :look="look"
             :show-totals="showTotals"
             :loading="previewLoading"
             :failed="previewFailed"
@@ -267,8 +169,6 @@ import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
 import {
   ArrowDownUp,
-  ArrowDownWideNarrow,
-  ArrowUpNarrowWide,
   Calendar,
   ChevronDown,
   ChevronUp,
@@ -279,7 +179,7 @@ import {
   Funnel,
   Hash,
   ListOrdered,
-  Palette,
+  SlidersHorizontal,
   Plus,
   Replace,
   Type,
@@ -287,31 +187,28 @@ import {
 } from "@lucide/vue";
 import BaseModal from "./BaseModal.vue";
 import DataGrid from "../common/DataGrid.vue";
-import { getSchema, listSources, queryRows } from "@/services/dataSourceService";
+import TableFilterPanel from "../designer/TableFilterPanel.vue";
+import { getFacets, getSchema, listSources, queryRows } from "@/services/dataSourceService";
 import {
-  FILTER_OPERATORS,
   PREVIEW_ROW_LIMIT,
   createDatasetName,
   maxColumnsForWidth,
   nextTableName,
-  operatorNeedsValue,
   toDataQuery,
 } from "@/utils/table/dataBinding";
 import { createBinding, evenColumnWidths, toColumnBinding, totalsFor } from "@/utils/table/dataTable";
-import { TABLE_THEMES, themeSwatch } from "@/utils/table/tableThemes";
-import type { ReportStyle, TableElement } from "@/types";
+import { resolveLook } from "@/utils/table/tableThemes";
+import type { TableElement } from "@/types";
 import type {
   DataColumnType,
   DataRow,
   DataSourceSchema,
   DataSourceSummary,
-  FilterMatch,
-  FilterOperator,
   TableColumnBinding,
   TableDataBinding,
   TableFilter,
   TableSort,
-  TableTheme,
+  SourceFacets,
   TotalFunction,
 } from "@/types/dataSource";
 
@@ -325,7 +222,6 @@ const props = defineProps<{
   initialColumnKey?: string;
   existingTableNames: string[];
   existingDatasetNames: string[];
-  reportStyles: ReportStyle[];
 }>();
 
 const emit = defineEmits<{
@@ -352,19 +248,11 @@ const draftName = ref("");
 const datasetName = ref("");
 const columns = ref<TableColumnBinding[]>([]);
 const filters = ref<TableFilter[]>([]);
-const filterMatch = ref<FilterMatch>("all");
 const sort = ref<TableSort[]>([]);
 const rowLimit = ref<number | undefined>(undefined);
 const showTotals = ref(false);
-const theme = ref<TableTheme>("corporateBlue");
 
 const maxColumns = computed(() => maxColumnsForWidth(props.tableWidth));
-const typeOf = (key: string): DataColumnType =>
-  schema.value?.columns.find((c) => c.key === key)?.type ?? "text";
-const inputType = (key: string) => {
-  const type = typeOf(key);
-  return type === "date" ? "date" : type === "text" ? "text" : "number";
-};
 // Another source than the table shows: Apply replaces its data, like a new image
 const replacedSource = computed(() => {
   const current = props.table?.binding;
@@ -382,12 +270,26 @@ function loadDraft(binding: TableDataBinding) {
   datasetName.value = binding.datasetName;
   columns.value = copy(binding.columns);
   filters.value = copy(binding.filters);
-  filterMatch.value = binding.filterMatch;
   sort.value = copy(binding.sort);
   rowLimit.value = binding.rowLimit;
   showTotals.value = binding.showTotals;
-  theme.value = binding.theme;
 }
+
+// Filter choices of the source (values with counts, ranges)
+const facets = ref<SourceFacets | null>(null);
+
+async function loadFacets(id: string) {
+  facets.value = null;
+  try {
+    const loaded = await getFacets(id);
+    if (sourceId.value === id) facets.value = loaded;
+  } catch {
+    if (sourceId.value === id) facets.value = {};
+  }
+}
+
+// The table keeps its look; a new table starts with the first built-in style
+const look = computed(() => resolveLook(props.table?.binding));
 
 async function useSchema(id: string, freshColumns: boolean) {
   loadError.value = false;
@@ -395,6 +297,7 @@ async function useSchema(id: string, freshColumns: boolean) {
     const loaded = await getSchema(id);
     if (sourceId.value !== id) return;
     schema.value = loaded;
+    loadFacets(id);
     if (freshColumns) {
       // A new source: start with as many of its columns as fit; keep the look
       const start = createBinding({
@@ -427,11 +330,9 @@ watch(
       datasetName.value = createDatasetName(props.existingDatasetNames);
       columns.value = [];
       filters.value = [];
-      filterMatch.value = "all";
       sort.value = [];
       rowLimit.value = undefined;
       showTotals.value = false;
-      theme.value = "corporateBlue";
     }
     const id = props.initialSourceId ?? current?.sourceId ?? "";
     sourceId.value = id;
@@ -469,26 +370,6 @@ function setTotal(col: TableColumnBinding, value: string) {
   col.total = (value || undefined) as TotalFunction | undefined;
 }
 
-function addFilter() {
-  const first = schema.value?.columns[0];
-  if (!first) return;
-  filters.value.push({ column: first.key, operator: FILTER_OPERATORS[first.type][0]! });
-}
-
-// A different column may not offer the chosen operator; start over with its first
-function setFilterColumn(filter: TableFilter, key: string) {
-  filter.column = key;
-  const ops = FILTER_OPERATORS[typeOf(key)];
-  if (!ops.includes(filter.operator)) filter.operator = ops[0]!;
-  filter.value = undefined;
-  filter.value2 = undefined;
-}
-
-function addSort() {
-  const free = schema.value?.columns.find((c) => !sort.value.some((s) => s.column === c.key));
-  if (free) sort.value.push({ column: free.key, direction: "asc" });
-}
-
 function toggleRowLimit(on: boolean) {
   rowLimit.value = on ? 10 : undefined;
 }
@@ -508,6 +389,8 @@ function toggleTotals(on: boolean) {
   }
 }
 
+const current = computed(() => props.table?.binding);
+
 // The setup as it would be applied
 const draftBinding = computed<TableDataBinding | null>(() => {
   if (!schema.value || !sourceId.value) return null;
@@ -520,12 +403,14 @@ const draftBinding = computed<TableDataBinding | null>(() => {
       columns.value.map((c) => ({ ...c, label: c.label.trim() || c.key })),
       props.tableWidth,
     ),
-    filters: filters.value.map((f) => ({ ...f })),
-    filterMatch: filterMatch.value,
-    sort: sort.value.map((s) => ({ ...s })),
+    filters: copy(filters.value),
+    sort: copy(sort.value.slice(0, 1)),
     rowLimit: rowLimit.value,
     showTotals: showTotals.value && columns.value.some((c) => c.total),
-    theme: theme.value,
+    // The look is set in the properties panel; the popup keeps it
+    theme: current.value?.theme ?? "corporateBlue",
+    look: current.value?.look ? copy(current.value.look) : undefined,
+    customized: current.value?.customized || undefined,
   };
 });
 
@@ -646,28 +531,17 @@ function apply() {
   gap: 6px;
 }
 
-.tcm-col,
-.tcm-filter,
-.tcm-sort {
+.tcm-col {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.tcm-filter {
-  flex-wrap: wrap;
-}
-
-.tcm-filter > .tcm-select-wrap {
-  flex: 1 1 110px;
-}
-
-.tcm-filter > .tcm-input {
-  flex: 1 1 90px;
-}
-
-.tcm-sort > .tcm-select-wrap {
-  flex: 1;
+.tcm-empty {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #6b7280;
 }
 
 .tcm-move {
@@ -766,65 +640,6 @@ function apply() {
   cursor: default;
 }
 
-.tcm-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: 1px dashed #c7d2fe;
-  border-radius: 6px;
-  background: #fff;
-  color: #2563eb;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.tcm-add:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.tcm-dir {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  height: 30px;
-  padding: 0 8px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  background: #fff;
-  font-size: 12px;
-  color: #1f2937;
-  cursor: pointer;
-}
-
-.tcm-segment {
-  display: inline-flex;
-  margin-bottom: 8px;
-  padding: 2px;
-  border-radius: 6px;
-  background: #eef0f4;
-}
-
-.tcm-segment button {
-  padding: 3px 10px;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  font-size: 11px;
-  color: #6b7280;
-  cursor: pointer;
-}
-
-.tcm-segment button.active {
-  background: #fff;
-  color: #1890ff;
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
-}
-
 .tcm-check {
   display: flex;
   align-items: center;
@@ -832,46 +647,6 @@ function apply() {
   min-height: 30px;
   font-size: 12px;
   color: #374151;
-}
-
-.tcm-themes {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.tcm-theme {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 4px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  background: #fff;
-  font-size: 11px;
-  color: #6b7280;
-  cursor: pointer;
-}
-
-.tcm-theme.active {
-  border-color: #1890ff;
-  color: #1890ff;
-  font-weight: 600;
-  box-shadow: 0 0 0 1px #1890ff;
-}
-
-.tcm-swatch {
-  display: flex;
-  flex-direction: column;
-  width: 40px;
-  border: 1px solid #e5e7eb;
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.tcm-swatch span {
-  height: 5px;
 }
 
 .tcm-muted {

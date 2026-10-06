@@ -1,13 +1,8 @@
 <template>
   <div class="element-properties">
-    <!-- Panel header: title, with the report's style manager beside it -->
+    <!-- Panel header: what the panel is showing (the selected element, or the report) -->
     <div class="panel-header">
-      <!-- What the panel is showing: the selected element, or the report -->
       <h3>{{ panelTitle }}</h3>
-      <button type="button" class="chip-btn" @click="showStyleManagerModal = true">
-        <Palette :size="13" aria-hidden="true" />
-        {{ t("properties.styleManagement") }}
-      </button>
     </div>
 
     <!-- Report properties -->
@@ -171,18 +166,15 @@
                 </span>
               </label>
             </div>
-            <label v-if="reportStyles && reportStyles.length > 0" class="field style-ref-field">
-              <span class="field-label">{{ t("properties.styleReference") }}</span>
-              <select
-                class="card-select"
-                :value="currentElement.style ?? ''"
-                @change="setTextProperty('style', ($event.target as HTMLSelectElement).value || undefined)"
-              >
-                <option value="">{{ t("properties.noStyle") }}</option>
-                <option v-for="st in reportStyles" :key="st.name" :value="st.name">{{ st.name }}</option>
-              </select>
-            </label>
           </div>
+
+          <!-- Table: data, style, row sizes -->
+          <TableDataPanel
+            v-if="currentElement.type === 'table'"
+            part="basic"
+            v-bind="tablePanelProps"
+            v-on="tablePanelEvents"
+          />
 
           <!-- Frame properties: border presets, border lines, layout -->
           <FrameProperties
@@ -456,23 +448,16 @@
         </div>
 
 
-        <!-- Table properties tab -->
+        <!-- Table: Style Settings is where its look is changed -->
         <div
-          v-else-if="activeTab === 'table' && currentElement.type === 'table'"
-          key="table"
+          v-else-if="activeTab === 'style' && currentElement.type === 'table'"
+          key="table-style"
           class="prop-tab-pane"
           role="tabpanel"
         >
-          <TableDataPanel
-            :element="currentElement"
-            :report-styles="reportStyles"
-            @configure="emit('configure-table')"
-            @save-state="emit('save-state')"
-            @update-jrxml="emit('update-jrxml')"
-            @update:report-styles="(styles) => { reportStyles = styles; emit('update:reportStyles', styles); }"
-          />
+          <TableDataPanel part="style" v-bind="tablePanelProps" v-on="tablePanelEvents" />
         </div>
- 
+
         <!-- Style settings tab -->
         <div v-else key="style" class="prop-tab-pane" role="tabpanel">
 
@@ -863,142 +848,6 @@
     </div>
   </div>
 
-  <!-- Style management modal -->
-  <BaseModal
-    :visible="showStyleManagerModal"
-    :title="t('properties.styleManagement')"
-    @update:visible="showStyleManagerModal = $event"
-    @confirm="saveStyleChanges"
-    @cancel="cancelStyleChanges"
-  >
-    <div class="style-manager-content">
-      <div
-        v-for="(style, index) in reportStyles"
-        :key="index"
-        class="style-item"
-      >
-        <h4>{{ style.name }}</h4>
-        <div class="style-properties">
-          <!-- Background mode settings -->
-          <div class="form-group">
-            <label>{{ t("properties.backgroundMode") }}</label>
-            <select v-model="style.mode" @change="emit('update-jrxml')">
-              <option :value="undefined">
-                {{ t("properties.defaultTransparent") }}
-              </option>
-              <option value="Transparent">
-                {{ t("properties.transparent") }}
-              </option>
-              <option value="Opaque">
-                {{ t("properties.opaque") }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Foreground color settings -->
-          <div class="form-group">
-            <label>{{ t("properties.forecolor") }}</label>
-            <ColorPickerWithOpacity
-              v-model="style.forecolor"
-              v-model:mode="style.forecolorMode"
-              @update:modelValue="emit('update-jrxml')"
-              @update:mode="emit('update-jrxml')"
-            />
-          </div>
-
-          <!-- Background color settings -->
-          <div class="form-group">
-            <label>{{ t("properties.backgroundColor") }}</label>
-            <ColorPickerWithOpacity
-              v-model="style.backcolor"
-              v-model:mode="style.mode"
-              @update:modelValue="emit('update-jrxml')"
-              @update:mode="emit('update-jrxml')"
-            />
-          </div>
-
-          <!-- Horizontal text alignment -->
-          <div class="form-group">
-            <label>{{ t("properties.hTextAlign") }}</label>
-            <select v-model="style.hTextAlign" @change="emit('update-jrxml')">
-              <option :value="undefined">
-                {{ t("properties.default") }}
-              </option>
-              <option value="Left">
-                {{ t("properties.left") }}
-              </option>
-              <option value="Center">
-                {{ t("properties.center") }}
-              </option>
-              <option value="Right">
-                {{ t("properties.right") }}
-              </option>
-              <option value="Justified">
-                {{ t("properties.justified") }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Horizontal image alignment -->
-          <div class="form-group">
-            <label>{{ t("properties.hImageAlign") }}</label>
-            <select v-model="style.hImageAlign" @change="emit('update-jrxml')">
-              <option :value="undefined">
-                {{ t("properties.default") }}
-              </option>
-              <option value="Left">
-                {{ t("properties.left") }}
-              </option>
-              <option value="Center">
-                {{ t("properties.center") }}
-              </option>
-              <option value="Right">
-                {{ t("properties.right") }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Vertical text alignment -->
-          <div class="form-group">
-            <label>{{ t("properties.vTextAlign") }}</label>
-            <select v-model="style.vTextAlign" @change="emit('update-jrxml')">
-              <option :value="undefined">
-                {{ t("properties.default") }}
-              </option>
-              <option value="Top">
-                {{ t("properties.top") }}
-              </option>
-              <option value="Middle">
-                {{ t("properties.middle") }}
-              </option>
-              <option value="Bottom">
-                {{ t("properties.bottom") }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Vertical image alignment -->
-          <div class="form-group">
-            <label>{{ t("properties.vImageAlign") }}</label>
-            <select v-model="style.vImageAlign" @change="emit('update-jrxml')">
-              <option :value="undefined">
-                {{ t("properties.default") }}
-              </option>
-              <option value="Top">
-                {{ t("properties.top") }}
-              </option>
-              <option value="Middle">
-                {{ t("properties.middle") }}
-              </option>
-              <option value="Bottom">
-                {{ t("properties.bottom") }}
-              </option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
-  </BaseModal>
 </template>
 
 <script setup lang="ts">
@@ -1009,7 +858,6 @@ import {
   Ban,
   FileText,
   Minus,
-  Palette,
   Plus,
   RotateCcw,
   Scan,
@@ -1026,6 +874,7 @@ import { computed, ref, onMounted, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
 import type { Band, SelectedElementInfo, TableDataset } from "../../../types";
+import type { SavedTableStyle } from "@/types/dataSource";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
   CORNER_NAMES,
@@ -1049,7 +898,6 @@ import {
   getEffectiveDefaultBandLimits,
   getEffectiveDefaultBandConfig,
 } from "../../../constants/constants";
-import BaseModal from "../../modals/BaseModal.vue";
 import ColorPickerWithOpacity from "./ColorPickerWithOpacity.vue";
 import PaginationProperties from "./PaginationProperties.vue";
 import { isPagination } from "../../../utils/paginationPresets";
@@ -1073,7 +921,8 @@ interface Props {
   bands: Band[];
   reportProperties: any;
   subDatasets?: TableDataset[];
-  reportStyles?: any[];
+  // Table styles saved in the report
+  tableStyles?: SavedTableStyle[];
   reportFields?: Array<{ name: string; class?: string }>;
   reportParameters?: Array<{ name: string; class?: string }>;
   reportVariables?: Array<{ name: string; class?: string }>;
@@ -1086,7 +935,10 @@ interface Emits {
   (e: "save-state"): void;
   // Fit the selected text element's box to its text (done by the designer)
   (e: "fit-to-text"): void;
-  (e: "update:reportStyles", styles: any[]): void;
+  (e: "save-table-style", name: string): void;
+  (e: "update-table-style", id: string): void;
+  (e: "rename-table-style", id: string, name: string): void;
+  (e: "delete-table-style", id: string): void;
   // Open the Configure popup for the selected table
   (e: "configure-table"): void;
 }
@@ -1271,7 +1123,6 @@ const showTextAlignmentAndStyle = computed(() => {
 });
 
 // Style management modal control
-const showStyleManagerModal = ref(false);
 
 // Frame property update handler
 const handleFramePropertyUpdate = (updatedElement: any) => {
@@ -1298,30 +1149,6 @@ const replaceCurrentElement = (updatedElement: any) => {
   emit("save-state");
   handleFramePropertyUpdate(updatedElement);
 };
-
-// Report style management
-const reportStyles = ref<any[]>(props.reportStyles || []);
-// Follow the report's styles (e.g. a table theme added from the canvas)
-watch(
-  () => props.reportStyles,
-  (styles) => {
-    reportStyles.value = styles || [];
-  },
-);
-
-// Save style changes
-function saveStyleChanges() {
-  emit("update:reportStyles", reportStyles.value);
-  emit("update-jrxml");
-  showStyleManagerModal.value = false;
-}
-
-// Cancel style changes
-function cancelStyleChanges() {
-  // Reset styles to their original state
-  reportStyles.value = props.reportStyles || [];
-  showStyleManagerModal.value = false;
-}
 
 // Rectangle border style computed property
 const rectangleBorderStyle = computed({
@@ -1727,13 +1554,23 @@ const panelTitle = computed(() => {
 const activeTab = ref("basic");
 const TAB_LABELS: Record<string, string> = {
   basic: "properties.basicProperties",
-  table: "properties.tableProperties",
   style: "properties.styleSettings",
 };
-// A table's look is its theme, chosen in the Table tab
-const availableTabs = computed(() =>
-  currentElement.value?.type === "table" ? ["basic", "table"] : ["basic", "style"],
-);
+const availableTabs = computed(() => ["basic", "style"]);
+
+// The table panel appears in both tabs (Basic: data, style, row sizes;
+// Style Settings: changes to its look)
+const tablePanelProps = computed(() => ({ element: currentElement.value as any, tableStyles: props.tableStyles ?? [] }));
+const tablePanelEvents = {
+  configure: () => emit("configure-table"),
+  "save-state": () => emit("save-state"),
+  "update-jrxml": () => emit("update-jrxml"),
+  "save-table-style": (name: string) => emit("save-table-style", name),
+  "update-table-style": (id: string) => emit("update-table-style", id),
+  "rename-table-style": (id: string, name: string) => emit("rename-table-style", id, name),
+  "delete-table-style": (id: string) => emit("delete-table-style", id),
+  "open-style-settings": () => (activeTab.value = "style"),
+};
 watch(availableTabs, (tabs) => {
   if (!tabs.includes(activeTab.value)) activeTab.value = "basic";
 });
@@ -2998,10 +2835,6 @@ function addPropertyExpression() {
   gap: 10px 12px;
 }
 
-.style-ref-field {
-  margin-top: 12px;
-}
-
 .card-select,
 .card-textarea {
   width: 100%;
@@ -3894,40 +3727,6 @@ function addPropertyExpression() {
   color: var(--prop-text-primary);
 }
 
-/* Style management section */
-.style-management-section {
-  margin-bottom: var(--prop-spacing-lg);
-}
-
-.style-manager-content {
-  max-height: 500px;
-  overflow-y: auto;
-}
-
-.style-item {
-  margin-bottom: var(--prop-spacing-xl);
-  padding: var(--prop-spacing-lg);
-  border: 1px solid var(--prop-border-color);
-  border-radius: var(--prop-border-radius-md);
-  background-color: var(--prop-bg-secondary);
-}
-
-.style-item h4 {
-  margin-top: 0;
-  margin-bottom: var(--prop-spacing-md);
-  font-size: var(--prop-font-size-md);
-  font-weight: var(--prop-font-weight-semibold);
-  color: var(--prop-text-primary);
-  border-bottom: 1px solid var(--prop-border-color);
-  padding-bottom: var(--prop-spacing-sm);
-}
-
-.style-properties {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--prop-spacing-lg);
-}
-
 .btn-autofit-height {
   padding: 2px 7px;
   font-size: 11px;
@@ -4010,11 +3809,5 @@ function addPropertyExpression() {
 .btn-cross-line:hover {
   background-color: #1890ff;
   color: #ffffff;
-}
-
-@media (max-width: 768px) {
-  .style-properties {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

@@ -15,8 +15,8 @@ A browser-based visual designer for JasperReports templates (JRXML), part of Pro
   - Basic: Text, Image, Line, Rectangle, Ellipse, Box, Table, Chart, Barcode
   - Composite: Page Border, Page Number (simple, "Page X", "Page X of Y"…, with page ranges)
   - Element presets: Number Box, Alert Box, Section Box, Photo Box
-- **Data tables**: drag a source (e.g. Procurement, Products) from "Table Data" onto a table, then pick columns, rename headers, filter, sort, limit rows, add totals and choose a theme (Corporate Blue, Minimal, Emerald). Several independent tables per report; rows are fetched from the backend each time
-- **Styling**: fonts, colours, borders per side (Solid, Dashed, Dotted, Double), rounded corners per corner, padding, named styles in Style Management
+- **Data tables**: drag a source (e.g. Procurement, Products) from "Table Data" onto a table, then pick columns, rename headers, filter and sort like a shop's filter panel (tick values, price-style ranges, one sort), limit rows and add totals. Table styles: built-in Corporate Blue, Minimal and Emerald, customize any table, and save a look as your own table style to reuse. Several independent tables per report; rows are fetched from the backend each time
+- **Styling**: fonts, colours, borders per side (Solid, Dashed, Dotted, Double), rounded corners per corner, padding
 - **Text**: inline rich-text editing with a formatting toolbar, fit-to-text
 - **Images**: upload, crop, rounded corners
 - **Layout**: grid, snap to grid and to alignment guides, rulers, zoom, multi-select with align and distribute, copy/paste, undo/redo (`Ctrl+Z` / `Ctrl+Y`)

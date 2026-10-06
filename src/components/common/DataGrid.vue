@@ -41,16 +41,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { ReportStyle } from "@/types";
-import type { DataRow, TableColumnBinding, TableTheme } from "@/types/dataSource";
+import type { DataRow, TableColumnBinding, TableLook } from "@/types/dataSource";
 import { cellAlignmentFor, computeTotal, formatCellValue } from "@/utils/table/dataTable";
-import { findTableStyle, tableCellCss, type TableStylePart } from "@/utils/table/tableThemes";
+import { lookPartStyles, tableCellCss, type TableStylePart } from "@/utils/table/tableThemes";
 
 const props = defineProps<{
   columns: TableColumnBinding[];
   rows: DataRow[];
-  theme: TableTheme;
-  reportStyles: ReportStyle[];
+  look: TableLook;
   showTotals?: boolean;
   loading?: boolean;
   failed?: boolean;
@@ -58,11 +56,7 @@ const props = defineProps<{
 
 const { t, locale } = useI18n();
 
-const styles = computed(() => ({
-  header: findTableStyle(props.reportStyles, props.theme, "header"),
-  row: findTableStyle(props.reportStyles, props.theme, "row"),
-  totals: findTableStyle(props.reportStyles, props.theme, "totals"),
-}));
+const styles = computed(() => lookPartStyles(props.look));
 
 function cellStyle(part: TableStylePart, col: TableColumnBinding, index: number, rowIndex = 0) {
   const css: Record<string, string> = tableCellCss(styles.value[part], part === "row" && rowIndex % 2 === 1);

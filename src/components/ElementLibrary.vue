@@ -55,64 +55,6 @@
       <TableDataList :bands="bands as Band[]" />
     </div>
 
-    <!-- Report styles section -->
-    <div class="data-fields-section">
-      <div class="section-header">
-        <h4>{{ t("elementLibrary.reportStyles") }}</h4>
-        <n-button
-          class="add-button"
-          @click="handleAddStyle"
-          type="default"
-          quaternary
-          circle
-          size="small"
-          :title="t('elementLibrary.addReportStyle')"
-          ><Plus :size="14" /></n-button
-        >
-      </div>
-      <div class="parameters-mini-view">
-        <div
-          v-for="(style, index) in reportStyles"
-          :key="index"
-          class="field-mini-item"
-        >
-          <div class="field-info">
-            <span class="field-name">{{ style.name }}</span>
-            <span v-if="style.parentStyle" class="field-type"
-              >({{ style.parentStyle }})</span
-            >
-          </div>
-          <div class="field-actions">
-            <n-button
-              class="action-button edit-button"
-              @click.stop="handleEditStyle(style)"
-              type="default"
-              quaternary
-              circle
-              size="small"
-              :title="t('elementLibrary.editStyle')"
-            >
-              <SquarePen :size="14" />
-            </n-button>
-            <n-button
-              class="action-button delete-button"
-              @click.stop="handleDeleteStyle(style.name)"
-              type="error"
-              quaternary
-              circle
-              size="small"
-              :title="t('elementLibrary.deleteStyle')"
-            >
-              <Trash2 :size="14" />
-            </n-button>
-          </div>
-        </div>
-        <div v-if="reportStyles.length === 0" class="empty-state">
-          <p>{{ t("elementLibrary.noReportStyles") }}</p>
-          <p class="empty-hint">{{ t("elementLibrary.clickToAddStyle") }}</p>
-        </div>
-      </div>
-    </div>
     <!-- Page Number tile: where on the page to put it -->
     <Teleport to="body">
       <div
@@ -159,9 +101,6 @@ import { NButton } from "naive-ui";
 import {
   ChevronDown,
   ChevronRight,
-  Plus,
-  SquarePen,
-  Trash2,
 } from "@lucide/vue";
 import TableDataList from "./designer/TableDataList.vue";
 import { ElementRegistry } from "./elements/ElementRegistry";
@@ -177,7 +116,6 @@ import type {
   ReportField,
   ReportParameter,
   ReportVariable,
-  ReportStyle,
 } from "../types";
 import { getElementIcon, getElementIconComponent } from "../utils/elementUtils";
 
@@ -190,7 +128,6 @@ interface Props {
   reportFields?: ReportField[];
   reportParameters?: ReportParameter[];
   reportVariables?: ReportVariable[];
-  reportStyles: ReportStyle[];
   bands: Array<{ type: string; name?: string; elements: DesignElement[] }>;
 }
 
@@ -199,9 +136,6 @@ interface Emits {
   (e: "drag-start", event: DragEvent, element: any): void;
   (e: "element-double-click", element: any): void;
   (e: "insert-page-number", position: PaginationPosition): void;
-  (e: "add-style"): void;
-  (e: "edit-style", style: ReportStyle): void;
-  (e: "delete-style", styleName: string): void;
 }
 
 // Use default values
@@ -210,7 +144,6 @@ const props = withDefaults(defineProps<Props>(), {
   reportFields: () => [],
   reportParameters: () => [],
   reportVariables: () => [],
-  reportStyles: () => [],
   bands: () => [],
 });
 
@@ -372,21 +305,6 @@ function choosePageNumberPosition(position: PaginationPosition): void {
 }
 
 onBeforeUnmount(closePageNumberMenu);
-
-// Handle adding a style
-function handleAddStyle(): void {
-  emit("add-style");
-}
-
-// Handle editing a style
-function handleEditStyle(style: ReportStyle): void {
-  emit("edit-style", style);
-}
-
-// Handle deleting a style
-function handleDeleteStyle(styleName: string): void {
-  emit("delete-style", styleName);
-}
 
 </script>
 

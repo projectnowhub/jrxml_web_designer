@@ -212,7 +212,6 @@
           :report-fields="reportFields"
           :report-parameters="reportParameters"
           :report-variables="reportVariables"
-          :report-styles="reportStyles"
           :bands="bands"
           @drag-start="handleDragStart"
           @element-double-click="handleElementDoubleClick"
@@ -226,9 +225,6 @@
           @add-variable="handleAddVariable"
           @edit-variable="handleEditVariable"
           @delete-variable="handleDeleteVariable"
-          @add-style="handleAddStyle"
-          @edit-style="handleEditStyle"
-          @delete-style="handleDeleteStyle"
         >
           <template #header-actions>
             <PanelToggleButton side="left" :collapsed="false" @toggle="toggleCollapse" />
@@ -286,7 +282,6 @@
           :enable-snap-to-grid="enableSnapToGrid"
           :enable-snap-to-alignment="enableSnapToAlignment"
           :show-grid="showGrid"
-          :report-styles="reportStyles"
           :total-pages="totalPages"
           @set-design-area-focused="setDesignAreaFocused"
           @select-band="selectBand"
@@ -386,7 +381,7 @@
             :bands="bands"
             :report-properties="reportProperties"
             :sub-datasets="subDatasets"
-            :report-styles="reportStyles"
+            :table-styles="tableStyles"
             :report-fields="reportFields"
             :report-parameters="reportParameters"
             :report-variables="reportVariables"
@@ -402,7 +397,10 @@
                   selectedElement.parentFrameIndex,
                 )
             "
-            @update:reportStyles="reportStyles = $event"
+            @save-table-style="saveTableStyle"
+            @update-table-style="updateTableStyle"
+            @rename-table-style="renameTableStyle"
+            @delete-table-style="deleteTableStyle"
             @configure-table="openTableConfigForSelection"
           />
         </div>
@@ -475,20 +473,11 @@
       @save="handleVariableSave"
     />
 
-    <!-- Style management modal -->
-    <StyleManagementModal
-      v-model:visible="showStyleModal"
-      :style="editingStyle"
-      :all-styles="reportStyles"
-      @save="handleStyleSave"
-    />
-
     <!-- PDF preview modal -->
     <PdfPreviewModal
       :visible="showPdfPreview"
       :jrxml-content="jrxmlContent"
       :bands="bands"
-      :report-styles="reportStyles"
       :report-parameters="reportParameters"
       :report-fields="reportFields"
       @update:visible="showPdfPreview = $event"
@@ -504,7 +493,6 @@
       :initial-column-key="tableConfig.columnKey"
       :existing-table-names="usedTableNames(bands)"
       :existing-dataset-names="usedDatasetNames(bands)"
-      :report-styles="reportStyles"
       @apply="applyTableConfig"
     />
 
@@ -599,7 +587,6 @@ import FieldManagementModal from "./modals/FieldManagementModal.vue";
 import PdfPreviewModal from "./modals/PdfPreviewModal.vue";
 import TableConfigModal from "./modals/TableConfigModal.vue";
 import VariableManagementModal from "./modals/VariableManagementModal.vue";
-import StyleManagementModal from "./modals/StyleManagementModal.vue";
 import BaseModal from "./modals/BaseModal.vue";
 import BottomPanel from "./panels/BottomPanel.vue";
 import PanelToggleButton from "./panels/PanelToggleButton.vue";
@@ -645,7 +632,7 @@ import type {
   TableDataset,
   TableElement,
 } from "../types";
-import type { DataColumn, TableDataBinding, TableTheme } from "@/types/dataSource";
+import type { DataColumn, SavedTableStyle, TableDataBinding, TableLook } from "@/types/dataSource";
 import {
   endDataSourceDrag,
   isDataSourceDrag,
@@ -661,7 +648,7 @@ import {
   tableHeight,
   toColumnBinding,
 } from "@/utils/table/dataTable";
-import { ensureThemeStyles, syncThemeStyles, withoutLegacyTableStyles } from "@/utils/table/tableThemes";
+import { createTableStyleId, parseSavedTableStyles, resolveLook } from "@/utils/table/tableThemes";
 import {
   collectBoundTables,
   ensureUniqueTableDatasets,
@@ -1172,8 +1159,8 @@ function loadFile(fileData: DesignerFile | any) {
       reportGroups.value = fileContent.reportGroups;
     }
 
-    if (fileContent.reportStyles) {
-      reportStyles.value = withoutLegacyTableStyles(fileContent.reportStyles);
+    if (Array.isArray(fileContent.tableStyles)) {
+      tableStyles.value = parseSavedTableStyles(JSON.stringify(fileContent.tableStyles));
     }
 
     if (fileContent.jrxmlContent) {
@@ -1249,7 +1236,7 @@ function saveCurrentFile() {
     subDatasets: subDatasets.value,
     reportVariables: reportVariables.value,
     reportGroups: reportGroups.value,
-    reportStyles: reportStyles.value,
+    tableStyles: tableStyles.value,
     jrxmlContent: jrxmlContent.value,
     lastModified: new Date().toISOString(),
   };
@@ -1387,7 +1374,8 @@ const subDatasets = ref<TableDataset[]>([]);
 
 // Report styles
 // Report styles (table theme styles are added when a table first uses them)
-const reportStyles = ref<any[]>([]);
+// Table styles the user saved in this report (built-in ones are not listed)
+const tableStyles = ref<SavedTableStyle[]>([]);
 
 // Report variables
 const reportVariables = ref<any[]>([]);
@@ -1442,7 +1430,7 @@ type HistoryState = {
   reportFields: typeof reportFields.value;
   reportParameters: typeof reportParameters.value;
   subDatasets: typeof subDatasets.value;
-  reportStyles: typeof reportStyles.value;
+  tableStyles: typeof tableStyles.value;
 };
 
 // Out-of-bounds elements
@@ -1617,7 +1605,7 @@ const { historyStack, redoStack, saveStateToHistory, undo, redo } =
       reportFields: reportFields.value,
       reportParameters: reportParameters.value,
       subDatasets: subDatasets.value,
-      reportStyles: reportStyles.value,
+      tableStyles: tableStyles.value,
     }),
     applyState: (state) => {
       reportProperties.value = state.reportProperties;
@@ -1626,7 +1614,7 @@ const { historyStack, redoStack, saveStateToHistory, undo, redo } =
       reportParameters.value = state.reportParameters;
       subDatasets.value = state.subDatasets;
       // Older snapshots (taken before styles were recorded) keep the current styles
-      if (state.reportStyles) reportStyles.value = state.reportStyles;
+      if (state.tableStyles) tableStyles.value = state.tableStyles;
     },
     onAfterRestore: () => {
       updateJRXML();
@@ -2568,22 +2556,6 @@ const tableAt = (loc: TableLocation | null): TableElement | null => {
   return el?.type === "table" ? (el as TableElement) : null;
 };
 
-// Style Management lists the styles of the themes the tables use, and no
-// others. Runs when a theme changes or a report is opened; part of the same
-// undo step as the change that switched the theme.
-watch(
-  () =>
-    [
-      [...new Set(collectBoundTables(bands.value).map((t) => t.binding.theme))].sort().join(","),
-      reportStyles.value,
-    ] as const,
-  ([themes]) => {
-    const synced = syncThemeStyles(reportStyles.value, themes ? (themes.split(",") as TableTheme[]) : []);
-    if (synced !== reportStyles.value) reportStyles.value = synced;
-  },
-  { immediate: true },
-);
-
 // The Configure popup: for an existing table, or for a new one created on Apply
 const tableConfig = ref<{
   visible: boolean;
@@ -2653,7 +2625,6 @@ const applyTableConfig = (binding: TableDataBinding, rowCount: number) => {
 
   table.binding = binding;
   table.height = tableHeight(binding, rowCount, table.headerHeight, table.rowHeight);
-  reportStyles.value = ensureThemeStyles(reportStyles.value, binding.theme);
 
   // The table must still fit its section: moved up, or the section grows
   if (location.parentFrameIndex === undefined) {
@@ -3877,7 +3848,7 @@ const downloadJRXML = () => {
     reportFields.value,
     reportParameters.value,
     subDatasets.value,
-    reportStyles.value,
+    tableStyles.value,
     reportVariables.value,
     [],
     reportGroups.value,
@@ -3987,7 +3958,7 @@ const updateJRXML = () => {
       reportFields.value,
       reportParameters.value,
       subDatasets.value,
-      reportStyles.value,
+      tableStyles.value,
       reportVariables.value,
       [],
       reportGroups.value,
@@ -4656,7 +4627,7 @@ watch(
     subDatasets,
     reportVariables,
     reportGroups,
-    reportStyles,
+    tableStyles,
   ],
   () => {
     // Only update while not dragging/resizing, not already in JRXML update, and not loading a file
@@ -4712,7 +4683,7 @@ const openPdfPreview = (): void => {
         reportFields.value,
         reportParameters.value,
         subDatasets.value,
-        reportStyles.value,
+        tableStyles.value,
         reportVariables.value,
         [],
         reportGroups.value,
@@ -4782,10 +4753,8 @@ const saveJRXML = (): void => {
       reportGroups.value = parsedData.groups;
     }
 
-    // Update the style definitions
-    if (parsedData.styles) {
-      reportStyles.value = parsedData.styles;
-    }
+    // Saved table styles (report styles themselves are rebuilt from the tables)
+    tableStyles.value = parsedData.tableStyles;
 
     // Update the sub-datasets
     if (parsedData.datasets) {
@@ -6325,54 +6294,66 @@ const handleVariableSave = (variable: ReportVariable): void => {
   updateJRXML();
 };
 
-// Style management related state
-const showStyleModal = ref(false);
-const editingStyle = ref<any | undefined>(undefined);
+// ── Table styles ──
+// Every table carries its own look; a saved style is a named look other
+// tables can use. Each action below is one undo step.
 
-// Handle adding a style
-const handleAddStyle = (): void => {
-  editingStyle.value = undefined;
-  showStyleModal.value = true;
+const copyLook = (look: TableLook): TableLook => ({ ...look });
+
+// Tables currently using a saved style unchanged
+const tablesUsingStyle = (id: string) =>
+  collectBoundTables(bands.value).filter((t) => t.binding.theme === id && !t.binding.customized);
+
+const selectedTable = () => {
+  const sel = selectedElement.value;
+  return sel ? tableAt({ bandIndex: sel.bandIndex, elementIndex: sel.elementIndex, parentFrameIndex: sel.parentFrameIndex }) : null;
 };
 
-// Handle editing a style
-const handleEditStyle = (style: any): void => {
-  editingStyle.value = {
-    ...style,
-    box: style.box ? { ...style.box } : undefined,
-  };
-  showStyleModal.value = true;
-};
-
-// Handle deleting a style
-const handleDeleteStyle = (styleName: string): void => {
-  if (confirm(t("editor.confirmDelete.style", { name: styleName }))) {
-    const styleIndex = reportStyles.value.findIndex(
-      (s) => s.name === styleName,
-    );
-    if (styleIndex !== -1) {
-      reportStyles.value.splice(styleIndex, 1);
-      saveStateToHistory();
-      updateJRXML();
-    }
-  }
-};
-
-// Handle saving a style
-const handleStyleSave = (style: any): void => {
-  const existingIndex = reportStyles.value.findIndex(
-    (s) => s.name === style.name,
-  );
-  if (existingIndex !== -1 && editingStyle.value?.name !== style.name) {
-    alert(t("editor.duplicateName.style"));
-    return;
-  }
-  if (existingIndex !== -1) {
-    reportStyles.value[existingIndex] = style;
-  } else {
-    reportStyles.value.push(style);
-  }
+// The selected table's look becomes a new saved style, used by that table
+const saveTableStyle = (name: string): void => {
+  const binding = selectedTable()?.binding;
+  if (!binding) return;
   saveStateToHistory();
+  const style: SavedTableStyle = {
+    id: createTableStyleId(tableStyles.value),
+    name,
+    look: copyLook(resolveLook(binding)),
+  };
+  tableStyles.value = [...tableStyles.value, style];
+  binding.theme = style.id;
+  binding.look = copyLook(style.look);
+  binding.customized = undefined;
+  notification.success(t("dataTable.style.saved", { name }));
+  updateJRXML();
+};
+
+// A saved style takes the selected table's look; every table using it follows
+const updateTableStyle = (id: string): void => {
+  const binding = selectedTable()?.binding;
+  const style = tableStyles.value.find((s) => s.id === id);
+  if (!binding || !style) return;
+  saveStateToHistory();
+  const look = copyLook(resolveLook(binding));
+  tableStyles.value = tableStyles.value.map((s) => (s.id === id ? { ...s, look } : s));
+  for (const table of tablesUsingStyle(id)) table.binding.look = copyLook(look);
+  binding.theme = id;
+  binding.look = copyLook(look);
+  binding.customized = undefined;
+  notification.success(t("dataTable.style.updated", { name: style.name }));
+  updateJRXML();
+};
+
+const renameTableStyle = (id: string, name: string): void => {
+  saveStateToHistory();
+  tableStyles.value = tableStyles.value.map((s) => (s.id === id ? { ...s, name } : s));
+  updateJRXML();
+};
+
+// Tables using a deleted style keep their look, as changes of their own
+const deleteTableStyle = (id: string): void => {
+  saveStateToHistory();
+  for (const table of tablesUsingStyle(id)) table.binding.customized = true;
+  tableStyles.value = tableStyles.value.filter((s) => s.id !== id);
   updateJRXML();
 };
 

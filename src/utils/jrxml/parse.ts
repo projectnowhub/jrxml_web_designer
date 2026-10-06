@@ -13,15 +13,14 @@ import {
   withoutLines,
 } from "../framePresets";
 import { detectPagination } from "../paginationPresets";
-import { withoutLegacyTableStyles } from "../table/tableThemes";
+import { SAVED_TABLE_STYLES_PROPERTY, parseSavedTableStyles } from "../table/tableThemes";
+import type { SavedTableStyle } from "@/types/dataSource";
 import type {
   ReportProperties,
   Field,
   Parameter,
   SubDataset,
   Variable,
-  ReportStyle,
-  ConditionalStyle,
 } from "./types";
 
 export function parseJRXMLContent(jrxmlContent: string): {
@@ -32,7 +31,7 @@ export function parseJRXMLContent(jrxmlContent: string): {
   datasets: SubDataset[];
   variables: Variable[];
   groups: ReportGroup[];
-  styles: ReportStyle[];
+  tableStyles: SavedTableStyle[];
   reportProperties: Array<{ name: string; value: string }>;
 } {
   const parser = new DOMParser();
@@ -480,32 +479,6 @@ export function parseJRXMLContent(jrxmlContent: string): {
     }
   });
 
-  // Parse report styles
-  const styles: ReportStyle[] = [];
-  Array.from(jasperReportElem.children).forEach((child) => {
-    if (child.tagName === "style" || child.localName === "style") {
-      const name = child.getAttribute("name");
-      if (!name) return;
-      const style: ReportStyle = { name, ...readStyleLook(child) };
-      // Parent style: "style" in the schema; "parentStyle" in older designer files
-      const parent = child.getAttribute("style") || child.getAttribute("parentStyle");
-      if (parent) style.parentStyle = parent;
-      const conditionalStyleElems = directChildren(child, "conditionalStyle");
-      if (conditionalStyleElems.length > 0) {
-        style.conditionalStyles = conditionalStyleElems.map((csElem) => {
-          const csCondExpr = directChildren(csElem, "conditionExpression")[0];
-          // The schema puts the look on a nested <style>; older files on the element itself
-          const look = directChildren(csElem, "style")[0] ?? csElem;
-          return {
-            conditionExpression: csCondExpr?.textContent?.trim() ?? "",
-            properties: readStyleLook(look),
-          } as ConditionalStyle;
-        });
-      }
-      styles.push(style);
-    }
-  });
-
   // Parse report-level <property> elements
   const reportProperties: Array<{ name: string; value: string }> = [];
   Array.from(jasperReportElem.children).forEach((child) => {
@@ -526,8 +499,12 @@ export function parseJRXMLContent(jrxmlContent: string): {
     datasets,
     variables,
     groups,
-    styles: withoutLegacyTableStyles(styles),
-    reportProperties,
+    // Report styles are not kept: tables rebuild theirs from their own look,
+    // and saved table styles come from their report property
+    tableStyles: parseSavedTableStyles(
+      reportProperties.find((p) => p.name === SAVED_TABLE_STYLES_PROPERTY)?.value,
+    ),
+    reportProperties: reportProperties.filter((p) => p.name !== SAVED_TABLE_STYLES_PROPERTY),
   };
 }
 
@@ -825,33 +802,6 @@ function directChildren(parent: Element, localName: string): Element[] {
   return Array.from(parent.children).filter((c) => (c.localName || c.tagName) === localName);
 }
 
-// Colours, alignment, font and box of a <style>: font and alignment are
-// attributes in the schema; older designer files wrote a <textElement> child
-function readStyleLook(el: Element): Partial<ReportStyle> {
-  const look: Partial<ReportStyle> = {};
-  const attr = (name: string) => el.getAttribute(name) || undefined;
-  if (attr("mode")) look.mode = attr("mode");
-  if (attr("backcolor")) look.backcolor = attr("backcolor");
-  if (attr("forecolor")) look.forecolor = attr("forecolor");
-  const textElem = directChildren(el, "textElement")[0];
-  const fontElem = textElem ? directChildren(textElem, "font")[0] : undefined;
-  const textAlignment = attr("hTextAlign") ?? attr("hAlign") ?? textElem?.getAttribute("textAlignment") ?? undefined;
-  const verticalAlignment = attr("vTextAlign") ?? attr("vAlign") ?? textElem?.getAttribute("verticalAlignment") ?? undefined;
-  if (textAlignment) look.textAlignment = textAlignment;
-  if (verticalAlignment) look.verticalAlignment = verticalAlignment;
-  const fontName = attr("fontName") ?? fontElem?.getAttribute("fontName") ?? undefined;
-  const fontSize = attr("fontSize") ?? fontElem?.getAttribute("size") ?? undefined;
-  if (fontName) look.fontFamily = fontName;
-  if (fontSize) look.fontSize = parseFloat(fontSize);
-  for (const flag of ["isBold", "isItalic", "isUnderline"] as const) {
-    const value = el.getAttribute(flag) ?? fontElem?.getAttribute(flag);
-    if (value === "true") look[flag] = true;
-  }
-  const boxElem = directChildren(el, "box")[0];
-  if (boxElem) look.box = parseBoxElement(boxElem);
-  return look;
-}
-
 // Position and size every element shares
 function readBounds(reportElement: Element) {
   return {
@@ -1056,9 +1006,6 @@ function parseElement(element: Element, type: string): any {
   } else if (reportElement.hasAttribute("printWhenExpression")) {
     (result as any).printWhenExpression =
       reportElement.getAttribute("printWhenExpression") || undefined;
-  }
-  if (reportElement.hasAttribute("style")) {
-    result.style = reportElement.getAttribute("style") || undefined;
   }
   if (reportElement.hasAttribute("isPrintRepeatedValues")) {
     (result as any).isPrintRepeatedValues =

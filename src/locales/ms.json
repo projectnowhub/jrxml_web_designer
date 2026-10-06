@@ -100,12 +100,6 @@
     "deleteVariable": "Padam Pemboleh Ubah",
     "noReportVariables": "Tiada pemboleh ubah laporan",
     "clickToAddVariable": "Klik '+' di atas untuk menambah pemboleh ubah",
-    "reportStyles": "Gaya",
-    "addReportStyle": "Tambah Gaya",
-    "editStyle": "Edit Gaya",
-    "deleteStyle": "Padam Gaya",
-    "noReportStyles": "Tiada gaya",
-    "clickToAddStyle": "Klik '+' di atas untuk menambah gaya",
     "fieldNameRequired": "Nama medan diperlukan",
     "duplicateFieldName": "Nama medan sudah wujud, sila gunakan nama lain"
   },
@@ -276,7 +270,6 @@
     "tableHeader": "Pengepala Jadual",
     "tableHeaderPlaceholder": "Masukkan teks pengepala jadual",
     "includeTableHeader": "Sertakan Pengepala Jadual",
-    "tableProperties": "Sifat Jadual",
     "tableFooter": "Pengaki Jadual",
     "tableFooterPlaceholder": "Masukkan ungkapan pengaki jadual",
     "moveColumnLeft": "Alih lajur ke kiri",
@@ -326,11 +319,8 @@
     "tableStyleSettings": "Tetapan Gaya Jadual",
     "rowHeightSettings": "Tetapan Ketinggian Baris",
     "detailCell": "Sel Butiran",
-    "styleManagement": "Pengurusan Gaya",
     "selectStyle": "Pilih Gaya",
     "printWhenExpression": "Syarat / Peraturan Paparan",
-    "styleReference": "Rujukan Gaya",
-    "noStyle": "Tiada Gaya",
     "contentSource": "Kandungan Data",
     "displayFormat": "Format Paparan",
     "positionType": "Apabila Kandungan di Atas Bertambah",
@@ -532,39 +522,6 @@
     "errors": {
       "nameRequired": "Nama pemboleh ubah diperlukan",
       "classRequired": "Jenis pemboleh ubah diperlukan"
-    }
-  },
-  "styleManagement": {
-    "title": "Pengurusan Gaya",
-    "addStyle": "Tambah Gaya",
-    "editStyle": "Edit Gaya",
-    "styleName": "Nama Gaya",
-    "styleNamePlaceholder": "Masukkan nama gaya",
-    "parentStyle": "Gaya Induk",
-    "noParent": "Tiada (Gaya peringkat atas)",
-    "mode": "Mod",
-    "modeDefault": "Lalai",
-    "modeOpaque": "Legap",
-    "modeTransparent": "Lut Sinar",
-    "forecolor": "Warna Latar Depan",
-    "backcolor": "Warna Latar Belakang",
-    "fontFamily": "Keluarga Fon",
-    "fontSize": "Saiz Fon",
-    "fontStyle": "Gaya Fon",
-    "bold": "Tebal",
-    "italic": "Condong",
-    "underline": "Garis Bawah",
-    "textAlignment": "Penjajaran Teks",
-    "alignLeft": "Kiri",
-    "alignCenter": "Tengah",
-    "alignRight": "Kanan",
-    "alignJustified": "Diseimbangkan",
-    "verticalAlignment": "Penjajaran Menegak",
-    "valignTop": "Atas",
-    "valignMiddle": "Tengah",
-    "valignBottom": "Bawah",
-    "errors": {
-      "nameRequired": "Nama gaya diperlukan"
     }
   },
   "pdfPreview": {
@@ -965,12 +922,10 @@
     "confirmDelete": {
       "field": "Adakah anda pasti mahu memadam medan \"{name}\"?",
       "parameter": "Adakah anda pasti mahu memadam parameter \"{name}\"?",
-      "variable": "Adakah anda pasti mahu memadam pemboleh ubah \"{name}\"?",
-      "style": "Adakah anda pasti mahu memadam gaya \"{name}\"?"
+      "variable": "Adakah anda pasti mahu memadam pemboleh ubah \"{name}\"?"
     },
     "duplicateName": {
       "variable": "Pemboleh ubah dengan nama ini sudah wujud, sila gunakan nama lain",
-      "style": "Gaya dengan nama ini sudah wujud, sila gunakan nama lain",
       "parameter": "Parameter dengan nama ini sudah wujud, sila gunakan nama lain",
       "field": "Medan dengan nama ini sudah wujud, sila gunakan nama lain"
     }
@@ -1289,23 +1244,6 @@
       "avg": "Purata",
       "count": "Bilangan"
     },
-    "operators": {
-      "equals": "ialah",
-      "notEquals": "bukan",
-      "contains": "mengandungi",
-      "startsWith": "bermula dengan",
-      "isEmpty": "kosong",
-      "isNotEmpty": "tidak kosong",
-      "greaterThan": "lebih daripada",
-      "lessThan": "kurang daripada",
-      "between": "antara",
-      "on": "pada",
-      "before": "sebelum",
-      "after": "selepas"
-    },
-    "summary": {
-      "between": "{column} antara {from} dan {to}"
-    },
     "types": {
       "text": "Teks",
       "number": "Nombor",
@@ -1313,7 +1251,6 @@
       "date": "Tarikh"
     },
     "theme": {
-      "label": "Tema",
       "corporateBlue": "Biru Korporat",
       "minimal": "Minimal",
       "emerald": "Zamrud"
@@ -1322,15 +1259,14 @@
       "data": "Data",
       "tableName": "Nama jadual",
       "columnCount": "1 lajur | {count} lajur",
-      "matchAll": "(semua mesti sepadan)",
-      "matchAny": "(mana-mana boleh sepadan)",
       "firstRows": "Baris pertama sahaja | {count} baris pertama",
       "editData": "Edit data",
       "emptyHint": "Seret sumber dari Data Jadual ke jadual ini, atau pilih satu di sini.",
       "chooseData": "Pilih data",
       "look": "Rupa",
       "headerHeight": "Tinggi pengepala",
-      "rowHeight": "Tinggi baris"
+      "rowHeight": "Tinggi baris",
+      "rowSizes": "Saiz baris"
     },
     "config": {
       "title": "Sediakan {name}",
@@ -1348,22 +1284,6 @@
       "removeColumn": "Buang lajur",
       "addColumn": "Tambah lajur…",
       "columnLimitHint": "Tiada lagi lajur yang muat. Buang satu, atau lebarkan jadual (halaman landskap memuatkan lebih banyak).",
-      "filters": "Penapis",
-      "match": {
-        "all": "Semua mesti sepadan",
-        "any": "Mana-mana boleh sepadan"
-      },
-      "value": "Nilai",
-      "value2": "dan",
-      "removeFilter": "Buang penapis",
-      "addFilter": "Tambah penapis",
-      "sort": "Isih",
-      "sortBy": "Isih mengikut",
-      "thenBy": "kemudian mengikut",
-      "ascending": "Menaik",
-      "descending": "Menurun",
-      "removeSort": "Buang isihan",
-      "addSort": "Tambah isihan",
       "rows": "Baris dan jumlah",
       "limitRows": "Tunjukkan hanya",
       "rowLimit": "Bilangan baris",
@@ -1389,6 +1309,96 @@
       "rows": "1 baris | {count} baris",
       "usedIn": "Digunakan dalam: {tables}",
       "dragColumn": "Seret ke jadual untuk menambah lajur ini"
+    },
+    "filter": {
+      "title": "Tapis & isih",
+      "applied": "Penapis digunakan",
+      "remove": "Buang",
+      "sortBy": "Isih mengikut",
+      "defaultOrder": "Susunan asal",
+      "search": "Cari {column}",
+      "selectAll": "Pilih semua",
+      "clear": "Kosongkan",
+      "clearAll": "Kosongkan semua",
+      "noValues": "Tiada pilihan",
+      "noMatchingValues": "Tiada nilai sepadan dengan carian anda",
+      "rangeHint": "Dalam data ini: {from} hingga {to}",
+      "quickPicks": "Pilihan pantas",
+      "min": "Min",
+      "max": "Maks",
+      "from": "Dari",
+      "to": "Hingga",
+      "under": "Bawah {value}",
+      "andAbove": "{value} dan ke atas",
+      "range": "{from} – {to}",
+      "atLeast": "{value} atau lebih",
+      "atMost": "Sehingga {value}",
+      "onOrAfter": "Dari {value}",
+      "onOrBefore": "Sehingga {value}",
+      "moreValues": "{values} +{count}",
+      "matchCount": "1 baris sepadan | {count} baris sepadan"
+    },
+    "sort": {
+      "text": {
+        "asc": "A hingga Z",
+        "desc": "Z hingga A"
+      },
+      "number": {
+        "asc": "Rendah ke tinggi",
+        "desc": "Tinggi ke rendah"
+      },
+      "date": {
+        "asc": "Terlama dahulu",
+        "desc": "Terbaru dahulu"
+      }
+    },
+    "style": {
+      "label": "Gaya jadual",
+      "preset": "Gaya terbina dalam (tidak boleh diubah)",
+      "customize": "Sesuaikan",
+      "customizeHint": "Perubahan hanya untuk jadual ini. Gaya asalnya kekal; simpan perubahan sebagai gaya jadual untuk digunakan semula.",
+      "customizedFrom": "Diubah daripada {name} untuk jadual ini",
+      "reset": "Set semula",
+      "parts": {
+        "header": "Pengepala",
+        "rows": "Baris",
+        "totals": "Jumlah",
+        "lines": "Garisan"
+      },
+      "fields": {
+        "headerBackground": "Latar",
+        "headerText": "Teks",
+        "rowBackground": "Latar",
+        "rowText": "Teks",
+        "stripe": "Jalur",
+        "totalsBackground": "Latar",
+        "totalsText": "Teks",
+        "lineColor": "Garisan",
+        "ruleColor": "Garisan pengepala"
+      },
+      "bold": "Tebal",
+      "stripes": "Baris berjalur",
+      "lines": {
+        "grid": "Grid",
+        "rows": "Baris sahaja",
+        "none": "Tiada"
+      },
+      "fontSize": "Saiz teks",
+      "onlyThisTable": "Perubahan ini disimpan untuk jadual ini sahaja. Simpan sebagai gaya jadual untuk menggunakannya pada jadual lain.",
+      "saveAs": "Simpan sebagai gaya jadual",
+      "update": "Kemas kini \"{name}\"",
+      "name": "Nama gaya",
+      "namePlaceholder": "cth. Biru kewangan",
+      "save": "Simpan",
+      "defaultName": "Gaya saya",
+      "saved": "Gaya jadual \"{name}\" disimpan",
+      "updated": "Gaya jadual \"{name}\" dikemas kini",
+      "rename": "Namakan semula",
+      "delete": "Padam",
+      "deleteConfirm": "Padam \"{name}\"?",
+      "savedStyle": "Gaya disimpan: {name}",
+      "needData": "Tambah data pada jadual dahulu, kemudian ubah rupanya di sini.",
+      "usingStyle": "Menggunakan {name}"
     }
   }
 }

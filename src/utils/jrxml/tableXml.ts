@@ -19,7 +19,12 @@ import {
   hasTotalsRow,
   totalVariable,
 } from "@/utils/table/dataTable";
-import { ensureThemeStyles, tableStyleName } from "@/utils/table/tableThemes";
+import {
+  buildLookStyles,
+  resolveLook,
+  tableStyleName,
+  tableStylePrefix,
+} from "@/utils/table/tableThemes";
 import { collectBoundTables } from "@/utils/table/tableDocument";
 
 export { collectBoundTables };
@@ -32,12 +37,15 @@ const toInt = (n: unknown) => Math.round(Number(n) || 0);
 export const javaString = (text: string) =>
   `"${text.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r?\n/g, "\\n")}"`;
 
-// The report's styles plus any theme styles a table needs but the report lacks
-export function withTableThemeStyles(styles: ReportStyle[], bands: Band[]): ReportStyle[] {
-  return collectBoundTables(bands).reduce(
-    (all, table) => ensureThemeStyles(all, table.binding.theme),
-    styles,
-  );
+// The report styles every table needs: three per look (header, row, totals),
+// written once per built-in or saved style and once per customised table
+export function tableReportStyles(bands: Band[]): ReportStyle[] {
+  const byPrefix = new Map<string, ReportStyle[]>();
+  for (const table of collectBoundTables(bands)) {
+    const prefix = tableStylePrefix(table.binding);
+    if (!byPrefix.has(prefix)) byPrefix.set(prefix, buildLookStyles(prefix, resolveLook(table.binding)));
+  }
+  return [...byPrefix.values()].flat();
 }
 
 // One <subDataset> per bound table
@@ -77,7 +85,7 @@ function textFieldXML(options: {
   ].join("");
   return (
     `<textField${attrs}>` +
-    `<reportElement x="0" y="0" width="${options.width}" height="${options.height}" uuid="${crypto.randomUUID()}" style="${options.style}"/>` +
+    `<reportElement x="0" y="0" width="${options.width}" height="${options.height}" uuid="${crypto.randomUUID()}" style="${xmlAttr(options.style)}"/>` +
     `<textElement textAlignment="${options.alignment}" verticalAlignment="Middle"/>` +
     `<textFieldExpression>${cdata(options.expression)}</textFieldExpression>` +
     `</textField>`
@@ -92,7 +100,7 @@ function columnXML(
   rowHeight: number,
 ): string {
   const width = toInt(col.width);
-  const style = (part: "header" | "row" | "totals") => tableStyleName(binding.theme, part);
+  const style = (part: "header" | "row" | "totals") => tableStyleName(tableStylePrefix(binding), part);
   const alignment = cellAlignmentFor(col.type);
   let xml = `<jr:column width="${width}" uuid="${crypto.randomUUID()}">`;
 
@@ -165,7 +173,7 @@ export function generateTableXML(table: TableElement, reportElementAttrs: string
   xml += textFieldXML({
     width: toInt(table.width),
     height: rowHeight,
-    style: tableStyleName(binding.theme, "row"),
+    style: tableStyleName(tableStylePrefix(binding), "row"),
     expression: javaString(t("dataTable.noRows")),
     alignment: "Center",
   });

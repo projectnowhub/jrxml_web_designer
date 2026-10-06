@@ -267,7 +267,6 @@
                           isElementOutOfBounds(bItem.bandIndex, originalIndex)
                         "
                         :zoom-level="zoomLevel"
-                        :report-styles="props.reportStyles"
                         :page-number="pIndex"
                         :total-pages="totalPages"
                         @select="selectElement"
@@ -318,7 +317,6 @@
                           isElementOutOfBounds(bItem.bandIndex, index)
                         "
                         :zoom-level="zoomLevel"
-                        :report-styles="props.reportStyles"
                         :page-number="pIndex"
                         :total-pages="totalPages"
                         @select="selectElement"
@@ -378,7 +376,6 @@
                     :report-is-underline="reportProperties.defaultFont?.isUnderline"
                     :is-out-of-bounds="false"
                     :zoom-level="zoomLevel"
-                    :report-styles="props.reportStyles"
                     :page-number="pIndex"
                     :total-pages="totalPages"
                   />
@@ -484,7 +481,6 @@ interface Props {
   enableSnapToGrid: boolean;
   enableSnapToAlignment: boolean;
   showGrid: boolean;
-  reportStyles?: any[];
   dragFeedback?: DragFeedback; // New: drag feedback
 }
 
@@ -512,7 +508,6 @@ const props = withDefaults(defineProps<Props>(), {
   enableSnapToGrid: false,
   enableSnapToAlignment: false,
   showGrid: true,
-  reportStyles: () => [],
   dragFeedback: () => ({
     previewElement: null,
     previewPosition: null,

@@ -119,9 +119,9 @@ import {
   rowSlots,
 } from "@/utils/table/dataTable";
 import { distributeColumnWidths } from "@/utils/table/dataBinding";
-import { findTableStyle, tableCellCss, type TableStylePart } from "@/utils/table/tableThemes";
+import { lookPartStyles, resolveLook, tableCellCss, type TableStylePart } from "@/utils/table/tableThemes";
 import { isDataSourceDrag } from "@/utils/table/dataDrag";
-import type { ReportStyle, SelectedElementInfo, TableElement } from "@/types";
+import type { SelectedElementInfo, TableElement } from "@/types";
 import type { DataRow, TableColumnBinding } from "@/types/dataSource";
 
 const props = defineProps<{
@@ -133,7 +133,6 @@ const props = defineProps<{
   isDragging?: boolean;
   isOutOfBounds?: boolean;
   parentFrameIndex?: number;
-  reportStyles?: ReportStyle[];
 }>();
 
 const emit = defineEmits<{
@@ -186,12 +185,7 @@ const rowSlotsShown = computed<Slot[]>(() => {
   return shown;
 });
 
-const theme = computed(() => binding.value?.theme ?? "corporateBlue");
-const partStyles = computed(() => {
-  const styles = props.reportStyles ?? [];
-  const get = (part: TableStylePart) => findTableStyle(styles, theme.value, part);
-  return { header: get("header"), row: get("row"), totals: get("totals") };
-});
+const partStyles = computed(() => lookPartStyles(resolveLook(binding.value)));
 
 function cellStyle(part: TableStylePart, col: PreviewColumn | undefined, index: number, rowIndex = 0) {
   const css: Record<string, string> = tableCellCss(partStyles.value[part], part === "row" && rowIndex % 2 === 1);

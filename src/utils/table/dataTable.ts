@@ -144,7 +144,6 @@ export function createBinding(options: {
     sourceName: schema.name,
     columns: columns.map((c, i) => toColumnBinding(c, widths[i] ?? 0)),
     filters: [],
-    filterMatch: "all",
     sort: [],
     showTotals: false,
     theme: "corporateBlue",

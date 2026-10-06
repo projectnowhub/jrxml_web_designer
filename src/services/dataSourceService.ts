@@ -5,17 +5,23 @@
 // Backend contract:
 //   GET  {api}/sources               -> DataSourceSummary[]
 //   GET  {api}/sources/{id}/schema   -> DataSourceSchema
+//   GET  {api}/sources/{id}/facets   -> SourceFacets (filter choices per column)
 //   POST {api}/sources/{id}/query    body: DataQuery -> DataQueryResult
+//
+// DataQuery filters: every filter must match. "in" = the cell equals one of
+// `values` (case-insensitive); "between" = value <= cell <= value2, either end
+// optional (dates as ISO yyyy-mm-dd). At most one sort; empty cells sort last.
 
 import apiClient from "./apiClient";
 import { DATA_SOURCE_API } from "@/config/apiConfig";
 import { MOCK_DATA_SOURCES } from "@/mocks/dataSources";
-import { queryRows as queryMockRows } from "@/mocks/queryDataSource";
+import { columnFacets, queryRows as queryMockRows } from "@/mocks/queryDataSource";
 import type {
   DataQuery,
   DataQueryResult,
   DataSourceSchema,
   DataSourceSummary,
+  SourceFacets,
 } from "@/types/dataSource";
 
 export const usesMockDataSources = () => !DATA_SOURCE_API;
@@ -59,9 +65,34 @@ export function getSchema(sourceId: string): Promise<DataSourceSchema> {
   return schema;
 }
 
-// Forget cached columns (e.g. after the backend changed a source)
+// Filter choices of a source, fetched once per source like its columns
+const facetsCache = new Map<string, Promise<SourceFacets>>();
+
+export function getFacets(sourceId: string): Promise<SourceFacets> {
+  let facets = facetsCache.get(sourceId);
+  if (!facets) {
+    facets = fetchFacets(sourceId);
+    facets.catch(() => facetsCache.delete(sourceId));
+    facetsCache.set(sourceId, facets);
+  }
+  return facets;
+}
+
+async function fetchFacets(sourceId: string): Promise<SourceFacets> {
+  if (usesMockDataSources()) {
+    await mockDelay();
+    const source = findMockSource(sourceId);
+    return columnFacets(source.rows, source.columns);
+  }
+  return apiClient.get<SourceFacets>(`sources/${encodeURIComponent(sourceId)}/facets`, {
+    baseURL: DATA_SOURCE_API,
+  });
+}
+
+// Forget cached columns and filter choices (e.g. after the backend changed a source)
 export function clearSchemaCache(): void {
   schemaCache.clear();
+  facetsCache.clear();
 }
 
 async function fetchSchema(sourceId: string): Promise<DataSourceSchema> {

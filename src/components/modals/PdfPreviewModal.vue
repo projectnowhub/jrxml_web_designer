@@ -43,11 +43,10 @@
             <div class="chips">
               <span class="chip">{{ t("dataTable.panel.columnCount", item.binding.columns.length) }}</span>
               <span v-for="(f, i) in activeFilters(item.binding)" :key="`f${i}`" class="chip is-filter">
-                <Funnel :size="10" aria-hidden="true" />{{ describeFilter(item.binding, f, t) }}
+                <Funnel :size="10" aria-hidden="true" />{{ describeFilter(item.binding, f, t, locale) }}
               </span>
-              <span v-for="(s, i) in describeSorts(item.binding)" :key="`s${i}`" class="chip">
-                {{ s.label }}
-                <component :is="s.direction === 'asc' ? ArrowUp : ArrowDown" :size="10" aria-hidden="true" />
+              <span v-for="(s, i) in describeSorts(item.binding, t)" :key="`s${i}`" class="chip">
+                <ArrowDownUp :size="10" aria-hidden="true" />{{ s }}
               </span>
               <span v-if="item.binding.rowLimit" class="chip">
                 {{ t("dataTable.panel.firstRows", item.binding.rowLimit) }}
@@ -57,8 +56,7 @@
               <DataGrid
                 :columns="item.binding.columns"
                 :rows="tableRows[item.binding.datasetName]?.rows ?? []"
-                :theme="item.binding.theme"
-                :report-styles="reportStyles"
+                :look="resolveLook(item.binding)"
                 :show-totals="item.binding.showTotals"
                 :loading="tableRows[item.binding.datasetName]?.loading"
                 :failed="tableRows[item.binding.datasetName]?.failed"
@@ -93,8 +91,7 @@
 
 <script setup lang="ts">
 import {
-  ArrowDown,
-  ArrowUp,
+  ArrowDownUp,
   ChevronLeft,
   ChevronRight,
   Database,
@@ -108,7 +105,7 @@ import DataGrid from "../common/DataGrid.vue";
 import { ref, computed, watch, onUnmounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
-import type { Band, ReportField, ReportParameter, ReportStyle } from "../../types";
+import type { Band, ReportField, ReportParameter } from "../../types";
 import type { DataRow } from "@/types/dataSource";
 import { generateMockParameters, generateMockDataSource } from "../../utils/mockDataGenerator";
 import { generatePdf, ReportGenerationError } from "../../services/reportService";
@@ -116,15 +113,15 @@ import { fetchTableRows } from "@/composables/useTableRows";
 import { PREVIEW_ROW_LIMIT } from "@/utils/table/dataBinding";
 import { collectBoundTables } from "@/utils/table/tableDocument";
 import { activeFilters, describeFilter, describeSorts } from "@/utils/table/summary";
+import { resolveLook } from "@/utils/table/tableThemes";
 import notification from "../../utils/notification";
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const props = defineProps<{
   visible: boolean;
   jrxmlContent: string;
   bands: Band[];
-  reportStyles: ReportStyle[];
   reportParameters?: ReportParameter[];
   reportFields?: ReportField[];
 }>();

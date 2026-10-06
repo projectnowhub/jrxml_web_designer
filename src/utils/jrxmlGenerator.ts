@@ -3,6 +3,8 @@ import { DEFAULT_REPORT_FONT } from "../config/fonts.config";
 // Import type definitions
 import type { DesignElement, BandType, Band, ReportGroup } from "../types";
 import type { ReportProperties, Field, Parameter } from "./jrxml/types";
+import type { SavedTableStyle } from "@/types/dataSource";
+import { SAVED_TABLE_STYLES_PROPERTY } from "./table/tableThemes";
 import { buildJasperReportOpenTag } from "./jrxml/xmlBuilder";
 import { generateUUID } from "./jrxml/uuidGenerator";
 import {
@@ -24,7 +26,7 @@ import {
   floatsBelowTable,
   generateTableDatasetsXML,
   generateTableXML,
-  withTableThemeStyles,
+  tableReportStyles,
 } from "./jrxml/tableXml";
 
 export type { ReportProperties, Field, Parameter } from "./jrxml/types";
@@ -42,7 +44,6 @@ function generateReportElementAttrs(element: any): string {
   let attrs = ` x="${xmlAttr(toInt(element.x))}" y="${xmlAttr(toInt(element.y))}" width="${xmlAttr(toInt(element.width))}" height="${xmlAttr(toInt(element.height))}"`;
   if (element.uuid) attrs += ` uuid="${xmlAttr(element.uuid)}"`;
   if (element.key) attrs += ` key="${xmlAttr(element.key)}"`;
-  if (element.style) attrs += ` style="${xmlAttr(element.style)}"`;
   if (element.mode) attrs += ` mode="${xmlAttr(element.mode)}"`;
   if (element.positionType && element.positionType !== "FixRelativeToTop")
     attrs += ` positionType="${xmlAttr(element.positionType)}"`;
@@ -93,7 +94,7 @@ export function generateJRXMLContent(
   fields: Field[],
   parameters: Parameter[] = [],
   subDatasets: any[] = [],
-  styles: any[] = [],
+  tableStyles: SavedTableStyle[] = [],
   variables: any[] = [],
   reportProperties: any[] = [],
   groups: ReportGroup[] = [],
@@ -149,9 +150,14 @@ export function generateJRXMLContent(
   // ============================================================
   // Order 1: properties (report properties)
   // ============================================================
-  if (reportProperties && reportProperties.length > 0) {
+  // Saved table styles travel with the report as one JSON property
+  const allProperties = [...(reportProperties || [])].filter((p) => p?.name !== SAVED_TABLE_STYLES_PROPERTY);
+  if (tableStyles.length) {
+    allProperties.push({ name: SAVED_TABLE_STYLES_PROPERTY, value: JSON.stringify(tableStyles) });
+  }
+  if (allProperties.length > 0) {
     jrxml += "<!-- Report properties -->";
-    reportProperties.forEach((prop) => {
+    allProperties.forEach((prop) => {
       if (prop.name && prop.value) {
         jrxml += `<property name="${xmlAttr(prop.name)}" value="${xmlAttr(prop.value)}"/>`;
       }
@@ -167,9 +173,9 @@ export function generateJRXMLContent(
   // ============================================================
   // Order 6: styles (style definitions)
   // ============================================================
-  // Theme styles of the report's tables are always written, even if the
-  // user removed them from Style Management
-  const allStyles = withTableThemeStyles(styles || [], bands);
+  // Only the tables' styles: three per table look (users don't edit report
+  // styles directly)
+  const allStyles = tableReportStyles(bands);
   if (allStyles.length > 0) {
     jrxml += "<!-- Styles -->";
     allStyles.forEach((style) => {
@@ -504,8 +510,6 @@ function generateStyleXML(style: any): string {
   if (!style.name) return "";
 
   let xml = `<style name="${xmlAttr(style.name)}"`;
-  // The parent style is the "style" attribute
-  if (style.parentStyle) xml += ` style="${xmlAttr(style.parentStyle)}"`;
   xml += `${styleAttributesXML(style)}>`;
 
   if (style.box) {

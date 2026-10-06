@@ -58,7 +58,7 @@ jrxml_web_designer/
     │   ├── designer/                 # DesignerCanvas, TableDataList, selection/alignment layers
     │   │   └── properties/           # ElementProperties (right panel), TableDataPanel, FrameProperties, PaginationProperties…
     │   ├── elements/                 # One component per element type + ElementRegistry.ts (library tiles, defaults)
-    │   ├── modals/                   # BaseModal, PdfPreviewModal, TableConfigModal, StyleManagementModal…
+    │   ├── modals/                   # BaseModal, PdfPreviewModal, TableConfigModal…
     │   ├── panels/                   # BottomPanel (Page Settings, JRXML Content), Left/Right panels
     │   ├── editor/                   # CodeMirror JRXML editor
     │   ├── common/                   # ColorSwatchPicker, DataGrid, LanguageSwitcher…
@@ -87,7 +87,7 @@ jrxml_web_designer/
 | `Band` | A layout section holding `elements`. Used: Background, Page Header, Column Header, Detail (one per designer page), Column Footer, Page Footer. There is no Title or Summary |
 | `DesignElement` | `TextFieldElement \| ImageElement \| LineElement \| RectangleElement \| EllipseElement \| FrameElement \| TableElement \| ChartElement \| BarcodeElement` |
 | `TableElement` | `{ type: "table", binding?, headerHeight?, rowHeight? }`. `binding` (`TableDataBinding`, `src/types/dataSource.ts`) is the whole table setup |
-| `ReportStyle`, `ConditionalStyle` | Named styles (also used by table themes) |
+| `ReportStyle`, `ConditionalStyle` | Report styles, generated only for tables (`TableLook` → three styles) |
 | `ReportField`, `ReportParameter`, `ReportVariable` | Data definitions |
 
 Every element has `x`, `y` (points, from the top-left of its band or box), `width`, `height` and a `uuid` (required by the XSD, made with `crypto.randomUUID()`).
@@ -103,7 +103,7 @@ Every element has `x`, `y` (points, from the top-left of its band or box), `widt
 Entry: `generateJRXMLContent()` in `src/utils/jrxmlGenerator.ts`.
 
 1. `<jasperReport>` open tag (`xmlBuilder.ts`)
-2. Properties, report font, styles (plus the theme styles of every table), parameters, sub-datasets (one per data table), fields, variables, groups
+2. Properties, report font, table styles (three per table look; saved table styles as the `com.cdp.tableStyles` property), parameters, sub-datasets (one per data table), fields, variables, groups
 3. Bands in XSD order, `<background>` first. Designer pages become Detail bands separated by `<break type="Page">`
 4. Each element: `<reportElement>` + type-specific content. Tables come from `tableXml.ts`; rounded boxes become marked rounded rectangles
 5. Every value goes through `xmlAttr()` / `cdata()` so typed text can't break the XML
@@ -148,7 +148,7 @@ Entry: `parseJRXMLContent()` in `src/utils/jrxml/parse.ts`, using the browser `D
 
 ### 5.4 Modals
 
-All are built on `BaseModal.vue`: `TableConfigModal` (table setup), `PdfPreviewModal` (PDF preview, read-only table list), `StyleManagementModal`, `FieldManagementModal`, `VariableManagementModal`, `PreviewServerSettingsModal`, `HelpModal`, and the generic `InputModal` and `ConfirmModal`.
+All are built on `BaseModal.vue`: `TableConfigModal` (table setup), `PdfPreviewModal` (PDF preview, read-only table list), `FieldManagementModal`, `VariableManagementModal`, `PreviewServerSettingsModal`, `HelpModal`, and the generic `InputModal` and `ConfirmModal`.
 
 ### 5.5 Interaction
 
@@ -158,7 +158,7 @@ All are built on `BaseModal.vue`: `TableConfigModal` (table setup), `PdfPreviewM
 
 ## 6. Data Tables
 
-Tables show rows from a backend source (dummy data in `src/mocks/` until `VITE_DATA_SOURCE_API` is set). The user drags a source from Table Data onto a table and sets columns, filters, sort, totals and theme in `TableConfigModal`. The JRXML gets one sub-dataset per table, and the setup is saved as JSON in the `com.cdp.table.binding` property. Full rules: `CLAUDE.md`, "Data Tables".
+Tables show rows from a backend source (dummy data in `src/mocks/` until `VITE_DATA_SOURCE_API` is set). The user drags a source from Table Data onto a table and sets columns, filters, sort and totals in `TableConfigModal` (filters in `TableFilterPanel.vue`); the table's Basic Properties tab picks the style, its Style Settings tab customizes it (`TableDataPanel.vue`). The JRXML gets one sub-dataset per table, and the setup is saved as JSON in the `com.cdp.table.binding` property. Full rules: `CLAUDE.md`, "Data Tables".
 
 ## 7. External Services
 
