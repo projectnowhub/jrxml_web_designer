@@ -15,27 +15,15 @@
     @resize-start="(ev, b, e, p, d) => emit('resizeStart', ev, b, e, p, d)"
     @contextmenu="(ev, b, e, p) => emit('contextmenu', ev, b, e, p)"
     @rotate="(b, e, p) => emit('rotate', b, e, p)"
+    @save-state="emit('save-state')"
   >
     <div class="barcode-element">
       <div class="barcode-content" :style="rotationStyle">
-        <svg class="barcode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-          <template v-if="element.barcodeType === 'QRCode' || element.barcodeType === 'DataMatrix'">
-            <rect x="3" y="3" width="18" height="18" rx="1" />
-            <rect x="6" y="6" width="4" height="4" fill="currentColor" />
-            <rect x="14" y="6" width="4" height="4" fill="currentColor" />
-            <rect x="6" y="14" width="4" height="4" fill="currentColor" />
-            <rect x="14" y="14" width="4" height="4" fill="currentColor" />
-          </template>
-          <template v-else>
-            <line x1="4" y1="4" x2="4" y2="20" stroke-width="2" />
-            <line x1="7" y1="4" x2="7" y2="20" />
-            <line x1="10" y1="4" x2="10" y2="20" stroke-width="2" />
-            <line x1="12" y1="4" x2="12" y2="20" />
-            <line x1="15" y1="4" x2="15" y2="20" stroke-width="1.5" />
-            <line x1="18" y1="4" x2="18" y2="20" />
-            <line x1="20" y1="4" x2="20" y2="20" stroke-width="2" />
-          </template>
-        </svg>
+        <component
+          :is="element.barcodeType === 'QRCode' || element.barcodeType === 'DataMatrix' ? QrCode : Barcode"
+          class="barcode-icon"
+          :stroke-width="1.5"
+        />
         <span class="barcode-label">{{ element.barcodeType }}</span>
       </div>
     </div>
@@ -44,6 +32,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { Barcode, QrCode } from '@lucide/vue';
 import BaseElement from './BaseElement.vue';
 import type { BarcodeElement, SelectedElementInfo, EditingElementInfo } from '../../types';
 
@@ -66,6 +55,7 @@ const emit = defineEmits<{
   resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  'save-state': [];
 }>();
 
 // Visual 90-degree step rotation style

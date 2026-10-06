@@ -1,24 +1,29 @@
 <template>
   <div class="select-control">
     <label v-if="label" class="select-label">{{ label }}</label>
-    <select
-      :value="modelValue"
-      @change="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
-      class="select-input"
-    >
-      <option
-        v-for="option in options"
-        :key="option.value"
-        :value="option.value"
+    <span class="select-wrap">
+      <select
+        :value="modelValue"
+        @change="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
+        class="select-input"
       >
-        {{ option.label }}
-      </option>
-    </select>
+        <option
+          v-for="option in options"
+          :key="option.value"
+          :value="option.value"
+        >
+          {{ option.label }}
+        </option>
+      </select>
+      <ChevronDown class="select-chevron" :size="14" aria-hidden="true" />
+    </span>
     <span v-if="description" class="select-description">{{ description }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ChevronDown } from '@lucide/vue';
+
 interface Option {
   value: string;
   label: string;
@@ -65,10 +70,21 @@ defineEmits<{
   box-sizing: border-box;
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
   padding-right: 28px;
+}
+
+.select-wrap {
+  position: relative;
+  display: block;
+}
+
+.select-chevron {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  color: #666;
+  pointer-events: none;
 }
 
 .select-input:hover {

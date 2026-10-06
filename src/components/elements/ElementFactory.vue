@@ -15,18 +15,10 @@ import ImageElement from './ImageElement.vue';
 import LineElement from './LineElement.vue';
 import RectangleElement from './RectangleElement.vue';
 import EllipseElement from './EllipseElement.vue';
-import BreakElement from './BreakElement.vue';
 import FrameElement from './FrameElement.vue';
 import TableElement from './TableElement.vue';
-import SubreportElement from './SubreportElement.vue';
-import ListElement from './ListElement.vue';
 import ChartElement from './ChartElement.vue';
 import BarcodeElement from './BarcodeElement.vue';
-import MapElement from './MapElement.vue';
-import CrosstabElement from './CrosstabElement.vue';
-import IconLabelElement from './IconLabelElement.vue';
-import GenericElement from './GenericElement.vue';
-import SortElement from './SortElement.vue';
 import type { 
   DesignElement,
   SelectedElementInfo,
@@ -40,18 +32,10 @@ const componentCache: Record<string, any> = {
   line: LineElement,
   rectangle: RectangleElement,
   ellipse: EllipseElement,
-  break: BreakElement,
   frame: FrameElement,
   table: TableElement,
-  subreport: SubreportElement,
-  list: ListElement,
   chart: ChartElement,
-  barcode: BarcodeElement,
-  map: MapElement,
-  crosstab: CrosstabElement,
-  iconLabel: IconLabelElement,
-  genericElement: GenericElement,
-  sort: SortElement
+  barcode: BarcodeElement
 };
 
 // Preload components
@@ -93,13 +77,6 @@ const props = defineProps<{
   isOutOfBounds?: boolean;
   parentFrameIndex?: number;
   zoomLevel?: number;
-  reportStyles?: any[];
-  tableStyles?: {
-    tableHeader: string;
-    columnHeader: string;
-    columnFooter: string;
-    detailCell: string;
-  };
   pageNumber?: number;
   totalPages?: number;
 }>();
@@ -114,10 +91,8 @@ const emit = defineEmits<{
   finishEditing: [];
   cancelEditing: [];
   checkFields: [fields: string[]];
-  moveColumn: [elementIndex: number, fromIndex: number, toIndex: number, bandIndex: number, parentFrameIndex?: number];
-  addColumnsToGroup: [elementIndex: number, columnIndices: number[], bandIndex: number, parentFrameIndex?: number];
-  joinColumnsToExistingGroup: [elementIndex: number, columnIndices: number[], bandIndex: number, parentFrameIndex?: number];
   'update-jrxml': [];
+  'save-state': [];
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
@@ -155,8 +130,6 @@ const commonProps = computed(() => ({
   isOutOfBounds: props.isOutOfBounds,
   parentFrameIndex: props.parentFrameIndex,
   zoomLevel: props.zoomLevel,
-  reportStyles: props.reportStyles,
-  tableStyles: props.tableStyles,
   pageNumber: props.pageNumber,
   totalPages: props.totalPages
 }));
@@ -195,17 +168,12 @@ const commonEvents = {
   checkFields: (fields: string[]) => {
     emit('checkFields', fields);
   },
-  moveColumn: (elementIndex: number, fromIndex: number, toIndex: number) => {
-    emit('moveColumn', elementIndex, fromIndex, toIndex, props.bandIndex, props.parentFrameIndex);
-  },
-  addColumnsToGroup: (elementIndex: number, columnIndices: number[]) => {
-    emit('addColumnsToGroup', elementIndex, columnIndices, props.bandIndex, props.parentFrameIndex);
-  },
-  joinColumnsToExistingGroup: (elementIndex: number, columnIndices: number[]) => {
-    emit('joinColumnsToExistingGroup', elementIndex, columnIndices, props.bandIndex, props.parentFrameIndex);
-  },
   'update-jrxml': () => {
     emit('update-jrxml');
+  },
+  // Snapshot for undo, sent by an element right before it changes the model itself
+  'save-state': () => {
+    emit('save-state');
   }
 };
 </script>

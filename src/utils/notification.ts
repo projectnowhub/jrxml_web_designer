@@ -1,4 +1,5 @@
-import { ref } from 'vue';
+import { h, ref, render } from 'vue';
+import { CircleCheck, CircleX, Info, TriangleAlert, X } from '@lucide/vue';
 
 interface NotificationItem {
   id: number;
@@ -63,19 +64,19 @@ const createNotificationElement = (notification: NotificationItem) => {
   const iconElement = document.createElement('div');
   iconElement.className = 'notification-icon';
   iconElement.style.cssText = `
+    display: flex;
     margin-right: 8px;
-    font-weight: bold;
-    font-size: 16px;
     color: ${borderColor};
   `;
-  iconElement.textContent =
+  const typeIcon =
     notification.type === 'success'
-      ? '✓'
+      ? CircleCheck
       : notification.type === 'error'
-      ? '✕'
+      ? CircleX
       : notification.type === 'warning'
-      ? '⚠'
-      : 'ℹ';
+      ? TriangleAlert
+      : Info;
+  render(h(typeIcon, { size: 16 }), iconElement);
   
   const messageElement = document.createElement('div');
   messageElement.className = 'notification-message';
@@ -91,13 +92,13 @@ const createNotificationElement = (notification: NotificationItem) => {
   closeElement.style.cssText = `
     background: none;
     border: none;
-    font-size: 16px;
     cursor: pointer;
     color: #999;
     padding: 0;
     margin-left: 8px;
+    display: flex;
   `;
-  closeElement.textContent = '×';
+  render(h(X, { size: 16 }), closeElement);
   closeElement.onclick = () => {
     container.removeChild(notificationElement);
     removeNotification(notification.id);

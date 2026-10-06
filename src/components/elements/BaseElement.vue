@@ -20,46 +20,46 @@
       <!-- 4 Corners -->
       <div 
         class="resize-handle resize-handle-nw"
-        title="Resize Top-Left"
+        :title="$t('resize.topLeft')"
         @mousedown.stop="(event) => handleResize('nw', event)"
       ></div>
       <div 
         class="resize-handle resize-handle-ne"
-        title="Resize Top-Right"
+        :title="$t('resize.topRight')"
         @mousedown.stop="(event) => handleResize('ne', event)"
       ></div>
       <div 
         class="resize-handle resize-handle-sw"
-        title="Resize Bottom-Left"
+        :title="$t('resize.bottomLeft')"
         @mousedown.stop="(event) => handleResize('sw', event)"
       ></div>
       <div 
         class="resize-handle resize-handle-se"
-        title="Resize Bottom-Right"
+        :title="$t('resize.bottomRight')"
         @mousedown.stop="(event) => handleResize('se', event)"
       ></div>
 
       <!-- 4 Edges -->
       <div 
         class="resize-handle resize-handle-n"
-        title="Resize Top (Double-click to Auto-fit)"
+        :title="$t('resize.topAutoFit')"
         @mousedown.stop="(event) => handleResize('n', event)"
         @dblclick.stop="handleAutoFitHeight"
       ></div>
       <div 
         class="resize-handle resize-handle-s"
-        title="Resize Bottom (Double-click to Auto-fit)"
+        :title="$t('resize.bottomAutoFit')"
         @mousedown.stop="(event) => handleResize('s', event)"
         @dblclick.stop="handleAutoFitHeight"
       ></div>
       <div 
         class="resize-handle resize-handle-w"
-        title="Resize Left"
+        :title="$t('resize.left')"
         @mousedown.stop="(event) => handleResize('w', event)"
       ></div>
       <div 
         class="resize-handle resize-handle-e"
-        title="Resize Right"
+        :title="$t('resize.right')"
         @mousedown.stop="(event) => handleResize('e', event)"
       ></div>
     </template>
@@ -74,9 +74,7 @@
           @click.stop="handleQuickRotate"
           @mousedown.stop
         >
-          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-          </svg>
+          <RotateCw :size="11" :stroke-width="2.5" />
         </button>
         <div class="element-rotate-stem"></div>
       </div>
@@ -85,9 +83,11 @@
 </template>
 
 <script setup lang="ts">
+import { RotateCw } from '@lucide/vue';
 import { computed } from 'vue';
 import type { DesignElement, SelectedElementInfo } from '../../types';
-import { getElementBoxPadding } from '../../utils/elementUtils';
+import { getElementBoxPadding, propertyCornerRadiusCss } from '../../utils/elementUtils';
+import { boxCornerRadiusCss, getLayeredBorder, type BorderSide } from '../../utils/framePresets';
 
 // Props
 const props = defineProps<{
@@ -115,6 +115,7 @@ const emit = defineEmits<{
   startEditing: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  'save-state': [];
 }>();
 
 const isRotatableElement = computed(() => 
@@ -130,6 +131,8 @@ const handleQuickRotate = () => {
   else if (cur === 'Left') next = 'None';
   else next = 'Right';
 
+  // Undo snapshot must be taken before the element changes
+  emit('save-state');
   (props.element as any).rotation = next;
   emit('rotate', props.bandIndex, props.elementIndex, props.parentFrameIndex);
 };
@@ -193,7 +196,14 @@ const elementStyle = computed(() => {
   const textAlign = props.element.textAlignment === 'Justified' ? 'justify' : (props.element.textAlignment?.toLowerCase() || 'left');
   
   // Compute the border style
+  // Rounded frame with a partial border: drawn solid in one colour, as in the PDF
+  const layered = props.element.type === 'frame' ? getLayeredBorder(props.element as any) : null;
+
   const calculateBorder = (side: string): string => {
+    if (layered) {
+      const width = layered.widths[side as BorderSide];
+      return width > 0 ? `${width}px solid ${layered.color}` : 'none';
+    }
     // Prefer the getBorderStyle function, which already contains the full border handling logic
     const borderStyle = getBorderStyle(side, props.element.box);
     if (borderStyle && borderStyle !== 'none') {
@@ -221,7 +231,7 @@ const elementStyle = computed(() => {
     borderLeft: calculateBorder('left'),
     borderBottom: calculateBorder('bottom'),
     borderRight: calculateBorder('right'),
-    borderRadius: props.element.type === 'ellipse' ? '50%' : ((props.element.type === 'rectangle' && (props.element as any).radius) ? `${(props.element as any).radius}px` : undefined),
+    borderRadius: props.element.type === 'ellipse' ? '50%' : props.element.type === 'frame' ? boxCornerRadiusCss(props.element as any) : ((props.element.type === 'rectangle' && (props.element as any).radius) ? `${(props.element as any).radius}px` : (props.element.type === 'image' || props.element.type === 'textField') ? propertyCornerRadiusCss(props.element) : undefined),
     fontFamily: props.element.fontFamily || props.reportFontFamily,
     fontSize: props.element.fontSize ? `${props.element.fontSize}px` : (props.reportFontSize ? `${props.reportFontSize}px` : '10px'),
     fontWeight: (props.element.isBold === true || (props.element.isBold === undefined && props.reportIsBold)) ? 'bold' : 'normal',
@@ -359,6 +369,9 @@ const getBorderStyle = (side: string, box?: any): string | undefined => {
 
   // If no color is set, use transparent
   const finalColor = color || 'transparent';
+
+  // Browsers draw a double border as a single line below 3px
+  if (style === 'double' && parseFloat(width) < 3) width = '3px';
 
   return `${width} ${style} ${finalColor}`;
 };

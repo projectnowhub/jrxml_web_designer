@@ -138,14 +138,14 @@ const modalTitle = computed(() =>
   isEditing.value ? t('variableManagement.editVariable') : t('variableManagement.addVariable')
 );
 
-const allowedClasses = ref([
-  { label: '🔤 Text', value: 'java.lang.String' },
-  { label: '🔢 Whole Number (Integer)', value: 'java.lang.Integer' },
-  { label: '🔢 Large Number', value: 'java.lang.Long' },
-  { label: '💵 Currency / Money', value: 'java.math.BigDecimal' },
-  { label: '🔢 Decimal Number', value: 'java.lang.Double' },
-  { label: '☑️ Yes / No (Boolean)', value: 'java.lang.Boolean' },
-  { label: '📅 Date', value: 'java.util.Date' }
+const allowedClasses = computed(() => [
+  { label: t('dataTypes.text'), value: 'java.lang.String' },
+  { label: t('dataTypes.integer'), value: 'java.lang.Integer' },
+  { label: t('dataTypes.long'), value: 'java.lang.Long' },
+  { label: t('dataTypes.currency'), value: 'java.math.BigDecimal' },
+  { label: t('dataTypes.decimal'), value: 'java.lang.Double' },
+  { label: t('dataTypes.boolean'), value: 'java.lang.Boolean' },
+  { label: t('dataTypes.date'), value: 'java.util.Date' }
 ]);
 
 watch(

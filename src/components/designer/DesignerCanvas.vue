@@ -13,8 +13,20 @@
       <div class="horizontal-ruler" ref="horizontalRulerRef">
         <div
           class="ruler-content"
-          :style="{ width: paperWidth * zoomLevel + 'px' }"
+          :style="{ width: paperWidth * zoomLevel + RULER_SCROLL_SLACK + 'px' }"
         >
+          <!-- Shaded margins; the numbers count from the left margin, like element X -->
+          <div
+            class="ruler-margin"
+            :style="{ left: 0, width: marginLeft * zoomLevel + 'px' }"
+          ></div>
+          <div
+            class="ruler-margin"
+            :style="{
+              left: (paperWidth - marginRight) * zoomLevel + 'px',
+              width: marginRight * zoomLevel + 'px',
+            }"
+          ></div>
           <div
             v-for="tick in horizontalRulerTicks"
             :key="tick.position"
@@ -26,6 +38,7 @@
             v-for="label in horizontalRulerLabels"
             :key="label.position"
             class="label"
+            :class="rulerLabelAlign(label.position, paperWidth)"
             :style="{ left: label.position * zoomLevel + 'px' }"
           >
             {{ label.value }}
@@ -41,8 +54,30 @@
         <div class="vertical-ruler" ref="verticalRulerRef">
           <div
             class="ruler-content"
-            :style="{ height: totalRulerHeight * zoomLevel + 'px' }"
+            :style="{
+              height: (totalRulerHeight + 32) * zoomLevel + RULER_SCROLL_SLACK + 'px',
+            }"
           >
+            <!-- Shaded top/bottom margins of each page; numbers count from the top margin -->
+            <template v-for="pIndex in totalPages" :key="'ruler-margin-' + pIndex">
+              <div
+                class="ruler-margin"
+                :style="{
+                  top: pageRulerOffset(pIndex) * zoomLevel + 'px',
+                  height: marginTop * zoomLevel + 'px',
+                }"
+              ></div>
+              <div
+                class="ruler-margin"
+                :style="{
+                  top:
+                    (pageRulerOffset(pIndex) + paperHeight - marginBottom) *
+                      zoomLevel +
+                    'px',
+                  height: marginBottom * zoomLevel + 'px',
+                }"
+              ></div>
+            </template>
             <div
               v-for="tick in verticalRulerTicks"
               :key="tick.position"
@@ -54,6 +89,7 @@
               v-for="label in verticalRulerLabels"
               :key="label.position"
               class="label"
+              :class="rulerLabelAlign(label.position % (paperHeight + 32), paperHeight)"
               :style="{ top: label.position * zoomLevel + 'px' }"
             >
               {{ label.value }}
@@ -97,29 +133,29 @@
               @mousedown="startSelection"
             >
               <!-- Floating Page Sheet Header / Badge in margin -->
-              <div class="page-sheet-header">
-                <span class="page-sheet-badge"
-                  >Page {{ pIndex }} of {{ totalPages }}</span
+              <div
+                class="page-sheet-header"
+                :style="{ transform: `scale(${1 / zoomLevel})` }"
+              >
+                <span class="page-sheet-badge">{{
+                  t("canvas.pageOf", { page: pIndex, total: totalPages })
+                }}</span>
+                <button
+                  class="add-page-after-btn"
+                  @click.stop="emit('add-page', pIndex)"
+                  :title="t('canvas.addPageAfter')"
                 >
+                  <Plus :size="13" :stroke-width="2.2" aria-hidden="true" />
+                  {{ t("canvas.addPageAfter") }}
+                </button>
                 <button
                   v-if="pIndex > 1"
                   class="delete-page-btn"
                   @click.stop="emit('delete-page', pIndex - 1)"
-                  title="Delete Page"
+                  :title="t('canvas.deletePage')"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="12"
-                    height="12"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path
-                      d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                    />
-                  </svg>
-                  Delete Page
+                  <Trash2 :size="13" aria-hidden="true" />
+                  {{ t("canvas.deletePage") }}
                 </button>
               </div>
 
@@ -140,15 +176,6 @@
                   height: '100%',
                   boxSizing: 'border-box',
                   position: 'relative',
-                  backgroundImage: showGrid
-                    ? 'linear-gradient(to right, #e0e0e0 1px, transparent 1px), linear-gradient(to bottom, #e0e0e0 1px, transparent 1px)'
-                    : 'none',
-                  backgroundSize: showGrid
-                    ? uiConstants.GRID_SIZE +
-                      'px ' +
-                      uiConstants.GRID_SIZE +
-                      'px'
-                    : 'auto',
                 }"
               >
                 <!-- Dynamic Bands for this Page -->
@@ -163,9 +190,9 @@
                     bItem.band.type === 'pageHeader' ? 'page-header-band' : '',
                     bItem.band.type === 'columnHeader' ? 'column-header-band' : '',
                     {
-                      'dragging-target':
-                        highlightedBandIndex === bItem.bandIndex,
-                      'drag-over': highlightedBandIndex === bItem.bandIndex,
+                      'drop-target': highlightedBandIndex === bItem.bandIndex,
+                      'drop-blocked':
+                        highlightedBandIndex === bItem.bandIndex && dropTargetBlocked,
                     },
                   ]"
                   :data-band-index="bItem.bandIndex"
@@ -173,6 +200,40 @@
                   :style="{ height: bItem.effectiveHeight + 'px' }"
                   @click.stop="selectBand(bItem.bandIndex)"
                 >
+                  <!-- Grid from the band's top-left, the origin of element X/Y and of
+                       snap-to-grid; lines stay one screen pixel wide at any zoom -->
+                  <svg
+                    v-if="showGrid && bItem.effectiveHeight > 0"
+                    class="band-grid"
+                    :width="printableWidth"
+                    :height="bItem.effectiveHeight"
+                    aria-hidden="true"
+                  >
+                    <path
+                      :d="gridPath(printableWidth, bItem.effectiveHeight)"
+                      :stroke-width="1 / zoomLevel"
+                    />
+                  </svg>
+                  <!-- Horizontal alignment guides, in the band they belong to (Y is per band) -->
+                  <template
+                    v-if="
+                      alignmentLines &&
+                      alignmentLines.bandIndex === bItem.bandIndex &&
+                      alignmentLines.pageIndex === pIndex - 1
+                    "
+                  >
+                    <div
+                      v-for="line in alignmentLines.y"
+                      :key="'guide-y-' + line"
+                      class="alignment-line horizontal"
+                      :style="{
+                        top: line + 'px',
+                        left: -marginLeft + 'px',
+                        width: paperWidth + 'px',
+                        height: 1 / zoomLevel + 'px',
+                      }"
+                    ></div>
+                  </template>
                   <div class="band-background-label-container">
                     <span class="band-background-label">{{
                       bItem.displayLabel
@@ -206,8 +267,8 @@
                           isElementOutOfBounds(bItem.bandIndex, originalIndex)
                         "
                         :zoom-level="zoomLevel"
-                        :report-styles="props.reportStyles"
-                        :table-styles="props.tableStyles"
+                        :page-number="pIndex"
+                        :total-pages="totalPages"
                         @select="selectElement"
                         @drag-start="startDragging"
                         @resize-start="startResizingElement"
@@ -217,12 +278,8 @@
                         @finish-editing="finishEditing"
                         @cancel-editing="cancelEditing"
                         @check-fields="checkFields"
-                        @move-column="handleMoveColumn"
-                        @add-columns-to-group="handleAddColumnsToGroup"
-                        @join-columns-to-existing-group="
-                          handleJoinColumnsToExistingGroup
-                        "
                         @update-jrxml="emit('update-jrxml')"
+                        @save-state="emit('save-state')"
                         @rotate="(b, e, p) => emit('rotate', b, e, p)"
                       />
                       <div
@@ -232,7 +289,7 @@
                         class="canvas-empty-state"
                       >
                         <div class="empty-state-text">
-                          Drag elements onto Page {{ pIndex }}
+                          {{ t("canvas.dragOntoPage", { page: pIndex }) }}
                         </div>
                       </div>
                     </template>
@@ -260,8 +317,6 @@
                           isElementOutOfBounds(bItem.bandIndex, index)
                         "
                         :zoom-level="zoomLevel"
-                        :report-styles="props.reportStyles"
-                        :table-styles="props.tableStyles"
                         :page-number="pIndex"
                         :total-pages="totalPages"
                         @select="selectElement"
@@ -273,25 +328,10 @@
                         @finish-editing="finishEditing"
                         @cancel-editing="cancelEditing"
                         @check-fields="checkFields"
-                        @move-column="handleMoveColumn"
-                        @add-columns-to-group="handleAddColumnsToGroup"
-                        @join-columns-to-existing-group="
-                          handleJoinColumnsToExistingGroup
-                        "
                         @update-jrxml="emit('update-jrxml')"
+                        @save-state="emit('save-state')"
                         @rotate="(b, e, p) => emit('rotate', b, e, p)"
                       />
-                      <!-- Default page number indicator if page footer is empty -->
-                      <div
-                        v-if="
-                          bItem.band.type === 'pageFooter' &&
-                          (!bItem.band.elements ||
-                            bItem.band.elements.length === 0)
-                        "
-                        class="footer-page-indicator"
-                      >
-                        <span>Page {{ pIndex }} of {{ totalPages }}</span>
-                      </div>
                     </template>
                   </div>
 
@@ -305,51 +345,75 @@
                   ></div>
                 </div>
 
-                <!-- Alignment lines -->
+                <!-- Background band (page borders, watermarks), printed behind every page.
+                     Drawn over the bands with a multiply blend so the bands keep their white
+                     background while lines still show. Not interactive on the canvas; select
+                     its elements from Report Elements. -->
                 <div
-                  v-if="isDraggingOrResizing && enableSnapToAlignment"
-                  class="alignment-lines"
+                  v-if="backgroundElements.length > 0"
+                  class="background-band-layer"
+                  :style="{
+                    top: (reportProperties.topMargin || 0) + 'px',
+                    left: (reportProperties.leftMargin || 0) + 'px',
+                    right: (reportProperties.rightMargin || 0) + 'px',
+                    height: (bands[backgroundBandIndex]?.height || 0) + 'px',
+                  }"
                 >
-                  <div
-                    v-for="(line, index) in alignmentLines.horizontal"
-                    :key="'h-' + index"
-                    class="alignment-line horizontal"
-                    :style="{ top: line + 'px' }"
-                  ></div>
-                  <div
-                    v-for="(line, index) in alignmentLines.vertical"
-                    :key="'v-' + index"
-                    class="alignment-line vertical"
-                    :style="{ left: line + 'px' }"
-                  ></div>
+                  <ElementFactory
+                    v-for="(item, index) in backgroundElements"
+                    :key="`page-${pIndex}-background-${item.uuid || index}`"
+                    :element="item"
+                    :band-index="backgroundBandIndex"
+                    :element-index="index"
+                    :selected-element="selectedElement"
+                    :selected-elements="selectedElements"
+                    :editing-element="null"
+                    :is-dragging="false"
+                    :report-font-family="reportProperties.defaultFont?.name"
+                    :report-font-size="reportProperties.defaultFont?.size"
+                    :report-is-bold="reportProperties.defaultFont?.isBold"
+                    :report-is-italic="reportProperties.defaultFont?.isItalic"
+                    :report-is-underline="reportProperties.defaultFont?.isUnderline"
+                    :is-out-of-bounds="false"
+                    :zoom-level="zoomLevel"
+                    :page-number="pIndex"
+                    :total-pages="totalPages"
+                  />
+                  <!-- Thin clickable strips along each edge, so a page border can be
+                       selected on the canvas while its inside stays click-through -->
+                  <template
+                    v-for="(item, index) in backgroundElements"
+                    :key="`page-${pIndex}-background-hit-${item.uuid || index}`"
+                  >
+                    <div
+                      v-for="side in EDGE_SIDES"
+                      :key="side"
+                      class="background-edge-hit"
+                      :class="`edge-${side}`"
+                      :style="edgeHitStyle(item, side)"
+                      :title="t('canvas.selectPageBorder')"
+                      @mousedown.stop
+                      @click.stop="selectElement(backgroundBandIndex, index, $event.ctrlKey || $event.metaKey || $event.shiftKey)"
+                    ></div>
+                  </template>
                 </div>
+
+                <!-- Vertical alignment guides, across the whole page (X is shared by all bands) -->
+                <template v-if="alignmentLines && alignmentLines.pageIndex === pIndex - 1">
+                  <div
+                    v-for="line in alignmentLines.x"
+                    :key="'guide-x-' + line"
+                    class="alignment-line vertical"
+                    :style="{
+                      left: marginLeft + line + 'px',
+                      width: 1 / zoomLevel + 'px',
+                    }"
+                  ></div>
+                </template>
               </div>
             </div>
           </div>
 
-          <!-- Add New Page Button at bottom of sheets -->
-          <div
-            class="add-page-container"
-            :style="{
-              width: paperWidth * zoomLevel + 'px',
-              paddingTop: '8px',
-            }"
-          >
-            <button class="add-page-btn" @click="emit('add-page')">
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              <span>Add New Page</span>
-            </button>
-          </div>
         </div>
       </div>
 
@@ -366,14 +430,17 @@
 </template>
 
 <script setup lang="ts">
+import { Plus, Trash2 } from "@lucide/vue";
 import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import ElementFactory from "../elements/ElementFactory.vue";
 import SelectionBox from "./SelectionBox.vue";
 import DragFeedbackLayer from "./DragFeedbackLayer.vue";
 import { BAND_CONSTANTS } from "@/constants/constants";
 import { getBandDisplayName } from "@/utils/bandUtils";
+import { buildGridPath } from "@/utils/rulerUtils";
 import type { Band } from "@/types";
 import type { DragFeedback } from "@/composables/useDragFeedback";
+import type { AlignmentGuideLines } from "@/composables/useSnapAlignment";
 import { useI18n } from "vue-i18n";
 import { NCheckbox, NSpace } from "naive-ui";
 
@@ -397,11 +464,13 @@ interface Props {
   }[]; // Added multi-select support
   editingElement: any;
   isDraggingOrResizing: boolean;
+  // The highlighted band can't take the element being dragged (too tall)
+  dropTargetBlocked?: boolean;
   horizontalRulerTicks: any[];
   horizontalRulerLabels: any[];
   verticalRulerTicks: any[];
   verticalRulerLabels: any[];
-  alignmentLines: any;
+  alignmentLines: AlignmentGuideLines | null;
   isDesignAreaFocused: boolean;
   uiConstants: any;
   outOfBoundsElements: Array<{
@@ -412,13 +481,6 @@ interface Props {
   enableSnapToGrid: boolean;
   enableSnapToAlignment: boolean;
   showGrid: boolean;
-  reportStyles?: any[];
-  tableStyles?: {
-    tableHeader: string;
-    columnHeader: string;
-    columnFooter: string;
-    detailCell: string;
-  };
   dragFeedback?: DragFeedback; // New: drag feedback
 }
 
@@ -439,20 +501,13 @@ const props = withDefaults(defineProps<Props>(), {
   horizontalRulerLabels: () => [],
   verticalRulerTicks: () => [],
   verticalRulerLabels: () => [],
-  alignmentLines: () => ({ horizontal: [], vertical: [] }),
+  alignmentLines: null,
   isDesignAreaFocused: false,
   uiConstants: () => ({}),
   outOfBoundsElements: () => [],
   enableSnapToGrid: false,
   enableSnapToAlignment: false,
   showGrid: true,
-  reportStyles: () => [],
-  tableStyles: () => ({
-    tableHeader: "Table_TH",
-    columnHeader: "Table_CH",
-    columnFooter: "Table_CH",
-    detailCell: "Table_TD",
-  }),
   dragFeedback: () => ({
     previewElement: null,
     previewPosition: null,
@@ -484,15 +539,12 @@ const emit = defineEmits([
   "clear-selection", // Added clear-selection event
   "check-fields", // Added field-check event
   "contextmenu", // Added context menu event
-  "move-column", // Added column-move event
-  "add-columns-to-group", // Added column-grouping event
-  "join-columns-to-existing-group", // Added join-column-to-existing-group event
   "update:enableSnapToGrid", // Added snap-to-grid toggle event
   "update:enableSnapToAlignment", // Added snap-to-alignment toggle event
   "update:showGrid", // Added show/hide grid event
-  "update:table-styles", // Added table style update event
   "reset-zoom", // Added reset zoom event
   "update-jrxml", // Added JRXML update event
+  "save-state", // Undo snapshot requested by an element before it changes itself
   "canvas-contextmenu", // Added canvas context menu event
   "add-page",
   "delete-page",
@@ -507,11 +559,72 @@ const detailBandIndex = computed(() =>
 
 const totalPages = computed(() => Math.max(1, props.totalPages || 1));
 
+// Background band is drawn as an underlay on every page, not in the stacked band flow
+const backgroundBandIndex = computed(() =>
+  props.bands.findIndex((b) => b.type === "background"),
+);
+const backgroundElements = computed(
+  () => props.bands[backgroundBandIndex.value]?.elements ?? [],
+);
+
+// Click targets for background elements: a strip centred on each edge
+const EDGE_SIDES = ["top", "right", "bottom", "left"] as const;
+const EDGE_HIT_SIZE = 6;
+const edgeHitStyle = (
+  el: { x: number; y: number; width: number; height: number },
+  side: (typeof EDGE_SIDES)[number],
+) => {
+  const half = EDGE_HIT_SIZE / 2;
+  const horizontal = side === "top" || side === "bottom";
+  return {
+    left: `${(side === "right" ? el.x + el.width : el.x) - half}px`,
+    top: `${(side === "bottom" ? el.y + el.height : el.y) - half}px`,
+    width: `${horizontal ? el.width + EDGE_HIT_SIZE : EDGE_HIT_SIZE}px`,
+    height: `${horizontal ? EDGE_HIT_SIZE : el.height + EDGE_HIT_SIZE}px`,
+  };
+};
+
 const totalRulerHeight = computed(() => {
   const pages = totalPages.value;
   const pageGap = 32;
   return props.paperHeight * pages + Math.max(0, (pages - 1) * pageGap);
 });
+
+// Extra ruler length past the last page, so the rulers can scroll as far as the
+// canvas (which also holds the add-page button and its scrollbar)
+const RULER_SCROLL_SLACK = 120;
+
+const marginLeft = computed(() => props.reportProperties.leftMargin || 0);
+const marginRight = computed(() => props.reportProperties.rightMargin || 0);
+const marginTop = computed(() => props.reportProperties.topMargin || 0);
+const marginBottom = computed(() => props.reportProperties.bottomMargin || 0);
+const printableWidth = computed(() =>
+  Math.max(0, props.paperWidth - marginLeft.value - marginRight.value),
+);
+
+// Top of page sheet n (1-based) on the vertical ruler
+const pageRulerOffset = (pIndex: number) => (pIndex - 1) * (props.paperHeight + 32);
+
+// Ruler numbers are centred on their tick, except at the paper edges where
+// centring would cut them in half
+const rulerLabelAlign = (position: number, pageLength: number) => {
+  const edge = 10 / props.zoomLevel;
+  if (position < edge) return "label-start";
+  if (position > pageLength - edge) return "label-end";
+  return "";
+};
+
+const gridPathCache = new Map<string, string>();
+const gridPath = (width: number, height: number) => {
+  const key = `${width}x${height}@${props.zoomLevel}`;
+  let path = gridPathCache.get(key);
+  if (path === undefined) {
+    if (gridPathCache.size > 200) gridPathCache.clear();
+    path = buildGridPath(width, height, 1 / props.zoomLevel);
+    gridPathCache.set(key, path);
+  }
+  return path;
+};
 
 // Determine if a band is visible on the given page
 function isBandVisibleOnPage(
@@ -725,56 +838,6 @@ const checkFields = (fields: string[]) => {
   emit("check-fields", fields);
 };
 
-// Handle column move event
-const handleMoveColumn = (
-  elementIndex: number,
-  fromIndex: number,
-  toIndex: number,
-  bandIndex: number,
-  parentFrameIndex?: number,
-) => {
-  emit(
-    "move-column",
-    elementIndex,
-    fromIndex,
-    toIndex,
-    bandIndex,
-    parentFrameIndex,
-  );
-};
-
-// Handle adding selected columns to a group
-const handleAddColumnsToGroup = (
-  elementIndex: number,
-  columnIndices: number[],
-  bandIndex: number,
-  parentFrameIndex?: number,
-) => {
-  emit(
-    "add-columns-to-group",
-    elementIndex,
-    columnIndices,
-    bandIndex,
-    parentFrameIndex,
-  );
-};
-
-// Handle adding selected columns to an existing group
-const handleJoinColumnsToExistingGroup = (
-  elementIndex: number,
-  columnIndices: number[],
-  bandIndex: number,
-  parentFrameIndex?: number,
-) => {
-  emit(
-    "join-columns-to-existing-group",
-    elementIndex,
-    columnIndices,
-    bandIndex,
-    parentFrameIndex,
-  );
-};
-
 // Handle element context menu
 const handleElementContextMenu = (
   event: MouseEvent,
@@ -794,8 +857,18 @@ const startResizingBand = (event: MouseEvent, bandIndex: number) => {
   emit("start-resizing-band", event, bandIndex);
 };
 
-// Check whether the element is out of bounds
+// Check whether the element is out of bounds. Not for the element being moved
+// or resized: while it moves, the orange band shows where it will land, and the
+// check runs again once it is dropped.
 const isElementOutOfBounds = (bandIndex: number, elementIndex: number) => {
+  if (
+    props.isDraggingOrResizing &&
+    props.selectedElement?.bandIndex === bandIndex &&
+    props.selectedElement?.elementIndex === elementIndex &&
+    props.selectedElement?.parentFrameIndex === undefined
+  ) {
+    return false;
+  }
   return props.outOfBoundsElements.some(
     (item) =>
       item.bandIndex === bandIndex && item.elementIndex === elementIndex,
@@ -1101,7 +1174,6 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   background-color: #e8e8e8;
-  border-top: 1px solid #ccc;
   overflow-x: hidden;
   overflow-y: auto;
   /* Hide scrollbar */
@@ -1156,121 +1228,153 @@ onBeforeUnmount(() => {
     0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
+/* Page tools: a small pill above the page's top-right corner, the same size
+   at any zoom (the sheet is scaled, so it is scaled back) */
 .page-sheet-header {
   position: absolute;
-  top: 4px;
+  top: 6px;
   right: 8px;
   z-index: 20;
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  gap: 2px;
+  padding: 3px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  transform-origin: top right;
   user-select: none;
+  backdrop-filter: blur(4px);
 }
 
 .page-sheet-badge {
+  padding: 0 10px 0 8px;
   font-size: 11px;
   font-weight: 600;
-  color: #718096;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  color: #6b7280;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  border-right: 1px solid #e5e7eb;
+  margin-right: 2px;
 }
 
+.add-page-after-btn,
 .delete-page-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px;
   font-size: 11px;
-  color: #e53e3e;
+  font-weight: 500;
   background: transparent;
-  border: 1px solid rgba(229, 62, 62, 0.3);
-  border-radius: 4px;
+  border: none;
+  border-radius: 999px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.add-page-after-btn {
+  color: #1d4ed8;
+}
+
+.add-page-after-btn:hover {
+  background: #eff6ff;
+}
+
+.delete-page-btn {
+  color: #6b7280;
 }
 
 .delete-page-btn:hover {
-  background: #fff5f5;
-  border-color: #e53e3e;
+  background: #fef2f2;
+  color: #dc2626;
 }
 
-.add-page-container {
-  display: flex;
-  justify-content: flex-start;
-  padding: 16px 0;
-}
-
-.add-page-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 24px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #2b6cb0;
-  background: #ffffff;
-  border: 1.5px dashed #63b3ed;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.add-page-btn:hover {
-  background: #ebf8ff;
-  border-color: #3182ce;
-  color: #2c5282;
-  box-shadow: 0 2px 6px rgba(49, 130, 206, 0.2);
-}
-
-.footer-page-indicator {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  height: 100%;
-  padding: 0 16px;
-  font-size: 11px;
-  color: #a0aec0;
-  font-style: italic;
+.add-page-after-btn:focus-visible,
+.delete-page-btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
 }
 
 .pager {
   position: relative;
   box-sizing: border-box;
-  background-image:
-    linear-gradient(to right, #e0e0e0 1px, transparent 1px),
-    linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
 }
 
+.band-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  pointer-events: none;
+  shape-rendering: crispEdges;
+}
+
+.band-grid path {
+  fill: none;
+  stroke: #ececec;
+}
+
+/* Sits above the bands; multiply keeps white areas white and lets the content
+   underneath show through fills, like ink printed on the page */
+.background-band-layer {
+  position: absolute;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+/* Nothing inside is clickable, including widgets that opt back in with pointer-events: auto */
+.background-band-layer :deep(*) {
+  pointer-events: none !important;
+}
+
+/* Page borders are sized from the page, not by dragging: no resize/rotate handles */
+.background-band-layer :deep(.resize-handle),
+.background-band-layer :deep(.element-rotate-widget) {
+  display: none;
+}
+
+/* Edge strips are the one clickable part of the layer */
+.background-band-layer .background-edge-hit {
+  position: absolute;
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+
+.background-band-layer .background-edge-hit:hover {
+  background-color: rgba(24, 144, 255, 0.35);
+}
+
+/* The outline is an inset shadow, not a border: a border would push the band's
+   contents 1px in, away from the margin where X/Y, the ruler and the grid start */
 .band {
-  border: 1px solid #ddd;
+  box-shadow: inset 0 0 0 1px #ddd;
   box-sizing: border-box;
   margin-bottom: 0;
   position: relative;
   background-color: rgba(255, 255, 255, 0.8);
   transition:
     background-color 0.2s ease,
-    border-color 0.2s ease,
     box-shadow 0.2s ease;
 }
 
-.band:hover {
+/* .band:hover {
   background-color: rgba(240, 240, 255, 0.8);
+} */
+
+/* While dragging: the band the element will land in (calm blue), or red when
+   it is too tall for that band and the drop would be refused */
+.band.drop-target {
+  box-shadow: inset 0 0 0 1.5px #2563eb;
+  background-color: rgba(37, 99, 235, 0.05);
 }
 
-.band.dragging-target {
-  border-color: #ff9500;
-  background-color: rgba(255, 248, 240, 0.8);
-}
-
-.band.drag-over {
-  border-color: #ff9500;
-  background-color: rgba(255, 248, 240, 0.9);
+.band.drop-target.drop-blocked {
+  box-shadow: inset 0 0 0 1.5px #dc2626;
+  background-color: rgba(220, 38, 38, 0.06);
 }
 
 .band-background-label-container {
@@ -1305,7 +1409,7 @@ onBeforeUnmount(() => {
   bottom: -5px;
   left: 0;
   right: 0;
-  height: 10px;
+  height: 6px;
   cursor: ns-resize;
   background-color: rgba(74, 144, 226, 0.4);
   opacity: 0;
@@ -1347,30 +1451,15 @@ onBeforeUnmount(() => {
   background-color: rgba(74, 144, 226, 0.6);
 }
 
-.alignment-lines {
+/* Snap guides: one screen pixel wide at any zoom (set inline), above the content */
+.alignment-line {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  background-color: #f0047f;
   pointer-events: none;
   z-index: 100;
 }
 
-.alignment-line {
-  position: absolute;
-  background-color: rgba(24, 144, 255, 0.8);
-  opacity: 0.7;
-}
-
-.alignment-line.horizontal {
-  height: 1px;
-  left: 0;
-  right: 0;
-}
-
 .alignment-line.vertical {
-  width: 1px;
   top: 0;
   bottom: 0;
 }
@@ -1431,6 +1520,38 @@ onBeforeUnmount(() => {
 .vertical-ruler .label {
   left: 12px;
   transform: translateY(-50%);
+}
+
+.horizontal-ruler .label.label-start {
+  transform: translateX(2px);
+}
+
+.horizontal-ruler .label.label-end {
+  transform: translateX(calc(-100% - 2px));
+}
+
+.vertical-ruler .label.label-start {
+  transform: translateY(2px);
+}
+
+.vertical-ruler .label.label-end {
+  transform: translateY(calc(-100% - 2px));
+}
+
+/* Page margins on the rulers: outside the area X/Y count from */
+.ruler-margin {
+  position: absolute;
+  background-color: #d4d4d4;
+}
+
+.horizontal-ruler .ruler-margin {
+  top: 0;
+  height: 100%;
+}
+
+.vertical-ruler .ruler-margin {
+  left: 0;
+  width: 100%;
 }
 
 /* Right-side control panel container */

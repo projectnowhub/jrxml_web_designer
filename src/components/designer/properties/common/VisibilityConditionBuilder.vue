@@ -74,9 +74,9 @@
               @click="removeCondition(index)"
               type="button"
               class="remove-cond-btn"
-              title="Remove condition"
+              :title="t('displayRules.removeCondition')"
             >
-              ✕
+              <X :size="14" />
             </button>
           </div>
         </div>
@@ -85,7 +85,8 @@
       <!-- Add condition button & logic operator toggle -->
       <div class="condition-actions">
         <button @click="addCondition" type="button" class="add-cond-btn">
-          + {{ t("displayRules.addCondition") }}
+          <Plus :size="14" aria-hidden="true" />
+          {{ t("displayRules.addCondition") }}
         </button>
 
         <div v-if="conditions.length > 1" class="logic-toggle">
@@ -100,13 +101,14 @@
 
     <!-- Informational summary badge -->
     <div v-if="selectedPreset !== 'always'" class="rule-summary">
-      <span class="summary-icon">👁️</span>
+      <Eye class="summary-icon" :size="14" aria-hidden="true" />
       <span class="summary-text">{{ ruleSummaryText }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Eye, Plus, X } from '@lucide/vue';
 import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -424,6 +426,9 @@ onMounted(() => {
 }
 
 .add-cond-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: #ffffff;
   border: 1px dashed #d1d5db;
   color: #2563eb;

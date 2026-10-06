@@ -1,4 +1,13 @@
 <script setup lang="ts">
+import {
+  Bot,
+  Check,
+  MessageSquare,
+  Settings,
+  Trash2,
+  TriangleAlert,
+  X,
+} from '@lucide/vue';
 import { ref, computed, nextTick, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAIChat } from '@/composables/useAIChat';
@@ -166,22 +175,22 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
     <!-- Header (shown when not in embedded mode) -->
     <div v-if="!embedded" class="panel-header" @click="toggleExpand">
       <div class="header-left">
-        <span class="panel-icon">🤖</span>
-        <span class="panel-title">AI Assistant</span>
+        <Bot class="panel-icon" :size="18" />
+        <span class="panel-title">{{ t("ai.title") }}</span>
         <span class="config-status" :title="`API: ${config.apiEndpoint}`">
-          ⚙️
+          <Settings :size="14" />
         </span>
       </div>
 
       <div class="header-actions">
-        <button class="action-btn" @click.stop="toggleSettings" title="Configure AI service">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <button class="action-btn" @click.stop="toggleSettings" :title="t('ai.configure')">
+          <Settings :size="16" />
         </button>
-        <button class="action-btn" @click.stop="clearHistory" title="Clear history">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        <button class="action-btn" @click.stop="clearHistory" :title="t('ai.clearHistory')">
+          <Trash2 :size="16" />
         </button>
-        <button class="action-btn close-btn" @click.stop="close" title="Close">
-          ✕
+        <button class="action-btn close-btn" @click.stop="close" :title="t('properties.close')">
+          <X :size="16" />
         </button>
       </div>
     </div>
@@ -189,14 +198,14 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
     <!-- Settings panel -->
     <div v-if="showSettings" class="settings-panel">
       <div class="settings-header">
-        <h4>AI Service Configuration</h4>
-        <button class="close-settings-btn" @click="showSettings = false">✕</button>
+        <h4>{{ t("ai.settings.title") }}</h4>
+        <button class="close-settings-btn" @click="showSettings = false"><X :size="16" /></button>
       </div>
 
       <div class="settings-form">
         <!-- API endpoint address -->
         <div class="form-group">
-          <label for="apiEndpoint">API Endpoint Address</label>
+          <label for="apiEndpoint">{{ t("ai.settings.apiEndpoint") }}</label>
           <input
             id="apiEndpoint"
             v-model="configForm.apiEndpoint"
@@ -204,12 +213,12 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             placeholder="https://api.anthropic.com/v1"
             class="form-input"
           />
-          <span class="form-hint">Claude default: https://api.anthropic.com/v1</span>
+          <span class="form-hint">{{ t("ai.settings.defaultValue", { value: "https://api.anthropic.com/v1" }) }}</span>
         </div>
 
         <!-- API key -->
         <div class="form-group">
-          <label for="apiKey">Claude API Key / Access Token</label>
+          <label for="apiKey">{{ t("ai.settings.apiKey") }}</label>
           <input
             id="apiKey"
             v-model="configForm.apiKey"
@@ -217,12 +226,12 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             placeholder="sk-ant-api03-..."
             class="form-input"
           />
-          <span class="form-hint">Anthropic Claude API Key (starts with sk-ant-)</span>
+          <span class="form-hint">{{ t("ai.settings.apiKeyHint") }}</span>
         </div>
 
         <!-- Model name -->
         <div class="form-group">
-          <label for="modelName">Model Name</label>
+          <label for="modelName">{{ t("ai.settings.modelName") }}</label>
           <input
             id="modelName"
             v-model="configForm.modelName"
@@ -230,12 +239,12 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             placeholder="claude-3-5-sonnet-20241022"
             class="form-input"
           />
-          <span class="form-hint">Default: claude-3-5-sonnet-20241022</span>
+          <span class="form-hint">{{ t("ai.settings.defaultValue", { value: "claude-3-5-sonnet-20241022" }) }}</span>
         </div>
 
         <!-- Token limit -->
         <div class="form-group">
-          <label for="maxTokens">Max Tokens</label>
+          <label for="maxTokens">{{ t("ai.settings.maxTokens") }}</label>
           <input
             id="maxTokens"
             v-model.number="configForm.maxTokens"
@@ -244,12 +253,12 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             max="100000"
             class="form-input"
           />
-          <span class="form-hint">Default: 4096</span>
+          <span class="form-hint">{{ t("ai.settings.defaultValue", { value: 4096 }) }}</span>
         </div>
 
         <!-- Temperature parameter -->
         <div class="form-group">
-          <label for="temperature">Temperature</label>
+          <label for="temperature">{{ t("ai.settings.temperature") }}</label>
           <input
             id="temperature"
             v-model.number="configForm.temperature"
@@ -259,12 +268,12 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             step="0.1"
             class="form-input"
           />
-          <span class="form-hint">0.0-1.0, higher is more random (default: 0.7)</span>
+          <span class="form-hint">{{ t("ai.settings.temperatureHint") }}</span>
         </div>
 
         <!-- Request timeout -->
         <div class="form-group">
-          <label for="requestTimeout">Request Timeout (seconds)</label>
+          <label for="requestTimeout">{{ t("ai.settings.requestTimeout") }}</label>
           <input
             id="requestTimeout"
             v-model.number="(configForm as any).requestTimeoutSeconds"
@@ -274,16 +283,16 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             step="30"
             class="form-input"
           />
-          <span class="form-hint">Unit: seconds, default: 300 seconds (5 minutes)</span>
+          <span class="form-hint">{{ t("ai.settings.requestTimeoutHint") }}</span>
         </div>
 
         <!-- Action buttons -->
         <div class="form-actions">
           <button class="btn btn-secondary" @click="handleResetConfig">
-            Reset to Default
+            {{ t("ai.settings.reset") }}
           </button>
           <button class="btn btn-primary" @click="saveConfig">
-            Save Configuration
+            {{ t("ai.settings.save") }}
           </button>
         </div>
       </div>
@@ -299,36 +308,36 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
 
       <!-- Empty state hint -->
       <div v-if="messages.length === 0 && isSupported" class="empty-state">
-        <div class="empty-icon">💬</div>
-        <div class="empty-text">Start a conversation with the AI assistant</div>
-        <div class="empty-hint">e.g.: create a title in the detail band</div>
-        <div class="empty-hint">Current API: {{ config.apiEndpoint }}</div>
+        <MessageSquare class="empty-icon" :size="40" :stroke-width="1.5" />
+        <div class="empty-text">{{ t("ai.empty.title") }}</div>
+        <div class="empty-hint">{{ t("ai.empty.example") }}</div>
+        <div class="empty-hint">{{ t("ai.empty.currentApi", { url: config.apiEndpoint }) }}</div>
       </div>
 
       <!-- Browser unsupported notice -->
       <div v-if="!isSupported" class="unsupported-warning">
-        <div class="warning-icon">⚠️</div>
-        <div class="warning-title">Browser Does Not Support AI Assistant</div>
-        <div class="warning-message">{{ browserSupport?.message }}</div>
+        <TriangleAlert class="warning-icon" :size="40" :stroke-width="1.5" />
+        <div class="warning-title">{{ t("ai.unsupported.title") }}</div>
+        <div class="warning-message">{{ t("ai.unsupported.message") }}</div>
         <div class="warning-requirements">
-          <div class="requirement-title">The following browser features are required:</div>
+          <div class="requirement-title">{{ t("ai.unsupported.requirements") }}</div>
           <ul class="requirement-list">
             <li :class="{ supported: browserSupport?.features.webassembly }">
-              {{ browserSupport?.features.webassembly ? '✓' : '✗' }} WebAssembly
+              <component :is="browserSupport?.features.webassembly ? Check : X" :size="14" class="requirement-icon" /> WebAssembly
             </li>
             <li :class="{ supported: browserSupport?.features.webWorkers }">
-              {{ browserSupport?.features.webWorkers ? '✓' : '✗' }} Web Workers
+              <component :is="browserSupport?.features.webWorkers ? Check : X" :size="14" class="requirement-icon" /> Web Workers
             </li>
             <li :class="{ supported: browserSupport?.features.fetch }">
-              {{ browserSupport?.features.fetch ? '✓' : '✗' }} Fetch API
+              <component :is="browserSupport?.features.fetch ? Check : X" :size="14" class="requirement-icon" /> Fetch API
             </li>
             <li :class="{ supported: browserSupport?.features.bigUint64Array }">
-              {{ browserSupport?.features.bigUint64Array ? '✓' : '✗' }} BigUint64Array
+              <component :is="browserSupport?.features.bigUint64Array ? Check : X" :size="14" class="requirement-icon" /> BigUint64Array
             </li>
           </ul>
         </div>
         <div class="suggestion">
-          We recommend using the latest version of Chrome, Firefox, or Safari
+          {{ t("ai.unsupported.suggestion") }}
         </div>
       </div>
     </div>
@@ -336,7 +345,7 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
     <!-- Input box -->
     <ChatInput
       :disabled="isLoading || !isSupported"
-      :placeholder="isSupported ? 'Enter a command, e.g.: create a text field in the detail band to display the customer name' : 'Browser not supported, please upgrade your browser'"
+      :placeholder="isSupported ? t('ai.input.placeholder') : t('ai.input.unsupported')"
       @submit="handleSendMessage"
     />
   </div>
@@ -542,8 +551,8 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
 }
 
 .empty-icon {
-  font-size: 3em;
-  margin-bottom: 12px;
+  display: block;
+  margin: 0 auto 12px;
 }
 
 .empty-text {
@@ -572,8 +581,8 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
 }
 
 .warning-icon {
-  font-size: 3em;
-  margin-bottom: 12px;
+  display: block;
+  margin: 0 auto 12px;
 }
 
 .warning-title {
@@ -613,6 +622,9 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
 }
 
 .requirement-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 0.85em;
   color: #666;
   padding: 4px 0;

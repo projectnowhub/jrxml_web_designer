@@ -21,22 +21,20 @@
             @focus="isTitleEditing = true"
             @blur="handleHeaderTitleCommit"
             @keydown.enter.prevent="onTitleEnter"
-            placeholder="Untitled Report"
-            :title="t('fileManager.renameFile') || 'Click to rename report'"
+            :placeholder="t('editorHeader.untitledReport')"
+            :title="t('editorHeader.renameReport')"
           />
           <div class="auto-save-badge" :title="saveStatusTitle">
             <span v-if="saveStatus === 'saving'" class="save-status-text saving">
               <span class="save-spinner"></span>
-              Saving...
+              {{ t("editorHeader.saving") }}
             </span>
             <span v-else-if="saveStatus === 'error'" class="save-status-text error">
-              Save failed
+              {{ t("editorHeader.saveFailed") }}
             </span>
             <span v-else class="save-status-text saved">
-              <svg class="saved-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              Saved
+              <Check class="saved-icon" :size="13" :stroke-width="2.5" />
+              {{ t("editorHeader.saved") }}
             </span>
           </div>
         </div>
@@ -83,18 +81,19 @@
         <div class="header-toolbar-ops">
            <button
             class="toolbar-btn add-page-btn"
-            @click="addNewPage"
-            title="Add New Page"
+            @click="addNewPage()"
+            :title="t('editorHeader.addNewPage')"
           >
             <FilePlus :size="16" :stroke-width="2" aria-hidden="true" />
+            <span>{{ t("editorHeader.pageButton") }}</span>
           </button>
-          <button class="toolbar-btn" @click="deleteElement" :title="t('actions.delete') || 'Delete'">
+          <button class="toolbar-btn" @click="deleteElement" :title="t('actions.delete')">
             <Trash2 :size="16" :stroke-width="2" aria-hidden="true" />
           </button>
-          <button class="toolbar-btn" @click="copyElement" :title="t('actions.copy') || 'Copy'">
+          <button class="toolbar-btn" @click="copyElement" :title="t('actions.copy')">
             <Copy :size="16" :stroke-width="2" aria-hidden="true" />
           </button>
-          <button class="toolbar-btn" @click="pasteElement" :title="t('actions.paste') || 'Paste'">
+          <button class="toolbar-btn" @click="pasteElement()" :title="t('actions.paste')">
             <ClipboardPaste :size="16" :stroke-width="2" aria-hidden="true" />
           </button>
         </div>
@@ -122,7 +121,7 @@
         <span class="toolbar-divider"></span>
 
         <!-- 8. Snap controls -->
-        <div class="snap-controls-header">
+        <div class="snap-controls-header" :title="t('actions.snapBypassHint')">
           <n-checkbox
             :checked="enableSnapToGrid"
             size="small"
@@ -165,37 +164,11 @@
               handler: downloadJRXML,
               class: 'btn-primary',
             },
-            {
-              label: t('actions.setPreviewServer'),
-              handler: openPreviewServerSettings,
-              class: 'btn-primary',
-            },
           ]"
         />
 
-        <!-- 10. My Act -->
-        <div class="my-act-menu">
-          <n-button type="default" @click="showMyActMenu = !showMyActMenu">
-            My Act
-            <ChevronDown
-              class="dropdown-arrow"
-              :size="14"
-              :stroke-width="2.25"
-              aria-hidden="true"
-            />
-          </n-button>
-
-          <div v-if="showMyActMenu" class="my-act-dropdown">
-            <button
-              type="button"
-              class="my-act-dropdown-item"
-              @click="handleSignOut"
-            >
-              <LogOut :size="16" :stroke-width="2.25" aria-hidden="true" />
-              <span>Sign out</span>
-            </button>
-          </div>
-        </div>
+        <!-- 10. Account menu (language, profile, sign out) -->
+        <AccountMenu />
       </div>
     </div>
 
@@ -212,7 +185,12 @@
 
     <!-- Band height adjustment tooltip -->
     <div v-if="resizingBandInfo.visible" class="band-height-display">
-      {{ resizingBandInfo.bandName }} Height: {{ resizingBandInfo.height }}px
+      {{
+        t("editorHeader.bandHeight", {
+          bandName: resizingBandInfo.bandName,
+          height: resizingBandInfo.height,
+        })
+      }}
     </div>
 
     <div class="designer-layout">
@@ -226,19 +204,18 @@
         :collapsible="true"
         @size-change="handleLeftPanelSizeChange"
         @collapse-change="leftPanelCollapsed = $event"
+        :title="t('elementLibrary.title')"
       >
+        <template #default="{ toggleCollapse }">
         <ElementLibrary
           :elements="elements"
           :report-fields="reportFields"
           :report-parameters="reportParameters"
           :report-variables="reportVariables"
-          :report-styles="reportStyles"
           :bands="bands"
-          :selected-element="selectedElement"
-          :sub-datasets="subDatasets"
           @drag-start="handleDragStart"
           @element-double-click="handleElementDoubleClick"
-          @select-element="selectElement"
+          @insert-page-number="addPageNumber"
           @add-field="handleAddField"
           @edit-field="handleEditField"
           @delete-field="handleDeleteField"
@@ -248,15 +225,12 @@
           @add-variable="handleAddVariable"
           @edit-variable="handleEditVariable"
           @delete-variable="handleDeleteVariable"
-          @add-style="handleAddStyle"
-          @edit-style="handleEditStyle"
-          @delete-style="handleDeleteStyle"
-          @delete-element="deleteElement"
-          @update-element-value="handleUpdateElementValue"
-          @add-sub-dataset="handleAddSubDataset"
-          @edit-sub-dataset="handleEditSubDataset"
-          @delete-sub-dataset="handleDeleteSubDataset"
-        />
+        >
+          <template #header-actions>
+            <PanelToggleButton side="left" :collapsed="false" @toggle="toggleCollapse" />
+          </template>
+        </ElementLibrary>
+        </template>
       </ResizablePanel>
 
       <!-- Center design area -->
@@ -292,6 +266,7 @@
           :bands="bands"
           :selected-band-index="selectedBandIndex"
           :highlighted-band-index="highlightedBandIndex"
+          :drop-target-blocked="dropTargetBlocked"
           :selected-element="selectedElement"
           :selected-elements="selectedElements"
           :editing-element="editingElement"
@@ -307,8 +282,6 @@
           :enable-snap-to-grid="enableSnapToGrid"
           :enable-snap-to-alignment="enableSnapToAlignment"
           :show-grid="showGrid"
-          :report-styles="reportStyles"
-          :table-styles="tableStyles"
           :total-pages="totalPages"
           @set-design-area-focused="setDesignAreaFocused"
           @select-band="selectBand"
@@ -330,16 +303,14 @@
           @contextmenu="handleElementContextMenu"
           @canvas-contextmenu="handleCanvasContextMenu"
           @reset-zoom="resetZoom"
-          @move-column="handleMoveColumn"
-          @add-columns-to-group="handleAddColumnsToGroup"
-          @join-columns-to-existing-group="handleJoinColumnsToExistingGroup"
           @update:enable-snap-to-grid="enableSnapToGrid = $event"
           @update:enable-snap-to-alignment="enableSnapToAlignment = $event"
           @update:show-grid="showGrid = $event"
-          @update:table-styles="tableStyles = $event"
           @add-page="addNewPage"
           @delete-page="deletePage"
           @rotate="handleElementRotate"
+          @save-state="saveStateToHistory"
+          @update-jrxml="updateJRXML"
         />
       </div>
 
@@ -354,34 +325,55 @@
         :auto-width="true"
         @size-change="handlePropertyPanelSizeChange"
         @collapse-change="rightPanelCollapsed = $event"
+        :title="rightPanelTab === 'ai' ? t('ai.title') : t('properties.title')"
       >
+        <template #default="{ toggleCollapse }">
         <!-- Right panel tabs -->
         <div class="right-panel-tabs">
-          <button
-            class="right-panel-tab"
-            :class="{ active: rightPanelTab === 'properties' }"
-            @click="rightPanelTab = 'properties'"
+          <div
+            class="right-panel-seg"
+            role="tablist"
+            :style="{ '--tab-index': rightPanelTab === 'ai' ? 1 : 0 }"
           >
-            Properties
-          </button>
-          <button
-            class="right-panel-tab"
-            :class="{ active: rightPanelTab === 'ai' }"
-            @click="rightPanelTab = 'ai'"
-          >
-            🤖 AI Assistant
-          </button>
+            <span class="right-panel-indicator" aria-hidden="true"></span>
+            <button
+              type="button"
+              role="tab"
+              class="right-panel-tab"
+              :class="{ active: rightPanelTab === 'properties' }"
+              :aria-selected="rightPanelTab === 'properties'"
+              @click="rightPanelTab = 'properties'"
+            >
+              <SlidersHorizontal :size="14" :stroke-width="2" aria-hidden="true" />
+              {{ t("properties.title") }}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="right-panel-tab"
+              :class="{ active: rightPanelTab === 'ai' }"
+              :aria-selected="rightPanelTab === 'ai'"
+              @click="rightPanelTab = 'ai'"
+            >
+              <Sparkles :size="14" :stroke-width="2" aria-hidden="true" />
+              {{ t("ai.title") }}
+            </button>
+          </div>
           <button
             v-if="rightPanelTab === 'ai'"
+            type="button"
             class="right-panel-settings-btn"
+            :title="t('ai.configure')"
+            :aria-label="t('ai.configure')"
             @click="toggleAISettings"
-            title="Configure AI service"
           >
-            ⚙️
+            <Settings :size="15" :stroke-width="2" aria-hidden="true" />
           </button>
+          <PanelToggleButton side="right" :collapsed="false" @toggle="toggleCollapse" />
         </div>
 
         <!-- Element properties component -->
+        <Transition name="right-panel-fade">
         <div v-show="rightPanelTab === 'properties'">
           <ElementProperties
             :selected-band-index="selectedBandIndex"
@@ -389,7 +381,7 @@
             :bands="bands"
             :report-properties="reportProperties"
             :sub-datasets="subDatasets"
-            :report-styles="reportStyles"
+            :table-styles="tableStyles"
             :report-fields="reportFields"
             :report-parameters="reportParameters"
             :report-variables="reportVariables"
@@ -397,12 +389,26 @@
             @delete-element="deleteElement"
             @update-jrxml="updateJRXML"
             @save-state="saveStateToHistory"
-            @update:reportStyles="reportStyles = $event"
-            @add-columns-to-group="handleAddColumnsToGroup"
+            @fit-to-text="
+              selectedElement &&
+                autoFitElementHeight(
+                  selectedElement.bandIndex,
+                  selectedElement.elementIndex,
+                  selectedElement.parentFrameIndex,
+                )
+            "
+            @save-table-style="saveTableStyle"
+            @update-table-style="updateTableStyle"
+            @rename-table-style="renameTableStyle"
+            @delete-table-style="deleteTableStyle"
+            @configure-table="openTableConfigForSelection"
           />
         </div>
 
+        </Transition>
+
         <!-- AI Assistant panel -->
+        <Transition name="right-panel-fade">
         <div v-show="rightPanelTab === 'ai'" class="ai-panel-container">
           <AIChatPanel
             :visible="rightPanelTab === 'ai'"
@@ -414,6 +420,8 @@
             @update:show-settings="showAISettings = $event"
           />
         </div>
+        </Transition>
+        </template>
       </ResizablePanel>
     </div>
 
@@ -426,16 +434,18 @@
       :all-band-types="allBandTypes"
       :selected-band-types="selectedBandTypes"
       :jrxml-content="jrxmlContent"
-      :preview-server-url="previewServerUrl"
       @update:visible="showBottomPanel = $event"
       @size-change="handleBottomPanelSizeChange"
       @update:report-properties="reportProperties = $event"
+      @save-state="saveStateToHistory"
+      @page-setup-change="handlePageSetupChange"
       @update:selected-band-types="selectedBandTypes = $event"
       @update:jrxml-content="jrxmlContent = $event"
       @copy-jrxml="copyJRXML"
       @save-jrxml="saveJRXML"
       @regenerate-jrxml="regenerateJRXML"
       @download-jrxml="downloadJRXML"
+      @open-preview="openPdfPreview"
       @band-selection-change="handleBandSelectionChange"
     />
 
@@ -443,8 +453,7 @@
     <DragFeedbackLayer :feedback="dragFeedback" />
 
     <!-- Help modal -->
-    <HelpModal v-if="locale === 'zh'" v-model:visible="showHelp" />
-    <HelpModalEn v-else v-model:visible="showHelp" />
+    <HelpModal v-model:visible="showHelp" />
 
     <!-- Field management modal -->
     <FieldManagementModal
@@ -464,82 +473,27 @@
       @save="handleVariableSave"
     />
 
-    <!-- Style management modal -->
-    <StyleManagementModal
-      v-model:visible="showStyleModal"
-      :style="editingStyle"
-      :all-styles="reportStyles"
-      @save="handleStyleSave"
-    />
-
     <!-- PDF preview modal -->
     <PdfPreviewModal
       :visible="showPdfPreview"
       :jrxml-content="jrxmlContent"
+      :bands="bands"
       :report-parameters="reportParameters"
       :report-fields="reportFields"
-      :sub-datasets="subDatasets"
-      :preview-server-url="previewServerUrl"
       @update:visible="showPdfPreview = $event"
+      @edit-table="openTableConfigByUuid"
     />
 
-    <!-- Preview server settings modal -->
-    <PreviewServerSettingsModal
-      :visible="showPreviewServerSettings"
-      :current-url="previewServerUrl"
-      @update:visible="showPreviewServerSettings = $event"
-      @update:url="updatePreviewServerUrl"
-    />
-
-    <!-- Sub-dataset management modal -->
-    <SubDatasetManagementModal
-      :visible="showSubDatasetModal"
-      :dataset="editingSubDataset"
-      @update:visible="showSubDatasetModal = $event"
-      @save="handleSubDatasetSave"
-    />
-
-    <!-- Group name input dialog -->
-    <BaseModal
-      v-model:visible="showGroupDialog"
-      title="Add columns to group"
-      :contentClass="'group-dialog'"
-      :useVShow="true"
-      @confirm="confirmJoinColumnsToGroup"
-    >
-      <div class="group-dialog-content">
-        <div class="form-group">
-          <label>Select an existing group or enter a new group name:</label>
-          <n-select
-            v-model:value="groupDialogState.selectedGroupName"
-            :options="
-              groupDialogState.existingGroups.map((group) => ({
-                label: group.name,
-                value: group.name,
-              }))
-            "
-            placeholder="Select an existing group or enter a new name"
-            filterable
-            tag
-            style="width: 100%; margin-top: 8px"
-          />
-        </div>
-      </div>
-    </BaseModal>
-
-    <!-- Column selection dialog -->
-    <ColumnSelectionModal
-      v-model:visible="showColumnSelectionModal"
-      :columns="columnSelectionState.columns"
-      :children="columnSelectionState.children"
-      @confirm="
-        (selectedColumnIndices, selectedRegion, groupText) =>
-          handleColumnSelectionConfirm(
-            selectedColumnIndices,
-            selectedRegion,
-            groupText,
-          )
-      "
+    <!-- Data table setup: source, columns, filters, sort, totals, theme -->
+    <TableConfigModal
+      v-model:visible="tableConfig.visible"
+      :table="tableConfigTable"
+      :table-width="tableConfigWidth"
+      :initial-source-id="tableConfig.sourceId"
+      :initial-column-key="tableConfig.columnKey"
+      :existing-table-names="usedTableNames(bands)"
+      :existing-dataset-names="usedDatasetNames(bands)"
+      @apply="applyTableConfig"
     />
 
     <!-- Right-click context menu -->
@@ -558,94 +512,66 @@
             class="context-menu-item"
             @click="handleContextMenuAction('copy')"
           >
-            <svg
-              class="menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect x="9" y="9" width="13" height="13" rx="2" />
-              <path
-                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-              />
-            </svg>
-            Copy
+            <Copy class="menu-icon" :size="16" />
+            {{ t("actions.copy") }}
           </div>
           <div
             class="context-menu-item"
             @click="handleContextMenuAction('paste')"
           >
-            <svg
-              class="menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
-              />
-              <rect x="8" y="2" width="8" height="4" rx="1" />
-            </svg>
-            Paste
+            <ClipboardPaste class="menu-icon" :size="16" />
+            {{ t("actions.paste") }}
           </div>
           <div class="context-menu-divider"></div>
           <div
             class="context-menu-item"
             @click="handleContextMenuAction('delete')"
           >
-            <svg
-              class="menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-              />
-            </svg>
-            Delete
+            <Trash2 class="menu-icon" :size="16" />
+            {{ t("actions.delete") }}
           </div>
           <div class="context-menu-divider"></div>
           <div
             class="context-menu-item"
             @click="handleContextMenuAction('bringToFront')"
           >
-            <svg
-              class="menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M12 19V5M5 12l7-7 7 7" />
-            </svg>
-            Bring to Front
+            <BringToFront class="menu-icon" :size="16" />
+            {{ t("editor.contextMenu.bringToFront") }}
           </div>
           <div
             class="context-menu-item"
             @click="handleContextMenuAction('sendToBack')"
           >
-            <svg
-              class="menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M12 5v14M19 12l-7 7-7-7" />
-            </svg>
-            Send to Back
+            <SendToBack class="menu-icon" :size="16" />
+            {{ t("editor.contextMenu.sendToBack") }}
           </div>
+          <!-- Item inside a box or frame: one of the two, never both -->
+          <template v-if="selectedBoxItem">
+            <div class="context-menu-divider"></div>
+            <div
+              v-if="selectedBoxItem.isPart"
+              class="context-menu-item"
+              @click="handleContextMenuAction('moveOutOfBox')"
+            >
+              <SquareArrowOutDownRight class="menu-icon" :size="16" />
+              {{ t("framePresets.moveOutOfBox") }}
+            </div>
+            <div
+              v-else
+              class="context-menu-item"
+              @click="handleContextMenuAction('addToBox')"
+            >
+              <SquarePlus class="menu-icon" :size="16" />
+              {{ t("framePresets.addToBox") }}
+            </div>
+          </template>
         </div>
         <div v-else class="context-menu-items">
           <div
             class="context-menu-item"
             @click="handleContextMenuAction('paste')"
           >
-            <span class="menu-icon">📎</span> Paste
+            <ClipboardPaste class="menu-icon" :size="16" /> {{ t("actions.paste") }}
           </div>
         </div>
       </div>
@@ -657,34 +583,37 @@
 import ResizablePanel from "./panels/ResizablePanel.vue";
 import DesignerCanvas from "./designer/DesignerCanvas.vue";
 import HelpModal from "./modals/HelpModal.vue";
-import HelpModalEn from "./modals/HelpModalEn.vue";
 import FieldManagementModal from "./modals/FieldManagementModal.vue";
 import PdfPreviewModal from "./modals/PdfPreviewModal.vue";
-import PreviewServerSettingsModal from "./modals/PreviewServerSettingsModal.vue";
-import SubDatasetManagementModal from "./modals/SubDatasetManagementModal.vue";
+import TableConfigModal from "./modals/TableConfigModal.vue";
 import VariableManagementModal from "./modals/VariableManagementModal.vue";
-import StyleManagementModal from "./modals/StyleManagementModal.vue";
 import BaseModal from "./modals/BaseModal.vue";
-import ColumnSelectionModal from "./modals/ColumnSelectionModal.vue";
 import BottomPanel from "./panels/BottomPanel.vue";
+import PanelToggleButton from "./panels/PanelToggleButton.vue";
 import AIChatPanel from "./ai/AIChatPanel.vue";
 import ElementLibrary from "./ElementLibrary.vue";
 import FileManager from "./designer/controls/FileManager.vue";
 import ZoomControls from "./designer/controls/ZoomControls.vue";
 import ElementProperties from "./designer/properties/ElementProperties.vue";
-import LanguageSwitcher from "./common/LanguageSwitcher.vue";
+import AccountMenu from "./common/AccountMenu.vue";
 import SplitButton from "./common/SplitButton.vue";
 import MultiSelectToolbar from "./designer/MultiSelectToolbar.vue";
 import AlignmentGuides from "./designer/AlignmentGuides.vue";
 import DragFeedbackLayer from "./designer/DragFeedbackLayer.vue";
 import { NButton, NSelect, NCheckbox } from "naive-ui";
 import {
-  ChevronDown,
+  BringToFront,
+  Check,
   ClipboardPaste,
   Copy,
   FilePlus,
-  LogOut,
   Redo2,
+  SendToBack,
+  Settings,
+  SlidersHorizontal,
+  Sparkles,
+  SquareArrowOutDownRight,
+  SquarePlus,
   Trash2,
   Undo2,
 } from "@lucide/vue";
@@ -701,7 +630,31 @@ import type {
   ReportVariable,
   SelectedElementInfo,
   TableDataset,
+  TableElement,
 } from "../types";
+import type { DataColumn, SavedTableStyle, TableDataBinding, TableLook } from "@/types/dataSource";
+import {
+  endDataSourceDrag,
+  isDataSourceDrag,
+  readDataSourceDrag,
+  type DataSourceDragPayload,
+} from "@/utils/table/dataDrag";
+import { MIN_TABLE_COLUMN_WIDTH, maxColumnsForWidth } from "@/utils/table/dataBinding";
+import {
+  PLACEHOLDER_COLUMN_COUNT,
+  evenColumnWidths,
+  scaleColumnWidths,
+  snapTableHeight,
+  tableHeight,
+  toColumnBinding,
+} from "@/utils/table/dataTable";
+import { createTableStyleId, parseSavedTableStyles, resolveLook } from "@/utils/table/tableThemes";
+import {
+  collectBoundTables,
+  ensureUniqueTableDatasets,
+  usedDatasetNames,
+  usedTableNames,
+} from "@/utils/table/tableDocument";
 import type { DesignerFile } from "@/types/designerFile";
 import type { MCPContext } from "@/mcp";
 import { checkWebMCPSupport } from "@/utils/browserCompatibility";
@@ -720,6 +673,19 @@ import { useDesignerFiles } from "@/composables/useDesignerFiles";
 import { useUndoRedo } from "@/composables/useUndoRedo";
 import { useZoom } from "@/composables/useZoom";
 import { useSnapAlignment } from "@/composables/useSnapAlignment";
+import { fitContentToPage } from "@/utils/pageFit";
+import { planBandFit, type BandFitPlan } from "@/utils/bandFit";
+import { planTextFit, type TextFitElement } from "@/utils/textFit";
+import {
+  nextGridLine,
+  snapEdge,
+  snapMove,
+  snapToGrid,
+  type SnapGuides,
+  type SnapOptions,
+  type SnapRect,
+  type SnapTargets,
+} from "@/utils/snapping";
 import {
   ALL_CONFIGURABLE_BANDS,
   BAND_CONSTANTS,
@@ -734,19 +700,43 @@ import {
   KEYBOARD_CONSTANTS,
   PANEL_CONSTANTS,
   REPORT_CONSTANTS,
-  RULER_CONSTANTS,
   UI_CONSTANTS,
   ZOOM_CONSTANTS,
 } from "../constants/constants";
 
 // Import newly created utility functions and constants
 import { getBandDisplayName } from "../utils/bandUtils";
+import {
+  buildRulerMarks,
+  type RulerLabel,
+  type RulerTick,
+} from "../utils/rulerUtils";
 
 import { loadFromLocalStorage, saveToLocalStorage } from "../utils/fileUtils";
 
 // Import element bounds validation utility
 import { getOutOfBoundsElements } from "../utils/elementBoundsValidator";
-import { calculateTextElementHeight } from "../utils/elementUtils";
+import {
+  calculateTextElementHeight,
+  measureTextElementWidth,
+  ensureUniqueUuids,
+  refreshUuids,
+} from "../utils/elementUtils";
+import {
+  applyBorderPreset,
+  buildFrameTemplate,
+  clampPositionInBox,
+  clampRectInBox,
+  findPageBorder,
+  isBoxPart,
+  resetBoxPhotos,
+  markBoxPart,
+  releaseBoxPart,
+  fitChildrenToFrame,
+  isFrameTemplateType,
+  PAGE_BORDER_TYPE,
+  type FrameTemplateContext,
+} from "../utils/framePresets";
 import { useBoundaryDetection } from "@/composables/useBoundaryDetection";
 import { useAlignmentSystem } from "@/composables/useAlignmentSystem";
 import { useDragFeedback } from "@/composables/useDragFeedback";
@@ -761,20 +751,24 @@ import {
 // Import the notification manager
 import notification from "../utils/notification";
 import {
+  buildPaginationElement,
+  findPaginationTargetBand,
+  isPagination,
+  PAGE_NUMBER_TYPE,
+  placePaginationInBand,
+  type PaginationPosition,
+} from "../utils/paginationPresets";
+import {
   createElement,
   getAllElements as getAllElementConfigs,
 } from "@/components/elements/ElementRegistry";
-import { syncTableColumns } from "../utils/table/ColumnTreeSync";
 
 // Import the default JRXML example file
-import { logout } from "../services/authService";
-import { PDF_PREVIEW_API } from "@/config/apiConfig.ts";
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 
 // Tab-related state
 const activeTab = ref("pageSettings");
-const showMyActMenu = ref(false);
 
 // Panel visibility state
 const showLeftPanel = ref(true);
@@ -910,9 +904,9 @@ const isLoadingFile = ref(false);
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 const saveStatusTitle = computed(() => {
-  if (saveStatus.value === "saving") return "Saving changes...";
-  if (saveStatus.value === "error") return "Auto-save failed";
-  return "Auto-save compulsory: All changes saved automatically";
+  if (saveStatus.value === "saving") return t("editorHeader.savingTitle");
+  if (saveStatus.value === "error") return t("editorHeader.saveFailedTitle");
+  return t("editorHeader.savedTitle");
 });
 
 function flushAutoSave(): boolean {
@@ -966,11 +960,6 @@ watch(
     document.title = name ? `${name} - ${t("app.title")}` : t("app.title");
   },
 );
-
-const handleSignOut = () => {
-  showMyActMenu.value = false;
-  void logout();
-};
 
 function createNewFile() {
   flushAutoSave();
@@ -1042,22 +1031,7 @@ function createNewFile() {
     {
       type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
       height: pageFooterH,
-      elements: [
-        {
-          uuid: crypto.randomUUID(),
-          type: "textField",
-          name: "PageNumberField",
-          x: 435,
-          y: 10,
-          width: 120,
-          height: 20,
-          expression: '"Page " + $V{PAGE_NUMBER}',
-          fontName: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
-          fontSize: 10,
-          hAlign: "Right",
-          vAlign: "Middle",
-        } as any,
-      ],
+      elements: [],
     },
   ];
 
@@ -1143,6 +1117,10 @@ function loadFile(fileData: DesignerFile | any) {
 
     if (fileContent.bands) {
       bands.value = fileContent.bands;
+      // Repair copies that share IDs with their original (pasted before copies got their own)
+      ensureUniqueUuids(bands.value);
+      ensureUniqueTableDatasets(bands.value);
+      resetBoxPhotos(bands.value);
       // Update selectedBandTypes to match the loaded bands
       selectedBandTypes.value = fileContent.bands.map(
         (band: Band) => band.type,
@@ -1181,8 +1159,8 @@ function loadFile(fileData: DesignerFile | any) {
       reportGroups.value = fileContent.reportGroups;
     }
 
-    if (fileContent.reportStyles) {
-      reportStyles.value = fileContent.reportStyles;
+    if (Array.isArray(fileContent.tableStyles)) {
+      tableStyles.value = parseSavedTableStyles(JSON.stringify(fileContent.tableStyles));
     }
 
     if (fileContent.jrxmlContent) {
@@ -1258,7 +1236,7 @@ function saveCurrentFile() {
     subDatasets: subDatasets.value,
     reportVariables: reportVariables.value,
     reportGroups: reportGroups.value,
-    reportStyles: reportStyles.value,
+    tableStyles: tableStyles.value,
     jrxmlContent: jrxmlContent.value,
     lastModified: new Date().toISOString(),
   };
@@ -1267,21 +1245,9 @@ function saveCurrentFile() {
   return fileData;
 }
 
-// Incomplete elements, only visible on localhost
-const INCOMPLETE_ELEMENTS = [
-  "map",
-  "crosstab",
-  "iconLabel",
-  "genericElement",
-  "list",
-  "subreport",
-];
-const isDev = location.hostname === "localhost";
-
 // Available elements
 const elements = computed(() =>
   getAllElementConfigs()
-    .filter((config) => isDev || !INCOMPLETE_ELEMENTS.includes(config.type))
     .map((config) => ({ type: config.type, name: config.name })),
 );
 
@@ -1333,22 +1299,7 @@ const bands = ref<Band[]>([
   {
     type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
     height: initPageFooterH,
-    elements: [
-      {
-        uuid: crypto.randomUUID(),
-        type: "textField",
-        name: "PageNumberField",
-        x: 435,
-        y: 10,
-        width: 120,
-        height: 20,
-        expression: '"Page " + $V{PAGE_NUMBER}',
-        fontName: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
-        fontSize: 10,
-        hAlign: "Right",
-        vAlign: "Middle",
-      } as any,
-    ],
+    elements: [],
   },
 ]);
 
@@ -1367,10 +1318,20 @@ const totalPages = computed(() =>
   Math.max(pageCount.value, maxDetailPageIndex.value + 1),
 );
 
-const addNewPage = () => {
+// afterPage: 1-based page the new one follows (default: at the end). Detail
+// content of later pages moves down one page.
+const addNewPage = (afterPage?: number) => {
   saveStateToHistory();
-  pageCount.value++;
-  notification.success(`Page ${pageCount.value} added`);
+  const insertAt =
+    typeof afterPage === "number" ? Math.min(afterPage, totalPages.value) : totalPages.value;
+  const detailBand = bands.value.find(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+  detailBand?.elements?.forEach((el: any) => {
+    if ((el.pageIndex ?? 0) >= insertAt) el.pageIndex = (el.pageIndex ?? 0) + 1;
+  });
+  pageCount.value = totalPages.value + 1;
+  notification.success(t("editor.pageAdded", { page: insertAt + 1 }));
   updateJRXML();
 };
 
@@ -1392,7 +1353,7 @@ const deletePage = (pageIndex: number) => {
   }
   selectedElement.value = null;
   pageCount.value = Math.max(1, pageCount.value - 1);
-  notification.info(`Page ${pageIndex + 1} deleted`);
+  notification.info(t("editor.pageDeleted", { page: pageIndex + 1 }));
   updateJRXML();
 };
 
@@ -1410,93 +1371,11 @@ const reportParameters = ref<ReportParameter[]>([]);
 
 // Sub-datasets
 const subDatasets = ref<TableDataset[]>([]);
-const showSubDatasetModal = ref(false);
-const editingSubDataset = ref<TableDataset | undefined>(undefined);
 
 // Report styles
-const reportStyles = ref<any[]>([
-  {
-    name: "Table_TH",
-    mode: "Opaque",
-    backcolor: "#F0F8FF",
-    box: {
-      pen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      topPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      leftPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      bottomPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      rightPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-    },
-  },
-  {
-    name: "Table_CH",
-    mode: "Opaque",
-    backcolor: "#BFE1FF",
-    box: {
-      pen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      topPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      leftPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      bottomPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      rightPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-    },
-  },
-  {
-    name: "Table_TD",
-    mode: "Opaque",
-    backcolor: "#FFFFFF",
-    box: {
-      pen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      topPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      leftPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      bottomPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      rightPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-    },
-  },
-]);
+// Report styles (table theme styles are added when a table first uses them)
+// Table styles the user saved in this report (built-in ones are not listed)
+const tableStyles = ref<SavedTableStyle[]>([]);
 
 // Report variables
 const reportVariables = ref<any[]>([]);
@@ -1512,94 +1391,6 @@ const contextMenu = ref({
   type: "element" as "element" | "canvas",
 });
 
-// Table styles
-const tableStyles = ref({
-  tableHeader: "Table_TH",
-  columnHeader: "Table_CH",
-  columnFooter: "Table_CH",
-  detailCell: "Table_TD",
-});
-
-// Handle adding a sub-dataset
-const handleAddSubDataset = () => {
-  editingSubDataset.value = undefined;
-  showSubDatasetModal.value = true;
-};
-
-// Handle editing a sub-dataset
-const handleEditSubDataset = (dataset: TableDataset, index: number) => {
-  editingSubDataset.value = dataset;
-  showSubDatasetModal.value = true;
-};
-
-// Handle deleting a sub-dataset
-const handleDeleteSubDataset = (index: number) => {
-  // Save state to history
-  saveStateToHistory();
-
-  // Remove the sub-dataset
-  subDatasets.value.splice(index, 1);
-
-  // Update JRXML
-  updateJRXML();
-};
-
-// Handle saving a sub-dataset
-const handleSubDatasetSave = (dataset: TableDataset) => {
-  // Save state to history
-  saveStateToHistory();
-
-  const existingIndex = subDatasets.value.findIndex(
-    (d: TableDataset) => d.uuid === dataset.uuid,
-  );
-
-  if (existingIndex >= 0) {
-    // Update the existing sub-dataset
-    subDatasets.value[existingIndex] = dataset;
-  } else {
-    // Add the new sub-dataset
-    subDatasets.value.push(dataset);
-  }
-
-  // Update JRXML
-  updateJRXML();
-
-  // Close the modal
-  showSubDatasetModal.value = false;
-};
-
-// Check for and create a default table dataset
-const checkAndCreateDefaultTableDataset = (
-  datasetName: string = "tableDataset",
-) => {
-  // Check whether a dataset with the same name already exists
-  const existingDataset = subDatasets.value.find(
-    (d: TableDataset) => d.name === datasetName,
-  );
-  if (existingDataset) {
-    return;
-  }
-
-  // Save state to history
-  saveStateToHistory();
-
-  // Create the default dataset
-  const defaultDataset: TableDataset = {
-    uuid: crypto.randomUUID(),
-    name: datasetName,
-    fields: [
-      { name: "FIELD_NAME", class: "java.lang.String" },
-      { name: "FIELD_NAME2", class: "java.lang.String" },
-      { name: "FIELD_NAME3", class: "java.lang.String" },
-    ],
-  };
-
-  // Add it to the sub-dataset list
-  subDatasets.value.push(defaultDataset);
-
-  // Update JRXML
-  updateJRXML();
-};
 
 // Element-created event handler
 const handleElementCreated = (
@@ -1639,6 +1430,7 @@ type HistoryState = {
   reportFields: typeof reportFields.value;
   reportParameters: typeof reportParameters.value;
   subDatasets: typeof subDatasets.value;
+  tableStyles: typeof tableStyles.value;
 };
 
 // Out-of-bounds elements
@@ -1813,6 +1605,7 @@ const { historyStack, redoStack, saveStateToHistory, undo, redo } =
       reportFields: reportFields.value,
       reportParameters: reportParameters.value,
       subDatasets: subDatasets.value,
+      tableStyles: tableStyles.value,
     }),
     applyState: (state) => {
       reportProperties.value = state.reportProperties;
@@ -1820,6 +1613,8 @@ const { historyStack, redoStack, saveStateToHistory, undo, redo } =
       reportFields.value = state.reportFields;
       reportParameters.value = state.reportParameters;
       subDatasets.value = state.subDatasets;
+      // Older snapshots (taken before styles were recorded) keep the current styles
+      if (state.tableStyles) tableStyles.value = state.tableStyles;
     },
     onAfterRestore: () => {
       updateJRXML();
@@ -1838,26 +1633,6 @@ const selectedElement = ref<SelectedElementInfo | null>(null);
 const selectedElements = ref<SelectedElementInfo[]>([]); // Element editing state
 const editingElement = ref<EditingElementInfo | null>(null);
 
-// Group name input dialog state
-const showGroupDialog = ref(false);
-const groupDialogState = ref({
-  elementIndex: 0,
-  columnIndices: [] as number[],
-  bandIndex: 0,
-  parentFrameIndex: undefined as number | undefined,
-  existingGroups: [] as any[],
-  selectedGroupName: "",
-});
-
-// Column selection dialog state
-const showColumnSelectionModal = ref(false);
-const columnSelectionState = ref({
-  elementIndex: 0,
-  bandIndex: 0,
-  parentFrameIndex: undefined as number | undefined,
-  columns: [] as any[],
-  children: [] as any[],
-});
 
 // Report design area focus state
 const isDesignAreaFocused = ref(true); // Focus the design area by default
@@ -1946,114 +1721,53 @@ const {
 const setZoomLevel = (newZoom: number) => {
   zoomLevel.value = newZoom;
 };
+// The selected element; an item inside a box is looked up inside that box
 const currentElement = computed(() => {
-  if (selectedElement.value && bands.value && Array.isArray(bands.value)) {
-    const band = bands.value[selectedElement.value.bandIndex];
+  const selection = selectedElement.value;
+  if (selection && bands.value && Array.isArray(bands.value)) {
+    const band = bands.value[selection.bandIndex];
     if (band && band.elements && Array.isArray(band.elements)) {
-      return band.elements[selectedElement.value.elementIndex];
+      if (selection.parentFrameIndex !== undefined) {
+        const box = band.elements[selection.parentFrameIndex] as FrameElement | undefined;
+        return box?.type === "frame" ? (box.elements?.[selection.elementIndex] ?? null) : null;
+      }
+      return band.elements[selection.elementIndex];
     }
   }
   return null;
 });
 
-// Get all report elements
+// Ruler marks: numbered from the margins, so they read the same as element X/Y
+const horizontalRulerMarks = computed(() =>
+  buildRulerMarks(
+    paperWidth.value,
+    reportProperties.value.leftMargin,
+    reportProperties.value.rightMargin,
+  ),
+);
+const horizontalRulerTicks = computed(() => horizontalRulerMarks.value.ticks);
+const horizontalRulerLabels = computed(() => horizontalRulerMarks.value.labels);
 
-// Report elements grouped by band - temporarily commented out since it's unused
-/*
-const groupedReportElements = computed(() => {
-  const groups: Record<string, Array<{ element: DesignElement, bandIndex: number, elementIndex: number }>> = {};
-
-  if (!filteredReportElements.value || !bands.value || !Array.isArray(bands.value)) {
-    return groups;
-  }
-
-  filteredReportElements.value.forEach(item => {
-    if (!bands.value || item.bandIndex >= bands.value.length) return;
-    const band = bands.value[item.bandIndex];
-    if (!band) return;
-    const bandType = band.type;
-    const bandName = getBandDisplayName(bandType);
-
-    if (!groups[bandName]) {
-      groups[bandName] = [];
-    }
-
-    groups[bandName].push(item);
-  });
-
-  return groups;
-});
-*/
-
-// Ruler-related computed properties
-const horizontalRulerTicks = computed(() => {
-  const ticks = [];
-  const width = paperWidth.value;
-  const unit = RULER_CONSTANTS.UNIT_SIZE; // Reduced base unit, from 10px to 5px, to increase tick density
-
-  for (let i = 0; i <= width; i += unit) {
-    ticks.push({
-      position: i, // Do not apply the zoom scale, keep the actual position
-      major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0, // One major tick every 25px, changed from 50px to 25px
-    });
-  }
-
-  return ticks;
-});
-
-const horizontalRulerLabels = computed(() => {
-  const labels = [];
-  const width = paperWidth.value;
-
-  for (let i = 0; i <= width; i += RULER_CONSTANTS.LABEL_INTERVAL) {
-    // Show a label every 25px, changed from 50px to 25px
-    labels.push({
-      position: i, // Do not apply the zoom scale, keep the actual position
-      value: i.toString(),
-    });
-  }
-
-  return labels;
-});
-
-const verticalRulerTicks = computed(() => {
-  const ticks = [];
+// One set of marks per page sheet; sheets are 32px apart on the canvas
+const verticalRulerMarks = computed(() => {
   const height = paperHeight.value;
-  const unit = RULER_CONSTANTS.UNIT_SIZE;
-  const pages = totalPages.value;
   const pageGap = 32;
-
-  for (let p = 0; p < pages; p++) {
-    const pageOffset = p * (height + pageGap);
-    for (let i = 0; i <= height; i += unit) {
-      ticks.push({
-        position: pageOffset + i,
-        major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0,
-      });
-    }
+  const ticks: RulerTick[] = [];
+  const labels: RulerLabel[] = [];
+  for (let p = 0; p < totalPages.value; p++) {
+    const marks = buildRulerMarks(
+      height,
+      reportProperties.value.topMargin,
+      reportProperties.value.bottomMargin,
+      p * (height + pageGap),
+    );
+    ticks.push(...marks.ticks);
+    labels.push(...marks.labels);
   }
-
-  return ticks;
+  return { ticks, labels };
 });
-
-const verticalRulerLabels = computed(() => {
-  const labels = [];
-  const height = paperHeight.value;
-  const pages = totalPages.value;
-  const pageGap = 32;
-
-  for (let p = 0; p < pages; p++) {
-    const pageOffset = p * (height + pageGap);
-    for (let i = 0; i <= height; i += RULER_CONSTANTS.LABEL_INTERVAL) {
-      labels.push({
-        position: pageOffset + i,
-        value: i.toString(),
-      });
-    }
-  }
-
-  return labels;
-});
+const verticalRulerTicks = computed(() => verticalRulerMarks.value.ticks);
+const verticalRulerLabels = computed(() => verticalRulerMarks.value.labels);
 
 // Drag-related state
 const draggingInfo = ref<DraggingInfo | null>(null);
@@ -2061,18 +1775,214 @@ const highlightedBandIndex = ref<number | null>(null); // Index of the highlight
 const {
   enableSnapToGrid,
   enableSnapToAlignment,
+  showGrid,
   alignmentLines,
-  detectAlignmentLines,
+  setAlignmentLines,
   clearAlignmentLines,
-} = useSnapAlignment({
-  bands,
-  reportProperties,
-  highlightedBandIndex,
-  bandSpacing: BAND_CONSTANTS.SPACING,
-});
+} = useSnapAlignment();
 
-// Controls whether the grid is shown or hidden
-const showGrid = ref(true);
+// How close (in screen pixels) an edge must come to another to align with it;
+// in screen pixels so it feels the same at every zoom
+const ALIGN_SNAP_SCREEN_PX = 6;
+
+const printableWidth = computed(
+  () =>
+    paperWidth.value -
+    (reportProperties.value?.leftMargin || 0) -
+    (reportProperties.value?.rightMargin || 0),
+);
+
+// What a moving element can snap to, in its container's coordinates (its band,
+// or its box for an item in a box: `offset` is then the box's position)
+interface SnapContext {
+  bandIndex: number;
+  pageIndex: number;
+  offset: { x: number; y: number };
+  targets: SnapTargets;
+}
+
+const buildSnapContext = (
+  bandIndex: number,
+  pageIndex: number,
+  parentFrameIndex: number | undefined,
+  moving: DesignElement,
+): SnapContext => {
+  const band = bands.value[bandIndex];
+  const box =
+    parentFrameIndex !== undefined
+      ? (band?.elements[parentFrameIndex] as FrameElement | undefined)
+      : undefined;
+  const offset = box ? { x: box.x, y: box.y } : { x: 0, y: 0 };
+  const width = printableWidth.value;
+  const height = band?.height ?? 0;
+
+  // Band coordinates; other bands share X but not Y (each band has its own top)
+  const xs = [0, width / 2, width];
+  const ys = [0, height / 2, height];
+  const add = (r: SnapRect, sameBand: boolean) => {
+    xs.push(r.x, r.x + r.width / 2, r.x + r.width);
+    if (sameBand) ys.push(r.y, r.y + r.height / 2, r.y + r.height);
+  };
+  bands.value.forEach((b, i) => {
+    if (b.type === BAND_TYPE_CONSTANTS.BACKGROUND) return;
+    for (const el of b.elements ?? []) {
+      // Moving element (and a moving box's own items) are not targets; nor is
+      // the detail content of other pages
+      if (el === moving) continue;
+      if (b.type === BAND_TYPE_CONSTANTS.DETAIL && (el.pageIndex ?? 0) !== pageIndex) continue;
+      add(el, i === bandIndex);
+      if (el.type === "frame") {
+        for (const child of (el as FrameElement).elements ?? []) {
+          if (child === moving) continue;
+          add({ ...child, x: el.x + child.x, y: el.y + child.y }, i === bandIndex);
+        }
+      }
+    }
+  });
+
+  return {
+    bandIndex,
+    pageIndex,
+    offset,
+    targets: {
+      x: [...new Set(xs)].map((v) => v - offset.x),
+      y: [...new Set(ys)].map((v) => v - offset.y),
+    },
+  };
+};
+
+// Snap settings for one mouse move or drop; holding Ctrl/Cmd skips snapping
+const getSnapOptions = (
+  event: { ctrlKey?: boolean; metaKey?: boolean } | null,
+  offset = { x: 0, y: 0 },
+): SnapOptions => {
+  const bypass = !!(event?.ctrlKey || event?.metaKey);
+  return {
+    grid: enableSnapToGrid.value && !bypass ? UI_CONSTANTS.GRID_SIZE : null,
+    threshold:
+      enableSnapToAlignment.value && !bypass
+        ? ALIGN_SNAP_SCREEN_PX / zoomLevel.value
+        : null,
+    gridOffsetX: offset.x,
+    gridOffsetY: offset.y,
+  };
+};
+
+// The most a band may grow to when something is dropped in it: its maximum
+// height setting, and the room left on the page (Detail keeps its minimum).
+// Detail fills whatever space remains, so it can't grow on its own.
+const getBandMaxHeight = (bandIndex: number): number => {
+  const band = bands.value[bandIndex];
+  if (!band) return 0;
+  if (
+    band.type === BAND_TYPE_CONSTANTS.DETAIL ||
+    band.type === BAND_TYPE_CONSTANTS.BACKGROUND
+  ) {
+    return band.height;
+  }
+  const limits = reportProperties.value?.bandLimits?.[band.type] ||
+    getEffectiveDefaultBandLimits()[band.type] || { min: 20, max: 70 };
+  const maxSetting = typeof limits.max === "number" ? limits.max : 70;
+  const printableHeight =
+    paperHeight.value -
+    (reportProperties.value?.topMargin || 0) -
+    (reportProperties.value?.bottomMargin || 0);
+  let otherBands = 0;
+  bands.value.forEach((b, i) => {
+    if (
+      i !== bandIndex &&
+      b.type !== BAND_TYPE_CONSTANTS.DETAIL &&
+      b.type !== BAND_TYPE_CONSTANTS.BACKGROUND
+    ) {
+      otherBands += b.height || 0;
+    }
+  });
+  const pageRoom = printableHeight - otherBands - (BAND_CONSTANTS.MIN_HEIGHT || 20);
+  return Math.max(band.height, Math.min(maxSetting, pageRoom));
+};
+
+// Where an element would end up if dropped in a band (see planBandFit)
+const planDropInBand = (
+  bandIndex: number,
+  element: { y: number; height: number },
+): BandFitPlan =>
+  planBandFit(
+    element,
+    bands.value[bandIndex]?.height ?? 0,
+    getBandMaxHeight(bandIndex),
+  );
+
+// Put a dropped element in place, growing the band if the plan says so
+const applyDropInBand = (
+  bandIndex: number,
+  element: DesignElement,
+  plan: Exclude<BandFitPlan, { kind: "tooTall" }>,
+) => {
+  element.y = plan.y;
+  const band = bands.value[bandIndex];
+  if (plan.kind === "grow" && band) {
+    band.height = plan.bandHeight;
+    notification.info(
+      t("editor.bandLimits.grewToFit", {
+        band: getBandDisplayName(band.type),
+        height: plan.bandHeight,
+      }),
+    );
+  }
+};
+
+const warnTooTallForBand = (bandIndex: number, height: number, maxHeight: number) => {
+  const band = bands.value[bandIndex];
+  notification.warning(
+    t("editor.bandLimits.tooTallForBand", {
+      height: Math.round(height),
+      band: band ? getBandDisplayName(band.type) : "",
+      max: Math.round(maxHeight),
+    }),
+  );
+};
+
+// While dragging: the target band turns red when the element can't fit in it
+const dropTargetBlocked = ref(false);
+
+// Whether an element at (x, y) in a band would land in one of its boxes
+// (same rule as the drop: its centre is inside the box; boxes don't nest)
+const isOverBox = (
+  bandIndex: number,
+  element: { type: string; width: number; height: number },
+  x: number,
+  y: number,
+) => {
+  if (element.type === "frame") return false;
+  const cx = x + element.width / 2;
+  const cy = y + element.height / 2;
+  return (bands.value[bandIndex]?.elements ?? []).some(
+    (el) =>
+      el.type === "frame" &&
+      cx >= el.x &&
+      cx <= el.x + el.width &&
+      cy >= el.y &&
+      cy <= el.y + el.height,
+  );
+};
+
+// Show the lines an element has snapped to (in band coordinates)
+const showSnapGuides = (
+  context: SnapContext,
+  guides: SnapGuides,
+  options: SnapOptions,
+) => {
+  if (options.threshold === null) {
+    clearAlignmentLines();
+    return;
+  }
+  setAlignmentLines({
+    bandIndex: context.bandIndex,
+    pageIndex: context.pageIndex,
+    x: guides.x.map((v) => v + context.offset.x),
+    y: guides.y.map((v) => v + context.offset.y),
+  });
+};
 // Coordinate info shown while dragging
 const dragCoordinates = ref<{
   x: number;
@@ -2106,71 +2016,6 @@ const lastClickedBandIndex = ref<number>(3); // Defaults to the DETAIL band (ind
 // Tracks the element being dragged from the component library (works around dataTransfer sometimes failing in the Mac Tauri environment)
 const draggedLibraryElement = ref<any>(null);
 
-// Helper function: generate table columns from a dataset
-function generateTableColumnsFromDataset(defaultTableWidth: number = 555) {
-  // Prefer the sub-dataset if one exists
-  if (subDatasets.value.length > 0) {
-    const dataset = subDatasets.value[0];
-    if (dataset && dataset.fields && dataset.fields.length > 0) {
-      const fieldCount = dataset.fields.length;
-      const columnWidth = Math.round(defaultTableWidth / fieldCount); // Distribute column width evenly across the table width
-      return dataset.fields.map((field) => {
-        return {
-          uuid: crypto.randomUUID(),
-          width: columnWidth,
-          name: field.name,
-          tableHeader: {
-            enable: false,
-            element: {
-              type: "textField",
-              x: 0,
-              y: 0,
-              width: columnWidth,
-              height: 30,
-              expression: `"${field.name}"`,
-              forecolor: "#000000",
-              backcolor: "#FFFFFF",
-              fontFamily: "SansSerif",
-              fontSize: 19,
-              isBold: true,
-              textAlignment: "Center",
-              verticalAlignment: "Middle",
-            },
-          },
-          columnHeader: {
-            enable: true,
-            element: {
-              type: "textField",
-              x: 0,
-              y: 0,
-              width: columnWidth,
-              height: 30,
-              expression: `"${field.name}"`,
-              textAlignment: "Center",
-              verticalAlignment: "Middle",
-            },
-          },
-          detailCell: {
-            enable: true,
-            element: {
-              type: "textField",
-              x: 0,
-              y: 0,
-              width: columnWidth,
-              height: 30,
-              expression: `$F{${field.name}}`,
-              textAlignment: "Center",
-              verticalAlignment: "Middle",
-            },
-          },
-        };
-      });
-    }
-  }
-  // Default to returning an empty array, using the default columns from ElementRegistry
-  return [];
-}
-
 // Handle drag-and-drop
 const handleDragStart = (event: DragEvent, element: any) => {
   draggedLibraryElement.value = element;
@@ -2180,8 +2025,151 @@ const handleDragStart = (event: DragEvent, element: any) => {
   }
 };
 
+// Printable page area (inside the margins) and translator, used to size frame templates
+const getFrameTemplateContext = (): FrameTemplateContext => ({
+  availableWidth: Math.round(
+    paperWidth.value -
+      (reportProperties.value?.leftMargin || 0) -
+      (reportProperties.value?.rightMargin || 0),
+  ),
+  availableHeight: Math.round(
+    paperHeight.value -
+      (reportProperties.value?.topMargin || 0) -
+      (reportProperties.value?.bottomMargin || 0),
+  ),
+  t,
+});
+
+// Base element for a library item: frame templates are built with their content,
+// everything else comes from the registry defaults
+const createLibraryElement = (type: string): DesignElement =>
+  isFrameTemplateType(type)
+    ? buildFrameTemplate(type, getFrameTemplateContext())
+    : type === PAGE_NUMBER_TYPE
+    ? buildPaginationElement(undefined, {
+        fontFamily: reportProperties.value?.defaultFont?.name,
+        fontSize: reportProperties.value?.defaultFont?.size,
+      })
+    : ({
+        ...createElement(type),
+        ...getDefaultElementProperties(type),
+      } as DesignElement);
+
+// Tell the user a page border already exists and select it for editing
+const rejectSecondPageBorder = (): boolean => {
+  const existing = findPageBorder(bands.value);
+  if (!existing) return false;
+  notification.warning(t("framePresets.pageBorderExists"));
+  selectElement(existing.bandIndex, existing.elementIndex);
+  return true;
+};
+
+// Add a border around the printable area of every page. It lives in the Background
+// band, which JasperReports prints behind all other content on each page.
+const addPageBorder = () => {
+  if (rejectSecondPageBorder()) return;
+  saveStateToHistory();
+
+  const ctx = getFrameTemplateContext();
+  let bandIndex = bands.value.findIndex(
+    (b) => b.type === BAND_TYPE_CONSTANTS.BACKGROUND,
+  );
+  if (bandIndex === -1) {
+    bands.value.push({
+      type: BAND_TYPE_CONSTANTS.BACKGROUND as BandType,
+      height: ctx.availableHeight,
+      elements: [],
+    });
+    bandIndex = bands.value.length - 1;
+    selectedBandTypes.value = bands.value.map((band) => band.type);
+  }
+
+  const backgroundBand = bands.value[bandIndex]!;
+  backgroundBand.height = ctx.availableHeight;
+  if (!backgroundBand.elements) backgroundBand.elements = [];
+
+  const border = {
+    ...buildFrameTemplate(PAGE_BORDER_TYPE, ctx),
+    uuid: crypto.randomUUID(),
+    x: 0,
+    y: 0,
+  } as DesignElement;
+  backgroundBand.elements.push(border);
+
+  const elementIndex = backgroundBand.elements.length - 1;
+  selectElement(bandIndex, elementIndex);
+  handleElementCreated(border, bandIndex, elementIndex);
+  updateJRXML();
+};
+
+// Page Number tile, position picked: the page header (top) or footer (bottom),
+// aligned the way the position says. Dragging the tile drops it in any band.
+const addPageNumber = (position: PaginationPosition) => {
+  const bandIndex = findPaginationTargetBand(bands.value, position);
+  const band = bands.value[bandIndex];
+  if (!band) {
+    notification.warning(t("pagination.noBand"));
+    return;
+  }
+
+  const element = buildPaginationElement(position, {
+    fontFamily: reportProperties.value?.defaultFont?.name,
+    fontSize: reportProperties.value?.defaultFont?.size,
+  });
+  Object.assign(
+    element,
+    placePaginationInBand(
+      element,
+      position,
+      getFrameTemplateContext().availableWidth,
+      band.height,
+    ),
+  );
+
+  // Fits the band, growing it when it is too short; too tall is refused
+  const plan = planDropInBand(bandIndex, element);
+  if (plan.kind === "tooTall") {
+    warnTooTallForBand(bandIndex, element.height, plan.maxHeight);
+    return;
+  }
+
+  saveStateToHistory();
+  applyDropInBand(bandIndex, element, plan);
+  if (!band.elements) band.elements = [];
+  band.elements.push(element);
+
+  const elementIndex = band.elements.length - 1;
+  selectElement(bandIndex, elementIndex);
+  handleElementCreated(element, bandIndex, elementIndex);
+  updateJRXML();
+};
+
+// After the paper size or margins change (already one undo step): resize the
+// page border to the new printable area and move elements that no longer fit
+const handlePageSetupChange = () => {
+  ensureBandsFitPage();
+  const ctx = getFrameTemplateContext();
+  const { borderResized, moved } = fitContentToPage(bands.value, {
+    width: ctx.availableWidth,
+    height: ctx.availableHeight,
+  });
+  const messages = [
+    borderResized ? t("canvas.pageBorderResized") : "",
+    moved > 0 ? t("canvas.elementsMovedToFit", moved) : "",
+  ].filter(Boolean);
+  if (messages.length) notification.info(messages.join(" "));
+  updateJRXML();
+};
+
 // Handle element double-click events
 const handleElementDoubleClick = (element: any) => {
+  if (element.type === PAGE_BORDER_TYPE) {
+    addPageBorder();
+    return;
+  }
+  // The library asks for a position first (insert-page-number)
+  if (element.type === PAGE_NUMBER_TYPE) return;
+
   // Ensure there is a last-clicked band
   if (
     lastClickedBandIndex.value === null ||
@@ -2189,6 +2177,12 @@ const handleElementDoubleClick = (element: any) => {
   ) {
     console.warn("No band selected, falling back to the default band");
     lastClickedBandIndex.value = 3; // Default to the DETAIL band
+  }
+
+  // Tables always go in the Detail section (the one that grows onto new pages)
+  if (element.type === "table") {
+    const detailIndex = bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+    if (detailIndex !== -1) lastClickedBandIndex.value = detailIndex;
   }
 
   // Get the target band
@@ -2203,33 +2197,19 @@ const handleElementDoubleClick = (element: any) => {
 
   // Create the new element
   let newElement: DesignElement = {
-    ...createElement(element.type),
+    ...createLibraryElement(element.type),
     uuid: crypto.randomUUID(), // Generate a UUID
     x: 50, // Default position
     y: 20, // Default position
-    ...getDefaultElementProperties(element.type),
   } as DesignElement;
 
-  // For table elements, check for/create the default dataset, then generate the corresponding columns
+  // A table is horizontally centered with equal space on left and right sides
   if (element.type === "table") {
-    // Get the default table width
-    const defaultTableWidth = (newElement as any).width || 555;
-
-    // Check for and create the default dataset
-    const datasetName = (newElement as any).dataset?.name || "tableDataset";
-    checkAndCreateDefaultTableDataset(datasetName);
-
-    // Generate table columns from the dataset
-    const columns = generateTableColumnsFromDataset(defaultTableWidth);
-    if (columns.length > 0) {
-      (newElement as any).columns = columns;
-      // Calculate the total table width
-      const totalWidth = columns.reduce(
-        (sum, column) => sum + (column.width || 150),
-        0,
-      );
-      newElement.width = totalWidth;
-    }
+    const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+    const sideMargin = 50;
+    newElement.width = Math.max(100, availableWidth - sideMargin * 2);
+    newElement.x = Math.round((availableWidth - newElement.width) / 2);
+    newElement.y = 20;
   }
 
   // For rectangles, ellipses, frames, and images, use a compact default size
@@ -2263,6 +2243,16 @@ const handleElementDoubleClick = (element: any) => {
 
 const handleDrop = (event: DragEvent, pageIndex?: number) => {
   event.preventDefault();
+
+  // A source or column from the "Table Data" list
+  const dataDrag = readDataSourceDrag(event);
+  if (dataDrag) {
+    endDataSourceDrag();
+    highlightedBandIndex.value = null;
+    dropTargetBlocked.value = false;
+    handleDataSourceDrop(event, dataDrag, pageIndex);
+    return;
+  }
 
   let elementData = null;
 
@@ -2319,15 +2309,25 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
       scaledY = (event.clientY - sheetRect.top) / currentZoom;
     }
 
+    // A page border always goes to the Background band, wherever it is dropped
+    if (elementData.type === PAGE_BORDER_TYPE) {
+      addPageBorder();
+      highlightedBandIndex.value = null;
+      return;
+    }
+
     // Create the new element
     // Center it on the cursor using its own compact default size
-    const droppedSize = getDefaultElementSize(elementData.type);
+    const baseElement = createLibraryElement(elementData.type);
+    const droppedSize =
+      isFrameTemplateType(elementData.type) || elementData.type === PAGE_NUMBER_TYPE || elementData.type === "table"
+      ? { width: baseElement.width, height: baseElement.height }
+      : getDefaultElementSize(elementData.type);
     let newElement: DesignElement = {
-      ...createElement(elementData.type),
+      ...baseElement,
       uuid: crypto.randomUUID(), // Generate a UUID
       x: Math.round(Math.max(0, scaledX - droppedSize.width / 2)), // Center horizontally on the cursor
       y: Math.round(Math.max(0, scaledY - droppedSize.height / 2)), // Center vertically on the cursor
-      ...getDefaultElementProperties(elementData.type),
     } as DesignElement;
 
     // For detail band elements, assign pageIndex
@@ -2335,28 +2335,18 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
       newElement.pageIndex = targetPageIndex;
     }
 
-    // For table elements, check for/create the default dataset, then generate the corresponding columns
+    // Tables live in the Detail section, the only one that grows onto new
+    // pages, and are centered with equal space on left and right sides
     if (elementData.type === "table") {
-      // Get the default table width
-      const defaultTableWidth = (newElement as any).width || 555;
-
-      // Check for and create the default dataset
-      const datasetName = (newElement as any).dataset?.name || "tableDataset";
-      checkAndCreateDefaultTableDataset(datasetName);
-
-      // Generate table columns from the dataset
-      const columns = generateTableColumnsFromDataset(defaultTableWidth);
-      if (columns.length > 0) {
-        (newElement as any).columns = columns;
-        // Calculate the total table width
-        const totalWidth = columns.reduce(
-          (sum, column) => sum + (column.width || 150),
-          0,
-        );
-        newElement.width = totalWidth;
-        // Update the x coordinate to center it
-        newElement.x = Math.round(Math.max(0, scaledX - totalWidth / 2));
+      if (bands.value[bandIndex]?.type !== BAND_TYPE_CONSTANTS.DETAIL) {
+        notification.warning(t("dataTable.onlyInDetail"));
+        highlightedBandIndex.value = null;
+        return;
       }
+      const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+      const sideMargin = 50;
+      newElement.width = Math.max(100, availableWidth - sideMargin * 2);
+      newElement.x = Math.round((availableWidth - newElement.width) / 2);
     }
 
     const targetBand = bands.value[bandIndex];
@@ -2373,14 +2363,26 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
         newElement.width = defaultSize.width;
         newElement.height = defaultSize.height;
       }
-      // Save state to history
-      saveStateToHistory();
+
+      // Land on the grid, or in line with a nearby element, like a dragged one
+      const dropSnap = buildSnapContext(bandIndex, targetPageIndex, undefined, newElement);
+      const snappedDrop = snapMove(newElement, dropSnap.targets, getSnapOptions(event));
+      newElement.x = Math.max(0, snappedDrop.x);
+      newElement.y = Math.max(0, snappedDrop.y);
+
+      // Keep table horizontally centered with equal space on left and right
+      if (newElement.type === "table") {
+        const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+        newElement.x = Math.round((availableWidth - newElement.width) / 2);
+      }
 
       // Detect whether it is being dropped on a Frame
       let targetFrameIndex = -1;
 
-      // Iterate over the Frames in the Band to check whether the new element lands on one
-      for (let i = targetBand.elements.length - 1; i >= 0; i--) {
+      // Iterate over the Frames in the Band to check whether the new element lands on one.
+      // Frames themselves are never nested: selection only supports one frame level.
+      const canNest = newElement.type !== "frame" && newElement.type !== "table";
+      for (let i = targetBand.elements.length - 1; canNest && i >= 0; i--) {
         const el = targetBand.elements[i];
         if (!el) continue;
         if (el.type === "frame") {
@@ -2399,6 +2401,20 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
           }
         }
       }
+
+      // Dropped in the band itself: it must fit, growing the band up to its
+      // maximum if needed; too tall is refused before anything changes
+      const bandPlan =
+        targetFrameIndex === -1 ? planDropInBand(bandIndex, newElement) : null;
+      if (bandPlan?.kind === "tooTall") {
+        warnTooTallForBand(bandIndex, newElement.height, bandPlan.maxHeight);
+        highlightedBandIndex.value = null;
+        dropTargetBlocked.value = false;
+        return;
+      }
+
+      // Save state to history
+      saveStateToHistory();
 
       if (targetFrameIndex !== -1) {
         // Add it to the Frame
@@ -2447,14 +2463,8 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
           newElement.width = Math.round(availableWidth);
         }
 
-        // Ensure the element's Y coordinate does not turn negative
-        if (newElement.height <= targetBand.height) {
-          if (newElement.y + newElement.height > targetBand.height) {
-            newElement.y = Math.max(0, Math.round(targetBand.height - newElement.height));
-          }
-        } else {
-          newElement.y = Math.max(0, newElement.y);
-        }
+        // Inside the band: moved up, or the band grows (checked above)
+        if (bandPlan) applyDropInBand(bandIndex, newElement, bandPlan);
 
         targetBand.elements.push(newElement);
 
@@ -2473,6 +2483,7 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
 
   // Clear the highlight state
   highlightedBandIndex.value = null;
+  dropTargetBlocked.value = false;
 };
 
 // Handle visual feedback while dragging
@@ -2482,34 +2493,218 @@ const handleDragOver = (event: DragEvent) => {
     event.dataTransfer.dropEffect = "copy";
   }
 
-  // Get the paper element as a reference point
-  const paper = document.querySelector(".paper") as HTMLElement;
-  if (!paper) return;
+  // The band under the pointer (same lookup as moving an element)
+  const { bandUnderMouse } = getTargetBandAndSheetUnderPoint(event.clientX, event.clientY);
+  const bandIndex =
+    bandUnderMouse?.dataset.bandIndex !== undefined
+      ? parseInt(bandUnderMouse.dataset.bandIndex, 10)
+      : -1;
+  highlightedBandIndex.value = bandIndex;
 
-  const paperRect = paper.getBoundingClientRect();
-  // Calculate coordinates relative to the paper
-  const y = event.clientY - paperRect.top;
+  // Red when the new element is too tall for that band (the drop is refused)
+  const type: string | undefined = draggedLibraryElement.value?.type;
+  const band = bands.value[bandIndex];
+  // A table (or data dropped beside one) can only go in the Detail section
+  const needsDetail =
+    type === "table" ||
+    (isDataSourceDrag(event) && !(event.target as HTMLElement)?.closest?.("[data-table-uuid]"));
+  dropTargetBlocked.value =
+    (needsDetail && !!band && band.type !== BAND_TYPE_CONSTANTS.DETAIL) ||
+    (!!type &&
+      !!band &&
+      type !== PAGE_BORDER_TYPE &&
+      getLibraryDropHeight(type, band.height) > getBandMaxHeight(bandIndex));
+};
 
-  // Account for the zoom scale
-  const currentZoom = zoomLevel.value;
-  const scaledY = y / currentZoom;
+// Height a library item gets when dropped in a band of the given height
+// (same sizes as handleDrop); built items are cached for the drag
+const libraryHeightCache = new Map<string, number>();
+const getLibraryDropHeight = (type: string, bandHeight: number): number => {
+  if (["rectangle", "ellipse", "frame", "image"].includes(type)) {
+    return getDefaultElementSize(type, bandHeight).height;
+  }
+  let height = libraryHeightCache.get(type);
+  if (height === undefined) {
+    height = createLibraryElement(type).height;
+    libraryHeightCache.set(type, height);
+  }
+  return height;
+};
 
-  // Find the corresponding band
-  let bandIndex = -1;
-  let currentY = 0;
-  for (let i = 0; i < bands.value.length; i++) {
-    const band = bands.value[i];
-    if (band && scaledY >= currentY && scaledY <= currentY + band.height) {
-      bandIndex = i;
-      break;
-    }
-    if (band) {
-      currentY += band.height;
+// ==================== Data tables ====================
+
+// Where a table sits in the model
+interface TableLocation {
+  bandIndex: number;
+  elementIndex: number;
+  parentFrameIndex?: number;
+}
+
+const findTableByUuid = (uuid: string): TableLocation | null => {
+  for (let b = 0; b < bands.value.length; b++) {
+    const elements = bands.value[b]?.elements ?? [];
+    for (let i = 0; i < elements.length; i++) {
+      const el = elements[i];
+      if (el?.type === "table" && el.uuid === uuid) return { bandIndex: b, elementIndex: i };
+      if (el?.type === "frame") {
+        const j = ((el as FrameElement).elements ?? []).findIndex(
+          (child) => child.type === "table" && child.uuid === uuid,
+        );
+        if (j !== -1) return { bandIndex: b, elementIndex: j, parentFrameIndex: i };
+      }
     }
   }
+  return null;
+};
 
-  // Update the highlight state
-  highlightedBandIndex.value = bandIndex;
+const tableAt = (loc: TableLocation | null): TableElement | null => {
+  if (!loc) return null;
+  const band = bands.value[loc.bandIndex];
+  const el =
+    loc.parentFrameIndex !== undefined
+      ? (band?.elements?.[loc.parentFrameIndex] as FrameElement | undefined)?.elements?.[loc.elementIndex]
+      : band?.elements?.[loc.elementIndex];
+  return el?.type === "table" ? (el as TableElement) : null;
+};
+
+// The Configure popup: for an existing table, or for a new one created on Apply
+const tableConfig = ref<{
+  visible: boolean;
+  target: TableLocation | null;
+  newAt: { bandIndex: number; y: number; pageIndex?: number } | null;
+  sourceId?: string;
+  columnKey?: string;
+}>({ visible: false, target: null, newAt: null });
+
+const tableConfigTable = computed(() => tableAt(tableConfig.value.target));
+const tableConfigWidth = computed(() => {
+  if (tableConfigTable.value?.width) return tableConfigTable.value.width;
+  const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+  const sideMargin = 50;
+  return Math.max(100, availableWidth - sideMargin * 2);
+});
+
+const openTableConfig = (
+  target: TableLocation | null,
+  options: { newAt?: { bandIndex: number; y: number; pageIndex?: number }; sourceId?: string; columnKey?: string } = {},
+) => {
+  tableConfig.value = {
+    visible: true,
+    target,
+    newAt: options.newAt ?? null,
+    sourceId: options.sourceId,
+    columnKey: options.columnKey,
+  };
+};
+
+const openTableConfigByUuid = (uuid: string) => {
+  const location = findTableByUuid(uuid);
+  if (!location) return;
+  selectElement(location.bandIndex, location.elementIndex, false, location.parentFrameIndex);
+  openTableConfig(location);
+};
+
+const openTableConfigForSelection = () => {
+  if (!selectedElement.value) return;
+  const { bandIndex, elementIndex, parentFrameIndex } = selectedElement.value;
+  if (tableAt({ bandIndex, elementIndex, parentFrameIndex })) {
+    openTableConfig({ bandIndex, elementIndex, parentFrameIndex });
+  }
+};
+
+// Apply the popup: one undo step, whether the table is new or not
+const applyTableConfig = (binding: TableDataBinding, rowCount: number) => {
+  const { target, newAt } = tableConfig.value;
+  let table = tableAt(target);
+  let location = target;
+  if (!table && !newAt) return;
+
+  saveStateToHistory();
+
+  if (!table && newAt) {
+    const band = bands.value[newAt.bandIndex];
+    if (!band) return;
+    const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+    const width = tableConfigWidth.value;
+    table = {
+      ...(createLibraryElement("table") as TableElement),
+      uuid: crypto.randomUUID(),
+      x: Math.round((availableWidth - width) / 2),
+      y: newAt.y,
+      width,
+    };
+    if (newAt.pageIndex !== undefined) table.pageIndex = newAt.pageIndex;
+    band.elements.push(table);
+    location = { bandIndex: newAt.bandIndex, elementIndex: band.elements.length - 1 };
+  }
+  if (!table || !location) return;
+
+  table.binding = binding;
+  table.height = tableHeight(binding, rowCount, table.headerHeight, table.rowHeight);
+
+  // The table must still fit its section: moved up, or the section grows
+  if (location.parentFrameIndex === undefined) {
+    const plan = planDropInBand(location.bandIndex, table);
+    if (plan.kind !== "tooTall") applyDropInBand(location.bandIndex, table, plan);
+  }
+
+  selectElement(location.bandIndex, location.elementIndex, false, location.parentFrameIndex);
+  updateJRXML();
+};
+
+// A source or column dropped from the "Table Data" list
+const handleDataSourceDrop = (
+  event: DragEvent,
+  drag: DataSourceDragPayload,
+  pageIndex?: number,
+) => {
+  const tableEl = (event.target as HTMLElement)?.closest?.("[data-table-uuid]") as HTMLElement | null;
+  const location = tableEl ? findTableByUuid(tableEl.dataset.tableUuid || "") : null;
+  const table = tableAt(location);
+  const columnKey = drag.kind === "column" ? drag.column.key : undefined;
+
+  if (table && location) {
+    // One more column of the source the table already shows: added directly
+    if (drag.kind === "column" && table.binding?.sourceId === drag.sourceId) {
+      addColumnToTable(table, drag.column);
+      return;
+    }
+    openTableConfig(location, { sourceId: drag.sourceId, columnKey });
+    return;
+  }
+
+  // Dropped beside any table: a new table in the Detail section, made on Apply
+  const bandEl = (event.target as HTMLElement)?.closest?.(".band") as HTMLElement | null;
+  const bandIndex = bandEl?.dataset.bandIndex !== undefined ? parseInt(bandEl.dataset.bandIndex, 10) : -1;
+  const band = bands.value[bandIndex];
+  if (!band || band.type !== BAND_TYPE_CONSTANTS.DETAIL || !bandEl) {
+    notification.warning(t("dataTable.onlyInDetail"));
+    return;
+  }
+  const y = Math.max(0, Math.round((event.clientY - bandEl.getBoundingClientRect().top) / zoomLevel.value));
+  const sheet = (event.target as HTMLElement)?.closest?.(".page-sheet") as HTMLElement | null;
+  const sheetPage = sheet?.dataset.pageIndex !== undefined ? parseInt(sheet.dataset.pageIndex, 10) : undefined;
+  openTableConfig(null, {
+    newAt: { bandIndex, y, pageIndex: sheetPage ?? pageIndex },
+    sourceId: drag.sourceId,
+    columnKey,
+  });
+};
+
+const addColumnToTable = (table: TableElement, column: DataColumn) => {
+  const binding = table.binding;
+  if (!binding) return;
+  if (binding.columns.some((c) => c.key === column.key)) {
+    notification.info(t("dataTable.columnAlreadyShown", { column: column.label }));
+    return;
+  }
+  if (binding.columns.length >= maxColumnsForWidth(table.width)) {
+    notification.warning(t("dataTable.columnLimitReached", { max: maxColumnsForWidth(table.width) }));
+    return;
+  }
+  saveStateToHistory();
+  binding.columns = evenColumnWidths([...binding.columns, toColumnBinding(column, 0)], table.width);
+  updateJRXML();
 };
 
 // Handle the drag-leave event
@@ -2518,6 +2713,7 @@ const handleDragLeave = (event: DragEvent) => {
   const paper = document.querySelector(".paper") as HTMLElement;
   if (paper && !paper.contains(event.relatedTarget as Node)) {
     highlightedBandIndex.value = null;
+    dropTargetBlocked.value = false;
   }
 };
 
@@ -2550,7 +2746,6 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
     case "textField":
       return {
         expression: `"${t("properties.defaultTextFieldExpression")}"`,
-        isStretchWithOverflow: false,
         evaluationTime: "Now",
         pattern: "",
         isBlankWhenNull: false,
@@ -2569,6 +2764,10 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
         mode: "Transparent",
         border: "1px solid #ccc", // Add a default border for rectangle elements
       };
+    case "frame":
+      // A new Box starts with a thin light border so it can be seen (and is
+      // printed); a fresh object each time, since border edits change it in place
+      return { box: applyBorderPreset(undefined, "light") };
     case "table":
       return {
         width: calculateAvailableWidth(),
@@ -2673,8 +2872,7 @@ const selectElement = (
   showBottomPanel.value = false;
 
   if (element && !element.box) {
-    // Use initBox to initialize the box property
-    initBox();
+    initBox(element);
   }
 
   // Removed the expensive DOM queries and animation effects; selection state is now managed via Vue's reactivity system and CSS classes
@@ -2767,56 +2965,43 @@ let cachedMouseMoveHandler: ((e: MouseEvent) => void) | null = null;
 let cachedMouseUpHandler: ((e: MouseEvent) => void) | null = null;
 
 // Detect target band and sheet under coordinates (combines elementFromPoint with geometric fallback)
+// The page sheet and band at a screen point, found from their positions on screen.
+// Not from what is drawn there: while dragging, that is usually the dragged
+// element itself, which still sits in its old band.
 const getTargetBandAndSheetUnderPoint = (clientX: number, clientY: number) => {
-  const elUnderPoint = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
-  let bandUnderMouse = elUnderPoint?.closest(".band") as HTMLElement | null;
-  let sheetUnderMouse = (elUnderPoint?.closest(".page-sheet") ||
-    bandUnderMouse?.closest(".page-sheet")) as HTMLElement | null;
-
-  // Geometric fallback when elementFromPoint hits an element instead of band surface
-  if (!bandUnderMouse) {
-    const sheets = Array.from(document.querySelectorAll<HTMLElement>(".page-sheet"));
-    let targetSheet: HTMLElement | null = null;
-    for (const sheet of sheets) {
+  const sheets = Array.from(document.querySelectorAll<HTMLElement>(".page-sheet"));
+  const sheetUnderMouse =
+    sheets.find((sheet) => {
       const rect = sheet.getBoundingClientRect();
-      if (
+      return (
         clientX >= rect.left &&
-        clientX <= rect.right &&
+        clientX < rect.right &&
         clientY >= rect.top &&
-        clientY <= rect.bottom
-      ) {
-        targetSheet = sheet;
-        break;
-      }
-    }
-    if (!targetSheet && sheets.length > 0) {
-      targetSheet =
-        sheets.find((sheet) => {
-          const rect = sheet.getBoundingClientRect();
-          return clientY >= rect.top && clientY <= rect.bottom;
-        }) ?? sheets[0] ?? null;
-    }
-    sheetUnderMouse = targetSheet;
+        clientY < rect.bottom
+      );
+    }) ??
+    sheets.find((sheet) => {
+      const rect = sheet.getBoundingClientRect();
+      return clientY >= rect.top && clientY < rect.bottom;
+    }) ??
+    sheets[0] ??
+    null;
 
-    if (sheetUnderMouse) {
-      const bandEls = Array.from(sheetUnderMouse.querySelectorAll<HTMLElement>(".band"));
-      for (const bandEl of bandEls) {
+  let bandUnderMouse: HTMLElement | null = null;
+  if (sheetUnderMouse) {
+    const bandEls = Array.from(sheetUnderMouse.querySelectorAll<HTMLElement>(".band"));
+    // Bands are stacked; a point on the line between two belongs to the lower
+    // one, so an element snapped to a band's bottom edge moves into the next band
+    bandUnderMouse =
+      bandEls.find((bandEl) => {
         const rect = bandEl.getBoundingClientRect();
-        if (clientY >= rect.top && clientY <= rect.bottom) {
-          bandUnderMouse = bandEl;
-          break;
-        }
-      }
-      if (!bandUnderMouse && bandEls.length > 0) {
-        const firstEl = bandEls[0];
-        const lastEl = bandEls[bandEls.length - 1];
-        if (firstEl && lastEl) {
-          const firstRect = firstEl.getBoundingClientRect();
-          const lastRect = lastEl.getBoundingClientRect();
-          if (clientY < firstRect.top) bandUnderMouse = firstEl;
-          else if (clientY > lastRect.bottom) bandUnderMouse = lastEl;
-        }
-      }
+        return clientY >= rect.top && clientY < rect.bottom;
+      }) ?? null;
+    if (!bandUnderMouse && bandEls.length > 0) {
+      // Above the first band or below the last (in the margins): the nearest one
+      const first = bandEls[0]!;
+      bandUnderMouse =
+        clientY < first.getBoundingClientRect().top ? first : bandEls[bandEls.length - 1]!;
     }
   }
 
@@ -2824,6 +3009,99 @@ const getTargetBandAndSheetUnderPoint = (clientX: number, clientY: number) => {
 };
 
 // Start dragging an element
+// Drag an item inside its box, kept within the box's edges
+const startDraggingInsideBox = (
+  event: MouseEvent,
+  element: DesignElement,
+  bandIndex: number,
+  boxIndex: number,
+) => {
+  const box = bands.value[bandIndex]!.elements[boxIndex] as FrameElement;
+  const zoom = zoomLevel.value;
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const origX = element.x;
+  const origY = element.y;
+  const snapContext = buildSnapContext(
+    bandIndex,
+    getEventPageIndex(event, element),
+    boxIndex,
+    element,
+  );
+
+  // Undo snapshot before the item moves (a drag only starts after the mouse moved)
+  saveStateToHistory();
+  isDraggingOrResizing.value = true;
+
+  const onMove = (e: MouseEvent) => {
+    const options = getSnapOptions(e, snapContext.offset);
+    const snapped = snapMove(
+      {
+        x: origX + (e.clientX - startX) / zoom,
+        y: origY + (e.clientY - startY) / zoom,
+        width: element.width,
+        height: element.height,
+      },
+      snapContext.targets,
+      options,
+    );
+    const position = clampPositionInBox({ ...element, ...snapped }, box);
+    element.x = position.x;
+    element.y = position.y;
+    showSnapGuides(snapContext, snapped.guides, options);
+  };
+  const frameMove = throttleToAnimationFrame(onMove);
+
+  const onUp = () => {
+    frameMove.flush();
+    clearAlignmentLines();
+    document.removeEventListener("mousemove", frameMove);
+    document.removeEventListener("mouseup", onUp);
+    isDraggingOrResizing.value = false;
+    isJustDraggedOrResized.value = true;
+    setTimeout(() => {
+      isJustDraggedOrResized.value = false;
+    }, 150);
+    updateJRXML();
+  };
+
+  document.addEventListener("mousemove", frameMove);
+  document.addEventListener("mouseup", onUp);
+};
+
+// The page sheet a mouse event happened on (detail content is per page)
+const getEventPageIndex = (event: Event, element?: DesignElement): number => {
+  const sheet = (event.target as HTMLElement | null)?.closest?.(
+    ".page-sheet",
+  ) as HTMLElement | null;
+  if (sheet?.dataset.pageIndex !== undefined) {
+    return parseInt(sheet.dataset.pageIndex, 10);
+  }
+  return element?.pageIndex ?? 0;
+};
+
+// Run a mouse-move handler at most once per screen frame, with the latest event:
+// the canvas never does more work than it can draw. `flush` applies a pending
+// move at once (call it on mouse-up so the final position is the last one).
+const throttleToAnimationFrame = (handler: (e: MouseEvent) => void) => {
+  let pending: MouseEvent | null = null;
+  let frame = 0;
+  const flush = () => {
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+    if (pending) {
+      const e = pending;
+      pending = null;
+      handler(e);
+    }
+  };
+  const onMove = (e: MouseEvent) => {
+    pending = e;
+    if (!frame) frame = requestAnimationFrame(flush);
+  };
+  return Object.assign(onMove, { flush });
+};
+
 const startDragging = (
   event: MouseEvent,
   bandIndex: number,
@@ -2846,6 +3124,13 @@ const startDragging = (
     }
   } else {
     draggedElement = band?.elements[elementIndex];
+  }
+
+  // A ready-made box's own parts move only within the box; a drag never pulls
+  // them out. Other items in a box can be dragged anywhere.
+  if (draggedElement && parentFrameIndex !== undefined && isBoxPart(draggedElement)) {
+    startDraggingInsideBox(event, draggedElement, bandIndex, parentFrameIndex);
+    return;
   }
 
   if (draggedElement) {
@@ -2875,10 +3160,32 @@ const startDragging = (
       lastTargetPageIndex: sourcePageIndex,
     };
 
+    // Undo snapshot before the element moves (a drag only starts after the
+    // mouse has moved, so plain clicks add no undo step)
+    saveStateToHistory();
+
     isDraggingOrResizing.value = true;
 
-    if (!cachedMouseMoveHandler) {
-      cachedMouseMoveHandler = (e: MouseEvent) => {
+    // Drop handlers left over from a drag whose mouse-up was missed
+    if (cachedMouseMoveHandler) {
+      document.removeEventListener("mousemove", cachedMouseMoveHandler);
+      cachedMouseMoveHandler = null;
+    }
+    if (cachedMouseUpHandler) {
+      document.removeEventListener("mouseup", cachedMouseUpHandler);
+      cachedMouseUpHandler = null;
+    }
+
+    // What the element can snap to; the other elements stay put during the drag
+    const snapContext = buildSnapContext(
+      bandIndex,
+      sourcePageIndex,
+      parentFrameIndex,
+      draggedElement,
+    );
+
+    {
+      const applyDragMove = (e: MouseEvent) => {
         if (draggingInfo.value) {
           const currentBand = bands.value[draggingInfo.value.bandIndex];
           let currentElement: DesignElement | undefined;
@@ -2908,8 +3215,20 @@ const startDragging = (
             const deltaY =
               (e.clientY - draggingInfo.value.startY) / currentZoom;
 
-            let newX = (draggingInfo.value.origElementX ?? 0) + deltaX;
-            let newY = (draggingInfo.value.origElementY ?? 0) + deltaY;
+            // Snap: line up with other elements first, else the grid
+            const snapOptions = getSnapOptions(e, snapContext.offset);
+            const snapped = snapMove(
+              {
+                x: (draggingInfo.value.origElementX ?? 0) + deltaX,
+                y: (draggingInfo.value.origElementY ?? 0) + deltaY,
+                width: currentElement.width,
+                height: currentElement.height,
+              },
+              snapContext.targets,
+              snapOptions,
+            );
+            let newX = snapped.x;
+            const newY = snapped.y;
 
             // Inside band, constrain X coordinate to container width
             if (draggingInfo.value.parentFrameIndex === undefined) {
@@ -2919,47 +3238,9 @@ const startDragging = (
               );
             }
 
-            // Apply auto-snap to grid
-            if (enableSnapToGrid.value) {
-              const gridSize = UI_CONSTANTS.GRID_SIZE;
-              const remainderX = newX % gridSize;
-              newX =
-                remainderX < gridSize / 2
-                  ? newX - remainderX
-                  : newX + (gridSize - remainderX);
-              const remainderY = newY % gridSize;
-              newY =
-                remainderY < gridSize / 2
-                  ? newY - remainderY
-                  : newY + (gridSize - remainderY);
-            }
-
-            // Apply alignment-line snapping
-            if (enableSnapToAlignment.value) {
-              const tempElement = { ...currentElement, x: newX, y: newY };
-              const snapInfo = detectAlignmentLines(
-                tempElement,
-                draggingInfo.value.bandIndex,
-                false,
-              );
-              if (snapInfo.horizontal) {
-                newX += snapInfo.horizontal.offset;
-              }
-              if (snapInfo.vertical) {
-                newY += snapInfo.vertical.offset;
-              }
-            }
-
-            // Update current element position
             currentElement.x = Math.round(newX);
             currentElement.y = Math.round(newY);
-
-            // Detect alignment lines (using the final position)
-            if (enableSnapToAlignment.value) {
-              detectAlignmentLines(currentElement, draggingInfo.value.bandIndex);
-            } else {
-              clearAlignmentLines();
-            }
+            showSnapGuides(snapContext, snapped.guides, snapOptions);
 
             // Target band and sheet detection:
             // Use the visual position of the element's top to prevent accidental reparenting
@@ -3030,6 +3311,16 @@ const startDragging = (
             }
             if (relativeY < 0) relativeY = 0;
 
+            // Red target band when the element is too tall for it (the drop
+            // would be refused); not when it lands in a box in that band
+            dropTargetBlocked.value =
+              targetBandIndex !== draggingInfo.value.bandIndex &&
+              !isOverBox(targetBandIndex, currentElement, relativeX, relativeY) &&
+              planDropInBand(targetBandIndex, {
+                y: relativeY,
+                height: currentElement.height,
+              }).kind === "tooTall";
+
             const targetBand = bands.value[targetBandIndex];
             const bandName = targetBand
               ? getBandDisplayName(targetBand.type) + " - "
@@ -3052,12 +3343,12 @@ const startDragging = (
           }
         }
       };
-    }
+      const frameMove = throttleToAnimationFrame(applyDragMove);
+      cachedMouseMoveHandler = frameMove;
 
-    if (!cachedMouseUpHandler) {
       cachedMouseUpHandler = (e: MouseEvent) => {
-        saveStateToHistory();
-
+        // Apply the last mouse move before reading the final position
+        frameMove.flush();
         if (draggingInfo.value) {
           const currentBand = bands.value[draggingInfo.value.bandIndex];
           let currentElement: DesignElement | undefined;
@@ -3182,9 +3473,10 @@ const startDragging = (
               elementRelTargetBandY = elementRelSourceBandY + bandOffsetY;
             }
 
-            // Find target frame within target band (if dropped inside a frame)
+            // Find target frame within target band (if dropped inside a frame).
+            // Frames themselves are never nested: selection only supports one frame level.
             let targetFrameIndex = -1;
-            if (targetBand && targetBand.elements) {
+            if (currentElement.type !== "frame" && targetBand && targetBand.elements) {
               for (let i = targetBand.elements.length - 1; i >= 0; i--) {
                 if (
                   targetBandIndex === draggingInfo.value.bandIndex &&
@@ -3221,7 +3513,34 @@ const startDragging = (
               (targetFrameIndex === -1 ? undefined : targetFrameIndex);
             const isSamePage = sourcePageIndex === targetSheetPageIndex;
 
-            if ((!isSameBand || !isSameFrame) && targetBand) {
+            // Y was snapped in the source band; snap it again to the grid of the
+            // band it lands in (bands start at different heights; X is shared)
+            const landingGrid = getSnapOptions(e).grid;
+            if (landingGrid && !isSameBand) {
+              elementRelTargetBandY = snapToGrid(elementRelTargetBandY, landingGrid);
+            }
+
+            // Landing in a band (not in a box): it must fit, growing the band up
+            // to its maximum if needed. Too tall for another band: refused.
+            const bandPlan =
+              targetFrameIndex === -1 && targetBand
+                ? planDropInBand(targetBandIndex, {
+                    y: elementRelTargetBandY,
+                    height: currentElement.height,
+                  })
+                : null;
+
+            if (bandPlan?.kind === "tooTall" && !isSameBand) {
+              currentElement.x = draggingInfo.value.origElementX ?? currentElement.x;
+              currentElement.y = draggingInfo.value.origElementY ?? currentElement.y;
+              warnTooTallForBand(targetBandIndex, currentElement.height, bandPlan.maxHeight);
+              selectElement(
+                draggingInfo.value.bandIndex,
+                draggingInfo.value.elementIndex,
+                false,
+                draggingInfo.value.parentFrameIndex,
+              );
+            } else if ((!isSameBand || !isSameFrame) && targetBand) {
               // Reparenting
               let targetFrame: FrameElement | null = null;
               if (targetFrameIndex !== -1) {
@@ -3274,7 +3593,11 @@ const startDragging = (
                   );
                 } else {
                   element.x = Math.max(0, Math.round(elementRelTargetBandX));
-                  element.y = Math.max(0, Math.round(elementRelTargetBandY));
+                  if (bandPlan && bandPlan.kind !== "tooTall") {
+                    applyDropInBand(targetBandIndex, element, bandPlan);
+                  } else {
+                    element.y = Math.max(0, Math.round(elementRelTargetBandY));
+                  }
 
                   if (targetBand.type === BAND_TYPE_CONSTANTS.DETAIL) {
                     (element as any).pageIndex = targetSheetPageIndex;
@@ -3291,20 +3614,22 @@ const startDragging = (
               }
             } else {
               // Within the same container
-              if (
+              const movedAcrossPages =
                 isSameBand &&
                 !isSamePage &&
-                currentBand.type === BAND_TYPE_CONSTANTS.DETAIL
-              ) {
-                // Moved detail element across pages
+                currentBand.type === BAND_TYPE_CONSTANTS.DETAIL;
+              if (movedAcrossPages) {
+                (currentElement as any).pageIndex = targetSheetPageIndex;
+              }
+              currentElement.x = Math.max(0, Math.round(currentElement.x));
+              if (bandPlan && bandPlan.kind !== "tooTall") {
+                // Kept inside its band (moved up, or the band grows)
+                applyDropInBand(targetBandIndex, currentElement, bandPlan);
+              } else {
                 currentElement.y = Math.max(
                   0,
-                  Math.round(elementRelTargetBandY),
+                  Math.round(movedAcrossPages ? elementRelTargetBandY : currentElement.y),
                 );
-                (currentElement as any).pageIndex = targetSheetPageIndex;
-              } else {
-                currentElement.x = Math.max(0, Math.round(currentElement.x));
-                currentElement.y = Math.max(0, Math.round(currentElement.y));
               }
 
               // Ensure the element remains selected after moving within the same container
@@ -3324,6 +3649,7 @@ const startDragging = (
 
         // Clear highlight and coordinate display
         highlightedBandIndex.value = null;
+        dropTargetBlocked.value = false;
         dragCoordinates.value.visible = false;
         clearAlignmentLines();
         draggingInfo.value = null;
@@ -3422,6 +3748,25 @@ const startEditing = (
   elementIndex: number,
   parentFrameIndex?: number,
 ) => {
+  // Page numbers are generated by the report: only their format, range and
+  // style can change, from the property panel
+  const band = bands.value[bandIndex];
+  const target =
+    parentFrameIndex !== undefined
+      ? (band?.elements?.[parentFrameIndex] as FrameElement | undefined)
+          ?.elements?.[elementIndex]
+      : band?.elements?.[elementIndex];
+  if (target?.type === "table") {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    openTableConfig({ bandIndex, elementIndex, parentFrameIndex });
+    return;
+  }
+  if (isPagination(target)) {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    notification.warning(t("pagination.cannotEdit"));
+    return;
+  }
+
   editingElement.value = { bandIndex, elementIndex, parentFrameIndex };
   // Select the element
   selectElement(bandIndex, elementIndex, false, parentFrameIndex);
@@ -3474,6 +3819,10 @@ const loadFromLocalStorageWrapper = () => {
         getEffectiveDefaultBandLimits(),
     };
     bands.value = loadedData.reportData.bands;
+    // Repair copies that share IDs with their original (pasted before copies got their own)
+    ensureUniqueUuids(bands.value);
+    ensureUniqueTableDatasets(bands.value);
+    resetBoxPhotos(bands.value);
     reportFields.value = loadedData.reportData.reportFields;
     jrxmlContent.value = loadedData.reportData.jrxmlContent;
     // Update selectedBandTypes to match the loaded bands
@@ -3492,43 +3841,16 @@ const loadFromLocalStorageWrapper = () => {
   return false;
 };
 
-// Initialize an element's Box property
-const initBox = () => {
-  if (currentElement.value) {
-    // Create a default box object
-    currentElement.value.box = {
-      // Global border
-      border: "",
-      borderColor: "#000000",
-      borderWidth: 0,
-      borderStyle: "",
-
-      // Per-side borders - style defaults to an empty string, meaning "use the global setting"
-      topBorder: "",
-      topBorderColor: "#000000",
-      topBorderWidth: 0,
-      topBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
-      leftBorder: "",
-      leftBorderColor: "#000000",
-      leftBorderWidth: 0,
-      leftBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
-      bottomBorder: "",
-      bottomBorderColor: "#000000",
-      bottomBorderWidth: 0,
-      bottomBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
-      rightBorder: "",
-      rightBorderColor: "#000000",
-      rightBorderWidth: 0,
-      rightBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
-
-      // Margins
-      padding: 0,
-      topPadding: 0,
-      leftPadding: 0,
-      bottomPadding: 0,
-      rightPadding: 0,
-    };
-  }
+// Initialize an element's Box property: padding only. Borders are pens, written
+// by the border presets and Style Settings when the user sets one.
+const initBox = (element: DesignElement) => {
+  element.box = {
+    padding: 0,
+    topPadding: 0,
+    leftPadding: 0,
+    bottomPadding: 0,
+    rightPadding: 0,
+  };
 };
 
 // Download the JRXML file
@@ -3542,7 +3864,7 @@ const downloadJRXML = () => {
     reportFields.value,
     reportParameters.value,
     subDatasets.value,
-    [],
+    tableStyles.value,
     reportVariables.value,
     [],
     reportGroups.value,
@@ -3652,7 +3974,7 @@ const updateJRXML = () => {
       reportFields.value,
       reportParameters.value,
       subDatasets.value,
-      reportStyles.value,
+      tableStyles.value,
       reportVariables.value,
       [],
       reportGroups.value,
@@ -3721,6 +4043,8 @@ const copyElement = async () => {
           type: "PDF_DESIGNER_ELEMENT",
           version: "1.0",
           elementData: elementData,
+          // Ctrl+V pastes back into the section it was copied from
+          sourceBandType: band.type,
         };
         // Convert the data to a JSON string and write it to the clipboard
         await navigator.clipboard.writeText(JSON.stringify(clipboardData));
@@ -3762,6 +4086,7 @@ const copyElement = async () => {
             type: "PDF_DESIGNER_ELEMENT",
             version: "1.0",
             elementData: elementData,
+            sourceBandType: band.type,
           }),
         );
       }
@@ -3769,88 +4094,250 @@ const copyElement = async () => {
   }
 };
 
-// Paste an element from the clipboard
-const pasteElement = async () => {
+// Paste an element from the clipboard. With a screen point (right-click → Paste)
+// it lands there; otherwise (Ctrl+V, toolbar) next to the original.
+const pasteElement = async (at?: { clientX: number; clientY: number }) => {
+  const isOurs = (data: any) =>
+    data?.type === "PDF_DESIGNER_ELEMENT" && data.elementData;
   try {
     // First try reading from the clipboard
-    const clipboardText = await navigator.clipboard.readText();
-    const clipboardData = JSON.parse(clipboardText);
-
-    // Verify this is our own PDF Designer element data
-    if (
-      clipboardData.type === "PDF_DESIGNER_ELEMENT" &&
-      clipboardData.elementData
-    ) {
-      processPastedElement(clipboardData.elementData);
-    }
+    const clipboardData = JSON.parse(await navigator.clipboard.readText());
+    if (isOurs(clipboardData)) processPastedElement(clipboardData, at);
   } catch (err) {
     console.error("Failed to read from clipboard:", err);
     // Fallback: try reading from sessionStorage
     try {
       const savedData = sessionStorage.getItem("pdfDesignerCopiedElement");
-      if (savedData) {
-        const clipboardData = JSON.parse(savedData);
-        if (
-          clipboardData.type === "PDF_DESIGNER_ELEMENT" &&
-          clipboardData.elementData
-        ) {
-          processPastedElement(clipboardData.elementData);
-        }
-      }
+      const clipboardData = savedData ? JSON.parse(savedData) : null;
+      if (isOurs(clipboardData)) processPastedElement(clipboardData, at);
     } catch (sessionErr) {
       console.error("Failed to read from sessionStorage:", sessionErr);
     }
   }
 };
 
-// Handle the pasted element data (extracted into a separate function for reuse)
-const processPastedElement = (elementData: any) => {
-  saveStateToHistory();
+// Screen rectangles of a band on the canvas: one per page sheet it shows on
+// (a Detail band only on its own page)
+const getBandScreenRects = (bandIndex: number, pageIndex?: number): DOMRect[] => {
+  const sheetSelector =
+    pageIndex === undefined ? ".page-sheet" : `.page-sheet[data-page-index="${pageIndex}"]`;
+  return Array.from(
+    document.querySelectorAll<HTMLElement>(
+      `${sheetSelector} .band[data-band-index="${bandIndex}"]`,
+    ),
+  ).map((el) => el.getBoundingClientRect());
+};
 
-  // Determine the paste location (use the currently selected band, or default to the first editable band)
-  let targetBandIndex =
-    selectedBandIndex.value !== null ? selectedBandIndex.value : 0;
+// The part of the canvas the user can see right now
+const getCanvasViewportRect = (): DOMRect | null =>
+  document.querySelector<HTMLElement>(".paper-container")?.getBoundingClientRect() ?? null;
 
-  // Find the first band that has an elements array
-  if (targetBandIndex === null) {
-    targetBandIndex = bands.value.findIndex(
-      (band) => band.elements && Array.isArray(band.elements),
+// Whether the middle of an element at (x, y) in a band is on screen
+const isBandSpotOnScreen = (
+  bandIndex: number,
+  pageIndex: number | undefined,
+  element: { x: number; y: number; width: number; height: number },
+): boolean => {
+  const view = getCanvasViewportRect();
+  if (!view) return true;
+  const zoom = zoomLevel.value;
+  return getBandScreenRects(bandIndex, pageIndex).some((rect) => {
+    const cx = rect.left + (element.x + element.width / 2) * zoom;
+    const cy = rect.top + (element.y + element.height / 2) * zoom;
+    return cx >= view.left && cx <= view.right && cy >= view.top && cy <= view.bottom;
+  });
+};
+
+// The middle of the visible part of the Detail section: the page showing the
+// most of it, in that band's coordinates
+const getVisibleDetailCentre = (
+  detailIndex: number,
+): { pageIndex: number; x: number; y: number } | null => {
+  const view = getCanvasViewportRect();
+  if (!view) return null;
+  let best: { pageIndex: number; x: number; y: number; area: number } | null = null;
+  document.querySelectorAll<HTMLElement>(".page-sheet").forEach((sheet) => {
+    const bandEl = sheet.querySelector<HTMLElement>(
+      `.band[data-band-index="${detailIndex}"]`,
     );
-    // If none is found, use the detail band (usually index 3)
-    if (targetBandIndex === -1) {
-      targetBandIndex = 3;
+    if (!bandEl || sheet.dataset.pageIndex === undefined) return;
+    const rect = bandEl.getBoundingClientRect();
+    const left = Math.max(rect.left, view.left);
+    const right = Math.min(rect.right, view.right);
+    const top = Math.max(rect.top, view.top);
+    const bottom = Math.min(rect.bottom, view.bottom);
+    const area = Math.max(0, right - left) * Math.max(0, bottom - top);
+    if (area > 0 && (!best || area > best.area)) {
+      best = {
+        pageIndex: parseInt(sheet.dataset.pageIndex, 10),
+        x: ((left + right) / 2 - rect.left) / zoomLevel.value,
+        y: ((top + bottom) / 2 - rect.top) / zoomLevel.value,
+        area,
+      };
+    }
+  });
+  return best;
+};
+
+// Keep an element inside the printable width (and below the band's top)
+const fitInPrintableWidth = (element: DesignElement) => {
+  const maxX = Math.max(0, printableWidth.value - (element.width || 0));
+  element.x = Math.min(Math.max(0, element.x), Math.round(maxX));
+  element.y = Math.max(0, element.y);
+};
+
+// Step a pasted element down and right past copies already at its spot, so
+// repeated pastes fan out instead of stacking exactly on top of each other
+const stepPastCopies = (element: DesignElement, bandIndex: number, pageIndex: number) => {
+  const band = bands.value[bandIndex];
+  if (!band) return;
+  const isDetail = band.type === BAND_TYPE_CONSTANTS.DETAIL;
+  const offset = KEYBOARD_CONSTANTS.ELEMENT_PASTE_OFFSET;
+  const isTaken = () =>
+    band.elements.some(
+      (el) =>
+        (!isDetail || (el.pageIndex ?? 0) === pageIndex) &&
+        Math.abs(el.x - element.x) < 1 &&
+        Math.abs(el.y - element.y) < 1,
+    );
+  for (let i = 0; i < 100 && isTaken(); i++) {
+    const before = { x: element.x, y: element.y };
+    element.x += offset;
+    element.y += offset;
+    fitInPrintableWidth(element);
+    if (element.x === before.x && element.y === before.y) break;
+  }
+};
+
+// Handle the pasted clipboard data (extracted into a separate function for reuse)
+const processPastedElement = (
+  clipboardData: { elementData: any; sourceBandType?: string },
+  at?: { clientX: number; clientY: number },
+) => {
+  const detailIndex = bands.value.findIndex(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+
+  // Create the new element (deep clone)
+  const newElement = JSON.parse(JSON.stringify(clipboardData.elementData));
+  // A copy is a separate element: new IDs for it and everything inside it
+  refreshUuids(newElement);
+  if (newElement.id) {
+    newElement.id = `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+  // Ensure the element's position and size are integers
+  newElement.x = Math.round(newElement.x || 0);
+  newElement.y = Math.round(newElement.y || 0);
+  if (newElement.width) newElement.width = Math.round(newElement.width);
+  if (newElement.height) newElement.height = Math.round(newElement.height);
+
+  // A page border goes back to the Background band, where only one is allowed
+  if (clipboardData.sourceBandType === BAND_TYPE_CONSTANTS.BACKGROUND) {
+    if (rejectSecondPageBorder()) return;
+    const backgroundIndex = bands.value.findIndex(
+      (b) => b.type === BAND_TYPE_CONSTANTS.BACKGROUND,
+    );
+    const background = bands.value[backgroundIndex];
+    if (!background) return;
+    saveStateToHistory();
+    background.elements.push(newElement);
+    selectElement(backgroundIndex, background.elements.length - 1);
+    updateJRXML();
+    return;
+  }
+
+  // Right-click → Paste on a page: the element's top-left corner at the
+  // clicked point. A click in the grey area around the pages pastes like Ctrl+V.
+  let target: { bandIndex: number; pageIndex: number } | null = null;
+  if (at) {
+    const { bandUnderMouse, sheetUnderMouse } = getTargetBandAndSheetUnderPoint(
+      at.clientX,
+      at.clientY,
+    );
+    const sheetRect = sheetUnderMouse?.getBoundingClientRect();
+    const onPage =
+      !!sheetRect &&
+      at.clientX >= sheetRect.left &&
+      at.clientX < sheetRect.right &&
+      at.clientY >= sheetRect.top &&
+      at.clientY < sheetRect.bottom;
+    if (onPage && bandUnderMouse?.dataset.bandIndex !== undefined) {
+      const bandRect = bandUnderMouse.getBoundingClientRect();
+      target = {
+        bandIndex: parseInt(bandUnderMouse.dataset.bandIndex, 10),
+        pageIndex: parseInt(sheetUnderMouse?.dataset.pageIndex ?? "0", 10),
+      };
+      newElement.x = Math.round((at.clientX - bandRect.left) / zoomLevel.value);
+      newElement.y = Math.round((at.clientY - bandRect.top) / zoomLevel.value);
+      fitInPrintableWidth(newElement);
     }
   }
 
+  if (!target) {
+    // Ctrl+V / toolbar: back into the section it was copied from, next to the
+    // original. Tables only live in Detail; an unknown section (an older copy,
+    // or one from another report) means Detail as well.
+    let bandIndex =
+      newElement.type === "table"
+        ? detailIndex
+        : bands.value.findIndex(
+            (b) =>
+              b.type === clipboardData.sourceBandType &&
+              b.type !== BAND_TYPE_CONSTANTS.BACKGROUND,
+          );
+    if (bandIndex === -1) bandIndex = detailIndex;
+    target = {
+      bandIndex,
+      pageIndex: Math.min(newElement.pageIndex ?? 0, Math.max(0, totalPages.value - 1)),
+    };
+    fitInPrintableWidth(newElement);
+    stepPastCopies(newElement, target.bandIndex, target.pageIndex);
+
+    // Out of sight (scrolled away, or on another page): the middle of the
+    // visible part of Detail instead, so the user sees what was pasted
+    const isDetail = bands.value[bandIndex]?.type === BAND_TYPE_CONSTANTS.DETAIL;
+    if (
+      detailIndex !== -1 &&
+      !isBandSpotOnScreen(bandIndex, isDetail ? target.pageIndex : undefined, newElement)
+    ) {
+      const centre = getVisibleDetailCentre(detailIndex);
+      if (centre) {
+        target = { bandIndex: detailIndex, pageIndex: centre.pageIndex };
+        newElement.x = Math.round(centre.x - (newElement.width || 0) / 2);
+        newElement.y = Math.round(centre.y - (newElement.height || 0) / 2);
+        fitInPrintableWidth(newElement);
+        stepPastCopies(newElement, target.bandIndex, target.pageIndex);
+      }
+    }
+  }
+
+  const targetBandIndex = target.bandIndex;
   const targetBand = bands.value[targetBandIndex];
   if (!targetBand) {
     console.error("Target band does not exist");
     return;
   }
-
-  // Create the new element (deep clone)
-  const newElement = JSON.parse(JSON.stringify(elementData));
-
-  // Offset the position slightly so it doesn't overlap the original element (shift down and to the right)
-  newElement.x = Math.round(
-    newElement.x + KEYBOARD_CONSTANTS.ELEMENT_PASTE_OFFSET,
-  );
-  newElement.y = Math.round(
-    newElement.y + KEYBOARD_CONSTANTS.ELEMENT_PASTE_OFFSET,
-  );
-
-  // Ensure the element's width and height are also integers
-  if (newElement.width) {
-    newElement.width = Math.round(newElement.width);
+  // Tables only live in the Detail section
+  if (newElement.type === "table" && targetBand.type !== BAND_TYPE_CONSTANTS.DETAIL) {
+    notification.warning(t("dataTable.onlyInDetail"));
+    return;
   }
-  if (newElement.height) {
-    newElement.height = Math.round(newElement.height);
+  // Detail elements belong to a page; other sections repeat on every page
+  if (targetBand.type === BAND_TYPE_CONSTANTS.DETAIL) {
+    newElement.pageIndex = target.pageIndex;
+  } else {
+    delete newElement.pageIndex;
   }
 
-  // Ensure the element's ID is unique
-  if (newElement.id) {
-    newElement.id = `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  // It must fit in the band, growing it up to its maximum if needed; too tall
+  // is refused before anything changes
+  const bandPlan = planDropInBand(targetBandIndex, newElement);
+  if (bandPlan.kind === "tooTall") {
+    warnTooTallForBand(targetBandIndex, newElement.height, bandPlan.maxHeight);
+    return;
   }
+  saveStateToHistory();
+  applyDropInBand(targetBandIndex, newElement, bandPlan);
 
   // Add it to the target band
   if (!targetBand.elements) {
@@ -3858,6 +4345,8 @@ const processPastedElement = (elementData: any) => {
   }
 
   targetBand.elements.push(newElement);
+  // A pasted table gets its own dataset and name
+  ensureUniqueTableDatasets(bands.value);
 
   // Select the newly added element
   const newElementIndex = targetBand.elements.length - 1;
@@ -3865,8 +4354,6 @@ const processPastedElement = (elementData: any) => {
 
   // Update JRXML
   updateJRXML();
-
-  console.log("Element pasted:", newElement);
 };
 
 // Define the handleKeyDown function at the top level of the component
@@ -4005,7 +4492,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
     // If Shift is held and an element is selected, nudge its position
     if (event.shiftKey && selectedElement.value) {
-      moveElementByKeyboard(event.key);
+      moveElementByKeyboard(event.key, event.repeat);
     } else {
       // Otherwise, perform the original navigation behavior
       navigateElements(event.key);
@@ -4112,19 +4599,35 @@ const navigateElements = (direction: string) => {
   }
 };
 
-// Nudge an element's position using the keyboard
-const moveElementByKeyboard = (direction: string) => {
+// Nudge an element's position using the keyboard: to the next grid line with
+// Snap to Grid on, else 1px. Holding the key down is one undo step.
+const moveElementByKeyboard = (direction: string, repeat = false) => {
   if (!selectedElement.value) return;
 
-  const { bandIndex: currentBandIndex, elementIndex: currentElementIndex } =
-    selectedElement.value;
+  const {
+    bandIndex: currentBandIndex,
+    elementIndex: currentElementIndex,
+    parentFrameIndex,
+  } = selectedElement.value;
   const currentBand = bands.value[currentBandIndex];
-  const currentElement = currentBand?.elements[currentElementIndex];
+  // An item in a box is found inside the box, and moves only within it
+  const parentBox =
+    parentFrameIndex !== undefined
+      ? (currentBand?.elements[parentFrameIndex] as FrameElement | undefined)
+      : undefined;
+  const currentElement =
+    parentFrameIndex !== undefined
+      ? parentBox?.elements?.[currentElementIndex]
+      : currentBand?.elements[currentElementIndex];
 
   if (!currentBand || !currentElement) return;
 
-  // Define the nudge step size (in pixels)
-  const MOVE_STEP = 1;
+  // The grid is drawn per band, so an item in a box steps to band grid lines
+  const grid = enableSnapToGrid.value ? UI_CONSTANTS.GRID_SIZE : null;
+  const offsetX = parentBox?.x ?? 0;
+  const offsetY = parentBox?.y ?? 0;
+  const step = (value: number, dir: 1 | -1, offset: number) =>
+    grid ? nextGridLine(value, grid, dir, offset) : value + dir;
 
   // Calculate the new position
   let newX = currentElement.x;
@@ -4132,30 +4635,38 @@ const moveElementByKeyboard = (direction: string) => {
 
   switch (direction) {
     case "ArrowUp":
-      newY = Math.max(0, currentElement.y - MOVE_STEP);
+      newY = Math.max(0, step(currentElement.y, -1, offsetY));
       break;
     case "ArrowDown": {
-      const maxDown = currentBand.height - currentElement.height;
-      if (maxDown > 0) {
-        newY = Math.min(maxDown, currentElement.y + MOVE_STEP);
-      } else {
-        newY = currentElement.y + MOVE_STEP;
-      }
+      const next = step(currentElement.y, 1, offsetY);
+      // Elements in a band stay within it (box parts are kept in their box below)
+      const maxDown = parentBox ? Infinity : currentBand.height - currentElement.height;
+      newY = maxDown > 0 ? Math.min(maxDown, next) : next;
       break;
     }
     case "ArrowLeft":
-      newX = Math.max(0, currentElement.x - MOVE_STEP);
+      newX = Math.max(0, step(currentElement.x, -1, offsetX));
       break;
-    case "ArrowRight":
-      newX = Math.min(
-        reportProperties.value.pageWidth - currentElement.width,
-        currentElement.x + MOVE_STEP,
-      );
+    case "ArrowRight": {
+      const next = step(currentElement.x, 1, offsetX);
+      newX = parentBox
+        ? next
+        : Math.min(Math.max(0, printableWidth.value - currentElement.width), next);
       break;
+    }
   }
 
-  // Save the pre-move state to history (for undo)
-  saveStateToHistory();
+  if (parentBox && isBoxPart(currentElement)) {
+    ({ x: newX, y: newY } = clampPositionInBox(
+      { ...currentElement, x: newX, y: newY },
+      parentBox,
+    ));
+  }
+
+  if (newX === currentElement.x && newY === currentElement.y) return;
+
+  // Save the pre-move state to history (for undo), once per key press
+  if (!repeat) saveStateToHistory();
 
   // Update the element's position
   currentElement.x = newX;
@@ -4266,7 +4777,7 @@ watch(
     subDatasets,
     reportVariables,
     reportGroups,
-    reportStyles,
+    tableStyles,
   ],
   () => {
     // Only update while not dragging/resizing, not already in JRXML update, and not loading a file
@@ -4304,7 +4815,7 @@ const copyJRXML = async (): Promise<void> => {
 const regenerateJRXML = (): void => {
   updateJRXML();
   // Show a notification message
-  notification.info("JRXML has been regenerated");
+  notification.info(t("editor.jrxmlRegenerated"));
 };
 
 // Open the PDF preview
@@ -4322,7 +4833,7 @@ const openPdfPreview = (): void => {
         reportFields.value,
         reportParameters.value,
         subDatasets.value,
-        [],
+        tableStyles.value,
         reportVariables.value,
         [],
         reportGroups.value,
@@ -4330,28 +4841,13 @@ const openPdfPreview = (): void => {
       );
       jrxmlContent.value = content;
     }
-    // If subDatasets is empty, extract it from the table elements
-    if (subDatasets.value.length === 0) {
-      const extracted: TableDataset[] = [];
-      for (const band of bands.value) {
-        for (const el of band.elements || []) {
-          if (el.type === "table" && (el as any).dataset) {
-            extracted.push((el as any).dataset);
-          }
-        }
-      }
-      if (extracted.length > 0) {
-        subDatasets.value = extracted;
-      }
-    }
-
     showPdfPreview.value = false;
     nextTick(() => {
       showPdfPreview.value = true;
     });
   } catch (error) {
     console.error("Failed to preview PDF:", error);
-    alert("Failed to preview PDF, please check the console for error details");
+    alert(t("editor.previewFailed"));
   }
 };
 
@@ -4407,10 +4903,8 @@ const saveJRXML = (): void => {
       reportGroups.value = parsedData.groups;
     }
 
-    // Update the style definitions
-    if (parsedData.styles) {
-      reportStyles.value = parsedData.styles;
-    }
+    // Saved table styles (report styles themselves are rebuilt from the tables)
+    tableStyles.value = parsedData.tableStyles;
 
     // Update the sub-datasets
     if (parsedData.datasets) {
@@ -4424,6 +4918,10 @@ const saveJRXML = (): void => {
 
     // Update the bands
     bands.value = parsedData.bands;
+    // Repair copies that share IDs with their original (pasted before copies got their own)
+    ensureUniqueUuids(bands.value);
+    ensureUniqueTableDatasets(bands.value);
+    resetBoxPhotos(bands.value);
 
     // Update the selected band types
     selectedBandTypes.value = parsedData.bands.map((band) => band.type);
@@ -4741,7 +5239,7 @@ const saveJRXML = (): void => {
     console.error("Failed to save JRXML:", error);
     notification.error(
       t("notifications.jrxmlEditSaveFailed", {
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : t("common.unknownError"),
       }),
     );
   }
@@ -4752,6 +5250,10 @@ watch(
   () => currentElement.value?.box?.border,
   (newBorderStyle) => {
     if (!currentElement.value || !currentElement.value.box) return;
+    // The field was removed (border presets and Style Settings write pens and
+    // drop these legacy fields); there is nothing to sync, and syncing would
+    // wipe the pen they just wrote
+    if (!("border" in currentElement.value.box)) return;
 
     const box = currentElement.value.box;
 
@@ -4799,6 +5301,10 @@ watch(
   () => currentElement.value?.box?.borderWidth,
   (newBorderWidth) => {
     if (!currentElement.value || !currentElement.value.box) return;
+    // The field was removed (border presets and Style Settings write pens and
+    // drop these legacy fields); there is nothing to sync, and syncing would
+    // wipe the pen they just wrote
+    if (!("borderWidth" in currentElement.value.box)) return;
 
     const box = currentElement.value.box;
 
@@ -4842,6 +5348,10 @@ watch(
   () => currentElement.value?.box?.borderStyle,
   (newBorderStyle, oldBorderStyle) => {
     if (!currentElement.value || !currentElement.value.box) return;
+    // The field was removed (border presets and Style Settings write pens and
+    // drop these legacy fields); there is nothing to sync, and syncing would
+    // wipe the pen they just wrote
+    if (!("borderStyle" in currentElement.value.box)) return;
 
     const box = currentElement.value.box;
 
@@ -4895,6 +5405,10 @@ watch(
   () => currentElement.value?.box?.borderColor,
   (newBorderColor) => {
     if (!currentElement.value || !currentElement.value.box) return;
+    // The field was removed (border presets and Style Settings write pens and
+    // drop these legacy fields); there is nothing to sync, and syncing would
+    // wipe the pen they just wrote
+    if (!("borderColor" in currentElement.value.box)) return;
 
     const box = currentElement.value.box;
 
@@ -5164,10 +5678,14 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   const startHeights: number[] = bands.value.map((b) => b.height || 0);
   const startTargetHeight: number = startHeights[bandIndex] ?? minHeight;
 
-  // Total height of all other fixed bands (excluding target band and Detail)
+  // Total height of all other fixed bands (excluding target band, Detail and the Background underlay)
   let otherBandsHeight = 0;
   bands.value.forEach((b, i) => {
-    if (i !== bandIndex && i !== detailIndex) {
+    if (
+      i !== bandIndex &&
+      i !== detailIndex &&
+      b.type !== BAND_TYPE_CONSTANTS.BACKGROUND
+    ) {
       otherBandsHeight += startHeights[i] || 0;
     }
   });
@@ -5205,17 +5723,13 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
     if (type === "max") {
       if (reason === "page_full") {
         notification.info(
-          `You don't have space to extend ${bandDisplayName}. Detail band has reached its minimum height (${detailMinHeight}px).`,
+          t("editor.bandLimits.noSpace", { band: bandDisplayName, height: detailMinHeight }),
         );
       } else {
-        notification.info(
-          `${bandDisplayName} space is exceeded, change the template band setting for more space.`,
-        );
+        notification.info(t("editor.bandLimits.maxReached", { band: bandDisplayName }));
       }
     } else {
-      notification.info(
-        `Min height reached, if you don't want this ${bandDisplayName} band, please remove them.`,
-      );
+      notification.info(t("editor.bandLimits.minReached", { band: bandDisplayName }));
     }
   };
 
@@ -5311,7 +5825,7 @@ const handleElementRotate = (
   _elementIndex: number,
   _parentFrameIndex?: number,
 ): void => {
-  saveStateToHistory();
+  // The undo snapshot was already taken via save-state, before the element rotated
   updateJRXML();
 };
 
@@ -5374,13 +5888,49 @@ const startResizingElement = (
       startLineDirection: (element as any).lineDirection || "TopDown",
     };
 
+    // A frame's children are re-laid out from these start positions while resizing
+    const frameChildrenStart =
+      element.type === "frame"
+        ? ((element as FrameElement).elements ?? []).map(
+            ({ x, y, width, height }) => ({ x, y, width, height }),
+          )
+        : null;
+    const frameStartSize = { width: element.width, height: element.height };
+
+    // What the moving edges can snap to; the other elements stay put
+    const snapContext = buildSnapContext(
+      bandIndex,
+      getEventPageIndex(event, element),
+      parentFrameIndex,
+      element,
+    );
+
     isDraggingOrResizing.value = true;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    // Undo snapshot of the size before the resize, taken on the first move so a
+    // click on a handle without dragging adds no undo step
+    let historySaved = false;
+
+    // A ready-made box's own part is resized only up to the box's edges
+    const parentBox =
+      parentFrameIndex !== undefined
+        ? (band?.elements[parentFrameIndex] as FrameElement | undefined)
+        : undefined;
+    const keepInParentBox = (item: DesignElement) => {
+      if (!parentBox || !isBoxPart(item)) return;
+      Object.assign(item, clampRectInBox(item, parentBox));
+    };
+
+    const applyResizeMove = (e: MouseEvent) => {
       if (!resizingInfo.value) return;
 
       const currentBand = bands.value[resizingInfo.value.bandIndex];
       if (!currentBand) return;
+
+      if (!historySaved) {
+        saveStateToHistory();
+        historySaved = true;
+      }
 
       let element: DesignElement | undefined;
       let containerWidth =
@@ -5432,6 +5982,17 @@ const startResizingElement = (
       const deltaX = currentMouseX - resizingInfo.value.startX;
       const deltaY = currentMouseY - resizingInfo.value.startY;
 
+      // Moving edges snap to other elements, else the grid. Aspect-locked
+      // resizes (Shift, Alt) follow the mouse instead.
+      const snapOptions = getSnapOptions(e, snapContext.offset);
+      const snapGuides: SnapGuides = { x: [], y: [] };
+      const snapResizeEdge = (value: number, axis: "x" | "y") => {
+        if (e.shiftKey || e.altKey) return value;
+        const result = snapEdge(value, snapContext.targets[axis], snapOptions, axis);
+        snapGuides[axis].push(...result.lines);
+        return result.value;
+      };
+
       // 2-point endpoint resizing for line elements
       if (dir === "line-start" || dir === "line-end") {
         const startLineDir = (resizingInfo.value as any).startLineDirection || "TopDown";
@@ -5449,8 +6010,22 @@ const startResizingElement = (
 
         const fixedX = dir === "line-start" ? p2x : p1x;
         const fixedY = dir === "line-start" ? p2y : p1y;
-        let movingX = Math.max(0, Math.min(containerWidth, currentMouseX));
-        let movingY = Math.max(0, Math.min(containerHeight, currentMouseY));
+        // The dragged end follows the mouse from where it started (band
+        // coordinates, like the fixed end), snapped like an edge
+        const endX = snapEdge(
+          (dir === "line-start" ? p1x : p2x) + deltaX,
+          snapContext.targets.x,
+          snapOptions,
+          "x",
+        );
+        const endY = snapEdge(
+          (dir === "line-start" ? p1y : p2y) + deltaY,
+          snapContext.targets.y,
+          snapOptions,
+          "y",
+        );
+        let movingX = Math.max(0, Math.min(containerWidth, endX.value));
+        let movingY = Math.max(0, Math.min(containerHeight, endY.value));
 
         let dx = movingX - fixedX;
         let dy = movingY - fixedY;
@@ -5492,12 +6067,16 @@ const startResizingElement = (
         element.width = newCalculatedWidth;
         element.height = newCalculatedHeight;
         (element as any).lineDirection = computedDir;
+        keepInParentBox(element);
 
-        if (enableSnapToAlignment.value) {
-          detectAlignmentLines(element, resizingInfo.value.bandIndex);
-        } else {
-          clearAlignmentLines();
-        }
+        showSnapGuides(
+          snapContext,
+          {
+            x: movingX === endX.value ? endX.lines : [],
+            y: movingY === endY.value ? endY.lines : [],
+          },
+          snapOptions,
+        );
         return;
       }
 
@@ -5512,14 +6091,14 @@ const startResizingElement = (
       if (dir.includes("e")) {
         // Dragging right edge: left edge (newX) is fixed at startElementX
         const maxRight = containerWidth;
-        const candidateRight = startElementX + startWidth + deltaX;
+        const candidateRight = snapResizeEdge(startElementX + startWidth + deltaX, "x");
         const clampedRight = Math.min(maxRight, Math.max(startElementX + minSize, candidateRight));
         newWidth = clampedRight - startElementX;
         newX = startElementX;
       } else if (dir.includes("w")) {
         // Dragging left edge: right edge is fixed at (startElementX + startWidth)
         const rightEdge = startElementX + startWidth;
-        const candidateLeft = startElementX + deltaX;
+        const candidateLeft = snapResizeEdge(startElementX + deltaX, "x");
         const clampedLeft = Math.max(0, Math.min(rightEdge - minSize, candidateLeft));
         newX = clampedLeft;
         newWidth = rightEdge - clampedLeft;
@@ -5529,14 +6108,14 @@ const startResizingElement = (
       if (dir.includes("s")) {
         // Dragging bottom edge: top edge (newY) is fixed at startElementY
         const maxBottom = containerHeight;
-        const candidateBottom = startElementY + startHeight + deltaY;
+        const candidateBottom = snapResizeEdge(startElementY + startHeight + deltaY, "y");
         const clampedBottom = Math.min(maxBottom, Math.max(startElementY + minSize, candidateBottom));
         newHeight = clampedBottom - startElementY;
         newY = startElementY;
       } else if (dir.includes("n")) {
         // Dragging top edge: bottom edge is fixed at (startElementY + startHeight)
         const bottomEdge = startElementY + startHeight;
-        const candidateTop = startElementY + deltaY;
+        const candidateTop = snapResizeEdge(startElementY + deltaY, "y");
         const clampedTop = Math.max(0, Math.min(bottomEdge - minSize, candidateTop));
         newY = clampedTop;
         newHeight = bottomEdge - clampedTop;
@@ -5618,138 +6197,46 @@ const startResizingElement = (
       const tempX = Math.round(newX);
       const tempY = Math.round(newY);
 
-      // Special handling for table elements: automatically adjust column widths when the table width changes
+      // A table keeps its columns' shares of the width (each at least the
+      // minimum column width) and its height in whole rows
       if (element.type === "table") {
-        // Look up the corresponding column within the children array (recursive search)
-        const findColumnInChildren = (
-          children: any[],
-          targetColumn: any,
-        ): any | null => {
-          for (const child of children) {
-            if (child.uuid === targetColumn.uuid) {
-              return child;
-            }
-            if (child.children) {
-              const found = findColumnInChildren(child.children, targetColumn);
-              if (found) {
-                return found;
-              }
-            }
-          }
-          return null;
-        };
-
-        if (element.columns && element.columns.length > 0) {
-          // Get the current width of each column
-          const columnWidths = element.columns.map((col) => col.width || 0);
-          const totalColumnWidth = columnWidths.reduce(
-            (sum, width) => sum + width,
-            0,
-          );
-
-          if (totalColumnWidth > 0) {
-            // Calculate the width ratio each column should receive
-            const ratios = columnWidths.map(
-              (width) => width / totalColumnWidth,
-            );
-
-            // Distribute column widths proportionally based on the new table width
-            const newColumnWidths = ratios.map((ratio) => {
-              // Distribute the new width proportionally
-              const newColWidth = tempWidth * ratio;
-              // Ensure every column has at least a minimum width
-              return Math.max(10, Math.round(newColWidth));
-            });
-
-            // Adjust the last column's width so the total matches the table width
-            const sumNewWidths = newColumnWidths.reduce(
-              (sum, width) => sum + width,
-              0,
-            );
-            if (sumNewWidths !== tempWidth && newColumnWidths.length > 0) {
-              const diff = tempWidth - sumNewWidths;
-              const lastIndex = newColumnWidths.length - 1;
-              // Ensure newColumnWidths[lastIndex] isn't undefined
-              newColumnWidths[lastIndex] =
-                (newColumnWidths[lastIndex] || 0) + diff;
-            }
-
-            // Update the width of every column
-            element.columns.forEach((col, index) => {
-              const newColWidth = newColumnWidths[index]!;
-              col.width = newColWidth;
-
-              // Also update the width of every cell within the column
-              if (col.tableHeader && col.tableHeader.element) {
-                col.tableHeader.element.width = newColWidth;
-              }
-              if (col.columnHeader && col.columnHeader.element) {
-                col.columnHeader.element.width = newColWidth;
-              }
-              if (col.detailCell && col.detailCell.element) {
-                col.detailCell.element.width = newColWidth;
-              }
-              if (col.columnFooter && col.columnFooter.element) {
-                col.columnFooter.element.width = newColWidth;
-              }
-              if (col.tableFooter && col.tableFooter.element) {
-                col.tableFooter.element.width = newColWidth;
-              }
-
-              // If the table has a children property, also update the width of the corresponding column within it
-              if (element.children) {
-                const childColumn = findColumnInChildren(element.children, col);
-                if (childColumn) {
-                  childColumn.width = newColWidth;
-
-                  // Also update the width of every related cell within childColumn
-                  if (childColumn.tableHeader) {
-                    childColumn.tableHeader.width = newColWidth;
-                  }
-                  if (childColumn.columnHeader) {
-                    childColumn.columnHeader.width = newColWidth;
-                  }
-                  if (childColumn.detailCell) {
-                    childColumn.detailCell.width = newColWidth;
-                  }
-                  if (childColumn.columnFooter) {
-                    childColumn.columnFooter.width = newColWidth;
-                  }
-                  if (childColumn.tableFooter) {
-                    childColumn.tableFooter.width = newColWidth;
-                  }
-                }
-              }
-            });
-          }
-        }
-
-        // Set the table's final width and height
-        element.width = tempWidth;
+        const table = element as TableElement;
+        const minWidth = (table.binding?.columns.length ?? PLACEHOLDER_COLUMN_COUNT) * MIN_TABLE_COLUMN_WIDTH;
+        const width = Math.max(tempWidth, minWidth);
+        const height = snapTableHeight(table, tempHeight);
+        if (table.binding) table.binding.columns = scaleColumnWidths(table.binding.columns, width);
+        element.width = width;
+        element.x = dir.includes("w") ? startElementX + startWidth - width : tempX;
+        element.y = dir.includes("n") ? startElementY + startHeight - height : tempY;
+        element.height = height;
       } else {
-        // Non-table element; apply the size adjustment directly
         element.width = tempWidth;
+        element.x = tempX;
+        element.y = tempY;
+        element.height = tempHeight;
+      }
+      keepInParentBox(element);
+
+      // Keep a frame's content in step with the frame (stretch wide items, pin edge items)
+      if (frameChildrenStart && element.type === "frame") {
+        const fitted = fitChildrenToFrame(frameChildrenStart, frameStartSize, {
+          width: element.width,
+          height: element.height,
+        });
+        (element as FrameElement).elements?.forEach((child, i) => {
+          const rect = fitted[i];
+          if (rect) Object.assign(child, rect);
+        });
       }
 
-      // Apply the position and height adjustments
-      element.x = tempX;
-      element.y = tempY;
-      element.height = tempHeight;
-
-      // Re-run alignment-line detection using the final size (to ensure alignment lines display correctly)
-      if (enableSnapToAlignment.value) {
-        detectAlignmentLines(element, resizingInfo.value.bandIndex);
-      } else {
-        clearAlignmentLines();
-      }
+      showSnapGuides(snapContext, snapGuides, snapOptions);
     };
+    const handleMouseMove = throttleToAnimationFrame(applyResizeMove);
 
     const handleMouseUp = () => {
-      // Clear the alignment lines
+      // Apply the last mouse move, then clear the alignment lines
+      handleMouseMove.flush();
       clearAlignmentLines();
-
-      // Save state to history
-      saveStateToHistory();
 
       resizingInfo.value = null;
       isDraggingOrResizing.value = false;
@@ -5770,7 +6257,10 @@ const startResizingElement = (
   }
 };
 
-// Auto-fit element height to its text content
+// "Fit to text" (the Fit badge, double-clicking the bottom handle, and the
+// Properties button): static one-line text gets the width of its text, keeping
+// its alignment edge and staying within its band or box; everything gets the
+// height its text needs. The band grows to fit, up to its maximum.
 const autoFitElementHeight = (
   bandIndex: number,
   elementIndex: number,
@@ -5779,54 +6269,47 @@ const autoFitElementHeight = (
   const band = bands.value[bandIndex];
   if (!band) return;
 
-  let element: DesignElement | undefined;
-  if (parentFrameIndex !== undefined) {
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
+  const box =
+    parentFrameIndex !== undefined
+      ? (band.elements[parentFrameIndex] as FrameElement | undefined)
+      : undefined;
+  const element =
+    parentFrameIndex !== undefined
+      ? box?.elements?.[elementIndex]
+      : band.elements[elementIndex];
+  if (!element || element.type !== "textField") return;
+
+  const font = reportProperties.value?.defaultFont;
+  const { x, width } = planTextFit(
+    element as TextFitElement,
+    // 1px spare so rounding in the browser never wraps the last word
+    measureTextElementWidth(element as any, font) + 1,
+    box ? box.width : printableWidth.value,
+  );
+  const height = calculateTextElementHeight({ ...(element as any), width }, font);
+  if (x === element.x && width === element.width && height === element.height) return;
+
+  saveStateToHistory();
+  element.x = x;
+  element.width = width;
+  element.height = height;
+
+  // A band grows to fit the text, up to its maximum; past that, warn
+  if (!box && element.y + height > band.height) {
+    const maxBandHeight = getBandMaxHeight(bandIndex);
+    band.height = Math.max(band.height, Math.min(maxBandHeight, element.y + height));
+    if (element.y + height > maxBandHeight) {
+      notification.warning(
+        t("editor.bandLimits.textOverflow", {
+          band: getBandDisplayName(band.type),
+          height: maxBandHeight,
+        }),
+      );
     }
-  } else {
-    element = band.elements[elementIndex];
   }
-
-  if (!element) return;
-
-  const neededHeight = calculateTextElementHeight(element as any);
-  if (neededHeight > 0) {
-    saveStateToHistory();
-    element.height = Math.max(element.height || 0, neededHeight);
-    if (parentFrameIndex === undefined) {
-      const bandLimitsConfig =
-        reportProperties.value?.bandLimits?.[band.type] ||
-        getEffectiveDefaultBandLimits()[band.type] || { min: 20, max: 70 };
-      const maxBandHeight =
-        typeof bandLimitsConfig.max === "number" ? bandLimitsConfig.max : 70;
-
-      const isDetailBand = band.type === BAND_TYPE_CONSTANTS.DETAIL;
-
-      if (isDetailBand) {
-        if (element.y + element.height > band.height) {
-          band.height = element.y + element.height;
-        }
-      } else {
-        const requiredHeight = element.y + element.height;
-        if (requiredHeight > band.height) {
-          const clampedHeight = Math.min(maxBandHeight, requiredHeight);
-          if (clampedHeight > band.height) {
-            band.height = clampedHeight;
-          }
-          if (requiredHeight > maxBandHeight) {
-            notification.warning(
-              `${getBandDisplayName(band.type)} reached its maximum limit (${maxBandHeight}px). Text content exceeds band capacity. Consider widening the element or placing lengthy text in the Detail band.`,
-            );
-          }
-        }
-      }
-    }
-    updateJRXML();
-    ensureBandsFitPage();
-    updateOutOfBoundsElements();
-  }
+  updateJRXML();
+  ensureBandsFitPage();
+  updateOutOfBoundsElements();
 };
 
 // Clean up event listeners when the component unmounts
@@ -5846,13 +6329,6 @@ const showHelp = ref(false);
 // PDF preview related state
 const showPdfPreview = ref(false);
 
-// Preview server settings related state
-const showPreviewServerSettings = ref(false);
-const previewServerUrl = ref(
-  localStorage.getItem("previewServerUrl") ||
-  `${PDF_PREVIEW_API}/api/pdf/generateForm`,
-);
-
 // Field management related state
 const showFieldModal = ref(false);
 const editingField = ref<ReportField | undefined>(undefined);
@@ -5862,27 +6338,7 @@ const editingParameter = ref<ReportParameter | undefined>(undefined);
 const showVariableModal = ref(false);
 const editingVariable = ref<ReportVariable | undefined>(undefined);
 
-// Open the preview server settings
-const openPreviewServerSettings = (): void => {
-  showPreviewServerSettings.value = true;
-};
-
-// Update the preview server address
-const updatePreviewServerUrl = (url: string): void => {
-  previewServerUrl.value = url;
-  localStorage.setItem("previewServerUrl", url);
-};
-
 // Handle updating element value from report elements list
-const handleUpdateElementValue = (
-  _elementItem: any,
-  _newValue: string,
-  _oldValue: string,
-): void => {
-  saveStateToHistory();
-  updateJRXML();
-  saveToLocalStorageWrapper();
-};
 const isEditingParameter = ref(false);
 
 // Handle adding a field
@@ -5901,7 +6357,7 @@ const handleEditField = (field: ReportField): void => {
 
 // Handle deleting a field
 const handleDeleteField = (fieldName: string): void => {
-  if (confirm(`Are you sure you want to delete field "${fieldName}"?`)) {
+  if (confirm(t("editor.confirmDelete.field", { name: fieldName }))) {
     const fieldIndex = reportFields.value.findIndex(
       (field) => field.name === fieldName,
     );
@@ -5931,7 +6387,7 @@ const handleEditParameter = (parameter: ReportParameter): void => {
 // Handle deleting a report parameter
 const handleDeleteParameter = (parameterName: string): void => {
   if (
-    confirm(`Are you sure you want to delete parameter "${parameterName}"?`)
+    confirm(t("editor.confirmDelete.parameter", { name: parameterName }))
   ) {
     const parameterIndex = reportParameters.value.findIndex(
       (param) => param.name === parameterName,
@@ -5958,7 +6414,7 @@ const handleEditVariable = (variable: ReportVariable): void => {
 
 // Handle deleting a variable
 const handleDeleteVariable = (variableName: string): void => {
-  if (confirm(`Are you sure you want to delete variable "${variableName}"?`)) {
+  if (confirm(t("editor.confirmDelete.variable", { name: variableName }))) {
     const variableIndex = reportVariables.value.findIndex(
       (v) => v.name === variableName,
     );
@@ -5976,9 +6432,7 @@ const handleVariableSave = (variable: ReportVariable): void => {
     (v) => v.name === variable.name,
   );
   if (existingIndex !== -1 && editingVariable.value?.name !== variable.name) {
-    alert(
-      "A variable with this name already exists, please use a different name",
-    );
+    alert(t("editor.duplicateName.variable"));
     return;
   }
   if (existingIndex !== -1) {
@@ -5990,54 +6444,66 @@ const handleVariableSave = (variable: ReportVariable): void => {
   updateJRXML();
 };
 
-// Style management related state
-const showStyleModal = ref(false);
-const editingStyle = ref<any | undefined>(undefined);
+// ── Table styles ──
+// Every table carries its own look; a saved style is a named look other
+// tables can use. Each action below is one undo step.
 
-// Handle adding a style
-const handleAddStyle = (): void => {
-  editingStyle.value = undefined;
-  showStyleModal.value = true;
+const copyLook = (look: TableLook): TableLook => ({ ...look });
+
+// Tables currently using a saved style unchanged
+const tablesUsingStyle = (id: string) =>
+  collectBoundTables(bands.value).filter((t) => t.binding.theme === id && !t.binding.customized);
+
+const selectedTable = () => {
+  const sel = selectedElement.value;
+  return sel ? tableAt({ bandIndex: sel.bandIndex, elementIndex: sel.elementIndex, parentFrameIndex: sel.parentFrameIndex }) : null;
 };
 
-// Handle editing a style
-const handleEditStyle = (style: any): void => {
-  editingStyle.value = {
-    ...style,
-    box: style.box ? { ...style.box } : undefined,
-  };
-  showStyleModal.value = true;
-};
-
-// Handle deleting a style
-const handleDeleteStyle = (styleName: string): void => {
-  if (confirm(`Are you sure you want to delete style "${styleName}"?`)) {
-    const styleIndex = reportStyles.value.findIndex(
-      (s) => s.name === styleName,
-    );
-    if (styleIndex !== -1) {
-      reportStyles.value.splice(styleIndex, 1);
-      saveStateToHistory();
-      updateJRXML();
-    }
-  }
-};
-
-// Handle saving a style
-const handleStyleSave = (style: any): void => {
-  const existingIndex = reportStyles.value.findIndex(
-    (s) => s.name === style.name,
-  );
-  if (existingIndex !== -1 && editingStyle.value?.name !== style.name) {
-    alert("A style with this name already exists, please use a different name");
-    return;
-  }
-  if (existingIndex !== -1) {
-    reportStyles.value[existingIndex] = style;
-  } else {
-    reportStyles.value.push(style);
-  }
+// The selected table's look becomes a new saved style, used by that table
+const saveTableStyle = (name: string): void => {
+  const binding = selectedTable()?.binding;
+  if (!binding) return;
   saveStateToHistory();
+  const style: SavedTableStyle = {
+    id: createTableStyleId(tableStyles.value),
+    name,
+    look: copyLook(resolveLook(binding)),
+  };
+  tableStyles.value = [...tableStyles.value, style];
+  binding.theme = style.id;
+  binding.look = copyLook(style.look);
+  binding.customized = undefined;
+  notification.success(t("dataTable.style.saved", { name }));
+  updateJRXML();
+};
+
+// A saved style takes the selected table's look; every table using it follows
+const updateTableStyle = (id: string): void => {
+  const binding = selectedTable()?.binding;
+  const style = tableStyles.value.find((s) => s.id === id);
+  if (!binding || !style) return;
+  saveStateToHistory();
+  const look = copyLook(resolveLook(binding));
+  tableStyles.value = tableStyles.value.map((s) => (s.id === id ? { ...s, look } : s));
+  for (const table of tablesUsingStyle(id)) table.binding.look = copyLook(look);
+  binding.theme = id;
+  binding.look = copyLook(look);
+  binding.customized = undefined;
+  notification.success(t("dataTable.style.updated", { name: style.name }));
+  updateJRXML();
+};
+
+const renameTableStyle = (id: string, name: string): void => {
+  saveStateToHistory();
+  tableStyles.value = tableStyles.value.map((s) => (s.id === id ? { ...s, name } : s));
+  updateJRXML();
+};
+
+// Tables using a deleted style keep their look, as changes of their own
+const deleteTableStyle = (id: string): void => {
+  saveStateToHistory();
+  for (const table of tablesUsingStyle(id)) table.binding.customized = true;
+  tableStyles.value = tableStyles.value.filter((s) => s.id !== id);
   updateJRXML();
 };
 
@@ -6073,9 +6539,7 @@ const handleFieldSave = (fieldOrParam: ReportField | ReportParameter): void => {
       editingParameter.value?.name !== fieldOrParam.name
     ) {
       // If editing and a parameter with this name already exists, show an error
-      alert(
-        "A parameter with this name already exists, please use a different name",
-      );
+      alert(t("editor.duplicateName.parameter"));
       return;
     }
 
@@ -6098,9 +6562,7 @@ const handleFieldSave = (fieldOrParam: ReportField | ReportParameter): void => {
       editingField.value?.name !== fieldOrParam.name
     ) {
       // If editing and a field with this name already exists, show an error
-      alert(
-        "A field with this name already exists, please use a different name",
-      );
+      alert(t("editor.duplicateName.field"));
       return;
     }
 
@@ -6145,524 +6607,6 @@ const handleCheckFields = (fields: string[]): void => {
   }
 };
 
-// Handle moving a table column
-const handleMoveColumn = (
-  elementIndex: number,
-  fromIndex: number,
-  toIndex: number,
-  bandIndex: number,
-  parentFrameIndex?: number,
-): void => {
-  // Get the current band
-  const band = bands.value[bandIndex];
-  if (!band) return;
-
-  // Get the element to operate on
-  let element;
-  if (parentFrameIndex !== undefined) {
-    // Handle an element inside a Frame
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    // Handle an element directly within a Band
-    element = band.elements[elementIndex];
-  }
-
-  // Ensure it is a table element
-  if (!element || element.type !== "table") return;
-
-  const tableElement = element as any;
-  if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
-
-  // Save state to history
-  saveStateToHistory();
-
-  // Perform the column move
-  const columns = [...tableElement.columns];
-  const [movedColumn] = columns.splice(fromIndex, 1);
-  columns.splice(toIndex, 0, movedColumn);
-
-  // Update the table's columns
-  tableElement.columns = columns;
-
-  // Update JRXML
-  updateJRXML();
-};
-
-// Handle adding the selected columns to a group
-const handleAddColumnsToGroup = (params: {
-  elementIndex: number;
-  columnIndices: number[];
-  bandIndex: number;
-  parentFrameIndex?: number;
-}): void => {
-  const { elementIndex, columnIndices, bandIndex, parentFrameIndex } = params;
-
-  // Get the current band
-  const band = bands.value[bandIndex];
-  if (!band) return;
-
-  // Get the element to operate on
-  let element;
-  if (parentFrameIndex !== undefined) {
-    // Handle an element inside a Frame
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    // Handle an element directly within a Band
-    element = band.elements[elementIndex];
-  }
-
-  // Ensure it is a table element
-  if (!element || element.type !== "table") return;
-
-  const tableElement = element as any;
-  if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
-
-  // Collect all existing column groups
-  const existingGroups: any[] = [];
-
-  // Recursively collect all groups
-  const collectGroups = (items: any[]): void => {
-    items.forEach((item) => {
-      if (item.children) {
-        existingGroups.push(item);
-        collectGroups(item.children);
-      }
-    });
-  };
-
-  // Initialize the children property if it doesn't exist
-  if (!tableElement.children) {
-    tableElement.children = [...tableElement.columns];
-  }
-
-  // Collect the existing groups
-  collectGroups(tableElement.children);
-
-  // Update the column selection dialog state
-  columnSelectionState.value = {
-    elementIndex,
-    bandIndex,
-    parentFrameIndex,
-    columns: tableElement.columns,
-    children: tableElement.children || tableElement.columns,
-  };
-
-  // Show the column selection dialog
-  showColumnSelectionModal.value = true;
-};
-
-// Handle confirmation of the column selection
-const handleColumnSelectionConfirm = (
-  selectedColumnIndices: number[],
-  selectedRegion: string,
-  groupText: string,
-): void => {
-  const { elementIndex, bandIndex, parentFrameIndex } =
-    columnSelectionState.value;
-
-  // Get the current band
-  const band = bands.value[bandIndex];
-  if (!band) return;
-
-  // Get the element to operate on
-  let element;
-  if (parentFrameIndex !== undefined) {
-    // Handle an element inside a Frame
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    // Handle an element directly within a Band
-    element = band.elements[elementIndex];
-  }
-
-  // Ensure it is a table element
-  if (!element || element.type !== "table") return;
-
-  const tableElement = element as any;
-  if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
-
-  // Ensure at least 2 columns are selected
-  if (selectedColumnIndices.length < 2) return;
-
-  // Save state to history
-  saveStateToHistory();
-
-  // Sort the selected column indices to process them left to right
-  const sortedIndices = [...selectedColumnIndices].sort((a, b) => a - b);
-
-  // Ensure sortedIndices isn't empty
-  if (sortedIndices.length === 0) return;
-
-  // Get the selected columns or groups (from the children array, since it includes combined columns)
-  const selectedColumns = sortedIndices.map(
-    (index) => tableElement.children[index],
-  );
-
-  // Calculate the group's width (recursively, to handle combined columns)
-  function calculateWidth(item: any): number {
-    if (item.children) {
-      // A combined column; recursively sum the widths of all child columns
-      return item.children.reduce(
-        (sum: number, child: any) => sum + calculateWidth(child),
-        0,
-      );
-    } else {
-      // A regular column; use its width directly
-      return item.width || 0;
-    }
-  }
-
-  const groupWidth = selectedColumns.reduce(
-    (sum: number, column: any) => sum + calculateWidth(column),
-    0,
-  );
-
-  // Create the new column group (preserving the original combined-column structure)
-  const newGroup: any = {
-    uuid: crypto.randomUUID(),
-    name: `Group_${Date.now()}`,
-    width: groupWidth,
-    children: selectedColumns, // Use the selected items directly (including combined columns), rather than flattening the child columns
-  };
-
-  // Set the corresponding property based on the selected region
-  const textContent = groupText || newGroup.name;
-  if (selectedRegion === "tableHeader") {
-    newGroup.hasTableHeader = true;
-    newGroup.tableHeader = {
-      enable: true,
-      element: {
-        type: "textField",
-        expression: `"${textContent}"`,
-        x: 0,
-        y: 0,
-        width: groupWidth,
-        height: 30,
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-    };
-  } else if (selectedRegion === "columnHeader") {
-    newGroup.columnHeader = {
-      enable: true,
-      element: {
-        type: "textField",
-        expression: `"${textContent}"`,
-        x: 0,
-        y: 0,
-        width: groupWidth,
-        height: 30,
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-    };
-  } else if (selectedRegion === "columnFooter") {
-    newGroup.columnFooter = {
-      enable: true,
-      element: {
-        type: "textField",
-        expression: `"${textContent}"`,
-        x: 0,
-        y: 0,
-        width: groupWidth,
-        height: 30,
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-    };
-  } else if (selectedRegion === "tableFooter") {
-    newGroup.tableFooter = {
-      enable: true,
-      element: {
-        type: "textField",
-        expression: `"${textContent}"`,
-        x: 0,
-        y: 0,
-        width: groupWidth,
-        height: 30,
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-    };
-  }
-
-  // Initialize the children property if it doesn't exist
-  if (!tableElement.children) {
-    tableElement.children = [...tableElement.columns];
-  }
-
-  // Update the children array, removing the selected columns and adding the new group
-  const newChildren = [...tableElement.children];
-
-  // Remove the selected columns from last to first to avoid index shifting
-  for (let i = sortedIndices.length - 1; i >= 0; i--) {
-    const index = sortedIndices[i] as number;
-    newChildren.splice(index, 1);
-  }
-
-  // Insert the new group at the position of the first selected column
-  const firstIndex = sortedIndices[0] as number;
-  newChildren.splice(firstIndex, 0, newGroup);
-
-  // Update the table element
-  tableElement.children = newChildren;
-
-  // Calculate the maximum nesting depth of combined columns in the table
-  function calculateMaxDepth(node: any, depth: number = 0): number {
-    if (!node.children || node.children.length === 0) {
-      return depth;
-    }
-    let maxDepth = depth;
-    for (const child of node.children) {
-      const childDepth = calculateMaxDepth(child, depth + 1);
-      if (childDepth > maxDepth) {
-        maxDepth = childDepth;
-      }
-    }
-    return maxDepth;
-  }
-
-  // Calculate the maximum nesting depth
-  const maxDepth = calculateMaxDepth({ children: tableElement.children });
-  const requiredRowSpan = maxDepth;
-
-  // Update the rowSpan value of ungrouped columns
-  tableElement.children.forEach((child: any) => {
-    if (!child.children) {
-      // This is an ungrouped column
-      if (child.tableHeader) {
-        child.tableHeader.rowSpan = requiredRowSpan;
-      }
-      if (child.columnHeader) {
-        child.columnHeader.rowSpan = requiredRowSpan;
-      }
-    }
-  });
-
-  // Sync columns, rebuilding it from children
-  syncTableColumns(tableElement);
-
-  // Update JRXML
-  updateJRXML();
-};
-
-// Handle adding the selected columns to an existing group
-const handleJoinColumnsToExistingGroup = (
-  elementIndex: number,
-  columnIndices: number[],
-  bandIndex: number,
-  parentFrameIndex?: number,
-): void => {
-  // Get the current band
-  const band = bands.value[bandIndex];
-  if (!band) return;
-
-  // Get the element to operate on
-  let element;
-  if (parentFrameIndex !== undefined) {
-    // Handle an element inside a Frame
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    // Handle an element directly within a Band
-    element = band.elements[elementIndex];
-  }
-
-  // Ensure it is a table element
-  if (!element || element.type !== "table") return;
-
-  const tableElement = element as any;
-  if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
-
-  // Ensure at least 1 column is selected
-  if (columnIndices.length < 1) return;
-
-  // Collect all existing column groups
-  const existingGroups: any[] = [];
-
-  // Recursively collect all groups
-  const collectGroups = (items: any[]): void => {
-    items.forEach((item) => {
-      if (item.children) {
-        existingGroups.push(item);
-        collectGroups(item.children);
-      }
-    });
-  };
-
-  // Initialize the children property if it doesn't exist
-  if (!tableElement.children) {
-    tableElement.children = [...tableElement.columns];
-  }
-
-  // Collect the existing groups
-  collectGroups(tableElement.children);
-
-  // Update the dialog state
-  groupDialogState.value = {
-    elementIndex,
-    columnIndices,
-    bandIndex,
-    parentFrameIndex,
-    existingGroups,
-    selectedGroupName: "",
-  };
-
-  // Show the dialog
-  showGroupDialog.value = true;
-};
-
-// Confirm adding the columns to a group
-const confirmJoinColumnsToGroup = (): void => {
-  const {
-    elementIndex,
-    columnIndices,
-    bandIndex,
-    parentFrameIndex,
-    existingGroups,
-    selectedGroupName,
-  } = groupDialogState.value;
-
-  if (!selectedGroupName) {
-    // If the user didn't enter a group name, return immediately
-    return;
-  }
-
-  // Get the current band
-  const band = bands.value[bandIndex];
-  if (!band) return;
-
-  // Get the element to operate on
-  let element;
-  if (parentFrameIndex !== undefined) {
-    // Handle an element inside a Frame
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    // Handle an element directly within a Band
-    element = band.elements[elementIndex];
-  }
-
-  // Ensure it is a table element
-  if (!element || element.type !== "table") return;
-
-  const tableElement = element as any;
-  if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
-
-  // Save state to history
-  saveStateToHistory();
-
-  // Initialize the children array if it doesn't exist
-  if (!tableElement.children) {
-    tableElement.children = [...tableElement.columns];
-  }
-
-  // Sort the selected column indices to process them left to right
-  const sortedIndices = [...columnIndices].sort((a, b) => a - b);
-
-  // Get the selected columns from the children array (indices are derived from the children array)
-  const selectedColumns = sortedIndices.map(
-    (index) => tableElement.children[index],
-  );
-
-  // Look up the group specified by the user
-  let targetGroup = existingGroups.find(
-    (group) => group.name === selectedGroupName,
-  );
-
-  // Build the new children array first, to avoid index-shift issues
-  const newChildren = [...tableElement.children];
-
-  // Remove the selected columns from last to first to avoid index shifting
-  for (let i = sortedIndices.length - 1; i >= 0; i--) {
-    const index = sortedIndices[i] as number;
-    newChildren.splice(index, 1);
-  }
-
-  if (!targetGroup) {
-    // If the group doesn't exist, create a new one
-    const groupWidth = selectedColumns.reduce(
-      (sum: number, column: any) => sum + column.width,
-      0,
-    );
-
-    let defaultTableHeaderHeight = 30;
-    let defaultColumnHeaderHeight = 30;
-    if (selectedColumns.length > 0 && selectedColumns[0]) {
-      const firstColumn = selectedColumns[0];
-      defaultTableHeaderHeight = firstColumn.tableHeader?.element?.height || 30;
-      defaultColumnHeaderHeight =
-        firstColumn.columnHeader?.element?.height || 30;
-    }
-
-    targetGroup = {
-      uuid: crypto.randomUUID(),
-      name: selectedGroupName,
-      width: groupWidth,
-      hasTableHeader: true,
-      tableHeader: {
-        enable: true,
-        element: {
-          type: "textField",
-          expression: `"${selectedGroupName}"`,
-          x: 0,
-          y: 0,
-          width: groupWidth,
-          height: defaultTableHeaderHeight,
-          textAlignment: "Center",
-          verticalAlignment: "Middle",
-        },
-      },
-      children: [],
-    };
-
-    // Insert the new group at the position of the first selected column
-    const firstIndex = sortedIndices[0] as number;
-    newChildren.splice(firstIndex, 0, targetGroup);
-  }
-
-  // Add the selected columns to the target group
-  targetGroup.children.push(...selectedColumns);
-
-  // Recalculate the target group's width
-  targetGroup.width = targetGroup.children.reduce(
-    (sum: number, item: any) => sum + item.width,
-    0,
-  );
-
-  // Update the target group's header width
-  if (targetGroup.tableHeader && targetGroup.tableHeader.element) {
-    targetGroup.tableHeader.element.width = targetGroup.width;
-  }
-  if (targetGroup.columnHeader && targetGroup.columnHeader.element) {
-    targetGroup.columnHeader.element.width = targetGroup.width;
-  }
-
-  // Update the table element
-  tableElement.children = newChildren;
-
-  // Sync columns, rebuilding it from children (including rowSpan calculation)
-  syncTableColumns(tableElement);
-
-  // Update JRXML
-  updateJRXML();
-
-  // Close the dialog
-  showGroupDialog.value = false;
-};
-
 // Handle the element context menu
 const handleElementContextMenu = (
   event: MouseEvent,
@@ -6700,7 +6644,7 @@ const handleContextMenuAction = (action: string) => {
       copyElement();
       break;
     case "paste":
-      pasteElement();
+      pasteElement({ clientX: contextMenu.value.x, clientY: contextMenu.value.y });
       break;
     case "delete":
       deleteElement();
@@ -6711,7 +6655,60 @@ const handleContextMenuAction = (action: string) => {
     case "sendToBack":
       moveElementZOrder("back");
       break;
+    case "moveOutOfBox":
+      moveElementOutOfBox();
+      break;
+    case "addToBox":
+      addElementToBox();
+      break;
   }
+};
+
+// The selected item when it sits inside a box or frame, with whether it is one
+// of the box's parts (kept inside) or an item that was dropped in (moves freely)
+const selectedBoxItem = computed(() => {
+  const selection = selectedElement.value;
+  if (!selection || selection.parentFrameIndex === undefined) return null;
+  const box = bands.value[selection.bandIndex]?.elements[selection.parentFrameIndex] as
+    | FrameElement
+    | undefined;
+  const item = box?.elements?.[selection.elementIndex];
+  if (!box || !item) return null;
+  return { box, item, isPart: isBoxPart(item) };
+});
+
+// Make an item that was dropped into a box one of its parts: it stays inside
+// the box and moves with it as one piece
+const addElementToBox = () => {
+  const target = selectedBoxItem.value;
+  if (!target || target.isPart) return;
+  const { box, item } = target;
+  saveStateToHistory();
+  markBoxPart(item);
+  Object.assign(item, clampPositionInBox(item, box));
+  Object.assign(item, clampRectInBox(item, box));
+  updateJRXML();
+};
+
+// Take the selected item out of its box and put it in the band at the same spot
+const moveElementOutOfBox = () => {
+  const selection = selectedElement.value;
+  if (!selection || selection.parentFrameIndex === undefined) return;
+  const band = bands.value[selection.bandIndex];
+  const box = band?.elements[selection.parentFrameIndex] as FrameElement | undefined;
+  const item = box?.elements?.[selection.elementIndex];
+  if (!band || !box || !item) return;
+
+  saveStateToHistory();
+  box.elements!.splice(selection.elementIndex, 1);
+  releaseBoxPart(item);
+  item.x = box.x + item.x;
+  item.y = box.y + item.y;
+  // Detail content is split into pages; the item stays on the box's page
+  if ((box as any).pageIndex !== undefined) (item as any).pageIndex = (box as any).pageIndex;
+  band.elements.push(item);
+  selectElement(selection.bandIndex, band.elements.length - 1);
+  updateJRXML();
 };
 
 // Move an element's Z-order
@@ -6861,55 +6858,6 @@ const handleBandSelectionChange = (): void => {
   white-space: nowrap;
 }
 
-.my-act-menu {
-  position: relative;
-  display: inline-block;
-}
-
-.dropdown-arrow {
-  margin-left: 6px;
-  flex-shrink: 0;
-  align-self: center;
-}
-
-.my-act-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  min-width: 150px;
-  padding: 6px;
-  background: rgba(18, 19, 28, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
-  z-index: 1000;
-}
-
-.my-act-dropdown-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
-  border: none;
-  border-radius: 7px;
-  background: transparent;
-  color: rgba(244, 244, 245, 0.9);
-  cursor: pointer;
-  text-align: left;
-  font-size: 13px;
-}
-
-.my-act-dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.my-act-dropdown-item svg {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
-
 /* Group name input dialog styles */
 .group-dialog {
   width: 400px;
@@ -6957,49 +6905,114 @@ const handleBandSelectionChange = (): void => {
 }
 
 /* Right panel tab styles */
+/* Properties / AI Assistant: a segmented switch whose white highlight slides
+   to the open tab, then the settings (AI only) and collapse buttons */
 .right-panel-tabs {
   display: flex;
-  border-bottom: 1px solid var(--border-color);
-  background-color: #fafafa;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 8px 8px 10px;
+  border-bottom: 1px solid #eceef2;
+  background: #fff;
+}
+
+.right-panel-seg {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border-radius: 9px;
+  background: #eef0f4;
+}
+
+.right-panel-indicator {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / 2);
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+  transform: translateX(calc(100% * var(--tab-index)));
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .right-panel-tab {
-  flex: 1;
-  padding: 10px;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
   border: none;
+  border-radius: 7px;
   background: transparent;
-  cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: #666;
-  transition: all 0.2s;
-  border-bottom: 2px solid transparent;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+/* The tab being opened fades and rises in */
+.right-panel-fade-enter-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.right-panel-fade-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .right-panel-indicator,
+  .right-panel-fade-enter-active {
+    transition: none;
+  }
 }
 
 .right-panel-tab:hover {
-  background-color: #f0f0f0;
-  color: var(--primary-color);
+  color: #111827;
 }
 
 .right-panel-tab.active {
   color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
-  background-color: #fff;
+  font-weight: 600;
+}
+
+.right-panel-tab:focus-visible,
+.right-panel-settings-btn:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 1px;
 }
 
 .right-panel-settings-btn {
-  padding: 8px 12px;
-  border: none;
-  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  background: #fff;
+  color: #6b7280;
   cursor: pointer;
-  font-size: 16px;
-  color: #666;
-  transition: all 0.2s;
-  border-left: 1px solid #e0e0e0;
+  transition: all 0.15s ease;
 }
 
 .right-panel-settings-btn:hover {
-  background-color: #f0f0f0;
+  border-color: #93c5fd;
+  background: #eff6ff;
   color: var(--primary-color);
 }
 
@@ -7293,7 +7306,9 @@ const handleBandSelectionChange = (): void => {
 
 .toolbar-btn.add-page-btn {
   width: auto;
-  padding: 0 6px;
+  padding: 0 8px;
   gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
 }
 </style>

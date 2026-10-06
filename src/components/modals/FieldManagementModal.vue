@@ -95,15 +95,15 @@ const modalTitle = computed(() => {
 });
 
 // Allowed field types based on JRXML Schema with friendly manager labels
-const allowedFieldTypes = ref([
-  { label: '🔤 Text', value: 'java.lang.String' },
-  { label: '🔢 Whole Number (Integer)', value: 'java.lang.Integer' },
-  { label: '🔢 Large Number', value: 'java.lang.Long' },
-  { label: '💵 Currency / Money', value: 'java.math.BigDecimal' },
-  { label: '🔢 Decimal Number', value: 'java.lang.Double' },
-  { label: '☑️ Yes / No (Boolean)', value: 'java.lang.Boolean' },
-  { label: '📅 Date', value: 'java.util.Date' },
-  { label: '🕒 Date & Time', value: 'java.sql.Timestamp' }
+const allowedFieldTypes = computed(() => [
+  { label: t('dataTypes.text'), value: 'java.lang.String' },
+  { label: t('dataTypes.integer'), value: 'java.lang.Integer' },
+  { label: t('dataTypes.long'), value: 'java.lang.Long' },
+  { label: t('dataTypes.currency'), value: 'java.math.BigDecimal' },
+  { label: t('dataTypes.decimal'), value: 'java.lang.Double' },
+  { label: t('dataTypes.boolean'), value: 'java.lang.Boolean' },
+  { label: t('dataTypes.date'), value: 'java.util.Date' },
+  { label: t('dataTypes.dateTime'), value: 'java.sql.Timestamp' }
 ]);
 
 // Watch for field prop changes

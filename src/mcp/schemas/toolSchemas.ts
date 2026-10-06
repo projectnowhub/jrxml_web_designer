@@ -60,7 +60,7 @@ export const FIND_ELEMENTS_SCHEMA: MCPToolSchema = {
       elementType: {
         type: 'string',
         description: 'Find by element type',
-        enum: ['textField', 'image', 'line', 'rectangle', 'ellipse', 'break', 'frame', 'table']
+        enum: ['textField', 'image', 'line', 'rectangle', 'ellipse', 'frame', 'table', 'chart', 'barcode']
       },
       text: {
         type: 'string',
@@ -84,7 +84,7 @@ export const CREATE_STATIC_TEXT_SCHEMA: MCPToolSchema = {
       bandType: {
         type: 'string',
         description: 'Target band type',
-        enum: ['detail', 'pageHeader', 'pageFooter', 'title', 'summary', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
+        enum: ['detail', 'pageHeader', 'pageFooter', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
       },
       x: {
         type: 'number',
@@ -149,7 +149,7 @@ export const CREATE_TEXT_FIELD_SCHEMA: MCPToolSchema = {
       bandType: {
         type: 'string',
         description: 'Target band type',
-        enum: ['detail', 'pageHeader', 'pageFooter', 'title', 'summary', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
+        enum: ['detail', 'pageHeader', 'pageFooter', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
       },
       x: {
         type: 'number',
@@ -201,7 +201,7 @@ export const CREATE_RECTANGLE_SCHEMA: MCPToolSchema = {
       bandType: {
         type: 'string',
         description: 'Target band type',
-        enum: ['detail', 'pageHeader', 'pageFooter', 'title', 'summary', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
+        enum: ['detail', 'pageHeader', 'pageFooter', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
       },
       x: {
         type: 'number',
@@ -240,46 +240,6 @@ export const CREATE_RECTANGLE_SCHEMA: MCPToolSchema = {
         type: 'string',
         description: 'Border style',
         enum: ['Solid', 'Dashed', 'Dotted']
-      }
-    },
-    required: ['bandType', 'x', 'y', 'width', 'height']
-  }
-};
-
-export const CREATE_FRAME_SCHEMA: MCPToolSchema = {
-  name: 'create_frame',
-  description: 'Create a Frame container element that can hold other elements',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      bandType: {
-        type: 'string',
-        description: 'Target band type',
-        enum: ['detail', 'pageHeader', 'pageFooter', 'title', 'summary', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
-      },
-      x: {
-        type: 'number',
-        description: 'X coordinate position'
-      },
-      y: {
-        type: 'number',
-        description: 'Y coordinate position'
-      },
-      width: {
-        type: 'number',
-        description: 'Frame width'
-      },
-      height: {
-        type: 'number',
-        description: 'Frame height'
-      },
-      borderColor: {
-        type: 'string',
-        description: 'Border color'
-      },
-      backgroundColor: {
-        type: 'string',
-        description: 'Background color'
       }
     },
     required: ['bandType', 'x', 'y', 'width', 'height']
@@ -383,7 +343,7 @@ export const UPDATE_BAND_HEIGHT_SCHEMA: MCPToolSchema = {
       bandType: {
         type: 'string',
         description: 'Band type',
-        enum: ['detail', 'pageHeader', 'pageFooter', 'title', 'summary', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
+        enum: ['detail', 'pageHeader', 'pageFooter', 'columnHeader', 'columnFooter', 'background', 'lastPageFooter', 'noData']
       },
       height: {
         type: 'number',
@@ -665,7 +625,6 @@ export const ALL_MCP_TOOL_SCHEMAS: MCPToolSchema[] = [
   CREATE_STATIC_TEXT_SCHEMA,
   CREATE_TEXT_FIELD_SCHEMA,
   CREATE_RECTANGLE_SCHEMA,
-  CREATE_FRAME_SCHEMA,
   // Modify tools
   UPDATE_ELEMENT_SCHEMA,
   MOVE_ELEMENT_SCHEMA,

@@ -3,18 +3,18 @@
     <n-button @click="toggleFileMenu" type="default">{{ t('fileManager.title') }}</n-button>
     <div v-if="showFileMenu" class="file-menu-dropdown">
       <div class="menu-item" @click="createNewFile">
-        <span class="menu-icon">📄</span>
+        <FilePlus class="menu-icon" :size="16" />
         <span>{{ t('fileManager.newFile') }}</span>
       </div>
       <div class="menu-item" @click="openLocalFile">
-        <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <FolderOpen class="menu-icon" :size="16" />
         <span>{{ t('fileManager.openLocalFile') }}</span>
       </div>
       <div class="menu-divider"></div>
       <div class="menu-item file-submenu-container" @click="toggleFileSubmenu">
-        <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <FileText class="menu-icon" :size="16" />
         <span>{{ t('fileManager.fileList') }}</span>
-        <span class="submenu-arrow">▶</span>
+        <ChevronRight class="submenu-arrow" :size="14" />
         <div v-if="showFileSubmenu" class="file-submenu" @click.stop>
           <div class="submenu-header">
             <h4>{{ t('fileManager.fileList') }}</h4>
@@ -35,7 +35,7 @@
                 size="small"
                 :title="t('fileManager.searchFile')"
               >
-                ✕
+                <X :size="14" />
               </n-button>
             </div>
           </div>
@@ -53,10 +53,10 @@
               </div>
               <div class="file-item-actions">
                 <n-button @click.stop="renameFileFromSubmenu(file)" type="default" quaternary circle size="small" :title="t('fileManager.rename')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  <SquarePen :size="14" />
                 </n-button>
                 <n-button @click.stop="deleteFileFromSubmenu(file)" type="error" quaternary circle size="small" :title="t('fileManager.delete')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  <Trash2 :size="14" />
                 </n-button>
               </div>
             </div>
@@ -93,6 +93,15 @@
 </template>
 
 <script setup lang="ts">
+import {
+  ChevronRight,
+  FilePlus,
+  FileText,
+  FolderOpen,
+  SquarePen,
+  Trash2,
+  X,
+} from '@lucide/vue';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { NButton } from 'naive-ui';

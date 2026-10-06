@@ -1,89 +1,105 @@
 <template>
   <BaseModal
     :visible="visible"
-    :title="'PDF Template Designer User Guide'"
+    :title="t('help.title')"
     :showFooter="false"
     @update:visible="$emit('update:visible', $event)"
     @cancel="closeModal"
     :contentClass="'help-modal-content'"
   >
     <div class="help-content-scroll">
-      <h4>1. Template Design Basics</h4>
-      <p>This tool is used to visually design PDF report templates for JasperReports, letting you quickly build professional PDF reports via drag and drop.</p>
+      <h4>{{ t("help.basicsTitle") }}</h4>
+      <p>{{ t("help.basicsText") }}</p>
 
-      <h4>2. Steps</h4>
+      <h4>{{ t("help.stepsTitle") }}</h4>
       <ol>
-        <li><strong>Modify an existing JRXML</strong>: open the bottom panel, copy the current JRXML into the code area, then click Apply</li>
-        <li><strong>Add elements</strong>: drag elements from the element library on the left into the design area</li>
-        <li><strong>Adjust the layout</strong>: drag elements to reposition them, drag the bottom-right corner to resize</li>
-        <li><strong>Set properties</strong>: after selecting an element, set its properties in the right-hand panel</li>
-        <li><strong>Configure data</strong>: add report parameters and data fields in the left-hand panel</li>
-        <li><strong>Generate JRXML</strong>: click the "Generate JRXML" button to export the report template</li>
+        <li v-for="step in STEPS" :key="step">
+          <strong>{{ t(`help.steps.${step}Title`) }}</strong>: {{ t(`help.steps.${step}Text`) }}
+        </li>
       </ol>
 
-      <h4>3. Supported Element Types</h4>
+      <h4>{{ t("help.elementsTitle") }}</h4>
       <ul>
-        <li>Static text: displays fixed text content</li>
-        <li>Text field: displays a dynamic data field</li>
-        <li>Image: inserts an image element</li>
-        <li>Line: adds a divider line</li>
-        <li>Rectangle: adds a border or background block</li>
+        <li v-for="element in ELEMENTS" :key="element">{{ t(`help.elements.${element}`) }}</li>
       </ul>
 
-      <h4>4. Keyboard Shortcuts</h4>
+      <h4>{{ t("help.shortcutsTitle") }}</h4>
       <table class="shortcuts-table">
         <thead>
-          <tr><th>Shortcut</th><th>Action</th></tr>
+          <tr>
+            <th>{{ t("help.shortcutColumn") }}</th>
+            <th>{{ t("help.actionColumn") }}</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>S</kbd></td><td>Save the current file</td></tr>
-          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>Z</kbd></td><td>Undo</td></tr>
-          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>Y</kbd></td><td>Redo</td></tr>
-          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>C</kbd></td><td>Copy the selected element</td></tr>
-          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>V</kbd></td><td>Paste an element</td></tr>
-          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>B</kbd></td><td>Toggle the bottom JRXML panel</td></tr>
-          <tr><td><kbd>Delete</kbd> / <kbd>Backspace</kbd></td><td>Delete the selected element</td></tr>
-          <tr><td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td><td>Select a neighboring element</td></tr>
-          <tr><td><kbd>Shift</kbd> + <kbd>Arrow key</kbd></td><td>Nudge the element's position (1px)</td></tr>
-          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>0</kbd></td><td>Reset zoom</td></tr>
+          <tr v-for="shortcut in SHORTCUTS" :key="shortcut.action">
+            <td>
+              <template v-for="(key, index) in shortcut.keys" :key="index">
+                <template v-if="index > 0"> {{ shortcut.joiner }} </template>
+                <kbd>{{ key === "Arrow" ? t("help.arrowKey") : key }}</kbd>
+              </template>
+            </td>
+            <td>{{ t(`help.shortcuts.${shortcut.action}`) }}</td>
+          </tr>
         </tbody>
       </table>
 
-      <h4>5. Advanced Features</h4>
+      <h4>{{ t("help.advancedTitle") }}</h4>
       <ul>
-        <li><strong>Automatic data field creation</strong>: when a dynamic text element's expression references a field that doesn't exist yet (e.g. $F{abc}), the system automatically creates that data field</li>
-        <li><strong>Report element deletion</strong>: in the report element list on the left, each element has a delete button on the right; click it to delete that element</li>
-        <li><strong>Cross-platform shortcuts</strong>: on macOS, the Command key can be used in place of Ctrl on Windows for keyboard shortcuts</li>
+        <li>
+          <strong>{{ t("help.advanced.autoFieldsTitle") }}</strong>:
+          {{ t("help.advanced.autoFieldsText", { example: "$F{abc}" }) }}
+        </li>
+        <li>
+          <strong>{{ t("help.advanced.deleteTitle") }}</strong>: {{ t("help.advanced.deleteText") }}
+        </li>
+        <li>
+          <strong>{{ t("help.advanced.shortcutsTitle") }}</strong>:
+          {{ t("help.advanced.shortcutsText") }}
+        </li>
       </ul>
 
-      <h4>6. Notes</h4>
+      <h4>{{ t("help.notesTitle") }}</h4>
       <ul>
-        <li>Elements cannot extend beyond the page boundary</li>
-        <li>While editing text, press Enter to confirm or Esc to cancel</li>
-        <li>Double-click a static text box to open an input box for editing its text content</li>
-        <li>Double-click a dynamic text box to open an input box for editing its expression</li>
-        <li>Dragging an element does not update the JRXML in real time; it updates once you release the mouse</li>
-        <li>All changes are automatically saved to local storage</li>
+        <li v-for="note in NOTES" :key="note">{{ t(`help.notes.${note}`) }}</li>
       </ul>
     </div>
   </BaseModal>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import BaseModal from './BaseModal.vue';
 
-// Define props
-const props = defineProps({
+defineProps({
   visible: {
     type: Boolean,
     default: false
   }
 });
 
-// Define emits
 const emit = defineEmits(['update:visible']);
 
-// Close the modal
+const { t } = useI18n();
+
+const STEPS = ['modify', 'add', 'layout', 'properties', 'data', 'generate'];
+const ELEMENTS = ['textField', 'image', 'line', 'rectangle'];
+const NOTES = ['bounds', 'textEditing', 'textFieldEdit', 'dragUpdate', 'autoSave'];
+
+// "joiner" separates the keys: "+" for a combination, "/" for alternatives, " " for a list
+const SHORTCUTS = [
+  { keys: ['Ctrl/⌘', 'S'], joiner: '+', action: 'save' },
+  { keys: ['Ctrl/⌘', 'Z'], joiner: '+', action: 'undo' },
+  { keys: ['Ctrl/⌘', 'Y'], joiner: '+', action: 'redo' },
+  { keys: ['Ctrl/⌘', 'C'], joiner: '+', action: 'copy' },
+  { keys: ['Ctrl/⌘', 'V'], joiner: '+', action: 'paste' },
+  { keys: ['Ctrl/⌘', 'B'], joiner: '+', action: 'toggleBottomPanel' },
+  { keys: ['Delete', 'Backspace'], joiner: '/', action: 'delete' },
+  { keys: ['↑', '↓', '←', '→'], joiner: '', action: 'selectNeighbor' },
+  { keys: ['Shift', 'Arrow'], joiner: '+', action: 'nudge' },
+  { keys: ['Ctrl/⌘', '0'], joiner: '+', action: 'resetZoom' },
+];
+
 const closeModal = () => {
   emit('update:visible', false);
 };

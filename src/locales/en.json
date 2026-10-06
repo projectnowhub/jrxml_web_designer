@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "JRXML Visual Designer"
+    "title": "CDP Report Studio"
   },
   "actions": {
     "undo": "Undo",
@@ -14,6 +14,7 @@
     "showGrid": "Show Grid",
     "snapToGrid": "Snap to Grid",
     "snapToAlignment": "Snap to Alignment",
+    "snapBypassHint": "Hold Ctrl (⌘ on Mac) while dragging or resizing to place an element freely",
     "clearLocalData": "Clear Local Data",
     "generateJRXML": "Generate JRXML",
     "downloadJRXML": "Download JRXML",
@@ -47,18 +48,11 @@
   "elementLibrary": {
     "title": "Element Library",
     "basicElements": "Basic Elements",
+    "frameElements": "Element Presets",
     "compositeElements": "Composite Elements",
-    "reportElements": "Report Elements",
-    "filterElements": "Filter elements...",
     "reportParameters": "Report Parameters",
     "dataFields": "Data Fields",
     "addDataField": "Add Data Field",
-    "subDatasets": "Tables",
-    "addSubDataset": "Add Table",
-    "editSubDataset": "Edit Table",
-    "deleteSubDataset": "Delete Table",
-    "noSubDatasets": "No tables",
-    "clickToAddSubDataset": "Click + to add a table",
     "subDatasetName": "Table Name",
     "subDatasetNamePlaceholder": "Enter table name",
     "subDatasetNameRequired": "Table name is required",
@@ -106,53 +100,36 @@
     "deleteVariable": "Delete Variable",
     "noReportVariables": "No report variables",
     "clickToAddVariable": "Click '+' above to add variables",
-    "reportStyles": "Styles",
-    "addReportStyle": "Add Style",
-    "editStyle": "Edit Style",
-    "deleteStyle": "Delete Style",
-    "noReportStyles": "No styles",
-    "clickToAddStyle": "Click '+' above to add styles",
-    "deleteConfirm": "Delete Confirmation",
-    "deleteElementConfirm": "Are you sure you want to delete this element?",
     "fieldNameRequired": "Field name is required",
     "duplicateFieldName": "Field name already exists, please use another name"
   },
   "bandNames": {
-    "title": "Title",
     "pageHeader": "Page Header",
     "columnHeader": "Column Header",
     "detail": "Detail",
     "columnFooter": "Column Footer",
     "pageFooter": "Page Footer",
-    "summary": "Summary",
     "background": "Background",
     "lastPageFooter": "Last Page Footer",
     "noData": "No Data"
   },
   "elementNames": {
-    "staticText": "Static Text",
     "textField": "Text",
     "image": "Image",
     "line": "Line",
     "rectangle": "Rectangle",
     "ellipse": "Ellipse",
-    "break": "Break",
-    "frame": "Frame",
+    "frame": "Box",
+    "frameKpiCard": "Number Box",
+    "frameAlertBox": "Alert Box",
+    "frameTitledSection": "Section Box",
+    "framePhotoCard": "Photo Box",
+    "framePageBorder": "Page Border",
     "table": "Table",
-    "subreport": "Subreport",
-    "list": "List",
     "chart": "Chart",
     "barcode": "Barcode",
-    "map": "Map",
-    "crosstab": "Crosstab",
-    "iconLabel": "Icon Label",
-    "genericElement": "Generic Element",
-    "sort": "Sort",
     "pageNumber": "Page Number",
-    "totalPages": "Total Pages",
     "currentDate": "Current Date",
-    "currentTime": "Time",
-    "percentage": "Percentage",
     "pageXofY": "Page X of Y"
   },
   "properties": {
@@ -194,7 +171,14 @@
     "downloadJRXML": "Download JRXML",
     "saveJRXML": "Save JRXML",
     "changeImage": "Change Image",
-    "dropOrClickToUpload": "Drop image or click to upload",
+    "dropOrDoubleClickToUpload": "Drop image or double-click to upload",
+    "uploadingImage": "Uploading...",
+    "loadingImage": "Loading...",
+    "storedImagePreviewUnavailable": "Preview unavailable",
+    "doubleClickToCrop": "Double-click to crop",
+    "cropDone": "Done",
+    "cropReset": "Reset",
+    "cropCancel": "Cancel",
     "x": "X",
     "y": "Y",
     "width": "Width",
@@ -205,9 +189,8 @@
     "italic": "Italic",
     "underline": "Underline",
     "expression": "Expression",
-    "expressionHint": "e.g., {fieldHolder} or 或 \"Fixed text\"",
+    "expressionHint": "e.g., {fieldHolder} or \"Fixed text\"",
     "defaultTextFieldExpression": "Text",
-    "defaultStaticText": "Static Text",
     "pattern": "Pattern",
     "patternHint": "e.g., Date: \"yyyy-MM-dd\", Number: \"#,##0.00\"",
     "textAlignment": "Text Alignment",
@@ -241,13 +224,7 @@
     "imageName": "Image Name",
     "imageNameHint": "Read-only: taken from the uploaded image file",
     "radius": "Radius",
-    "breakType": "Break Type",
-    "pageBreak": "Page Break",
     "columnBreak": "Column Break",
-    "layoutMode": "Layout Mode",
-    "freeLayout": "Free Layout",
-    "horizontalLayout": "Horizontal Layout",
-    "verticalLayout": "Vertical Layout",
     "breakNoBorder": "Break element does not support border settings.",
     "unifiedBorder": "Unified Border Settings",
     "unifiedBorderHint": "This element only supports unified border settings",
@@ -261,7 +238,7 @@
     "quickSettings": "Quick Settings",
     "noBorders": "No Borders",
     "allBorders": "All Borders (1px Solid)",
-    "sideBorders": "Side Border Settings",
+    "sideBorders": "Borders",
     "topSide": "Top",
     "leftSide": "Left",
     "bottomSide": "Bottom",
@@ -293,7 +270,6 @@
     "tableHeader": "Table Header",
     "tableHeaderPlaceholder": "Enter table header text",
     "includeTableHeader": "Include Table Header",
-    "tableProperties": "Table Properties",
     "tableFooter": "Table Footer",
     "tableFooterPlaceholder": "Enter table footer expression",
     "moveColumnLeft": "Move column left",
@@ -343,17 +319,10 @@
     "tableStyleSettings": "Table Style Settings",
     "rowHeightSettings": "Row Height Settings",
     "detailCell": "Detail Cell",
-    "styleManagement": "Style Management",
     "selectStyle": "Select Style",
     "printWhenExpression": "Display Condition / Rules",
-    "styleReference": "Style Reference",
-    "noStyle": "No Style",
     "contentSource": "Data Content",
     "displayFormat": "Display Format",
-    "textAdjust": "When Text Is Too Long",
-    "textAdjustStretch": "Wrap text and expand height",
-    "textAdjustCut": "Cut off excess text",
-    "textAdjustShrink": "Shrink font size to fit",
     "positionType": "When Content Above Grows",
     "posFixTop": "Stay in fixed position",
     "posFloat": "Push down automatically",
@@ -365,7 +334,65 @@
     "advancedSettings": "Advanced Settings (Optional)",
     "lineColor": "Line Color",
     "rectangleColor": "Rectangle Color",
-    "ellipsesColor": "Ellipses Color"
+    "ellipsesColor": "Ellipses Color",
+    "storedImage": "Stored image",
+    "imageUploadHint": "PNG, JPG, JPEG · max 4 MB",
+    "imagePreview": "Image preview",
+    "uploadImageButton": "Upload Image (PNG, JPG · max 4 MB)",
+    "rotation": "Rotation",
+    "rotationNone": "0° - No rotation",
+    "rotationRight": "90° clockwise",
+    "rotationUpsideDown": "180° upside down",
+    "rotationLeft": "270° counter-clockwise",
+    "cornerRadius": "Corner Radius",
+    "lineOrientation": "Line Orientation",
+    "lineHorizontal": "Horiz",
+    "lineHorizontalTitle": "Horizontal line (0°)",
+    "lineVertical": "Vert",
+    "lineVerticalTitle": "Vertical line (90°)",
+    "lineTopDown": "Top-down",
+    "lineTopDownTitle": "Diagonal from top-left to bottom-right (↘)",
+    "lineBottomUp": "Bottom-up",
+    "lineBottomUpTitle": "Diagonal from bottom-left to top-right (↗)",
+    "crossLine": "Add Crossing Line (Make X)",
+    "crossLineTitle": "Create the opposite diagonal line to make an 'X' cross",
+    "lineStyle": "Line Style",
+    "lineThickness": "Line Thickness",
+    "fitToText": "Fit to Text",
+    "fitToTextTitle": "Size the box to its text. Fixed text gets the width and height of its text; data fields get the height they need, keeping their width.",
+    "insertField": "Insert Field...",
+    "textFieldPlaceholder": "Enter text or {example}",
+    "columnManagement": "Column Management",
+    "column": "Column",
+    "addGroup": "Add Group",
+    "group": "Group",
+    "combineColumns": "Combine Columns",
+    "combineColumnsTitle": "Select columns to combine",
+    "noColumnsHint": "Click the button above to add a column",
+    "headerRowHeight": "Header Row Height",
+    "columnHeaderRowHeight": "Column Header Row Height",
+    "dataRowHeight": "Data Row Height",
+    "columnFooterRowHeight": "Column Footer Row Height",
+    "tableFooterRowHeight": "Table Footer Row Height",
+    "barcodeProperties": "Barcode Properties",
+    "barcodeType": "Barcode Type",
+    "barcodeValue": "Barcode Value",
+    "barcodeValuePlaceholder": "e.g. 1234567890",
+    "cornerRadiusHint": "The border follows the rounded corners in one solid colour, and the inside is filled (white unless the frame has a background).",
+    "cornerAll": "All corners",
+    "corner": {
+      "topLeft": "Top left",
+      "topRight": "Top right",
+      "bottomRight": "Bottom right",
+      "bottomLeft": "Bottom left"
+    },
+    "side": "Side",
+    "textSettings": "Text",
+    "allSides": "All sides",
+    "positionSize": "Position & size",
+    "insertFieldLabel": "Insert a data field",
+    "outline": "Outline",
+    "lineSettings": "Line"
   },
   "bottomPanel": {
     "pageSettings": "Page Settings",
@@ -421,7 +448,12 @@
     "applyToCurrentTemplate": "Apply to Current Template",
     "appliedToTemplateSuccess": "Applied default band settings to current template.",
     "savedAsGlobalDefault": "Current constraints saved as default for all new templates.",
-    "resetToDefaultSuccess": "Reset band constraints to system defaults."
+    "resetToDefaultSuccess": "Reset band constraints to system defaults.",
+    "resetToDeveloperDefaultsSuccess": "Band constraints reset to developer defaults.",
+    "search": "Search... (Ctrl+F)",
+    "searchPrevious": "Previous",
+    "searchNext": "Next",
+    "customPaperSize": "Custom"
   },
   "zoom": {
     "zoomIn": "Zoom In",
@@ -484,7 +516,7 @@
     "resetGroup": "Group",
     "resetGroupPlaceholder": "Enter group name",
     "expression": "Expression",
-    "expressionPlaceholder": "e.g. $F{amount}",
+    "expressionPlaceholder": "e.g. $F{'{'}amount{'}'}",
     "initialValueExpression": "Initial Value Expression",
     "initialValuePlaceholder": "e.g. 0",
     "errors": {
@@ -492,69 +524,32 @@
       "classRequired": "Variable type is required"
     }
   },
-  "styleManagement": {
-    "title": "Style Management",
-    "addStyle": "Add Style",
-    "editStyle": "Edit Style",
-    "styleName": "Style Name",
-    "styleNamePlaceholder": "Enter style name",
-    "parentStyle": "Parent Style",
-    "noParent": "None (Top-level style)",
-    "mode": "Mode",
-    "modeDefault": "Default",
-    "modeOpaque": "Opaque",
-    "modeTransparent": "Transparent",
-    "forecolor": "Foreground Color",
-    "backcolor": "Background Color",
-    "fontFamily": "Font Family",
-    "fontSize": "Font Size",
-    "fontStyle": "Font Style",
-    "bold": "Bold",
-    "italic": "Italic",
-    "underline": "Underline",
-    "textAlignment": "Text Alignment",
-    "alignLeft": "Left",
-    "alignCenter": "Center",
-    "alignRight": "Right",
-    "alignJustified": "Justified",
-    "verticalAlignment": "Vertical Alignment",
-    "valignTop": "Top",
-    "valignMiddle": "Middle",
-    "valignBottom": "Bottom",
-    "errors": {
-      "nameRequired": "Style name is required"
-    }
-  },
   "pdfPreview": {
     "title": "PDF Preview",
     "generateBtn": "Generate PDF",
     "editor": {
-      "showPanel": "Show Editor Panel",
-      "hidePanel": "Hide Editor Panel"
+      "showPanel": "Show tables",
+      "hidePanel": "Hide tables"
     },
-    "parameters": {
-      "title": "Parameters",
-      "name": "Name",
-      "type": "Type",
-      "value": "Value",
-      "noParameters": "No parameters defined"
+    "generationFailed": "PDF generation failed",
+    "errors": {
+      "httpFailure": "PDF generation failed (HTTP {status})",
+      "invalidJson": "The server returned invalid JSON instead of a PDF",
+      "noPdf": "The server response did not contain a PDF",
+      "notPdf": "The server response is not a PDF (content type: {type})"
     },
-    "dataSource": {
-      "title": "Data Source",
-      "rowCount": "Row Count",
-      "regenerate": "Regenerate",
-      "addRow": "Add Row",
-      "removeRow": "Remove Row",
-      "noFields": "No fields defined"
-    },
-    "subDataset": {
-      "title": "Sub Datasets"
+    "tables": {
+      "title": "Tables in this report",
+      "readOnly": "Read-only — edit in the designer",
+      "none": "This report has no tables with data yet.",
+      "edit": "Edit in designer",
+      "rowsCapped": "first {shown} of {count} rows"
     }
   },
   "previewServerSettings": {
     "title": "Preview Server Settings",
     "serverUrl": "Server URL",
-    "sourceInfo": "Preview server source code address："
+    "sourceInfo": "Preview server source code address:"
   },
   "displayRules": {
     "ruleType": "Display Rule",
@@ -586,7 +581,8 @@
     "summaryFirstPage": "Shows only on the first page",
     "summaryHideFirstPage": "Hidden on the first page",
     "summaryLastPage": "Shows only on the last page",
-    "summaryCustomActive": "{count} active display condition(s)"
+    "summaryCustomActive": "{count} active display condition(s)",
+    "removeCondition": "Remove condition"
   },
   "formatSelector": {
     "category": "Format Category",
@@ -605,7 +601,11 @@
     "decimals": "Decimals",
     "dateStyle": "Date Format",
     "timeStyle": "Time Format",
-    "preview": "Preview"
+    "preview": "Preview",
+    "hour12": "12-hour",
+    "hour24": "24-hour",
+    "dateTime": "Date & Time",
+    "plainTextPreview": "Plain Text"
   },
   "fieldContent": {
     "modeDataField": "Data Field",
@@ -617,9 +617,18 @@
     "parameters": "Parameters",
     "variables": "Calculated Totals",
     "selectDocInfo": "Select Document Value",
-    "templateHelp": "Type text and insert {Field} tokens:",
-    "templatePlaceholder": "e.g.: Invoice for {customer_name} on {order_date}",
-    "insertField": "Insert Field"
+    "templateHelp": "Type text and insert {'{'}Field{'}'} tokens:",
+    "templatePlaceholder": "e.g.: Invoice for {'{'}customer_name{'}'} on {'{'}order_date{'}'}",
+    "insertField": "Insert Field",
+    "totalRecords": "Total Records",
+    "pageXofYSample": "Page 1 of 5",
+    "types": {
+      "text": "Text",
+      "number": "Number",
+      "decimal": "Decimal/Currency",
+      "date": "Date",
+      "boolean": "Yes/No"
+    }
   },
   "common": {
     "save": "Save",
@@ -628,7 +637,8 @@
     "delete": "Delete",
     "ok": "OK",
     "confirm": "Confirm",
-    "required": "Required"
+    "required": "Required",
+    "unknownError": "Unknown error"
   },
   "notifications": {
     "fileSavedSuccess": "File saved successfully",
@@ -641,5 +651,754 @@
   "designer": {
     "relativeToBand": "relative to Band",
     "coordinates": "{bandName}X: {x}, Y: {y} (relative to Band)"
+  },
+  "language": {
+    "label": "Language",
+    "english": "English",
+    "malay": "Malay"
+  },
+  "auth": {
+    "welcomeBack": "Welcome back",
+    "desktopApplication": "Desktop Application",
+    "signInSubtitle": "Sign in to continue to your workspace",
+    "enterTenantUrl": "Enter your tenant URL to get started",
+    "verifying": "Verifying...",
+    "verifyTenant": "Verify Tenant",
+    "signingIn": "Signing in...",
+    "continueToCdp": "Continue to CDP",
+    "verifyTenantFirst": "Verify your tenant URL before continuing.",
+    "secureAccess": "Secure access to your workspace and dashboard.",
+    "currentTenant": "Current Tenant",
+    "changeTenantUrl": "Change Tenant URL",
+    "secureEncrypted": "Secure · Encrypted",
+    "tenantVerificationFailed": "Tenant verification failed. Please contact your administrator to get the proper URL to proceed further.",
+    "invalidTenantUrl": "Please enter a valid tenant URL.",
+    "tenantVerificationContactAdmin": "Tenant verification failed. Please contact your administrator.",
+    "tenantVerificationRetry": "Tenant verification failed. Please try again.",
+    "signInFailed": "Sign-in failed. Please try again.",
+    "redirectingToLogin": "Redirecting to Login",
+    "pleaseWait": "Please wait...",
+    "desktopAuthentication": "Desktop application authentication",
+    "brandLogo": "CDP brand logo"
+  },
+  "callback": {
+    "secureConnection": "Secure connection",
+    "securingSession": "Securing your session",
+    "securingSessionDescription": "Verifying your credentials and establishing a protected workspace",
+    "verifyingCredentials": "Verifying your credentials...",
+    "authCodeReceived": "Authorization code received",
+    "pkceCodeVerified": "PKCE code verified",
+    "exchangingToken": "Exchanging token securely",
+    "communicatingWithServer": "Communicating with server",
+    "loadingWorkspace": "Loading your workspace",
+    "fetchingAccountDetails": "Fetching account details",
+    "active": "Active",
+    "authProgress": "Authentication progress",
+    "pkceSecured": "PKCE secured",
+    "endToEndEncrypted": "End-to-end encrypted",
+    "secureChannelActive": "Secure channel active",
+    "done": "Done"
+  },
+  "layout": {
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar",
+    "searchTemplates": "Search templates",
+    "help": "Help",
+    "notifications": "Notifications",
+    "myProfile": "My profile",
+    "signOut": "Sign out",
+    "templates": "Templates",
+    "myTemplates": "My templates",
+    "activity": "Activity",
+    "allSystemsOperational": "All systems operational",
+    "closeNavigation": "Close navigation",
+    "accountMenu": "Account menu",
+    "defaultWorkspace": "Your CDP workspace"
+  },
+  "home": {
+    "eyebrow": "Template workspace",
+    "greeting": "Good morning, {name}",
+    "defaultUserName": "Designer",
+    "subtitle": "Create, organize, and manage your report templates.",
+    "recentTemplates": "Recent templates",
+    "viewAll": "View all",
+    "createNewTemplate": "Create a new template",
+    "createNewTemplateHint": "Start with a blank JRXML report",
+    "moreOptions": "More options",
+    "createdBy": "Created by {name}",
+    "sharedWithYou": "Shared with you",
+    "recentlyAccessed": "Recently accessed",
+    "noSharedTemplates": "No shared templates yet",
+    "noSharedTemplatesHint": "Templates shared with you will appear here.",
+    "sampleTemplates": {
+      "monthlySales": "Monthly sales report",
+      "customerInvoice": "Customer invoice",
+      "operationsSummary": "Operations summary",
+      "editedTodayAt": "Edited today at {time}",
+      "editedYesterday": "Edited yesterday",
+      "editedOn": "Edited {date}"
+    }
+  },
+  "pages": {
+    "account": "Account",
+    "workspace": "Workspace",
+    "myProfile": "My Profile",
+    "myProfileDescription": "Manage your profile information and workspace identity.",
+    "myTemplates": "My Templates",
+    "myTemplatesDescription": "View and manage the templates you have created or saved.",
+    "activity": "Activity",
+    "activityDescription": "View recent activity and changes across your workspace."
+  },
+  "editorHeader": {
+    "untitledReport": "Untitled Report",
+    "renameReport": "Click to rename report",
+    "saving": "Saving...",
+    "saveFailed": "Save failed",
+    "saved": "Saved",
+    "savingTitle": "Saving changes...",
+    "saveFailedTitle": "Auto-save failed",
+    "savedTitle": "All changes are saved automatically",
+    "addNewPage": "Add New Page",
+    "bandHeight": "{bandName} Height: {height}px",
+    "pageButton": "Page"
+  },
+  "help": {
+    "title": "JRXML Visual Designer User Guide",
+    "basicsTitle": "1. Template Design Basics",
+    "basicsText": "This tool is used to visually design PDF report templates for JasperReports, allowing you to quickly create professional PDF reports through drag and drop.",
+    "stepsTitle": "2. Steps",
+    "steps": {
+      "modifyTitle": "Modify an existing JRXML",
+      "modifyText": "Open the bottom panel, copy the current JRXML into the code area, then click Apply",
+      "addTitle": "Add elements",
+      "addText": "Drag elements from the element library on the left into the design area",
+      "layoutTitle": "Adjust the layout",
+      "layoutText": "Drag elements to reposition them, and drag the handles to resize them",
+      "propertiesTitle": "Set properties",
+      "propertiesText": "After selecting an element, set its properties in the right-hand panel",
+      "dataTitle": "Configure data",
+      "dataText": "Add report parameters and data fields in the left-hand panel",
+      "generateTitle": "Generate JRXML",
+      "generateText": "Click the \"Generate JRXML\" button to export the report template"
+    },
+    "elementsTitle": "3. Supported Element Types",
+    "elements": {
+      "textField": "Text field: displays a dynamic data field",
+      "image": "Image: inserts an image element",
+      "line": "Line: adds a divider line",
+      "rectangle": "Rectangle: adds a border or background block"
+    },
+    "shortcutsTitle": "4. Keyboard Shortcuts",
+    "shortcutColumn": "Shortcut",
+    "actionColumn": "Action",
+    "arrowKey": "Arrow key",
+    "shortcuts": {
+      "save": "Save the current file",
+      "undo": "Undo",
+      "redo": "Redo",
+      "copy": "Copy the selected element",
+      "paste": "Paste an element",
+      "toggleBottomPanel": "Toggle the bottom JRXML panel",
+      "delete": "Delete the selected element",
+      "selectNeighbor": "Select a neighboring element",
+      "nudge": "Nudge the element's position (1px)",
+      "resetZoom": "Reset zoom"
+    },
+    "advancedTitle": "5. Advanced Features",
+    "advanced": {
+      "autoFieldsTitle": "Automatic data field creation",
+      "autoFieldsText": "When a text element's expression references a field that doesn't exist yet (e.g. {example}), the field is created automatically",
+      "deleteTitle": "Report element deletion",
+      "deleteText": "In the report element list on the left, click the delete button next to an element to delete it",
+      "shortcutsTitle": "Cross-platform shortcuts",
+      "shortcutsText": "On macOS, use the Command key in place of Ctrl"
+    },
+    "notesTitle": "6. Notes",
+    "notes": {
+      "bounds": "Elements cannot extend beyond the page boundary",
+      "textEditing": "While editing text, press Enter to confirm or Esc to cancel",
+      "textFieldEdit": "Double-click a text field to edit its expression",
+      "dragUpdate": "The JRXML updates when you release the mouse after dragging an element",
+      "autoSave": "All changes are automatically saved to local storage"
+    }
+  },
+  "imageUpload": {
+    "invalidFormat": "You cannot upload this file. Only PNG and JPEG images are supported.",
+    "tooLarge": "Image is too large. Maximum size is 4 MB.",
+    "tooLargeWithSize": "Image is too large ({size} MB). Maximum size is 4 MB.",
+    "uploadFailed": "Image upload failed. Please try again.",
+    "invalidResponse": "The server did not return a stored image reference."
+  },
+  "ai": {
+    "title": "AI Assistant",
+    "configure": "Configure AI service",
+    "clearHistory": "Clear history",
+    "settings": {
+      "title": "AI Service Configuration",
+      "apiEndpoint": "API Endpoint Address",
+      "defaultValue": "Default: {value}",
+      "apiKey": "Claude API Key / Access Token",
+      "apiKeyHint": "Anthropic Claude API key (starts with sk-ant-)",
+      "modelName": "Model Name",
+      "maxTokens": "Max Tokens",
+      "temperature": "Temperature",
+      "temperatureHint": "0.0-1.0, higher is more random (default: 0.7)",
+      "requestTimeout": "Request Timeout (seconds)",
+      "requestTimeoutHint": "In seconds, default: 300 seconds (5 minutes)",
+      "reset": "Reset to Default",
+      "save": "Save Configuration"
+    },
+    "empty": {
+      "title": "Start a conversation with the AI assistant",
+      "example": "e.g.: create a title in the detail band",
+      "currentApi": "Current API: {url}"
+    },
+    "unsupported": {
+      "title": "Browser Does Not Support AI Assistant",
+      "message": "Your browser is missing features that the AI assistant needs.",
+      "requirements": "The following browser features are required:",
+      "suggestion": "We recommend using the latest version of Chrome, Firefox or Safari"
+    },
+    "input": {
+      "placeholder": "Enter a command, e.g.: create a text field in the detail band to display the customer name",
+      "unsupported": "Browser not supported, please upgrade your browser",
+      "send": "Send message (Ctrl+Enter)"
+    },
+    "message": {
+      "you": "You",
+      "copied": "Copied",
+      "copy": "Copy message"
+    },
+    "tools": {
+      "get_design_state": "Get design state",
+      "get_element": "Get element info",
+      "find_elements": "Find elements",
+      "create_static_text": "Create static text",
+      "create_text_field": "Create dynamic text field",
+      "create_rectangle": "Create rectangle",
+      "update_element": "Update element",
+      "move_element": "Move element",
+      "delete_element": "Delete element",
+      "update_band_height": "Adjust band height"
+    },
+    "tool": {
+      "noParameters": "No parameters",
+      "success": "Success",
+      "failed": "Failed",
+      "parameters": "Parameters:",
+      "result": "Result:",
+      "executed": "Executed successfully",
+      "executionFailed": "Execution failed"
+    },
+    "chat": {
+      "processing": "AI is processing...",
+      "executingTool": "Executing tool: {tool}",
+      "toolSucceeded": "Tool {tool} executed successfully",
+      "toolFailed": "Tool {tool} failed: {error}"
+    }
+  },
+  "editor": {
+    "groupDialog": {
+      "title": "Add columns to group",
+      "label": "Select an existing group or enter a new group name:",
+      "placeholder": "Select an existing group or enter a new name"
+    },
+    "contextMenu": {
+      "bringToFront": "Bring to Front",
+      "sendToBack": "Send to Back"
+    },
+    "pageAdded": "Page {page} added",
+    "pageDeleted": "Page {page} deleted",
+    "jrxmlRegenerated": "JRXML has been regenerated",
+    "previewFailed": "Failed to preview PDF, please check the console for error details",
+    "bandLimits": {
+      "noSpace": "You don't have space to extend {band}. The Detail band has reached its minimum height ({height}px).",
+      "maxReached": "{band} space is exceeded. Change the template band settings for more space.",
+      "minReached": "Minimum height reached. If you don't need the {band} band, remove it.",
+      "textOverflow": "{band} reached its maximum limit ({height}px). The text exceeds the band capacity. Consider widening the element or placing long text in the Detail band.",
+      "grewToFit": "{band} grew to {height}px to fit the element.",
+      "tooTallForBand": "This element is {height}px tall, but {band} can be at most {max}px. Make the element smaller, or raise the band's maximum height in the template band settings."
+    },
+    "confirmDelete": {
+      "field": "Are you sure you want to delete field \"{name}\"?",
+      "parameter": "Are you sure you want to delete parameter \"{name}\"?",
+      "variable": "Are you sure you want to delete variable \"{name}\"?"
+    },
+    "duplicateName": {
+      "variable": "A variable with this name already exists, please use a different name",
+      "parameter": "A parameter with this name already exists, please use a different name",
+      "field": "A field with this name already exists, please use a different name"
+    }
+  },
+  "canvas": {
+    "deletePage": "Delete Page",
+    "dropHere": "Drop here",
+    "aligned": "Aligned",
+    "pageOf": "Page {page} of {total}",
+    "dragOntoPage": "Drag elements onto page {page}",
+    "selectPageBorder": "Click to select the page border",
+    "pageBorderResized": "The page border was resized to fit the new page.",
+    "elementsMovedToFit": "1 element was moved to fit inside the new page. | {count} elements were moved to fit inside the new page.",
+    "addPageAfter": "Add page after"
+  },
+  "alignment": {
+    "left": "Align left",
+    "centerH": "Center horizontally",
+    "right": "Align right",
+    "top": "Align top",
+    "middle": "Center vertically",
+    "bottom": "Align bottom"
+  },
+  "multiSelect": {
+    "align": "Align",
+    "distribute": "Distribute",
+    "distributeH": "Distribute horizontally",
+    "distributeV": "Distribute vertically",
+    "size": "Size",
+    "sameWidth": "Same width",
+    "sameHeight": "Same height",
+    "sameSize": "Same size",
+    "selectedCount": "{count} element(s) selected"
+  },
+  "resize": {
+    "topLeft": "Resize top-left",
+    "topRight": "Resize top-right",
+    "bottomLeft": "Resize bottom-left",
+    "bottomRight": "Resize bottom-right",
+    "topAutoFit": "Resize top (double-click to auto-fit)",
+    "bottomAutoFit": "Resize bottom (double-click to auto-fit)",
+    "left": "Resize left",
+    "right": "Resize right"
+  },
+  "frame": {
+    "title": "Box Style"
+  },
+  "framePresets": {
+    "styleLabel": "Border presets",
+    "pageBorderTitle": "Page Border",
+    "custom": "Custom border (no preset matches)",
+    "style": {
+      "none": "None",
+      "hairline": "Hairline",
+      "light": "Light",
+      "softDashed": "Soft dashed",
+      "outline": "Outline",
+      "thick": "Thick",
+      "doubleRule": "Double rule",
+      "topAccent": "Top accent",
+      "leftAccent": "Left accent",
+      "rightAccent": "Right accent",
+      "bottomAccent": "Bottom accent",
+      "underline": "Underline"
+    },
+    "placeholder": {
+      "kpiLabel": "LABEL",
+      "kpiValue": "0.00%",
+      "kpiCaption": "Caption",
+      "alertTitle": "⚠ ATTENTION",
+      "alertBody": "Describe the issue and the action required.",
+      "sectionTitle": "SECTION TITLE",
+      "photoCaption": "Photo 1: Caption",
+      "photoMeta": "Date: – · Location: –"
+    },
+    "customizeHint": "Fine-tune each side and the corner radius in Style Settings.",
+    "pageBorderExists": "This report already has a page border. You can edit the existing page border instead of adding a new one.",
+    "templateDescription": {
+      "frameKpiCard": "Shows one important number, with a small label above and a note below (for example: Progress 17.93%).",
+      "frameAlertBox": "A coloured box with a heading and a short message, for warnings or things readers must notice.",
+      "frameTitledSection": "A bordered area with a dark heading bar on top. Put related content inside it.",
+      "framePhotoCard": "A photo with a caption and a date line underneath.",
+      "framePageBorder": "A border around every page of the report."
+    },
+    "addToBox": "Add to box",
+    "moveOutOfBox": "Move out of box"
+  },
+  "pagination": {
+    "title": "Page Number",
+    "format": "Format",
+    "formats": {
+      "simple": "Number only",
+      "prefixed": "\"Page\" and the number",
+      "pageXofY": "Page number and total pages",
+      "slash": "Number / total pages"
+    },
+    "showOn": "Show on",
+    "ranges": {
+      "all": "All pages",
+      "skipFirst": "Skip first page",
+      "skipFirstTwo": "Skip first 2 pages",
+      "custom": "Custom range"
+    },
+    "fromPage": "From page",
+    "toPage": "To page",
+    "lastPage": "Last",
+    "toPageHint": "Leave \"To page\" empty to continue to the last page.",
+    "rangeEmpty": "\"From page\" is after \"To page\", so the page number won't print on any page.",
+    "expression": "Expression (generated)",
+    "expressionHint": "Set by the format and page range above.",
+    "cannotEdit": "Page numbers are dynamically generated and cannot be edited directly. Use the property panel to change format or page range.",
+    "lockedHint": "Page number – change its format or pages in the property panel.",
+    "noBand": "Add a band to the report before inserting a page number.",
+    "tileHint": "Click to choose where the page number goes, or drag it onto the page.",
+    "choosePosition": "Insert page number",
+    "positions": {
+      "topRight": "Top right",
+      "bottomRight": "Bottom right",
+      "bottomCenter": "Bottom center"
+    },
+    "dragHint": "Or drag the tile onto the page to place it anywhere.",
+    "totalSymbol": "N",
+    "totalHint": "{n} is the total number of pages, filled in when the report is generated.",
+    "totalPreviewHint": "The total here is the designer's page count; the PDF shows its real total.",
+    "rangeHints": {
+      "skipFirst": "The first page has no number; page 2 is numbered 1.",
+      "skipFirstTwo": "The first 2 pages have no number; page 3 is numbered 1.",
+      "custom": "Only these pages are numbered, starting at 1 on the \"From\" page."
+    },
+    "startsLater": "Numbering starts on page {page}, which this design doesn't have yet. Shown faded here so you can still select it."
+  },
+  "expression": {
+    "builtIn": {
+      "REPORT_PARAMETERS_MAP": "Map of report parameters passed in when the user fills the report",
+      "JASPER_REPORTS_CONTEXT": "The current report-filling context",
+      "JASPER_REPORT": "The JasperReport template object currently being filled",
+      "REPORT_CONNECTION": "The JDBC connection needed to run the default report query",
+      "REPORT_MAX_COUNT": "Limits the number of records processed from the data source",
+      "REPORT_DATA_SOURCE": "The report data source instance",
+      "REPORT_SCRIPTLET": "The user-supplied report scriptlet instance",
+      "REPORT_LOCALE": "The locale required for the resource bundle",
+      "REPORT_RESOURCE_BUNDLE": "The resource bundle containing localized messages",
+      "REPORT_TIME_ZONE": "The time zone used for date formatting",
+      "REPORT_VIRTUALIZER": "The virtualizer used for page virtualization",
+      "REPORT_CLASS_LOADER": "The class loader used to load resources during filling",
+      "REPORT_FORMAT_FACTORY": "The format factory used to create DateFormat and NumberFormat instances",
+      "IS_IGNORE_PAGINATION": "Whether to ignore the pagination flag",
+      "REPORT_TEMPLATES": "The collection of report templates passed in while filling",
+      "REPORT_COUNT": "Total number of records read from the data source",
+      "PAGE_COUNT": "Number of records processed while generating the current page",
+      "COLUMN_COUNT": "Number of records processed while generating the current column",
+      "PAGE_NUMBER": "Current page number (total page count once report filling finishes)",
+      "COLUMN_NUMBER": "Current column number",
+      "MASTER_CURRENT_PAGE": "Current page number of the master report (Master evaluation time only)",
+      "MASTER_TOTAL_PAGES": "Total page count of the master report (Master evaluation time only)"
+    },
+    "methods": {
+      "now": "Current time",
+      "today": "Today's date",
+      "toString": "Convert to string",
+      "toInteger": "Convert to integer",
+      "toDouble": "Convert to double",
+      "newDate": "Create the current date",
+      "dateFormat": "Date formatting"
+    },
+    "common": {
+      "equalsValue": "Field equals a specific value",
+      "notNull": "Field is not null",
+      "greaterThanZero": "Field is greater than 0",
+      "pageAfterFirst": "Page number is greater than 1",
+      "statusActive": "Status equals \"active\"",
+      "amountOver100": "Amount is greater than 100"
+    },
+    "help": "Expression help",
+    "sections": {
+      "common": "Common expressions",
+      "fields": "Field references",
+      "pages": "Page numbering",
+      "comparison": "Comparison operators",
+      "logical": "Logical operators",
+      "methods": "Built-in methods"
+    },
+    "fieldReference": "Data field reference",
+    "currentPage": "Current page number",
+    "totalRecords": "Total records count",
+    "operators": {
+      "equal": "Equal to",
+      "notEqual": "Not equal to",
+      "greaterThan": "Greater than",
+      "lessThan": "Less than",
+      "and": "And",
+      "or": "Or",
+      "not": "Not"
+    }
+  },
+  "textField": {
+    "placeholder": "Enter text...",
+    "overflowTitle": "The text doesn't fit the box. Click to fit the box to the text",
+    "fit": "Fit",
+    "openLink": "Open link",
+    "copied": "Copied!",
+    "copyLink": "Copy link",
+    "editLink": "Edit link",
+    "removeLink": "Remove link"
+  },
+  "textToolbar": {
+    "bold": "Bold (Ctrl+B)",
+    "italic": "Italic (Ctrl+I)",
+    "underline": "Underline (Ctrl+U)",
+    "strikethrough": "Strikethrough",
+    "textColor": "Text color",
+    "highlight": "Highlight color",
+    "highlightTitle": "Highlight color (background)",
+    "link": "Insert or edit link (Ctrl+K)",
+    "clearFormatting": "Clear formatting",
+    "back": "Back",
+    "automatic": "Automatic",
+    "automaticTitle": "Automatic (default color)",
+    "customColor": "Custom color",
+    "removeHighlight": "Remove highlight",
+    "noColor": "No color",
+    "linkWeb": "Web",
+    "linkEmail": "Email",
+    "linkPhone": "Phone",
+    "linkText": "Text",
+    "linkTextPlaceholder": "Display label (optional)",
+    "linkLabel": "Link",
+    "removeLink": "Remove hyperlink",
+    "colors": {
+      "yellow": "Yellow",
+      "lime": "Lime",
+      "cyan": "Cyan",
+      "orange": "Orange",
+      "pink": "Pink",
+      "purple": "Purple",
+      "softRed": "Soft red",
+      "lightGray": "Light gray",
+      "deepYellow": "Deep yellow",
+      "green": "Green",
+      "blue": "Blue",
+      "violet": "Violet"
+    },
+    "remove": "Remove"
+  },
+  "dataTypes": {
+    "text": "Text",
+    "integer": "Whole Number (Integer)",
+    "long": "Large Number",
+    "currency": "Currency / Money",
+    "decimal": "Decimal Number",
+    "boolean": "Yes / No (Boolean)",
+    "date": "Date",
+    "dateTime": "Date & Time"
+  },
+  "chart": {
+    "title": "Chart",
+    "type": "Chart type",
+    "chartTitle": "Title",
+    "chartTitlePlaceholder": "e.g. Sales by region",
+    "showLegend": "Show legend",
+    "data": "Chart data",
+    "dataFrom": "Data from",
+    "reportData": "Report data",
+    "fieldPlaceholder": "field",
+    "types": {
+      "pie": "Pie",
+      "pie3D": "Pie (3D)",
+      "bar": "Bar",
+      "bar3D": "Bar (3D)",
+      "stackedBar": "Stacked bar",
+      "stackedBar3D": "Stacked bar (3D)",
+      "line": "Line",
+      "area": "Area",
+      "stackedArea": "Stacked area",
+      "xyLine": "XY line",
+      "xyArea": "XY area",
+      "xyBar": "XY bar",
+      "scatter": "Scatter",
+      "bubble": "Bubble",
+      "timeSeries": "Time series",
+      "highLow": "High-low",
+      "candlestick": "Candlestick",
+      "meter": "Meter",
+      "thermometer": "Thermometer",
+      "multiAxis": "Multi-axis",
+      "gantt": "Gantt",
+      "spider": "Spider"
+    },
+    "fields": {
+      "key": "Slice label",
+      "value": "Value",
+      "series": "Series",
+      "category": "Category",
+      "x": "X value",
+      "y": "Y value"
+    },
+    "hints": {
+      "pie": "Each row adds its value to the slice named by the label.",
+      "category": "Each row adds its value to a category (one bar or point); series splits them into groups.",
+      "xy": "Each row is one point at (X, Y); series splits the points into lines or groups."
+    }
+  },
+  "dataTable": {
+    "dropHint": "Drag table data here",
+    "placeholderColumn": "Column {n}",
+    "moreRows": "+1 more row | +{count} more rows",
+    "loading": "Loading data…",
+    "loadFailed": "Couldn't load the data",
+    "noRows": "No records found",
+    "onlyInDetail": "Tables can only be placed in the Detail section.",
+    "columnAlreadyShown": "\"{column}\" is already in this table.",
+    "columnLimitReached": "This table is full: it fits at most {max} columns. Widen it or remove a column first.",
+    "totals": {
+      "label": "Total",
+      "sum": "Sum",
+      "avg": "Average",
+      "count": "Count"
+    },
+    "types": {
+      "text": "Text",
+      "number": "Number",
+      "currency": "Amount",
+      "date": "Date"
+    },
+    "theme": {
+      "corporateBlue": "Corporate Blue",
+      "minimal": "Minimal",
+      "emerald": "Emerald"
+    },
+    "panel": {
+      "data": "Data",
+      "tableName": "Table name",
+      "columnCount": "1 column | {count} columns",
+      "firstRows": "First row only | First {count} rows",
+      "editData": "Edit data",
+      "emptyHint": "Drag a source from Table Data onto this table, or choose one here.",
+      "chooseData": "Choose data",
+      "look": "Look",
+      "headerHeight": "Header height",
+      "rowHeight": "Row height",
+      "rowSizes": "Row sizes"
+    },
+    "config": {
+      "title": "Set up {name}",
+      "source": "Source",
+      "chooseSource": "Choose a source",
+      "replacesData": "Apply replaces this table's current data ({source}).",
+      "sourceOption": "{name} ({count} rows)",
+      "columns": "Columns",
+      "columnCounter": "{count} of {max}",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "headerText": "Header text",
+      "total": "Total",
+      "noTotal": "No total",
+      "removeColumn": "Remove column",
+      "addColumn": "Add a column…",
+      "columnLimitHint": "No more columns fit. Remove one, or widen the table (landscape pages fit more).",
+      "rows": "Rows and totals",
+      "limitRows": "Show only the first",
+      "rowLimit": "Number of rows",
+      "showTotals": "Add a totals row",
+      "preview": "Preview",
+      "pickSourceFirst": "Choose a source to see its data",
+      "previewCapped": "Showing the first {shown} of {count} rows",
+      "rowCount": "1 row | {count} rows",
+      "needColumn": "Choose at least one column",
+      "tooManyColumns": "Too many columns: at most {max} fit",
+      "apply": "Apply"
+    },
+    "library": {
+      "title": "Table Data",
+      "reload": "Reload sources",
+      "search": "Search sources and columns",
+      "hint": "Drag a source onto a table (or the page) to show its data. Drag a column to add just that column.",
+      "retry": "Try again",
+      "noMatch": "No sources match",
+      "dragSource": "Drag onto a table or the page",
+      "expand": "Show columns",
+      "collapse": "Hide columns",
+      "rows": "1 row | {count} rows",
+      "usedIn": "Used in: {tables}",
+      "dragColumn": "Drag onto a table to add this column"
+    },
+    "filter": {
+      "title": "Filter & sort",
+      "applied": "Applied filters",
+      "remove": "Remove",
+      "sortBy": "Sort by",
+      "defaultOrder": "Default order",
+      "search": "Search {column}",
+      "selectAll": "Select all",
+      "clear": "Clear",
+      "clearAll": "Clear all",
+      "noValues": "Nothing to choose",
+      "noMatchingValues": "No value matches your search",
+      "rangeHint": "In this data: {from} to {to}",
+      "quickPicks": "Quick picks",
+      "min": "Min",
+      "max": "Max",
+      "from": "From",
+      "to": "To",
+      "under": "Under {value}",
+      "andAbove": "{value} and above",
+      "range": "{from} – {to}",
+      "atLeast": "{value} or more",
+      "atMost": "Up to {value}",
+      "onOrAfter": "From {value}",
+      "onOrBefore": "Until {value}",
+      "moreValues": "{values} +{count}",
+      "matchCount": "1 row matches | {count} rows match"
+    },
+    "sort": {
+      "text": {
+        "asc": "A to Z",
+        "desc": "Z to A"
+      },
+      "number": {
+        "asc": "Low to high",
+        "desc": "High to low"
+      },
+      "date": {
+        "asc": "Oldest first",
+        "desc": "Newest first"
+      }
+    },
+    "style": {
+      "label": "Table style",
+      "preset": "Built-in style (can't be changed)",
+      "customize": "Customize",
+      "customizeHint": "Changes apply to this table only. The style it came from stays as it is; save your changes as a table style to reuse them.",
+      "customizedFrom": "Changed from {name} for this table",
+      "reset": "Reset",
+      "parts": {
+        "header": "Header",
+        "rows": "Rows",
+        "totals": "Totals",
+        "lines": "Lines"
+      },
+      "fields": {
+        "headerBackground": "Background",
+        "headerText": "Text",
+        "rowBackground": "Background",
+        "rowText": "Text",
+        "stripe": "Stripe",
+        "totalsBackground": "Background",
+        "totalsText": "Text",
+        "lineColor": "Lines",
+        "ruleColor": "Header line"
+      },
+      "bold": "Bold",
+      "stripes": "Striped rows",
+      "lines": {
+        "grid": "Grid",
+        "rows": "Rows only",
+        "none": "None"
+      },
+      "fontSize": "Text size",
+      "onlyThisTable": "These changes are kept for this table only. Save them as a table style to use them on other tables.",
+      "saveAs": "Save as table style",
+      "update": "Update \"{name}\"",
+      "name": "Style name",
+      "namePlaceholder": "e.g. Finance blue",
+      "save": "Save",
+      "defaultName": "My style",
+      "saved": "Table style \"{name}\" saved",
+      "updated": "Table style \"{name}\" updated",
+      "rename": "Rename",
+      "delete": "Delete",
+      "deleteConfirm": "Delete \"{name}\"?",
+      "savedStyle": "Saved style: {name}",
+      "needData": "Add data to the table first, then change its look here.",
+      "usingStyle": "Using {name}"
+    }
   }
 }

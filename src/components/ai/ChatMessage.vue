@@ -1,5 +1,17 @@
 <script setup lang="ts">
+import {
+  Bot,
+  Check,
+  CircleX,
+  Copy,
+  Info,
+  MessageSquare,
+  User,
+  Wrench,
+} from '@lucide/vue';
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { LOCALE_TAGS, type AppLocale } from '@/i18n';
 import type { ChatMessage } from '@/composables/useAIChat';
 import ToolCallDisplay from './ToolCallDisplay.vue';
 
@@ -25,18 +37,20 @@ const messageClass = computed(() => ({
 // Icon mapping
 const roleIcon = computed(() => {
   switch (props.message.role) {
-    case 'user': return '👤';
-    case 'assistant': return '🤖';
-    case 'tool': return '🔧';
-    case 'error': return '❌';
-    case 'system': return 'ℹ️';
-    default: return '💬';
+    case 'user': return User;
+    case 'assistant': return Bot;
+    case 'tool': return Wrench;
+    case 'error': return CircleX;
+    case 'system': return Info;
+    default: return MessageSquare;
   }
 });
 
+const { locale, t } = useI18n();
+
 // Format time
 const formattedTime = computed(() => {
-  return props.message.timestamp.toLocaleTimeString('zh-CN', {
+  return props.message.timestamp.toLocaleTimeString(LOCALE_TAGS[locale.value as AppLocale] ?? 'en-US', {
     hour: '2-digit',
     minute: '2-digit'
   });
@@ -68,17 +82,17 @@ async function copyMessage() {
     <div v-else class="message-content">
       <!-- Header -->
       <div class="message-header">
-        <span class="role-icon">{{ roleIcon }}</span>
-        <span class="role-name">{{ message.role === 'user' ? 'You' : 'AI Assistant' }}</span>
+        <component :is="roleIcon" class="role-icon" :size="16" />
+        <span class="role-name">{{ message.role === 'user' ? t('ai.message.you') : t('ai.title') }}</span>
         <span class="timestamp">{{ formattedTime }}</span>
         <button
           v-if="message.role === 'assistant' && message.content"
           class="copy-btn"
           @click="copyMessage"
-          :title="copied ? 'Copied' : 'Copy message'"
+          :title="copied ? t('ai.message.copied') : t('ai.message.copy')"
         >
-          <svg v-if="!copied" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          <span v-else>✓</span>
+          <Copy v-if="!copied" :size="14" />
+          <Check v-else :size="14" />
         </button>
       </div>
 

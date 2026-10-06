@@ -66,9 +66,9 @@
     <div v-if="selectedCategory === 'time'" class="format-options">
       <label class="control-label">{{ t("formatSelector.timeStyle") }}</label>
       <select v-model="selectedPreset" @change="applyPreset" class="form-select">
-        <option value="hh:mm a">02:30 PM (12-hour)</option>
-        <option value="HH:mm:ss">14:30:00 (24-hour)</option>
-        <option value="yyyy-MM-dd HH:mm">2026-09-22 14:30 (Date & Time)</option>
+        <option value="hh:mm a">02:30 PM ({{ t("formatSelector.hour12") }})</option>
+        <option value="HH:mm:ss">14:30:00 ({{ t("formatSelector.hour24") }})</option>
+        <option value="yyyy-MM-dd HH:mm">2026-09-22 14:30 ({{ t("formatSelector.dateTime") }})</option>
       </select>
     </div>
 
@@ -223,7 +223,7 @@ const previewText = computed(() => {
       if (selectedPreset.value === '#,##0.0%') return '75.4%';
       return '75.40%';
     default:
-      return 'Plain Text';
+      return t('formatSelector.plainTextPreview');
   }
 });
 

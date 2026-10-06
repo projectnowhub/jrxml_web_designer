@@ -8,7 +8,7 @@
     <div class="modal-content" :class="contentClass" :style="contentStyle">
       <div class="modal-header" v-if="showHeader">
         <h3 class="modal-title">{{ title }}</h3>
-        <n-button type="default" size="small" quaternary circle @click="handleClose" v-if="showCloseButton">×</n-button>
+        <n-button type="default" size="small" quaternary circle @click="handleClose" v-if="showCloseButton"><X :size="16" /></n-button>
       </div>
       <div class="modal-body" :class="bodyClass" :style="{ height: bodyHeight, ...bodyStyle }">
         <slot></slot>
@@ -29,7 +29,7 @@
     <div class="modal-content" :class="contentClass" :style="contentStyle">
       <div class="modal-header" v-if="showHeader">
         <h3 class="modal-title">{{ title }}</h3>
-        <n-button type="default" size="small" quaternary circle @click="handleClose" v-if="showCloseButton">×</n-button>
+        <n-button type="default" size="small" quaternary circle @click="handleClose" v-if="showCloseButton"><X :size="16" /></n-button>
       </div>
       <div class="modal-body" :class="bodyClass" :style="{ height: bodyHeight, ...bodyStyle }">
         <slot></slot>
@@ -45,6 +45,7 @@
 </template>
 
 <script setup lang="ts">
+import { X } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
 import { NButton } from 'naive-ui';
 import { ref, watch } from 'vue';

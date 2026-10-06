@@ -27,26 +27,22 @@ export interface HtmlRendererOptions {
 }
 
 const BAND_DISPLAY_NAMES: Record<string, string> = {
-  title: "Title",
   pageHeader: "Page Header",
   columnHeader: "Column Header",
   detail: "Detail",
   columnFooter: "Column Footer",
   pageFooter: "Page Footer",
-  summary: "Summary",
   background: "Background",
   lastPageFooter: "Last Page Footer",
   noData: "No Data",
 };
 
 const BAND_ORDER = [
-  "title",
   "pageHeader",
   "columnHeader",
   "detail",
   "columnFooter",
   "pageFooter",
-  "summary",
   "background",
 ];
 
@@ -167,20 +163,6 @@ function buildTextStyle(element: DesignElement): string {
       Bottom: "flex-end",
     };
     style += `display: flex; align-items: ${valignMap[element.verticalAlignment] || "flex-start"};`;
-  }
-
-  if (element.textAdjust) {
-    switch (element.textAdjust) {
-      case "StretchHeight":
-        style += "overflow: visible;";
-        break;
-      case "CutText":
-        style += "overflow: hidden;";
-        break;
-      case "ShrinkToFit":
-        style += "overflow: hidden; white-space: nowrap;";
-        break;
-    }
   }
 
   if ("rotation" in element && element.rotation) {
@@ -519,12 +501,10 @@ export function renderToMultiPageHtml(
 
   // Calculate fixed band heights
   const fixedBandTypes = [
-    "title",
     "pageHeader",
     "columnHeader",
     "columnFooter",
     "pageFooter",
-    "summary",
   ];
   let fixedHeight = 0;
   for (const bt of fixedBandTypes) {
@@ -560,17 +540,6 @@ export function renderToMultiPageHtml(
   for (let page = 0; page < totalPages; page++) {
     let bandsHtml = "";
 
-    // Title only on first page
-    if (page === 0 && bandsMap["title"]) {
-      bandsHtml += renderBand(
-        "title",
-        bandsMap["title"],
-        opts.scale,
-        opts.showBorders,
-        opts.showElementBorders,
-        opts.showBandLabels,
-      );
-    }
 
     // Page header on every page
     if (bandsMap["pageHeader"]) {
@@ -642,17 +611,6 @@ export function renderToMultiPageHtml(
       );
     }
 
-    // Summary only on last page
-    if (page === totalPages - 1 && bandsMap["summary"]) {
-      bandsHtml += renderBand(
-        "summary",
-        bandsMap["summary"],
-        opts.scale,
-        opts.showBorders,
-        opts.showElementBorders,
-        opts.showBandLabels,
-      );
-    }
 
     const pageHtml = `<!DOCTYPE html>
 <html>
@@ -725,12 +683,11 @@ function extractFieldsFromBands(
   for (const band of bands) {
     if (!band.elements) continue;
     for (const el of band.elements) {
-      if (el.type === "table" && (el as TableElement).columns) {
-        for (const col of (el as TableElement).columns) {
-          if (!seen.has(col.name)) {
-            seen.add(col.name);
-            fields.push({ name: col.name, label: col.name });
-          }
+      const binding = el.type === "table" ? (el as TableElement).binding : undefined;
+      for (const col of binding?.columns ?? []) {
+        if (!seen.has(col.key)) {
+          seen.add(col.key);
+          fields.push({ name: col.key, label: col.label });
         }
       }
     }
@@ -775,27 +732,27 @@ function generateMockRows(
     const row: string[] = [];
     for (const field of fields) {
       const lower = field.name.toLowerCase();
-      if (/^id$|编号|序号/.test(lower)) row.push(String(i + 1));
-      else if (/name|姓名|名称|员工|用户|客户/.test(lower))
+      if (/^id$|^no$|number/.test(lower)) row.push(String(i + 1));
+      else if (/name|customer|employee|user/.test(lower))
         row.push(names[i % names.length]!);
-      else if (/phone|电话|手机/.test(lower))
+      else if (/phone|tel|mobile/.test(lower))
         row.push(
-          `138${String(Math.floor(Math.random() * 100000000)).padStart(8, "0")}`,
+          `555-${String(Math.floor(Math.random() * 10000000)).padStart(7, "0").replace(/^(\d{3})/, "$1-")}`,
         );
-      else if (/date|日期|时间/.test(lower)) {
+      else if (/date|time/.test(lower)) {
         const d = new Date(Date.now() - Math.random() * 86400000 * 365);
         row.push(
           `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
         );
-      } else if (/amount|金额|价格|费用|工资/.test(lower))
+      } else if (/amount|price|cost|salary/.test(lower))
         row.push((Math.floor(Math.random() * 99999) + 1).toLocaleString());
-      else if (/status|状态/.test(lower))
+      else if (/status/.test(lower))
         row.push(statuses[i % statuses.length]!);
-      else if (/city|城市/.test(lower))
+      else if (/city/.test(lower))
         row.push(["New York", "Los Angeles", "Chicago", "Houston", "Phoenix"][i % 5]!);
-      else if (/sex|gender|性别/.test(lower))
+      else if (/sex|gender/.test(lower))
         row.push(i % 2 === 0 ? "Male" : "Female");
-      else if (/age|年龄/.test(lower))
+      else if (/age/.test(lower))
         row.push(String(20 + Math.floor(Math.random() * 40)));
       else row.push(`Data${i + 1}`);
     }

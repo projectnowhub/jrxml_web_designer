@@ -1,197 +1,67 @@
-import { ref } from 'vue';
-import type { Ref } from 'vue';
-import type { Band, DesignElement, ReportProperties } from '@/types';
+import { ref, watch } from 'vue';
 
-export function useSnapAlignment(options: {
-  bands: Ref<Band[]>;
-  reportProperties: Ref<ReportProperties>;
-  highlightedBandIndex: Ref<number | null>;
-  bandSpacing: number;
-  threshold?: number;
-}) {
-  const enableSnapToGrid = ref(false);
-  const enableSnapToAlignment = ref(true);
+// Guide lines shown while an element snaps, in the coordinates of one band on
+// one page sheet: x values are vertical lines, y values horizontal ones
+export interface AlignmentGuideLines {
+  bandIndex: number;
+  pageIndex: number;
+  x: number[];
+  y: number[];
+}
 
-  const alignmentLines = ref({
-    horizontal: [] as number[],
-    vertical: [] as number[]
+const STORAGE_KEY = 'designerSnapSettings';
+
+interface SnapSettings {
+  snapToGrid: boolean;
+  snapToAlignment: boolean;
+  showGrid: boolean;
+}
+
+const DEFAULTS: SnapSettings = { snapToGrid: true, snapToAlignment: true, showGrid: true };
+
+function loadSettings(): SnapSettings {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    return { ...DEFAULTS, ...(saved && typeof saved === 'object' ? saved : {}) };
+  } catch {
+    return { ...DEFAULTS };
+  }
+}
+
+// Snap and grid toggles (remembered per browser) and the guides being shown
+export function useSnapAlignment() {
+  const saved = loadSettings();
+  const enableSnapToGrid = ref(saved.snapToGrid);
+  const enableSnapToAlignment = ref(saved.snapToAlignment);
+  const showGrid = ref(saved.showGrid);
+
+  watch([enableSnapToGrid, enableSnapToAlignment, showGrid], ([snapToGrid, snapToAlignment, grid]) => {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ snapToGrid, snapToAlignment, showGrid: grid }),
+      );
+    } catch {
+      // Storage unavailable: the toggles still work for this session
+    }
   });
 
-  const threshold = options.threshold ?? 3;
+  const alignmentLines = ref<AlignmentGuideLines | null>(null);
 
-  const detectAlignmentLines = (currentElement: DesignElement, currentBandIndex: number, updateState: boolean = true) => {
-    const verticalAlignmentLines: number[] = [];
-    const horizontalAlignmentLines: number[] = [];
-
-    const snapInfo = {
-      horizontal: null as { position: number; offset: number } | null,
-      vertical: null as { position: number; offset: number } | null
-    };
-
-    const { leftMargin = 0, topMargin = 0 } = options.reportProperties.value || ({} as ReportProperties);
-
-    let bandOffsetY = 0;
-    options.bands.value.forEach((band, bandIndex) => {
-      band.elements.forEach((element) => {
-        if (bandIndex === currentBandIndex && element === currentElement) return;
-
-        const currentLeft = currentElement.x;
-        const currentRight = currentElement.x + currentElement.width;
-        const currentTop = currentElement.y;
-        const currentBottom = currentElement.y + currentElement.height;
-        const currentCenterX = currentElement.x + currentElement.width / 2;
-        const currentCenterY = currentElement.y + currentElement.height / 2;
-
-        const otherLeft = element.x;
-        const otherRight = element.x + element.width;
-        const otherTop = element.y;
-        const otherBottom = element.y + element.height;
-        const otherCenterX = element.x + element.width / 2;
-        const otherCenterY = element.y + element.height / 2;
-
-        if (Math.abs(currentLeft - otherLeft) < threshold) {
-          const linePosition = otherLeft + leftMargin;
-          verticalAlignmentLines.push(linePosition);
-          if (!snapInfo.horizontal || Math.abs(currentLeft - otherLeft) < Math.abs(snapInfo.horizontal.offset)) {
-            snapInfo.horizontal = { position: linePosition, offset: otherLeft - currentLeft };
-          }
-        }
-
-        if (Math.abs(currentRight - otherRight) < threshold) {
-          const linePosition = otherRight + leftMargin;
-          verticalAlignmentLines.push(linePosition);
-          if (!snapInfo.horizontal || Math.abs(currentRight - otherRight) < Math.abs(snapInfo.horizontal.offset)) {
-            snapInfo.horizontal = { position: linePosition, offset: otherRight - currentRight };
-          }
-        }
-
-        if (Math.abs(currentCenterX - otherCenterX) < threshold) {
-          const linePosition = otherCenterX + leftMargin;
-          verticalAlignmentLines.push(linePosition);
-          if (!snapInfo.horizontal || Math.abs(currentCenterX - otherCenterX) < Math.abs(snapInfo.horizontal.offset)) {
-            snapInfo.horizontal = { position: linePosition, offset: otherCenterX - currentCenterX };
-          }
-        }
-
-        if (Math.abs(currentLeft - otherRight) < threshold) {
-          const linePosition = otherRight + leftMargin;
-          verticalAlignmentLines.push(linePosition);
-          if (!snapInfo.horizontal || Math.abs(currentLeft - otherRight) < Math.abs(snapInfo.horizontal.offset)) {
-            snapInfo.horizontal = { position: linePosition, offset: otherRight - currentLeft };
-          }
-        }
-
-        if (Math.abs(currentRight - otherLeft) < threshold) {
-          const linePosition = otherLeft + leftMargin;
-          verticalAlignmentLines.push(linePosition);
-          if (!snapInfo.horizontal || Math.abs(currentRight - otherLeft) < Math.abs(snapInfo.horizontal.offset)) {
-            snapInfo.horizontal = { position: linePosition, offset: otherLeft - currentRight };
-          }
-        }
-
-        if (bandIndex === currentBandIndex) {
-          if (Math.abs(currentTop - otherTop) < threshold) {
-            const linePosition = otherTop + topMargin + bandOffsetY;
-            horizontalAlignmentLines.push(linePosition);
-            if (!snapInfo.vertical || Math.abs(currentTop - otherTop) < Math.abs(snapInfo.vertical.offset)) {
-              snapInfo.vertical = { position: linePosition, offset: otherTop - currentTop };
-            }
-          }
-
-          if (Math.abs(currentBottom - otherBottom) < threshold) {
-            const linePosition = otherBottom + topMargin + bandOffsetY;
-            horizontalAlignmentLines.push(linePosition);
-            if (!snapInfo.vertical || Math.abs(currentBottom - otherBottom) < Math.abs(snapInfo.vertical.offset)) {
-              snapInfo.vertical = { position: linePosition, offset: otherBottom - currentBottom };
-            }
-          }
-
-          if (Math.abs(currentCenterY - otherCenterY) < threshold) {
-            const linePosition = otherCenterY + topMargin + bandOffsetY;
-            horizontalAlignmentLines.push(linePosition);
-            if (!snapInfo.vertical || Math.abs(currentCenterY - otherCenterY) < Math.abs(snapInfo.vertical.offset)) {
-              snapInfo.vertical = { position: linePosition, offset: otherCenterY - currentCenterY };
-            }
-          }
-
-          if (Math.abs(currentTop - otherBottom) < threshold) {
-            const linePosition = otherBottom + topMargin + bandOffsetY;
-            horizontalAlignmentLines.push(linePosition);
-            if (!snapInfo.vertical || Math.abs(currentTop - otherBottom) < Math.abs(snapInfo.vertical.offset)) {
-              snapInfo.vertical = { position: linePosition, offset: otherBottom - currentTop };
-            }
-          }
-
-          if (Math.abs(currentBottom - otherTop) < threshold) {
-            const linePosition = otherTop + topMargin + bandOffsetY;
-            horizontalAlignmentLines.push(linePosition);
-            if (!snapInfo.vertical || Math.abs(currentBottom - otherTop) < Math.abs(snapInfo.vertical.offset)) {
-              snapInfo.vertical = { position: linePosition, offset: otherTop - currentBottom };
-            }
-          }
-        } else if (options.highlightedBandIndex.value === bandIndex) {
-          let sourceBandOffsetY = 0;
-          let targetBandOffsetY = 0;
-
-          for (let i = 0; i < currentBandIndex; i++) {
-            sourceBandOffsetY += options.bands.value[i]?.height || 0;
-            if (i < currentBandIndex - 1) {
-              sourceBandOffsetY += options.bandSpacing;
-            }
-          }
-
-          for (let i = 0; i < bandIndex; i++) {
-            targetBandOffsetY += options.bands.value[i]?.height || 0;
-            if (i < bandIndex - 1) {
-              targetBandOffsetY += options.bandSpacing;
-            }
-          }
-
-          const relativeY = currentTop + (sourceBandOffsetY - targetBandOffsetY);
-          const relativeBottom = currentBottom + (sourceBandOffsetY - targetBandOffsetY);
-          const relativeCenterY = currentCenterY + (sourceBandOffsetY - targetBandOffsetY);
-
-          if (Math.abs(relativeY - otherTop) < threshold) {
-            horizontalAlignmentLines.push(otherTop + topMargin + targetBandOffsetY);
-          }
-          if (Math.abs(relativeBottom - otherBottom) < threshold) {
-            horizontalAlignmentLines.push(otherBottom + topMargin + targetBandOffsetY);
-          }
-          if (Math.abs(relativeCenterY - otherCenterY) < threshold) {
-            horizontalAlignmentLines.push(otherCenterY + topMargin + targetBandOffsetY);
-          }
-          if (Math.abs(relativeY - otherBottom) < threshold) {
-            horizontalAlignmentLines.push(otherBottom + topMargin + targetBandOffsetY);
-          }
-          if (Math.abs(relativeBottom - otherTop) < threshold) {
-            horizontalAlignmentLines.push(otherTop + topMargin + targetBandOffsetY);
-          }
-        }
-      });
-
-      bandOffsetY += band.height + options.bandSpacing;
-    });
-
-    if (updateState) {
-      alignmentLines.value = {
-        horizontal: [...new Set(horizontalAlignmentLines)],
-        vertical: [...new Set(verticalAlignmentLines)]
-      };
-    }
-
-    return snapInfo;
+  const setAlignmentLines = (lines: AlignmentGuideLines | null) => {
+    alignmentLines.value = lines && (lines.x.length || lines.y.length) ? lines : null;
   };
 
   const clearAlignmentLines = () => {
-    alignmentLines.value = { horizontal: [], vertical: [] };
+    alignmentLines.value = null;
   };
 
   return {
     enableSnapToGrid,
     enableSnapToAlignment,
+    showGrid,
     alignmentLines,
-    detectAlignmentLines,
-    clearAlignmentLines
+    setAlignmentLines,
+    clearAlignmentLines,
   };
 }
-

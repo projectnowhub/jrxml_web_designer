@@ -66,7 +66,6 @@ export interface Variable {
 
 export interface ReportStyle {
   name: string;
-  parentStyle?: string;
   mode?: string;
   backcolor?: string;
   forecolor?: string;

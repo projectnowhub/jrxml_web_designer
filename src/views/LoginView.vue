@@ -9,49 +9,17 @@
     <div class="login-shell">
       <div class="login-card">
         <div class="brand-wrap">
-          <div class="brand-icon" aria-label="CDP brand logo">
-            <svg viewBox="0 0 64 64" aria-hidden="true">
-              <defs>
-                <linearGradient
-                  id="brand-gradient"
-                  x1="0%"
-                  x2="100%"
-                  y1="0%"
-                  y2="100%"
-                >
-                  <stop offset="0%" stop-color="#7c5cf7" />
-                  <stop offset="100%" stop-color="#6366f1" />
-                </linearGradient>
-              </defs>
-              <rect
-                x="8"
-                y="10"
-                width="48"
-                height="42"
-                rx="14"
-                fill="url(#brand-gradient)"
-                opacity="0.18"
-              />
-              <path
-                d="M18 40V24h7v16M29 40V17h7v23M40 40V28h7v12"
-                fill="none"
-                stroke="url(#brand-gradient)"
-                stroke-width="4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+          <div class="brand-icon">
+            <img src="/assets/cdp-logo.png" :alt="t('auth.brandLogo')" />
           </div>
           <div class="brand-text">CDP PLATFORM</div>
         </div>
 
         <div class="heading-wrap">
-          <h1>Welcome back</h1>
+          <h1>{{ t("auth.welcomeBack") }}</h1>
           <p>
             {{
-              isDesktop
-                ? "Desktop Application"
-                : "Sign in to continue to your workspace"
+              isDesktop ? t("auth.desktopApplication") : t("auth.signInSubtitle")
             }}
           </p>
         </div>
@@ -61,7 +29,7 @@
           class="tenant-form"
           @submit.prevent="handleTenantSubmit"
         >
-          <label for="tenant-url">Enter your tenant URL to get started</label>
+          <label for="tenant-url">{{ t("auth.enterTenantUrl") }}</label>
           <input
             id="tenant-url"
             v-model="tenantUrlInput"
@@ -70,15 +38,15 @@
             :disabled="isVerifyingTenant"
             required
           />
-          <p v-if="tenantFormError" class="tenant-form-error">
-            {{ tenantFormError }}
+          <p v-if="tenantFormErrorKey" class="tenant-form-error">
+            {{ t(tenantFormErrorKey) }}
           </p>
           <button
             class="primary-button"
             type="submit"
             :disabled="isVerifyingTenant"
           >
-            {{ isVerifyingTenant ? "Verifying..." : "Verify Tenant" }}
+            {{ isVerifyingTenant ? t("auth.verifying") : t("auth.verifyTenant") }}
           </button>
         </form>
 
@@ -90,44 +58,21 @@
           @click="handleLogin"
         >
           <span class="icon"
-            ><svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M10 17l5-5-5-5M15 12H3M13 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              /></svg
-          ></span>
-          {{ isLoading ? "Signing in..." : "Continue to CDP" }}
+            ><LogIn aria-hidden="true" /></span>
+          {{ isLoading ? t("auth.signingIn") : t("auth.continueToCdp") }}
         </button>
 
         <div class="status-box" :class="{ error: isError }">
           <span class="status-icon" aria-hidden="true">
-            <svg v-if="isError" viewBox="0 0 24 24">
-              <path
-                d="M12 8v5M12 16h.01M9.09 3.6L2.7 16.2A2 2 0 004.6 19h14.8a2 2 0 001.9-2.8L14.91 3.6a2 2 0 00-3.82 0z"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <svg v-else viewBox="0 0 24 24">
-              <path
-                d="M12 2l8 4v5c0 5-3.4 9.7-8 11-4.6-1.3-8-6-8-11V6l8-4zm-1.1 12.2l-2.5-2.5L7 12.7l3.9 3.9 7-7L17 8.2l-6.1 6z"
-                fill="currentColor"
-              />
-            </svg>
+            <TriangleAlert v-if="isError" />
+            <ShieldCheck v-else />
           </span>
           <span>{{
             isError
-              ? errorMessage
+              ? t(errorMessageKey || "auth.signInFailed")
               : isDesktop && !isTenantVerified
-                ? "Verify your tenant URL before continuing."
-                : "Secure access to your workspace and dashboard."
+                ? t("auth.verifyTenantFirst")
+                : t("auth.secureAccess")
           }}</span>
         </div>
 
@@ -137,43 +82,18 @@
         >
           <div class="tenant-info-main">
             <div class="tenant-info-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="9"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <path
-                  d="M12 8h.01M12 11v5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-              </svg>
+              <Info />
             </div>
             <div class="tenant-info-details">
-              <p class="tenant-info-label">Current Tenant</p>
+              <p class="tenant-info-label">{{ t("auth.currentTenant") }}</p>
               <p class="tenant-info-url">{{ tenantUrl }}</p>
               <button
                 type="button"
                 class="change-url-button"
                 @click="changeTenantUrl"
               >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-                Change Tenant URL
+                <SquarePen aria-hidden="true" />
+                {{ t("auth.changeTenantUrl") }}
               </button>
             </div>
           </div>
@@ -188,27 +108,28 @@
           <span class="copyright"
             >&copy; {{ new Date().getFullYear() }} CDP Platform</span
           >
-          <button type="button" class="lang-button">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 0c2.2 1.8 3.8 4.9 3.8 8s-1.6 6.2-3.8 8c-2.2-1.8-3.8-4.9-3.8-8s1.6-6.2 3.8-8zm-1.5 0h3c.3 1.6.8 3.1 1.6 4.4-.8 1.2-1.3 2.7-1.6 4.4h-3c-.3-1.7-.8-3.2-1.6-4.4.8-1.3 1.3-2.8 1.6-4.4zm-3 1.5c-.9 1.3-1.5 3.1-1.7 5h3.1c.3-1.9 1-3.6 1.8-5H7.5zm9 0c.8 1.4 1.5 3.1 1.8 5h-3.1c-.3-1.9-1-3.6-1.8-5h3.1zm-9 12.5c.2 1.9.8 3.7 1.7 5h3.1c-.8-1.4-1.5-3.1-1.8-5H7.5zm9 0c-.3 1.9-1 3.6-1.8 5h-3.1c.2-1.9.8-3.7 1.7-5h3.2z"
-                fill="currentColor"
-              />
-            </svg>
-            English
-          </button>
+          <LanguageSwitcher />
         </div>
       </div>
 
-      <p class="footnote">Secure &middot; Encrypted</p>
+      <p class="footnote">{{ t("auth.secureEncrypted") }}</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import {
+  Info,
+  LogIn,
+  ShieldCheck,
+  SquarePen,
+  TriangleAlert,
+} from "@lucide/vue";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { desktopLogin, login } from "../services/authService";
+import LanguageSwitcher from "../components/common/LanguageSwitcher.vue";
 import {
   getTenantIdFromUrl,
   verifyTenant,
@@ -220,15 +141,17 @@ import {
   TENANT_URL_KEY,
 } from "../services/apiClient";
 
+const { t } = useI18n();
 const router = useRouter();
 const isLoading = ref(false);
 const isError = ref(false);
-const errorMessage = ref("");
+// Messages are stored as translation keys, so they follow a language switch
+const errorMessageKey = ref("");
 const tenantUrl = ref(localStorage.getItem(TENANT_URL_KEY) ?? "");
 const tenantUrlInput = ref(tenantUrl.value);
 const isTenantVerified = ref<boolean | null>(null);
 const isVerifyingTenant = ref(false);
-const tenantFormError = ref("");
+const tenantFormErrorKey = ref("");
 
 const isDesktop = computed(
   () =>
@@ -269,25 +192,23 @@ onMounted(async () => {
 
     isError.value = true;
     isTenantVerified.value = false;
-    errorMessage.value =
-      "Tenant verification failed. Please contact your administrator to get the proper URL to proceed further.";
+    errorMessageKey.value = "auth.tenantVerificationFailed";
   } catch (error) {
     console.error("Tenant verification failed on login page:", error);
 
     isError.value = true;
     isTenantVerified.value = false;
-    errorMessage.value =
-      "Tenant verification failed. Please contact your administrator to get the proper URL to proceed further.";
+    errorMessageKey.value = "auth.tenantVerificationFailed";
   }
 });
 
 const handleTenantSubmit = async () => {
-  tenantFormError.value = "";
+  tenantFormErrorKey.value = "";
   const normalizedUrl = tenantUrlInput.value.trim();
   const tenantId = getTenantIdFromUrl(normalizedUrl);
 
   if (!tenantId) {
-    tenantFormError.value = "Please enter a valid tenant URL.";
+    tenantFormErrorKey.value = "auth.invalidTenantUrl";
     return;
   }
 
@@ -299,13 +220,12 @@ const handleTenantSubmit = async () => {
       localStorage.setItem(TENANT_URL_KEY, normalizedUrl);
     } else {
       isTenantVerified.value = false;
-      tenantFormError.value =
-        "Tenant verification failed. Please contact your administrator.";
+      tenantFormErrorKey.value = "auth.tenantVerificationContactAdmin";
     }
   } catch (error) {
     console.error("Tenant verification failed:", error);
     isTenantVerified.value = false;
-    tenantFormError.value = "Tenant verification failed. Please try again.";
+    tenantFormErrorKey.value = "auth.tenantVerificationRetry";
   } finally {
     isVerifyingTenant.value = false;
   }
@@ -316,9 +236,9 @@ const changeTenantUrl = () => {
   tenantUrl.value = "";
   tenantUrlInput.value = "";
   isTenantVerified.value = null;
-  tenantFormError.value = "";
+  tenantFormErrorKey.value = "";
   isError.value = false;
-  errorMessage.value = "";
+  errorMessageKey.value = "";
 };
 
 const handleLogin = async () => {
@@ -338,6 +258,7 @@ const handleLogin = async () => {
     await login();
   } catch (error) {
     console.error("Login failed:", error);
+    errorMessageKey.value = "auth.signInFailed";
     isError.value = true;
   } finally {
     isLoading.value = false;
@@ -450,9 +371,10 @@ const handleLogin = async () => {
     0 4px 16px rgba(23, 20, 44, 0.12);
 }
 
-.brand-icon svg {
+.brand-icon img {
   width: 34px;
   height: 34px;
+  object-fit: contain;
 }
 
 .brand-text {
@@ -730,35 +652,6 @@ const handleLogin = async () => {
 .copyright {
   color: #8a84a3;
   font-size: 11px;
-}
-
-.lang-button {
-  border: 1px solid rgba(28, 27, 38, 0.12);
-  background: transparent;
-  color: #6f6a7e;
-  border-radius: 0.5rem;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0 0.6rem;
-  font-size: 11px;
-  cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    background 0.2s ease,
-    color 0.2s ease;
-}
-
-.lang-button:hover {
-  border-color: rgba(124, 92, 247, 0.28);
-  background: rgba(124, 92, 247, 0.08);
-  color: #6440f4;
-}
-
-.lang-button svg {
-  width: 11px;
-  height: 11px;
 }
 
 .footnote {

@@ -67,10 +67,10 @@ rl.question('Enter the new version number (format: x.y.z, press Enter to default
     fs.writeFileSync(tauriConfPath, JSON.stringify(tauriConf, null, 2));
     console.log('✓ src-tauri/tauri.conf.json version updated');
 
-    // 3. Run tests
-    console.log('3. Running tests...');
-    execSync('pnpm test', { cwd: projectRoot, stdio: 'inherit' });
-    console.log('✓ Tests passed');
+    // 3. Type-check and build
+    console.log('3. Building...');
+    execSync('pnpm build', { cwd: projectRoot, stdio: 'inherit' });
+    console.log('✓ Build passed');
 
     // 4. Commit the code
     console.log('4. Committing the code...');

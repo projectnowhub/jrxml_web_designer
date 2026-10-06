@@ -1,15 +1,14 @@
 <template>
   <div class="color-picker-with-opacity">
-    <div class="color-picker-row">
+    <ColorSwatchPicker
+      :model-value="localColor"
+      @update:model-value="localColor = $event; updateColor()"
+      class="color-input"
+      :aria-label="t('properties.color')"
+    />
+    <label class="opacity-field">
+      <span class="opacity-label">{{ t('properties.opacity') }}</span>
       <input
-        v-model="localColor"
-        type="color"
-        @input="updateColor"
-        class="color-input"
-      />
-    </div>
-    <div class="color-opacity-row">
-        <input
         type="range"
         min="0"
         max="1"
@@ -18,12 +17,17 @@
         @input="updateColor"
         class="opacity-slider"
       />
-      </div>
+      <span class="opacity-value">{{ Math.round(localOpacity * 100) }}%</span>
+    </label>
   </div>
 </template>
 
 <script setup lang="ts">
+import ColorSwatchPicker from '../../common/ColorSwatchPicker.vue';
 import { ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 interface Props {
   modelValue: string | undefined;
@@ -128,29 +132,49 @@ watch(localColor, (newColor) => {
 
 <style scoped>
 .color-picker-with-opacity {
-  width: 100%;
-}
-
-.color-picker-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 10px;
   width: 100%;
 }
 
 .color-input {
-  width: 100%;
+  flex: 0 0 44px;
+  height: 30px;
   padding: 0;
-  border: 1px solid #ddd;
+  border: 1px solid var(--prop-border-color, #e5e7eb);
+  border-radius: 6px;
   cursor: pointer;
-  height: 18px;
-  flex-shrink: 0;
+}
+
+.opacity-field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.opacity-label {
+  font-size: 11px;
+  color: var(--prop-text-secondary, #6b7280);
+  white-space: nowrap;
 }
 
 .opacity-slider {
-  width: 100%;
-  height: 6px;
+  flex: 1;
+  min-width: 0;
+  height: 4px;
   padding: 0;
   margin: 0;
+  accent-color: var(--prop-border-focus, #1890ff);
+}
+
+.opacity-value {
+  flex: 0 0 34px;
+  text-align: right;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--prop-text-secondary, #6b7280);
 }
 </style>

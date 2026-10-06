@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import {
+  ChevronDown,
+  ChevronUp,
+  X,
+} from "@lucide/vue";
+import {
   ref,
   computed,
   nextTick,
@@ -10,7 +15,6 @@ import {
 import { useI18n } from "vue-i18n";
 import { NButton, NAlert } from "naive-ui";
 import ResizablePanel from "./ResizablePanel.vue";
-import PdfPreviewModal from "../modals/PdfPreviewModal.vue";
 import CodeMirrorEditor from "../editor/CodeMirrorEditor.vue";
 
 import {
@@ -20,7 +24,7 @@ import {
   type ValidationError,
   type AutoFixResult,
 } from "../../utils/jrxml/xsdValidator";
-import { html_beautify } from "js-beautify";
+import { formatXml } from "../../utils/jrxml/formatXml";
 
 import type { Band, ReportProperties } from "../../types";
 import {
@@ -53,11 +57,11 @@ interface Props {
   allBandTypes: any[];
   selectedBandTypes: BandType[];
   jrxmlContent: string;
-  previewServerUrl?: string;
 }
 
 // Define component events
 interface Emits {
+  (e: "open-preview"): void;
   (e: "update:visible", value: boolean): void;
   (e: "size-change", value: number): void;
   (e: "update:report-properties", value: any): void;
@@ -68,6 +72,9 @@ interface Emits {
   (e: "regenerate-jrxml"): void;
   (e: "download-jrxml"): void;
   (e: "band-selection-change"): void;
+  // Before a page size/margin change (undo snapshot), and after it (fit content)
+  (e: "save-state"): void;
+  (e: "page-setup-change"): void;
 }
 
 // Use defineProps and defineEmits
@@ -80,7 +87,8 @@ const emit = defineEmits<Emits>();
 
 // Tab-related state
 const activeTab = ref("pageSettings");
-const tabs = ref([
+// Computed so the labels follow a language switch
+const tabs = computed(() => [
   { id: "pageSettings", name: t("bottomPanel.jrxmlTabs.pageSettings") },
   { id: "jrxml", name: t("bottomPanel.jrxmlContent") },
 ]);
@@ -154,7 +162,6 @@ const orientation = ref("Portrait");
 const availableFonts = ref<string[]>([]);
 
 // PDF preview modal visibility state
-const showPdfPreview = ref(false);
 
 // Reference to the CodeMirrorEditor component
 const codeMirrorEditorRef = ref<InstanceType<typeof CodeMirrorEditor> | null>(
@@ -232,16 +239,13 @@ onMounted(async () => {
   availableFonts.value = await getAvailableFonts();
 });
 
-// Open the PDF preview
+// Open the PDF preview (the designer owns it, with the report's table data)
 const openPdfPreview = (): void => {
   if (!localJrxmlContent.value) {
     alert(t("bottomPanel.alerts.generateJrxmlFirst"));
     return;
   }
-  showPdfPreview.value = false;
-  nextTick(() => {
-    showPdfPreview.value = true;
-  });
+  emit("open-preview");
 };
 
 // Computed property: local binding for reportProperties
@@ -474,13 +478,46 @@ const handlePaperSizeChange = () => {
   if (!size) return;
 
   // Apply the size based on the current orientation
-  if (orientation.value === "Landscape") {
-    localReportProperties.value.pageWidth = size.height;
-    localReportProperties.value.pageHeight = size.width;
-  } else {
-    localReportProperties.value.pageWidth = size.width;
-    localReportProperties.value.pageHeight = size.height;
+  const landscape = orientation.value === "Landscape";
+  setPageSize(
+    landscape ? size.height : size.width,
+    landscape ? size.width : size.height,
+  );
+};
+
+// Change the page size as one undo step, then let the designer fit the content
+const setPageSize = (width: number, height: number) => {
+  const page = localReportProperties.value;
+  if (page.pageWidth === width && page.pageHeight === height) return;
+  emit("save-state");
+  page.pageWidth = width;
+  page.pageHeight = height;
+  emit("page-setup-change");
+};
+
+type PageSetting =
+  | "pageWidth"
+  | "pageHeight"
+  | "leftMargin"
+  | "rightMargin"
+  | "topMargin"
+  | "bottomMargin";
+
+// Page size and margins apply when the edit is committed (Enter or leaving the
+// field), not on every keystroke: typing "600" must not fit the content to a
+// 6px page on the way
+const setPageSetting = (key: PageSetting, event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const value = Number(input.value);
+  const isSize = key === "pageWidth" || key === "pageHeight";
+  if (input.value.trim() === "" || !Number.isFinite(value) || value < 0 || (isSize && value === 0)) {
+    input.value = String(localReportProperties.value[key] ?? "");
+    return;
   }
+  if (value === localReportProperties.value[key]) return;
+  emit("save-state");
+  localReportProperties.value[key] = value;
+  emit("page-setup-change");
 };
 
 // Handle orientation changes
@@ -488,18 +525,9 @@ const handleOrientationChange = () => {
   const w = localReportProperties.value.pageWidth;
   const h = localReportProperties.value.pageHeight;
 
-  if (orientation.value === "Landscape") {
-    // Switching to landscape: if currently portrait (width < height), swap them
-    if (w < h) {
-      localReportProperties.value.pageWidth = h;
-      localReportProperties.value.pageHeight = w;
-    }
-  } else {
-    // Switching to portrait: if currently landscape (width > height), swap them
-    if (w > h) {
-      localReportProperties.value.pageWidth = h;
-      localReportProperties.value.pageHeight = w;
-    }
+  // Landscape: swap a portrait page (width < height); portrait: the reverse
+  if (orientation.value === "Landscape" ? w < h : w > h) {
+    setPageSize(h, w);
   }
 };
 
@@ -523,29 +551,7 @@ const localSelectedBandTypes = computed({
 const localJrxmlContent = computed({
   get: () => {
     if (!props.jrxmlContent) return props.jrxmlContent;
-    return html_beautify(props.jrxmlContent, {
-      indent_size: 2,
-      wrap_attributes: "auto",
-      wrap_line_length: 120,
-      content_unformatted: [
-        "text",
-        "textFieldExpression",
-        "parameterExpression",
-        "queryString",
-        "sortField",
-        "groupExpression",
-        "reportFont",
-        "property",
-        "propertyExpression",
-        "font",
-      ],
-      extra_liners: [
-        "text",
-        "textFieldExpression",
-        "parameterExpression",
-        "queryString",
-      ],
-    });
+    return formatXml(props.jrxmlContent);
   },
   set: (value) => emit("update:jrxml-content", value),
 });
@@ -759,7 +765,7 @@ onBeforeUnmount(() => {
     :initial-size="bottomPanelHeight"
     :min-size="150"
     :max-size="currentMaxSize"
-    :collapsible="true"
+    :collapsible="false"
     @size-change="handleBottomPanelSizeChange"
   >
     <div class="tab-navigation">
@@ -771,6 +777,15 @@ onBeforeUnmount(() => {
         @click="activeTab = tab.id"
       >
         {{ tab.name }}
+      </button>
+      <button
+        type="button"
+        class="panel-close-button"
+        :title="t('actions.hideBottomPanel')"
+        :aria-label="t('actions.hideBottomPanel')"
+        @click="emit('update:visible', false)"
+      >
+        <X :size="14" aria-hidden="true" />
       </button>
     </div>
 
@@ -799,7 +814,7 @@ onBeforeUnmount(() => {
                   :key="size.name"
                   :value="size.name"
                 >
-                  {{ size.name }}
+                  {{ size.name === "Custom" ? t("bottomPanel.customPaperSize") : size.name }}
                 </option>
               </select>
             </div>
@@ -819,14 +834,16 @@ onBeforeUnmount(() => {
             <div class="form-group flex-1">
               <label>{{ t("bottomPanel.pageWidth") }}</label>
               <input
-                v-model.number="localReportProperties.pageWidth"
+                :value="localReportProperties.pageWidth"
+                @change="setPageSetting('pageWidth', $event)"
                 type="number"
               />
             </div>
             <div class="form-group flex-1">
               <label>{{ t("bottomPanel.pageHeight") }}</label>
               <input
-                v-model.number="localReportProperties.pageHeight"
+                :value="localReportProperties.pageHeight"
+                @change="setPageSetting('pageHeight', $event)"
                 type="number"
               />
             </div>
@@ -839,22 +856,26 @@ onBeforeUnmount(() => {
             <label>{{ t("bottomPanel.marginsPx") }}</label>
             <div class="margin-inputs">
               <input
-                v-model.number="localReportProperties.leftMargin"
+                :value="localReportProperties.leftMargin"
+                @change="setPageSetting('leftMargin', $event)"
                 type="number"
                 :placeholder="t('properties.leftSide')"
               />
               <input
-                v-model.number="localReportProperties.rightMargin"
+                :value="localReportProperties.rightMargin"
+                @change="setPageSetting('rightMargin', $event)"
                 type="number"
                 :placeholder="t('properties.rightSide')"
               />
               <input
-                v-model.number="localReportProperties.topMargin"
+                :value="localReportProperties.topMargin"
+                @change="setPageSetting('topMargin', $event)"
                 type="number"
                 :placeholder="t('properties.topSide')"
               />
               <input
-                v-model.number="localReportProperties.bottomMargin"
+                :value="localReportProperties.bottomMargin"
+                @change="setPageSetting('bottomMargin', $event)"
                 type="number"
                 :placeholder="t('properties.bottomSide')"
               />
@@ -932,9 +953,9 @@ onBeforeUnmount(() => {
                 <span
                   v-if="bandType.type === BAND_TYPE_CONSTANTS.DETAIL"
                   class="band-required-tag"
-                  :title="t('bottomPanel.detailBandAlwaysRequired') || 'Main report canvas (always required)'"
+                  :title="t('bottomPanel.detailBandAlwaysRequired')"
                 >
-                  {{ t("common.required") || "Required" }}
+                  {{ t("common.required") }}
                 </span>
               </label>
             </div>
@@ -1027,9 +1048,9 @@ onBeforeUnmount(() => {
             <!-- Detail Band (Auto-Calculated Remaining A4 Space) -->
             <div class="band-limit-card band-limit-card-detail">
               <div class="band-limit-title">
-                <span>{{ t("bandNames.detail") || "Detail" }}</span>
+                <span>{{ t("bandNames.detail") }}</span>
                 <span class="band-badge-auto">{{
-                  t("properties.detailAutoCalculated") || "Auto Calculated"
+                  t("properties.detailAutoCalculated")
                 }}</span>
               </div>
               <div class="band-limit-inputs">
@@ -1037,7 +1058,7 @@ onBeforeUnmount(() => {
                   <label>{{ t("bottomPanel.defaultHeight") }}</label>
                   <div
                     class="input-unit-wrapper is-disabled"
-                    title="Detail height is automatically calculated from remaining A4 page space"
+                    :title="t('properties.detailAutoCalculatedHint')"
                   >
                     <input
                       :value="defaultDetailCalculatedHeight"
@@ -1101,7 +1122,7 @@ onBeforeUnmount(() => {
                 ref="searchInputRef"
                 v-model="searchQuery"
                 class="inline-search-input"
-                placeholder="Search... (Ctrl+F)"
+                :placeholder="t('bottomPanel.search')"
                 @input="performSearch"
                 @keydown.enter="findNext"
                 @keydown.shift.enter="findPrevious"
@@ -1111,22 +1132,22 @@ onBeforeUnmount(() => {
                 @click="findPrevious"
                 type="default"
                 size="small"
-                title="Previous"
-                >↑</n-button
+                :title="t('bottomPanel.searchPrevious')"
+                ><ChevronUp :size="14" /></n-button
               >
               <n-button
                 @click="findNext"
                 type="default"
                 size="small"
-                title="Next"
-                >↓</n-button
+                :title="t('bottomPanel.searchNext')"
+                ><ChevronDown :size="14" /></n-button
               >
               <n-button
                 @click="closeSearch"
                 type="default"
                 size="small"
-                title="Close"
-                >×</n-button
+                :title="t('properties.close')"
+                ><X :size="14" /></n-button
               >
               <span v-if="searchResultsCount > 0" class="search-status">
                 {{ currentSearchResult }} / {{ searchResultsCount }}
@@ -1262,12 +1283,6 @@ onBeforeUnmount(() => {
     </div>
   </ResizablePanel>
 
-  <PdfPreviewModal
-    :visible="showPdfPreview"
-    :jrxml-content="localJrxmlContent"
-    :preview-server-url="props.previewServerUrl || ''"
-    @update:visible="showPdfPreview = $event"
-  />
 </template>
 
 <style scoped>
@@ -1299,6 +1314,30 @@ onBeforeUnmount(() => {
   font-size: 13px;
   border-bottom: 2px solid transparent;
   transition: all 0.3s ease;
+}
+
+.panel-close-button {
+  margin-left: auto;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: #666;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.panel-close-button:hover,
+.panel-close-button:focus-visible {
+  outline: none;
+  background-color: #dcdcdc;
+  color: #222;
 }
 
 .tab-button.active {

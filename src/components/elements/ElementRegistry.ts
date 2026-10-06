@@ -1,4 +1,23 @@
+import type { Component } from "vue";
+import {
+  Barcode,
+  ChartNoAxesColumn,
+  Circle,
+  FileDigit,
+  Image as ImageIcon,
+  Images,
+  Minus,
+  PanelTop,
+  Square,
+  SquareActivity,
+  SquareDashed,
+  SquareSquare,
+  Table as TableIcon,
+  TriangleAlert,
+  Type as TypeIcon,
+} from "@lucide/vue";
 import type { DesignElement } from "../../types";
+import { TABLE_HEADER_HEIGHT, TABLE_ROW_HEIGHT } from "../../utils/table/dataTable";
 import { ELEMENT_DEFAULT_SIZES } from "../../constants/constants";
 
 // Element configuration interface
@@ -6,7 +25,7 @@ export interface ElementConfig {
   type: string;
   name: string;
   icon: string;
-  iconSvg?: string;
+  iconComponent?: Component;
   category?: string;
   defaultProps: Partial<DesignElement>;
   component?: any;
@@ -37,8 +56,7 @@ export class ElementRegistry {
       type: "textField",
       name: "elementNames.textField",
       icon: "T",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>',
+      iconComponent: TypeIcon,
       category: "basic",
       defaultProps: {
         type: "textField",
@@ -54,8 +72,6 @@ export class ElementRegistry {
         hyperlinkType: "None",
         bookmarkLevel: 0,
         markup: "html",
-        // Deprecated property (kept for backward compatibility)
-        isStretchWithOverflow: false,
         // Style properties
         fontFamily: "SansSerif",
         fontSize: 12,
@@ -71,8 +87,7 @@ export class ElementRegistry {
       type: "image",
       name: "elementNames.image",
       icon: "◻",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
+      iconComponent: ImageIcon,
       category: "basic",
       defaultProps: {
         type: "image",
@@ -94,8 +109,7 @@ export class ElementRegistry {
       type: "line",
       name: "elementNames.line",
       icon: "─",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>',
+      iconComponent: Minus,
       category: "basic",
       defaultProps: {
         type: "line",
@@ -115,8 +129,7 @@ export class ElementRegistry {
       type: "rectangle",
       name: "elementNames.rectangle",
       icon: "▭",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/></svg>',
+      iconComponent: Square,
       category: "basic",
       defaultProps: {
         type: "rectangle",
@@ -135,8 +148,7 @@ export class ElementRegistry {
       type: "ellipse",
       name: "elementNames.ellipse",
       icon: "◯",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="8"/></svg>',
+      iconComponent: Circle,
       category: "basic",
       defaultProps: {
         type: "ellipse",
@@ -151,30 +163,11 @@ export class ElementRegistry {
       },
     });
 
-    // this.registerElement({
-    //   type: 'break',
-    //   name: 'elementNames.break',
-    //   icon: '⤓',
-    //   iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>',
-    //   category: 'basic',
-    //   defaultProps: {
-    //     type: 'break',
-    //     x: 0,
-    //     y: 0,
-    //     width: 100,
-    //     height: 1, // Breaks are usually thin
-    //     breakType: 'Page',
-    //     // New properties
-    //     isResetPageNumber: false
-    //   }
-    // });
-
     this.registerElement({
       type: "frame",
       name: "elementNames.frame",
       icon: "☐",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/></svg>',
+      iconComponent: SquareDashed,
       category: "basic",
       defaultProps: {
         type: "frame",
@@ -196,185 +189,22 @@ export class ElementRegistry {
       },
     });
 
+    // Table: starts empty (3 columns, one row); data is dropped on it from
+    // the "Table Data" list. Its size follows its content (utils/table/dataTable.ts).
     this.registerElement({
       type: "table",
       name: "elementNames.table",
       icon: "⊞",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>',
+      iconComponent: TableIcon,
       category: "basic",
       defaultProps: {
         type: "table",
-        x: 0,
-        y: 0,
-        width: 555,
-        height: 60,
-        dataset: {
-          uuid: crypto.randomUUID(),
-          name: "tableDataset",
-        },
-        columns: [
-          {
-            uuid: crypto.randomUUID(),
-            width: 160,
-            name: "Column1",
-            tableHeader: {
-              enable: false,
-              element: {
-                type: "textField",
-                x: 0,
-                y: 0,
-                width: 160,
-                height: 30,
-                expression: '"Header"',
-                forecolor: "#000000",
-                backcolor: "#FFFFFF",
-                fontFamily: "SansSerif",
-                fontSize: 19,
-                isBold: true,
-                textAlignment: "Center",
-                verticalAlignment: "Middle",
-              },
-            },
-            columnHeader: {
-              enable: true,
-              element: {
-                type: "textField",
-                x: 0,
-                y: 0,
-                width: 160,
-                height: 30,
-                expression: '"Column Header"',
-                textAlignment: "Center",
-                verticalAlignment: "Middle",
-              },
-            },
-            detailCell: {
-              enable: true,
-              element: {
-                type: "textField",
-                x: 0,
-                y: 0,
-                width: 160,
-                height: 30,
-                expression: "$F{FIELD_NAME}",
-                textAlignment: "Center",
-                verticalAlignment: "Middle",
-              },
-            },
-          },
-          {
-            uuid: crypto.randomUUID(),
-            width: 180,
-            name: "Column2",
-            tableHeader: {
-              enable: false,
-              element: {
-                type: "textField",
-                x: 0,
-                y: 0,
-                width: 180,
-                height: 30,
-                expression: '""',
-                forecolor: "#000000",
-                backcolor: "#FFFFFF",
-                fontFamily: "SansSerif",
-                fontSize: 19,
-                isBold: true,
-                textAlignment: "Center",
-                verticalAlignment: "Middle",
-              },
-            },
-            columnHeader: {
-              enable: true,
-              element: {
-                type: "textField",
-                x: 0,
-                y: 0,
-                width: 180,
-                height: 30,
-                expression: '"Column Header"',
-                textAlignment: "Center",
-                verticalAlignment: "Middle",
-              },
-            },
-            detailCell: {
-              enable: true,
-              element: {
-                type: "textField",
-                x: 0,
-                y: 0,
-                width: 180,
-                height: 30,
-                expression: "$F{FIELD_NAME}",
-                textAlignment: "Center",
-                verticalAlignment: "Middle",
-              },
-            },
-          },
-        ],
-        styles: {
-          tableHeader: "Table_TH",
-          columnHeader: "Table_CH",
-          detail: "Table_TD",
-        },
-        whenNoDataType: "AllSectionsNoDetail",
-      },
-    });
-
-    // Subreport element
-    this.registerElement({
-      type: "subreport",
-      name: "elementNames.subreport",
-      icon: "⊡",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><rect x="6" y="6" width="12" height="12" rx="1"/></svg>',
-      category: "basic",
-      defaultProps: {
-        type: "subreport",
-        x: 0,
-        y: 0,
-        width: 200,
-        height: 100,
-        subreportExpression: '""',
-        parametersMapExpression: "",
-        connectionExpression: "",
-        dataSourceExpression: "",
-        evaluationTime: "Now",
-        printWhenExpression: "",
-        isUsingCache: false,
-        isIgnorePagination: false,
-      },
-    });
-
-    // List element
-    this.registerElement({
-      type: "list",
-      name: "elementNames.list",
-      icon: "☰",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
-      category: "basic",
-      defaultProps: {
-        type: "list",
-        x: 0,
-        y: 0,
-        width: 200,
-        height: 100,
-        listContents: {
-          elements: [],
-          height: 100,
-          width: 200,
-        },
-        printOrder: "Vertical",
-        ignoreWidth: false,
-        subDataset: "",
-        dataSourceExpression: "",
-        connectionExpression: "",
-        printWhenExpression: "",
-        evaluationTime: "Now",
-        splitType: "Stretch",
-        isIgnorePagination: false,
+        x: 50,
+        y: 20,
+        width: 455,
+        height: TABLE_HEADER_HEIGHT + TABLE_ROW_HEIGHT,
+        headerHeight: TABLE_HEADER_HEIGHT,
+        rowHeight: TABLE_ROW_HEIGHT,
       },
     });
 
@@ -383,8 +213,7 @@ export class ElementRegistry {
       type: "chart",
       name: "elementNames.chart",
       icon: "▊",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>',
+      iconComponent: ChartNoAxesColumn,
       category: "basic",
       defaultProps: {
         type: "chart",
@@ -407,8 +236,7 @@ export class ElementRegistry {
       type: "barcode",
       name: "elementNames.barcode",
       icon: "▐",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v20M10 2v20M14 2v20M18 2v20M22 2v20"/></svg>',
+      iconComponent: Barcode,
       category: "basic",
       defaultProps: {
         type: "barcode",
@@ -423,189 +251,63 @@ export class ElementRegistry {
       },
     });
 
-    // Map element
-    this.registerElement({
-      type: "map",
-      name: "elementNames.map",
-      icon: "📍",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
-      category: "basic",
-      defaultProps: {
-        type: "map",
-        x: 0,
-        y: 0,
-        width: 200,
-        height: 200,
-        mapType: "html",
-        latExpression: "",
-        lngExpression: "",
-        zoomExpression: "",
-        languageExpression: "",
-        evaluationTime: "Now",
-        printWhenExpression: "",
+    // Frame templates: styled frames with placeholder content.
+    // The actual element is built by buildFrameTemplate() in utils/framePresets.ts.
+    // Element presets: ready-made boxes (a frame with its parts)
+    const elementPresets: Array<{ type: string; name: string; iconComponent: Component }> = [
+      {
+        type: "frameKpiCard",
+        name: "elementNames.frameKpiCard",
+        iconComponent: SquareActivity,
       },
+      {
+        type: "frameAlertBox",
+        name: "elementNames.frameAlertBox",
+        iconComponent: TriangleAlert,
+      },
+      {
+        type: "frameTitledSection",
+        name: "elementNames.frameTitledSection",
+        iconComponent: PanelTop,
+      },
+      {
+        type: "framePhotoCard",
+        name: "elementNames.framePhotoCard",
+        iconComponent: Images,
+      },
+    ];
+    elementPresets.forEach(({ type, name, iconComponent }) =>
+      this.registerElement({
+        type,
+        name,
+        icon: "☐",
+        iconComponent,
+        category: "frames",
+        defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
+      }),
+    );
+
+    // Composite elements
+    // Page border: a frame in the Background band around every page
+    this.registerElement({
+      type: "framePageBorder",
+      name: "elementNames.framePageBorder",
+      icon: "☐",
+      iconComponent: SquareSquare,
+      category: "composite",
+      defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
     });
 
-    // Crosstab element
+    // Page number: a text field built by buildPaginationElement() in
+    // utils/paginationPresets.ts. Clicking the tile asks where on the page it goes.
     this.registerElement({
-      type: "crosstab",
-      name: "elementNames.crosstab",
-      icon: "⊞",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><path d="M9 9h6v6H9z" fill="currentColor" opacity="0.2"/></svg>',
-      category: "basic",
-      defaultProps: {
-        type: "crosstab",
-        x: 0,
-        y: 0,
-        width: 400,
-        height: 200,
-        crosstabWidth: 400,
-        crosstabHeight: 200,
-        printWhenExpression: "",
-        whenNoDataType: "AllSectionsNoDetail",
-      },
+      type: "pageNumber",
+      name: "elementNames.pageNumber",
+      icon: "#",
+      iconComponent: FileDigit,
+      category: "composite",
+      defaultProps: { type: "textField", x: 0, y: 0, width: 120, height: 20 },
     });
-
-    // Icon label element
-    this.registerElement({
-      type: "iconLabel",
-      name: "elementNames.iconLabel",
-      icon: "🏷️",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
-      category: "basic",
-      defaultProps: {
-        type: "iconLabel",
-        x: 0,
-        y: 0,
-        width: 100,
-        height: 30,
-        icon: "",
-        label: "",
-        labelExpression: "",
-        evaluationTime: "Now",
-        printWhenExpression: "",
-      },
-    });
-
-    // Generic element
-    this.registerElement({
-      type: "genericElement",
-      name: "elementNames.genericElement",
-      icon: "❓",
-      iconSvg:
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-      category: "basic",
-      defaultProps: {
-        type: "genericElement",
-        x: 0,
-        y: 0,
-        width: 100,
-        height: 50,
-        namespace: "",
-        evaluationTime: "Now",
-        printWhenExpression: "",
-      },
-    });
-
-    // Composite Elements
-    // this.registerElement({
-    //   type: 'pageNumber',
-    //   name: 'elementNames.pageNumber',
-    //   icon: '#',
-    //   iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6M12 9v6"/></svg>',
-    //   category: 'composite',
-    //   defaultProps: {
-    //     type: 'textField',
-    //     x: 0, y: 0, width: 50, height: 20,
-    //     expression: '$V{PAGE_NUMBER}',
-    //     evaluationTime: 'Now',
-    //     fontFamily: 'SansSerif', fontSize: 12,
-    //     textAlignment: 'Center', verticalAlignment: 'Middle'
-    //   }
-    // });
-
-    // this.registerElement({
-    //   type: 'totalPages',
-    //   name: 'elementNames.totalPages',
-    //   icon: 'Σ',
-    //   iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8l5-3 5 3M7 16l5 3 5-3"/></svg>',
-    //   category: 'composite',
-    //   defaultProps: {
-    //     type: 'textField',
-    //     x: 0, y: 0, width: 50, height: 20,
-    //     expression: '$V{PAGE_NUMBER}',
-    //     evaluationTime: 'Report',
-    //     fontFamily: 'SansSerif', fontSize: 12,
-    //     textAlignment: 'Center', verticalAlignment: 'Middle'
-    //   }
-    // });
-
-    // this.registerElement({
-    //   type: 'currentDate',
-    //   name: 'elementNames.currentDate',
-    //   icon: '📅',
-    //   iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
-    //   category: 'composite',
-    //   defaultProps: {
-    //     type: 'textField',
-    //     x: 0, y: 0, width: 100, height: 20,
-    //     expression: 'new java.util.Date()',
-    //     evaluationTime: 'Now', pattern: 'yyyy-MM-dd',
-    //     fontFamily: 'SansSerif', fontSize: 12,
-    //     textAlignment: 'Center', verticalAlignment: 'Middle'
-    //   }
-    // });
-
-    // this.registerElement({
-    //   type: 'currentTime',
-    //   name: 'elementNames.currentTime',
-    //   icon: '🕒',
-    //   iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
-    //   category: 'composite',
-    //   defaultProps: {
-    //     type: 'textField',
-    //     x: 0, y: 0, width: 80, height: 20,
-    //     expression: 'new java.util.Date()',
-    //     evaluationTime: 'Now', pattern: 'HH:mm:ss',
-    //     fontFamily: 'SansSerif', fontSize: 12,
-    //     textAlignment: 'Center', verticalAlignment: 'Middle'
-    //   }
-    // });
-
-    // this.registerElement({
-    //   type: 'percentage',
-    //   name: 'elementNames.percentage',
-    //   icon: '%',
-    //   iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M20 4L4 20"/></svg>',
-    //   category: 'composite',
-    //   defaultProps: {
-    //     type: 'textField',
-    //     x: 0, y: 0, width: 60, height: 20,
-    //     expression: '$V{REPORT_COUNT} / $V{REPORT_TOTAL_COUNT}',
-    //     evaluationTime: 'Report', pattern: '#,##0.0%',
-    //     fontFamily: 'SansSerif', fontSize: 12,
-    //     textAlignment: 'Center', verticalAlignment: 'Middle'
-    //   }
-    // });
-
-    // this.registerElement({
-    //   type: 'pageXofY',
-    //   name: 'elementNames.pageXofY',
-    //   icon: '#/#',
-    //   iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>',
-    //   category: 'composite',
-    //   defaultProps: {
-    //     type: 'textField',
-    //     x: 0, y: 0, width: 80, height: 20,
-    //     expression: '$V{PAGE_NUMBER} + " / " + $V{NUMBER_OF_PAGES}',
-    //     evaluationTime: 'Now',
-    //     fontFamily: 'SansSerif', fontSize: 12,
-    //     textAlignment: 'Center', verticalAlignment: 'Middle'
-    //   }
-    // });
   }
 
   // Register an element
@@ -731,7 +433,6 @@ export class ElementRegistry {
         line: "./LineElement.vue",
         rectangle: "./RectangleElement.vue",
         ellipse: "./EllipseElement.vue",
-        break: "./BreakElement.vue",
         frame: "./FrameElement.vue",
         table: "./TableElement.vue",
       };

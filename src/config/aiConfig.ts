@@ -57,8 +57,6 @@ export const AI_CONFIG: AIConfig = {
   ).trim(),
   API_KEY: (
     import.meta.env.VITE_AI_ACCESS_TOKEN ||
-    import.meta.env.VITE_AI_API_KEY ||
-    import.meta.env.ANTHROPIC_API_KEY ||
     DEFAULT_AI_CONFIG.API_KEY
   ).trim(),
   MODEL_NAME: (
@@ -79,7 +77,6 @@ Available tools:
 - create_static_text: Create static text
 - create_text_field: Create a dynamic text field
 - create_rectangle: Create a rectangle
-- create_frame: Create a Frame container
 - update_element: Update element properties
 - move_element: Move an element's position
 - delete_element: Delete an element

@@ -14,7 +14,7 @@
       <button
         @click="showHelp = !showHelp"
         class="help-button"
-        title="Expression help"
+        :title="t('expression.help')"
       >
         ?
       </button>
@@ -46,7 +46,7 @@
     <!-- Expression help panel -->
     <div v-if="showHelp && !showAutocomplete" class="expression-help">
       <div class="help-section">
-        <h5>Common expressions</h5>
+        <h5>{{ t("expression.sections.common") }}</h5>
         <div class="help-items">
           <div
             v-for="item in commonExpressions"
@@ -61,98 +61,98 @@
       </div>
 
       <div class="help-section">
-        <h5>Field references</h5>
+        <h5>{{ t("expression.sections.fields") }}</h5>
         <div class="help-items">
           <div class="help-item" @click="insertExpression('$F{fieldName}')">
             <span class="expression-text">$F{fieldName}</span>
-            <span class="expression-desc">Data field reference</span>
+            <span class="expression-desc">{{ t("expression.fieldReference") }}</span>
           </div>
         </div>
       </div>
 
       <div class="help-section">
-        <h5>Page numbering</h5>
+        <h5>{{ t("expression.sections.pages") }}</h5>
         <div class="help-items">
           <div class="help-item" @click="insertExpression('$V{PAGE_NUMBER}')">
             <span class="expression-text">$V{PAGE_NUMBER}</span>
-            <span class="expression-desc">Current page number</span>
+            <span class="expression-desc">{{ t("expression.currentPage") }}</span>
           </div>
           <div class="help-item" @click="insertExpression('$V{REPORT_COUNT}')">
             <span class="expression-text">$V{REPORT_COUNT}</span>
-            <span class="expression-desc">Total records count</span>
+            <span class="expression-desc">{{ t("expression.totalRecords") }}</span>
           </div>
         </div>
       </div>
 
       <div class="help-section">
-        <h5>Comparison operators</h5>
+        <h5>{{ t("expression.sections.comparison") }}</h5>
         <div class="help-items">
           <div class="help-item" @click="insertExpression('==')">
             <span class="expression-text">==</span>
-            <span class="expression-desc">Equal to</span>
+            <span class="expression-desc">{{ t("expression.operators.equal") }}</span>
           </div>
           <div class="help-item" @click="insertExpression('!=')">
             <span class="expression-text">!=</span>
-            <span class="expression-desc">Not equal to</span>
+            <span class="expression-desc">{{ t("expression.operators.notEqual") }}</span>
           </div>
           <div class="help-item" @click="insertExpression('>')">
             <span class="expression-text">></span>
-            <span class="expression-desc">Greater than</span>
+            <span class="expression-desc">{{ t("expression.operators.greaterThan") }}</span>
           </div>
           <div class="help-item" @click="insertExpression('<')">
             <span class="expression-text"><</span>
-            <span class="expression-desc">Less than</span>
+            <span class="expression-desc">{{ t("expression.operators.lessThan") }}</span>
           </div>
         </div>
       </div>
 
       <div class="help-section">
-        <h5>Logical operators</h5>
+        <h5>{{ t("expression.sections.logical") }}</h5>
         <div class="help-items">
           <div class="help-item" @click="insertExpression('&&')">
             <span class="expression-text">&&</span>
-            <span class="expression-desc">And</span>
+            <span class="expression-desc">{{ t("expression.operators.and") }}</span>
           </div>
           <div class="help-item" @click="insertExpression('||')">
             <span class="expression-text">||</span>
-            <span class="expression-desc">Or</span>
+            <span class="expression-desc">{{ t("expression.operators.or") }}</span>
           </div>
           <div class="help-item" @click="insertExpression('!')">
             <span class="expression-text">!</span>
-            <span class="expression-desc">Not</span>
+            <span class="expression-desc">{{ t("expression.operators.not") }}</span>
           </div>
         </div>
       </div>
 
       <div class="help-section">
-        <h5>Built-in methods</h5>
+        <h5>{{ t("expression.sections.methods") }}</h5>
         <div class="help-items">
           <div class="help-item" @click="insertExpression('NOW()')">
             <span class="expression-text">NOW()</span>
-            <span class="expression-desc">Current time</span>
+            <span class="expression-desc">{{ t("expression.methods.now") }}</span>
           </div>
           <div class="help-item" @click="insertExpression('TODAY()')">
             <span class="expression-text">TODAY()</span>
-            <span class="expression-desc">Today's date</span>
+            <span class="expression-desc">{{ t("expression.methods.today") }}</span>
           </div>
           <div class="help-item" @click="insertExpression('String.valueOf()')">
             <span class="expression-text">String.valueOf()</span>
-            <span class="expression-desc">Convert to string</span>
+            <span class="expression-desc">{{ t("expression.methods.toString") }}</span>
           </div>
           <div class="help-item" @click="insertExpression('Integer.valueOf()')">
             <span class="expression-text">Integer.valueOf()</span>
-            <span class="expression-desc">Convert to integer</span>
+            <span class="expression-desc">{{ t("expression.methods.toInteger") }}</span>
           </div>
           <div class="help-item" @click="insertExpression('Double.valueOf()')">
             <span class="expression-text">Double.valueOf()</span>
-            <span class="expression-desc">Convert to double</span>
+            <span class="expression-desc">{{ t("expression.methods.toDouble") }}</span>
           </div>
           <div
             class="help-item"
             @click="insertExpression('new java.util.Date()')"
           >
             <span class="expression-text">new java.util.Date()</span>
-            <span class="expression-desc">Create the current date</span>
+            <span class="expression-desc">{{ t("expression.methods.newDate") }}</span>
           </div>
           <div
             class="help-item"
@@ -163,7 +163,7 @@
             "
           >
             <span class="expression-text">SimpleDateFormat.format()</span>
-            <span class="expression-desc">Date formatting</span>
+            <span class="expression-desc">{{ t("expression.methods.dateFormat") }}</span>
           </div>
         </div>
       </div>
@@ -173,6 +173,7 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick } from "vue";
+import { useI18n } from "vue-i18n";
 
 interface SuggestionItem {
   value: string;
@@ -192,6 +193,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   "update:modelValue": [value: string];
 }>();
+
+const { t } = useI18n();
 
 const editorRef = ref<HTMLElement>();
 const inputRef = ref<HTMLInputElement>();
@@ -232,66 +235,63 @@ const allSuggestions = computed<SuggestionItem[]>(() => {
   const builtInParams = [
     {
       value: "REPORT_PARAMETERS_MAP",
-      description:
-        "Map of report parameters passed in when the user fills the report",
+      description: t("expression.builtIn.REPORT_PARAMETERS_MAP"),
     },
     {
       value: "JASPER_REPORTS_CONTEXT",
-      description: "The current report-filling context",
+      description: t("expression.builtIn.JASPER_REPORTS_CONTEXT"),
     },
     {
       value: "JASPER_REPORT",
-      description: "The JasperReport template object currently being filled",
+      description: t("expression.builtIn.JASPER_REPORT"),
     },
     {
       value: "REPORT_CONNECTION",
-      description: "The JDBC connection needed to run the default report query",
+      description: t("expression.builtIn.REPORT_CONNECTION"),
     },
     {
       value: "REPORT_MAX_COUNT",
-      description:
-        "Limits the number of records processed from the data source",
+      description: t("expression.builtIn.REPORT_MAX_COUNT"),
     },
     {
       value: "REPORT_DATA_SOURCE",
-      description: "The report data source instance",
+      description: t("expression.builtIn.REPORT_DATA_SOURCE"),
     },
     {
       value: "REPORT_SCRIPTLET",
-      description: "The user-supplied report scriptlet instance",
+      description: t("expression.builtIn.REPORT_SCRIPTLET"),
     },
     {
       value: "REPORT_LOCALE",
-      description: "The locale required for the resource bundle",
+      description: t("expression.builtIn.REPORT_LOCALE"),
     },
     {
       value: "REPORT_RESOURCE_BUNDLE",
-      description: "The resource bundle containing localized messages",
+      description: t("expression.builtIn.REPORT_RESOURCE_BUNDLE"),
     },
     {
       value: "REPORT_TIME_ZONE",
-      description: "The time zone used for date formatting",
+      description: t("expression.builtIn.REPORT_TIME_ZONE"),
     },
     {
       value: "REPORT_VIRTUALIZER",
-      description: "The virtualizer used for page virtualization",
+      description: t("expression.builtIn.REPORT_VIRTUALIZER"),
     },
     {
       value: "REPORT_CLASS_LOADER",
-      description: "The class loader used to load resources during filling",
+      description: t("expression.builtIn.REPORT_CLASS_LOADER"),
     },
     {
       value: "REPORT_FORMAT_FACTORY",
-      description:
-        "The format factory used to create DateFormat and NumberFormat instances",
+      description: t("expression.builtIn.REPORT_FORMAT_FACTORY"),
     },
     {
       value: "IS_IGNORE_PAGINATION",
-      description: "Whether to ignore the pagination flag",
+      description: t("expression.builtIn.IS_IGNORE_PAGINATION"),
     },
     {
       value: "REPORT_TEMPLATES",
-      description: "The collection of report templates passed in while filling",
+      description: t("expression.builtIn.REPORT_TEMPLATES"),
     },
   ];
   for (const p of builtInParams) {
@@ -307,33 +307,29 @@ const allSuggestions = computed<SuggestionItem[]>(() => {
   const builtInVars = [
     {
       value: "REPORT_COUNT",
-      description: "Total number of records read from the data source",
+      description: t("expression.builtIn.REPORT_COUNT"),
     },
     {
       value: "PAGE_COUNT",
-      description:
-        "Number of records processed while generating the current page",
+      description: t("expression.builtIn.PAGE_COUNT"),
     },
     {
       value: "COLUMN_COUNT",
-      description:
-        "Number of records processed while generating the current column",
+      description: t("expression.builtIn.COLUMN_COUNT"),
     },
     {
       value: "PAGE_NUMBER",
-      description:
-        "Current page number (total page count once report filling finishes)",
+      description: t("expression.builtIn.PAGE_NUMBER"),
     },
-    { value: "COLUMN_NUMBER", description: "Current column number" },
+    { value: "COLUMN_NUMBER",
+      description: t("expression.builtIn.COLUMN_NUMBER") },
     {
       value: "MASTER_CURRENT_PAGE",
-      description:
-        "Current page number of the master report (Master evaluation time only)",
+      description: t("expression.builtIn.MASTER_CURRENT_PAGE"),
     },
     {
       value: "MASTER_TOTAL_PAGES",
-      description:
-        "Total page count of the master report (Master evaluation time only)",
+      description: t("expression.builtIn.MASTER_TOTAL_PAGES"),
     },
   ];
   for (const v of builtInVars) {
@@ -359,15 +355,15 @@ const allSuggestions = computed<SuggestionItem[]>(() => {
 
   // Built-in methods
   const builtInMethods = [
-    { value: "NOW()", description: "Current time" },
-    { value: "TODAY()", description: "Today's date" },
-    { value: "String.valueOf(", description: "Convert to string" },
-    { value: "Integer.valueOf(", description: "Convert to integer" },
-    { value: "Double.valueOf(", description: "Convert to double" },
-    { value: "new java.util.Date()", description: "Create the current date" },
+    { value: "NOW()", description: t("expression.methods.now") },
+    { value: "TODAY()", description: t("expression.methods.today") },
+    { value: "String.valueOf(", description: t("expression.methods.toString") },
+    { value: "Integer.valueOf(", description: t("expression.methods.toInteger") },
+    { value: "Double.valueOf(", description: t("expression.methods.toDouble") },
+    { value: "new java.util.Date()", description: t("expression.methods.newDate") },
     {
       value: 'new java.text.SimpleDateFormat("yyyy-MM-dd").format(',
-      description: "Date formatting",
+      description: t("expression.methods.dateFormat"),
     },
   ];
   for (const m of builtInMethods) {
@@ -532,26 +528,26 @@ function handleBlur() {
   }, 200);
 }
 
-const commonExpressions = [
+const commonExpressions = computed(() => [
   {
     expression: '$F{field}.equals("value")',
-    description: "Field equals a specific value",
+    description: t("expression.common.equalsValue"),
   },
-  { expression: "$F{field} != null", description: "Field is not null" },
-  { expression: "$F{field} > 0", description: "Field is greater than 0" },
+  { expression: "$F{field} != null", description: t("expression.common.notNull") },
+  { expression: "$F{field} > 0", description: t("expression.common.greaterThanZero") },
   {
     expression: "$V{PAGE_NUMBER} > 1",
-    description: "Page number is greater than 1",
+    description: t("expression.common.pageAfterFirst"),
   },
   {
     expression: '$F{status}.equals("active")',
-    description: 'Status equals "active"',
+    description: t("expression.common.statusActive"),
   },
   {
     expression: "$F{amount}.doubleValue() > 100",
-    description: "Amount is greater than 100",
+    description: t("expression.common.amountOver100"),
   },
-];
+]);
 
 const insertExpression = (expression: string) => {
   const currentValue = props.modelValue || "";

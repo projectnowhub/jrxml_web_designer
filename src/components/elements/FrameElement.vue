@@ -12,13 +12,17 @@
     :report-is-italic="reportIsItalic"
     :report-is-underline="reportIsUnderline"
     :parent-frame-index="parentFrameIndex"
+    :zoom-level="zoomLevel"
     @select="handleSelect"
     @drag-start="handleDragStart"
     @resize-start="handleResizeStart"
     @contextmenu="handleContextMenu"
   >
     <!-- Frame element content -->
-    <div class="frame-content" :class="{ 'frame-empty': !element.elements || element.elements.length === 0 }">
+    <div
+      class="frame-content"
+      @mousedown.capture="rememberSelectionAtPress"
+    >
       <!-- Render child elements -->
       <template v-if="element.elements && element.elements.length > 0">
         <!-- Dynamically load ElementFactory to avoid circular reference -->
@@ -40,6 +44,9 @@
           :report-is-underline="reportIsUnderline"
           :is-out-of-bounds="false"
           :parent-frame-index="elementIndex"
+          :zoom-level="zoomLevel"
+          :page-number="pageNumber"
+          :total-pages="totalPages"
           @select="handleChildSelect"
           @drag-start="handleChildDragStart"
           @resize-start="handleChildResizeStart"
@@ -48,21 +55,27 @@
           @finish-editing="handleChildFinishEditing"
           @cancel-editing="handleChildCancelEditing"
           @check-fields="handleChildCheckFields"
+          @update-jrxml="emit('update-jrxml')"
+          @save-state="emit('save-state')"
+          @auto-fit-height="(b: number, e: number, p?: number) => emit('autoFitHeight', b, e, p)"
+          @rotate="(b: number, e: number, p?: number) => emit('rotate', b, e, p)"
         />
       </template>
       
       <!-- Currently empty; nested elements may be supported in the future -->
       <div v-else class="frame-placeholder">
-        <span class="frame-label">Frame</span>
+        <span class="frame-label"></span>
       </div>
     </div>
   </BaseElement>
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent } from 'vue';
+import { computed, defineAsyncComponent } from 'vue';
 import BaseElement from './BaseElement.vue';
 import type { FrameElement, SelectedElementInfo, EditingElementInfo } from '../../types';
+import { isBoxPart } from '../../utils/framePresets';
+import { getElementBoxPadding } from '../../utils/elementUtils';
 
 // Asynchronously import ElementFactory to avoid circular dependencies
 const ElementFactory = defineAsyncComponent(() => import('./ElementFactory.vue'));
@@ -83,7 +96,14 @@ const props = defineProps<{
   reportIsItalic?: boolean;
   reportIsUnderline?: boolean;
   parentFrameIndex?: number; // Add the parentFrameIndex prop
+  zoomLevel?: number;
+  // Canvas page the box is drawn on (page numbers inside it show it)
+  pageNumber?: number;
+  totalPages?: number;
 }>();
+
+
+const padding = computed(() => getElementBoxPadding(props.element.box));
 
 // Emits
 const emit = defineEmits<{
@@ -95,6 +115,11 @@ const emit = defineEmits<{
   finishEditing: [];
   cancelEditing: [];
   checkFields: [fields: string[]];
+  'update-jrxml': [];
+  'save-state': [];
+  // From items in the box: passed on to the designer
+  autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
 // Handle selection
@@ -117,14 +142,52 @@ const handleContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: n
   emit('contextmenu', event, bandIndex, elementIndex, parentFrameIndex);
 };
 
+// A ready-made box's own parts (label, number, photo...) cover most of the box,
+// so they behave like a group in PowerPoint:
+// - dragging a part moves the whole box, unless that part is already selected
+// - clicking a part selects the box first; clicking again selects the part
+// - right-clicking a part opens the box's menu unless that part is selected
+// Decided from the selection at mouse press, before this press changes it.
+let boxWasActive = false;
+let selectedPartAtPress: number | null = null;
+let boxDraggedThisPress = false;
+
+const rememberSelectionAtPress = () => {
+  const selected = props.selectedElement;
+  const inThisBand = !!selected && selected.bandIndex === props.bandIndex;
+  selectedPartAtPress =
+    inThisBand && selected!.parentFrameIndex === props.elementIndex ? selected!.elementIndex : null;
+  boxWasActive =
+    selectedPartAtPress !== null ||
+    (inThisBand &&
+      selected!.parentFrameIndex === undefined &&
+      selected!.elementIndex === props.elementIndex);
+  boxDraggedThisPress = false;
+};
+
+const isPart = (childIndex: number) => isBoxPart(props.element.elements?.[childIndex]);
+
+const selectBox = (isMultiSelect?: boolean) =>
+  emit('select', props.bandIndex, props.elementIndex, isMultiSelect, props.parentFrameIndex);
+
 // Handle child element events
 const handleChildSelect = (bIndex: number, childIndex: number, isMultiSelect?: boolean) => {
+  if (isPart(childIndex) && (boxDraggedThisPress || !boxWasActive)) {
+    // The click that ends a box drag, or the first click on a box: keep the box selected
+    selectBox(isMultiSelect);
+    return;
+  }
   // When a child element inside the Frame is selected, pass the Frame's elementIndex as parentFrameIndex
   emit('select', props.bandIndex, childIndex, isMultiSelect, props.elementIndex);
 };
 
 const handleChildDragStart = (event: MouseEvent, bIndex: number, childIndex: number) => {
   event.stopPropagation(); // Prevent the event from bubbling up to the Frame
+  if (isPart(childIndex) && selectedPartAtPress !== childIndex) {
+    boxDraggedThisPress = true;
+    emit('dragStart', event, props.bandIndex, props.elementIndex, props.parentFrameIndex);
+    return;
+  }
   emit('dragStart', event, props.bandIndex, childIndex, props.elementIndex);
 };
 
@@ -135,6 +198,18 @@ const handleChildResizeStart = (event: MouseEvent, bIndex: number, childIndex: n
 
 const handleChildContextMenu = (event: MouseEvent, bIndex: number, childIndex: number) => {
   event.stopPropagation(); // Prevent the event from bubbling up to the Frame
+  // Right-click opens the box's menu (copy, paste, delete...) unless this part is
+  // itself the selected item, like right-clicking inside a group in PowerPoint
+  const selected = props.selectedElement;
+  const partIsSelected =
+    !!selected &&
+    selected.bandIndex === props.bandIndex &&
+    selected.parentFrameIndex === props.elementIndex &&
+    selected.elementIndex === childIndex;
+  if (isPart(childIndex) && !partIsSelected) {
+    emit('contextmenu', event, props.bandIndex, props.elementIndex, props.parentFrameIndex);
+    return;
+  }
   emit('contextmenu', event, props.bandIndex, childIndex, props.elementIndex);
 };
 
@@ -161,17 +236,5 @@ const handleChildCheckFields = (fields: string[]) => {
   height: 100%;
   position: relative;
 }
-
-.frame-empty {
-  /* When empty, show a light gray background and dashed border to make it easier to design */
-  border: 1px dashed #e0e0e0;
-  background-color: rgba(240, 240, 240, 0.2);
-}
-
-/* Deepen the border color when selected */
-:deep(.design-element.selected) .frame-empty {
-  border-color: #a0a0a0;
-}
-
 
 </style>

@@ -1,48 +1,48 @@
 name: Deploy to GitHub Pages
 
 on:
-  # 当推送到main分支时触发部署
+  # Deploy when changes are pushed to the main branch
   push:
     branches: [ master ]
   
-  # 允许手动触发工作流
+  # Allow running the workflow manually
   workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      # 检出代码
+      # Check out the code
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           submodules: false
       
-      # 设置Node.js环境
+      # Set up Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
       
-      # 设置pnpm
+      # Set up pnpm
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 9.15.4
       
-      # 安装依赖
+      # Install dependencies
       - name: Install dependencies
         run: pnpm install
       
-      # 构建项目
+      # Build the project
       - name: Build project
         run: npm run build
       
-      # 部署到GitHub Pages
+      # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
-          # 可选：设置自定义域名
+          # Optional: set a custom domain
           # cname: example.com

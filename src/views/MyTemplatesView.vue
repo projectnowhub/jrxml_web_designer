@@ -1,8 +1,8 @@
 <template>
   <section class="my-templates-view">
-    <span class="eyebrow">Workspace</span>
-    <h1>My Templates</h1>
-    <p>View and manage the templates you have created or saved.</p>
+    <span class="eyebrow">{{ $t("pages.workspace") }}</span>
+    <h1>{{ $t("pages.myTemplates") }}</h1>
+    <p>{{ $t("pages.myTemplatesDescription") }}</p>
   </section>
 </template>
 

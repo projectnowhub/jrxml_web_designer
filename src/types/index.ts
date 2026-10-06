@@ -1,57 +1,16 @@
+import type { TableDataBinding } from "./dataSource";
+
 // Element type enum
 export type ElementType =
-  | "staticText"
   | "textField"
   | "image"
   | "line"
   | "rectangle"
   | "ellipse"
-  | "break"
   | "frame"
   | "table"
-  | "subreport"
-  | "list"
   | "chart"
-  | "barcode"
-  | "map"
-  | "crosstab"
-  | "iconLabel"
-  | "genericElement"
-  | "sort";
-
-// Column group interface
-export interface ColumnGroup {
-  uuid: string;
-  name: string;
-  width: number;
-  hasTableHeader?: boolean;
-  tableHeader?: TableCell;
-  columnHeader?: TableCell;
-  columnFooter?: TableCell;
-  tableFooter?: TableCell;
-  // Sub-groups or columns
-  children: (ColumnGroup | TableColumn)[];
-}
-
-// Table cell interface
-export interface TableCell {
-  enable: boolean;
-  element?: DesignElement;
-}
-
-// Table column interface
-export interface TableColumn {
-  uuid: string;
-  width: number;
-  name: string;
-  hasTableHeader?: boolean;
-  tableHeader?: TableCell;
-  columnHeader?: TableCell;
-  detailCell?: TableCell;
-  columnFooter?: TableCell;
-  tableFooter?: TableCell;
-  children?: (ColumnGroup | TableColumn)[];
-}
+  | "barcode";
 
 // Query interface
 export interface Query {
@@ -220,7 +179,6 @@ export interface ConditionalStyle {
 // Report style interface
 export interface ReportStyle {
   name: string;
-  parentStyle?: string;
   mode?: string;
   backcolor?: string;
   forecolor?: string;
@@ -286,7 +244,6 @@ export interface DesignElementBase {
   textAdjust?: string;
   isStyledText?: boolean;
   isStretchWithOverflow?: boolean;
-  style?: string;
   // Common reportElement attributes
   key?: string;
   positionType?: "Float" | "FixRelativeToTop" | "FixRelativeToBottom";
@@ -306,18 +263,6 @@ export interface DesignElementBase {
   propertyExpressions?: Array<{ name: string; valueExpression: string }>;
 }
 
-// Static text element interface
-export interface StaticTextElement extends DesignElementBase {
-  type: "staticText";
-  text?: string;
-  markup?: "none" | "html" | "rtf" | "styledtext";
-  textAdjust?: "StretchHeight" | "CutText" | "ShrinkToFit";
-  rotation?: "None" | "Left" | "Right" | "UpsideDown";
-  pattern?: string;
-  xml_lang?: string;
-  printWhenExpression?: string;
-}
-
 // Text field element interface
 export interface TextFieldElement extends DesignElementBase {
   type: "textField";
@@ -330,7 +275,8 @@ export interface TextFieldElement extends DesignElementBase {
     | "Column"
     | "Group"
     | "Band"
-    | "Auto";
+    | "Auto"
+    | "Master";
   evaluationGroup?: string;
   pattern?: string;
   patternExpression?: string;
@@ -423,15 +369,6 @@ export interface EllipseElement extends DesignElementBase {
   printWhenExpression?: string;
 }
 
-// Break element interface
-export interface BreakElement extends DesignElementBase {
-  type: "break";
-  breakType?: "Page" | "Column";
-  // Newly added properties
-  isResetPageNumber?: boolean;
-  isResetPageOverflow?: boolean;
-}
-
 // Frame (container) element interface
 export interface FrameElement extends DesignElementBase {
   type: "frame";
@@ -455,111 +392,19 @@ export interface FrameElement extends DesignElementBase {
   // Frame-specific properties
   isRemoveLineWhenBlank?: boolean;
   isPrintRepeatedValues?: boolean;
+  // Corner radius when all four corners match
+  radius?: number;
+  // Corner radii when they differ (see BOX_CORNER_RADIUS_PROPERTY)
+  cornerRadii?: { topLeft: number; topRight: number; bottomRight: number; bottomLeft: number };
 }
 
-// Row group interface
-export interface RowGroup {
-  uuid: string;
-  name: string;
-  height: number;
-  header?: TableCell;
-  footer?: TableCell;
-  isStartNewPage?: boolean;
-  isRepeatHeader?: boolean;
-  expression?: string;
-}
-
-// Table element interface
+// Table element: shows rows of a backend source (see types/dataSource.ts).
+// Without a binding it is an empty table waiting for data to be dropped on it.
 export interface TableElement extends DesignElementBase {
   type: "table";
-  dataset: TableDataset;
-  // Supports a mixed structure of groups and columns
-  children?: (ColumnGroup | TableColumn)[];
-  // Kept for backward compatibility, supports the legacy columns array
-  columns: TableColumn[];
-  // Row groups
-  rowGroups?: RowGroup[];
-  styles?: {
-    tableHeader?: string;
-    columnHeader?: string;
-    detail?: string;
-    columnFooter?: string;
-    tableFooter?: string;
-  };
-  whenNoDataType?:
-    | "Blank"
-    | "NoDataCell"
-    | "AllSectionsNoDetail"
-    | "AllSectionsWithDetail";
-  // Table-level properties
-  printHeaders?: boolean;
-  ignoreWidth?: boolean;
-  isIgnorePagination?: boolean;
-  // Style inheritance
-  style?: string;
-  parentStyle?: string;
-  // Pagination control
-  splitType?: "Stretch" | "Prevent" | "Immediate";
-}
-
-// Subreport element interface
-export interface SubreportElement extends DesignElementBase {
-  type: "subreport";
-  subreportExpression?: string;
-  parametersMapExpression?: string;
-  connectionExpression?: string;
-  dataSourceExpression?: string;
-  returnValue?: {
-    subreportVariable: string;
-    toVariable: string;
-    calculationType?: string;
-  }[];
-  printWhenExpression?: string;
-  isUsingCache?: boolean;
-  runToBottom?: boolean;
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto"
-    | "Master";
-  evaluationGroup?: string;
-  isIgnorePagination?: boolean;
-}
-
-// List element interface
-export interface ListElement extends DesignElementBase {
-  type: "list";
-  listContents?: {
-    elements: DesignElement[];
-    height?: number;
-    width?: number;
-  };
-  // Sub-dataset run configuration
-  subDataset?: string;
-  dataSourceExpression?: string;
-  connectionExpression?: string;
-  // List settings
-  printOrder?: "Vertical" | "Horizontal";
-  ignoreWidth?: boolean;
-  // Conditional display
-  printWhenExpression?: string;
-  // Evaluation settings
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto";
-  evaluationGroup?: string;
-  // Pagination settings
-  splitType?: "Stretch" | "Prevent" | "Immediate";
-  isIgnorePagination?: boolean;
+  binding?: TableDataBinding;
+  headerHeight?: number;
+  rowHeight?: number;
 }
 
 // Chart element interface
@@ -686,97 +531,6 @@ export interface BarcodeElement extends DesignElementBase {
     | "Auto";
 }
 
-// Map element interface
-export interface MapElement extends DesignElementBase {
-  type: "map";
-  mapType?: "html" | "image" | "pdf";
-  latExpression?: string;
-  lngExpression?: string;
-  zoomExpression?: string;
-  languageExpression?: string;
-  printWhenExpression?: string;
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto";
-}
-
-// Crosstab element interface
-export interface CrosstabElement extends DesignElementBase {
-  type: "crosstab";
-  crosstabWidth?: number;
-  crosstabHeight?: number;
-  printWhenExpression?: string;
-  whenNoDataType?:
-    | "AllSectionsNoDetail"
-    | "AllSectionsWithDetail"
-    | "NoDataCell"
-    | "Blank";
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto"
-    | "Master";
-}
-
-// Icon label element interface
-export interface IconLabelElement extends DesignElementBase {
-  type: "iconLabel";
-  icon?: string;
-  label?: string;
-  labelExpression?: string;
-  printWhenExpression?: string;
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto";
-}
-
-// Generic element interface
-export interface GenericElement extends DesignElementBase {
-  type: "genericElement";
-  namespace?: string;
-  printWhenExpression?: string;
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto";
-}
-
-// Sort element interface
-export interface SortElement extends DesignElementBase {
-  type: "sort";
-  sortFields?: Array<{
-    name: string;
-    order?: "Ascending" | "Descending";
-  }>;
-  printWhenExpression?: string;
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto";
-}
-
 // Design element union type
 export type DesignElement =
   | TextFieldElement
@@ -784,18 +538,10 @@ export type DesignElement =
   | LineElement
   | RectangleElement
   | EllipseElement
-  | BreakElement
   | FrameElement
   | TableElement
-  | SubreportElement
-  | ListElement
   | ChartElement
-  | BarcodeElement
-  | MapElement
-  | CrosstabElement
-  | IconLabelElement
-  | GenericElement
-  | SortElement;
+  | BarcodeElement;
 
 // Report band interface
 export interface Band {

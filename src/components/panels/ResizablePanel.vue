@@ -7,16 +7,18 @@
     ]"
     :style="panelStyle"
   >
-    <!-- Collapse button -->
-    <div 
-      v-if="collapsible"
-      class="panel-collapse-button"
-      :class="`panel-collapse-button--${position}`"
-      @click="toggleCollapse"
-    >
-      <span class="collapse-icon">{{ isCollapsed ? expandIcon : collapseIcon }}</span>
+    <!-- Collapsed: a slim rail with the expand button and the panel's name.
+         Expanded, the panel shows its own toggle in its header (slot prop
+         "toggleCollapse"), so nothing floats over its content. -->
+    <div v-if="collapsible && isCollapsed" class="collapsed-rail">
+      <PanelToggleButton
+        :side="position === 'right' ? 'right' : 'left'"
+        :collapsed="true"
+        @toggle="toggleCollapse"
+      />
+      <span v-if="title" class="collapsed-rail-label">{{ title }}</span>
     </div>
-    
+
     <!-- Resize handle -->
     <div 
       v-if="resizable && !isCollapsed"
@@ -27,13 +29,14 @@
     
     <!-- Panel content -->
     <div v-if="!isCollapsed" class="panel-content">
-      <slot></slot>
+      <slot :toggle-collapse="toggleCollapse"></slot>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onUnmounted } from 'vue';
+import PanelToggleButton from './PanelToggleButton.vue';
 
 // Define component props
 interface Props {
@@ -53,6 +56,8 @@ interface Props {
   collapsedSize?: number;
   // Whether to use auto width (fill the remaining space)
   autoWidth?: boolean;
+  // Panel name, shown on the rail while collapsed
+  title?: string;
 }
 
 // Define component events
@@ -98,26 +103,6 @@ const panelStyle = computed(() => {
     return {
       height: `${size}px`
     };
-  }
-});
-
-// Collapse icon
-const collapseIcon = computed(() => {
-  switch (props.position) {
-    case 'left': return '◀';
-    case 'right': return '▶';
-    case 'bottom': return '▼';
-    default: return '◀';
-  }
-});
-
-// Expand icon
-const expandIcon = computed(() => {
-  switch (props.position) {
-    case 'left': return '▶';
-    case 'right': return '◀';
-    case 'bottom': return '▲';
-    default: return '▶';
   }
 });
 
@@ -209,43 +194,29 @@ onUnmounted(() => {
   min-height: auto !important;
 }
 
-/* Collapse button */
-.panel-collapse-button {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 24px;
-  height: 24px;
-  background-color: #e0e0e0;
-  border: 1px solid #ccc;
-  border-radius: 0 0 0 4px;
+/* Collapsed: a slim rail with the expand button and the panel's name */
+.collapsed-rail {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
+  gap: 12px;
+  height: 100%;
+  padding-top: 10px;
+  background: #fff;
 }
 
-.panel-collapse-button--left {
-  right: 0;
-  top: 0;
-}
-
-.panel-collapse-button--right {
-  left: 0;
-  top: 0;
-  border-radius: 0 0 4px 0;
-}
-
-.panel-collapse-button--bottom {
-  right: 0;
-  top: 0;
-  border-radius: 0 0 0 4px;
-}
-
-.collapse-icon {
+.collapsed-rail-label {
+  writing-mode: vertical-rl;
   font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  white-space: nowrap;
   user-select: none;
+}
+
+.resizable-panel--left .collapsed-rail-label {
+  transform: rotate(180deg);
 }
 
 /* Resize handle */

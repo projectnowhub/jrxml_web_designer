@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { Check, Wrench, X } from '@lucide/vue';
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { MCPToolCall, MCPToolResult } from '@/mcp';
 
 // Props
@@ -8,31 +10,19 @@ const props = defineProps<{
   toolResult?: MCPToolResult;
 }>();
 
-// Tool display name mapping
-const toolDisplayNames: Record<string, string> = {
-  'get_design_state': 'Get design state',
-  'get_element': 'Get element info',
-  'find_elements': 'Find elements',
-  'create_static_text': 'Create static text',
-  'create_text_field': 'Create dynamic text field',
-  'create_rectangle': 'Create rectangle',
-  'create_frame': 'Create Frame',
-  'update_element': 'Update element',
-  'move_element': 'Move element',
-  'delete_element': 'Delete element',
-  'update_band_height': 'Adjust band height'
-};
+const { t, te } = useI18n();
 
-// Get the tool display name
+// Tools with a translated display name (ai.tools.<tool name>); others show the raw tool name
 const displayName = computed(() => {
-  return toolDisplayNames[props.toolCall.name] || props.toolCall.name;
+  const key = `ai.tools.${props.toolCall.name}`;
+  return te(key) ? t(key) : props.toolCall.name;
 });
 
 // Format parameters
 const formattedParams = computed(() => {
   const params = props.toolCall.params;
   if (!params || Object.keys(params).length === 0) {
-    return 'No parameters';
+    return t('ai.tool.noParameters');
   }
   return JSON.stringify(params, null, 2);
 });
@@ -56,27 +46,28 @@ const statusClass = computed(() => ({
   <div :class="statusClass">
     <!-- Tool name -->
     <div class="tool-header">
-      <span class="tool-icon">🔧</span>
+      <Wrench class="tool-icon" :size="14" />
       <span class="tool-name">{{ displayName }}</span>
       <span v-if="toolResult" class="tool-status" :class="toolStatus">
-        {{ toolStatus === 'success' ? '✓ Success' : '✗ Failed' }}
+        <component :is="toolStatus === 'success' ? Check : X" :size="12" />
+        {{ toolStatus === 'success' ? t('ai.tool.success') : t('ai.tool.failed') }}
       </span>
     </div>
 
     <!-- Tool parameters -->
     <div class="tool-params">
-      <div class="params-label">Parameters:</div>
+      <div class="params-label">{{ t("ai.tool.parameters") }}</div>
       <pre class="params-code">{{ formattedParams }}</pre>
     </div>
 
     <!-- Tool result -->
     <div v-if="toolResult" class="tool-result">
-      <div class="result-label">Result:</div>
+      <div class="result-label">{{ t("ai.tool.result") }}</div>
       <div v-if="toolResult.success" class="result-success">
-        {{ toolResult.data?.message || 'Executed successfully' }}
+        {{ toolResult.data?.message || t('ai.tool.executed') }}
       </div>
       <div v-else class="result-error">
-        {{ toolResult.error || 'Execution failed' }}
+        {{ toolResult.error || t('ai.tool.executionFailed') }}
       </div>
     </div>
   </div>
@@ -124,6 +115,9 @@ const statusClass = computed(() => ({
 }
 
 .tool-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: 0.85em;
   padding: 2px 6px;
   border-radius: 4px;
