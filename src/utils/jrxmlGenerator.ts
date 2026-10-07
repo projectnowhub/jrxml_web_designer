@@ -8,6 +8,7 @@ import { SAVED_TABLE_STYLES_PROPERTY } from "./table/tableThemes";
 import { REPORT_PROJECTS_PROPERTY } from "./projectFields";
 import { buildJasperReportOpenTag } from "./jrxml/xmlBuilder";
 import { generateUUID } from "./jrxml/uuidGenerator";
+import { reportElementProperties } from "./elementUtils";
 import {
   BOX_CORNER_RADIUS_PROPERTY,
   encodeCornerRadii,
@@ -64,8 +65,10 @@ function generateReportElementAttrs(element: any): string {
 function generateReportElementChildren(element: any): string {
   let xml = "";
   // Generate property elements
-  if (element.properties && element.properties.length > 0) {
-    element.properties.forEach((prop: any) => {
+  // (an image with a preset shape gets the corner radii for its current size)
+  const properties = reportElementProperties(element);
+  if (properties.length > 0) {
+    properties.forEach((prop: any) => {
       if (prop.name) {
         xml += `<property name="${xmlAttr(prop.name)}" value="${xmlAttr(prop.value || "")}"/>`;
       }

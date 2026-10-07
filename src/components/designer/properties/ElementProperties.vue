@@ -216,6 +216,34 @@
                 @change="handlePropertiesImageUpload"
               />
             </div>
+            <!-- Shape: preset corner looks, cards like the box border presets
+                 (custom corners are in Style Settings) -->
+            <div class="box-section compact">
+              <div class="shape-card-head">
+                <h5>{{ t("properties.imageShape") }}</h5>
+                <span v-if="!currentImageShape" class="shape-custom-badge">{{ t("properties.imageShapeCustom") }}</span>
+              </div>
+              <span class="field-label shape-field-label">{{ t("properties.imageShapePresets") }}</span>
+              <div class="shape-grid" role="radiogroup" :aria-label="t('properties.imageShapePresets')">
+                <button
+                  v-for="shape in IMAGE_SHAPES"
+                  :key="shape.id"
+                  type="button"
+                  role="radio"
+                  class="shape-swatch"
+                  :class="{ active: currentImageShape === shape.id }"
+                  :aria-checked="currentImageShape === shape.id"
+                  :title="t(`properties.imageShapes.${shape.id}Title`)"
+                  @click="applyImageShape(shape.id)"
+                >
+                  <span class="shape-sample-wrap">
+                    <span class="shape-sample" :style="shapePreviewStyle(shape)" aria-hidden="true"></span>
+                  </span>
+                  <span class="shape-name">{{ t(`properties.imageShapes.${shape.id}`) }}</span>
+                </button>
+              </div>
+              <small class="card-hint">{{ t("properties.imageShapeHint") }}</small>
+            </div>
             <div class="box-section compact">
               <h5>{{ t("properties.rotation") }}</h5>
               <div class="seg" role="radiogroup" :aria-label="t('properties.rotation')">
@@ -888,6 +916,10 @@ import {
   getElementTypeName,
   getImageDisplayName,
   getPropertyCornerRadii,
+  getImageShape,
+  IMAGE_SHAPES,
+  type ImageShapeId,
+  setImageShape,
   quoteExpressionValue,
   stripExpressionQuotes,
   setPropertyCornerRadii,
@@ -1334,6 +1366,47 @@ function setElementRotation(rot: "None" | "Right" | "UpsideDown" | "Left") {
   emit("save-state");
   (currentElement.value as any).rotation = rot;
   emit("update-jrxml");
+}
+
+// Image shape: the preset in use, "square" for plain corners, null for custom corners
+const currentImageShape = computed<ImageShapeId | null>(() => {
+  const element = currentElement.value;
+  if (element?.type !== "image") return null;
+  const shape = getImageShape(element);
+  if (shape) return shape;
+  const radii = getPropertyCornerRadii(element);
+  return CORNER_NAMES.every((c) => radii[c] === 0) ? "square" : null;
+});
+
+// One undo step. A circle also makes the image square, around its centre.
+function applyImageShape(id: ImageShapeId) {
+  const element = currentElement.value as any;
+  if (!element || element.type !== "image") return;
+  const preset = IMAGE_SHAPES.find((s) => s.id === id);
+  const side = Math.min(element.width, element.height);
+  const resize = !!preset?.makeSquare && element.width !== element.height;
+  if (currentImageShape.value === id && !resize) return;
+  emit("save-state");
+  if (resize) {
+    element.x = Math.round(element.x + (element.width - side) / 2);
+    element.y = Math.round(element.y + (element.height - side) / 2);
+    element.width = side;
+    element.height = side;
+  }
+  setImageShape(element, id);
+  emit("update-jrxml");
+}
+
+// Card sample: a small picture cut to the shape (wide for the pill)
+function shapePreviewStyle(shape: (typeof IMAGE_SHAPES)[number]) {
+  const width = shape.id === "pill" ? 46 : 30;
+  const height = shape.id === "pill" ? 22 : 30;
+  const side = Math.min(width, height);
+  return {
+    width: `${width}px`,
+    height: `${height}px`,
+    borderRadius: shape.corners.map((c) => `${Math.round(side * c)}px`).join(" "),
+  };
 }
 
 // Current orientation of selected line element
@@ -3097,6 +3170,114 @@ function addPropertyExpression() {
   font-weight: 600;
   text-transform: uppercase;
   color: var(--prop-text-tertiary, #9ca3af);
+}
+
+/* Image shape cards, styled like the box border presets (FrameProperties.vue) */
+.shape-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.shape-card-head h5 {
+  margin: 0;
+}
+
+.shape-custom-badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(24, 144, 255, 0.1);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--prop-border-focus, #1890ff);
+}
+
+.shape-field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--prop-text-secondary, #6b7280);
+}
+
+.shape-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+
+.shape-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--prop-border-color, #e5e7eb);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.shape-swatch:hover {
+  border-color: var(--prop-border-hover, #9ca3af);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+.shape-swatch.active {
+  border-color: var(--prop-border-focus, #1890ff);
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.shape-swatch:focus-visible {
+  outline: none;
+  border-color: var(--prop-border-focus, #1890ff);
+  box-shadow: var(--prop-focus-ring);
+}
+
+/* Small "page" the picture sits on */
+.shape-sample-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  border-radius: 5px;
+  background: var(--prop-bg-tertiary, #f3f4f6);
+}
+
+.shape-swatch.active .shape-sample-wrap {
+  background: rgba(24, 144, 255, 0.08);
+}
+
+/* A tiny landscape photo (sun and hills, plain CSS) cut to the shape */
+.shape-sample {
+  display: block;
+  flex-shrink: 0;
+  background:
+    radial-gradient(circle at 72% 30%, #fde68a 0 11%, transparent 12%),
+    radial-gradient(ellipse 70% 50% at 25% 100%, #1e40af 0 98%, transparent 100%),
+    radial-gradient(ellipse 80% 42% at 85% 100%, #2563eb 0 98%, transparent 100%),
+    linear-gradient(160deg, #93c5fd, #60a5fa);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
+}
+
+.shape-name {
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--prop-text-secondary, #6b7280);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shape-swatch.active .shape-name {
+  color: var(--prop-border-focus, #1890ff);
+  font-weight: 600;
 }
 
 /* Line style tiles: the line drawn above its name */
