@@ -42,14 +42,14 @@
             </div>
             <div class="chips">
               <span class="chip">{{ t("dataTable.panel.columnCount", item.binding.columns.length) }}</span>
-              <span v-for="(f, i) in activeFilters(item.binding)" :key="`f${i}`" class="chip is-filter">
+              <span v-for="(f, i) in activeFilters(item.binding)" :key="`f${i}`" class="chip is-applied">
                 <Funnel :size="10" aria-hidden="true" />{{ describeFilter(item.binding, f, t, locale) }}
               </span>
-              <span v-for="(s, i) in describeSorts(item.binding, t)" :key="`s${i}`" class="chip">
+              <span v-for="(s, i) in describeSorts(item.binding, t)" :key="`s${i}`" class="chip is-applied">
                 <ArrowDownUp :size="10" aria-hidden="true" />{{ s }}
               </span>
-              <span v-if="item.binding.rowLimit" class="chip">
-                {{ t("dataTable.panel.firstRows", item.binding.rowLimit) }}
+              <span v-if="item.binding.rowLimit" class="chip is-applied">
+                <ListOrdered :size="10" aria-hidden="true" />{{ t("dataTable.panel.firstRows", item.binding.rowLimit) }}
               </span>
             </div>
             <div class="card-grid">
@@ -92,6 +92,7 @@
 <script setup lang="ts">
 import {
   ArrowDownUp,
+  ListOrdered,
   ChevronLeft,
   ChevronRight,
   Database,
@@ -350,7 +351,7 @@ watch(
   background: #fff;
 }
 
-.chip.is-filter {
+.chip.is-applied {
   background: #eff6ff;
   border-color: #bfdbfe;
   color: #1d4ed8;

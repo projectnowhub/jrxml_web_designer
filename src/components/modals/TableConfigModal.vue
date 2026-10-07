@@ -49,16 +49,33 @@
                 {{ t("dataTable.config.columnCounter", { count: columns.length, max: maxColumns }) }}
               </span>
             </h4>
-            <ul class="tcm-list">
-              <li v-for="(col, i) in columns" :key="col.key" class="tcm-col">
-                <div class="tcm-move">
-                  <button type="button" class="tcm-icon-btn" :disabled="i === 0" :title="t('dataTable.config.moveUp')" @click="moveColumn(i, -1)">
-                    <ChevronUp :size="13" />
-                  </button>
-                  <button type="button" class="tcm-icon-btn" :disabled="i === columns.length - 1" :title="t('dataTable.config.moveDown')" @click="moveColumn(i, 1)">
-                    <ChevronDown :size="13" />
-                  </button>
-                </div>
+            <!-- Drag a row by its grip to change the column order -->
+            <ul
+              class="tcm-list"
+              @dragover="onColumnDragOver"
+              @dragleave="onColumnDragLeave"
+              @drop="onColumnDrop"
+            >
+              <li
+                v-for="(col, i) in columns"
+                :key="col.key"
+                class="tcm-col"
+                :class="{
+                  'is-dragged': dragFrom === i,
+                  'drop-before': showDropLine && dropAt === i,
+                  'drop-after': showDropLine && dropAt === columns.length && i === columns.length - 1,
+                }"
+              >
+                <span
+                  class="tcm-grip"
+                  draggable="true"
+                  :title="t('dataTable.config.dragToReorder')"
+                  :aria-label="t('dataTable.config.dragToReorder')"
+                  @dragstart="onColumnDragStart($event, i)"
+                  @dragend="endColumnDrag"
+                >
+                  <GripVertical :size="14" aria-hidden="true" />
+                </span>
                 <component :is="TYPE_ICONS[col.type]" :size="13" class="tcm-type" :title="t(`dataTable.types.${col.type}`)" />
                 <input
                   class="tcm-input"
@@ -85,14 +102,19 @@
               </li>
             </ul>
             <div v-if="unusedColumns.length" class="tcm-select-wrap">
+              <!-- Every unused column is listed, even when the table is full, so
+                   the user can see what else there is -->
               <select
                 class="tcm-select"
                 value=""
-                :disabled="columns.length >= maxColumns"
                 @change="addColumn(($event.target as HTMLSelectElement))"
               >
-                <option value="">{{ t("dataTable.config.addColumn") }}</option>
-                <option v-for="c in unusedColumns" :key="c.key" :value="c.key">{{ c.label }}</option>
+                <option value="" disabled hidden>
+                  {{ t(columns.length >= maxColumns ? "dataTable.config.tableFull" : "dataTable.config.addColumn") }}
+                </option>
+                <option v-for="c in unusedColumns" :key="c.key" :value="c.key" :disabled="columns.length >= maxColumns">
+                  {{ c.label }}
+                </option>
               </select>
               <ChevronDown class="tcm-chevron" :size="14" aria-hidden="true" />
             </div>
@@ -118,6 +140,7 @@
           <!-- Rows, totals -->
           <section class="tcm-section">
             <h4><ListOrdered :size="14" aria-hidden="true" />{{ t("dataTable.config.rows") }}</h4>
+            <p class="tcm-hint is-top">{{ t("dataTable.config.rowsNote") }}</p>
             <label class="tcm-check">
               <input type="checkbox" :checked="rowLimit !== undefined" @change="toggleRowLimit(($event.target as HTMLInputElement).checked)" />
               {{ t("dataTable.config.limitRows") }}
@@ -183,10 +206,10 @@ import {
   ArrowDownUp,
   Calendar,
   ChevronDown,
-  ChevronUp,
   Columns3,
   Database,
   FolderKanban,
+  GripVertical,
   DatabaseZap,
   DollarSign,
   Funnel,
@@ -414,10 +437,65 @@ function changeSource(id: string) {
   useSchema(id, true);
 }
 
-function moveColumn(index: number, step: number) {
-  const list = columns.value;
-  const [col] = list.splice(index, 1);
-  if (col) list.splice(index + step, 0, col);
+// ── Column order: drag a row by its grip ──
+const dragFrom = ref<number | null>(null);
+// Where the dragged column would go: before row dropAt (columns.length = at the end)
+const dropAt = ref<number | null>(null);
+// No line where dropping wouldn't move anything
+const showDropLine = computed(
+  () =>
+    dragFrom.value !== null &&
+    dropAt.value !== null &&
+    dropAt.value !== dragFrom.value &&
+    dropAt.value !== dragFrom.value + 1,
+);
+const COLUMN_DRAG_TYPE = "application/x-table-column";
+
+function onColumnDragStart(event: DragEvent, index: number) {
+  dragFrom.value = index;
+  dropAt.value = null;
+  const dt = event.dataTransfer;
+  if (!dt) return;
+  dt.effectAllowed = "move";
+  dt.setData(COLUMN_DRAG_TYPE, String(index));
+  // Drag the whole row, not just the grip
+  const row = (event.currentTarget as HTMLElement).closest("li");
+  if (row) dt.setDragImage(row, 12, row.offsetHeight / 2);
+}
+
+function onColumnDragOver(event: DragEvent) {
+  if (dragFrom.value === null) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+  const rows = Array.from((event.currentTarget as HTMLElement).children);
+  const at = rows.findIndex((row) => {
+    const r = row.getBoundingClientRect();
+    return event.clientY < r.top + r.height / 2;
+  });
+  dropAt.value = at === -1 ? rows.length : at;
+}
+
+function onColumnDragLeave(event: DragEvent) {
+  const list = event.currentTarget as HTMLElement;
+  if (!list.contains(event.relatedTarget as Node | null)) dropAt.value = null;
+}
+
+function onColumnDrop(event: DragEvent) {
+  const from = dragFrom.value;
+  const at = dropAt.value;
+  if (from === null || at === null) return;
+  event.preventDefault();
+  const to = at > from ? at - 1 : at;
+  if (to !== from) {
+    const [col] = columns.value.splice(from, 1);
+    if (col) columns.value.splice(to, 0, col);
+  }
+  endColumnDrag();
+}
+
+function endColumnDrag() {
+  dragFrom.value = null;
+  dropAt.value = null;
 }
 
 function removeColumn(index: number) {
@@ -607,9 +685,56 @@ function apply() {
 }
 
 .tcm-col {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.tcm-col.is-dragged {
+  opacity: 0.4;
+}
+
+/* Where the dragged column will land */
+.tcm-col.drop-before::before,
+.tcm-col.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: #2563eb;
+  pointer-events: none;
+}
+
+.tcm-col.drop-before::before {
+  top: -4px;
+}
+
+.tcm-col.drop-after::after {
+  bottom: -4px;
+}
+
+.tcm-grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 30px;
+  border-radius: 4px;
+  color: #9ca3af;
+  cursor: grab;
+}
+
+.tcm-grip:hover {
+  background: #eef0f4;
+  color: #4b5563;
+}
+
+.tcm-grip:active {
+  cursor: grabbing;
 }
 
 .tcm-empty {
@@ -617,11 +742,6 @@ function apply() {
   font-size: 12px;
   line-height: 1.4;
   color: #6b7280;
-}
-
-.tcm-move {
-  display: flex;
-  flex-direction: column;
 }
 
 .tcm-type {
@@ -696,10 +816,6 @@ function apply() {
   cursor: pointer;
 }
 
-.tcm-move .tcm-icon-btn {
-  height: 14px;
-}
-
 .tcm-icon-btn:hover:not(:disabled) {
   background: #eef0f4;
   color: #1f2937;
@@ -740,6 +856,10 @@ function apply() {
 
 .tcm-error {
   color: #dc2626;
+}
+
+.tcm-hint.is-top {
+  margin: -4px 0 6px;
 }
 
 .tcm-note {

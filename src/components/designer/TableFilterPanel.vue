@@ -50,27 +50,41 @@
 
       <!-- Choices -->
       <div class="tfp-pane" role="tabpanel">
-        <!-- Sort: one at a time -->
-        <div v-if="active === SORT" class="tfp-options" role="radiogroup" :aria-label="t('dataTable.filter.sortBy')">
-          <label class="tfp-option">
-            <input type="radio" name="tfp-sort" :checked="!sort.length" @change="setSort(null)" />
-            <span class="tfp-option-text">{{ t("dataTable.filter.defaultOrder") }}</span>
-          </label>
-          <template v-for="col in columns" :key="col.key">
-            <label v-for="dir in (['asc', 'desc'] as const)" :key="dir" class="tfp-option">
+        <!-- Sort: one column at a time, then its order -->
+        <template v-if="active === SORT">
+          <div v-if="sortColumn" class="tfp-order">
+            <span class="tfp-order-label">{{ t("dataTable.filter.order") }}</span>
+            <div class="tfp-segment" role="radiogroup" :aria-label="t('dataTable.filter.order')">
+              <button
+                v-for="dir in (['asc', 'desc'] as const)"
+                :key="dir"
+                type="button"
+                role="radio"
+                class="tfp-segment-btn"
+                :class="{ active: sort[0]?.direction === dir }"
+                :aria-checked="sort[0]?.direction === dir"
+                @click="setSortColumn(sortColumn, dir)"
+              >
+                {{ sortDirectionLabel(sortColumn.type, dir, t) }}
+              </button>
+            </div>
+          </div>
+          <div class="tfp-options" role="radiogroup" :aria-label="t('dataTable.filter.sortBy')">
+            <label class="tfp-option">
+              <input type="radio" :name="sortGroup" :checked="!sortColumn" @change="setSort(null)" />
+              <span class="tfp-option-text">{{ t("dataTable.filter.defaultOrder") }}</span>
+            </label>
+            <label v-for="col in columns" :key="col.key" class="tfp-option">
               <input
                 type="radio"
-                name="tfp-sort"
-                :checked="sort[0]?.column === col.key && sort[0]?.direction === dir"
-                @change="setSort({ column: col.key, label: col.label, type: col.type, direction: dir })"
+                :name="sortGroup"
+                :checked="sortColumn?.key === col.key"
+                @change="setSortColumn(col, sort[0]?.direction ?? 'asc')"
               />
-              <span class="tfp-option-text">
-                {{ col.label }}
-                <span class="tfp-muted">· {{ sortDirectionLabel(col.type, dir, t) }}</span>
-              </span>
+              <span class="tfp-option-text">{{ col.label }}</span>
             </label>
-          </template>
-        </div>
+          </div>
+        </template>
 
         <template v-else-if="activeColumn">
           <div v-if="!facets" class="tfp-message">{{ t("dataTable.loading") }}</div>
@@ -125,7 +139,8 @@
                 {{ pick.label }}
               </button>
             </div>
-            <div class="tfp-range">
+            <!-- Dates stack: two date pickers don't fit side by side -->
+            <div class="tfp-range" :class="{ 'is-stacked': activeColumn.type === 'date' }">
               <label class="tfp-field">
                 <span>{{ t(activeColumn.type === "date" ? "dataTable.filter.from" : "dataTable.filter.min") }}</span>
                 <input
@@ -171,7 +186,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, type Component } from "vue";
+import { computed, ref, useId, watch, type Component } from "vue";
 import { useI18n } from "vue-i18n";
 import { ArrowDownUp, Funnel, Search, X } from "@lucide/vue";
 import type {
@@ -262,6 +277,16 @@ function clearAll() {
 
 function setSort(sort: TableSort | null) {
   emit("update:sort", sort ? [sort] : []);
+}
+
+// Radio group name of this panel's sort choices, unique on the page
+const sortGroup = `tfp-sort-${useId()}`;
+
+// The column sorted on (a sort on a column the source no longer has counts as none)
+const sortColumn = computed(() => props.columns.find((c) => c.key === props.sort[0]?.column));
+
+function setSortColumn(col: DataColumn, direction: "asc" | "desc") {
+  setSort({ column: col.key, label: col.label, type: col.type, direction });
 }
 
 // ── Text values ──
@@ -532,6 +557,55 @@ const appliedChips = computed<{ key: string; text: string; icon: Component; remo
   flex-direction: column;
 }
 
+.tfp-order {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eef0f4;
+}
+
+.tfp-order-label {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.tfp-segment {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  padding: 2px;
+  border-radius: 6px;
+  background: #f3f4f6;
+}
+
+.tfp-segment-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #4b5563;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.tfp-segment-btn:hover {
+  color: #111827;
+}
+
+.tfp-segment-btn.active {
+  background: #fff;
+  color: #1d4ed8;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
 .tfp-option {
   display: flex;
   align-items: center;
@@ -665,6 +739,20 @@ const appliedChips = computed<{ key: string; text: string; icon: Component; remo
   border-radius: 6px;
   font-size: 12px;
   color: #1f2937;
+}
+
+.tfp-range.is-stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.tfp-range.is-stacked .tfp-dash {
+  display: none;
+}
+
+.tfp-field input {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .tfp-dash {

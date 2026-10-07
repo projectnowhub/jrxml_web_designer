@@ -49,7 +49,11 @@
             class="dt-cell dt-more"
             :style="cellStyle('row', undefined, 0, r)"
           >
-            {{ t("dataTable.moreRows", slot.count) }}
+            {{
+              slot.limit
+                ? t("dataTable.moreRowsLimited", { count: slot.count, limit: slot.limit }, slot.count)
+                : t("dataTable.moreRows", slot.count)
+            }}
           </div>
           <div
             v-else-if="slot.kind === 'message'"
@@ -170,7 +174,7 @@ const displayColumns = computed<PreviewColumn[]>(() => {
 
 type Slot =
   | { kind: "row"; row: DataRow }
-  | { kind: "more"; count: number }
+  | { kind: "more"; count: number; limit?: number }
   | { kind: "message"; text: string };
 
 // Fill the table's height with sample rows; the last slot says how many more
@@ -179,9 +183,13 @@ const rowSlotsShown = computed<Slot[]>(() => {
   if (loading.value && !rows.value.length) return [{ kind: "message", text: t("dataTable.loading") }];
   if (failed.value) return [{ kind: "message", text: t("dataTable.loadFailed") }];
   if (!rows.value.length) return [{ kind: "message", text: t("dataTable.noRows") }];
-  const fits = totalCount.value <= slots ? totalCount.value : slots - 1;
+  // The report prints only the first rowLimit rows when there is a limit
+  const limit = binding.value?.rowLimit;
+  const limited = limit !== undefined && limit < totalCount.value;
+  const printed = limited ? limit : totalCount.value;
+  const fits = printed <= slots ? printed : slots - 1;
   const shown: Slot[] = rows.value.slice(0, fits).map((row) => ({ kind: "row", row }));
-  if (totalCount.value > fits) shown.push({ kind: "more", count: totalCount.value - fits });
+  if (printed > fits) shown.push({ kind: "more", count: printed - fits, limit: limited ? limit : undefined });
   return shown;
 });
 

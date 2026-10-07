@@ -30,7 +30,7 @@
       <div v-if="filters.length" class="tdp-row">
         <Funnel :size="13" class="tdp-row-icon" aria-hidden="true" />
         <div class="tdp-chips">
-          <span v-for="(f, i) in filters" :key="i" class="tdp-chip is-filter">
+          <span v-for="(f, i) in filters" :key="i" class="tdp-chip is-applied">
             {{ describeFilter(binding, f, t, locale) }}
           </span>
         </div>
@@ -39,13 +39,15 @@
       <div v-if="sorts.length" class="tdp-row">
         <ArrowDownUp :size="13" class="tdp-row-icon" aria-hidden="true" />
         <div class="tdp-chips">
-          <span v-for="(s, i) in sorts" :key="i" class="tdp-chip">{{ s }}</span>
+          <span v-for="(s, i) in sorts" :key="i" class="tdp-chip is-applied">{{ s }}</span>
         </div>
       </div>
 
       <div v-if="binding.rowLimit" class="tdp-row">
         <ListOrdered :size="13" class="tdp-row-icon" aria-hidden="true" />
-        <span class="tdp-muted">{{ t("dataTable.panel.firstRows", binding.rowLimit) }}</span>
+        <div class="tdp-chips">
+          <span class="tdp-chip is-applied">{{ t("dataTable.panel.firstRows", binding.rowLimit) }}</span>
+        </div>
       </div>
 
       <button type="button" class="tdp-btn" @click="emit('configure')">
@@ -645,7 +647,7 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
   white-space: nowrap;
 }
 
-.tdp-chip.is-filter {
+.tdp-chip.is-applied {
   background: #eff6ff;
   border-color: #bfdbfe;
   color: #1d4ed8;

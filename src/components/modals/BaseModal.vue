@@ -1,29 +1,11 @@
 <template>
-  <div 
+  <!-- One copy of the content: rendered while open (or always with useVShow,
+       then only hidden). Two copies would clash, e.g. radio groups by name. -->
+  <div
+    v-if="useVShow || visible"
+    v-show="visible"
     :key="keyForRecreation"
-    v-if="!useVShow && visible" 
-    class="modal-overlay" 
-    @click.self="handleClose"
-  >
-    <div class="modal-content" :class="contentClass" :style="contentStyle">
-      <div class="modal-header" v-if="showHeader">
-        <h3 class="modal-title">{{ title }}</h3>
-        <n-button type="default" size="small" quaternary circle @click="handleClose" v-if="showCloseButton"><X :size="16" /></n-button>
-      </div>
-      <div class="modal-body" :class="bodyClass" :style="{ height: bodyHeight, ...bodyStyle }">
-        <slot></slot>
-      </div>
-      <div class="modal-footer" v-if="showFooter">
-        <slot name="footer">
-          <n-button type="default" @click="handleClose">{{ t('common.cancel') }}</n-button>
-          <n-button type="primary" @click="handleConfirm">{{ t('common.confirm') }}</n-button>
-        </slot>
-      </div>
-    </div>
-  </div>
-  <div 
-    v-show="useVShow && visible" 
-    class="modal-overlay" 
+    class="modal-overlay"
     @click.self="handleClose"
   >
     <div class="modal-content" :class="contentClass" :style="contentStyle">
@@ -99,10 +81,9 @@ const props = defineProps({
   }
 });
 
-// Key for recreating the modal when using v-if
+// Key for recreating the modal when useVShow changes
 const keyForRecreation = ref(0);
 
-// When useVShow changes, recreate the modal for v-if case
 watch(
   () => props.useVShow,
   () => {
