@@ -11,17 +11,30 @@
 //   GET  {api}/projects/{pid}/sources/{id}/facets    -> SourceFacets (filter choices per column)
 //   POST {api}/projects/{pid}/sources/{id}/query     body: DataQuery -> DataQueryResult
 //
+// Chart numbers come from the CDP backend's analytics endpoint, the one the
+// CDP app's dashboards use (same request and response, see AggregateRequest):
+//   POST {VITE_OAUTH_BASE_URL}/v2/analytics/aggregate  body: AggregateRequest -> AggregateResult
+// with the user's login. A source's schema names the CDP entity it reads
+// (entityName) and its column keys are that entity's property paths.
+//
 // Project values are ready to print (dates and amounts formatted); an image's
 // value is its location. DataQuery filters: every filter must match. "in" =
 // the cell equals one of `values` (case-insensitive); "between" = value <=
 // cell <= value2, either end optional (dates as ISO yyyy-mm-dd). At most one
-// sort; empty cells sort last.
+// sort; empty cells sort last. A saved "between" filter may carry a `period`
+// (thisMonth, lastMonth, thisQuarter, thisYear, last30Days) instead of dates:
+// the designer sends it already turned into dates, and a backend running a
+// saved report must do the same with that day's date.
 
 import apiClient from "./apiClient";
 import { DATA_SOURCE_API } from "@/config/apiConfig";
 import { MOCK_PROJECTS } from "@/mocks/projects";
-import { columnFacets, queryRows as queryMockRows } from "@/mocks/queryDataSource";
+import { aggregateRows, columnFacets, queryRows as queryMockRows } from "@/mocks/queryDataSource";
+import { resolveFilterDates } from "@/utils/table/dataBinding";
 import type {
+  AggregateRequest,
+  AggregateResult,
+  JmixCondition,
   DataQuery,
   DataQueryResult,
   DataSourceSchema,
@@ -32,7 +45,6 @@ import type {
 } from "@/types/dataSource";
 
 export const usesMockDataSources = () => !DATA_SOURCE_API;
-
 // Short pause so loading states behave as they will with the real API
 const MOCK_DELAY_MS = 150;
 const mockDelay = () =>
@@ -108,8 +120,8 @@ export function getSchema(projectId: string, sourceId: string): Promise<DataSour
   return cached(schemaCache, `${projectId}/${sourceId}`, async () => {
     if (usesMockDataSources()) {
       await mockDelay();
-      const { id, name, columns } = findMockSource(projectId, sourceId);
-      return { id, name, columns: columns.map((c) => ({ ...c })) };
+      const { id, name, entityName, columns } = findMockSource(projectId, sourceId);
+      return { id, name, entityName, columns: columns.map((c) => ({ ...c })) };
     }
     return apiClient.get<DataSourceSchema>(`${sourcePath(projectId, sourceId)}/schema`, {
       baseURL: DATA_SOURCE_API,
@@ -147,15 +159,49 @@ export async function queryRows(
   query: DataQuery,
   signal?: AbortSignal,
 ): Promise<DataQueryResult> {
+  const sent = { ...query, filters: resolveFilterDates(query.filters) };
   if (usesMockDataSources()) {
     await mockDelay();
     signal?.throwIfAborted();
     const source = findMockSource(projectId, sourceId);
-    return queryMockRows(source.rows, source.columns, query);
+    return queryMockRows(source.rows, source.columns, sent);
   }
   return apiClient.post<DataQueryResult>(
     `${sourcePath(projectId, sourceId)}/query`,
-    JSON.stringify(query),
+    JSON.stringify(sent),
     { baseURL: DATA_SOURCE_API, signal },
   );
+}
+
+// The project a request is for (its globalFilter's project.id)
+const projectOf = (request: AggregateRequest): string => {
+  const condition = request.globalFilter?.conditions.find(
+    (c): c is JmixCondition => "property" in c && c.property === "project.id",
+  );
+  return condition ? String(condition.value) : "";
+};
+
+// The CDP backend may wrap answers as { data, message, status }; like the CDP app's unwrap()
+function unwrap<T>(body: unknown): T {
+  if (body && typeof body === "object" && !Array.isArray(body) && "data" in body) {
+    const envelope = body as { data: T; message?: unknown; status?: unknown };
+    if ("message" in envelope || "status" in envelope) return envelope.data;
+  }
+  return body as T;
+}
+
+// A chart's numbers for one series (see the header). With dummy data the same
+// request is answered from the dummy rows.
+export async function aggregate(request: AggregateRequest, signal?: AbortSignal): Promise<AggregateResult> {
+  if (usesMockDataSources()) {
+    await mockDelay();
+    signal?.throwIfAborted();
+    const source = findMockProject(projectOf(request)).sources.find(
+      (s) => s.entityName === request.entityName || s.id === request.entityName,
+    );
+    if (!source) throw new Error(`Unknown data source: ${request.entityName}`);
+    return aggregateRows(source.rows, source.columns, request);
+  }
+  const body = await apiClient.post<unknown>("/analytics/aggregate", JSON.stringify(request), { signal });
+  return unwrap<AggregateResult>(body);
 }

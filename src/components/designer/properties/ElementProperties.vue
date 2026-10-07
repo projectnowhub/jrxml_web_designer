@@ -265,70 +265,15 @@
             </div>
           </template>
 
-          <!-- Chart: type, title and the data it plots -->
-          <template v-if="currentElement.type === 'chart'">
-            <div class="box-section compact">
-              <h5>{{ t("chart.title") }}</h5>
-              <label class="field">
-                <span class="field-label">{{ t("chart.type") }}</span>
-                <select
-                  class="card-select"
-                  :value="currentElement.chartType"
-                  @change="setTextProperty('chartType', ($event.target as HTMLSelectElement).value)"
-                >
-                  <option v-for="type in chartTypeOptions" :key="type" :value="type">{{ t(`chart.types.${type}`) }}</option>
-                </select>
-              </label>
-              <label class="field card-gap-sm">
-                <span class="field-label">{{ t("chart.chartTitle") }}</span>
-                <input
-                  class="card-input"
-                  type="text"
-                  :value="chartTitleText"
-                  :placeholder="t('chart.chartTitlePlaceholder')"
-                  @change="setChartTitle(($event.target as HTMLInputElement).value)"
-                />
-              </label>
-              <label class="toggle-row card-gap-sm">
-                <input
-                  type="checkbox"
-                  :checked="currentElement.isShowLegend !== false"
-                  @change="setTextProperty('isShowLegend', ($event.target as HTMLInputElement).checked)"
-                />
-                <span>{{ t("chart.showLegend") }}</span>
-              </label>
-            </div>
-
-            <div class="box-section compact">
-              <h5>{{ t("chart.data") }}</h5>
-              <label class="field">
-                <span class="field-label">{{ t("chart.dataFrom") }}</span>
-                <select
-                  class="card-select"
-                  :value="currentElement.subDataset ?? ''"
-                  @change="setTextProperty('subDataset', ($event.target as HTMLSelectElement).value || undefined)"
-                >
-                  <option value="">{{ t("chart.reportData") }}</option>
-                  <option v-for="ds in subDatasets || []" :key="ds.name" :value="ds.name">{{ ds.name }}</option>
-                </select>
-              </label>
-              <label v-for="field in chartDataFields" :key="field.key" class="field card-gap-sm">
-                <span class="field-label">{{ t(field.labelKey) }}</span>
-                <input
-                  class="card-input mono"
-                  type="text"
-                  list="chart-field-options"
-                  :value="(currentElement as any)[field.key] ?? ''"
-                  :placeholder="'$F{' + t('chart.fieldPlaceholder') + '}'"
-                  @change="setTextProperty(field.key, ($event.target as HTMLInputElement).value.trim() || undefined)"
-                />
-              </label>
-              <datalist id="chart-field-options">
-                <option v-for="f in reportFields || []" :key="f.name" :value="`$F{${f.name}}`" />
-              </datalist>
-              <small class="card-hint">{{ t(chartDataHintKey) }}</small>
-            </div>
-          </template>
+          <!-- Chart: type, title, legend -->
+          <ChartProperties
+            v-if="currentElement.type === 'chart'"
+            part="basic"
+            :element="currentElement as ChartElement"
+            @save-state="emit('save-state')"
+            @update-jrxml="emit('update-jrxml')"
+            @configure="emit('configure-chart')"
+          />
 
           <!-- Barcode: symbology and value -->
           <template v-if="currentElement.type === 'barcode'">
@@ -488,6 +433,14 @@
 
         <!-- Style settings tab -->
         <div v-else key="style" class="prop-tab-pane" role="tabpanel">
+
+            <ChartProperties
+              v-if="currentElement.type === 'chart'"
+              part="style"
+              :element="currentElement as ChartElement"
+              @save-state="emit('save-state')"
+              @update-jrxml="emit('update-jrxml')"
+            />
 
             <!-- Border settings (not supported for table and line elements) -->
             <template v-if="currentElement.type !== 'table' && currentElement.type !== 'line'">
@@ -908,7 +861,7 @@ import ColorSwatchPicker from '../../common/ColorSwatchPicker.vue';
 import { computed, ref, onMounted, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
-import type { Band, SelectedElementInfo, TableDataset } from "../../../types";
+import type { Band, ChartElement, SelectedElementInfo } from "../../../types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
@@ -920,8 +873,6 @@ import {
   IMAGE_SHAPES,
   type ImageShapeId,
   setImageShape,
-  quoteExpressionValue,
-  stripExpressionQuotes,
   setPropertyCornerRadii,
   type CornerName,
   type CornerRadii,
@@ -939,6 +890,7 @@ import {
 } from "../../../constants/constants";
 import ColorPickerWithOpacity from "./ColorPickerWithOpacity.vue";
 import PaginationProperties from "./PaginationProperties.vue";
+import ChartProperties from "./ChartProperties.vue";
 import { isPagination } from "../../../utils/paginationPresets";
 import FrameProperties from "./FrameProperties.vue";
 import {
@@ -959,7 +911,6 @@ interface Props {
   selectedElement: SelectedElementInfo | null;
   bands: Band[];
   reportProperties: any;
-  subDatasets?: TableDataset[];
   // Table styles saved in the report
   tableStyles?: SavedTableStyle[];
   reportFields?: Array<{ name: string; class?: string }>;
@@ -980,6 +931,7 @@ interface Emits {
   (e: "delete-table-style", id: string): void;
   // Open the Configure popup for the selected table
   (e: "configure-table"): void;
+  (e: "configure-chart"): void;
 }
 
 const props = defineProps<Props>();
@@ -1676,66 +1628,6 @@ const SHAPE_STYLES = LINE_ONLY_STYLES;
 // JasperReports draws a Double pen as two lines a third of the pen width each,
 // so below 3pt it prints (and shows on the canvas) as one solid line
 const MIN_DOUBLE_LINE_WIDTH = 3;
-
-// Chart types offered in the picker (the ones the generator writes fully);
-// an imported chart of another type keeps its own type in the list
-const CHART_TYPES = [
-  "pie", "pie3D", "bar", "bar3D", "stackedBar", "stackedBar3D",
-  "line", "area", "stackedArea", "xyLine", "xyArea", "xyBar", "scatter",
-];
-const PIE_CHARTS = ["pie", "pie3D"];
-const XY_CHARTS = ["xyLine", "xyArea", "xyBar", "scatter", "bubble", "timeSeries", "highLow", "candlestick"];
-
-const chartTypeOptions = computed(() => {
-  const current = (currentElement.value as any)?.chartType;
-  return current && !CHART_TYPES.includes(current) ? [current, ...CHART_TYPES] : CHART_TYPES;
-});
-
-// The expressions a chart of this type reads (same split as the generator)
-const chartDataFields = computed(() => {
-  const type = (currentElement.value as any)?.chartType || "pie";
-  if (PIE_CHARTS.includes(type)) {
-    return [
-      { key: "keyExpression", labelKey: "chart.fields.key" },
-      { key: "valueExpression", labelKey: "chart.fields.value" },
-    ];
-  }
-  if (XY_CHARTS.includes(type)) {
-    return [
-      { key: "seriesExpression", labelKey: "chart.fields.series" },
-      { key: "xValueExpression", labelKey: "chart.fields.x" },
-      { key: "yValueExpression", labelKey: "chart.fields.y" },
-    ];
-  }
-  return [
-    { key: "seriesExpression", labelKey: "chart.fields.series" },
-    { key: "categoryExpression", labelKey: "chart.fields.category" },
-    { key: "valueExpression", labelKey: "chart.fields.value" },
-  ];
-});
-const chartDataHintKey = computed(() => {
-  const type = (currentElement.value as any)?.chartType || "pie";
-  if (PIE_CHARTS.includes(type)) return "chart.hints.pie";
-  if (XY_CHARTS.includes(type)) return "chart.hints.xy";
-  return "chart.hints.category";
-});
-
-// Title: plain text is stored as a quoted expression, $F{}/$P{} as typed
-const chartTitleText = computed(() => {
-  const el = currentElement.value as any;
-  if (!el) return "";
-  return el.titleExpression ? stripExpressionQuotes(el.titleExpression) : el.title || "";
-});
-function setChartTitle(value: string) {
-  const el = currentElement.value as any;
-  const text = value.trim();
-  const expression = text ? quoteExpressionValue(text) : "";
-  if (!el || (el.titleExpression || "") === expression) return;
-  emit("save-state");
-  el.titleExpression = expression;
-  el.title = undefined;
-  emit("update-jrxml");
-}
 
 // Barcode symbologies (value = JasperReports barcode type)
 const BARCODE_TYPES = [

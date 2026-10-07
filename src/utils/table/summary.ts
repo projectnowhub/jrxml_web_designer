@@ -34,6 +34,7 @@ export function describeFilterValue(
       ? t("dataTable.filter.moreValues", { values: listed, count: values.length - LISTED_VALUES })
       : listed;
   }
+  if (filter.period) return t(`dataTable.filter.periods.${filter.period}`);
   const show = (v?: string) => formatCellValue(type === "date" ? v : Number(v), type, locale);
   const hasFrom = filter.value !== undefined && filter.value !== "";
   const hasTo = filter.value2 !== undefined && filter.value2 !== "";

@@ -1,4 +1,4 @@
-import type { ReportProject, TableDataBinding } from "./dataSource";
+import type { ChartBinding, ReportProject, TableDataBinding } from "./dataSource";
 
 // Element type enum
 export type ElementType =
@@ -409,96 +409,12 @@ export interface TableElement extends DesignElementBase {
   rowHeight?: number;
 }
 
-// Chart element interface
+// Chart element: one of nine chart types (utils/chart). Written to the JRXML
+// as an image of the chart with its setup (com.cdp.chart.binding), which the
+// parser reads back.
 export interface ChartElement extends DesignElementBase {
   type: "chart";
-  chartType:
-    | "pie"
-    | "pie3D"
-    | "bar"
-    | "bar3D"
-    | "xyBar"
-    | "stackedBar"
-    | "stackedBar3D"
-    | "line"
-    | "xyLine"
-    | "area"
-    | "xyArea"
-    | "scatter"
-    | "bubble"
-    | "timeSeries"
-    | "highLow"
-    | "candlestick"
-    | "meter"
-    | "thermometer"
-    | "multiAxis"
-    | "stackedArea"
-    | "gantt"
-    | "spider";
-  // Chart title
-  title?: string;
-  titleExpression?: string;
-  subtitleExpression?: string;
-  legendExpression?: string;
-  // Chart settings
-  isShowLegend?: boolean;
-  isShowTitle?: boolean;
-  isShowSubtitle?: boolean;
-  renderType?: "svg" | "draw" | "image";
-  customizerClass?: string;
-  // Hyperlink
-  hyperlinkTooltipExpression?: string;
-  hyperlinkTarget?: "Self" | "Blank" | "Top" | "Parent";
-  hyperlinkType?:
-    | "None"
-    | "Reference"
-    | "LocalAnchor"
-    | "LocalPage"
-    | "RemoteAnchor"
-    | "RemotePage"
-    | "Tooltip";
-  hyperlinkExpression?: string;
-  bookmarkLevel?: number;
-  // Evaluation settings
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto"
-    | "Master";
-  evaluationGroup?: string;
-  printWhenExpression?: string;
-  // Dataset
-  subDataset?: string;
-  dataSourceExpression?: string;
-  incrementType?: "None" | "Group" | "Page" | "Column" | "Report";
-  incrementGroup?: string;
-  // Series expressions (categorical charts: bar, line, area, stackedBar, etc.)
-  seriesExpression?: string;
-  categoryExpression?: string;
-  valueExpression?: string;
-  // Pie chart expression
-  keyExpression?: string;
-  // XY chart expressions (scatter, bubble, xyLine, xyArea, timeSeries, etc.)
-  xValueExpression?: string;
-  yValueExpression?: string;
-  // Rendering settings
-  isCircular?: boolean;
-  isShowShapes?: boolean;
-  itemLabelColor?: string;
-  itemLabelBackgroundColor?: string;
-  categoryAxisLabelExpression?: string;
-  valueAxisLabelExpression?: string;
-  // Specific to gauge/thermometer charts
-  dataExpression?: string;
-  shape?: "chord" | "pie" | "circle" | "fan" | "dash" | "bullet";
-  lowExpression?: string;
-  mediumExpression?: string;
-  highExpression?: string;
-  units?: string;
+  binding: ChartBinding;
 }
 
 // Barcode element interface

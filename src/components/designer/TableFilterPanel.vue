@@ -20,7 +20,7 @@
     <div class="tfp-box">
       <!-- Categories -->
       <ul class="tfp-rail" role="tablist" :aria-label="t('dataTable.filter.title')">
-        <li>
+        <li v-if="showSort">
           <button
             type="button"
             role="tab"
@@ -126,6 +126,27 @@
             <p v-if="activeFacet.min !== null" class="tfp-hint">
               {{ t("dataTable.filter.rangeHint", { from: show(activeFacet.min), to: show(activeFacet.max) }) }}
             </p>
+            <!-- Dates: ranges that move with today's date (a report reused next month) -->
+            <template v-if="activeColumn.type === 'date'">
+              <span class="tfp-group-label">{{ t("dataTable.filter.movingRange") }}</span>
+              <div class="tfp-quick" role="group" :aria-label="t('dataTable.filter.movingRange')">
+                <button
+                  v-for="period in RELATIVE_PERIODS"
+                  :key="period"
+                  type="button"
+                  class="tfp-pill"
+                  :class="{ active: periodOf(activeColumn.key) === period }"
+                  :aria-pressed="periodOf(activeColumn.key) === period"
+                  @click="periodOf(activeColumn.key) === period ? clearColumn(activeColumn.key) : setPeriod(activeColumn, period)"
+                >
+                  {{ t(`dataTable.filter.periods.${period}`) }}
+                </button>
+              </div>
+              <p v-if="periodOf(activeColumn.key)" class="tfp-hint">
+                {{ t("dataTable.filter.movingRangeHint", periodDates(periodOf(activeColumn.key)!)) }}
+              </p>
+              <span v-if="quickPicks.length" class="tfp-group-label">{{ t("dataTable.filter.fixedRange") }}</span>
+            </template>
             <div v-if="quickPicks.length" class="tfp-quick" role="group" :aria-label="t('dataTable.filter.quickPicks')">
               <button
                 v-for="pick in quickPicks"
@@ -192,22 +213,29 @@ import { ArrowDownUp, Funnel, Search, X } from "@lucide/vue";
 import type {
   ColumnFacet,
   DataColumn,
+  RelativePeriod,
   SourceFacets,
   TableFilter,
   TableSort,
 } from "@/types/dataSource";
+import { RELATIVE_PERIODS, periodRange } from "@/utils/table/dataBinding";
 import { formatCellValue } from "@/utils/table/dataTable";
 import { describeFilter, describeSort, sortDirectionLabel } from "@/utils/table/summary";
 
-const props = defineProps<{
-  // Every column of the source (filters may use columns the table doesn't show)
-  columns: DataColumn[];
-  facets: SourceFacets | null;
-  filters: TableFilter[];
-  sort: TableSort[];
-  // Rows the current choices keep; null while unknown
-  matchCount: number | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    // Every column of the source (filters may use columns the table doesn't show)
+    columns: DataColumn[];
+    facets: SourceFacets | null;
+    filters: TableFilter[];
+    sort?: TableSort[];
+    // Rows the current choices keep; null while unknown
+    matchCount: number | null;
+    // Charts have no row order: no Sort category
+    showSort?: boolean;
+  }>(),
+  { sort: () => [], showSort: true },
+);
 
 const emit = defineEmits<{
   "update:filters": [filters: TableFilter[]];
@@ -220,7 +248,6 @@ const SORT = "__sort";
 // A search box appears for columns with more values than this
 const SEARCH_FROM = 8;
 
-const active = ref<string>(SORT);
 const search = ref("");
 
 // Columns with something to choose from (a column whose cells are all empty has nothing)
@@ -232,6 +259,10 @@ const filterableColumns = computed(() =>
   }),
 );
 
+// The category opened first: Sort, or the first column when there is no Sort
+const firstCategory = () => (props.showSort ? SORT : (filterableColumns.value[0]?.key ?? ""));
+const active = ref<string>(firstCategory());
+
 const activeColumn = computed(() => props.columns.find((c) => c.key === active.value));
 const activeFacet = computed<ColumnFacet | undefined>(() =>
   activeColumn.value ? props.facets?.[activeColumn.value.key] : undefined,
@@ -241,7 +272,7 @@ const activeFacet = computed<ColumnFacet | undefined>(() =>
 watch(
   () => props.columns.map((c) => c.key).join(","),
   () => {
-    active.value = SORT;
+    active.value = firstCategory();
     search.value = "";
   },
 );
@@ -257,7 +288,7 @@ function selectedCount(key: string): number {
   const f = filterOf(key);
   if (!f) return 0;
   if (f.operator === "in") return f.values?.length ?? 0;
-  return f.value || f.value2 ? 1 : 0;
+  return f.period || f.value || f.value2 ? 1 : 0;
 }
 
 // Replace (or drop) one column's filter
@@ -326,6 +357,22 @@ function setRange(col: DataColumn, from: string, to: string) {
     empty ? null : { column: col.key, label: col.label, type: col.type, operator: "between", value: from || undefined, value2: to || undefined },
   );
 }
+
+// ── Moving date ranges ──
+const periodOf = (key: string): RelativePeriod | undefined => {
+  const f = filterOf(key);
+  return f?.operator === "between" ? f.period : undefined;
+};
+
+function setPeriod(col: DataColumn, period: RelativePeriod) {
+  putFilter(col.key, { column: col.key, label: col.label, type: col.type, operator: "between", period });
+}
+
+// Today's dates for a moving range, for the hint under the choices
+const periodDates = (period: RelativePeriod) => {
+  const { from, to } = periodRange(period);
+  return { from: show(from), to: show(to) };
+};
 
 // Numbers in labels without trailing ".00"
 function show(value: string | number | null | undefined): string {
@@ -686,6 +733,14 @@ const appliedChips = computed<{ key: string; text: string; icon: Component; remo
   margin: 0;
   font-size: 11px;
   color: #6b7280;
+}
+
+.tfp-group-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9ca3af;
 }
 
 .tfp-quick {

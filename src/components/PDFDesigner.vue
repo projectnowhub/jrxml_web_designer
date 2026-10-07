@@ -217,6 +217,7 @@
           @drag-start="handleDragStart"
           @element-double-click="handleElementDoubleClick"
           @insert-page-number="addPageNumber"
+          @insert-chart="addChart"
           @update-projects="setReportProjects"
           @add-field="handleAddField"
           @edit-field="handleEditField"
@@ -382,7 +383,6 @@
             :selected-element="selectedElement"
             :bands="bands"
             :report-properties="reportProperties"
-            :sub-datasets="subDatasets"
             :table-styles="tableStyles"
             :report-fields="reportFields"
             :report-parameters="reportParameters"
@@ -404,6 +404,7 @@
             @rename-table-style="renameTableStyle"
             @delete-table-style="deleteTableStyle"
             @configure-table="openTableConfigForSelection"
+            @configure-chart="openChartConfigForSelection"
           />
         </div>
 
@@ -500,6 +501,18 @@
       @apply="applyTableConfig"
     />
 
+    <!-- Chart setup: type, source, what to show, filters -->
+    <ChartConfigModal
+      v-model:visible="chartConfig.visible"
+      :binding="chartConfigElement?.binding"
+      :chart-size="{ width: chartConfigElement?.width ?? 320, height: chartConfigElement?.height ?? 200 }"
+      :projects="reportProjects"
+      :initial-project-id="chartConfig.projectId"
+      :initial-source-id="chartConfig.sourceId"
+      :initial-column-key="chartConfig.columnKey"
+      @apply="applyChartConfig"
+    />
+
     <!-- Right-click context menu -->
     <div
       v-if="contextMenu.visible"
@@ -590,6 +603,8 @@ import HelpModal from "./modals/HelpModal.vue";
 import FieldManagementModal from "./modals/FieldManagementModal.vue";
 import PdfPreviewModal from "./modals/PdfPreviewModal.vue";
 import TableConfigModal from "./modals/TableConfigModal.vue";
+import ChartConfigModal from "./modals/ChartConfigModal.vue";
+import { chartDataVersion, ensureChartData } from "../utils/chart/chartDataStore";
 import VariableManagementModal from "./modals/VariableManagementModal.vue";
 import BaseModal from "./modals/BaseModal.vue";
 import BottomPanel from "./panels/BottomPanel.vue";
@@ -624,6 +639,7 @@ import {
 import type {
   Band,
   BandType,
+  ChartElement,
   DesignElement,
   DraggingInfo,
   EditingElementInfo,
@@ -637,6 +653,8 @@ import type {
   TableElement,
 } from "../types";
 import type {
+  ChartBinding,
+  ChartType,
   DataColumn,
   ProjectField,
   ReportProject,
@@ -775,6 +793,7 @@ import {
   placePaginationInBand,
   type PaginationPosition,
 } from "../utils/paginationPresets";
+import { buildChartElement } from "../utils/chart/chartElement";
 import {
   createElement,
   getAllElements as getAllElementConfigs,
@@ -2086,6 +2105,8 @@ const createLibraryElement = (type: string): DesignElement =>
         fontFamily: reportProperties.value?.defaultFont?.name,
         fontSize: reportProperties.value?.defaultFont?.size,
       })
+    : type === "chart"
+    ? buildChartElement()
     : ({
         ...createElement(type),
         ...getDefaultElementProperties(type),
@@ -2180,6 +2201,39 @@ const addPageNumber = (position: PaginationPosition) => {
   updateJRXML();
 };
 
+// Chart tile, type picked: goes in the last clicked band, centred across the
+// page. Dragging the tile drops a bar chart wherever it is released.
+const addChart = (chartType: ChartType) => {
+  const bandIndex = bands.value[lastClickedBandIndex.value]
+    ? lastClickedBandIndex.value
+    : bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+  const band = bands.value[bandIndex];
+  if (!band) return;
+
+  const element: DesignElement = { ...buildChartElement(chartType), uuid: crypto.randomUUID() };
+  const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+  element.width = Math.min(element.width, availableWidth);
+  element.x = Math.round((availableWidth - element.width) / 2);
+  element.y = 20;
+
+  // Fits the band, growing it when it is too short; too tall is refused
+  const plan = planDropInBand(bandIndex, element);
+  if (plan.kind === "tooTall") {
+    warnTooTallForBand(bandIndex, element.height, plan.maxHeight);
+    return;
+  }
+
+  saveStateToHistory();
+  applyDropInBand(bandIndex, element, plan);
+  if (!band.elements) band.elements = [];
+  band.elements.push(element);
+
+  const elementIndex = band.elements.length - 1;
+  selectElement(bandIndex, elementIndex);
+  handleElementCreated(element, bandIndex, elementIndex);
+  updateJRXML();
+};
+
 // After the paper size or margins change (already one undo step): resize the
 // page border to the new printable area and move elements that no longer fit
 const handlePageSetupChange = () => {
@@ -2203,8 +2257,8 @@ const handleElementDoubleClick = (element: any) => {
     addPageBorder();
     return;
   }
-  // The library asks for a position first (insert-page-number)
-  if (element.type === PAGE_NUMBER_TYPE) return;
+  // The library asks for a position or a chart type first
+  if (element.type === PAGE_NUMBER_TYPE || element.type === "chart") return;
 
   // Ensure there is a last-clicked band
   if (
@@ -2378,7 +2432,8 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
     // Center it on the cursor using its own compact default size
     const baseElement = createLibraryElement(elementData.type);
     const droppedSize =
-      isFrameTemplateType(elementData.type) || elementData.type === PAGE_NUMBER_TYPE || elementData.type === "table"
+      isFrameTemplateType(elementData.type) ||
+      [PAGE_NUMBER_TYPE, "table", "chart"].includes(elementData.type)
       ? { width: baseElement.width, height: baseElement.height }
       : getDefaultElementSize(elementData.type);
     let newElement: DesignElement = {
@@ -2581,7 +2636,8 @@ const handleDragOver = (event: DragEvent) => {
   // A table (or data dropped beside one) can only go in the Detail section
   const needsDetail =
     type === "table" ||
-    (isDataSourceDrag(event) && !(event.target as HTMLElement)?.closest?.("[data-table-uuid]"));
+    (isDataSourceDrag(event) &&
+      !(event.target as HTMLElement)?.closest?.("[data-table-uuid], [data-chart-uuid]"));
   dropTargetBlocked.value =
     (needsDetail && !!band && band.type !== BAND_TYPE_CONSTANTS.DETAIL) ||
     (!!type &&
@@ -2789,16 +2845,71 @@ const applyTableConfig = (binding: TableDataBinding, rowCount: number) => {
   updateJRXML();
 };
 
+// ---- Charts: the Configure popup ----
+const chartAt = (location: TableLocation | null): ChartElement | null => {
+  const el = location ? elementAtLocation(location) : undefined;
+  return el?.type === "chart" ? (el as ChartElement) : null;
+};
+
+const chartConfig = ref<{
+  visible: boolean;
+  target: TableLocation | null;
+  // Project and source dragged onto the chart, if it was opened by a drop
+  projectId?: string;
+  sourceId?: string;
+  columnKey?: string;
+}>({ visible: false, target: null });
+
+const chartConfigElement = computed(() => chartAt(chartConfig.value.target));
+
+const openChartConfig = (
+  target: TableLocation,
+  options: { projectId?: string; sourceId?: string; columnKey?: string } = {},
+) => {
+  chartConfig.value = { visible: true, target, ...options };
+};
+
+const openChartConfigForSelection = () => {
+  if (!selectedElement.value) return;
+  const { bandIndex, elementIndex, parentFrameIndex } = selectedElement.value;
+  const location = { bandIndex, elementIndex, parentFrameIndex };
+  if (chartAt(location)) openChartConfig(location);
+};
+
+// Apply the popup: one undo step
+const applyChartConfig = (binding: ChartBinding) => {
+  const location = chartConfig.value.target;
+  const chart = chartAt(location);
+  if (!chart || !location) return;
+  saveStateToHistory();
+  chart.binding = binding;
+  selectElement(location.bandIndex, location.elementIndex, false, location.parentFrameIndex);
+  updateJRXML();
+};
+
+// A chart's numbers arrived: its picture in the JRXML is redrawn
+watch(chartDataVersion, () => updateJRXML());
+
 // A source or column dropped from the "Report Data" list
 const handleDataSourceDrop = (
   event: DragEvent,
   drag: Exclude<DataSourceDragPayload, { kind: "projectField" }>,
   pageIndex?: number,
 ) => {
+  const columnKey = drag.kind === "column" ? drag.column.key : undefined;
+
+  // Onto a chart: its Configure popup opens with that source (and column)
+  const chartEl = (event.target as HTMLElement)?.closest?.("[data-chart-uuid]") as HTMLElement | null;
+  const chartLocation = chartEl ? findElementByUuid(chartEl.dataset.chartUuid || "") : null;
+  if (chartLocation && chartAt(chartLocation)) {
+    selectElement(chartLocation.bandIndex, chartLocation.elementIndex, false, chartLocation.parentFrameIndex);
+    openChartConfig(chartLocation, { projectId: drag.projectId, sourceId: drag.sourceId, columnKey });
+    return;
+  }
+
   const tableEl = (event.target as HTMLElement)?.closest?.("[data-table-uuid]") as HTMLElement | null;
   const location = tableEl ? findTableByUuid(tableEl.dataset.tableUuid || "") : null;
   const table = tableAt(location);
-  const columnKey = drag.kind === "column" ? drag.column.key : undefined;
 
   if (table && location) {
     // One more column of the source the table already shows: added directly
@@ -3903,6 +4014,11 @@ const startEditing = (
     openTableConfig({ bandIndex, elementIndex, parentFrameIndex });
     return;
   }
+  if (target?.type === "chart") {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    openChartConfig({ bandIndex, elementIndex, parentFrameIndex });
+    return;
+  }
   if (isPagination(target)) {
     selectElement(bandIndex, elementIndex, false, parentFrameIndex);
     notification.warning(t("pagination.cannotEdit"));
@@ -3995,8 +4111,9 @@ const initBox = (element: DesignElement) => {
   };
 };
 
-// Download the JRXML file
-const downloadJRXML = () => {
+// Download the JRXML file (charts drawn with their numbers first)
+const downloadJRXML = async () => {
+  await ensureChartData(bands.value);
   const content = generateJRXMLContent(
     {
       ...reportProperties.value,
@@ -4960,10 +5077,12 @@ const regenerateJRXML = (): void => {
   notification.info(t("editor.jrxmlRegenerated"));
 };
 
-// Open the PDF preview
-const openPdfPreview = (): void => {
+// Open the PDF preview (charts drawn with their numbers first)
+const openPdfPreview = async (): Promise<void> => {
   flushAutoSave();
   try {
+    await ensureChartData(bands.value);
+    updateJRXML();
     if (!jrxmlContent.value) {
       // Generate the JRXML content directly, without downloading it
       const content = generateJRXMLContent(

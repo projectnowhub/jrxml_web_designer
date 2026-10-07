@@ -2,7 +2,7 @@
 // generator/parser and the preview. Each table on a report has its own
 // TableDataBinding, so several tables can use the same source independently.
 
-import type { DataQuery, TableDataBinding, TableFilter } from "@/types/dataSource";
+import type { DataQuery, RelativePeriod, TableDataBinding, TableFilter } from "@/types/dataSource";
 import { normalizeLook } from "./tableThemes";
 
 // JRXML property on the table's <reportElement> holding its TableDataBinding
@@ -21,8 +21,45 @@ const isBlank = (value: unknown) =>
 export function isActiveFilter(filter: TableFilter): boolean {
   if (!filter.column) return false;
   if (filter.operator === "in") return (filter.values?.length ?? 0) > 0;
-  if (filter.operator === "between") return !isBlank(filter.value) || !isBlank(filter.value2);
+  if (filter.operator === "between") {
+    return !!filter.period || !isBlank(filter.value) || !isBlank(filter.value2);
+  }
   return false;
+}
+
+export const RELATIVE_PERIODS: RelativePeriod[] = ["thisMonth", "lastMonth", "thisQuarter", "thisYear", "last30Days"];
+
+const isoDay = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+// First and last day (YYYY-MM-DD) of a moving date range, as of `today`
+export function periodRange(period: RelativePeriod, today = new Date()): { from: string; to: string } {
+  const y = today.getFullYear();
+  const m = today.getMonth();
+  switch (period) {
+    case "thisMonth":
+      return { from: isoDay(new Date(y, m, 1)), to: isoDay(new Date(y, m + 1, 0)) };
+    case "lastMonth":
+      return { from: isoDay(new Date(y, m - 1, 1)), to: isoDay(new Date(y, m, 0)) };
+    case "thisQuarter": {
+      const q = m - (m % 3);
+      return { from: isoDay(new Date(y, q, 1)), to: isoDay(new Date(y, q + 3, 0)) };
+    }
+    case "thisYear":
+      return { from: isoDay(new Date(y, 0, 1)), to: isoDay(new Date(y, 11, 31)) };
+    case "last30Days":
+      return { from: isoDay(new Date(y, m, today.getDate() - 29)), to: isoDay(today) };
+  }
+}
+
+// Filters as sent to the backend: moving date ranges become today's dates
+export function resolveFilterDates(filters: TableFilter[], today = new Date()): TableFilter[] {
+  return filters.map((f) => {
+    if (f.operator !== "between" || !f.period) return f;
+    const { from, to } = periodRange(f.period, today);
+    const { period: _period, ...rest } = f;
+    return { ...rest, value: from, value2: to };
+  });
 }
 
 export function maxColumnsForWidth(tableWidth: number): number {
@@ -70,6 +107,14 @@ export function toDataQuery(binding: TableDataBinding, limit?: number): DataQuer
   };
 }
 
+// Saved filters, keeping only the kinds the designer knows
+export function readFilters(value: unknown): TableFilter[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((f: TableFilter) => f && typeof f.column === "string" && (f.operator === "in" || f.operator === "between"))
+    .map((f: TableFilter) => (f.period && !RELATIVE_PERIODS.includes(f.period) ? { ...f, period: undefined } : f));
+}
+
 export function serializeBinding(binding: TableDataBinding): string {
   return JSON.stringify(binding);
 }
@@ -97,9 +142,7 @@ export function parseBinding(json: string | null | undefined): TableDataBinding 
       sourceId: b.sourceId,
       sourceName: typeof b.sourceName === "string" ? b.sourceName : b.sourceId,
       columns: b.columns,
-      filters: Array.isArray(b.filters)
-        ? b.filters.filter((f: TableFilter) => f && (f.operator === "in" || f.operator === "between"))
-        : [],
+      filters: readFilters(b.filters),
       sort: Array.isArray(b.sort) ? b.sort.slice(0, 1) : [],
       rowLimit: typeof b.rowLimit === "number" ? b.rowLimit : undefined,
       showTotals: b.showTotals === true,

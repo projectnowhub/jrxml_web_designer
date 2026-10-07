@@ -79,6 +79,29 @@
     <p v-if="!projects.length" class="rdp-hint">{{ t("reportData.noProjects") }}</p>
 
     <template v-else>
+      <!-- One tab per project (its logo and short code; the full name in the
+           tooltip and below): the same tables in each, with that project's data.
+           Tabs wrap onto more rows in the narrow panel. -->
+      <div class="rdp-tabs" role="tablist" :aria-label="t('reportData.projectTabs')" @keydown="onTabKeydown">
+        <button
+          v-for="project in projects"
+          :key="project.id"
+          :ref="(el) => (tabRefs[project.id] = el as HTMLElement | null)"
+          type="button"
+          role="tab"
+          class="rdp-tab"
+          :class="{ active: project.id === activeId }"
+          :aria-selected="project.id === activeId"
+          :tabindex="project.id === activeId ? 0 : -1"
+          :title="project.name"
+          @click="activeId = project.id"
+        >
+          <img v-if="logoOf(project.id)" :src="logoOf(project.id)!" class="rdp-tab-logo" alt="" />
+          <FolderKanban v-else :size="13" aria-hidden="true" />
+          <span class="rdp-tab-name">{{ details[project.id]?.code || project.name }}</span>
+        </button>
+      </div>
+
       <label class="rdp-search">
         <Search :size="13" aria-hidden="true" />
         <input v-model="query" type="text" :placeholder="t('reportData.search')" />
@@ -86,27 +109,14 @@
       <p class="rdp-hint">{{ t("reportData.hint") }}</p>
     </template>
 
-    <!-- Each project: its details and its tables -->
-    <section v-for="project in projects" :key="project.id" class="rdp-project">
-      <button
-        type="button"
-        class="rdp-project-head"
-        :aria-expanded="!collapsed[project.id]"
-        @click="collapsed[project.id] = !collapsed[project.id]"
-      >
-        <component :is="collapsed[project.id] ? ChevronRight : ChevronDown" :size="13" class="rdp-chevron" />
-        <img
-          v-if="logoOf(project.id)"
-          :src="logoOf(project.id)!"
-          class="rdp-project-logo"
-          alt=""
-        />
-        <FolderKanban v-else :size="14" class="rdp-accent" aria-hidden="true" />
-        <span class="rdp-name">{{ project.name }}</span>
-        <span class="rdp-meta">{{ details[project.id]?.code }}</span>
-      </button>
+    <!-- The chosen tab's project: its details and its tables -->
+    <section v-if="activeProject" :key="activeProject.id" class="rdp-project" role="tabpanel">
+      <div class="rdp-project-head">
+        <span class="rdp-name">{{ activeProject.name }}</span>
+        <span class="rdp-meta">{{ details[activeProject.id]?.code }}</span>
+      </div>
 
-      <div v-if="!collapsed[project.id]" class="rdp-project-body">
+      <div v-for="project in [activeProject]" :key="project.id" class="rdp-project-body">
         <div v-if="failed[project.id]" class="rdp-message is-error">
           {{ t("reportData.loadFailed") }}
           <button type="button" class="rdp-link" @click="loadProject(project.id)">{{ t("reportData.retry") }}</button>
@@ -239,6 +249,8 @@ import {
 import { clearTableRowsCache } from "@/composables/useTableRows";
 import { endDataSourceDrag, startDataSourceDrag } from "@/utils/table/dataDrag";
 import { collectBoundTables } from "@/utils/table/tableDocument";
+import { clearChartDataCache } from "@/utils/chart/chartDataStore";
+import { isChartBound, normalizeChartBinding } from "@/utils/chart/chartTypes";
 import type { Band } from "@/types";
 import type {
   DataColumn,
@@ -317,7 +329,6 @@ async function selectProjects(ids: string[]) {
 const details = reactive<Record<string, ProjectDetails | undefined>>({});
 const sources = reactive<Record<string, DataSourceSummary[]>>({});
 const failed = reactive<Record<string, boolean>>({});
-const collapsed = reactive<Record<string, boolean>>({});
 const schemas = reactive<Record<string, DataSourceSchema | undefined>>({});
 const expanded = reactive<Record<string, boolean>>({});
 const query = ref("");
@@ -352,22 +363,51 @@ function toggleSource(projectId: string, sourceId: string) {
   if (expanded[key]) loadSchema(projectId, sourceId);
 }
 
-// Load newly chosen projects
+// ---- Tabs: one project shown at a time ------------------------------------
+
+const activeId = ref("");
+const activeProject = computed(() => props.projects.find((p) => p.id === activeId.value));
+const tabRefs: Record<string, HTMLElement | null> = {};
+
+// Load newly chosen projects; a project just added opens in its tab, and
+// when the open one is removed the first one opens
 watch(
   () => props.projects.map((p) => p.id),
-  (ids) => {
+  (ids, before) => {
     ids.forEach((id) => {
       if (!details[id] && !failed[id]) loadProject(id);
     });
+    const added = before ? ids.filter((id) => !before.includes(id)) : [];
+    if (added.length) activeId.value = added[added.length - 1]!;
+    else if (!ids.includes(activeId.value)) activeId.value = ids[0] ?? "";
   },
   { immediate: true },
 );
+
+// Left / right arrows (and Home / End) move between tabs
+function onTabKeydown(event: KeyboardEvent) {
+  const ids = props.projects.map((p) => p.id);
+  const at = ids.indexOf(activeId.value);
+  const next =
+    event.key === "ArrowRight" ? ids[(at + 1) % ids.length]
+    : event.key === "ArrowLeft" ? ids[(at - 1 + ids.length) % ids.length]
+    : event.key === "Home" ? ids[0]
+    : event.key === "End" ? ids[ids.length - 1]
+    : undefined;
+  if (!next) return;
+  event.preventDefault();
+  activeId.value = next;
+  nextTick(() => {
+    tabRefs[next]?.focus();
+  });
+}
 
 // Fetch everything again (e.g. after the backend changed a project)
 async function reload() {
   reloading.value = true;
   clearSchemaCache();
   clearTableRowsCache();
+  clearChartDataCache();
   Object.keys(details).forEach((k) => delete details[k]);
   Object.keys(schemas).forEach((k) => delete schemas[k]);
   try {
@@ -404,12 +444,24 @@ const visibleSources = (projectId: string): DataSourceSummary[] =>
       !!schemas[sourceKey(projectId, s.id)]?.columns.some((c) => matches(c.label)),
   );
 
-// Tables on the report that show each source
+// Tables and charts on the report that show each source (a chart by its
+// title, or its type when it has none)
 const tablesBySource = computed(() => {
   const map: Record<string, string[]> = {};
   for (const table of collectBoundTables(props.bands)) {
     const key = sourceKey(table.binding.projectId, table.binding.sourceId);
     (map[key] ??= []).push(table.binding.tableName);
+  }
+  for (const band of props.bands) {
+    for (const el of band.elements ?? []) {
+      for (const item of el.type === "frame" ? [el, ...(el.elements ?? [])] : [el]) {
+        if (item.type !== "chart") continue;
+        const chart = normalizeChartBinding(item.binding);
+        if (!isChartBound(chart)) continue;
+        const key = sourceKey(chart.projectId!, chart.sourceId!);
+        (map[key] ??= []).push(chart.title.trim() || t(`chart.types.${chart.chartType}`));
+      }
+    }
   }
   return map;
 });
@@ -664,6 +716,71 @@ onMounted(() => loadAllProjects());
   color: #9ca3af;
 }
 
+/* Project tabs: equal columns, wrapping onto more rows; a tab alone on the
+   last row keeps its column's width */
+.rdp-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 4px;
+  margin: 10px 0 0;
+  padding: 3px;
+  border-radius: 8px;
+  background: #f3f4f6;
+}
+
+.rdp-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 11.5px;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.rdp-tab:hover {
+  color: #1f2937;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.rdp-tab.active {
+  border-color: #bfdbfe;
+  background: #fff;
+  color: #1d4ed8;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.rdp-tab:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: -2px;
+}
+
+.rdp-tab svg {
+  flex-shrink: 0;
+  color: #2563eb;
+}
+
+.rdp-tab-logo {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.rdp-tab-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .rdp-project {
   margin-bottom: 6px;
   border: 1px solid var(--prop-border-color, #e5e7eb);
@@ -671,34 +788,18 @@ onMounted(() => loadAllProjects());
   background: #fff;
 }
 
+/* The open project's full name and code */
 .rdp-project-head {
   display: flex;
   align-items: center;
   gap: 6px;
-  width: 100%;
-  padding: 7px 8px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
+  padding: 7px 8px 2px;
   font-size: 12px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.rdp-project-head:hover {
-  background: #f9fafb;
 }
 
 .rdp-project-head .rdp-name {
   font-weight: 600;
-}
-
-.rdp-project-logo {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  object-fit: cover;
-  flex-shrink: 0;
+  white-space: normal;
 }
 
 .rdp-project-body {
@@ -774,8 +875,7 @@ onMounted(() => loadAllProjects());
 }
 
 .rdp-type,
-.rdp-grip,
-.rdp-chevron {
+.rdp-grip {
   flex-shrink: 0;
   color: #9ca3af;
 }

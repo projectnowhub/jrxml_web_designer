@@ -1205,49 +1205,114 @@
   "chart": {
     "title": "Chart",
     "type": "Chart type",
+    "chooseType": "Choose a chart type",
+    "tileHint": "Click to choose a chart type, or drag onto the page",
+    "dragHint": "Or drag the tile onto the page for a bar chart.",
     "chartTitle": "Title",
     "chartTitlePlaceholder": "e.g. Sales by region",
     "showLegend": "Show legend",
-    "data": "Chart data",
-    "dataFrom": "Data from",
-    "reportData": "Report data",
-    "fieldPlaceholder": "field",
+    "colors": "Colors",
+    "groups": {
+      "metric": "Track one number",
+      "trend": "Show a trend",
+      "compare": "Compare categories",
+      "partOfWhole": "Part of a whole"
+    },
     "types": {
-      "pie": "Pie",
-      "pie3D": "Pie (3D)",
-      "bar": "Bar",
-      "bar3D": "Bar (3D)",
-      "stackedBar": "Stacked bar",
-      "stackedBar3D": "Stacked bar (3D)",
-      "line": "Line",
-      "area": "Area",
-      "stackedArea": "Stacked area",
-      "xyLine": "XY line",
-      "xyArea": "XY area",
-      "xyBar": "XY bar",
-      "scatter": "Scatter",
-      "bubble": "Bubble",
-      "timeSeries": "Time series",
-      "highLow": "High-low",
-      "candlestick": "Candlestick",
-      "meter": "Meter",
-      "thermometer": "Thermometer",
-      "multiAxis": "Multi-axis",
-      "gantt": "Gantt",
-      "spider": "Spider"
+      "kpi": "KPI Stat",
+      "gauge": "Gauge",
+      "line": "Line Chart",
+      "area": "Area Chart",
+      "bar": "Bar Chart",
+      "barH": "Horizontal Bar",
+      "pie": "Pie Chart",
+      "donut": "Donut Chart",
+      "treemap": "Tree Map"
     },
-    "fields": {
-      "key": "Slice label",
-      "value": "Value",
-      "series": "Series",
-      "category": "Category",
-      "x": "X value",
-      "y": "Y value"
+    "palettes": {
+      "vivid": "Vivid",
+      "ocean": "Ocean",
+      "forest": "Forest",
+      "sunset": "Sunset",
+      "mono": "Grey"
     },
-    "hints": {
-      "pie": "Each row adds its value to the slice named by the label.",
-      "category": "Each row adds its value to a category (one bar or point); series splits them into groups.",
-      "xy": "Each row is one point at (X, Y); series splits the points into lines or groups."
+    "sample": {
+      "total": "Total",
+      "series": "Series {n}",
+      "category": "Category {n}",
+      "group": "Group {n}",
+      "item": "Item {n}"
+    },
+    "data": "Data",
+    "dataFrom": "{source} · {project}",
+    "dataHint": "Drag a source from Report Data onto the chart, or set it up here. Until then the chart shows sample numbers and prints nothing.",
+    "setUpData": "Set up data",
+    "editData": "Edit data",
+    "noData": "No data",
+    "blank": "(Blank)",
+    "other": "Other",
+    "quarterLabel": "Q{quarter} {year}",
+    "measures": {
+      "countOf": "Count",
+      "sumOf": "Total {column}",
+      "avgOf": "Average {column}",
+      "minOf": "Lowest {column}",
+      "maxOf": "Highest {column}"
+    },
+    "aggregations": {
+      "count": "Count rows",
+      "sum": "Total of",
+      "avg": "Average of",
+      "min": "Lowest of",
+      "max": "Highest of"
+    },
+    "granularities": {
+      "day": "By day",
+      "week": "By week",
+      "month": "By month",
+      "quarter": "By quarter",
+      "year": "By year"
+    },
+    "states": {
+      "sample": "Sample data",
+      "sampleHint": "Sample numbers: drag a source from Report Data onto the chart, or double-click it to set up its data. Prints nothing until then.",
+      "incomplete": "Finish the setup",
+      "incompleteHint": "Choose what the chart shows (double-click it). Prints nothing until then.",
+      "loading": "Loading…",
+      "loadingHint": "Loading the chart's numbers…",
+      "failed": "Couldn't load data",
+      "failedHint": "The chart's numbers couldn't be loaded. It prints nothing until they can."
+    },
+    "config": {
+      "title": "Chart data",
+      "replacesData": "Replaces the chart's data from {source}.",
+      "whatToShow": "What to show",
+      "categories": "Categories",
+      "overTime": "Over time",
+      "groups": "Groups",
+      "items": "Items in each group",
+      "chooseColumn": "Choose a column",
+      "groupDatesBy": "Group dates",
+      "noTextColumns": "This source has no columns to group by.",
+      "noDateColumns": "This source has no date column. Bar charts can compare other columns.",
+      "value": "Number shown",
+      "series": "Lines or bars",
+      "calculation": "Calculation",
+      "ofColumn": "Column",
+      "splitBy": "One per",
+      "noSplit": "(none)",
+      "addSeries": "Add another",
+      "removeSeries": "Remove",
+      "gaugeMax": "Scale up to",
+      "automatic": "Automatic",
+      "stackBars": "Stack the bars",
+      "stackAreas": "Stack the areas",
+      "show": "Show",
+      "largest": "Largest {count}",
+      "all": "All",
+      "filters": "Which rows count",
+      "basedOn": "Based on 1 row | Based on {count} rows",
+      "incomplete": "Choose what the chart shows."
     }
   },
   "dataTable": {
@@ -1350,7 +1415,17 @@
       "onOrAfter": "From {value}",
       "onOrBefore": "Until {value}",
       "moreValues": "{values} +{count}",
-      "matchCount": "1 row matches | {count} rows match"
+      "matchCount": "1 row matches | {count} rows match",
+      "movingRange": "Moves with today's date",
+      "movingRangeHint": "Today that is {from} to {to}.",
+      "fixedRange": "Fixed months",
+      "periods": {
+        "thisMonth": "This month",
+        "lastMonth": "Last month",
+        "thisQuarter": "This quarter",
+        "thisYear": "This year",
+        "last30Days": "Last 30 days"
+      }
     },
     "sort": {
       "text": {
@@ -1441,8 +1516,9 @@
     "dropTextOnText": "Drop text details (name, dates, budget…) on a text element, or on empty space.",
     "dropImageOnImage": "Drop the logo on an image element, or on empty space.",
     "dropNotOnPageNumber": "A page number can't show project data. Drop it on another text element.",
-    "projectInUse": "{project} is still used by {count} table(s) on this report. Delete them, or choose another project in their data, before removing it.",
+    "projectInUse": "{project} is still used by {count} table(s) or chart(s) on this report. Delete them, or choose another project in their data, before removing it.",
     "projectSource": "{project} · {source}",
-    "noValue": "{project} has no {label} to add."
+    "noValue": "{project} has no {label} to add.",
+    "projectTabs": "Report projects"
   }
 }

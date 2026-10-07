@@ -1205,49 +1205,114 @@
   "chart": {
     "title": "Carta",
     "type": "Jenis carta",
+    "chooseType": "Pilih jenis carta",
+    "tileHint": "Klik untuk memilih jenis carta, atau seret ke halaman",
+    "dragHint": "Atau seret jubin ke halaman untuk carta bar.",
     "chartTitle": "Tajuk",
     "chartTitlePlaceholder": "cth. Jualan mengikut wilayah",
     "showLegend": "Tunjukkan petunjuk",
-    "data": "Data carta",
-    "dataFrom": "Data daripada",
-    "reportData": "Data laporan",
-    "fieldPlaceholder": "medan",
+    "colors": "Warna",
+    "groups": {
+      "metric": "Jejak satu nombor",
+      "trend": "Tunjukkan trend",
+      "compare": "Bandingkan kategori",
+      "partOfWhole": "Bahagian daripada keseluruhan"
+    },
     "types": {
-      "pie": "Pai",
-      "pie3D": "Pai (3D)",
-      "bar": "Bar",
-      "bar3D": "Bar (3D)",
-      "stackedBar": "Bar bertindan",
-      "stackedBar3D": "Bar bertindan (3D)",
-      "line": "Garis",
-      "area": "Kawasan",
-      "stackedArea": "Kawasan bertindan",
-      "xyLine": "Garis XY",
-      "xyArea": "Kawasan XY",
-      "xyBar": "Bar XY",
-      "scatter": "Serakan",
-      "bubble": "Gelembung",
-      "timeSeries": "Siri masa",
-      "highLow": "Tinggi-rendah",
-      "candlestick": "Batang lilin",
-      "meter": "Meter",
-      "thermometer": "Termometer",
-      "multiAxis": "Berbilang paksi",
-      "gantt": "Gantt",
-      "spider": "Labah-labah"
+      "kpi": "Stat KPI",
+      "gauge": "Tolok",
+      "line": "Carta Garis",
+      "area": "Carta Kawasan",
+      "bar": "Carta Bar",
+      "barH": "Bar Mendatar",
+      "pie": "Carta Pai",
+      "donut": "Carta Donut",
+      "treemap": "Peta Pokok"
     },
-    "fields": {
-      "key": "Label hirisan",
-      "value": "Nilai",
-      "series": "Siri",
-      "category": "Kategori",
-      "x": "Nilai X",
-      "y": "Nilai Y"
+    "palettes": {
+      "vivid": "Terang",
+      "ocean": "Lautan",
+      "forest": "Hutan",
+      "sunset": "Senja",
+      "mono": "Kelabu"
     },
-    "hints": {
-      "pie": "Setiap baris menambah nilainya pada hirisan yang dinamakan oleh label.",
-      "category": "Setiap baris menambah nilainya pada satu kategori (satu bar atau titik); siri membahagikannya kepada kumpulan.",
-      "xy": "Setiap baris ialah satu titik pada (X, Y); siri membahagikan titik kepada garis atau kumpulan."
+    "sample": {
+      "total": "Jumlah",
+      "series": "Siri {n}",
+      "category": "Kategori {n}",
+      "group": "Kumpulan {n}",
+      "item": "Item {n}"
+    },
+    "data": "Data",
+    "dataFrom": "{source} · {project}",
+    "dataHint": "Seret sumber dari Data Laporan ke carta, atau sediakannya di sini. Sehingga itu carta menunjukkan nombor contoh dan tidak dicetak.",
+    "setUpData": "Sediakan data",
+    "editData": "Edit data",
+    "noData": "Tiada data",
+    "blank": "(Kosong)",
+    "other": "Lain-lain",
+    "quarterLabel": "S{quarter} {year}",
+    "measures": {
+      "countOf": "Bilangan",
+      "sumOf": "Jumlah {column}",
+      "avgOf": "Purata {column}",
+      "minOf": "{column} terendah",
+      "maxOf": "{column} tertinggi"
+    },
+    "aggregations": {
+      "count": "Kira baris",
+      "sum": "Jumlah",
+      "avg": "Purata",
+      "min": "Terendah",
+      "max": "Tertinggi"
+    },
+    "granularities": {
+      "day": "Mengikut hari",
+      "week": "Mengikut minggu",
+      "month": "Mengikut bulan",
+      "quarter": "Mengikut suku tahun",
+      "year": "Mengikut tahun"
+    },
+    "states": {
+      "sample": "Data contoh",
+      "sampleHint": "Nombor contoh: seret sumber dari Data Laporan ke carta, atau klik dua kali untuk menyediakan datanya. Tidak dicetak sehingga itu.",
+      "incomplete": "Lengkapkan tetapan",
+      "incompleteHint": "Pilih apa yang ditunjukkan oleh carta (klik dua kali). Tidak dicetak sehingga itu.",
+      "loading": "Memuatkan…",
+      "loadingHint": "Memuatkan nombor carta…",
+      "failed": "Data tidak dapat dimuatkan",
+      "failedHint": "Nombor carta tidak dapat dimuatkan. Carta tidak dicetak sehingga ia dapat dimuatkan."
+    },
+    "config": {
+      "title": "Data carta",
+      "replacesData": "Menggantikan data carta daripada {source}.",
+      "whatToShow": "Apa yang ditunjukkan",
+      "categories": "Kategori",
+      "overTime": "Mengikut masa",
+      "groups": "Kumpulan",
+      "items": "Item dalam setiap kumpulan",
+      "chooseColumn": "Pilih lajur",
+      "groupDatesBy": "Kumpulkan tarikh",
+      "noTextColumns": "Sumber ini tiada lajur untuk dikumpulkan.",
+      "noDateColumns": "Sumber ini tiada lajur tarikh. Carta bar boleh membandingkan lajur lain.",
+      "value": "Nombor yang ditunjukkan",
+      "series": "Garis atau bar",
+      "calculation": "Pengiraan",
+      "ofColumn": "Lajur",
+      "splitBy": "Satu bagi setiap",
+      "noSplit": "(tiada)",
+      "addSeries": "Tambah lagi",
+      "removeSeries": "Buang",
+      "gaugeMax": "Skala sehingga",
+      "automatic": "Automatik",
+      "stackBars": "Tindankan bar",
+      "stackAreas": "Tindankan kawasan",
+      "show": "Tunjukkan",
+      "largest": "{count} terbesar",
+      "all": "Semua",
+      "filters": "Baris yang dikira",
+      "basedOn": "Berdasarkan 1 baris | Berdasarkan {count} baris",
+      "incomplete": "Pilih apa yang ditunjukkan oleh carta."
     }
   },
   "dataTable": {
@@ -1350,7 +1415,17 @@
       "onOrAfter": "Dari {value}",
       "onOrBefore": "Sehingga {value}",
       "moreValues": "{values} +{count}",
-      "matchCount": "1 baris sepadan | {count} baris sepadan"
+      "matchCount": "1 baris sepadan | {count} baris sepadan",
+      "movingRange": "Bergerak mengikut tarikh hari ini",
+      "movingRangeHint": "Hari ini iaitu {from} hingga {to}.",
+      "fixedRange": "Bulan tetap",
+      "periods": {
+        "thisMonth": "Bulan ini",
+        "lastMonth": "Bulan lepas",
+        "thisQuarter": "Suku tahun ini",
+        "thisYear": "Tahun ini",
+        "last30Days": "30 hari lepas"
+      }
     },
     "sort": {
       "text": {
@@ -1441,8 +1516,9 @@
     "dropTextOnText": "Lepaskan butiran teks (nama, tarikh, bajet…) pada elemen teks, atau di ruang kosong.",
     "dropImageOnImage": "Lepaskan logo pada elemen imej, atau di ruang kosong.",
     "dropNotOnPageNumber": "Nombor halaman tidak boleh memaparkan data projek. Lepaskannya pada elemen teks lain.",
-    "projectInUse": "{project} masih digunakan oleh {count} jadual dalam laporan ini. Padam jadual tersebut, atau pilih projek lain dalam datanya, sebelum mengalih keluarnya.",
+    "projectInUse": "{project} masih digunakan oleh {count} jadual atau carta dalam laporan ini. Padam jadual atau carta tersebut, atau pilih projek lain dalam datanya, sebelum mengalih keluarnya.",
     "projectSource": "{project} · {source}",
-    "noValue": "{project} tiada {label} untuk ditambah."
+    "noValue": "{project} tiada {label} untuk ditambah.",
+    "projectTabs": "Projek laporan"
   }
 }

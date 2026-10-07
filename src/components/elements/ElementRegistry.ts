@@ -1,7 +1,7 @@
 import type { Component } from "vue";
 import {
   Barcode,
-  ChartNoAxesColumn,
+  ChartColumn,
   Circle,
   FileDigit,
   Gauge,
@@ -208,27 +208,15 @@ export class ElementRegistry {
       },
     });
 
-    // Chart element
+    // Chart: one tile for the nine chart types. Clicking it asks for a type;
+    // dragging it drops a bar chart. Built by buildChartElement() (utils/chart).
     this.registerElement({
       type: "chart",
       name: "elementNames.chart",
       icon: "▊",
-      iconComponent: ChartNoAxesColumn,
+      iconComponent: ChartColumn,
       category: "basic",
-      defaultProps: {
-        type: "chart",
-        x: 0,
-        y: 0,
-        width: 200,
-        height: 150,
-        chartType: "pie",
-        title: "Chart",
-        titleExpression: "",
-        subtitleExpression: "",
-        legendExpression: "",
-        evaluationTime: "Now",
-        printWhenExpression: "",
-      },
+      defaultProps: { type: "chart", x: 0, y: 0, width: 320, height: 200 },
     });
 
     // Barcode element

@@ -8,7 +8,7 @@
 import type { Band, DesignElement, FrameElement } from "@/types";
 import { setImageCrop, setImageName } from "./elementUtils";
 import { isPagination } from "./paginationPresets";
-import type { ProjectField, ReportProject, TableDataBinding } from "@/types/dataSource";
+import type { ChartBinding, ProjectField, ReportProject, TableDataBinding } from "@/types/dataSource";
 
 export const REPORT_PROJECTS_PROPERTY = "com.cdp.projects";
 
@@ -64,12 +64,12 @@ function* allElements(bands: Band[]): Generator<DesignElement> {
   }
 }
 
-// How many tables of the report use a project (it can't be removed then)
+// How many tables and charts of the report use a project (it can't be removed then)
 export function countProjectUsage(bands: Band[], projectId: string): number {
   let count = 0;
   for (const element of allElements(bands)) {
-    const binding = (element as { binding?: TableDataBinding }).binding;
-    if (element.type === "table" && binding?.projectId === projectId) count++;
+    const binding = (element as { binding?: TableDataBinding | ChartBinding }).binding;
+    if ((element.type === "table" || element.type === "chart") && binding?.projectId === projectId) count++;
   }
   return count;
 }

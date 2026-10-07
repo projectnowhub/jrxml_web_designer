@@ -28,11 +28,11 @@
             class="element-item"
             :class="{
               'is-disabled': isUnavailable(element.type),
-              'is-open': element.type === PAGE_NUMBER_TYPE && pageNumberMenu !== null,
+              'is-open': tileMenu?.type === element.type,
             }"
             :title="tileHint(element.type)"
             :draggable="!isUnavailable(element.type)"
-            :aria-haspopup="element.type === PAGE_NUMBER_TYPE ? 'dialog' : undefined"
+            :aria-haspopup="hasTileMenu(element.type) ? 'dialog' : undefined"
             @dragstart="handleDragStart($event, element)"
             @click="handleTileClick($event, element)"
             @dblclick="handleElementDoubleClick($event, element)"
@@ -59,39 +59,61 @@
       />
     </div>
 
-    <!-- Page Number tile: where on the page to put it -->
+    <!-- Page Number tile: where on the page to put it; Chart tile: which chart -->
     <Teleport to="body">
       <div
-        v-if="pageNumberMenu"
-        ref="pageNumberMenuRef"
-        class="page-number-menu"
+        v-if="tileMenu"
+        ref="tileMenuRef"
+        class="tile-menu"
+        :class="{ 'is-chart': tileMenu.type === 'chart' }"
         role="dialog"
-        :aria-label="t('pagination.choosePosition')"
-        :style="{ left: pageNumberMenu.x + 'px', top: pageNumberMenu.y + 'px' }"
+        :aria-label="tileMenu.type === 'chart' ? t('chart.chooseType') : t('pagination.choosePosition')"
+        :style="{ left: tileMenu.x + 'px', top: tileMenu.y + 'px' }"
       >
-        <div class="page-number-menu-title">{{ t("pagination.choosePosition") }}</div>
-        <div class="page-number-menu-options">
-          <button
-            v-for="position in PAGINATION_POSITIONS"
-            :key="position.id"
-            type="button"
-            class="page-number-option"
-            @click="choosePageNumberPosition(position.id)"
-          >
-            <span class="page-thumb" aria-hidden="true">
-              <span class="page-thumb-lines" />
-              <span
-                class="page-thumb-number"
-                :class="[
-                  position.edge === 'top' ? 'is-top' : 'is-bottom',
-                  position.align === 'Center' ? 'is-center' : 'is-right',
-                ]"
-              />
-            </span>
-            <span>{{ t(`pagination.positions.${position.id}`) }}</span>
-          </button>
-        </div>
-        <div class="page-number-menu-hint">{{ t("pagination.dragHint") }}</div>
+        <template v-if="tileMenu.type === PAGE_NUMBER_TYPE">
+          <div class="tile-menu-title">{{ t("pagination.choosePosition") }}</div>
+          <div class="page-number-menu-options">
+            <button
+              v-for="position in PAGINATION_POSITIONS"
+              :key="position.id"
+              type="button"
+              class="page-number-option"
+              @click="choosePageNumberPosition(position.id)"
+            >
+              <span class="page-thumb" aria-hidden="true">
+                <span class="page-thumb-lines" />
+                <span
+                  class="page-thumb-number"
+                  :class="[
+                    position.edge === 'top' ? 'is-top' : 'is-bottom',
+                    position.align === 'Center' ? 'is-center' : 'is-right',
+                  ]"
+                />
+              </span>
+              <span>{{ t(`pagination.positions.${position.id}`) }}</span>
+            </button>
+          </div>
+          <div class="tile-menu-hint">{{ t("pagination.dragHint") }}</div>
+        </template>
+        <template v-else>
+          <div class="tile-menu-title">{{ t("chart.chooseType") }}</div>
+          <div v-for="group in CHART_GROUPS" :key="group" class="chart-menu-group">
+            <div class="chart-menu-group-title">{{ t(`chart.groups.${group}`) }}</div>
+            <div class="chart-menu-options">
+              <button
+                v-for="chart in chartTypesInGroup(group)"
+                :key="chart.type"
+                type="button"
+                class="chart-option"
+                @click="chooseChartType(chart.type)"
+              >
+                <component :is="CHART_TYPE_ICONS[chart.type]" :size="16" :stroke-width="1.75" aria-hidden="true" />
+                <span>{{ t(`chart.types.${chart.type}`) }}</span>
+              </button>
+            </div>
+          </div>
+          <div class="tile-menu-hint">{{ t("chart.dragHint") }}</div>
+        </template>
       </div>
     </Teleport>
 
@@ -121,7 +143,9 @@ import type {
   ReportParameter,
   ReportVariable,
 } from "../types";
-import type { ReportProject } from "../types/dataSource";
+import type { ChartType, ReportProject } from "../types/dataSource";
+import { CHART_GROUPS, chartTypesInGroup } from "../utils/chart/chartTypes";
+import { CHART_TYPE_ICONS } from "./elements/chartIcons";
 import { getElementIcon, getElementIconComponent } from "../utils/elementUtils";
 
 const { t } = useI18n();
@@ -143,6 +167,7 @@ interface Emits {
   (e: "drag-start", event: DragEvent, element: any): void;
   (e: "element-double-click", element: any): void;
   (e: "insert-page-number", position: PaginationPosition): void;
+  (e: "insert-chart", chartType: ChartType): void;
   (e: "update-projects", projects: ReportProject[]): void;
 }
 
@@ -224,11 +249,12 @@ const tileHint = (type: string): string | undefined => {
   if (isUnavailable(type)) return t("framePresets.pageBorderExists");
   if (isFrameTemplateType(type)) return t(`framePresets.templateDescription.${type}`);
   if (type === PAGE_NUMBER_TYPE) return t("pagination.tileHint");
+  if (type === "chart") return t("chart.tileHint");
   return undefined;
 };
 
 function handleDragStart(event: DragEvent, element: any): void {
-  closePageNumberMenu();
+  closeTileMenu();
   if (isUnavailable(element.type)) {
     event.preventDefault();
     emit("element-double-click", element);
@@ -237,40 +263,47 @@ function handleDragStart(event: DragEvent, element: any): void {
   emit("drag-start", event, element);
 }
 
-// Handle element double-click (the Page Number tile asks for a position instead)
+// The Page Number and Chart tiles ask a question first (where / which chart)
+// when clicked; dragging them drops a default one
+type TileMenuType = typeof PAGE_NUMBER_TYPE | "chart";
+const hasTileMenu = (type: string): type is TileMenuType =>
+  type === PAGE_NUMBER_TYPE || type === "chart";
+
+// Handle element double-click (tiles with a question open it instead)
 function handleElementDoubleClick(event: MouseEvent, element: any): void {
-  if (element.type === PAGE_NUMBER_TYPE) {
-    openPageNumberMenu(event.currentTarget as HTMLElement);
+  if (hasTileMenu(element.type)) {
+    openTileMenu(element.type, event.currentTarget as HTMLElement);
     return;
   }
   emit("element-double-click", element);
 }
 
 function handleTileClick(event: MouseEvent, element: any): void {
-  if (element.type === PAGE_NUMBER_TYPE) openPageNumberMenu(event.currentTarget as HTMLElement);
+  if (hasTileMenu(element.type)) openTileMenu(element.type, event.currentTarget as HTMLElement);
 }
 
-// Page Number position popover: beside the tile, kept inside the window
-const pageNumberMenu = ref<{ x: number; y: number } | null>(null);
-const pageNumberMenuRef = ref<HTMLElement | null>(null);
-let pageNumberTile: HTMLElement | null = null;
+// The question popover: beside the tile, kept inside the window
+const tileMenu = ref<{ type: TileMenuType; x: number; y: number } | null>(null);
+const tileMenuRef = ref<HTMLElement | null>(null);
+let menuTile: HTMLElement | null = null;
 const MENU_GAP = 8;
 const WINDOW_MARGIN = 8;
 
-function openPageNumberMenu(tile: HTMLElement): void {
-  if (pageNumberMenu.value && pageNumberTile === tile) return;
-  pageNumberTile = tile;
+function openTileMenu(type: TileMenuType, tile: HTMLElement): void {
+  if (tileMenu.value && menuTile === tile) return;
+  closeTileMenu();
+  menuTile = tile;
   const rect = tile.getBoundingClientRect();
-  pageNumberMenu.value = { x: rect.right + MENU_GAP, y: rect.top };
+  tileMenu.value = { type, x: rect.right + MENU_GAP, y: rect.top };
   document.addEventListener("mousedown", handleOutsideMenuPress, true);
   document.addEventListener("keydown", handleMenuKeydown, true);
-  window.addEventListener("resize", closePageNumberMenu);
-  window.addEventListener("scroll", closePageNumberMenu, true);
+  window.addEventListener("resize", closeTileMenu);
+  window.addEventListener("scroll", closeTileMenu, true);
   nextTick(() => {
-    const menu = pageNumberMenuRef.value;
-    if (!menu || !pageNumberMenu.value) return;
+    const menu = tileMenuRef.value;
+    if (!menu || !tileMenu.value) return;
     const { width, height } = menu.getBoundingClientRect();
-    let { x, y } = pageNumberMenu.value;
+    let { x, y } = tileMenu.value;
     // No room on the right: open below the tile instead
     if (x + width > window.innerWidth - WINDOW_MARGIN) {
       x = rect.left;
@@ -278,41 +311,46 @@ function openPageNumberMenu(tile: HTMLElement): void {
     }
     x = Math.max(WINDOW_MARGIN, Math.min(x, window.innerWidth - width - WINDOW_MARGIN));
     y = Math.max(WINDOW_MARGIN, Math.min(y, window.innerHeight - height - WINDOW_MARGIN));
-    pageNumberMenu.value = { x, y };
+    tileMenu.value = { type, x, y };
     menu.querySelector<HTMLButtonElement>("button")?.focus();
   });
 }
 
-function closePageNumberMenu(): void {
-  if (!pageNumberMenu.value) return;
-  pageNumberMenu.value = null;
+function closeTileMenu(): void {
+  if (!tileMenu.value) return;
+  tileMenu.value = null;
   document.removeEventListener("mousedown", handleOutsideMenuPress, true);
   document.removeEventListener("keydown", handleMenuKeydown, true);
-  window.removeEventListener("resize", closePageNumberMenu);
-  window.removeEventListener("scroll", closePageNumberMenu, true);
-  pageNumberTile?.focus?.();
-  pageNumberTile = null;
+  window.removeEventListener("resize", closeTileMenu);
+  window.removeEventListener("scroll", closeTileMenu, true);
+  menuTile?.focus?.();
+  menuTile = null;
 }
 
 function handleOutsideMenuPress(event: MouseEvent): void {
   const target = event.target as Node;
-  if (pageNumberMenuRef.value?.contains(target) || pageNumberTile?.contains(target)) return;
-  closePageNumberMenu();
+  if (tileMenuRef.value?.contains(target) || menuTile?.contains(target)) return;
+  closeTileMenu();
 }
 
 function handleMenuKeydown(event: KeyboardEvent): void {
   if (event.key === "Escape") {
     event.stopPropagation();
-    closePageNumberMenu();
+    closeTileMenu();
   }
 }
 
 function choosePageNumberPosition(position: PaginationPosition): void {
-  closePageNumberMenu();
+  closeTileMenu();
   emit("insert-page-number", position);
 }
 
-onBeforeUnmount(closePageNumberMenu);
+function chooseChartType(chartType: ChartType): void {
+  closeTileMenu();
+  emit("insert-chart", chartType);
+}
+
+onBeforeUnmount(closeTileMenu);
 
 </script>
 
@@ -414,7 +452,7 @@ onBeforeUnmount(closePageNumberMenu);
   background-color: #e6f4ff;
 }
 
-.page-number-menu {
+.tile-menu {
   position: fixed;
   z-index: 2000;
   width: 264px;
@@ -425,7 +463,11 @@ onBeforeUnmount(closePageNumberMenu);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
-.page-number-menu-title {
+.tile-menu.is-chart {
+  width: 300px;
+}
+
+.tile-menu-title {
   margin-bottom: 10px;
   font-size: 12px;
   font-weight: 600;
@@ -513,7 +555,55 @@ onBeforeUnmount(closePageNumberMenu);
   right: 4px;
 }
 
-.page-number-menu-hint {
+.chart-menu-group + .chart-menu-group {
+  margin-top: 10px;
+}
+
+.chart-menu-group-title {
+  margin-bottom: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #888;
+}
+
+.chart-menu-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+}
+
+.chart-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.2;
+  color: #374151;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.chart-option svg {
+  flex-shrink: 0;
+  color: #6b7280;
+}
+
+.chart-option:hover,
+.chart-option:focus-visible {
+  outline: none;
+  border-color: #1890ff;
+  background-color: #e6f4ff;
+  color: #1f2937;
+}
+
+.tile-menu-hint {
   margin-top: 10px;
   font-size: 11px;
   line-height: 1.4;

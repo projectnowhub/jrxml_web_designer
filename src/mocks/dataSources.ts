@@ -96,6 +96,7 @@ export function buildProjectSources(variant: ProjectDataVariant): MockDataSource
     {
       id: "procurement",
       name: "Procurement",
+      entityName: "cdp_ProcurementRegister",
       columns: [
         { key: "po_number", label: "PO Number", type: "text" },
         { key: "vendor_name", label: "Vendor", type: "text" },
@@ -114,6 +115,7 @@ export function buildProjectSources(variant: ProjectDataVariant): MockDataSource
     {
       id: "products",
       name: "Materials",
+      entityName: "mock_Materials",
       columns: [
         { key: "sku", label: "SKU", type: "text" },
         { key: "product_name", label: "Material", type: "text" },
@@ -130,6 +132,7 @@ export function buildProjectSources(variant: ProjectDataVariant): MockDataSource
     {
       id: "vendors",
       name: "Vendors",
+      entityName: "mock_Vendors",
       columns: [
         { key: "vendor_code", label: "Code", type: "text" },
         { key: "vendor_name", label: "Vendor", type: "text" },
@@ -141,6 +144,7 @@ export function buildProjectSources(variant: ProjectDataVariant): MockDataSource
     {
       id: "milestones",
       name: "Milestones",
+      entityName: "mock_Milestones",
       columns: [
         { key: "milestone", label: "Milestone", type: "text" },
         { key: "phase", label: "Phase", type: "text" },
