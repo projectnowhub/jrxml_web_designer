@@ -285,17 +285,6 @@ export function getEffectiveDefaultBandLimits(): Record<
   return limits;
 }
 
-// Evaluation time constants
-export const EVALUATION_TIME_CONSTANTS = {
-  NOW: "Now",
-  REPORT: "Report",
-  PAGE: "Page",
-  COLUMN: "Column",
-  GROUP: "Group",
-  BAND: "Band",
-  AUTO: "Auto",
-};
-
 // Ruler-related constants
 export const RULER_CONSTANTS = {
   UNIT_SIZE: 5, // base unit, 5px

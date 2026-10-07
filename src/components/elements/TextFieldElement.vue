@@ -186,6 +186,7 @@ import {
   X,
 } from '@lucide/vue';
 import BaseElement from './BaseElement.vue';
+import { resolveReportFont } from '../../config/fonts.config';
 import TextFormatToolbar from './TextFormatToolbar.vue';
 import type { TextFieldElement, SelectedElementInfo, EditingElementInfo } from '../../types';
 import {
@@ -859,7 +860,7 @@ const typographyStyle = computed(() => {
       : props.element.textAlignment?.toLowerCase() || 'left';
 
   return {
-    fontFamily: props.element.fontFamily || props.reportFontFamily || 'SansSerif',
+    fontFamily: resolveReportFont(props.element.fontFamily || props.reportFontFamily),
     fontSize: props.element.fontSize
       ? `${props.element.fontSize}px`
       : props.reportFontSize

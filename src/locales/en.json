@@ -258,7 +258,7 @@
     "transparent": "Transparent",
     "opaque": "Opaque",
     "fontName": "Font Name",
-    "useDefaultFont": "Use Default Font",
+    "fontLimitedInfo": "Only {font} is available for now, because it is the only font the report server has. More fonts will be added later.",
     "fontHint": "Tip: You can type font name directly",
     "deleteElement": "Delete Element",
     "tableDataset": "Table Dataset",

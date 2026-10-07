@@ -1,5 +1,5 @@
 import { xmlAttr, cdata } from "./jrxml/xmlEscape";
-import { DEFAULT_REPORT_FONT } from "../config/fonts.config";
+import { DEFAULT_REPORT_FONT, resolveReportFont } from "../config/fonts.config";
 // Import type definitions
 import type { DesignElement, BandType, Band, ReportGroup } from "../types";
 import type { ReportProperties, Field, Parameter } from "./jrxml/types";
@@ -506,7 +506,7 @@ function styleAttributesXML(style: any): string {
   if (style.textAlignment) attrs += ` hTextAlign="${xmlAttr(style.textAlignment)}"`;
   if (style.verticalAlignment) attrs += ` vTextAlign="${xmlAttr(style.verticalAlignment)}"`;
   if (style.fontFamily || style.fontSize || style.isBold || style.isItalic || style.isUnderline) {
-    attrs += ` fontName="${xmlAttr(style.fontFamily || DEFAULT_FONT)}"`;
+    attrs += ` fontName="${xmlAttr(resolveReportFont(style.fontFamily))}"`;
     if (style.fontSize) attrs += ` fontSize="${xmlAttr(style.fontSize)}"`;
     if (style.isBold) attrs += ` isBold="true"`;
     if (style.isItalic) attrs += ` isItalic="true"`;
@@ -972,8 +972,8 @@ function generateTextFieldXML(element: any): string {
 
   // Add the font configuration
   let fontAttrs = "";
-  // Add the font name attribute (defaults to DEFAULT_FONT)
-  fontAttrs += ` fontName="${xmlAttr(element.fontFamily || DEFAULT_FONT)}"`;
+  // Add the font name attribute (only fonts the report server has; others become DEFAULT_FONT)
+  fontAttrs += ` fontName="${xmlAttr(resolveReportFont(element.fontFamily))}"`;
   if (element.fontSize) {
     fontAttrs += ` size="${xmlAttr(element.fontSize)}"`;
   }

@@ -90,6 +90,7 @@
 
 <script setup lang="ts">
 import { RotateCw } from '@lucide/vue';
+import { resolveReportFont } from '../../config/fonts.config';
 import { computed, ref } from 'vue';
 import { canTakeProjectField } from '../../utils/projectFields';
 import { readDataSourceDrag } from '../../utils/table/dataDrag';
@@ -240,7 +241,7 @@ const elementStyle = computed(() => {
     borderBottom: calculateBorder('bottom'),
     borderRight: calculateBorder('right'),
     borderRadius: props.element.type === 'ellipse' ? '50%' : props.element.type === 'frame' ? boxCornerRadiusCss(props.element as any) : ((props.element.type === 'rectangle' && (props.element as any).radius) ? `${(props.element as any).radius}px` : (props.element.type === 'image' || props.element.type === 'textField') ? propertyCornerRadiusCss(props.element) : undefined),
-    fontFamily: props.element.fontFamily || props.reportFontFamily,
+    fontFamily: resolveReportFont(props.element.fontFamily || props.reportFontFamily),
     fontSize: props.element.fontSize ? `${props.element.fontSize}px` : (props.reportFontSize ? `${props.reportFontSize}px` : '10px'),
     fontWeight: (props.element.isBold === true || (props.element.isBold === undefined && props.reportIsBold)) ? 'bold' : 'normal',
     fontStyle: (props.element.isItalic === true || (props.element.isItalic === undefined && props.reportIsItalic)) ? 'italic' : 'normal',

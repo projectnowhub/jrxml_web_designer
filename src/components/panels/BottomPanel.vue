@@ -2,8 +2,10 @@
 import {
   ChevronDown,
   ChevronUp,
+  Info,
   X,
 } from "@lucide/vue";
+import { DEFAULT_REPORT_FONT, resolveReportFont } from "../../config/fonts.config";
 import {
   ref,
   computed,
@@ -889,7 +891,12 @@ onBeforeUnmount(() => {
           <div class="font-settings-row">
             <div class="font-setting-item">
               <label>{{ t("properties.fontName") }}</label>
-              <select v-model="localReportProperties.defaultFont.name">
+              <!-- Read-only until the report server supports more fonts -->
+              <select
+                :value="resolveReportFont(localReportProperties.defaultFont.name)"
+                :disabled="availableFonts.length <= 1"
+                @change="localReportProperties.defaultFont.name = ($event.target as HTMLSelectElement).value"
+              >
                 <option
                   v-for="font in availableFonts"
                   :key="font"
@@ -907,6 +914,10 @@ onBeforeUnmount(() => {
               />
             </div>
           </div>
+          <p v-if="availableFonts.length <= 1" class="font-info">
+            <Info :size="13" :stroke-width="2" />
+            <span>{{ t("properties.fontLimitedInfo", { font: DEFAULT_REPORT_FONT }) }}</span>
+          </p>
           <div class="font-style-options">
             <label>
               <input
@@ -1422,6 +1433,21 @@ onBeforeUnmount(() => {
   display: flex;
   gap: v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
   margin-bottom: v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
+}
+
+.font-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
+  font-size: 11px;
+  line-height: 1.4;
+  color: #6b7280;
+}
+
+.font-info svg {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .font-setting-item {

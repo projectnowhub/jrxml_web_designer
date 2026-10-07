@@ -5,6 +5,7 @@
  */
 
 import type { DesignElement, Band, BandType } from '@/types';
+import { DEFAULT_REPORT_FONT } from '@/config/fonts.config';
 import { createNewElement } from '@/utils/elementUtils';
 
 // ============================================
@@ -163,7 +164,7 @@ const createStaticTextHandler: MCPToolHandler = {
       height,
       text,
       fontSize = 12,
-      fontFamily = 'Arial',
+      fontFamily = DEFAULT_REPORT_FONT,
       isBold = false,
       isItalic = false,
       forecolor = '#000000',
@@ -236,7 +237,7 @@ const createTextFieldHandler: MCPToolHandler = {
       height,
       expression,
       fontSize = 12,
-      fontFamily = 'Arial',
+      fontFamily = DEFAULT_REPORT_FONT,
       isBold = false,
       pattern
     } = params;

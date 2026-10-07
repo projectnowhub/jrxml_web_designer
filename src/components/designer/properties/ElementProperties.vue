@@ -735,11 +735,12 @@
               <div v-if="showFontName" class="field-row">
                 <label class="field grow">
                   <span class="field-label">{{ t("properties.fontName") }}</span>
+                  <!-- Read-only until the report server supports more fonts -->
                   <select
-                    :value="currentElement.fontFamily ?? ''"
+                    :value="resolveReportFont(currentElement.fontFamily)"
+                    :disabled="availableFonts.length <= 1"
                     @change="setTextProperty('fontFamily', ($event.target as HTMLSelectElement).value)"
                   >
-                    <option value="">{{ t("properties.useDefaultFont") }}</option>
                     <option v-for="font in availableFonts" :key="font" :value="font">{{ font }}</option>
                   </select>
                 </label>
@@ -757,6 +758,10 @@
                   </span>
                 </label>
               </div>
+              <p v-if="showFontName && availableFonts.length <= 1" class="font-info">
+                <Info :size="13" :stroke-width="2" />
+                <span>{{ t("properties.fontLimitedInfo", { font: DEFAULT_REPORT_FONT }) }}</span>
+              </p>
 
               <div v-if="showTextAlignmentAndStyle" class="field-row">
                 <div class="field">
@@ -866,9 +871,11 @@ import {
   TextAlignEnd,
   TextAlignStart,
   Trash2,
+  Info,
   Upload,
   X,
 } from "@lucide/vue";
+import { DEFAULT_REPORT_FONT, resolveReportFont } from "../../../config/fonts.config";
 import ColorSwatchPicker from '../../common/ColorSwatchPicker.vue';
 import { computed, ref, onMounted, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
@@ -3189,6 +3196,21 @@ function addPropertyExpression() {
 
 .text-card h5 {
   margin-bottom: 0;
+}
+
+.font-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #6b7280;
+}
+
+.font-info svg {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .field-row {

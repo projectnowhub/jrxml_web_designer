@@ -258,7 +258,7 @@
     "transparent": "Lut Sinar",
     "opaque": "Legap",
     "fontName": "Nama Fon",
-    "useDefaultFont": "Guna Fon Lalai",
+    "fontLimitedInfo": "Buat masa ini hanya {font} tersedia, kerana itu satu-satunya fon pada pelayan laporan. Lebih banyak fon akan ditambah kemudian.",
     "fontHint": "Petua: Anda boleh menaip nama fon terus",
     "deleteElement": "Padam Elemen",
     "tableDataset": "Set Data Jadual",
