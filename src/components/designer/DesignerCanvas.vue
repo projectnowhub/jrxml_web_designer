@@ -398,6 +398,23 @@
                   </template>
                 </div>
 
+                <!-- While the Page Border tile is dragged: the Background band (the whole
+                     printable area, behind every page) is the drop target, not a band -->
+                <div
+                  v-if="backgroundDropTarget"
+                  class="background-drop-target"
+                  :style="{
+                    top: (reportProperties.topMargin || 0) + 'px',
+                    left: (reportProperties.leftMargin || 0) + 'px',
+                    right: (reportProperties.rightMargin || 0) + 'px',
+                    bottom: (reportProperties.bottomMargin || 0) + 'px',
+                  }"
+                >
+                  <span class="background-drop-label">{{
+                    getBandDisplayName("background")
+                  }}</span>
+                </div>
+
                 <!-- Vertical alignment guides, across the whole page (X is shared by all bands) -->
                 <template v-if="alignmentLines && alignmentLines.pageIndex === pIndex - 1">
                   <div
@@ -466,6 +483,8 @@ interface Props {
   isDraggingOrResizing: boolean;
   // The highlighted band can't take the element being dragged (too tall)
   dropTargetBlocked?: boolean;
+  // The Page Border tile is being dragged over the page: highlight the Background band
+  backgroundDropTarget?: boolean;
   horizontalRulerTicks: any[];
   horizontalRulerLabels: any[];
   verticalRulerTicks: any[];
@@ -1375,6 +1394,26 @@ onBeforeUnmount(() => {
 .band.drop-target.drop-blocked {
   box-shadow: inset 0 0 0 1.5px #dc2626;
   background-color: rgba(220, 38, 38, 0.06);
+}
+
+/* Drop target for the Page Border tile: the whole printable area (Background band) */
+.background-drop-target {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1.5px #2563eb;
+  background-color: rgba(37, 99, 235, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.background-drop-label {
+  font-size: 40px;
+  font-weight: bold;
+  color: rgba(37, 99, 235, 0.25);
+  user-select: none;
+  white-space: nowrap;
 }
 
 .band-background-label-container {

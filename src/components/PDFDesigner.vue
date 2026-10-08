@@ -270,6 +270,7 @@
           :selected-band-index="selectedBandIndex"
           :highlighted-band-index="highlightedBandIndex"
           :drop-target-blocked="dropTargetBlocked"
+          :background-drop-target="backgroundDropTarget"
           :selected-element="selectedElement"
           :selected-elements="selectedElements"
           :editing-element="editingElement"
@@ -2000,6 +2001,13 @@ const warnTooTallForBand = (bandIndex: number, height: number, maxHeight: number
 // While dragging: the target band turns red when the element can't fit in it
 const dropTargetBlocked = ref(false);
 
+// While dragging the Page Border tile over the page: the Background band is the target
+const backgroundDropTarget = computed(
+  () =>
+    highlightedBandIndex.value !== null &&
+    draggedLibraryElement.value?.type === PAGE_BORDER_TYPE,
+);
+
 // Whether an element at (x, y) in a band would land in one of its boxes
 // (same rule as the drop: its centre is inside the box; boxes don't nest)
 const isOverBox = (
@@ -2620,6 +2628,14 @@ const handleDragOver = (event: DragEvent) => {
   event.preventDefault();
   if (event.dataTransfer) {
     event.dataTransfer.dropEffect = "copy";
+  }
+
+  // A page border goes to the Background band wherever it is dropped: the whole
+  // printable area lights up instead of the band under the pointer
+  if (draggedLibraryElement.value?.type === PAGE_BORDER_TYPE && !isDataSourceDrag(event)) {
+    highlightedBandIndex.value = -1;
+    dropTargetBlocked.value = false;
+    return;
   }
 
   // The band under the pointer (same lookup as moving an element)
