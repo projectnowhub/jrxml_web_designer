@@ -59,15 +59,15 @@
       />
     </div>
 
-    <!-- Page Number tile: where on the page to put it; Chart tile: which chart -->
+    <!-- Page Number tile: where on the page to put it; Chart / Barcode tile: which type -->
     <Teleport to="body">
       <div
         v-if="tileMenu"
         ref="tileMenuRef"
         class="tile-menu"
-        :class="{ 'is-chart': tileMenu.type === 'chart' }"
+        :class="{ 'is-chart': tileMenu.type === 'chart', 'is-barcode': tileMenu.type === 'barcode' }"
         role="dialog"
-        :aria-label="tileMenu.type === 'chart' ? t('chart.chooseType') : t('pagination.choosePosition')"
+        :aria-label="tileMenuLabel"
         :style="{ left: tileMenu.x + 'px', top: tileMenu.y + 'px' }"
       >
         <template v-if="tileMenu.type === PAGE_NUMBER_TYPE">
@@ -94,6 +94,28 @@
             </button>
           </div>
           <div class="tile-menu-hint">{{ t("pagination.dragHint") }}</div>
+        </template>
+        <template v-else-if="tileMenu.type === 'barcode'">
+          <div class="tile-menu-title">{{ t("barcode.chooseType") }}</div>
+          <div v-for="group in BARCODE_GROUPS" :key="group" class="chart-menu-group">
+            <div class="chart-menu-group-title">{{ t(`barcode.groups.${group}`) }}</div>
+            <div class="barcode-menu-options">
+              <button
+                v-for="code in barcodeTypesInGroup(group)"
+                :key="code.type"
+                type="button"
+                class="barcode-option"
+                :title="t(`barcode.uses.${code.type}`)"
+                @click="chooseBarcodeType(code.type)"
+              >
+                <span class="barcode-option-sample" :class="`is-${code.kind}`" aria-hidden="true">
+                  <img v-if="barcodeSamples[code.type]" :src="barcodeSamples[code.type]!.uri" alt="" draggable="false" />
+                </span>
+                <span class="barcode-option-name">{{ t(`barcode.types.${code.type}`) }}</span>
+              </button>
+            </div>
+          </div>
+          <div class="tile-menu-hint">{{ t("barcode.dragHint") }}</div>
         </template>
         <template v-else>
           <div class="tile-menu-title">{{ t("chart.chooseType") }}</div>
@@ -145,6 +167,8 @@ import type {
 } from "../types";
 import type { ChartType, ReportProject } from "../types/dataSource";
 import { CHART_GROUPS, chartTypesInGroup } from "../utils/chart/chartTypes";
+import { BARCODE_GROUPS, BARCODE_TYPES, barcodeTypesInGroup, type BarcodeType } from "../utils/barcode/barcodeTypes";
+import { barcodeSamplePicture, type BarcodePicture } from "../utils/barcode/barcodeImage";
 import { CHART_TYPE_ICONS } from "./elements/chartIcons";
 import { getElementIcon, getElementIconComponent } from "../utils/elementUtils";
 
@@ -168,6 +192,7 @@ interface Emits {
   (e: "element-double-click", element: any): void;
   (e: "insert-page-number", position: PaginationPosition): void;
   (e: "insert-chart", chartType: ChartType): void;
+  (e: "insert-barcode", barcodeType: BarcodeType): void;
   (e: "update-projects", projects: ReportProject[]): void;
 }
 
@@ -250,6 +275,7 @@ const tileHint = (type: string): string | undefined => {
   if (isFrameTemplateType(type)) return t(`framePresets.templateDescription.${type}`);
   if (type === PAGE_NUMBER_TYPE) return t("pagination.tileHint");
   if (type === "chart") return t("chart.tileHint");
+  if (type === "barcode") return t("barcode.tileHint");
   return undefined;
 };
 
@@ -263,11 +289,11 @@ function handleDragStart(event: DragEvent, element: any): void {
   emit("drag-start", event, element);
 }
 
-// The Page Number and Chart tiles ask a question first (where / which chart)
-// when clicked; dragging them drops a default one
-type TileMenuType = typeof PAGE_NUMBER_TYPE | "chart";
+// The Page Number, Chart and Barcode tiles ask a question first (where /
+// which type) when clicked; dragging them drops a default one
+type TileMenuType = typeof PAGE_NUMBER_TYPE | "chart" | "barcode";
 const hasTileMenu = (type: string): type is TileMenuType =>
-  type === PAGE_NUMBER_TYPE || type === "chart";
+  type === PAGE_NUMBER_TYPE || type === "chart" || type === "barcode";
 
 // Handle element double-click (tiles with a question open it instead)
 function handleElementDoubleClick(event: MouseEvent, element: any): void {
@@ -284,6 +310,11 @@ function handleTileClick(event: MouseEvent, element: any): void {
 
 // The question popover: beside the tile, kept inside the window
 const tileMenu = ref<{ type: TileMenuType; x: number; y: number } | null>(null);
+const tileMenuLabel = computed(() => {
+  if (tileMenu.value?.type === "chart") return t("chart.chooseType");
+  if (tileMenu.value?.type === "barcode") return t("barcode.chooseType");
+  return t("pagination.choosePosition");
+});
 const tileMenuRef = ref<HTMLElement | null>(null);
 let menuTile: HTMLElement | null = null;
 const MENU_GAP = 8;
@@ -349,6 +380,19 @@ function chooseChartType(chartType: ChartType): void {
   closeTileMenu();
   emit("insert-chart", chartType);
 }
+
+function chooseBarcodeType(barcodeType: BarcodeType): void {
+  closeTileMenu();
+  emit("insert-barcode", barcodeType);
+}
+
+// Barcode menu: each type's sample (drawn once the barcode library is in)
+const barcodeSamples = computed(() => {
+  const out = {} as Record<BarcodeType, BarcodePicture | null>;
+  if (tileMenu.value?.type !== "barcode") return out;
+  for (const code of BARCODE_TYPES) out[code.type] = barcodeSamplePicture(code.type);
+  return out;
+});
 
 onBeforeUnmount(closeTileMenu);
 
@@ -601,6 +645,79 @@ onBeforeUnmount(closeTileMenu);
   border-color: #1890ff;
   background-color: #e6f4ff;
   color: #1f2937;
+}
+
+.tile-menu.is-barcode {
+  width: 340px;
+}
+
+.barcode-menu-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.barcode-option {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
+  padding: 5px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+/* The sample on a white label over a tinted tile, like the properties cards */
+.barcode-option-sample {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 3px 10px;
+  box-sizing: border-box;
+  border-radius: 4px;
+  background: #f3f4f6;
+}
+
+.barcode-option-sample img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 2px;
+  box-sizing: border-box;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
+}
+
+.barcode-option-sample.is-square img {
+  width: 30px;
+}
+
+.barcode-option-sample.is-postal img {
+  height: 16px;
+}
+
+.barcode-option-name {
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.2;
+  color: #374151;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barcode-option:hover,
+.barcode-option:focus-visible {
+  outline: none;
+  border-color: #1890ff;
+  background-color: #e6f4ff;
 }
 
 .tile-menu-hint {

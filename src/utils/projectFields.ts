@@ -1,11 +1,13 @@
 // Project details (Report Data) on the page. A detail dragged onto the page
-// becomes ordinary content: its value as plain text in a Text element, or the
-// logo as a fixed picture in an Image element. Nothing stays linked to the
+// becomes ordinary content: its value as plain text in a Text element (or as
+// a barcode's value when dropped on a barcode), or the logo as a fixed
+// picture in an Image element. Nothing stays linked to the
 // project; to show a newer value, the user drags the detail again.
 //
 // The report's chosen projects are the `com.cdp.projects` report property.
 
-import type { Band, DesignElement, FrameElement } from "@/types";
+import type { Band, BarcodeElement, DesignElement, FrameElement } from "@/types";
+import { checkBarcodeValue, toBarcodeExpression } from "./barcode/barcodeTypes";
 import { setImageCrop, setImageName } from "./elementUtils";
 import { isPagination } from "./paginationPresets";
 import type { ChartBinding, ProjectField, ReportProject, TableDataBinding } from "@/types/dataSource";
@@ -13,11 +15,18 @@ import type { ChartBinding, ProjectField, ReportProject, TableDataBinding } from
 export const REPORT_PROJECTS_PROPERTY = "com.cdp.projects";
 
 // Whether a project detail can be dropped onto an existing item: text details
-// onto a text item (not a page number), an image (the logo) onto an image item
-export function canTakeProjectField(element: DesignElement, field: ProjectField): boolean {
+// onto a text item (not a page number) or onto a barcode whose type can hold
+// the value, an image (the logo) onto an image item
+export function canTakeProjectField(element: DesignElement, field: ProjectField, value?: string | null): boolean {
   if (element.type === "image") return field.type === "image";
   if (element.type === "textField") return field.type !== "image" && !isPagination(element);
+  if (element.type === "barcode") return field.type !== "image" && (value == null || !projectValueProblem(element, value));
   return false;
+}
+
+// Why a barcode can't hold a detail's value, or null when it can
+export function projectValueProblem(element: BarcodeElement, value: string) {
+  return checkBarcodeValue(element.barcodeType, value.trim());
 }
 
 // Put a detail's value into a text or image item. An existing item keeps its
@@ -42,6 +51,8 @@ export function applyProjectValue(
     element.expression = `"${value.replace(/\r\n|\r|\n/g, "\\n")}"`;
     // Long texts (introductions) grow downwards instead of being cut off
     if (field.type === "longText") element.textAdjust = "StretchHeight";
+  } else if (element.type === "barcode") {
+    element.codeExpression = toBarcodeExpression(value.trim());
   }
 }
 

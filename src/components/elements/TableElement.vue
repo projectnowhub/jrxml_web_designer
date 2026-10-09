@@ -69,7 +69,13 @@
               class="dt-cell"
               :style="cellStyle('row', col, i, r)"
             >
-              {{ formatCellValue(slot.row[col.key], col.type, locale) }}
+              <BarcodeCell
+                v-if="tableColumnBarcode(col)"
+                :type="tableColumnBarcode(col)!"
+                :value="slot.row[col.key]"
+                :height="rowHeight"
+              />
+              <template v-else>{{ formatCellValue(slot.row[col.key], col.type, locale) }}</template>
             </div>
           </template>
         </div>
@@ -111,6 +117,8 @@ import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { DatabaseZap } from "@lucide/vue";
 import BaseElement from "./BaseElement.vue";
+import BarcodeCell from "@/components/common/BarcodeCell.vue";
+import { tableColumnBarcode } from "@/utils/barcode/barcodeTypes";
 import { useTableRows } from "@/composables/useTableRows";
 import {
   CANVAS_SAMPLE_ROWS,

@@ -15,6 +15,8 @@ import { distributeColumnWidths, maxColumnsForWidth } from "./dataBinding";
 
 export const TABLE_HEADER_HEIGHT = 24;
 export const TABLE_ROW_HEIGHT = 20;
+// Rows of a table with a barcode column are at least this tall
+export const TABLE_BARCODE_ROW_HEIGHT = 36;
 // Rows drawn on the canvas; the report itself prints every row
 export const CANVAS_SAMPLE_ROWS = 5;
 // Columns of a new table before data is dropped on it

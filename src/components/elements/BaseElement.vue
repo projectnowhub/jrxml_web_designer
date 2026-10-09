@@ -481,18 +481,18 @@ const handleDoubleClick = () => {
 
 // ---- Project details (Report Data) ------------------------------------------
 
-// While a project detail is dragged over this item: can it take it? Only text
-// and image items react; the drop itself is handled by the designer.
+// While a project detail is dragged over this item: can it take it? Only text,
+// image and barcode items react; the drop itself is handled by the designer.
 const projectDrop = ref<'ok' | 'blocked' | null>(null);
 
 const handleProjectDragOver = (event: DragEvent) => {
-  if (props.element.type !== 'textField' && props.element.type !== 'image') return;
+  if (!['textField', 'image', 'barcode'].includes(props.element.type)) return;
   const drag = readDataSourceDrag(event);
   if (drag?.kind !== 'projectField') return;
   // The innermost item under the pointer decides (an item inside a box)
   event.stopPropagation();
   event.preventDefault();
-  const ok = canTakeProjectField(props.element, drag.field);
+  const ok = canTakeProjectField(props.element, drag.field, drag.value);
   projectDrop.value = ok ? 'ok' : 'blocked';
   // A refused drop still reaches the designer, which says why
   if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';

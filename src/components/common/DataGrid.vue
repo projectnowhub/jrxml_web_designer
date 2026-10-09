@@ -21,7 +21,10 @@
         </tr>
         <tr v-for="(row, r) in rows" v-else :key="r" :class="{ 'is-stale': loading }">
           <td v-for="(col, i) in columns" :key="col.key" :style="cellStyle('row', col, i, r)">
-            {{ formatCellValue(row[col.key], col.type, locale) }}
+            <div v-if="tableColumnBarcode(col)" class="dg-barcode">
+              <BarcodeCell :type="tableColumnBarcode(col)!" :value="row[col.key]" :height="BARCODE_CELL_HEIGHT" />
+            </div>
+            <template v-else>{{ formatCellValue(row[col.key], col.type, locale) }}</template>
           </td>
         </tr>
       </tbody>
@@ -44,6 +47,11 @@ import { useI18n } from "vue-i18n";
 import type { DataRow, TableColumnBinding, TableLook } from "@/types/dataSource";
 import { cellAlignmentFor, computeTotal, formatCellValue } from "@/utils/table/dataTable";
 import { lookPartStyles, tableCellCss, type TableStylePart } from "@/utils/table/tableThemes";
+import { tableColumnBarcode } from "@/utils/barcode/barcodeTypes";
+import BarcodeCell from "./BarcodeCell.vue";
+
+// Barcode columns in the preview: a row this tall (points)
+const BARCODE_CELL_HEIGHT = 30;
 
 const props = defineProps<{
   columns: TableColumnBinding[];
@@ -123,5 +131,10 @@ tfoot td {
 
 .dg-message.is-error {
   color: #dc2626;
+}
+
+.dg-barcode {
+  width: 100%;
+  height: 30px;
 }
 </style>

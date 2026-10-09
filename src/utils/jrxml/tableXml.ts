@@ -26,6 +26,7 @@ import {
   tableStylePrefix,
 } from "@/utils/table/tableThemes";
 import { collectBoundTables } from "@/utils/table/tableDocument";
+import { tableColumnBarcode, type TableBarcodeType } from "@/utils/barcode/barcodeTypes";
 
 export { collectBoundTables };
 
@@ -92,6 +93,34 @@ function textFieldXML(options: {
   );
 }
 
+// A barcode column's cell: the row's value as a barcode, nothing when empty
+// (barcode4j fails on an empty value). A frame with the row's style draws the
+// background, stripes and lines (a barcode with no value prints nothing).
+// No size is written: values differ per row, so JasperReports draws each at
+// its natural width, shrunk to fit.
+function barcodeCellXML(type: TableBarcodeType, col: TableColumnBinding, width: number, height: number, style: string): string {
+  const f = `$F{${col.key}}`;
+  const text = `String.valueOf(${f}).trim()`;
+  // Code 128 holds plain characters only (Java source: "[^\\x20-\\x7E]")
+  const value = type === "Code128" ? `${text}.replaceAll("[^\\\\x20-\\\\x7E]", "?")` : text;
+  const shape = type === "DataMatrix" ? ' shape="force-square"' : "";
+  return (
+    `<frame>` +
+    `<reportElement x="0" y="0" width="${width}" height="${height}" uuid="${crypto.randomUUID()}" style="${xmlAttr(style)}"/>` +
+    `<componentElement>` +
+    `<reportElement x="0" y="0" width="${Math.max(1, width - 2 * CELL_SIDE_PADDING)}" height="${height}" uuid="${crypto.randomUUID()}" mode="Transparent"/>` +
+    `<c:${type} xmlns:c="http://jasperreports.sourceforge.net/jasperreports/components"${shape}>` +
+    `<c:codeExpression>${cdata(`${f} == null || ${text}.isEmpty() ? null : ${value}`)}</c:codeExpression>` +
+    `</c:${type}>` +
+    `</componentElement>` +
+    `</frame>`
+  );
+}
+
+// The row style's padding left and right (tableThemes): a frame's items are
+// placed inside it, so the barcode gets the width left over
+const CELL_SIDE_PADDING = 4;
+
 function columnXML(
   col: TableColumnBinding,
   index: number,
@@ -130,15 +159,18 @@ function columnXML(
   }
 
   xml += `<jr:detailCell height="${rowHeight}">`;
-  xml += textFieldXML({
-    width,
-    height: rowHeight,
-    style: style("row"),
-    expression: cellExpression(col),
-    alignment,
-    pattern: cellPatternFor(col.type),
-    stretch: true,
-  });
+  const barcode = tableColumnBarcode(col);
+  xml += barcode
+    ? barcodeCellXML(barcode, col, width, rowHeight, style("row"))
+    : textFieldXML({
+        width,
+        height: rowHeight,
+        style: style("row"),
+        expression: cellExpression(col),
+        alignment,
+        pattern: cellPatternFor(col.type),
+        stretch: true,
+      });
   xml += `</jr:detailCell>`;
 
   return xml + `</jr:column>`;

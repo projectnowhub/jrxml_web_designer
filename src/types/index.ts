@@ -437,6 +437,9 @@ export interface BarcodeElement extends DesignElementBase {
     | "RoyalMailCustomer"
     | "USPSIntelligentMail";
   codeExpression?: string;
+  // Values typed for the other types (their code expressions): switching
+  // back to a type brings its own value back (com.cdp.barcode.values)
+  valuesByType?: Partial<Record<string, string>>;
   printWhenExpression?: string;
   rotation?: "None" | "Left" | "Right" | "UpsideDown";
   evaluationTime?:

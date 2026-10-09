@@ -16,6 +16,7 @@ import {
   TriangleAlert,
   Type as TypeIcon,
 } from "@lucide/vue";
+import { buildBarcodeElement } from "../../utils/barcode/barcodeTypes";
 import type { DesignElement } from "../../types";
 import { TABLE_HEADER_HEIGHT, TABLE_ROW_HEIGHT } from "../../utils/table/dataTable";
 import { ELEMENT_DEFAULT_SIZES } from "../../constants/constants";
@@ -226,17 +227,7 @@ export class ElementRegistry {
       icon: "▐",
       iconComponent: Barcode,
       category: "basic",
-      defaultProps: {
-        type: "barcode",
-        x: 0,
-        y: 0,
-        width: 150,
-        height: 60,
-        barcodeType: "Code128",
-        codeExpression: '"1234567890"',
-        evaluationTime: "Now",
-        printWhenExpression: "",
-      },
+      defaultProps: buildBarcodeElement("Code128"),
     });
 
     // Frame templates: styled frames with placeholder content.

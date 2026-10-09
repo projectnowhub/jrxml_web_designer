@@ -16,6 +16,7 @@ import { detectPagination } from "../paginationPresets";
 import { CHART_BINDING_PROPERTY, parseChartBinding } from "../chart/chartTypes";
 import { SAVED_TABLE_STYLES_PROPERTY, parseSavedTableStyles } from "../table/tableThemes";
 import { REPORT_PROJECTS_PROPERTY, parseReportProjects } from "../projectFields";
+import { BARCODE_TYPE_IDS, BARCODE_VALUES_PROPERTY, parseBarcodeValues } from "../barcode/barcodeTypes";
 import type { SavedTableStyle } from "@/types/dataSource";
 import type {
   ReportProperties,
@@ -717,23 +718,7 @@ function parseComponentElement(componentElem: Element): any {
   }
 
   // Find a barcode4j element - supports with or without a namespace prefix
-  const barcodeTypes = [
-    "Code128",
-    "Code39",
-    "EAN13",
-    "EAN8",
-    "UPCA",
-    "UPCE",
-    "QRCode",
-    "DataMatrix",
-    "Interleaved2Of5",
-    "Codabar",
-    "EAN128",
-    "PDF417",
-    "POSTNET",
-    "RoyalMailCustomer",
-    "USPSIntelligentMail",
-  ];
+  const barcodeTypes = BARCODE_TYPE_IDS;
 
   for (const child of Array.from(componentElem.children)) {
     const childLocalName = child.localName || child.tagName;
@@ -751,11 +736,19 @@ function parseComponentElement(componentElem: Element): any {
 
         const orientation = child.getAttribute("orientation");
         let rotation: "None" | "Left" | "Right" | "UpsideDown" = "None";
-        if (orientation === "90") rotation = "Right";
-        else if (orientation === "180") rotation = "UpsideDown";
-        else if (orientation === "270") rotation = "Left";
+        // JasperReports' barcode orientation: 90 = left, 270 = right
+        if (orientation === "90" || orientation === "left") rotation = "Left";
+        else if (orientation === "180" || orientation === "down") rotation = "UpsideDown";
+        else if (orientation === "270" || orientation === "right") rotation = "Right";
+
+        // Values typed for the other types
+        const keptValues = Array.from(reportElement.children).find(
+          (c) => c.localName === "property" && c.getAttribute("name") === BARCODE_VALUES_PROPERTY,
+        );
+        const valuesByType = parseBarcodeValues(keptValues?.getAttribute("value"));
 
         return {
+          ...(valuesByType ? { valuesByType } : {}),
           type: "barcode",
           uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
           x: parseInt(reportElement.getAttribute("x") || "0"),

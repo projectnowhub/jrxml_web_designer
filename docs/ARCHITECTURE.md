@@ -76,7 +76,8 @@ jrxml_web_designer/
         │   ├── tableXml.ts           # Data tables ⇄ JRXML
         │   ├── xsdValidator.ts       # Validate XSD + Auto Fix
         │   └── validator.ts, types.ts, uuidGenerator.ts
-        └── table/                    # Data table logic: binding, layout, themes, drag payloads
+        ├── table/                    # Data table logic: binding, layout, themes, drag payloads
+        └── barcode/                  # Barcode types, samples, input rules; drawing like the report prints it
 ```
 
 ## 3. Data Model (`src/types/index.ts`)
@@ -138,6 +139,7 @@ Entry: `parseJRXMLContent()` in `src/utils/jrxml/parse.ts`, using the browser `D
 | Text editing | `elements/TextFieldElement.vue`, `TextFormatToolbar.vue`, `utils/textFit.ts` |
 | Images | `services/imageService.ts` (upload to `<VITE_OAUTH_BASE_URL>/rest/files`), crop and corner radius in `utils/elementUtils.ts` |
 | Data tables | `utils/table/`, `jrxml/tableXml.ts`, `modals/TableConfigModal.vue`, `designer/ReportDataPanel.vue` |
+| Barcodes | `utils/barcode/` (types, examples, input rules, sizing and drawing with bwip-js, QR content, GS1 fields), `properties/BarcodeProperties.vue` (+ `QrContentEditor.vue`, `Gs1Editor.vue`), `elements/BarcodeElement.vue`; barcode table columns: `jrxml/tableXml.ts`, `common/BarcodeCell.vue` |
 | Project details on the page | `utils/projectFields.ts` (a dropped detail becomes plain text or a fixed image) |
 | Band fitting | `utils/bandFit.ts`, `utils/pageFit.ts`, `properties/BandHeightControls.vue` |
 | Undo / redo | `composables/useUndoRedo.ts` (whole-model snapshots) |

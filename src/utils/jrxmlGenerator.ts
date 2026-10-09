@@ -11,6 +11,8 @@ import { generateUUID } from "./jrxml/uuidGenerator";
 import { reportElementProperties } from "./elementUtils";
 import { CHART_BINDING_PROPERTY, normalizeChartBinding } from "./chart/chartTypes";
 import { chartImageDataUri } from "./chart/chartImage";
+import { BARCODE_VALUES_PROPERTY, printedBarcodeText, serializeBarcodeValues } from "./barcode/barcodeTypes";
+import { barcodeSizing } from "./barcode/barcodeImage";
 import {
   BOX_CORNER_RADIUS_PROPERTY,
   encodeCornerRadii,
@@ -1461,20 +1463,43 @@ function generateChartXML(element: any): string {
 // Generate barcode XML
 function generateBarcodeXML(element: any): string {
   const barcodeType = element.barcodeType || "Code128";
-  // Barcode4j elements are wrapped in componentElement
+  // Barcode4j elements are wrapped in componentElement; transparent like on
+  // the canvas (JasperReports paints a barcode's box white otherwise)
   let xml = `<componentElement>`;
-  xml += `<reportElement${generateReportElementAttrs(element)}>`;
-  xml += `${generateReportElementChildren(element)}`;
+  xml += `<reportElement${generateReportElementAttrs({ ...element, mode: element.mode || "Transparent" })}>`;
+  // Values typed for the other types come back when the type is switched back
+  const keptValues = serializeBarcodeValues(element.valuesByType);
+  const properties = (element.properties ?? []).filter((p: any) => p?.name !== BARCODE_VALUES_PROPERTY);
+  if (keptValues) properties.push({ name: BARCODE_VALUES_PROPERTY, value: keptValues });
+  xml += `${generateReportElementChildren({ ...element, properties })}`;
   xml += "</reportElement>";
 
+  // JasperReports' barcode orientation: 90 = left, 270 = right
   let orientationAttr = "";
-  if (element.rotation === "Right") orientationAttr = ' orientation="90"';
+  if (element.rotation === "Right") orientationAttr = ' orientation="270"';
   else if (element.rotation === "UpsideDown") orientationAttr = ' orientation="180"';
-  else if (element.rotation === "Left") orientationAttr = ' orientation="270"';
+  else if (element.rotation === "Left") orientationAttr = ' orientation="90"';
   else if (element.rotation === "None") orientationAttr = ' orientation="0"';
+  // A QR code has no orientation in the schema (JasperReports rejects it)
+  if (barcodeType === "QRCode") orientationAttr = "";
+
+  // Sized to fill its box, like the canvas (JasperReports' defaults draw it
+  // at its natural width); turned a quarter, the bars run along the height
+  const sideways = element.rotation === "Right" || element.rotation === "Left";
+  const sizing = barcodeSizing(
+    barcodeType,
+    printedBarcodeText(barcodeType, element.codeExpression),
+    sideways ? element.height : element.width,
+    sideways ? element.width : element.height,
+  );
+  let sizeAttrs = Object.entries(sizing?.attributes ?? {})
+    .map(([name, value]) => ` ${name}="${xmlAttr(String(value))}"`)
+    .join("");
+  // Data Matrix square, as drawn on the canvas (barcode4j may pick a rectangle)
+  if (barcodeType === "DataMatrix") sizeAttrs += ' shape="force-square"';
 
   // Barcode4j uses the components namespace
-  xml += `<c:${barcodeType} xmlns:c="http://jasperreports.sourceforge.net/jasperreports/components"${orientationAttr}>`;
+  xml += `<c:${barcodeType} xmlns:c="http://jasperreports.sourceforge.net/jasperreports/components"${orientationAttr}${sizeAttrs}>`;
   if (element.codeExpression) {
     xml += `<c:codeExpression>${cdata(element.codeExpression)}</c:codeExpression>`;
   }

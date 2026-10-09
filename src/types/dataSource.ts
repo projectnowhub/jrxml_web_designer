@@ -108,6 +108,8 @@ export interface TableColumnBinding {
   type: DataColumnType;
   width: number;
   total?: TotalFunction;
+  // Text columns can print each value as a barcode (types that hold any text)
+  barcode?: "Code128" | "QRCode" | "DataMatrix";
 }
 
 // Built-in table styles; they can't be changed

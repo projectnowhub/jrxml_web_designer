@@ -84,6 +84,20 @@
                   :aria-label="t('dataTable.config.headerText')"
                   @input="col.label = ($event.target as HTMLInputElement).value"
                 />
+                <!-- Text values can print as a barcode -->
+                <div v-if="col.type === 'text'" class="tcm-select-wrap is-small">
+                  <select
+                    class="tcm-select"
+                    :value="col.barcode ?? ''"
+                    :title="t('dataTable.config.showAs')"
+                    :aria-label="t('dataTable.config.showAs')"
+                    @change="setBarcode(col, ($event.target as HTMLSelectElement).value)"
+                  >
+                    <option value="">{{ t("dataTable.config.showAsText") }}</option>
+                    <option v-for="code in TABLE_BARCODE_TYPES" :key="code" :value="code">{{ t(`barcode.types.${code}`) }}</option>
+                  </select>
+                  <ChevronDown class="tcm-chevron" :size="12" aria-hidden="true" />
+                </div>
                 <div v-if="showTotals" class="tcm-select-wrap is-small">
                   <select
                     class="tcm-select"
@@ -118,6 +132,9 @@
               </select>
               <ChevronDown class="tcm-chevron" :size="14" aria-hidden="true" />
             </div>
+            <p v-if="columns.some((c) => tableColumnBarcode(c))" class="tcm-hint">
+              {{ t("dataTable.config.barcodeHint") }}
+            </p>
             <p v-if="columns.length >= maxColumns && unusedColumns.length" class="tcm-hint">
               {{ t("dataTable.config.columnLimitHint") }}
             </p>
@@ -199,6 +216,7 @@
 </template>
 
 <script setup lang="ts">
+import { TABLE_BARCODE_TYPES, isTableBarcodeType, tableColumnBarcode } from "@/utils/barcode/barcodeTypes";
 import { computed, ref, watch, type Component } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
@@ -507,6 +525,11 @@ function addColumn(select: HTMLSelectElement) {
   select.value = "";
   if (!column || columns.value.length >= maxColumns.value) return;
   columns.value.push(toColumnBinding(column, 0));
+}
+
+// A text column printed as a barcode (rows get taller when applied)
+function setBarcode(col: TableColumnBinding, value: string) {
+  col.barcode = isTableBarcodeType(value) ? value : undefined;
 }
 
 function setTotal(col: TableColumnBinding, value: string) {

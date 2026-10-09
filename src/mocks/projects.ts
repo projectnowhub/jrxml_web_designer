@@ -27,6 +27,15 @@ const PROJECT_FIELDS: ProjectField[] = [
   { key: "end_date", label: "End Date", type: "text" },
   { key: "budget", label: "Budget", type: "text" },
   { key: "status", label: "Status", type: "text" },
+  // Details that suit barcodes (drag them onto a Barcode element): a web
+  // link or contact for a QR code, numbers and tags for 1D codes
+  { key: "website", label: "Website", type: "text" },
+  { key: "contact_email", label: "Contact Email", type: "text" },
+  { key: "contact_phone", label: "Contact Phone", type: "text" },
+  { key: "project_number", label: "Project Number", type: "text" },
+  { key: "asset_tag", label: "Asset Tag", type: "text" },
+  { key: "item_number", label: "Item Number (EAN-13)", type: "text" },
+  { key: "postcode", label: "Site Postcode", type: "text" },
 ];
 
 // Logos are bundled files; the report server needs a full address
@@ -55,6 +64,13 @@ export const MOCK_PROJECTS: MockProject[] = [
       end_date: "30 Jun 2028",
       budget: "RM 4,850,000,000",
       status: "In progress",
+      website: "https://www.klmetro3.example.com",
+      contact_email: "projects@klmetro3.example.com",
+      contact_phone: "+60 3 2711 8888",
+      project_number: "2025003101",
+      asset_tag: "KLM3-AT-000451",
+      item_number: "9551234000010",
+      postcode: "50450",
     },
     sources: buildProjectSources({
       prefix: "KLM",
@@ -93,6 +109,13 @@ export const MOCK_PROJECTS: MockProject[] = [
       end_date: "31 Dec 2027",
       budget: "RM 1,320,000,000",
       status: "In progress",
+      website: "https://www.penangcoastal.example.com",
+      contact_email: "info@penangcoastal.example.com",
+      contact_phone: "+60 4 262 1955",
+      project_number: "2025004207",
+      asset_tag: "PGCH2-AT-000318",
+      item_number: "9551234000027",
+      postcode: "11960",
     },
     sources: buildProjectSources({
       prefix: "PCH",
@@ -129,6 +152,13 @@ export const MOCK_PROJECTS: MockProject[] = [
       end_date: "28 Feb 2027",
       budget: "RM 610,000,000",
       status: "On hold",
+      website: "https://www.johorsolar.example.com",
+      contact_email: "contact@johorsolar.example.com",
+      contact_phone: "+60 7 771 3300",
+      project_number: "2025006410",
+      asset_tag: "JHSF1-AT-000127",
+      item_number: "9551234000034",
+      postcode: "86000",
     },
     sources: buildProjectSources({
       prefix: "JSF",
@@ -164,6 +194,13 @@ export const MOCK_PROJECTS: MockProject[] = [
       end_date: "30 Sep 2028",
       budget: "RM 980,000,000",
       status: "In progress",
+      website: "https://www.sabahgh-extension.example.com",
+      contact_email: "site@sabahgh-extension.example.com",
+      contact_phone: "+60 88 517 555",
+      project_number: "2025003008",
+      asset_tag: "SBGH4-AT-000902",
+      item_number: "9551234000041",
+      postcode: "88586",
     },
     sources: buildProjectSources({
       prefix: "SGH",

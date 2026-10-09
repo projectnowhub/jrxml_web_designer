@@ -17,24 +17,34 @@
     @rotate="(b, e, p) => emit('rotate', b, e, p)"
     @save-state="emit('save-state')"
   >
-    <div class="barcode-element">
+    <div class="barcode-element" :class="{ 'is-placeholder': view.state !== 'ready' }">
+      <!-- Drawn the way the report prints it: filling the box (a QR code centred in it) -->
       <div class="barcode-content" :style="rotationStyle">
-        <component
-          :is="element.barcodeType === 'QRCode' || element.barcodeType === 'DataMatrix' ? QrCode : Barcode"
-          class="barcode-icon"
-          :stroke-width="1.5"
+        <img
+          v-if="picture"
+          class="barcode-picture"
+          :src="picture.uri"
+          :style="{ objectPosition: picture.centered ? 'center' : anchor }"
+          alt=""
+          draggable="false"
         />
-        <span class="barcode-label">{{ element.barcodeType }}</span>
+        <Barcode v-else class="barcode-loading" :size="24" :stroke-width="1.5" aria-hidden="true" />
       </div>
+      <span v-if="view.state !== 'ready'" class="barcode-badge" :class="`is-${view.state}`" :title="view.hint">
+        {{ t(`barcode.states.${view.state}`) }}
+      </span>
     </div>
   </BaseElement>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Barcode, QrCode } from '@lucide/vue';
+import { useI18n } from 'vue-i18n';
+import { Barcode } from '@lucide/vue';
 import BaseElement from './BaseElement.vue';
 import type { BarcodeElement, SelectedElementInfo, EditingElementInfo } from '../../types';
+import { barcodeTypeInfo, checkBarcodeValue, readBarcodeValue } from '../../utils/barcode/barcodeTypes';
+import { barcodePicture } from '../../utils/barcode/barcodeImage';
 
 const props = defineProps<{
   element: BarcodeElement;
@@ -58,9 +68,56 @@ const emit = defineEmits<{
   'save-state': [];
 }>();
 
+const { t } = useI18n();
+
+// The value it prints; a sample (faded, with a badge) when it comes from the
+// data or doesn't fit the type, since the report would fail on it
+const view = computed(() => {
+  const type = props.element.barcodeType;
+  const value = readBarcodeValue(props.element.codeExpression);
+  const sample = barcodeTypeInfo(type).sample;
+  if (value.isExpression) return { state: 'sample', text: sample, hint: t('barcode.states.sampleHint') };
+  const problem = checkBarcodeValue(type, value.text);
+  if (!problem) return { state: 'ready', text: value.text, hint: '' };
+  return {
+    state: problem.key === 'empty' ? 'empty' : 'invalid',
+    text: sample,
+    hint: t(`barcode.problems.${problem.key}`, problem.params ?? {}),
+  };
+});
+
+// Turned a quarter, the barcode's height runs along the box width
+// QR codes aren't turned (JasperReports has no orientation for them)
+const rotation = computed(() => (props.element.barcodeType === 'QRCode' ? 'None' : props.element.rotation || 'None'));
+const isSideways = computed(() => rotation.value === 'Right' || rotation.value === 'Left');
+
+// Sized to fill the box, like the printed barcode
+const picture = computed(() =>
+  barcodePicture(
+    props.element.barcodeType,
+    view.value.text,
+    isSideways.value ? props.element.height : props.element.width,
+    isSideways.value ? props.element.width : props.element.height,
+  ),
+);
+
+// The corner that ends up top left once the content is turned
+const anchor = computed(() => {
+  switch (rotation.value) {
+    case 'Right':
+      return 'left bottom';
+    case 'Left':
+      return 'right top';
+    case 'UpsideDown':
+      return 'right bottom';
+    default:
+      return 'left top';
+  }
+});
+
 // Visual 90-degree step rotation style
 const rotationStyle = computed(() => {
-  const rot = props.element.rotation;
+  const rot = rotation.value;
   if (!rot || rot === 'None') return {};
 
   const w = props.element.width;
@@ -102,31 +159,59 @@ const rotationStyle = computed(() => {
 
 <style scoped>
 .barcode-element {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.barcode-content {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f9f0ff;
-  border: 1px dashed #d3adf7;
-  border-radius: 2px;
 }
 
-.barcode-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  color: #722ed1;
+/* Keeps its shape inside the box, like the printed image (RetainShape) */
+.barcode-picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
 }
 
-.barcode-icon {
-  width: 24px;
-  height: 24px;
+.barcode-loading {
+  color: #c4c8cf;
 }
 
-.barcode-label {
-  font-size: 10px;
-  font-weight: 500;
+/* A sample never prints: drawn faded */
+.barcode-element.is-placeholder .barcode-picture {
+  opacity: 0.4;
+}
+
+.barcode-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  max-width: calc(100% - 6px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 1px 6px;
+  font-size: 9px;
+  line-height: 14px;
+  color: #4b5563;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px dashed #c7cbd1;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+
+.barcode-badge.is-invalid,
+.barcode-badge.is-empty {
+  color: #b91c1c;
+  border-color: #fca5a5;
 }
 </style>

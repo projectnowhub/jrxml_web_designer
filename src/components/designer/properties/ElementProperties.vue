@@ -275,34 +275,16 @@
             @configure="emit('configure-chart')"
           />
 
-          <!-- Barcode: symbology and value -->
-          <template v-if="currentElement.type === 'barcode'">
-            <div class="box-section compact">
-              <h5>{{ t("properties.barcodeProperties") }}</h5>
-              <label class="field">
-                <span class="field-label">{{ t("properties.barcodeType") }}</span>
-                <select
-                  class="card-select"
-                  :value="currentElement.barcodeType"
-                  @change="setTextProperty('barcodeType', ($event.target as HTMLSelectElement).value)"
-                >
-                  <option v-for="code in BARCODE_TYPES" :key="code.value" :value="code.value">{{ code.label }}</option>
-                </select>
-              </label>
-              <label class="field card-gap-sm">
-                <span class="field-label">{{ t("properties.barcodeValue") }}</span>
-                <input
-                  class="card-input"
-                  type="text"
-                  :value="getBarcodeValue(currentElement)"
-                  @input="updateBarcodeValue(($event.target as HTMLInputElement).value)"
-                  :placeholder="t('properties.barcodeValuePlaceholder')"
-                />
-              </label>
-            </div>
-          </template>
+          <!-- Barcode: type (with samples) and value -->
+          <BarcodeProperties
+            v-if="currentElement.type === 'barcode'"
+            :element="currentElement as BarcodeElement"
+            @save-state="emit('save-state')"
+            @update-jrxml="emit('update-jrxml')"
+          />
 
-          <template v-if="currentElement.type === 'barcode'">
+          <!-- QR codes aren't turned (JasperReports has no orientation for them) -->
+          <template v-if="currentElement.type === 'barcode' && currentElement.barcodeType !== 'QRCode'">
             <div class="box-section compact">
               <h5>{{ t("properties.rotation") }}</h5>
               <div class="seg" role="radiogroup" :aria-label="t('properties.rotation')">
@@ -861,7 +843,7 @@ import ColorSwatchPicker from '../../common/ColorSwatchPicker.vue';
 import { computed, ref, onMounted, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
-import type { Band, ChartElement, SelectedElementInfo } from "../../../types";
+import type { Band, BarcodeElement, ChartElement, SelectedElementInfo } from "../../../types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
@@ -891,6 +873,7 @@ import {
 import ColorPickerWithOpacity from "./ColorPickerWithOpacity.vue";
 import PaginationProperties from "./PaginationProperties.vue";
 import ChartProperties from "./ChartProperties.vue";
+import BarcodeProperties from "./BarcodeProperties.vue";
 import { isPagination } from "../../../utils/paginationPresets";
 import FrameProperties from "./FrameProperties.vue";
 import {
@@ -1432,32 +1415,6 @@ function addCrossingLine() {
   emit("update-jrxml");
 }
 
-// Get clean barcode value for display (without quotes if static text)
-function getBarcodeValue(element: any) {
-  if (!element || !element.codeExpression) return "";
-  const raw = String(element.codeExpression).trim();
-  if (raw.startsWith('"') && raw.endsWith('"')) {
-    return raw.slice(1, -1);
-  }
-  return raw;
-}
-
-// Update barcode value (wraps plain text in quotes, preserves $F{...} expressions)
-function updateBarcodeValue(val: string) {
-  if (!currentElement.value || currentElement.value.type !== "barcode") return;
-  // Typing the value is one undo step
-  recordBorderEdit("barcode-value");
-  const trimmed = val.trim();
-  if (!trimmed) {
-    currentElement.value.codeExpression = '""';
-  } else if (trimmed.startsWith("$") || (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
-    currentElement.value.codeExpression = trimmed;
-  } else {
-    currentElement.value.codeExpression = `"${trimmed}"`;
-  }
-  emit("update-jrxml");
-}
-
 // Image upload handling for Image elements in Properties panel
 const propImageFileInputRef = ref<HTMLInputElement | null>(null);
 const isPropertiesImageUploading = ref(false);
@@ -1628,22 +1585,6 @@ const SHAPE_STYLES = LINE_ONLY_STYLES;
 // JasperReports draws a Double pen as two lines a third of the pen width each,
 // so below 3pt it prints (and shows on the canvas) as one solid line
 const MIN_DOUBLE_LINE_WIDTH = 3;
-
-// Barcode symbologies (value = JasperReports barcode type)
-const BARCODE_TYPES = [
-  { value: "Code128", label: "Code 128" },
-  { value: "Code39", label: "Code 39" },
-  { value: "EAN13", label: "EAN-13" },
-  { value: "EAN8", label: "EAN-8" },
-  { value: "UPCA", label: "UPC-A" },
-  { value: "UPCE", label: "UPC-E" },
-  { value: "QRCode", label: "QR Code" },
-  { value: "DataMatrix", label: "Data Matrix" },
-  { value: "Interleaved2Of5", label: "Interleaved 2 of 5" },
-  { value: "Codabar", label: "Codabar" },
-  { value: "EAN128", label: "EAN-128" },
-  { value: "PDF417", label: "PDF417" },
-];
 
 // Text card
 const FONT_TOGGLES = [

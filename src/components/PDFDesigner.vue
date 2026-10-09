@@ -218,6 +218,7 @@
           @element-double-click="handleElementDoubleClick"
           @insert-page-number="addPageNumber"
           @insert-chart="addChart"
+          @insert-barcode="addBarcode"
           @update-projects="setReportProjects"
           @add-field="handleAddField"
           @edit-field="handleEditField"
@@ -606,6 +607,8 @@ import PdfPreviewModal from "./modals/PdfPreviewModal.vue";
 import TableConfigModal from "./modals/TableConfigModal.vue";
 import ChartConfigModal from "./modals/ChartConfigModal.vue";
 import { chartDataVersion, ensureChartData } from "../utils/chart/chartDataStore";
+import { barcodeLibraryLoaded, ensureBarcodeLibrary } from "../utils/barcode/barcodeImage";
+import { buildBarcodeElement, tableColumnBarcode, type BarcodeType } from "../utils/barcode/barcodeTypes";
 import VariableManagementModal from "./modals/VariableManagementModal.vue";
 import BaseModal from "./modals/BaseModal.vue";
 import BottomPanel from "./panels/BottomPanel.vue";
@@ -666,6 +669,7 @@ import type {
 import {
   applyProjectValue,
   canTakeProjectField,
+  projectValueProblem,
   countProjectUsage,
   projectFieldSize,
 } from "@/utils/projectFields";
@@ -678,6 +682,8 @@ import {
 import { MIN_TABLE_COLUMN_WIDTH, maxColumnsForWidth } from "@/utils/table/dataBinding";
 import {
   PLACEHOLDER_COLUMN_COUNT,
+  TABLE_BARCODE_ROW_HEIGHT,
+  TABLE_ROW_HEIGHT,
   evenColumnWidths,
   scaleColumnWidths,
   snapTableHeight,
@@ -2242,6 +2248,39 @@ const addChart = (chartType: ChartType) => {
   updateJRXML();
 };
 
+// Barcode tile, type picked: goes in the last clicked band, centred across
+// the page, with the type's sample value. Dragging the tile drops a Code 128.
+const addBarcode = (barcodeType: BarcodeType) => {
+  const bandIndex = bands.value[lastClickedBandIndex.value]
+    ? lastClickedBandIndex.value
+    : bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+  const band = bands.value[bandIndex];
+  if (!band) return;
+
+  const element = { ...buildBarcodeElement(barcodeType), uuid: crypto.randomUUID() } as DesignElement;
+  const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+  element.width = Math.min(element.width, availableWidth);
+  element.x = Math.round((availableWidth - element.width) / 2);
+  element.y = 20;
+
+  // Fits the band, growing it when it is too short; too tall is refused
+  const plan = planDropInBand(bandIndex, element);
+  if (plan.kind === "tooTall") {
+    warnTooTallForBand(bandIndex, element.height, plan.maxHeight);
+    return;
+  }
+
+  saveStateToHistory();
+  applyDropInBand(bandIndex, element, plan);
+  if (!band.elements) band.elements = [];
+  band.elements.push(element);
+
+  const elementIndex = band.elements.length - 1;
+  selectElement(bandIndex, elementIndex);
+  handleElementCreated(element, bandIndex, elementIndex);
+  updateJRXML();
+};
+
 // After the paper size or margins change (already one undo step): resize the
 // page border to the new printable area and move elements that no longer fit
 const handlePageSetupChange = () => {
@@ -2709,10 +2748,10 @@ const elementAtLocation = (location: TableLocation): DesignElement | undefined =
     : band?.elements[location.elementIndex];
 };
 
-// A project detail dropped onto a text or image element: its content becomes
-// the value, keeping its place, size and look (one undo step). Text details go
-// in text elements, the logo in image elements; the wrong kind is refused with
-// a message. Returns false when the drop wasn't on such an element.
+// A project detail dropped onto a text, image or barcode element: its content
+// becomes the value, keeping its place, size and look (one undo step). Text
+// details go in text elements and barcodes (when the type can hold the value),
+// the logo in image elements; anything else is refused with a message. Returns false when the drop wasn't on such an element.
 const fillDroppedProjectValue = (
   event: DragEvent,
   drag: Extract<DataSourceDragPayload, { kind: "projectField" }>,
@@ -2720,9 +2759,24 @@ const fillDroppedProjectValue = (
   const target = (event.target as HTMLElement)?.closest?.("[data-element-uuid]") as HTMLElement | null;
   const location = target?.dataset.elementUuid ? findElementByUuid(target.dataset.elementUuid) : null;
   const element = location ? elementAtLocation(location) : undefined;
-  if (!location || !element || (element.type !== "textField" && element.type !== "image")) return false;
+  if (!location || !element || !["textField", "image", "barcode"].includes(element.type)) return false;
 
-  if (!canTakeProjectField(element, drag.field)) {
+  // A barcode takes a text detail whose value its type can hold
+  if (element.type === "barcode" && drag.field.type !== "image") {
+    const problem = projectValueProblem(element, drag.value ?? "");
+    if (problem) {
+      notification.warning(
+        t("reportData.dropNotForBarcode", {
+          value: drag.value ?? "",
+          type: t(`barcode.types.${element.barcodeType}`),
+          problem: t(`barcode.problems.${problem.key}`, problem.params ?? {}),
+        }),
+      );
+      return true;
+    }
+  }
+
+  if (!canTakeProjectField(element, drag.field, drag.value)) {
     notification.warning(
       t(
         drag.field.type === "image"
@@ -2849,6 +2903,10 @@ const applyTableConfig = (binding: TableDataBinding, rowCount: number) => {
   if (!table || !location) return;
 
   table.binding = binding;
+  // Barcodes need taller rows than text
+  if (binding.columns.some((c) => tableColumnBarcode(c)) && (table.rowHeight ?? TABLE_ROW_HEIGHT) < TABLE_BARCODE_ROW_HEIGHT) {
+    table.rowHeight = TABLE_BARCODE_ROW_HEIGHT;
+  }
   table.height = tableHeight(binding, rowCount, table.headerHeight, table.rowHeight);
 
   // The table must still fit its section: moved up, or the section grows
@@ -2905,6 +2963,8 @@ const applyChartConfig = (binding: ChartBinding) => {
 
 // A chart's numbers arrived: its picture in the JRXML is redrawn
 watch(chartDataVersion, () => updateJRXML());
+// Barcodes are sized once their drawing library is in
+watch(barcodeLibraryLoaded, () => updateJRXML());
 
 // A source or column dropped from the "Report Data" list
 const handleDataSourceDrop = (
@@ -4127,9 +4187,9 @@ const initBox = (element: DesignElement) => {
   };
 };
 
-// Download the JRXML file (charts drawn with their numbers first)
+// Download the JRXML file (charts drawn with their numbers, barcodes sized, first)
 const downloadJRXML = async () => {
-  await ensureChartData(bands.value);
+  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value)]);
   const content = generateJRXMLContent(
     {
       ...reportProperties.value,
@@ -5093,11 +5153,11 @@ const regenerateJRXML = (): void => {
   notification.info(t("editor.jrxmlRegenerated"));
 };
 
-// Open the PDF preview (charts drawn with their numbers first)
+// Open the PDF preview (charts drawn with their numbers, barcodes sized, first)
 const openPdfPreview = async (): Promise<void> => {
   flushAutoSave();
   try {
-    await ensureChartData(bands.value);
+    await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value)]);
     updateJRXML();
     if (!jrxmlContent.value) {
       // Generate the JRXML content directly, without downloading it
