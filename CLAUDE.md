@@ -29,7 +29,7 @@ UI (Vue Canvas) ⇄ Structured JSON ⇄ JRXML (XML)
 ### Critical Path 3: JSON → UI Binding (Designer Canvas)
 
 - **Main component**: `src/components/PDFDesigner.vue` — the core orchestrator
-- Vue 3 reactive refs hold the JSON model (`reportProperties`, `bands`, `fields`, etc.)
+- The JSON model (`reportProperties`, `bands`, `reportFields`, etc.), its JRXML (`jrxmlContent`, written by `updateJrxml()`) and undo/redo live in the Pinia store `useReportStore` (`src/stores/report.ts`); `PDFDesigner.vue`, the canvas and the panels read them from the store, and the designer calls `reportStore.reset()` when it opens (a fresh report each visit)
 - Elements rendered in `src/components/designer/` sub-components
 - Drag/drop, resize, selection all operate on the JSON model directly
 - Changes to JSON immediately reflect in the visual canvas
@@ -61,7 +61,7 @@ Logic lives in `src/utils/framePresets.ts`: border presets, per-side pen helpers
   - `radius` + a partial border (accents) → two stacked filled rounded rectangles (border colour behind, inside colour in front, inset by each side's width); solid, one colour, inside filled
   Canvas and generator share the same helpers (`getLayeredBorder`) so they always match. No SVG or images.
 - **Corner radius per corner** (boxes, images and text, Style Settings: "All corners" + one field per corner): stored in CSS order ("12 0 6 0"), one value when all match. Boxes: all equal → `radius` (rounded rectangle above, rounded in the PDF); different → `cornerRadii`, written as the `com.cdp.box.cornerRadius` frame property. Images: always the `com.cdp.image.cornerRadius` property; text fields (page numbers included): always `com.cdp.text.cornerRadius`. JasperReports has one radius per rectangle and none on images or text fields, so the canvas draws these and the report server is expected to read the properties.
-- **Image shapes** (Basic tab → Shape: Square, Rounded, Soft, Circle, Pill, Leaf, Top round, Drop; `IMAGE_SHAPES` in `utils/elementUtils.ts`): stored as `com.cdp.image.shape`, each corner a share of the image's short side, so the shape follows resizing (Circle also makes the image square). The generator always writes the pixel radii for the current size into `com.cdp.image.cornerRadius` (`reportElementProperties`). Typing a corner in Style Settings drops the shape (Custom).
+- **Image shapes** (Basic tab → Shape: Square, Rounded, Soft, Circle, Pill, Leaf, Top round, Drop; `IMAGE_SHAPES` in `utils/elementUtils.ts`): stored as `com.cdp.image.shape`, each corner a share of the image's short side, so the shape follows resizing. Choosing a shape never changes the image's size: Circle and Pill both round it fully (a circle on a square image, a pill on a wide one). The generator always writes the pixel radii for the current size into `com.cdp.image.cornerRadius` (`reportElementProperties`). Typing a corner in Style Settings drops the shape (Custom).
 
 ## Report Data (projects)
 
@@ -176,7 +176,13 @@ The JRXML panel shows, validates, previews and saves the *formatted* text, so fo
 
 - TypeScript strict mode
 - Vue 3 `<script setup>` composition API
-- No external state management library — reactive refs in components
+- State management: **Pinia** (registered in `main.ts`, stores in `src/stores/`, setup-style `defineStore`):
+  - `useReportStore` (`report.ts`): the whole report (page settings, bands and elements, page count, fields, parameters, sub-datasets, saved table styles, variables, groups), the JRXML and its writer `updateJrxml()`, page size / page count / band list getters, fitting Detail to the page, turning bands on or off (`setBandTypes`), and undo/redo over all of it (`saveStateToHistory` before every change). **Every way of opening a report goes through `loadReport()`**, which sets every part (missing ones get their new-report value), repairs shared IDs, clears the selection and starts an empty history (`keepHistory` when applying edited JRXML, which is one undo step). Never assign the report fields one by one to open a report.
+  - `useSelectionStore` (`selection.ts`): selected band and element(s), the element being edited, the last clicked band (where library elements go; none yet: Detail).
+  - `useEditorStore` (`editor.ts`): zoom, snap/grid toggles (remembered per browser), alignment guides, drag/resize in progress, keyboard focus on the page area, panel layout.
+  - `useFilesStore` (`files.ts`): the reports saved in this browser, the open file (name, id) and its save status; `useDesignerFiles` reads and writes browser storage around it.
+  - `PDFDesigner.vue` resets them when it opens. The canvas, `ElementProperties`, `BottomPanel`, `ElementLibrary` and `FileManager` read the stores directly; property panels and canvas elements call `saveStateToHistory()` / `updateJrxml()` themselves. Auto-save stays in the designer (it saves when the store writes a new JRXML, `jrxmlVersion`).
+  - Not in stores, on purpose: temporary interaction state in `PDFDesigner.vue` (drag preview, drop highlight, context menu, open popups, clipboard), caches (chart data, table rows, the barcode library), and drafts local to one input. New shared state goes in a store, never in module-level refs or prop chains.
 - i18n via vue-i18n: English (`en`, default) and Malay (`ms`); all text outside `src/locales/ms.json` is English; locale files in `src/locales/`, choice stored in localStorage (`appLocale`)
 - User-visible text always goes through a translation key; never hard-code UI text
 - Locale files stay in sync: whenever a key is added, changed, renamed or deleted in `src/locales/en.json`, make the same change in every other locale file (currently `ms.json`) in the same edit, with a real translation, not English copied over
@@ -187,4 +193,4 @@ The JRXML panel shows, validates, previews and saves the *formatted* text, so fo
 - JRXML namespace: `http://jasperreports.sourceforge.net/jasperreports`
 - Element UUIDs required by JasperReports XSD
 - **Styles** (`<style>`) are written only for tables and follow the JasperReports schema: font and alignment are attributes (`fontName`, `fontSize`, `isBold`, `hTextAlign`, `vTextAlign`), and conditions only appear inside `<conditionalStyle>` (with a nested `<style>`). No parent styles, no `style` attribute on other elements.
-- **Undo/redo** (`src/composables/useUndoRedo.ts`) snapshots the whole model (bands, fields, parameters, sub-datasets, saved table styles). Every editor change must take a snapshot **before** mutating: `saveStateToHistory()` in `PDFDesigner.vue`, `emit("save-state")` from property panels. One user action = one undo step: record once per action (not once per side or per keystroke; see `recordBorderEdit` in `ElementProperties.vue`), and for drags/resizes record at the start, not on mouse-up. New features must be checked with Ctrl+Z / Ctrl+Y.
+- **Undo/redo** (`useReportStore`, built on `src/composables/useUndoRedo.ts`) snapshots the whole model (bands, fields, parameters, sub-datasets, saved table styles). Every editor change must take a snapshot **before** mutating: `saveStateToHistory()` from the report store (`useReportStore`, in `PDFDesigner.vue` and the property panels), then `updateJrxml()` after. One user action = one undo step: record once per action (not once per side or per keystroke; see `recordBorderEdit` in `ElementProperties.vue`), and for drags/resizes record at the start, not on mouse-up. New features must be checked with Ctrl+Z / Ctrl+Y.

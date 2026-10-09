@@ -15,7 +15,6 @@
     @resize-start="(ev, b, e, p, d) => emit('resizeStart', ev, b, e, p, d)"
     @contextmenu="(ev, b, e, p) => emit('contextmenu', ev, b, e, p)"
     @rotate="(b, e, p) => emit('rotate', b, e, p)"
-    @save-state="emit('save-state')"
   >
     <div class="barcode-element" :class="{ 'is-placeholder': view.state !== 'ready' }">
       <!-- Drawn the way the report prints it: filling the box (a QR code centred in it) -->
@@ -65,7 +64,6 @@ const emit = defineEmits<{
   resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  'save-state': [];
 }>();
 
 const { t } = useI18n();

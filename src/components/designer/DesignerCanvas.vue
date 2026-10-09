@@ -278,8 +278,6 @@
                         @finish-editing="finishEditing"
                         @cancel-editing="cancelEditing"
                         @check-fields="checkFields"
-                        @update-jrxml="emit('update-jrxml')"
-                        @save-state="emit('save-state')"
                         @rotate="(b, e, p) => emit('rotate', b, e, p)"
                       />
                       <div
@@ -328,8 +326,6 @@
                         @finish-editing="finishEditing"
                         @cancel-editing="cancelEditing"
                         @check-fields="checkFields"
-                        @update-jrxml="emit('update-jrxml')"
-                        @save-state="emit('save-state')"
                         @rotate="(b, e, p) => emit('rotate', b, e, p)"
                       />
                     </template>
@@ -447,6 +443,10 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
+import { useEditorStore } from "@/stores/editor";
+import { useReportStore } from "@/stores/report";
+import { useSelectionStore } from "@/stores/selection";
 import { Plus, Trash2 } from "@lucide/vue";
 import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import ElementFactory from "../elements/ElementFactory.vue";
@@ -465,21 +465,7 @@ const { t } = useI18n();
 
 // Props
 interface Props {
-  paperWidth: number;
-  paperHeight: number;
-  zoomLevel: number;
-  totalPages?: number;
-  reportProperties: any;
-  bands: Band[];
-  selectedBandIndex: number | null;
   highlightedBandIndex: number | null;
-  selectedElement: any;
-  selectedElements: {
-    bandIndex: number;
-    elementIndex: number;
-    parentFrameIndex?: number;
-  }[]; // Added multi-select support
-  editingElement: any;
   isDraggingOrResizing: boolean;
   // The highlighted band can't take the element being dragged (too tall)
   dropTargetBlocked?: boolean;
@@ -489,44 +475,24 @@ interface Props {
   horizontalRulerLabels: any[];
   verticalRulerTicks: any[];
   verticalRulerLabels: any[];
-  alignmentLines: AlignmentGuideLines | null;
-  isDesignAreaFocused: boolean;
   uiConstants: any;
   outOfBoundsElements: Array<{
     bandIndex: number;
     elementIndex: number;
     element: any;
   }>;
-  enableSnapToGrid: boolean;
-  enableSnapToAlignment: boolean;
-  showGrid: boolean;
   dragFeedback?: DragFeedback; // New: drag feedback
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  paperWidth: 0,
-  paperHeight: 0,
-  zoomLevel: 1,
-  totalPages: 1,
-  reportProperties: () => ({}),
-  bands: () => [],
-  selectedBandIndex: null,
   highlightedBandIndex: null,
-  selectedElement: null,
-  selectedElements: () => [], // Default value for multi-select support
-  editingElement: null,
   isDraggingOrResizing: false,
   horizontalRulerTicks: () => [],
   horizontalRulerLabels: () => [],
   verticalRulerTicks: () => [],
   verticalRulerLabels: () => [],
-  alignmentLines: null,
-  isDesignAreaFocused: false,
   uiConstants: () => ({}),
   outOfBoundsElements: () => [],
-  enableSnapToGrid: false,
-  enableSnapToAlignment: false,
-  showGrid: true,
   dragFeedback: () => ({
     previewElement: null,
     previewPosition: null,
@@ -540,6 +506,14 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 // Emits
+// Report, selection and editor state come from the stores
+const editorStore = useEditorStore();
+const { zoomLevel, alignmentLines, enableSnapToGrid, enableSnapToAlignment, showGrid, isDesignAreaFocused } = storeToRefs(editorStore);
+const reportStore = useReportStore();
+const { reportProperties, bands, paperWidth, paperHeight, totalPages: pageTotal } = storeToRefs(reportStore);
+const selectionStore = useSelectionStore();
+const { selectedBandIndex, selectedElement, selectedElements, editingElement } = storeToRefs(selectionStore);
+
 const emit = defineEmits([
   "set-design-area-focused",
   "handle-drop",
@@ -562,8 +536,6 @@ const emit = defineEmits([
   "update:enableSnapToAlignment", // Added snap-to-alignment toggle event
   "update:showGrid", // Added show/hide grid event
   "reset-zoom", // Added reset zoom event
-  "update-jrxml", // Added JRXML update event
-  "save-state", // Undo snapshot requested by an element before it changes itself
   "canvas-contextmenu", // Added canvas context menu event
   "add-page",
   "delete-page",
@@ -573,17 +545,17 @@ const emit = defineEmits([
 
 // Computed detail band index
 const detailBandIndex = computed(() =>
-  props.bands.findIndex((b) => b.type === "detail"),
+  bands.value.findIndex((b) => b.type === "detail"),
 );
 
-const totalPages = computed(() => Math.max(1, props.totalPages || 1));
+const totalPages = computed(() => Math.max(1, pageTotal.value || 1));
 
 // Background band is drawn as an underlay on every page, not in the stacked band flow
 const backgroundBandIndex = computed(() =>
-  props.bands.findIndex((b) => b.type === "background"),
+  bands.value.findIndex((b) => b.type === "background"),
 );
 const backgroundElements = computed(
-  () => props.bands[backgroundBandIndex.value]?.elements ?? [],
+  () => bands.value[backgroundBandIndex.value]?.elements ?? [],
 );
 
 // Click targets for background elements: a strip centred on each edge
@@ -606,28 +578,28 @@ const edgeHitStyle = (
 const totalRulerHeight = computed(() => {
   const pages = totalPages.value;
   const pageGap = 32;
-  return props.paperHeight * pages + Math.max(0, (pages - 1) * pageGap);
+  return paperHeight.value * pages + Math.max(0, (pages - 1) * pageGap);
 });
 
 // Extra ruler length past the last page, so the rulers can scroll as far as the
 // canvas (which also holds the add-page button and its scrollbar)
 const RULER_SCROLL_SLACK = 120;
 
-const marginLeft = computed(() => props.reportProperties.leftMargin || 0);
-const marginRight = computed(() => props.reportProperties.rightMargin || 0);
-const marginTop = computed(() => props.reportProperties.topMargin || 0);
-const marginBottom = computed(() => props.reportProperties.bottomMargin || 0);
+const marginLeft = computed(() => reportProperties.value.leftMargin || 0);
+const marginRight = computed(() => reportProperties.value.rightMargin || 0);
+const marginTop = computed(() => reportProperties.value.topMargin || 0);
+const marginBottom = computed(() => reportProperties.value.bottomMargin || 0);
 const printableWidth = computed(() =>
-  Math.max(0, props.paperWidth - marginLeft.value - marginRight.value),
+  Math.max(0, paperWidth.value - marginLeft.value - marginRight.value),
 );
 
 // Top of page sheet n (1-based) on the vertical ruler
-const pageRulerOffset = (pIndex: number) => (pIndex - 1) * (props.paperHeight + 32);
+const pageRulerOffset = (pIndex: number) => (pIndex - 1) * (paperHeight.value + 32);
 
 // Ruler numbers are centred on their tick, except at the paper edges where
 // centring would cut them in half
 const rulerLabelAlign = (position: number, pageLength: number) => {
-  const edge = 10 / props.zoomLevel;
+  const edge = 10 / zoomLevel.value;
   if (position < edge) return "label-start";
   if (position > pageLength - edge) return "label-end";
   return "";
@@ -635,11 +607,11 @@ const rulerLabelAlign = (position: number, pageLength: number) => {
 
 const gridPathCache = new Map<string, string>();
 const gridPath = (width: number, height: number) => {
-  const key = `${width}x${height}@${props.zoomLevel}`;
+  const key = `${width}x${height}@${zoomLevel.value}`;
   let path = gridPathCache.get(key);
   if (path === undefined) {
     if (gridPathCache.size > 200) gridPathCache.clear();
-    path = buildGridPath(width, height, 1 / props.zoomLevel);
+    path = buildGridPath(width, height, 1 / zoomLevel.value);
     gridPathCache.set(key, path);
   }
   return path;
@@ -678,7 +650,7 @@ function getBandDisplayLabel(bandType: string, pIndex: number): string {
 
 const getDetailElementsForPage = (pageIdx: number) => {
   if (detailBandIndex.value === -1) return [];
-  const detailBand = props.bands[detailBandIndex.value];
+  const detailBand = bands.value[detailBandIndex.value];
   if (!detailBand || !detailBand.elements) return [];
   const result: Array<{ element: any; originalIndex: number }> = [];
   detailBand.elements.forEach((el, index) => {
@@ -693,16 +665,16 @@ const getDetailElementsForPage = (pageIdx: number) => {
 // Calculate remaining height for detail band dynamically based on all visible non-detail bands on page
 const getPageDetailHeight = (pageIdx: number) => {
   if (detailBandIndex.value === -1) return 100;
-  const detailBand = props.bands[detailBandIndex.value];
+  const detailBand = bands.value[detailBandIndex.value];
   if (!detailBand) return 100;
 
   const pIndex = pageIdx + 1;
-  const topMargin = props.reportProperties?.topMargin || 0;
-  const bottomMargin = props.reportProperties?.bottomMargin || 0;
-  const availableHeight = props.paperHeight - topMargin - bottomMargin;
+  const topMargin = reportProperties.value?.topMargin || 0;
+  const bottomMargin = reportProperties.value?.bottomMargin || 0;
+  const availableHeight = paperHeight.value - topMargin - bottomMargin;
 
   let otherBandsHeight = 0;
-  props.bands.forEach((b) => {
+  bands.value.forEach((b) => {
     if (
       b.type !== "detail" &&
       isBandVisibleOnPage(b, pIndex, totalPages.value)
@@ -726,7 +698,7 @@ interface PageBandInfo {
 // Get the dynamic list of bands for a given page
 const getBandsForPage = (pIndex: number): PageBandInfo[] => {
   const result: PageBandInfo[] = [];
-  props.bands.forEach((band, bandIndex) => {
+  bands.value.forEach((band, bandIndex) => {
     if (!isBandVisibleOnPage(band, pIndex, totalPages.value)) {
       return;
     }
@@ -841,14 +813,14 @@ const startEditing = (
 
 const finishEditing = () => {
   // Since ElementFactory's finishEditing event doesn't pass parameters, we need to get the info from editingElement
-  if (props.editingElement) {
+  if (editingElement.value) {
     emit("finish-editing");
   }
 };
 
 const cancelEditing = () => {
   // Since ElementFactory's cancelEditing event doesn't pass parameters, we need to get the info from editingElement
-  if (props.editingElement) {
+  if (editingElement.value) {
     emit("cancel-editing");
   }
 };
@@ -882,9 +854,9 @@ const startResizingBand = (event: MouseEvent, bandIndex: number) => {
 const isElementOutOfBounds = (bandIndex: number, elementIndex: number) => {
   if (
     props.isDraggingOrResizing &&
-    props.selectedElement?.bandIndex === bandIndex &&
-    props.selectedElement?.elementIndex === elementIndex &&
-    props.selectedElement?.parentFrameIndex === undefined
+    selectedElement.value?.bandIndex === bandIndex &&
+    selectedElement.value?.elementIndex === elementIndex &&
+    selectedElement.value?.parentFrameIndex === undefined
   ) {
     return false;
   }
@@ -935,7 +907,7 @@ const startSelection = (event: MouseEvent) => {
     ) as HTMLElement;
     if (paperEl && paperContainer) {
       const containerRect = paperContainer.getBoundingClientRect();
-      const currentZoom = props.zoomLevel;
+      const currentZoom = zoomLevel.value;
 
       // Get the scroll position
       const scrollLeft = paperContainer.scrollLeft;
@@ -976,7 +948,7 @@ const updateSelection = (event: MouseEvent) => {
   ) as HTMLElement;
   if (paperEl && paperContainer) {
     const containerRect = paperContainer.getBoundingClientRect();
-    const currentZoom = props.zoomLevel;
+    const currentZoom = zoomLevel.value;
 
     // Get the scroll position
     const scrollLeft = paperContainer.scrollLeft;
@@ -1032,7 +1004,7 @@ const endSelection = () => {
   }
 
   // Convert the scaled coordinates to coordinates relative to the paper
-  const currentZoom = props.zoomLevel;
+  const currentZoom = zoomLevel.value;
   const left = scaledLeft / currentZoom;
   const top = scaledTop / currentZoom;
   const right = scaledRight / currentZoom;

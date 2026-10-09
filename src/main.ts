@@ -1,4 +1,5 @@
 import { createApp } from "vue";
+import { createPinia } from "pinia";
 import "./style.css";
 import "./styles/fonts.css";
 import "./styles/properties-panel.css";
@@ -11,6 +12,7 @@ import { initializeAllPlugins } from "./plugins/PluginRegistry";
 initializeAllPlugins();
 
 const app = createApp(App);
+app.use(createPinia());
 app.use(i18n);
 app.use(router);
 app.mount("#app");

@@ -143,6 +143,8 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
+import { useReportStore } from "@/stores/report";
 import { ref, computed, nextTick, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
@@ -178,10 +180,6 @@ const { t } = useI18n();
 // Define component props
 interface Props {
   elements: Array<{ type: string; name: string }>;
-  reportFields?: ReportField[];
-  reportParameters?: ReportParameter[];
-  reportVariables?: ReportVariable[];
-  bands: Array<{ type: string; name?: string; elements: DesignElement[] }>;
   // Projects chosen for the report
   projects?: ReportProject[];
 }
@@ -199,11 +197,11 @@ interface Emits {
 // Use default values
 const props = withDefaults(defineProps<Props>(), {
   elements: () => [],
-  reportFields: () => [],
-  reportParameters: () => [],
-  reportVariables: () => [],
-  bands: () => [],
 });
+
+// Report, selection and editor state come from the stores
+const reportStore = useReportStore();
+const { reportFields, reportParameters, reportVariables, bands } = storeToRefs(reportStore);
 
 const emit = defineEmits<Emits>();
 
@@ -266,7 +264,7 @@ function getFieldTypeName(className: string): string {
 // Handle drag start
 // Only one page border per report; the tile stays clickable so the designer can
 // explain why and select the existing border
-const hasPageBorder = computed(() => findPageBorder(props.bands) !== null);
+const hasPageBorder = computed(() => findPageBorder(bands.value) !== null);
 const isUnavailable = (type: string) => type === PAGE_BORDER_TYPE && hasPageBorder.value;
 
 // Hover text: why a tile is disabled, or what a ready-made box is for

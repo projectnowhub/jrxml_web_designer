@@ -22,20 +22,30 @@ export function useUndoRedo<State>(options: {
     redoStack.value = [];
   }
 
-  function undo() {
-    if (historyStack.value.length === 0) return;
+  // Whether there was a step to undo
+  function undo(): boolean {
+    if (historyStack.value.length === 0) return false;
     redoStack.value.push(deepClone(options.getState()));
     const previousState = historyStack.value.pop() as State;
     options.applyState(previousState);
     options.onAfterRestore?.();
+    return true;
   }
 
-  function redo() {
-    if (redoStack.value.length === 0) return;
+  // Whether there was a step to redo
+  function redo(): boolean {
+    if (redoStack.value.length === 0) return false;
     historyStack.value.push(deepClone(options.getState()));
     const nextState = redoStack.value.pop() as State;
     options.applyState(nextState);
     options.onAfterRestore?.();
+    return true;
+  }
+
+  // Forget every step (a fresh designer)
+  function clear() {
+    historyStack.value = [];
+    redoStack.value = [];
   }
 
   return {
@@ -43,6 +53,7 @@ export function useUndoRedo<State>(options: {
     redoStack,
     saveStateToHistory,
     undo,
-    redo
+    redo,
+    clear
   };
 }

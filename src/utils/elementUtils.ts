@@ -211,12 +211,13 @@ export type ImageShapeId =
 
 // Each corner as a share of the image's short side (0.5 = fully round),
 // in CSS order: top-left, top-right, bottom-right, bottom-left.
-// makeSquare: choosing it makes the image square (a circle, not an oval).
-export const IMAGE_SHAPES: { id: ImageShapeId; corners: [number, number, number, number]; makeSquare?: boolean }[] = [
+// Choosing a shape never changes the image's size: Circle and Pill both
+// round it fully (a circle on a square image, a pill on a wide one).
+export const IMAGE_SHAPES: { id: ImageShapeId; corners: [number, number, number, number] }[] = [
   { id: "square", corners: [0, 0, 0, 0] },
   { id: "rounded", corners: [0.08, 0.08, 0.08, 0.08] },
   { id: "soft", corners: [0.22, 0.22, 0.22, 0.22] },
-  { id: "circle", corners: [0.5, 0.5, 0.5, 0.5], makeSquare: true },
+  { id: "circle", corners: [0.5, 0.5, 0.5, 0.5] },
   { id: "pill", corners: [0.5, 0.5, 0.5, 0.5] },
   { id: "leaf", corners: [0.4, 0, 0.4, 0] },
   { id: "tab", corners: [0.16, 0.16, 0, 0] },
@@ -242,7 +243,6 @@ function shapeRadii(id: ImageShapeId, element: DesignElement): CornerRadii {
 }
 
 // Gives the image a preset shape. "square" removes the corners.
-// The caller makes the image square first for shapes with makeSquare.
 export function setImageShape(element: DesignElement, id: ImageShapeId): void {
   if (element?.type !== "image" || !findImageShape(id)) return;
   setPropertyCornerRadii(element, shapeRadii(id, element));

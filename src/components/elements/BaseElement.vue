@@ -89,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import { useReportStore } from "@/stores/report";
 import { RotateCw } from '@lucide/vue';
 import { resolveReportFont } from '../../config/fonts.config';
 import { computed, ref } from 'vue';
@@ -116,6 +117,9 @@ const props = defineProps<{
 }>();
 
 // Emits
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
 const emit = defineEmits<{
   select: [bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number];
   dragStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
@@ -124,7 +128,6 @@ const emit = defineEmits<{
   startEditing: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  'save-state': [];
 }>();
 
 const isRotatableElement = computed(() => 
@@ -141,7 +144,7 @@ const handleQuickRotate = () => {
   else next = 'Right';
 
   // Undo snapshot must be taken before the element changes
-  emit('save-state');
+  report.saveStateToHistory();
   (props.element as any).rotation = next;
   emit('rotate', props.bandIndex, props.elementIndex, props.parentFrameIndex);
 };

@@ -55,8 +55,6 @@
           @finish-editing="handleChildFinishEditing"
           @cancel-editing="handleChildCancelEditing"
           @check-fields="handleChildCheckFields"
-          @update-jrxml="emit('update-jrxml')"
-          @save-state="emit('save-state')"
           @auto-fit-height="(b: number, e: number, p?: number) => emit('autoFitHeight', b, e, p)"
           @rotate="(b: number, e: number, p?: number) => emit('rotate', b, e, p)"
         />
@@ -115,8 +113,6 @@ const emit = defineEmits<{
   finishEditing: [];
   cancelEditing: [];
   checkFields: [fields: string[]];
-  'update-jrxml': [];
-  'save-state': [];
   // From items in the box: passed on to the designer
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];

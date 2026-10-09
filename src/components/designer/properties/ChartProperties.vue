@@ -89,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import { useReportStore } from "@/stores/report";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ChartElement } from "../../../types";
@@ -112,9 +113,10 @@ const props = defineProps<{
   part: "basic" | "style";
 }>();
 
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
 const emit = defineEmits<{
-  "save-state": [];
-  "update-jrxml": [];
   // Open the Configure popup
   configure: [];
 }>();
@@ -131,9 +133,9 @@ const filterSummary = computed(() =>
 // One undo step per change; the element keeps its place and size
 const commit = (next: ChartBinding) => {
   if (JSON.stringify(next) === JSON.stringify(binding.value)) return;
-  emit("save-state");
+  report.saveStateToHistory();
   props.element.binding = next;
-  emit("update-jrxml");
+  report.updateJrxml();
 };
 const update = (patch: Partial<ChartBinding>) => commit({ ...binding.value, ...patch });
 

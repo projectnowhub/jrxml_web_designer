@@ -42,14 +42,7 @@
         <span class="toolbar-divider"></span>
 
         <!-- 3. File Manager -->
-        <FileManager
-          :current-file-name="currentFileName"
-          :current-file-id="currentFileId"
-          @create-new-file="createNewFile"
-          @load-file="loadFile"
-          @update:currentFileName="currentFileName = $event"
-          @update:currentFileId="currentFileId = $event"
-        />
+        <FileManager @create-new-file="createNewFile" @load-file="loadFile" />
 
         <span class="toolbar-divider"></span>
 
@@ -209,10 +202,6 @@
         <template #default="{ toggleCollapse }">
         <ElementLibrary
           :elements="elements"
-          :report-fields="reportFields"
-          :report-parameters="reportParameters"
-          :report-variables="reportVariables"
-          :bands="bands"
           :projects="reportProjects"
           @drag-start="handleDragStart"
           @element-double-click="handleElementDoubleClick"
@@ -263,31 +252,16 @@
         />
         <DesignerCanvas
           ref="designerCanvasRef"
-          :paper-width="paperWidth"
-          :paper-height="paperHeight"
-          :zoom-level="zoomLevel"
-          :report-properties="reportProperties"
-          :bands="bands"
-          :selected-band-index="selectedBandIndex"
           :highlighted-band-index="highlightedBandIndex"
           :drop-target-blocked="dropTargetBlocked"
           :background-drop-target="backgroundDropTarget"
-          :selected-element="selectedElement"
-          :selected-elements="selectedElements"
-          :editing-element="editingElement"
           :is-dragging-or-resizing="isDraggingOrResizing"
-          :alignment-lines="alignmentLines"
           :horizontal-ruler-ticks="horizontalRulerTicks"
           :horizontal-ruler-labels="horizontalRulerLabels"
           :vertical-ruler-ticks="verticalRulerTicks"
           :vertical-ruler-labels="verticalRulerLabels"
-          :is-design-area-focused="isDesignAreaFocused"
           :out-of-bounds-elements="outOfBoundsElements"
           :ui-constants="UI_CONSTANTS"
-          :enable-snap-to-grid="enableSnapToGrid"
-          :enable-snap-to-alignment="enableSnapToAlignment"
-          :show-grid="showGrid"
-          :total-pages="totalPages"
           @set-design-area-focused="setDesignAreaFocused"
           @select-band="selectBand"
           @select-element="selectElement"
@@ -314,8 +288,6 @@
           @add-page="addNewPage"
           @delete-page="deletePage"
           @rotate="handleElementRotate"
-          @save-state="saveStateToHistory"
-          @update-jrxml="updateJRXML"
         />
       </div>
 
@@ -381,18 +353,8 @@
         <Transition name="right-panel-fade">
         <div v-show="rightPanelTab === 'properties'">
           <ElementProperties
-            :selected-band-index="selectedBandIndex"
-            :selected-element="selectedElement"
-            :bands="bands"
-            :report-properties="reportProperties"
-            :table-styles="tableStyles"
-            :report-fields="reportFields"
-            :report-parameters="reportParameters"
-            :report-variables="reportVariables"
             @update:bands="bands = $event"
             @delete-element="deleteElement"
-            @update-jrxml="updateJRXML"
-            @save-state="saveStateToHistory"
             @fit-to-text="
               selectedElement &&
                 autoFitElementHeight(
@@ -434,24 +396,17 @@
     <BottomPanel
       :visible="showBottomPanel"
       :initial-height="bottomPanelHeight"
-      :report-properties="reportProperties"
-      :bands="bands"
       :all-band-types="allBandTypes"
-      :selected-band-types="selectedBandTypes"
-      :jrxml-content="jrxmlContent"
       @update:visible="showBottomPanel = $event"
       @size-change="handleBottomPanelSizeChange"
       @update:report-properties="reportProperties = $event"
-      @save-state="saveStateToHistory"
       @page-setup-change="handlePageSetupChange"
-      @update:selected-band-types="selectedBandTypes = $event"
       @update:jrxml-content="jrxmlContent = $event"
       @copy-jrxml="copyJRXML"
       @save-jrxml="saveJRXML"
       @regenerate-jrxml="regenerateJRXML"
       @download-jrxml="downloadJRXML"
       @open-preview="openPdfPreview"
-      @band-selection-change="handleBandSelectionChange"
     />
 
     <!-- Drag feedback layer -->
@@ -646,14 +601,10 @@ import type {
   ChartElement,
   DesignElement,
   DraggingInfo,
-  EditingElementInfo,
   FrameElement,
   ReportField,
   ReportParameter,
-  ReportProperties,
   ReportVariable,
-  SelectedElementInfo,
-  TableDataset,
   TableElement,
 } from "../types";
 import type {
@@ -712,9 +663,11 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDesignerFiles } from "@/composables/useDesignerFiles";
-import { useUndoRedo } from "@/composables/useUndoRedo";
-import { useZoom } from "@/composables/useZoom";
-import { useSnapAlignment } from "@/composables/useSnapAlignment";
+import { storeToRefs } from "pinia";
+import { useReportStore } from "@/stores/report";
+import { useSelectionStore } from "@/stores/selection";
+import { useEditorStore } from "@/stores/editor";
+import { useFilesStore } from "@/stores/files";
 import { fitContentToPage } from "@/utils/pageFit";
 import { planBandFit, type BandFitPlan } from "@/utils/bandFit";
 import { planTextFit, type TextFitElement } from "@/utils/textFit";
@@ -731,19 +684,15 @@ import {
 import {
   ALL_CONFIGURABLE_BANDS,
   BAND_CONSTANTS,
-  BAND_HEIGHT_CONSTANTS,
   BAND_TYPE_CONSTANTS,
   getEffectiveDefaultBandLimits,
-  getEffectiveDefaultBandConfig,
   ELEMENT_CONSTANTS,
   FONT_CONSTANTS,
   getDefaultElementSize,
-  HISTORY_CONSTANTS,
   KEYBOARD_CONSTANTS,
   PANEL_CONSTANTS,
   REPORT_CONSTANTS,
   UI_CONSTANTS,
-  ZOOM_CONSTANTS,
 } from "../constants/constants";
 
 // Import newly created utility functions and constants
@@ -761,7 +710,6 @@ import { getOutOfBoundsElements } from "../utils/elementBoundsValidator";
 import {
   calculateTextElementHeight,
   measureTextElementWidth,
-  ensureUniqueUuids,
   refreshUuids,
 } from "../utils/elementUtils";
 import {
@@ -771,7 +719,6 @@ import {
   clampRectInBox,
   findPageBorder,
   isBoxPart,
-  resetBoxPhotos,
   markBoxPart,
   releaseBoxPart,
   fitChildrenToFrame,
@@ -810,16 +757,33 @@ import {
 
 const { t } = useI18n();
 
-// Tab-related state
-const activeTab = ref("pageSettings");
+// Designer state lives in Pinia stores (src/stores): the report model and
+// undo/redo, what is selected, and how the designer is shown (zoom, snapping,
+// panels). Each starts fresh when the designer opens.
+const reportStore = useReportStore();
+const selectionStore = useSelectionStore();
+const editorStore = useEditorStore();
+const filesStore = useFilesStore();
+reportStore.reset();
+selectionStore.reset();
+editorStore.reset();
+filesStore.resetCurrentFile(t("fileManager.untitledReport"));
 
-// Panel visibility state
-const showLeftPanel = ref(true);
-const showRightPanel = ref(true);
-const showBottomPanel = ref(false);
-const showAIChat = ref(false);
-const aiChatPanelHeight = ref(300);
-const rightPanelTab = ref("properties"); // 'properties' or 'ai'
+// Panels: which are open, their sizes and tabs
+const {
+  activeTab,
+  showLeftPanel,
+  showRightPanel,
+  showBottomPanel,
+  showAIChat,
+  aiChatPanelHeight,
+  rightPanelTab,
+  propertyPanelWidth,
+  rightPanelCollapsed,
+  leftPanelWidth,
+  leftPanelCollapsed,
+  bottomPanelHeight,
+} = storeToRefs(editorStore);
 
 // Browser compatibility check
 const browserSupport = ref(checkWebMCPSupport());
@@ -864,41 +828,28 @@ function forceUpdateUI() {
   });
 }
 
-// Properties panel width
-const propertyPanelWidth = ref(PANEL_CONSTANTS.DEFAULT_PROPERTY_PANEL_WIDTH); // Default width 300px
-const rightPanelCollapsed = ref(false); // Right panel collapsed state
-
-// Left panel width
-const leftPanelWidth = ref(PANEL_CONSTANTS.DEFAULT_LEFT_PANEL_WIDTH);
-const leftPanelCollapsed = ref(false); // Left panel collapsed state
-
 // DesignerCanvas component reference
 const designerCanvasRef = ref<any>(null);
 
-// Bottom panel height
-const bottomPanelHeight = ref(PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT); // Default height 400px
-
-// JRXML content display
-const jrxmlContent = ref("");
-
-// Report properties
-const reportProperties = ref<ReportProperties>({
-  name: "NewReport",
-  pageWidth: REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH,
-  pageHeight: REPORT_CONSTANTS.DEFAULT_PAGE_HEIGHT,
-  leftMargin: REPORT_CONSTANTS.DEFAULT_MARGIN,
-  rightMargin: REPORT_CONSTANTS.DEFAULT_MARGIN,
-  topMargin: REPORT_CONSTANTS.DEFAULT_MARGIN,
-  bottomMargin: REPORT_CONSTANTS.DEFAULT_MARGIN,
-  defaultFont: {
-    name: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
-    size: REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
-    isBold: false,
-    isItalic: false,
-    isUnderline: false,
-  },
-  bandLimits: getEffectiveDefaultBandLimits(),
-});
+// The report model, its JRXML and undo/redo (report store)
+const {
+  jrxmlContent,
+  reportProperties,
+  bands,
+  pageCount,
+  reportFields,
+  reportParameters,
+  subDatasets,
+  tableStyles,
+  reportVariables,
+  reportGroups,
+  paperWidth,
+  paperHeight,
+  totalPages,
+  historyStack,
+  redoStack,
+} = storeToRefs(reportStore);
+const { saveStateToHistory } = reportStore;
 
 // File management related state
 const {
@@ -942,7 +893,8 @@ function handleHeaderTitleCommit() {
 }
 
 // Auto-save state and helpers
-const saveStatus = ref<"saved" | "saving" | "error">("saved");
+// Whether the latest changes are saved (files store)
+const { saveStatus } = storeToRefs(filesStore);
 const isLoadingFile = ref(false);
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -1013,86 +965,8 @@ function createNewFile() {
   currentFileName.value = `${t("fileManager.untitledReport")}${timestamp}`;
   currentFileId.value = `file_${timestamp}`;
 
-  // Reset the report data
-  reportProperties.value = {
-    name: "NewReport",
-    pageWidth: 595,
-    pageHeight: 842,
-    leftMargin: 20,
-    rightMargin: 20,
-    topMargin: 20,
-    bottomMargin: 20,
-    defaultFont: {
-      name: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
-      size: 12,
-      isBold: false,
-      isItalic: false,
-      isUnderline: false,
-    },
-    bandLimits: getEffectiveDefaultBandLimits(),
-  };
-
-  const defaultBandConfig = getEffectiveDefaultBandConfig();
-  const pageHeaderH =
-    defaultBandConfig[BAND_TYPE_CONSTANTS.PAGE_HEADER]?.defaultHeight ??
-    (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50);
-  const columnHeaderH =
-    defaultBandConfig[BAND_TYPE_CONSTANTS.COLUMN_HEADER]?.defaultHeight ??
-    (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30);
-  const columnFooterH =
-    defaultBandConfig[BAND_TYPE_CONSTANTS.COLUMN_FOOTER]?.defaultHeight ??
-    (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30);
-  const pageFooterH =
-    defaultBandConfig[BAND_TYPE_CONSTANTS.PAGE_FOOTER]?.defaultHeight ??
-    (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40);
-  const detailH = Math.max(
-    50,
-    802 - (pageHeaderH + columnHeaderH + columnFooterH + pageFooterH),
-  );
-
-  bands.value = [
-    {
-      type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
-      height: pageHeaderH,
-      elements: [],
-    },
-    {
-      type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType,
-      height: columnHeaderH,
-      elements: [],
-    },
-    {
-      type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
-      height: detailH,
-      elements: [],
-    },
-    {
-      type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType,
-      height: columnFooterH,
-      elements: [],
-    },
-    {
-      type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
-      height: pageFooterH,
-      elements: [],
-    },
-  ];
-
-  pageCount.value = 1;
-
-  // Update selectedBandTypes to match the new bands
-  selectedBandTypes.value = bands.value.map((band) => band.type);
-
-  reportFields.value = [];
-  reportParameters.value = [];
-  subDatasets.value = [];
-  reportVariables.value = [];
-  reportGroups.value = [];
-  jrxmlContent.value = "";
-
-  // Clear the currently selected element
-  selectedElement.value = null;
-  selectedBandIndex.value = null;
+  // A new, empty report (every part reset, no undo history, nothing selected)
+  reportStore.loadReport({});
 
   nextTick(() => {
     isLoadingFile.value = false;
@@ -1150,67 +1024,21 @@ function loadFile(fileData: DesignerFile | any) {
         ? JSON.parse(fileData.content)
         : fileData;
 
-    // Load the file data into the current report
-    if (fileContent.reportProperties) {
-      reportProperties.value = {
-        ...reportProperties.value,
-        ...fileContent.reportProperties,
-        // Each report has its own projects
-        projects: fileContent.reportProperties.projects ?? [],
-      };
-    }
-
-    if (fileContent.bands) {
-      bands.value = fileContent.bands;
-      // Repair copies that share IDs with their original (pasted before copies got their own)
-      ensureUniqueUuids(bands.value);
-      ensureUniqueTableDatasets(bands.value);
-      resetBoxPhotos(bands.value);
-      // Update selectedBandTypes to match the loaded bands
-      selectedBandTypes.value = fileContent.bands.map(
-        (band: Band) => band.type,
-      );
-      const detailBand = fileContent.bands.find(
-        (band: Band) => band.type === BAND_TYPE_CONSTANTS.DETAIL,
-      );
-      if (detailBand && detailBand.elements) {
-        const maxPage = Math.max(
-          0,
-          ...detailBand.elements.map((e: any) => e.pageIndex || 0),
-        );
-        pageCount.value = maxPage + 1;
-      } else {
-        pageCount.value = 1;
-      }
-    }
-
-    if (fileContent.reportFields) {
-      reportFields.value = fileContent.reportFields;
-    }
-
-    if (fileContent.reportParameters) {
-      reportParameters.value = fileContent.reportParameters;
-    }
-
-    if (fileContent.subDatasets) {
-      subDatasets.value = fileContent.subDatasets;
-    }
-
-    if (fileContent.reportVariables) {
-      reportVariables.value = fileContent.reportVariables;
-    }
-
-    if (fileContent.reportGroups) {
-      reportGroups.value = fileContent.reportGroups;
-    }
-
-    if (Array.isArray(fileContent.tableStyles)) {
-      tableStyles.value = parseSavedTableStyles(JSON.stringify(fileContent.tableStyles));
-    }
-
-    if (fileContent.jrxmlContent) {
-      jrxmlContent.value = fileContent.jrxmlContent;
-    }
+    // Open it: every part of the report is set (what the file lacks gets its
+    // new-report value), the undo history starts empty, nothing is selected
+    reportStore.loadReport({
+      reportProperties: fileContent.reportProperties,
+      bands: fileContent.bands,
+      reportFields: fileContent.reportFields,
+      reportParameters: fileContent.reportParameters,
+      subDatasets: fileContent.subDatasets,
+      reportVariables: fileContent.reportVariables,
+      reportGroups: fileContent.reportGroups,
+      tableStyles: Array.isArray(fileContent.tableStyles)
+        ? parseSavedTableStyles(JSON.stringify(fileContent.tableStyles))
+        : [],
+      jrxmlContent: fileContent.jrxmlContent,
+    });
 
     // Update the current file info
     currentFileName.value = fileData.name || t("fileManager.untitledReport");
@@ -1218,10 +1046,6 @@ function loadFile(fileData: DesignerFile | any) {
     if (fileData.id) {
       setLastFile({ id: fileData.id, name: fileData.name });
     }
-
-    // Clear the currently selected element
-    selectedElement.value = null;
-    selectedBandIndex.value = null;
 
     nextTick(() => {
       isLoadingFile.value = false;
@@ -1301,67 +1125,8 @@ const elements = computed(() =>
 
 // Using the interfaces imported from types/index.ts
 
-// Report bands
-const initDefaultBandConfig = getEffectiveDefaultBandConfig();
-const initPageHeaderH =
-  initDefaultBandConfig[BAND_TYPE_CONSTANTS.PAGE_HEADER]?.defaultHeight ??
-  (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50);
-const initColumnHeaderH =
-  initDefaultBandConfig[BAND_TYPE_CONSTANTS.COLUMN_HEADER]?.defaultHeight ??
-  (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30);
-const initColumnFooterH =
-  initDefaultBandConfig[BAND_TYPE_CONSTANTS.COLUMN_FOOTER]?.defaultHeight ??
-  (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30);
-const initPageFooterH =
-  initDefaultBandConfig[BAND_TYPE_CONSTANTS.PAGE_FOOTER]?.defaultHeight ??
-  (BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40);
-const initDetailH = Math.max(
-  50,
-  802 - (initPageHeaderH + initColumnHeaderH + initColumnFooterH + initPageFooterH),
-);
-
-const bands = ref<Band[]>([
-  {
-    type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
-    height: initPageHeaderH,
-    elements: [],
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType,
-    height: initColumnHeaderH,
-    elements: [],
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
-    height: initDetailH,
-    elements: [],
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType,
-    height: initColumnFooterH,
-    elements: [],
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
-    height: initPageFooterH,
-    elements: [],
-  },
-]);
-
 // Multi-page state and methods
-const pageCount = ref(1);
 
-const maxDetailPageIndex = computed(() => {
-  const detailBand = bands.value.find(
-    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
-  );
-  if (!detailBand || !detailBand.elements) return 0;
-  return Math.max(0, ...detailBand.elements.map((e: any) => e.pageIndex || 0));
-});
-
-const totalPages = computed(() =>
-  Math.max(pageCount.value, maxDetailPageIndex.value + 1),
-);
 
 // afterPage: 1-based page the new one follows (default: at the end). Detail
 // content of later pages moves down one page.
@@ -1405,22 +1170,10 @@ const deletePage = (pageIndex: number) => {
 // All possible band types
 const allBandTypes = ALL_CONFIGURABLE_BANDS;
 
-// The currently selected band type
-const selectedBandTypes = ref<BandType[]>(bands.value.map((band) => band.type));
 
-// Data fields
-const reportFields = ref<ReportField[]>([]);
 
-// Report parameters
-const reportParameters = ref<ReportParameter[]>([]);
 
-// Sub-datasets
-const subDatasets = ref<TableDataset[]>([]);
 
-// Report styles
-// Report styles (table theme styles are added when a table first uses them)
-// Table styles the user saved in this report (built-in ones are not listed)
-const tableStyles = ref<SavedTableStyle[]>([]);
 
 // Projects chosen in the Report Data list (kept with the report properties,
 // so undo and saving cover them)
@@ -1439,11 +1192,7 @@ const setReportProjects = (projects: ReportProject[]) => {
   updateJRXML();
 };
 
-// Report variables
-const reportVariables = ref<any[]>([]);
 
-// Report groups
-const reportGroups = ref<any[]>([]);
 
 // Context menu state
 const contextMenu = ref({
@@ -1485,15 +1234,6 @@ const handleElementCreated = (
   }
 };
 
-// History stack - used for the undo feature
-type HistoryState = {
-  reportProperties: typeof reportProperties.value;
-  bands: typeof bands.value;
-  reportFields: typeof reportFields.value;
-  reportParameters: typeof reportParameters.value;
-  subDatasets: typeof subDatasets.value;
-  tableStyles: typeof tableStyles.value;
-};
 
 // Out-of-bounds elements
 const outOfBoundsElements = ref<
@@ -1658,46 +1398,27 @@ function handleMultiResize(type: "sameWidth" | "sameHeight" | "sameSize") {
   updateJRXML();
 }
 
-const { historyStack, redoStack, saveStateToHistory, undo, redo } =
-  useUndoRedo<HistoryState>({
-    maxHistorySize: HISTORY_CONSTANTS.MAX_HISTORY_SIZE,
-    getState: () => ({
-      reportProperties: reportProperties.value,
-      bands: bands.value,
-      reportFields: reportFields.value,
-      reportParameters: reportParameters.value,
-      subDatasets: subDatasets.value,
-      tableStyles: tableStyles.value,
-    }),
-    applyState: (state) => {
-      reportProperties.value = state.reportProperties;
-      bands.value = state.bands;
-      reportFields.value = state.reportFields;
-      reportParameters.value = state.reportParameters;
-      subDatasets.value = state.subDatasets;
-      // Older snapshots (taken before styles were recorded) keep the current styles
-      if (state.tableStyles) tableStyles.value = state.tableStyles;
-    },
-    onAfterRestore: () => {
-      updateJRXML();
-    },
-  });
+// Undo/redo restore the model; the JRXML is rewritten after each
+const undo = () => {
+  if (reportStore.undo()) updateJRXML();
+};
+const redo = () => {
+  if (reportStore.redo()) updateJRXML();
+};
 
-const isDraggingOrResizing = ref(false); // Flags whether a drag or resize is in progress
-const isUpdatingJRXML = ref(false); // Guards against re-entrant calls to updateJRXML
+// A drag or resize is in progress (editor store)
+const { isDraggingOrResizing } = storeToRefs(editorStore);
 
 // Add a new parameter
 // Removed the unused parameter management function
 
-// Selection state
-const selectedBandIndex = ref<number | null>(null);
-const selectedElement = ref<SelectedElementInfo | null>(null);
-const selectedElements = ref<SelectedElementInfo[]>([]); // Element editing state
-const editingElement = ref<EditingElementInfo | null>(null);
+// Selection state (selection store)
+const { selectedBandIndex, selectedElement, selectedElements, editingElement } = storeToRefs(selectionStore);
 
 
 // Report design area focus state
-const isDesignAreaFocused = ref(true); // Focus the design area by default
+// The page area has the keyboard (editor store)
+const { isDesignAreaFocused } = storeToRefs(editorStore);
 
 // Set focus on the design area
 const setDesignAreaFocused = () => {
@@ -1710,74 +1431,13 @@ const removeDesignAreaFocused = () => {
 };
 
 // Computed properties
-const paperWidth = computed(
-  () =>
-    reportProperties.value?.pageWidth || REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH,
-);
-const paperHeight = computed(
-  () =>
-    reportProperties.value?.pageHeight || REPORT_CONSTANTS.DEFAULT_PAGE_HEIGHT,
-);
 
-// Ensure the bands fit within the page height and detail takes the remaining space
-const ensureBandsFitPage = () => {
-  const topMargin = reportProperties.value?.topMargin || 0;
-  const bottomMargin = reportProperties.value?.bottomMargin || 0;
-  const availableHeight = paperHeight.value - topMargin - bottomMargin;
-
-  const detailIndex = bands.value.findIndex(
-    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
-  );
-  if (detailIndex === -1) return;
-
-  let otherBandsHeight = 0;
-  bands.value.forEach((b, i) => {
-    // Exclude detail itself, and non-stacking band (background underlay)
-    if (i !== detailIndex && b.type !== BAND_TYPE_CONSTANTS.BACKGROUND) {
-      otherBandsHeight += b.height || 0;
-    }
-  });
-
-  const remaining = Math.max(
-    BAND_CONSTANTS.MIN_HEIGHT,
-    availableHeight - otherBandsHeight,
-  );
-  if (bands.value[detailIndex]) {
-    bands.value[detailIndex].height = remaining;
-  }
-};
-
-// Watch paper dimensions, margins, and non-detail band heights to ensure Detail always fits remaining space
-watch(
-  [
-    () => paperHeight.value,
-    () => reportProperties.value?.topMargin,
-    () => reportProperties.value?.bottomMargin,
-    () =>
-      bands.value
-        .filter(
-          (b) =>
-            b.type !== BAND_TYPE_CONSTANTS.DETAIL &&
-            b.type !== BAND_TYPE_CONSTANTS.BACKGROUND,
-        )
-        .map((b) => b.height)
-        .join(","),
-  ],
-  () => {
-    ensureBandsFitPage();
-  },
-);
-const {
-  zoomLevel,
-  resetZoom,
-  calculateOptimalZoom,
-  handleZoomChange,
-  zoomIn,
-  zoomOut,
-} = useZoom({
-  paperWidth,
-  zoomConstants: ZOOM_CONSTANTS,
-});
+// Detail takes the page height the other bands leave (report store, which
+// also refits it when the page size, margins or band heights change)
+const ensureBandsFitPage = () => reportStore.fitBandsToPage();
+// Zoom (editor store)
+const { zoomLevel } = storeToRefs(editorStore);
+const { resetZoom, calculateOptimalZoom, handleZoomChange, zoomIn, zoomOut } = editorStore;
 
 // Function to set the zoom level
 const setZoomLevel = (newZoom: number) => {
@@ -1834,14 +1494,9 @@ const verticalRulerLabels = computed(() => verticalRulerMarks.value.labels);
 // Drag-related state
 const draggingInfo = ref<DraggingInfo | null>(null);
 const highlightedBandIndex = ref<number | null>(null); // Index of the highlighted target band
-const {
-  enableSnapToGrid,
-  enableSnapToAlignment,
-  showGrid,
-  alignmentLines,
-  setAlignmentLines,
-  clearAlignmentLines,
-} = useSnapAlignment();
+// Snapping, grid and alignment guides (editor store)
+const { enableSnapToGrid, enableSnapToAlignment, showGrid, alignmentLines } = storeToRefs(editorStore);
+const { setAlignmentLines, clearAlignmentLines } = editorStore;
 
 // How close (in screen pixels) an edge must come to another to align with it;
 // in screen pixels so it feels the same at every zoom
@@ -2080,7 +1735,13 @@ const resizingInfo = ref<{
 } | null>(null);
 
 // Tracks the last-clicked band
-const lastClickedBandIndex = ref<number>(3); // Defaults to the DETAIL band (index 3)
+// The band last clicked (selection store); none yet: Detail
+const { lastClickedBandIndex } = storeToRefs(selectionStore);
+// Where elements added from the library go: the last clicked band, or Detail
+const insertBandIndex = (): number => {
+  const last = lastClickedBandIndex.value;
+  return last !== null && bands.value[last] ? last : bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+};
 
 // Tracks the element being dragged from the component library (works around dataTransfer sometimes failing in the Mac Tauri environment)
 const draggedLibraryElement = ref<any>(null);
@@ -2152,7 +1813,6 @@ const addPageBorder = () => {
       elements: [],
     });
     bandIndex = bands.value.length - 1;
-    selectedBandTypes.value = bands.value.map((band) => band.type);
   }
 
   const backgroundBand = bands.value[bandIndex]!;
@@ -2218,9 +1878,7 @@ const addPageNumber = (position: PaginationPosition) => {
 // Chart tile, type picked: goes in the last clicked band, centred across the
 // page. Dragging the tile drops a bar chart wherever it is released.
 const addChart = (chartType: ChartType) => {
-  const bandIndex = bands.value[lastClickedBandIndex.value]
-    ? lastClickedBandIndex.value
-    : bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+  const bandIndex = insertBandIndex();
   const band = bands.value[bandIndex];
   if (!band) return;
 
@@ -2251,9 +1909,7 @@ const addChart = (chartType: ChartType) => {
 // Barcode tile, type picked: goes in the last clicked band, centred across
 // the page, with the type's sample value. Dragging the tile drops a Code 128.
 const addBarcode = (barcodeType: BarcodeType) => {
-  const bandIndex = bands.value[lastClickedBandIndex.value]
-    ? lastClickedBandIndex.value
-    : bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+  const bandIndex = insertBandIndex();
   const band = bands.value[bandIndex];
   if (!band) return;
 
@@ -2307,14 +1963,8 @@ const handleElementDoubleClick = (element: any) => {
   // The library asks for a position or a chart type first
   if (element.type === PAGE_NUMBER_TYPE || element.type === "chart") return;
 
-  // Ensure there is a last-clicked band
-  if (
-    lastClickedBandIndex.value === null ||
-    lastClickedBandIndex.value === undefined
-  ) {
-    console.warn("No band selected, falling back to the default band");
-    lastClickedBandIndex.value = 3; // Default to the DETAIL band
-  }
+  // No band clicked yet (or it no longer exists): Detail
+  lastClickedBandIndex.value = insertBandIndex();
 
   // Tables always go in the Detail section (the one that grows onto new pages)
   if (element.type === "table") {
@@ -4146,30 +3796,7 @@ const saveToLocalStorageWrapper = () => {
 const loadFromLocalStorageWrapper = () => {
   const loadedData = loadFromLocalStorage();
   if (loadedData && loadedData.reportData) {
-    reportProperties.value = {
-      ...loadedData.reportData.reportProperties,
-      bandLimits:
-        loadedData.reportData.reportProperties.bandLimits ||
-        getEffectiveDefaultBandLimits(),
-    };
-    bands.value = loadedData.reportData.bands;
-    // Repair copies that share IDs with their original (pasted before copies got their own)
-    ensureUniqueUuids(bands.value);
-    ensureUniqueTableDatasets(bands.value);
-    resetBoxPhotos(bands.value);
-    reportFields.value = loadedData.reportData.reportFields;
-    jrxmlContent.value = loadedData.reportData.jrxmlContent;
-    // Update selectedBandTypes to match the loaded bands
-    if (
-      loadedData.reportData.bands &&
-      Array.isArray(loadedData.reportData.bands)
-    ) {
-      selectedBandTypes.value = loadedData.reportData.bands.map(
-        (band: Band) => band.type,
-      );
-    } else {
-      selectedBandTypes.value = [];
-    }
+    reportStore.loadReport(loadedData.reportData);
     return true;
   }
   return false;
@@ -4280,60 +3907,11 @@ const handleBottomPanelSizeChange = (newSize: number) => {
 };
 
 // Automatically update the JRXML content
-const updateJRXML = () => {
-  // Guard against re-entrancy: if updateJRXML is already running, skip this call
-  if (isUpdatingJRXML.value) {
-    return;
-  }
-  isUpdatingJRXML.value = true;
-  try {
-    // Ensure all data has been initialized
-    if (
-      !reportProperties.value ||
-      !bands.value ||
-      !reportFields.value ||
-      !reportParameters.value
-    ) {
-      return;
-    }
+// The JRXML is written by the report store (it fits the bands to the page first)
+const updateJRXML = () => reportStore.updateJrxml();
 
-    // Ensure bands fit within the A4 page height and detail takes the remaining space
-    ensureBandsFitPage();
-
-    const content = generateJRXMLContent(
-      {
-        ...reportProperties.value,
-        pageCount: totalPages.value,
-      },
-      bands.value,
-      reportFields.value,
-      reportParameters.value,
-      subDatasets.value,
-      tableStyles.value,
-      reportVariables.value,
-      [],
-      reportGroups.value,
-      totalPages.value,
-    );
-
-    // If the content changed, save it to history
-    if (content !== jrxmlContent.value) {
-      // Only save history while not dragging/resizing
-      if (!isDraggingOrResizing.value && historyStack.value.length === 0) {
-        // Save the initial state on first run
-        saveStateToHistory();
-      }
-      jrxmlContent.value = content;
-
-      // Save to local storage immediately, ensuring the JRXML content gets persisted
-      saveToLocalStorageWrapper();
-    }
-  } catch (error) {
-    console.error("Failed to update JRXML:", error);
-  } finally {
-    isUpdatingJRXML.value = false;
-  }
-};
+// Auto-save each JRXML the store writes, right away
+watch(() => reportStore.jrxmlVersion, () => saveToLocalStorageWrapper(), { flush: "sync" });
 
 // Copy an element to the clipboard
 const copyElement = async () => {
@@ -5116,7 +4694,7 @@ watch(
   ],
   () => {
     // Only update while not dragging/resizing, not already in JRXML update, and not loading a file
-    if (!isDraggingOrResizing.value && !isUpdatingJRXML.value && !isLoadingFile.value) {
+    if (!isDraggingOrResizing.value && !reportStore.isWritingJrxml() && !isLoadingFile.value) {
       updateJRXML();
       // Update the out-of-bounds elements
       updateOutOfBoundsElements();
@@ -5194,88 +4772,34 @@ const saveJRXML = (): void => {
     // Use our parseJRXMLContent function to parse the JRXML content
     const parsedData = parseJRXMLContent(jrxmlContent.value);
 
-    // Update the report properties
-    reportProperties.value = {
-      ...parsedData.properties,
-      orientation:
-        parsedData.properties?.orientation === "landscape"
-          ? "landscape"
-          : "portrait",
-      defaultFont: reportProperties.value?.defaultFont || {
-        name: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
-        size: REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
-        isBold: false,
-        isItalic: false,
-        isUnderline: false,
+    // The edited JRXML replaces the whole report: one undo step. Every part
+    // is set from it (what it lacks is emptied); the default font and band
+    // limits aren't in JRXML and stay
+    saveStateToHistory();
+    reportStore.loadReport(
+      {
+        reportProperties: {
+          ...parsedData.properties,
+          orientation: parsedData.properties?.orientation === "landscape" ? "landscape" : "portrait",
+          defaultFont: reportProperties.value?.defaultFont,
+          bandLimits: reportProperties.value?.bandLimits,
+        } as any,
+        bands: parsedData.bands,
+        reportFields: parsedData.fields,
+        reportParameters: parsedData.parameters,
+        reportVariables: parsedData.variables,
+        reportGroups: parsedData.groups,
+        tableStyles: parsedData.tableStyles,
+        subDatasets: (parsedData.datasets ?? []).map((dataset) => ({
+          uuid: crypto.randomUUID(),
+          name: dataset.name,
+          fields: dataset.fields,
+          query: dataset.query,
+        })) as any,
+        jrxmlContent: jrxmlContent.value,
       },
-      bandLimits:
-        reportProperties.value?.bandLimits || getEffectiveDefaultBandLimits(),
-    };
-
-    if (parsedData.properties?.pageCount) {
-      pageCount.value = parsedData.properties.pageCount;
-    } else {
-      const detailBand = parsedData.bands.find(
-        (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
-      );
-      const maxIdx = detailBand?.elements
-        ? Math.max(0, ...detailBand.elements.map((e: any) => e.pageIndex || 0))
-        : 0;
-      pageCount.value = maxIdx + 1;
-    }
-
-    // Update the field definitions
-    reportFields.value = parsedData.fields;
-
-    // Update the parameter definitions
-    reportParameters.value = parsedData.parameters || [];
-
-    // Update the variable definitions
-    if (parsedData.variables) {
-      reportVariables.value = parsedData.variables;
-    }
-
-    // Update the group definitions
-    if (parsedData.groups) {
-      reportGroups.value = parsedData.groups;
-    }
-
-    // Saved table styles (report styles themselves are rebuilt from the tables)
-    tableStyles.value = parsedData.tableStyles;
-
-    // Update the sub-datasets
-    if (parsedData.datasets) {
-      subDatasets.value = parsedData.datasets.map((dataset) => ({
-        uuid: crypto.randomUUID(),
-        name: dataset.name,
-        fields: dataset.fields,
-        query: dataset.query,
-      })) as any;
-    }
-
-    // Update the bands
-    bands.value = parsedData.bands;
-    // Repair copies that share IDs with their original (pasted before copies got their own)
-    ensureUniqueUuids(bands.value);
-    ensureUniqueTableDatasets(bands.value);
-    resetBoxPhotos(bands.value);
-
-    // Update the selected band types
-    selectedBandTypes.value = parsedData.bands.map((band) => band.type);
-
-    // Update pageCount based on loaded elements
-    const detailBand = parsedData.bands.find(
-      (b: Band) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+      { keepHistory: true },
     );
-    if (detailBand && detailBand.elements) {
-      const maxPage = Math.max(
-        0,
-        ...detailBand.elements.map((e: any) => e.pageIndex || 0),
-      );
-      pageCount.value = Math.max(1, maxPage + 1);
-    } else {
-      pageCount.value = 1;
-    }
 
     // Add a default border to rectangle elements to ensure they render correctly
     bands.value.forEach((band) => {
@@ -6162,7 +5686,7 @@ const handleElementRotate = (
   _elementIndex: number,
   _parentFrameIndex?: number,
 ): void => {
-  // The undo snapshot was already taken via save-state, before the element rotated
+  // The element took the undo snapshot (report store) before it rotated
   updateJRXML();
 };
 
@@ -7068,88 +6592,6 @@ const moveElementZOrder = (direction: "front" | "back") => {
   updateJRXML();
 };
 
-// Handle Band selection changes
-const handleBandSelectionChange = (): void => {
-  // Get the currently selected band types
-  const currentSelectedTypes = [...selectedBandTypes.value] as BandType[];
-
-  // Get the types currently present in bands
-  const currentBandTypes = bands.value.map((band) => band.type);
-
-  // Determine which bands need to be added (present in selectedBandTypes but not in currentBandTypes)
-  const bandsToAdd = currentSelectedTypes.filter(
-    (type) => !currentBandTypes.includes(type),
-  );
-
-  // Determine which bands need to be removed (present in currentBandTypes but not in selectedBandTypes)
-  // Detail band is the fundamental report canvas and must never be removed
-  const bandsToRemove = currentBandTypes.filter(
-    (type) =>
-      !currentSelectedTypes.includes(type) &&
-      type !== BAND_TYPE_CONSTANTS.DETAIL,
-  );
-
-  // Remove the bands that are no longer needed
-  if (bandsToRemove.length > 0) {
-    bands.value = bands.value.filter(
-      (band) => !bandsToRemove.includes(band.type),
-    );
-  }
-
-  // Add the new bands
-  if (bandsToAdd.length > 0) {
-    const defaultBandConfig = getEffectiveDefaultBandConfig();
-    const newBands = bandsToAdd.map((type) => {
-      const bandTypeConfig = allBandTypes.find((bt) => bt.type === type);
-      const defaultHeight =
-        defaultBandConfig[type]?.defaultHeight ??
-        (bandTypeConfig ? bandTypeConfig.defaultHeight : 50);
-      return {
-        type: type as BandType,
-        height: defaultHeight,
-        elements: [],
-      };
-    });
-
-    // Insert the new bands in the order defined by allBandTypes
-    allBandTypes.forEach((bandType) => {
-      if (bandsToAdd.includes(bandType.type as BandType)) {
-        const newBand = newBands.find((b) => b.type === bandType.type);
-        if (newBand) {
-          // Ensure the height property isn't undefined
-          if (newBand.height === undefined) {
-            newBand.height = BAND_HEIGHT_CONSTANTS[bandType.type] || 50;
-          }
-          // Find the appropriate insertion position
-          let insertIndex = bands.value.length;
-          for (let i = 0; i < bands.value.length; i++) {
-            const currentBandTypeIndex = allBandTypes.findIndex(
-              (bt) => bt.type === bands.value[i]?.type,
-            );
-            const newBandTypeIndex = allBandTypes.findIndex(
-              (bt) => bt.type === bandType.type,
-            );
-            if (newBandTypeIndex < currentBandTypeIndex) {
-              insertIndex = i;
-              break;
-            }
-          }
-          // Use a type assertion to ensure newBand satisfies the Band interface
-          bands.value.splice(insertIndex, 0, newBand as Band);
-        }
-      }
-    });
-  }
-
-  // Ensure bands fit within the A4 page height
-  ensureBandsFitPage();
-
-  // Save state to history
-  saveStateToHistory();
-
-  // Update JRXML
-  updateJRXML();
-};
 </script>
 
 <style scoped>

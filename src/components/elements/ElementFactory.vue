@@ -91,8 +91,6 @@ const emit = defineEmits<{
   finishEditing: [];
   cancelEditing: [];
   checkFields: [fields: string[]];
-  'update-jrxml': [];
-  'save-state': [];
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
@@ -168,12 +166,5 @@ const commonEvents = {
   checkFields: (fields: string[]) => {
     emit('checkFields', fields);
   },
-  'update-jrxml': () => {
-    emit('update-jrxml');
-  },
-  // Snapshot for undo, sent by an element right before it changes the model itself
-  'save-state': () => {
-    emit('save-state');
-  }
 };
 </script>

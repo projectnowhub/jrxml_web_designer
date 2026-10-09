@@ -304,6 +304,7 @@
 </template>
 
 <script setup lang="ts">
+import { useReportStore } from "@/stores/report";
 import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -349,12 +350,13 @@ const props = defineProps<{
   tableStyles: SavedTableStyle[];
 }>();
 
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
 const emit = defineEmits<{
   configure: [];
   // "Customize" in the Basic tab opens Style Settings
   "open-style-settings": [];
-  "save-state": [];
-  "update-jrxml": [];
   // Save this table's look as a new reusable style
   "save-table-style": [name: string];
   // Overwrite a saved style with this table's look (all its tables follow)
@@ -375,9 +377,9 @@ const look = computed(() => resolveLook(binding.value));
 function renameTable(value: string) {
   const name = value.trim();
   if (!binding.value || !name || name === binding.value.tableName) return;
-  emit("save-state");
+  report.saveStateToHistory();
   binding.value.tableName = name;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // ── Choosing a style ──
@@ -406,12 +408,12 @@ const copyLook = (value: TableLook): TableLook => ({ ...value });
 function applyStyle(id: string) {
   const b = binding.value;
   if (!b || isActiveStyle(id)) return;
-  emit("save-state");
+  report.saveStateToHistory();
   b.theme = id;
   b.customized = undefined;
   const saved = props.tableStyles.find((s) => s.id === id);
   b.look = saved ? copyLook(saved.look) : isBuiltinTheme(id) ? undefined : b.look;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // ── Renaming or deleting the saved style the table uses ──
@@ -464,13 +466,13 @@ function setLook<K extends LookField>(field: K, value: TableLook[K], single = fa
   if (!b) return;
   if (look.value[field] === value) return;
   if (editing !== field) {
-    emit("save-state");
+    report.saveStateToHistory();
     editing = single ? null : field;
   }
   // The first change makes the table's own copy of its style
   b.look = { ...look.value, [field]: value };
   b.customized = true;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function toggleStripes(on: boolean) {
@@ -509,12 +511,12 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
   if (!Number.isFinite(value) || value < 12 || value === props.element[key]) return;
   const table = props.element;
   const slots = rowSlots(table);
-  emit("save-state");
+  report.saveStateToHistory();
   table[key] = value;
   const header = table.headerHeight ?? TABLE_HEADER_HEIGHT;
   const row = table.rowHeight ?? TABLE_ROW_HEIGHT;
   table.height = header + slots * row + (hasTotalsRow(table.binding) ? row : 0);
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 </script>
 

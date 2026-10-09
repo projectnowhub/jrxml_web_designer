@@ -83,6 +83,7 @@
 </template>
 
 <script setup lang="ts">
+import { useReportStore } from "@/stores/report";
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { TextFieldElement } from '../../../types';
@@ -99,10 +100,9 @@ const props = defineProps<{
   element: TextFieldElement;
 }>();
 
-const emit = defineEmits<{
-  'save-state': [];
-  'update-jrxml': [];
-}>();
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
 
 const { t } = useI18n();
 
@@ -117,9 +117,9 @@ const rangeIsEmpty = computed(
 const update = (patch: Partial<PaginationSettings>) => {
   const next = { ...settings.value, ...patch };
   if (JSON.stringify(next) === JSON.stringify(settings.value)) return;
-  emit('save-state');
+  report.saveStateToHistory();
   applyPaginationSettings(props.element, next);
-  emit('update-jrxml');
+  report.updateJrxml();
 };
 
 // Empty or invalid = no limit on that side

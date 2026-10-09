@@ -113,30 +113,12 @@ import InputModal from '../../modals/InputModal.vue';
 
 const { t } = useI18n();
 
-interface Props {
-  currentFileName: string;
-  currentFileId: string | null;
-}
-
 interface Emits {
   (e: 'create-new-file'): void;
   (e: 'load-file', file: DesignerFile): void;
-  (e: 'update:currentFileName', name: string): void;
-  (e: 'update:currentFileId', id: string | null): void;
 }
 
-const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
-
-const currentFileNameRef = computed({
-  get: () => props.currentFileName,
-  set: (value: string) => emit('update:currentFileName', value)
-});
-
-const currentFileIdRef = computed({
-  get: () => props.currentFileId,
-  set: (value: string | null) => emit('update:currentFileId', value)
-});
 
 // File management related state
 const showFileMenu = ref(false);
@@ -147,15 +129,14 @@ const showRenameModal = ref(false);
 const showDeleteModal = ref(false);
 const pendingFile = ref<DesignerFile | null>(null);
 
+// The open file and the saved list come from the files store
 const {
   files,
+  currentFileName,
   loadFilesFromStorage,
   renameFile,
   deleteFile
-} = useDesignerFiles({
-  currentFileName: currentFileNameRef,
-  currentFileId: currentFileIdRef
-});
+} = useDesignerFiles();
 
 // Computed property: filtered file list
 const filteredFiles = computed(() => {

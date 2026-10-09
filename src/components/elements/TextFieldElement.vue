@@ -21,7 +21,6 @@
     @start-editing="handleStartEditing"
     @auto-fit-height="handleAutoFit"
     @rotate="(b, e, p) => emit('rotate', b, e, p)"
-    @save-state="emit('save-state')"
   >
     <div
       class="text-element-inner"
@@ -170,6 +169,7 @@
 </template>
 
 <script setup lang="ts">
+import { useReportStore } from "@/stores/report";
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
@@ -229,19 +229,20 @@ const props = defineProps<{
 }>();
 
 // Emits
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
 const emit = defineEmits<{
   select: [bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number];
   dragStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
   updateElement: [];
-  'update-jrxml': [];
   checkFields: [fields: string[]];
   startEditing: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   finishEditing: [];
   cancelEditing: [];
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  'save-state': [];
 }>();
 
 // Visual 90-degree step rotation style
@@ -1408,23 +1409,29 @@ const handleFinishEditing = () => {
   let html = editInput.value.innerHTML;
   const textContent = editInput.value.textContent || '';
 
+  // One undo step per edit, taken before the text changes (none when the
+  // text stayed the same)
+  const commit = (expression: string, markup = props.element.markup) => {
+    if (expression !== props.element.expression || markup !== props.element.markup) report.saveStateToHistory();
+    props.element.expression = expression;
+    props.element.markup = markup;
+  };
+
   if (!textContent.trim() && !html.includes('<img') && !html.includes('<a')) {
-    props.element.expression = '""';
+    commit('""');
     emit('updateElement');
-    emit('update-jrxml');
+    report.updateJrxml();
     emit('finishEditing');
     nextTick(checkOverflow);
     return;
   }
 
   if (hasHtmlTags(html)) {
-    props.element.markup = 'html';
     const safeHtml = cleanHtmlForJasper(html);
-    props.element.expression = `"${safeHtml}"`;
+    commit(`"${safeHtml}"`, 'html');
   } else {
-    props.element.markup = 'html';
     const plain = textContent.replace(/\r\n|\r|\n/g, '\\n');
-    props.element.expression = `"${plain}"`;
+    commit(`"${plain}"`, 'html');
   }
 
   // Extract all field references $F{fieldName}
@@ -1443,7 +1450,7 @@ const handleFinishEditing = () => {
   }
 
   emit('updateElement');
-  emit('update-jrxml');
+  report.updateJrxml();
   emit('finishEditing');
   nextTick(checkOverflow);
 };

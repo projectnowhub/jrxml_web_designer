@@ -1,6 +1,6 @@
-import { ref } from 'vue';
-import type { Ref } from 'vue';
+import { storeToRefs } from 'pinia';
 import type { DesignerFile } from '@/types/designerFile';
+import { useFilesStore } from '@/stores/files';
 
 const STORAGE_KEYS = {
   FILES: 'pdfDesignerFiles',
@@ -22,17 +22,12 @@ function normalizeContent(content: unknown): string {
   return JSON.stringify(content);
 }
 
-const sharedFiles = ref<DesignerFile[]>([]);
 let isFilesLoaded = false;
 
-export function useDesignerFiles(options?: {
-  currentFileName?: Ref<string>;
-  currentFileId?: Ref<string | null>;
-  defaultFileName?: string;
-}) {
-  const currentFileName = options?.currentFileName ?? ref(options?.defaultFileName ?? 'Untitled Report');
-  const currentFileId = options?.currentFileId ?? ref<string | null>(null);
-  const files = sharedFiles;
+// The file list and the open file are in the files store, shared by every
+// caller (the designer and its File menu)
+export function useDesignerFiles(options?: { defaultFileName?: string }) {
+  const { files, currentFileName, currentFileId } = storeToRefs(useFilesStore());
 
   function loadFilesFromStorage() {
     try {
@@ -98,7 +93,7 @@ export function useDesignerFiles(options?: {
   }
 
   function saveCurrentFileContent(content: unknown) {
-    if (!sharedFiles.value.length && !isFilesLoaded) {
+    if (!files.value.length && !isFilesLoaded) {
       loadFilesFromStorage();
     }
     const timestamp = Date.now();

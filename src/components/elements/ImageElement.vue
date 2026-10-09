@@ -18,7 +18,6 @@
     @resize-start="handleResizeStart"
     @contextmenu="handleContextMenu"
     @rotate="(b, e, p) => emit('rotate', b, e, p)"
-    @save-state="emit('save-state')"
   >
     <div
       class="image-container"
@@ -188,6 +187,7 @@
 </template>
 
 <script setup lang="ts">
+import { useReportStore } from "@/stores/report";
 import { Check, RotateCcw, Upload, X } from "@lucide/vue";
 import { computed, inject, onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -237,6 +237,9 @@ const cornerRadiusStyle = computed(() => {
 });
 
 // Emits
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
 const emit = defineEmits<{
   select: [
     bandIndex: number,
@@ -258,8 +261,6 @@ const emit = defineEmits<{
     direction?: string,
   ];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  "update-jrxml": [];
-  "save-state": [];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
@@ -466,14 +467,14 @@ async function processImageFile(file: File) {
   try {
     const source = await resolveImageSource(file);
     // Undo snapshot before the element changes
-    emit("save-state");
+    report.saveStateToHistory();
     props.element.imageExpression = toImageExpression(source);
     // Remember the uploaded file name so the panels can show it
     setImageName(props.element, file.name || "");
     // A crop belongs to the previous picture
     setImageCrop(props.element, null);
     imageError.value = false;
-    emit("update-jrxml");
+    report.updateJrxml();
   } catch (error) {
     console.error("Image upload failed:", error);
     showUploadError(
@@ -716,7 +717,7 @@ function applyCrop() {
   if (unchanged) return;
 
   // Undo snapshot before the element changes
-  emit("save-state");
+  report.saveStateToHistory();
   setImageCrop(props.element, {
     left: (rect.x - full.x) / full.w,
     top: (rect.y - full.y) / full.h,
@@ -728,7 +729,7 @@ function applyCrop() {
   props.element.y = Math.round((Number(props.element.y) || 0) + kept.y);
   props.element.width = Math.max(1, Math.round(kept.w));
   props.element.height = Math.max(1, Math.round(kept.h));
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function cancelCrop() {

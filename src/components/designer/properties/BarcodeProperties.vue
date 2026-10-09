@@ -110,6 +110,7 @@
 </template>
 
 <script setup lang="ts">
+import { useReportStore } from "@/stores/report";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { Barcode, Calculator, CircleCheck, Lightbulb, TriangleAlert } from "@lucide/vue";
@@ -138,10 +139,9 @@ const props = defineProps<{
   element: BarcodeElement;
 }>();
 
-const emit = defineEmits<{
-  "save-state": [];
-  "update-jrxml": [];
-}>();
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
 
 const { t } = useI18n();
 
@@ -207,7 +207,7 @@ watch(
 function setType(type: BarcodeType) {
   const el = props.element;
   if (el.barcodeType === type) return;
-  emit("save-state");
+  report.saveStateToHistory();
   const kindChanged = barcodeTypeInfo(el.barcodeType).kind !== barcodeTypeInfo(type).kind;
   switchBarcodeType(el, type);
   // QR codes aren't turned (JasperReports has no orientation for them)
@@ -217,7 +217,7 @@ function setType(type: BarcodeType) {
     el.width = isSideways.value ? size.height : size.width;
     el.height = isSideways.value ? size.width : size.height;
   }
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Typing is one undo step per field until focus moves; a choice (an example,
@@ -230,11 +230,11 @@ function setValue(text: string, discrete = false) {
   const next = toBarcodeExpression(text);
   if (next === props.element.codeExpression) return;
   if (discrete || !typing.value) {
-    emit("save-state");
+    report.saveStateToHistory();
     typing.value = !discrete;
   }
   props.element.codeExpression = next;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 </script>
 

@@ -270,8 +270,6 @@
             v-if="currentElement.type === 'chart'"
             part="basic"
             :element="currentElement as ChartElement"
-            @save-state="emit('save-state')"
-            @update-jrxml="emit('update-jrxml')"
             @configure="emit('configure-chart')"
           />
 
@@ -279,8 +277,6 @@
           <BarcodeProperties
             v-if="currentElement.type === 'barcode'"
             :element="currentElement as BarcodeElement"
-            @save-state="emit('save-state')"
-            @update-jrxml="emit('update-jrxml')"
           />
 
           <!-- QR codes aren't turned (JasperReports has no orientation for them) -->
@@ -346,8 +342,6 @@
             <PaginationProperties
               v-if="isPagination(currentElement)"
               :element="currentElement"
-              @save-state="emit('save-state')"
-              @update-jrxml="emit('update-jrxml')"
             />
             <div v-else class="box-section compact">
               <div class="card-head">
@@ -420,8 +414,6 @@
               v-if="currentElement.type === 'chart'"
               part="style"
               :element="currentElement as ChartElement"
-              @save-state="emit('save-state')"
-              @update-jrxml="emit('update-jrxml')"
             />
 
             <!-- Border settings (not supported for table and line elements) -->
@@ -819,6 +811,9 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
+import { useSelectionStore } from "@/stores/selection";
+import { useReportStore } from "@/stores/report";
 import {
   AlignVerticalJustifyCenter,
   AlignVerticalJustifyEnd,
@@ -890,22 +885,12 @@ import SwitchControl from "./common/SwitchControl.vue";
 const { t } = useI18n();
 
 interface Props {
-  selectedBandIndex: number | null;
-  selectedElement: SelectedElementInfo | null;
-  bands: Band[];
-  reportProperties: any;
   // Table styles saved in the report
-  tableStyles?: SavedTableStyle[];
-  reportFields?: Array<{ name: string; class?: string }>;
-  reportParameters?: Array<{ name: string; class?: string }>;
-  reportVariables?: Array<{ name: string; class?: string }>;
 }
 
 interface Emits {
   (e: "update:bands", bands: Band[]): void;
   (e: "delete-element"): void;
-  (e: "update-jrxml"): void;
-  (e: "save-state"): void;
   // Fit the selected text element's box to its text (done by the designer)
   (e: "fit-to-text"): void;
   (e: "save-table-style", name: string): void;
@@ -918,27 +903,36 @@ interface Emits {
 }
 
 const props = defineProps<Props>();
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
+// Report, selection and editor state come from the stores
+const selectionStore = useSelectionStore();
+const { selectedBandIndex, selectedElement } = storeToRefs(selectionStore);
+const reportStore = useReportStore();
+const { bands, reportProperties, tableStyles, reportFields, reportParameters, reportVariables } = storeToRefs(reportStore);
+
 const emit = defineEmits<Emits>();
 
 function getBandLimit(bandType: string) {
-  if (!props.reportProperties) return { min: 20, max: 70 };
-  if (!props.reportProperties.bandLimits) {
-    props.reportProperties.bandLimits = getEffectiveDefaultBandLimits();
+  if (!reportProperties.value) return { min: 20, max: 70 };
+  if (!reportProperties.value.bandLimits) {
+    reportProperties.value.bandLimits = getEffectiveDefaultBandLimits();
   }
-  if (!props.reportProperties.bandLimits[bandType]) {
-    props.reportProperties.bandLimits[bandType] = { min: 20, max: 70 };
+  if (!reportProperties.value.bandLimits[bandType]) {
+    reportProperties.value.bandLimits[bandType] = { min: 20, max: 70 };
   }
-  return props.reportProperties.bandLimits[bandType];
+  return reportProperties.value.bandLimits[bandType];
 }
 
 function getMaxPhysicalHeight(bandType: string): number {
-  const pageH = props.reportProperties?.pageHeight || 842;
-  const topM = props.reportProperties?.topMargin || 20;
-  const bottomM = props.reportProperties?.bottomMargin || 20;
+  const pageH = reportProperties.value?.pageHeight || 842;
+  const topM = reportProperties.value?.topMargin || 20;
+  const bottomM = reportProperties.value?.bottomMargin || 20;
   const printableH = pageH - topM - bottomM;
   let otherBandsH = 0;
-  if (props.bands && Array.isArray(props.bands)) {
-    props.bands.forEach((b) => {
+  if (bands.value && Array.isArray(bands.value)) {
+    bands.value.forEach((b) => {
       if (b.type !== bandType && b.type !== "detail" && b.type !== "background") {
         otherBandsH += b.height || 0;
       }
@@ -949,13 +943,13 @@ function getMaxPhysicalHeight(bandType: string): number {
 }
 
 function getMaxAllowedLimit(bandType: string): number {
-  const pageH = props.reportProperties?.pageHeight || 842;
-  const topM = props.reportProperties?.topMargin || 20;
-  const bottomM = props.reportProperties?.bottomMargin || 20;
+  const pageH = reportProperties.value?.pageHeight || 842;
+  const topM = reportProperties.value?.topMargin || 20;
+  const bottomM = reportProperties.value?.bottomMargin || 20;
   const printableH = pageH - topM - bottomM;
   let otherBandsMin = 0;
-  if (props.bands && Array.isArray(props.bands)) {
-    props.bands.forEach((b) => {
+  if (bands.value && Array.isArray(bands.value)) {
+    bands.value.forEach((b) => {
       if (b.type !== bandType && b.type !== "detail" && b.type !== "background") {
         const limit = getBandLimit(b.type);
         otherBandsMin += Math.max(10, limit?.min || 10);
@@ -976,11 +970,11 @@ function onTemplateMinChange(bandType: string) {
       limit.max = limit.min;
     }
   }
-  const band = props.bands?.find((b) => b.type === bandType);
+  const band = bands.value?.find((b) => b.type === bandType);
   if (band && typeof band.height === "number" && band.height < limit.min) {
     band.height = limit.min;
   }
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function onTemplateMaxChange(bandType: string) {
@@ -997,16 +991,16 @@ function onTemplateMaxChange(bandType: string) {
       limit.min = limit.max;
     }
   }
-  const band = props.bands?.find((b) => b.type === bandType);
+  const band = bands.value?.find((b) => b.type === bandType);
   if (band && typeof band.height === "number" && band.height > limit.max) {
     band.height = limit.max;
   }
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function resetTemplateBandLimitsToDefault() {
-  if (!props.reportProperties) return;
-  emit("save-state");
+  if (!reportProperties.value) return;
+  report.saveStateToHistory();
   const config = getEffectiveDefaultBandConfig();
   const limits: Record<string, { min: number; max: number }> = {};
   for (const key of Object.keys(config)) {
@@ -1015,10 +1009,10 @@ function resetTemplateBandLimitsToDefault() {
       limits[key] = { min: item.min, max: item.max };
     }
   }
-  props.reportProperties.bandLimits = limits;
+  reportProperties.value.bandLimits = limits;
 
-  if (props.bands && Array.isArray(props.bands)) {
-    props.bands.forEach((band, index) => {
+  if (bands.value && Array.isArray(bands.value)) {
+    bands.value.forEach((band, index) => {
       const bConf = config[band.type];
       if (band.type !== "detail" && bConf?.defaultHeight) {
         band.height = bConf.defaultHeight;
@@ -1044,17 +1038,17 @@ onMounted(async () => {
 
 // Computed properties
 const currentElement = computed(() => {
-  if (props.selectedElement && props.bands && Array.isArray(props.bands)) {
-    const band = props.bands[props.selectedElement.bandIndex];
+  if (selectedElement.value && bands.value && Array.isArray(bands.value)) {
+    const band = bands.value[selectedElement.value.bandIndex];
     if (band && band.elements && Array.isArray(band.elements)) {
       // Check whether this is an element nested inside a Frame
-      if (props.selectedElement.parentFrameIndex !== undefined) {
-        const frame = band.elements[props.selectedElement.parentFrameIndex];
+      if (selectedElement.value.parentFrameIndex !== undefined) {
+        const frame = band.elements[selectedElement.value.parentFrameIndex];
         if (frame && frame.type === "frame" && frame.elements) {
-          return frame.elements[props.selectedElement.elementIndex];
+          return frame.elements[selectedElement.value.elementIndex];
         }
       } else {
-        return band.elements[props.selectedElement.elementIndex];
+        return band.elements[selectedElement.value.elementIndex];
       }
     }
   }
@@ -1076,9 +1070,9 @@ const showTextColor = computed(() => {
 const isPageBorder = computed(
   () =>
     currentElement.value?.type === "frame" &&
-    !!props.selectedElement &&
-    props.selectedElement.parentFrameIndex === undefined &&
-    props.bands[props.selectedElement.bandIndex]?.type === "background",
+    !!selectedElement.value &&
+    selectedElement.value.parentFrameIndex === undefined &&
+    bands.value[selectedElement.value.bandIndex]?.type === "background",
 );
 
 const showBackgroundColor = computed(() => {
@@ -1100,19 +1094,19 @@ const showTextAlignmentAndStyle = computed(() => {
 
 // Frame property update handler
 const handleFramePropertyUpdate = (updatedElement: any) => {
-  if (currentElement.value && props.selectedElement) {
-    const band = props.bands[props.selectedElement.bandIndex];
+  if (currentElement.value && selectedElement.value) {
+    const band = bands.value[selectedElement.value.bandIndex];
     if (band && band.elements) {
-      if (props.selectedElement.parentFrameIndex !== undefined) {
-        const frame = band.elements[props.selectedElement.parentFrameIndex];
+      if (selectedElement.value.parentFrameIndex !== undefined) {
+        const frame = band.elements[selectedElement.value.parentFrameIndex];
         if (frame && frame.type === "frame" && frame.elements) {
-          frame.elements[props.selectedElement.elementIndex] = updatedElement;
+          frame.elements[selectedElement.value.elementIndex] = updatedElement;
         }
       } else {
-        band.elements[props.selectedElement.elementIndex] = updatedElement;
+        band.elements[selectedElement.value.elementIndex] = updatedElement;
       }
-      emit("update:bands", props.bands);
-      emit("update-jrxml");
+      emit("update:bands", bands.value);
+      report.updateJrxml();
     }
   }
 };
@@ -1120,7 +1114,7 @@ const handleFramePropertyUpdate = (updatedElement: any) => {
 // Replace the selected element with an updated copy (frame panel edits:
 // border presets, layout), recorded for undo first
 const replaceCurrentElement = (updatedElement: any) => {
-  emit("save-state");
+  report.saveStateToHistory();
   handleFramePropertyUpdate(updatedElement);
 };
 
@@ -1143,7 +1137,7 @@ function getBandDisplayName(bandType: string): string {
 
 // Update Band height
 function updateBandHeight(index: number) {
-  const band = props.bands[index];
+  const band = bands.value[index];
   if (band && band.type !== "detail") {
     const limit = getBandLimit(band.type);
     const maxAllowed = getMaxPhysicalHeight(band.type);
@@ -1168,14 +1162,14 @@ function updateBandHeight(index: number) {
   }
 
   // Recalculate Detail band height so it automatically absorbs the change (A4 page fitting)
-  const detailBand = props.bands.find((b) => b.type === "detail");
+  const detailBand = bands.value.find((b) => b.type === "detail");
   if (detailBand) {
-    const pageH = props.reportProperties?.pageHeight || 842;
-    const topM = props.reportProperties?.topMargin || 20;
-    const bottomM = props.reportProperties?.bottomMargin || 20;
+    const pageH = reportProperties.value?.pageHeight || 842;
+    const topM = reportProperties.value?.topMargin || 20;
+    const bottomM = reportProperties.value?.bottomMargin || 20;
     const availableH = pageH - topM - bottomM;
     let otherBandsH = 0;
-    props.bands.forEach((b) => {
+    bands.value.forEach((b) => {
       if (b.type !== "detail" && b.type !== "background") {
         otherBandsH += b.height || 0;
       }
@@ -1184,9 +1178,9 @@ function updateBandHeight(index: number) {
   }
 
   // Callers take the undo snapshot before changing the height
-  const updatedBands = [...props.bands];
+  const updatedBands = [...bands.value];
   emit("update:bands", updatedBands);
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Apply a typed whole-number value (position, size, band height). The undo
@@ -1200,39 +1194,39 @@ function setIntegerValue(target: any, property: string, event: Event): boolean {
     input.value = String(target[property] ?? "");
     return false;
   }
-  emit("save-state");
+  report.saveStateToHistory();
   target[property] = parsed;
   // A ready-made box's own part keeps inside the box when its position or size is typed
-  const parentIndex = props.selectedElement?.parentFrameIndex;
+  const parentIndex = selectedElement.value?.parentFrameIndex;
   if (
     parentIndex !== undefined &&
     target === currentElement.value &&
     isBoxPart(target) &&
     ["x", "y", "width", "height"].includes(property)
   ) {
-    const box = props.bands[props.selectedElement!.bandIndex]?.elements[parentIndex];
+    const box = bands.value[selectedElement.value!.bandIndex]?.elements[parentIndex];
     if (box?.type === "frame") Object.assign(target, clampRectInBox(target, box));
   }
   input.value = String(target[property]);
-  emit("update-jrxml");
+  report.updateJrxml();
   return true;
 }
 
 // Set horizontal alignment
 function setHorizontalAlignment(alignment: "Left" | "Center" | "Right") {
   if (currentElement.value) {
-    emit("save-state");
+    report.saveStateToHistory();
     currentElement.value.textAlignment = alignment;
-    emit("update-jrxml");
+    report.updateJrxml();
   }
 }
 
 // Set vertical alignment
 function setVerticalAlignment(alignment: "Top" | "Middle" | "Bottom") {
   if (currentElement.value) {
-    emit("save-state");
+    report.saveStateToHistory();
     currentElement.value.verticalAlignment = alignment;
-    emit("update-jrxml");
+    report.updateJrxml();
   }
 }
 
@@ -1251,10 +1245,10 @@ function updateTextFieldExpression(newExpression: string) {
   if (!currentElement.value || currentElement.value.type !== "textField")
     return;
 
-  emit("save-state");
+  report.saveStateToHistory();
   currentElement.value.expression = newExpression;
 
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Get clean text field content for display (strips quotes if static text, preserves field expressions)
@@ -1271,7 +1265,7 @@ function getTextFieldDisplay(element: any) {
 // Update text field content (wraps static text in quotes, preserves $F{...} / $V{...} expressions)
 function updateTextFieldDisplay(val: string) {
   if (!currentElement.value || currentElement.value.type !== "textField") return;
-  emit("save-state");
+  report.saveStateToHistory();
   const elem = currentElement.value as any;
   if (!elem.markup) {
     elem.markup = "html";
@@ -1284,23 +1278,23 @@ function updateTextFieldDisplay(val: string) {
   } else {
     elem.expression = `"${val}"`;
   }
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Insert a selected field into the text field
 function insertFieldIntoTextField(fieldExpr: string) {
   if (!fieldExpr || !currentElement.value || currentElement.value.type !== "textField") return;
-  emit("save-state");
+  report.saveStateToHistory();
   currentElement.value.expression = fieldExpr;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Set rotation for text, image, and barcode elements
 function setElementRotation(rot: "None" | "Right" | "UpsideDown" | "Left") {
   if (!currentElement.value) return;
-  emit("save-state");
+  report.saveStateToHistory();
   (currentElement.value as any).rotation = rot;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Image shape: the preset in use, "square" for plain corners, null for custom corners
@@ -1313,23 +1307,14 @@ const currentImageShape = computed<ImageShapeId | null>(() => {
   return CORNER_NAMES.every((c) => radii[c] === 0) ? "square" : null;
 });
 
-// One undo step. A circle also makes the image square, around its centre.
+// One undo step. The image keeps its position and size: only its corners change.
 function applyImageShape(id: ImageShapeId) {
   const element = currentElement.value as any;
   if (!element || element.type !== "image") return;
-  const preset = IMAGE_SHAPES.find((s) => s.id === id);
-  const side = Math.min(element.width, element.height);
-  const resize = !!preset?.makeSquare && element.width !== element.height;
-  if (currentImageShape.value === id && !resize) return;
-  emit("save-state");
-  if (resize) {
-    element.x = Math.round(element.x + (element.width - side) / 2);
-    element.y = Math.round(element.y + (element.height - side) / 2);
-    element.width = side;
-    element.height = side;
-  }
+  if (currentImageShape.value === id) return;
+  report.saveStateToHistory();
   setImageShape(element, id);
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Card sample: a small picture cut to the shape (wide for the pill)
@@ -1356,7 +1341,7 @@ const currentLineOrientation = computed(() => {
 // Set orientation for line element
 function setLineOrientation(type: "horizontal" | "vertical" | "topdown" | "bottomup") {
   if (!currentElement.value || currentElement.value.type !== "line") return;
-  emit("save-state");
+  report.saveStateToHistory();
   const el = currentElement.value as any;
   if (type === "horizontal") {
     el.height = 1;
@@ -1375,7 +1360,7 @@ function setLineOrientation(type: "horizontal" | "vertical" | "topdown" | "botto
     if (el.width <= 1) el.width = 100;
     el.lineDirection = "BottomUp";
   }
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Add a crossing line element to form an "X"
@@ -1383,11 +1368,11 @@ function addCrossingLine() {
   if (
     !currentElement.value ||
     currentElement.value.type !== "line" ||
-    !props.selectedElement ||
-    !props.bands
+    !selectedElement.value ||
+    !bands.value
   )
     return;
-  emit("save-state");
+  report.saveStateToHistory();
   const el = currentElement.value as any;
   if (el.width <= 1) el.width = 100;
   if (el.height <= 1) el.height = 60;
@@ -1401,10 +1386,10 @@ function addCrossingLine() {
     lineDirection: oppositeDir,
   };
 
-  const band = props.bands[props.selectedElement.bandIndex];
+  const band = bands.value[selectedElement.value.bandIndex];
   if (band && band.elements) {
-    if (props.selectedElement.parentFrameIndex !== undefined) {
-      const frame = band.elements[props.selectedElement.parentFrameIndex];
+    if (selectedElement.value.parentFrameIndex !== undefined) {
+      const frame = band.elements[selectedElement.value.parentFrameIndex];
       if (frame && frame.type === "frame" && frame.elements) {
         frame.elements.push(crossLine);
       }
@@ -1412,7 +1397,7 @@ function addCrossingLine() {
       band.elements.push(crossLine);
     }
   }
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Image upload handling for Image elements in Properties panel
@@ -1440,13 +1425,13 @@ async function handlePropertiesImageUpload(event: Event) {
     const source = await resolveImageSource(file);
     // The upload is async: apply it to the element that started it, even if selection changed
     if (element.type !== "image") return;
-    emit("save-state");
+    report.saveStateToHistory();
     (element as any).imageExpression = toImageExpression(source);
     // Use the uploaded file name as the image name shown in the panels
     setImageName(element, file.name || "");
     // A crop belongs to the previous picture
     setImageCrop(element, null);
-    emit("update-jrxml");
+    report.updateJrxml();
   } catch (error) {
     console.error("Image upload failed:", error);
     alert(
@@ -1531,7 +1516,7 @@ const marginPreviewStyle = computed(() => {
 
 const panelTitle = computed(() => {
   const el = currentElement.value as any;
-  if (!props.selectedElement || !el) return t("properties.reportProperties");
+  if (!selectedElement.value || !el) return t("properties.reportProperties");
   if (isPagination(el)) return t("elementNames.pageNumber");
   if (isPageBorder.value) return t("elementNames.framePageBorder");
   return t(getElementTypeName(el.type));
@@ -1549,11 +1534,9 @@ const availableTabs = computed(() => ["basic", "style"]);
 
 // The table panel appears in both tabs (Basic: data, style, row sizes;
 // Style Settings: changes to its look)
-const tablePanelProps = computed(() => ({ element: currentElement.value as any, tableStyles: props.tableStyles ?? [] }));
+const tablePanelProps = computed(() => ({ element: currentElement.value as any, tableStyles: tableStyles.value ?? [] }));
 const tablePanelEvents = {
   configure: () => emit("configure-table"),
-  "save-state": () => emit("save-state"),
-  "update-jrxml": () => emit("update-jrxml"),
   "save-table-style": (name: string) => emit("save-table-style", name),
   "update-table-style": (id: string) => emit("update-table-style", id),
   "rename-table-style": (id: string, name: string) => emit("rename-table-style", id, name),
@@ -1607,9 +1590,9 @@ const V_ALIGNS = [
 function setTextProperty(key: string, value: unknown) {
   const element = currentElement.value as any;
   if (!element || element[key] === value) return;
-  emit("save-state");
+  report.saveStateToHistory();
   element[key] = value;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function setFontSize(value: string) {
@@ -1624,7 +1607,7 @@ function setColorProperty(group: string, key: string, value: unknown) {
   if (!element || element[key] === value) return;
   recordBorderEdit(`color-${group}`);
   element[key] = value;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Corner preview: the radii, scaled down to fit the small box
@@ -1655,10 +1638,10 @@ function setCornerRadius(corner: CornerName | null, value: string) {
   const next = { ...current };
   for (const c of corner ? [corner] : CORNER_NAMES) next[c] = radius;
   if (CORNER_NAMES.every((c) => next[c] === current[c])) return;
-  emit("save-state");
+  report.saveStateToHistory();
   if (element.type === "frame") setBoxCornerRadii(element, next);
   else setPropertyCornerRadii(element, next);
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Undo step for a border edit. Repeated edits of the same control in quick
@@ -1667,7 +1650,7 @@ let lastBorderEdit = { key: "", time: 0 };
 function recordBorderEdit(key: string) {
   const now = Date.now();
   if (key !== lastBorderEdit.key || now - lastBorderEdit.time > 1000) {
-    emit("save-state");
+    report.saveStateToHistory();
   }
   lastBorderEdit = { key, time: now };
 }
@@ -1697,7 +1680,7 @@ function setSideBorderWidth(side: string, value: string, record = true) {
     currentElement.value.box[penKey] = {};
   }
   currentElement.value.box[penKey].lineWidth = numValue;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function getSideBorderStyle(side: string): string {
@@ -1748,7 +1731,7 @@ function setSideBorderStyle(side: string, value: string, record = true) {
     box[widthKey] = 0;
   }
 
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function getSideBorderColor(side: string): string {
@@ -1775,7 +1758,7 @@ function setSideBorderColor(side: string, value: string, record = true) {
     box[penKey] = {};
   }
   box[penKey].lineColor = value;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Functions related to the unified four-side setting ("All" row).
@@ -1810,7 +1793,7 @@ function setUnifiedBorderStyle(value: string) {
   BORDER_SIDE_NAMES.forEach((side) => {
     setSideBorderStyle(side, value, false);
   });
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function getUnifiedBorderWidth(): number | "" {
@@ -1829,7 +1812,7 @@ function setUnifiedBorderWidth(value: string) {
     if (turningOn) setSideBorderStyle(side, "Solid", false);
     setSideBorderWidth(side, value, false);
   });
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function getUnifiedBorderColor(): string {
@@ -1844,7 +1827,7 @@ function setUnifiedBorderColor(value: string) {
   unifiedTargetSides().forEach((side) => {
     setSideBorderColor(side, value, false);
   });
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Handle Global Margin input: sets all four sides and global padding
@@ -1855,7 +1838,7 @@ function handleGlobalMarginInput(event: Event) {
   }
   const input = event.target as HTMLInputElement;
   const rawVal = input.value;
-  emit("save-state");
+  report.saveStateToHistory();
 
   if (rawVal === "" || rawVal === undefined || rawVal === null) {
     currentElement.value.box.padding = undefined;
@@ -1871,7 +1854,7 @@ function handleGlobalMarginInput(event: Event) {
     currentElement.value.box.leftPadding = num;
     currentElement.value.box.rightPadding = num;
   }
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Handle individual side margin input: resets global padding and sets specific side
@@ -1886,7 +1869,7 @@ function handleSideMarginInput(
   const box = currentElement.value.box;
   const input = event.target as HTMLInputElement;
   const rawVal = input.value;
-  emit("save-state");
+  report.saveStateToHistory();
 
   // If individual margins weren't explicitly initialized yet but global padding was set,
   // seed the other sides with the current global value before diverging.
@@ -1922,7 +1905,7 @@ function handleSideMarginInput(
     box.padding = box.topPadding;
   }
 
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Delete element
@@ -1941,13 +1924,13 @@ function setRectangleBorderWidth(value: string) {
   if (!currentElement.value) return;
   const el = currentElement.value as any;
   const numValue = parseFloat(value) || 0;
-  emit("save-state");
+  report.saveStateToHistory();
   if (!el.pen) {
     el.pen = {};
   }
   el.pen.lineWidth = numValue;
   el.lineWidth = numValue;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function getRectangleBorderStyle(): string {
@@ -1959,7 +1942,7 @@ function getRectangleBorderStyle(): string {
 function setRectangleBorderStyle(value: string) {
   if (!currentElement.value) return;
   const el = currentElement.value as any;
-  emit("save-state");
+  report.saveStateToHistory();
   if (!el.pen) {
     el.pen = {};
   }
@@ -1970,7 +1953,7 @@ function setRectangleBorderStyle(value: string) {
     el.pen.lineWidth = MIN_DOUBLE_LINE_WIDTH;
     el.lineWidth = MIN_DOUBLE_LINE_WIDTH;
   }
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function getRectangleBorderColor(): string {
@@ -1982,7 +1965,7 @@ function getRectangleBorderColor(): string {
 function setRectangleBorderColor(value: string) {
   if (!currentElement.value) return;
   const el = currentElement.value as any;
-  emit("save-state");
+  report.saveStateToHistory();
   if (!el.pen) {
     el.pen = {};
   }
@@ -1992,7 +1975,7 @@ function setRectangleBorderColor(value: string) {
     el.pen.lineWidth = 1;
   }
   el.lineWidth = el.pen.lineWidth;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function addProperty() {
@@ -2001,7 +1984,7 @@ function addProperty() {
     (currentElement.value as any).properties = [];
   }
   (currentElement.value as any).properties.push({ name: "", value: "" });
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function addPropertyExpression() {
@@ -2013,7 +1996,7 @@ function addPropertyExpression() {
     name: "",
     valueExpression: "",
   });
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 </script>
 

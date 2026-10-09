@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
+import { useReportStore } from "@/stores/report";
 import {
   ChevronDown,
   ChevronUp,
@@ -54,11 +56,7 @@ function getBandDisplayName(bandType: string): string {
 interface Props {
   visible: boolean;
   initialHeight?: number;
-  reportProperties: any;
-  bands: Band[];
   allBandTypes: any[];
-  selectedBandTypes: BandType[];
-  jrxmlContent: string;
 }
 
 // Define component events
@@ -67,15 +65,12 @@ interface Emits {
   (e: "update:visible", value: boolean): void;
   (e: "size-change", value: number): void;
   (e: "update:report-properties", value: any): void;
-  (e: "update:selected-band-types", value: BandType[]): void;
   (e: "update:jrxml-content", value: string): void;
   (e: "copy-jrxml"): void;
   (e: "save-jrxml"): void;
   (e: "regenerate-jrxml"): void;
   (e: "download-jrxml"): void;
-  (e: "band-selection-change"): void;
   // Before a page size/margin change (undo snapshot), and after it (fit content)
-  (e: "save-state"): void;
   (e: "page-setup-change"): void;
 }
 
@@ -84,6 +79,13 @@ const props = withDefaults(defineProps<Props>(), {
   visible: false,
   initialHeight: PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT,
 });
+
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
+// Report, selection and editor state come from the stores
+const reportStore = useReportStore();
+const { reportProperties, bands, jrxmlContent } = storeToRefs(reportStore);
 
 const emit = defineEmits<Emits>();
 
@@ -252,7 +254,7 @@ const openPdfPreview = (): void => {
 
 // Computed property: local binding for reportProperties
 const localReportProperties = computed({
-  get: () => props.reportProperties,
+  get: () => reportProperties.value,
   set: (value) => emit("update:report-properties", value),
 });
 
@@ -411,9 +413,9 @@ const applyGlobalDefaultsToCurrentTemplate = () => {
   localReportProperties.value.bandLimits = limits;
   emit("update:report-properties", localReportProperties.value);
 
-  if (props.bands && Array.isArray(props.bands)) {
+  if (bands.value && Array.isArray(bands.value)) {
     let otherBandsH = 0;
-    props.bands.forEach((band) => {
+    bands.value.forEach((band) => {
       const bConf = config[band.type];
       if (band.type !== "detail" && bConf?.defaultHeight) {
         band.height = bConf.defaultHeight;
@@ -421,7 +423,7 @@ const applyGlobalDefaultsToCurrentTemplate = () => {
       }
     });
     // Detail band absorbs whatever space remains on the page
-    const detailBand = props.bands.find((b) => b.type === "detail");
+    const detailBand = bands.value.find((b) => b.type === "detail");
     if (detailBand) {
       const pageH = localReportProperties.value?.pageHeight || 842;
       const topM = localReportProperties.value?.topMargin || 20;
@@ -436,10 +438,10 @@ const applyGlobalDefaultsToCurrentTemplate = () => {
 
 // Detect the paper size and orientation
 const detectPaperSizeAndOrientation = () => {
-  if (!props.reportProperties) return;
+  if (!reportProperties.value) return;
 
-  const w = props.reportProperties.pageWidth;
-  const h = props.reportProperties.pageHeight;
+  const w = reportProperties.value.pageWidth;
+  const h = reportProperties.value.pageHeight;
   const isLandscape = w > h;
 
   // Ideally we'd only update orientation when it wasn't changed manually (to avoid update loops),
@@ -462,7 +464,7 @@ const detectPaperSizeAndOrientation = () => {
 // Watch for reportProperties changes and update the selected state
 // Use deep: true to watch changes to nested properties
 watch(
-  () => props.reportProperties,
+  () => reportProperties.value,
   () => {
     // Re-detect whenever width/height change
     // Note: this may also fire while we're in the middle of changing width/height, so handle it carefully
@@ -491,7 +493,7 @@ const handlePaperSizeChange = () => {
 const setPageSize = (width: number, height: number) => {
   const page = localReportProperties.value;
   if (page.pageWidth === width && page.pageHeight === height) return;
-  emit("save-state");
+  report.saveStateToHistory();
   page.pageWidth = width;
   page.pageHeight = height;
   emit("page-setup-change");
@@ -517,7 +519,7 @@ const setPageSetting = (key: PageSetting, event: Event) => {
     return;
   }
   if (value === localReportProperties.value[key]) return;
-  emit("save-state");
+  report.saveStateToHistory();
   localReportProperties.value[key] = value;
   emit("page-setup-change");
 };
@@ -533,27 +535,18 @@ const handleOrientationChange = () => {
   }
 };
 
-// Computed property: local binding for selectedBandTypes (Detail band is permanently required)
+// The band switches: the report's bands (report store); turning one on or
+// off is one undo step there. Detail is always on.
 const localSelectedBandTypes = computed({
-  get: () => {
-    if (!props.selectedBandTypes.includes(BAND_TYPE_CONSTANTS.DETAIL as BandType)) {
-      return [...props.selectedBandTypes, BAND_TYPE_CONSTANTS.DETAIL as BandType];
-    }
-    return props.selectedBandTypes;
-  },
-  set: (value: BandType[]) => {
-    const safeValue = value.includes(BAND_TYPE_CONSTANTS.DETAIL as BandType)
-      ? value
-      : [...value, BAND_TYPE_CONSTANTS.DETAIL as BandType];
-    emit("update:selected-band-types", safeValue);
-  },
+  get: () => report.bandTypes,
+  set: (value: BandType[]) => report.setBandTypes(value),
 });
 
 // Computed property: local binding for jrxmlContent
 const localJrxmlContent = computed({
   get: () => {
-    if (!props.jrxmlContent) return props.jrxmlContent;
-    return formatXml(props.jrxmlContent);
+    if (!jrxmlContent.value) return jrxmlContent.value;
+    return formatXml(jrxmlContent.value);
   },
   set: (value) => emit("update:jrxml-content", value),
 });
@@ -568,13 +561,6 @@ const syncScroll = () => {
 const handleBottomPanelSizeChange = (newSize: number) => {
   bottomPanelHeight.value = newSize;
   emit("size-change", newSize);
-};
-
-// Handle Band selection changes
-const handleBandSelectionChange = () => {
-  // localSelectedBandTypes is a computed property already synced to the parent via v-model
-  // Here we just need to emit the band-selection-change event so the parent can run related logic
-  emit("band-selection-change");
 };
 
 // Copy the JRXML content to the clipboard
@@ -958,7 +944,6 @@ onBeforeUnmount(() => {
                   :value="bandType.type"
                   v-model="localSelectedBandTypes"
                   :disabled="bandType.type === BAND_TYPE_CONSTANTS.DETAIL"
-                  @change="handleBandSelectionChange"
                 />
                 {{ getBandDisplayName(bandType.type) }}
                 <span
