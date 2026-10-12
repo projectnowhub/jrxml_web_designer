@@ -557,11 +557,18 @@
       "notPdf": "Respons pelayan bukan PDF (jenis kandungan: {type})"
     },
     "tables": {
-      "title": "Jadual dalam laporan ini",
       "readOnly": "Baca sahaja — edit dalam pereka",
-      "none": "Laporan ini belum ada jadual dengan data.",
       "edit": "Edit dalam pereka",
       "rowsCapped": "{shown} baris pertama daripada {count}"
+    },
+    "data": {
+      "title": "Data dalam laporan ini",
+      "none": "Laporan ini belum mempunyai jadual atau carta dengan data.",
+      "serverNote": "Pelayan laporan mengambil semula baris jadual dan nombor carta semasa membina PDF.",
+      "untitledChart": "Carta {n}",
+      "byDimension": "mengikut {name}",
+      "total": "Jumlah",
+      "printsNothing": "tidak dicetak sehingga ini dibetulkan."
     }
   },
   "previewServerSettings": {
@@ -1045,12 +1052,12 @@
       "all": "Semua halaman",
       "skipFirst": "Langkau halaman pertama",
       "skipFirstTwo": "Langkau 2 halaman pertama",
-      "custom": "Julat tersuai"
+      "custom": "Halaman tersuai"
     },
     "fromPage": "Dari halaman",
     "toPage": "Hingga halaman",
     "lastPage": "Akhir",
-    "toPageHint": "Biarkan \"Hingga halaman\" kosong untuk diteruskan hingga halaman terakhir.",
+    "toPageHint": "Biarkan \"Hingga halaman\" kosong untuk diteruskan sehingga kumpulan seterusnya, atau ke halaman terakhir.",
     "rangeEmpty": "\"Dari halaman\" adalah selepas \"Hingga halaman\", jadi nombor halaman tidak akan dicetak pada mana-mana halaman.",
     "expression": "Ungkapan (dijana)",
     "expressionHint": "Ditetapkan oleh format dan julat halaman di atas.",
@@ -1071,9 +1078,52 @@
     "rangeHints": {
       "skipFirst": "Halaman pertama tiada nombor; halaman 2 bernombor 1.",
       "skipFirstTwo": "2 halaman pertama tiada nombor; halaman 3 bernombor 1.",
-      "custom": "Hanya halaman ini yang bernombor, bermula dengan 1 pada halaman \"Dari\"."
+      "custom": "Hanya halaman ini dinomborkan, bermula pada 1 di halaman \"Dari\". Halaman sebelum \"Dari\" dan selepas \"Hingga\" tiada nombor."
     },
-    "startsLater": "Penomboran bermula pada halaman {page}, yang belum ada dalam reka bentuk ini. Dipaparkan pudar di sini supaya anda masih boleh memilihnya."
+    "hide": {
+      "label": "Kecuali halaman ini",
+      "placeholder": "cth. 3, 5, 8-10",
+      "add": "Tambah",
+      "hint": "Halaman dalam halaman bernombor yang tiada nombor. Pisahkan dengan koma; gunakan sengkang untuk beberapa halaman berturut-turut, seperti 8-10.",
+      "unreadable": "Tidak dapat membaca “{text}”. Gunakan nombor halaman seperti 3, 5 atau 8-10.",
+      "page": "Halaman {page}",
+      "pages": "Halaman {from}–{to}",
+      "remove": "Nomborkan semula halaman ini",
+      "clear": "Kosongkan semua",
+      "numbering": "Pada halaman selepas halaman kecualian",
+      "modes": {
+        "keep": "Kira halaman kecualian juga",
+        "skip": "Jangan kira halaman kecualian"
+      },
+      "example": "Halaman {page} menunjukkan “{label}”",
+      "outside": "{pages}: bukan dalam halaman bernombor ({range}), jadi sudah tiada nombor.",
+      "rangeText": "halaman {pages}",
+      "rangeToEnd": "{from} hingga halaman terakhir"
+    },
+    "preview": {
+      "title": "Cara halaman reka bentuk ini dinomborkan | Cara {n} halaman reka bentuk ini dinomborkan",
+      "page": "Halaman {page}",
+      "none": "Tiada nombor pada halaman ini",
+      "more": "…dan {n} halaman lagi, dinomborkan dengan cara yang sama.",
+      "hint": "PDF boleh mempunyai lebih banyak halaman daripada reka bentuk (contohnya apabila jadual memanjang); halaman itu mengikut tetapan yang sama."
+    },
+    "groups": {
+      "label": "Kumpulan {n}",
+      "add": "Tambah kumpulan lain",
+      "remove": "Buang kumpulan ini",
+      "untilNext": "Kumpulan seterusnya",
+      "hint": "Setiap kumpulan dinomborkan dari 1, dengan jumlahnya sendiri. Halaman di luar kumpulan tiada nombor.",
+      "toBeforeFrom": "Dalam kumpulan {n}, \"Hingga halaman\" mesti sama atau selepas \"Dari halaman\".",
+      "startAfter": "Kumpulan {n} mesti bermula selepas halaman {page}, tempat kumpulan {prev} berakhir.",
+      "endBefore": "Kumpulan {n} mesti berakhir sebelum halaman {page}, tempat kumpulan {next} bermula."
+    },
+    "design": {
+      "nothingNumbered": "Tiada halaman reka bentuk ini yang bernombor: ia hanya ada 1 halaman, jadi nombor halaman tidak ditunjukkan pada kanvas. | Tiada halaman reka bentuk ini yang bernombor: ia ada {total} halaman, jadi nombor halaman tidak ditunjukkan pada kanvas.",
+      "startsAfterEnd": "Penomboran bermula pada halaman {from}, tetapi reka bentuk ini hanya ada 1 halaman. | Penomboran bermula pada halaman {from}, tetapi reka bentuk ini hanya ada {total} halaman.",
+      "groupAfterEnd": "Kumpulan {group} bermula pada halaman {from}, tetapi reka bentuk ini hanya ada 1 halaman. | Kumpulan {group} bermula pada halaman {from}, tetapi reka bentuk ini hanya ada {total} halaman.",
+      "exceptAfterEnd": "Halaman kecualian {pages} selepas halaman terakhir reka bentuk ini (halaman {total}). | Halaman kecualian {pages} selepas halaman terakhir reka bentuk ini (halaman {total}).",
+      "pdfNote": "Halaman itu hanya muncul jika PDF menjadi sepanjang itu. Tambah halaman di sini, atau ubah nombor di atas."
+    }
   },
   "expression": {
     "builtIn": {

@@ -557,11 +557,18 @@
       "notPdf": "The server response is not a PDF (content type: {type})"
     },
     "tables": {
-      "title": "Tables in this report",
       "readOnly": "Read-only — edit in the designer",
-      "none": "This report has no tables with data yet.",
       "edit": "Edit in designer",
       "rowsCapped": "first {shown} of {count} rows"
+    },
+    "data": {
+      "title": "Data in this report",
+      "none": "This report has no tables or charts with data yet.",
+      "serverNote": "The report server fetches table rows and chart numbers again when it builds the PDF.",
+      "untitledChart": "Chart {n}",
+      "byDimension": "by {name}",
+      "total": "Total",
+      "printsNothing": "prints nothing until this is fixed."
     }
   },
   "previewServerSettings": {
@@ -1045,12 +1052,12 @@
       "all": "All pages",
       "skipFirst": "Skip first page",
       "skipFirstTwo": "Skip first 2 pages",
-      "custom": "Custom range"
+      "custom": "Custom pages"
     },
     "fromPage": "From page",
     "toPage": "To page",
     "lastPage": "Last",
-    "toPageHint": "Leave \"To page\" empty to continue to the last page.",
+    "toPageHint": "Leave \"To page\" empty to continue up to the next group, or to the last page.",
     "rangeEmpty": "\"From page\" is after \"To page\", so the page number won't print on any page.",
     "expression": "Expression (generated)",
     "expressionHint": "Set by the format and page range above.",
@@ -1071,9 +1078,52 @@
     "rangeHints": {
       "skipFirst": "The first page has no number; page 2 is numbered 1.",
       "skipFirstTwo": "The first 2 pages have no number; page 3 is numbered 1.",
-      "custom": "Only these pages are numbered, starting at 1 on the \"From\" page."
+      "custom": "Only these pages are numbered, starting at 1 on the \"From\" page. Pages before \"From\" and after \"To\" have no number."
     },
-    "startsLater": "Numbering starts on page {page}, which this design doesn't have yet. Shown faded here so you can still select it."
+    "hide": {
+      "label": "Except these pages",
+      "placeholder": "e.g. 3, 5, 8-10",
+      "add": "Add",
+      "hint": "Pages inside the numbered pages that get no number. Separate them with commas; use a dash for several pages in a row, like 8-10.",
+      "unreadable": "Couldn't read “{text}”. Use page numbers like 3, 5 or 8-10.",
+      "page": "Page {page}",
+      "pages": "Pages {from}–{to}",
+      "remove": "Number these pages again",
+      "clear": "Clear all",
+      "numbering": "On the pages after an except page",
+      "modes": {
+        "keep": "Count except pages too",
+        "skip": "Don't count except pages"
+      },
+      "example": "Page {page} shows “{label}”",
+      "outside": "{pages}: not in the numbered pages ({range}), so they already have no number.",
+      "rangeText": "pages {pages}",
+      "rangeToEnd": "{from} to the last page"
+    },
+    "preview": {
+      "title": "How this design's page is numbered | How this design's {n} pages are numbered",
+      "page": "Page {page}",
+      "none": "No number on this page",
+      "more": "…and {n} more pages, numbered the same way.",
+      "hint": "The PDF can have more pages than the design (for example when a table grows); they follow the same settings."
+    },
+    "groups": {
+      "label": "Group {n}",
+      "add": "Add another group",
+      "remove": "Remove this group",
+      "untilNext": "Next group",
+      "hint": "Each group is numbered from 1, with its own total. Pages outside the groups have no number.",
+      "toBeforeFrom": "In group {n}, \"To page\" has to be on or after \"From page\".",
+      "startAfter": "Group {n} has to start after page {page}, where group {prev} ends.",
+      "endBefore": "Group {n} has to end before page {page}, where group {next} starts."
+    },
+    "design": {
+      "nothingNumbered": "No page of this design gets a number: it has only 1 page, so the page number isn't shown on the canvas. | No page of this design gets a number: it has {total} pages, so the page number isn't shown on the canvas.",
+      "startsAfterEnd": "Numbering starts on page {from}, but this design has only 1 page. | Numbering starts on page {from}, but this design has only {total} pages.",
+      "groupAfterEnd": "Group {group} starts on page {from}, but this design has only 1 page. | Group {group} starts on page {from}, but this design has only {total} pages.",
+      "exceptAfterEnd": "Except page {pages} is after the last page of this design (page {total}). | Except pages {pages} are after the last page of this design (page {total}).",
+      "pdfNote": "Those pages appear only if the PDF grows that long. Add pages here, or change the numbers above."
+    }
   },
   "expression": {
     "builtIn": {

@@ -54,7 +54,6 @@
         :class="{
           'is-placeholder': !hasContent,
           'is-page-number': isPageNumber,
-          'is-off-range': isPageNumber && !printedOnThisPage,
         }"
         :style="typographyStyle"
         @click="handleContentClick"
@@ -196,9 +195,7 @@ import {
   textExpressionToHtml,
 } from '../../utils/elementUtils';
 import {
-  formatFirstPageNumber,
   formatPageNumber,
-  getNumberedPages,
   getPaginationSettings,
   isPageInRange,
   isPagination,
@@ -286,10 +283,9 @@ const rotationStyle = computed(() => {
   return {};
 });
 
-// Page numbers show this page's number in the chosen format and are left out
-// of pages outside their range (single-page view counts as page 1). When no
-// page of the design is numbered (e.g. one page, "Skip first page"), page 1
-// keeps it, faded, so it can still be selected.
+// Page numbers show this page's number in the chosen format and are removed
+// from pages where they don't print (outside the range, or an except page),
+// like in the PDF. Single-page view counts as page 1.
 const isPageNumber = computed(() => isPagination(props.element));
 const paginationSettings = computed(() => getPaginationSettings(props.element));
 const canvasPage = computed(() => props.pageNumber ?? 1);
@@ -297,23 +293,9 @@ const canvasPageCount = computed(() => Math.max(props.totalPages ?? 1, canvasPag
 const printedOnThisPage = computed(() =>
   isPageInRange(paginationSettings.value, canvasPage.value),
 );
-const printedOnSomePage = computed(() => {
-  for (let page = 1; page <= canvasPageCount.value; page++) {
-    if (isPageInRange(paginationSettings.value, page)) return true;
-  }
-  return false;
-});
-const hiddenOnThisPage = computed(
-  () =>
-    isPageNumber.value &&
-    !printedOnThisPage.value &&
-    (printedOnSomePage.value || canvasPage.value !== 1),
-);
+const hiddenOnThisPage = computed(() => isPageNumber.value && !printedOnThisPage.value);
 // The total shown on the canvas is the designer's page count, not the PDF's
 const pageNumberTitle = computed(() => {
-  if (!printedOnThisPage.value) {
-    return t('pagination.startsLater', { page: getNumberedPages(paginationSettings.value).first });
-  }
   return showsTotalPages(paginationSettings.value)
     ? `${t('pagination.lockedHint')} ${t('pagination.totalPreviewHint')}`
     : t('pagination.lockedHint');
@@ -326,8 +308,7 @@ const renderedHtmlContent = computed(() => textExpressionToHtml(props.element.ex
 const displayText = computed(() => {
   if (isPageNumber.value) {
     return (
-      formatPageNumber(paginationSettings.value, canvasPage.value, canvasPageCount.value) ??
-      formatFirstPageNumber(paginationSettings.value, canvasPageCount.value)
+      formatPageNumber(paginationSettings.value, canvasPage.value, canvasPageCount.value) ?? ""
     );
   }
   if (props.element.expression) {
@@ -1594,9 +1575,6 @@ const handleStartEditing = () => {
   cursor: not-allowed;
 }
 
-.text-content-display.is-off-range {
-  opacity: 0.35;
-}
 
 .inline-edit-contenteditable {
   width: 100%;
