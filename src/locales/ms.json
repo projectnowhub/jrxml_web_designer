@@ -1040,27 +1040,12 @@
   },
   "pagination": {
     "title": "Nombor Halaman",
-    "format": "Format",
     "formats": {
       "simple": "Nombor sahaja",
       "prefixed": "\"Page\" dan nombor",
       "pageXofY": "Nombor halaman dan jumlah halaman",
       "slash": "Nombor / jumlah halaman"
     },
-    "showOn": "Papar pada",
-    "ranges": {
-      "all": "Semua halaman",
-      "skipFirst": "Langkau halaman pertama",
-      "skipFirstTwo": "Langkau 2 halaman pertama",
-      "custom": "Halaman tersuai"
-    },
-    "fromPage": "Dari halaman",
-    "toPage": "Hingga halaman",
-    "lastPage": "Akhir",
-    "toPageHint": "Biarkan \"Hingga halaman\" kosong untuk diteruskan sehingga kumpulan seterusnya, atau ke halaman terakhir.",
-    "rangeEmpty": "\"Dari halaman\" adalah selepas \"Hingga halaman\", jadi nombor halaman tidak akan dicetak pada mana-mana halaman.",
-    "expression": "Ungkapan (dijana)",
-    "expressionHint": "Ditetapkan oleh format dan julat halaman di atas.",
     "cannotEdit": "Nombor halaman dijana secara dinamik dan tidak boleh disunting secara terus. Gunakan panel sifat untuk menukar format atau julat halaman.",
     "lockedHint": "Nombor halaman – tukar format atau halamannya dalam panel sifat.",
     "noBand": "Tambah satu jalur pada laporan sebelum memasukkan nombor halaman.",
@@ -1072,57 +1057,85 @@
       "bottomCenter": "Bawah tengah"
     },
     "dragHint": "Atau seret jubin ke halaman untuk meletakkannya di mana-mana.",
-    "totalSymbol": "N",
-    "totalHint": "{n} ialah jumlah halaman, diisi apabila laporan dijana.",
     "totalPreviewHint": "Jumlah di sini ialah bilangan halaman dalam pereka; PDF menunjukkan jumlah sebenar.",
-    "rangeHints": {
-      "skipFirst": "Halaman pertama tiada nombor; halaman 2 bernombor 1.",
-      "skipFirstTwo": "2 halaman pertama tiada nombor; halaman 3 bernombor 1.",
-      "custom": "Hanya halaman ini dinomborkan, bermula pada 1 di halaman \"Dari\". Halaman sebelum \"Dari\" dan selepas \"Hingga\" tiada nombor."
+    "style": {
+      "label": "Gaya nombor",
+      "arabic": "Nombor: 1, 2, 3",
+      "romanLower": "Angka Roman kecil: i, ii, iii",
+      "romanUpper": "Angka Roman: I, II, III",
+      "letters": "Huruf: A, B, C"
     },
-    "hide": {
-      "label": "Kecuali halaman ini",
-      "placeholder": "cth. 3, 5, 8-10",
-      "add": "Tambah",
-      "hint": "Halaman dalam halaman bernombor yang tiada nombor. Pisahkan dengan koma; gunakan sengkang untuk beberapa halaman berturut-turut, seperti 8-10.",
-      "unreadable": "Tidak dapat membaca “{text}”. Gunakan nombor halaman seperti 3, 5 atau 8-10.",
-      "page": "Halaman {page}",
-      "pages": "Halaman {from}–{to}",
-      "remove": "Nomborkan semula halaman ini",
-      "clear": "Kosongkan semua",
-      "numbering": "Pada halaman selepas halaman kecualian",
-      "modes": {
-        "keep": "Kira halaman kecualian juga",
-        "skip": "Jangan kira halaman kecualian"
+    "panel": {
+      "lookTitle": "Format",
+      "totalHint": "Nombor terakhir ({total}) ialah bilangan halaman. Ia diisi apabila laporan dibuat.",
+      "pagesTitle": "Halaman mana yang bernombor?",
+      "choices": {
+        "all": "Setiap halaman",
+        "skipFirst": "Setiap halaman kecuali yang pertama",
+        "skipFirstTwo": "Setiap halaman kecuali dua yang pertama",
+        "custom": "Hanya sesetengah halaman"
       },
-      "example": "Halaman {page} menunjukkan “{label}”",
-      "outside": "{pages}: bukan dalam halaman bernombor ({range}), jadi sudah tiada nombor.",
-      "rangeText": "halaman {pages}",
-      "rangeToEnd": "{from} hingga halaman terakhir"
-    },
-    "preview": {
-      "title": "Cara halaman reka bentuk ini dinomborkan | Cara {n} halaman reka bentuk ini dinomborkan",
-      "page": "Halaman {page}",
-      "none": "Tiada nombor pada halaman ini",
-      "more": "…dan {n} halaman lagi, dinomborkan dengan cara yang sama.",
-      "hint": "PDF boleh mempunyai lebih banyak halaman daripada reka bentuk (contohnya apabila jadual memanjang); halaman itu mengikut tetapan yang sama."
-    },
-    "groups": {
-      "label": "Kumpulan {n}",
-      "add": "Tambah kumpulan lain",
-      "remove": "Buang kumpulan ini",
-      "untilNext": "Kumpulan seterusnya",
-      "hint": "Setiap kumpulan dinomborkan dari 1, dengan jumlahnya sendiri. Halaman di luar kumpulan tiada nombor.",
-      "toBeforeFrom": "Dalam kumpulan {n}, \"Hingga halaman\" mesti sama atau selepas \"Dari halaman\".",
-      "startAfter": "Kumpulan {n} mesti bermula selepas halaman {page}, tempat kumpulan {prev} berakhir.",
-      "endBefore": "Kumpulan {n} mesti berakhir sebelum halaman {page}, tempat kumpulan {next} bermula."
-    },
-    "design": {
-      "nothingNumbered": "Tiada halaman reka bentuk ini yang bernombor: ia hanya ada 1 halaman, jadi nombor halaman tidak ditunjukkan pada kanvas. | Tiada halaman reka bentuk ini yang bernombor: ia ada {total} halaman, jadi nombor halaman tidak ditunjukkan pada kanvas.",
-      "startsAfterEnd": "Penomboran bermula pada halaman {from}, tetapi reka bentuk ini hanya ada 1 halaman. | Penomboran bermula pada halaman {from}, tetapi reka bentuk ini hanya ada {total} halaman.",
-      "groupAfterEnd": "Kumpulan {group} bermula pada halaman {from}, tetapi reka bentuk ini hanya ada 1 halaman. | Kumpulan {group} bermula pada halaman {from}, tetapi reka bentuk ini hanya ada {total} halaman.",
-      "exceptAfterEnd": "Halaman kecualian {pages} selepas halaman terakhir reka bentuk ini (halaman {total}). | Halaman kecualian {pages} selepas halaman terakhir reka bentuk ini (halaman {total}).",
-      "pdfNote": "Halaman itu hanya muncul jika PDF menjadi sepanjang itu. Tambah halaman di sini, atau ubah nombor di atas."
+      "choiceHints": {
+        "all": "Halaman 1, 2, 3 dan seterusnya.",
+        "skipFirst": "Sesuai untuk halaman kulit. Halaman kedua menunjukkan nombor 1.",
+        "skipFirstTwo": "Sesuai untuk halaman kulit dan halaman kandungan. Halaman ketiga menunjukkan nombor 1.",
+        "custom": "Anda pilih halaman, contohnya 1 hingga 10."
+      },
+      "part": "Bahagian {part}",
+      "pages": "Halaman",
+      "to": "hingga",
+      "toEnd": "akhir",
+      "toNextPart": "bahagian seterusnya",
+      "firstPage": "Halaman pertama bahagian {part}",
+      "lastPage": "Halaman terakhir bahagian {part}",
+      "partLook": "Rupanya",
+      "partNumbers": "Nombor",
+      "sameAsAbove": "Sama seperti di atas",
+      "addPart": "Tambah bahagian",
+      "addPartHint": "Bahagian baharu memulakan nombornya semula, contohnya apabila laporan mengandungi dua dokumen.",
+      "removePart": "Buang bahagian ini",
+      "errors": {
+        "toBeforeFrom": "Dalam bahagian {part}, halaman terakhir tidak boleh sebelum halaman pertama.",
+        "startAfter": "Bahagian {part} mesti bermula selepas halaman {page}, tempat bahagian {prev} berakhir.",
+        "endBefore": "Bahagian {part} mesti berakhir sebelum halaman {page}, tempat bahagian {next} bermula.",
+        "empty": "Halaman pertama selepas halaman terakhir, jadi tiada halaman yang bernombor."
+      },
+      "leaveOut": "Halaman tanpa nombor",
+      "leaveOutPlaceholder": "contohnya 3, 5",
+      "leaveOutAdd": "Tambah",
+      "leaveOutHint": "Halaman ini tiada nombor. Tulis beberapa halaman dengan koma, atau julat seperti 8-10.",
+      "unreadable": "“{text}” bukan nombor halaman. Tulis nombor seperti 3, 5 atau 8-10.",
+      "outside": "{pages}: halaman ini sudah tiada nombor. Halaman bernombor: {range}.",
+      "fromToEnd": "{from} hingga akhir",
+      "chipPage": "Halaman {page}",
+      "chipPages": "Halaman {from} hingga {to}",
+      "chipRemove": "Kembalikan nombor halaman ini",
+      "clearAll": "Kosongkan semua",
+      "yourPages": "Halaman anda | {n} halaman anda",
+      "pageLabel": "Halaman {page}",
+      "noNumber": "Tiada nombor pada halaman ini",
+      "morePages": "…dan {n} halaman lagi, dinomborkan dengan cara yang sama.",
+      "longerNote": "Jika laporan menjadi lebih panjang, halaman tambahan dinomborkan dengan cara yang sama.",
+      "tablesNote": "Jadual boleh menjadikan laporan lebih panjang daripada yang anda lihat di sini. Halaman tambahan dinomborkan dengan cara yang sama.",
+      "design": {
+        "nothingNumbered": "Belum ada halaman yang bernombor: laporan anda hanya ada 1 halaman. | Belum ada halaman yang bernombor: laporan anda ada {total} halaman.",
+        "startsAfterEnd": "Penomboran bermula pada halaman {from}, tetapi laporan anda hanya ada 1 halaman. | Penomboran bermula pada halaman {from}, tetapi laporan anda hanya ada {total} halaman.",
+        "partAfterEnd": "Bahagian {part} bermula pada halaman {from}, tetapi laporan anda hanya ada 1 halaman. | Bahagian {part} bermula pada halaman {from}, tetapi laporan anda hanya ada {total} halaman.",
+        "leftOutAfterEnd": "Halaman {pages} selepas halaman terakhir laporan anda. | Halaman {pages} selepas halaman terakhir laporan anda.",
+        "whatToDo": "Ini tidak mengapa jika laporan menjadi lebih panjang semasa dibuat. Jika tidak, tambah halaman atau ubah nombor halaman di atas."
+      },
+      "numbersTitle": "Gaya nombor",
+      "afterLeftOut": "Selepas halaman tanpa nombor",
+      "leftOutModes": {
+        "keep": "Tetap kira halaman itu",
+        "skip": "Jangan kira halaman itu"
+      },
+      "partsCounting": "Nombor dalam setiap bahagian",
+      "partsModes": {
+        "restart": "Mula semula dalam setiap bahagian",
+        "continue": "Sambung dari bahagian sebelumnya"
+      },
+      "example": "Halaman {page} menunjukkan “{label}”"
     }
   },
   "expression": {

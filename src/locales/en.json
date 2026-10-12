@@ -1040,27 +1040,12 @@
   },
   "pagination": {
     "title": "Page Number",
-    "format": "Format",
     "formats": {
       "simple": "Number only",
       "prefixed": "\"Page\" and the number",
       "pageXofY": "Page number and total pages",
       "slash": "Number / total pages"
     },
-    "showOn": "Show on",
-    "ranges": {
-      "all": "All pages",
-      "skipFirst": "Skip first page",
-      "skipFirstTwo": "Skip first 2 pages",
-      "custom": "Custom pages"
-    },
-    "fromPage": "From page",
-    "toPage": "To page",
-    "lastPage": "Last",
-    "toPageHint": "Leave \"To page\" empty to continue up to the next group, or to the last page.",
-    "rangeEmpty": "\"From page\" is after \"To page\", so the page number won't print on any page.",
-    "expression": "Expression (generated)",
-    "expressionHint": "Set by the format and page range above.",
     "cannotEdit": "Page numbers are dynamically generated and cannot be edited directly. Use the property panel to change format or page range.",
     "lockedHint": "Page number – change its format or pages in the property panel.",
     "noBand": "Add a band to the report before inserting a page number.",
@@ -1072,57 +1057,85 @@
       "bottomCenter": "Bottom center"
     },
     "dragHint": "Or drag the tile onto the page to place it anywhere.",
-    "totalSymbol": "N",
-    "totalHint": "{n} is the total number of pages, filled in when the report is generated.",
     "totalPreviewHint": "The total here is the designer's page count; the PDF shows its real total.",
-    "rangeHints": {
-      "skipFirst": "The first page has no number; page 2 is numbered 1.",
-      "skipFirstTwo": "The first 2 pages have no number; page 3 is numbered 1.",
-      "custom": "Only these pages are numbered, starting at 1 on the \"From\" page. Pages before \"From\" and after \"To\" have no number."
+    "style": {
+      "label": "Number style",
+      "arabic": "Numbers: 1, 2, 3",
+      "romanLower": "Small Roman numerals: i, ii, iii",
+      "romanUpper": "Roman numerals: I, II, III",
+      "letters": "Letters: A, B, C"
     },
-    "hide": {
-      "label": "Except these pages",
-      "placeholder": "e.g. 3, 5, 8-10",
-      "add": "Add",
-      "hint": "Pages inside the numbered pages that get no number. Separate them with commas; use a dash for several pages in a row, like 8-10.",
-      "unreadable": "Couldn't read “{text}”. Use page numbers like 3, 5 or 8-10.",
-      "page": "Page {page}",
-      "pages": "Pages {from}–{to}",
-      "remove": "Number these pages again",
-      "clear": "Clear all",
-      "numbering": "On the pages after an except page",
-      "modes": {
-        "keep": "Count except pages too",
-        "skip": "Don't count except pages"
+    "panel": {
+      "lookTitle": "Format",
+      "totalHint": "The last number ({total}) is the number of pages. It is filled in when the report is made.",
+      "pagesTitle": "Which pages get a number?",
+      "choices": {
+        "all": "Every page",
+        "skipFirst": "Every page except the first",
+        "skipFirstTwo": "Every page except the first two",
+        "custom": "Only some pages"
       },
-      "example": "Page {page} shows “{label}”",
-      "outside": "{pages}: not in the numbered pages ({range}), so they already have no number.",
-      "rangeText": "pages {pages}",
-      "rangeToEnd": "{from} to the last page"
-    },
-    "preview": {
-      "title": "How this design's page is numbered | How this design's {n} pages are numbered",
-      "page": "Page {page}",
-      "none": "No number on this page",
-      "more": "…and {n} more pages, numbered the same way.",
-      "hint": "The PDF can have more pages than the design (for example when a table grows); they follow the same settings."
-    },
-    "groups": {
-      "label": "Group {n}",
-      "add": "Add another group",
-      "remove": "Remove this group",
-      "untilNext": "Next group",
-      "hint": "Each group is numbered from 1, with its own total. Pages outside the groups have no number.",
-      "toBeforeFrom": "In group {n}, \"To page\" has to be on or after \"From page\".",
-      "startAfter": "Group {n} has to start after page {page}, where group {prev} ends.",
-      "endBefore": "Group {n} has to end before page {page}, where group {next} starts."
-    },
-    "design": {
-      "nothingNumbered": "No page of this design gets a number: it has only 1 page, so the page number isn't shown on the canvas. | No page of this design gets a number: it has {total} pages, so the page number isn't shown on the canvas.",
-      "startsAfterEnd": "Numbering starts on page {from}, but this design has only 1 page. | Numbering starts on page {from}, but this design has only {total} pages.",
-      "groupAfterEnd": "Group {group} starts on page {from}, but this design has only 1 page. | Group {group} starts on page {from}, but this design has only {total} pages.",
-      "exceptAfterEnd": "Except page {pages} is after the last page of this design (page {total}). | Except pages {pages} are after the last page of this design (page {total}).",
-      "pdfNote": "Those pages appear only if the PDF grows that long. Add pages here, or change the numbers above."
+      "choiceHints": {
+        "all": "Page 1, 2, 3 and so on.",
+        "skipFirst": "Good for a cover page. The second page shows number 1.",
+        "skipFirstTwo": "Good for a cover and a contents page. The third page shows number 1.",
+        "custom": "You choose the pages, for example 1 to 10."
+      },
+      "part": "Part {part}",
+      "pages": "Pages",
+      "to": "to",
+      "toEnd": "the end",
+      "toNextPart": "next part",
+      "firstPage": "First page of part {part}",
+      "lastPage": "Last page of part {part}",
+      "partLook": "Looks like",
+      "partNumbers": "Numbers",
+      "sameAsAbove": "Same as above",
+      "addPart": "Add a part",
+      "addPartHint": "A new part starts its numbers again, for example when the report holds two documents.",
+      "removePart": "Remove this part",
+      "errors": {
+        "toBeforeFrom": "In part {part}, the last page can't be before the first page.",
+        "startAfter": "Part {part} has to start after page {page}, where part {prev} ends.",
+        "endBefore": "Part {part} has to end before page {page}, where part {next} starts.",
+        "empty": "The first page is after the last page, so no page gets a number."
+      },
+      "leaveOut": "Pages without a number",
+      "leaveOutPlaceholder": "for example 3, 5",
+      "leaveOutAdd": "Add",
+      "leaveOutHint": "These pages get no number. Write several pages with commas, or a run like 8-10.",
+      "unreadable": "“{text}” isn't a page number. Write numbers like 3, 5 or 8-10.",
+      "outside": "{pages}: these pages already have no number. Numbered pages: {range}.",
+      "fromToEnd": "{from} to the end",
+      "chipPage": "Page {page}",
+      "chipPages": "Pages {from} to {to}",
+      "chipRemove": "Give this page its number back",
+      "clearAll": "Clear all",
+      "yourPages": "Your page | Your {n} pages",
+      "pageLabel": "Page {page}",
+      "noNumber": "No number on this page",
+      "morePages": "…and {n} more pages, numbered the same way.",
+      "longerNote": "If the report becomes longer, the extra pages are numbered the same way.",
+      "tablesNote": "A table can make the report longer than you see here. The extra pages are numbered the same way.",
+      "design": {
+        "nothingNumbered": "No page gets a number yet: your report has only 1 page. | No page gets a number yet: your report has {total} pages.",
+        "startsAfterEnd": "Numbering starts on page {from}, but your report has only 1 page. | Numbering starts on page {from}, but your report has only {total} pages.",
+        "partAfterEnd": "Part {part} starts on page {from}, but your report has only 1 page. | Part {part} starts on page {from}, but your report has only {total} pages.",
+        "leftOutAfterEnd": "Page {pages} is after the last page of your report. | Pages {pages} are after the last page of your report.",
+        "whatToDo": "This is fine if the report grows longer when it is made. Otherwise, add pages or change the page numbers above."
+      },
+      "numbersTitle": "Number style",
+      "afterLeftOut": "After a page without a number",
+      "leftOutModes": {
+        "keep": "Count that page anyway",
+        "skip": "Don't count that page"
+      },
+      "partsCounting": "Numbers in each part",
+      "partsModes": {
+        "restart": "Start again in each part",
+        "continue": "Carry on from the part before"
+      },
+      "example": "Page {page} shows “{label}”"
     }
   },
   "expression": {
