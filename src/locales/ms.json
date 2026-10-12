@@ -46,6 +46,8 @@
     "deleteFile": "Padam Fail",
     "deleteFileConfirm": "Adakah anda pasti mahu memadam fail \"{name}\"? Tindakan ini tidak boleh dibuat asal.",
     "loadingFileFailed": "Gagal memuatkan fail",
+    "jrxmlOpened": "\"{name}\" telah dibuka",
+    "onlyJrxml": "Hanya fail laporan .jrxml boleh dibuka",
     "invalidFileFormat": "Format fail tidak sah, tidak dapat dimuatkan",
     "untitledReport": "Laporan Tanpa Tajuk"
   },

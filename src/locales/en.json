@@ -46,6 +46,8 @@
     "deleteFile": "Delete File",
     "deleteFileConfirm": "Are you sure you want to delete file \"{name}\"? This action cannot be undone.",
     "loadingFileFailed": "Loading file failed",
+    "jrxmlOpened": "Opened \"{name}\"",
+    "onlyJrxml": "Only .jrxml report files can be opened",
     "invalidFileFormat": "Invalid file format, cannot load",
     "untitledReport": "Untitled Report"
   },

@@ -57,6 +57,7 @@
           :compact="headerTier >= 5"
           @create-new-file="createNewFile"
           @load-file="loadFile"
+          @open-jrxml="openJrxmlFile"
         />
 
         <!-- 5. Undo / Redo -->
@@ -4860,15 +4861,31 @@ const openPdfPreview = async (): Promise<void> => {
 };
 
 // Save the edited JRXML content
-const saveJRXML = (): void => {
+const saveJRXML = (): void => applyJrxml(jrxmlContent.value);
+
+// Open a .jrxml file from the computer as a new report (File → Open)
+const openJrxmlFile = (file: { name: string; content: string }): void =>
+  applyJrxml(file.content, file.name.replace(/\.jrxml$/i, ""));
+
+// Turn JRXML text into the report. Without a file name it is the edited JRXML
+// of this report (one undo step); with one it opens as a new report
+const applyJrxml = (text: string, openedFileName?: string): void => {
   try {
     // Use our parseJRXMLContent function to parse the JRXML content
-    const parsedData = parseJRXMLContent(jrxmlContent.value);
+    const parsedData = parseJRXMLContent(text);
 
-    // The edited JRXML replaces the whole report: one undo step. Every part
-    // is set from it (what it lacks is emptied); the default font and band
-    // limits aren't in JRXML and stay
-    saveStateToHistory();
+    if (openedFileName !== undefined) {
+      // Keep the report that was open, then start a new one: no undo history
+      flushAutoSave();
+      currentFileName.value =
+        openedFileName.trim() || t("fileManager.untitledReport");
+      currentFileId.value = `file_${Date.now()}`;
+    } else {
+      // The edited JRXML replaces the whole report: one undo step. Every part
+      // is set from it (what it lacks is emptied); the default font and band
+      // limits aren't in JRXML and stay
+      saveStateToHistory();
+    }
     reportStore.loadReport(
       {
         reportProperties: {
@@ -4889,9 +4906,9 @@ const saveJRXML = (): void => {
           fields: dataset.fields,
           query: dataset.query,
         })) as any,
-        jrxmlContent: jrxmlContent.value,
+        jrxmlContent: text,
       },
-      { keepHistory: true },
+      { keepHistory: openedFileName === undefined },
     );
 
     // Add a default border to rectangle elements to ensure they render correctly
@@ -5184,6 +5201,15 @@ const saveJRXML = (): void => {
     // Regenerate the JRXML content, ensuring parameters are included
     updateJRXML();
 
+    if (openedFileName !== undefined) {
+      // Kept in the browser's file list like any other report
+      saveCurrentFileToStorage(false);
+      notification.success(
+        t("fileManager.jrxmlOpened", { name: currentFileName.value }),
+      );
+      return;
+    }
+
     // Save to local storage
     saveToLocalStorageWrapper();
 
@@ -5191,6 +5217,10 @@ const saveJRXML = (): void => {
     notification.success(t("notifications.jrxmlEditSaved"));
   } catch (error: unknown) {
     console.error("Failed to save JRXML:", error);
+    if (openedFileName !== undefined) {
+      notification.error(t("fileManager.invalidFileFormat"));
+      return;
+    }
     notification.error(
       t("notifications.jrxmlEditSaveFailed", {
         error: error instanceof Error ? error.message : t("common.unknownError"),

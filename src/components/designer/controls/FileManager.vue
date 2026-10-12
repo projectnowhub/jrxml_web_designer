@@ -125,6 +125,7 @@ const { t } = useI18n();
 interface Emits {
   (e: 'create-new-file'): void;
   (e: 'load-file', file: DesignerFile): void;
+  (e: 'open-jrxml', file: { name: string; content: string }): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -227,24 +228,19 @@ function openLocalFile() {
   showFileMenu.value = false;
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = '.json';
+  // Only JRXML reports (what Download saves)
+  input.accept = '.jrxml';
   input.onchange = (e) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (file) {
+      // "All files" in the dialog can still pick something else
+      if (!/\.jrxml$/i.test(file.name)) {
+        notification.error(t('fileManager.onlyJrxml'));
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (e) => {
-        try {
-          const content = e.target?.result as string;
-          JSON.parse(content); // Validate JSON format
-          loadFile({
-            id: null,
-            name: file.name,
-            content: content
-          });
-        } catch (error) {
-          console.error('Failed to load file:', error);
-          notification.error(t('fileManager.invalidFileFormat'));
-        }
+        emit('open-jrxml', { name: file.name, content: e.target?.result as string });
       };
       reader.readAsText(file);
     }
