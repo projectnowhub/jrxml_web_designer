@@ -139,6 +139,7 @@ Entry: `parseJRXMLContent()` in `src/utils/jrxml/parse.ts`, using the browser `D
 | Text editing | `elements/TextFieldElement.vue`, `TextFormatToolbar.vue`, `utils/textFit.ts` |
 | Images | `services/imageService.ts` (upload to `<VITE_OAUTH_BASE_URL>/rest/files`), crop and corner radius in `utils/elementUtils.ts` |
 | Data tables | `utils/table/`, `jrxml/tableXml.ts`, `modals/TableConfigModal.vue`, `designer/ReportDataPanel.vue` |
+| Report engine (server-side charts and table queries) | `src/engine/`, `vite.engine.config.ts`, `npm run build:engine`; contract in `docs/REPORT_ENGINE.md` |
 | Barcodes | `utils/barcode/` (types, examples, input rules, sizing and drawing with bwip-js, QR content, GS1 fields), `properties/BarcodeProperties.vue` (+ `QrContentEditor.vue`, `Gs1Editor.vue`), `elements/BarcodeElement.vue`; barcode table columns: `jrxml/tableXml.ts`, `common/BarcodeCell.vue` |
 | Project details on the page | `utils/projectFields.ts` (a dropped detail becomes plain text or a fixed image) |
 | Band fitting | `utils/bandFit.ts`, `utils/pageFit.ts`, `properties/BandHeightControls.vue` |
@@ -168,7 +169,7 @@ Report data comes from the backend per project (dummy projects in `src/mocks/` u
 ### 7.1 PDF preview server
 
 - `POST https://preview.report.projectnowcdp.com/api/pdf/generateForm` (configurable in Preview Server Settings)
-- Sends the JRXML, parameters, one main data row, and each table's rows as `subDataSources[datasetName]`; returns the PDF
+- Sends only the JRXML (form field `jrxml`); the report server fetches table rows and chart numbers itself from the setups in it (`docs/REPORT_ENGINE.md`); returns the PDF
 - Code: `services/reportService.ts`, `PdfPreviewModal.vue`. Server source: https://github.com/fengyunhe/jrxml_preview_server
 
 ### 7.2 CDP backend

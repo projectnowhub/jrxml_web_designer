@@ -3,7 +3,7 @@
 // image both draw from this, so they always match.
 
 import type { EChartsCoreOption } from "echarts/core";
-import i18n from "@/i18n";
+import { chartT } from "./chartText";
 import type { ChartBinding } from "@/types/dataSource";
 import { resolveReportFont } from "@/config/fonts.config";
 import type { ChartData } from "./chartData";
@@ -197,7 +197,7 @@ export function buildChartOption(
   // Nothing matched the filters: say so instead of drawing empty axes
   if (isEmpty(data)) {
     titles.push({
-      text: i18n.global.t("chart.noData") as string,
+      text: chartT("chart.noData"),
       left: "center",
       top: centerY,
       textVerticalAlign: "middle",

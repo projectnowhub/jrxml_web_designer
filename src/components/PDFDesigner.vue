@@ -438,10 +438,9 @@
       :visible="showPdfPreview"
       :jrxml-content="jrxmlContent"
       :bands="bands"
-      :report-parameters="reportParameters"
-      :report-fields="reportFields"
       @update:visible="showPdfPreview = $event"
       @edit-table="openTableConfigByUuid"
+      @edit-chart="openChartConfigByUuid"
     />
 
     <!-- Data table setup: source, columns, filters, sort, totals, theme -->
@@ -2591,6 +2590,14 @@ const openChartConfig = (
   options: { projectId?: string; sourceId?: string; columnKey?: string } = {},
 ) => {
   chartConfig.value = { visible: true, target, ...options };
+};
+
+// From the PDF preview's side panel: select the chart and open its popup
+const openChartConfigByUuid = (uuid: string) => {
+  const location = findElementByUuid(uuid);
+  if (!location || !chartAt(location)) return;
+  selectElement(location.bandIndex, location.elementIndex, false, location.parentFrameIndex);
+  openChartConfig(location);
 };
 
 const openChartConfigForSelection = () => {

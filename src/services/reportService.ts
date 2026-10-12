@@ -7,11 +7,11 @@ const t = i18n.global.t;
 
 const GENERATE_PDF_PATH = "api/pdf/generateForm";
 
+// Only the JRXML is sent. The report server gets every table's rows and
+// every chart's numbers itself, from the setups in the JRXML
+// (com.cdp.table.binding, com.cdp.chart.binding; see docs/REPORT_ENGINE.md)
 export interface GeneratePdfPayload {
   jrxml: string;
-  parameters: Record<string, unknown>;
-  dataSource: Record<string, unknown>[];
-  subDataSources?: Record<string, Record<string, unknown>[]>;
 }
 
 export class ReportGenerationError extends Error {
@@ -91,11 +91,6 @@ export async function generatePdf(
 ): Promise<Blob> {
   const form = new FormData();
   form.append("jrxml", payload.jrxml);
-  form.append("parameters", JSON.stringify(payload.parameters));
-  form.append("dataSource", JSON.stringify(payload.dataSource));
-  if (payload.subDataSources && Object.keys(payload.subDataSources).length > 0) {
-    form.append("subDataSources", JSON.stringify(payload.subDataSources));
-  }
 
   let blob: Blob;
   try {

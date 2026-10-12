@@ -5,11 +5,11 @@
 // real numbers (not linked, not finished, still loading) prints nothing.
 
 import type { EChartsCoreOption } from "echarts/core";
-import i18n from "@/i18n";
+import { chartLocaleTag } from "./chartText";
+import { renderChartSvg } from "./chartSvg";
 import type { ChartElement } from "@/types";
 import type { ChartBinding } from "@/types/dataSource";
 import { resolveReportFont } from "@/config/fonts.config";
-import { echarts } from "./echartsSetup";
 import { sampleChartData, type ChartData } from "./chartData";
 import { chartDataEntry } from "./chartDataStore";
 import { buildChartOption, chartFontFamily } from "./chartOption";
@@ -56,17 +56,7 @@ export function chartElementOption(element: ChartElement, view = chartView(eleme
   });
 }
 
-export function renderChartSvg(option: EChartsCoreOption, width: number, height: number): string {
-  const chart = echarts.init(null, null, { renderer: "svg", ssr: true, width, height });
-  try {
-    chart.setOption(option);
-    // The report server's SVG reader (Batik) fails on an embedded stylesheet,
-    // and the one ECharts writes only holds mouse-hover rules
-    return chart.renderToSVGString().replace(/<style[\s\S]*?<\/style>/g, "");
-  } finally {
-    chart.dispose();
-  }
-}
+export { renderChartSvg };
 
 function toBase64(text: string): string {
   const bytes = new TextEncoder().encode(text);
@@ -89,7 +79,7 @@ export function chartImageDataUri(element: ChartElement): string {
     width,
     height,
     resolveReportFont(element.fontFamily),
-    i18n.global.locale.value,
+    chartLocaleTag(),
   ]);
   const cached = imageCache.get(key);
   if (cached) return cached;

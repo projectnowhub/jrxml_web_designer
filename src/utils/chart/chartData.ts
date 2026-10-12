@@ -1,7 +1,7 @@
 // The numbers a chart draws, in one of four shapes. Never saved in the design.
 // A chart not linked to a project's data shows sample numbers in the designer.
 
-import i18n, { LOCALE_TAGS, type AppLocale } from "@/i18n";
+import { chartLocaleTag, chartT } from "./chartText";
 import type { ChartType } from "@/types/dataSource";
 
 export interface ChartSeries {
@@ -28,16 +28,14 @@ export type ChartData =
   // Tree map: groups and the items in them
   | { kind: "tree"; nodes: ChartTreeNode[] };
 
-const t = (key: string, params: Record<string, unknown> = {}) =>
-  i18n.global.t(key, params) as string;
+const t = chartT;
 
 const numbered = (key: string, count: number) =>
   Array.from({ length: count }, (_, i) => t(key, { n: i + 1 }));
 
 // The first six month names in the app's language
 function monthNames(): string[] {
-  const tag = LOCALE_TAGS[i18n.global.locale.value as AppLocale] ?? LOCALE_TAGS.en;
-  const format = new Intl.DateTimeFormat(tag, { month: "short" });
+  const format = new Intl.DateTimeFormat(chartLocaleTag(), { month: "short" });
   return Array.from({ length: 6 }, (_, i) => format.format(new Date(2026, i, 1)));
 }
 

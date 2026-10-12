@@ -2,7 +2,7 @@
 // answers to the ChartData it draws (categories in order, the largest ones
 // kept, empty date buckets filled in, labels in the app's language).
 
-import i18n, { LOCALE_TAGS, type AppLocale } from "@/i18n";
+import { chartLocaleTag, chartT } from "./chartText";
 import type {
   AggregateGranularity,
   AggregateRequest,
@@ -27,8 +27,8 @@ const MAX_SPLIT_VALUES = 6;
 // Date buckets drawn at most (a longer range is cut at its start)
 const MAX_DATE_BUCKETS = 400;
 
-const t = (key: string, params: Record<string, unknown> = {}) => i18n.global.t(key, params) as string;
-const localeTag = () => LOCALE_TAGS[i18n.global.locale.value as AppLocale] ?? LOCALE_TAGS.en;
+const t = chartT;
+const localeTag = chartLocaleTag;
 
 // ── Requests: the CDP analytics contract (POST /v2/analytics/aggregate) ──
 
