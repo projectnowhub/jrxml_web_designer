@@ -474,6 +474,15 @@
       @save="handleVariableSave"
     />
 
+    <!-- In-app confirmation (never the browser's confirm()) -->
+    <ConfirmModal
+      v-model:visible="confirmDialog.visible"
+      :title="confirmDialog.title"
+      :message="confirmDialog.message"
+      @confirm="settleConfirm(true)"
+      @cancel="settleConfirm(false)"
+    />
+
     <!-- PDF preview modal -->
     <PdfPreviewModal
       :visible="showPdfPreview"
@@ -599,6 +608,7 @@ import DesignerCanvas from "./designer/DesignerCanvas.vue";
 import HelpModal from "./modals/HelpModal.vue";
 import FieldManagementModal from "./modals/FieldManagementModal.vue";
 import PdfPreviewModal from "./modals/PdfPreviewModal.vue";
+import ConfirmModal from "./modals/ConfirmModal.vue";
 import TableConfigModal from "./modals/TableConfigModal.vue";
 import ChartConfigModal from "./modals/ChartConfigModal.vue";
 import { chartDataVersion, ensureChartData } from "../utils/chart/chartDataStore";
@@ -4845,7 +4855,7 @@ const openPdfPreview = async (): Promise<void> => {
     });
   } catch (error) {
     console.error("Failed to preview PDF:", error);
-    alert(t("editor.previewFailed"));
+    notification.error(t("editor.previewFailed"));
   }
 };
 
@@ -6293,9 +6303,29 @@ const handleEditField = (field: ReportField): void => {
   showFieldModal.value = true;
 };
 
+// In-app confirmation dialog: resolves true on Confirm, false on Cancel
+const confirmDialog = reactive({ visible: false, title: "", message: "" });
+let confirmResolve: ((ok: boolean) => void) | null = null;
+const askConfirm = (title: string, message: string): Promise<boolean> => {
+  confirmResolve?.(false);
+  Object.assign(confirmDialog, { visible: true, title, message });
+  return new Promise((resolve) => {
+    confirmResolve = resolve;
+  });
+};
+const settleConfirm = (ok: boolean): void => {
+  confirmResolve?.(ok);
+  confirmResolve = null;
+};
+
 // Handle deleting a field
-const handleDeleteField = (fieldName: string): void => {
-  if (confirm(t("editor.confirmDelete.field", { name: fieldName }))) {
+const handleDeleteField = async (fieldName: string): Promise<void> => {
+  if (
+    await askConfirm(
+      t("editor.confirmDelete.title"),
+      t("editor.confirmDelete.field", { name: fieldName }),
+    )
+  ) {
     const fieldIndex = reportFields.value.findIndex(
       (field) => field.name === fieldName,
     );
@@ -6323,9 +6353,12 @@ const handleEditParameter = (parameter: ReportParameter): void => {
 };
 
 // Handle deleting a report parameter
-const handleDeleteParameter = (parameterName: string): void => {
+const handleDeleteParameter = async (parameterName: string): Promise<void> => {
   if (
-    confirm(t("editor.confirmDelete.parameter", { name: parameterName }))
+    await askConfirm(
+      t("editor.confirmDelete.title"),
+      t("editor.confirmDelete.parameter", { name: parameterName }),
+    )
   ) {
     const parameterIndex = reportParameters.value.findIndex(
       (param) => param.name === parameterName,
@@ -6351,8 +6384,13 @@ const handleEditVariable = (variable: ReportVariable): void => {
 };
 
 // Handle deleting a variable
-const handleDeleteVariable = (variableName: string): void => {
-  if (confirm(t("editor.confirmDelete.variable", { name: variableName }))) {
+const handleDeleteVariable = async (variableName: string): Promise<void> => {
+  if (
+    await askConfirm(
+      t("editor.confirmDelete.title"),
+      t("editor.confirmDelete.variable", { name: variableName }),
+    )
+  ) {
     const variableIndex = reportVariables.value.findIndex(
       (v) => v.name === variableName,
     );
@@ -6370,7 +6408,7 @@ const handleVariableSave = (variable: ReportVariable): void => {
     (v) => v.name === variable.name,
   );
   if (existingIndex !== -1 && editingVariable.value?.name !== variable.name) {
-    alert(t("editor.duplicateName.variable"));
+    notification.error(t("editor.duplicateName.variable"));
     return;
   }
   if (existingIndex !== -1) {
@@ -6477,7 +6515,7 @@ const handleFieldSave = (fieldOrParam: ReportField | ReportParameter): void => {
       editingParameter.value?.name !== fieldOrParam.name
     ) {
       // If editing and a parameter with this name already exists, show an error
-      alert(t("editor.duplicateName.parameter"));
+      notification.error(t("editor.duplicateName.parameter"));
       return;
     }
 
@@ -6500,7 +6538,7 @@ const handleFieldSave = (fieldOrParam: ReportField | ReportParameter): void => {
       editingField.value?.name !== fieldOrParam.name
     ) {
       // If editing and a field with this name already exists, show an error
-      alert(t("editor.duplicateName.field"));
+      notification.error(t("editor.duplicateName.field"));
       return;
     }
 

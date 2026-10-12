@@ -951,6 +951,7 @@
       "tooTallForBand": "This element is {height}px tall, but {band} can be at most {max}px. Make the element smaller, or raise the band's maximum height in the template band settings."
     },
     "confirmDelete": {
+      "title": "Delete",
       "field": "Are you sure you want to delete field \"{name}\"?",
       "parameter": "Are you sure you want to delete parameter \"{name}\"?",
       "variable": "Are you sure you want to delete variable \"{name}\"?"

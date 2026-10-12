@@ -838,6 +838,7 @@ import ColorSwatchPicker from '../../common/ColorSwatchPicker.vue';
 import { computed, ref, onMounted, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
+import notification from "@/utils/notification";
 import type { Band, BarcodeElement, ChartElement, SelectedElementInfo } from "../../../types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { getAvailableFonts } from "../../../utils/fontUtils";
@@ -1434,7 +1435,7 @@ async function handlePropertiesImageUpload(event: Event) {
     report.updateJrxml();
   } catch (error) {
     console.error("Image upload failed:", error);
-    alert(
+    notification.error(
       error instanceof ImageUploadError
         ? t(error.messageKey, error.params)
         : t("imageUpload.uploadFailed"),

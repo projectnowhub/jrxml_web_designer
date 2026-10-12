@@ -191,7 +191,7 @@ import { useReportStore } from "@/stores/report";
 import { Check, RotateCcw, Upload, X } from "@lucide/vue";
 import { computed, inject, onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { createDiscreteApi } from "naive-ui";
+import notification from "@/utils/notification";
 import BaseElement from "./BaseElement.vue";
 import type { ImageElement, SelectedElementInfo } from "../../types";
 import {
@@ -452,13 +452,7 @@ const imageUrl = computed(() => {
 });
 
 function showUploadError(message: string) {
-  try {
-    const { message: discreteMessage } = createDiscreteApi(["message"]);
-    discreteMessage.error(message);
-  } catch {
-    // Discrete API fallback
-  }
-  alert(message);
+  notification.error(message, 5000);
 }
 
 async function processImageFile(file: File) {

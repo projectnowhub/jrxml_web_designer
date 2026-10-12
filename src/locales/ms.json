@@ -951,6 +951,7 @@
       "tooTallForBand": "Elemen ini setinggi {height}px, tetapi {band} hanya boleh setinggi {max}px. Kecilkan elemen, atau naikkan ketinggian maksimum jalur dalam tetapan jalur templat."
     },
     "confirmDelete": {
+      "title": "Padam",
       "field": "Adakah anda pasti mahu memadam medan \"{name}\"?",
       "parameter": "Adakah anda pasti mahu memadam parameter \"{name}\"?",
       "variable": "Adakah anda pasti mahu memadam pemboleh ubah \"{name}\"?"

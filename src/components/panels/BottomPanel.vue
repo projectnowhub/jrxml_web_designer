@@ -18,6 +18,7 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, NAlert } from "naive-ui";
+import notification from "@/utils/notification";
 import ResizablePanel from "./ResizablePanel.vue";
 import CodeMirrorEditor from "../editor/CodeMirrorEditor.vue";
 
@@ -246,7 +247,7 @@ onMounted(async () => {
 // Open the PDF preview (the designer owns it, with the report's table data)
 const openPdfPreview = (): void => {
   if (!localJrxmlContent.value) {
-    alert(t("bottomPanel.alerts.generateJrxmlFirst"));
+    notification.warning(t("bottomPanel.alerts.generateJrxmlFirst"));
     return;
   }
   emit("open-preview");
@@ -397,7 +398,7 @@ const resetBandLimitsToDefault = () => {
   } catch (e) {
     console.error("Failed to remove saved band limits from localStorage:", e);
   }
-  alert(t("bottomPanel.resetToDeveloperDefaultsSuccess"));
+  notification.success(t("bottomPanel.resetToDeveloperDefaultsSuccess"));
 };
 
 const applyGlobalDefaultsToCurrentTemplate = () => {
@@ -433,7 +434,7 @@ const applyGlobalDefaultsToCurrentTemplate = () => {
     emit("save-jrxml");
   }
 
-  alert(t("bottomPanel.appliedToTemplateSuccess"));
+  notification.success(t("bottomPanel.appliedToTemplateSuccess"));
 };
 
 // Detect the paper size and orientation
@@ -647,7 +648,7 @@ const isValidating = ref(false);
 // Run XSD validation
 const runValidation = async () => {
   if (!localJrxmlContent.value) {
-    alert(t("bottomPanel.alerts.generateJrxmlFirst"));
+    notification.warning(t("bottomPanel.alerts.generateJrxmlFirst"));
     return;
   }
 
@@ -702,7 +703,7 @@ const autoFixResult = ref<AutoFixResult | null>(null);
 // Run auto-fix
 const runAutoFix = async () => {
   if (!localJrxmlContent.value) {
-    alert(t("bottomPanel.alerts.generateJrxmlFirst"));
+    notification.warning(t("bottomPanel.alerts.generateJrxmlFirst"));
     return;
   }
 
