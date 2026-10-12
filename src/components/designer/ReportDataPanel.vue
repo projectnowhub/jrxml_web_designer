@@ -1,5 +1,5 @@
 <template>
-  <!-- The report's projects: drag a detail (name, logo…) onto the page, or a
+  <!-- The report's projects (chosen in the header): drag a detail (name, logo…) onto the page, or a
        table source (or one column) onto a table -->
   <div class="rdp">
     <div class="rdp-head">
@@ -13,67 +13,6 @@
       >
         <RefreshCw :size="13" :class="{ spinning: reloading }" />
       </button>
-    </div>
-
-    <!-- Chosen projects: one select field, several projects allowed -->
-    <label class="rdp-label" for="rdp-project-select">{{ t("reportData.projects") }}</label>
-    <Multiselect
-      :key="selectKey"
-      class="rdp-project-select"
-      mode="tags"
-      :attrs="{ id: 'rdp-project-select' }"
-      :model-value="projects.map((p) => p.id)"
-      :options="projectOptions"
-      :searchable="true"
-      :close-on-select="false"
-      :hide-selected="false"
-      :can-clear="false"
-      :loading="!allProjects.length && !allProjectsFailed"
-      :placeholder="t('reportData.chooseProjects')"
-      :no-options-text="allProjectsFailed ? t('reportData.loadFailed') : t('dataTable.loading')"
-      :no-results-text="t('reportData.noProjectMatch')"
-      @update:model-value="selectProjects"
-    >
-      <template #tag="{ option, handleTagRemove }">
-        <span class="rdp-tag">
-          <FolderKanban :size="12" aria-hidden="true" />
-          <span class="rdp-tag-name" :title="option.label">{{ option.label }}</span>
-          <button
-            type="button"
-            class="rdp-tag-remove"
-            :title="t('reportData.removeProject', { project: option.label })"
-            :aria-label="t('reportData.removeProject', { project: option.label })"
-            @mousedown.prevent.stop="handleTagRemove(option, $event)"
-          >
-            <X :size="11" />
-          </button>
-        </span>
-      </template>
-      <template #option="{ option, isSelected }">
-        <span class="rdp-option">
-          <span class="rdp-option-check" :class="{ 'is-on': isSelected(option) }">
-            <Check v-if="isSelected(option)" :size="11" :stroke-width="3" />
-          </span>
-          <span class="rdp-name">{{ option.label }}</span>
-          <span class="rdp-meta">{{ option.code }}</span>
-        </span>
-      </template>
-      <template #spinner>
-        <LoaderCircle class="rdp-spinner spinning" :size="14" aria-hidden="true" />
-      </template>
-      <template #caret="{ handleCaretClick, isOpen }">
-        <ChevronDown
-          class="rdp-caret"
-          :class="{ 'is-open': isOpen }"
-          :size="15"
-          aria-hidden="true"
-          @mousedown.prevent="handleCaretClick"
-        />
-      </template>
-    </Multiselect>
-    <div v-if="allProjectsFailed" class="rdp-message is-error">
-      {{ t("reportData.loadFailed") }}
-      <button type="button" class="rdp-link" @click="loadAllProjects">{{ t("reportData.retry") }}</button>
     </div>
 
     <p v-if="!projects.length" class="rdp-hint">{{ t("reportData.noProjects") }}</p>
@@ -218,13 +157,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, reactive, ref, watch, type Component } from "vue";
-import Multiselect from "@vueform/multiselect";
-import "@vueform/multiselect/themes/default.css";
+import { computed, nextTick, reactive, ref, watch, type Component } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   Calendar,
-  Check,
   ChevronDown,
   ChevronRight,
   Database,
@@ -233,17 +169,14 @@ import {
   GripVertical,
   Hash,
   Image as ImageIcon,
-  LoaderCircle,
   RefreshCw,
   Search,
   Type,
-  X,
 } from "@lucide/vue";
 import {
   clearSchemaCache,
   getProject,
   getSchema,
-  listProjects,
   listSources,
 } from "@/services/dataSourceService";
 import { clearTableRowsCache } from "@/composables/useTableRows";
@@ -260,16 +193,11 @@ import type {
   ProjectDetails,
   ProjectField,
   ProjectFieldType,
-  ProjectSummary,
   ReportProject,
 } from "@/types/dataSource";
 
+// The projects are chosen in the designer's header
 const props = defineProps<{ bands: Band[]; projects: ReportProject[] }>();
-
-const emit = defineEmits<{
-  // The new list of chosen projects
-  "update-projects": [projects: ReportProject[]];
-}>();
 
 const { t } = useI18n();
 
@@ -286,43 +214,6 @@ const COLUMN_ICONS: Record<DataColumnType, Component> = {
   currency: DollarSign,
   date: Calendar,
 };
-
-// ---- Choosing projects ----------------------------------------------------
-
-const allProjects = ref<ProjectSummary[]>([]);
-const allProjectsFailed = ref(false);
-
-async function loadAllProjects() {
-  allProjectsFailed.value = false;
-  try {
-    allProjects.value = await listProjects();
-  } catch {
-    allProjectsFailed.value = true;
-  }
-}
-
-// Every project, plus chosen ones the list doesn't have (yet), so their tags show
-const projectOptions = computed(() => {
-  const options = allProjects.value.map((p) => ({ label: p.name, value: p.id, code: p.code }));
-  for (const p of props.projects) {
-    if (!options.some((o) => o.value === p.id)) options.push({ label: p.name, value: p.id, code: "" });
-  }
-  return options;
-});
-
-// The designer refuses (with a message) to remove a project still in use;
-// the field then shows the report's projects again
-const selectKey = ref(0);
-
-async function selectProjects(ids: string[]) {
-  const nameOf = (id: string) =>
-    props.projects.find((p) => p.id === id)?.name ??
-    allProjects.value.find((p) => p.id === id)?.name ??
-    id;
-  emit("update-projects", ids.map((id) => ({ id, name: nameOf(id) })));
-  await nextTick();
-  if (props.projects.map((p) => p.id).join("\n") !== ids.join("\n")) selectKey.value++;
-}
 
 // ---- Each project's details and sources -----------------------------------
 
@@ -412,7 +303,6 @@ async function reload() {
   Object.keys(schemas).forEach((k) => delete schemas[k]);
   try {
     await Promise.all([
-      loadAllProjects(),
       ...props.projects.map((p) => loadProject(p.id)),
     ]);
     Object.keys(expanded).forEach((key) => {
@@ -507,7 +397,6 @@ function dragColumn(
   });
 }
 
-onMounted(() => loadAllProjects());
 </script>
 
 <style scoped>
@@ -527,7 +416,6 @@ onMounted(() => loadAllProjects());
   font-weight: 600;
 }
 
-.rdp-label,
 .rdp-group {
   display: block;
   margin: 10px 0 4px;
@@ -540,149 +428,6 @@ onMounted(() => loadAllProjects());
 
 .rdp-group {
   margin: 8px 0 2px 2px;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* The project field (@vueform/multiselect), in the panel's colours */
-.rdp-project-select {
-  --ms-font-size: 12px;
-  --ms-line-height: 1.4;
-  --ms-py: 4px;
-  --ms-px: 8px;
-  --ms-radius: 6px;
-  --ms-border-color: var(--prop-border-color, #e5e7eb);
-  --ms-border-color-active: #93c5fd;
-  --ms-ring-width: 3px;
-  --ms-ring-color: rgba(37, 99, 235, 0.15);
-  --ms-placeholder-color: #9ca3af;
-  --ms-dropdown-border-color: var(--prop-border-color, #e5e7eb);
-  --ms-dropdown-radius: 8px;
-  --ms-option-font-size: 12px;
-  --ms-option-px: 8px;
-  --ms-option-py: 6px;
-  --ms-option-bg-pointed: #f3f4f6;
-  --ms-option-color-pointed: #1f2937;
-  --ms-option-bg-selected: #fff;
-  --ms-option-color-selected: #1f2937;
-  --ms-option-bg-selected-pointed: #eff6ff;
-  --ms-option-color-selected-pointed: #1f2937;
-  --ms-empty-color: #9ca3af;
-  --ms-spinner-color: #2563eb;
-  --ms-max-height: 15rem;
-  margin-bottom: 4px;
-  min-height: 32px;
-  background: #fff;
-}
-
-.rdp-project-select :deep(.multiselect-dropdown) {
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
-}
-
-.rdp-project-select :deep(.multiselect-tags) {
-  gap: 4px;
-  margin: 0;
-  padding-left: 4px;
-}
-
-.rdp-project-select :deep(.multiselect-tags-search-wrapper) {
-  margin: 0 4px;
-}
-
-.rdp-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  max-width: 100%;
-  padding: 2px 3px 2px 7px;
-  border: 1px solid #bfdbfe;
-  border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-size: 11.5px;
-  line-height: 1.3;
-}
-
-.rdp-tag-name {
-  min-width: 0;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rdp-tag-remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-
-.rdp-tag-remove:hover {
-  background: #dbeafe;
-}
-
-.rdp-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-width: 0;
-}
-
-.rdp-option-check {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 14px;
-  height: 14px;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 4px;
-  background: #fff;
-  color: #fff;
-}
-
-.rdp-option-check.is-on {
-  border-color: #2563eb;
-  background: #2563eb;
-}
-
-.rdp-spinner {
-  flex-shrink: 0;
-  margin-right: 6px;
-  color: #2563eb;
-}
-
-.rdp-caret {
-  flex-shrink: 0;
-  margin-right: 8px;
-  color: #9ca3af;
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
-
-.rdp-caret.is-open {
-  transform: rotate(180deg);
 }
 
 .rdp-search {

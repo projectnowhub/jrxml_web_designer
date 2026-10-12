@@ -55,7 +55,6 @@
       <ReportDataPanel
         :bands="bands as Band[]"
         :projects="projects ?? []"
-        @update-projects="emit('update-projects', $event)"
       />
     </div>
 
@@ -191,7 +190,6 @@ interface Emits {
   (e: "insert-page-number", position: PaginationPosition): void;
   (e: "insert-chart", chartType: ChartType): void;
   (e: "insert-barcode", barcodeType: BarcodeType): void;
-  (e: "update-projects", projects: ReportProject[]): void;
 }
 
 // Use default values

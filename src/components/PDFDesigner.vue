@@ -39,14 +39,20 @@
           </div>
         </div>
 
+        <!-- 3. The report's projects (their details and tables are in Report Data) -->
+        <HeaderProjectPicker
+          :projects="reportProjects"
+          @update-projects="setReportProjects"
+        />
+
         <span class="toolbar-divider"></span>
 
-        <!-- 3. File Manager -->
+        <!-- 4. File Manager -->
         <FileManager @create-new-file="createNewFile" @load-file="loadFile" />
 
         <span class="toolbar-divider"></span>
 
-        <!-- 4. Undo / Redo -->
+        <!-- 5. Undo / Redo -->
         <div class="header-undo-redo">
           <n-button
             @click="undo"
@@ -70,7 +76,7 @@
 
         <span class="toolbar-divider"></span>
 
-        <!-- 5. Delete, Copy, Paste, Add Page -->
+        <!-- 6. Delete, Copy, Paste, Add Page -->
         <div class="header-toolbar-ops">
            <button
             class="toolbar-btn add-page-btn"
@@ -93,7 +99,7 @@
 
         <span class="toolbar-divider"></span>
 
-        <!-- 6. Zoom controls -->
+        <!-- 7. Zoom controls -->
         <ZoomControls
           :zoom-level="zoomLevel"
           :paper-width="reportProperties.pageWidth"
@@ -102,7 +108,7 @@
 
         <span class="toolbar-divider"></span>
 
-        <!-- 7. Show Bottom Panel -->
+        <!-- 8. Show Bottom Panel -->
         <n-button @click="toggleBottomPanel" type="default" size="small" class="bottom-panel-btn">
           {{
             showBottomPanel
@@ -113,54 +119,32 @@
 
         <span class="toolbar-divider"></span>
 
-        <!-- 8. Snap controls -->
-        <div class="snap-controls-header" :title="t('actions.snapBypassHint')">
-          <n-checkbox
-            :checked="enableSnapToGrid"
-            size="small"
-            @update:checked="enableSnapToGrid = $event"
-          >
-            {{ t("actions.snapToGrid") }}
-          </n-checkbox>
-          <n-checkbox
-            :checked="enableSnapToAlignment"
-            size="small"
-            @update:checked="
-              enableSnapToAlignment = $event;
-              if (!$event) clearAlignmentLines();
-            "
-          >
-            {{ t("actions.snapToAlignment") }}
-          </n-checkbox>
-          <n-checkbox
-            :checked="showGrid"
-            size="small"
-            @update:checked="showGrid = $event"
-          >
-            {{ t("actions.showGrid") }}
-          </n-checkbox>
-        </div>
-        <span class="toolbar-divider"></span>
+        <!-- 9. Snap & grid (dropdown) -->
+        <SnapMenu />
       </div>
 
       <div class="header-actions">
-        <!-- 9. Preview PDF -->
-        <SplitButton
-          :actions="[
-            {
-              label: t('actions.previewPDF'),
-              handler: openPdfPreview,
-              class: 'btn-primary',
-            },
-            {
-              label: t('actions.downloadJRXML'),
-              handler: downloadJRXML,
-              class: 'btn-primary',
-            },
-          ]"
-        />
+        <!-- 10. Download JRXML / Preview PDF -->
+        <button
+          type="button"
+          class="header-btn header-btn-secondary"
+          :title="t('actions.downloadJRXML')"
+          @click="downloadJRXML"
+        >
+          <Download :size="16" :stroke-width="2" aria-hidden="true" />
+          <span>{{ t("actions.downloadJRXML") }}</span>
+        </button>
+        <button
+          type="button"
+          class="header-btn header-btn-primary"
+          :title="t('actions.previewPDF')"
+          @click="openPdfPreview"
+        >
+          <Eye :size="16" :stroke-width="2" aria-hidden="true" />
+          <span>{{ t("actions.previewPDF") }}</span>
+        </button>
 
-        <!-- 10. Account menu (language, profile, sign out) -->
+        <!-- 11. Account menu (language, profile, sign out) -->
         <AccountMenu />
       </div>
     </div>
@@ -208,7 +192,6 @@
           @insert-page-number="addPageNumber"
           @insert-chart="addChart"
           @insert-barcode="addBarcode"
-          @update-projects="setReportProjects"
           @add-field="handleAddField"
           @edit-field="handleEditField"
           @delete-field="handleDeleteField"
@@ -573,16 +556,19 @@ import FileManager from "./designer/controls/FileManager.vue";
 import ZoomControls from "./designer/controls/ZoomControls.vue";
 import ElementProperties from "./designer/properties/ElementProperties.vue";
 import AccountMenu from "./common/AccountMenu.vue";
-import SplitButton from "./common/SplitButton.vue";
+import SnapMenu from "./designer/SnapMenu.vue";
+import HeaderProjectPicker from "./designer/HeaderProjectPicker.vue";
 import MultiSelectToolbar from "./designer/MultiSelectToolbar.vue";
 import AlignmentGuides from "./designer/AlignmentGuides.vue";
 import DragFeedbackLayer from "./designer/DragFeedbackLayer.vue";
-import { NButton, NSelect, NCheckbox } from "naive-ui";
+import { NButton } from "naive-ui";
 import {
   BringToFront,
   Check,
   ClipboardPaste,
   Copy,
+  Download,
+  Eye,
   FilePlus,
   Redo2,
   SendToBack,
@@ -1174,7 +1160,7 @@ const allBandTypes = ALL_CONFIGURABLE_BANDS;
 
 
 
-// Projects chosen in the Report Data list (kept with the report properties,
+// Projects chosen in the header (kept with the report properties,
 // so undo and saving cover them)
 const reportProjects = computed<ReportProject[]>(() => reportProperties.value?.projects ?? []);
 
@@ -6949,12 +6935,58 @@ const moveElementZOrder = (direction: "front" | "back") => {
   justify-content: flex-end;
 }
 
-.snap-controls-header {
-  display: flex;
-  gap: 10px;
+/* Download JRXML (outlined) and Preview PDF (main action) */
+.header-btn {
+  display: inline-flex;
   align-items: center;
-  padding: 0 4px;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
   flex-shrink: 0;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease;
+}
+
+.header-btn:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.header-btn-secondary {
+  border-color: #d1d5db;
+  background: #ffffff;
+  color: #374151;
+}
+
+.header-btn-secondary:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.header-btn-primary {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
+}
+
+.header-btn-primary:hover {
+  background: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.36);
+}
+
+.header-btn-primary:active {
+  background: #1e40af;
 }
 
 .designer-layout {
