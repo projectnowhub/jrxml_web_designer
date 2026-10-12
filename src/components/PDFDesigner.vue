@@ -58,6 +58,7 @@
           @create-new-file="createNewFile"
           @load-file="loadFile"
           @open-jrxml="openJrxmlFile"
+          @delete-all-files="deleteAllFiles"
         />
 
         <!-- 5. Undo / Redo -->
@@ -761,7 +762,11 @@ import {
   type RulerTick,
 } from "../utils/rulerUtils";
 
-import { loadFromLocalStorage, saveToLocalStorage } from "../utils/fileUtils";
+import {
+  clearLocalStorage,
+  loadFromLocalStorage,
+  saveToLocalStorage,
+} from "../utils/fileUtils";
 
 // Import element bounds validation utility
 import { getOutOfBoundsElements } from "../utils/elementBoundsValidator";
@@ -919,6 +924,7 @@ const {
   saveCurrentFileContent,
   setLastFile,
   renameFile,
+  clearStoredFiles,
 } = useDesignerFiles({
   defaultFileName: t("fileManager.untitledReport"),
 });
@@ -1014,8 +1020,8 @@ watch(
   },
 );
 
-function createNewFile() {
-  flushAutoSave();
+function createNewFile(saveOpenFile = true) {
+  if (saveOpenFile) flushAutoSave();
   isLoadingFile.value = true;
 
   // Logic for creating a new file
@@ -1031,6 +1037,19 @@ function createNewFile() {
     updateJRXML();
     saveCurrentFileToStorage(false);
   });
+}
+
+// Delete every report saved in this browser and start a new, empty one. The
+// open report is not saved first, or it would come straight back
+function deleteAllFiles() {
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = null;
+  }
+  clearStoredFiles();
+  clearLocalStorage();
+  createNewFile(false);
+  notification.success(t("fileManager.deleteAllFilesDone"));
 }
 
 function saveCurrentFileToStorage(showNotification = false): boolean {

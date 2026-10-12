@@ -48,6 +48,9 @@
     "loadingFileFailed": "Gagal memuatkan fail",
     "jrxmlOpened": "\"{name}\" telah dibuka",
     "onlyJrxml": "Hanya fail laporan .jrxml boleh dibuka",
+    "deleteAllFiles": "Padam Semua Laporan",
+    "deleteAllFilesConfirm": "Padam semua laporan yang disimpan dalam pelayar ini? Laporan yang sedang dibuka juga dipadam dan laporan baharu yang kosong dibuka. Tindakan ini tidak boleh dibatalkan. Muat turun dahulu laporan yang ingin anda simpan.",
+    "deleteAllFilesDone": "Semua laporan yang disimpan telah dipadam",
     "invalidFileFormat": "Format fail tidak sah, tidak dapat dimuatkan",
     "untitledReport": "Laporan Tanpa Tajuk"
   },

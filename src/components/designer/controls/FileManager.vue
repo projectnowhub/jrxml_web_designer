@@ -12,16 +12,16 @@
     <n-button v-else @click="toggleFileMenu" type="default">{{ t('fileManager.title') }}</n-button>
     <div v-if="showFileMenu" class="file-menu-dropdown">
       <div class="menu-item" @click="createNewFile">
-        <FilePlus class="menu-icon" :size="16" />
+        <FilePlus class="menu-icon" :size="17" :stroke-width="2.25" aria-hidden="true" />
         <span>{{ t('fileManager.newFile') }}</span>
       </div>
       <div class="menu-item" @click="openLocalFile">
-        <FolderOpen class="menu-icon" :size="16" />
+        <FolderOpen class="menu-icon" :size="17" :stroke-width="2.25" aria-hidden="true" />
         <span>{{ t('fileManager.openLocalFile') }}</span>
       </div>
       <div class="menu-divider"></div>
       <div class="menu-item file-submenu-container" @click="toggleFileSubmenu">
-        <FileText class="menu-icon" :size="16" />
+        <FileText class="menu-icon" :size="17" :stroke-width="2.25" aria-hidden="true" />
         <span>{{ t('fileManager.fileList') }}</span>
         <ChevronRight class="submenu-arrow" :size="14" />
         <div v-if="showFileSubmenu" class="file-submenu" @click.stop>
@@ -74,11 +74,13 @@
               <n-button @click.stop="createNewFile" type="primary">{{ t('fileManager.createNewFile') }}</n-button>
             </div>
           </div>
-          <div class="submenu-footer">
-            <n-button @click.stop="createNewFile" type="primary" size="small">{{ t('fileManager.newFile') }}</n-button>
-            <n-button @click.stop="openLocalFile" type="default" size="small">{{ t('fileManager.openLocalFile') }}</n-button>
-          </div>
+         
         </div>
+      </div>
+      <div class="menu-divider"></div>
+      <div class="menu-item menu-item-danger" @click="askDeleteAllFiles">
+        <Trash2 class="menu-icon" :size="17" :stroke-width="2.25" aria-hidden="true" />
+        <span>{{ t('fileManager.deleteAllFiles') }}</span>
       </div>
     </div>
 
@@ -97,6 +99,14 @@
       :title="t('fileManager.deleteFile')"
       :message="t('fileManager.deleteFileConfirm', { name: pendingFile?.name })"
       @confirm="handleConfirmDelete"
+    />
+
+    <!-- Delete all confirmation dialog -->
+    <ConfirmModal
+      v-model:visible="showDeleteAllModal"
+      :title="t('fileManager.deleteAllFiles')"
+      :message="t('fileManager.deleteAllFilesConfirm')"
+      @confirm="emit('delete-all-files')"
     />
   </div>
 </template>
@@ -126,6 +136,7 @@ interface Emits {
   (e: 'create-new-file'): void;
   (e: 'load-file', file: DesignerFile): void;
   (e: 'open-jrxml', file: { name: string; content: string }): void;
+  (e: 'delete-all-files'): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -140,6 +151,7 @@ const fileMenuContainer = ref<HTMLElement | null>(null);
 const fileFilterText = ref('');
 const showRenameModal = ref(false);
 const showDeleteModal = ref(false);
+const showDeleteAllModal = ref(false);
 const pendingFile = ref<DesignerFile | null>(null);
 
 // The open file and the saved list come from the files store
@@ -215,6 +227,13 @@ function handleConfirmDelete() {
     deleteFile(pendingFile.value.id);
   }
   pendingFile.value = null;
+}
+
+// Delete every report saved in this browser (asks first)
+function askDeleteAllFiles() {
+  showFileMenu.value = false;
+  showFileSubmenu.value = false;
+  showDeleteAllModal.value = true;
 }
 
 // Create a new file
@@ -306,30 +325,51 @@ onUnmounted(() => {
 
 
 
+/* Same look as the account menu */
 .file-menu-dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 8px);
   left: 0;
-  margin-top: 4px;
-  background-color: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 1000;
-  min-width: 200px;
+  min-width: 232px;
+  padding: 8px;
+  border: 1px solid rgba(28, 27, 38, 0.1);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow:
+    0 18px 38px rgba(23, 20, 44, 0.16),
+    0 2px 6px rgba(23, 20, 44, 0.08);
+  box-sizing: border-box;
+  animation: file-menu-in 0.16s ease;
+}
+
+@keyframes file-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  padding: 8px 16px;
+  gap: 10px;
+  padding: 9px 8px;
+  border-radius: 6px;
+  color: #45425a;
+  font-size: 12.5px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background 0.14s ease;
   position: relative;
 }
 
 .menu-item:hover {
-  background-color: #f5f5f5;
+  background: rgba(124, 92, 247, 0.08);
 }
 
 .menu-item:disabled {
@@ -338,14 +378,23 @@ onUnmounted(() => {
 }
 
 .menu-icon {
-  margin-right: 8px;
-  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* Same look as Sign out in the account menu */
+.menu-item-danger {
+  color: #e5484d;
+}
+
+.menu-item-danger:hover {
+  background: rgba(229, 72, 77, 0.09);
+  color: #d0342e;
 }
 
 .menu-divider {
   height: 1px;
-  background-color: #e0e0e0;
   margin: 4px 0;
+  background: rgba(28, 27, 38, 0.08);
 }
 
 .submenu-arrow {
@@ -360,28 +409,37 @@ onUnmounted(() => {
 
 .file-submenu {
   position: absolute;
-  top: 0;
+  top: -8px;
   left: 100%;
-  margin-left: 4px;
-  background-color: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  margin-left: 12px;
   z-index: 1001;
   min-width: 300px;
   max-height: 400px;
+  padding: 8px;
+  border: 1px solid rgba(28, 27, 38, 0.1);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow:
+    0 18px 38px rgba(23, 20, 44, 0.16),
+    0 2px 6px rgba(23, 20, 44, 0.08);
+  box-sizing: border-box;
+  color: #1c1b26;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: default;
+  animation: file-menu-in 0.16s ease;
 }
 
 .submenu-header {
-  padding: 12px;
-  border-bottom: 1px solid #e0e0e0;
-  background-color: #f9f9f9;
+  padding: 4px 4px 8px;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.08);
 }
 
 .submenu-header h4 {
   margin: 0 0 8px 0;
-  font-size: 14px;
-  font-weight: 600;
+  color: #1c1b26;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .file-filter {
@@ -390,36 +448,47 @@ onUnmounted(() => {
 
 .filter-input {
   width: 100%;
-  padding: 6px 30px 6px 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 7px 30px 7px 10px;
+  border: 1px solid rgba(28, 27, 38, 0.14);
+  border-radius: 8px;
+  font-size: 12.5px;
   box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
 }
 
-
+.filter-input:focus {
+  border-color: #7c5cf7;
+  box-shadow: 0 0 0 3px rgba(124, 92, 247, 0.12);
+}
 
 .submenu-file-list {
   max-height: 250px;
   overflow-y: auto;
-  padding: 8px;
+  padding: 6px 0 0;
 }
 
 .submenu-file-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px;
-  margin-bottom: 4px;
-  background-color: #f9f9f9;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  font-size: 12px;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  color: #45425a;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background 0.14s ease;
+  margin: 6px;
+}
+
+.submenu-file-item:hover {
+  background: rgba(124, 92, 247, 0.08);
 }
 
 .submenu-file-item.active {
-  background-color: #e6f7ff;
-  border-color: #1890ff;
+  background: rgba(124, 92, 247, 0.12);
+  color: #1c1b26;
 }
 
 .file-info {
@@ -429,7 +498,7 @@ onUnmounted(() => {
 
 .file-name {
   display: block;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -438,8 +507,8 @@ onUnmounted(() => {
 
 .file-date {
   display: block;
-  font-size: 10px;
-  color: #999;
+  font-size: 11px;
+  color: #77718a;
 }
 
 .file-item-actions {
@@ -448,11 +517,10 @@ onUnmounted(() => {
 }
 
 .submenu-footer {
-  padding: 12px;
-  border-top: 1px solid #e0e0e0;
+  padding: 8px 4px 0;
+  border-top: 1px solid rgba(28, 27, 38, 0.08);
   display: flex;
   gap: 8px;
-  background-color: #f9f9f9;
 }
 
 .empty-state :deep(.n-button) {

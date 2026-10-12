@@ -144,18 +144,18 @@ async function selectProjects(ids: string[]) {
   --ms-ring-color: rgba(37, 99, 235, 0.15);
   --ms-placeholder-color: #6b7280;
   --ms-bg: #f9fafb;
-  --ms-dropdown-border-color: #e5e7eb;
-  --ms-dropdown-radius: 8px;
-  --ms-option-font-size: 13px;
-  --ms-option-px: 10px;
-  --ms-option-py: 7px;
-  --ms-option-bg-pointed: #f3f4f6;
-  --ms-option-color-pointed: #1f2937;
-  --ms-option-bg-selected: #fff;
-  --ms-option-color-selected: #1f2937;
-  --ms-option-bg-selected-pointed: #eff6ff;
-  --ms-option-color-selected-pointed: #1f2937;
-  --ms-empty-color: #9ca3af;
+  --ms-dropdown-border-color: rgba(28, 27, 38, 0.1);
+  --ms-dropdown-radius: 12px;
+  --ms-option-font-size: 12.5px;
+  --ms-option-px: 8px;
+  --ms-option-py: 8px;
+  --ms-option-bg-pointed: rgba(124, 92, 247, 0.08);
+  --ms-option-color-pointed: #1c1b26;
+  --ms-option-bg-selected: transparent;
+  --ms-option-color-selected: #45425a;
+  --ms-option-bg-selected-pointed: rgba(124, 92, 247, 0.08);
+  --ms-option-color-selected-pointed: #1c1b26;
+  --ms-empty-color: #77718a;
   --ms-spinner-color: #2563eb;
   --ms-max-height: 18rem;
   flex: 0 1 230px;
@@ -165,12 +165,49 @@ async function selectProjects(ids: string[]) {
   margin: 0;
 }
 
-/* The list is wider than the field so long project names fit */
+/* The list is wider than the field so long project names fit. Same card
+   as the account menu and the File menu */
 .hpp-select :deep(.multiselect-dropdown) {
   right: auto;
+  bottom: -8px;
   width: 320px;
   min-width: 100%;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+  padding: 8px;
+  border-radius: 12px;
+  box-shadow:
+    0 18px 38px rgba(23, 20, 44, 0.16),
+    0 2px 6px rgba(23, 20, 44, 0.08);
+  box-sizing: border-box;
+  animation: hpp-menu-in 0.16s ease;
+}
+
+.hpp-select :deep(.multiselect-options) {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hpp-select :deep(.multiselect-option) {
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background 0.14s ease;
+}
+
+.hpp-select :deep(.multiselect-no-options),
+.hpp-select :deep(.multiselect-no-results) {
+  padding: 9px 8px;
+  font-size: 12.5px;
+}
+
+@keyframes hpp-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(100% - 3px)) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(100%) scale(1);
+  }
 }
 
 /* Narrow screens: icon and count only; the list spans the screen under the header */
@@ -198,6 +235,18 @@ async function selectProjects(ids: string[]) {
   width: auto;
   max-width: 360px;
   transform: none;
+  animation-name: hpp-menu-in-fixed;
+}
+
+@keyframes hpp-menu-in-fixed {
+  from {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .hpp-label {
@@ -248,7 +297,7 @@ async function selectProjects(ids: string[]) {
 .hpp-option {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
   min-width: 0;
 }
@@ -260,15 +309,16 @@ async function selectProjects(ids: string[]) {
   flex-shrink: 0;
   width: 15px;
   height: 15px;
-  border: 1.5px solid #cbd5e1;
+  border: 1.5px solid rgba(28, 27, 38, 0.22);
   border-radius: 4px;
+  transition: background 0.14s ease, border-color 0.14s ease;
   background: #fff;
   color: #fff;
 }
 
 .hpp-check.is-on {
-  border-color: #2563eb;
-  background: #2563eb;
+  border-color: #7c5cf7;
+  background: #7c5cf7;
 }
 
 .hpp-name {
@@ -281,8 +331,9 @@ async function selectProjects(ids: string[]) {
 
 .hpp-code {
   flex-shrink: 0;
-  color: #9ca3af;
+  color: #77718a;
   font-size: 11px;
+  font-weight: 500;
 }
 
 .hpp-spinner {

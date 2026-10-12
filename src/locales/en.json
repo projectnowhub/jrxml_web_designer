@@ -48,6 +48,9 @@
     "loadingFileFailed": "Loading file failed",
     "jrxmlOpened": "Opened \"{name}\"",
     "onlyJrxml": "Only .jrxml report files can be opened",
+    "deleteAllFiles": "Delete All Reports",
+    "deleteAllFilesConfirm": "Delete every report saved in this browser? The open report is deleted too and a new, empty one is opened. This can't be undone. Download any report you want to keep first.",
+    "deleteAllFilesDone": "All saved reports were deleted",
     "invalidFileFormat": "Invalid file format, cannot load",
     "untitledReport": "Untitled Report"
   },
