@@ -1,13 +1,15 @@
 <template>
   <div class="pdf-designer">
-    <div class="designer-header">
+    <!-- Header: as the window narrows, labels turn into icons, then the less
+         used tools move into the More menu (headerTier) -->
+    <div ref="headerRef" class="designer-header" :class="`tier-${headerTier}`">
       <div class="header-left header-workflow">
         <!-- 1. Logo & App Name (Option C) -->
-        <div class="brand-wrap">
+        <div v-if="headerTier < 6" class="brand-wrap">
           <div class="brand-img">
             <img src="/assets/cdp-logo.png" alt="ProjectNow CDP" />
           </div>
-          <div class="brand-name">
+          <div v-if="headerTier < 1" class="brand-name">
             <span class="brand-text">ProjectNow CDP</span>
             <span class="brand-badge">REPORT STUDIO</span>
           </div>
@@ -24,17 +26,19 @@
             :placeholder="t('editorHeader.untitledReport')"
             :title="t('editorHeader.renameReport')"
           />
+          <!-- Narrow screens: the icon only (the words are in its tooltip) -->
           <div class="auto-save-badge" :title="saveStatusTitle">
             <span v-if="saveStatus === 'saving'" class="save-status-text saving">
               <span class="save-spinner"></span>
-              {{ t("editorHeader.saving") }}
+              <span v-if="headerTier < 4">{{ t("editorHeader.saving") }}</span>
             </span>
             <span v-else-if="saveStatus === 'error'" class="save-status-text error">
-              {{ t("editorHeader.saveFailed") }}
+              <CircleAlert v-if="headerTier >= 4" class="saved-icon" :size="13" :stroke-width="2.5" />
+              <span v-else>{{ t("editorHeader.saveFailed") }}</span>
             </span>
-            <span v-else class="save-status-text saved">
+            <span v-else-if="headerTier < 6" class="save-status-text saved">
               <Check class="saved-icon" :size="13" :stroke-width="2.5" />
-              {{ t("editorHeader.saved") }}
+              <span v-if="headerTier < 4">{{ t("editorHeader.saved") }}</span>
             </span>
           </div>
         </div>
@@ -42,109 +46,163 @@
         <!-- 3. The report's projects (their details and tables are in Report Data) -->
         <HeaderProjectPicker
           :projects="reportProjects"
+          :compact="headerTier >= 4"
           @update-projects="setReportProjects"
         />
 
-        <span class="toolbar-divider"></span>
+        <span v-if="headerTier < 4" class="toolbar-divider"></span>
 
         <!-- 4. File Manager -->
-        <FileManager @create-new-file="createNewFile" @load-file="loadFile" />
-
-        <span class="toolbar-divider"></span>
-
-        <!-- 5. Undo / Redo -->
-        <div class="header-undo-redo">
-          <n-button
-            @click="undo"
-            type="default"
-            quaternary
-            circle
-            :title="t('actions.undo') + ' (Ctrl+Z)'"
-          >
-            <Undo2 :size="16" :stroke-width="2" aria-hidden="true" />
-          </n-button>
-          <n-button
-            @click="redo"
-            type="default"
-            quaternary
-            circle
-            :title="t('actions.redo') + ' (Ctrl+Y)'"
-          >
-            <Redo2 :size="16" :stroke-width="2" aria-hidden="true" />
-          </n-button>
-        </div>
-
-        <span class="toolbar-divider"></span>
-
-        <!-- 6. Delete, Copy, Paste, Add Page -->
-        <div class="header-toolbar-ops">
-           <button
-            class="toolbar-btn add-page-btn"
-            @click="addNewPage()"
-            :title="t('editorHeader.addNewPage')"
-          >
-            <FilePlus :size="16" :stroke-width="2" aria-hidden="true" />
-            <span>{{ t("editorHeader.pageButton") }}</span>
-          </button>
-          <button class="toolbar-btn" @click="deleteElement" :title="t('actions.delete')">
-            <Trash2 :size="16" :stroke-width="2" aria-hidden="true" />
-          </button>
-          <button class="toolbar-btn" @click="copyElement" :title="t('actions.copy')">
-            <Copy :size="16" :stroke-width="2" aria-hidden="true" />
-          </button>
-          <button class="toolbar-btn" @click="pasteElement()" :title="t('actions.paste')">
-            <ClipboardPaste :size="16" :stroke-width="2" aria-hidden="true" />
-          </button>
-        </div>
-
-        <span class="toolbar-divider"></span>
-
-        <!-- 7. Zoom controls -->
-        <ZoomControls
-          :zoom-level="zoomLevel"
-          :paper-width="reportProperties.pageWidth"
-          @update:zoomLevel="setZoomLevel($event)"
+        <FileManager
+          :compact="headerTier >= 5"
+          @create-new-file="createNewFile"
+          @load-file="loadFile"
         />
 
-        <span class="toolbar-divider"></span>
+        <!-- 5. Undo / Redo -->
+        <template v-if="headerTier < 5">
+          <span class="toolbar-divider"></span>
+          <div class="header-undo-redo">
+            <n-button
+              @click="undo"
+              type="default"
+              quaternary
+              circle
+              :title="t('actions.undo') + ' (Ctrl+Z)'"
+            >
+              <Undo2 :size="16" :stroke-width="2" aria-hidden="true" />
+            </n-button>
+            <n-button
+              @click="redo"
+              type="default"
+              quaternary
+              circle
+              :title="t('actions.redo') + ' (Ctrl+Y)'"
+            >
+              <Redo2 :size="16" :stroke-width="2" aria-hidden="true" />
+            </n-button>
+          </div>
+        </template>
 
-        <!-- 8. Show Bottom Panel -->
-        <n-button @click="toggleBottomPanel" type="default" size="small" class="bottom-panel-btn">
-          {{
-            showBottomPanel
-              ? t("actions.hideBottomPanel")
-              : t("actions.showBottomPanel")
-          }}
-        </n-button>
+        <!-- 6. Delete, Copy, Paste, Add Page -->
+        <template v-if="headerTier < 4">
+          <span class="toolbar-divider"></span>
+          <div class="header-toolbar-ops">
+            <button
+              class="toolbar-btn add-page-btn"
+              @click="addNewPage()"
+              :title="t('editorHeader.addNewPage')"
+            >
+              <FilePlus :size="16" :stroke-width="2" aria-hidden="true" />
+              <span v-if="headerTier < 2">{{ t("editorHeader.pageButton") }}</span>
+            </button>
+            <button class="toolbar-btn" @click="deleteElement" :title="t('actions.delete')">
+              <Trash2 :size="16" :stroke-width="2" aria-hidden="true" />
+            </button>
+            <button class="toolbar-btn" @click="copyElement" :title="t('actions.copy')">
+              <Copy :size="16" :stroke-width="2" aria-hidden="true" />
+            </button>
+            <button class="toolbar-btn" @click="pasteElement()" :title="t('actions.paste')">
+              <ClipboardPaste :size="16" :stroke-width="2" aria-hidden="true" />
+            </button>
+          </div>
+        </template>
 
-        <span class="toolbar-divider"></span>
+        <template v-if="headerTier < 3">
+          <span class="toolbar-divider"></span>
 
-        <!-- 9. Snap & grid (dropdown) -->
-        <SnapMenu />
+          <!-- 7. Zoom controls -->
+          <ZoomControls
+            :zoom-level="zoomLevel"
+            :paper-width="reportProperties.pageWidth"
+            @update:zoomLevel="setZoomLevel($event)"
+          />
+
+          <span class="toolbar-divider"></span>
+
+          <!-- 8. Show Bottom Panel -->
+          <n-button
+            @click="toggleBottomPanel"
+            type="default"
+            size="small"
+            class="bottom-panel-btn"
+            :title="showBottomPanel ? t('actions.hideBottomPanel') : t('actions.showBottomPanel')"
+          >
+            <component
+              :is="showBottomPanel ? PanelBottomClose : PanelBottom"
+              v-if="headerTier >= 2"
+              :size="16"
+              :stroke-width="2"
+              aria-hidden="true"
+            />
+            <template v-else>
+              {{
+                showBottomPanel
+                  ? t("actions.hideBottomPanel")
+                  : t("actions.showBottomPanel")
+              }}
+            </template>
+          </n-button>
+
+          <span class="toolbar-divider"></span>
+
+          <!-- 9. Snap & grid (dropdown) -->
+          <SnapMenu :compact="headerTier >= 2" />
+        </template>
       </div>
 
       <div class="header-actions">
-        <!-- 10. Download JRXML / Preview PDF -->
+        <!-- 10. Whatever no longer fits in the header -->
+        <HeaderMoreMenu
+          v-if="headerTier >= 3"
+          :sections="{
+            undoRedo: headerTier >= 5,
+            edit: headerTier >= 4,
+            zoom: true,
+            bottomPanel: true,
+            snap: true,
+            download: headerTier >= 4,
+          }"
+          :zoom-level="zoomLevel"
+          :paper-width="reportProperties.pageWidth"
+          :show-bottom-panel="showBottomPanel"
+          @undo="undo"
+          @redo="redo"
+          @add-page="addNewPage()"
+          @delete="deleteElement"
+          @copy="copyElement"
+          @paste="pasteElement()"
+          @toggle-bottom-panel="toggleBottomPanel"
+          @download="downloadJRXML"
+          @update:zoom-level="setZoomLevel($event)"
+        />
+
+        <!-- 11. Download JRXML / Preview PDF -->
         <button
+          v-if="headerTier < 4"
           type="button"
           class="header-btn header-btn-secondary"
+          :class="{ 'is-icon': headerTier >= 1 }"
           :title="t('actions.downloadJRXML')"
+          :aria-label="t('actions.downloadJRXML')"
           @click="downloadJRXML"
         >
           <Download :size="16" :stroke-width="2" aria-hidden="true" />
-          <span>{{ t("actions.downloadJRXML") }}</span>
+          <span v-if="headerTier < 1">{{ t("actions.downloadJRXML") }}</span>
         </button>
         <button
           type="button"
           class="header-btn header-btn-primary"
+          :class="{ 'is-icon': headerTier >= 5 }"
           :title="t('actions.previewPDF')"
+          :aria-label="t('actions.previewPDF')"
           @click="openPdfPreview"
         >
           <Eye :size="16" :stroke-width="2" aria-hidden="true" />
-          <span>{{ t("actions.previewPDF") }}</span>
+          <span v-if="headerTier < 5">{{ t("actions.previewPDF") }}</span>
         </button>
 
-        <!-- 11. Account menu (language, profile, sign out) -->
+        <!-- 12. Account menu (language, profile, sign out) -->
         <AccountMenu />
       </div>
     </div>
@@ -558,6 +616,7 @@ import ElementProperties from "./designer/properties/ElementProperties.vue";
 import AccountMenu from "./common/AccountMenu.vue";
 import SnapMenu from "./designer/SnapMenu.vue";
 import HeaderProjectPicker from "./designer/HeaderProjectPicker.vue";
+import HeaderMoreMenu from "./designer/HeaderMoreMenu.vue";
 import MultiSelectToolbar from "./designer/MultiSelectToolbar.vue";
 import AlignmentGuides from "./designer/AlignmentGuides.vue";
 import DragFeedbackLayer from "./designer/DragFeedbackLayer.vue";
@@ -566,10 +625,13 @@ import {
   BringToFront,
   Check,
   ClipboardPaste,
+  CircleAlert,
   Copy,
   Download,
   Eye,
   FilePlus,
+  PanelBottom,
+  PanelBottomClose,
   Redo2,
   SendToBack,
   Settings,
@@ -740,7 +802,7 @@ import {
 
 // Import the default JRXML example file
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 // Designer state lives in Pinia stores (src/stores): the report model and
 // undo/redo, what is selected, and how the designer is shown (zoom, snapping,
@@ -1159,6 +1221,48 @@ const allBandTypes = ALL_CONFIGURABLE_BANDS;
 
 
 
+
+// How much of the header fits the window: 0 = everything with labels; each
+// step turns labels into icons or moves tools into the More menu
+// (1: brand name, Download label · 2: Page / Snap / bottom panel labels ·
+// 3: zoom, bottom panel, snap → More · 4: edit tools, Download → More, save
+// status as an icon, projects as an icon · 5: undo/redo → More, File /
+// Preview as icons ·
+// 6: logo and "Saved" hidden). Works down to a 300px wide window. The widths
+// are a first guess; if the header still overflows (longer Malay labels, a
+// long project code…), the next step is taken until it fits.
+const HEADER_TIER_WIDTHS = [1500, 1320, 1140, 900, 680, 440];
+const MAX_HEADER_TIER = HEADER_TIER_WIDTHS.length;
+const headerRef = ref<HTMLElement | null>(null);
+const headerTier = ref(0);
+// The header, or one of its two groups (the left tools can slide under the
+// buttons on the right without the header itself getting wider)
+const headerOverflows = () => {
+  const header = headerRef.value;
+  if (!header) return false;
+  return [header, ...Array.from(header.children)].some(
+    (el) => el.scrollWidth > el.clientWidth + 1,
+  );
+};
+let fittingHeader = false;
+const fitHeader = async () => {
+  if (fittingHeader) return;
+  fittingHeader = true;
+  try {
+    headerTier.value = HEADER_TIER_WIDTHS.filter((width) => window.innerWidth < width).length;
+    await nextTick();
+    while (headerOverflows() && headerTier.value < MAX_HEADER_TIER) {
+      headerTier.value++;
+      await nextTick();
+    }
+  } finally {
+    fittingHeader = false;
+  }
+};
+window.addEventListener("resize", fitHeader);
+onUnmounted(() => window.removeEventListener("resize", fitHeader));
+onMounted(fitHeader);
+watch(locale, () => nextTick(fitHeader));
 
 // Projects chosen in the header (kept with the report properties,
 // so undo and saving cover them)
@@ -6987,6 +7091,97 @@ const moveElementZOrder = (direction: "front" | "back") => {
 
 .header-btn-primary:active {
   background: #1e40af;
+}
+
+.header-btn.is-icon {
+  width: 34px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* Narrow headers (headerTier): the report name takes the room that is left,
+   spacing tightens, and nothing is allowed to push the header wider */
+.designer-header .header-left,
+.designer-header .document-title-wrap {
+  min-width: 0;
+}
+
+/* The report name keeps its usual width while there is room and gives way
+   first when there isn't (down to 120px, 56px on the narrowest screens) */
+.designer-header.tier-3 .document-title-wrap,
+.designer-header.tier-4 .document-title-wrap,
+.designer-header.tier-5 .document-title-wrap,
+.designer-header.tier-6 .document-title-wrap {
+  flex: 0 1 auto;
+}
+
+.designer-header.tier-3 .document-title-input,
+.designer-header.tier-4 .document-title-input,
+.designer-header.tier-5 .document-title-input,
+.designer-header.tier-6 .document-title-input {
+  flex: 0 1 200px;
+  width: 200px;
+  min-width: 120px;
+}
+
+.designer-header.tier-6 .document-title-input {
+  min-width: 56px;
+}
+
+.designer-header.tier-3 .header-left.header-workflow,
+.designer-header.tier-4 .header-left.header-workflow,
+.designer-header.tier-5 .header-left.header-workflow,
+.designer-header.tier-6 .header-left.header-workflow {
+  flex: 1 1 auto;
+}
+
+.designer-header.tier-3 .header-actions,
+.designer-header.tier-4 .header-actions,
+.designer-header.tier-5 .header-actions,
+.designer-header.tier-6 .header-actions {
+  flex: 0 0 auto;
+}
+
+.designer-header.tier-4 .save-status-text,
+.designer-header.tier-5 .save-status-text,
+.designer-header.tier-6 .save-status-text {
+  padding: 4px;
+}
+
+.designer-header.tier-5,
+.designer-header.tier-6 {
+  padding: 0 8px;
+  gap: 6px;
+}
+
+.designer-header.tier-5 .header-left.header-workflow,
+.designer-header.tier-5 .header-actions,
+.designer-header.tier-6 .header-left.header-workflow,
+.designer-header.tier-6 .header-actions {
+  gap: 6px;
+}
+
+.designer-header.tier-5 .brand-wrap {
+  padding: 0;
+}
+
+.designer-header.tier-5 .brand-img img {
+  width: 28px;
+  height: 28px;
+}
+
+.designer-header.tier-6 .header-left.header-workflow,
+.designer-header.tier-6 .header-actions {
+  gap: 4px;
+}
+
+.designer-header.tier-6 .document-title-input {
+  padding: 4px 6px;
+  font-size: 14px;
+}
+
+.designer-header.tier-6 .auto-save-badge {
+  margin-left: 0;
 }
 
 .designer-layout {

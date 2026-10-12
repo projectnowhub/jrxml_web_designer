@@ -4,6 +4,7 @@
   <Multiselect
     :key="selectKey"
     class="hpp-select"
+    :class="{ 'is-compact': compact }"
     mode="multiple"
     :attrs="{ 'aria-label': t('reportData.projects') }"
     :model-value="projects.map((p) => p.id)"
@@ -25,7 +26,8 @@
     <template #multiplelabel>
       <div class="multiselect-multiple-label hpp-label">
         <FolderKanban class="hpp-label-icon" :size="15" aria-hidden="true" />
-        <span v-if="projects.length === 1" class="hpp-label-name">{{ shortName(projects[0]!) }}</span>
+        <span v-if="compact" class="hpp-count">{{ projects.length }}</span>
+        <span v-else-if="projects.length === 1" class="hpp-label-name">{{ shortName(projects[0]!) }}</span>
         <template v-else>
           <span class="hpp-count">{{ projects.length }}</span>
           <span class="hpp-label-name">{{ t("reportData.projectsSelected", projects.length) }}</span>
@@ -35,7 +37,7 @@
     <template #placeholder>
       <div class="multiselect-placeholder hpp-label is-empty">
         <FolderKanban class="hpp-label-icon" :size="15" aria-hidden="true" />
-        <span class="hpp-label-name">{{ t("reportData.chooseProjects") }}</span>
+        <span v-if="!compact" class="hpp-label-name">{{ t("reportData.chooseProjects") }}</span>
       </div>
     </template>
     <template #option="{ option, isSelected }">
@@ -71,7 +73,8 @@ import { Check, ChevronDown, FolderKanban, LoaderCircle } from "@lucide/vue";
 import { listProjects } from "@/services/dataSourceService";
 import type { ProjectSummary, ReportProject } from "@/types/dataSource";
 
-const props = defineProps<{ projects: ReportProject[] }>();
+// `compact`: just the icon and how many projects (narrow screens)
+const props = defineProps<{ projects: ReportProject[]; compact?: boolean }>();
 
 const emit = defineEmits<{
   // The new list of chosen projects
@@ -171,6 +174,33 @@ async function selectProjects(ids: string[]) {
   width: 320px;
   min-width: 100%;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+}
+
+/* Narrow screens: icon and count only; the list spans the screen under the header */
+.hpp-select.is-compact {
+  flex: 0 0 auto;
+  width: 50px;
+  min-width: 50px;
+}
+
+.hpp-select.is-compact .hpp-label {
+  padding-right: 0;
+  padding-left: 8px;
+}
+
+.hpp-select.is-compact :deep(.hpp-caret) {
+  display: none;
+}
+
+.hpp-select.is-compact :deep(.multiselect-dropdown) {
+  position: fixed;
+  top: 52px;
+  left: 8px;
+  right: 8px;
+  bottom: auto;
+  width: auto;
+  max-width: 360px;
+  transform: none;
 }
 
 .hpp-label {

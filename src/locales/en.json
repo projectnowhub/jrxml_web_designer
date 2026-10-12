@@ -789,7 +789,9 @@
     "savedTitle": "All changes are saved automatically",
     "addNewPage": "Add New Page",
     "bandHeight": "{bandName} Height: {height}px",
-    "pageButton": "Page"
+    "pageButton": "Page",
+    "more": "More tools",
+    "zoom": "Zoom"
   },
   "help": {
     "title": "JRXML Visual Designer User Guide",

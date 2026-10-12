@@ -1,6 +1,15 @@
 <template>
-  <div class="file-menu-container" ref="fileMenuContainer">
-    <n-button @click="toggleFileMenu" type="default">{{ t('fileManager.title') }}</n-button>
+  <div class="file-menu-container" :class="{ 'is-compact': compact }" ref="fileMenuContainer">
+    <n-button
+      v-if="compact"
+      @click="toggleFileMenu"
+      type="default"
+      :title="t('fileManager.title')"
+      :aria-label="t('fileManager.title')"
+    >
+      <FolderOpen :size="16" />
+    </n-button>
+    <n-button v-else @click="toggleFileMenu" type="default">{{ t('fileManager.title') }}</n-button>
     <div v-if="showFileMenu" class="file-menu-dropdown">
       <div class="menu-item" @click="createNewFile">
         <FilePlus class="menu-icon" :size="16" />
@@ -119,6 +128,9 @@ interface Emits {
 }
 
 const emit = defineEmits<Emits>();
+
+// `compact`: an icon button, and the menu spans the screen (narrow screens)
+defineProps<{ compact?: boolean }>();
 
 // File management related state
 const showFileMenu = ref(false);
@@ -268,6 +280,32 @@ onUnmounted(() => {
 .file-menu-container {
   position: relative;
   display: inline-block;
+}
+
+/* Narrow screens: the menu sits under the header across the screen, and the
+   file list opens below its item instead of beside it */
+.is-compact .file-menu-dropdown {
+  position: fixed;
+  top: 52px;
+  left: 8px;
+  right: 8px;
+  max-width: 360px;
+  min-width: 0;
+  max-height: calc(100vh - 64px);
+  margin-top: 0;
+  overflow-y: auto;
+}
+
+.is-compact .file-submenu-container {
+  flex-wrap: wrap;
+}
+
+.is-compact .file-submenu {
+  position: static;
+  flex-basis: 100%;
+  min-width: 0;
+  margin: 8px 0 0;
+  box-shadow: none;
 }
 
 

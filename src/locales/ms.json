@@ -789,7 +789,9 @@
     "savedTitle": "Semua perubahan disimpan secara automatik",
     "addNewPage": "Tambah Halaman Baharu",
     "bandHeight": "Ketinggian {bandName}: {height}px",
-    "pageButton": "Halaman"
+    "pageButton": "Halaman",
+    "more": "Alatan lain",
+    "zoom": "Zum"
   },
   "help": {
     "title": "Panduan Pengguna Pereka Visual JRXML",
