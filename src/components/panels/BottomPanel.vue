@@ -606,14 +606,9 @@ const toggleFullscreen = (): void => {
 
 // Listen for keyboard events
 function handleKeyDown(event: KeyboardEvent) {
-  // Listen for the ESC key to exit fullscreen or hide the bottom panel
-  if (event.key === "Escape") {
-    if (isFullscreen.value) {
-      toggleFullscreen();
-    } else if (props.visible) {
-      // When the bottom panel is visible and not fullscreen, ESC hides the bottom panel
-      emit("update:visible", false);
-    }
+  // ESC only leaves fullscreen; the panel closes only from its close button or the header toggle
+  if (event.key === "Escape" && isFullscreen.value) {
+    toggleFullscreen();
   }
 
   // Listen for Cmd+F or Ctrl+F to switch to the JRXML tab and enter fullscreen

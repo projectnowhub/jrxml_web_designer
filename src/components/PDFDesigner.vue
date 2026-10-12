@@ -2867,8 +2867,6 @@ const selectBand = (index: number) => {
   selectedElements.value = []; // Clear the multi-selection
   // Update the last-clicked band index
   lastClickedBandIndex.value = index;
-  // Automatically hide the bottom panel
-  showBottomPanel.value = false;
   // Automatically switch to the properties tab
   rightPanelTab.value = "properties";
 };
@@ -2943,9 +2941,6 @@ const selectElement = (
   }
 
   selectedBandIndex.value = null;
-
-  // Automatically hide the bottom panel
-  showBottomPanel.value = false;
 
   if (element && !element.box) {
     initBox(element);
@@ -3031,9 +3026,6 @@ const selectElementsInRect = (rect: {
       };
     }
   }
-
-  // Automatically hide the bottom panel
-  showBottomPanel.value = false;
 };
 
 // Cache the event handler functions to avoid recreating them
@@ -3186,9 +3178,6 @@ const startDragging = (
 ) => {
   event.stopPropagation();
   selectElement(bandIndex, elementIndex, false, parentFrameIndex);
-
-  // Automatically hide the bottom panel
-  showBottomPanel.value = false;
 
   const band = bands.value[bandIndex];
   let draggedElement: DesignElement | undefined;
@@ -3851,9 +3840,6 @@ const startEditing = (
   editingElement.value = { bandIndex, elementIndex, parentFrameIndex };
   // Select the element
   selectElement(bandIndex, elementIndex, false, parentFrameIndex);
-
-  // Automatically hide the bottom panel
-  showBottomPanel.value = false;
 };
 
 // Finish editing
@@ -5593,9 +5579,6 @@ watch(
 const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   event.preventDefault();
 
-  // Automatically hide the bottom panel
-  showBottomPanel.value = false;
-
   const startY = event.clientY;
   if (!bands.value || !bands.value[bandIndex]) return;
 
@@ -5796,9 +5779,6 @@ const startResizingElement = (
   parentFrameIndex?: number,
 ): void => {
   event.preventDefault();
-
-  // Automatically hide the bottom panel
-  showBottomPanel.value = false;
 
   const band = bands.value[bandIndex];
   let element;

@@ -548,7 +548,7 @@
   },
   "pdfPreview": {
     "title": "PDF Preview",
-    "generateBtn": "Generate PDF",
+    "generateBtn": "Regenerate PDF",
     "editor": {
       "showPanel": "Show tables",
       "hidePanel": "Hide tables"
