@@ -857,8 +857,8 @@ select:focus {
   align-items: flex-end;
   justify-content: center;
   width: 100%;
-  height: 58px;
-  padding: 0 3px 6px;
+  min-height: 58px;
+  padding: 28px 3px 5px;
   box-sizing: border-box;
   border: 1px solid var(--prop-border-color);
   border-radius: 4px;
@@ -869,14 +869,16 @@ select:focus {
     #fff;
 }
 
+/* The whole text always shows: long labels ("Page III of IV") wrap onto a
+   second line between words, never cut off */
 .tile-label {
-  overflow: hidden;
   max-width: 100%;
   font-size: 10px;
   font-weight: 700;
+  line-height: 1.2;
   color: var(--prop-primary-color, #1890ff);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-align: center;
+  overflow-wrap: break-word;
 }
 
 .page-tile.is-off .tile-sheet {
