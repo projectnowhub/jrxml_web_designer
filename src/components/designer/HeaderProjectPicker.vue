@@ -28,10 +28,7 @@
         <FolderKanban class="hpp-label-icon" :size="15" aria-hidden="true" />
         <span v-if="compact" class="hpp-count">{{ projects.length }}</span>
         <span v-else-if="projects.length === 1" class="hpp-label-name">{{ shortName(projects[0]!) }}</span>
-        <template v-else>
-          <span class="hpp-count">{{ projects.length }}</span>
-          <span class="hpp-label-name">{{ t("reportData.projectsSelected", projects.length) }}</span>
-        </template>
+        <span v-else class="hpp-label-name">{{ t("reportData.projectsSelected", projects.length) }}</span>
       </div>
     </template>
     <template #placeholder>
