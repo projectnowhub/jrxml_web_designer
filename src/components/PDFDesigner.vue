@@ -5,7 +5,13 @@
     <div ref="headerRef" class="designer-header" :class="`tier-${headerTier}`">
       <div class="header-left header-workflow">
         <!-- 1. Logo & App Name (Option C) -->
-        <div v-if="headerTier < 6" class="brand-wrap">
+        <RouterLink
+          v-if="headerTier < 6"
+          :to="{ name: 'home' }"
+          class="brand-wrap"
+          :title="t('header.reportsHome')"
+          :aria-label="t('header.reportsHome')"
+        >
           <div class="brand-img">
             <img src="/assets/cdp-logo.png" alt="ProjectNow CDP" />
           </div>
@@ -13,7 +19,7 @@
             <span class="brand-text">ProjectNow CDP</span>
             <span class="brand-badge">REPORT STUDIO</span>
           </div>
-        </div>
+        </RouterLink>
 
         <!-- 2. File Name (Inline Editable Google Docs Style) & Auto-save Status -->
         <div class="document-title-wrap">
@@ -252,6 +258,7 @@
           @insert-page-number="addPageNumber"
           @insert-chart="addChart"
           @insert-barcode="addBarcode"
+          @insert-table="addTable"
           @add-field="handleAddField"
           @edit-field="handleEditField"
           @delete-field="handleDeleteField"
@@ -411,6 +418,7 @@
             @rename-table-style="renameTableStyle"
             @delete-table-style="deleteTableStyle"
             @configure-table="openTableConfigForSelection"
+            @table-content="setTableContent"
             @configure-chart="openChartConfigForSelection"
           />
         </div>
@@ -570,6 +578,15 @@
             <SendToBack class="menu-icon" :size="16" />
             {{ t("editor.contextMenu.sendToBack") }}
           </div>
+          <div class="context-menu-divider"></div>
+          <div
+            class="context-menu-item"
+            :title="t('resetStyle.hint')"
+            @click="handleContextMenuAction('resetStyle')"
+          >
+            <RotateCcw class="menu-icon" :size="16" />
+            {{ t("resetStyle.label") }}
+          </div>
           <!-- Item inside a box or frame: one of the two, never both -->
           <template v-if="selectedBoxItem">
             <div class="context-menu-divider"></div>
@@ -646,6 +663,7 @@ import {
   PanelBottomClose,
   Redo2,
   SendToBack,
+  RotateCcw,
   Settings,
   SlidersHorizontal,
   Sparkles,
@@ -658,6 +676,7 @@ import type {
   Band,
   BandType,
   ChartElement,
+  CustomTableElement,
   DesignElement,
   DraggingInfo,
   FrameElement,
@@ -670,6 +689,7 @@ import type {
   ChartBinding,
   ChartType,
   DataColumn,
+  DataRow,
   ProjectField,
   ReportProject,
   SavedTableStyle,
@@ -789,6 +809,23 @@ import {
   PAGE_BORDER_TYPE,
   type FrameTemplateContext,
 } from "../utils/framePresets";
+import { emptyDataTable, emptyTypedTable, typedTableFromData } from "../utils/table/tableConversion";
+import { resetElementStyle } from "../utils/resetStyle";
+import { fetchTableRows } from "../composables/useTableRows";
+import {
+  buildCustomTable,
+  MIN_COLUMN_WIDTH,
+  MIN_ROW_HEIGHT,
+  scaleSizes,
+  syncTableSize,
+} from "../utils/customTable";
+import {
+  buildReportPart,
+  isFullWidthPart,
+  isReportPartType,
+  reportPartBand,
+  type ReportPartType,
+} from "../utils/reportParts";
 import { useBoundaryDetection } from "@/composables/useBoundaryDetection";
 import { useAlignmentSystem } from "@/composables/useAlignmentSystem";
 import { useDragFeedback } from "@/composables/useDragFeedback";
@@ -1796,7 +1833,7 @@ const isOverBox = (
   x: number,
   y: number,
 ) => {
-  if (element.type === "frame") return false;
+  if (element.type === "frame" || element.type === "customTable") return false;
   const cx = x + element.width / 2;
   const cy = y + element.height / 2;
   return (bands.value[bandIndex]?.elements ?? []).some(
@@ -1894,6 +1931,8 @@ const getFrameTemplateContext = (): FrameTemplateContext => ({
 const createLibraryElement = (type: string): DesignElement =>
   isFrameTemplateType(type)
     ? buildFrameTemplate(type, getFrameTemplateContext())
+    : isReportPartType(type)
+    ? buildReportPart(type, getFrameTemplateContext())
     : type === PAGE_NUMBER_TYPE
     ? buildPaginationElement(undefined, {
         fontFamily: reportProperties.value?.defaultFont?.name,
@@ -1901,10 +1940,24 @@ const createLibraryElement = (type: string): DesignElement =>
       })
     : type === "chart"
     ? buildChartElement()
+    : type === "customTable"
+    ? buildNewCustomTable()
     : ({
         ...createElement(type),
         ...getDefaultElementProperties(type),
       } as DesignElement);
+
+// A new custom table: a dark header row and two empty rows, across most of the page
+const buildNewCustomTable = (): DesignElement => {
+  const width = Math.min(480, Math.round(getFrameTemplateContext().availableWidth));
+  const headers = [1, 2, 3].map((n) => t("customTable.placeholderHeader", { n }));
+  const element = {
+    ...createElement("customTable"),
+    table: buildCustomTable(width, headers),
+  } as CustomTableElement;
+  syncTableSize(element);
+  return element;
+};
 
 // Tell the user a page border already exists and select it for editing
 const rejectSecondPageBorder = (): boolean => {
@@ -1994,6 +2047,47 @@ const addPageNumber = (position: PaginationPosition) => {
   updateJRXML();
 };
 
+// Report part tile clicked: the header banner goes to the Page Header, the footer
+// to the Page Footer, everything else to the last clicked band. Full-width parts
+// start at the left margin. Dragging the tile drops it in any band.
+const addReportPart = (type: ReportPartType) => {
+  const wantedBand = reportPartBand(type);
+  const bandIndex = wantedBand
+    ? bands.value.findIndex((b) => b.type === wantedBand)
+    : insertBandIndex();
+  const band = bands.value[bandIndex];
+  if (!band) {
+    if (wantedBand) {
+      notification.warning(t("reportParts.noBand", { band: getBandDisplayName(wantedBand) }));
+    }
+    return;
+  }
+
+  const element: DesignElement = {
+    ...buildReportPart(type, getFrameTemplateContext()),
+    uuid: crypto.randomUUID(),
+  };
+  element.x = isFullWidthPart(type) ? 0 : 50;
+  element.y = wantedBand ? 0 : 20;
+
+  // Fits the band, growing it when it is too short; too tall is refused
+  const plan = planDropInBand(bandIndex, element);
+  if (plan.kind === "tooTall") {
+    warnTooTallForBand(bandIndex, element.height, plan.maxHeight);
+    return;
+  }
+
+  saveStateToHistory();
+  applyDropInBand(bandIndex, element, plan);
+  if (!band.elements) band.elements = [];
+  band.elements.push(element);
+
+  const elementIndex = band.elements.length - 1;
+  selectElement(bandIndex, elementIndex);
+  handleElementCreated(element, bandIndex, elementIndex);
+  updateJRXML();
+};
+
 // Chart tile, type picked: goes in the last clicked band, centred across the
 // page. Dragging the tile drops a bar chart wherever it is released.
 const addChart = (chartType: ChartType) => {
@@ -2022,6 +2116,45 @@ const addChart = (chartType: ChartType) => {
   const elementIndex = band.elements.length - 1;
   selectElement(bandIndex, elementIndex);
   handleElementCreated(element, bandIndex, elementIndex);
+  updateJRXML();
+};
+
+// Table tile, kind picked. "Type my own": a typed table in the last clicked band,
+// centred, open for typing. "Use project data": the setup popup, which makes the
+// table in Detail on Apply (nothing is added when it is closed). Dragging the
+// tile drops an empty project-data table.
+const addTable = (kind: "typed" | "data") => {
+  if (kind === "data") {
+    const detailIndex = bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+    if (detailIndex === -1) return;
+    openTableConfig(null, { newAt: { bandIndex: detailIndex, y: 20, pageIndex: 0 } });
+    return;
+  }
+  const bandIndex = insertBandIndex();
+  const band = bands.value[bandIndex];
+  if (!band) return;
+
+  const element: DesignElement = { ...buildNewCustomTable(), uuid: crypto.randomUUID() };
+  const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+  element.x = Math.max(0, Math.round((availableWidth - element.width) / 2));
+  element.y = 20;
+
+  // Fits the band, growing it when it is too short; too tall is refused
+  const plan = planDropInBand(bandIndex, element);
+  if (plan.kind === "tooTall") {
+    warnTooTallForBand(bandIndex, element.height, plan.maxHeight);
+    return;
+  }
+
+  saveStateToHistory();
+  applyDropInBand(bandIndex, element, plan);
+  if (!band.elements) band.elements = [];
+  band.elements.push(element);
+
+  const elementIndex = band.elements.length - 1;
+  selectElement(bandIndex, elementIndex);
+  handleElementCreated(element, bandIndex, elementIndex);
+  editingElement.value = { bandIndex, elementIndex };
   updateJRXML();
 };
 
@@ -2081,6 +2214,10 @@ const handleElementDoubleClick = (element: any) => {
   }
   // The library asks for a position or a chart type first
   if (element.type === PAGE_NUMBER_TYPE || element.type === "chart") return;
+  if (isReportPartType(element.type)) {
+    addReportPart(element.type);
+    return;
+  }
 
   // No band clicked yet (or it no longer exists): Detail
   lastClickedBandIndex.value = insertBandIndex();
@@ -2249,7 +2386,8 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
     const baseElement = createLibraryElement(elementData.type);
     const droppedSize =
       isFrameTemplateType(elementData.type) ||
-      [PAGE_NUMBER_TYPE, "table", "chart"].includes(elementData.type)
+      isReportPartType(elementData.type) ||
+      [PAGE_NUMBER_TYPE, "table", "chart", "customTable"].includes(elementData.type)
       ? { width: baseElement.width, height: baseElement.height }
       : getDefaultElementSize(elementData.type);
     let newElement: DesignElement = {
@@ -2326,7 +2464,7 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
 
       // Iterate over the Frames in the Band to check whether the new element lands on one.
       // Frames themselves are never nested: selection only supports one frame level.
-      const canNest = newElement.type !== "frame" && newElement.type !== "table";
+      const canNest = !["frame", "table", "customTable"].includes(newElement.type);
       for (let i = targetBand.elements.length - 1; canNest && i >= 0; i--) {
         const el = targetBand.elements[i];
         if (!el) continue;
@@ -2589,6 +2727,82 @@ const tableAt = (loc: TableLocation | null): TableElement | null => {
       ? (band?.elements?.[loc.parentFrameIndex] as FrameElement | undefined)?.elements?.[loc.elementIndex]
       : band?.elements?.[loc.elementIndex];
   return el?.type === "table" ? (el as TableElement) : null;
+};
+
+// ---- One Table, two kinds of content: "From project data" / "Typed by me" ----
+
+// A table in a section (tables never sit inside a box)
+const topLevelElementAt = (loc: TableLocation) =>
+  loc.parentFrameIndex === undefined ? bands.value[loc.bandIndex]?.elements?.[loc.elementIndex] : undefined;
+
+// Put the converted table in place of the old one (the caller recorded the undo
+// step) and select it; the section grows when the new table is taller
+const replaceTableAt = (loc: TableLocation, element: DesignElement) => {
+  const band = bands.value[loc.bandIndex];
+  if (!band?.elements) return;
+  band.elements[loc.elementIndex] = element;
+  const bottom = Math.ceil(element.y + element.height);
+  if (bottom > band.height) band.height = bottom;
+  selectElement(loc.bandIndex, loc.elementIndex);
+};
+
+// "Typed by me": an empty table becomes an empty typed table; a table with data
+// keeps what it shows now (headings, rows that fit on the page, totals, colours)
+const convertTableToTyped = async (loc: TableLocation) => {
+  const source = topLevelElementAt(loc);
+  if (source?.type !== "table") return;
+  const table = source as TableElement;
+  let converted: CustomTableElement;
+  if (!table.binding) {
+    converted = emptyTypedTable(table, [1, 2, 3].map((n) => t("customTable.placeholderHeader", { n })));
+  } else {
+    let rows: DataRow[];
+    try {
+      rows = (await fetchTableRows(table.binding, table.binding.rowLimit)).rows;
+    } catch {
+      notification.error(t("customTable.convertFailed"));
+      return;
+    }
+    // The table may have changed while its rows were loading
+    if (topLevelElementAt(loc) !== source) return;
+    const result = typedTableFromData(table, rows, {
+      maxHeight: getBandMaxHeight(loc.bandIndex) - table.y,
+      totalLabel: t("dataTable.totals.label"),
+      locale: locale.value,
+    });
+    converted = result.element;
+    if (result.leftOut > 0) notification.warning(t("customTable.rowsLeftOut", result.leftOut));
+  }
+  saveStateToHistory();
+  replaceTableAt(loc, converted);
+  updateJRXML();
+};
+
+// "From project data": the typed cells are replaced (after asking), then the
+// Configure popup picks the data. Data tables live in the Detail section only.
+const convertTableToData = async (loc: TableLocation) => {
+  const source = topLevelElementAt(loc);
+  if (source?.type !== "customTable") return;
+  if (bands.value[loc.bandIndex]?.type !== BAND_TYPE_CONSTANTS.DETAIL) {
+    notification.warning(t("dataTable.onlyInDetail"));
+    return;
+  }
+  const ok = await askConfirm(t("customTable.toDataTitle"), t("customTable.toDataMessage"));
+  if (!ok || topLevelElementAt(loc) !== source) return;
+  saveStateToHistory();
+  editingElement.value = null;
+  replaceTableAt(loc, emptyDataTable(source as CustomTableElement));
+  updateJRXML();
+  openTableConfig(loc);
+};
+
+// The switch in the table's properties
+const setTableContent = (kind: "data" | "typed") => {
+  if (!selectedElement.value) return;
+  const { bandIndex, elementIndex, parentFrameIndex } = selectedElement.value;
+  const loc = { bandIndex, elementIndex, parentFrameIndex };
+  if (kind === "typed") convertTableToTyped(loc);
+  else convertTableToData(loc);
 };
 
 // The Configure popup: for an existing table, or for a new one created on Apply
@@ -3571,7 +3785,7 @@ const startDragging = (
             // Find target frame within target band (if dropped inside a frame).
             // Frames themselves are never nested: selection only supports one frame level.
             let targetFrameIndex = -1;
-            if (currentElement.type !== "frame" && targetBand && targetBand.elements) {
+            if (!["frame", "customTable"].includes(currentElement.type) && targetBand && targetBand.elements) {
               for (let i = targetBand.elements.length - 1; i >= 0; i--) {
                 if (
                   targetBandIndex === draggingInfo.value.bandIndex &&
@@ -5893,6 +6107,14 @@ const startResizingElement = (
           )
         : null;
     const frameStartSize = { width: element.width, height: element.height };
+    // A custom table's columns and rows keep their shares while it is resized
+    const customTableStart =
+      element.type === "customTable"
+        ? {
+            columns: [...(element as CustomTableElement).table.columns],
+            rows: (element as CustomTableElement).table.rows.map((r) => r.height),
+          }
+        : null;
 
     // What the moving edges can snap to; the other elements stay put
     const snapContext = buildSnapContext(
@@ -6206,6 +6428,15 @@ const startResizingElement = (
         element.x = dir.includes("w") ? startElementX + startWidth - width : tempX;
         element.y = dir.includes("n") ? startElementY + startHeight - height : tempY;
         element.height = height;
+      } else if (customTableStart && element.type === "customTable") {
+        const table = (element as CustomTableElement).table;
+        table.columns = scaleSizes(customTableStart.columns, tempWidth, MIN_COLUMN_WIDTH);
+        scaleSizes(customTableStart.rows, tempHeight, MIN_ROW_HEIGHT).forEach((h, i) => {
+          table.rows[i]!.height = h;
+        });
+        syncTableSize(element as CustomTableElement);
+        element.x = dir.includes("w") ? startElementX + startWidth - element.width : tempX;
+        element.y = dir.includes("n") ? startElementY + startHeight - element.height : tempY;
       } else {
         element.width = tempWidth;
         element.x = tempX;
@@ -6473,20 +6704,38 @@ const handleVariableSave = (variable: ReportVariable): void => {
 // Every table carries its own look; a saved style is a named look other
 // tables can use. Each action below is one undo step.
 
-const copyLook = (look: TableLook): TableLook => ({ ...look });
+const copyLook = (look: TableLook): TableLook => ({ ...look, rowColors: [...look.rowColors] });
+
+// What carries a table's style: a data table's binding, a typed table's setup
+type StyleHolder = { theme: string; look?: TableLook; customized?: boolean };
+
+// Every table's style holder (data tables and typed tables)
+const allStyleHolders = (): StyleHolder[] => [
+  ...collectBoundTables(bands.value).map((t) => t.binding),
+  ...bands.value.flatMap((b) =>
+    (b.elements ?? []).filter((e): e is CustomTableElement => e.type === "customTable").map((e) => e.table),
+  ),
+];
 
 // Tables currently using a saved style unchanged
-const tablesUsingStyle = (id: string) =>
-  collectBoundTables(bands.value).filter((t) => t.binding.theme === id && !t.binding.customized);
+const tablesUsingStyle = (id: string) => allStyleHolders().filter((h) => h.theme === id && !h.customized);
 
 const selectedTable = () => {
   const sel = selectedElement.value;
   return sel ? tableAt({ bandIndex: sel.bandIndex, elementIndex: sel.elementIndex, parentFrameIndex: sel.parentFrameIndex }) : null;
 };
 
+// The selected table's style holder
+const selectedStyleHolder = (): StyleHolder | undefined => {
+  const sel = selectedElement.value;
+  const el = sel && sel.parentFrameIndex === undefined ? bands.value[sel.bandIndex]?.elements?.[sel.elementIndex] : undefined;
+  if (el?.type === "customTable") return (el as CustomTableElement).table;
+  return selectedTable()?.binding;
+};
+
 // The selected table's look becomes a new saved style, used by that table
 const saveTableStyle = (name: string): void => {
-  const binding = selectedTable()?.binding;
+  const binding = selectedStyleHolder();
   if (!binding) return;
   saveStateToHistory();
   const style: SavedTableStyle = {
@@ -6504,13 +6753,13 @@ const saveTableStyle = (name: string): void => {
 
 // A saved style takes the selected table's look; every table using it follows
 const updateTableStyle = (id: string): void => {
-  const binding = selectedTable()?.binding;
+  const binding = selectedStyleHolder();
   const style = tableStyles.value.find((s) => s.id === id);
   if (!binding || !style) return;
   saveStateToHistory();
   const look = copyLook(resolveLook(binding));
   tableStyles.value = tableStyles.value.map((s) => (s.id === id ? { ...s, look } : s));
-  for (const table of tablesUsingStyle(id)) table.binding.look = copyLook(look);
+  for (const holder of tablesUsingStyle(id)) holder.look = copyLook(look);
   binding.theme = id;
   binding.look = copyLook(look);
   binding.customized = undefined;
@@ -6527,7 +6776,7 @@ const renameTableStyle = (id: string, name: string): void => {
 // Tables using a deleted style keep their look, as changes of their own
 const deleteTableStyle = (id: string): void => {
   saveStateToHistory();
-  for (const table of tablesUsingStyle(id)) table.binding.customized = true;
+  for (const holder of tablesUsingStyle(id)) holder.customized = true;
   tableStyles.value = tableStyles.value.filter((s) => s.id !== id);
   updateJRXML();
 };
@@ -6686,7 +6935,33 @@ const handleContextMenuAction = (action: string) => {
     case "addToBox":
       addElementToBox();
       break;
+    case "resetStyle":
+      resetSelectedStyles();
+      break;
   }
+};
+
+// "Reset style" on the selected element(s): one undo step for all of them
+const resetSelectedStyles = () => {
+  const selection = selectedElements.value.length ? selectedElements.value : selectedElement.value ? [selectedElement.value] : [];
+  const targets = selection
+    .map((sel) => {
+      const band = bands.value[sel.bandIndex];
+      const element =
+        sel.parentFrameIndex !== undefined
+          ? (band?.elements?.[sel.parentFrameIndex] as FrameElement | undefined)?.elements?.[sel.elementIndex]
+          : band?.elements?.[sel.elementIndex];
+      const isPageBorder =
+        element?.type === "frame" && sel.parentFrameIndex === undefined && band?.type === BAND_TYPE_CONSTANTS.BACKGROUND;
+      return element ? { element, isPageBorder } : null;
+    })
+    .filter((x): x is { element: DesignElement; isPageBorder: boolean } => x !== null);
+  if (!targets.length) return;
+  saveStateToHistory();
+  for (const { element, isPageBorder } of targets) {
+    resetElementStyle(element, { fontSize: reportProperties.value?.defaultFont?.size, isPageBorder });
+  }
+  updateJRXML();
 };
 
 // The selected item when it sits inside a box or frame, with whether it is one
@@ -6765,6 +7040,19 @@ const moveElementZOrder = (direction: "front" | "back") => {
   gap: 8px;
   padding: 3px 6px;
   flex-shrink: 0;
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.brand-wrap:hover {
+  background-color: rgba(15, 23, 42, 0.06);
+}
+
+.brand-wrap:focus-visible {
+  outline: 2px solid #1890ff;
+  outline-offset: 1px;
 }
 
 .brand-img img {

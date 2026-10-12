@@ -148,9 +148,38 @@
         </button>
       </div>
 
+      <!-- Style Settings: take every style off this element (content, place and size stay) -->
+      <div v-if="activeTab === 'style'" class="reset-style-row">
+        <button type="button" class="chip-btn" :title="t('resetStyle.hint')" @click="resetStyle">
+          <RotateCcw :size="13" aria-hidden="true" />
+          {{ t("resetStyle.label") }}
+        </button>
+      </div>
+
       <Transition name="prop-tab-fade" mode="out-in">
         <!-- Basic properties tab -->
         <div v-if="activeTab === 'basic'" key="basic" class="prop-tab-pane" role="tabpanel">
+          <!-- Table: where its content comes from (one Table element, two kinds) -->
+          <div v-if="isTableElement" class="box-section compact">
+            <h5>{{ t("customTable.content") }}</h5>
+            <div class="seg" role="radiogroup" :aria-label="t('customTable.content')">
+              <button
+                v-for="kind in TABLE_CONTENT_KINDS"
+                :key="kind.value"
+                type="button"
+                role="radio"
+                class="seg-btn"
+                :class="{ active: tableContentKind === kind.value }"
+                :aria-checked="tableContentKind === kind.value"
+                @click="tableContentKind !== kind.value && emit('table-content', kind.value)"
+              >
+                <component :is="kind.icon" :size="14" aria-hidden="true" />
+                <span>{{ t(kind.labelKey) }}</span>
+              </button>
+            </div>
+            <small class="card-hint">{{ t(tableContentKind === "typed" ? "customTable.typedHint" : "customTable.fromDataHint") }}</small>
+          </div>
+
           <div class="box-section compact">
             <h5>{{ t("properties.positionSize") }}</h5>
             <div class="geometry-grid">
@@ -167,6 +196,20 @@
               </label>
             </div>
           </div>
+
+          <!-- Custom table: grid size and the look of the chosen cells -->
+          <CustomTableProperties
+            v-if="currentElement.type === 'customTable'"
+            part="basic"
+            :element="currentElement as CustomTableElement"
+          />
+          <!-- Its table style: the same styles as a data table -->
+          <TableDataPanel
+            v-if="currentElement.type === 'customTable'"
+            part="basic"
+            v-bind="tablePanelProps"
+            v-on="tablePanelEvents"
+          />
 
           <!-- Table: data, style, row sizes -->
           <TableDataPanel
@@ -302,6 +345,26 @@
             </div>
           </template>
 
+          <!-- Circle: traffic-light colours for status columns (Low / Moderate / High risk) -->
+          <div v-if="currentElement.type === 'ellipse'" class="box-section compact">
+            <h5>{{ t("reportParts.statusColor") }}</h5>
+            <div class="seg" role="radiogroup" :aria-label="t('reportParts.statusColor')">
+              <button
+                v-for="status in STATUS_COLORS"
+                :key="status.id"
+                type="button"
+                role="radio"
+                class="seg-btn"
+                :class="{ active: isStatusColor(status.color) }"
+                :aria-checked="isStatusColor(status.color)"
+                @click="setStatusColor(status.color)"
+              >
+                <span class="status-swatch" :style="{ background: status.color }" aria-hidden="true" />
+                <span>{{ t(`reportParts.placeholder.${status.id}Risk`) }}</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Line: which way it runs (its look is in Style Settings) -->
           <template v-if="currentElement && currentElement.type === 'line'">
             <div class="box-section compact">
@@ -396,6 +459,17 @@
           </template>
         </div>
 
+
+        <!-- Custom table: lines, text size, space in the cells -->
+        <div
+          v-else-if="activeTab === 'style' && currentElement.type === 'customTable'"
+          key="custom-table-style"
+          class="prop-tab-pane"
+          role="tabpanel"
+        >
+          <TableDataPanel part="style" v-bind="tablePanelProps" v-on="tablePanelEvents" />
+          <CustomTableProperties part="style" :element="currentElement as CustomTableElement" />
+        </div>
 
         <!-- Table: Style Settings is where its look is changed -->
         <div
@@ -819,7 +893,9 @@ import {
   AlignVerticalJustifyEnd,
   AlignVerticalJustifyStart,
   Ban,
+  Database,
   FileText,
+  PencilLine,
   Minus,
   Plus,
   RotateCcw,
@@ -839,7 +915,7 @@ import { computed, ref, onMounted, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
 import notification from "@/utils/notification";
-import type { Band, BarcodeElement, ChartElement, SelectedElementInfo } from "../../../types";
+import type { Band, BarcodeElement, ChartElement, CustomTableElement, SelectedElementInfo } from "../../../types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
@@ -869,6 +945,8 @@ import {
 import ColorPickerWithOpacity from "./ColorPickerWithOpacity.vue";
 import PaginationProperties from "./PaginationProperties.vue";
 import ChartProperties from "./ChartProperties.vue";
+import CustomTableProperties from "./CustomTableProperties.vue";
+import { resetElementStyle } from "../../../utils/resetStyle";
 import BarcodeProperties from "./BarcodeProperties.vue";
 import { isPagination } from "../../../utils/paginationPresets";
 import FrameProperties from "./FrameProperties.vue";
@@ -879,6 +957,7 @@ import {
   isBoxPart,
   isUniformBorder,
 } from "../../../utils/framePresets";
+import { STATUS_COLORS } from "../../../utils/reportParts";
 import TableDataPanel from "./TableDataPanel.vue";
 import { useLivePreview } from "@/composables/useLivePreview";
 import SwitchControl from "./common/SwitchControl.vue";
@@ -900,6 +979,7 @@ interface Emits {
   (e: "delete-table-style", id: string): void;
   // Open the Configure popup for the selected table
   (e: "configure-table"): void;
+  (e: "table-content", kind: "data" | "typed"): void;
   (e: "configure-chart"): void;
 }
 
@@ -1064,7 +1144,7 @@ const elementType = computed(() => {
 // Style property visibility computed properties
 const showTextColor = computed(() => {
   if (!currentElement.value) return false;
-  return !["image", "line", "rectangle", "ellipse", "frame", "barcode", "chart"].includes(currentElement.value.type);
+  return !["image", "line", "rectangle", "ellipse", "frame", "barcode", "chart", "customTable"].includes(currentElement.value.type);
 });
 
 // Frame in the Background band: a border drawn on every page, with no fill or padding
@@ -1078,17 +1158,17 @@ const isPageBorder = computed(
 
 const showBackgroundColor = computed(() => {
   if (!currentElement.value || isPageBorder.value) return false;
-  return !["line", "barcode"].includes(currentElement.value.type);
+  return !["line", "barcode", "customTable"].includes(currentElement.value.type);
 });
 
 const showFontName = computed(() => {
   if (!currentElement.value) return false;
-  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "table", "chart"].includes(currentElement.value.type);
+  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "table", "chart", "customTable"].includes(currentElement.value.type);
 });
 
 const showTextAlignmentAndStyle = computed(() => {
   if (!currentElement.value) return false;
-  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "chart", "table"].includes(currentElement.value.type);
+  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "chart", "table", "customTable"].includes(currentElement.value.type);
 });
 
 // Style management modal control
@@ -1533,6 +1613,26 @@ const TAB_LABELS: Record<string, string> = {
 };
 const availableTabs = computed(() => ["basic", "style"]);
 
+// "Reset style": one undo step
+function resetStyle() {
+  const element = currentElement.value;
+  if (!element) return;
+  report.saveStateToHistory();
+  resetElementStyle(element, {
+    fontSize: reportProperties.value?.defaultFont?.size,
+    isPageBorder: isPageBorder.value,
+  });
+  report.updateJrxml();
+}
+
+// One Table element: its content comes from project data, or is typed by the user
+const TABLE_CONTENT_KINDS = [
+  { value: "data", labelKey: "customTable.fromData", icon: Database },
+  { value: "typed", labelKey: "customTable.typed", icon: PencilLine },
+] as const;
+const isTableElement = computed(() => ["table", "customTable"].includes(currentElement.value?.type ?? ""));
+const tableContentKind = computed(() => (currentElement.value?.type === "customTable" ? "typed" : "data"));
+
 // The table panel appears in both tabs (Basic: data, style, row sizes;
 // Style Settings: changes to its look)
 const tablePanelProps = computed(() => ({ element: currentElement.value as any, tableStyles: tableStyles.value ?? [] }));
@@ -1603,6 +1703,21 @@ function setFontSize(value: string) {
 
 // Colour pickers send the colour and then the mode (and repeat while the
 // opacity slider moves): these share one undo step per colour
+// Status dot: fill with one of the traffic-light colours (an outline of width 0
+// follows the fill, so the dot stays one colour)
+const isStatusColor = (color: string) =>
+  currentElement.value?.mode === "Opaque" &&
+  currentElement.value?.backcolor?.toUpperCase() === color;
+function setStatusColor(color: string) {
+  const element = currentElement.value as any;
+  if (!element || isStatusColor(color)) return;
+  report.saveStateToHistory();
+  element.mode = "Opaque";
+  element.backcolor = color;
+  if (element.pen && !element.pen.lineWidth) element.pen = { ...element.pen, lineColor: color };
+  report.updateJrxml();
+}
+
 function setColorProperty(group: string, key: string, value: unknown) {
   const element = currentElement.value as any;
   if (!element || element[key] === value) return;
@@ -2843,6 +2958,12 @@ function addPropertyExpression() {
 }
 
 /* Small pill action in a card header */
+.reset-style-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 8px;
+}
+
 .chip-btn {
   display: inline-flex;
   align-items: center;
@@ -2896,6 +3017,13 @@ function addPropertyExpression() {
   padding: 2px;
   border-radius: 8px;
   background: var(--prop-bg-tertiary, #f3f4f6);
+}
+
+.status-swatch {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
 }
 
 .seg-btn {

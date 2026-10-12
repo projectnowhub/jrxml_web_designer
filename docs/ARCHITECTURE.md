@@ -67,6 +67,8 @@ jrxml_web_designer/
         ├── jrxmlGenerator.ts         # ★ JSON → JRXML
         ├── jrxmlHtmlRenderer.ts      # JRXML → HTML (canvas rendering helper)
         ├── framePresets.ts           # Boxes, templates, page border, rounded borders
+        ├── reportParts.ts            # Element presets from a monthly report (header, footer, headings, legend, sign-off)
+        ├── customTable.ts            # Custom (typed) tables: grid, merges, rows/columns
         ├── paginationPresets.ts      # Page Number element
         ├── jrxml/
         │   ├── parse.ts              # ★ JRXML → JSON
@@ -134,7 +136,8 @@ Entry: `parseJRXMLContent()` in `src/utils/jrxml/parse.ts`, using the browser `D
 | Feature | Where |
 |---------|-------|
 | Pages | One Detail band per page (`pageIndex` on elements); "Add page after" in the canvas; written as `<break type="Page">` |
-| Boxes, presets, page border | `utils/framePresets.ts`, `elements/FrameElement.vue` |
+| Boxes, presets, page border | `utils/framePresets.ts`, `utils/reportParts.ts`, `elements/FrameElement.vue` |
+| Custom (typed) tables | `utils/customTable.ts`, `utils/jrxml/customTableXml.ts`, `elements/CustomTableElement.vue`, `properties/CustomTableProperties.vue` |
 | Page Number | `utils/paginationPresets.ts`, `properties/PaginationProperties.vue` |
 | Text editing | `elements/TextFieldElement.vue`, `TextFormatToolbar.vue`, `utils/textFit.ts` |
 | Images | `services/imageService.ts` (upload to `<VITE_OAUTH_BASE_URL>/rest/files`), crop and corner radius in `utils/elementUtils.ts` |

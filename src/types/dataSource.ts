@@ -113,7 +113,8 @@ export interface TableColumnBinding {
 }
 
 // Built-in table styles; they can't be changed
-export type TableTheme = "corporateBlue" | "minimal" | "emerald";
+// "none": no colours, only thin lines (what Reset style gives a table)
+export type TableTheme = "none" | "corporateBlue" | "minimal" | "emerald";
 
 // How a table looks. Built-in styles, saved table styles and one-off
 // customisations are all a TableLook.
@@ -121,10 +122,9 @@ export interface TableLook {
   headerBackground: string;
   headerText: string;
   headerBold: boolean;
-  rowBackground: string;
+  // Body row colours, 1 to 4, repeating: row 1 the first, row 2 the second...
+  rowColors: string[];
   rowText: string;
-  // Colour of every second row; null: no stripes
-  stripe: string | null;
   totalsBackground: string;
   totalsText: string;
   totalsBold: boolean;

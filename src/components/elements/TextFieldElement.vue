@@ -189,9 +189,11 @@ import { resolveReportFont } from '../../config/fonts.config';
 import TextFormatToolbar from './TextFormatToolbar.vue';
 import type { TextFieldElement, SelectedElementInfo, EditingElementInfo } from '../../types';
 import {
+  cleanEditorHtml,
   getElementBoxInsets,
   hasHtmlTags,
   isRichTextElement,
+  rgbToHex,
   textExpressionToHtml,
 } from '../../utils/elementUtils';
 import {
@@ -379,6 +381,10 @@ const activeFormats = ref({
   italic: false,
   underline: false,
   strike: false,
+  superscript: false,
+  subscript: false,
+  bulletList: false,
+  numberedList: false,
   link: false,
   color: '',
   highlight: '',
@@ -766,6 +772,10 @@ const handleSelectionUpdate = () => {
     italic: document.queryCommandState('italic'),
     underline: document.queryCommandState('underline'),
     strike: document.queryCommandState('strikeThrough'),
+    superscript: document.queryCommandState('superscript'),
+    subscript: document.queryCommandState('subscript'),
+    bulletList: document.queryCommandState('insertUnorderedList'),
+    numberedList: document.queryCommandState('insertOrderedList'),
     color: colorVal,
     highlight: highlightVal,
     link: !!linkEl,
@@ -968,36 +978,10 @@ const handleInput = () => {
   checkOverflow();
 };
 
-// Helper to convert rgb(r, g, b) colors to #hex for JasperReports compatibility
-const rgbToHex = (str: string): string => {
-  return str.replace(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*[\d.]+)?\s*\)/gi, (_, r, g, b) => {
-    const toH = (n: string) => {
-      const h = parseInt(n, 10).toString(16);
-      return h.length === 1 ? '0' + h : h;
-    };
-    return `#${toH(r)}${toH(g)}${toH(b)}`;
-  });
-};
-
-// Clean and normalize HTML specifically for JasperReports markup="html"
-const cleanHtmlForJasper = (html: string): string => {
-  let clean = rgbToHex(html);
-  // 1. Standardize standalone color spans to <font color="...">
-  clean = clean.replace(/<span\s+style="color:\s*([^";]+);?">([\s\S]*?)<\/span>/gi, '<font color="$1">$2</font>');
-  // 2. Remove web-only class attributes (e.g. class="text-hyperlink")
-  clean = clean.replace(/\s*class="[^"]*"/gi, '');
-  // 3. Remove web-only rel attributes (e.g. rel="noopener noreferrer")
-  clean = clean.replace(/\s*rel="[^"]*"/gi, '');
-  // 4. Remove web-only target attributes
-  clean = clean.replace(/\s*target="[^"]*"/gi, '');
-  // 5. Remove redundant color style on <a> tags
-  clean = clean.replace(/(<a\s+[^>]*?)\s+style="color:\s*[^";]+;?"/gi, '$1');
-  // 6. Clean empty spans or wrapper spans without style
-  clean = clean.replace(/<span>([\s\S]*?)<\/span>/gi, '$1');
-  // 7. Escape double quotes for Java string literal
-  clean = clean.replace(/\\"/g, '"').replace(/"/g, '\\"');
-  return clean;
-};
+// Clean and normalize HTML specifically for JasperReports markup="html", as a
+// Java string literal's content
+const cleanHtmlForJasper = (html: string): string =>
+  cleanEditorHtml(html).replace(/\\"/g, '"').replace(/"/g, '\\"');
 
 // Format commands from toolbar
 const handleFormat = (command: string, value?: string) => {
@@ -1484,8 +1468,16 @@ const handleKeyDown = (e: KeyboardEvent) => {
     }
   }
 
-  // Newlines: Enter or Shift+Enter inserts a clean line break
+  // Newlines: Enter or Shift+Enter inserts a clean line break; in a bullet or
+  // numbered list Enter starts the next point (on an empty point it ends the list)
   if (e.key === 'Enter') {
+    const anchor = window.getSelection()?.anchorNode ?? null;
+    const anchorEl = anchor && (anchor.nodeType === Node.ELEMENT_NODE ? (anchor as Element) : anchor.parentElement);
+    const inList = !!anchorEl?.closest('li') && !!editInput.value?.contains(anchorEl);
+    if (inList && !e.shiftKey) {
+      nextTick(handleInput);
+      return;
+    }
     e.preventDefault();
     document.execCommand('insertLineBreak');
     handleInput();
@@ -1575,6 +1567,29 @@ const handleStartEditing = () => {
   cursor: not-allowed;
 }
 
+
+/* Bullet / numbered points: indented like the PDF, no extra space around */
+.rich-html-span :deep(ul),
+.rich-html-span :deep(ol),
+.inline-edit-contenteditable :deep(ul),
+.inline-edit-contenteditable :deep(ol) {
+  margin: 0;
+  /* JasperReports indents each list level by 50pt, whatever the font size */
+  padding-left: 50px;
+}
+
+.rich-html-span :deep(li),
+.inline-edit-contenteditable :deep(li) {
+  margin: 0;
+}
+
+.rich-html-span :deep(sup),
+.rich-html-span :deep(sub),
+.inline-edit-contenteditable :deep(sup),
+.inline-edit-contenteditable :deep(sub) {
+  font-size: 0.7em;
+  line-height: 0;
+}
 
 .inline-edit-contenteditable {
   width: 100%;

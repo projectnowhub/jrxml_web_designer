@@ -1,4 +1,4 @@
-import type { ChartBinding, ReportProject, TableDataBinding } from "./dataSource";
+import type { ChartBinding, ReportProject, TableDataBinding, TableLook } from "./dataSource";
 
 // Element type enum
 export type ElementType =
@@ -10,7 +10,8 @@ export type ElementType =
   | "frame"
   | "table"
   | "chart"
-  | "barcode";
+  | "barcode"
+  | "customTable";
 
 // Query interface
 export interface Query {
@@ -452,6 +453,54 @@ export interface BarcodeElement extends DesignElementBase {
     | "Auto";
 }
 
+// Custom table: a grid the user types into (not project data). A merged cell is
+// the top-left cell of the block with colSpan / rowSpan; the cells it covers stay
+// in the grid but are not shown or written.
+export interface CustomTableCell {
+  // Plain text ("\n" for new lines), or HTML when `rich` (bold words, colours,
+  // bullet points, superscript...: what JasperReports' html markup reads)
+  text: string;
+  rich?: boolean;
+  colSpan?: number;
+  rowSpan?: number;
+  fill?: string;
+  color?: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  align?: "Left" | "Center" | "Right" | "Justified";
+  vAlign?: "Top" | "Middle" | "Bottom";
+  fontSize?: number;
+}
+
+export interface CustomTableRow {
+  // Design height; in the PDF a row grows to its tallest text
+  height: number;
+  cells: CustomTableCell[];
+}
+
+// Its look is a table style, like a data table's: `theme` is the built-in or saved
+// style it started from, `look` its actual look (none for an unchanged built-in),
+// `customized` = changed for this table only. Colours set on cells are exceptions
+// on top of the style.
+export interface CustomTableData {
+  columns: number[];
+  rows: CustomTableRow[];
+  theme: string;
+  look?: TableLook;
+  customized?: boolean;
+  // Top rows drawn as headings (0 to 3)
+  headerRows: number;
+  // The last row drawn as a totals row
+  totalRow: boolean;
+  padding: number;
+}
+
+export interface CustomTableElement extends DesignElementBase {
+  type: "customTable";
+  table: CustomTableData;
+}
+
 // Design element union type
 export type DesignElement =
   | TextFieldElement
@@ -462,7 +511,8 @@ export type DesignElement =
   | FrameElement
   | TableElement
   | ChartElement
-  | BarcodeElement;
+  | BarcodeElement
+  | CustomTableElement;
 
 // Report band interface
 export interface Band {

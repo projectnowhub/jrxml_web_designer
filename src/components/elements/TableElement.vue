@@ -131,7 +131,7 @@ import {
   rowSlots,
 } from "@/utils/table/dataTable";
 import { distributeColumnWidths } from "@/utils/table/dataBinding";
-import { lookPartStyles, resolveLook, tableCellCss, type TableStylePart } from "@/utils/table/tableThemes";
+import { lookPartStyles, resolveLook, rowColorAt, tableCellCss, type TableStylePart } from "@/utils/table/tableThemes";
 import { isDataSourceDrag } from "@/utils/table/dataDrag";
 import type { SelectedElementInfo, TableElement } from "@/types";
 import type { DataRow, TableColumnBinding } from "@/types/dataSource";
@@ -201,10 +201,11 @@ const rowSlotsShown = computed<Slot[]>(() => {
   return shown;
 });
 
-const partStyles = computed(() => lookPartStyles(resolveLook(binding.value)));
+const look = computed(() => resolveLook(binding.value));
+const partStyles = computed(() => lookPartStyles(look.value));
 
 function cellStyle(part: TableStylePart, col: PreviewColumn | undefined, index: number, rowIndex = 0) {
-  const css: Record<string, string> = tableCellCss(partStyles.value[part], part === "row" && rowIndex % 2 === 1);
+  const css: Record<string, string> = tableCellCss(partStyles.value[part], part === "row" ? rowColorAt(look.value, rowIndex) : undefined);
   if (col) {
     css.width = `${col.width}px`;
     css.justifyContent =

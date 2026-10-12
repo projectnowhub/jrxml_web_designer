@@ -5,12 +5,22 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import type { EditingElementInfo, SelectedElementInfo } from "@/types";
+import type { CellPos } from "@/utils/customTable";
+
+// Cells selected in a custom table being edited: from the cell first clicked
+// (anchor) to the one the selection reaches (focus); `uuid` is the table's
+export interface TableCellSelection {
+  uuid: string;
+  anchor: CellPos;
+  focus: CellPos;
+}
 
 export const useSelectionStore = defineStore("selection", () => {
   const selectedBandIndex = ref<number | null>(null);
   const selectedElement = ref<SelectedElementInfo | null>(null);
   const selectedElements = ref<SelectedElementInfo[]>([]);
   const editingElement = ref<EditingElementInfo | null>(null);
+  const tableCells = ref<TableCellSelection | null>(null);
   // The band last clicked: elements added from the library go there (none
   // yet: Detail)
   const lastClickedBandIndex = ref<number | null>(null);
@@ -21,8 +31,17 @@ export const useSelectionStore = defineStore("selection", () => {
     selectedElement.value = null;
     selectedElements.value = [];
     editingElement.value = null;
+    tableCells.value = null;
     lastClickedBandIndex.value = null;
   }
 
-  return { selectedBandIndex, selectedElement, selectedElements, editingElement, lastClickedBandIndex, reset };
+  return {
+    selectedBandIndex,
+    selectedElement,
+    selectedElements,
+    editingElement,
+    tableCells,
+    lastClickedBandIndex,
+    reset,
+  };
 });

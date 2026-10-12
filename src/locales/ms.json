@@ -58,6 +58,13 @@
     "title": "Pustaka Elemen",
     "basicElements": "Elemen Asas",
     "frameElements": "Preset Elemen",
+    "presetGroups": {
+      "boxes": "Kotak",
+      "headerFooter": "Kepala & Kaki",
+      "headings": "Tajuk & Teks",
+      "status": "Status",
+      "signOff": "Pengesahan"
+    },
     "compositeElements": "Elemen Komposit",
     "reportParameters": "Parameter Laporan",
     "dataFields": "Medan Data",
@@ -139,7 +146,16 @@
     "barcode": "Kod Bar",
     "pageNumber": "Nombor Halaman",
     "currentDate": "Tarikh Semasa",
-    "pageXofY": "Halaman X daripada Y"
+    "pageXofY": "Halaman X daripada Y",
+    "partReportHeader": "Kepala Laporan",
+    "partPageFooter": "Kaki Halaman",
+    "partSectionHeading": "Tajuk Bahagian",
+    "partSubHeading": "Subtajuk",
+    "partNote": "Nota",
+    "partRiskLegend": "Petunjuk Risiko",
+    "partStatusDot": "Titik Status",
+    "partSignOff": "Pengesahan",
+    "customTable": "Jadual"
   },
   "properties": {
     "title": "Sifat",
@@ -1050,6 +1066,91 @@
     "addToBox": "Tambah ke kotak",
     "moveOutOfBox": "Keluarkan dari kotak"
   },
+  "reportParts": {
+    "noBand": "Laporan ini tiada {band}. Hidupkannya di Tetapan Halaman → Pilihan Jalur, kemudian tambah semula.",
+    "statusColor": "Warna status",
+    "description": {
+      "partReportHeader": "Jalur gelap di bahagian atas setiap halaman dengan tiga baris tajuk (pelanggan dan projek, nombor laporan, bulan). Diletakkan di Kepala Halaman.",
+      "partPageFooter": "Garis nipis, nombor halaman (Halaman 1 daripada 12) dan ruang untuk logo anda, di bahagian bawah setiap halaman. Diletakkan di Kaki Halaman.",
+      "partSectionHeading": "Tajuk besar bercetak tebal dengan nombornya, contohnya: BAHAGIAN 1.  BUTIRAN PROJEK.",
+      "partSubHeading": "Tajuk lebih kecil, tebal dan bergaris bawah, contohnya: MENARA A: AKTIVITI UTAMA.",
+      "partNote": "Baris kecil condong untuk sumber atau catatan di bawah jadual.",
+      "partRiskLegend": "Titik hijau, kuning dan merah yang menerangkan warna risiko: Risiko Rendah, Sederhana dan Tinggi.",
+      "partStatusDot": "Satu titik berwarna yang menunjukkan status. Pilih hijau, kuning atau merah dalam sifatnya.",
+      "partSignOff": "Gambar tandatangan di atas garis, dengan nama, jawatan dan tarikh."
+    },
+    "placeholder": {
+      "headerLine1": "Pelanggan - Nama Projek",
+      "headerLine2": "Laporan Bulanan #1",
+      "headerLine3": "Bulan Tahun",
+      "sectionNumber": "BAHAGIAN 1.",
+      "sectionTitle": "TAJUK BAHAGIAN",
+      "subHeading": "SUBTAJUK",
+      "note": "*Sumber angka di atas",
+      "lowRisk": "Risiko Rendah",
+      "moderateRisk": "Risiko Sederhana",
+      "highRisk": "Risiko Tinggi",
+      "signOffName": "Nama Penuh",
+      "signOffRole": "Jawatan",
+      "signOffDate": "Hari Bulan Tahun",
+      "signOffDateLabel": "Tarikh"
+    }
+  },
+  "customTable": {
+    "placeholderHeader": "Tajuk {n}",
+    "cellText": "Teks sel",
+    "dragColumn": "Seret untuk menukar lebar lajur",
+    "dragRow": "Seret untuk menukar tinggi baris",
+    "grid": "Baris dan lajur",
+    "rows": "Baris",
+    "columns": "Lajur",
+    "addRow": "Tambah baris di bawah",
+    "removeRow": "Buang baris terakhir",
+    "addColumn": "Tambah lajur di kanan",
+    "removeColumn": "Buang lajur terakhir",
+    "editCells": "Taip dalam jadual",
+    "editHint": "Klik dua kali pada jadual untuk menaip. Klik kanan pada sel untuk menambah baris, menggabungkan sel dan lain-lain.",
+    "editingHint": "Klik sel untuk menaip. Seret merentasi sel (atau Shift+klik) untuk memilih beberapa sel. Tekan Esc apabila selesai.",
+    "selectedCells": "1 sel dipilih | {n} sel dipilih",
+    "allCells": "Semua sel",
+    "fill": "Isian",
+    "textColor": "Warna teks",
+    "textStyle": "Gaya teks",
+    "textSize": "Saiz teks",
+    "alignment": "Penjajaran",
+    "justified": "Jajar penuh",
+    "text": "Teks",
+    "padding": "Ruang dalam sel",
+    "menu": {
+      "rowAbove": "Sisip baris di atas",
+      "rowBelow": "Sisip baris di bawah",
+      "colLeft": "Sisip lajur di kiri",
+      "colRight": "Sisip lajur di kanan",
+      "deleteRows": "Padam baris | Padam {n} baris",
+      "deleteCols": "Padam lajur | Padam {n} lajur",
+      "merge": "Gabung sel",
+      "split": "Pisah sel",
+      "clear": "Kosongkan teks"
+    },
+    "content": "Kandungan jadual",
+    "fromData": "Guna data projek",
+    "typed": "Taip sendiri",
+    "fromDataHint": "Baris datang daripada projek dan diambil semula setiap kali laporan dijalankan.",
+    "typedHint": "Anda menaip setiap sel sendiri. Klik dua kali pada jadual untuk menaip.",
+    "toDataTitle": "Guna data projek?",
+    "toDataMessage": "Sel yang anda taip akan diganti dengan baris daripada projek. Anda boleh membatalkannya dengan Ctrl+Z.",
+    "rowsLeftOut": "1 baris tidak muat di halaman ini dan ditinggalkan. | {n} baris tidak muat di halaman ini dan ditinggalkan.",
+    "convertFailed": "Baris jadual tidak dapat dimuatkan, jadi jadual tidak diubah. Sila cuba lagi.",
+    "chooseKind": "Apakah isi jadual ini?",
+    "typedDesc": "Anda menaip teks dalam setiap sel.",
+    "fromDataDesc": "Baris datang daripada projek dan dikemas kini setiap kali laporan dijalankan.",
+    "dragHint": "Atau seret jubin ke halaman untuk jadual kosong, kemudian lepaskan data projek padanya.",
+    "headerRows": "Baris tajuk",
+    "fewerHeaderRows": "Kurangkan satu baris tajuk",
+    "moreHeaderRows": "Tambah satu baris tajuk",
+    "totalRow": "Baris terakhir ialah jumlah",
+    "styleColors": "Kembali kepada warna gaya jadual"
+  },
   "pagination": {
     "title": "Nombor Halaman",
     "formats": {
@@ -1261,7 +1362,11 @@
       "blue": "Biru",
       "violet": "Ungu lembayung"
     },
-    "remove": "Buang"
+    "remove": "Buang",
+    "superscript": "Superskrip (teks kecil terangkat, cth. 1st, m²)",
+    "subscript": "Subskrip (teks kecil diturunkan, cth. H₂O)",
+    "bulletList": "Titik peluru",
+    "numberedList": "Titik bernombor"
   },
   "dataTypes": {
     "text": "Teks",
@@ -1387,7 +1492,7 @@
     }
   },
   "dataTable": {
-    "dropHint": "Seret data jadual ke sini",
+    "dropHint": "Seret data jadual ke sini, atau klik dua kali untuk menyediakannya",
     "placeholderColumn": "Lajur {n}",
     "moreRows": "+1 baris lagi | +{count} baris lagi",
     "moreRowsLimited": "+1 baris lagi (dihadkan kepada {limit}) | +{count} baris lagi (dihadkan kepada {limit})",
@@ -1410,6 +1515,7 @@
       "date": "Tarikh"
     },
     "theme": {
+      "none": "Tiada",
       "corporateBlue": "Biru Korporat",
       "minimal": "Minimal",
       "emerald": "Zamrud"
@@ -1531,16 +1637,13 @@
       "fields": {
         "headerBackground": "Latar",
         "headerText": "Teks",
-        "rowBackground": "Latar",
         "rowText": "Teks",
-        "stripe": "Jalur",
         "totalsBackground": "Latar",
         "totalsText": "Teks",
         "lineColor": "Garisan",
         "ruleColor": "Garisan pengepala"
       },
       "bold": "Tebal",
-      "stripes": "Baris berjalur",
       "lines": {
         "grid": "Grid",
         "rows": "Baris sahaja",
@@ -1561,7 +1664,13 @@
       "deleteConfirm": "Padam \"{name}\"?",
       "savedStyle": "Gaya disimpan: {name}",
       "needData": "Tambah data pada jadual dahulu, kemudian ubah rupanya di sini.",
-      "usingStyle": "Menggunakan {name}"
+      "usingStyle": "Menggunakan {name}",
+      "rowColors": "Warna baris",
+      "rowN": "Baris {n}",
+      "addRowColor": "Tambah",
+      "removeRowColor": "Buang warna baris {n}",
+      "rowColorsHint": "Baris mengambil warna ini secara bergilir, kemudian bermula semula.",
+      "addRowColorHint": "Tambah warna baris (hingga 4)"
     }
   },
   "reportData": {
@@ -1791,5 +1900,12 @@
         "sscc": "17 atau 18 digit"
       }
     }
+  },
+  "resetStyle": {
+    "label": "Set semula gaya",
+    "hint": "Buang gaya item ini (warna, sempadan, fon, bentuk). Kandungan, kedudukan dan saiznya kekal. Jadual hanya mengekalkan garisannya."
+  },
+  "header": {
+    "reportsHome": "Laman utama laporan"
   }
 }

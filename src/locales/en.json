@@ -58,6 +58,13 @@
     "title": "Element Library",
     "basicElements": "Basic Elements",
     "frameElements": "Element Presets",
+    "presetGroups": {
+      "boxes": "Boxes",
+      "headerFooter": "Header & Footer",
+      "headings": "Headings & Text",
+      "status": "Status",
+      "signOff": "Sign-off"
+    },
     "compositeElements": "Composite Elements",
     "reportParameters": "Report Parameters",
     "dataFields": "Data Fields",
@@ -139,7 +146,16 @@
     "barcode": "Barcode",
     "pageNumber": "Page Number",
     "currentDate": "Current Date",
-    "pageXofY": "Page X of Y"
+    "pageXofY": "Page X of Y",
+    "partReportHeader": "Report Header",
+    "partPageFooter": "Page Footer",
+    "partSectionHeading": "Section Heading",
+    "partSubHeading": "Sub-heading",
+    "partNote": "Note",
+    "partRiskLegend": "Risk Legend",
+    "partStatusDot": "Status Dot",
+    "partSignOff": "Sign-off",
+    "customTable": "Table"
   },
   "properties": {
     "title": "Properties",
@@ -1050,6 +1066,91 @@
     "addToBox": "Add to box",
     "moveOutOfBox": "Move out of box"
   },
+  "reportParts": {
+    "noBand": "This report has no {band}. Turn it on under Page Settings → Band Selection, then add it again.",
+    "statusColor": "Status colour",
+    "description": {
+      "partReportHeader": "A dark banner across the top of every page with three lines of title (client and project, report number, month). Goes in the Page Header.",
+      "partPageFooter": "A thin line, the page number (Page 1 of 12) and a spot for your logo, at the bottom of every page. Goes in the Page Footer.",
+      "partSectionHeading": "A large bold heading with its number, for example: SECTION 1.  PROJECT DETAILS.",
+      "partSubHeading": "A smaller bold, underlined heading, for example: TOWER A: KEY ACTIVITIES.",
+      "partNote": "A small italic line for a source or remark under a table.",
+      "partRiskLegend": "Green, amber and red dots that explain the risk colours: Low, Moderate and High Risk.",
+      "partStatusDot": "One coloured dot that shows a status. Pick green, amber or red in its properties.",
+      "partSignOff": "A signature picture over a line, with the name, job title and date."
+    },
+    "placeholder": {
+      "headerLine1": "Client - Project Name",
+      "headerLine2": "Monthly Report #1",
+      "headerLine3": "Month Year",
+      "sectionNumber": "SECTION 1.",
+      "sectionTitle": "SECTION TITLE",
+      "subHeading": "SUB-HEADING",
+      "note": "*Source of the figures above",
+      "lowRisk": "Low Risk",
+      "moderateRisk": "Moderate Risk",
+      "highRisk": "High Risk",
+      "signOffName": "Full Name",
+      "signOffRole": "Job Title",
+      "signOffDate": "Day Month Year",
+      "signOffDateLabel": "Date"
+    }
+  },
+  "customTable": {
+    "placeholderHeader": "Heading {n}",
+    "cellText": "Cell text",
+    "dragColumn": "Drag to change the column width",
+    "dragRow": "Drag to change the row height",
+    "grid": "Rows and columns",
+    "rows": "Rows",
+    "columns": "Columns",
+    "addRow": "Add a row at the bottom",
+    "removeRow": "Remove the last row",
+    "addColumn": "Add a column on the right",
+    "removeColumn": "Remove the last column",
+    "editCells": "Type in the table",
+    "editHint": "Double-click the table to type in it. Right-click a cell to add rows, merge cells and more.",
+    "editingHint": "Click a cell to type. Drag across cells (or Shift+click) to choose several. Press Esc when you are done.",
+    "selectedCells": "1 selected cell | {n} selected cells",
+    "allCells": "All cells",
+    "fill": "Fill",
+    "textColor": "Text colour",
+    "textStyle": "Text style",
+    "textSize": "Text size",
+    "alignment": "Alignment",
+    "justified": "Justify",
+    "text": "Text",
+    "padding": "Space inside cells",
+    "menu": {
+      "rowAbove": "Insert row above",
+      "rowBelow": "Insert row below",
+      "colLeft": "Insert column left",
+      "colRight": "Insert column right",
+      "deleteRows": "Delete row | Delete {n} rows",
+      "deleteCols": "Delete column | Delete {n} columns",
+      "merge": "Merge cells",
+      "split": "Split cells",
+      "clear": "Clear text"
+    },
+    "content": "Table content",
+    "fromData": "Use project data",
+    "typed": "Type my own",
+    "fromDataHint": "Rows come from a project and are fetched again each time the report runs.",
+    "typedHint": "You type every cell yourself. Double-click the table to type in it.",
+    "toDataTitle": "Use project data?",
+    "toDataMessage": "Your typed cells will be replaced by rows from a project. You can undo this with Ctrl+Z.",
+    "rowsLeftOut": "1 row didn't fit on this page and was left out. | {n} rows didn't fit on this page and were left out.",
+    "convertFailed": "The table's rows couldn't be loaded, so the table was not changed. Please try again.",
+    "chooseKind": "What goes in the table?",
+    "typedDesc": "You type the text in each cell.",
+    "fromDataDesc": "Rows come from a project and update every time the report runs.",
+    "dragHint": "Or drag the tile onto the page for an empty table, then drop project data on it.",
+    "headerRows": "Header rows",
+    "fewerHeaderRows": "One header row less",
+    "moreHeaderRows": "One more header row",
+    "totalRow": "Last row is a total",
+    "styleColors": "Back to the table style's colours"
+  },
   "pagination": {
     "title": "Page Number",
     "formats": {
@@ -1261,7 +1362,11 @@
       "blue": "Blue",
       "violet": "Violet"
     },
-    "remove": "Remove"
+    "remove": "Remove",
+    "superscript": "Superscript (raised small text, e.g. 1st, m²)",
+    "subscript": "Subscript (lowered small text, e.g. H₂O)",
+    "bulletList": "Bullet points",
+    "numberedList": "Numbered points"
   },
   "dataTypes": {
     "text": "Text",
@@ -1387,7 +1492,7 @@
     }
   },
   "dataTable": {
-    "dropHint": "Drag table data here",
+    "dropHint": "Drag table data here, or double-click to set it up",
     "placeholderColumn": "Column {n}",
     "moreRows": "+1 more row | +{count} more rows",
     "moreRowsLimited": "+1 more row (limited to {limit}) | +{count} more rows (limited to {limit})",
@@ -1410,6 +1515,7 @@
       "date": "Date"
     },
     "theme": {
+      "none": "None",
       "corporateBlue": "Corporate Blue",
       "minimal": "Minimal",
       "emerald": "Emerald"
@@ -1531,16 +1637,13 @@
       "fields": {
         "headerBackground": "Background",
         "headerText": "Text",
-        "rowBackground": "Background",
         "rowText": "Text",
-        "stripe": "Stripe",
         "totalsBackground": "Background",
         "totalsText": "Text",
         "lineColor": "Lines",
         "ruleColor": "Header line"
       },
       "bold": "Bold",
-      "stripes": "Striped rows",
       "lines": {
         "grid": "Grid",
         "rows": "Rows only",
@@ -1561,7 +1664,13 @@
       "deleteConfirm": "Delete \"{name}\"?",
       "savedStyle": "Saved style: {name}",
       "needData": "Add data to the table first, then change its look here.",
-      "usingStyle": "Using {name}"
+      "usingStyle": "Using {name}",
+      "rowColors": "Row colours",
+      "rowN": "Row {n}",
+      "addRowColor": "Add",
+      "removeRowColor": "Remove row colour {n}",
+      "rowColorsHint": "Rows take these colours in turn, then start again.",
+      "addRowColorHint": "Add a row colour (up to 4)"
     }
   },
   "reportData": {
@@ -1791,5 +1900,12 @@
         "sscc": "17 or 18 digits"
       }
     }
+  },
+  "resetStyle": {
+    "label": "Reset style",
+    "hint": "Remove this item's styling (colours, borders, fonts, shapes). Its content, place and size stay. Tables keep only their lines."
+  },
+  "header": {
+    "reportsHome": "Reports home"
   }
 }

@@ -1,4 +1,5 @@
-import type { DesignElement, BandType, Band, ReportGroup, TableElement } from "@/types";
+import type { DesignElement, BandType, Band, ReportGroup, TableElement, CustomTableData, CustomTableElement } from "@/types";
+import { CUSTOM_TABLE_PART_PROPERTY, CUSTOM_TABLE_PROPERTY, parseCustomTable, syncTableSize } from "../customTable";
 import { TABLE_BINDING_PROPERTY, parseBinding } from "../table/dataBinding";
 import { TABLE_HEADER_HEIGHT, TABLE_ROW_HEIGHT } from "../table/dataTable";
 import { collectBoundTables } from "./tableXml";
@@ -656,6 +657,10 @@ function parseBandElements(bandElem: Element): any[] {
     if (elementType === "frame" && isEmptyTableFrame(child)) {
       const table = parseEmptyTable(child);
       if (table) elements.push(table);
+    } else if (elementType === "frame" && readCustomTable(child)) {
+      elements.push(parseCustomTableFrame(child));
+    } else if (elementType === "frame" && isCustomTablePart(child)) {
+      // A row of a custom table: the table is rebuilt from its first frame
     } else if (validElementTypes.includes(elementType)) {
       const parsedElement = parseElement(child, elementType);
       if (parsedElement) {
@@ -829,6 +834,36 @@ function parseEmptyTable(frame: Element): TableElement | null {
     headerHeight: TABLE_HEADER_HEIGHT,
     rowHeight: TABLE_ROW_HEIGHT,
   } as TableElement;
+}
+
+// A custom table is a frame carrying its setup in CUSTOM_TABLE_PROPERTY: it is
+// rebuilt from that alone (its rows and cells are written from the setup)
+function readCustomTable(frame: Element): CustomTableData | null {
+  const reportElement = findChildElement(frame, "reportElement");
+  const property = reportElement
+    ? Array.from(reportElement.children).find(
+        (c) => c.localName === "property" && c.getAttribute("name") === CUSTOM_TABLE_PROPERTY,
+      )
+    : undefined;
+  return property ? parseCustomTable(property.getAttribute("value")) : null;
+}
+
+function isCustomTablePart(frame: Element): boolean {
+  const reportElement = findChildElement(frame, "reportElement");
+  return !!reportElement && Array.from(reportElement.children).some(
+    (c) => c.localName === "property" && c.getAttribute("name") === CUSTOM_TABLE_PART_PROPERTY,
+  );
+}
+
+function parseCustomTableFrame(frame: Element): CustomTableElement {
+  const reportElement = findChildElement(frame, "reportElement")!;
+  const element: CustomTableElement = {
+    type: "customTable",
+    ...readBounds(reportElement),
+    table: readCustomTable(frame)!,
+  };
+  syncTableSize(element);
+  return element;
 }
 
 function findChildElement(parent: Element, localName: string): Element | null {

@@ -19,6 +19,7 @@ import FrameElement from './FrameElement.vue';
 import TableElement from './TableElement.vue';
 import ChartElement from './ChartElement.vue';
 import BarcodeElement from './BarcodeElement.vue';
+import CustomTableElement from './CustomTableElement.vue';
 import type { 
   DesignElement,
   SelectedElementInfo,
@@ -35,7 +36,8 @@ const componentCache: Record<string, any> = {
   frame: FrameElement,
   table: TableElement,
   chart: ChartElement,
-  barcode: BarcodeElement
+  barcode: BarcodeElement,
+  customTable: CustomTableElement
 };
 
 // Preload components

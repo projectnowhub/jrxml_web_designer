@@ -219,7 +219,7 @@ export function floatsBelowTable(element: DesignElement, siblings: DesignElement
   return siblings.some(
     (other) =>
       other !== element &&
-      other.type === "table" &&
+      (other.type === "table" || other.type === "customTable") &&
       (other as any).pageIndex === (element as any).pageIndex &&
       element.y >= other.y + other.height,
   );

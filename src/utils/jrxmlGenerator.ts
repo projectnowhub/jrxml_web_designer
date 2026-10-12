@@ -8,6 +8,7 @@ import { SAVED_TABLE_STYLES_PROPERTY } from "./table/tableThemes";
 import { REPORT_PROJECTS_PROPERTY } from "./projectFields";
 import { buildJasperReportOpenTag } from "./jrxml/xmlBuilder";
 import { generateUUID } from "./jrxml/uuidGenerator";
+import { generateCustomTableXML } from "./jrxml/customTableXml";
 import { reportElementProperties } from "./elementUtils";
 import { CHART_BINDING_PROPERTY, normalizeChartBinding } from "./chart/chartTypes";
 import { chartImageDataUri } from "./chart/chartImage";
@@ -570,6 +571,8 @@ function generateElementXML(element: any): string {
       return generateChartXML(element);
     case "barcode":
       return generateBarcodeXML(element);
+    case "customTable":
+      return generateCustomTableXML(element);
     default:
       return "";
   }
@@ -963,7 +966,7 @@ function generateTextFieldXML(element: any): string {
         : "none"
       : undefined);
   if (!markup || markup === "none") {
-    if (element.expression && /<(b|strong|i|em|u|s|strike|del|font|a|span)\b[^>]*>/i.test(element.expression)) {
+    if (element.expression && /<(b|strong|i|em|u|s|strike|del|font|a|span|ul|ol|li|sup|sub)\b[^>]*>/i.test(element.expression)) {
       markup = "html";
     }
   }

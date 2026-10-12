@@ -442,7 +442,7 @@ export interface TextFontDefaults {
 
 // Formatting tags the rich text editor writes into a text expression
 export const hasHtmlTags = (str: string): boolean =>
-  /<\/?(b|strong|i|em|u|s|strike|del|font|a|span|p|div|br)\b[^>]*>/i.test(str);
+  /<\/?(b|strong|i|em|u|s|strike|del|font|a|span|p|div|br|ul|ol|li|sup|sub)\b[^>]*>/i.test(str);
 
 export const isRichTextElement = (element: { markup?: string; expression?: string }): boolean =>
   element.markup === 'html' || hasHtmlTags(element.expression || '');
@@ -457,6 +457,33 @@ export const sanitizeHtml = (html: string): string =>
     .replace(/\s*on\w+\s*=\s*(['"]).*?\1/gi, '')
     .replace(/\s*on\w+\s*=\s*[^>\s]+/gi, '')
     .replace(/javascript:/gi, '');
+
+// rgb(r, g, b) colours (what the browser's editor writes) as #rrggbb, which JasperReports reads
+export const rgbToHex = (str: string): string =>
+  str.replace(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*[\d.]+)?\s*\)/gi, (_, r, g, b) => {
+    const toH = (n: string) => parseInt(n, 10).toString(16).padStart(2, '0');
+    return `#${toH(r)}${toH(g)}${toH(b)}`;
+  });
+
+// HTML from the browser's editor made into what JasperReports' html markup reads
+// (colour spans as <font>, no web-only attributes, no empty spans)
+export function cleanEditorHtml(html: string): string {
+  let clean = rgbToHex(html);
+  clean = clean.replace(/<span\s+style="color:\s*([^";]+);?">([\s\S]*?)<\/span>/gi, '<font color="$1">$2</font>');
+  clean = clean.replace(/\s*class="[^"]*"/gi, '');
+  clean = clean.replace(/\s*rel="[^"]*"/gi, '');
+  clean = clean.replace(/\s*target="[^"]*"/gi, '');
+  clean = clean.replace(/(<a\s+[^>]*?)\s+style="color:\s*[^";]+;?"/gi, '$1');
+  clean = clean.replace(/<span>([\s\S]*?)<\/span>/gi, '$1');
+  return clean;
+}
+
+// Formatting beyond line breaks (bold, colour, lists, superscript...)
+export const hasFormatting = (html: string): boolean =>
+  /<\/?(b|strong|i|em|u|s|strike|del|font|a|span|ul|ol|li|sup|sub)\b[^>]*>/i.test(html);
+
+export const escapeHtml = (text: string): string =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 // HTML the canvas shows for a formatted text expression
 export function textExpressionToHtml(expression: string): string {

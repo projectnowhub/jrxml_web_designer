@@ -21,9 +21,14 @@
           />
           <span>{{ categoryLabels[categoryKey] || categoryKey }}</span>
         </div>
-        <div v-if="expandedCategories[categoryKey]" class="element-list">
+        <template v-if="expandedCategories[categoryKey]">
+        <template v-for="section in sectionsOf(categoryElements)" :key="section.group">
+        <div v-if="section.group" class="element-group-title">
+          {{ t(`elementLibrary.presetGroups.${section.group}`) }}
+        </div>
+        <div class="element-list">
           <div
-            v-for="element in categoryElements"
+            v-for="element in section.elements"
             :key="element.type"
             class="element-item"
             :class="{
@@ -47,6 +52,8 @@
             <span class="element-name">{{ t(element.name) }}</span>
           </div>
         </div>
+        </template>
+        </template>
       </div>
     </div>
 
@@ -93,6 +100,25 @@
             </button>
           </div>
           <div class="tile-menu-hint">{{ t("pagination.dragHint") }}</div>
+        </template>
+        <template v-else-if="tileMenu.type === 'table'">
+          <div class="tile-menu-title">{{ t("customTable.chooseKind") }}</div>
+          <div class="table-kind-options">
+            <button
+              v-for="kind in TABLE_KINDS"
+              :key="kind.value"
+              type="button"
+              class="table-kind-option"
+              @click="chooseTableKind(kind.value)"
+            >
+              <component :is="kind.icon" :size="18" :stroke-width="1.75" aria-hidden="true" />
+              <span class="table-kind-text">
+                <span class="table-kind-name">{{ t(kind.labelKey) }}</span>
+                <span class="table-kind-desc">{{ t(kind.descKey) }}</span>
+              </span>
+            </button>
+          </div>
+          <div class="tile-menu-hint">{{ t("customTable.dragHint") }}</div>
         </template>
         <template v-else-if="tileMenu.type === 'barcode'">
           <div class="tile-menu-title">{{ t("barcode.chooseType") }}</div>
@@ -150,10 +176,13 @@ import { NButton } from "naive-ui";
 import {
   ChevronDown,
   ChevronRight,
+  Database,
+  PencilLine,
 } from "@lucide/vue";
 import ReportDataPanel from "./designer/ReportDataPanel.vue";
 import { ElementRegistry } from "./elements/ElementRegistry";
 import { findPageBorder, isFrameTemplateType, PAGE_BORDER_TYPE } from "../utils/framePresets";
+import { isReportPartType } from "../utils/reportParts";
 import {
   PAGE_NUMBER_TYPE,
   PAGINATION_POSITIONS,
@@ -190,6 +219,7 @@ interface Emits {
   (e: "insert-page-number", position: PaginationPosition): void;
   (e: "insert-chart", chartType: ChartType): void;
   (e: "insert-barcode", barcodeType: BarcodeType): void;
+  (e: "insert-table", kind: "typed" | "data"): void;
 }
 
 // Use default values
@@ -225,11 +255,26 @@ const groupedElements = computed(() => {
   for (const element of props.elements) {
     const config = registry.getElementConfig(element.type);
     const category = config?.category || "basic";
+    if (category === "hidden") continue;
     if (!categories[category]) categories[category] = [];
     categories[category].push(element);
   }
   return categories;
 });
+
+// A category's tiles split by their sub-group (Element Presets: Boxes, Header &
+// Footer...), in registration order; tiles without a group form one untitled list
+const sectionsOf = (elements: any[]): { group: string; elements: any[] }[] => {
+  const registry = ElementRegistry.getInstance();
+  const sections: { group: string; elements: any[] }[] = [];
+  for (const element of elements) {
+    const group = registry.getElementConfig(element.type)?.group ?? "";
+    let section = sections.find((s) => s.group === group);
+    if (!section) sections.push((section = { group, elements: [] }));
+    section.elements.push(element);
+  }
+  return sections;
+};
 
 // List of allowed field types
 const allowedFieldTypes = computed(() => [
@@ -269,6 +314,7 @@ const isUnavailable = (type: string) => type === PAGE_BORDER_TYPE && hasPageBord
 const tileHint = (type: string): string | undefined => {
   if (isUnavailable(type)) return t("framePresets.pageBorderExists");
   if (isFrameTemplateType(type)) return t(`framePresets.templateDescription.${type}`);
+  if (isReportPartType(type)) return t(`reportParts.description.${type}`);
   if (type === PAGE_NUMBER_TYPE) return t("pagination.tileHint");
   if (type === "chart") return t("chart.tileHint");
   if (type === "barcode") return t("barcode.tileHint");
@@ -285,11 +331,17 @@ function handleDragStart(event: DragEvent, element: any): void {
   emit("drag-start", event, element);
 }
 
-// The Page Number, Chart and Barcode tiles ask a question first (where /
-// which type) when clicked; dragging them drops a default one
-type TileMenuType = typeof PAGE_NUMBER_TYPE | "chart" | "barcode";
+// The Page Number, Chart, Barcode and Table tiles ask a question first (where /
+// which type / typed or project data) when clicked; dragging them drops a default one
+type TileMenuType = typeof PAGE_NUMBER_TYPE | "chart" | "barcode" | "table";
 const hasTileMenu = (type: string): type is TileMenuType =>
-  type === PAGE_NUMBER_TYPE || type === "chart" || type === "barcode";
+  type === PAGE_NUMBER_TYPE || type === "chart" || type === "barcode" || type === "table";
+
+// Table tile: the same two choices as "Table content" in the table's properties
+const TABLE_KINDS = [
+  { value: "typed", labelKey: "customTable.typed", descKey: "customTable.typedDesc", icon: PencilLine },
+  { value: "data", labelKey: "customTable.fromData", descKey: "customTable.fromDataDesc", icon: Database },
+] as const;
 
 // Handle element double-click (tiles with a question open it instead)
 function handleElementDoubleClick(event: MouseEvent, element: any): void {
@@ -309,6 +361,7 @@ const tileMenu = ref<{ type: TileMenuType; x: number; y: number } | null>(null);
 const tileMenuLabel = computed(() => {
   if (tileMenu.value?.type === "chart") return t("chart.chooseType");
   if (tileMenu.value?.type === "barcode") return t("barcode.chooseType");
+  if (tileMenu.value?.type === "table") return t("customTable.chooseKind");
   return t("pagination.choosePosition");
 });
 const tileMenuRef = ref<HTMLElement | null>(null);
@@ -375,6 +428,11 @@ function choosePageNumberPosition(position: PaginationPosition): void {
 function chooseChartType(chartType: ChartType): void {
   closeTileMenu();
   emit("insert-chart", chartType);
+}
+
+function chooseTableKind(kind: "typed" | "data"): void {
+  closeTileMenu();
+  emit("insert-table", kind);
 }
 
 function chooseBarcodeType(barcodeType: BarcodeType): void {
@@ -448,6 +506,17 @@ onBeforeUnmount(closeTileMenu);
 .add-button:hover {
   background-color: #3a80d2;
   transform: scale(1.1);
+}
+
+.element-group-title {
+  margin: 8px 0 4px;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.category-header + .element-group-title {
+  margin-top: 2px;
 }
 
 .element-list {
@@ -714,6 +783,57 @@ onBeforeUnmount(closeTileMenu);
   outline: none;
   border-color: #1890ff;
   background-color: #e6f4ff;
+}
+
+.table-kind-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.table-kind-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 10px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #555;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.table-kind-option svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.table-kind-option:hover,
+.table-kind-option:focus-visible {
+  outline: none;
+  border-color: #1890ff;
+  background-color: #e6f4ff;
+  color: #1f2937;
+}
+
+.table-kind-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.table-kind-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.table-kind-desc {
+  font-size: 11px;
+  line-height: 1.35;
+  color: #6b7280;
 }
 
 .tile-menu-hint {

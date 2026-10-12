@@ -3,16 +3,25 @@ import {
   Barcode,
   ChartColumn,
   Circle,
+  CircleDot,
   FileDigit,
   Gauge,
+  Heading1,
+  Heading2,
   Image as ImageIcon,
   Images,
+  LayoutPanelTop,
+  List,
   Minus,
+  PanelBottom,
   PanelTop,
+  Signature,
   Square,
   SquareDashed,
   SquareSquare,
+  StickyNote,
   Table as TableIcon,
+  TableProperties,
   TriangleAlert,
   Type as TypeIcon,
 } from "@lucide/vue";
@@ -28,6 +37,8 @@ export interface ElementConfig {
   icon: string;
   iconComponent?: Component;
   category?: string;
+  // Sub-group inside a category (Element Presets: boxes, headerFooter, headings, status, signOff)
+  group?: string;
   defaultProps: Partial<DesignElement>;
   component?: any;
   validator?: (element: DesignElement) => boolean;
@@ -220,6 +231,19 @@ export class ElementRegistry {
       defaultProps: { type: "chart", x: 0, y: 0, width: 320, height: 200 },
     });
 
+    // Custom table ("Typed by me" content of a Table): a grid the user types into
+    // (cells, merges, fills). Built by buildCustomTable() in utils/customTable.ts;
+    // edited on the canvas
+    this.registerElement({
+      type: "customTable",
+      name: "elementNames.customTable",
+      icon: "⊞",
+      iconComponent: TableProperties,
+      // Not a tile of its own: the Table tile makes a table, typed or with project data
+      category: "hidden",
+      defaultProps: { type: "customTable", x: 0, y: 0, width: 300, height: 60 },
+    });
+
     // Barcode element
     this.registerElement({
       type: "barcode",
@@ -262,6 +286,31 @@ export class ElementRegistry {
         icon: "☐",
         iconComponent,
         category: "frames",
+        group: "boxes",
+        defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
+      }),
+    );
+
+    // More element presets, from a monthly project report: header banner, footer,
+    // headings, legend, sign-off... Built by buildReportPart() in utils/reportParts.ts
+    const reportParts: Array<{ type: string; group: string; iconComponent: Component }> = [
+      { type: "partReportHeader", group: "headerFooter", iconComponent: LayoutPanelTop },
+      { type: "partPageFooter", group: "headerFooter", iconComponent: PanelBottom },
+      { type: "partSectionHeading", group: "headings", iconComponent: Heading1 },
+      { type: "partSubHeading", group: "headings", iconComponent: Heading2 },
+      { type: "partNote", group: "headings", iconComponent: StickyNote },
+      { type: "partRiskLegend", group: "status", iconComponent: List },
+      { type: "partStatusDot", group: "status", iconComponent: CircleDot },
+      { type: "partSignOff", group: "signOff", iconComponent: Signature },
+    ];
+    reportParts.forEach(({ type, group, iconComponent }) =>
+      this.registerElement({
+        type,
+        name: `elementNames.${type}`,
+        icon: "☐",
+        iconComponent,
+        category: "frames",
+        group,
         defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
       }),
     );

@@ -57,6 +57,48 @@
           <Strikethrough :size="14" :stroke-width="2.5" />
         </button>
 
+        <!-- Superscript / subscript ("1st", "m²", "H₂O") -->
+        <button
+          type="button"
+          class="format-btn"
+          :class="{ 'is-active': activeFormats.superscript }"
+          :title="t('textToolbar.superscript')"
+          @click="emitFormat('superscript')"
+        >
+          <Superscript :size="14" :stroke-width="2" />
+        </button>
+        <button
+          type="button"
+          class="format-btn"
+          :class="{ 'is-active': activeFormats.subscript }"
+          :title="t('textToolbar.subscript')"
+          @click="emitFormat('subscript')"
+        >
+          <Subscript :size="14" :stroke-width="2" />
+        </button>
+
+        <span class="btn-separator"></span>
+
+        <!-- Lists: the chosen lines become bullet points or numbered points -->
+        <button
+          type="button"
+          class="format-btn"
+          :class="{ 'is-active': activeFormats.bulletList }"
+          :title="t('textToolbar.bulletList')"
+          @click="emitFormat('insertUnorderedList')"
+        >
+          <List :size="14" :stroke-width="2" />
+        </button>
+        <button
+          type="button"
+          class="format-btn"
+          :class="{ 'is-active': activeFormats.numberedList }"
+          :title="t('textToolbar.numberedList')"
+          @click="emitFormat('insertOrderedList')"
+        >
+          <ListOrdered :size="14" :stroke-width="2" />
+        </button>
+
         <span class="btn-separator"></span>
 
         <!-- Text Color picker trigger -->
@@ -391,11 +433,15 @@ import {
   Highlighter,
   Italic,
   Link,
+  List,
+  ListOrdered,
   Mail,
   Palette,
   Phone,
   RemoveFormatting,
   Strikethrough,
+  Subscript,
+  Superscript,
   Underline,
   Unlink,
   X,
@@ -412,6 +458,10 @@ const props = defineProps<{
     italic?: boolean;
     underline?: boolean;
     strike?: boolean;
+    superscript?: boolean;
+    subscript?: boolean;
+    bulletList?: boolean;
+    numberedList?: boolean;
     link?: boolean;
     color?: string;
     highlight?: string;
