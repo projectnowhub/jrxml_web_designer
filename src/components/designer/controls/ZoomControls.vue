@@ -41,7 +41,7 @@
 
       <!-- Dropdown Popover Menu -->
       <transition name="zoom-menu-fade">
-        <div v-if="isDropdownOpen" class="zoom-menu-popover" role="menu">
+        <Transition name="menu-pop-centered"><div v-if="isDropdownOpen" class="zoom-menu-popover" role="menu">
           <!-- Fit Content based on device and panels -->
           <button
             type="button"
@@ -85,7 +85,7 @@
               <span class="zoom-item-label">{{ Math.round(level * 100) }}%</span>
             </button>
           </div>
-        </div>
+        </div></Transition>
       </transition>
     </div>
 

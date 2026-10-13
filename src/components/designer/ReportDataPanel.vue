@@ -108,8 +108,9 @@
                   :aria-label="t(expanded[sourceKey(project.id, source.id)] ? 'reportData.collapse' : 'reportData.expand')"
                   @click="toggleSource(project.id, source.id)"
                 >
-                  <component
-                    :is="expanded[sourceKey(project.id, source.id)] ? ChevronDown : ChevronRight"
+                  <ChevronDown
+                    class="rdp-chevron"
+                    :class="{ 'is-closed': !expanded[sourceKey(project.id, source.id)] }"
                     :size="13"
                   />
                 </button>
@@ -123,6 +124,7 @@
                 {{ t("reportData.usedIn", { tables: usedBy(project.id, source.id).join(", ") }) }}
               </div>
 
+              <Collapse>
               <ul v-if="expanded[sourceKey(project.id, source.id)]" class="rdp-list rdp-columns">
                 <li v-if="!schemas[sourceKey(project.id, source.id)]" class="rdp-message">
                   {{ t("dataTable.loading") }}
@@ -141,6 +143,7 @@
                   <span class="rdp-meta">{{ t(`dataTable.types.${col.type}`) }}</span>
                 </li>
               </ul>
+              </Collapse>
             </li>
           </ul>
 
@@ -157,12 +160,12 @@
 </template>
 
 <script setup lang="ts">
+import Collapse from "../common/Collapse.vue";
 import { computed, nextTick, reactive, ref, watch, type Component } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   Calendar,
   ChevronDown,
-  ChevronRight,
   Database,
   DollarSign,
   FolderKanban,
@@ -400,6 +403,14 @@ function dragColumn(
 </script>
 
 <style scoped>
+.rdp-chevron {
+  transition: transform 0.15s ease;
+}
+
+.rdp-chevron.is-closed {
+  transform: rotate(-90deg);
+}
+
 .rdp {
   padding: 10px 0;
 }

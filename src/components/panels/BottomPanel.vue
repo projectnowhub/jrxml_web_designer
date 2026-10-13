@@ -24,6 +24,7 @@ import { useI18n } from "vue-i18n";
 import { NButton, NAlert } from "naive-ui";
 import notification from "@/utils/notification";
 import ResizablePanel from "./ResizablePanel.vue";
+import Collapse from "../common/Collapse.vue";
 import CodeMirrorEditor from "../editor/CodeMirrorEditor.vue";
 
 import {
@@ -767,6 +768,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <Collapse>
   <ResizablePanel
     v-show="visible"
     position="bottom"
@@ -1317,6 +1319,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </ResizablePanel>
+  </Collapse>
 
 </template>
 

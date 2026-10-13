@@ -13,11 +13,28 @@ export const ZOOM_CONSTANTS = {
 // Panel size constants
 export const PANEL_CONSTANTS = {
   DEFAULT_BOTTOM_PANEL_HEIGHT: 320,
-  DEFAULT_PROPERTY_PANEL_WIDTH: 320,
-  DEFAULT_LEFT_PANEL_WIDTH: 240, // default width of the left panel
-  LEFT_PANEL_MIN_WIDTH: 150, // minimum width of the left panel
-  LEFT_PANEL_MAX_WIDTH: 400, // maximum width of the left panel
+  // Side panels: dragged between min and max, and never wider than their share
+  // of the window, so the canvas keeps room on small screens
+  DEFAULT_PROPERTY_PANEL_WIDTH: 500,
+  PROPERTY_PANEL_MIN_WIDTH: 450,
+  PROPERTY_PANEL_MAX_WIDTH: 600,
+  PROPERTY_PANEL_WINDOW_SHARE: 0.36,
+  DEFAULT_LEFT_PANEL_WIDTH: 260, // default width of the left panel
+  LEFT_PANEL_MIN_WIDTH: 200, // minimum width of the left panel (two tile columns)
+  LEFT_PANEL_MAX_WIDTH: 480, // maximum width of the left panel
+  LEFT_PANEL_WINDOW_SHARE: 0.3,
 };
+
+// Side panels opening / closing: the panel's content is revealed from its edge
+// and the canvas glides to its new place (transforms only, no layout per frame)
+export const PANEL_MOTION = {
+  // Quick, and slowing down only briefly at the end (a long tail feels sluggish)
+  duration: 220,
+  easing: "cubic-bezier(0.25, 0.8, 0.25, 1)",
+};
+
+export const prefersReducedMotion = () =>
+  typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 // Report property constants
 export const REPORT_CONSTANTS = {

@@ -132,7 +132,7 @@ onBeforeUnmount(() => {
       <Menu :size="18" :stroke-width="2" aria-hidden="true" />
     </button>
 
-    <div v-if="isOpen" class="more-popover" :style="popoverStyle" role="menu">
+    <Transition name="menu-pop"><div v-if="isOpen" class="more-popover" :style="popoverStyle" role="menu">
       <!-- Edit -->
       <div v-if="sections.undoRedo || sections.edit" class="more-heading">{{ t("appMenu.edit") }}</div>
       <div v-if="sections.undoRedo" class="more-row">
@@ -205,7 +205,7 @@ onBeforeUnmount(() => {
         <span>{{ t("actions.downloadJRXML") }}</span>
       </button>
       </template>
-    </div>
+    </div></Transition>
   </div>
 </template>
 

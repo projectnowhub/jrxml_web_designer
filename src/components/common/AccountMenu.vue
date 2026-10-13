@@ -64,7 +64,7 @@ onBeforeUnmount(() => {
     >
       <span class="avatar">{{ userInitial }}</span>
     </button>
-    <div v-if="isOpen" class="account-popover" role="menu">
+    <Transition name="menu-pop"><div v-if="isOpen" class="account-popover" role="menu">
       <div class="account-popover-header">
         <span class="avatar">{{ userInitial }}</span>
         <div>
@@ -97,7 +97,7 @@ onBeforeUnmount(() => {
         <LogOut :size="17" :stroke-width="2.25" aria-hidden="true" />
         <span>{{ t("layout.signOut") }}</span>
       </button>
-    </div>
+    </div></Transition>
   </div>
 </template>
 

@@ -15,13 +15,14 @@
       >
         <div class="category-header" @click="toggleCategory(categoryKey)">
           <span class="category-title">{{ categoryLabels[categoryKey] || categoryKey }}</span>
-          <component
-            :is="expandedCategories[categoryKey] ? ChevronDown : ChevronRight"
+          <ChevronDown
             class="category-arrow"
+            :class="{ 'is-closed': !expandedCategories[categoryKey] }"
             :size="14"
           />
         </div>
-        <template v-if="expandedCategories[categoryKey]">
+        <Collapse>
+        <div v-if="expandedCategories[categoryKey]" class="category-body">
         <template v-for="section in sectionsOf(categoryElements)" :key="section.group">
         <div v-if="section.group" class="element-group-title">
           {{ t(`elementLibrary.presetGroups.${section.group}`) }}
@@ -53,7 +54,8 @@
           </div>
         </div>
         </template>
-        </template>
+        </div>
+        </Collapse>
       </div>
     </div>
 
@@ -168,6 +170,7 @@
 </template>
 
 <script setup lang="ts">
+import Collapse from "./common/Collapse.vue";
 import { storeToRefs } from "pinia";
 import { useReportStore } from "@/stores/report";
 import { ref, computed, nextTick, onBeforeUnmount } from "vue";
@@ -175,7 +178,6 @@ import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
 import {
   ChevronDown,
-  ChevronRight,
   Database,
   PencilLine,
 } from "@lucide/vue";
@@ -558,7 +560,7 @@ onBeforeUnmount(closeTileMenu);
   background: rgba(28, 27, 38, 0.07);
 }
 
-.category-header + .element-group-title {
+.category-body > .element-group-title:first-child {
   margin-top: 2px;
 }
 
@@ -938,6 +940,10 @@ onBeforeUnmount(closeTileMenu);
   flex-shrink: 0;
   color: var(--prop-text-tertiary, #8a84a3);
   transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.category-arrow.is-closed {
+  transform: rotate(-90deg);
 }
 
 .category-header:hover .category-arrow {

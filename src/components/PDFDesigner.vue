@@ -242,15 +242,17 @@
 
     <div class="designer-layout">
       <!-- Left-side element library -->
+      <Transition name="side-panel-left">
       <ResizablePanel
         v-show="showLeftPanel"
         position="left"
         :initial-size="leftPanelWidth"
         :min-size="PANEL_CONSTANTS.LEFT_PANEL_MIN_WIDTH"
         :max-size="PANEL_CONSTANTS.LEFT_PANEL_MAX_WIDTH"
+        :max-window-share="PANEL_CONSTANTS.LEFT_PANEL_WINDOW_SHARE"
         :collapsible="true"
         @size-change="handleLeftPanelSizeChange"
-        @collapse-change="leftPanelCollapsed = $event"
+        @collapse-change="leftPanelCollapsed = $event; glideCanvas()"
         :title="t('elementLibrary.title')"
       >
         <template #default="{ toggleCollapse }">
@@ -279,9 +281,11 @@
         </ElementLibrary>
         </template>
       </ResizablePanel>
+      </Transition>
 
       <!-- Center design area -->
       <div
+        ref="designAreaRef"
         class="design-area-wrapper"
         style="position: relative; flex: 1; overflow: hidden; min-width: 0; display: flex; flex-direction: column;"
       >
@@ -347,16 +351,17 @@
       </div>
 
       <!-- Right-side properties panel -->
+      <Transition name="side-panel-right">
       <ResizablePanel
         v-show="showRightPanel"
         position="right"
         :initial-size="propertyPanelWidth"
-        :min-size="200"
-        :max-size="500"
+        :min-size="PANEL_CONSTANTS.PROPERTY_PANEL_MIN_WIDTH"
+        :max-size="PANEL_CONSTANTS.PROPERTY_PANEL_MAX_WIDTH"
+        :max-window-share="PANEL_CONSTANTS.PROPERTY_PANEL_WINDOW_SHARE"
         :collapsible="true"
-        :auto-width="true"
         @size-change="handlePropertyPanelSizeChange"
-        @collapse-change="rightPanelCollapsed = $event"
+        @collapse-change="rightPanelCollapsed = $event; glideCanvas()"
         :title="rightPanelTab === 'ai' ? t('ai.title') : t('properties.title')"
       >
         <template #default="{ toggleCollapse }">
@@ -447,6 +452,7 @@
         </Transition>
         </template>
       </ResizablePanel>
+      </Transition>
     </div>
 
     <!-- Bottom tab area -->
@@ -788,6 +794,8 @@ import {
   getDefaultElementSize,
   KEYBOARD_CONSTANTS,
   PANEL_CONSTANTS,
+  PANEL_MOTION,
+  prefersReducedMotion,
   REPORT_CONSTANTS,
   UI_CONSTANTS,
 } from "../constants/constants";
@@ -4659,6 +4667,25 @@ const downloadJRXML = async () => {
   flushAutoSave();
 };
 
+// A side panel opened or closed: the canvas moves to its new place in one
+// layout, then glides there from where it was (a transform, so the page isn't
+// laid out again on every frame)
+const designAreaRef = ref<HTMLElement | null>(null);
+const glideCanvas = () => {
+  const area = designAreaRef.value;
+  if (!area || prefersReducedMotion() || typeof area.animate !== "function") return;
+  const anchor = () => (area.querySelector(".page-sheet-wrapper") as HTMLElement | null) ?? area;
+  const before = anchor().getBoundingClientRect().left;
+  nextTick(() => {
+    const dx = before - anchor().getBoundingClientRect().left;
+    if (Math.abs(dx) < 1) return;
+    area.animate([{ transform: `translateX(${dx}px)` }, { transform: "none" }], {
+      duration: PANEL_MOTION.duration,
+      easing: PANEL_MOTION.easing,
+    });
+  });
+};
+
 // Panel visibility control functions
 const toggleLeftPanel = () => {
   showLeftPanel.value = !showLeftPanel.value;
@@ -8054,6 +8081,8 @@ const moveElementZOrder = (direction: "front" | "back") => {
 
 .designer-layout {
   display: flex;
+  /* The canvas's colour, seen at its edge while it glides after a side panel */
+  background: #f1f0f7;
   flex: 1;
   /* May shrink to nothing when the bottom panel is full height */
   min-height: 0;

@@ -781,3 +781,20 @@
 .table-properties .prop-list {
   background: #fff;
 }
+
+/* Cards that appear (a new selection, an option turned on) fade in */
+@keyframes prop-card-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.prop-form-group {
+  animation: prop-card-in 0.18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prop-form-group {
+    animation: none;
+  }
+}

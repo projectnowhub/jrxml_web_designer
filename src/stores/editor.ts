@@ -1,7 +1,7 @@
 // How the designer is shown, not what is in the report: zoom, snapping and
 // grid (remembered per browser), alignment guides, and the panel layout.
 import { defineStore } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, type Ref } from "vue";
 import { useZoom } from "@/composables/useZoom";
 import { useSnapAlignment } from "@/composables/useSnapAlignment";
 import { PANEL_CONSTANTS, ZOOM_CONSTANTS } from "@/constants/constants";
@@ -35,28 +35,52 @@ export const useEditorStore = defineStore("editor", () => {
   const aiChatPanelHeight = ref(300);
   // 'properties' or 'ai'
   const rightPanelTab = ref("properties");
-  const propertyPanelWidth = ref(PANEL_CONSTANTS.DEFAULT_PROPERTY_PANEL_WIDTH);
-  const rightPanelCollapsed = ref(false);
-  const leftPanelWidth = ref(PANEL_CONSTANTS.DEFAULT_LEFT_PANEL_WIDTH);
-  const leftPanelCollapsed = ref(false);
-  // The bottom panel's height is remembered per browser
-  const BOTTOM_HEIGHT_KEY = "designer.bottomPanelHeight";
-  const savedBottomHeight = () => {
+  // Panel sizes are remembered per browser
+  const savedSize = (key: string, fallback: number, min: number, max = Infinity) => {
     try {
-      const n = Number(localStorage.getItem(BOTTOM_HEIGHT_KEY));
-      return Number.isFinite(n) && n >= 150 ? n : PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT;
+      const raw = localStorage.getItem(key);
+      const n = raw === null ? NaN : Number(raw);
+      return Number.isFinite(n) && n >= min && n <= max ? n : fallback;
     } catch {
-      return PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT;
+      return fallback;
     }
   };
+  const remember = (key: string, size: Ref<number>) =>
+    watch(size, (n) => {
+      try {
+        localStorage.setItem(key, String(Math.round(n)));
+      } catch {
+        // Storage blocked: the size is just not remembered
+      }
+    });
+
+  const RIGHT_WIDTH_KEY = "designer.rightPanelWidth";
+  const LEFT_WIDTH_KEY = "designer.leftPanelWidth";
+  const BOTTOM_HEIGHT_KEY = "designer.bottomPanelHeight";
+  const savedRightWidth = () =>
+    savedSize(
+      RIGHT_WIDTH_KEY,
+      PANEL_CONSTANTS.DEFAULT_PROPERTY_PANEL_WIDTH,
+      PANEL_CONSTANTS.PROPERTY_PANEL_MIN_WIDTH,
+      PANEL_CONSTANTS.PROPERTY_PANEL_MAX_WIDTH,
+    );
+  const savedLeftWidth = () =>
+    savedSize(
+      LEFT_WIDTH_KEY,
+      PANEL_CONSTANTS.DEFAULT_LEFT_PANEL_WIDTH,
+      PANEL_CONSTANTS.LEFT_PANEL_MIN_WIDTH,
+      PANEL_CONSTANTS.LEFT_PANEL_MAX_WIDTH,
+    );
+  const savedBottomHeight = () => savedSize(BOTTOM_HEIGHT_KEY, PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT, 150);
+
+  const propertyPanelWidth = ref(savedRightWidth());
+  const rightPanelCollapsed = ref(false);
+  const leftPanelWidth = ref(savedLeftWidth());
+  const leftPanelCollapsed = ref(false);
   const bottomPanelHeight = ref(savedBottomHeight());
-  watch(bottomPanelHeight, (h) => {
-    try {
-      localStorage.setItem(BOTTOM_HEIGHT_KEY, String(Math.round(h)));
-    } catch {
-      // Storage blocked: the height is just not remembered
-    }
-  });
+  remember(RIGHT_WIDTH_KEY, propertyPanelWidth);
+  remember(LEFT_WIDTH_KEY, leftPanelWidth);
+  remember(BOTTOM_HEIGHT_KEY, bottomPanelHeight);
 
   // The layout a designer opens with; the snap and grid toggles are the
   // user's settings and stay as they are
@@ -72,9 +96,9 @@ export const useEditorStore = defineStore("editor", () => {
     showAIChat.value = false;
     aiChatPanelHeight.value = 300;
     rightPanelTab.value = "properties";
-    propertyPanelWidth.value = PANEL_CONSTANTS.DEFAULT_PROPERTY_PANEL_WIDTH;
+    propertyPanelWidth.value = savedRightWidth();
     rightPanelCollapsed.value = false;
-    leftPanelWidth.value = PANEL_CONSTANTS.DEFAULT_LEFT_PANEL_WIDTH;
+    leftPanelWidth.value = savedLeftWidth();
     leftPanelCollapsed.value = false;
     bottomPanelHeight.value = savedBottomHeight();
   }

@@ -110,7 +110,7 @@ onBeforeUnmount(() => {
       <span v-if="!compact">{{ t("actions.snapMenu") }}</span>
       <ChevronDown class="snap-caret" :size="14" aria-hidden="true" />
     </button>
-    <div v-if="isOpen" class="snap-popover" role="menu">
+    <Transition name="menu-pop"><div v-if="isOpen" class="snap-popover" role="menu">
       <div v-for="option in options" :key="option.key" class="snap-option">
         <n-checkbox
           class="snap-check"
@@ -135,7 +135,7 @@ onBeforeUnmount(() => {
       </div>
       <div class="snap-divider" />
       <p class="snap-hint">{{ t("actions.snapBypassHint") }}</p>
-    </div>
+    </div></Transition>
   </div>
 </template>
 

@@ -1,6 +1,7 @@
 <template>
   <!-- One copy of the content: rendered while open (or always with useVShow,
        then only hidden). Two copies would clash, e.g. radio groups by name. -->
+  <Transition name="modal-pop">
   <div
     v-if="useVShow || visible"
     v-show="visible"
@@ -24,6 +25,7 @@
       </div>
     </div>
   </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
