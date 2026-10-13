@@ -264,8 +264,8 @@ onMounted(() => {
 }
 
 .form-select:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  border-color: #6440f4;
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.2);
 }
 
 .format-options {

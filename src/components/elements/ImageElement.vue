@@ -885,7 +885,7 @@ const handleContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: n
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 2px dashed #93c5fd;
+  border: 2px dashed #c4b5fd;
   border-radius: 4px;
   background-color: #f8faff;
   color: #4b5563;
@@ -899,9 +899,9 @@ const handleContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: n
 
 .image-upload-zone:hover,
 .image-upload-zone.is-drag-over {
-  border-color: #2563eb;
-  background-color: #eff6ff;
-  color: #1d4ed8;
+  border-color: #6440f4;
+  background-color: #f4f1ff;
+  color: #5b3ee0;
 }
 
 .image-upload-zone.is-stored {

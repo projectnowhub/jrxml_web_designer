@@ -135,7 +135,7 @@ function onDragLeave(event: DragEvent) {
 }
 
 .chart-element.is-drop-target {
-  outline: 2px dashed #1890ff;
+  outline: 2px dashed #6440f4;
   outline-offset: 2px;
 }
 
@@ -143,7 +143,7 @@ function onDragLeave(event: DragEvent) {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(24, 144, 255, 0.08);
+  background: rgba(100, 64, 244, 0.08);
   pointer-events: none;
 }
 

@@ -727,7 +727,7 @@ function apply() {
   right: 0;
   height: 2px;
   border-radius: 1px;
-  background: #2563eb;
+  background: #6440f4;
   pointer-events: none;
 }
 
@@ -789,8 +789,8 @@ function apply() {
 .tcm-input:focus,
 .tcm-select:focus {
   outline: none;
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+  border-color: #6440f4;
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.15);
 }
 
 .tcm-input.is-narrow {

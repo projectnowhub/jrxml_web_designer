@@ -487,10 +487,10 @@ const appliedChips = computed<{ key: string; text: string; icon: Component; remo
   gap: 4px;
   max-width: 100%;
   padding: 3px 8px;
-  border: 1px solid #bfdbfe;
+  border: 1px solid #ddd6fe;
   border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: #f4f1ff;
+  color: #5b3ee0;
   font-size: 11px;
   cursor: pointer;
 }
@@ -502,8 +502,8 @@ const appliedChips = computed<{ key: string; text: string; icon: Component; remo
 }
 
 .tfp-chip:hover {
-  border-color: #93c5fd;
-  background: #dbeafe;
+  border-color: #c4b5fd;
+  background: #ede9fe;
 }
 
 .tfp-box {
@@ -558,7 +558,7 @@ const appliedChips = computed<{ key: string; text: string; icon: Component; remo
   bottom: 6px;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: #2563eb;
+  background: #6440f4;
 }
 
 .tfp-cat-name {
@@ -574,7 +574,7 @@ const appliedChips = computed<{ key: string; text: string; icon: Component; remo
   min-width: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: #2563eb;
+  background: #6440f4;
   color: #fff;
   font-size: 10px;
   font-weight: 600;
@@ -587,7 +587,7 @@ const appliedChips = computed<{ key: string; text: string; icon: Component; remo
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #2563eb;
+  background: #6440f4;
 }
 
 .tfp-pane {
@@ -648,7 +648,7 @@ const appliedChips = computed<{ key: string; text: string; icon: Component; remo
 
 .tfp-segment-btn.active {
   background: #fff;
-  color: #1d4ed8;
+  color: #5b3ee0;
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
@@ -671,7 +671,7 @@ const appliedChips = computed<{ key: string; text: string; icon: Component; remo
 .tfp-option input {
   flex-shrink: 0;
   margin: 0;
-  accent-color: #2563eb;
+  accent-color: #6440f4;
 }
 
 .tfp-option-text {
@@ -719,7 +719,7 @@ const appliedChips = computed<{ key: string; text: string; icon: Component; remo
   padding: 0;
   border: none;
   background: none;
-  color: #2563eb;
+  color: #6440f4;
   font-size: 12px;
   cursor: pointer;
 }
@@ -760,13 +760,13 @@ const appliedChips = computed<{ key: string; text: string; icon: Component; remo
 }
 
 .tfp-pill:hover {
-  border-color: #93c5fd;
+  border-color: #c4b5fd;
 }
 
 .tfp-pill.active {
-  border-color: #2563eb;
-  background: #eff6ff;
-  color: #1d4ed8;
+  border-color: #6440f4;
+  background: #f4f1ff;
+  color: #5b3ee0;
   font-weight: 600;
 }
 

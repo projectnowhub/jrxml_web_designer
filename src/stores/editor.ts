@@ -10,9 +10,10 @@ import { useReportStore } from "./report";
 export const useEditorStore = defineStore("editor", () => {
   const report = useReportStore();
   const paperWidth = computed(() => report.paperWidth);
+  const paperHeight = computed(() => report.paperHeight);
 
   // Zoom of the canvas
-  const zoom = useZoom({ paperWidth, zoomConstants: ZOOM_CONSTANTS });
+  const zoom = useZoom({ paperWidth, paperHeight, zoomConstants: ZOOM_CONSTANTS });
 
   // Snap to grid / to other elements, show the grid; the guides being drawn
   const snap = useSnapAlignment();

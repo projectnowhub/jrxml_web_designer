@@ -1633,7 +1633,7 @@ const handleStartEditing = () => {
 /* Hyperlinks in canvas */
 :deep(.text-hyperlink),
 :deep(a) {
-  color: #1890ff;
+  color: #6440f4;
   text-decoration: underline;
   cursor: pointer;
   transition: color 0.1s ease;
@@ -1641,7 +1641,7 @@ const handleStartEditing = () => {
 
 :deep(.text-hyperlink:hover),
 :deep(a:hover) {
-  color: #40a9ff;
+  color: #7c5cf7;
 }
 
 /* Link Preview Chip */
@@ -1677,11 +1677,11 @@ const handleStartEditing = () => {
 .preview-type-icon {
   display: flex;
   align-items: center;
-  color: #1890ff;
+  color: #6440f4;
 }
 
 .preview-url-link {
-  color: #1890ff;
+  color: #6440f4;
   text-decoration: none;
   max-width: 190px;
   overflow: hidden;
@@ -1705,7 +1705,7 @@ const handleStartEditing = () => {
 }
 
 .chip-action-btn:hover {
-  color: #1890ff;
+  color: #6440f4;
   background: #f0f0f0;
 }
 

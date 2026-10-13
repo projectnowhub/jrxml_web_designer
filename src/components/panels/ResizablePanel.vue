@@ -168,24 +168,23 @@ onUnmounted(() => {
 .resizable-panel {
   position: relative;
   overflow: hidden;
-  background-color: #f5f5f5;
-  border: 1px solid #ddd;
+  background-color: #ffffff;
   height: 100%;
 }
 
 /* Left panel */
 .resizable-panel--left {
-  border-right: 1px solid #ddd;
+  border-right: 1px solid rgba(28, 27, 38, 0.08);
 }
 
 /* Right panel */
 .resizable-panel--right {
-  border-left: 1px solid #ddd;
+  border-left: 1px solid rgba(28, 27, 38, 0.08);
 }
 
 /* Bottom panel */
 .resizable-panel--bottom {
-  border-top: 1px solid #ddd;
+  border-top: 1px solid rgba(28, 27, 38, 0.08);
 }
 
 /* Collapsed state */
@@ -202,15 +201,16 @@ onUnmounted(() => {
   gap: 12px;
   height: 100%;
   padding-top: 10px;
-  background: #fff;
+  background: #ffffff;
 }
 
 .collapsed-rail-label {
   writing-mode: vertical-rl;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: #6b7280;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  color: #8a84a3;
+  text-transform: uppercase;
   white-space: nowrap;
   user-select: none;
 }
@@ -224,10 +224,11 @@ onUnmounted(() => {
   position: absolute;
   background-color: transparent;
   z-index: 5;
+  transition: background-color 0.15s ease;
 }
 
 .panel-resize-handle:hover {
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: rgba(124, 92, 247, 0.25);
 }
 
 /* Left panel resize handle */
@@ -262,7 +263,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  padding: 8px;
+  padding: 0;
   display: flex;
   flex-direction: column;
 }

@@ -61,7 +61,7 @@ const label = computed(() => {
 }
 
 .panel-toggle-button:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid #6440f4;
   outline-offset: 1px;
 }
 </style>

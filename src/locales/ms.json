@@ -522,7 +522,10 @@
     "zoomIn": "Zum Masuk",
     "zoomOut": "Zum Keluar",
     "resetZoom": "Set Semula Zum",
-    "fitWindow": "Muat ke Tetingkap"
+    "fitWindow": "Muat Kandungan",
+    "fitContent": "Muat Kandungan",
+    "zoomLevel": "Tahap Zum",
+    "zoomOptions": "Pilihan Zum"
   },
   "modal": {
     "confirm": "Sahkan",

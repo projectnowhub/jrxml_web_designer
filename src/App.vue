@@ -1,17 +1,35 @@
 <template>
-  <div id="app">
-    <RouterView />
-  </div>
+  <!-- One look for the whole app (home page and designer): the home page's purple -->
+  <NConfigProvider :theme-overrides="themeOverrides">
+    <div id="app">
+      <RouterView />
+    </div>
+  </NConfigProvider>
 </template>
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from "vue";
 import { useRouter, RouterView } from "vue-router";
+import { NConfigProvider, type GlobalThemeOverrides } from "naive-ui";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "./services/apiClient";
 import { fetchUser } from "./services/authService";
 
 const router = useRouter();
+
+const themeOverrides: GlobalThemeOverrides = {
+  common: {
+    primaryColor: "#6366F1",
+    primaryColorHover: "#7C5CF7",
+    primaryColorPressed: "#4F46E5",
+    primaryColorSuppl: "#7C5CF7",
+    borderRadius: "8px",
+    borderColor: "#E6E5EE",
+    textColorBase: "#1C1B26",
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif",
+  },
+};
 
 let unlisten: (() => void) | undefined;
 let lastHandledUrl: string | undefined;

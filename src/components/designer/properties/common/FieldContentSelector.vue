@@ -339,7 +339,7 @@ onMounted(() => {
 
 .mode-tab-btn.active {
   background: #ffffff;
-  color: #2563eb;
+  color: #6440f4;
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
@@ -371,8 +371,8 @@ onMounted(() => {
 }
 
 .form-select:focus, .form-textarea:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  border-color: #6440f4;
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.2);
 }
 
 .preset-grid {
@@ -395,13 +395,13 @@ onMounted(() => {
 }
 
 .preset-card:hover {
-  border-color: #93c5fd;
+  border-color: #c4b5fd;
   background: #f8fafc;
 }
 
 .preset-card.selected {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: #6440f4;
+  background: #f4f1ff;
 }
 
 .preset-icon {

@@ -494,21 +494,21 @@ function dragColumn(
 }
 
 .rdp-tab.active {
-  border-color: #bfdbfe;
+  border-color: #ddd6fe;
   background: #fff;
-  color: #1d4ed8;
+  color: #5b3ee0;
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
 .rdp-tab:focus-visible {
-  outline: 2px solid #93c5fd;
+  outline: 2px solid #c4b5fd;
   outline-offset: -2px;
 }
 
 .rdp-tab svg {
   flex-shrink: 0;
-  color: #2563eb;
+  color: #6440f4;
 }
 
 .rdp-tab-logo {
@@ -570,8 +570,8 @@ function dragColumn(
 }
 
 .rdp-item:hover {
-  border-color: #93c5fd;
-  background: #eff6ff;
+  border-color: #c4b5fd;
+  background: #f4f1ff;
 }
 
 .rdp-item.is-source {
@@ -616,7 +616,7 @@ function dragColumn(
 
 .rdp-accent {
   flex-shrink: 0;
-  color: #2563eb;
+  color: #6440f4;
 }
 
 .rdp-type,
@@ -666,7 +666,7 @@ function dragColumn(
   padding: 0;
   border: none;
   background: none;
-  color: #2563eb;
+  color: #6440f4;
   font-size: 12px;
   text-decoration: underline;
   cursor: pointer;

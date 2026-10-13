@@ -904,8 +904,8 @@ function runMenu(id: MenuId) {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(37, 99, 235, 0.16);
-  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.7);
+  background: rgba(100, 64, 244, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(100, 64, 244, 0.7);
   pointer-events: none;
 }
 
@@ -915,7 +915,7 @@ function runMenu(id: MenuId) {
   z-index: 1;
   margin: 0;
   border: none;
-  outline: 2px solid #2563eb;
+  outline: 2px solid #6440f4;
   outline-offset: -2px;
   background: rgba(255, 255, 255, 0.95);
   font-family: inherit;
@@ -968,7 +968,7 @@ function runMenu(id: MenuId) {
 
 .ct-col-edge:hover,
 .ct-row-edge:hover {
-  background: rgba(37, 99, 235, 0.35);
+  background: rgba(100, 64, 244, 0.35);
 }
 
 .ct-menu {
@@ -1012,7 +1012,7 @@ function runMenu(id: MenuId) {
 }
 
 .ct-menu-item:hover:not(:disabled) {
-  background: #eff6ff;
+  background: #f4f1ff;
 }
 
 .ct-menu-item:disabled {

@@ -915,8 +915,8 @@ defineExpose({
 }
 
 .format-btn.is-active {
-  background: #e6f7ff;
-  color: #1890ff;
+  background: #f1edff;
+  color: #6440f4;
   font-weight: 600;
 }
 
@@ -1009,9 +1009,9 @@ defineExpose({
 }
 
 .clear-highlight-btn.is-active-none {
-  background: #e6f7ff;
-  border-color: #1890ff;
-  color: #1890ff;
+  background: #f1edff;
+  border-color: #6440f4;
+  color: #6440f4;
   font-weight: 600;
 }
 
@@ -1050,7 +1050,7 @@ defineExpose({
 }
 
 .color-swatch-btn.is-selected {
-  outline: 2px solid #1890ff;
+  outline: 2px solid #6440f4;
   outline-offset: 1px;
 }
 
@@ -1106,8 +1106,8 @@ defineExpose({
 }
 
 .custom-color-text:focus {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+  border-color: #6440f4;
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.15);
 }
 
 .custom-apply-btn {
@@ -1150,8 +1150,8 @@ defineExpose({
 }
 
 .link-tab.is-active {
-  background: #1890ff;
-  border-color: #1890ff;
+  background: #6440f4;
+  border-color: #6440f4;
   color: #ffffff;
   font-weight: 500;
 }
@@ -1187,8 +1187,8 @@ defineExpose({
 }
 
 .input-row:focus-within {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+  border-color: #6440f4;
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.15);
 }
 
 .input-prefix-label {
@@ -1212,8 +1212,8 @@ defineExpose({
 }
 
 .link-text-input:focus {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+  border-color: #6440f4;
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.15);
 }
 
 .input-row .inline-input {
@@ -1235,7 +1235,7 @@ defineExpose({
 }
 
 .action-btn-primary {
-  background: #1890ff;
+  background: #6440f4;
   color: #ffffff;
   border: none;
   font-size: 11px;
@@ -1247,7 +1247,7 @@ defineExpose({
 }
 
 .action-btn-primary:hover:not(:disabled) {
-  background: #40a9ff;
+  background: #7c5cf7;
 }
 
 .action-btn-primary:disabled {

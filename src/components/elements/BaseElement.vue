@@ -537,7 +537,7 @@ const handleProjectDragLeave = (event: DragEvent) => {
 }
 
 .design-element.selected {
-  outline: 2px solid #1890ff;
+  outline: 2px solid #6440f4;
   outline-offset: -1px;
   /* Raise the z-index of the selected element to ensure correct interaction */
   z-index: 50;
@@ -559,7 +559,7 @@ const handleProjectDragLeave = (event: DragEvent) => {
    background colour. */
 .design-element.design-element.is-project-drop,
 .design-element.design-element.is-project-drop-blocked {
-  outline: 2px dashed #2563eb;
+  outline: 2px dashed #6440f4;
   outline-offset: 1px;
   z-index: 60;
 }
@@ -575,7 +575,7 @@ const handleProjectDragLeave = (event: DragEvent) => {
   position: absolute;
   inset: 0;
   z-index: 5;
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(100, 64, 244, 0.08);
   pointer-events: none;
 }
 
@@ -585,7 +585,7 @@ const handleProjectDragLeave = (event: DragEvent) => {
 
 .resize-handle {
   position: absolute;
-  background-color: #1890ff;
+  background-color: #6440f4;
   z-index: 60;
   box-sizing: border-box;
   border: 1px solid #ffffff;
@@ -594,7 +594,7 @@ const handleProjectDragLeave = (event: DragEvent) => {
 }
 
 .resize-handle:hover {
-  background-color: #40a9ff;
+  background-color: #7c5cf7;
 }
 
 .resize-handle-nw {
@@ -689,7 +689,7 @@ const handleProjectDragLeave = (event: DragEvent) => {
 .element-rotate-stem {
   width: 1px;
   height: 6px;
-  background-color: #1890ff;
+  background-color: #6440f4;
 }
 
 .element-rotate-btn {
@@ -697,8 +697,8 @@ const handleProjectDragLeave = (event: DragEvent) => {
   height: 18px;
   border-radius: 50%;
   background: #ffffff;
-  border: 1px solid #1890ff;
-  color: #1890ff;
+  border: 1px solid #6440f4;
+  color: #6440f4;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -709,7 +709,7 @@ const handleProjectDragLeave = (event: DragEvent) => {
 }
 
 .element-rotate-btn:hover {
-  background: #1890ff;
+  background: #6440f4;
   color: #ffffff;
   transform: scale(1.15);
 }

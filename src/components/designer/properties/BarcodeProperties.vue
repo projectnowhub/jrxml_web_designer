@@ -269,10 +269,10 @@ function setValue(text: string, discrete = false) {
 .type-badge {
   padding: 1px 8px;
   border-radius: 999px;
-  background: rgba(24, 144, 255, 0.1);
+  background: rgba(100, 64, 244, 0.1);
   font-size: 10px;
   font-weight: 600;
-  color: var(--prop-border-focus, #1890ff);
+  color: var(--prop-border-focus, #6440f4);
 }
 
 .field-label {
@@ -315,13 +315,13 @@ function setValue(text: string, discrete = false) {
 }
 
 .type-swatch.active {
-  border-color: var(--prop-border-focus, #1890ff);
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  border-color: var(--prop-border-focus, #6440f4);
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.2);
 }
 
 .type-swatch:focus-visible {
   outline: none;
-  border-color: var(--prop-border-focus, #1890ff);
+  border-color: var(--prop-border-focus, #6440f4);
   box-shadow: var(--prop-focus-ring);
 }
 
@@ -336,7 +336,7 @@ function setValue(text: string, discrete = false) {
 }
 
 .type-swatch.active .sample-wrap {
-  background: rgba(24, 144, 255, 0.08);
+  background: rgba(100, 64, 244, 0.08);
 }
 
 .sample-label {
@@ -383,7 +383,7 @@ function setValue(text: string, discrete = false) {
 
 .type-swatch.active .type-name {
   font-weight: 600;
-  color: var(--prop-border-focus, #1890ff);
+  color: var(--prop-border-focus, #6440f4);
 }
 
 .value-input {
@@ -490,13 +490,13 @@ function setValue(text: string, discrete = false) {
 .example:hover,
 .example:focus-visible {
   outline: none;
-  border-color: var(--prop-border-focus, #1890ff);
+  border-color: var(--prop-border-focus, #6440f4);
   background: #f5faff;
 }
 
 .example.active {
-  border-color: var(--prop-border-focus, #1890ff);
-  background: #e6f4ff;
+  border-color: var(--prop-border-focus, #6440f4);
+  background: #f1edff;
 }
 
 .hint.tip {

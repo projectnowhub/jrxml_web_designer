@@ -2137,7 +2137,10 @@ function addPropertyExpression() {
 
 <style scoped>
 .element-properties {
-  padding: var(--prop-spacing-md);
+  padding: 12px;
+  background: #fcfcfe;
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 .panel-header {
@@ -2147,16 +2150,17 @@ function addPropertyExpression() {
   gap: 8px;
   margin-bottom: 14px;
   padding-bottom: 10px;
-  border-bottom: 1px solid var(--prop-divider-color);
+  border-bottom: 1px solid rgba(28, 27, 38, 0.07);
 }
 
 .element-properties .panel-header h3 {
   margin: 0;
   padding: 0;
   border: none;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--prop-text-primary);
+  font-size: 14px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  color: #1c1b26;
 }
 
 .section-title {
@@ -2174,7 +2178,8 @@ function addPropertyExpression() {
   grid-template-columns: repeat(var(--tab-count), minmax(0, 1fr));
   padding: 3px;
   border-radius: 9px;
-  background: var(--prop-bg-tertiary, #eef0f4);
+  background: #f1f0f6;
+  border: 1px solid rgba(28, 27, 38, 0.05);
 }
 
 .prop-tab-indicator {
@@ -2185,7 +2190,7 @@ function addPropertyExpression() {
   width: calc((100% - 6px) / var(--tab-count));
   border-radius: 7px;
   background: #fff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.08);
   transform: translateX(calc(100% * var(--tab-index)));
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -2213,12 +2218,12 @@ function addPropertyExpression() {
 }
 
 .prop-tab.active {
-  font-weight: 600;
-  color: var(--prop-primary-color, #1890ff);
+  font-weight: 650;
+  color: #5b3ee0;
 }
 
 .prop-tab:focus-visible {
-  outline: 2px solid var(--prop-border-focus, #1890ff);
+  outline: 2px solid var(--prop-border-focus, #7c5cf7);
   outline-offset: 1px;
   border-radius: 7px;
 }
@@ -2262,8 +2267,8 @@ function addPropertyExpression() {
   margin: 0 0 var(--prop-spacing-sm) 0;
   padding: 0;
   font-size: var(--prop-font-size-sm);
-  font-weight: var(--prop-font-weight-semibold);
-  color: var(--prop-text-secondary);
+  font-weight: 650;
+  color: #1c1b26;
 }
 
 .property-section {
@@ -2369,18 +2374,19 @@ function addPropertyExpression() {
 .band-settings-title-group h4 {
   margin: 0;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 650;
   color: var(--prop-text-primary);
   white-space: nowrap;
 }
 
 .template-scope-pill {
-  padding: 1px 8px;
+  padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(24, 144, 255, 0.1);
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.18);
   font-size: 10px;
-  font-weight: 600;
-  color: var(--prop-primary-color, #1890ff);
+  font-weight: 700;
+  color: #6366f1;
   white-space: nowrap;
 }
 
@@ -2390,11 +2396,11 @@ function addPropertyExpression() {
   gap: 4px;
   height: 24px;
   padding: 0 10px;
-  border: 1px solid var(--prop-border-color);
+  border: 1px solid rgba(28, 27, 38, 0.1);
   border-radius: 999px;
   background: #fff;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--prop-text-secondary);
   cursor: pointer;
   white-space: nowrap;
@@ -2402,8 +2408,9 @@ function addPropertyExpression() {
 }
 
 .reset-template-limits-btn:hover {
-  border-color: var(--prop-primary-color, #1890ff);
-  color: var(--prop-primary-color, #1890ff);
+  border-color: rgba(124, 92, 247, 0.35);
+  background: rgba(124, 92, 247, 0.06);
+  color: #5b3ee0;
 }
 
 .band-cards-grid {
@@ -2412,20 +2419,22 @@ function addPropertyExpression() {
   gap: 8px;
 }
 
-/* One card per band, with a coloured edge so the bands are easy to tell apart */
+/* Clean modern card per band matching Home page cards */
 .template-band-card {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px 12px;
-  border-radius: var(--prop-border-radius-md);
-  background: var(--prop-bg-secondary);
-  border-left: 3px solid var(--prop-primary-color, #1890ff);
-  transition: background-color 0.15s ease;
+  padding: 11px 12px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid rgba(28, 27, 38, 0.08);
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .template-band-card:hover {
-  background: #f3f6fa;
+  border-color: rgba(124, 92, 247, 0.35);
+  box-shadow: 0 6px 16px rgba(124, 92, 247, 0.08);
 }
 
 .template-band-header {
@@ -2435,17 +2444,18 @@ function addPropertyExpression() {
 }
 
 .template-band-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--prop-text-primary);
+  font-size: 12.5px;
+  font-weight: 650;
+  color: #1c1b26;
 }
 
 .band-badge-auto {
-  padding: 1px 8px;
+  padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(16, 185, 129, 0.12);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 650;
   color: #059669;
 }
 
@@ -2476,19 +2486,21 @@ function addPropertyExpression() {
   align-items: center;
   height: 30px;
   padding: 0 8px;
-  border: 1px solid var(--prop-border-color);
-  border-radius: 6px;
-  background: #fff;
+  border: 1px solid rgba(28, 27, 38, 0.11);
+  border-radius: 7px;
+  background: #fafafc;
   box-sizing: border-box;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
 .input-unit-wrapper:hover {
-  border-color: var(--prop-border-hover);
+  border-color: rgba(124, 92, 247, 0.35);
+  background: #ffffff;
 }
 
 .input-unit-wrapper:focus-within {
   border-color: var(--prop-border-focus);
+  background: #ffffff;
   box-shadow: var(--prop-focus-ring);
 }
 
@@ -2524,15 +2536,17 @@ function addPropertyExpression() {
 }
 
 .box-section {
-  margin-bottom: var(--prop-spacing-lg);
-  padding: var(--prop-spacing-md);
-  background-color: var(--prop-bg-secondary);
-  border-radius: var(--prop-border-radius-md);
+  margin-bottom: 12px;
+  padding: 12px;
+  background-color: #ffffff;
+  border: 1px solid rgba(28, 27, 38, 0.08);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
 }
 
 .box-section.compact {
-  margin-bottom: var(--prop-spacing-md);
-  padding: var(--prop-spacing-sm);
+  margin-bottom: 10px;
+  padding: 10px 12px;
 }
 
 .border-quick-actions {
@@ -2597,7 +2611,7 @@ function addPropertyExpression() {
 .unit-input input:focus,
 .text-card select:focus {
   outline: none;
-  border-color: var(--prop-border-focus, #1890ff);
+  border-color: var(--prop-border-focus, #6440f4);
   box-shadow: var(--prop-focus-ring);
 }
 
@@ -2711,13 +2725,13 @@ function addPropertyExpression() {
 
 .line-style-btn.active {
   background: #fff;
-  color: var(--prop-border-focus, #1890ff);
+  color: var(--prop-border-focus, #6440f4);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
 }
 
 .line-style-btn:focus-visible,
 .icon-btn:focus-visible {
-  outline: 2px solid var(--prop-border-focus, #1890ff);
+  outline: 2px solid var(--prop-border-focus, #6440f4);
   outline-offset: 1px;
 }
 
@@ -2816,8 +2830,8 @@ function addPropertyExpression() {
   grid-row: 1 / span 2;
   align-self: stretch;
   min-height: 70px;
-  border: 2px solid var(--prop-border-focus, #1890ff);
-  background: rgba(24, 144, 255, 0.06);
+  border: 2px solid var(--prop-border-focus, #6440f4);
+  background: rgba(100, 64, 244, 0.06);
   transition: border-radius 0.2s ease;
 }
 
@@ -2846,9 +2860,9 @@ function addPropertyExpression() {
 
 .margin-preview-content {
   position: absolute;
-  border: 1.5px dashed var(--prop-border-focus, #1890ff);
+  border: 1.5px dashed var(--prop-border-focus, #6440f4);
   border-radius: 3px;
-  background: rgba(24, 144, 255, 0.08);
+  background: rgba(100, 64, 244, 0.08);
   transition: all 0.2s ease;
 }
 
@@ -2886,7 +2900,7 @@ function addPropertyExpression() {
 .card-select:focus,
 .card-textarea:focus {
   outline: none;
-  border-color: var(--prop-border-focus, #1890ff);
+  border-color: var(--prop-border-focus, #6440f4);
   box-shadow: var(--prop-focus-ring);
 }
 
@@ -2956,7 +2970,7 @@ function addPropertyExpression() {
   width: 16px;
   height: 16px;
   margin: 0;
-  accent-color: var(--prop-primary-color, #1890ff);
+  accent-color: var(--prop-primary-color, #6440f4);
 }
 
 .image-name-row {
@@ -2989,20 +3003,20 @@ function addPropertyExpression() {
   gap: 4px;
   height: 24px;
   padding: 0 10px;
-  border: 1px solid rgba(24, 144, 255, 0.35);
+  border: 1px solid rgba(100, 64, 244, 0.35);
   border-radius: 999px;
-  background: rgba(24, 144, 255, 0.06);
+  background: rgba(100, 64, 244, 0.06);
   font-size: 11px;
   font-weight: 500;
-  color: var(--prop-border-focus, #1890ff);
+  color: var(--prop-border-focus, #6440f4);
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s ease;
 }
 
 .chip-btn:hover:not(:disabled) {
-  background: var(--prop-border-focus, #1890ff);
-  border-color: var(--prop-border-focus, #1890ff);
+  background: var(--prop-border-focus, #6440f4);
+  border-color: var(--prop-border-focus, #6440f4);
   color: #fff;
 }
 
@@ -3012,13 +3026,13 @@ function addPropertyExpression() {
 }
 
 .chip-btn-solid {
-  background: var(--prop-border-focus, #1890ff);
-  border-color: var(--prop-border-focus, #1890ff);
+  background: var(--prop-border-focus, #6440f4);
+  border-color: var(--prop-border-focus, #6440f4);
   color: #fff;
 }
 
 .chip-btn-solid:hover:not(:disabled) {
-  background: var(--prop-primary-active, #096dd9);
+  background: var(--prop-primary-active, #5b3ee0);
 }
 
 .chip-btn-muted {
@@ -3081,7 +3095,7 @@ function addPropertyExpression() {
 
 .seg-btn.active {
   background: #fff;
-  color: var(--prop-border-focus, #1890ff);
+  color: var(--prop-border-focus, #6440f4);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
   font-weight: 600;
 }
@@ -3089,7 +3103,7 @@ function addPropertyExpression() {
 .seg-btn:focus-visible,
 .chip-btn:focus-visible,
 .ghost-btn:focus-visible {
-  outline: 2px solid var(--prop-border-focus, #1890ff);
+  outline: 2px solid var(--prop-border-focus, #6440f4);
   outline-offset: 1px;
 }
 
@@ -3111,10 +3125,10 @@ function addPropertyExpression() {
 }
 
 .ghost-btn:hover {
-  border-color: var(--prop-border-focus, #1890ff);
+  border-color: var(--prop-border-focus, #6440f4);
   border-style: solid;
-  color: var(--prop-border-focus, #1890ff);
-  background: rgba(24, 144, 255, 0.05);
+  color: var(--prop-border-focus, #6440f4);
+  background: rgba(100, 64, 244, 0.05);
 }
 
 /* Line style names above an icon picker outside the border table */
@@ -3152,10 +3166,10 @@ function addPropertyExpression() {
 .shape-custom-badge {
   padding: 1px 8px;
   border-radius: 999px;
-  background: rgba(24, 144, 255, 0.1);
+  background: rgba(100, 64, 244, 0.1);
   font-size: 10px;
   font-weight: 600;
-  color: var(--prop-border-focus, #1890ff);
+  color: var(--prop-border-focus, #6440f4);
 }
 
 .shape-field-label {
@@ -3193,13 +3207,13 @@ function addPropertyExpression() {
 }
 
 .shape-swatch.active {
-  border-color: var(--prop-border-focus, #1890ff);
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  border-color: var(--prop-border-focus, #6440f4);
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.2);
 }
 
 .shape-swatch:focus-visible {
   outline: none;
-  border-color: var(--prop-border-focus, #1890ff);
+  border-color: var(--prop-border-focus, #6440f4);
   box-shadow: var(--prop-focus-ring);
 }
 
@@ -3214,7 +3228,7 @@ function addPropertyExpression() {
 }
 
 .shape-swatch.active .shape-sample-wrap {
-  background: rgba(24, 144, 255, 0.08);
+  background: rgba(100, 64, 244, 0.08);
 }
 
 /* A tiny landscape photo (sun and hills, plain CSS) cut to the shape */
@@ -3224,8 +3238,8 @@ function addPropertyExpression() {
   background:
     radial-gradient(circle at 72% 30%, #fde68a 0 11%, transparent 12%),
     radial-gradient(ellipse 70% 50% at 25% 100%, #1e40af 0 98%, transparent 100%),
-    radial-gradient(ellipse 80% 42% at 85% 100%, #2563eb 0 98%, transparent 100%),
-    linear-gradient(160deg, #93c5fd, #60a5fa);
+    radial-gradient(ellipse 80% 42% at 85% 100%, #6440f4 0 98%, transparent 100%),
+    linear-gradient(160deg, #c4b5fd, #60a5fa);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
 }
 
@@ -3240,7 +3254,7 @@ function addPropertyExpression() {
 }
 
 .shape-swatch.active .shape-name {
-  color: var(--prop-border-focus, #1890ff);
+  color: var(--prop-border-focus, #6440f4);
   font-weight: 600;
 }
 
@@ -3290,13 +3304,13 @@ function addPropertyExpression() {
 
 .style-tile.active {
   background: #fff;
-  color: var(--prop-primary-color, #1890ff);
+  color: var(--prop-primary-color, #6440f4);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
 }
 
 .style-tile:focus-visible {
-  outline: 2px solid var(--prop-border-focus, #1890ff);
+  outline: 2px solid var(--prop-border-focus, #6440f4);
   outline-offset: 1px;
 }
 
@@ -3417,7 +3431,7 @@ function addPropertyExpression() {
 
 .icon-btn.active {
   background: #fff;
-  color: var(--prop-border-focus, #1890ff);
+  color: var(--prop-border-focus, #6440f4);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
 }
 
@@ -3756,7 +3770,7 @@ function addPropertyExpression() {
 }
 
 .field-item.selected {
-  background-color: #e6f7ff;
+  background-color: #f1edff;
   border-color: #91d5ff;
 }
 
@@ -3891,7 +3905,7 @@ function addPropertyExpression() {
   padding: 2px 7px;
   font-size: 11px;
   background-color: #f0f7ff;
-  color: #1890ff;
+  color: #6440f4;
   border: 1px solid #91d5ff;
   border-radius: 3px;
   cursor: pointer;
@@ -3900,9 +3914,9 @@ function addPropertyExpression() {
 }
 
 .btn-autofit-height:hover {
-  background-color: #1890ff;
+  background-color: #6440f4;
   color: #ffffff;
-  border-color: #1890ff;
+  border-color: #6440f4;
 }
 
 .rotation-segmented-group,
@@ -3942,8 +3956,8 @@ function addPropertyExpression() {
 .rotation-btn.active,
 .line-orientation-btn.active {
   background-color: #ffffff;
-  color: #1890ff;
-  border-color: #1890ff;
+  color: #6440f4;
+  border-color: #6440f4;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   font-weight: 600;
 }
@@ -3959,15 +3973,15 @@ function addPropertyExpression() {
   font-size: 11px;
   font-weight: 500;
   border-radius: 4px;
-  border: 1px dashed #1890ff;
+  border: 1px dashed #6440f4;
   background-color: #f0f7ff;
-  color: #1890ff;
+  color: #6440f4;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .btn-cross-line:hover {
-  background-color: #1890ff;
+  background-color: #6440f4;
   color: #ffffff;
 }
 </style>

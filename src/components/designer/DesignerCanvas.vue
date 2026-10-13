@@ -1270,12 +1270,13 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* The desk the pages lie on: the home page's soft lavender grey */
 .designer-canvas {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: #f0f0f0;
+  background-color: #f1f0f7;
   position: relative;
   min-height: 0;
 }
@@ -1283,8 +1284,8 @@ onBeforeUnmount(() => {
 .top-ruler-container {
   display: flex;
   height: 30px;
-  background-color: #e8e8e8;
-  border-bottom: 1px solid #ccc;
+  background-color: #f7f6fb;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.08);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -1293,16 +1294,17 @@ onBeforeUnmount(() => {
 .corner-space {
   width: 30px;
   height: 30px;
-  background-color: #e0e0e0;
-  border-right: 1px solid #ccc;
+  background-color: #f1f0f6;
+  border-right: 1px solid rgba(28, 27, 38, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .unit-label {
-  font-size: 10px;
-  color: #666;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #8a84a3;
 }
 
 .horizontal-ruler {
@@ -1310,8 +1312,8 @@ onBeforeUnmount(() => {
   flex: 1;
   width: 0;
   height: 30px;
-  background-color: #e8e8e8;
-  border-bottom: 1px solid #ccc;
+  background-color: #f7f6fb;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.08);
   overflow-x: auto;
   overflow-y: hidden;
   /* Hide scrollbar */
@@ -1338,8 +1340,8 @@ onBeforeUnmount(() => {
 
 .vertical-ruler-container {
   width: 30px;
-  background-color: #e8e8e8;
-  border-right: 1px solid #ccc;
+  background-color: #f7f6fb;
+  border-right: 1px solid rgba(28, 27, 38, 0.08);
   position: sticky;
   left: 0;
   z-index: 5;
@@ -1349,7 +1351,7 @@ onBeforeUnmount(() => {
   position: relative;
   width: 100%;
   height: 100%;
-  background-color: #e8e8e8;
+  background-color: #f7f6fb;
   overflow-x: hidden;
   overflow-y: auto;
   /* Hide scrollbar */
@@ -1370,6 +1372,30 @@ onBeforeUnmount(() => {
   overflow: auto;
   min-width: 0;
   min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #cfd5e1 transparent;
+}
+
+.paper-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.paper-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.paper-container::-webkit-scrollbar-thumb {
+  background: #cfd5e1;
+  border-radius: 4px;
+}
+
+.paper-container::-webkit-scrollbar-thumb:hover {
+  background: #b0b8c9;
+}
+
+.paper-container::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .pages-wrapper {
@@ -1388,20 +1414,20 @@ onBeforeUnmount(() => {
 .paper {
   background-color: white;
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.12),
-    0 1px 3px rgba(0, 0, 0, 0.08);
+    0 4px 20px rgba(23, 20, 44, 0.08),
+    0 1px 3px rgba(23, 20, 44, 0.05);
   position: relative;
   transition: box-shadow 0.2s ease;
   flex-shrink: 0;
-  border-radius: 2px;
+  border-radius: 3px;
   box-sizing: border-box;
   overflow: hidden;
 }
 
 .paper.focused {
   box-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.18),
-    0 2px 6px rgba(0, 0, 0, 0.12);
+    0 8px 26px rgba(23, 20, 44, 0.14),
+    0 2px 6px rgba(23, 20, 44, 0.08);
 }
 
 /* Page tools: a small pill above the page's top-right corner, the same size
@@ -1416,9 +1442,9 @@ onBeforeUnmount(() => {
   gap: 2px;
   padding: 3px;
   background: rgba(255, 255, 255, 0.96);
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(28, 27, 38, 0.08);
   border-radius: 999px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 2px 8px rgba(23, 20, 44, 0.06);
   transform-origin: top right;
   user-select: none;
   backdrop-filter: blur(4px);
@@ -1441,33 +1467,36 @@ onBeforeUnmount(() => {
   gap: 6px;
   height: 26px;
   padding: 0 12px;
-  border: 1px dashed #93c5fd;
+  border: 1px dashed rgba(124, 92, 247, 0.35);
   border-radius: 999px;
-  background: #ffffff;
-  color: #1d4ed8;
-  font-size: 12px;
-  font-weight: 500;
+  background: rgba(255, 255, 255, 0.96);
+  color: #6366f1;
+  font-size: 11.5px;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: all 0.16s ease;
 }
 
 .special-page-btn:hover {
-  background: #eff6ff;
-  border-color: #3b82f6;
+  background: #ffffff;
+  border-color: #7c5cf7;
+  color: #5b3ee0;
+  box-shadow: 0 4px 12px rgba(124, 92, 247, 0.12);
 }
 
 .special-page-btn:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid #7c5cf7;
   outline-offset: 1px;
 }
 
 .page-sheet-badge.is-special {
-  color: #7c3aed;
+  color: #6366f1;
 }
 
 .page-sheet.is-cover-page,
 .page-sheet.is-contents-page {
-  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.25), 0 4px 16px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 0 0 2px rgba(124, 92, 247, 0.22), 0 4px 16px rgba(23, 20, 44, 0.1);
 }
 
 .page-menu-wrap {
@@ -1484,14 +1513,14 @@ onBeforeUnmount(() => {
   border: none;
   border-radius: 999px;
   background: transparent;
-  color: #6b7280;
+  color: #6f6a7e;
   cursor: pointer;
 }
 
 .page-menu-btn:hover,
 .page-menu-btn.is-open {
-  background: #f3f4f6;
-  color: #111827;
+  background: rgba(124, 92, 247, 0.08);
+  color: #1c1b26;
 }
 
 .page-menu {
@@ -1500,11 +1529,13 @@ onBeforeUnmount(() => {
   right: 0;
   z-index: 30;
   min-width: 210px;
-  padding: 4px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  padding: 6px;
+  border: 1px solid rgba(28, 27, 38, 0.1);
+  border-radius: 10px;
   background: #ffffff;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+  box-shadow:
+    0 16px 36px rgba(23, 20, 44, 0.14),
+    0 2px 6px rgba(23, 20, 44, 0.06);
 }
 
 .page-menu-item {
@@ -1514,17 +1545,19 @@ onBeforeUnmount(() => {
   width: 100%;
   padding: 7px 10px;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   background: transparent;
-  color: #1f2937;
+  color: #45425a;
   font-size: 12px;
+  font-weight: 500;
   text-align: left;
   white-space: nowrap;
   cursor: pointer;
 }
 
 .page-menu-item:hover {
-  background: #eff6ff;
+  background: rgba(124, 92, 247, 0.08);
+  color: #1c1b26;
 }
 
 .page-menu-item.is-danger {
@@ -1539,10 +1572,10 @@ onBeforeUnmount(() => {
   padding: 0 10px 0 8px;
   font-size: 11px;
   font-weight: 600;
-  color: #6b7280;
+  color: #6f6a7e;
   letter-spacing: 0.02em;
   white-space: nowrap;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid rgba(28, 27, 38, 0.08);
   margin-right: 2px;
 }
 
@@ -1554,7 +1587,7 @@ onBeforeUnmount(() => {
   height: 24px;
   padding: 0 10px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   background: transparent;
   border: none;
   border-radius: 999px;
@@ -1564,15 +1597,16 @@ onBeforeUnmount(() => {
 }
 
 .add-page-after-btn {
-  color: #1d4ed8;
+  color: #6366f1;
 }
 
 .add-page-after-btn:hover {
-  background: #eff6ff;
+  background: rgba(124, 92, 247, 0.08);
+  color: #5b3ee0;
 }
 
 .delete-page-btn {
-  color: #6b7280;
+  color: #6f6a7e;
 }
 
 .delete-page-btn:hover {
@@ -1582,7 +1616,7 @@ onBeforeUnmount(() => {
 
 .add-page-after-btn:focus-visible,
 .delete-page-btn:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid #7c5cf7;
   outline-offset: 1px;
 }
 
@@ -1632,7 +1666,7 @@ onBeforeUnmount(() => {
 }
 
 .background-band-layer .background-edge-hit:hover {
-  background-color: rgba(24, 144, 255, 0.35);
+  background-color: rgba(100, 64, 244, 0.35);
 }
 
 /* The outline is an inset shadow, not a border: a border would push the band's
@@ -1655,8 +1689,8 @@ onBeforeUnmount(() => {
 /* While dragging: the band the element will land in (calm blue), or red when
    it is too tall for that band and the drop would be refused */
 .band.drop-target {
-  box-shadow: inset 0 0 0 1.5px #2563eb;
-  background-color: rgba(37, 99, 235, 0.05);
+  box-shadow: inset 0 0 0 1.5px #6440f4;
+  background-color: rgba(100, 64, 244, 0.05);
 }
 
 .band.drop-target.drop-blocked {
@@ -1669,8 +1703,8 @@ onBeforeUnmount(() => {
   position: absolute;
   z-index: 5;
   pointer-events: none;
-  box-shadow: inset 0 0 0 1.5px #2563eb;
-  background-color: rgba(37, 99, 235, 0.05);
+  box-shadow: inset 0 0 0 1.5px #6440f4;
+  background-color: rgba(100, 64, 244, 0.05);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1679,7 +1713,7 @@ onBeforeUnmount(() => {
 .background-drop-label {
   font-size: 40px;
   font-weight: bold;
-  color: rgba(37, 99, 235, 0.25);
+  color: rgba(100, 64, 244, 0.25);
   user-select: none;
   white-space: nowrap;
 }
@@ -1718,7 +1752,7 @@ onBeforeUnmount(() => {
   right: 0;
   height: 6px;
   cursor: ns-resize;
-  background-color: rgba(74, 144, 226, 0.4);
+  background-color: rgba(124, 92, 247, 0.35);
   opacity: 0;
   transition:
     opacity 0.2s ease,
@@ -1729,7 +1763,7 @@ onBeforeUnmount(() => {
 .band:hover .band-resize-handle,
 .band-resize-handle:hover {
   opacity: 1;
-  background-color: rgba(74, 144, 226, 0.95);
+  background-color: rgba(124, 92, 247, 0.9);
   z-index: 4;
 }
 
@@ -1748,14 +1782,14 @@ onBeforeUnmount(() => {
 .detail-band:hover + .pageFooter-band .band-resize-handle,
 .detail-band:hover + .page-footer-band .band-resize-handle {
   opacity: 0.7;
-  background-color: rgba(74, 144, 226, 0.6);
+  background-color: rgba(124, 92, 247, 0.55);
 }
 
 /* When hovering Column Footer, also highlight the dragger between Column Footer and Page Footer */
 .columnFooter-band:hover + .pageFooter-band .band-resize-handle,
 .column-footer-band:hover + .page-footer-band .band-resize-handle {
   opacity: 0.7;
-  background-color: rgba(74, 144, 226, 0.6);
+  background-color: rgba(124, 92, 247, 0.55);
 }
 
 /* Snap guides: one screen pixel wide at any zoom (set inline), above the content */
@@ -1790,42 +1824,56 @@ onBeforeUnmount(() => {
 
 .tick {
   position: absolute;
-  background-color: #666;
-}
-
-.tick.major {
-  height: 10px;
-  width: 1px;
-}
-
-.tick.minor {
-  height: 5px;
-  width: 1px;
+  background-color: #b5b0c7;
 }
 
 .horizontal-ruler .tick {
-  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.horizontal-ruler .tick.major {
+  height: 6px;
+  background-color: #9e97b5;
+}
+
+.horizontal-ruler .tick.minor {
+  height: 3px;
+  background-color: #c9c5d8;
 }
 
 .vertical-ruler .tick {
-  left: 0;
-  width: 10px;
+  right: 0;
   height: 1px;
+}
+
+.vertical-ruler .tick.major {
+  width: 5px;
+  background-color: #9e97b5;
+}
+
+.vertical-ruler .tick.minor {
+  width: 3px;
+  background-color: #c9c5d8;
 }
 
 .label {
   position: absolute;
-  font-size: 10px;
-  color: #666;
+  font-size: 9.5px;
+  font-weight: 500;
+  color: #78728c;
+  line-height: 1;
+  user-select: none;
 }
 
 .horizontal-ruler .label {
-  top: 12px;
+  top: 4px;
   transform: translateX(-50%);
 }
 
 .vertical-ruler .label {
-  left: 12px;
+  right: 8px;
+  text-align: right;
   transform: translateY(-50%);
 }
 
@@ -1848,7 +1896,7 @@ onBeforeUnmount(() => {
 /* Page margins on the rulers: outside the area X/Y count from */
 .ruler-margin {
   position: absolute;
-  background-color: #d4d4d4;
+  background-color: rgba(28, 27, 38, 0.055);
 }
 
 .horizontal-ruler .ruler-margin {

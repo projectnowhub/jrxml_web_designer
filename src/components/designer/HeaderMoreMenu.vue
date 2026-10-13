@@ -29,6 +29,7 @@ const props = defineProps<{
   };
   zoomLevel: number;
   paperWidth: number;
+  paperHeight?: number;
   showBottomPanel: boolean;
 }>();
 
@@ -170,6 +171,7 @@ onBeforeUnmount(() => {
           <ZoomControls
             :zoom-level="zoomLevel"
             :paper-width="paperWidth"
+            :paper-height="paperHeight"
             @update:zoomLevel="emit('update:zoomLevel', $event)"
           />
         </div>
@@ -230,7 +232,7 @@ onBeforeUnmount(() => {
   color: #111827;
 }
 .more-button:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid #6440f4;
   outline-offset: 1px;
 }
 .more-popover {
@@ -291,11 +293,11 @@ onBeforeUnmount(() => {
 }
 .more-tool:hover,
 .more-item:hover {
-  background: rgba(37, 99, 235, 0.07);
+  background: rgba(100, 64, 244, 0.07);
 }
 .more-tool:focus-visible,
 .more-item:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid #6440f4;
   outline-offset: -2px;
 }
 .more-item.is-danger {

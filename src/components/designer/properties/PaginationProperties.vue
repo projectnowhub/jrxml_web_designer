@@ -538,7 +538,7 @@ const partsExample = computed(() => {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--prop-primary-color, #1890ff);
+  background: var(--prop-primary-color, #6440f4);
   font-size: 12px;
   font-weight: 700;
   color: #fff;
@@ -573,7 +573,7 @@ const partsExample = computed(() => {
   width: 15px;
   height: 15px;
   margin: 0;
-  accent-color: var(--prop-primary-color, #1890ff);
+  accent-color: var(--prop-primary-color, #6440f4);
 }
 
 .count-special .hint {
@@ -674,10 +674,10 @@ select:focus {
 }
 
 .look-card.active {
-  border-color: var(--prop-primary-color, #1890ff);
-  box-shadow: inset 0 0 0 1px var(--prop-primary-color, #1890ff);
-  background: #e6f4ff;
-  color: var(--prop-primary-color, #1890ff);
+  border-color: var(--prop-primary-color, #6440f4);
+  box-shadow: inset 0 0 0 1px var(--prop-primary-color, #6440f4);
+  background: #f1edff;
+  color: var(--prop-primary-color, #6440f4);
   font-weight: 700;
 }
 
@@ -705,8 +705,8 @@ select:focus {
 }
 
 .choice.active {
-  border-color: var(--prop-primary-color, #1890ff);
-  background: #e6f4ff;
+  border-color: var(--prop-primary-color, #6440f4);
+  background: #f1edff;
 }
 
 .choice-dot {
@@ -721,7 +721,7 @@ select:focus {
 }
 
 .choice.active .choice-dot {
-  border: 5px solid var(--prop-primary-color, #1890ff);
+  border: 5px solid var(--prop-primary-color, #6440f4);
 }
 
 .choice-text {
@@ -744,7 +744,7 @@ select:focus {
 .look-card:focus-visible,
 .choice:focus-visible,
 .outline-btn:focus-visible {
-  outline: 2px solid var(--prop-border-focus, #1890ff);
+  outline: 2px solid var(--prop-border-focus, #6440f4);
   outline-offset: 2px;
 }
 
@@ -828,8 +828,8 @@ select:focus {
 }
 
 .outline-btn:hover:not(:disabled) {
-  border-color: var(--prop-primary-color, #1890ff);
-  color: var(--prop-primary-color, #1890ff);
+  border-color: var(--prop-primary-color, #6440f4);
+  color: var(--prop-primary-color, #6440f4);
 }
 
 .outline-btn:disabled {
@@ -949,7 +949,7 @@ select:focus {
   font-size: 10px;
   font-weight: 700;
   line-height: 1.2;
-  color: var(--prop-primary-color, #1890ff);
+  color: var(--prop-primary-color, #6440f4);
   text-align: center;
   overflow-wrap: break-word;
 }

@@ -230,9 +230,9 @@ const setType = (chartType: ChartType) => commit(changeChartType(binding.value, 
 
 .type-option.active,
 .palette-option.active {
-  border-color: var(--prop-primary-color, #1890ff);
-  background: #e6f4ff;
-  color: var(--prop-primary-color, #1890ff);
+  border-color: var(--prop-primary-color, #6440f4);
+  background: #f1edff;
+  color: var(--prop-primary-color, #6440f4);
   font-weight: 600;
 }
 
@@ -255,7 +255,7 @@ const setType = (chartType: ChartType) => commit(changeChartType(binding.value, 
   width: 16px;
   height: 16px;
   margin: 0;
-  accent-color: var(--prop-primary-color, #1890ff);
+  accent-color: var(--prop-primary-color, #6440f4);
 }
 
 .palette-list {
@@ -329,6 +329,6 @@ const setType = (chartType: ChartType) => commit(changeChartType(binding.value, 
 
 .data-btn:hover {
   border-color: var(--prop-border-focus);
-  color: var(--prop-primary-color, #1890ff);
+  color: var(--prop-primary-color, #6440f4);
 }
 </style>

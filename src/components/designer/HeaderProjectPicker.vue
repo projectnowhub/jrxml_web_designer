@@ -139,9 +139,9 @@ async function selectProjects(ids: string[]) {
   --ms-px: 10px;
   --ms-radius: 6px;
   --ms-border-color: #d1d5db;
-  --ms-border-color-active: #93c5fd;
+  --ms-border-color-active: #c4b5fd;
   --ms-ring-width: 3px;
-  --ms-ring-color: rgba(37, 99, 235, 0.15);
+  --ms-ring-color: rgba(100, 64, 244, 0.15);
   --ms-placeholder-color: #6b7280;
   --ms-bg: #f9fafb;
   --ms-dropdown-border-color: rgba(28, 27, 38, 0.1);
@@ -156,7 +156,7 @@ async function selectProjects(ids: string[]) {
   --ms-option-bg-selected-pointed: rgba(124, 92, 247, 0.08);
   --ms-option-color-selected-pointed: #1c1b26;
   --ms-empty-color: #77718a;
-  --ms-spinner-color: #2563eb;
+  --ms-spinner-color: #6440f4;
   --ms-max-height: 18rem;
   flex: 0 1 230px;
   width: 230px;
@@ -264,7 +264,7 @@ async function selectProjects(ids: string[]) {
 
 .hpp-label-icon {
   flex-shrink: 0;
-  color: #2563eb;
+  color: #6440f4;
 }
 
 .hpp-label.is-empty .hpp-label-icon {
@@ -287,7 +287,7 @@ async function selectProjects(ids: string[]) {
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: #2563eb;
+  background: #6440f4;
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -339,7 +339,7 @@ async function selectProjects(ids: string[]) {
 .hpp-spinner {
   flex-shrink: 0;
   margin-right: 6px;
-  color: #2563eb;
+  color: #6440f4;
 }
 
 .hpp-caret {

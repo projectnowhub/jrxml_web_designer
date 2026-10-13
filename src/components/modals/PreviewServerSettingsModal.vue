@@ -94,8 +94,8 @@ const saveSettings = () => {
 
 .server-url-input:focus {
   outline: none;
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  border-color: #6440f4;
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.2);
 }
 
 .source-info {
@@ -112,7 +112,7 @@ const saveSettings = () => {
 }
 
 .source-link {
-  color: #1890ff;
+  color: #6440f4;
   text-decoration: none;
   font-size: 14px;
 }

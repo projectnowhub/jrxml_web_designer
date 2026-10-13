@@ -407,9 +407,9 @@ watch(
 }
 
 .chip.is-applied {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
+  background: #f4f1ff;
+  border-color: #ddd6fe;
+  color: #5b3ee0;
 }
 
 .card-grid {

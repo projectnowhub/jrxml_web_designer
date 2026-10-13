@@ -607,8 +607,8 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
 }
 
 .tdp-add-btn:hover {
-  border-color: var(--prop-primary-color, #1890ff);
-  color: var(--prop-primary-color, #1890ff);
+  border-color: var(--prop-primary-color, #6440f4);
+  color: var(--prop-primary-color, #6440f4);
 }
 
 .tdp-row-preview {
@@ -666,7 +666,7 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
 .tdp-input:focus,
 .tdp-unit input:focus {
   outline: none;
-  border-color: var(--prop-border-focus, #1890ff);
+  border-color: var(--prop-border-focus, #6440f4);
   box-shadow: var(--prop-focus-ring);
 }
 
@@ -754,9 +754,9 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
 }
 
 .tdp-chip.is-applied {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
+  background: #f4f1ff;
+  border-color: #ddd6fe;
+  color: #5b3ee0;
 }
 
 .tdp-hint {
@@ -774,9 +774,9 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
   width: 100%;
   height: 32px;
   margin-top: 12px;
-  border: 1px solid var(--prop-primary-color, #1890ff);
+  border: 1px solid var(--prop-primary-color, #6440f4);
   border-radius: 6px;
-  background: var(--prop-primary-color, #1890ff);
+  background: var(--prop-primary-color, #6440f4);
   color: #fff;
   font-size: 12px;
   font-weight: 600;
@@ -813,10 +813,10 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
 }
 
 .tdp-theme.active {
-  border-color: var(--prop-primary-color, #1890ff);
-  color: var(--prop-primary-color, #1890ff);
+  border-color: var(--prop-primary-color, #6440f4);
+  color: var(--prop-primary-color, #6440f4);
   font-weight: 600;
-  box-shadow: 0 0 0 1px var(--prop-primary-color, #1890ff);
+  box-shadow: 0 0 0 1px var(--prop-primary-color, #6440f4);
 }
 
 .tdp-swatch {
@@ -872,7 +872,7 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
   padding: 0;
   border: none;
   background: none;
-  color: var(--prop-primary-color, #1890ff);
+  color: var(--prop-primary-color, #6440f4);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -1016,7 +1016,7 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
 .tdp-btn.is-outline {
   margin-top: 8px;
   background: #fff;
-  color: var(--prop-primary-color, #1890ff);
+  color: var(--prop-primary-color, #6440f4);
 }
 
 .tdp-btn:disabled {

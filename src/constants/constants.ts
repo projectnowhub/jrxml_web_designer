@@ -4,10 +4,10 @@ import { DEFAULT_REPORT_FONT } from "../config/fonts.config";
 // Zoom-related constants
 export const ZOOM_CONSTANTS = {
   DEFAULT_ZOOM: 1,
-  ZOOM_LEVELS: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3],
-  MIN_ZOOM: 0.25,
-  MAX_ZOOM: 3,
-  OPTIMAL_ZOOM_MARGIN: 0.9, // margin coefficient used when calculating the optimal zoom ratio
+  ZOOM_LEVELS: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 4.0, 5.0],
+  MIN_ZOOM: 0.1,
+  MAX_ZOOM: 5,
+  OPTIMAL_ZOOM_MARGIN: 0.92, // margin coefficient used when calculating the optimal zoom ratio
 };
 
 // Panel size constants

@@ -491,9 +491,9 @@ function split() {
 }
 
 .icon-btn.active {
-  border-color: var(--prop-primary-color, #1890ff);
-  background: #e6f4ff;
-  color: var(--prop-primary-color, #1890ff);
+  border-color: var(--prop-primary-color, #6440f4);
+  background: #f1edff;
+  color: var(--prop-primary-color, #6440f4);
 }
 
 .wide-btn {
@@ -569,9 +569,9 @@ function split() {
 }
 
 .seg-btn.active {
-  border-color: var(--prop-primary-color, #1890ff);
-  background: #e6f4ff;
-  color: var(--prop-primary-color, #1890ff);
+  border-color: var(--prop-primary-color, #6440f4);
+  background: #f1edff;
+  color: var(--prop-primary-color, #6440f4);
 }
 
 .seg-gap {
@@ -627,7 +627,7 @@ function split() {
   width: 15px;
   height: 15px;
   margin: 0;
-  accent-color: var(--prop-primary-color, #1890ff);
+  accent-color: var(--prop-primary-color, #6440f4);
 }
 
 .merge-row {

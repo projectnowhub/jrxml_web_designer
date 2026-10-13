@@ -366,9 +366,9 @@ function setColor(key: keyof Pick<ContentsListData, "color" | "numberFill">, val
 }
 
 .wide-btn.is-primary {
-  border-color: var(--prop-primary-color, #1890ff);
-  background: #e6f4ff;
-  color: var(--prop-primary-color, #1890ff);
+  border-color: var(--prop-primary-color, #6440f4);
+  background: #f1edff;
+  color: var(--prop-primary-color, #6440f4);
   font-weight: 600;
 }
 
@@ -454,9 +454,9 @@ function setColor(key: keyof Pick<ContentsListData, "color" | "numberFill">, val
 }
 
 .icon-btn.active {
-  border-color: var(--prop-primary-color, #1890ff);
-  background: #e6f4ff;
-  color: var(--prop-primary-color, #1890ff);
+  border-color: var(--prop-primary-color, #6440f4);
+  background: #f1edff;
+  color: var(--prop-primary-color, #6440f4);
 }
 
 .unit-input {
@@ -520,7 +520,7 @@ function setColor(key: keyof Pick<ContentsListData, "color" | "numberFill">, val
   width: 15px;
   height: 15px;
   margin: 0;
-  accent-color: var(--prop-primary-color, #1890ff);
+  accent-color: var(--prop-primary-color, #6440f4);
 }
 
 .color-with-clear {

@@ -705,8 +705,8 @@ function apply() {
 .ccm-input:focus,
 .ccm-select:focus {
   outline: none;
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+  border-color: #6440f4;
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.15);
 }
 
 .ccm-input.is-narrow {
@@ -774,8 +774,8 @@ function apply() {
 }
 
 .ccm-add:hover {
-  border-color: #1890ff;
-  color: #1890ff;
+  border-color: #6440f4;
+  color: #6440f4;
 }
 
 .ccm-inline {

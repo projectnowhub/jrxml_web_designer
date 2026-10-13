@@ -151,14 +151,14 @@ function setField(key: string, value: string, discrete = false) {
 }
 
 .kind-btn.active {
-  border-color: var(--prop-border-focus, #1890ff);
-  background: #e6f4ff;
-  color: var(--prop-border-focus, #1890ff);
+  border-color: var(--prop-border-focus, #6440f4);
+  background: #f1edff;
+  color: var(--prop-border-focus, #6440f4);
   font-weight: 600;
 }
 
 .kind-btn:focus-visible {
-  outline: 2px solid var(--prop-border-focus, #1890ff);
+  outline: 2px solid var(--prop-border-focus, #6440f4);
   outline-offset: 1px;
 }
 

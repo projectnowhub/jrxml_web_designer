@@ -128,13 +128,13 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   border: 2px solid #7c5cf7;
   border-radius: 50%;
-  background: linear-gradient(135deg, #7c5cf7, #6366f1);
+  background: linear-gradient(135deg, #7c5cf7, #6440f4);
   color: white;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 14px;
   font-weight: 800;
   line-height: 1;
-  box-shadow: 0 3px 12px rgba(99, 102, 241, 0.32);
+  box-shadow: 0 3px 12px rgba(100, 64, 244, 0.32);
   box-sizing: border-box;
 }
 .account-popover {

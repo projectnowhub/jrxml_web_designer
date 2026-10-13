@@ -132,8 +132,8 @@ const thumbHeight = computed(() => Math.round((props.pageHeight / props.pageWidt
 .design-card:hover,
 .design-card:focus-visible {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  border-color: #6440f4;
+  box-shadow: 0 0 0 3px rgba(100, 64, 244, 0.15);
 }
 
 .design-preview {

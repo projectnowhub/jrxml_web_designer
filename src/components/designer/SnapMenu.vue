@@ -168,7 +168,7 @@ onBeforeUnmount(() => {
   color: #111827;
 }
 .snap-button:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid #6440f4;
   outline-offset: 1px;
 }
 .snap-caret {
@@ -237,12 +237,12 @@ onBeforeUnmount(() => {
 }
 .snap-info:hover,
 .snap-info:focus-visible {
-  background: rgba(37, 99, 235, 0.1);
-  color: #2563eb;
+  background: rgba(100, 64, 244, 0.1);
+  color: #6440f4;
   outline: none;
 }
 .snap-option:hover {
-  background: rgba(37, 99, 235, 0.06);
+  background: rgba(100, 64, 244, 0.06);
 }
 .snap-divider {
   height: 1px;

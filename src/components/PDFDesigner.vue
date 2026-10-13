@@ -123,6 +123,7 @@
           <ZoomControls
             :zoom-level="zoomLevel"
             :paper-width="reportProperties.pageWidth"
+            :paper-height="reportProperties.pageHeight"
             @update:zoomLevel="setZoomLevel($event)"
           />
 
@@ -173,6 +174,7 @@
           }"
           :zoom-level="zoomLevel"
           :paper-width="reportProperties.pageWidth"
+          :paper-height="reportProperties.pageHeight"
           :show-bottom-panel="showBottomPanel"
           @undo="undo"
           @redo="redo"
@@ -279,7 +281,7 @@
       <!-- Center design area -->
       <div
         class="design-area-wrapper"
-        style="position: relative; flex: 1; overflow: auto"
+        style="position: relative; flex: 1; overflow: hidden; min-width: 0; display: flex; flex-direction: column;"
       >
         <MultiSelectToolbar
           :visible="selectedElements.length > 1"
@@ -7548,7 +7550,7 @@ const moveElementZOrder = (direction: "front" | "back") => {
 }
 
 .brand-wrap:focus-visible {
-  outline: 2px solid #1890ff;
+  outline: 2px solid #6440f4;
   outline-offset: 1px;
 }
 
@@ -7610,18 +7612,18 @@ const moveElementZOrder = (direction: "front" | "back") => {
 }
 
 .existing-group-tag:hover {
-  background-color: #e6f7ff;
+  background-color: #f1edff;
   border-color: #91d5ff;
-  color: #1890ff;
+  color: #6440f4;
 }
 
 /* CSS variable definitions */
 :root {
-  --primary-color: #1890ff;
-  --primary-hover: #40a9ff;
-  --text-color: #333;
-  --border-color: #ddd;
-  --hover-color: #f0f0f0;
+  --primary-color: #6366f1;
+  --primary-hover: #7c5cf7;
+  --text-color: #1c1b26;
+  --border-color: #e6e5ee;
+  --hover-color: #f3f1fa;
   --font-size-medium: 14px;
 }
 
@@ -7629,7 +7631,8 @@ const moveElementZOrder = (direction: "front" | "back") => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  font-family: Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  color: #1c1b26;
 }
 
 /* Right panel tab styles */
@@ -7639,9 +7642,9 @@ const moveElementZOrder = (direction: "front" | "back") => {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 8px 8px 10px;
-  border-bottom: 1px solid #eceef2;
-  background: #fff;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.07);
+  background: #ffffff;
 }
 
 .right-panel-seg {
@@ -7652,7 +7655,8 @@ const moveElementZOrder = (direction: "front" | "back") => {
   grid-template-columns: 1fr 1fr;
   padding: 3px;
   border-radius: 9px;
-  background: #eef0f4;
+  background: #f1f0f6;
+  border: 1px solid rgba(28, 27, 38, 0.05);
 }
 
 .right-panel-indicator {
@@ -7663,7 +7667,7 @@ const moveElementZOrder = (direction: "front" | "back") => {
   width: calc((100% - 6px) / 2);
   border-radius: 7px;
   background: #fff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.08);
   transform: translateX(calc(100% * var(--tab-index)));
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -7683,7 +7687,7 @@ const moveElementZOrder = (direction: "front" | "back") => {
   background: transparent;
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: #6f6a7e;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -7709,17 +7713,17 @@ const moveElementZOrder = (direction: "front" | "back") => {
 }
 
 .right-panel-tab:hover {
-  color: #111827;
+  color: #1c1b26;
 }
 
 .right-panel-tab.active {
-  color: var(--primary-color);
-  font-weight: 600;
+  color: #5b3ee0;
+  font-weight: 650;
 }
 
 .right-panel-tab:focus-visible,
 .right-panel-settings-btn:focus-visible {
-  outline: 2px solid var(--primary-color);
+  outline: 2px solid #7c5cf7;
   outline-offset: 1px;
 }
 
@@ -7730,18 +7734,18 @@ const moveElementZOrder = (direction: "front" | "back") => {
   flex: 0 0 30px;
   height: 30px;
   padding: 0;
-  border: 1px solid #e5e7eb;
-  border-radius: 7px;
+  border: 1px solid rgba(28, 27, 38, 0.1);
+  border-radius: 8px;
   background: #fff;
-  color: #6b7280;
+  color: #6f6a7e;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .right-panel-settings-btn:hover {
-  border-color: #93c5fd;
-  background: #eff6ff;
-  color: var(--primary-color);
+  border-color: rgba(124, 92, 247, 0.35);
+  background: rgba(124, 92, 247, 0.06);
+  color: #5b3ee0;
 }
 
 .ai-panel-container {
@@ -7755,10 +7759,12 @@ const moveElementZOrder = (direction: "front" | "back") => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 14px;
+  padding: 0 16px;
   background-color: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid rgba(28, 27, 38, 0.08);
+  box-shadow:
+    0 1px 0 rgba(28, 27, 38, 0.03),
+    0 10px 24px -18px rgba(23, 20, 44, 0.12);
   height: 56px;
   flex-shrink: 0;
   gap: 12px;
@@ -7789,29 +7795,32 @@ const moveElementZOrder = (direction: "front" | "back") => {
 }
 
 .document-title-input {
-  font-size: 15px;
-  font-weight: 500;
-  color: #111827;
-  padding: 4px 8px;
-  border: 1px solid transparent;
-  border-radius: 5px;
-  background: transparent;
+  font-size: 14px;
+  font-weight: 650;
+  color: #1c1b26;
+  padding: 5px 8px;
+  border: 1px solid rgba(28, 27, 38, 0.09);
+  border-radius: 7px;
+  background-color: #fafafc;
   outline: none;
   min-width: 120px;
   max-width: 200px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: all 0.15s ease;
+  transition: all 0.16s ease;
   font-family: inherit;
-  border-color: #d1d5db;
-  background-color: #f9fafb;
+}
+
+.document-title-input:hover {
+  border-color: rgba(124, 92, 247, 0.35);
+  background-color: #ffffff;
 }
 
 .document-title-input:focus {
-  border-color: #2563eb;
+  border-color: #7c5cf7;
   background-color: #ffffff;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+  box-shadow: 0 0 0 3px rgba(124, 92, 247, 0.14);
 }
 
 .auto-save-badge {
@@ -7826,17 +7835,18 @@ const moveElementZOrder = (direction: "front" | "back") => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 500;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-weight: 600;
   font-size: 11px;
   line-height: 1;
   transition: all 0.2s ease;
 }
 
 .save-status-text.saved {
-  color: #16a34a;
-  background-color: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+  background-color: rgba(22, 163, 74, 0.09);
+  border: 1px solid rgba(22, 163, 74, 0.18);
 }
 
 .save-status-text.saving {
@@ -7901,48 +7911,51 @@ const moveElementZOrder = (direction: "front" | "back") => {
   border: 1px solid transparent;
   border-radius: 8px;
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12.5px;
+  font-weight: 650;
   white-space: nowrap;
   cursor: pointer;
   flex-shrink: 0;
   transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    color 0.15s ease;
+    background 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
 }
 
 .header-btn:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid #7c5cf7;
   outline-offset: 2px;
 }
 
 .header-btn-secondary {
-  border-color: #d1d5db;
+  border-color: rgba(28, 27, 38, 0.12);
   background: #ffffff;
-  color: #374151;
+  color: #45425a;
 }
 
 .header-btn-secondary:hover {
-  border-color: #93c5fd;
-  background: #eff6ff;
-  color: #1d4ed8;
+  border-color: rgba(124, 92, 247, 0.35);
+  background: rgba(124, 92, 247, 0.06);
+  color: #5b3ee0;
 }
 
 .header-btn-primary {
-  background: #2563eb;
+  background: linear-gradient(135deg, #7c5cf7, #6366f1);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.22);
 }
 
 .header-btn-primary:hover {
-  background: #1d4ed8;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.36);
+  background: linear-gradient(135deg, #6e4de8, #5558ea);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.3);
+  transform: translateY(-1px);
 }
 
 .header-btn-primary:active {
-  background: #1e40af;
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.18);
 }
 
 .header-btn.is-icon {
@@ -8046,14 +8059,14 @@ const moveElementZOrder = (direction: "front" | "back") => {
 
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 v-bind('UI_CONSTANTS.BORDER_MEDIUM + "px"') #1890ff;
+    box-shadow: 0 0 0 v-bind('UI_CONSTANTS.BORDER_MEDIUM + "px"') #6440f4;
   }
   50% {
     box-shadow: 0 0 0 v-bind('UI_CONSTANTS.BORDER_THICK + "px"')
-      rgba(24, 144, 255, 0.5);
+      rgba(100, 64, 244, 0.5);
   }
   100% {
-    box-shadow: 0 0 0 v-bind('UI_CONSTANTS.BORDER_MEDIUM + "px"') #1890ff;
+    box-shadow: 0 0 0 v-bind('UI_CONSTANTS.BORDER_MEDIUM + "px"') #6440f4;
   }
 }
 
@@ -8143,9 +8156,9 @@ const moveElementZOrder = (direction: "front" | "back") => {
 
 .toolbar-divider {
   width: 1px;
-  height: 20px;
-  background: #e5e7eb;
-  margin: 0 2px;
+  height: 18px;
+  background: rgba(28, 27, 38, 0.09);
+  margin: 0 3px;
   flex-shrink: 0;
 }
 
@@ -8153,27 +8166,28 @@ const moveElementZOrder = (direction: "front" | "back") => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
+  width: 30px;
+  height: 30px;
+  border: 1px solid transparent;
   background: transparent;
-  border-radius: 4px;
+  border-radius: 7px;
   cursor: pointer;
   font-size: 14px;
-  color: #4b5563;
+  color: #45425a;
   transition: all 0.15s ease;
 }
 
 .toolbar-btn:hover {
-  background-color: #f3f4f6;
-  color: #111827;
+  background-color: rgba(124, 92, 247, 0.08);
+  border-color: rgba(124, 92, 247, 0.2);
+  color: #5b3ee0;
 }
 
 .toolbar-btn.add-page-btn {
   width: auto;
-  padding: 0 8px;
-  gap: 4px;
+  padding: 0 9px;
+  gap: 5px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
 }
 </style>

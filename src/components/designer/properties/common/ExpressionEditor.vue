@@ -637,7 +637,7 @@ const insertExpression = (expression: string) => {
 
 .autocomplete-item:hover,
 .autocomplete-item.active {
-  background: #e6f4ff;
+  background: #f1edff;
 }
 
 .autocomplete-type {
