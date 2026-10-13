@@ -2034,7 +2034,8 @@
     "wholeSheetOff": "Halaman kulit kini mengekalkan jidar halaman.",
     "changeDesign": "Tukar reka bentuk",
     "changeDesignHint": "Pilih reka bentuk lain untuk halaman ini. Setiap bahagiannya masih boleh diubah kemudian.",
-    "borderNotOnCover": "Sempadan halaman ditambah pada setiap halaman kecuali halaman kulit: halaman kulit menggunakan seluruh helaian, jadi ia tiada sempadan. Untuk memberikan sempadan pada halaman kulit juga, pilih \"Kekalkan jidar halaman\" dalam menu ⋯ halaman kulit."
+    "borderNotOnCover": "Sempadan halaman ditambah pada setiap halaman kecuali halaman kulit: halaman kulit menggunakan seluruh helaian, jadi ia tiada sempadan. Untuk memberikan sempadan pada halaman kulit juga, pilih \"Kekalkan jidar halaman\" dalam menu ⋯ halaman kulit.",
+    "borderRefusedOnCover": "Halaman kulit menggunakan seluruh helaian, jadi ia tidak boleh mempunyai sempadan halaman. Untuk memberikan sempadan pada halaman kulit, pilih \"Kekalkan jidar halaman\" dalam menu ⋯ halaman kulit. Untuk meletakkan sempadan pada halaman lain, lepaskannya pada mana-mana halaman tersebut."
   },
   "contentsList": {
     "emptyHint": "Isi kandungan: isikannya daripada Tajuk Bahagian anda dalam sifatnya",

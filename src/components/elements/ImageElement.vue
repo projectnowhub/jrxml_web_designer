@@ -499,10 +499,13 @@ function handleFileInputChange(event: Event) {
 
 // Drags from the Report Data list are for the designer (link this image to a
 // project's logo); only dropped files are handled here
-const isReportDataDrag = (event: DragEvent) => !!readDataSourceDrag(event);
+// The image only takes picture files dropped from the computer. Anything else
+// (library elements, Report Data) goes on to the page, which puts it on top
+const isFileDrag = (event: DragEvent) =>
+  !readDataSourceDrag(event) && Array.from(event.dataTransfer?.types ?? []).includes("Files");
 
 function handleDragOver(event: DragEvent) {
-  if (isReportDataDrag(event)) return;
+  if (!isFileDrag(event)) return;
   event.preventDefault();
   event.stopPropagation();
   if (event.dataTransfer) {
@@ -513,14 +516,14 @@ function handleDragOver(event: DragEvent) {
 
 function handleDragLeave(event: DragEvent) {
   isDraggingOver.value = false;
-  if (isReportDataDrag(event)) return;
+  if (!isFileDrag(event)) return;
   event.preventDefault();
   event.stopPropagation();
 }
 
 function handleDrop(event: DragEvent) {
   isDraggingOver.value = false;
-  if (isReportDataDrag(event)) return;
+  if (!isFileDrag(event)) return;
   event.preventDefault();
   event.stopPropagation();
   const file = event.dataTransfer?.files?.[0];

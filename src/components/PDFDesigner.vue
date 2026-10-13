@@ -2396,7 +2396,17 @@ const rejectSecondPageBorder = (): boolean => {
 
 // Add a border around the printable area of every page. It lives in the Background
 // band, which JasperReports prints behind all other content on each page.
-const addPageBorder = () => {
+// `droppedOnPage`: the Detail page it was dropped on (a click adds it too)
+const addPageBorder = (droppedOnPage?: number) => {
+  // Dropped on a whole-sheet cover: meant for the cover, which can't have one
+  if (
+    droppedOnPage !== undefined &&
+    specialPages(reportProperties.value).fullPageCover &&
+    pageKind(reportProperties.value, droppedOnPage) === "cover"
+  ) {
+    notification.warning(t("specialPages.borderRefusedOnCover"));
+    return;
+  }
   if (rejectSecondPageBorder()) return;
   saveStateToHistory();
 
@@ -2829,7 +2839,7 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
 
     // A page border always goes to the Background band, wherever it is dropped
     if (elementData.type === PAGE_BORDER_TYPE) {
-      addPageBorder();
+      addPageBorder(targetPageIndex);
       highlightedBandIndex.value = null;
       return;
     }

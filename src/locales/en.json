@@ -2034,7 +2034,8 @@
     "wholeSheetOff": "The cover now keeps the page margins.",
     "changeDesign": "Change design",
     "changeDesignHint": "Pick another design for this page. Every part of it can still be changed afterwards.",
-    "borderNotOnCover": "Page border added to every page except the cover: the cover uses the whole sheet, so it has no border. To give the cover a border too, choose \"Keep the page margins\" in the cover's ⋯ menu."
+    "borderNotOnCover": "Page border added to every page except the cover: the cover uses the whole sheet, so it has no border. To give the cover a border too, choose \"Keep the page margins\" in the cover's ⋯ menu.",
+    "borderRefusedOnCover": "The cover uses the whole sheet, so it can't have a page border. To give the cover a border, choose \"Keep the page margins\" in the cover's ⋯ menu. To put a border on the other pages, drop it on any of them."
   },
   "contentsList": {
     "emptyHint": "Table of contents: fill it from your Section Headings in its properties",
