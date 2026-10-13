@@ -15,7 +15,7 @@ export const PANEL_CONSTANTS = {
   DEFAULT_BOTTOM_PANEL_HEIGHT: 320,
   // Side panels: dragged between min and max, and never wider than their share
   // of the window, so the canvas keeps room on small screens
-  DEFAULT_PROPERTY_PANEL_WIDTH: 500,
+  DEFAULT_PROPERTY_PANEL_WIDTH: 450,
   PROPERTY_PANEL_MIN_WIDTH: 450,
   PROPERTY_PANEL_MAX_WIDTH: 600,
   PROPERTY_PANEL_WINDOW_SHARE: 0.36,
