@@ -1,4 +1,5 @@
 import type { ReportProject } from "../../types/dataSource";
+import type { HeadingNumbering } from "../../types";
 
 export interface ReportProperties {
   name: string;
@@ -32,6 +33,8 @@ export interface ReportProperties {
   countSpecialPages?: boolean;
   // The cover uses the whole sheet (written with a 0 bottom margin, see specialPages.ts)
   fullPageCover?: boolean;
+  // How Section Headings number themselves (utils/headingSync.ts)
+  headingNumbers?: HeadingNumbering;
 }
 
 export interface Field {

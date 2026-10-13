@@ -66,7 +66,7 @@
       "signOff": "Sign-off",
       "tables": "Tables",
       "coverPages": "Cover Pages",
-      "contentsPages": "Contents Pages"
+      "contentsPages": "Table of Contents"
     },
     "compositeElements": "Composite Elements",
     "reportParameters": "Report Parameters",
@@ -172,10 +172,10 @@
     "coverMinimal": "Minimal",
     "coverColourBlock": "Colour Block",
     "coverProjectCard": "Project Card",
-    "contentsClassic": "Contents: Classic",
-    "contentsDotted": "Contents: Dotted",
-    "contentsNumbered": "Contents: Numbered",
-    "contentsTwoColumns": "Contents: Two Columns"
+    "contentsClassic": "Classic",
+    "contentsDotted": "Dotted",
+    "contentsNumbered": "Numbered",
+    "contentsTwoColumns": "Two Columns"
   },
   "properties": {
     "title": "Properties",
@@ -2077,7 +2077,21 @@
     "subStyle": "Sub-sections",
     "noSubNumbers": "No numbers",
     "autoNumberHint": "Sections count 1, 2, 3; each sub-section counts again under its section. Indent a row to make it a sub-section.",
-    "countedHint": "Counted automatically. Untick \"Number automatically\" to type your own."
+    "countedHint": "Counted automatically. Untick \"Number automatically\" to type your own.",
+    "follow": "Keep in step with my headings",
+    "followHint": "The rows come from the Section Headings and Sub-headings on your pages. Add, rename, move or delete a heading and the list changes with it.",
+    "followNone": "No headings yet. Add a Section Heading or Sub-heading from Element Presets → Headings & Text and it appears here.",
+    "overflow": "1 row doesn't fit on this page. | {n} rows don't fit on this page.",
+    "overflowNotContents": "1 row doesn't fit on this page. Make the list or its rows smaller, or put it on a contents page so it can carry on to the next one. | {n} rows don't fit on this page. Make the list or its rows smaller, or put it on a contents page so it can carry on to the next one.",
+    "addContentsPage": "Add a contents page for the rest",
+    "pageCheckHint": "Page numbers are the pages in your design. A table that grows can push a heading onto a later page: check the numbers in Preview PDF.",
+    "followNumbers": "Section numbers are the ones your Section Headings show. Change their style on any Section Heading.",
+    "followRowsHint": "To change a row, change its heading on the page. Untick \"Keep in step with my headings\" to type the rows yourself.",
+    "followEmptyHint": "Table of contents: your Section Headings and Sub-headings will appear here",
+    "linksHint": "In the PDF, clicking a row jumps to its heading. Here, double-click a row or use its target button.",
+    "goTo": "Go to this heading",
+    "goToHint": "Double-click to go to this heading",
+    "noHeadingForRow": "No heading on your pages has this row's title."
   },
   "pageDesigns": {
     "chooseCover": "Choose a cover page design",
@@ -2162,5 +2176,23 @@
     "pages": "Pages",
     "view": "View",
     "export": "Export"
+  },
+  "headingNumbers": {
+    "title": "Section number",
+    "auto": "Number this heading automatically",
+    "autoHint": "This is section {n}. Section Headings count 1, 2, 3… in page order: add, move or delete one and the numbers follow.",
+    "typedHint": "This heading keeps the number typed in it. Tick the box to count it again.",
+    "notCounted": "Headings on the cover and contents pages aren't counted.",
+    "noNumberPart": "This heading has no number of its own.",
+    "style": "Style for every Section Heading",
+    "word": "Word before the number",
+    "styleHint": "Typing your own number in a heading keeps that number for that heading only."
+  },
+  "autoDate": {
+    "title": "Date that updates itself",
+    "off": "Off: the text I type",
+    "onHint": "Shows the date the report is made, so it's always current. To type a different date, choose Off.",
+    "offHint": "Choose a style to show the date the report is made instead of typed text, e.g. the month of a monthly report.",
+    "cannotEdit": "This date updates itself. To type over it, choose Off under \"Date that updates itself\" in its properties."
   }
 }

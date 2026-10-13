@@ -18,6 +18,7 @@ import { ensureUniqueUuids } from "@/utils/elementUtils";
 import { resetBoxPhotos } from "@/utils/framePresets";
 import { ensureUniqueTableDatasets } from "@/utils/table/tableDocument";
 import { specialPages } from "@/utils/specialPages";
+import { syncHeadings } from "@/utils/headingSync";
 import { useEditorStore } from "./editor";
 import { useSelectionStore } from "./selection";
 import {
@@ -202,6 +203,9 @@ export const useReportStore = defineStore("report", () => {
     try {
       if (!reportProperties.value || !bands.value || !reportFields.value || !reportParameters.value) return;
       fitBandsToPage();
+      // Headings renumbered, contents lists that follow them rebuilt (part of
+      // the change being written, so the same undo step)
+      syncHeadings(bands.value, reportProperties.value);
       const content = generateJRXMLContent(
         { ...reportProperties.value, pageCount: totalPages.value },
         bands.value,

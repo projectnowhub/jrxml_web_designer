@@ -228,6 +228,15 @@ export interface ReportProperties {
   countSpecialPages?: boolean;
   // The cover uses the whole sheet (written with a 0 bottom margin, see specialPages.ts)
   fullPageCover?: boolean;
+  // How Section Headings number themselves (utils/headingSync.ts); unset: "SECTION 1."
+  headingNumbers?: HeadingNumbering;
+}
+
+// Section Headings counted 1, 2… in page order, shown in this style
+export interface HeadingNumbering {
+  style: ContentsSectionStyle;
+  // "word" style: the word before the number ("SECTION 1.")
+  word?: string;
 }
 
 // Base design element interface
@@ -543,6 +552,9 @@ export interface ContentsListData {
   // "word" style: the word before the number ("SECTION 1.")
   sectionWord?: string;
   subStyle?: ContentsSubStyle;
+  // Kept in step with the Section Headings and Sub-headings on the pages: its
+  // rows are rebuilt from them after every change (utils/headingSync.ts)
+  follow?: boolean;
 }
 
 export type ContentsSectionStyle = "1" | "1." | "01" | "I" | "A" | "word";

@@ -66,7 +66,7 @@
       "signOff": "Pengesahan",
       "tables": "Jadual",
       "coverPages": "Halaman Kulit",
-      "contentsPages": "Halaman Kandungan"
+      "contentsPages": "Isi Kandungan"
     },
     "compositeElements": "Elemen Komposit",
     "reportParameters": "Parameter Laporan",
@@ -172,10 +172,10 @@
     "coverMinimal": "Ringkas",
     "coverColourBlock": "Blok Warna",
     "coverProjectCard": "Kad Projek",
-    "contentsClassic": "Kandungan: Klasik",
-    "contentsDotted": "Kandungan: Bertitik",
-    "contentsNumbered": "Kandungan: Bernombor",
-    "contentsTwoColumns": "Kandungan: Dua Lajur"
+    "contentsClassic": "Klasik",
+    "contentsDotted": "Bertitik",
+    "contentsNumbered": "Bernombor",
+    "contentsTwoColumns": "Dua Lajur"
   },
   "properties": {
     "title": "Sifat",
@@ -2077,7 +2077,21 @@
     "subStyle": "Subbahagian",
     "noSubNumbers": "Tiada nombor",
     "autoNumberHint": "Bahagian dikira 1, 2, 3; setiap subbahagian dikira semula di bawah bahagiannya. Inden baris untuk menjadikannya subbahagian.",
-    "countedHint": "Dikira secara automatik. Nyahtanda \"Nombor secara automatik\" untuk menaip sendiri."
+    "countedHint": "Dikira secara automatik. Nyahtanda \"Nombor secara automatik\" untuk menaip sendiri.",
+    "follow": "Selaraskan dengan tajuk saya",
+    "followHint": "Baris diambil daripada Tajuk Bahagian dan Subtajuk pada halaman anda. Tambah, namakan semula, alihkan atau padam tajuk dan senarai akan berubah bersamanya.",
+    "followNone": "Belum ada tajuk. Tambah Tajuk Bahagian atau Subtajuk daripada Preset Elemen → Tajuk & Teks dan ia akan muncul di sini.",
+    "overflow": "1 baris tidak muat pada halaman ini. | {n} baris tidak muat pada halaman ini.",
+    "overflowNotContents": "1 baris tidak muat pada halaman ini. Kecilkan senarai atau barisnya, atau letakkannya pada halaman kandungan supaya ia boleh bersambung ke halaman seterusnya. | {n} baris tidak muat pada halaman ini. Kecilkan senarai atau barisnya, atau letakkannya pada halaman kandungan supaya ia boleh bersambung ke halaman seterusnya.",
+    "addContentsPage": "Tambah halaman kandungan untuk bakinya",
+    "pageCheckHint": "Nombor halaman ialah halaman dalam reka bentuk anda. Jadual yang memanjang boleh menolak tajuk ke halaman kemudian: semak nombor dalam Pratonton PDF.",
+    "followNumbers": "Nombor bahagian ialah nombor yang ditunjukkan oleh Tajuk Bahagian anda. Tukar gayanya pada mana-mana Tajuk Bahagian.",
+    "followRowsHint": "Untuk menukar baris, tukar tajuknya pada halaman. Nyahtanda \"Selaraskan dengan tajuk saya\" untuk menaip baris sendiri.",
+    "followEmptyHint": "Isi kandungan: Tajuk Bahagian dan Subtajuk anda akan muncul di sini",
+    "linksHint": "Dalam PDF, mengklik baris akan melompat ke tajuknya. Di sini, klik dua kali baris atau gunakan butang sasarannya.",
+    "goTo": "Pergi ke tajuk ini",
+    "goToHint": "Klik dua kali untuk pergi ke tajuk ini",
+    "noHeadingForRow": "Tiada tajuk pada halaman anda yang mempunyai tajuk baris ini."
   },
   "pageDesigns": {
     "chooseCover": "Pilih reka bentuk halaman kulit",
@@ -2162,5 +2176,23 @@
     "pages": "Halaman",
     "view": "Paparan",
     "export": "Eksport"
+  },
+  "headingNumbers": {
+    "title": "Nombor bahagian",
+    "auto": "Nomborkan tajuk ini secara automatik",
+    "autoHint": "Ini ialah bahagian {n}. Tajuk Bahagian dikira 1, 2, 3… mengikut susunan halaman: tambah, alihkan atau padam satu dan nombornya akan mengikut.",
+    "typedHint": "Tajuk ini mengekalkan nombor yang ditaip di dalamnya. Tandakan kotak untuk mengiranya semula.",
+    "notCounted": "Tajuk pada halaman kulit dan halaman kandungan tidak dikira.",
+    "noNumberPart": "Tajuk ini tiada nombornya sendiri.",
+    "style": "Gaya untuk setiap Tajuk Bahagian",
+    "word": "Perkataan sebelum nombor",
+    "styleHint": "Menaip nombor anda sendiri dalam tajuk mengekalkan nombor itu untuk tajuk itu sahaja."
+  },
+  "autoDate": {
+    "title": "Tarikh yang dikemas kini sendiri",
+    "off": "Tutup: teks yang saya taip",
+    "onHint": "Menunjukkan tarikh laporan dihasilkan, jadi ia sentiasa terkini. Untuk menaip tarikh lain, pilih Tutup.",
+    "offHint": "Pilih gaya untuk menunjukkan tarikh laporan dihasilkan dan bukannya teks yang ditaip, cth. bulan laporan bulanan.",
+    "cannotEdit": "Tarikh ini dikemas kini sendiri. Untuk menaip di atasnya, pilih Tutup di bawah \"Tarikh yang dikemas kini sendiri\" dalam sifatnya."
   }
 }

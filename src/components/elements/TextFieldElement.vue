@@ -168,6 +168,7 @@
 </template>
 
 <script setup lang="ts">
+import { autoDateOf, autoDateSample } from "@/utils/autoDate";
 import { useReportStore } from "@/stores/report";
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -312,6 +313,9 @@ const renderedHtmlContent = computed(() => textExpressionToHtml(props.element.ex
 
 // Clean display text for plain expressions (preserves linebreaks, strips literal quotes)
 const displayText = computed(() => {
+  // A date that updates itself: today's date
+  const dateStyle = autoDateOf(props.element);
+  if (dateStyle) return autoDateSample(dateStyle);
   if (isPageNumber.value) {
     return (
       formatPageNumber(paginationSettings.value, canvasPage.value, canvasPageCount.value) ?? ""
@@ -357,7 +361,9 @@ const displayText = computed(() => {
   return '';
 });
 
-const hasRichMarkup = computed(() => !isPageNumber.value && isRichTextElement(props.element));
+const hasRichMarkup = computed(
+  () => !isPageNumber.value && !autoDateOf(props.element) && isRichTextElement(props.element),
+);
 
 const hasContent = computed(() => {
   if (hasRichMarkup.value) {

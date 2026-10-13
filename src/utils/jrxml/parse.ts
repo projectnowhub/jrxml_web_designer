@@ -1,3 +1,4 @@
+import { HEADING_NUMBERS_PROPERTY, parseHeadingNumbers } from "../headingSync";
 import type { DesignElement, BandType, Band, ReportGroup, TableElement, CustomTableData, CustomTableElement, ContentsListData, ContentsListElement } from "@/types";
 import { CONTENTS_LIST_PROPERTY, parseContentsList, syncContentsListSize } from "../contentsList";
 import { CUSTOM_TABLE_PART_PROPERTY, CUSTOM_TABLE_PROPERTY, parseCustomTable, syncTableSize } from "../customTable";
@@ -365,6 +366,13 @@ export function parseJRXMLContent(jrxmlContent: string): {
       ?.getAttribute("value"),
   );
   const contentsCount = Math.max(special.contentsPages ?? 0, contentsPageElements.length);
+  // How Section Headings number themselves
+  const headingNumbers = parseHeadingNumbers(
+    Array.from(jasperReportElem.children)
+      .find((c) => c.localName === "property" && c.getAttribute("name") === HEADING_NUMBERS_PROPERTY)
+      ?.getAttribute("value"),
+  );
+  if (headingNumbers) properties.headingNumbers = headingNumbers;
   if (special.countSpecialPages === false) properties.countSpecialPages = false;
   // A whole-sheet cover: the real bottom margin is back, the page footer loses
   // the space that stood in for it, the cover's elements count from the sheet's corner
@@ -609,7 +617,8 @@ export function parseJRXMLContent(jrxmlContent: string): {
       (p) =>
         p.name !== SAVED_TABLE_STYLES_PROPERTY &&
         p.name !== REPORT_PROJECTS_PROPERTY &&
-        p.name !== SPECIAL_PAGES_PROPERTY,
+        p.name !== SPECIAL_PAGES_PROPERTY &&
+        p.name !== HEADING_NUMBERS_PROPERTY,
     ),
   };
 }

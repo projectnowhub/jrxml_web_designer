@@ -22,7 +22,10 @@
         v-for="(entry, i) in list.entries"
         :key="i"
         class="cl-row"
+        :class="{ 'is-linked': !!headings[i] }"
         :style="{ height: `${list.rowHeight}px` }"
+        :title="headings[i] ? t('contentsList.goToHint') : undefined"
+        @dblclick.stop="goTo(i)"
       >
         <span
           v-if="list.numberWidth > 0"
@@ -34,7 +37,7 @@
         <span class="cl-page" :style="{ width: `${list.pageWidth}px`, fontWeight: weight(entry) }">{{ entry.page }}</span>
       </div>
       <div v-if="!list.entries.length" class="cl-empty" :style="{ height: `${list.rowHeight}px` }">
-        {{ t(list.continues ? "contentsList.continuesHint" : "contentsList.emptyHint") }}
+        {{ t(list.continues ? "contentsList.continuesHint" : list.follow ? "contentsList.followEmptyHint" : "contentsList.emptyHint") }}
       </div>
     </div>
   </BaseElement>
@@ -45,7 +48,9 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import BaseElement from "./BaseElement.vue";
 import { resolveReportFont } from "../../config/fonts.config";
-import { LEADER_DOTS, listNumbers, numberStarts, SUB_INDENT, titleLineHeight } from "../../utils/contentsList";
+import { headingItems, LEADER_DOTS, listNumbers, matchHeadings, numberStarts, SUB_INDENT, titleLineHeight } from "../../utils/contentsList";
+import { useSelectionStore } from "@/stores/selection";
+import notification from "@/utils/notification";
 import { useReportStore } from "@/stores/report";
 import type { ContentsEntry, ContentsListElement, EditingElementInfo, SelectedElementInfo } from "../../types";
 
@@ -73,6 +78,18 @@ const emit = defineEmits<{
 }>();
 
 const list = computed(() => props.element.list);
+
+// The heading each row stands for (as the PDF links them): double-click a row
+// to select that heading and bring it into view
+const selection = useSelectionStore();
+const headings = computed(() =>
+  matchHeadings(list.value.entries, headingItems(report.bands, report.reportProperties)),
+);
+function goTo(i: number) {
+  const heading = headings.value[i];
+  if (heading?.element.uuid) selection.revealUuid = heading.element.uuid;
+  else notification.info(t("contentsList.noHeadingForRow"));
+}
 const font = resolveReportFont(undefined);
 const lineHeight = computed(() => Math.min(list.value.rowHeight, titleLineHeight(list.value.fontSize)));
 
@@ -119,6 +136,12 @@ function titleStyle(entry: ContentsEntry) {
   width: 100%;
   height: 100%;
   overflow: hidden;
+}
+
+/* A row that leads to a heading lights up under the pointer */
+.cl-row.is-linked:hover {
+  background: rgba(100, 64, 244, 0.06);
+  cursor: pointer;
 }
 
 .cl-row {

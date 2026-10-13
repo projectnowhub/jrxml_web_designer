@@ -27,6 +27,9 @@ export const useSelectionStore = defineStore("selection", () => {
   // The page last clicked or worked on: elements added by clicking a library
   // tile go there (none yet: the first normal page)
   const lastClickedPageIndex = ref<number | null>(null);
+  // An element to select and scroll to (by uuid), e.g. the heading of a
+  // contents row; the designer does it and clears it
+  const revealUuid = ref<string | null>(null);
 
   // Nothing selected or being edited (a fresh designer)
   function reset() {
@@ -37,10 +40,12 @@ export const useSelectionStore = defineStore("selection", () => {
     tableCells.value = null;
     lastClickedBandIndex.value = null;
     lastClickedPageIndex.value = null;
+    revealUuid.value = null;
   }
 
   return {
     selectedBandIndex,
+    revealUuid,
     selectedElement,
     selectedElements,
     editingElement,

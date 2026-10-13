@@ -4,17 +4,48 @@
     <template v-if="part === 'basic'">
       <div class="card">
         <h5>{{ t("contentsList.fillTitle") }}</h5>
-        <button type="button" class="wide-btn is-primary" @click="emit('fill')">
-          <ListRestart :size="14" aria-hidden="true" />
-          {{ t("contentsList.fill") }}
-        </button>
-        <p class="form-hint">{{ t("contentsList.fillHint") }}</p>
+        <label class="toggle-row is-first">
+          <input type="checkbox" :checked="!!list.follow" @change="setFollow(($event.target as HTMLInputElement).checked)" />
+          {{ t("contentsList.follow") }}
+        </label>
+        <!-- Following: the rows come from the headings, live -->
+        <template v-if="list.follow">
+          <p class="form-hint">{{ t("contentsList.followHint") }}</p>
+          <p v-if="!headingCount" class="form-hint is-note">{{ t("contentsList.followNone") }}</p>
+          <div v-if="overflow" class="overflow-note" role="status">
+            <TriangleAlert :size="14" aria-hidden="true" />
+            <span>{{ t(onContentsPage ? "contentsList.overflow" : "contentsList.overflowNotContents", { n: overflow }, overflow) }}</span>
+          </div>
+          <button v-if="overflow && onContentsPage" type="button" class="wide-btn is-primary" @click="emit('fill')">
+            <FilePlus :size="14" aria-hidden="true" />
+            {{ t("contentsList.addContentsPage") }}
+          </button>
+          <p class="form-hint">{{ t("contentsList.pageCheckHint") }}</p>
+        </template>
+        <!-- Not following: filled once on request, then typed -->
+        <template v-else>
+          <button type="button" class="wide-btn is-primary" @click="emit('fill')">
+            <ListRestart :size="14" aria-hidden="true" />
+            {{ t("contentsList.fill") }}
+          </button>
+          <p class="form-hint">{{ t("contentsList.fillHint") }}</p>
+        </template>
         <p v-if="list.continues" class="form-hint is-note">{{ t("contentsList.continuesNote") }}</p>
       </div>
 
       <!-- Numbers: counted automatically (sections, then sub-sections), or typed -->
       <div class="card">
         <h5>{{ t("contentsList.numbers") }}</h5>
+        <template v-if="list.follow">
+          <p class="form-hint is-first">{{ t("contentsList.followNumbers") }}</p>
+          <label class="field">
+            <span class="field-label">{{ t("contentsList.subStyle") }}</span>
+            <select :value="list.subStyle ?? 'roman'" @change="setStyle('subStyle', ($event.target as HTMLSelectElement).value)">
+              <option v-for="style in SUB_STYLES" :key="style" :value="style">{{ subSample(style) }}</option>
+            </select>
+          </label>
+        </template>
+        <template v-else>
         <label class="toggle-row is-first">
           <input type="checkbox" :checked="!!list.autoNumber" @change="setAuto(($event.target as HTMLInputElement).checked)" />
           {{ t("contentsList.autoNumber") }}
@@ -42,10 +73,12 @@
           </label>
           <p class="form-hint">{{ t("contentsList.autoNumberHint") }}</p>
         </template>
+        </template>
       </div>
 
       <div class="card">
         <h5>{{ t("contentsList.rows", { n: list.entries.length }, list.entries.length) }}</h5>
+        <p v-if="list.follow && list.entries.length" class="form-hint is-first">{{ t("contentsList.followRowsHint") }}</p>
         <div v-if="list.entries.length" class="row-head" aria-hidden="true">
           <span v-if="list.numberWidth > 0" class="col-number" :style="{ width: numberColumnWidth }">{{ t("contentsList.number") }}</span>
           <span class="col-title">{{ t("contentsList.titleColumn") }}</span>
@@ -57,7 +90,7 @@
             class="col-number"
             :style="{ width: numberColumnWidth }"
             :value="list.autoNumber ? numbers[i] : entry.number"
-            :readonly="list.autoNumber"
+            :readonly="list.autoNumber || list.follow"
             :title="list.autoNumber ? t('contentsList.countedHint') : undefined"
             :aria-label="t('contentsList.number')"
             @change="setEntry(i, 'number', ($event.target as HTMLInputElement).value)"
@@ -65,16 +98,29 @@
           <input
             class="col-title"
             :value="entry.title"
+            :readonly="list.follow"
             :aria-label="t('contentsList.titleColumn')"
             @change="setEntry(i, 'title', ($event.target as HTMLInputElement).value)"
           />
           <input
             class="col-page"
             :value="entry.page"
+            :readonly="list.follow"
             :aria-label="t('contentsList.page')"
             @change="setEntry(i, 'page', ($event.target as HTMLInputElement).value)"
           />
           <button
+            type="button"
+            class="icon-btn"
+            :disabled="!headings[i]"
+            :title="t(headings[i] ? 'contentsList.goTo' : 'contentsList.noHeadingForRow')"
+            :aria-label="t('contentsList.goTo')"
+            @click="headings[i] && (selection.revealUuid = headings[i]!.element.uuid ?? null)"
+          >
+            <LocateFixed :size="13" aria-hidden="true" />
+          </button>
+          <button
+            v-if="!list.follow"
             type="button"
             class="icon-btn"
             :title="t(entry.level === 1 ? 'contentsList.makeSection' : 'contentsList.makeSub')"
@@ -84,6 +130,7 @@
             <component :is="entry.level === 1 ? IndentDecrease : IndentIncrease" :size="13" aria-hidden="true" />
           </button>
           <button
+            v-if="!list.follow"
             type="button"
             class="icon-btn is-danger"
             :title="t('contentsList.removeRow')"
@@ -93,7 +140,8 @@
             <Trash2 :size="13" aria-hidden="true" />
           </button>
         </div>
-        <button type="button" class="wide-btn" @click="addRow">
+        <p v-if="list.entries.length" class="form-hint">{{ t("contentsList.linksHint") }}</p>
+        <button v-if="!list.follow" type="button" class="wide-btn" @click="addRow">
           <Plus :size="13" aria-hidden="true" />
           {{ t("contentsList.addRow") }}
         </button>
@@ -183,11 +231,15 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { Ban, IndentDecrease, IndentIncrease, ListRestart, Plus, Trash2 } from "@lucide/vue";
+import { Ban, FilePlus, LocateFixed, IndentDecrease, IndentIncrease, ListRestart, Plus, Trash2, TriangleAlert } from "@lucide/vue";
 import ColorSwatchPicker from "../../common/ColorSwatchPicker.vue";
 import { useReportStore } from "@/stores/report";
+import { useSelectionStore } from "@/stores/selection";
 import {
+  collectHeadings,
   DEFAULT_SECTION_WORD,
+  headingItems,
+  matchHeadings,
   listNumbers,
   numberStarts,
   SECTION_STYLES,
@@ -196,6 +248,8 @@ import {
   subNumber,
   syncContentsListSize,
 } from "@/utils/contentsList";
+import { followOverflow, listChain } from "@/utils/headingSync";
+import { pageKind } from "@/utils/specialPages";
 import type {
   ContentsEntry,
   ContentsListData,
@@ -240,6 +294,33 @@ function addRow() {
   change(() =>
     list.value.entries.push({ number: "", title: t("contentsList.newRow"), page: last?.page ?? "", level: last?.level ?? 0 }),
   );
+}
+
+// The heading each row stands for (the "go to" buttons)
+const selection = useSelectionStore();
+const headings = computed(() => matchHeadings(list.value.entries, headingItems(report.bands, report.reportProperties)));
+
+// Following the headings: how many there are, and the rows that don't fit
+const headingCount = computed(() => collectHeadings(report.bands, report.reportProperties).length);
+const overflow = computed(() => followOverflow(report.bands, report.reportProperties, props.element));
+const onContentsPage = computed(() => pageKind(report.reportProperties, props.element.pageIndex) === "contents");
+
+// On or off for the list and the lists carrying it on. Off: the rows stay as
+// they are, numbers included, to be edited by hand
+function setFollow(on: boolean) {
+  if (on === !!list.value.follow) return;
+  const detail = report.bands.find((b) => b.type === "detail");
+  const chain = detail ? listChain(detail.elements, props.element) : [props.element];
+  change(() => {
+    for (const l of chain) {
+      if (on) {
+        l.list.follow = true;
+      } else {
+        delete l.list.follow;
+        delete l.list.autoNumber;
+      }
+    }
+  });
 }
 
 // Counted numbers (from where the lists before this one in its chain stopped)
@@ -451,6 +532,11 @@ function setColor(key: keyof Pick<ContentsListData, "color" | "numberFill">, val
   cursor: pointer;
 }
 
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .icon-btn.is-danger:hover {
   border-color: #fca5a5;
   color: #dc2626;
@@ -499,6 +585,28 @@ function setColor(key: keyof Pick<ContentsListData, "color" | "numberFill">, val
 
 .toggle-row.is-first {
   margin: 0 0 8px;
+}
+
+.form-hint.is-first {
+  margin: 0 0 8px;
+}
+
+.overflow-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  background: #fff7ed;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #9a3412;
+}
+
+.overflow-note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .field select,

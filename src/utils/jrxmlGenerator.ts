@@ -1,7 +1,8 @@
+import { headingBookmarks, HEADING_NUMBERS_PROPERTY, serializeHeadingNumbers } from "./headingSync";
 import { xmlAttr, cdata } from "./jrxml/xmlEscape";
 import { DEFAULT_REPORT_FONT, resolveReportFont } from "../config/fonts.config";
 // Import type definitions
-import type { DesignElement, BandType, Band, ReportGroup } from "../types";
+import type { DesignElement, BandType, Band, ContentsListElement, ReportGroup } from "../types";
 import type { ReportProperties, Field, Parameter } from "./jrxml/types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { SAVED_TABLE_STYLES_PROPERTY } from "./table/tableThemes";
@@ -10,11 +11,25 @@ import { buildJasperReportOpenTag } from "./jrxml/xmlBuilder";
 import { generateUUID } from "./jrxml/uuidGenerator";
 import { generateCustomTableXML } from "./jrxml/customTableXml";
 import { generateContentsListXML } from "./jrxml/contentsListXml";
-import { numberStarts, type NumberStart } from "./contentsList";
+import { headingItems, matchHeadings, numberStarts, type HeadingItem, type NumberStart } from "./contentsList";
 
 // Where each contents list's automatic numbers start (lists carrying one list
 // on keep counting); set for the report being written
 let contentsNumberStarts = new Map<string, NumberStart>();
+// The frame holding contents page n and the break before Detail page `page`:
+// the same id every time they are written (the parser keeps neither), so an
+// unchanged report gives the same JRXML
+const pageBreakUuid = (page: number) => `b0b0b0b0-0000-4000-8000-${page.toString(16).padStart(12, "0")}`;
+const contentsPageUuid = (n: number) => `c0c0c0c0-0000-4000-8000-${n.toString(16).padStart(12, "0")}`;
+// Headings' titles written as PDF bookmarks (utils/headingSync.ts), by uuid
+let bookmarks = new Map<string, { level: number; label: string }>();
+// Every heading with a bookmark, for the contents rows that jump to them
+let headingLinks: HeadingItem[] = [];
+
+// Per contents row: the bookmark of the heading with the same title and level
+// (the nth row with a title goes to the nth heading with it)
+const contentsLinks = (element: ContentsListElement): (string | undefined)[] =>
+  matchHeadings(element.list.entries, headingLinks).map((h) => h?.label);
 import {
   afterSpecialPages,
   CONTENTS_PAGE_PROPERTY,
@@ -50,6 +65,7 @@ import {
   floatsBelowTable,
   generateTableDatasetsXML,
   generateTableXML,
+  javaString,
   tableReportStyles,
 } from "./jrxml/tableXml";
 
@@ -135,6 +151,8 @@ export function generateJRXMLContent(
     bottomMargin: properties.bottomMargin || 0,
   };
   contentsNumberStarts = numberStarts(bands.find((b) => b.type === "detail")?.elements ?? []);
+  bookmarks = headingBookmarks(bands, properties);
+  headingLinks = headingItems(bands, properties).filter((h) => h.target?.uuid && h.label);
   // Cover and contents pages (utils/specialPages.ts): the cover is the title,
   // on a page of its own
   const special = specialPages(properties);
@@ -195,13 +213,16 @@ export function generateJRXMLContent(
     (p) =>
       p?.name !== SAVED_TABLE_STYLES_PROPERTY &&
       p?.name !== REPORT_PROJECTS_PROPERTY &&
-      p?.name !== SPECIAL_PAGES_PROPERTY,
+      p?.name !== SPECIAL_PAGES_PROPERTY &&
+      p?.name !== HEADING_NUMBERS_PROPERTY,
   );
   if (tableStyles.length) {
     allProperties.push({ name: SAVED_TABLE_STYLES_PROPERTY, value: JSON.stringify(tableStyles) });
   }
   const specialPagesValue = serializeSpecialPages(properties);
   if (specialPagesValue) allProperties.push({ name: SPECIAL_PAGES_PROPERTY, value: specialPagesValue });
+  const headingNumbersValue = serializeHeadingNumbers(properties);
+  if (headingNumbersValue) allProperties.push({ name: HEADING_NUMBERS_PROPERTY, value: headingNumbersValue });
   // The projects chosen in the Report Data list
   if (properties.projects?.length) {
     allProperties.push({
@@ -482,7 +503,7 @@ export function generateJRXMLContent(
     for (let n = 1; n <= special.contents; n++) {
       const page = (special.cover ? 1 : 0) + n - 1;
       const pageElements = elementsOfPage(page);
-      jrxml += `<frame><reportElement x="0" y="0" width="${xmlAttr(printableWidth)}" height="${xmlAttr(printableHeight)}" uuid="${xmlAttr(generateUUID())}" mode="Transparent">`;
+      jrxml += `<frame><reportElement x="0" y="0" width="${xmlAttr(printableWidth)}" height="${xmlAttr(printableHeight)}" uuid="${xmlAttr(contentsPageUuid(n))}" mode="Transparent">`;
       jrxml += `<property name="${CONTENTS_PAGE_PROPERTY}" value="${xmlAttr(n)}"/>`;
       jrxml += `<printWhenExpression>${cdata(onlyOnPage(page + 1))}</printWhenExpression></reportElement>`;
       pageElements.forEach((element) => {
@@ -547,7 +568,7 @@ export function generateJRXMLContent(
         jrxml += `<band height="${xmlAttr(bandHeight)}"${splitAttr(band) || ' splitType="Stretch"'}>`;
         if (i > 0) {
           // Standard JasperReports page break at top of subsequent detail page bands
-          jrxml += `<break type="Page"><reportElement x="0" y="0" width="${xmlAttr(printableWidth)}" height="1" uuid="${xmlAttr(generateUUID())}"/></break>`;
+          jrxml += `<break type="Page"><reportElement x="0" y="0" width="${xmlAttr(printableWidth)}" height="1" uuid="${xmlAttr(pageBreakUuid(page))}"/></break>`;
         }
         if (pageKind(properties, page) === "normal") {
           const pageElements = elementsOfPage(page);
@@ -653,6 +674,7 @@ function generateElementXML(element: any): string {
         element,
         generateReportElementAttrs({ ...element, mode: undefined, forecolor: undefined, backcolor: undefined }),
         element.uuid ? contentsNumberStarts.get(element.uuid) : undefined,
+        contentsLinks(element),
       );
     default:
       return "";
@@ -955,6 +977,11 @@ function getDefaultBandHeight(bandType: string): number {
 
 // Generate text field XML
 function generateTextFieldXML(element: any): string {
+  // A heading's title: a PDF bookmark (worked out each time, never stored)
+  const bookmark = element?.uuid ? bookmarks.get(element.uuid) : undefined;
+  if (bookmark) {
+    element = { ...element, bookmarkLevel: bookmark.level, anchorNameExpression: javaString(bookmark.label) };
+  }
   let xml = `<textField`;
 
   // Add textField-specific attributes, ensuring compliance with the XSD spec

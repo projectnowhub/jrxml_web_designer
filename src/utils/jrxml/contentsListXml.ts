@@ -35,6 +35,8 @@ interface FieldOptions {
   align: "Left" | "Center" | "Right";
   color: string;
   fill?: string;
+  // The heading's bookmark this row jumps to in the PDF
+  link?: string;
 }
 
 export function generateContentsListXML(
@@ -42,6 +44,8 @@ export function generateContentsListXML(
   reportElementAttrs: string,
   // Where automatic numbers start (a list carrying another one on)
   start?: NumberStart,
+  // Per row: the bookmark of the heading it stands for (clickable in the PDF)
+  links: (string | undefined)[] = [],
 ): string {
   const list = element.list;
   const numbers = listNumbers(list, start);
@@ -54,11 +58,14 @@ export function generateContentsListXML(
     let attrs = ` x="${r(o.x)}" y="${r(o.y)}" width="${r(Math.max(1, o.width))}" height="${r(o.height)}" uuid="${id()}"`;
     attrs += o.fill ? ` mode="Opaque" backcolor="${xmlAttr(o.fill)}"` : ` mode="Transparent"`;
     attrs += ` forecolor="${xmlAttr(o.color)}"`;
+    const linked = o.link ? ` hyperlinkType="LocalAnchor"` : "";
     return (
-      `<textField><reportElement${attrs}/>` +
+      `<textField${linked}><reportElement${attrs}/>` +
       `<textElement textAlignment="${o.align}" verticalAlignment="Middle" markup="none">` +
       `<font fontName="${xmlAttr(font)}" size="${xmlAttr(list.fontSize)}"${o.bold ? ' isBold="true"' : ""}/></textElement>` +
-      `<textFieldExpression>${cdata(javaString(o.text))}</textFieldExpression></textField>`
+      `<textFieldExpression>${cdata(javaString(o.text))}</textFieldExpression>` +
+      (o.link ? `<hyperlinkAnchorExpression>${cdata(javaString(o.link))}</hyperlinkAnchorExpression>` : "") +
+      `</textField>`
     );
   };
 
@@ -71,6 +78,7 @@ export function generateContentsListXML(
     const bold = entry.level === 0 && list.boldSections;
     const indent = entry.level === 1 ? SUB_INDENT : 0;
     const number = numbers[i] ?? "";
+    const link = links[i];
     if (list.numberWidth > 0 && number) {
       const boxed = !!list.numberFill && entry.level === 0;
       xml += field({
@@ -83,6 +91,7 @@ export function generateContentsListXML(
         align: boxed ? "Center" : "Left",
         color: boxed ? (list.numberColor ?? "#FFFFFF") : list.color,
         fill: boxed ? list.numberFill : undefined,
+        link,
       });
     }
     const titleX = list.numberWidth + indent;
@@ -95,6 +104,7 @@ export function generateContentsListXML(
       bold,
       align: "Left",
       color: list.color,
+      link,
     });
     xml += field({
       x: width - list.pageWidth,
@@ -105,6 +115,7 @@ export function generateContentsListXML(
       bold,
       align: "Right",
       color: list.color,
+      link,
     });
   });
   return xml + `</frame>`;

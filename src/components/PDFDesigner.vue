@@ -772,6 +772,7 @@ import { useSelectionStore } from "@/stores/selection";
 import { useEditorStore } from "@/stores/editor";
 import { useFilesStore } from "@/stores/files";
 import { fitContentToPage, scaleElementsToArea } from "@/utils/pageFit";
+import { autoDateOf } from "@/utils/autoDate";
 import { planBandFit, type BandFitPlan } from "@/utils/bandFit";
 import { planTextFit, type TextFitElement } from "@/utils/textFit";
 import {
@@ -3682,6 +3683,32 @@ const clearSelection = () => {
 };
 
 // Select elements within a marquee (rubber-band) rectangle
+// Select an element asked for by uuid (a contents row's heading) and bring it into view
+watch(
+  () => selectionStore.revealUuid,
+  (uuid) => {
+    if (!uuid) return;
+    selectionStore.revealUuid = null;
+    for (const [bandIndex, band] of bands.value.entries()) {
+      for (const [elementIndex, el] of (band.elements ?? []).entries()) {
+        if (el.uuid === uuid) {
+          selectElement(bandIndex, elementIndex);
+        } else if (el.type === "frame") {
+          const inner = (el.elements ?? []).findIndex((c) => c.uuid === uuid);
+          if (inner === -1) continue;
+          selectElement(bandIndex, inner, false, elementIndex);
+        } else continue;
+        nextTick(() =>
+          document
+            .querySelector(`[data-element-uuid="${CSS.escape(uuid)}"]`)
+            ?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "center", inline: "nearest" }),
+        );
+        return;
+      }
+    }
+  },
+);
+
 const selectElementsInRect = (rect: {
   left: number;
   top: number;
@@ -4578,6 +4605,12 @@ const startEditing = (
     notification.warning(t("pagination.cannotEdit"));
     return;
   }
+  // A date that updates itself is set in its properties, not typed
+  if (autoDateOf(target)) {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    notification.info(t("autoDate.cannotEdit"));
+    return;
+  }
 
   editingElement.value = { bandIndex, elementIndex, parentFrameIndex };
   // Select the element
@@ -4979,6 +5012,9 @@ const processPastedElement = (
   const newElement = JSON.parse(JSON.stringify(clipboardData.elementData));
   // A copy is a separate element: new IDs for it and everything inside it
   refreshUuids(newElement);
+  // A pasted Table of Contents is a list of its own, never part of the one it
+  // was copied from (a copied second column would share its rows)
+  if (newElement.type === "contentsList") delete newElement.list?.continues;
   if (newElement.id) {
     newElement.id = `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }

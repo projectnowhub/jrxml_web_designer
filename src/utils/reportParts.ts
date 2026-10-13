@@ -17,6 +17,7 @@ import {
 import { applyPaginationSettings, buildPaginationElement } from "@/utils/paginationPresets";
 import { buildTablePreset, isTablePresetType, TABLE_PRESET_TYPES, type TablePresetType } from "@/utils/tablePresets";
 import { buildContentsList, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/utils/contentsList";
+import { setAutoNumbered } from "@/utils/headingSync";
 import { buildCoverDesign, COVER_DESIGN_TYPES, isCoverDesignType, type CoverDesignType } from "@/utils/pageDesigns";
 
 export const REPORT_PART_COLORS = {
@@ -157,9 +158,12 @@ function sectionHeading(ctx: FrameTemplateContext): FrameElement {
     text({ x, y: 0, width, height: 18, fontSize: 11, isBold: true,
       forecolor: REPORT_PART_COLORS.ink, verticalAlignment: "Middle", text: placeholder(ctx, key) });
   // Marked, so "Fill from my section headings" (Contents list) finds it
+  // Its number counts itself (headingSync.ts: "SECTION 1.", "SECTION 2."…)
+  const number = heading(0, numberW, "sectionNumber");
+  setAutoNumbered(number, true);
   return {
     ...frame(w, 18, { box: undefined, mode: "Transparent", backcolor: "#FFFFFF" }, [
-      heading(0, numberW, "sectionNumber"),
+      number,
       heading(numberW, w - numberW, "sectionTitle"),
     ]),
     properties: [{ name: SECTION_HEADING_PROPERTY, value: "true" }],

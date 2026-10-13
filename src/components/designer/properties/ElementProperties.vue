@@ -206,6 +206,9 @@
             @fill="emit('fill-contents-list')"
           />
 
+          <!-- Section Heading (or one of its parts): its number -->
+          <HeadingNumberProperties v-if="sectionHeading" :heading="sectionHeading" />
+
           <CustomTableProperties
             v-if="currentElement.type === 'customTable'"
             part="basic"
@@ -414,7 +417,7 @@
               v-if="isPagination(currentElement)"
               :element="currentElement"
             />
-            <div v-else class="box-section compact">
+            <div v-else-if="!autoDateOf(currentElement)" class="box-section compact">
               <div class="card-head">
                 <h5>{{ t("properties.textContent") }}</h5>
                 <button
@@ -445,6 +448,8 @@
                 </select>
               </label>
             </div>
+            <!-- Or the date the report is made, updated by itself -->
+            <AutoDateProperties v-if="!isPagination(currentElement)" :element="currentElement" />
             <div class="box-section compact">
               <h5>{{ t("properties.rotation") }}</h5>
               <div class="seg" role="radiogroup" :aria-label="t('properties.rotation')">
@@ -932,7 +937,7 @@ import { computed, ref, onMounted, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
 import notification from "@/utils/notification";
-import type { Band, BarcodeElement, ChartElement, ContentsListElement, CustomTableElement, SelectedElementInfo } from "../../../types";
+import type { Band, BarcodeElement, ChartElement, ContentsListElement, CustomTableElement, FrameElement, SelectedElementInfo } from "../../../types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
@@ -964,6 +969,10 @@ import PaginationProperties from "./PaginationProperties.vue";
 import ChartProperties from "./ChartProperties.vue";
 import CustomTableProperties from "./CustomTableProperties.vue";
 import ContentsListProperties from "./ContentsListProperties.vue";
+import HeadingNumberProperties from "./HeadingNumberProperties.vue";
+import AutoDateProperties from "./AutoDateProperties.vue";
+import { autoDateOf } from "@/utils/autoDate";
+import { hasProperty, SECTION_HEADING_PROPERTY } from "@/utils/contentsList";
 import { resetElementStyle } from "../../../utils/resetStyle";
 import BarcodeProperties from "./BarcodeProperties.vue";
 import { isPagination } from "../../../utils/paginationPresets";
@@ -1167,6 +1176,15 @@ const showTextColor = computed(() => {
 });
 
 // Frame in the Background band: a border drawn on every page, with no fill or padding
+// The Section Heading box selected, or the one holding the selected part
+const sectionHeading = computed<FrameElement | null>(() => {
+  const sel = selectedElement.value;
+  if (!sel) return null;
+  const band = bands.value?.[sel.bandIndex];
+  const box = sel.parentFrameIndex !== undefined ? band?.elements[sel.parentFrameIndex] : currentElement.value;
+  return box?.type === "frame" && hasProperty(box, SECTION_HEADING_PROPERTY) ? (box as FrameElement) : null;
+});
+
 const isPageBorder = computed(
   () =>
     currentElement.value?.type === "frame" &&

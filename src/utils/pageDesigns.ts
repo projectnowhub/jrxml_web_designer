@@ -8,6 +8,7 @@ import type { ContentsEntry, DesignElement, FrameElement } from "@/types";
 import { createElement } from "@/components/elements/ElementRegistry";
 import { BOX_PART_PROPERTY, frame, photo, releaseBoxPart, text, type FrameTemplateContext, type TextOptions } from "./framePresets";
 import { buildContentsList } from "./contentsList";
+import { setAutoDate } from "./autoDate";
 
 export const DESIGN_COLORS = {
   navy: "#14284B",
@@ -56,7 +57,7 @@ function block(x: number, y: number, width: number, height: number, color: strin
 // Text parts are at least 1.45 x the font size tall: JasperReports leaves out
 // text whose first line doesn't fit (Noto Sans SC)
 function label(ctx: FrameTemplateContext, key: string, o: Omit<TextOptions, "text" | "height"> & { height?: number }) {
-  return text({
+  const element = text({
     ...o,
     x: Math.round(o.x),
     y: Math.round(o.y),
@@ -64,6 +65,9 @@ function label(ctx: FrameTemplateContext, key: string, o: Omit<TextOptions, "tex
     height: Math.max(o.height ?? 0, Math.ceil(o.fontSize * 1.45) + 2),
     text: ph(ctx, key),
   });
+  // The cover's date is the month the report is made
+  if (key === "period") setAutoDate(element, "monthYear");
+  return element;
 }
 
 const pic = (x: number, y: number, w: number, h: number) => photo(Math.round(x), Math.round(y), Math.round(w), Math.round(h));

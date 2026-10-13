@@ -45,6 +45,8 @@ export function defaultContentsList(): ContentsListData {
     leader: true,
     boldSections: true,
     color: "#1F2937",
+    // New lists keep in step with the headings on the pages
+    follow: true,
   };
 }
 
@@ -90,7 +92,7 @@ export const SECTION_STYLES: ContentsSectionStyle[] = ["1", "1.", "01", "I", "A"
 export const SUB_STYLES: ContentsSubStyle[] = ["roman", "letters", "decimal", "none"];
 export const DEFAULT_SECTION_WORD = "SECTION";
 
-export function sectionNumber(list: ContentsListData, n: number): string {
+export function sectionNumber(list: Pick<ContentsListData, "sectionStyle" | "sectionWord">, n: number): string {
   switch (list.sectionStyle ?? "1.") {
     case "1":
       return String(n);
@@ -107,7 +109,7 @@ export function sectionNumber(list: ContentsListData, n: number): string {
   }
 }
 
-export function subNumber(list: ContentsListData, section: number, n: number): string {
+export function subNumber(list: Pick<ContentsListData, "subStyle">, section: number, n: number): string {
   switch (list.subStyle ?? "roman") {
     case "letters":
       return styleNumber(n, "letters").toLowerCase();
@@ -126,9 +128,10 @@ export interface NumberStart {
 }
 
 // The numbers a list shows: counted when automatic (from where the lists
-// before it in its chain stopped), else the typed ones
+// before it in its chain stopped), else the typed ones. A list that follows
+// the headings shows the numbers it was given (the headings' own)
 export function listNumbers(list: ContentsListData, start: NumberStart = { section: 0, sub: 0 }): string[] {
-  if (!list.autoNumber) return list.entries.map((e) => e.number);
+  if (!list.autoNumber || list.follow) return list.entries.map((e) => e.number);
   let { section, sub } = start;
   return list.entries.map((e) => {
     if (e.level === 0) {
@@ -192,6 +195,7 @@ export function normalizeContentsList(raw: any): ContentsListData | null {
   };
   if (COLOR.test(raw.numberFill)) list.numberFill = raw.numberFill;
   if (COLOR.test(raw.numberColor)) list.numberColor = raw.numberColor;
+  if (raw.follow === true) list.follow = true;
   if (typeof raw.continues === "string" && /^[0-9a-fA-F-]{8,40}$/.test(raw.continues)) list.continues = raw.continues;
   if (raw.autoNumber === true) {
     list.autoNumber = true;
@@ -228,11 +232,11 @@ export function fitNumber(list: ContentsListData, number: string): string {
 export const entriesFor = (list: ContentsListData, entries: ContentsEntry[]): ContentsEntry[] =>
   entries.map((e) => ({ ...e, number: fitNumber(list, e.number) }));
 
-const hasProperty = (el: { properties?: { name?: string }[] }, name: string) =>
+export const hasProperty = (el: { properties?: { name?: string }[] }, name: string) =>
   !!el.properties?.some((p) => p?.name === name);
 
 // The text a text element shows (plain or formatted)
-function textOf(el: DesignElement | undefined): string {
+export function textOf(el: DesignElement | undefined): string {
   if (!el || el.type !== "textField") return "";
   let expr = (el.expression ?? "").trim();
   if (expr.startsWith('"') && expr.endsWith('"') && expr.length >= 2) {
@@ -253,25 +257,80 @@ function textOf(el: DesignElement | undefined): string {
     .trim();
 }
 
+// One heading on the pages: its contents row, the text field carrying its
+// PDF bookmark (the title), and the bookmark's name (number and title)
+export interface HeadingItem {
+  entry: ContentsEntry;
+  target?: DesignElement;
+  label: string;
+  // The heading itself, as selected on the page (the Section Heading box, or
+  // the Sub-heading text)
+  element: DesignElement;
+}
+
 // Every Section Heading and Sub-heading on the normal pages, in page order,
-// with the page it prints on
-export function collectHeadings(bands: Band[], props: Pick<ReportProperties, "coverPage" | "contentsPages" | "countSpecialPages">): ContentsEntry[] {
+// with the page it prints on. Sub-headings inside a box count too, at the
+// box's place plus theirs (Section Headings are boxes, which don't nest)
+export function headingItems(
+  bands: Band[],
+  props: Pick<ReportProperties, "coverPage" | "contentsPages" | "countSpecialPages">,
+): HeadingItem[] {
   const detail = bands.find((b) => b.type === "detail");
   const { count, countPages } = specialPages(props);
-  const found = (detail?.elements ?? [])
-    .filter((el) => pageKind(props, el.pageIndex) === "normal")
-    .filter((el) => hasProperty(el, SECTION_HEADING_PROPERTY) || hasProperty(el, SUB_HEADING_PROPERTY))
-    .sort((a, b) => (a.pageIndex ?? 0) - (b.pageIndex ?? 0) || a.y - b.y || a.x - b.x);
-  return found
-    .map((el): ContentsEntry => {
-      const page = String((el.pageIndex ?? 0) + 1 - (countPages ? 0 : count));
-      if (hasProperty(el, SECTION_HEADING_PROPERTY) && el.type === "frame") {
-        const parts = [...((el as FrameElement).elements ?? [])].sort((a, b) => a.x - b.x);
-        const number = parts.length > 1 ? textOf(parts[0]) : "";
-        const title = parts.length > 1 ? parts.slice(1).map(textOf).join(" ") : textOf(parts[0]);
-        return { number, title, page, level: 0 };
+  const found: { el: DesignElement; page: number; y: number; x: number }[] = [];
+  for (const el of detail?.elements ?? []) {
+    if (pageKind(props, el.pageIndex) !== "normal") continue;
+    const page = el.pageIndex ?? 0;
+    if (hasProperty(el, SECTION_HEADING_PROPERTY) || hasProperty(el, SUB_HEADING_PROPERTY)) {
+      found.push({ el, page, y: el.y, x: el.x });
+    } else if (el.type === "frame") {
+      for (const child of el.elements ?? []) {
+        if (child.type === "textField" && hasProperty(child, SUB_HEADING_PROPERTY)) {
+          found.push({ el: child, page, y: el.y + child.y, x: el.x + child.x });
+        }
       }
-      return { number: "", title: textOf(el), page, level: 1 };
+    }
+  }
+  found.sort((a, b) => a.page - b.page || a.y - b.y || a.x - b.x);
+  return found
+    .map(({ el, page: index }): HeadingItem => {
+      const page = String(index + 1 - (countPages ? 0 : count));
+      if (hasProperty(el, SECTION_HEADING_PROPERTY) && el.type === "frame") {
+        const { numberPart, titleParts } = sectionHeadingParts(el as FrameElement);
+        const number = textOf(numberPart ?? undefined);
+        const title = titleParts.map(textOf).join(" ").replace(/\s+/g, " ").trim();
+        return {
+          entry: { number, title, page, level: 0 },
+          target: titleParts.find((p) => p.type === "textField"),
+          label: [number, title].filter(Boolean).join(" "),
+          element: el,
+        };
+      }
+      const title = textOf(el);
+      return { entry: { number: "", title, page, level: 1 }, target: el, label: title, element: el };
     })
-    .filter((e) => e.title || e.number);
+    .filter((h) => h.entry.title || h.entry.number);
+}
+
+// The heading each row stands for: same title and level (the nth row with a
+// title goes to the nth heading with it). Used by the PDF links and the canvas
+export function matchHeadings(entries: ContentsEntry[], items: HeadingItem[]): (HeadingItem | undefined)[] {
+  const seen = new Map<string, number>();
+  return entries.map((entry) => {
+    const key = `${entry.level}|${entry.title.trim()}`;
+    const n = seen.get(key) ?? 0;
+    seen.set(key, n + 1);
+    const matches = items.filter((h) => `${h.entry.level}|${h.entry.title}` === key);
+    return matches[n] ?? matches[0];
+  });
+}
+
+export const collectHeadings = (...args: Parameters<typeof headingItems>): ContentsEntry[] =>
+  headingItems(...args).map((h) => h.entry);
+
+// A Section Heading box: its number (the left part, when there are two or
+// more) and its title parts
+export function sectionHeadingParts(heading: FrameElement): { numberPart: DesignElement | null; titleParts: DesignElement[] } {
+  const parts = [...(heading.elements ?? [])].sort((a, b) => a.x - b.x);
+  return parts.length > 1 ? { numberPart: parts[0]!, titleParts: parts.slice(1) } : { numberPart: null, titleParts: parts };
 }
