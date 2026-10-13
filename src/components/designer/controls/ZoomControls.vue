@@ -170,6 +170,9 @@ watch(
 
 // Toggle dropdown
 function toggleDropdown() {
+  if (!isDropdownOpen.value) {
+    refreshFitZoom();
+  }
   isDropdownOpen.value = !isDropdownOpen.value;
 }
 
@@ -283,14 +286,20 @@ function computeOptimalZoom(): number {
   return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, exactZoom));
 }
 
+const liveOptimalZoom = ref(1.0);
+
+function refreshFitZoom() {
+  liveOptimalZoom.value = computeOptimalZoom();
+}
+
 const fitContentPercent = computed(() => {
-  return Math.round(computeOptimalZoom() * 100);
+  return Math.round(liveOptimalZoom.value * 100);
 });
 
 // Automatically calculate and apply the optimal zoom ratio
 function calculateOptimalZoom() {
-  const exactZoom = computeOptimalZoom();
-  updateZoomLevel(exactZoom);
+  refreshFitZoom();
+  updateZoomLevel(liveOptimalZoom.value);
 }
 
 // Click outside and keydown listeners
@@ -306,15 +315,45 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
+let containerObserver: ResizeObserver | null = null;
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
   document.addEventListener('keydown', handleKeydown);
+  window.addEventListener('resize', refreshFitZoom);
+
+  refreshFitZoom();
+
+  nextTick(() => {
+    refreshFitZoom();
+    const container =
+      document.querySelector('.paper-container') ||
+      document.querySelector('.designer-canvas');
+    if (container && typeof ResizeObserver !== 'undefined') {
+      containerObserver = new ResizeObserver(() => {
+        refreshFitZoom();
+      });
+      containerObserver.observe(container);
+    }
+  });
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside);
   document.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener('resize', refreshFitZoom);
+  if (containerObserver) {
+    containerObserver.disconnect();
+    containerObserver = null;
+  }
 });
+
+watch(
+  () => [props.paperWidth, props.paperHeight],
+  () => {
+    refreshFitZoom();
+  }
+);
 </script>
 
 <style scoped>

@@ -504,6 +504,9 @@
     "minHeight": "Ketinggian Minimum",
     "maxHeight": "Ketinggian Maksimum",
     "defaultHeight": "Ketinggian Lalai",
+    "minShort": "Min",
+    "maxShort": "Maks",
+    "defaultShort": "Lalai",
     "defaultBandSettings": "Tetapan Jalur Lalai",
     "resetToDeveloperDefaults": "Set Semula ke Lalai Pembangun",
     "saveAsGlobalDefault": "Simpan sebagai Lalai Global",
@@ -1985,7 +1988,9 @@
     "hint": "Buang gaya item ini (warna, sempadan, fon, bentuk). Kandungan, kedudukan dan saiznya kekal. Jadual hanya mengekalkan garisannya."
   },
   "header": {
-    "reportsHome": "Laman utama laporan"
+    "reportsHome": "Laman utama laporan",
+    "mainMenu": "Menu Utama",
+    "document": "Dokumen"
   },
   "specialPages": {
     "addCover": "Tambah halaman kulit",

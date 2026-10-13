@@ -14,12 +14,12 @@
         class="element-category"
       >
         <div class="category-header" @click="toggleCategory(categoryKey)">
+          <span class="category-title">{{ categoryLabels[categoryKey] || categoryKey }}</span>
           <component
             :is="expandedCategories[categoryKey] ? ChevronDown : ChevronRight"
             class="category-arrow"
-            :size="12"
+            :size="14"
           />
-          <span>{{ categoryLabels[categoryKey] || categoryKey }}</span>
         </div>
         <template v-if="expandedCategories[categoryKey]">
         <template v-for="section in sectionsOf(categoryElements)" :key="section.group">
@@ -900,31 +900,48 @@ onBeforeUnmount(closeTileMenu);
   border: 1px solid rgba(28, 27, 38, 0.08);
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.element-category:hover {
+  border-color: rgba(124, 92, 247, 0.22);
 }
 
 .category-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
   margin: 0 -2px 6px;
-  padding: 6px 6px;
+  padding: 6px 8px;
   font-size: 12.5px;
   font-weight: 650;
+  letter-spacing: -0.01em;
   color: #1c1b26;
   cursor: pointer;
   border-radius: 8px;
-  transition: background-color 0.15s, color 0.15s;
+  background-color: transparent;
+  transition: background-color 0.15s ease, color 0.15s ease;
   user-select: none;
 }
 
 .category-header:hover {
-  background-color: rgba(124, 92, 247, 0.06);
+  background-color: rgba(99, 102, 241, 0.07);
   color: #5b3ee0;
+}
+
+.category-title {
+  flex: 1;
 }
 
 .category-arrow {
   flex-shrink: 0;
   color: var(--prop-text-tertiary, #8a84a3);
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.category-header:hover .category-arrow {
+  color: #6366f1;
 }
 
 /* Icon in a soft badge */
@@ -1075,21 +1092,26 @@ onBeforeUnmount(closeTileMenu);
 }
 
 /* Scrollbar style */
+.fields-mini-view {
+  scrollbar-width: thin;
+  scrollbar-color: #cfd5e1 transparent;
+}
+
 .fields-mini-view::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 .fields-mini-view::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
+  background: transparent;
 }
 
 .fields-mini-view::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
+  background: #cfd5e1;
+  border-radius: 4px;
 }
 
 .fields-mini-view::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: #b0b8c9;
 }
 </style>

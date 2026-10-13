@@ -504,6 +504,9 @@
     "minHeight": "Minimum Height",
     "maxHeight": "Maximum Height",
     "defaultHeight": "Default Height",
+    "minShort": "Min",
+    "maxShort": "Max",
+    "defaultShort": "Default",
     "defaultBandSettings": "Default Band Settings",
     "resetToDeveloperDefaults": "Reset to Developer Defaults",
     "saveAsGlobalDefault": "Save as Global Defaults",
@@ -1985,7 +1988,9 @@
     "hint": "Remove this item's styling (colours, borders, fonts, shapes). Its content, place and size stay. Tables keep only their lines."
   },
   "header": {
-    "reportsHome": "Reports home"
+    "reportsHome": "Reports home",
+    "mainMenu": "Main Menu",
+    "document": "Document"
   },
   "specialPages": {
     "addCover": "Add cover page",

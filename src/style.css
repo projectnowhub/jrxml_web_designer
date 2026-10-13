@@ -64,3 +64,40 @@ input[type="number"]::-webkit-inner-spin-button {
   margin-left: 2px;
   cursor: pointer;
 }
+
+/* ==========================================================================
+   Global Custom Scrollbar System
+   Unified modern slim scrollbars matching the right side panel and element library.
+   ========================================================================== */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cfd5e1 transparent;
+}
+
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background: #cfd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background: #b0b8c9;
+}
+
+::-webkit-scrollbar-corner,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}

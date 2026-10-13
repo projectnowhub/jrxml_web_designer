@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue';
+import { ref, computed, onUnmounted, watch } from 'vue';
 import PanelToggleButton from './PanelToggleButton.vue';
 
 // Define component props
@@ -82,6 +82,15 @@ const emit = defineEmits<Emits>();
 const currentSize = ref(props.initialSize);
 const isCollapsed = ref(false);
 const isResizing = ref(false);
+
+watch(
+  () => props.initialSize,
+  (newSize) => {
+    if (typeof newSize === 'number') {
+      currentSize.value = newSize;
+    }
+  }
+);
 
 // Compute panel style
 const panelStyle = computed(() => {
@@ -185,6 +194,7 @@ onUnmounted(() => {
 /* Bottom panel */
 .resizable-panel--bottom {
   border-top: 1px solid rgba(28, 27, 38, 0.08);
+  flex-shrink: 0;
 }
 
 /* Collapsed state */
@@ -266,5 +276,25 @@ onUnmounted(() => {
   padding: 0;
   display: flex;
   flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: #cfd5e1 transparent;
+}
+
+.panel-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+  background: #cfd5e1;
+  border-radius: 4px;
+}
+
+.panel-content::-webkit-scrollbar-thumb:hover {
+  background: #b0b8c9;
 }
 </style>

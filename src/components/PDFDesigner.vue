@@ -52,15 +52,15 @@
         <!-- 3. The report's projects (their details and tables are in Report Data) -->
         <HeaderProjectPicker
           :projects="reportProjects"
-          :compact="headerTier >= 4"
+          :compact="headerTier >= 2"
           @update-projects="setReportProjects"
         />
 
-        <span v-if="headerTier < 4" class="toolbar-divider"></span>
+        <span v-if="headerTier < 3" class="toolbar-divider"></span>
 
         <!-- 4. File Manager -->
         <FileManager
-          :compact="headerTier >= 5"
+          :compact="headerTier >= 3"
           @create-new-file="createNewFile"
           @load-file="loadFile"
           @open-jrxml="openJrxmlFile"
@@ -7784,6 +7784,7 @@ const moveElementZOrder = (direction: "front" | "back") => {
   gap: 8px;
   flex: 0 1 auto;
   min-width: 0;
+  flex-wrap: nowrap;
 }
 
 /* Google Docs style editable document title */
@@ -7792,6 +7793,7 @@ const moveElementZOrder = (direction: "front" | "back") => {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .document-title-input {
@@ -7803,8 +7805,8 @@ const moveElementZOrder = (direction: "front" | "back") => {
   border-radius: 7px;
   background-color: #fafafc;
   outline: none;
-  min-width: 120px;
-  max-width: 200px;
+  min-width: 80px;
+  max-width: 170px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -7977,20 +7979,19 @@ const moveElementZOrder = (direction: "front" | "back") => {
 .designer-header.tier-4 .document-title-wrap,
 .designer-header.tier-5 .document-title-wrap,
 .designer-header.tier-6 .document-title-wrap {
-  flex: 0 1 auto;
+  flex-shrink: 0;
 }
 
 .designer-header.tier-3 .document-title-input,
-.designer-header.tier-4 .document-title-input,
-.designer-header.tier-5 .document-title-input,
-.designer-header.tier-6 .document-title-input {
-  flex: 0 1 200px;
-  width: 200px;
-  min-width: 120px;
+.designer-header.tier-4 .document-title-input {
+  max-width: 130px;
+  min-width: 70px;
 }
 
+.designer-header.tier-5 .document-title-input,
 .designer-header.tier-6 .document-title-input {
-  min-width: 56px;
+  max-width: 90px;
+  min-width: 50px;
 }
 
 .designer-header.tier-3 .header-left.header-workflow,
