@@ -21,6 +21,34 @@
           </div>
         </RouterLink>
 
+        <!-- ☰: only when the window is too narrow for every tool; it holds
+             just the hidden ones, grouped (Edit, Pages, View, Export) -->
+        <HeaderMoreMenu
+          v-if="headerTier >= 3"
+          :sections="{
+            undoRedo: headerTier >= 5,
+            edit: headerTier >= 4,
+            view: true,
+            download: headerTier >= 4,
+          }"
+          :zoom-level="zoomLevel"
+          :paper-width="reportProperties.pageWidth"
+          :paper-height="reportProperties.pageHeight"
+          :show-bottom-panel="showBottomPanel"
+          :has-cover="!!reportProperties.coverPage"
+          @undo="undo"
+          @redo="redo"
+          @add-page="addNewPage()"
+          @add-cover="handlePageAction('addCover', 0)"
+          @add-contents="handlePageAction('addContents', 0)"
+          @delete="deleteElement"
+          @copy="copyElement"
+          @paste="pasteElement()"
+          @toggle-bottom-panel="toggleBottomPanel"
+          @download="downloadJRXML"
+          @update:zoom-level="setZoomLevel($event)"
+        />
+
         <!-- 2. File Name (Inline Editable Google Docs Style) & Auto-save Status -->
         <div class="document-title-wrap">
           <input
@@ -161,32 +189,6 @@
       </div>
 
       <div class="header-actions">
-        <!-- 10. Whatever no longer fits in the header -->
-        <HeaderMoreMenu
-          v-if="headerTier >= 3"
-          :sections="{
-            undoRedo: headerTier >= 5,
-            edit: headerTier >= 4,
-            zoom: true,
-            bottomPanel: true,
-            snap: true,
-            download: headerTier >= 4,
-          }"
-          :zoom-level="zoomLevel"
-          :paper-width="reportProperties.pageWidth"
-          :paper-height="reportProperties.pageHeight"
-          :show-bottom-panel="showBottomPanel"
-          @undo="undo"
-          @redo="redo"
-          @add-page="addNewPage()"
-          @delete="deleteElement"
-          @copy="copyElement"
-          @paste="pasteElement()"
-          @toggle-bottom-panel="toggleBottomPanel"
-          @download="downloadJRXML"
-          @update:zoom-level="setZoomLevel($event)"
-        />
-
         <!-- 11. Download JRXML / Preview PDF -->
         <button
           v-if="headerTier < 4"
@@ -8053,6 +8055,8 @@ const moveElementZOrder = (direction: "front" | "back") => {
 .designer-layout {
   display: flex;
   flex: 1;
+  /* May shrink to nothing when the bottom panel is full height */
+  min-height: 0;
   overflow: hidden;
   transition: all 0.3s ease;
   position: relative;

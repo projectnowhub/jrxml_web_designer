@@ -626,10 +626,13 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
 }
 
 .tdp-section {
-  padding: 12px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  background: var(--prop-bg-secondary, #f7f8fa);
+  /* Same card as the other property sections */
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(28, 27, 38, 0.08);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
 }
 
 .tdp-section h5 {

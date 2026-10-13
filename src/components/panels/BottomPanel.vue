@@ -7,6 +7,8 @@ import {
   FileCode2,
   Info,
   SlidersHorizontal,
+  Maximize2,
+  Minimize2,
   X,
 } from "@lucide/vue";
 import { DEFAULT_REPORT_FONT, resolveReportFont } from "../../config/fonts.config";
@@ -104,13 +106,24 @@ const tabs = computed(() => [
 const HEADER_HEIGHT = 56;
 const bottomPanelHeight = ref(props.initialHeight);
 
+// Opened: the limit is measured again (the header may have changed height)
+watch(
+  () => props.visible,
+  (open) => {
+    if (open) nextTick(updateMaxSize);
+  },
+);
+
 // Fullscreen state
 const isFullscreen = ref(false);
 const originalPanelHeight = ref(props.initialHeight);
 const currentMaxSize = ref(Math.max(150, window.innerHeight - HEADER_HEIGHT)); // Extend up to the header
 
+// Up to the header's bottom edge (measured: the header's height changes with the window)
 const updateMaxSize = () => {
-  currentMaxSize.value = Math.max(150, window.innerHeight - HEADER_HEIGHT);
+  const header = document.querySelector(".designer-header");
+  const top = header ? header.getBoundingClientRect().bottom : HEADER_HEIGHT;
+  currentMaxSize.value = Math.max(150, Math.floor(window.innerHeight - top));
 };
 
 // Paper size definitions
@@ -568,6 +581,8 @@ const syncScroll = () => {
 // Handle bottom panel size changes
 const handleBottomPanelSizeChange = (newSize: number) => {
   bottomPanelHeight.value = newSize;
+  // Dragged to the top it is full height; dragged down it is not any more
+  isFullscreen.value = newSize >= currentMaxSize.value - 2;
   emit("size-change", newSize);
 };
 
@@ -606,10 +621,14 @@ const toggleFullscreen = (): void => {
     updateMaxSize();
     bottomPanelHeight.value = currentMaxSize.value;
   } else {
-    // Exit fullscreen mode
-    bottomPanelHeight.value = originalPanelHeight.value;
+    // Exit fullscreen mode (to a smaller height if the last one was full too)
     updateMaxSize();
+    bottomPanelHeight.value =
+      originalPanelHeight.value >= currentMaxSize.value - 2
+        ? Math.round(currentMaxSize.value / 2)
+        : originalPanelHeight.value;
   }
+  emit("size-change", bottomPanelHeight.value);
 };
 
 // Listen for keyboard events
@@ -737,6 +756,7 @@ const clearAutoFixResult = () => {
 onMounted(() => {
   window.addEventListener("keydown", handleKeyDown);
   window.addEventListener("resize", updateMaxSize);
+  updateMaxSize();
 });
 
 // Remove event listeners before the component is unmounted
@@ -753,8 +773,10 @@ onBeforeUnmount(() => {
     :initial-size="bottomPanelHeight"
     :min-size="150"
     :max-size="currentMaxSize"
+    :snap-fractions="[1 / 3, 1 / 2, 1]"
     :collapsible="false"
     @size-change="handleBottomPanelSizeChange"
+    @handle-dblclick="toggleFullscreen"
   >
     <div class="tab-navigation">
       <div class="tabs-list">
@@ -769,6 +791,17 @@ onBeforeUnmount(() => {
           <span>{{ tab.name }}</span>
         </button>
       </div>
+      <!-- Full height / back, then close: together on the right -->
+      <div class="panel-actions">
+      <button
+        type="button"
+        class="panel-close-button"
+        :title="t(isFullscreen ? 'bottomPanel.restore' : 'bottomPanel.maximize')"
+        :aria-label="t(isFullscreen ? 'bottomPanel.restore' : 'bottomPanel.maximize')"
+        @click="toggleFullscreen"
+      >
+        <component :is="isFullscreen ? Minimize2 : Maximize2" :size="14" aria-hidden="true" />
+      </button>
       <button
         type="button"
         class="panel-close-button"
@@ -778,6 +811,7 @@ onBeforeUnmount(() => {
       >
         <X :size="15" aria-hidden="true" />
       </button>
+      </div>
     </div>
 
     <!-- Page settings tab -->
@@ -1398,14 +1432,35 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
 .settings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  /* Four cards fill the row (auto-fit left an empty fifth column next to them,
+     because the full-width Default Band Settings keeps every track) */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
   padding: 16px 20px 24px;
+}
+
+@media (max-width: 1280px) {
+  .settings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .settings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .settings-grid::-webkit-scrollbar {

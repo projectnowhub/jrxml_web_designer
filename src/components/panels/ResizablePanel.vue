@@ -25,6 +25,7 @@
       class="panel-resize-handle"
       :class="`panel-resize-handle--${position}`"
       @mousedown.stop="startResizing"
+      @dblclick.stop="emit('handle-dblclick')"
     ></div>
     
     <!-- Panel content -->
@@ -58,12 +59,16 @@ interface Props {
   autoWidth?: boolean;
   // Panel name, shown on the rail while collapsed
   title?: string;
+  // Shares of maxSize the size snaps to while dragging (e.g. [1/3, 1/2, 1])
+  snapFractions?: number[];
 }
 
 // Define component events
 interface Emits {
   (e: 'size-change', size: number): void;
   (e: 'collapse-change', isCollapsed: boolean): void;
+  // The resize handle was double-clicked
+  (e: 'handle-dblclick'): void;
 }
 
 // Use default values
@@ -150,7 +155,12 @@ const startResizing = (event: MouseEvent) => {
     }
 
     // Compute the new size and clamp it between min/max
-    const newSize = Math.max(props.minSize!, Math.min(props.maxSize!, startSize + delta));
+    let newSize = Math.max(props.minSize!, Math.min(props.maxSize!, startSize + delta));
+    // Snap to the given shares of the largest size (e.g. 1/3, 1/2, full)
+    for (const f of props.snapFractions ?? []) {
+      const point = Math.round(props.maxSize! * f);
+      if (Math.abs(newSize - point) <= 14) newSize = point;
+    }
     currentSize.value = newSize;
     emit('size-change', newSize);
   };
@@ -259,13 +269,32 @@ onUnmounted(() => {
   cursor: ew-resize;
 }
 
-/* Bottom panel resize handle */
+/* Bottom panel resize handle: an 8px strip on the top edge, above the
+   panel's (sticky) tab row, with a grip in the middle */
 .panel-resize-handle--bottom {
   top: 0;
   left: 0;
   width: 100%;
-  height: 4px;
+  height: 8px;
+  z-index: 30;
   cursor: ns-resize;
+}
+
+.panel-resize-handle--bottom::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  width: 40px;
+  height: 4px;
+  margin-left: -20px;
+  border-radius: 999px;
+  background: #d9d4ec;
+  transition: background-color 0.15s ease;
+}
+
+.panel-resize-handle--bottom:hover::after {
+  background: #6440f4;
 }
 
 /* Panel content */

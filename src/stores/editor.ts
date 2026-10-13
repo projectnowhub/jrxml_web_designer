@@ -1,7 +1,7 @@
 // How the designer is shown, not what is in the report: zoom, snapping and
 // grid (remembered per browser), alignment guides, and the panel layout.
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useZoom } from "@/composables/useZoom";
 import { useSnapAlignment } from "@/composables/useSnapAlignment";
 import { PANEL_CONSTANTS, ZOOM_CONSTANTS } from "@/constants/constants";
@@ -39,7 +39,24 @@ export const useEditorStore = defineStore("editor", () => {
   const rightPanelCollapsed = ref(false);
   const leftPanelWidth = ref(PANEL_CONSTANTS.DEFAULT_LEFT_PANEL_WIDTH);
   const leftPanelCollapsed = ref(false);
-  const bottomPanelHeight = ref(PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT);
+  // The bottom panel's height is remembered per browser
+  const BOTTOM_HEIGHT_KEY = "designer.bottomPanelHeight";
+  const savedBottomHeight = () => {
+    try {
+      const n = Number(localStorage.getItem(BOTTOM_HEIGHT_KEY));
+      return Number.isFinite(n) && n >= 150 ? n : PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT;
+    } catch {
+      return PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT;
+    }
+  };
+  const bottomPanelHeight = ref(savedBottomHeight());
+  watch(bottomPanelHeight, (h) => {
+    try {
+      localStorage.setItem(BOTTOM_HEIGHT_KEY, String(Math.round(h)));
+    } catch {
+      // Storage blocked: the height is just not remembered
+    }
+  });
 
   // The layout a designer opens with; the snap and grid toggles are the
   // user's settings and stay as they are
@@ -59,7 +76,7 @@ export const useEditorStore = defineStore("editor", () => {
     rightPanelCollapsed.value = false;
     leftPanelWidth.value = PANEL_CONSTANTS.DEFAULT_LEFT_PANEL_WIDTH;
     leftPanelCollapsed.value = false;
-    bottomPanelHeight.value = PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT;
+    bottomPanelHeight.value = savedBottomHeight();
   }
 
   return {

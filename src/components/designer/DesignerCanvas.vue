@@ -367,6 +367,9 @@
                         class="canvas-empty-state"
                       >
                         <div class="empty-state-text">
+                          <span class="empty-state-icon" aria-hidden="true">
+                            <MousePointerClick :size="18" />
+                          </span>
                           {{
                             kindOf(pIndex - 1) === "cover"
                               ? t("specialPages.emptyCover")
@@ -539,6 +542,7 @@ import {
   Expand,
   FileText,
   LayoutTemplate,
+  MousePointerClick,
   Shrink,
   Plus,
   TableOfContents,
@@ -1807,8 +1811,11 @@ onBeforeUnmount(() => {
 
 .canvas-empty-state {
   display: flex;
-  align-items: center;
+  /* Near the top of the page, not lost in the middle */
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 48px;
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
   min-height: 60px;
@@ -1816,10 +1823,31 @@ onBeforeUnmount(() => {
 }
 
 .empty-state-text {
-  font-size: 13px;
-  color: var(--prop-text-tertiary, #999);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 260px;
+  padding: 16px 20px;
+  border: 1px dashed #d9d4ec;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #8a84a3;
   text-align: center;
   pointer-events: none;
+}
+
+.empty-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #f1edff;
+  color: #6440f4;
 }
 
 .tick {

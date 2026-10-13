@@ -519,7 +519,9 @@
     "search": "Search... (Ctrl+F)",
     "searchPrevious": "Previous",
     "searchNext": "Next",
-    "customPaperSize": "Custom"
+    "customPaperSize": "Custom",
+    "maximize": "Full height (up to the header). Tip: double-click the panel's top edge.",
+    "restore": "Back to the height before"
   },
   "zoom": {
     "zoomIn": "Zoom In",
@@ -2008,8 +2010,8 @@
     "toNormal": "Turn into a normal page",
     "deleteCover": "Delete cover page",
     "deleteContents": "Delete this contents page",
-    "emptyCover": "Design your cover page here. It uses the whole page: the page header and footer don't print on it.",
-    "emptyContents": "Design your contents page here. It uses the whole page: the page header and footer don't print on it.",
+    "emptyCover": "Design the cover page",
+    "emptyContents": "Design the table of contents",
     "lastNormalPage": "This page can't be deleted: a report needs at least one normal page after the cover and contents pages.",
     "coverAdded": "Cover page added at the front.",
     "coverMade": "This page is now the cover page.",
@@ -2152,5 +2154,12 @@
     },
     "wholeSheet": "Fill the whole sheet, edge to edge",
     "wholeSheetHint": "Photos and colours reach the paper's edges. The other pages keep their margins."
+  },
+  "appMenu": {
+    "title": "Menu",
+    "edit": "Edit",
+    "pages": "Pages",
+    "view": "View",
+    "export": "Export"
   }
 }

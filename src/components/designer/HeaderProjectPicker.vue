@@ -35,6 +35,8 @@
       <div class="multiselect-placeholder hpp-label is-empty">
         <FolderKanban class="hpp-label-icon" :size="15" aria-hidden="true" />
         <span v-if="!compact" class="hpp-label-name">{{ t("reportData.chooseProjects") }}</span>
+        <!-- Narrow: a "+" says projects can be added here -->
+        <span v-else class="hpp-count is-add" aria-hidden="true"><Plus :size="10" :stroke-width="3" /></span>
       </div>
     </template>
     <template #option="{ option, isSelected }">
@@ -66,7 +68,7 @@ import { computed, nextTick, onMounted, ref } from "vue";
 import Multiselect from "@vueform/multiselect";
 import "@vueform/multiselect/themes/default.css";
 import { useI18n } from "vue-i18n";
-import { Check, ChevronDown, FolderKanban, LoaderCircle } from "@lucide/vue";
+import { Plus, Check, ChevronDown, FolderKanban, LoaderCircle } from "@lucide/vue";
 import { listProjects } from "@/services/dataSourceService";
 import type { ProjectSummary, ReportProject } from "@/types/dataSource";
 
@@ -218,8 +220,22 @@ async function selectProjects(ids: string[]) {
 }
 
 .hpp-select.is-compact .hpp-label {
-  padding-right: 0;
-  padding-left: 8px;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 6px;
+}
+
+.hpp-select.is-compact .hpp-label-icon {
+  color: #6440f4;
+  opacity: 1;
+}
+
+.hpp-count.is-add {
+  min-width: 16px;
+  height: 16px;
+  padding: 0;
+  background: #f1edff;
+  color: #6440f4;
 }
 
 .hpp-select.is-compact :deep(.hpp-caret) {

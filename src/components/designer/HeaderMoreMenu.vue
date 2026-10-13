@@ -2,11 +2,13 @@
 import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
+  BookImage,
   ClipboardPaste,
   Copy,
   Download,
-  Ellipsis,
   FilePlus,
+  Menu,
+  TableOfContents,
   PanelBottom,
   PanelBottomClose,
   Redo2,
@@ -16,18 +18,18 @@ import {
 import ZoomControls from "./controls/ZoomControls.vue";
 import SnapMenu from "./SnapMenu.vue";
 
-// The header tools that don't fit on a narrow screen, in one "More" menu.
-// The designer says which groups are in here; the rest stay in the header.
+// The menu (☰ next to the logo) for the header tools that no longer fit on a
+// narrow window, grouped by what they are for; the designer says which are hidden
 const props = defineProps<{
   sections: {
     undoRedo?: boolean;
     edit?: boolean;
-    zoom?: boolean;
-    bottomPanel?: boolean;
-    snap?: boolean;
+    view?: boolean;
     download?: boolean;
   };
   zoomLevel: number;
+  // The report already has a cover page (its "Add" item is hidden)
+  hasCover?: boolean;
   paperWidth: number;
   paperHeight?: number;
   showBottomPanel: boolean;
@@ -37,6 +39,9 @@ const emit = defineEmits<{
   undo: [];
   redo: [];
   "add-page": [];
+  "add-cover": [];
+  "add-contents": [];
+  preview: [];
   delete: [];
   copy: [];
   paste: [];
@@ -60,10 +65,8 @@ function placePopover() {
   const rect = buttonRef.value?.getBoundingClientRect();
   if (!rect) return;
   const width = Math.min(MENU_WIDTH, window.innerWidth - SCREEN_GAP * 2);
-  const left = Math.min(
-    Math.max(SCREEN_GAP, rect.right - width),
-    window.innerWidth - width - SCREEN_GAP,
-  );
+  // Opens under the button, from its left edge
+  const left = Math.min(Math.max(SCREEN_GAP, rect.left), window.innerWidth - width - SCREEN_GAP);
   popoverStyle.value = {
     top: `${rect.bottom + 8}px`,
     left: `${left}px`,
@@ -122,16 +125,17 @@ onBeforeUnmount(() => {
       type="button"
       aria-haspopup="menu"
       :aria-expanded="isOpen"
-      :aria-label="t('editorHeader.more')"
-      :title="t('editorHeader.more')"
+      :aria-label="t('appMenu.title')"
+      :title="t('appMenu.title')"
       @click="toggle"
     >
-      <Ellipsis :size="18" :stroke-width="2" aria-hidden="true" />
+      <Menu :size="18" :stroke-width="2" aria-hidden="true" />
     </button>
 
     <div v-if="isOpen" class="more-popover" :style="popoverStyle" role="menu">
-      <!-- Undo / redo -->
-      <div v-if="props.sections.undoRedo" class="more-row">
+      <!-- Edit -->
+      <div v-if="sections.undoRedo || sections.edit" class="more-heading">{{ t("appMenu.edit") }}</div>
+      <div v-if="sections.undoRedo" class="more-row">
         <button type="button" class="more-tool" role="menuitem" @click="run(() => emit('undo'), true)">
           <Undo2 :size="16" :stroke-width="2" aria-hidden="true" />
           <span>{{ t("actions.undo") }}</span>
@@ -141,65 +145,65 @@ onBeforeUnmount(() => {
           <span>{{ t("actions.redo") }}</span>
         </button>
       </div>
+      <template v-if="sections.edit">
+      <button type="button" class="more-item" role="menuitem" @click="run(() => emit('copy'))">
+        <Copy :size="16" :stroke-width="2" aria-hidden="true" />
+        <span>{{ t("actions.copy") }}</span>
+      </button>
+      <button type="button" class="more-item" role="menuitem" @click="run(() => emit('paste'))">
+        <ClipboardPaste :size="16" :stroke-width="2" aria-hidden="true" />
+        <span>{{ t("actions.paste") }}</span>
+      </button>
+      <button type="button" class="more-item is-danger" role="menuitem" @click="run(() => emit('delete'))">
+        <Trash2 :size="16" :stroke-width="2" aria-hidden="true" />
+        <span>{{ t("actions.delete") }}</span>
+      </button>
 
-      <!-- Page, delete, copy, paste -->
-      <template v-if="props.sections.edit">
-        <div v-if="props.sections.undoRedo" class="more-divider" />
-        <button type="button" class="more-item" role="menuitem" @click="run(() => emit('add-page'))">
-          <FilePlus :size="16" :stroke-width="2" aria-hidden="true" />
-          <span>{{ t("editorHeader.addNewPage") }}</span>
-        </button>
-        <button type="button" class="more-item" role="menuitem" @click="run(() => emit('copy'))">
-          <Copy :size="16" :stroke-width="2" aria-hidden="true" />
-          <span>{{ t("actions.copy") }}</span>
-        </button>
-        <button type="button" class="more-item" role="menuitem" @click="run(() => emit('paste'))">
-          <ClipboardPaste :size="16" :stroke-width="2" aria-hidden="true" />
-          <span>{{ t("actions.paste") }}</span>
-        </button>
-        <button type="button" class="more-item is-danger" role="menuitem" @click="run(() => emit('delete'))">
-          <Trash2 :size="16" :stroke-width="2" aria-hidden="true" />
-          <span>{{ t("actions.delete") }}</span>
-        </button>
+      <!-- Pages -->
+      <div class="more-divider" />
+      <div class="more-heading">{{ t("appMenu.pages") }}</div>
+      <button type="button" class="more-item" role="menuitem" @click="run(() => emit('add-page'))">
+        <FilePlus :size="16" :stroke-width="2" aria-hidden="true" />
+        <span>{{ t("editorHeader.addNewPage") }}</span>
+      </button>
+      <button v-if="!hasCover" type="button" class="more-item" role="menuitem" @click="run(() => emit('add-cover'))">
+        <BookImage :size="16" :stroke-width="2" aria-hidden="true" />
+        <span>{{ t("specialPages.addCover") }}</span>
+      </button>
+      <button type="button" class="more-item" role="menuitem" @click="run(() => emit('add-contents'))">
+        <TableOfContents :size="16" :stroke-width="2" aria-hidden="true" />
+        <span>{{ t("specialPages.addContents") }}</span>
+      </button>
       </template>
 
-      <!-- Zoom -->
-      <template v-if="props.sections.zoom">
-        <div class="more-divider" />
-        <div class="more-heading">{{ t("editorHeader.zoom") }}</div>
-        <div class="more-zoom">
-          <ZoomControls
-            :zoom-level="zoomLevel"
-            :paper-width="paperWidth"
-            :paper-height="paperHeight"
-            @update:zoomLevel="emit('update:zoomLevel', $event)"
-          />
-        </div>
+      <!-- View -->
+      <template v-if="sections.view">
+      <div v-if="sections.undoRedo || sections.edit" class="more-divider" />
+      <div class="more-heading">{{ t("appMenu.view") }}</div>
+      <div class="more-zoom">
+        <ZoomControls
+          :zoom-level="zoomLevel"
+          :paper-width="paperWidth"
+          :paper-height="paperHeight"
+          @update:zoomLevel="emit('update:zoomLevel', $event)"
+        />
+      </div>
+      <button type="button" class="more-item" role="menuitem" @click="run(() => emit('toggle-bottom-panel'))">
+        <component :is="showBottomPanel ? PanelBottomClose : PanelBottom" :size="16" :stroke-width="2" aria-hidden="true" />
+        <span>{{ showBottomPanel ? t("actions.hideBottomPanel") : t("actions.showBottomPanel") }}</span>
+      </button>
+      <div class="more-subheading">{{ t("actions.snapMenu") }}</div>
+      <SnapMenu inline />
       </template>
 
-      <!-- Bottom panel -->
-      <template v-if="props.sections.bottomPanel">
-        <div class="more-divider" />
-        <button type="button" class="more-item" role="menuitem" @click="run(() => emit('toggle-bottom-panel'))">
-          <component :is="showBottomPanel ? PanelBottomClose : PanelBottom" :size="16" :stroke-width="2" aria-hidden="true" />
-          <span>{{ showBottomPanel ? t("actions.hideBottomPanel") : t("actions.showBottomPanel") }}</span>
-        </button>
-      </template>
-
-      <!-- Snap & grid -->
-      <template v-if="props.sections.snap">
-        <div class="more-divider" />
-        <div class="more-heading">{{ t("actions.snapMenu") }}</div>
-        <SnapMenu inline />
-      </template>
-
-      <!-- Download JRXML -->
-      <template v-if="props.sections.download">
-        <div class="more-divider" />
-        <button type="button" class="more-item" role="menuitem" @click="run(() => emit('download'))">
-          <Download :size="16" :stroke-width="2" aria-hidden="true" />
-          <span>{{ t("actions.downloadJRXML") }}</span>
-        </button>
+      <!-- Export -->
+      <template v-if="sections.download">
+      <div class="more-divider" />
+      <div class="more-heading">{{ t("appMenu.export") }}</div>
+      <button type="button" class="more-item" role="menuitem" @click="run(() => emit('download'))">
+        <Download :size="16" :stroke-width="2" aria-hidden="true" />
+        <span>{{ t("actions.downloadJRXML") }}</span>
+      </button>
       </template>
     </div>
   </div>
@@ -318,6 +322,12 @@ onBeforeUnmount(() => {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+.more-subheading {
+  padding: 6px 8px 4px;
+  color: #6f6a7e;
+  font-size: 12px;
+  font-weight: 600;
 }
 .more-zoom {
   display: flex;

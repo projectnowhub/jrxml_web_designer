@@ -146,10 +146,13 @@ const setType = (chartType: ChartType) => commit(changeChartType(binding.value, 
 <style scoped>
 /* Cards, matching the rest of the property panel */
 .card {
-  margin-bottom: var(--prop-spacing-md);
-  padding: var(--prop-spacing-sm) 10px 10px;
-  border-radius: var(--prop-border-radius-md);
-  background: var(--prop-bg-secondary);
+  /* Same card as the other property sections */
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(28, 27, 38, 0.08);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
 }
 
 .card h5 {

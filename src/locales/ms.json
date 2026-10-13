@@ -519,7 +519,9 @@
     "search": "Cari... (Ctrl+F)",
     "searchPrevious": "Sebelumnya",
     "searchNext": "Seterusnya",
-    "customPaperSize": "Tersuai"
+    "customPaperSize": "Tersuai",
+    "maximize": "Ketinggian penuh (hingga ke pengepala). Petua: klik dua kali pada tepi atas panel.",
+    "restore": "Kembali ke ketinggian sebelumnya"
   },
   "zoom": {
     "zoomIn": "Zum Masuk",
@@ -2008,8 +2010,8 @@
     "toNormal": "Jadikan halaman biasa",
     "deleteCover": "Padam halaman kulit",
     "deleteContents": "Padam halaman kandungan ini",
-    "emptyCover": "Reka halaman kulit anda di sini. Ia menggunakan seluruh halaman: kepala dan kaki halaman tidak dicetak padanya.",
-    "emptyContents": "Reka halaman kandungan anda di sini. Ia menggunakan seluruh halaman: kepala dan kaki halaman tidak dicetak padanya.",
+    "emptyCover": "Reka halaman kulit",
+    "emptyContents": "Reka isi kandungan",
     "lastNormalPage": "Halaman ini tidak boleh dipadam: laporan memerlukan sekurang-kurangnya satu halaman biasa selepas halaman kulit dan kandungan.",
     "coverAdded": "Halaman kulit ditambah di hadapan.",
     "coverMade": "Halaman ini kini halaman kulit.",
@@ -2152,5 +2154,12 @@
     },
     "wholeSheet": "Isi seluruh helaian, tepi ke tepi",
     "wholeSheetHint": "Foto dan warna sampai ke tepi kertas. Halaman lain mengekalkan jidarnya."
+  },
+  "appMenu": {
+    "title": "Menu",
+    "edit": "Sunting",
+    "pages": "Halaman",
+    "view": "Paparan",
+    "export": "Eksport"
   }
 }
