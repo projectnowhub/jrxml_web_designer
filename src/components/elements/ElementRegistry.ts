@@ -1,8 +1,11 @@
 import type { Component } from "vue";
 import {
+  Banknote,
   Barcode,
   ChartColumn,
+  ChartNoAxesColumnIncreasing,
   Circle,
+  Columns3,
   CircleDot,
   FileDigit,
   Gauge,
@@ -12,9 +15,11 @@ import {
   Images,
   LayoutPanelTop,
   List,
+  ListChecks,
   Minus,
   PanelBottom,
   PanelTop,
+  ShieldAlert,
   Signature,
   Square,
   SquareDashed,
@@ -302,6 +307,12 @@ export class ElementRegistry {
       { type: "partRiskLegend", group: "status", iconComponent: List },
       { type: "partStatusDot", group: "status", iconComponent: CircleDot },
       { type: "partSignOff", group: "signOff", iconComponent: Signature },
+      { type: "tableKeyValue", group: "tables", iconComponent: TableProperties },
+      { type: "tableFinancial", group: "tables", iconComponent: Banknote },
+      { type: "tableProgress", group: "tables", iconComponent: ChartNoAxesColumnIncreasing },
+      { type: "tableComparison", group: "tables", iconComponent: Columns3 },
+      { type: "tableActionPlan", group: "tables", iconComponent: ListChecks },
+      { type: "tableRiskRegister", group: "tables", iconComponent: ShieldAlert },
     ];
     reportParts.forEach(({ type, group, iconComponent }) =>
       this.registerElement({

@@ -295,7 +295,7 @@ export interface FrameTemplateContext {
   // Printable height (page height minus top/bottom margins)
   availableHeight: number;
   // Translator for placeholder text
-  t: (key: string) => string;
+  t: (key: string, named?: Record<string, unknown>) => string;
 }
 
 export interface TextOptions {

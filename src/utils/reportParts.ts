@@ -15,6 +15,7 @@ import {
   type FrameTemplateContext,
 } from "@/utils/framePresets";
 import { applyPaginationSettings, buildPaginationElement } from "@/utils/paginationPresets";
+import { buildTablePreset, isTablePresetType, TABLE_PRESET_TYPES, type TablePresetType } from "@/utils/tablePresets";
 
 export const REPORT_PART_COLORS = {
   banner: "#03053A",
@@ -39,6 +40,8 @@ export const REPORT_PART_TYPES = [
   "partRiskLegend",
   "partStatusDot",
   "partSignOff",
+  // Tables of the report, as typed tables (utils/tablePresets.ts)
+  ...TABLE_PRESET_TYPES,
 ] as const;
 
 export type ReportPartType = (typeof REPORT_PART_TYPES)[number];
@@ -56,7 +59,7 @@ export function reportPartBand(type: ReportPartType): "pageHeader" | "pageFooter
 
 // Parts spanning the printable width start at the left margin
 export function isFullWidthPart(type: ReportPartType): boolean {
-  return ["partReportHeader", "partPageFooter", "partSectionHeading"].includes(type);
+  return ["partReportHeader", "partPageFooter", "partSectionHeading"].includes(type) || isTablePresetType(type);
 }
 
 const placeholder = (ctx: FrameTemplateContext, key: string) =>
@@ -218,6 +221,9 @@ const BUILDERS: Record<ReportPartType, (ctx: FrameTemplateContext) => DesignElem
   partRiskLegend: riskLegend,
   partStatusDot: statusDot,
   partSignOff: signOff,
+  ...(Object.fromEntries(
+    TABLE_PRESET_TYPES.map((type) => [type, (ctx: FrameTemplateContext) => buildTablePreset(type, ctx)]),
+  ) as Record<TablePresetType, (ctx: FrameTemplateContext) => DesignElement>),
 };
 
 export function buildReportPart(type: ReportPartType, ctx: FrameTemplateContext): DesignElement {
