@@ -24,6 +24,9 @@ export const useSelectionStore = defineStore("selection", () => {
   // The band last clicked: elements added from the library go there (none
   // yet: Detail)
   const lastClickedBandIndex = ref<number | null>(null);
+  // The page last clicked or worked on: elements added by clicking a library
+  // tile go there (none yet: the first normal page)
+  const lastClickedPageIndex = ref<number | null>(null);
 
   // Nothing selected or being edited (a fresh designer)
   function reset() {
@@ -33,6 +36,7 @@ export const useSelectionStore = defineStore("selection", () => {
     editingElement.value = null;
     tableCells.value = null;
     lastClickedBandIndex.value = null;
+    lastClickedPageIndex.value = null;
   }
 
   return {
@@ -42,6 +46,7 @@ export const useSelectionStore = defineStore("selection", () => {
     editingElement,
     tableCells,
     lastClickedBandIndex,
+    lastClickedPageIndex,
     reset,
   };
 });

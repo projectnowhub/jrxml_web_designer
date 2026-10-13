@@ -183,6 +183,7 @@ import ReportDataPanel from "./designer/ReportDataPanel.vue";
 import { ElementRegistry } from "./elements/ElementRegistry";
 import { findPageBorder, isFrameTemplateType, PAGE_BORDER_TYPE } from "../utils/framePresets";
 import { isReportPartType } from "../utils/reportParts";
+import { isContentsDesignType, isCoverDesignType } from "../utils/pageDesigns";
 import {
   PAGE_NUMBER_TYPE,
   PAGINATION_POSITIONS,
@@ -314,6 +315,7 @@ const isUnavailable = (type: string) => type === PAGE_BORDER_TYPE && hasPageBord
 const tileHint = (type: string): string | undefined => {
   if (isUnavailable(type)) return t("framePresets.pageBorderExists");
   if (isFrameTemplateType(type)) return t(`framePresets.templateDescription.${type}`);
+  if (isCoverDesignType(type) || isContentsDesignType(type)) return t(`pageDesigns.designs.${type}.tileHint`);
   if (isReportPartType(type)) return t(`reportParts.description.${type}`);
   if (type === PAGE_NUMBER_TYPE) return t("pagination.tileHint");
   if (type === "chart") return t("chart.tileHint");

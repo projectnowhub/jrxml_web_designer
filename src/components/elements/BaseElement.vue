@@ -5,6 +5,7 @@
       'selected': isSelected,
       'out-of-bounds': isOutOfBounds,
       'is-dragging': isDragging,
+      'is-in-box': parentFrameIndex !== undefined,
       'is-project-drop': projectDrop === 'ok',
       'is-project-drop-blocked': projectDrop === 'blocked'
     }"
@@ -523,9 +524,8 @@ const handleProjectDragLeave = (event: DragEvent) => {
   white-space: pre-wrap;
 }
 
-.design-element:hover {
-  z-index: 35;
-}
+/* Hovering keeps the stacking order: raising an item hid what lies on top of
+   it (e.g. a cover's title over its colour panel) */
 
 .design-element.out-of-bounds {
   /* Highlight style for out-of-bounds elements */
@@ -545,6 +545,12 @@ const handleProjectDragLeave = (event: DragEvent) => {
 
 .design-element.is-dragging {
   z-index: 100;
+}
+
+/* Inside a box the parts keep their order even when selected: a selected
+   colour panel must not cover the texts on it */
+.design-element.is-in-box.selected {
+  z-index: 10;
 }
 
 /* A project detail dragged over: blue dotted when it can be dropped here, red

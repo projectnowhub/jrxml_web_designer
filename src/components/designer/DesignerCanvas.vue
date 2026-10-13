@@ -126,21 +126,61 @@
                 transform: `scale(${zoomLevel})`,
                 transformOrigin: 'top left',
               }"
-              :class="{ focused: isDesignAreaFocused }"
+              :class="{ focused: isDesignAreaFocused, [`is-${kindOf(pIndex - 1)}-page`]: isSpecial(pIndex - 1) }"
               @drop="handleDrop($event, pIndex - 1)"
               @dragover="handleDragOver"
               @dragleave="handleDragLeave"
               @mousedown="startSelection"
             >
+              <!-- First page: add a cover page / contents page in front -->
+              <div
+                v-if="pIndex === 1 && (!special.cover || !special.contents)"
+                class="special-pages-bar"
+                :style="{ transform: `scale(${1 / zoomLevel})` }"
+                @mousedown.stop
+              >
+                <button
+                  v-if="!special.cover"
+                  type="button"
+                  class="special-page-btn"
+                  :title="t('specialPages.addCoverHint')"
+                  @click="emit('page-action', 'addCover', 0)"
+                >
+                  <BookImage :size="14" aria-hidden="true" />
+                  {{ t("specialPages.addCover") }}
+                </button>
+                <button
+                  v-if="!special.contents"
+                  type="button"
+                  class="special-page-btn"
+                  :title="t('specialPages.addContentsHint')"
+                  @click="emit('page-action', 'addContents', 0)"
+                >
+                  <TableOfContents :size="14" aria-hidden="true" />
+                  {{ t("specialPages.addContents") }}
+                </button>
+              </div>
+
               <!-- Floating Page Sheet Header / Badge in margin -->
               <div
                 class="page-sheet-header"
                 :style="{ transform: `scale(${1 / zoomLevel})` }"
               >
-                <span class="page-sheet-badge">{{
-                  t("canvas.pageOf", { page: pIndex, total: totalPages })
+                <span class="page-sheet-badge" :class="{ 'is-special': isSpecial(pIndex - 1) }">{{
+                  pageBadge(pIndex - 1)
                 }}</span>
+                <!-- Cover / contents page: change its design (all of it stays editable) -->
                 <button
+                  v-if="isSpecial(pIndex - 1)"
+                  class="add-page-after-btn"
+                  :title="t('specialPages.changeDesignHint')"
+                  @click.stop="emit('page-action', 'chooseDesign', pIndex - 1)"
+                >
+                  <LayoutTemplate :size="13" aria-hidden="true" />
+                  {{ t("specialPages.changeDesign") }}
+                </button>
+                <button
+                  v-if="kindOf(pIndex - 1) === 'normal'"
                   class="add-page-after-btn"
                   @click.stop="emit('add-page', pIndex)"
                   :title="t('canvas.addPageAfter')"
@@ -149,7 +189,16 @@
                   {{ t("canvas.addPageAfter") }}
                 </button>
                 <button
-                  v-if="pIndex > 1"
+                  v-else-if="pIndex - 1 === special.count - 1 && kindOf(pIndex - 1) === 'contents'"
+                  class="add-page-after-btn"
+                  @click.stop="emit('page-action', 'addContents', pIndex - 1)"
+                  :title="t('specialPages.addAnotherContentsHint')"
+                >
+                  <Plus :size="13" :stroke-width="2.2" aria-hidden="true" />
+                  {{ t("specialPages.addAnotherContents") }}
+                </button>
+                <button
+                  v-if="canDeletePage(pIndex - 1)"
                   class="delete-page-btn"
                   @click.stop="emit('delete-page', pIndex - 1)"
                   :title="t('canvas.deletePage')"
@@ -157,21 +206,52 @@
                   <Trash2 :size="13" aria-hidden="true" />
                   {{ t("canvas.deletePage") }}
                 </button>
+                <!-- Cover / contents choices for this page -->
+                <div v-if="pageMenuItems(pIndex - 1).length" class="page-menu-wrap">
+                  <button
+                    type="button"
+                    class="page-menu-btn"
+                    :class="{ 'is-open': openPageMenu === pIndex - 1 }"
+                    :title="t('specialPages.pageOptions')"
+                    :aria-label="t('specialPages.pageOptions')"
+                    aria-haspopup="menu"
+                    :aria-expanded="openPageMenu === pIndex - 1"
+                    @mousedown.stop
+                    @click.stop="togglePageMenu(pIndex - 1)"
+                  >
+                    <EllipsisVertical :size="14" aria-hidden="true" />
+                  </button>
+                  <div v-if="openPageMenu === pIndex - 1" class="page-menu" role="menu" @mousedown.stop>
+                    <button
+                      v-for="item in pageMenuItems(pIndex - 1)"
+                      :key="item.action"
+                      type="button"
+                      role="menuitem"
+                      class="page-menu-item"
+                      :class="{ 'is-danger': item.danger }"
+                      @click.stop="runPageAction(item.action, pIndex - 1)"
+                    >
+                      <component :is="item.icon" :size="14" aria-hidden="true" />
+                      <span>{{ t(item.labelKey) }}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <!-- Report margin container -->
               <div
                 class="pager"
                 :style="{
-                  padding:
-                    (reportProperties.topMargin || 0) +
-                    'px ' +
-                    (reportProperties.rightMargin || 0) +
-                    'px ' +
-                    (reportProperties.bottomMargin || 0) +
-                    'px ' +
-                    (reportProperties.leftMargin || 0) +
-                    'px',
+                  padding: isSheetPage(pIndex - 1)
+                    ? '0'
+                    : (reportProperties.topMargin || 0) +
+                      'px ' +
+                      (reportProperties.rightMargin || 0) +
+                      'px ' +
+                      (reportProperties.bottomMargin || 0) +
+                      'px ' +
+                      (reportProperties.leftMargin || 0) +
+                      'px',
                   width: '100%',
                   height: '100%',
                   boxSizing: 'border-box',
@@ -205,12 +285,12 @@
                   <svg
                     v-if="showGrid && bItem.effectiveHeight > 0"
                     class="band-grid"
-                    :width="printableWidth"
+                    :width="isSheetPage(pIndex - 1) ? paperWidth : printableWidth"
                     :height="bItem.effectiveHeight"
                     aria-hidden="true"
                   >
                     <path
-                      :d="gridPath(printableWidth, bItem.effectiveHeight)"
+                      :d="gridPath(isSheetPage(pIndex - 1) ? paperWidth : printableWidth, bItem.effectiveHeight)"
                       :stroke-width="1 / zoomLevel"
                     />
                   </svg>
@@ -228,7 +308,7 @@
                       class="alignment-line horizontal"
                       :style="{
                         top: line + 'px',
-                        left: -marginLeft + 'px',
+                        left: -(isSheetPage(pIndex - 1) ? 0 : marginLeft) + 'px',
                         width: paperWidth + 'px',
                         height: 1 / zoomLevel + 'px',
                       }"
@@ -287,7 +367,13 @@
                         class="canvas-empty-state"
                       >
                         <div class="empty-state-text">
-                          {{ t("canvas.dragOntoPage", { page: pIndex }) }}
+                          {{
+                            kindOf(pIndex - 1) === "cover"
+                              ? t("specialPages.emptyCover")
+                              : kindOf(pIndex - 1) === "contents"
+                                ? t("specialPages.emptyContents")
+                                : t("canvas.dragOntoPage", { page: pIndex })
+                          }}
                         </div>
                       </div>
                     </template>
@@ -346,7 +432,7 @@
                      background while lines still show. Not interactive on the canvas; select
                      its elements from Report Elements. -->
                 <div
-                  v-if="backgroundElements.length > 0"
+                  v-if="backgroundElements.length > 0 && !isSheetPage(pIndex - 1)"
                   class="background-band-layer"
                   :style="{
                     top: (reportProperties.topMargin || 0) + 'px',
@@ -397,7 +483,7 @@
                 <!-- While the Page Border tile is dragged: the Background band (the whole
                      printable area, behind every page) is the drop target, not a band -->
                 <div
-                  v-if="backgroundDropTarget"
+                  v-if="backgroundDropTarget && !isSheetPage(pIndex - 1)"
                   class="background-drop-target"
                   :style="{
                     top: (reportProperties.topMargin || 0) + 'px',
@@ -418,7 +504,7 @@
                     :key="'guide-x-' + line"
                     class="alignment-line vertical"
                     :style="{
-                      left: marginLeft + line + 'px',
+                      left: (isSheetPage(pIndex - 1) ? 0 : marginLeft) + line + 'px',
                       width: 1 / zoomLevel + 'px',
                     }"
                   ></div>
@@ -447,7 +533,18 @@ import { storeToRefs } from "pinia";
 import { useEditorStore } from "@/stores/editor";
 import { useReportStore } from "@/stores/report";
 import { useSelectionStore } from "@/stores/selection";
-import { Plus, Trash2 } from "@lucide/vue";
+import {
+  BookImage,
+  EllipsisVertical,
+  Expand,
+  FileText,
+  LayoutTemplate,
+  Shrink,
+  Plus,
+  TableOfContents,
+  Trash2,
+} from "@lucide/vue";
+import { pageKind, specialPageArea } from "@/utils/specialPages";
 import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import ElementFactory from "../elements/ElementFactory.vue";
 import SelectionBox from "./SelectionBox.vue";
@@ -510,7 +607,8 @@ const props = withDefaults(defineProps<Props>(), {
 const editorStore = useEditorStore();
 const { zoomLevel, alignmentLines, enableSnapToGrid, enableSnapToAlignment, showGrid, isDesignAreaFocused } = storeToRefs(editorStore);
 const reportStore = useReportStore();
-const { reportProperties, bands, paperWidth, paperHeight, totalPages: pageTotal } = storeToRefs(reportStore);
+const { reportProperties, bands, paperWidth, paperHeight, totalPages: pageTotal, special } =
+  storeToRefs(reportStore);
 const selectionStore = useSelectionStore();
 const { selectedBandIndex, selectedElement, selectedElements, editingElement } = storeToRefs(selectionStore);
 
@@ -539,6 +637,8 @@ const emit = defineEmits([
   "canvas-contextmenu", // Added canvas context menu event
   "add-page",
   "delete-page",
+  // Cover / contents page actions: (action, pageIndex)
+  "page-action",
   "auto-fit-height",
   "rotate",
 ]);
@@ -617,14 +717,92 @@ const gridPath = (width: number, height: number) => {
   return path;
 };
 
+// ---- Cover and contents pages (utils/specialPages.ts) ----
+
+const kindOf = (pageIdx: number) => pageKind(reportProperties.value, pageIdx);
+const isSpecial = (pageIdx: number) => kindOf(pageIdx) !== "normal";
+// A whole-sheet cover: drawn edge to edge, no margins
+const isSheetPage = (pageIdx: number) => !!specialPageArea(reportProperties.value, pageIdx)?.sheet;
+
+function pageBadge(pageIdx: number): string {
+  const kind = kindOf(pageIdx);
+  if (kind === "cover") return t("specialPages.cover");
+  if (kind === "contents") {
+    const n = pageIdx - (special.value.cover ? 1 : 0) + 1;
+    return special.value.contents > 1 ? t("specialPages.contentsN", { n }) : t("specialPages.contents");
+  }
+  return t("canvas.pageOf", { page: pageIdx + 1, total: totalPages.value });
+}
+
+// A page can go while one normal page is left
+const canDeletePage = (pageIdx: number) =>
+  isSpecial(pageIdx) || totalPages.value - special.value.count > 1;
+
+type PageAction =
+  | "makeCover"
+  | "makeContents"
+  | "coverToNormal"
+  | "contentsToNormal"
+  | "chooseDesign"
+  | "wholeSheet"
+  | "keepMargins"
+  | "delete";
+function pageMenuItems(pageIdx: number) {
+  const kind = kindOf(pageIdx);
+  const { cover, contents, count } = special.value;
+  const items: { action: PageAction; labelKey: string; icon: unknown; danger?: boolean }[] = [];
+  if (kind === "normal") {
+    if (pageIdx === 0 && !cover && !contents) {
+      items.push({ action: "makeCover", labelKey: "specialPages.makeCover", icon: BookImage });
+    }
+    if (pageIdx === count) {
+      items.push({ action: "makeContents", labelKey: "specialPages.makeContents", icon: TableOfContents });
+    }
+  } else if (kind === "cover") {
+    items.push(
+      special.value.fullPageCover
+        ? { action: "keepMargins", labelKey: "specialPages.keepMargins", icon: Shrink }
+        : { action: "wholeSheet", labelKey: "specialPages.wholeSheet", icon: Expand },
+    );
+    if (!contents) items.push({ action: "coverToNormal", labelKey: "specialPages.toNormal", icon: FileText });
+    items.push({ action: "delete", labelKey: "specialPages.deleteCover", icon: Trash2, danger: true });
+  } else {
+    if (pageIdx === count - 1) items.push({ action: "contentsToNormal", labelKey: "specialPages.toNormal", icon: FileText });
+    items.push({ action: "delete", labelKey: "specialPages.deleteContents", icon: Trash2, danger: true });
+  }
+  return items;
+}
+
+const openPageMenu = ref<number | null>(null);
+const closePageMenu = () => {
+  openPageMenu.value = null;
+  document.removeEventListener("mousedown", closePageMenu);
+};
+function togglePageMenu(pageIdx: number) {
+  if (openPageMenu.value === pageIdx) {
+    closePageMenu();
+    return;
+  }
+  openPageMenu.value = pageIdx;
+  document.addEventListener("mousedown", closePageMenu);
+}
+function runPageAction(action: PageAction, pageIdx: number) {
+  closePageMenu();
+  if (action === "delete") emit("delete-page", pageIdx);
+  else emit("page-action", action, pageIdx);
+}
+onBeforeUnmount(closePageMenu);
+
 // Determine if a band is visible on the given page
 function isBandVisibleOnPage(
   band: Band,
-  _pIndex: number,
+  pIndex: number,
   _total: number,
 ): boolean {
   // Background is an underlay layer, excluded from stacked vertical flow
   if (band.type === "background") return false;
+  // A cover or contents page has only its own area: no shared sections
+  if (isSpecial(pIndex - 1)) return band.type === "detail";
 
   // Non-detail bands with <= 0 height and no elements are hidden
   if (
@@ -642,6 +820,7 @@ function isBandVisibleOnPage(
 function getBandDisplayLabel(bandType: string, pIndex: number): string {
   const name = getBandDisplayName(bandType);
   if (bandType === "detail") {
+    if (isSpecial(pIndex - 1)) return pageBadge(pIndex - 1);
     return `${name} (Page ${pIndex})`;
   }
 
@@ -669,6 +848,9 @@ const getPageDetailHeight = (pageIdx: number) => {
   if (!detailBand) return 100;
 
   const pIndex = pageIdx + 1;
+  // A cover or contents page: the whole printable page (or sheet)
+  const area = specialPageArea(reportProperties.value, pageIdx);
+  if (area) return Math.max(20, area.height);
   const topMargin = reportProperties.value?.topMargin || 0;
   const bottomMargin = reportProperties.value?.bottomMargin || 0;
   const availableHeight = paperHeight.value - topMargin - bottomMargin;
@@ -888,6 +1070,9 @@ const handleWheel = (event: WheelEvent) => {
 
 // Rectangle selection feature
 const startSelection = (event: MouseEvent) => {
+  // Library tiles clicked next add their element to this page
+  const sheetPage = (event.currentTarget as HTMLElement | null)?.dataset?.pageIndex;
+  if (sheetPage !== undefined) selectionStore.lastClickedPageIndex = parseInt(sheetPage, 10);
   // Only the left mouse button can trigger rectangle selection
   if (event.button !== 0) {
     return;
@@ -1237,6 +1422,117 @@ onBeforeUnmount(() => {
   transform-origin: top right;
   user-select: none;
   backdrop-filter: blur(4px);
+}
+
+.special-pages-bar {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  z-index: 20;
+  display: flex;
+  gap: 6px;
+  transform-origin: top left;
+  user-select: none;
+}
+
+.special-page-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 12px;
+  border: 1px dashed #93c5fd;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.special-page-btn:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.special-page-btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
+}
+
+.page-sheet-badge.is-special {
+  color: #7c3aed;
+}
+
+.page-sheet.is-cover-page,
+.page-sheet.is-contents-page {
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.25), 0 4px 16px rgba(15, 23, 42, 0.12);
+}
+
+.page-menu-wrap {
+  position: relative;
+}
+
+.page-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.page-menu-btn:hover,
+.page-menu-btn.is-open {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.page-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: 210px;
+  padding: 4px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+}
+
+.page-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: #1f2937;
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.page-menu-item:hover {
+  background: #eff6ff;
+}
+
+.page-menu-item.is-danger {
+  color: #dc2626;
+}
+
+.page-menu-item.is-danger:hover {
+  background: #fef2f2;
 }
 
 .page-sheet-badge {

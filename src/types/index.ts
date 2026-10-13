@@ -11,7 +11,8 @@ export type ElementType =
   | "table"
   | "chart"
   | "barcode"
-  | "customTable";
+  | "customTable"
+  | "contentsList";
 
 // Query interface
 export interface Query {
@@ -219,6 +220,14 @@ export interface ReportProperties {
   bandLimits?: Record<string, { min: number; max: number }>;
   // Projects whose data the report uses (the "Report Data" list)
   projects?: ReportProject[];
+  // Pages at the front with no shared sections (utils/specialPages.ts): a
+  // cover (designer page 0) and contents pages after it
+  coverPage?: boolean;
+  contentsPages?: number;
+  // false: page numbers don't count the cover and contents pages
+  countSpecialPages?: boolean;
+  // The cover uses the whole sheet (written with a 0 bottom margin, see specialPages.ts)
+  fullPageCover?: boolean;
 }
 
 // Base design element interface
@@ -501,6 +510,49 @@ export interface CustomTableElement extends DesignElementBase {
   table: CustomTableData;
 }
 
+// Contents list (table of contents): one row per entry, written as plain text
+// fields (utils/contentsList.ts)
+export interface ContentsEntry {
+  number: string;
+  title: string;
+  page: string;
+  // 0: a section, 1: a sub-section (indented, not bold)
+  level: 0 | 1;
+}
+
+export interface ContentsListData {
+  entries: ContentsEntry[];
+  rowHeight: number;
+  fontSize: number;
+  // Width of the number column (0: no numbers) and of the page column
+  numberWidth: number;
+  pageWidth: number;
+  // Dots between each title and its page
+  leader: boolean;
+  boldSections: boolean;
+  color: string;
+  // A filled box behind each number ("Numbered blocks"), and its text colour
+  numberFill?: string;
+  numberColor?: string;
+  // The list this one carries on (a second column or a later contents page)
+  continues?: string;
+  // Numbers counted automatically (sections 1, 2…; sub-sections i, ii…); off:
+  // the numbers typed in the rows
+  autoNumber?: boolean;
+  sectionStyle?: ContentsSectionStyle;
+  // "word" style: the word before the number ("SECTION 1.")
+  sectionWord?: string;
+  subStyle?: ContentsSubStyle;
+}
+
+export type ContentsSectionStyle = "1" | "1." | "01" | "I" | "A" | "word";
+export type ContentsSubStyle = "roman" | "letters" | "decimal" | "none";
+
+export interface ContentsListElement extends DesignElementBase {
+  type: "contentsList";
+  list: ContentsListData;
+}
+
 // Design element union type
 export type DesignElement =
   | TextFieldElement
@@ -512,7 +564,8 @@ export type DesignElement =
   | TableElement
   | ChartElement
   | BarcodeElement
-  | CustomTableElement;
+  | CustomTableElement
+  | ContentsListElement;
 
 // Report band interface
 export interface Band {

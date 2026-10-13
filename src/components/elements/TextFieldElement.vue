@@ -290,8 +290,12 @@ const rotationStyle = computed(() => {
 // like in the PDF. Single-page view counts as page 1.
 const isPageNumber = computed(() => isPagination(props.element));
 const paginationSettings = computed(() => getPaginationSettings(props.element));
-const canvasPage = computed(() => props.pageNumber ?? 1);
-const canvasPageCount = computed(() => Math.max(props.totalPages ?? 1, canvasPage.value));
+// Page numbers that don't count the cover and contents pages start after them
+const pageNumberShift = computed(() => (report.special.countPages ? 0 : report.special.count));
+const canvasPage = computed(() => Math.max(1, (props.pageNumber ?? 1) - pageNumberShift.value));
+const canvasPageCount = computed(() =>
+  Math.max((props.totalPages ?? 1) - pageNumberShift.value, canvasPage.value),
+);
 const printedOnThisPage = computed(() =>
   isPageInRange(paginationSettings.value, canvasPage.value),
 );

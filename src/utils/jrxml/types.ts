@@ -26,6 +26,12 @@ export interface ReportProperties {
   pageCount?: number;
   // Projects whose data the report uses (written as `com.cdp.projects`)
   projects?: ReportProject[];
+  // Cover and contents pages (utils/specialPages.ts, `com.cdp.specialPages`)
+  coverPage?: boolean;
+  contentsPages?: number;
+  countSpecialPages?: boolean;
+  // The cover uses the whole sheet (written with a 0 bottom margin, see specialPages.ts)
+  fullPageCover?: boolean;
 }
 
 export interface Field {

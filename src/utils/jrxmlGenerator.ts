@@ -9,6 +9,23 @@ import { REPORT_PROJECTS_PROPERTY } from "./projectFields";
 import { buildJasperReportOpenTag } from "./jrxml/xmlBuilder";
 import { generateUUID } from "./jrxml/uuidGenerator";
 import { generateCustomTableXML } from "./jrxml/customTableXml";
+import { generateContentsListXML } from "./jrxml/contentsListXml";
+import { numberStarts, type NumberStart } from "./contentsList";
+
+// Where each contents list's automatic numbers start (lists carrying one list
+// on keep counting); set for the report being written
+let contentsNumberStarts = new Map<string, NumberStart>();
+import {
+  afterSpecialPages,
+  CONTENTS_PAGE_PROPERTY,
+  guardPrintWhen,
+  onlyOnPage,
+  pageKind,
+  serializeSpecialPages,
+  shiftPageNumbers,
+  SPECIAL_PAGES_PROPERTY,
+  specialPages,
+} from "./specialPages";
 import { reportElementProperties } from "./elementUtils";
 import { CHART_BINDING_PROPERTY, normalizeChartBinding } from "./chart/chartTypes";
 import { chartImageDataUri } from "./chart/chartImage";
@@ -117,6 +134,20 @@ export function generateJRXMLContent(
     topMargin: properties.topMargin || 0,
     bottomMargin: properties.bottomMargin || 0,
   };
+  contentsNumberStarts = numberStarts(bands.find((b) => b.type === "detail")?.elements ?? []);
+  // Cover and contents pages (utils/specialPages.ts): the cover is the title,
+  // on a page of its own
+  const special = specialPages(properties);
+  safeProperties.isTitleNewPage = special.cover;
+  const printableWidth = safeProperties.pageWidth - safeProperties.leftMargin - safeProperties.rightMargin;
+  const printableHeight = safeProperties.pageHeight - safeProperties.topMargin - safeProperties.bottomMargin;
+  // Page numbers that don't count the cover and contents pages
+  const pageNumberShift = special.countPages ? 0 : special.count;
+  // A whole-sheet cover: an element can't reach below its band, so the bottom
+  // margin is written as 0 and its space added to the page footer instead
+  // (the normal pages print the same); the real margin is in com.cdp.specialPages
+  const footerExtra = special.fullPageCover ? safeProperties.bottomMargin : 0;
+  if (special.fullPageCover) safeProperties.bottomMargin = 0;
 
   // Build a map of field names for quick lookup
   const fieldMap = new Map<string, Field>();
@@ -161,11 +192,16 @@ export function generateJRXMLContent(
   // ============================================================
   // Saved table styles travel with the report as one JSON property
   const allProperties = [...(reportProperties || [])].filter(
-    (p) => p?.name !== SAVED_TABLE_STYLES_PROPERTY && p?.name !== REPORT_PROJECTS_PROPERTY,
+    (p) =>
+      p?.name !== SAVED_TABLE_STYLES_PROPERTY &&
+      p?.name !== REPORT_PROJECTS_PROPERTY &&
+      p?.name !== SPECIAL_PAGES_PROPERTY,
   );
   if (tableStyles.length) {
     allProperties.push({ name: SAVED_TABLE_STYLES_PROPERTY, value: JSON.stringify(tableStyles) });
   }
+  const specialPagesValue = serializeSpecialPages(properties);
+  if (specialPagesValue) allProperties.push({ name: SPECIAL_PAGES_PROPERTY, value: specialPagesValue });
   // The projects chosen in the Report Data list
   if (properties.projects?.length) {
     allProperties.push({
@@ -409,95 +445,134 @@ export function generateJRXMLContent(
     });
   }
 
-  // Add report bands. The XSD requires <background> before every other band,
-  // while the designer keeps it at the end of its band list.
-  const orderedBands = [
-    ...bands.filter((band) => band.type === "background"),
-    ...bands.filter((band) => band.type !== "background"),
-  ];
-  orderedBands.forEach((band) => {
-    if (band.elements.length > 0 || band.height > 0) {
-      if (band.type === "detail") {
-        // Check for multi-page detail
-        let maxPageIndex = 0;
-        band.elements.forEach((el) => {
-          if (el.pageIndex !== undefined && el.pageIndex > maxPageIndex) {
-            maxPageIndex = el.pageIndex;
-          }
-        });
-        const numPages = Math.max(
-          safeProperties.pageCount || 1,
-          maxPageIndex + 1,
-          totalPagesCount || 1,
-        );
+  // An element as written: inside its area, floating below a table, page
+  // numbers shifted when the special pages aren't counted
+  const prepare = (element: DesignElement, siblings: DesignElement[]) =>
+    shiftPageNumbers(withTableFloat(validateElementPosition(element), siblings), pageNumberShift);
+  const detailBand = bands.find((band) => band.type === "detail");
+  const elementsOfPage = (page: number) =>
+    (detailBand?.elements ?? []).filter((el) => (el.pageIndex ?? 0) === page);
+  const splitAttr = (band: Band) =>
+    band.splitType
+      ? ` splitType="${xmlAttr(band.splitType)}"`
+      : band.isSplitAllowed !== undefined
+        ? ` splitType="${band.isSplitAllowed ? "Stretch" : "Prevent"}"`
+        : "";
+  // Designer pages: at least one normal page after the special ones
+  const maxPageIndex = Math.max(0, ...(detailBand?.elements ?? []).map((el) => el.pageIndex ?? 0));
+  const numPages = Math.max(safeProperties.pageCount || 1, maxPageIndex + 1, totalPagesCount || 1, special.count + 1);
 
-        if (numPages > 1) {
-          jrxml += `<detail>`;
-          const colWidth =
-            safeProperties.pageWidth -
-            safeProperties.leftMargin -
-            safeProperties.rightMargin;
-          for (let p = 0; p < numPages; p++) {
-            const pageElements = band.elements.filter(
-              (el) => (el.pageIndex ?? 0) === p,
-            );
-            const bandHeight = band.height > 0 ? band.height : 100;
-            let bandAttrs = `height="${xmlAttr(bandHeight)}"`;
-            if (band.splitType) {
-              bandAttrs += ` splitType="${xmlAttr(band.splitType)}"`;
-            } else {
-              bandAttrs += ` splitType="Stretch"`;
-            }
-
-            jrxml += `<band ${bandAttrs}>`;
-            if (p > 0) {
-              // Standard JasperReports page break at top of subsequent detail page bands
-              jrxml += `<break type="Page"><reportElement x="0" y="0" width="${xmlAttr(colWidth)}" height="1" uuid="${xmlAttr(generateUUID())}"/></break>`;
-            }
-            pageElements.forEach((element) => {
-              const validatedElement = withTableFloat(
-                validateElementPosition(element),
-                pageElements,
-              );
-              jrxml += generateElementXML(validatedElement);
-            });
-            jrxml += `</band>`;
-          }
-          jrxml += `</detail>`;
-          return;
-        }
-      }
-
-      jrxml += `<${band.type}>`;
-
-      // Per the XSD spec, the height attribute belongs on the band element, but band does not allow a uuid attribute
-      let bandAttributes = `height="${xmlAttr(band.height)}"`;
-
-      // Prefer the non-deprecated splitType attribute; only fall back to the deprecated isSplitAllowed attribute if splitType is absent
-      if (band.splitType) {
-        // If splitType is already specified, use it directly
-        bandAttributes += ` splitType="${xmlAttr(band.splitType)}"`;
-      } else if (band.isSplitAllowed !== undefined) {
-        // Only use the deprecated isSplitAllowed attribute if splitType is absent
-        const splitTypeValue = band.isSplitAllowed ? "Stretch" : "Prevent";
-        bandAttributes += ` splitType="${xmlAttr(splitTypeValue)}"`;
-      }
-
-      jrxml += `<band ${bandAttributes}>`;
-
-      // Add the elements within the band, validating element positions per the band type
-      band.elements.forEach((element) => {
-        // Validate the position of each element using the current band type's height limit
-        const validatedElement = withTableFloat(
-          validateElementPosition(element),
-          band.elements,
-        );
-        jrxml += generateElementXML(validatedElement);
+  // <background> first (the XSD order). Its own items (the page border) print on
+  // every page but a whole-sheet cover; each contents page is a frame of the whole printable area printed
+  // only on its page.
+  const backgroundBand = bands.find((band) => band.type === "background");
+  const backgroundElements = backgroundBand?.elements ?? [];
+  const backgroundHeight = Math.max(backgroundBand?.height ?? 0, special.contents ? printableHeight : 0);
+  if (backgroundElements.length > 0 || backgroundHeight > 0) {
+    jrxml += `<background><band height="${xmlAttr(backgroundHeight)}"${backgroundBand ? splitAttr(backgroundBand) : ""}>`;
+    backgroundElements.forEach((element) => {
+      const prepared = prepare(element, backgroundElements);
+      // On every page (cover and contents pages too), except a whole-sheet cover
+      jrxml += generateElementXML(
+        special.fullPageCover
+          ? { ...prepared, printWhenExpression: guardPrintWhen(1, prepared.printWhenExpression) }
+          : prepared,
+      );
+    });
+    for (let n = 1; n <= special.contents; n++) {
+      const page = (special.cover ? 1 : 0) + n - 1;
+      const pageElements = elementsOfPage(page);
+      jrxml += `<frame><reportElement x="0" y="0" width="${xmlAttr(printableWidth)}" height="${xmlAttr(printableHeight)}" uuid="${xmlAttr(generateUUID())}" mode="Transparent">`;
+      jrxml += `<property name="${CONTENTS_PAGE_PROPERTY}" value="${xmlAttr(n)}"/>`;
+      jrxml += `<printWhenExpression>${cdata(onlyOnPage(page + 1))}</printWhenExpression></reportElement>`;
+      pageElements.forEach((element) => {
+        jrxml += generateElementXML(prepare(element, pageElements));
       });
-
-      jrxml += `</band></${band.type}>`;
+      jrxml += `</frame>`;
     }
+    jrxml += `</band></background>`;
+  }
+
+  // The cover: the title band, the whole printable page. A whole-sheet cover's
+  // elements are placed from the sheet's corner: they start in the margins
+  // (negative x / y, which JasperReports allows) and its band reaches the foot
+  // of the sheet (the bottom margin is 0).
+  if (special.cover) {
+    const coverElements = elementsOfPage(0);
+    const left = special.fullPageCover ? safeProperties.leftMargin : 0;
+    const top = special.fullPageCover ? safeProperties.topMargin : 0;
+    jrxml += `<title><band height="${xmlAttr(printableHeight + footerExtra)}" splitType="Prevent">`;
+    coverElements.forEach((element) => {
+      const prepared = prepare(element, coverElements);
+      jrxml += generateElementXML(
+        left || top ? { ...prepared, x: (element.x ?? 0) - left, y: (element.y ?? 0) - top } : prepared,
+      );
+    });
+    jrxml += `</band></title>`;
+  }
+
+  // The other bands in their order; the shared ones print only after the special pages
+  const SHARED_BANDS = ["pageHeader", "columnHeader", "columnFooter", "pageFooter", "lastPageFooter"];
+  // A whole-sheet cover with no page footer: an empty one holds the bottom margin's space
+  let footerSpaceWritten =
+    !footerExtra || bands.some((b) => b.type === "pageFooter" && (b.elements.length > 0 || b.height > 0));
+  const writeFooterSpace = () => {
+    if (footerSpaceWritten) return;
+    footerSpaceWritten = true;
+    jrxml += `<pageFooter><band height="${xmlAttr(footerExtra)}">`;
+    jrxml += `<printWhenExpression>${cdata(afterSpecialPages(special.count))}</printWhenExpression>`;
+    jrxml += `</band></pageFooter>`;
+  };
+  bands.forEach((band) => {
+    if (band.type === "background") return;
+    if (["lastPageFooter", "summary", "noData"].includes(band.type)) writeFooterSpace();
+    if (!(band.elements.length > 0 || band.height > 0)) return;
+
+    if (band.type === "detail") {
+      // Each designer page is a band; the next one starts with a page break.
+      // A contents page's band is empty (its content is in the background).
+      const firstPage = special.cover ? 1 : 0;
+      const pages = Array.from({ length: numPages - firstPage }, (_, i) => firstPage + i);
+      const bandHeight = band.height > 0 ? band.height : 100;
+      if (pages.length === 1 && !special.count) {
+        jrxml += `<detail><band height="${xmlAttr(band.height)}"${splitAttr(band)}>`;
+        band.elements.forEach((element) => {
+          jrxml += generateElementXML(prepare(element, band.elements));
+        });
+        jrxml += `</band></detail>`;
+        return;
+      }
+      jrxml += `<detail>`;
+      pages.forEach((page, i) => {
+        jrxml += `<band height="${xmlAttr(bandHeight)}"${splitAttr(band) || ' splitType="Stretch"'}>`;
+        if (i > 0) {
+          // Standard JasperReports page break at top of subsequent detail page bands
+          jrxml += `<break type="Page"><reportElement x="0" y="0" width="${xmlAttr(printableWidth)}" height="1" uuid="${xmlAttr(generateUUID())}"/></break>`;
+        }
+        if (pageKind(properties, page) === "normal") {
+          const pageElements = elementsOfPage(page);
+          pageElements.forEach((element) => {
+            jrxml += generateElementXML(prepare(element, pageElements));
+          });
+        }
+        jrxml += `</band>`;
+      });
+      jrxml += `</detail>`;
+      return;
+    }
+
+    // Per the XSD spec, the height attribute belongs on the band element, but band does not allow a uuid attribute
+    const height = band.height + (["pageFooter", "lastPageFooter"].includes(band.type) ? footerExtra : 0);
+    jrxml += `<${band.type}><band height="${xmlAttr(height)}"${splitAttr(band)}>`;
+    if (special.count && SHARED_BANDS.includes(band.type)) {
+      jrxml += `<printWhenExpression>${cdata(afterSpecialPages(special.count))}</printWhenExpression>`;
+    }
+    band.elements.forEach((element) => {
+      jrxml += generateElementXML(prepare(element, band.elements));
+    });
+    jrxml += `</band></${band.type}>`;
   });
+  writeFooterSpace();
 
   jrxml += "</jasperReport>";
   return jrxml;
@@ -573,6 +648,12 @@ function generateElementXML(element: any): string {
       return generateBarcodeXML(element);
     case "customTable":
       return generateCustomTableXML(element);
+    case "contentsList":
+      return generateContentsListXML(
+        element,
+        generateReportElementAttrs({ ...element, mode: undefined, forecolor: undefined, backcolor: undefined }),
+        element.uuid ? contentsNumberStarts.get(element.uuid) : undefined,
+      );
     default:
       return "";
   }

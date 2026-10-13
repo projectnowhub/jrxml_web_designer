@@ -20,6 +20,7 @@ import TableElement from './TableElement.vue';
 import ChartElement from './ChartElement.vue';
 import BarcodeElement from './BarcodeElement.vue';
 import CustomTableElement from './CustomTableElement.vue';
+import ContentsListElement from './ContentsListElement.vue';
 import type { 
   DesignElement,
   SelectedElementInfo,
@@ -37,7 +38,8 @@ const componentCache: Record<string, any> = {
   table: TableElement,
   chart: ChartElement,
   barcode: BarcodeElement,
-  customTable: CustomTableElement
+  customTable: CustomTableElement,
+  contentsList: ContentsListElement
 };
 
 // Preload components

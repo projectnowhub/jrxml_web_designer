@@ -296,6 +296,8 @@ export interface FrameTemplateContext {
   availableHeight: number;
   // Translator for placeholder text
   t: (key: string, named?: Record<string, unknown>) => string;
+  // Space kept clear at the sheet's edges by text and logos (a whole-sheet cover)
+  inset?: number;
 }
 
 export interface TextOptions {

@@ -69,6 +69,9 @@ jrxml_web_designer/
         ├── framePresets.ts           # Boxes, templates, page border, rounded borders
         ├── reportParts.ts            # Element presets from a monthly report (header, footer, headings, legend, sign-off)
         ├── customTable.ts            # Custom (typed) tables: grid, merges, rows/columns
+        ├── specialPages.ts           # Cover and contents pages (title / background in JRXML)
+        ├── pageDesigns.ts            # Cover / contents page designs
+        ├── contentsList.ts           # Contents list element (fill from section headings)
         ├── paginationPresets.ts      # Page Number element
         ├── jrxml/
         │   ├── parse.ts              # ★ JRXML → JSON

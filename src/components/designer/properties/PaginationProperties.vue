@@ -47,6 +47,24 @@
     <!-- 2. Which pages get a number -->
     <section class="card">
       <h5 class="step"><span class="step-no" aria-hidden="true">2</span>{{ t("pagination.panel.pagesTitle") }}</h5>
+      <!-- With a cover / contents pages: do they count? (they never show a number) -->
+      <div v-if="report.special.count" class="count-special">
+        <label class="count-special-row">
+          <input
+            type="checkbox"
+            :checked="report.special.countPages"
+            @change="setCountSpecialPages(($event.target as HTMLInputElement).checked)"
+          />
+          {{ t("specialPages.countPages") }}
+        </label>
+        <p class="hint">
+          {{
+            t(report.special.countPages ? "specialPages.countPagesYes" : "specialPages.countPagesNo", {
+              n: report.special.count + 1,
+            })
+          }}
+        </p>
+      </div>
       <select
         class="pages-select"
         :aria-label="t('pagination.panel.pagesTitle')"
@@ -212,15 +230,15 @@
           v-for="item in previewPages"
           :key="item.page"
           class="page-tile"
-          :class="{ 'is-off': !item.label }"
-          :title="item.label ? `${t('pagination.panel.pageLabel', { page: item.page })}: ${item.label}` : t('pagination.panel.noNumber')"
+          :class="{ 'is-off': !item.label, 'is-special': item.special }"
+          :title="item.label ? `${item.name}: ${item.label}` : `${item.name}: ${t('pagination.panel.noNumber')}`"
         >
           <span class="tile-sheet"><span class="tile-label">{{ item.label ?? "–" }}</span></span>
-          <span class="tile-page">{{ t("pagination.panel.pageLabel", { page: item.page }) }}</span>
+          <span class="tile-page">{{ item.name }}</span>
         </div>
       </div>
-      <p v-if="previewPages.length < designPages" class="hint">
-        {{ t("pagination.panel.morePages", { n: designPages - previewPages.length }) }}
+      <p v-if="previewPages.length < report.totalPages" class="hint">
+        {{ t("pagination.panel.morePages", { n: report.totalPages - previewPages.length }) }}
       </p>
       <p class="hint">{{ t(hasTables ? "pagination.panel.tablesNote" : "pagination.panel.longerNote") }}</p>
     </section>
@@ -233,6 +251,7 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { Plus, TriangleAlert, X } from "@lucide/vue";
 import { useReportStore } from "@/stores/report";
+import { pageKind } from "@/utils/specialPages";
 import { collectTables } from "@/utils/table/tableDocument";
 import type { TextFieldElement } from "../../../types";
 import {
@@ -274,8 +293,18 @@ const update = (patch: Partial<PaginationSettings>) => {
   report.updateJrxml();
 };
 
-// The design's own pages: examples, totals and the pictures follow them
-const designPages = computed(() => Math.max(1, report.totalPages));
+// Pages the numbers count: the design's pages, without the cover and contents
+// pages when they aren't counted. Examples, totals and the pictures follow them.
+const numberShift = computed(() => (report.special.countPages ? 0 : report.special.count));
+const designPages = computed(() => Math.max(1, report.totalPages - numberShift.value));
+
+function setCountSpecialPages(count: boolean) {
+  if (count === report.special.countPages) return;
+  report.saveStateToHistory();
+  if (count) delete report.reportProperties.countSpecialPages;
+  else report.reportProperties.countSpecialPages = false;
+  report.updateJrxml();
+}
 
 // ── 1. How it looks ──
 
@@ -408,11 +437,23 @@ watch(
 // ── 3. The pages ──
 
 const PREVIEW_MAX = 60;
+// Every design page: the cover and contents pages never print a number
 const previewPages = computed(() =>
-  Array.from({ length: Math.min(PREVIEW_MAX, designPages.value) }, (_, i) => ({
-    page: i + 1,
-    label: formatPageNumber(settings.value, i + 1, designPages.value),
-  })),
+  Array.from({ length: Math.min(PREVIEW_MAX, report.totalPages) }, (_, i) => {
+    const kind = pageKind(report.reportProperties, i);
+    const special = kind !== "normal";
+    return {
+      page: i + 1,
+      special,
+      name:
+        kind === "cover"
+          ? t("specialPages.cover")
+          : kind === "contents"
+            ? t("specialPages.contents")
+            : t("pagination.panel.pageLabel", { page: i + 1 }),
+      label: special ? null : formatPageNumber(settings.value, i + 1 - numberShift.value, designPages.value),
+    };
+  }),
 );
 
 // Tables can make the PDF longer than the design
@@ -509,6 +550,38 @@ const partsExample = computed(() => {
   font-size: 13px;
   font-weight: 600;
   color: var(--prop-text-primary);
+}
+
+.count-special {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #f5f3ff;
+}
+
+.count-special-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--prop-text-primary);
+  cursor: pointer;
+}
+
+.count-special-row input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--prop-primary-color, #1890ff);
+}
+
+.count-special .hint {
+  margin-top: 4px;
+}
+
+.page-tile.is-special .tile-page {
+  color: #7c3aed;
 }
 
 .hint {

@@ -17,6 +17,7 @@ import { generateJRXMLContent } from "@/utils/jrxmlGenerator";
 import { ensureUniqueUuids } from "@/utils/elementUtils";
 import { resetBoxPhotos } from "@/utils/framePresets";
 import { ensureUniqueTableDatasets } from "@/utils/table/tableDocument";
+import { specialPages } from "@/utils/specialPages";
 import { useEditorStore } from "./editor";
 import { useSelectionStore } from "./selection";
 import {
@@ -119,11 +120,18 @@ export const useReportStore = defineStore("report", () => {
   // Detail content, or more when pages were added)
   const paperWidth = computed(() => reportProperties.value?.pageWidth || REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH);
   const paperHeight = computed(() => reportProperties.value?.pageHeight || REPORT_CONSTANTS.DEFAULT_PAGE_HEIGHT);
+  // The cover and contents pages at the front (utils/specialPages.ts)
+  const special = computed(() => specialPages(reportProperties.value));
   const totalPages = computed(() => {
     const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
     const lastPage = Math.max(0, ...(detail?.elements ?? []).map((e: any) => e.pageIndex || 0));
-    return Math.max(pageCount.value, lastPage + 1);
+    // Always one normal page after the special ones
+    return Math.max(pageCount.value, lastPage + 1, special.value.count + 1);
   });
+  // Height of the printable area (the whole page inside the margins)
+  const printableHeight = computed(
+    () => paperHeight.value - (reportProperties.value?.topMargin || 0) - (reportProperties.value?.bottomMargin || 0),
+  );
 
   // Undo/redo snapshots the whole model. Every change records a step BEFORE
   // changing anything (saveStateToHistory); one user action = one step.
@@ -268,7 +276,7 @@ export const useReportStore = defineStore("report", () => {
     resetBoxPhotos(bands.value);
     const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
     const lastPage = Math.max(0, ...(detail?.elements ?? []).map((e: any) => e.pageIndex || 0));
-    pageCount.value = Math.max(1, data.pageCount ?? 0, lastPage + 1);
+    pageCount.value = Math.max(1, data.pageCount ?? props.pageCount ?? 0, lastPage + 1);
     reportFields.value = data.reportFields ?? [];
     reportParameters.value = data.reportParameters ?? [];
     subDatasets.value = data.subDatasets ?? [];
@@ -298,6 +306,8 @@ export const useReportStore = defineStore("report", () => {
     reportGroups,
     paperWidth,
     paperHeight,
+    printableHeight,
+    special,
     totalPages,
     historyStack: history.historyStack,
     redoStack: history.redoStack,

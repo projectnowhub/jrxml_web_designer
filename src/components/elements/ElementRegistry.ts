@@ -1,5 +1,14 @@
 import type { Component } from "vue";
 import {
+  Columns2,
+  Hash,
+  Ellipsis,
+  ListOrdered,
+  FileText,
+  IdCard,
+  GalleryVerticalEnd,
+  PanelRight,
+  TableOfContents,
   Banknote,
   Barcode,
   ChartColumn,
@@ -249,6 +258,27 @@ export class ElementRegistry {
       defaultProps: { type: "customTable", x: 0, y: 0, width: 300, height: 60 },
     });
 
+    // Contents List (table of contents): a Basic Element (built by
+    // buildReportPart("partContentsList"), placed like a report part); not on a cover
+    this.registerElement({
+      type: "partContentsList",
+      name: "elementNames.partContentsList",
+      icon: "≡",
+      iconComponent: TableOfContents,
+      category: "basic",
+      defaultProps: { type: "contentsList", x: 0, y: 0, width: 400, height: 22 },
+    });
+
+    // The contents list element itself (no tile of its own)
+    this.registerElement({
+      type: "contentsList",
+      name: "elementNames.contentsList",
+      icon: "≡",
+      iconComponent: TableOfContents,
+      category: "hidden",
+      defaultProps: { type: "contentsList", x: 0, y: 0, width: 400, height: 22 },
+    });
+
     // Barcode element
     this.registerElement({
       type: "barcode",
@@ -313,6 +343,17 @@ export class ElementRegistry {
       { type: "tableComparison", group: "tables", iconComponent: Columns3 },
       { type: "tableActionPlan", group: "tables", iconComponent: ListChecks },
       { type: "tableRiskRegister", group: "tables", iconComponent: ShieldAlert },
+      // Cover page designs: a tile sets the cover page's design (utils/pageDesigns.ts)
+      { type: "coverPhotoPanel", group: "coverPages", iconComponent: PanelRight },
+      { type: "coverFullPhoto", group: "coverPages", iconComponent: GalleryVerticalEnd },
+      { type: "coverMinimal", group: "coverPages", iconComponent: FileText },
+      { type: "coverColourBlock", group: "coverPages", iconComponent: PanelTop },
+      { type: "coverProjectCard", group: "coverPages", iconComponent: IdCard },
+      // Contents pages: the list itself, and designs that set a contents page's design
+      { type: "contentsClassic", group: "contentsPages", iconComponent: ListOrdered },
+      { type: "contentsDotted", group: "contentsPages", iconComponent: Ellipsis },
+      { type: "contentsNumbered", group: "contentsPages", iconComponent: Hash },
+      { type: "contentsTwoColumns", group: "contentsPages", iconComponent: Columns2 },
     ];
     reportParts.forEach(({ type, group, iconComponent }) =>
       this.registerElement({

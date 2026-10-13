@@ -1,4 +1,5 @@
-import type { DesignElement, BandType, Band, ReportGroup, TableElement, CustomTableData, CustomTableElement } from "@/types";
+import type { DesignElement, BandType, Band, ReportGroup, TableElement, CustomTableData, CustomTableElement, ContentsListData, ContentsListElement } from "@/types";
+import { CONTENTS_LIST_PROPERTY, parseContentsList, syncContentsListSize } from "../contentsList";
 import { CUSTOM_TABLE_PART_PROPERTY, CUSTOM_TABLE_PROPERTY, parseCustomTable, syncTableSize } from "../customTable";
 import { TABLE_BINDING_PROPERTY, parseBinding } from "../table/dataBinding";
 import { TABLE_HEADER_HEIGHT, TABLE_ROW_HEIGHT } from "../table/dataTable";
@@ -14,6 +15,12 @@ import {
   withoutLines,
 } from "../framePresets";
 import { detectPagination } from "../paginationPresets";
+import {
+  CONTENTS_PAGE_PROPERTY,
+  parseSpecialPages,
+  SPECIAL_PAGES_PROPERTY,
+  unguardPrintWhen,
+} from "../specialPages";
 import { CHART_BINDING_PROPERTY, parseChartBinding } from "../chart/chartTypes";
 import { SAVED_TABLE_STYLES_PROPERTY, parseSavedTableStyles } from "../table/tableThemes";
 import { REPORT_PROJECTS_PROPERTY, parseReportProjects } from "../projectFields";
@@ -195,6 +202,16 @@ export function parseJRXMLContent(jrxmlContent: string): {
   });
 
   const bands: Band[] = [];
+  // Cover and contents pages (utils/specialPages.ts): their elements join the
+  // Detail band as pages 0, 1… once every band is read
+  const coverElements: DesignElement[] = [];
+  const contentsPageElements: DesignElement[][] = [];
+  const titleBand = findBandElement(xmlDoc, "title");
+  if (titleBand) {
+    coverElements.push(...parseBandElements(titleBand).filter((el) => el.type !== "break"));
+    properties.coverPage = true;
+  }
+
   const bandTypes = [
     "background",
     "pageHeader",
@@ -286,7 +303,23 @@ export function parseJRXMLContent(jrxmlContent: string): {
     }
 
     const height = parseInt(bandElem.getAttribute("height") || "0");
-    const elements = parseBandElements(bandElem);
+    let elements = parseBandElements(bandElem);
+
+    // Background: the contents pages' frames become pages; the other items
+    // lose the rule that kept them off the special pages
+    if (type === "background") {
+      Array.from(bandElem.children).forEach((child) => {
+        const n = contentsPageOf(child);
+        if (n) contentsPageElements[n - 1] = parseBandElements(child);
+      });
+      elements = elements
+        .filter((el) => !el.properties?.some((p: any) => p.name === CONTENTS_PAGE_PROPERTY))
+        .map((el) => {
+          const own = unguardPrintWhen(el.printWhenExpression);
+          if (own !== el.printWhenExpression) el.printWhenExpression = own;
+          return el;
+        });
+    }
 
     // If detail has a single band with page breaks, split elements across pages
     if (
@@ -323,6 +356,64 @@ export function parseJRXMLContent(jrxmlContent: string): {
 
     bands.push(band);
   });
+
+  // The special pages at the front: cover (page 0), contents pages, then the
+  // Detail pages (their first bands hold the contents pages' places)
+  const special = parseSpecialPages(
+    Array.from(jasperReportElem.children)
+      .find((c) => c.localName === "property" && c.getAttribute("name") === SPECIAL_PAGES_PROPERTY)
+      ?.getAttribute("value"),
+  );
+  const contentsCount = Math.max(special.contentsPages ?? 0, contentsPageElements.length);
+  if (special.countSpecialPages === false) properties.countSpecialPages = false;
+  // A whole-sheet cover: the real bottom margin is back, the page footer loses
+  // the space that stood in for it, the cover's elements count from the sheet's corner
+  if (special.fullPageCover && properties.coverPage) {
+    const extra = Math.max(0, special.bottomMargin ?? 0);
+    properties.fullPageCover = true;
+    properties.bottomMargin = extra;
+    for (const band of bands) {
+      if (["pageFooter", "lastPageFooter"].includes(band.type)) band.height = Math.max(0, band.height - extra);
+    }
+    const emptyFooter = bands.findIndex((b) => b.type === "pageFooter" && b.height === 0 && !b.elements.length);
+    if (emptyFooter !== -1) bands.splice(emptyFooter, 1);
+    // Their written positions start in the margins (negative), which the
+    // element reader would turn into 0: read them from the band
+    const written = new Map<string, { x: number; y: number }>();
+    for (const child of Array.from(titleBand?.children ?? [])) {
+      const re = findChildElement(child, "reportElement");
+      const uuid = re?.getAttribute("uuid");
+      if (re && uuid) written.set(uuid, { x: parseInt(re.getAttribute("x") || "0"), y: parseInt(re.getAttribute("y") || "0") });
+    }
+    for (const el of coverElements) {
+      const pos = (el.uuid && written.get(el.uuid)) || { x: el.x, y: el.y };
+      el.x = pos.x + (properties.leftMargin || 0);
+      el.y = pos.y + (properties.topMargin || 0);
+    }
+  }
+  if (properties.coverPage || contentsCount) {
+    const coverOffset = properties.coverPage ? 1 : 0;
+    if (contentsCount) properties.contentsPages = contentsCount;
+    let detail = bands.find((b) => b.type === "detail");
+    if (!detail) {
+      detail = { type: "detail" as BandType, height: 100, elements: [] };
+      bands.push(detail);
+    }
+    for (const el of detail.elements) el.pageIndex = (el.pageIndex ?? 0) + coverOffset;
+    for (const el of coverElements) el.pageIndex = 0;
+    contentsPageElements.forEach((pageElements, i) =>
+      (pageElements ?? []).forEach((el) => (el.pageIndex = coverOffset + i)),
+    );
+    detail.elements = [
+      ...coverElements,
+      ...contentsPageElements.flatMap((pageElements) => pageElements ?? []),
+      ...detail.elements,
+    ];
+    properties.pageCount = Math.max(
+      coverOffset + contentsCount + 1,
+      coverOffset + (properties.pageCount ?? 1),
+    );
+  }
 
   // Parse sub-datasets. A data table's own dataset is rebuilt from the
   // table's setup when the report is written, so it isn't kept here.
@@ -515,7 +606,10 @@ export function parseJRXMLContent(jrxmlContent: string): {
       reportProperties.find((p) => p.name === SAVED_TABLE_STYLES_PROPERTY)?.value,
     ),
     reportProperties: reportProperties.filter(
-      (p) => p.name !== SAVED_TABLE_STYLES_PROPERTY && p.name !== REPORT_PROJECTS_PROPERTY,
+      (p) =>
+        p.name !== SAVED_TABLE_STYLES_PROPERTY &&
+        p.name !== REPORT_PROJECTS_PROPERTY &&
+        p.name !== SPECIAL_PAGES_PROPERTY,
     ),
   };
 }
@@ -657,6 +751,8 @@ function parseBandElements(bandElem: Element): any[] {
     if (elementType === "frame" && isEmptyTableFrame(child)) {
       const table = parseEmptyTable(child);
       if (table) elements.push(table);
+    } else if (elementType === "frame" && readContentsList(child)) {
+      elements.push(parseContentsListFrame(child));
     } else if (elementType === "frame" && readCustomTable(child)) {
       elements.push(parseCustomTableFrame(child));
     } else if (elementType === "frame" && isCustomTablePart(child)) {
@@ -848,6 +944,28 @@ function readCustomTable(frame: Element): CustomTableData | null {
   return property ? parseCustomTable(property.getAttribute("value")) : null;
 }
 
+// A contents list: a frame carrying its setup; rebuilt from that alone
+function readContentsList(frame: Element): ContentsListData | null {
+  const reportElement = findChildElement(frame, "reportElement");
+  const property = reportElement
+    ? Array.from(reportElement.children).find(
+        (c) => c.localName === "property" && c.getAttribute("name") === CONTENTS_LIST_PROPERTY,
+      )
+    : undefined;
+  return property ? parseContentsList(property.getAttribute("value")) : null;
+}
+
+function parseContentsListFrame(frame: Element): ContentsListElement {
+  const reportElement = findChildElement(frame, "reportElement")!;
+  const element: ContentsListElement = {
+    type: "contentsList",
+    ...readBounds(reportElement),
+    list: readContentsList(frame)!,
+  };
+  syncContentsListSize(element);
+  return element;
+}
+
 function isCustomTablePart(frame: Element): boolean {
   const reportElement = findChildElement(frame, "reportElement");
   return !!reportElement && Array.from(reportElement.children).some(
@@ -864,6 +982,25 @@ function parseCustomTableFrame(frame: Element): CustomTableElement {
   };
   syncTableSize(element);
   return element;
+}
+
+// The <band> of a section (e.g. "title"), or null
+function findBandElement(xmlDoc: Document, section: string): Element | null {
+  const container = Array.from(xmlDoc.documentElement.children).find((c) => c.localName === section);
+  return container ? findChildElement(container, "band") : null;
+}
+
+// A background frame holding a contents page: its number (1, 2…), else 0
+function contentsPageOf(frame: Element): number {
+  if (frame.localName !== "frame") return 0;
+  const reportElement = findChildElement(frame, "reportElement");
+  const property = reportElement
+    ? Array.from(reportElement.children).find(
+        (c) => c.localName === "property" && c.getAttribute("name") === CONTENTS_PAGE_PROPERTY,
+      )
+    : undefined;
+  const n = parseInt(property?.getAttribute("value") ?? "", 10);
+  return Number.isInteger(n) && n > 0 && n <= 50 ? n : 0;
 }
 
 function findChildElement(parent: Element, localName: string): Element | null {

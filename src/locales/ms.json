@@ -64,7 +64,9 @@
       "headings": "Tajuk & Teks",
       "status": "Status",
       "signOff": "Pengesahan",
-      "tables": "Jadual"
+      "tables": "Jadual",
+      "coverPages": "Halaman Kulit",
+      "contentsPages": "Halaman Kandungan"
     },
     "compositeElements": "Elemen Komposit",
     "reportParameters": "Parameter Laporan",
@@ -162,7 +164,18 @@
     "tableProgress": "Jadual Kemajuan",
     "tableComparison": "Jadual Perbandingan",
     "tableActionPlan": "Pelan Tindakan",
-    "tableRiskRegister": "Daftar Risiko"
+    "tableRiskRegister": "Daftar Risiko",
+    "contentsList": "Isi Kandungan",
+    "partContentsList": "Isi Kandungan",
+    "coverPhotoPanel": "Foto + Panel",
+    "coverFullPhoto": "Foto Penuh",
+    "coverMinimal": "Ringkas",
+    "coverColourBlock": "Blok Warna",
+    "coverProjectCard": "Kad Projek",
+    "contentsClassic": "Kandungan: Klasik",
+    "contentsDotted": "Kandungan: Bertitik",
+    "contentsNumbered": "Kandungan: Bernombor",
+    "contentsTwoColumns": "Kandungan: Dua Lajur"
   },
   "properties": {
     "title": "Sifat",
@@ -1090,7 +1103,13 @@
       "tableProgress": "Item, keterangan, sasaran %, sebenar % dan varians %, dengan baris Keseluruhan di bawah.",
       "tableComparison": "Dua baris tajuk (Semasa, Sebelum dan Perbezaan, setiap satu dibahagi kepada Dikeluarkan dan Belum Selesai), baris kategori dan baris Jumlah.",
       "tableActionPlan": "Item, keterangan, tindakan sebagai titik peluru, dan titik status berwarna: tukar warna teks titik itu kepada hijau, kuning atau merah.",
-      "tableRiskRegister": "Isu bernombor dengan tindakannya, tindakan seterusnya, tarikh akhir dan sel risiko berwarna (Tinggi, Sederhana)."
+      "tableRiskRegister": "Isu bernombor dengan tindakannya, tindakan seterusnya, tarikh akhir dan sel risiko berwarna (Tinggi, Sederhana).",
+      "partContentsList": "Isi kandungan: nombor, tajuk, garisan titik dan halaman. Gunakannya pada halaman kandungan (atau mana-mana halaman biasa, bukan halaman kulit). Isikannya daripada Tajuk Bahagian anda dalam sifatnya.",
+      "coverPhotoPanel": "Halaman kulit penuh: foto di kiri, panel gelap dengan logo dan tajuk.",
+      "coverFullPhoto": "Halaman kulit penuh: satu foto besar dan jalur tajuk gelap.",
+      "coverMinimal": "Halaman kulit penuh: logo, tajuk besar dan garisan aksen.",
+      "coverColourBlock": "Halaman kulit penuh: separuh atas berwarna dengan tajuk dan foto di bawah.",
+      "coverProjectCard": "Halaman kulit penuh: kad di tengah dengan tajuk dan fakta utama."
     },
     "placeholder": {
       "headerLine1": "Pelanggan - Nama Projek",
@@ -1964,5 +1983,166 @@
   },
   "header": {
     "reportsHome": "Laman utama laporan"
+  },
+  "specialPages": {
+    "addCover": "Tambah halaman kulit",
+    "addCoverHint": "Menambah halaman kulit di hadapan laporan. Ia menggunakan seluruh halaman, tanpa kepala atau kaki halaman.",
+    "addContents": "Tambah halaman kandungan",
+    "addContentsHint": "Menambah halaman kandungan selepas halaman kulit (atau di hadapan). Ia menggunakan seluruh halaman, tanpa kepala atau kaki halaman.",
+    "addAnotherContents": "Tambah halaman kandungan",
+    "addAnotherContentsHint": "Menambah satu lagi halaman kandungan selepas halaman ini, untuk senarai yang panjang.",
+    "pageOptions": "Pilihan halaman",
+    "cover": "Halaman kulit",
+    "contents": "Halaman kandungan",
+    "contentsN": "Halaman kandungan {n}",
+    "makeCover": "Jadikan halaman kulit",
+    "makeContents": "Jadikan halaman kandungan",
+    "toNormal": "Jadikan halaman biasa",
+    "deleteCover": "Padam halaman kulit",
+    "deleteContents": "Padam halaman kandungan ini",
+    "emptyCover": "Reka halaman kulit anda di sini. Ia menggunakan seluruh halaman: kepala dan kaki halaman tidak dicetak padanya.",
+    "emptyContents": "Reka halaman kandungan anda di sini. Ia menggunakan seluruh halaman: kepala dan kaki halaman tidak dicetak padanya.",
+    "lastNormalPage": "Halaman ini tidak boleh dipadam: laporan memerlukan sekurang-kurangnya satu halaman biasa selepas halaman kulit dan kandungan.",
+    "coverAdded": "Halaman kulit ditambah di hadapan.",
+    "coverMade": "Halaman ini kini halaman kulit.",
+    "contentsAdded": "Halaman kandungan ditambah.",
+    "contentsMade": "Halaman ini kini halaman kandungan.",
+    "madeNormal": "Halaman ini kembali menjadi halaman biasa: kepala dan kaki halaman dicetak padanya.",
+    "coverDeleted": "Halaman kulit dipadam.",
+    "contentsDeleted": "Halaman kandungan dipadam.",
+    "notAllowed": {
+      "pageNumber": "Nombor halaman tidak boleh diletakkan pada halaman kulit atau kandungan. Letakkannya di kepala atau kaki halaman: ia dipaparkan pada halaman lain.",
+      "dataTable": "Jadual dengan data projek tidak boleh diletakkan pada halaman kulit atau kandungan kerana ia boleh memanjang ke halaman lain. Gunakan jadual yang anda taip sendiri (Taip sendiri).",
+      "contentsList": "Isi kandungan tidak boleh diletakkan pada halaman kulit. Letakkannya pada halaman kandungan (atau halaman biasa)."
+    },
+    "countPages": "Kira halaman kulit dan kandungan",
+    "countPagesYes": "Halaman ini tiada nombor tetapi dikira: halaman biasa pertama ialah halaman {n}.",
+    "countPagesNo": "Halaman ini tidak dikira: halaman biasa pertama ialah halaman 1.",
+    "wholeSheet": "Gunakan seluruh helaian (tepi ke tepi)",
+    "keepMargins": "Kekalkan jidar halaman",
+    "wholeSheetOn": "Halaman kulit kini menggunakan seluruh helaian, tepi ke tepi.",
+    "wholeSheetOff": "Halaman kulit kini mengekalkan jidar halaman.",
+    "changeDesign": "Tukar reka bentuk",
+    "changeDesignHint": "Pilih reka bentuk lain untuk halaman ini. Setiap bahagiannya masih boleh diubah kemudian.",
+    "borderNotOnCover": "Sempadan halaman ditambah pada setiap halaman kecuali halaman kulit: halaman kulit menggunakan seluruh helaian, jadi ia tiada sempadan. Untuk memberikan sempadan pada halaman kulit juga, pilih \"Kekalkan jidar halaman\" dalam menu ⋯ halaman kulit."
+  },
+  "contentsList": {
+    "emptyHint": "Isi kandungan: isikannya daripada Tajuk Bahagian anda dalam sifatnya",
+    "continuesHint": "Menyambung isi kandungan",
+    "fillTitle": "Kandungan",
+    "fill": "Isi daripada tajuk bahagian saya",
+    "fillHint": "Menyenaraikan setiap Tajuk Bahagian dan Subtajuk pada halaman anda dengan nombor halamannya. Jadual yang memanjang boleh mengubah halaman: semak nombor dalam Pratonton PDF.",
+    "continuesNote": "Senarai ini menyambung senarai lain: mengisinya akan mengisi kesemuanya.",
+    "rows": "Tiada baris | 1 baris | {n} baris",
+    "number": "No.",
+    "titleColumn": "Tajuk",
+    "page": "Halaman",
+    "makeSection": "Jadikan bahagian (tidak diinden)",
+    "makeSub": "Jadikan subbahagian (diinden)",
+    "removeRow": "Buang baris ini",
+    "addRow": "Tambah baris",
+    "newRow": "Entri baharu",
+    "look": "Rupa",
+    "textSize": "Saiz teks",
+    "rowHeight": "Tinggi baris",
+    "numberWidth": "Lajur nombor",
+    "pageWidth": "Lajur halaman",
+    "numberWidthHint": "Lajur nombor 0: tiada nombor.",
+    "leader": "Titik antara tajuk dan halaman",
+    "boldSections": "Bahagian dalam huruf tebal",
+    "colours": "Warna",
+    "textColour": "Warna teks",
+    "numberBox": "Kotak nombor",
+    "noNumberBox": "Tiada kotak nombor",
+    "onlyOnPages": "Pilih isi kandungan pada halaman dahulu.",
+    "noHeadings": "Tiada tajuk bahagian ditemui. Tambah praset Tajuk Bahagian (Preset Elemen → Tajuk & Teks) pada halaman anda dahulu.",
+    "notAllFit": "1 baris tidak muat. Letakkan senarai pada halaman kandungan untuk menyambungnya ke halaman lain. | {n} baris tidak muat. Letakkan senarai pada halaman kandungan untuk menyambungnya ke halaman lain.",
+    "filled": "Diisi dengan 1 tajuk. | Diisi dengan {n} tajuk.",
+    "filledMore": "Diisi dengan {n} tajuk; 1 halaman kandungan ditambah untuk selebihnya. | Diisi dengan {n} tajuk; {pages} halaman kandungan ditambah untuk selebihnya.",
+    "numbers": "Nombor",
+    "autoNumber": "Nombor secara automatik",
+    "sectionStyle": "Bahagian",
+    "sectionWord": "Perkataan sebelum nombor",
+    "subStyle": "Subbahagian",
+    "noSubNumbers": "Tiada nombor",
+    "autoNumberHint": "Bahagian dikira 1, 2, 3; setiap subbahagian dikira semula di bawah bahagiannya. Inden baris untuk menjadikannya subbahagian.",
+    "countedHint": "Dikira secara automatik. Nyahtanda \"Nombor secara automatik\" untuk menaip sendiri."
+  },
+  "pageDesigns": {
+    "chooseCover": "Pilih reka bentuk halaman kulit",
+    "chooseContents": "Pilih reka bentuk halaman kandungan",
+    "chooseHint": "Setiap bahagian boleh diubah kemudian: klik bahagian untuk memilihnya, klik dua kali pada teks untuk menaip.",
+    "blank": "Kosong",
+    "blankDesc": "Halaman kosong untuk anda reka sendiri.",
+    "replaceTitle": "Ganti kandungan halaman ini?",
+    "replaceMessage": "Semua di halaman ini akan diganti dengan reka bentuk. Anda boleh membatalkannya dengan Ctrl+Z.",
+    "applied": "Reka bentuk digunakan.",
+    "designs": {
+      "coverPhotoPanel": {
+        "name": "Foto + panel sisi",
+        "desc": "Dua foto di kiri, panel gelap di kanan dengan logo dan tajuk.",
+        "tileHint": "Menetapkan reka bentuk halaman kulit: foto di kiri, panel gelap dengan logo dan tajuk."
+      },
+      "coverFullPhoto": {
+        "name": "Foto penuh",
+        "desc": "Satu foto besar dengan jalur tajuk gelap di bawah.",
+        "tileHint": "Menetapkan reka bentuk halaman kulit: satu foto besar dan jalur tajuk gelap."
+      },
+      "coverMinimal": {
+        "name": "Ringkas",
+        "desc": "Logo, tajuk besar dengan garisan aksen, dan untuk siapa di bawah.",
+        "tileHint": "Menetapkan reka bentuk halaman kulit: logo, tajuk besar dan garisan aksen."
+      },
+      "coverColourBlock": {
+        "name": "Blok warna",
+        "desc": "Separuh atas berwarna dengan tajuk, foto di bawah.",
+        "tileHint": "Menetapkan reka bentuk halaman kulit: separuh atas berwarna dengan tajuk, foto di bawah."
+      },
+      "coverProjectCard": {
+        "name": "Kad projek",
+        "desc": "Kad di tengah dengan tajuk dan fakta utama.",
+        "tileHint": "Menetapkan reka bentuk halaman kulit: kad di tengah dengan tajuk dan fakta utama."
+      },
+      "contentsClassic": {
+        "name": "Klasik",
+        "desc": "BAHAGIAN 1. dan tajuk, halaman di sebelah kanan.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: BAHAGIAN 1. dan tajuk, halaman di kanan. Lepaskan pada halaman kandungan, atau klik untuk halaman pertama."
+      },
+      "contentsDotted": {
+        "name": "Garisan titik",
+        "desc": "Tajuk besar, titik menuju ke setiap nombor halaman.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: tajuk di tengah, titik menuju ke setiap nombor halaman."
+      },
+      "contentsNumbered": {
+        "name": "Kotak bernombor",
+        "desc": "Nombor besar dalam kotak berwarna.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: nombor besar dalam kotak berwarna."
+      },
+      "contentsTwoColumns": {
+        "name": "Dua lajur",
+        "desc": "Dua senarai bersebelahan, untuk kandungan yang panjang.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: dua senarai bersebelahan."
+      }
+    },
+    "placeholder": {
+      "projectName": "NAMA PROJEK",
+      "reportType": "LAPORAN BULANAN",
+      "reportNumber": "NO. 1",
+      "period": "Bulan Tahun",
+      "reportTitle": "Laporan Kemajuan Bulanan No. 1",
+      "preparedFor": "Disediakan untuk: Nama pelanggan",
+      "preparedBy": "Disediakan oleh: Nama syarikat",
+      "client": "Pelanggan: Nama pelanggan",
+      "location": "Lokasi: Lokasi projek",
+      "contractSum": "Jumlah kontrak: RM 0",
+      "tableOfContents": "ISI KANDUNGAN",
+      "contents": "Kandungan",
+      "sample1": "BUTIRAN PROJEK",
+      "sample2": "GAMBARAN PROJEK",
+      "sample3": "DAFTAR RISIKO",
+      "sectionN": "BAHAGIAN {n}."
+    },
+    "wholeSheet": "Isi seluruh helaian, tepi ke tepi",
+    "wholeSheetHint": "Foto dan warna sampai ke tepi kertas. Halaman lain mengekalkan jidarnya."
   }
 }

@@ -198,6 +198,14 @@
           </div>
 
           <!-- Custom table: grid size and the look of the chosen cells -->
+          <!-- Contents list: fill from the headings, its rows -->
+          <ContentsListProperties
+            v-if="currentElement.type === 'contentsList'"
+            part="basic"
+            :element="currentElement as ContentsListElement"
+            @fill="emit('fill-contents-list')"
+          />
+
           <CustomTableProperties
             v-if="currentElement.type === 'customTable'"
             part="basic"
@@ -461,6 +469,15 @@
 
 
         <!-- Custom table: lines, text size, space in the cells -->
+        <div
+          v-else-if="activeTab === 'style' && currentElement.type === 'contentsList'"
+          key="contents-list-style"
+          class="prop-tab-pane"
+          role="tabpanel"
+        >
+          <ContentsListProperties part="style" :element="currentElement as ContentsListElement" />
+        </div>
+
         <div
           v-else-if="activeTab === 'style' && currentElement.type === 'customTable'"
           key="custom-table-style"
@@ -915,7 +932,7 @@ import { computed, ref, onMounted, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
 import notification from "@/utils/notification";
-import type { Band, BarcodeElement, ChartElement, CustomTableElement, SelectedElementInfo } from "../../../types";
+import type { Band, BarcodeElement, ChartElement, ContentsListElement, CustomTableElement, SelectedElementInfo } from "../../../types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
@@ -946,6 +963,7 @@ import ColorPickerWithOpacity from "./ColorPickerWithOpacity.vue";
 import PaginationProperties from "./PaginationProperties.vue";
 import ChartProperties from "./ChartProperties.vue";
 import CustomTableProperties from "./CustomTableProperties.vue";
+import ContentsListProperties from "./ContentsListProperties.vue";
 import { resetElementStyle } from "../../../utils/resetStyle";
 import BarcodeProperties from "./BarcodeProperties.vue";
 import { isPagination } from "../../../utils/paginationPresets";
@@ -980,6 +998,7 @@ interface Emits {
   // Open the Configure popup for the selected table
   (e: "configure-table"): void;
   (e: "table-content", kind: "data" | "typed"): void;
+  (e: "fill-contents-list"): void;
   (e: "configure-chart"): void;
 }
 
@@ -1144,7 +1163,7 @@ const elementType = computed(() => {
 // Style property visibility computed properties
 const showTextColor = computed(() => {
   if (!currentElement.value) return false;
-  return !["image", "line", "rectangle", "ellipse", "frame", "barcode", "chart", "customTable"].includes(currentElement.value.type);
+  return !["image", "line", "rectangle", "ellipse", "frame", "barcode", "chart", "customTable", "contentsList"].includes(currentElement.value.type);
 });
 
 // Frame in the Background band: a border drawn on every page, with no fill or padding
@@ -1158,17 +1177,17 @@ const isPageBorder = computed(
 
 const showBackgroundColor = computed(() => {
   if (!currentElement.value || isPageBorder.value) return false;
-  return !["line", "barcode", "customTable"].includes(currentElement.value.type);
+  return !["line", "barcode", "customTable", "contentsList"].includes(currentElement.value.type);
 });
 
 const showFontName = computed(() => {
   if (!currentElement.value) return false;
-  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "table", "chart", "customTable"].includes(currentElement.value.type);
+  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "table", "chart", "customTable", "contentsList"].includes(currentElement.value.type);
 });
 
 const showTextAlignmentAndStyle = computed(() => {
   if (!currentElement.value) return false;
-  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "chart", "table", "customTable"].includes(currentElement.value.type);
+  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "chart", "table", "customTable", "contentsList"].includes(currentElement.value.type);
 });
 
 // Style management modal control

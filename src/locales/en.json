@@ -64,7 +64,9 @@
       "headings": "Headings & Text",
       "status": "Status",
       "signOff": "Sign-off",
-      "tables": "Tables"
+      "tables": "Tables",
+      "coverPages": "Cover Pages",
+      "contentsPages": "Contents Pages"
     },
     "compositeElements": "Composite Elements",
     "reportParameters": "Report Parameters",
@@ -162,7 +164,18 @@
     "tableProgress": "Progress Table",
     "tableComparison": "Comparison Table",
     "tableActionPlan": "Action Plan",
-    "tableRiskRegister": "Risk Register"
+    "tableRiskRegister": "Risk Register",
+    "contentsList": "Table of Contents",
+    "partContentsList": "Table of Contents",
+    "coverPhotoPanel": "Photo + Panel",
+    "coverFullPhoto": "Full Photo",
+    "coverMinimal": "Minimal",
+    "coverColourBlock": "Colour Block",
+    "coverProjectCard": "Project Card",
+    "contentsClassic": "Contents: Classic",
+    "contentsDotted": "Contents: Dotted",
+    "contentsNumbered": "Contents: Numbered",
+    "contentsTwoColumns": "Contents: Two Columns"
   },
   "properties": {
     "title": "Properties",
@@ -1090,7 +1103,13 @@
       "tableProgress": "Item, description, target %, actual % and variance %, with an Overall row at the bottom.",
       "tableComparison": "Two heading rows (Current, Previous and Difference, each split into Issued and Pending), category rows and a Total row.",
       "tableActionPlan": "Item, description, the actions as bullet points, and a coloured status dot: change the dot's text colour to green, amber or red.",
-      "tableRiskRegister": "Numbered issues with their actions, the next action, a due date and a coloured risk cell (High, Moderate)."
+      "tableRiskRegister": "Numbered issues with their actions, the next action, a due date and a coloured risk cell (High, Moderate).",
+      "partContentsList": "A table of contents: number, title, dotted line and page. Use it on a contents page (or any normal page, not on the cover). Fill it from your Section Headings in its properties.",
+      "coverPhotoPanel": "A whole cover page: photos on the left, a dark panel with logo and title.",
+      "coverFullPhoto": "A whole cover page: one large photo and a dark title band.",
+      "coverMinimal": "A whole cover page: logo, large title and an accent line.",
+      "coverColourBlock": "A whole cover page: a coloured top half with the title and a photo below.",
+      "coverProjectCard": "A whole cover page: a centred card with the title and key facts."
     },
     "placeholder": {
       "headerLine1": "Client - Project Name",
@@ -1964,5 +1983,166 @@
   },
   "header": {
     "reportsHome": "Reports home"
+  },
+  "specialPages": {
+    "addCover": "Add cover page",
+    "addCoverHint": "Adds a cover page in front of the report. It uses the whole page, without the page header or footer.",
+    "addContents": "Add contents page",
+    "addContentsHint": "Adds a contents page after the cover (or at the front). It uses the whole page, without the page header or footer.",
+    "addAnotherContents": "Add contents page",
+    "addAnotherContentsHint": "Adds another contents page after this one, for a long list.",
+    "pageOptions": "Page options",
+    "cover": "Cover page",
+    "contents": "Contents page",
+    "contentsN": "Contents page {n}",
+    "makeCover": "Make this the cover page",
+    "makeContents": "Make this a contents page",
+    "toNormal": "Turn into a normal page",
+    "deleteCover": "Delete cover page",
+    "deleteContents": "Delete this contents page",
+    "emptyCover": "Design your cover page here. It uses the whole page: the page header and footer don't print on it.",
+    "emptyContents": "Design your contents page here. It uses the whole page: the page header and footer don't print on it.",
+    "lastNormalPage": "This page can't be deleted: a report needs at least one normal page after the cover and contents pages.",
+    "coverAdded": "Cover page added at the front.",
+    "coverMade": "This page is now the cover page.",
+    "contentsAdded": "Contents page added.",
+    "contentsMade": "This page is now a contents page.",
+    "madeNormal": "This page is a normal page again: the page header and footer print on it.",
+    "coverDeleted": "Cover page deleted.",
+    "contentsDeleted": "Contents page deleted.",
+    "notAllowed": {
+      "pageNumber": "Page numbers can't go on the cover or contents pages. Put them in the page header or footer: they show on the other pages.",
+      "dataTable": "Tables with project data can't go on the cover or contents pages, because they can grow onto more pages. Use a table you type yourself (Type my own).",
+      "contentsList": "A table of contents can't go on the cover page. Put it on a contents page (or a normal page)."
+    },
+    "countPages": "Count the cover and contents pages",
+    "countPagesYes": "They get no number, but they are counted: the first normal page is page {n}.",
+    "countPagesNo": "They are not counted: the first normal page is page 1.",
+    "wholeSheet": "Use the whole sheet (edge to edge)",
+    "keepMargins": "Keep the page margins",
+    "wholeSheetOn": "The cover now uses the whole sheet, edge to edge.",
+    "wholeSheetOff": "The cover now keeps the page margins.",
+    "changeDesign": "Change design",
+    "changeDesignHint": "Pick another design for this page. Every part of it can still be changed afterwards.",
+    "borderNotOnCover": "Page border added to every page except the cover: the cover uses the whole sheet, so it has no border. To give the cover a border too, choose \"Keep the page margins\" in the cover's ⋯ menu."
+  },
+  "contentsList": {
+    "emptyHint": "Table of contents: fill it from your Section Headings in its properties",
+    "continuesHint": "Carries on the table of contents",
+    "fillTitle": "Contents",
+    "fill": "Fill from my section headings",
+    "fillHint": "Lists every Section Heading and Sub-heading on your pages with its page number. A table that grows can move pages: check the numbers in Preview PDF.",
+    "continuesNote": "This list carries on another one: filling it fills them all.",
+    "rows": "No rows | 1 row | {n} rows",
+    "number": "No.",
+    "titleColumn": "Title",
+    "page": "Page",
+    "makeSection": "Make it a section (not indented)",
+    "makeSub": "Make it a sub-section (indented)",
+    "removeRow": "Remove this row",
+    "addRow": "Add a row",
+    "newRow": "New entry",
+    "look": "Look",
+    "textSize": "Text size",
+    "rowHeight": "Row height",
+    "numberWidth": "Number column",
+    "pageWidth": "Page column",
+    "numberWidthHint": "Number column 0: no numbers.",
+    "leader": "Dots between title and page",
+    "boldSections": "Sections in bold",
+    "colours": "Colours",
+    "textColour": "Text colour",
+    "numberBox": "Number box",
+    "noNumberBox": "No number box",
+    "onlyOnPages": "Select a table of contents on a page first.",
+    "noHeadings": "No section headings found. Add Section Heading presets (Element Presets → Headings & Text) to your pages first.",
+    "notAllFit": "1 row didn't fit. Put the list on a contents page to carry it on to more pages. | {n} rows didn't fit. Put the list on a contents page to carry it on to more pages.",
+    "filled": "Filled with 1 heading. | Filled with {n} headings.",
+    "filledMore": "Filled with {n} headings; 1 contents page was added for the rest. | Filled with {n} headings; {pages} contents pages were added for the rest.",
+    "numbers": "Numbers",
+    "autoNumber": "Number automatically",
+    "sectionStyle": "Sections",
+    "sectionWord": "Word before the number",
+    "subStyle": "Sub-sections",
+    "noSubNumbers": "No numbers",
+    "autoNumberHint": "Sections count 1, 2, 3; each sub-section counts again under its section. Indent a row to make it a sub-section.",
+    "countedHint": "Counted automatically. Untick \"Number automatically\" to type your own."
+  },
+  "pageDesigns": {
+    "chooseCover": "Choose a cover page design",
+    "chooseContents": "Choose a contents page design",
+    "chooseHint": "Every part can be changed afterwards: click a part to select it, double-click text to type.",
+    "blank": "Blank",
+    "blankDesc": "An empty page to design yourself.",
+    "replaceTitle": "Replace this page's content?",
+    "replaceMessage": "Everything on this page will be replaced by the design. You can undo this with Ctrl+Z.",
+    "applied": "Design applied.",
+    "designs": {
+      "coverPhotoPanel": {
+        "name": "Photo + side panel",
+        "desc": "Two photos on the left, a dark panel on the right with the logo and title.",
+        "tileHint": "Sets the cover page's design: photos on the left, a dark panel with logo and title."
+      },
+      "coverFullPhoto": {
+        "name": "Full photo",
+        "desc": "One large photo with a dark title band at the bottom.",
+        "tileHint": "Sets the cover page's design: one large photo and a dark title band."
+      },
+      "coverMinimal": {
+        "name": "Minimal",
+        "desc": "Logo, a large title with an accent line, and who it is for at the bottom.",
+        "tileHint": "Sets the cover page's design: logo, large title and an accent line."
+      },
+      "coverColourBlock": {
+        "name": "Colour block",
+        "desc": "A coloured top half with the title, a photo below.",
+        "tileHint": "Sets the cover page's design: a coloured top half with the title, a photo below."
+      },
+      "coverProjectCard": {
+        "name": "Project card",
+        "desc": "A centred card with the title and key facts.",
+        "tileHint": "Sets the cover page's design: a centred card with the title and key facts."
+      },
+      "contentsClassic": {
+        "name": "Classic",
+        "desc": "SECTION 1. and the title, the page on the right.",
+        "tileHint": "Sets a contents page's design: SECTION 1. and the title, page on the right. Drop it on a contents page, or click to use the first one."
+      },
+      "contentsDotted": {
+        "name": "Dotted lines",
+        "desc": "A large heading, dots leading to each page number.",
+        "tileHint": "Sets a contents page's design: a centred heading, dots leading to each page number."
+      },
+      "contentsNumbered": {
+        "name": "Numbered boxes",
+        "desc": "Big numbers in coloured boxes.",
+        "tileHint": "Sets a contents page's design: big numbers in coloured boxes."
+      },
+      "contentsTwoColumns": {
+        "name": "Two columns",
+        "desc": "Two lists side by side, for a long contents.",
+        "tileHint": "Sets a contents page's design: two lists side by side."
+      }
+    },
+    "placeholder": {
+      "projectName": "PROJECT NAME",
+      "reportType": "MONTHLY REPORT",
+      "reportNumber": "NO. 1",
+      "period": "Month Year",
+      "reportTitle": "Monthly Progress Report No. 1",
+      "preparedFor": "Prepared for: Client name",
+      "preparedBy": "Prepared by: Company name",
+      "client": "Client: Client name",
+      "location": "Location: Project location",
+      "contractSum": "Contract sum: RM 0",
+      "tableOfContents": "TABLE OF CONTENTS",
+      "contents": "Contents",
+      "sample1": "PROJECT DETAILS",
+      "sample2": "PROJECT SNAPSHOT",
+      "sample3": "RISK REGISTER",
+      "sectionN": "SECTION {n}."
+    },
+    "wholeSheet": "Fill the whole sheet, edge to edge",
+    "wholeSheetHint": "Photos and colours reach the paper's edges. The other pages keep their margins."
   }
 }

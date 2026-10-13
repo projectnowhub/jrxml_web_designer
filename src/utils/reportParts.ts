@@ -16,6 +16,8 @@ import {
 } from "@/utils/framePresets";
 import { applyPaginationSettings, buildPaginationElement } from "@/utils/paginationPresets";
 import { buildTablePreset, isTablePresetType, TABLE_PRESET_TYPES, type TablePresetType } from "@/utils/tablePresets";
+import { buildContentsList, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/utils/contentsList";
+import { buildCoverDesign, COVER_DESIGN_TYPES, isCoverDesignType, type CoverDesignType } from "@/utils/pageDesigns";
 
 export const REPORT_PART_COLORS = {
   banner: "#03053A",
@@ -42,6 +44,9 @@ export const REPORT_PART_TYPES = [
   "partSignOff",
   // Tables of the report, as typed tables (utils/tablePresets.ts)
   ...TABLE_PRESET_TYPES,
+  // Cover and contents (utils/pageDesigns.ts): the contents list, cover designs
+  "partContentsList",
+  ...COVER_DESIGN_TYPES,
 ] as const;
 
 export type ReportPartType = (typeof REPORT_PART_TYPES)[number];
@@ -59,14 +64,18 @@ export function reportPartBand(type: ReportPartType): "pageHeader" | "pageFooter
 
 // Parts spanning the printable width start at the left margin
 export function isFullWidthPart(type: ReportPartType): boolean {
-  return ["partReportHeader", "partPageFooter", "partSectionHeading"].includes(type) || isTablePresetType(type);
+  return (
+    ["partReportHeader", "partPageFooter", "partSectionHeading", "partContentsList"].includes(type) ||
+    isTablePresetType(type) ||
+    isCoverDesignType(type)
+  );
 }
 
 const placeholder = (ctx: FrameTemplateContext, key: string) =>
   ctx.t(`reportParts.placeholder.${key}`);
 
 // A filled shape without an outline, as a part of its box
-function shape(
+export function shape(
   type: "rectangle" | "ellipse",
   x: number,
   y: number,
@@ -87,7 +96,7 @@ function shape(
   } as Partial<DesignElement>);
 }
 
-function rule(x: number, y: number, width: number, lineWidth: number, color: string): DesignElement {
+export function rule(x: number, y: number, width: number, lineWidth: number, color: string): DesignElement {
   return createElement("line", {
     uuid: crypto.randomUUID(),
     x,
@@ -147,23 +156,30 @@ function sectionHeading(ctx: FrameTemplateContext): FrameElement {
   const heading = (x: number, width: number, key: string) =>
     text({ x, y: 0, width, height: 18, fontSize: 11, isBold: true,
       forecolor: REPORT_PART_COLORS.ink, verticalAlignment: "Middle", text: placeholder(ctx, key) });
-  return frame(w, 18, { box: undefined, mode: "Transparent", backcolor: "#FFFFFF" }, [
-    heading(0, numberW, "sectionNumber"),
-    heading(numberW, w - numberW, "sectionTitle"),
-  ]);
+  // Marked, so "Fill from my section headings" (Contents list) finds it
+  return {
+    ...frame(w, 18, { box: undefined, mode: "Transparent", backcolor: "#FFFFFF" }, [
+      heading(0, numberW, "sectionNumber"),
+      heading(numberW, w - numberW, "sectionTitle"),
+    ]),
+    properties: [{ name: SECTION_HEADING_PROPERTY, value: "true" }],
+  };
 }
 
 // A single text element, not a box part
-function standaloneText(options: Parameters<typeof text>[0]): DesignElement {
+export function standaloneText(options: Parameters<typeof text>[0]): DesignElement {
   const element = text(options);
   releaseBoxPart(element);
   return element;
 }
 
 // "TOWER A: KEY ACTIVITIES / MILESTONES"
-const subHeading = (ctx: FrameTemplateContext) =>
-  standaloneText({ x: 0, y: 0, width: 320, height: 14, fontSize: 9, isBold: true, isUnderline: true,
+function subHeading(ctx: FrameTemplateContext): DesignElement {
+  const element = standaloneText({ x: 0, y: 0, width: 320, height: 14, fontSize: 9, isBold: true, isUnderline: true,
     forecolor: REPORT_PART_COLORS.ink, verticalAlignment: "Middle", text: placeholder(ctx, "subHeading") });
+  element.properties = [...(element.properties ?? []), { name: SUB_HEADING_PROPERTY, value: "true" }];
+  return element;
+}
 
 // Small italic line under a table: "*Per QS Financial Report No.21"
 const note = (ctx: FrameTemplateContext) =>
@@ -224,6 +240,10 @@ const BUILDERS: Record<ReportPartType, (ctx: FrameTemplateContext) => DesignElem
   ...(Object.fromEntries(
     TABLE_PRESET_TYPES.map((type) => [type, (ctx: FrameTemplateContext) => buildTablePreset(type, ctx)]),
   ) as Record<TablePresetType, (ctx: FrameTemplateContext) => DesignElement>),
+  partContentsList: (ctx) => buildContentsList(ctx.availableWidth),
+  ...(Object.fromEntries(
+    COVER_DESIGN_TYPES.map((type) => [type, (ctx: FrameTemplateContext) => buildCoverDesign(type, ctx)]),
+  ) as Record<CoverDesignType, (ctx: FrameTemplateContext) => DesignElement>),
 };
 
 export function buildReportPart(type: ReportPartType, ctx: FrameTemplateContext): DesignElement {

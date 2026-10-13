@@ -7,6 +7,7 @@ import { BOX_CORNER_RADIUS_PROPERTY, FRAME_COLORS, pen, ROUNDED_BORDER_PENS_PROP
 import { IMAGE_CORNER_RADIUS_PROPERTY, IMAGE_SHAPE_PROPERTY, TEXT_CORNER_RADIUS_PROPERTY } from "./elementUtils";
 import { isPagination } from "./paginationPresets";
 import { DEFAULT_CHART_PALETTE } from "./chart/chartTypes";
+import { resetContentsListStyle } from "./contentsList";
 
 // Properties that only hold styling
 const STYLE_PROPERTIES = new Set([
@@ -95,6 +96,11 @@ export function resetElementStyle(element: DesignElement, options: ResetOptions 
         delete el.binding.look;
         delete el.binding.customized;
       }
+      break;
+    case "contentsList":
+      delete el.mode;
+      resetContentsListStyle(el.list);
+      el.height = Math.max(1, el.list.entries.length) * el.list.rowHeight;
       break;
     case "customTable": {
       delete el.mode;
