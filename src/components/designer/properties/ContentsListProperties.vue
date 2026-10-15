@@ -97,7 +97,9 @@
           <ListRestart :size="14" aria-hidden="true" />
           {{ t("contentsList.fill") }}
         </button>
-        <p v-if="list.follow && !headingCount" class="empty-note">{{ t("contentsList.followNone") }}</p>
+        <p v-if="list.follow && !headingCount" class="empty-note">
+          {{ t(list.entries.length ? "contentsList.sampleRows" : "contentsList.followNone", { n: list.entries.length }) }}
+        </p>
         <div v-if="overflow" class="overflow-note" role="status">
           <TriangleAlert :size="14" aria-hidden="true" />
           <span>{{ t(onContentsPage ? "contentsList.overflow" : "contentsList.overflowNotContents", { n: overflow }, overflow) }}</span>

@@ -187,7 +187,8 @@
     "contentsElegant": "Elegant",
     "contentsStatesman": "Statesman",
     "contentsBurgundy": "Burgundy",
-    "contentsPlain": "Classic"
+    "contentsPlain": "Classic",
+    "coverClassic": "Classic"
   },
   "properties": {
     "title": "Properties",
@@ -2150,7 +2151,8 @@
       "middle": "Middle",
       "bottom": "Bottom",
       "hint": "Up / down uses the space below the heading. Two columns move together, and later contents pages follow."
-    }
+    },
+    "sampleRows": "The {n} rows on the page are samples from the design. Add a Section Heading or Sub-heading (Element Presets → Headings & Text) and your headings replace them."
   },
   "pageDesigns": {
     "chooseCover": "Choose a cover page design",
@@ -2162,6 +2164,11 @@
     "replaceMessage": "Everything on this page will be replaced by the design. You can undo this with Ctrl+Z.",
     "applied": "Design applied.",
     "designs": {
+      "coverClassic": {
+        "name": "Classic",
+        "desc": "Just the words in black: title, a thin rule, project and date, who it is for and by.",
+        "tileHint": "Sets the cover page's design: just the words in black, no colours or photos."
+      },
       "coverPhotoPanel": {
         "name": "Photo + side panel",
         "desc": "Two photos on the left, a dark panel on the right with the logo and title.",
@@ -2303,7 +2310,8 @@
     "allContentsNote": "This design is used on all your contents pages. Your Table of Contents rows are kept.",
     "replaceContentsMessage": "The new design replaces the heading and layout on all your contents pages. Your Table of Contents rows are kept.",
     "appliedAllContents": "Design applied to all your contents pages.",
-    "replaceContentsTitle": "Change the design of all contents pages?"
+    "replaceContentsTitle": "Change the design of all contents pages?",
+    "numbersNow": "Your Section Headings are now numbered like this design: {sample}… Ctrl+Z undoes it."
   },
   "appMenu": {
     "title": "Menu",

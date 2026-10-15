@@ -187,7 +187,8 @@
     "contentsElegant": "Anggun",
     "contentsStatesman": "Negarawan",
     "contentsBurgundy": "Marun",
-    "contentsPlain": "Klasik"
+    "contentsPlain": "Klasik",
+    "coverClassic": "Klasik"
   },
   "properties": {
     "title": "Sifat",
@@ -2150,7 +2151,8 @@
       "middle": "Tengah",
       "bottom": "Bawah",
       "hint": "Atas / bawah menggunakan ruang di bawah tajuk. Dua lajur bergerak bersama, dan halaman kandungan seterusnya mengikut."
-    }
+    },
+    "sampleRows": "{n} baris di halaman ialah contoh daripada reka bentuk. Tambah Tajuk Bahagian atau Sub-tajuk (Pratetap Elemen → Tajuk & Teks) dan tajuk anda akan menggantikannya."
   },
   "pageDesigns": {
     "chooseCover": "Pilih reka bentuk halaman kulit",
@@ -2162,6 +2164,11 @@
     "replaceMessage": "Semua di halaman ini akan diganti dengan reka bentuk. Anda boleh membatalkannya dengan Ctrl+Z.",
     "applied": "Reka bentuk digunakan.",
     "designs": {
+      "coverClassic": {
+        "name": "Klasik",
+        "desc": "Hanya perkataan dalam warna hitam: tajuk, garis nipis, projek dan tarikh, untuk siapa dan oleh siapa.",
+        "tileHint": "Menetapkan reka bentuk halaman kulit: hanya perkataan dalam warna hitam, tanpa warna atau foto."
+      },
       "coverPhotoPanel": {
         "name": "Foto + panel sisi",
         "desc": "Dua foto di kiri, panel gelap di kanan dengan logo dan tajuk.",
@@ -2303,7 +2310,8 @@
     "allContentsNote": "Reka bentuk ini digunakan pada semua halaman kandungan anda. Baris Isi Kandungan anda dikekalkan.",
     "replaceContentsMessage": "Reka bentuk baharu menggantikan tajuk dan susun atur pada semua halaman kandungan anda. Baris Isi Kandungan anda dikekalkan.",
     "appliedAllContents": "Reka bentuk digunakan pada semua halaman kandungan anda.",
-    "replaceContentsTitle": "Tukar reka bentuk semua halaman kandungan?"
+    "replaceContentsTitle": "Tukar reka bentuk semua halaman kandungan?",
+    "numbersNow": "Tajuk Bahagian anda kini bernombor seperti reka bentuk ini: {sample}… Ctrl+Z untuk buat asal."
   },
   "appMenu": {
     "title": "Menu",

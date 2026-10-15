@@ -784,7 +784,7 @@ import { useEditorStore } from "@/stores/editor";
 import { useFilesStore } from "@/stores/files";
 import { fitContentToPage, scaleElementsToArea } from "@/utils/pageFit";
 import { cleanLegacyAutoDateElement } from "@/utils/autoDate";
-import { listChain, syncFollowingLists } from "@/utils/headingSync";
+import { headingNumberText, headingNumbering, listChain, sectionHeadings, syncFollowingLists } from "@/utils/headingSync";
 import { planBandFit, type BandFitPlan } from "@/utils/bandFit";
 import { planTextFit, type TextFitElement } from "@/utils/textFit";
 import {
@@ -1584,12 +1584,15 @@ const applyChosenDesign = async (id: string) => {
   // The design's numbering becomes the report's: section numbers (shared with
   // the Section Headings), no text before / after beyond the design's word;
   // sub-sections come with the design's list
+  let numbersChanged = false;
   if (kind === "contents" && designFirst) {
     const l = designFirst.list;
+    const before = JSON.stringify(headingNumbering(props));
     props.headingNumbers =
       l.sectionStyle === "word"
         ? { style: "word", word: l.sectionWord ?? "SECTION" }
         : { style: l.sectionStyle ?? "1." };
+    numbersChanged = JSON.stringify(headingNumbering(props)) !== before && sectionHeadings(bands.value, props).length > 0;
   }
   contentsIndexes.forEach((p, n) => {
     for (const element of design) {
@@ -1613,6 +1616,13 @@ const applyChosenDesign = async (id: string) => {
       ? t(allContents && contentsIndexes.length > 1 ? "pageDesigns.appliedAllContents" : "pageDesigns.applied")
       : t(kind === "cover" ? "specialPages.coverAdded" : "specialPages.contentsAdded"),
   );
+  // The Section Headings on the pages now number like the design: say so
+  if (numbersChanged) {
+    const n = headingNumbering(props);
+    notification.info(
+      t("pageDesigns.numbersNow", { sample: [1, 2, 3].map((i) => headingNumberText(n, i)).join(", ") }),
+    );
+  }
   updateJRXML();
 };
 

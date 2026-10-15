@@ -25,6 +25,7 @@ export const DESIGN_COLORS = {
 } as const;
 
 export const COVER_DESIGN_TYPES = [
+  "coverClassic",
   "coverPhotoPanel",
   "coverFullPhoto",
   "coverMinimal",
@@ -170,6 +171,26 @@ export function boxUp(parts: DesignElement[], pageWidth: number, pageHeight: num
 function page(ctx: FrameTemplateContext, parts: DesignElement[]): DesignElement[] {
   for (const part of parts) releaseBoxPart(part);
   return boxUp(parts, ctx.availableWidth, ctx.availableHeight);
+}
+
+// Just the words, in black: report title, a thin rule, project and date in the
+// middle, who it is for / by at the foot; no colours, no pictures
+function classic(ctx: FrameTemplateContext): DesignElement[] {
+  const P = Math.max(ctx.inset ?? 0, 24);
+  const W = ctx.availableWidth;
+  const H = ctx.availableHeight;
+  const tw = W - 2 * P;
+  const black = "#000000";
+  const center = { textAlignment: "Center" as const };
+  const top = Math.round(H * 0.34);
+  return page(ctx, [
+    label(ctx, "reportTitle", { x: P, y: top, width: tw, fontSize: 26, isBold: true, forecolor: black, ...center }),
+    block(W / 2 - 60, top + 52, 120, 1, black),
+    label(ctx, "projectName", { x: P, y: top + 70, width: tw, fontSize: 16, forecolor: black, ...center }),
+    label(ctx, "period", { x: P, y: top + 100, width: tw, fontSize: 12, forecolor: black, ...center }),
+    label(ctx, "preparedFor", { x: P, y: H - P - 64, width: tw, fontSize: 10, forecolor: black, ...center }),
+    label(ctx, "preparedBy", { x: P, y: H - P - 42, width: tw, fontSize: 10, forecolor: black, ...center }),
+  ]);
 }
 
 // Like the sample report: photos on the left, a navy panel with logo and title
@@ -404,6 +425,7 @@ function photoStrip(ctx: FrameTemplateContext): DesignElement[] {
 }
 
 const COVER_BUILDERS: Record<CoverDesignType, (ctx: FrameTemplateContext) => DesignElement[]> = {
+  coverClassic: classic,
   coverOfficial: official,
   coverBand: band,
   coverStripe: stripe,
