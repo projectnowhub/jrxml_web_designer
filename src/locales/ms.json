@@ -172,20 +172,22 @@
     "coverMinimal": "Ringkas",
     "coverColourBlock": "Blok Warna",
     "coverProjectCard": "Kad Projek",
-    "contentsClassic": "Klasik",
-    "contentsDotted": "Bertitik",
-    "contentsNumbered": "Bernombor",
-    "contentsTwoColumns": "Dua Lajur",
     "coverOfficial": "Jata Rasmi",
     "coverBand": "Jalur Biru Tua",
     "coverStripe": "Jalur Sisi",
     "coverFramed": "Bingkai Rasmi",
     "coverPhotoStrip": "Jalur Foto",
-    "contentsOfficial": "Rasmi",
-    "contentsBanner": "Sepanduk Biru Tua",
-    "contentsSidebar": "Bar Sisi",
-    "contentsColumns": "Lajur Indeks",
-    "contentsPanel": "Panel Lembut"
+    "contentsRegal": "Diraja",
+    "contentsHeritage": "Warisan",
+    "contentsNavyCrown": "Mahkota biru",
+    "contentsGoldCorners": "Penjuru emas",
+    "contentsTwoColumns": "Dua lajur",
+    "contentsLedger": "Lejar",
+    "contentsCard": "Kad",
+    "contentsElegant": "Anggun",
+    "contentsStatesman": "Negarawan",
+    "contentsBurgundy": "Marun",
+    "contentsPlain": "Klasik"
   },
   "properties": {
     "title": "Sifat",
@@ -2033,7 +2035,9 @@
     "notAllowed": {
       "pageNumber": "Nombor halaman tidak boleh diletakkan pada halaman kulit atau kandungan. Letakkannya di kepala atau kaki halaman: ia dipaparkan pada halaman lain.",
       "dataTable": "Jadual dengan data projek tidak boleh diletakkan pada halaman kulit atau kandungan kerana ia boleh memanjang ke halaman lain. Gunakan jadual yang anda taip sendiri (Taip sendiri).",
-      "contentsList": "Isi kandungan tidak boleh diletakkan pada halaman kulit. Letakkannya pada halaman kandungan (atau halaman biasa)."
+      "contentsList": "Isi kandungan tidak boleh diletakkan pada halaman kulit. Letakkannya pada halaman kandungan (atau halaman biasa).",
+      "secondContents": "Laporan ini sudah ada Jadual Kandungan di halaman kandungannya. Ia telah dipilih: ubahnya, atau tambah satu lagi di halaman biasa.",
+      "contentsListInBox": "Kotak yang memegang Jadual Kandungan hanya boleh berada di halaman biasa. Di halaman kandungan, gunakan Jadual Kandungan secara sendiri (Keluarkan dari kotak)."
     },
     "countPages": "Kira halaman kulit dan kandungan",
     "countPagesYes": "Halaman ini tiada nombor tetapi dikira: halaman biasa pertama ialah halaman {n}.",
@@ -2046,14 +2050,14 @@
     "changeDesignHint": "Pilih reka bentuk lain untuk halaman ini. Setiap bahagiannya masih boleh diubah kemudian.",
     "borderNotOnCover": "Sempadan halaman ditambah pada setiap halaman kecuali halaman kulit: halaman kulit menggunakan seluruh helaian, jadi ia tiada sempadan. Untuk memberikan sempadan pada halaman kulit juga, pilih \"Kekalkan jidar halaman\" dalam menu ⋯ halaman kulit.",
     "borderRefusedOnCover": "Halaman kulit menggunakan seluruh helaian, jadi ia tidak boleh mempunyai sempadan halaman. Untuk memberikan sempadan pada halaman kulit, pilih \"Kekalkan jidar halaman\" dalam menu ⋯ halaman kulit. Untuk meletakkan sempadan pada halaman lain, lepaskannya pada mana-mana halaman tersebut.",
-    "contentsAddedSameDesign": "Halaman kandungan ditambah dengan reka bentuk yang sama."
+    "contentsAddedSameDesign": "Halaman kandungan ditambah dengan reka bentuk yang sama.",
+    "noToc": "Halaman kandungan ini tiada Jadual Kandungan",
+    "addToc": "Tambah Jadual Kandungan",
+    "chooseDesign": "Pilih reka bentuk"
   },
   "contentsList": {
     "emptyHint": "Isi kandungan: isikannya daripada Tajuk Bahagian anda dalam sifatnya",
     "continuesHint": "Menyambung isi kandungan",
-    "fillTitle": "Kandungan",
-    "fill": "Isi daripada tajuk bahagian saya",
-    "fillHint": "Menyenaraikan setiap Tajuk Bahagian dan Subtajuk pada halaman anda dengan nombor halamannya. Jadual yang memanjang boleh mengubah halaman: semak nombor dalam Pratonton PDF.",
     "continuesNote": "Senarai ini menyambung senarai lain: mengisinya akan mengisi kesemuanya.",
     "rows": "Tiada baris | 1 baris | {n} baris",
     "number": "No.",
@@ -2083,27 +2087,16 @@
     "filledMore": "Diisi dengan {n} tajuk; 1 halaman kandungan ditambah untuk selebihnya. | Diisi dengan {n} tajuk; {pages} halaman kandungan ditambah untuk selebihnya.",
     "numbers": "Nombor",
     "autoNumber": "Nombor secara automatik",
-    "sectionStyle": "Bahagian",
-    "sectionWord": "Perkataan sebelum nombor",
     "subStyle": "Subbahagian",
     "noSubNumbers": "Tiada nombor",
-    "autoNumberHint": "Bahagian dikira 1, 2, 3; setiap subbahagian dikira semula di bawah bahagiannya. Inden baris untuk menjadikannya subbahagian.",
-    "countedHint": "Dikira secara automatik. Nyahtanda \"Nombor secara automatik\" untuk menaip sendiri.",
     "follow": "Selaraskan dengan tajuk saya",
-    "followHint": "Baris diambil daripada Tajuk Bahagian dan Subtajuk pada halaman anda. Tambah, namakan semula, alihkan atau padam tajuk dan senarai akan berubah bersamanya.",
     "followNone": "Belum ada tajuk. Tambah Tajuk Bahagian atau Subtajuk daripada Preset Elemen → Tajuk & Teks dan ia akan muncul di sini.",
     "overflow": "1 baris tidak muat pada halaman ini. | {n} baris tidak muat pada halaman ini.",
     "overflowNotContents": "1 baris tidak muat pada halaman ini. Kecilkan senarai atau barisnya, atau letakkannya pada halaman kandungan supaya ia boleh bersambung ke halaman seterusnya. | {n} baris tidak muat pada halaman ini. Kecilkan senarai atau barisnya, atau letakkannya pada halaman kandungan supaya ia boleh bersambung ke halaman seterusnya.",
-    "addContentsPage": "Tambah halaman kandungan untuk bakinya",
-    "pageCheckHint": "Nombor halaman ialah halaman dalam reka bentuk anda. Jadual yang memanjang boleh menolak tajuk ke halaman kemudian: semak nombor dalam Pratonton PDF.",
-    "followNumbers": "Nombor bahagian ialah nombor yang ditunjukkan oleh Tajuk Bahagian anda. Tukar gayanya pada mana-mana Tajuk Bahagian.",
-    "followRowsHint": "Untuk menukar baris, tukar tajuknya pada halaman. Nyahtanda \"Selaraskan dengan tajuk saya\" untuk menaip baris sendiri.",
     "followEmptyHint": "Isi kandungan: Tajuk Bahagian dan Subtajuk anda akan muncul di sini",
-    "linksHint": "Dalam PDF, mengklik baris akan melompat ke tajuknya. Di sini, klik dua kali baris atau gunakan butang sasarannya.",
     "goTo": "Pergi ke tajuk ini",
     "goToHint": "Klik dua kali untuk pergi ke tajuk ini",
     "noHeadingForRow": "Tiada tajuk pada halaman anda yang mempunyai tajuk baris ini.",
-    "onePerReport": "Satu Isi Kandungan pada 1 halaman: semua barisnya ada di sini, dan ia mengalir ke bahagian seterusnya dengan sendiri. | Satu Isi Kandungan dalam {n} bahagian: semua barisnya ada di sini, dan ia mengalir dari satu halaman ke halaman seterusnya dengan sendiri.",
     "nextColumn": "Lajur seterusnya",
     "onPage": "Halaman kandungan {n}",
     "continuedTag": "sambungan",
@@ -2116,7 +2109,48 @@
     },
     "designHint": "Hanya menukar rupa senarai: baris dan kedudukannya kekal.",
     "designAllPages": "Digunakan pada setiap halaman Isi Kandungan ini, supaya halaman kandungan anda sentiasa sepadan.",
-    "designAllPagesHint": "Menukar rupa Isi Kandungan pada semua halaman kandungan anda: barisnya kekal."
+    "designAllPagesHint": "Menukar rupa Isi Kandungan pada semua halaman kandungan anda: barisnya kekal.",
+    "linksHintShort": "Dalam PDF, klik baris untuk melompat ke tajuknya.",
+    "dragToMove": "Seret untuk mengalih",
+    "rowsFrom": "Dari mana baris datang",
+    "modeAuto": "Automatik",
+    "modeAutoDesc": "Dibina daripada tajuk anda, sentiasa terkini",
+    "modeManual": "Manual",
+    "modeManualDesc": "Taip dan susun baris sendiri",
+    "autoHint": "Untuk menambah atau menukar baris, tambah atau tukar tajuk di halaman anda. Sembunyikan baris dengan ikon mata.",
+    "manualHint": "Baris anda sendiri: menyuntingnya tidak pernah menukar tajuk anda. Kembali ke Automatik akan menggantikannya dengan tajuk anda.",
+    "autoNumbersOn": "Nombor bahagian sepadan dengan Tajuk Bahagian anda; sub-bahagian dikira.",
+    "manualNumbersOn": "Bahagian dan sub-bahagian dikira untuk anda.",
+    "numbersOff": "Taip setiap nombor sendiri, atau biarkan kosong.",
+    "manualEmpty": "Belum ada baris. Isi daripada tajuk anda, atau tambah baris sendiri.",
+    "fill": "Isi daripada tajuk saya",
+    "hideRow": "Sembunyikan daripada kandungan",
+    "showRow": "Tunjukkan dalam kandungan",
+    "sharedStyleHint": "Turut menukar nombor pada Tajuk Bahagian anda, supaya sentiasa sepadan.",
+    "filledAdded": "1 baris ditambah di hujung: seret ke tempatnya. | {n} baris ditambah di hujung: seret ke tempatnya.",
+    "fillAsk": {
+      "title": "Kandungan anda sudah ada 1 baris. Apa yang perlu dibuat? | Kandungan anda sudah ada {n} baris. Apa yang perlu dibuat?",
+      "new": "Tambah tajuk baharu sahaja",
+      "newDesc": "1 tajuk belum ada dalam senarai. Ia ditambah di hujung; baris anda kekal. | {n} tajuk belum ada dalam senarai. Ia ditambah di hujung; baris anda kekal.",
+      "noneNew": "Semua tajuk sudah ada dalam senarai anda.",
+      "all": "Tambah semua tajuk di hujung",
+      "allDesc": "Menambah 1 tajuk di bawah baris anda. | Menambah kesemua {n} tajuk di bawah baris anda.",
+      "replace": "Gantikan baris saya",
+      "replaceDesc": "Membuang baris anda dan bermula semula daripada tajuk anda. Anda boleh buat asal dengan Ctrl+Z.",
+      "recommended": "Disyorkan"
+    },
+    "place": {
+      "title": "Penjajaran Kandungan",
+      "across": "Mendatar",
+      "upDown": "Menegak",
+      "left": "Kiri",
+      "center": "Tengah",
+      "right": "Kanan",
+      "top": "Atas",
+      "middle": "Tengah",
+      "bottom": "Bawah",
+      "hint": "Atas / bawah menggunakan ruang di bawah tajuk. Dua lajur bergerak bersama, dan halaman kandungan seterusnya mengikut."
+    }
   },
   "pageDesigns": {
     "chooseCover": "Pilih reka bentuk halaman kulit",
@@ -2153,26 +2187,6 @@
         "desc": "Kad di tengah dengan tajuk dan fakta utama.",
         "tileHint": "Menetapkan reka bentuk halaman kulit: kad di tengah dengan tajuk dan fakta utama."
       },
-      "contentsClassic": {
-        "name": "Klasik",
-        "desc": "BAHAGIAN 1. dan tajuk, halaman di sebelah kanan.",
-        "tileHint": "Menetapkan reka bentuk halaman kandungan: BAHAGIAN 1. dan tajuk, halaman di kanan. Lepaskan pada halaman kandungan, atau klik untuk halaman pertama."
-      },
-      "contentsDotted": {
-        "name": "Garisan titik",
-        "desc": "Tajuk besar, titik menuju ke setiap nombor halaman.",
-        "tileHint": "Menetapkan reka bentuk halaman kandungan: tajuk di tengah, titik menuju ke setiap nombor halaman."
-      },
-      "contentsNumbered": {
-        "name": "Kotak bernombor",
-        "desc": "Nombor besar dalam kotak berwarna.",
-        "tileHint": "Menetapkan reka bentuk halaman kandungan: nombor besar dalam kotak berwarna."
-      },
-      "contentsTwoColumns": {
-        "name": "Dua lajur",
-        "desc": "Dua senarai bersebelahan, untuk kandungan yang panjang.",
-        "tileHint": "Menetapkan reka bentuk halaman kandungan: dua senarai bersebelahan."
-      },
       "coverOfficial": {
         "name": "Jata rasmi",
         "desc": "Jata di tengah, nama kementerian dan tajuk di antara jalur biru tua dan emas.",
@@ -2198,30 +2212,60 @@
         "desc": "Tajuk di atas, foto lebar merentasi halaman, pengaki biru tua dengan tarikh.",
         "tileHint": "Menetapkan reka bentuk halaman kulit: jalur foto lebar dan pengaki biru tua."
       },
-      "contentsOfficial": {
-        "name": "Rasmi",
-        "desc": "Jata kecil, tajuk di tengah di atas garisan biru tua dan emas, garis bertitik.",
-        "tileHint": "Menetapkan reka bentuk halaman kandungan: jata, tajuk di tengah dan garisan berganda."
+      "contentsPlain": {
+        "name": "Klasik",
+        "desc": "Hanya kandungan dalam warna hitam: bahagian 1, 2, 3, sub-bahagian i, ii, garis bertitik.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: hanya kandungan dalam warna hitam, tanpa warna."
       },
-      "contentsBanner": {
-        "name": "Sepanduk biru tua",
-        "desc": "Tajuk dalam sepanduk biru tua di atas, garis bertitik di bawah.",
-        "tileHint": "Menetapkan reka bentuk halaman kandungan: tajuk dalam sepanduk biru tua."
+      "contentsRegal": {
+        "name": "Diraja",
+        "desc": "Bingkai berganda biru tua dan emas, lambang, tajuk di atas garis berganda, garis bertitik.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: bingkai berganda biru tua dan emas, lambang, tajuk di atas garis berganda, garis bertitik."
       },
-      "contentsSidebar": {
-        "name": "Bar sisi",
-        "desc": "Bar biru tua di sebelah kiri, nombor BAHAGIAN dan garis bertitik.",
-        "tileHint": "Menetapkan reka bentuk halaman kandungan: bar biru tua di sebelah kiri."
+      "contentsHeritage": {
+        "name": "Warisan",
+        "desc": "Halaman krim dengan bingkai emas, tajuk merah marun dan nombor BAHAGIAN.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: halaman krim dengan bingkai emas, tajuk merah marun dan nombor BAHAGIAN."
       },
-      "contentsColumns": {
-        "name": "Lajur indeks",
-        "desc": "Label No. / Tajuk / Muka di atas garisan biru tua, seperti indeks rasmi.",
-        "tileHint": "Menetapkan reka bentuk halaman kandungan: label lajur di atas garisan biru tua."
+      "contentsNavyCrown": {
+        "name": "Mahkota biru",
+        "desc": "Tajuk dalam jalur biru tua bertepi emas, kotak nombor biru tua.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: tajuk dalam jalur biru tua bertepi emas, kotak nombor biru tua."
       },
-      "contentsPanel": {
-        "name": "Panel lembut",
-        "desc": "Senarai di atas panel kelabu lembut dengan kotak nombor emas.",
-        "tileHint": "Menetapkan reka bentuk halaman kandungan: panel lembut dengan kotak nombor emas."
+      "contentsGoldCorners": {
+        "name": "Penjuru emas",
+        "desc": "Bingkai emas nipis dengan penjuru biru tua, nombor Roman, tajuk di antara dua garis.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: bingkai emas nipis dengan penjuru biru tua, nombor Roman, tajuk di antara dua garis."
+      },
+      "contentsTwoColumns": {
+        "name": "Dua lajur",
+        "desc": "Dua senarai bersebelahan, di tengah, dengan garis emas di antaranya.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: dua senarai bersebelahan, di tengah, dengan garis emas di antaranya."
+      },
+      "contentsLedger": {
+        "name": "Lejar",
+        "desc": "Indeks rasmi: No. / Tajuk / Halaman dalam jalur biru tua, baris di atas panel pucat.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: indeks rasmi: No. / Tajuk / Halaman dalam jalur biru tua, baris di atas panel pucat."
+      },
+      "contentsCard": {
+        "name": "Kad",
+        "desc": "Kad putih di atas halaman lembut, kotak nombor emas.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: kad putih di atas halaman lembut, kotak nombor emas."
+      },
+      "contentsElegant": {
+        "name": "Anggun",
+        "desc": "Tajuk besar yang ringan, garis nipis di atas dan di bawah senarai.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: tajuk besar yang ringan, garis nipis di atas dan di bawah senarai."
+      },
+      "contentsStatesman": {
+        "name": "Negarawan",
+        "desc": "Lambang dan nama kementerian, jalur biru tua dan emas di atas dan bawah, nombor BAHAGIAN.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: lambang dan nama kementerian, jalur biru tua dan emas di atas dan bawah, nombor BAHAGIAN."
+      },
+      "contentsBurgundy": {
+        "name": "Marun",
+        "desc": "Jalur tajuk marun dalam bingkai berganda, kotak nombor marun.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: jalur tajuk marun dalam bingkai berganda, kotak nombor marun."
       }
     },
     "placeholder": {
@@ -2275,8 +2319,6 @@
     "typedHint": "Tajuk ini mengekalkan nombor yang ditaip di dalamnya. Tandakan kotak untuk mengiranya semula.",
     "notCounted": "Tajuk pada halaman kulit dan halaman kandungan tidak dikira.",
     "noNumberPart": "Tajuk ini tiada nombornya sendiri.",
-    "style": "Gaya untuk setiap Tajuk Bahagian",
-    "word": "Perkataan sebelum nombor",
     "styleHint": "Menaip nombor anda sendiri dalam tajuk mengekalkan nombor itu untuk tajuk itu sahaja."
   },
   "addPageMenu": {
@@ -2289,5 +2331,14 @@
     "contents": "Isi Kandungan",
     "contentsHint": "Selepas halaman kulit, tanpa pengepala atau pengaki halaman. Anda pilih reka bentuk seterusnya.",
     "contentsMoreHint": "Satu lagi halaman kandungan dengan reka bentuk yang sama seperti yang terakhir."
+  },
+  "sectionNumbers": {
+    "style": "Bahagian",
+    "before": "Teks sebelum",
+    "after": "Teks selepas",
+    "beforePlaceholder": "cth. Bab",
+    "afterPlaceholder": "cth. :",
+    "preview": "Pratonton",
+    "sampleTitle": "Butiran projek"
   }
 }

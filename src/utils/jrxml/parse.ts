@@ -979,6 +979,12 @@ function parseContentsListFrame(frame: Element): ContentsListElement {
     ...readBounds(reportElement),
     list: readContentsList(frame)!,
   };
+  // Its other properties (e.g. being part of a box)
+  const others = Array.from(reportElement.children)
+    .filter((c) => c.localName === "property" && c.getAttribute("name") !== CONTENTS_LIST_PROPERTY)
+    .map((c) => ({ name: c.getAttribute("name") ?? "", value: c.getAttribute("value") ?? "" }))
+    .filter((p) => p.name);
+  if (others.length) element.properties = others;
   syncContentsListSize(element);
   return element;
 }
@@ -1790,6 +1796,11 @@ function parseFrameElement(element: Element, result: any): void {
   // Iterate direct child elements
   Array.from(element.children).forEach((child) => {
     const childType = child.localName || child.tagName;
+    // A Table of Contents inside a box (normal pages)
+    if (childType === "frame" && readContentsList(child)) {
+      elements.push(parseContentsListFrame(child));
+      return;
+    }
     if (validElementTypes.includes(childType)) {
       const parsedElement = parseElement(child, childType);
       if (parsedElement) {

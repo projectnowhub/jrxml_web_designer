@@ -8,6 +8,7 @@
 
 import type {
   Band,
+  ContentsAdjust,
   ContentsEntry,
   ContentsListData,
   ContentsListElement,
@@ -94,37 +95,92 @@ export const rowsThatFit = (list: ContentsListData, height: number) =>
 // Automatic numbers: sections 1, 2…, sub-sections i, ii… under each section,
 // counted on across the lists that carry one list on
 
-export const SECTION_STYLES: ContentsSectionStyle[] = ["1", "1.", "01", "I", "A", "word"];
-export const SUB_STYLES: ContentsSubStyle[] = ["roman", "letters", "decimal", "none"];
+export const SECTION_STYLES: ContentsSectionStyle[] = ["1", "1.", "1)", "(1)", "01", "I", "i", "A", "a"];
+export const SUB_STYLES: ContentsSubStyle[] = [
+  "roman",
+  "romanUpper",
+  "romanParen",
+  "letters",
+  "lettersUpper",
+  "lettersParen",
+  "lettersBracket",
+  "decimal",
+  "sectionLetter",
+  "none",
+];
+// Styles read from older reports (not offered: "word" is text before "1.")
+const KNOWN_SECTION_STYLES: ContentsSectionStyle[] = [...SECTION_STYLES, "word"];
+export const isSectionStyle = (v: unknown): v is ContentsSectionStyle => KNOWN_SECTION_STYLES.includes(v as ContentsSectionStyle);
 export const DEFAULT_SECTION_WORD = "SECTION";
+export const AFFIX_MAX = 30;
 
-export function sectionNumber(list: Pick<ContentsListData, "sectionStyle" | "sectionWord">, n: number): string {
-  switch (list.sectionStyle ?? "1.") {
+function coreNumber(style: ContentsSectionStyle, n: number): string {
+  switch (style) {
     case "1":
       return String(n);
+    case "1)":
+      return `${n})`;
+    case "(1)":
+      return `(${n})`;
     case "01":
       return String(n).padStart(2, "0");
     case "I":
       return styleNumber(n, "romanUpper");
+    case "i":
+      return styleNumber(n, "romanLower");
     case "A":
       return styleNumber(n, "letters");
-    case "word":
-      return `${(list.sectionWord ?? DEFAULT_SECTION_WORD).trim()} ${n}.`.trim();
+    case "a":
+      return styleNumber(n, "letters").toLowerCase();
     default:
       return `${n}.`;
   }
 }
 
+// "SECTION 1." (older "word" style), or any style with text before / after:
+// "Chapter" + "1" + ":" gives "Chapter 1:"
+export function sectionNumber(
+  list: Pick<ContentsListData, "sectionStyle" | "sectionWord" | "sectionBefore" | "sectionAfter">,
+  n: number,
+): string {
+  const style = list.sectionStyle ?? "1.";
+  if (style === "word") return `${(list.sectionWord ?? DEFAULT_SECTION_WORD).trim()} ${n}.`.trim();
+  const before = (list.sectionBefore ?? "").trim();
+  return `${before ? `${before} ` : ""}${coreNumber(style, n)}${list.sectionAfter ?? ""}`.trimEnd();
+}
+
+// The style and text around it as edited in a panel: an older "word" style is
+// shown as "1." with the word before it
+export function sectionAffixes(style: ContentsSectionStyle | undefined, word?: string, before?: string, after?: string) {
+  return style === "word"
+    ? { style: "1." as ContentsSectionStyle, before: word ?? DEFAULT_SECTION_WORD, after: "" }
+    : { style: style ?? "1.", before: before ?? "", after: after ?? "" };
+}
+
 export function subNumber(list: Pick<ContentsListData, "subStyle">, section: number, n: number): string {
+  const letter = styleNumber(n, "letters").toLowerCase();
+  const roman = styleNumber(n, "romanLower");
   switch (list.subStyle ?? "roman") {
     case "letters":
-      return styleNumber(n, "letters").toLowerCase();
+      return letter;
+    case "lettersUpper":
+      return letter.toUpperCase();
+    case "lettersParen":
+      return `(${letter})`;
+    case "lettersBracket":
+      return `${letter})`;
+    case "romanUpper":
+      return roman.toUpperCase();
+    case "romanParen":
+      return `(${roman})`;
     case "decimal":
       return `${Math.max(1, section)}.${n}`;
+    case "sectionLetter":
+      return `${Math.max(1, section)}${letter}`;
     case "none":
       return "";
     default:
-      return styleNumber(n, "romanLower");
+      return roman;
   }
 }
 
@@ -190,6 +246,7 @@ export function normalizeContentsList(raw: any): ContentsListData | null {
       title: str(e?.title),
       page: str(e?.page, 12),
       level: e?.level === 1 ? 1 : 0,
+      ...(typeof e?.key === "string" && e.key ? { key: e.key.slice(0, 60) } : {}),
     })),
     rowHeight: num(raw.rowHeight, d.rowHeight, 12, 80),
     fontSize: num(raw.fontSize, d.fontSize, 6, 36),
@@ -202,16 +259,36 @@ export function normalizeContentsList(raw: any): ContentsListData | null {
   if (COLOR.test(raw.numberFill)) list.numberFill = raw.numberFill;
   if (COLOR.test(raw.numberColor)) list.numberColor = raw.numberColor;
   if (raw.follow === true) list.follow = true;
+  if (raw.ownNumbers === true) list.ownNumbers = true;
+  const adjust = normalizeAdjust(raw.adjust);
+  if (adjust) list.adjust = adjust;
   if (raw.autoPage === true) list.autoPage = true;
   if (raw.fixedBox === true) list.fixedBox = true;
   if (typeof raw.continues === "string" && /^[0-9a-fA-F-]{8,40}$/.test(raw.continues)) list.continues = raw.continues;
   if (raw.autoNumber === true) {
     list.autoNumber = true;
-    list.sectionStyle = SECTION_STYLES.includes(raw.sectionStyle) ? raw.sectionStyle : "1.";
+    list.sectionStyle = isSectionStyle(raw.sectionStyle) ? raw.sectionStyle : "1.";
     list.subStyle = SUB_STYLES.includes(raw.subStyle) ? raw.subStyle : "roman";
     if (typeof raw.sectionWord === "string") list.sectionWord = raw.sectionWord.slice(0, 30);
+    if (typeof raw.sectionBefore === "string" && raw.sectionBefore) list.sectionBefore = raw.sectionBefore.slice(0, AFFIX_MAX);
+    if (typeof raw.sectionAfter === "string" && raw.sectionAfter) list.sectionAfter = raw.sectionAfter.slice(0, AFFIX_MAX);
   }
   return list;
+}
+
+function normalizeAdjust(raw: any): ContentsAdjust | null {
+  if (!raw || typeof raw !== "object") return null;
+  const adjust: ContentsAdjust = {};
+  if (Array.isArray(raw.hidden)) {
+    const hidden = raw.hidden.filter((k: unknown) => typeof k === "string").slice(0, 500).map((k: string) => k.slice(0, 60));
+    if (hidden.length) adjust.hidden = hidden;
+  }
+  if (raw.numbers && typeof raw.numbers === "object") {
+    const numbers: Record<string, string> = {};
+    for (const [k, v] of Object.entries(raw.numbers).slice(0, 500)) if (typeof v === "string") numbers[k.slice(0, 60)] = v.slice(0, 40);
+    if (Object.keys(numbers).length) adjust.numbers = numbers;
+  }
+  return Object.keys(adjust).length ? adjust : null;
 }
 
 export function parseContentsList(value: string | null | undefined): ContentsListData | null {
@@ -325,6 +402,8 @@ export function headingItems(
 export function matchHeadings(entries: ContentsEntry[], items: HeadingItem[]): (HeadingItem | undefined)[] {
   const seen = new Map<string, number>();
   return entries.map((entry) => {
+    const byKey = entry.key && items.find((h) => h.element.uuid === entry.key);
+    if (byKey) return byKey;
     const key = `${entry.level}|${entry.title.trim()}`;
     const n = seen.get(key) ?? 0;
     seen.set(key, n + 1);
@@ -397,6 +476,8 @@ export const LOOK_KEYS = [
   "numberColor",
   "sectionStyle",
   "sectionWord",
+  "sectionBefore",
+  "sectionAfter",
   "subStyle",
 ] as const;
 

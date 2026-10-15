@@ -250,13 +250,14 @@ export class ElementRegistry {
       defaultProps: { type: "customTable", x: 0, y: 0, width: 300, height: 60 },
     });
 
-    // Contents List (table of contents): added via page menu / Add contents page
+    // Table of Contents tile: on a contents page (one there) or any normal page
+    // (as many as wanted); never on the cover
     this.registerElement({
       type: "partContentsList",
       name: "elementNames.partContentsList",
       icon: "≡",
       iconComponent: TableOfContents,
-      category: "hidden",
+      category: "basic",
       defaultProps: { type: "contentsList", x: 0, y: 0, width: 400, height: 22 },
     });
 

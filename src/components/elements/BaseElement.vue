@@ -6,6 +6,7 @@
       'out-of-bounds': isOutOfBounds,
       'is-dragging': isDragging,
       'is-in-box': parentFrameIndex !== undefined,
+      'keeps-order': KEEPS_ORDER.has(element.type),
       'is-project-drop': projectDrop === 'ok',
       'is-project-drop-blocked': projectDrop === 'blocked'
     }"
@@ -91,6 +92,9 @@
 
 <script setup lang="ts">
 import { useReportStore } from "@/stores/report";
+
+// Shapes and boxes stay in their place in the stacking order when selected
+const KEEPS_ORDER = new Set(["rectangle", "ellipse", "frame"]);
 import { RotateCw } from '@lucide/vue';
 import { resolveReportFont } from '../../config/fonts.config';
 import { computed, ref } from 'vue';
@@ -548,9 +552,17 @@ const handleProjectDragLeave = (event: DragEvent) => {
 }
 
 /* Inside a box the parts keep their order even when selected: a selected
-   colour panel must not cover the texts on it */
-.design-element.is-in-box.selected {
+   colour panel must not cover the texts on it. Shapes and boxes keep theirs
+   too (a background or panel must not cover what lies on it) */
+.design-element.is-in-box.selected,
+.design-element.keeps-order.selected {
   z-index: 10;
+}
+
+/* While dragged, an element is always on top so it stays in view (after the
+   rules above, and as specific, so it wins over them) */
+.design-element.design-element.design-element.is-dragging {
+  z-index: 100;
 }
 
 /* A project detail dragged over: blue dotted when it can be dropped here, red

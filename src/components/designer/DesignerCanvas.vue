@@ -230,6 +230,24 @@
                   position: 'relative',
                 }"
               >
+                <!-- A contents page without a Table of Contents: offer to add one
+                     (designer only; never printed) -->
+                <div v-if="contentsPageWithoutToc(pIndex - 1)" class="no-toc-prompt">
+                  <div class="no-toc-card" @mousedown.stop>
+                    <TableOfContents :size="20" aria-hidden="true" />
+                    <span class="no-toc-title">{{ t("specialPages.noToc") }}</span>
+                    <div class="no-toc-actions">
+                      <button type="button" class="no-toc-btn is-primary" @click.stop="emit('page-action', 'addToc', pIndex - 1)">
+                        <Plus :size="13" aria-hidden="true" />
+                        {{ t("specialPages.addToc") }}
+                      </button>
+                      <button type="button" class="no-toc-btn" @click.stop="emit('page-action', 'chooseDesign', pIndex - 1)">
+                        <LayoutTemplate :size="13" aria-hidden="true" />
+                        {{ t("specialPages.chooseDesign") }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 <!-- Dynamic Bands for this Page -->
                 <div
                   v-for="bItem in getBandsForPage(pIndex)"
@@ -722,6 +740,7 @@ type PageAction =
   | "coverToNormal"
   | "contentsToNormal"
   | "chooseDesign"
+  | "addToc"
   | "wholeSheet"
   | "keepMargins"
   | "delete";
@@ -814,6 +833,15 @@ function getBandDisplayLabel(bandType: string, pIndex: number): string {
 
   return name;
 }
+
+// The first contents page with nothing of a Table of Contents on any contents
+// page (one Table of Contents carries on over them by itself)
+const contentsPageWithoutToc = (pageIdx: number) =>
+  kindOf(pageIdx) === "contents" &&
+  pageIdx === (special.value.cover ? 1 : 0) &&
+  !(bands.value[detailBandIndex.value]?.elements ?? []).some(
+    (el) => el.type === "contentsList" && kindOf(el.pageIndex ?? 0) === "contents",
+  );
 
 const getDetailElementsForPage = (pageIdx: number) => {
   if (detailBandIndex.value === -1) return [];
@@ -1925,5 +1953,65 @@ onBeforeUnmount(() => {
   border: none !important;
   padding: 0 !important;
   gap: 4px !important;
+}
+
+.no-toc-prompt {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.no-toc-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  border: 1px dashed rgba(100, 64, 244, 0.45);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 16px rgba(23, 20, 44, 0.08);
+  color: #6440f4;
+  pointer-events: auto;
+}
+
+.no-toc-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1c1b26;
+}
+
+.no-toc-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.no-toc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid #e6e5ee;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1c1b26;
+  cursor: pointer;
+}
+
+.no-toc-btn:hover {
+  border-color: #6440f4;
+}
+
+.no-toc-btn.is-primary {
+  border-color: #6440f4;
+  background: #6440f4;
+  color: #fff;
 }
 </style>

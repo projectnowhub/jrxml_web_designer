@@ -23,13 +23,13 @@ import type {
   ReportProperties,
 } from "@/types";
 import {
-  collectHeadings,
   fitNumber,
   headingItems,
   hasProperty,
   rowsThatFit,
   SECTION_HEADING_PROPERTY,
-  SECTION_STYLES,
+  AFFIX_MAX,
+  isSectionStyle,
   sectionHeadingParts,
   sectionNumber,
   SUB_HEADING_PROPERTY,
@@ -66,7 +66,7 @@ export const headingNumbering = (p: Pick<ReportProperties, "headingNumbers"> | u
   p?.headingNumbers ?? DEFAULT_HEADING_NUMBERING;
 
 export const headingNumberText = (numbering: HeadingNumbering, n: number) =>
-  sectionNumber({ sectionStyle: numbering.style, sectionWord: numbering.word }, n);
+  sectionNumber({ sectionStyle: numbering.style, sectionWord: numbering.word, sectionBefore: numbering.before, sectionAfter: numbering.after }, n);
 
 const detailOf = (bands: Band[]) => bands.find((b) => b.type === "detail");
 
@@ -192,20 +192,34 @@ function sharePlace(first: ContentsListElement, part: ContentsListElement): bool
   return changed;
 }
 
-// The rows the headings give a list: section numbers as the headings show
-// them, sub-sections counted under each section in the list's own style
+// The rows the headings give a list (automatic mode): section numbers as the
+// headings show them, sub-sections counted under each section in the list's
+// own style, or the numbers typed per row when the list has `ownNumbers`.
+// Headings the user left out are skipped
 function followedEntries(bands: Band[], props: SyncProps, first: ContentsListElement): ContentsEntry[] {
+  const { hidden = [], numbers = {} } = first.list.adjust ?? {};
   let section = 0;
   let sub = 0;
-  return collectHeadings(bands, props).map((e) => {
-    if (e.level === 0) {
+  const out: ContentsEntry[] = [];
+  for (const h of headingItems(bands, props)) {
+    const key = h.element.uuid ?? "";
+    const left = !!key && hidden.includes(key);
+    // A section left out keeps its number on its page; sub-sections have none
+    if (h.entry.level === 0) {
       section += 1;
       sub = 0;
-      return e;
+    } else if (!left) {
+      sub += 1;
     }
-    sub += 1;
-    return { ...e, number: subNumber(first.list, section, sub) };
-  });
+    if (left) continue;
+    const number = first.list.ownNumbers
+      ? (numbers[key] ?? "")
+      : h.entry.level === 0
+        ? h.entry.number
+        : subNumber(first.list, section, sub);
+    out.push({ ...h.entry, number, ...(key ? { key } : {}) });
+  }
+  return out;
 }
 
 // Lists carrying on a list that is gone (deleted): the first of them in page
@@ -242,8 +256,11 @@ const SHARED_KEYS = [
   "autoNumber",
   "sectionStyle",
   "sectionWord",
+  "sectionBefore",
+  "sectionAfter",
   "subStyle",
   "follow",
+  "ownNumbers",
 ] as const;
 
 function shareLook(first: ContentsListElement, part: ContentsListElement): boolean {
@@ -285,16 +302,18 @@ export function syncFollowingLists(bands: Band[], props: SyncProps): boolean {
         if (sharePlace(first, part)) changed = true;
       }
     }
-    const headings = first.list.follow ? followedEntries(bands, props, first) : [];
+    const followed = first.list.follow ? followedEntries(bands, props, first) : [];
     const rest =
-      first.list.follow && headings.length > 0
-        ? headings
+      first.list.follow && followed.length > 0
+        ? followed
         : chain.flatMap((l) => l.list.entries.map((e) => ({ ...e })));
     chain.forEach((l, i) => {
       const take = i === chain.length - 1 ? rest.length : Math.min(capacity(bands, props, l), rest.length);
       const entries = rest
         .splice(0, take)
-        .map((e) => (first.list.follow && e.level === 0 ? { ...e, number: fitNumber(l.list, e.number) } : e));
+        .map((e) =>
+          first.list.follow && !first.list.ownNumbers && e.level === 0 && e.number ? { ...e, number: fitNumber(l.list, e.number) } : e,
+        );
       if (JSON.stringify(entries) !== JSON.stringify(l.list.entries)) {
         l.list.entries = entries;
         changed = true;
@@ -303,6 +322,39 @@ export function syncFollowingLists(bands: Band[], props: SyncProps): boolean {
       syncContentsListSize(l);
       if (l.height !== height) changed = true;
     });
+  }
+  return changed;
+}
+
+// A Table of Contents inside a box (normal pages only): its rows follow the
+// headings like any list on a normal page, and the box grows to hold it
+function syncBoxedLists(bands: Band[], props: SyncProps, elements: DesignElement[]): boolean {
+  let changed = false;
+  for (const box of elements) {
+    if (box.type !== "frame") continue;
+    for (const l of box.elements ?? []) {
+      if (l.type !== "contentsList") continue;
+      if (l.list.continues) {
+        delete l.list.continues;
+        changed = true;
+      }
+      if (l.list.follow) {
+        const entries = followedEntries(bands, props, l).map((e) =>
+          !l.list.ownNumbers && e.level === 0 && e.number ? { ...e, number: fitNumber(l.list, e.number) } : e,
+        );
+        if (entries.length && JSON.stringify(entries) !== JSON.stringify(l.list.entries)) {
+          l.list.entries = entries;
+          changed = true;
+        }
+      }
+      const height = l.height;
+      syncContentsListSize(l);
+      if (l.height !== height) changed = true;
+      if (l.y + l.height > box.height) {
+        box.height = l.y + l.height;
+        changed = true;
+      }
+    }
   }
   return changed;
 }
@@ -321,7 +373,9 @@ export function followOverflow(bands: Band[], props: SyncProps, list: ContentsLi
 export function syncHeadings(bands: Band[], props: SyncProps): boolean {
   const renumbered = renumberHeadings(bands, props);
   const lists = syncFollowingLists(bands, props);
-  return renumbered || lists;
+  const detail = detailOf(bands);
+  const boxed = detail ? syncBoxedLists(bands, props, detail.elements) : false;
+  return renumbered || lists || boxed;
 }
 
 // ---------------------------------------------------------------------------
@@ -343,18 +397,21 @@ export function serializeHeadingNumbers(p: Pick<ReportProperties, "headingNumber
   const n = p?.headingNumbers;
   if (!n) return null;
   const d = DEFAULT_HEADING_NUMBERING;
-  if (n.style === d.style && (n.word ?? "") === (d.word ?? "")) return null;
-  return JSON.stringify(n.style === "word" ? { style: n.style, word: n.word ?? "" } : { style: n.style });
+  if (n.style === d.style && (n.word ?? "") === (d.word ?? "") && !n.before && !n.after) return null;
+  if (n.style === "word") return JSON.stringify({ style: n.style, word: n.word ?? "" });
+  return JSON.stringify({ style: n.style, ...(n.before ? { before: n.before } : {}), ...(n.after ? { after: n.after } : {}) });
 }
 
 export function parseHeadingNumbers(value: string | null | undefined): HeadingNumbering | undefined {
   if (!value) return undefined;
   try {
     const raw = JSON.parse(value);
-    if (!SECTION_STYLES.includes(raw?.style)) return undefined;
-    return raw.style === "word"
-      ? { style: "word", word: typeof raw.word === "string" ? raw.word.slice(0, 30) : "" }
-      : { style: raw.style };
+    if (!isSectionStyle(raw?.style)) return undefined;
+    if (raw.style === "word") return { style: "word", word: typeof raw.word === "string" ? raw.word.slice(0, 30) : "" };
+    const n: HeadingNumbering = { style: raw.style };
+    if (typeof raw.before === "string" && raw.before) n.before = raw.before.slice(0, AFFIX_MAX);
+    if (typeof raw.after === "string" && raw.after) n.after = raw.after.slice(0, AFFIX_MAX);
+    return n;
   } catch {
     return undefined;
   }

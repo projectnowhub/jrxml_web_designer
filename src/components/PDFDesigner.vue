@@ -509,6 +509,14 @@
       @choose="applyChosenDesign"
     />
 
+    <FillContentsModal
+      :visible="fillDialog.visible"
+      :row-count="fillDialog.rowCount"
+      :heading-count="fillDialog.headingCount"
+      :new-count="fillDialog.newCount"
+      @choose="settleFill"
+    />
+
     <ConfirmModal
       v-model:visible="confirmDialog.visible"
       :title="confirmDialog.title"
@@ -653,6 +661,7 @@ import HelpModal from "./modals/HelpModal.vue";
 import FieldManagementModal from "./modals/FieldManagementModal.vue";
 import PdfPreviewModal from "./modals/PdfPreviewModal.vue";
 import ConfirmModal from "./modals/ConfirmModal.vue";
+import FillContentsModal, { type FillMode } from "./modals/FillContentsModal.vue";
 import TableConfigModal from "./modals/TableConfigModal.vue";
 import ChartConfigModal from "./modals/ChartConfigModal.vue";
 import { chartDataVersion, ensureChartData } from "../utils/chart/chartDataStore";
@@ -1353,8 +1362,38 @@ const deletePage = (pageIndex: number) => {
 
 // ---- Cover and contents pages (utils/specialPages.ts) ----
 
-const warnSpecialPageProblem = (problem: SpecialPageProblem) =>
+// The Table of Contents already on the contents pages, when `element` would be
+// a second one there (its own parts, a second column or a later page, don't count)
+let existingContentsToc: ContentsListElement | null = null;
+const otherContentsToc = (element: DesignElement, pageIndex: number): ContentsListElement | null => {
+  const props = reportProperties.value;
+  if (element.type !== "contentsList" || pageKind(props, pageIndex) !== "contents") return null;
+  const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+  const own = new Set(
+    detail ? listChain(detail.elements, element as ContentsListElement).map((l) => l.uuid) : [element.uuid],
+  );
+  return (
+    (detail?.elements ?? []).find(
+      (e): e is ContentsListElement =>
+        e.type === "contentsList" && !own.has(e.uuid) && pageKind(props, e.pageIndex) === "contents",
+    ) ?? null
+  );
+};
+
+// What stops an element from going on a Detail page (cover / contents rules,
+// one Table of Contents on the contents pages)
+const pageProblem = (element: DesignElement, pageIndex: number): SpecialPageProblem | null => {
+  const problem = specialPageProblem(element, pageKind(reportProperties.value, pageIndex));
+  if (problem) return problem;
+  existingContentsToc = otherContentsToc(element, pageIndex);
+  return existingContentsToc ? "secondContents" : null;
+};
+
+const warnSpecialPageProblem = (problem: SpecialPageProblem) => {
   notification.warning(t(`specialPages.notAllowed.${problem}`));
+  // Show the Table of Contents that is already there
+  if (problem === "secondContents" && existingContentsToc?.uuid) selectionStore.revealUuid = existingContentsToc.uuid;
+};
 
 // The first item on a page that can't be on a cover or contents page
 const specialProblemOnPage = (pageIndex: number, kind: "cover" | "contents"): SpecialPageProblem | null => {
@@ -1409,6 +1448,7 @@ type PageAction =
   | "makeContents"
   | "contentsToNormal"
   | "chooseDesign"
+  | "addToc"
   | "wholeSheet"
   | "keepMargins";
 
@@ -1541,6 +1581,16 @@ const applyChosenDesign = async (id: string) => {
     else delete designFirst.list.follow;
     if (oldFirst) designFirst.list.entries = keptRows.map((e) => ({ ...e }));
   }
+  // The design's numbering becomes the report's: section numbers (shared with
+  // the Section Headings), no text before / after beyond the design's word;
+  // sub-sections come with the design's list
+  if (kind === "contents" && designFirst) {
+    const l = designFirst.list;
+    props.headingNumbers =
+      l.sectionStyle === "word"
+        ? { style: "word", word: l.sectionWord ?? "SECTION" }
+        : { style: l.sectionStyle ?? "1." };
+  }
   contentsIndexes.forEach((p, n) => {
     for (const element of design) {
       // Later contents pages: a copy, its lists carrying on the first page's list
@@ -1571,7 +1621,7 @@ const applyChosenDesign = async (id: string) => {
 // Fills the selected list (and the lists carrying it on) with every Section
 // Heading and Sub-heading; when they don't fit, new contents pages carry the
 // list on. One undo step.
-const fillContentsList = () => {
+const fillContentsList = async () => {
   const sel = selectedElement.value;
   const detailIndex = bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
   const detail = bands.value[detailIndex];
@@ -1587,7 +1637,6 @@ const fillContentsList = () => {
     notification.warning(t("contentsList.noHeadings"));
     return;
   }
-  saveStateToHistory();
   const lists = () => detail.elements.filter((e): e is ContentsListElement => e.type === "contentsList");
   const first =
     (picked.list.continues && lists().find((l) => l.uuid === picked.list.continues)) || picked;
@@ -1597,11 +1646,26 @@ const fillContentsList = () => {
       .filter((l) => l.list.continues === first.uuid)
       .sort((a, b) => (a.pageIndex ?? 0) - (b.pageIndex ?? 0) || a.x - b.x),
   ];
+  // Rows already there are kept unless the user chooses to replace them; new
+  // rows always go at the end (the user drags them into place)
+  const existing = chain.flatMap((l) => l.list.entries.map((e) => ({ ...e })));
+  const rowKey = (e: { level: number; title: string }) => `${e.level}|${e.title.trim().toLowerCase()}`;
+  const known = new Set(existing.map(rowKey));
+  const fresh = entries.filter((e) => !known.has(rowKey(e)));
+  let mode: FillMode = "replace";
+  if (existing.length) {
+    const chosen = await askFillMode(existing.length, entries.length, fresh.length);
+    if (!chosen) return;
+    mode = chosen;
+  }
+  const added = entriesFor(first.list, mode === "new" ? fresh : entries);
+  if (mode === "new" && !added.length) return;
+  saveStateToHistory();
   const capacity = (l: ContentsListElement) =>
     rowsThatFit(l.list, bandAreaHeight(detailIndex, l.pageIndex) - l.y);
-  const rest = entries.map((e) => ({ ...e }));
+  const rest = mode === "replace" ? added : [...existing, ...added];
   for (const l of chain) {
-    l.list.entries = entriesFor(l.list, rest.splice(0, Math.min(capacity(l), rest.length)));
+    l.list.entries = rest.splice(0, Math.min(capacity(l), rest.length));
     syncContentsListSize(l);
   }
   // More than fits: new contents pages, each with a copy of the list
@@ -1617,7 +1681,7 @@ const fillContentsList = () => {
       pageIndex: count,
     };
     copy.list.continues = first.uuid;
-    copy.list.entries = entriesFor(copy.list, rest.splice(0, Math.min(capacity(copy), rest.length)));
+    copy.list.entries = rest.splice(0, Math.min(capacity(copy), rest.length));
     syncContentsListSize(copy);
     detail.elements.push(copy);
   }
@@ -1637,8 +1701,8 @@ const fillContentsList = () => {
   else
     notification.success(
       addedPages
-        ? t("contentsList.filledMore", { n: entries.length, pages: addedPages }, addedPages)
-        : t("contentsList.filled", { n: entries.length }, entries.length),
+        ? t("contentsList.filledMore", { n: added.length, pages: addedPages }, addedPages)
+        : t(mode === "replace" ? "contentsList.filled" : "contentsList.filledAdded", { n: added.length }, added.length),
     );
   updateJRXML();
 };
@@ -1709,6 +1773,15 @@ const handlePageAction = (action: PageAction, pageIndex: number) => {
       );
       notification.info(t(sheet ? "specialPages.wholeSheetOn" : "specialPages.wholeSheetOff"));
       break;
+    }
+    case "addToc": {
+      // A Table of Contents on this contents page (the canvas offers it when the page has none)
+      const detailIndex = bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+      if (detailIndex === -1) return;
+      lastClickedBandIndex.value = detailIndex;
+      lastClickedPageIndex.value = pageIndex;
+      addReportPart("partContentsList");
+      return;
     }
     case "chooseDesign": {
       const kind = pageKind(props, pageIndex);
@@ -2294,6 +2367,17 @@ const backgroundDropTarget = computed(
 );
 
 // Whether an element at (x, y) in a band would land in one of its boxes
+// What can be put in a box: not a box, a table or a typed table; a Table of
+// Contents only on a normal page (on contents pages it carries on over the
+// pages, which needs it on the page itself)
+const canGoInBox = (element: { type: string }, pageIndex?: number): boolean => {
+  if (["frame", "table", "customTable"].includes(element.type)) return false;
+  if (element.type === "contentsList") {
+    return pageIndex === undefined || pageKind(reportProperties.value, pageIndex) === "normal";
+  }
+  return true;
+};
+
 // (same rule as the drop: its centre is inside the box; boxes don't nest)
 const isOverBox = (
   bandIndex: number,
@@ -2302,7 +2386,7 @@ const isOverBox = (
   y: number,
   pageIndex?: number,
 ) => {
-  if (["frame", "customTable", "contentsList"].includes(element.type)) return false;
+  if (!canGoInBox(element, pageIndex)) return false;
   const cx = x + element.width / 2;
   const cy = y + element.height / 2;
   const band = bands.value[bandIndex];
@@ -2379,11 +2463,13 @@ const placeOnPage = (bandIndex: number, element: DesignElement): boolean => {
   const { cover, contents, count } = specialPages(props);
   let page = lastClickedPageIndex.value;
   if (page === null || page >= totalPages.value) page = count;
-  if (element.type === "contentsList" && pageKind(props, page) !== "contents" && contents) {
-    page = cover ? 1 : 0;
+  // A Table of Contents goes on the page last clicked (a contents or normal
+  // page); from the cover, on the first contents page, else the first normal page
+  if (element.type === "contentsList" && pageKind(props, page) === "cover") {
+    page = contents ? 1 : count;
   }
   element.pageIndex = page;
-  const problem = specialPageProblem(element, pageKind(props, page));
+  const problem = pageProblem(element, page);
   if (problem) {
     warnSpecialPageProblem(problem);
     return false;
@@ -2576,6 +2662,8 @@ const addReportPart = (type: ReportPartType) => {
   };
   element.x = isFullWidthPart(type) ? 0 : 50;
   element.y = wantedBand ? 0 : 20;
+  // A Table of Contents is centred across the page
+  if (element.type === "contentsList") element.x = Math.round((getFrameTemplateContext().availableWidth - element.width) / 2);
 
   // Fits the band, growing it when it is too short; too tall is refused
   if (!placeOnPage(bandIndex, element)) return;
@@ -2930,7 +3018,7 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
     if (bands.value[bandIndex]?.type === BAND_TYPE_CONSTANTS.DETAIL) {
       newElement.pageIndex = targetPageIndex;
       // A page number or project-data table can't go on a cover or contents page
-      const problem = specialPageProblem(newElement, pageKind(reportProperties.value, targetPageIndex));
+      const problem = pageProblem(newElement, targetPageIndex);
       if (problem) {
         warnSpecialPageProblem(problem);
         highlightedBandIndex.value = null;
@@ -3000,7 +3088,7 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
 
       // Iterate over the Frames in the Band to check whether the new element lands on one.
       // Frames themselves are never nested: selection only supports one frame level.
-      const canNest = !["frame", "table", "customTable", "contentsList"].includes(newElement.type);
+      const canNest = canGoInBox(newElement, newElement.pageIndex);
       for (let i = targetBand.elements.length - 1; canNest && i >= 0; i--) {
         const el = targetBand.elements[i];
         if (!el) continue;
@@ -4365,7 +4453,12 @@ const startDragging = (
             // Find target frame within target band (if dropped inside a frame).
             // Frames themselves are never nested: selection only supports one frame level.
             let targetFrameIndex = -1;
-            if (!["frame", "customTable", "contentsList"].includes(currentElement.type) && targetBand && targetBand.elements) {
+            if (
+              canGoInBox(currentElement, targetBand?.type === BAND_TYPE_CONSTANTS.DETAIL ? targetSheetPageIndex : undefined) &&
+              !(currentElement.type === "contentsList" && currentElement.list.continues) &&
+              targetBand &&
+              targetBand.elements
+            ) {
               for (let i = targetBand.elements.length - 1; i >= 0; i--) {
                 if (
                   targetBandIndex === draggingInfo.value.bandIndex &&
@@ -4427,7 +4520,7 @@ const startDragging = (
               targetBand?.type === BAND_TYPE_CONSTANTS.DETAIL &&
               targetFrameIndex === -1 &&
               targetSheetPageIndex !== (currentElement.pageIndex ?? 0)
-                ? specialPageProblem(currentElement, pageKind(reportProperties.value, targetSheetPageIndex))
+                ? pageProblem(currentElement, targetSheetPageIndex)
                 : null;
 
             if (specialRefusal || (bandPlan?.kind === "tooTall" && !isSameBand)) {
@@ -5185,7 +5278,7 @@ const processPastedElement = (
   // Detail elements belong to a page; other sections repeat on every page
   if (targetBand.type === BAND_TYPE_CONSTANTS.DETAIL) {
     newElement.pageIndex = target.pageIndex;
-    const problem = specialPageProblem(newElement, pageKind(reportProperties.value, target.pageIndex));
+    const problem = pageProblem(newElement, target.pageIndex);
     if (problem) {
       warnSpecialPageProblem(problem);
       return;
@@ -7242,6 +7335,23 @@ const handleEditField = (field: ReportField): void => {
   editingField.value = { ...field };
   isEditingParameter.value = false;
   showFieldModal.value = true;
+};
+
+// "Fill from my headings" on a list with rows: add the new ones, add all, or
+// replace (null: cancelled)
+const fillDialog = reactive({ visible: false, rowCount: 0, headingCount: 0, newCount: 0 });
+let fillResolve: ((mode: FillMode | null) => void) | null = null;
+const askFillMode = (rowCount: number, headingCount: number, newCount: number): Promise<FillMode | null> => {
+  fillResolve?.(null);
+  Object.assign(fillDialog, { visible: true, rowCount, headingCount, newCount });
+  return new Promise((resolve) => {
+    fillResolve = resolve;
+  });
+};
+const settleFill = (mode: FillMode | null): void => {
+  fillDialog.visible = false;
+  fillResolve?.(mode);
+  fillResolve = null;
 };
 
 // In-app confirmation dialog: resolves true on Confirm, false on Cancel

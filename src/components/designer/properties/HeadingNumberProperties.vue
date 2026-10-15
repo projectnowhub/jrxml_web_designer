@@ -16,16 +16,7 @@
     </template>
     <p v-else class="form-hint">{{ t("headingNumbers.noNumberPart") }}</p>
 
-    <label class="field">
-      <span class="field-label">{{ t("headingNumbers.style") }}</span>
-      <select :value="numbering.style" @change="setStyle(($event.target as HTMLSelectElement).value as ContentsSectionStyle)">
-        <option v-for="style in SECTION_STYLES" :key="style" :value="style">{{ sample(style) }}</option>
-      </select>
-    </label>
-    <label v-if="numbering.style === 'word'" class="field">
-      <span class="field-label">{{ t("headingNumbers.word") }}</span>
-      <input class="text-input" :value="numbering.word ?? ''" maxlength="30" @change="setWord(($event.target as HTMLInputElement).value)" />
-    </label>
+    <SectionNumberFields class="style-fields" :value="sectionValue" @change="setSectionNumbering" />
     <p class="form-hint">{{ t("headingNumbers.styleHint") }}</p>
   </div>
 </template>
@@ -34,16 +25,16 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useReportStore } from "@/stores/report";
-import { SECTION_STYLES } from "@/utils/contentsList";
+import { sectionAffixes } from "@/utils/contentsList";
+import SectionNumberFields, { type SectionNumberValue } from "./SectionNumberFields.vue";
 import {
   headingNumberPart,
   headingNumbering,
-  headingNumberText,
   isAutoNumbered,
   sectionHeadings,
   setAutoNumbered,
 } from "@/utils/headingSync";
-import type { ContentsSectionStyle, FrameElement, HeadingNumbering } from "@/types";
+import type { FrameElement, HeadingNumbering } from "@/types";
 
 const props = defineProps<{ heading: FrameElement }>();
 
@@ -55,9 +46,6 @@ const auto = computed(() => isAutoNumbered(numberPart.value));
 const numbering = computed(() => headingNumbering(report.reportProperties));
 // Which section this is (0: not counted, e.g. on a contents page)
 const position = computed(() => sectionHeadings(report.bands, report.reportProperties).indexOf(props.heading) + 1);
-
-const sample = (style: ContentsSectionStyle) =>
-  [1, 2, 3].map((n) => headingNumberText({ ...numbering.value, style, word: numbering.value.word ?? "SECTION" }, n)).join("  ");
 
 // One undo step each
 function change(mutate: () => void) {
@@ -72,19 +60,27 @@ function setAuto(on: boolean) {
   change(() => setAutoNumbered(part, on));
 }
 
-function setNumbering(next: HeadingNumbering) {
-  const current = numbering.value;
-  if (next.style === current.style && (next.word ?? "") === (current.word ?? "")) return;
-  change(() => (report.reportProperties.headingNumbers = next));
+// The style every Section Heading uses (an older "word" style shows as "1."
+// with the word before it); one undo step
+const sectionValue = computed<SectionNumberValue>(() => {
+  const n = numbering.value;
+  return sectionAffixes(n.style, n.word, n.before, n.after);
+});
+
+function setSectionNumbering(next: SectionNumberValue) {
+  const n: HeadingNumbering = { style: next.style };
+  const before = next.before.trim();
+  if (before) n.before = before;
+  if (next.after) n.after = next.after;
+  change(() => (report.reportProperties.headingNumbers = n));
 }
-
-const setStyle = (style: ContentsSectionStyle) =>
-  setNumbering(style === "word" ? { style, word: numbering.value.word ?? "SECTION" } : { style });
-
-const setWord = (value: string) => setNumbering({ style: "word", word: value.trim().slice(0, 30) });
 </script>
 
 <style scoped>
+.style-fields {
+  margin-top: 10px;
+}
+
 .toggle-row {
   display: flex;
   align-items: center;

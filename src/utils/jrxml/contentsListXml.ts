@@ -72,6 +72,12 @@ export function generateContentsListXML(
 
   let xml = `<frame><reportElement${reportElementAttrs} mode="Transparent">`;
   xml += `<property name="${CONTENTS_LIST_PROPERTY}" value="${xmlAttr(serializeContentsList(list))}"/>`;
+  // Its other properties (e.g. being part of a box)
+  for (const p of element.properties ?? []) {
+    if (p?.name && p.name !== CONTENTS_LIST_PROPERTY) {
+      xml += `<property name="${xmlAttr(p.name)}" value="${xmlAttr(p.value ?? "")}"/>`;
+    }
+  }
   xml += `</reportElement>`;
   const width = element.width;
   list.entries.forEach((entry, i) => {

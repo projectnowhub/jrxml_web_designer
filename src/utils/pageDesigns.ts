@@ -17,6 +17,11 @@ export const DESIGN_COLORS = {
   muted: "#6B7280",
   ink: "#111827",
   white: "#FFFFFF",
+  burgundy: "#6B1F2A",
+  cream: "#FBF8F1",
+  gold: "#B8902F",
+  paleGold: "#F3EAD3",
+  slate: "#F4F6FA",
 } as const;
 
 export const COVER_DESIGN_TYPES = [
@@ -36,15 +41,17 @@ export const isCoverDesignType = (type: string): type is CoverDesignType =>
   (COVER_DESIGN_TYPES as readonly string[]).includes(type);
 
 export const CONTENTS_DESIGN_TYPES = [
-  "contentsClassic",
-  "contentsDotted",
-  "contentsNumbered",
+  "contentsPlain",
+  "contentsRegal",
+  "contentsHeritage",
+  "contentsNavyCrown",
+  "contentsGoldCorners",
   "contentsTwoColumns",
-  "contentsOfficial",
-  "contentsBanner",
-  "contentsSidebar",
-  "contentsColumns",
-  "contentsPanel",
+  "contentsLedger",
+  "contentsCard",
+  "contentsElegant",
+  "contentsStatesman",
+  "contentsBurgundy",
 ] as const;
 export type ContentsDesignType = (typeof CONTENTS_DESIGN_TYPES)[number];
 export const isContentsDesignType = (type: string): type is ContentsDesignType =>
@@ -105,13 +112,64 @@ const pic = (x: number, y: number, w: number, h: number): DesignElement => {
   return el;
 };
 
-// Cover page elements are placed directly on the page so every title, photo,
-// and shape can be moved, resized, and edited independently
-function page(_ctx: FrameTemplateContext, parts: DesignElement[]): DesignElement[] {
-  return parts.map((part) => {
-    releaseBoxPart(part);
-    return part;
+// A box made by a design (a coloured panel holding its texts and photos); kept
+// as a box when a report is opened (old cover boxes are unwrapped)
+export const DESIGN_BOX_PROPERTY = "com.cdp.design.box";
+
+const inside = (e: DesignElement, p: DesignElement) =>
+  e.x >= p.x - 0.5 && e.y >= p.y - 0.5 && e.x + e.width <= p.x + p.width + 0.5 && e.y + e.height <= p.y + p.height + 0.5;
+
+// Rule for designs: a coloured panel with things on it is a box (frame) holding
+// them, so clicking the panel never hides its texts and they move with it. A
+// rectangle is only used when nothing sits on it (bars, rules, outlines, and
+// page-wide backgrounds). Each item goes into the smallest panel around it;
+// Contents lists never go in a box; boxes don't nest (a panel that holds
+// things stays on its own, drawn above the larger panel).
+export function boxUp(parts: DesignElement[], pageWidth: number, pageHeight: number): DesignElement[] {
+  const isPanel = (e: DesignElement) =>
+    e.type === "rectangle" && e.mode === "Opaque" && e.width * e.height < pageWidth * pageHeight * 0.9;
+  const owner = new Map<DesignElement, DesignElement>();
+  parts.forEach((e, i) => {
+    if (e.type === "contentsList") return;
+    let best: DesignElement | undefined;
+    for (const p of parts.slice(0, i)) {
+      if (isPanel(p) && inside(e, p) && (!best || p.width * p.height < best.width * best.height)) best = p;
+    }
+    if (best) owner.set(e, best);
   });
+  const holders = new Set(owner.values());
+  // A panel holding things stays on its own (no box inside a box)
+  for (const h of holders) owner.delete(h);
+  const used = new Set([...owner.values()]);
+  const out: DesignElement[] = [];
+  for (const e of parts) {
+    if (owner.has(e)) continue;
+    if (!used.has(e)) {
+      out.push(e);
+      continue;
+    }
+    const r = e as DesignElement & { radius?: number; pen?: { lineWidth: number; lineStyle: string; lineColor: string } };
+    const children = parts
+      .filter((c) => owner.get(c) === e)
+      .map((c) => ({ ...c, x: Math.round(c.x - e.x), y: Math.round(c.y - e.y) }) as DesignElement);
+    const box: FrameElement = {
+      ...frame(e.width, e.height, { mode: "Opaque", backcolor: e.backcolor ?? DESIGN_COLORS.white, box: r.pen?.lineWidth ? { pen: r.pen as never } : undefined }, children),
+      uuid: crypto.randomUUID(),
+      x: e.x,
+      y: e.y,
+      ...(r.radius ? { radius: r.radius } : {}),
+      properties: [{ name: DESIGN_BOX_PROPERTY, value: "true" }],
+    };
+    out.push(box);
+  }
+  return out;
+}
+
+// Cover page elements are placed on the page so every title, photo and shape
+// can be moved, resized and edited; coloured panels hold what sits on them
+function page(ctx: FrameTemplateContext, parts: DesignElement[]): DesignElement[] {
+  for (const part of parts) releaseBoxPart(part);
+  return boxUp(parts, ctx.availableWidth, ctx.availableHeight);
 }
 
 // Like the sample report: photos on the left, a navy panel with logo and title
@@ -373,6 +431,7 @@ export function unwrapLegacyCoverFrames(bands: Band[]): boolean {
       el &&
       el.type === "frame" &&
       (el.pageIndex ?? 0) === 0 &&
+      !(el.properties ?? []).some((p) => p?.name === DESIGN_BOX_PROPERTY) &&
       el.elements &&
       el.elements.length > 0 &&
       (el.elements.some(isBoxPart) || (el.width >= 400 && el.height >= 500))
@@ -458,124 +517,177 @@ function placedList(x: number, y: number, width: number, entries: ContentsEntry[
   return { ...buildContentsList(width, entries, patch), uuid: crypto.randomUUID(), x: Math.round(x), y: Math.round(y) };
 }
 
-const CONTENTS_BUILDERS: Partial<Record<ContentsDesignType, (ctx: FrameTemplateContext) => DesignElement[]>> = {
-  // Like the sample report: SECTION n. / TITLE / page
-  contentsClassic: (ctx) => {
+// A list centred across the page
+const centredList = (W: number, y: number, width: number, entries: ContentsEntry[], patch: Parameters<typeof buildContentsList>[2]) =>
+  placedList((W - width) / 2, y, width, entries, patch);
+
+const sectionWords = (ctx: FrameTemplateContext) => ["1", "2", "3"].map((n) => ctx.t("pageDesigns.placeholder.sectionN", { n }));
+
+// A centred heading
+const title = (ctx: FrameTemplateContext, W: number, y: number, fontSize: number, color: string, key = "tableOfContentsTitle") =>
+  heading(ctx, key, { x: 0, y, width: W, fontSize, isBold: true, forecolor: color, textAlignment: "Center" });
+
+// A small centred line of text (project name, document number)
+const caption = (ctx: FrameTemplateContext, W: number, y: number, key: string, color: string, fontSize = 9, italic = false) =>
+  heading(ctx, key, { x: W * 0.1, y, width: W * 0.8, fontSize, forecolor: color, textAlignment: "Center", isItalic: italic });
+
+// Centred rules: a thick one with a thin one under it
+const doubleRule = (W: number, y: number, width: number, thick: string, thin: string) => [
+  own(block((W - width) / 2, y, width, 2, thick)),
+  own(block((W - width * 0.6) / 2, y + 5, width * 0.6, 1, thin)),
+];
+
+// Three small squares in a row: a quiet ornament under a heading
+const ornament = (W: number, y: number, color: string) =>
+  [-14, -3, 8].map((dx, i) => own(block(W / 2 + dx, y + (i === 1 ? -1 : 0), i === 1 ? 6 : 4, i === 1 ? 6 : 4, color)));
+
+const CONTENTS_BUILDERS: Record<ContentsDesignType, (ctx: FrameTemplateContext) => DesignElement[]> = {
+  // Just the contents, in black: sections 1, 2…, sub-sections i, ii…, dotted lines
+  contentsPlain: (ctx) => {
     const W = ctx.availableWidth;
-    const sections = ["1", "2", "3"].map((n) => ctx.t("pageDesigns.placeholder.sectionN", { n }));
+    const black = "#000000";
     return [
-      heading(ctx, "tableOfContentsTitle", { x: 0, y: 40, width: W, fontSize: 16, isBold: true, forecolor: DESIGN_COLORS.ink, textAlignment: "Center" }),
-      placedList(20, 90, W - 40, sampleEntries(ctx, sections), { numberWidth: 110, leader: false, rowHeight: 28, color: DESIGN_COLORS.ink, sectionStyle: "word" }),
+      title(ctx, W, 40, 20, black),
+      centredList(W, 100, Math.round(W * 0.8), sampleEntries(ctx, ["1", "2", "3"]), {
+        numberWidth: 30,
+        leader: true,
+        rowHeight: 26,
+        fontSize: 11,
+        color: black,
+        sectionStyle: "1",
+        subStyle: "roman",
+      }),
     ];
   },
-  // A large heading with an accent line, titles with dotted leaders
-  contentsDotted: (ctx) => {
+  // A navy and gold double frame, crest, heading over a double rule, dotted list
+  contentsRegal: (ctx) => {
     const W = ctx.availableWidth;
-    const line = own(block((W - 64) / 2, 78, 64, 4, DESIGN_COLORS.accent));
+    const H = ctx.availableHeight;
+    const lw = Math.round(W * 0.76);
     return [
-      heading(ctx, "tableOfContentsTitle", { x: 0, y: 30, width: W, fontSize: 24, isBold: true, forecolor: DESIGN_COLORS.navy, textAlignment: "Center" }),
-      line,
-      placedList(W * 0.06, 110, W * 0.88, sampleEntries(ctx, ["1", "2", "3"]), { numberWidth: 34, leader: true, rowHeight: 26, color: DESIGN_COLORS.ink, sectionStyle: "1." }),
+      own(outline(8, 8, W - 16, H - 16, DESIGN_COLORS.navy, 2)),
+      own(outline(15, 15, W - 30, H - 30, DESIGN_COLORS.gold, 0.75)),
+      own(pic(W / 2 - 26, 44, 52, 52)),
+      title(ctx, W, 108, 22, DESIGN_COLORS.navy),
+      ...doubleRule(W, 146, W * 0.4, DESIGN_COLORS.navy, DESIGN_COLORS.gold),
+      centredList(W, 180, lw, sampleEntries(ctx, ["1.", "2.", "3."]), { numberWidth: 36, leader: true, rowHeight: 28, fontSize: 11, color: DESIGN_COLORS.ink, sectionStyle: "1." }),
+      own(block(W * 0.3, H - 64, W * 0.4, 1, DESIGN_COLORS.gold)),
+      caption(ctx, W, H - 56, "projectName", DESIGN_COLORS.muted),
     ];
   },
-  // Big coloured number boxes
-  contentsNumbered: (ctx) => {
+  // A warm cream page, burgundy heading with a gold ornament, SECTION words
+  contentsHeritage: (ctx) => {
     const W = ctx.availableWidth;
+    const H = ctx.availableHeight;
+    const lw = Math.round(W * 0.8);
     return [
-      heading(ctx, "tableOfContentsTitle", { x: 0, y: 30, width: W, fontSize: 24, isBold: true, forecolor: DESIGN_COLORS.navy, textAlignment: "Center" }),
-      own(block((W - 64) / 2, 78, 64, 4, DESIGN_COLORS.accent)),
-      placedList(W * 0.08, 104, W * 0.84, sampleEntries(ctx, ["01", "02", "03"]), {
-        numberWidth: 60,
-        leader: false,
+      own(block(0, 0, W, H, DESIGN_COLORS.cream)),
+      own(outline(12, 12, W - 24, H - 24, DESIGN_COLORS.gold, 1)),
+      caption(ctx, W, 46, "projectName", DESIGN_COLORS.gold, 10),
+      title(ctx, W, 66, 24, DESIGN_COLORS.burgundy),
+      ...ornament(W, 110, DESIGN_COLORS.gold),
+      centredList(W, 140, lw, sampleEntries(ctx, sectionWords(ctx)), { numberWidth: 100, leader: true, rowHeight: 30, fontSize: 11, color: DESIGN_COLORS.ink, sectionStyle: "word" }),
+      ...ornament(W, H - 48, DESIGN_COLORS.gold),
+    ];
+  },
+  // A navy crown band with the heading in white, gold edge, navy number boxes
+  contentsNavyCrown: (ctx) => {
+    const W = ctx.availableWidth;
+    const H = ctx.availableHeight;
+    const lw = Math.round(W * 0.78);
+    return [
+      own(block(0, 0, W, 112, DESIGN_COLORS.navy)),
+      own(block(0, 112, W, 4, DESIGN_COLORS.accent)),
+      caption(ctx, W, 26, "projectName", DESIGN_COLORS.accent, 10),
+      title(ctx, W, 46, 24, DESIGN_COLORS.white),
+      centredList(W, 156, lw, sampleEntries(ctx, ["01", "02", "03"]), {
+        numberWidth: 56,
+        leader: true,
+        rowHeight: 34,
+        fontSize: 11,
         sectionStyle: "01",
-        rowHeight: 36,
-        fontSize: 12,
         numberFill: DESIGN_COLORS.navy,
         numberColor: DESIGN_COLORS.white,
         color: DESIGN_COLORS.ink,
       }),
+      own(block(0, H - 18, W, 4, DESIGN_COLORS.accent)),
+      own(block(0, H - 14, W, 14, DESIGN_COLORS.navy)),
     ];
   },
-  // Two columns side by side: the right one carries on the left one
+  // A thin gold frame with navy corner squares, heading between two rules
+  contentsGoldCorners: (ctx) => {
+    const W = ctx.availableWidth;
+    const H = ctx.availableHeight;
+    const lw = Math.round(W * 0.74);
+    const c = 14;
+    return [
+      own(outline(20, 20, W - 40, H - 40, DESIGN_COLORS.gold, 1)),
+      own(block(13, 13, c, c, DESIGN_COLORS.navy)),
+      own(block(W - 13 - c, 13, c, c, DESIGN_COLORS.navy)),
+      own(block(13, H - 13 - c, c, c, DESIGN_COLORS.navy)),
+      own(block(W - 13 - c, H - 13 - c, c, c, DESIGN_COLORS.navy)),
+      own(block(W * 0.3, 62, W * 0.4, 1, DESIGN_COLORS.gold)),
+      title(ctx, W, 72, 22, DESIGN_COLORS.navy),
+      own(block(W * 0.3, 112, W * 0.4, 1, DESIGN_COLORS.gold)),
+      centredList(W, 146, lw, sampleEntries(ctx, ["I", "II", "III"]), { numberWidth: 40, leader: true, rowHeight: 28, fontSize: 11, color: DESIGN_COLORS.ink, sectionStyle: "I" }),
+    ];
+  },
+  // Two columns centred as a pair, a gold line between them
   contentsTwoColumns: (ctx) => {
     const W = ctx.availableWidth;
-    // Whole pixels, the right column ending exactly at the page edge
-    const colW = Math.floor((W - 24) / 2);
-    const left = placedList(0, 100, colW, sampleEntries(ctx, ["1", "2", "3"]), { numberWidth: 30, leader: true, rowHeight: 24, color: DESIGN_COLORS.ink, sectionStyle: "1." });
-    const right = placedList(W - colW, 100, colW, [], { numberWidth: 30, leader: true, rowHeight: 24, color: DESIGN_COLORS.ink, sectionStyle: "1.", continues: left.uuid });
+    const H = ctx.availableHeight;
+    const gap = 32;
+    const colW = Math.floor((W * 0.9 - gap) / 2);
+    const x0 = Math.round((W - (colW * 2 + gap)) / 2);
+    const patch = { numberWidth: 30, leader: true, rowHeight: 26, fontSize: 10, color: DESIGN_COLORS.ink, sectionStyle: "1." as const };
+    const left = placedList(x0, 150, colW, sampleEntries(ctx, ["1.", "2.", "3."]), patch);
+    const right = placedList(x0 + colW + gap, 150, colW, [], { ...patch, continues: left.uuid });
     return [
-      heading(ctx, "tableOfContentsTitle", { x: 0, y: 30, width: W, fontSize: 24, isBold: true, forecolor: DESIGN_COLORS.navy, textAlignment: "Center" }),
-      own(block((W - 64) / 2, 78, 64, 4, DESIGN_COLORS.accent)),
+      own(block(0, 0, W, 6, DESIGN_COLORS.navy)),
+      title(ctx, W, 44, 24, DESIGN_COLORS.navy),
+      ...doubleRule(W, 88, W * 0.3, DESIGN_COLORS.navy, DESIGN_COLORS.accent),
+      caption(ctx, W, 104, "projectName", DESIGN_COLORS.muted),
+      own(block(W / 2 - 0.5, 150, 1, 230, DESIGN_COLORS.gold)),
       left,
       right,
+      own(block(0, H - 6, W, 6, DESIGN_COLORS.navy)),
     ];
   },
-};
-
-// ---- Formal contents pages for government reports ----
-
-const CONTENTS_GOV: Record<
-  "contentsOfficial" | "contentsBanner" | "contentsSidebar" | "contentsColumns" | "contentsPanel",
-  (ctx: FrameTemplateContext) => DesignElement[]
-> = {
-  // Small crest on top, centred heading over a navy and gold double rule, dotted list
-  contentsOfficial: (ctx) => {
-    const W = ctx.availableWidth;
-    return [
-      own(pic(W / 2 - 24, 16, 48, 48)),
-      heading(ctx, "tableOfContentsTitle", { x: 0, y: 72, width: W, fontSize: 20, isBold: true, forecolor: DESIGN_COLORS.navy, textAlignment: "Center" }),
-      own(block(W * 0.2, 108, W * 0.6, 2, DESIGN_COLORS.navy)),
-      own(block(W * 0.3, 113, W * 0.4, 1, DESIGN_COLORS.accent)),
-      placedList(W * 0.06, 136, W * 0.88, sampleEntries(ctx, ["1.", "2.", "3."]), { numberWidth: 36, leader: true, rowHeight: 26, color: DESIGN_COLORS.ink, sectionStyle: "1." }),
-    ];
-  },
-  // A navy banner across the top holding the heading, a gold edge, dotted list below
-  contentsBanner: (ctx) => {
-    const W = ctx.availableWidth;
-    return [
-      own(block(0, 0, W, 64, DESIGN_COLORS.navy)),
-      own(block(0, 64, W, 4, DESIGN_COLORS.accent)),
-      heading(ctx, "tableOfContentsTitle", { x: 24, y: 18, width: W - 48, fontSize: 20, isBold: true, forecolor: DESIGN_COLORS.white }),
-      placedList(24, 100, W - 48, sampleEntries(ctx, ["1", "2", "3"]), { numberWidth: 34, leader: true, rowHeight: 26, color: DESIGN_COLORS.ink, sectionStyle: "1" }),
-    ];
-  },
-  // A navy bar down the left edge, heading and SECTION list beside it
-  contentsSidebar: (ctx) => {
+  // An official index: column labels in a navy bar, rows on a pale panel
+  contentsLedger: (ctx) => {
     const W = ctx.availableWidth;
     const H = ctx.availableHeight;
-    const sections = ["1", "2", "3"].map((n) => ctx.t("pageDesigns.placeholder.sectionN", { n }));
+    const lw = Math.round(W * 0.82);
+    const x = (W - lw) / 2;
+    const small = { fontSize: 9, isBold: true, forecolor: DESIGN_COLORS.white };
     return [
-      own(block(0, 0, 8, H, DESIGN_COLORS.navy)),
-      heading(ctx, "tableOfContentsTitle", { x: 32, y: 30, width: W - 32, fontSize: 22, isBold: true, forecolor: DESIGN_COLORS.navy }),
-      own(block(32, 68, 60, 3, DESIGN_COLORS.accent)),
-      placedList(32, 96, W - 40, sampleEntries(ctx, sections), { numberWidth: 100, leader: true, rowHeight: 28, color: DESIGN_COLORS.ink, sectionStyle: "word" }),
+      title(ctx, W, 40, 22, DESIGN_COLORS.navy),
+      caption(ctx, W, 76, "documentNo", DESIGN_COLORS.muted),
+      own(block(x, 112, lw, 26, DESIGN_COLORS.navy)),
+      heading(ctx, "colNumber", { x: x + 10, y: 117, width: 60, ...small }),
+      heading(ctx, "colTitle", { x: x + 66, y: 117, width: 200, ...small }),
+      heading(ctx, "colPage", { x: x + lw - 70, y: 117, width: 60, ...small, textAlignment: "Right" }),
+      own(block(x, 138, lw, 8 * 28 + 16, DESIGN_COLORS.slate)),
+      placedList(x, 146, lw, sampleEntries(ctx, ["1.0", "2.0", "3.0"]), { numberWidth: 56, leader: false, rowHeight: 28, fontSize: 11, color: DESIGN_COLORS.ink, sectionStyle: "1." }),
+      own(block(x, 138 + 8 * 28 + 16, lw, 2, DESIGN_COLORS.navy)),
+      own(block(W * 0.35, H - 40, W * 0.3, 1, DESIGN_COLORS.line)),
+      caption(ctx, W, H - 32, "projectName", DESIGN_COLORS.muted, 8),
     ];
   },
-  // Column labels (No. / Title / Page) over a navy rule, like an official index
-  contentsColumns: (ctx) => {
-    const W = ctx.availableWidth;
-    const x = 20;
-    const lw = W - 40;
-    const small = { fontSize: 9, isBold: true, forecolor: DESIGN_COLORS.muted };
-    return [
-      heading(ctx, "tableOfContentsTitle", { x, y: 28, width: lw, fontSize: 20, isBold: true, forecolor: DESIGN_COLORS.navy }),
-      heading(ctx, "colNumber", { x: x + 6, y: 80, width: 60, ...small }),
-      heading(ctx, "colTitle", { x: x + 56, y: 80, width: 200, ...small }),
-      heading(ctx, "colPage", { x: x + lw - 66, y: 80, width: 60, ...small, textAlignment: "Right" }),
-      own(block(x, 98, lw, 2, DESIGN_COLORS.navy)),
-      placedList(x, 106, lw, sampleEntries(ctx, ["1.0", "2.0", "3.0"]), { numberWidth: 50, leader: false, rowHeight: 26, color: DESIGN_COLORS.ink, sectionStyle: "1." }),
-    ];
-  },
-  // A soft panel behind the list, gold number boxes, heading centred above
-  contentsPanel: (ctx) => {
+  // A white card on a soft page, gold number boxes inside
+  contentsCard: (ctx) => {
     const W = ctx.availableWidth;
     const H = ctx.availableHeight;
+    const cw = Math.round(W * 0.84);
+    const lw = Math.round(cw - 56);
     return [
-      heading(ctx, "tableOfContentsTitle", { x: 0, y: 28, width: W, fontSize: 22, isBold: true, forecolor: DESIGN_COLORS.navy, textAlignment: "Center" }),
-      own(block((W - 48) / 2, 66, 48, 3, DESIGN_COLORS.accent)),
-      own(block(W * 0.05, 90, W * 0.9, 310, DESIGN_COLORS.light, 10)),
-      placedList(W * 0.09, 110, W * 0.82, sampleEntries(ctx, ["01", "02", "03"]), {
-        numberWidth: 56,
+      own(block(0, 0, W, H, DESIGN_COLORS.slate)),
+      own(block((W - cw) / 2, 50, cw, H - 100, DESIGN_COLORS.white, 12)),
+      own(block((W - cw) / 2, 50, cw, 6, DESIGN_COLORS.accent)),
+      heading(ctx, "tableOfContentsTitle", { x: (W - cw) / 2 + 16, y: 84, width: cw - 32, fontSize: 22, isBold: true, forecolor: DESIGN_COLORS.navy, textAlignment: "Center" }),
+      heading(ctx, "projectName", { x: (W - cw) / 2 + 16, y: 118, width: cw - 32, fontSize: 9, forecolor: DESIGN_COLORS.muted, textAlignment: "Center" }),
+      centredList(W, 156, lw, sampleEntries(ctx, ["01", "02", "03"]), {
+        numberWidth: 52,
         leader: true,
         rowHeight: 32,
         fontSize: 11,
@@ -586,9 +698,65 @@ const CONTENTS_GOV: Record<
       }),
     ];
   },
+  // Quiet and refined: thin rules above and below, a large light heading
+  contentsElegant: (ctx) => {
+    const W = ctx.availableWidth;
+    const H = ctx.availableHeight;
+    const lw = Math.round(W * 0.7);
+    return [
+      caption(ctx, W, 60, "reportTitle", DESIGN_COLORS.gold, 10),
+      heading(ctx, "tableOfContentsTitle", { x: 0, y: 80, width: W, fontSize: 28, forecolor: DESIGN_COLORS.ink, textAlignment: "Center" }),
+      own(block((W - 40) / 2, 130, 40, 2, DESIGN_COLORS.gold)),
+      own(block((W - lw) / 2, 160, lw, 1, DESIGN_COLORS.line)),
+      centredList(W, 172, lw, sampleEntries(ctx, ["1", "2", "3"]), { numberWidth: 30, leader: true, rowHeight: 28, fontSize: 11, color: DESIGN_COLORS.ink, sectionStyle: "1" }),
+      own(block((W - lw) / 2, 172 + 8 * 28 + 12, lw, 1, DESIGN_COLORS.line)),
+      caption(ctx, W, H - 40, "period", DESIGN_COLORS.muted, 9, true),
+    ];
+  },
+  // Government style: crest and ministry name, navy bars top and bottom
+  contentsStatesman: (ctx) => {
+    const W = ctx.availableWidth;
+    const H = ctx.availableHeight;
+    const lw = Math.round(W * 0.78);
+    return [
+      own(block(0, 0, W, 8, DESIGN_COLORS.navy)),
+      own(block(0, 10, W, 2, DESIGN_COLORS.accent)),
+      own(pic(W / 2 - 22, 30, 44, 44)),
+      caption(ctx, W, 80, "ministry", DESIGN_COLORS.navy, 10),
+      title(ctx, W, 104, 20, DESIGN_COLORS.navy),
+      ...doubleRule(W, 138, W * 0.5, DESIGN_COLORS.navy, DESIGN_COLORS.accent),
+      centredList(W, 168, lw, sampleEntries(ctx, sectionWords(ctx)), { numberWidth: 100, leader: true, rowHeight: 28, fontSize: 11, color: DESIGN_COLORS.ink, sectionStyle: "word" }),
+      caption(ctx, W, H - 38, "documentNo", DESIGN_COLORS.muted, 8),
+      own(block(0, H - 12, W, 2, DESIGN_COLORS.accent)),
+      own(block(0, H - 8, W, 8, DESIGN_COLORS.navy)),
+    ];
+  },
+  // Burgundy and gold: a deep heading band inside a double frame
+  contentsBurgundy: (ctx) => {
+    const W = ctx.availableWidth;
+    const H = ctx.availableHeight;
+    const lw = Math.round(W * 0.76);
+    return [
+      own(outline(6, 6, W - 12, H - 12, DESIGN_COLORS.burgundy, 2)),
+      own(outline(12, 12, W - 24, H - 24, DESIGN_COLORS.gold, 0.75)),
+      own(block(W * 0.15, 44, W * 0.7, 64, DESIGN_COLORS.burgundy, 4)),
+      heading(ctx, "tableOfContentsTitle", { x: W * 0.15 + 8, y: 60, width: W * 0.7 - 16, fontSize: 22, isBold: true, forecolor: DESIGN_COLORS.white, textAlignment: "Center" }),
+      ...ornament(W, 124, DESIGN_COLORS.gold),
+      centredList(W, 150, lw, sampleEntries(ctx, ["01", "02", "03"]), {
+        numberWidth: 50,
+        leader: true,
+        rowHeight: 32,
+        fontSize: 11,
+        sectionStyle: "01",
+        numberFill: DESIGN_COLORS.burgundy,
+        numberColor: DESIGN_COLORS.white,
+        color: DESIGN_COLORS.ink,
+      }),
+      caption(ctx, W, H - 44, "projectName", DESIGN_COLORS.burgundy, 9, true),
+    ];
+  },
 };
-Object.assign(CONTENTS_BUILDERS, CONTENTS_GOV);
 
 export function buildContentsDesign(type: ContentsDesignType, ctx: FrameTemplateContext): DesignElement[] {
-  return CONTENTS_BUILDERS[type]!(ctx);
+  return boxUp(CONTENTS_BUILDERS[type](ctx), ctx.availableWidth, ctx.availableHeight);
 }

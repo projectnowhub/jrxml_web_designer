@@ -63,7 +63,7 @@ export function reportPartBand(type: ReportPartType): "pageHeader" | "pageFooter
 // Parts spanning the printable width start at the left margin
 export function isFullWidthPart(type: ReportPartType): boolean {
   return (
-    ["partReportHeader", "partPageFooter", "partSectionHeading", "partContentsList"].includes(type) ||
+    ["partReportHeader", "partPageFooter", "partSectionHeading"].includes(type) ||
     isTablePresetType(type)
   );
 }
@@ -240,7 +240,15 @@ const BUILDERS: Record<ReportPartType, (ctx: FrameTemplateContext) => DesignElem
   ...(Object.fromEntries(
     TABLE_PRESET_TYPES.map((type) => [type, (ctx: FrameTemplateContext) => buildTablePreset(type, ctx)]),
   ) as Record<TablePresetType, (ctx: FrameTemplateContext) => DesignElement>),
-  partContentsList: (ctx) => buildContentsList(ctx.availableWidth),
+  // Automatic, numbered, plain black (1, 2… / i, ii…, dotted lines), 80% wide
+  partContentsList: (ctx) =>
+    buildContentsList(Math.round(ctx.availableWidth * 0.8), [], {
+      numberWidth: 30,
+      rowHeight: 26,
+      fontSize: 11,
+      color: "#000000",
+      sectionStyle: "1",
+    }),
 };
 
 export function buildReportPart(type: ReportPartType, ctx: FrameTemplateContext): DesignElement {

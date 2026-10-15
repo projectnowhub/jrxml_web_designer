@@ -246,6 +246,9 @@ export interface HeadingNumbering {
   style: ContentsSectionStyle;
   // "word" style: the word before the number ("SECTION 1.")
   word?: string;
+  // Any other style: text before and after the number ("Chapter 1:")
+  before?: string;
+  after?: string;
 }
 
 // Base design element interface
@@ -536,6 +539,17 @@ export interface ContentsEntry {
   page: string;
   // 0: a section, 1: a sub-section (indented, not bold)
   level: 0 | 1;
+  // Which heading (its uuid) the row stands for, in a list that follows the
+  // headings
+  key?: string;
+}
+
+// Automatic mode: the user's choices for the heading rows (kept on the first
+// part, keyed by the heading's uuid): headings left out, and the numbers typed
+// in when "Number automatically" is off (`ContentsListData.ownNumbers`)
+export interface ContentsAdjust {
+  hidden?: string[];
+  numbers?: Record<string, string>;
 }
 
 export interface ContentsListData {
@@ -560,6 +574,9 @@ export interface ContentsListData {
   sectionStyle?: ContentsSectionStyle;
   // "word" style: the word before the number ("SECTION 1.")
   sectionWord?: string;
+  // Any style: text before and after the number ("Chapter 1:")
+  sectionBefore?: string;
+  sectionAfter?: string;
   subStyle?: ContentsSubStyle;
   // On a contents page: the box keeps the size the user gives it (rows that
   // don't fit go on to the next contents page) instead of growing with its rows
@@ -570,10 +587,23 @@ export interface ContentsListData {
   // Kept in step with the Section Headings and Sub-headings on the pages: its
   // rows are rebuilt from them after every change (utils/headingSync.ts)
   follow?: boolean;
+  // Automatic mode with "Number automatically" off: numbers typed per row
+  ownNumbers?: boolean;
+  adjust?: ContentsAdjust;
 }
 
-export type ContentsSectionStyle = "1" | "1." | "01" | "I" | "A" | "word";
-export type ContentsSubStyle = "roman" | "letters" | "decimal" | "none";
+export type ContentsSectionStyle = "1" | "1." | "01" | "I" | "A" | "a" | "i" | "1)" | "(1)" | "word";
+export type ContentsSubStyle =
+  | "roman"
+  | "letters"
+  | "decimal"
+  | "romanUpper"
+  | "lettersUpper"
+  | "lettersParen"
+  | "romanParen"
+  | "lettersBracket"
+  | "sectionLetter"
+  | "none";
 
 export interface ContentsListElement extends DesignElementBase {
   type: "contentsList";

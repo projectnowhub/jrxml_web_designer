@@ -86,7 +86,7 @@ export function specialPageArea(p: PageSizeProps | undefined, pageIndex: number 
 // What can't go on a cover or contents page: page numbers (the shared sections
 // carry them), project-data tables (they grow over pages); and on the cover, a
 // contents list. `kind`: the page it would go on (normal pages take anything).
-export type SpecialPageProblem = "pageNumber" | "dataTable" | "contentsList";
+export type SpecialPageProblem = "pageNumber" | "dataTable" | "contentsList" | "secondContents" | "contentsListInBox";
 
 export function specialPageProblem(
   element: { type: string } | null | undefined,
@@ -98,6 +98,8 @@ export function specialPageProblem(
   if (element.type === "contentsList" && kind === "cover") return "contentsList";
   if (element.type === "frame") {
     for (const child of (element as { elements?: DesignElement[] }).elements ?? []) {
+      // A Table of Contents in a box only works on a normal page
+      if (child.type === "contentsList") return kind === "cover" ? "contentsList" : "contentsListInBox";
       const problem = specialPageProblem(child, kind);
       if (problem) return problem;
     }

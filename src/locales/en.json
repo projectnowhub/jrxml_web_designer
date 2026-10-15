@@ -172,20 +172,22 @@
     "coverMinimal": "Minimal",
     "coverColourBlock": "Colour Block",
     "coverProjectCard": "Project Card",
-    "contentsClassic": "Classic",
-    "contentsDotted": "Dotted",
-    "contentsNumbered": "Numbered",
-    "contentsTwoColumns": "Two Columns",
     "coverOfficial": "Official Crest",
     "coverBand": "Navy Band",
     "coverStripe": "Side Stripe",
     "coverFramed": "Formal Frame",
     "coverPhotoStrip": "Photo Strip",
-    "contentsOfficial": "Official",
-    "contentsBanner": "Navy Banner",
-    "contentsSidebar": "Side Bar",
-    "contentsColumns": "Index Columns",
-    "contentsPanel": "Soft Panel"
+    "contentsRegal": "Regal",
+    "contentsHeritage": "Heritage",
+    "contentsNavyCrown": "Navy crown",
+    "contentsGoldCorners": "Gold corners",
+    "contentsTwoColumns": "Two columns",
+    "contentsLedger": "Ledger",
+    "contentsCard": "Card",
+    "contentsElegant": "Elegant",
+    "contentsStatesman": "Statesman",
+    "contentsBurgundy": "Burgundy",
+    "contentsPlain": "Classic"
   },
   "properties": {
     "title": "Properties",
@@ -2033,7 +2035,9 @@
     "notAllowed": {
       "pageNumber": "Page numbers can't go on the cover or contents pages. Put them in the page header or footer: they show on the other pages.",
       "dataTable": "Tables with project data can't go on the cover or contents pages, because they can grow onto more pages. Use a table you type yourself (Type my own).",
-      "contentsList": "A table of contents can't go on the cover page. Put it on a contents page (or a normal page)."
+      "contentsList": "A table of contents can't go on the cover page. Put it on a contents page (or a normal page).",
+      "secondContents": "This report already has a Table of Contents on its contents pages. It is selected: change it, or add another one on a normal page.",
+      "contentsListInBox": "A box holding a Table of Contents can only be on a normal page. On a contents page, use the Table of Contents on its own (Move out of box)."
     },
     "countPages": "Count the cover and contents pages",
     "countPagesYes": "They get no number, but they are counted: the first normal page is page {n}.",
@@ -2046,14 +2050,14 @@
     "changeDesignHint": "Pick another design for this page. Every part of it can still be changed afterwards.",
     "borderNotOnCover": "Page border added to every page except the cover: the cover uses the whole sheet, so it has no border. To give the cover a border too, choose \"Keep the page margins\" in the cover's ⋯ menu.",
     "borderRefusedOnCover": "The cover uses the whole sheet, so it can't have a page border. To give the cover a border, choose \"Keep the page margins\" in the cover's ⋯ menu. To put a border on the other pages, drop it on any of them.",
-    "contentsAddedSameDesign": "Contents page added with the same design."
+    "contentsAddedSameDesign": "Contents page added with the same design.",
+    "noToc": "This contents page has no Table of Contents",
+    "addToc": "Add Table of Contents",
+    "chooseDesign": "Choose a design"
   },
   "contentsList": {
     "emptyHint": "Table of contents: fill it from your Section Headings in its properties",
     "continuesHint": "Carries on the table of contents",
-    "fillTitle": "Contents",
-    "fill": "Fill from my section headings",
-    "fillHint": "Lists every Section Heading and Sub-heading on your pages with its page number. A table that grows can move pages: check the numbers in Preview PDF.",
     "continuesNote": "This list carries on another one: filling it fills them all.",
     "rows": "No rows | 1 row | {n} rows",
     "number": "No.",
@@ -2062,7 +2066,7 @@
     "makeSection": "Make it a section (not indented)",
     "makeSub": "Make it a sub-section (indented)",
     "removeRow": "Remove this row",
-    "addRow": "Add a row",
+    "addRow": "Add row",
     "newRow": "New entry",
     "look": "Look",
     "textSize": "Text size",
@@ -2083,27 +2087,16 @@
     "filledMore": "Filled with {n} headings; 1 contents page was added for the rest. | Filled with {n} headings; {pages} contents pages were added for the rest.",
     "numbers": "Numbers",
     "autoNumber": "Number automatically",
-    "sectionStyle": "Sections",
-    "sectionWord": "Word before the number",
     "subStyle": "Sub-sections",
     "noSubNumbers": "No numbers",
-    "autoNumberHint": "Sections count 1, 2, 3; each sub-section counts again under its section. Indent a row to make it a sub-section.",
-    "countedHint": "Counted automatically. Untick \"Number automatically\" to type your own.",
     "follow": "Keep in step with my headings",
-    "followHint": "The rows come from the Section Headings and Sub-headings on your pages. Add, rename, move or delete a heading and the list changes with it.",
     "followNone": "No headings yet. Add a Section Heading or Sub-heading from Element Presets → Headings & Text and it appears here.",
     "overflow": "1 row doesn't fit on this page. | {n} rows don't fit on this page.",
     "overflowNotContents": "1 row doesn't fit on this page. Make the list or its rows smaller, or put it on a contents page so it can carry on to the next one. | {n} rows don't fit on this page. Make the list or its rows smaller, or put it on a contents page so it can carry on to the next one.",
-    "addContentsPage": "Add a contents page for the rest",
-    "pageCheckHint": "Page numbers are the pages in your design. A table that grows can push a heading onto a later page: check the numbers in Preview PDF.",
-    "followNumbers": "Section numbers are the ones your Section Headings show. Change their style on any Section Heading.",
-    "followRowsHint": "To change a row, change its heading on the page. Untick \"Keep in step with my headings\" to type the rows yourself.",
     "followEmptyHint": "Table of contents: your Section Headings and Sub-headings will appear here",
-    "linksHint": "In the PDF, clicking a row jumps to its heading. Here, double-click a row or use its target button.",
     "goTo": "Go to this heading",
     "goToHint": "Double-click to go to this heading",
     "noHeadingForRow": "No heading on your pages has this row's title.",
-    "onePerReport": "One Table of Contents over 1 page: its rows are all here, and they flow onto the next part by themselves. | One Table of Contents over {n} parts: its rows are all here, and they flow from one page to the next by themselves.",
     "nextColumn": "Next column",
     "onPage": "Contents page {n}",
     "continuedTag": "continued",
@@ -2116,7 +2109,48 @@
     },
     "designHint": "Changes only how the list looks: its rows and place stay.",
     "designAllPages": "Used on every page of this Table of Contents, so your contents pages always match.",
-    "designAllPagesHint": "Changes how the Table of Contents looks on all your contents pages: its rows stay."
+    "designAllPagesHint": "Changes how the Table of Contents looks on all your contents pages: its rows stay.",
+    "linksHintShort": "In the PDF, clicking a row jumps to its heading.",
+    "dragToMove": "Drag to move",
+    "rowsFrom": "Where the rows come from",
+    "modeAuto": "Automatic",
+    "modeAutoDesc": "Made from your headings, always up to date",
+    "modeManual": "Manual",
+    "modeManualDesc": "Type and arrange the rows yourself",
+    "autoHint": "To add or change a row, add or change a heading on your pages. Hide a row with the eye.",
+    "manualHint": "Your own rows: editing them never changes your headings. Switching back to Automatic replaces them with your headings.",
+    "autoNumbersOn": "Section numbers match your Section Headings; sub-sections are counted.",
+    "manualNumbersOn": "Sections and sub-sections are counted for you.",
+    "numbersOff": "Type each number yourself, or leave it empty.",
+    "manualEmpty": "No rows yet. Fill them from your headings, or add your own.",
+    "fill": "Fill from my headings",
+    "hideRow": "Hide from the contents",
+    "showRow": "Show in the contents",
+    "sharedStyleHint": "Also changes the numbers on your Section Headings, so they always match.",
+    "filledAdded": "Added 1 row at the end: drag it into place. | Added {n} rows at the end: drag them into place.",
+    "fillAsk": {
+      "title": "Your contents already has 1 row. What should we do? | Your contents already has {n} rows. What should we do?",
+      "new": "Add only the new headings",
+      "newDesc": "1 heading isn't in your list yet. It goes at the end; your rows stay as they are. | {n} headings aren't in your list yet. They go at the end; your rows stay as they are.",
+      "noneNew": "Every heading is already in your list.",
+      "all": "Add all headings at the end",
+      "allDesc": "Adds 1 heading below your rows. | Adds all {n} headings below your rows.",
+      "replace": "Replace my rows",
+      "replaceDesc": "Removes your rows and starts again from your headings. You can undo this with Ctrl+Z.",
+      "recommended": "Recommended"
+    },
+    "place": {
+      "title": "Content Alignment",
+      "across": "Horizontal",
+      "upDown": "Vertical",
+      "left": "Left",
+      "center": "Centre",
+      "right": "Right",
+      "top": "Top",
+      "middle": "Middle",
+      "bottom": "Bottom",
+      "hint": "Up / down uses the space below the heading. Two columns move together, and later contents pages follow."
+    }
   },
   "pageDesigns": {
     "chooseCover": "Choose a cover page design",
@@ -2153,26 +2187,6 @@
         "desc": "A centred card with the title and key facts.",
         "tileHint": "Sets the cover page's design: a centred card with the title and key facts."
       },
-      "contentsClassic": {
-        "name": "Classic",
-        "desc": "SECTION 1. and the title, the page on the right.",
-        "tileHint": "Sets a contents page's design: SECTION 1. and the title, page on the right. Drop it on a contents page, or click to use the first one."
-      },
-      "contentsDotted": {
-        "name": "Dotted lines",
-        "desc": "A large heading, dots leading to each page number.",
-        "tileHint": "Sets a contents page's design: a centred heading, dots leading to each page number."
-      },
-      "contentsNumbered": {
-        "name": "Numbered boxes",
-        "desc": "Big numbers in coloured boxes.",
-        "tileHint": "Sets a contents page's design: big numbers in coloured boxes."
-      },
-      "contentsTwoColumns": {
-        "name": "Two columns",
-        "desc": "Two lists side by side, for a long contents.",
-        "tileHint": "Sets a contents page's design: two lists side by side."
-      },
       "coverOfficial": {
         "name": "Official crest",
         "desc": "Centred crest, ministry name and title between navy and gold bars.",
@@ -2198,30 +2212,60 @@
         "desc": "Title on top, a wide photo across the page, a navy footer with the date.",
         "tileHint": "Sets the cover page's design: a wide photo strip and a navy footer."
       },
-      "contentsOfficial": {
-        "name": "Official",
-        "desc": "Small crest, centred heading over a navy and gold rule, dotted lines.",
-        "tileHint": "Sets the contents pages' design: crest, centred heading and a double rule."
+      "contentsPlain": {
+        "name": "Classic",
+        "desc": "Just the contents in black: sections 1, 2, 3, sub-sections i, ii, dotted lines.",
+        "tileHint": "Sets the contents pages' design: just the contents in black, no colours."
       },
-      "contentsBanner": {
-        "name": "Navy banner",
-        "desc": "The heading in a navy banner across the top, dotted lines below.",
-        "tileHint": "Sets the contents pages' design: the heading in a navy banner."
+      "contentsRegal": {
+        "name": "Regal",
+        "desc": "A navy and gold double frame, crest, heading over a double rule, dotted lines.",
+        "tileHint": "Sets the contents pages' design: a navy and gold double frame, crest, heading over a double rule, dotted lines."
       },
-      "contentsSidebar": {
-        "name": "Side bar",
-        "desc": "A navy bar down the left, SECTION numbers and dotted lines.",
-        "tileHint": "Sets the contents pages' design: a navy bar down the left."
+      "contentsHeritage": {
+        "name": "Heritage",
+        "desc": "A warm cream page with a gold frame, burgundy heading and SECTION numbers.",
+        "tileHint": "Sets the contents pages' design: a warm cream page with a gold frame, burgundy heading and SECTION numbers."
       },
-      "contentsColumns": {
-        "name": "Index columns",
-        "desc": "No. / Title / Page labels over a navy rule, like an official index.",
-        "tileHint": "Sets the contents pages' design: column labels over a navy rule."
+      "contentsNavyCrown": {
+        "name": "Navy crown",
+        "desc": "The heading in a navy band with a gold edge, navy number boxes.",
+        "tileHint": "Sets the contents pages' design: the heading in a navy band with a gold edge, navy number boxes."
       },
-      "contentsPanel": {
-        "name": "Soft panel",
-        "desc": "The list on a soft grey panel with gold number boxes.",
-        "tileHint": "Sets the contents pages' design: a soft panel with gold number boxes."
+      "contentsGoldCorners": {
+        "name": "Gold corners",
+        "desc": "A thin gold frame with navy corners, Roman numbers, heading between two rules.",
+        "tileHint": "Sets the contents pages' design: a thin gold frame with navy corners, Roman numbers, heading between two rules."
+      },
+      "contentsTwoColumns": {
+        "name": "Two columns",
+        "desc": "Two lists side by side, centred, with a gold line between them.",
+        "tileHint": "Sets the contents pages' design: two lists side by side, centred, with a gold line between them."
+      },
+      "contentsLedger": {
+        "name": "Ledger",
+        "desc": "An official index: No. / Title / Page in a navy bar, rows on a pale panel.",
+        "tileHint": "Sets the contents pages' design: an official index: No. / Title / Page in a navy bar, rows on a pale panel."
+      },
+      "contentsCard": {
+        "name": "Card",
+        "desc": "A white card on a soft page, gold number boxes.",
+        "tileHint": "Sets the contents pages' design: a white card on a soft page, gold number boxes."
+      },
+      "contentsElegant": {
+        "name": "Elegant",
+        "desc": "A large light heading, thin rules above and below the list.",
+        "tileHint": "Sets the contents pages' design: a large light heading, thin rules above and below the list."
+      },
+      "contentsStatesman": {
+        "name": "Statesman",
+        "desc": "Crest and ministry name, navy and gold bars top and bottom, SECTION numbers.",
+        "tileHint": "Sets the contents pages' design: crest and ministry name, navy and gold bars top and bottom, SECTION numbers."
+      },
+      "contentsBurgundy": {
+        "name": "Burgundy",
+        "desc": "A burgundy heading band inside a double frame, burgundy number boxes.",
+        "tileHint": "Sets the contents pages' design: a burgundy heading band inside a double frame, burgundy number boxes."
       }
     },
     "placeholder": {
@@ -2275,8 +2319,6 @@
     "typedHint": "This heading keeps the number typed in it. Tick the box to count it again.",
     "notCounted": "Headings on the cover and contents pages aren't counted.",
     "noNumberPart": "This heading has no number of its own.",
-    "style": "Style for every Section Heading",
-    "word": "Word before the number",
     "styleHint": "Typing your own number in a heading keeps that number for that heading only."
   },
   "addPageMenu": {
@@ -2289,5 +2331,14 @@
     "contents": "Table of Contents",
     "contentsHint": "After the cover, without the page header or footer. You choose a design next.",
     "contentsMoreHint": "Another contents page with the same design as the last one."
+  },
+  "sectionNumbers": {
+    "style": "Sections",
+    "before": "Text before",
+    "after": "Text after",
+    "beforePlaceholder": "e.g. Chapter",
+    "afterPlaceholder": "e.g. :",
+    "preview": "Preview",
+    "sampleTitle": "Project details"
   }
 }
