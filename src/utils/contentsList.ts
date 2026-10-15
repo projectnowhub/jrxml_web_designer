@@ -16,6 +16,7 @@ import type {
   DesignElement,
   FrameElement,
   ReportProperties,
+  SavedContentsStyle,
 } from "@/types";
 import { styleNumber } from "./paginationPresets";
 import { pageKind, specialPages } from "./specialPages";
@@ -27,6 +28,9 @@ export const SUB_HEADING_PROPERTY = "com.cdp.subHeading";
 
 export const LEADER_DOTS = " " + ". ".repeat(150).trim();
 export const SUB_INDENT = 18;
+// Space kept clear inside the list's left and right edges (numbers and page
+// numbers never touch the edge), the same on the canvas and in the PDF
+export const SIDE_PAD = 6;
 // Line height of the report font (Noto Sans SC) as a share of the font size
 const LINE_HEIGHT = 1.45;
 
@@ -76,8 +80,10 @@ export function buildContentsList(width: number, entries: ContentsEntry[] = [], 
 }
 
 // The box is as tall as its rows (one empty row at least)
+// (a fixed box on a contents page keeps its height, one row at least)
 export function syncContentsListSize(element: ContentsListElement): void {
-  element.height = Math.max(1, element.list.entries.length) * element.list.rowHeight;
+  const { fixedBox, rowHeight, entries } = element.list;
+  element.height = fixedBox ? Math.max(rowHeight, element.height || 0) : Math.max(1, entries.length) * rowHeight;
 }
 
 // Rows that fit in a height
@@ -196,6 +202,8 @@ export function normalizeContentsList(raw: any): ContentsListData | null {
   if (COLOR.test(raw.numberFill)) list.numberFill = raw.numberFill;
   if (COLOR.test(raw.numberColor)) list.numberColor = raw.numberColor;
   if (raw.follow === true) list.follow = true;
+  if (raw.autoPage === true) list.autoPage = true;
+  if (raw.fixedBox === true) list.fixedBox = true;
   if (typeof raw.continues === "string" && /^[0-9a-fA-F-]{8,40}$/.test(raw.continues)) list.continues = raw.continues;
   if (raw.autoNumber === true) {
     list.autoNumber = true;
@@ -333,4 +341,102 @@ export const collectHeadings = (...args: Parameters<typeof headingItems>): Conte
 export function sectionHeadingParts(heading: FrameElement): { numberPart: DesignElement | null; titleParts: DesignElement[] } {
   const parts = [...(heading.elements ?? [])].sort((a, b) => a.x - b.x);
   return parts.length > 1 ? { numberPart: parts[0]!, titleParts: parts.slice(1) } : { numberPart: null, titleParts: parts };
+}
+
+// ---------------------------------------------------------------------------
+// Ready-made looks for one list ("Design" in its properties): only the look
+// changes, never its rows or place
+
+export const LIST_LOOKS = ["classic", "dotted", "numbered", "plain"] as const;
+export type ListLook = (typeof LIST_LOOKS)[number];
+
+export const LOOK_PATCHES: Record<ListLook, Partial<ContentsListData>> = {
+  classic: { numberWidth: 110, leader: false, rowHeight: 28, fontSize: 10, sectionStyle: "word", numberFill: undefined, numberColor: undefined },
+  dotted: { numberWidth: 34, leader: true, rowHeight: 26, fontSize: 10, sectionStyle: "1.", numberFill: undefined, numberColor: undefined },
+  numbered: { numberWidth: 60, leader: false, rowHeight: 36, fontSize: 12, sectionStyle: "01", numberFill: "#14284B", numberColor: "#FFFFFF" },
+  plain: { numberWidth: 0, leader: false, rowHeight: 24, fontSize: 10, numberFill: undefined, numberColor: undefined },
+};
+
+export function applyListLook(list: ContentsListData, look: ListLook): void {
+  for (const [key, value] of Object.entries(LOOK_PATCHES[look])) {
+    if (value === undefined) delete (list as unknown as Record<string, unknown>)[key];
+    else (list as unknown as Record<string, unknown>)[key] = value;
+  }
+  // Numbers counted in the look's style (a list following the headings shows theirs)
+  if (look !== "plain" && !list.follow) list.autoNumber = true;
+}
+
+// The look a list has now, if it is one of the ready-made ones
+export function currentListLook(list: ContentsListData): ListLook | null {
+  return (
+    LIST_LOOKS.find((look) =>
+      Object.entries(LOOK_PATCHES[look]).every(([key, value]) =>
+        key === "sectionStyle" && (list.numberWidth === 0 || list.follow)
+          ? true
+          : (list as unknown as Record<string, unknown>)[key] === value,
+      ),
+    ) ?? null
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Looks the user saves ("Save as my style"), kept in the report like saved
+// table styles: everything about how a list looks, nothing about its rows
+
+export const CONTENTS_STYLES_PROPERTY = "com.cdp.contentsStyles";
+
+export const LOOK_KEYS = [
+  "rowHeight",
+  "fontSize",
+  "numberWidth",
+  "pageWidth",
+  "leader",
+  "boldSections",
+  "color",
+  "numberFill",
+  "numberColor",
+  "sectionStyle",
+  "sectionWord",
+  "subStyle",
+] as const;
+
+export function lookOf(list: ContentsListData): Partial<ContentsListData> {
+  const look: Record<string, unknown> = {};
+  for (const key of LOOK_KEYS) if (list[key] !== undefined) look[key] = list[key];
+  return look as Partial<ContentsListData>;
+}
+
+export function applySavedLook(list: ContentsListData, look: Partial<ContentsListData>): void {
+  for (const key of LOOK_KEYS) {
+    const value = look[key];
+    if (value === undefined) delete (list as unknown as Record<string, unknown>)[key];
+    else (list as unknown as Record<string, unknown>)[key] = value;
+  }
+  if (list.numberWidth > 0 && !list.follow) list.autoNumber = true;
+}
+
+export const sameLook = (list: ContentsListData, look: Partial<ContentsListData>) =>
+  LOOK_KEYS.every((key) => (list[key] ?? null) === (look[key] ?? null));
+
+export function serializeContentsStyles(styles: SavedContentsStyle[] | undefined): string | null {
+  return styles?.length ? JSON.stringify(styles) : null;
+}
+
+export function parseContentsStyles(value: string | null | undefined): SavedContentsStyle[] | undefined {
+  if (!value) return undefined;
+  try {
+    const raw = JSON.parse(value);
+    if (!Array.isArray(raw)) return undefined;
+    const styles = raw
+      .filter((s) => s && typeof s.id === "string" && typeof s.name === "string" && s.look && typeof s.look === "object")
+      .slice(0, 50)
+      .map((s): SavedContentsStyle => {
+        // Read through the list reader, so only valid values come back
+        const checked = normalizeContentsList({ ...s.look, entries: [] });
+        return { id: s.id.slice(0, 40), name: s.name.slice(0, 60), look: checked ? lookOf(checked) : {} };
+      });
+    return styles.length ? styles : undefined;
+  } catch {
+    return undefined;
+  }
 }

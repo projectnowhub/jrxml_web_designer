@@ -37,7 +37,8 @@ import {
   syncContentsListSize,
   textOf,
 } from "./contentsList";
-import { pageKind, specialPageArea } from "./specialPages";
+import { pageKind, shiftPages, specialPageArea, specialPages } from "./specialPages";
+import { refreshUuids } from "./elementUtils";
 
 // On a Section Heading's number part: the number it was given automatically
 export const HEADING_NUMBER_PROPERTY = "com.cdp.heading.number";
@@ -148,8 +149,48 @@ export function listChain(elements: DesignElement[], list: ContentsListElement):
   ];
 }
 
-const capacity = (bands: Band[], props: SyncProps, l: ContentsListElement) =>
-  rowsThatFit(l.list, pageAreaHeight(bands, props, l.pageIndex) - l.y);
+// Rows a part holds: room left on the page (leaving a 20px bottom buffer), or within its fixed box if specified
+const capacity = (bands: Band[], props: SyncProps, l: ContentsListElement) => {
+  const room = Math.max(l.list.rowHeight, pageAreaHeight(bands, props, l.pageIndex) - l.y - 20);
+  const maxRows = rowsThatFit(l.list, room);
+  if (l.list.fixedBox && l.height > 0) {
+    return Math.min(rowsThatFit(l.list, l.height), maxRows);
+  }
+  return maxRows;
+};
+
+// Ensure contents lists fit their content cleanly. If a list was given a bloated
+// fixedBox down to the bottom of the page, unfix it so it sizes to its rows.
+function fixBoxes(bands: Band[], props: SyncProps, elements: DesignElement[]): boolean {
+  let changed = false;
+  for (const l of elements) {
+    if (l.type !== "contentsList") continue;
+    if (l.list.fixedBox) {
+      const pageH = pageAreaHeight(bands, props, l.pageIndex);
+      const rowsH = Math.max(1, l.list.entries.length) * l.list.rowHeight;
+      if (l.height >= pageH - l.y - 10 || l.height > rowsH + l.list.rowHeight * 2) {
+        delete l.list.fixedBox;
+        l.height = rowsH;
+        changed = true;
+      }
+    }
+  }
+  return changed;
+}
+
+// The parts on later contents pages take the first part's place and width, so
+// arranging the first page arranges them all (each part's height fits its own rows)
+function sharePlace(first: ContentsListElement, part: ContentsListElement): boolean {
+  if ((part.pageIndex ?? 0) === (first.pageIndex ?? 0)) return false;
+  let changed = false;
+  for (const key of ["x", "y", "width"] as const) {
+    if (part[key] !== first[key]) {
+      part[key] = first[key];
+      changed = true;
+    }
+  }
+  return changed;
+}
 
 // The rows the headings give a list: section numbers as the headings show
 // them, sub-sections counted under each section in the list's own style
@@ -186,22 +227,74 @@ export function repairListChains(elements: DesignElement[]): boolean {
   return orphans.size > 0;
 }
 
-// Every following list rebuilt from the headings; true when one changed
+// What every part of a Table of Contents shares with its first part: its look
+// and its numbering (one Table of Contents, however many pages it takes)
+const SHARED_KEYS = [
+  "rowHeight",
+  "fontSize",
+  "numberWidth",
+  "pageWidth",
+  "leader",
+  "boldSections",
+  "color",
+  "numberFill",
+  "numberColor",
+  "autoNumber",
+  "sectionStyle",
+  "sectionWord",
+  "subStyle",
+  "follow",
+] as const;
+
+function shareLook(first: ContentsListElement, part: ContentsListElement): boolean {
+  let changed = false;
+  for (const key of SHARED_KEYS) {
+    const value = first.list[key];
+    if (part.list[key] === value) continue;
+    if (value === undefined) delete part.list[key];
+    else (part.list as unknown as Record<string, unknown>)[key] = value;
+    changed = true;
+  }
+  return changed;
+}
+
+// A Table of Contents on contents pages is one list: its parts on later
+// contents pages (or a second column) share the first part's look, and all its
+// rows (from the headings when it follows them, else the typed ones) are spread
+// over the parts by the room on each page, the last part taking the rest.
+// Elsewhere only a list that follows the headings is rebuilt (typed lists on
+// normal pages are left as they are). True when one changed
+export const onContentsPages = (props: SyncProps, list: ContentsListElement) =>
+  pageKind(props, list.pageIndex) === "contents";
+
 export function syncFollowingLists(bands: Band[], props: SyncProps): boolean {
   const detail = detailOf(bands);
   if (!detail) return false;
   let changed = repairListChains(detail.elements);
+  if (fixBoxes(bands, props, detail.elements)) changed = true;
   const firsts = detail.elements.filter(
-    (e): e is ContentsListElement => e.type === "contentsList" && !!e.list.follow && !e.list.continues,
+    (e): e is ContentsListElement => e.type === "contentsList" && !e.list.continues,
   );
   for (const first of firsts) {
+    const shared = onContentsPages(props, first);
+    if (!shared && !first.list.follow) continue;
     const chain = listChain(detail.elements, first);
-    const rest = followedEntries(bands, props, first);
+    if (shared) {
+      for (const part of chain.slice(1)) {
+        if (shareLook(first, part)) changed = true;
+        if (sharePlace(first, part)) changed = true;
+      }
+    }
+    const headings = first.list.follow ? followedEntries(bands, props, first) : [];
+    const rest =
+      first.list.follow && headings.length > 0
+        ? headings
+        : chain.flatMap((l) => l.list.entries.map((e) => ({ ...e })));
     chain.forEach((l, i) => {
       const take = i === chain.length - 1 ? rest.length : Math.min(capacity(bands, props, l), rest.length);
       const entries = rest
         .splice(0, take)
-        .map((e) => (e.level === 0 ? { ...e, number: fitNumber(l.list, e.number) } : e));
+        .map((e) => (first.list.follow && e.level === 0 ? { ...e, number: fitNumber(l.list, e.number) } : e));
       if (JSON.stringify(entries) !== JSON.stringify(l.list.entries)) {
         l.list.entries = entries;
         changed = true;
@@ -214,11 +307,12 @@ export function syncFollowingLists(bands: Band[], props: SyncProps): boolean {
   return changed;
 }
 
-// Rows of a following list's chain that don't fit on its last page
+// Rows of a Table of Contents that don't fit on its last page
 export function followOverflow(bands: Band[], props: SyncProps, list: ContentsListElement): number {
   const detail = detailOf(bands);
-  if (!detail || !list.list.follow) return 0;
+  if (!detail) return 0;
   const chain = listChain(detail.elements, list);
+  if (!chain[0]!.list.follow && !onContentsPages(props, chain[0]!)) return 0;
   const last = chain[chain.length - 1]!;
   return Math.max(0, last.list.entries.length - capacity(bands, props, last));
 }
@@ -264,4 +358,94 @@ export function parseHeadingNumbers(value: string | null | undefined): HeadingNu
   } catch {
     return undefined;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Contents pages added and removed as a Table of Contents needs them
+
+// A Table of Contents on contents pages with rows that don't fit on its last part
+function contentsOverflow(bands: Band[], props: SyncProps): number {
+  const detail = detailOf(bands);
+  if (!detail) return 0;
+  return detail.elements
+    .filter((e): e is ContentsListElement => e.type === "contentsList" && !e.list.continues && onContentsPages(props, e))
+    .reduce((n, first) => n + followOverflow(bands, props, first), 0);
+}
+
+// A new contents page after the last one, a copy of it (same design), its
+// lists carrying on their Table of Contents with full room. The caller adds
+// one to the report's page count. False when there is nothing to copy
+export function addContentsPageCopy(bands: Band[], props: ReportProperties, auto = false): boolean {
+  const detail = detailOf(bands);
+  const { contents, count } = specialPages(props);
+  if (!detail || !contents) return false;
+  const source = detail.elements.filter((el) => (el.pageIndex ?? 0) === count - 1);
+  shiftPages(detail.elements, count, 1);
+  props.contentsPages = contents + 1;
+  for (const el of source) {
+    const copy = JSON.parse(JSON.stringify(el)) as DesignElement;
+    refreshUuids(copy);
+    copy.pageIndex = count;
+    if (copy.type === "contentsList" && el.type === "contentsList") {
+      copy.list.continues = listChain(detail.elements, el)[0]!.uuid;
+      copy.list.entries = [];
+      if (auto) copy.list.autoPage = true;
+      else delete copy.list.autoPage;
+      syncContentsListSize(copy);
+    }
+    detail.elements.push(copy);
+  }
+  return true;
+}
+
+// The same element apart from its id, page and a list's rows
+const sameDesign = (a: DesignElement, b: DesignElement) => {
+  const strip = (el: DesignElement) =>
+    JSON.stringify({ ...el, uuid: undefined, pageIndex: undefined, ...(el.type === "contentsList" ? { list: { ...el.list, entries: [], continues: undefined, autoPage: undefined }, height: undefined } : {}) });
+  return strip(a) === strip(b);
+};
+
+// The last contents page when it is an unused copy of the one before it (its
+// lists empty, nothing added or changed): removed. The caller takes one off
+// the report's page count. False when it is kept
+export function removeUnusedContentsPage(bands: Band[], props: ReportProperties): boolean {
+  const detail = detailOf(bands);
+  const { contents, count, cover } = specialPages(props);
+  if (!detail || contents < 2) return false;
+  const last = count - 1;
+  const onLast = detail.elements.filter((el) => (el.pageIndex ?? 0) === last);
+  const before = detail.elements.filter((el) => (el.pageIndex ?? 0) === last - 1);
+  if (last - 1 < (cover ? 1 : 0)) return false;
+  const lists = onLast.filter((e): e is ContentsListElement => e.type === "contentsList");
+  // Only a page added by itself (never one the user added)
+  if (!lists.length || lists.some((l) => l.list.entries.length || !l.list.continues || !l.list.autoPage)) return false;
+  if (onLast.length !== before.length || !onLast.every((el, i) => before[i] && sameDesign(el, before[i]!))) return false;
+  detail.elements = detail.elements.filter((el) => (el.pageIndex ?? 0) !== last);
+  shiftPages(detail.elements, last + 1, -1);
+  props.contentsPages = contents - 1;
+  return true;
+}
+
+// After a change: contents pages added while a Table of Contents' rows don't
+// fit, and unused copies at the end removed. Returns the change in pages
+export function fitContentsPages(bands: Band[], props: ReportProperties): number {
+  let delta = 0;
+  for (let i = 0; i < 20; i++) {
+    const over = contentsOverflow(bands, props);
+    if (!over) break;
+    if (!addContentsPageCopy(bands, props, true)) break;
+    delta++;
+    syncFollowingLists(bands, props);
+    // The new page took nothing (no list of that Table of Contents on it): undo it
+    if (contentsOverflow(bands, props) >= over) {
+      removeUnusedContentsPage(bands, props);
+      delta--;
+      break;
+    }
+  }
+  while (delta <= 0 && contentsOverflow(bands, props) === 0 && removeUnusedContentsPage(bands, props)) {
+    delta--;
+    syncFollowingLists(bands, props);
+  }
+  return delta;
 }

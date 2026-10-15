@@ -175,7 +175,17 @@
     "contentsClassic": "Classic",
     "contentsDotted": "Dotted",
     "contentsNumbered": "Numbered",
-    "contentsTwoColumns": "Two Columns"
+    "contentsTwoColumns": "Two Columns",
+    "coverOfficial": "Official Crest",
+    "coverBand": "Navy Band",
+    "coverStripe": "Side Stripe",
+    "coverFramed": "Formal Frame",
+    "coverPhotoStrip": "Photo Strip",
+    "contentsOfficial": "Official",
+    "contentsBanner": "Navy Banner",
+    "contentsSidebar": "Side Bar",
+    "contentsColumns": "Index Columns",
+    "contentsPanel": "Soft Panel"
   },
   "properties": {
     "title": "Properties",
@@ -2000,7 +2010,7 @@
     "addContents": "Add contents page",
     "addContentsHint": "Adds a contents page after the cover (or at the front). It uses the whole page, without the page header or footer.",
     "addAnotherContents": "Add contents page",
-    "addAnotherContentsHint": "Adds another contents page after this one, for a long list.",
+    "addAnotherContentsHint": "Adds another contents page after this one, with the same design, for a long list.",
     "pageOptions": "Page options",
     "cover": "Cover page",
     "contents": "Contents page",
@@ -2035,7 +2045,8 @@
     "changeDesign": "Change design",
     "changeDesignHint": "Pick another design for this page. Every part of it can still be changed afterwards.",
     "borderNotOnCover": "Page border added to every page except the cover: the cover uses the whole sheet, so it has no border. To give the cover a border too, choose \"Keep the page margins\" in the cover's ⋯ menu.",
-    "borderRefusedOnCover": "The cover uses the whole sheet, so it can't have a page border. To give the cover a border, choose \"Keep the page margins\" in the cover's ⋯ menu. To put a border on the other pages, drop it on any of them."
+    "borderRefusedOnCover": "The cover uses the whole sheet, so it can't have a page border. To give the cover a border, choose \"Keep the page margins\" in the cover's ⋯ menu. To put a border on the other pages, drop it on any of them.",
+    "contentsAddedSameDesign": "Contents page added with the same design."
   },
   "contentsList": {
     "emptyHint": "Table of contents: fill it from your Section Headings in its properties",
@@ -2056,9 +2067,9 @@
     "look": "Look",
     "textSize": "Text size",
     "rowHeight": "Row height",
-    "numberWidth": "Number column",
-    "pageWidth": "Page column",
-    "numberWidthHint": "Number column 0: no numbers.",
+    "numberWidth": "Space for numbers",
+    "pageWidth": "Space for page numbers",
+    "numberWidthHint": "Set Space for numbers to 0 to hide the numbers.",
     "leader": "Dots between title and page",
     "boldSections": "Sections in bold",
     "colours": "Colours",
@@ -2091,7 +2102,21 @@
     "linksHint": "In the PDF, clicking a row jumps to its heading. Here, double-click a row or use its target button.",
     "goTo": "Go to this heading",
     "goToHint": "Double-click to go to this heading",
-    "noHeadingForRow": "No heading on your pages has this row's title."
+    "noHeadingForRow": "No heading on your pages has this row's title.",
+    "onePerReport": "One Table of Contents over 1 page: its rows are all here, and they flow onto the next part by themselves. | One Table of Contents over {n} parts: its rows are all here, and they flow from one page to the next by themselves.",
+    "nextColumn": "Next column",
+    "onPage": "Contents page {n}",
+    "continuedTag": "continued",
+    "design": "Design",
+    "looks": {
+      "classic": "Classic",
+      "dotted": "Dotted lines",
+      "numbered": "Numbered boxes",
+      "plain": "Plain"
+    },
+    "designHint": "Changes only how the list looks: its rows and place stay.",
+    "designAllPages": "Used on every page of this Table of Contents, so your contents pages always match.",
+    "designAllPagesHint": "Changes how the Table of Contents looks on all your contents pages: its rows stay."
   },
   "pageDesigns": {
     "chooseCover": "Choose a cover page design",
@@ -2147,6 +2172,56 @@
         "name": "Two columns",
         "desc": "Two lists side by side, for a long contents.",
         "tileHint": "Sets a contents page's design: two lists side by side."
+      },
+      "coverOfficial": {
+        "name": "Official crest",
+        "desc": "Centred crest, ministry name and title between navy and gold bars.",
+        "tileHint": "Sets the cover page's design: centred crest, ministry and title."
+      },
+      "coverBand": {
+        "name": "Navy band",
+        "desc": "Logo and ministry on top, the title in a navy band, project details below.",
+        "tileHint": "Sets the cover page's design: the title in a navy band across the page."
+      },
+      "coverStripe": {
+        "name": "Side stripe",
+        "desc": "A navy and gold stripe down the left, everything neatly aligned beside it.",
+        "tileHint": "Sets the cover page's design: a navy stripe down the left."
+      },
+      "coverFramed": {
+        "name": "Formal frame",
+        "desc": "A double frame with everything centred, like a certificate.",
+        "tileHint": "Sets the cover page's design: a double frame, everything centred."
+      },
+      "coverPhotoStrip": {
+        "name": "Photo strip",
+        "desc": "Title on top, a wide photo across the page, a navy footer with the date.",
+        "tileHint": "Sets the cover page's design: a wide photo strip and a navy footer."
+      },
+      "contentsOfficial": {
+        "name": "Official",
+        "desc": "Small crest, centred heading over a navy and gold rule, dotted lines.",
+        "tileHint": "Sets the contents pages' design: crest, centred heading and a double rule."
+      },
+      "contentsBanner": {
+        "name": "Navy banner",
+        "desc": "The heading in a navy banner across the top, dotted lines below.",
+        "tileHint": "Sets the contents pages' design: the heading in a navy banner."
+      },
+      "contentsSidebar": {
+        "name": "Side bar",
+        "desc": "A navy bar down the left, SECTION numbers and dotted lines.",
+        "tileHint": "Sets the contents pages' design: a navy bar down the left."
+      },
+      "contentsColumns": {
+        "name": "Index columns",
+        "desc": "No. / Title / Page labels over a navy rule, like an official index.",
+        "tileHint": "Sets the contents pages' design: column labels over a navy rule."
+      },
+      "contentsPanel": {
+        "name": "Soft panel",
+        "desc": "The list on a soft grey panel with gold number boxes.",
+        "tileHint": "Sets the contents pages' design: a soft panel with gold number boxes."
       }
     },
     "placeholder": {
@@ -2165,10 +2240,26 @@
       "sample1": "PROJECT DETAILS",
       "sample2": "PROJECT SNAPSHOT",
       "sample3": "RISK REGISTER",
-      "sectionN": "SECTION {n}."
+      "sectionN": "SECTION {n}.",
+      "ministry": "MINISTRY / DEPARTMENT NAME",
+      "agency": "Agency or division name",
+      "documentNo": "Document No.: XXX/0000/2026",
+      "tableOfContentsTitle": "Table of Contents",
+      "colNumber": "No.",
+      "colTitle": "Title",
+      "colPage": "Page",
+      "sample4": "FINANCIAL SUMMARY",
+      "sample5": "APPENDICES",
+      "sampleSub1": "Scope of work",
+      "sampleSub2": "Key dates",
+      "sampleSub3": "Progress this month"
     },
     "wholeSheet": "Fill the whole sheet, edge to edge",
-    "wholeSheetHint": "Photos and colours reach the paper's edges. The other pages keep their margins."
+    "wholeSheetHint": "Photos and colours reach the paper's edges. The other pages keep their margins.",
+    "allContentsNote": "This design is used on all your contents pages. Your Table of Contents rows are kept.",
+    "replaceContentsMessage": "The new design replaces the heading and layout on all your contents pages. Your Table of Contents rows are kept.",
+    "appliedAllContents": "Design applied to all your contents pages.",
+    "replaceContentsTitle": "Change the design of all contents pages?"
   },
   "appMenu": {
     "title": "Menu",
@@ -2188,11 +2279,15 @@
     "word": "Word before the number",
     "styleHint": "Typing your own number in a heading keeps that number for that heading only."
   },
-  "autoDate": {
-    "title": "Date that updates itself",
-    "off": "Off: the text I type",
-    "onHint": "Shows the date the report is made, so it's always current. To type a different date, choose Off.",
-    "offHint": "Choose a style to show the date the report is made instead of typed text, e.g. the month of a monthly report.",
-    "cannotEdit": "This date updates itself. To type over it, choose Off under \"Date that updates itself\" in its properties."
+  "addPageMenu": {
+    "title": "Add a page",
+    "normal": "Normal page",
+    "normalHint": "Added at the end of the report.",
+    "cover": "Cover page",
+    "coverHint": "At the front, without the page header or footer. You choose a design next.",
+    "coverExists": "This report already has a cover page.",
+    "contents": "Table of Contents",
+    "contentsHint": "After the cover, without the page header or footer. You choose a design next.",
+    "contentsMoreHint": "Another contents page with the same design as the last one."
   }
 }

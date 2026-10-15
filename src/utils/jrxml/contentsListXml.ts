@@ -9,6 +9,7 @@ import {
   LEADER_DOTS,
   listNumbers,
   serializeContentsList,
+  SIDE_PAD,
   SUB_INDENT,
   titleLineHeight,
   type NumberStart,
@@ -82,7 +83,7 @@ export function generateContentsListXML(
     if (list.numberWidth > 0 && number) {
       const boxed = !!list.numberFill && entry.level === 0;
       xml += field({
-        x: indent,
+        x: SIDE_PAD + indent,
         y: boxed ? y + 1 : y + top,
         width: boxed ? Math.min(list.numberWidth - 6, list.rowHeight * 1.6) : list.numberWidth - 4,
         height: boxed ? list.rowHeight - 2 : lineHeight,
@@ -94,11 +95,11 @@ export function generateContentsListXML(
         link,
       });
     }
-    const titleX = list.numberWidth + indent;
+    const titleX = SIDE_PAD + list.numberWidth + indent;
     xml += field({
       x: titleX,
       y: y + top,
-      width: width - titleX - list.pageWidth,
+      width: width - titleX - list.pageWidth - SIDE_PAD,
       height: lineHeight,
       text: entry.title + (list.leader ? LEADER_DOTS : ""),
       bold,
@@ -107,7 +108,7 @@ export function generateContentsListXML(
       link,
     });
     xml += field({
-      x: width - list.pageWidth,
+      x: width - list.pageWidth - SIDE_PAD,
       y: y + top,
       width: list.pageWidth,
       height: lineHeight,

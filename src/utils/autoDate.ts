@@ -1,52 +1,61 @@
-// A text that shows the date the report is made ("October 2026"): the
-// report server works it out each time it prints the report, so a monthly
-// report never needs its date typed again. The canvas shows today's date.
-// The style is kept in AUTO_DATE_PROPERTY next to the expression; month
-// names are English, like "Page 1 of 3".
+// Date fields are treated as plain text so users can type into them directly.
+// This utility migrates any legacy autoDate properties and expressions into plain literal text.
 
 import type { DesignElement } from "@/types";
 
 export const AUTO_DATE_PROPERTY = "com.cdp.text.autoDate";
 
-export const AUTO_DATE_STYLES = ["monthYear", "dayMonthYear", "numeric"] as const;
-export type AutoDateStyle = (typeof AUTO_DATE_STYLES)[number];
-
-const JAVA_PATTERNS: Record<AutoDateStyle, string> = {
-  monthYear: "MMMM yyyy",
-  dayMonthYear: "d MMMM yyyy",
-  numeric: "dd/MM/yyyy",
-};
-
-const SAMPLE_FORMATS: Record<AutoDateStyle, Intl.DateTimeFormatOptions> = {
+const SAMPLE_FORMATS = {
   monthYear: { month: "long", year: "numeric" },
   dayMonthYear: { day: "numeric", month: "long", year: "numeric" },
   numeric: { day: "2-digit", month: "2-digit", year: "numeric" },
-};
+} as const;
 
-export function autoDateOf(element: DesignElement | null | undefined): AutoDateStyle | null {
-  const value = element?.properties?.find((p) => p?.name === AUTO_DATE_PROPERTY)?.value;
-  return AUTO_DATE_STYLES.includes(value as AutoDateStyle) ? (value as AutoDateStyle) : null;
+export function resolveLegacyDateSample(expressionOrStyle?: string): string {
+  const date = new Date();
+  if (expressionOrStyle?.includes("dd/MM/yyyy") || expressionOrStyle === "numeric") {
+    return new Intl.DateTimeFormat("en-GB", SAMPLE_FORMATS.numeric).format(date);
+  }
+  if (expressionOrStyle?.includes("d MMMM yyyy") || expressionOrStyle === "dayMonthYear") {
+    return new Intl.DateTimeFormat("en-GB", SAMPLE_FORMATS.dayMonthYear).format(date);
+  }
+  return new Intl.DateTimeFormat("en-GB", SAMPLE_FORMATS.monthYear).format(date);
 }
 
-export const autoDateExpression = (style: AutoDateStyle) =>
-  `new java.text.SimpleDateFormat("${JAVA_PATTERNS[style]}", java.util.Locale.ENGLISH).format(new java.util.Date())`;
+export function cleanLegacyAutoDateElement(element: DesignElement | null | undefined): boolean {
+  if (!element || element.type !== "textField") return false;
+  let changed = false;
+  if (Array.isArray(element.properties)) {
+    const idx = element.properties.findIndex((p) => p?.name === AUTO_DATE_PROPERTY);
+    if (idx !== -1) {
+      element.properties.splice(idx, 1);
+      if (element.properties.length === 0) delete (element as any).properties;
+      changed = true;
+    }
+  }
+  const expr = String(element.expression ?? "").trim();
+  if (expr.includes("SimpleDateFormat") && expr.includes("java.util.Date")) {
+    const sample = resolveLegacyDateSample(expr);
+    element.expression = `"${sample}"`;
+    changed = true;
+  }
+  return changed;
+}
 
-// What the date looks like (today's, on the canvas and in the panel)
-export const autoDateSample = (style: AutoDateStyle, date = new Date()) =>
-  new Intl.DateTimeFormat("en-GB", SAMPLE_FORMATS[style]).format(date);
+export function cleanLegacyAutoDate(bands: { elements?: any[] }[] | undefined): void {
+  if (!Array.isArray(bands)) return;
+  for (const band of bands) {
+    cleanLegacyList(band.elements);
+  }
+}
 
-// On: the text shows the date in this style. Off (null): it keeps today's
-// date as ordinary typed text
-export function setAutoDate(element: DesignElement, style: AutoDateStyle | null): void {
-  if (element.type !== "textField") return;
-  const current = autoDateOf(element);
-  const others = (element.properties ?? []).filter((p) => p?.name !== AUTO_DATE_PROPERTY);
-  if (style) {
-    element.properties = [...others, { name: AUTO_DATE_PROPERTY, value: style }];
-    element.expression = autoDateExpression(style);
-    element.markup = "none";
-  } else {
-    element.properties = others;
-    element.expression = `"${current ? autoDateSample(current) : ""}"`;
+function cleanLegacyList(elements: any[] | undefined): void {
+  if (!Array.isArray(elements)) return;
+  for (const el of elements) {
+    if (!el) continue;
+    if (el.type === "frame" && Array.isArray(el.elements)) {
+      cleanLegacyList(el.elements);
+    }
+    cleanLegacyAutoDateElement(el);
   }
 }

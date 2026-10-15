@@ -132,39 +132,11 @@
               @dragleave="handleDragLeave"
               @mousedown="startSelection"
             >
-              <!-- First page: add a cover page / contents page in front -->
-              <div
-                v-if="pIndex === 1 && (!special.cover || !special.contents)"
-                class="special-pages-bar"
-                :style="{ transform: `scale(${1 / zoomLevel})` }"
-                @mousedown.stop
-              >
-                <button
-                  v-if="!special.cover"
-                  type="button"
-                  class="special-page-btn"
-                  :title="t('specialPages.addCoverHint')"
-                  @click="emit('page-action', 'addCover', 0)"
-                >
-                  <BookImage :size="14" aria-hidden="true" />
-                  {{ t("specialPages.addCover") }}
-                </button>
-                <button
-                  v-if="!special.contents"
-                  type="button"
-                  class="special-page-btn"
-                  :title="t('specialPages.addContentsHint')"
-                  @click="emit('page-action', 'addContents', 0)"
-                >
-                  <TableOfContents :size="14" aria-hidden="true" />
-                  {{ t("specialPages.addContents") }}
-                </button>
-              </div>
-
               <!-- Floating Page Sheet Header / Badge in margin -->
               <div
                 class="page-sheet-header"
-                :style="{ transform: `scale(${1 / zoomLevel})` }"
+                :class="{ 'is-compact': compactPageToolbar }"
+                :style="{ transform: `scale(${pageToolbarScale})` }"
               >
                 <span class="page-sheet-badge" :class="{ 'is-special': isSpecial(pIndex - 1) }">{{
                   pageBadge(pIndex - 1)
@@ -177,7 +149,7 @@
                   @click.stop="emit('page-action', 'chooseDesign', pIndex - 1)"
                 >
                   <LayoutTemplate :size="13" aria-hidden="true" />
-                  {{ t("specialPages.changeDesign") }}
+                  <span class="btn-label">{{ t("specialPages.changeDesign") }}</span>
                 </button>
                 <button
                   v-if="kindOf(pIndex - 1) === 'normal'"
@@ -186,7 +158,7 @@
                   :title="t('canvas.addPageAfter')"
                 >
                   <Plus :size="13" :stroke-width="2.2" aria-hidden="true" />
-                  {{ t("canvas.addPageAfter") }}
+                  <span class="btn-label">{{ t("canvas.addPageAfter") }}</span>
                 </button>
                 <button
                   v-else-if="pIndex - 1 === special.count - 1 && kindOf(pIndex - 1) === 'contents'"
@@ -195,7 +167,7 @@
                   :title="t('specialPages.addAnotherContentsHint')"
                 >
                   <Plus :size="13" :stroke-width="2.2" aria-hidden="true" />
-                  {{ t("specialPages.addAnotherContents") }}
+                  <span class="btn-label">{{ t("specialPages.addAnotherContents") }}</span>
                 </button>
                 <button
                   v-if="canDeletePage(pIndex - 1)"
@@ -204,7 +176,7 @@
                   :title="t('canvas.deletePage')"
                 >
                   <Trash2 :size="13" aria-hidden="true" />
-                  {{ t("canvas.deletePage") }}
+                  <span class="btn-label">{{ t("canvas.deletePage") }}</span>
                 </button>
                 <!-- Cover / contents choices for this page -->
                 <div v-if="pageMenuItems(pIndex - 1).length" class="page-menu-wrap">
@@ -743,6 +715,8 @@ const canDeletePage = (pageIdx: number) =>
   isSpecial(pageIdx) || totalPages.value - special.value.count > 1;
 
 type PageAction =
+  | "addCover"
+  | "addContents"
   | "makeCover"
   | "makeContents"
   | "coverToNormal"
@@ -751,10 +725,20 @@ type PageAction =
   | "wholeSheet"
   | "keepMargins"
   | "delete";
+// Each page's toolbar keeps its size when zoomed in, shrinks with the page
+// when zoomed out (to 75% at most), and shows icons only on a narrow page
+const pageToolbarScale = computed(() => Math.max(0.75, Math.min(1, zoomLevel.value)) / zoomLevel.value);
+const compactPageToolbar = computed(() => paperWidth.value * zoomLevel.value < 620);
+
 function pageMenuItems(pageIdx: number) {
   const kind = kindOf(pageIdx);
   const { cover, contents, count } = special.value;
   const items: { action: PageAction; labelKey: string; icon: unknown; danger?: boolean }[] = [];
+  // Adding the pages at the front (also in the header's Page menu)
+  if (pageIdx === 0 && !cover) items.push({ action: "addCover", labelKey: "specialPages.addCover", icon: BookImage });
+  if (!contents && (kind === "cover" || pageIdx === count)) {
+    items.push({ action: "addContents", labelKey: "specialPages.addContents", icon: TableOfContents });
+  }
   if (kind === "normal") {
     if (pageIdx === 0 && !cover && !contents) {
       items.push({ action: "makeCover", labelKey: "specialPages.makeCover", icon: BookImage });
@@ -1454,45 +1438,9 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(4px);
 }
 
-.special-pages-bar {
-  position: absolute;
-  top: 6px;
-  left: 8px;
-  z-index: 20;
-  display: flex;
-  gap: 6px;
-  transform-origin: top left;
-  user-select: none;
-}
 
-.special-page-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 26px;
-  padding: 0 12px;
-  border: 1px dashed rgba(124, 92, 247, 0.35);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.96);
-  color: #6366f1;
-  font-size: 11.5px;
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
-  cursor: pointer;
-  transition: all 0.16s ease;
-}
 
-.special-page-btn:hover {
-  background: #ffffff;
-  border-color: #7c5cf7;
-  color: #5b3ee0;
-  box-shadow: 0 4px 12px rgba(124, 92, 247, 0.12);
-}
 
-.special-page-btn:focus-visible {
-  outline: 2px solid #7c5cf7;
-  outline-offset: 1px;
-}
 
 .page-sheet-badge.is-special {
   color: #6366f1;
@@ -1570,6 +1518,16 @@ onBeforeUnmount(() => {
 
 .page-menu-item.is-danger:hover {
   background: #fef2f2;
+}
+
+/* Narrow page on screen: icons only (the names are in the tooltips) */
+.page-sheet-header.is-compact .btn-label {
+  display: none;
+}
+
+.page-sheet-header.is-compact .add-page-after-btn,
+.page-sheet-header.is-compact .delete-page-btn {
+  padding: 0 7px;
 }
 
 .page-sheet-badge {

@@ -7,6 +7,8 @@
     @update:visible="emit('update:visible', $event)"
   >
     <p class="chooser-hint">{{ t("pageDesigns.chooseHint") }}</p>
+    <!-- Contents pages share one design -->
+    <p v-if="allPagesNote" class="all-pages-note">{{ t("pageDesigns.allContentsNote") }}</p>
     <!-- Cover: edge to edge, or inside the report's margins -->
     <label v-if="kind === 'cover'" class="sheet-option">
       <input type="checkbox" :checked="sheet" @change="emit('update:sheet', ($event.target as HTMLInputElement).checked)" />
@@ -55,6 +57,8 @@ const props = defineProps<{
   designs: { id: string; elements: DesignElement[] }[];
   // Cover: designs fill the whole sheet
   sheet?: boolean;
+  // Contents: the design goes on every contents page
+  allPagesNote?: boolean;
   // The printable area the designs are made for
   pageWidth: number;
   pageHeight: number;
@@ -67,7 +71,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const THUMB = 132;
+const THUMB = 176;
 const thumbHeight = computed(() => Math.round((props.pageHeight / props.pageWidth) * THUMB));
 </script>
 
@@ -76,6 +80,15 @@ const thumbHeight = computed(() => Math.round((props.pageHeight / props.pageWidt
   margin: 0 0 14px;
   font-size: 13px;
   color: #4b5563;
+}
+
+.all-pages-note {
+  margin: -6px 0 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f5f3ff;
+  font-size: 12.5px;
+  color: #4c3aa8;
 }
 
 .sheet-option {
@@ -111,7 +124,7 @@ const thumbHeight = computed(() => Math.round((props.pageHeight / props.pageWidt
 
 .design-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
   gap: 14px;
 }
 
@@ -138,6 +151,8 @@ const thumbHeight = computed(() => Math.round((props.pageHeight / props.pageWidt
 
 .design-preview {
   display: block;
+  overflow: hidden;
+  border-radius: 3px;
   border: 1px solid #e5e7eb;
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
 }
@@ -166,7 +181,7 @@ const thumbHeight = computed(() => Math.round((props.pageHeight / props.pageWidt
 
 <style>
 .modal-content.design-chooser {
-  width: min(820px, 94vw);
+  width: min(1000px, 95vw);
   max-height: 88vh;
 }
 

@@ -417,7 +417,7 @@
               v-if="isPagination(currentElement)"
               :element="currentElement"
             />
-            <div v-else-if="!autoDateOf(currentElement)" class="box-section compact">
+            <div v-else class="box-section compact">
               <div class="card-head">
                 <h5>{{ t("properties.textContent") }}</h5>
                 <button
@@ -448,8 +448,6 @@
                 </select>
               </label>
             </div>
-            <!-- Or the date the report is made, updated by itself -->
-            <AutoDateProperties v-if="!isPagination(currentElement)" :element="currentElement" />
             <div class="box-section compact">
               <h5>{{ t("properties.rotation") }}</h5>
               <div class="seg" role="radiogroup" :aria-label="t('properties.rotation')">
@@ -970,8 +968,7 @@ import ChartProperties from "./ChartProperties.vue";
 import CustomTableProperties from "./CustomTableProperties.vue";
 import ContentsListProperties from "./ContentsListProperties.vue";
 import HeadingNumberProperties from "./HeadingNumberProperties.vue";
-import AutoDateProperties from "./AutoDateProperties.vue";
-import { autoDateOf } from "@/utils/autoDate";
+import { cleanLegacyAutoDateElement, resolveLegacyDateSample } from "@/utils/autoDate";
 import { hasProperty, SECTION_HEADING_PROPERTY } from "@/utils/contentsList";
 import { resetElementStyle } from "../../../utils/resetStyle";
 import BarcodeProperties from "./BarcodeProperties.vue";
@@ -1374,6 +1371,9 @@ function getTextFieldDisplay(element: any) {
   if (!element) return "";
   const raw = element.expression || (element.fieldName ? `$F{${element.fieldName}}` : "");
   const trimmed = String(raw).trim();
+  if (trimmed.includes("SimpleDateFormat") && trimmed.includes("java.util.Date")) {
+    return resolveLegacyDateSample(trimmed);
+  }
   if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
     return trimmed.slice(1, -1).replace(/\\n/g, '\n');
   }
@@ -1383,6 +1383,7 @@ function getTextFieldDisplay(element: any) {
 // Update text field content (wraps static text in quotes, preserves $F{...} / $V{...} expressions)
 function updateTextFieldDisplay(val: string) {
   if (!currentElement.value || currentElement.value.type !== "textField") return;
+  cleanLegacyAutoDateElement(currentElement.value);
   report.saveStateToHistory();
   const elem = currentElement.value as any;
   if (!elem.markup) {

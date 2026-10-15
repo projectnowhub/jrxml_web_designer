@@ -2,6 +2,34 @@
   <div class="contents-list-properties">
     <!-- Basic Properties: fill it from the headings, or type the rows -->
     <template v-if="part === 'basic'">
+      <!-- Design: a ready-made look for the list (on contents pages, for all of them) -->
+      <div class="card">
+        <h5>{{ t("contentsList.design") }}</h5>
+        <div class="look-grid" role="radiogroup" :aria-label="t('contentsList.design')">
+          <button
+            v-for="look in LIST_LOOKS"
+            :key="look"
+            type="button"
+            role="radio"
+            class="look-card"
+            :class="{ active: activeLook === look }"
+            :aria-checked="activeLook === look"
+            @click="setLook(look)"
+          >
+            <span class="look-sample" :class="`is-${look}`" aria-hidden="true">
+              <span v-for="n in 3" :key="n" class="look-row">
+                <span v-if="look !== 'plain'" class="look-num">{{ lookNumber(look, n) }}</span>
+                <span class="look-title" />
+                <span v-if="look === 'dotted'" class="look-dots" />
+                <span class="look-page">{{ n + 2 }}</span>
+              </span>
+            </span>
+            <span class="look-name">{{ t(`contentsList.looks.${look}`) }}</span>
+          </button>
+        </div>
+        <p class="form-hint">{{ t(chain.length > 1 || onContentsPage ? "contentsList.designAllPagesHint" : "contentsList.designHint") }}</p>
+      </div>
+
       <div class="card">
         <h5>{{ t("contentsList.fillTitle") }}</h5>
         <label class="toggle-row is-first">
@@ -77,37 +105,41 @@
       </div>
 
       <div class="card">
-        <h5>{{ t("contentsList.rows", { n: list.entries.length }, list.entries.length) }}</h5>
-        <p v-if="list.follow && list.entries.length" class="form-hint is-first">{{ t("contentsList.followRowsHint") }}</p>
-        <div v-if="list.entries.length" class="row-head" aria-hidden="true">
+        <h5>{{ t("contentsList.rows", { n: rows.length }, rows.length) }}</h5>
+        <p v-if="chain.length > 1" class="form-hint is-first">{{ t("contentsList.onePerReport", { n: chain.length }, chain.length) }}</p>
+        <p v-if="list.follow && rows.length" class="form-hint is-first">{{ t("contentsList.followRowsHint") }}</p>
+        <div v-if="rows.length" class="row-head" aria-hidden="true">
           <span v-if="list.numberWidth > 0" class="col-number" :style="{ width: numberColumnWidth }">{{ t("contentsList.number") }}</span>
           <span class="col-title">{{ t("contentsList.titleColumn") }}</span>
           <span class="col-page">{{ t("contentsList.page") }}</span>
         </div>
-        <div v-for="(entry, i) in list.entries" :key="i" class="entry-row" :class="{ 'is-sub': entry.level === 1 }">
+        <template v-for="(row, i) in rows" :key="i">
+        <!-- Where the next page (or column) of the Table of Contents starts -->
+        <div v-if="row.divider" class="part-divider">{{ row.divider }}</div>
+        <div class="entry-row" :class="{ 'is-sub': row.entry.level === 1 }">
           <input
             v-if="list.numberWidth > 0"
             class="col-number"
             :style="{ width: numberColumnWidth }"
-            :value="list.autoNumber ? numbers[i] : entry.number"
+            :value="list.autoNumber ? numbers[i] : row.entry.number"
             :readonly="list.autoNumber || list.follow"
             :title="list.autoNumber ? t('contentsList.countedHint') : undefined"
             :aria-label="t('contentsList.number')"
-            @change="setEntry(i, 'number', ($event.target as HTMLInputElement).value)"
+            @change="setEntry(row, 'number', ($event.target as HTMLInputElement).value)"
           />
           <input
             class="col-title"
-            :value="entry.title"
+            :value="row.entry.title"
             :readonly="list.follow"
             :aria-label="t('contentsList.titleColumn')"
-            @change="setEntry(i, 'title', ($event.target as HTMLInputElement).value)"
+            @change="setEntry(row, 'title', ($event.target as HTMLInputElement).value)"
           />
           <input
             class="col-page"
-            :value="entry.page"
+            :value="row.entry.page"
             :readonly="list.follow"
             :aria-label="t('contentsList.page')"
-            @change="setEntry(i, 'page', ($event.target as HTMLInputElement).value)"
+            @change="setEntry(row, 'page', ($event.target as HTMLInputElement).value)"
           />
           <button
             type="button"
@@ -123,11 +155,11 @@
             v-if="!list.follow"
             type="button"
             class="icon-btn"
-            :title="t(entry.level === 1 ? 'contentsList.makeSection' : 'contentsList.makeSub')"
-            :aria-label="t(entry.level === 1 ? 'contentsList.makeSection' : 'contentsList.makeSub')"
-            @click="change(() => (entry.level = entry.level === 1 ? 0 : 1))"
+            :title="t(row.entry.level === 1 ? 'contentsList.makeSection' : 'contentsList.makeSub')"
+            :aria-label="t(row.entry.level === 1 ? 'contentsList.makeSection' : 'contentsList.makeSub')"
+            @click="change(() => (row.entry.level = row.entry.level === 1 ? 0 : 1))"
           >
-            <component :is="entry.level === 1 ? IndentDecrease : IndentIncrease" :size="13" aria-hidden="true" />
+            <component :is="row.entry.level === 1 ? IndentDecrease : IndentIncrease" :size="13" aria-hidden="true" />
           </button>
           <button
             v-if="!list.follow"
@@ -135,12 +167,13 @@
             class="icon-btn is-danger"
             :title="t('contentsList.removeRow')"
             :aria-label="t('contentsList.removeRow')"
-            @click="change(() => list.entries.splice(i, 1))"
+            @click="change(() => row.part.list.entries.splice(row.index, 1))"
           >
             <Trash2 :size="13" aria-hidden="true" />
           </button>
         </div>
-        <p v-if="list.entries.length" class="form-hint">{{ t("contentsList.linksHint") }}</p>
+        </template>
+        <p v-if="rows.length" class="form-hint">{{ t("contentsList.linksHint") }}</p>
         <button v-if="!list.follow" type="button" class="wide-btn" @click="addRow">
           <Plus :size="13" aria-hidden="true" />
           {{ t("contentsList.addRow") }}
@@ -236,6 +269,10 @@ import ColorSwatchPicker from "../../common/ColorSwatchPicker.vue";
 import { useReportStore } from "@/stores/report";
 import { useSelectionStore } from "@/stores/selection";
 import {
+  applyListLook,
+  currentListLook,
+  LIST_LOOKS,
+  type ListLook,
   collectHeadings,
   DEFAULT_SECTION_WORD,
   headingItems,
@@ -249,7 +286,7 @@ import {
   syncContentsListSize,
 } from "@/utils/contentsList";
 import { followOverflow, listChain } from "@/utils/headingSync";
-import { pageKind } from "@/utils/specialPages";
+import { contentsPageNumber, pageKind } from "@/utils/specialPages";
 import type {
   ContentsEntry,
   ContentsListData,
@@ -266,7 +303,44 @@ const emit = defineEmits<{ fill: [] }>();
 
 const { t } = useI18n();
 const report = useReportStore();
-const list = computed(() => props.element.list);
+// One Table of Contents, however many pages it takes: its parts in order
+// (this one, the lists carrying it on, the one it carries on). Its look and
+// numbering live on the first part (the others share them); its rows are all
+// shown here, each kept by the part that shows it
+// (Only on contents pages: a list on a normal page shows and keeps its own
+// rows and look, as before.)
+const fullChain = computed(() => {
+  const detail = report.bands.find((b) => b.type === "detail");
+  return detail ? listChain(detail.elements, props.element) : [props.element];
+});
+const chain = computed(() =>
+  pageKind(report.reportProperties, props.element.pageIndex) === "contents" ? fullChain.value : [props.element],
+);
+const head = computed(() => chain.value[0] ?? props.element);
+const list = computed(() => head.value.list);
+
+interface Row {
+  entry: ContentsEntry;
+  part: ContentsListElement;
+  index: number;
+  // Where a later part starts: "Contents page 2" / "Next column"
+  divider?: string;
+}
+const rows = computed<Row[]>(() =>
+  chain.value.flatMap((part, p) =>
+    part.list.entries.map((entry, index) => {
+      let divider: string | undefined;
+      if (index === 0 && p > 0) {
+        const before = chain.value[p - 1]!;
+        divider =
+          (before.pageIndex ?? 0) === (part.pageIndex ?? 0)
+            ? t("contentsList.nextColumn")
+            : t("contentsList.onPage", { n: contentsPageNumber(report.reportProperties, part.pageIndex ?? 0) });
+      }
+      return { entry, part, index, divider };
+    }),
+  ),
+);
 
 // One undo step per change; a colour being dragged is one step too
 let lastEdit = { key: "", time: 0 };
@@ -276,29 +350,45 @@ function record(key?: string) {
   lastEdit = { key: key ?? "", time: now };
 }
 
+// After a change the rows flow over the parts again (report store sync)
 function change(mutate: () => void, key?: string) {
   record(key);
   mutate();
-  syncContentsListSize(props.element);
+  for (const part of chain.value) syncContentsListSize(part);
   report.updateJrxml();
 }
 
-function setEntry(index: number, key: keyof Omit<ContentsEntry, "level">, value: string) {
-  const entry = list.value.entries[index];
-  if (!entry || entry[key] === value) return;
-  change(() => (entry[key] = value));
+function setEntry(row: Row, key: keyof Omit<ContentsEntry, "level">, value: string) {
+  if (row.entry[key] === value) return;
+  change(() => (row.entry[key] = value));
 }
 
+// A new row goes at the end (on the last part)
 function addRow() {
-  const last = list.value.entries[list.value.entries.length - 1];
+  const lastPart = chain.value[chain.value.length - 1]!;
+  const last = rows.value[rows.value.length - 1]?.entry;
   change(() =>
-    list.value.entries.push({ number: "", title: t("contentsList.newRow"), page: last?.page ?? "", level: last?.level ?? 0 }),
+    lastPart.list.entries.push({ number: "", title: t("contentsList.newRow"), page: last?.page ?? "", level: last?.level ?? 0 }),
   );
 }
 
 // The heading each row stands for (the "go to" buttons)
 const selection = useSelectionStore();
-const headings = computed(() => matchHeadings(list.value.entries, headingItems(report.bands, report.reportProperties)));
+const headings = computed(() =>
+  matchHeadings(
+    rows.value.map((r) => r.entry),
+    headingItems(report.bands, report.reportProperties),
+  ),
+);
+
+// Ready-made looks (the first part's look is the whole Table of Contents' on
+// contents pages; the other parts copy it when the report is written again)
+const activeLook = computed(() => currentListLook(list.value));
+const lookNumber = (look: ListLook, n: number) => (look === "numbered" ? `0${n}` : look === "classic" ? `SEC. ${n}` : `${n}.`);
+function setLook(look: ListLook) {
+  if (activeLook.value === look) return;
+  change(() => applyListLook(list.value, look));
+}
 
 // Following the headings: how many there are, and the rows that don't fit
 const headingCount = computed(() => collectHeadings(report.bands, report.reportProperties).length);
@@ -309,10 +399,8 @@ const onContentsPage = computed(() => pageKind(report.reportProperties, props.el
 // they are, numbers included, to be edited by hand
 function setFollow(on: boolean) {
   if (on === !!list.value.follow) return;
-  const detail = report.bands.find((b) => b.type === "detail");
-  const chain = detail ? listChain(detail.elements, props.element) : [props.element];
   change(() => {
-    for (const l of chain) {
+    for (const l of fullChain.value) {
       if (on) {
         l.list.follow = true;
       } else {
@@ -323,16 +411,16 @@ function setFollow(on: boolean) {
   });
 }
 
-// Counted numbers (from where the lists before this one in its chain stopped)
+// Counted numbers of every row, straight through the parts
 const numbers = computed(() => {
   const detail = report.bands.find((b) => b.type === "detail");
-  const start = props.element.uuid ? numberStarts(detail?.elements ?? []).get(props.element.uuid) : undefined;
-  return listNumbers(list.value, start);
+  const starts = numberStarts(detail?.elements ?? []);
+  return chain.value.flatMap((part) => listNumbers(part.list, part.uuid ? starts.get(part.uuid) : undefined));
 });
 
 // The No. boxes are as wide as the longest number ("SECTION 12."), within reason
 const numberColumnWidth = computed(() => {
-  const longest = Math.max(2, ...list.value.entries.map((e, i) => (list.value.autoNumber ? numbers.value[i] : e.number)?.length ?? 0));
+  const longest = Math.max(2, ...rows.value.map((r, i) => (list.value.autoNumber ? numbers.value[i] : r.entry.number)?.length ?? 0));
   return `${Math.min(110, Math.max(44, longest * 7 + 16))}px`;
 });
 
@@ -487,6 +575,24 @@ function setColor(key: keyof Pick<ContentsListData, "color" | "numberFill">, val
   margin-bottom: 4px;
 }
 
+.part-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--prop-primary-color, #6440f4);
+}
+
+.part-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(100, 64, 244, 0.2);
+}
+
 .entry-row.is-sub .col-title {
   margin-left: 12px;
 }
@@ -581,6 +687,91 @@ function setColor(key: keyof Pick<ContentsListData, "color" | "numberFill">, val
   font-size: 12px;
   color: var(--prop-text-primary);
   cursor: pointer;
+}
+
+.look-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.look-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--prop-border-color);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.look-card:hover {
+  border-color: var(--prop-border-focus);
+}
+
+.look-card.active {
+  border-color: var(--prop-primary-color, #6440f4);
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.15);
+}
+
+.look-sample {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px 6px;
+  border-radius: 5px;
+  background: #fafafc;
+}
+
+.look-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 9px;
+  font-size: 7px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.look-title {
+  width: 40%;
+  height: 3px;
+  border-radius: 2px;
+  background: #9ca3af;
+}
+
+.look-dots {
+  flex: 1;
+  border-bottom: 1.5px dotted #9ca3af;
+}
+
+.look-page {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.is-dotted .look-page,
+.is-plain .look-page {
+  margin-left: 0;
+}
+
+.is-numbered .look-row {
+  height: 11px;
+}
+
+.is-numbered .look-num {
+  padding: 0 2px;
+  border-radius: 2px;
+  background: #14284b;
+  color: #fff;
+}
+
+.look-name {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--prop-text-primary);
 }
 
 .toggle-row.is-first {

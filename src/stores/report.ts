@@ -16,9 +16,11 @@ import { useUndoRedo } from "@/composables/useUndoRedo";
 import { generateJRXMLContent } from "@/utils/jrxmlGenerator";
 import { ensureUniqueUuids } from "@/utils/elementUtils";
 import { resetBoxPhotos } from "@/utils/framePresets";
+import { cleanLegacyAutoDate } from "@/utils/autoDate";
 import { ensureUniqueTableDatasets } from "@/utils/table/tableDocument";
 import { specialPages } from "@/utils/specialPages";
-import { syncHeadings } from "@/utils/headingSync";
+import { fitContentsPages, syncHeadings } from "@/utils/headingSync";
+import { unwrapLegacyCoverFrames } from "@/utils/pageDesigns";
 import { useEditorStore } from "./editor";
 import { useSelectionStore } from "./selection";
 import {
@@ -206,6 +208,10 @@ export const useReportStore = defineStore("report", () => {
       // Headings renumbered, contents lists that follow them rebuilt (part of
       // the change being written, so the same undo step)
       syncHeadings(bands.value, reportProperties.value);
+      // A Table of Contents on contents pages gets the contents pages it needs
+      const before = totalPages.value;
+      const added = fitContentsPages(bands.value, reportProperties.value);
+      if (added) pageCount.value = Math.max(1, before + added);
       const content = generateJRXMLContent(
         { ...reportProperties.value, pageCount: totalPages.value },
         bands.value,
@@ -278,6 +284,8 @@ export const useReportStore = defineStore("report", () => {
     ensureUniqueUuids(bands.value);
     ensureUniqueTableDatasets(bands.value);
     resetBoxPhotos(bands.value);
+    cleanLegacyAutoDate(bands.value);
+    unwrapLegacyCoverFrames(bands.value);
     const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
     const lastPage = Math.max(0, ...(detail?.elements ?? []).map((e: any) => e.pageIndex || 0));
     pageCount.value = Math.max(1, data.pageCount ?? props.pageCount ?? 0, lastPage + 1);

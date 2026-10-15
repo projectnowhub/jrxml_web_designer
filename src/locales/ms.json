@@ -175,7 +175,17 @@
     "contentsClassic": "Klasik",
     "contentsDotted": "Bertitik",
     "contentsNumbered": "Bernombor",
-    "contentsTwoColumns": "Dua Lajur"
+    "contentsTwoColumns": "Dua Lajur",
+    "coverOfficial": "Jata Rasmi",
+    "coverBand": "Jalur Biru Tua",
+    "coverStripe": "Jalur Sisi",
+    "coverFramed": "Bingkai Rasmi",
+    "coverPhotoStrip": "Jalur Foto",
+    "contentsOfficial": "Rasmi",
+    "contentsBanner": "Sepanduk Biru Tua",
+    "contentsSidebar": "Bar Sisi",
+    "contentsColumns": "Lajur Indeks",
+    "contentsPanel": "Panel Lembut"
   },
   "properties": {
     "title": "Sifat",
@@ -2000,7 +2010,7 @@
     "addContents": "Tambah halaman kandungan",
     "addContentsHint": "Menambah halaman kandungan selepas halaman kulit (atau di hadapan). Ia menggunakan seluruh halaman, tanpa kepala atau kaki halaman.",
     "addAnotherContents": "Tambah halaman kandungan",
-    "addAnotherContentsHint": "Menambah satu lagi halaman kandungan selepas halaman ini, untuk senarai yang panjang.",
+    "addAnotherContentsHint": "Menambah satu lagi halaman kandungan selepas halaman ini, dengan reka bentuk yang sama, untuk senarai yang panjang.",
     "pageOptions": "Pilihan halaman",
     "cover": "Halaman kulit",
     "contents": "Halaman kandungan",
@@ -2035,7 +2045,8 @@
     "changeDesign": "Tukar reka bentuk",
     "changeDesignHint": "Pilih reka bentuk lain untuk halaman ini. Setiap bahagiannya masih boleh diubah kemudian.",
     "borderNotOnCover": "Sempadan halaman ditambah pada setiap halaman kecuali halaman kulit: halaman kulit menggunakan seluruh helaian, jadi ia tiada sempadan. Untuk memberikan sempadan pada halaman kulit juga, pilih \"Kekalkan jidar halaman\" dalam menu ⋯ halaman kulit.",
-    "borderRefusedOnCover": "Halaman kulit menggunakan seluruh helaian, jadi ia tidak boleh mempunyai sempadan halaman. Untuk memberikan sempadan pada halaman kulit, pilih \"Kekalkan jidar halaman\" dalam menu ⋯ halaman kulit. Untuk meletakkan sempadan pada halaman lain, lepaskannya pada mana-mana halaman tersebut."
+    "borderRefusedOnCover": "Halaman kulit menggunakan seluruh helaian, jadi ia tidak boleh mempunyai sempadan halaman. Untuk memberikan sempadan pada halaman kulit, pilih \"Kekalkan jidar halaman\" dalam menu ⋯ halaman kulit. Untuk meletakkan sempadan pada halaman lain, lepaskannya pada mana-mana halaman tersebut.",
+    "contentsAddedSameDesign": "Halaman kandungan ditambah dengan reka bentuk yang sama."
   },
   "contentsList": {
     "emptyHint": "Isi kandungan: isikannya daripada Tajuk Bahagian anda dalam sifatnya",
@@ -2056,9 +2067,9 @@
     "look": "Rupa",
     "textSize": "Saiz teks",
     "rowHeight": "Tinggi baris",
-    "numberWidth": "Lajur nombor",
-    "pageWidth": "Lajur halaman",
-    "numberWidthHint": "Lajur nombor 0: tiada nombor.",
+    "numberWidth": "Ruang untuk nombor",
+    "pageWidth": "Ruang untuk nombor halaman",
+    "numberWidthHint": "Tetapkan Ruang untuk nombor kepada 0 untuk menyembunyikan nombor.",
     "leader": "Titik antara tajuk dan halaman",
     "boldSections": "Bahagian dalam huruf tebal",
     "colours": "Warna",
@@ -2091,7 +2102,21 @@
     "linksHint": "Dalam PDF, mengklik baris akan melompat ke tajuknya. Di sini, klik dua kali baris atau gunakan butang sasarannya.",
     "goTo": "Pergi ke tajuk ini",
     "goToHint": "Klik dua kali untuk pergi ke tajuk ini",
-    "noHeadingForRow": "Tiada tajuk pada halaman anda yang mempunyai tajuk baris ini."
+    "noHeadingForRow": "Tiada tajuk pada halaman anda yang mempunyai tajuk baris ini.",
+    "onePerReport": "Satu Isi Kandungan pada 1 halaman: semua barisnya ada di sini, dan ia mengalir ke bahagian seterusnya dengan sendiri. | Satu Isi Kandungan dalam {n} bahagian: semua barisnya ada di sini, dan ia mengalir dari satu halaman ke halaman seterusnya dengan sendiri.",
+    "nextColumn": "Lajur seterusnya",
+    "onPage": "Halaman kandungan {n}",
+    "continuedTag": "sambungan",
+    "design": "Reka bentuk",
+    "looks": {
+      "classic": "Klasik",
+      "dotted": "Garis bertitik",
+      "numbered": "Kotak bernombor",
+      "plain": "Ringkas"
+    },
+    "designHint": "Hanya menukar rupa senarai: baris dan kedudukannya kekal.",
+    "designAllPages": "Digunakan pada setiap halaman Isi Kandungan ini, supaya halaman kandungan anda sentiasa sepadan.",
+    "designAllPagesHint": "Menukar rupa Isi Kandungan pada semua halaman kandungan anda: barisnya kekal."
   },
   "pageDesigns": {
     "chooseCover": "Pilih reka bentuk halaman kulit",
@@ -2147,6 +2172,56 @@
         "name": "Dua lajur",
         "desc": "Dua senarai bersebelahan, untuk kandungan yang panjang.",
         "tileHint": "Menetapkan reka bentuk halaman kandungan: dua senarai bersebelahan."
+      },
+      "coverOfficial": {
+        "name": "Jata rasmi",
+        "desc": "Jata di tengah, nama kementerian dan tajuk di antara jalur biru tua dan emas.",
+        "tileHint": "Menetapkan reka bentuk halaman kulit: jata, kementerian dan tajuk di tengah."
+      },
+      "coverBand": {
+        "name": "Jalur biru tua",
+        "desc": "Logo dan kementerian di atas, tajuk dalam jalur biru tua, butiran projek di bawah.",
+        "tileHint": "Menetapkan reka bentuk halaman kulit: tajuk dalam jalur biru tua merentasi halaman."
+      },
+      "coverStripe": {
+        "name": "Jalur sisi",
+        "desc": "Jalur biru tua dan emas di sebelah kiri, semua kandungan tersusun kemas di sebelahnya.",
+        "tileHint": "Menetapkan reka bentuk halaman kulit: jalur biru tua di sebelah kiri."
+      },
+      "coverFramed": {
+        "name": "Bingkai rasmi",
+        "desc": "Bingkai berganda dengan semua kandungan di tengah, seperti sijil.",
+        "tileHint": "Menetapkan reka bentuk halaman kulit: bingkai berganda, semua di tengah."
+      },
+      "coverPhotoStrip": {
+        "name": "Jalur foto",
+        "desc": "Tajuk di atas, foto lebar merentasi halaman, pengaki biru tua dengan tarikh.",
+        "tileHint": "Menetapkan reka bentuk halaman kulit: jalur foto lebar dan pengaki biru tua."
+      },
+      "contentsOfficial": {
+        "name": "Rasmi",
+        "desc": "Jata kecil, tajuk di tengah di atas garisan biru tua dan emas, garis bertitik.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: jata, tajuk di tengah dan garisan berganda."
+      },
+      "contentsBanner": {
+        "name": "Sepanduk biru tua",
+        "desc": "Tajuk dalam sepanduk biru tua di atas, garis bertitik di bawah.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: tajuk dalam sepanduk biru tua."
+      },
+      "contentsSidebar": {
+        "name": "Bar sisi",
+        "desc": "Bar biru tua di sebelah kiri, nombor BAHAGIAN dan garis bertitik.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: bar biru tua di sebelah kiri."
+      },
+      "contentsColumns": {
+        "name": "Lajur indeks",
+        "desc": "Label No. / Tajuk / Muka di atas garisan biru tua, seperti indeks rasmi.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: label lajur di atas garisan biru tua."
+      },
+      "contentsPanel": {
+        "name": "Panel lembut",
+        "desc": "Senarai di atas panel kelabu lembut dengan kotak nombor emas.",
+        "tileHint": "Menetapkan reka bentuk halaman kandungan: panel lembut dengan kotak nombor emas."
       }
     },
     "placeholder": {
@@ -2165,10 +2240,26 @@
       "sample1": "BUTIRAN PROJEK",
       "sample2": "GAMBARAN PROJEK",
       "sample3": "DAFTAR RISIKO",
-      "sectionN": "BAHAGIAN {n}."
+      "sectionN": "BAHAGIAN {n}.",
+      "ministry": "NAMA KEMENTERIAN / JABATAN",
+      "agency": "Nama agensi atau bahagian",
+      "documentNo": "No. Dokumen: XXX/0000/2026",
+      "tableOfContentsTitle": "Isi Kandungan",
+      "colNumber": "No.",
+      "colTitle": "Tajuk",
+      "colPage": "Muka",
+      "sample4": "RINGKASAN KEWANGAN",
+      "sample5": "LAMPIRAN",
+      "sampleSub1": "Skop kerja",
+      "sampleSub2": "Tarikh penting",
+      "sampleSub3": "Kemajuan bulan ini"
     },
     "wholeSheet": "Isi seluruh helaian, tepi ke tepi",
-    "wholeSheetHint": "Foto dan warna sampai ke tepi kertas. Halaman lain mengekalkan jidarnya."
+    "wholeSheetHint": "Foto dan warna sampai ke tepi kertas. Halaman lain mengekalkan jidarnya.",
+    "allContentsNote": "Reka bentuk ini digunakan pada semua halaman kandungan anda. Baris Isi Kandungan anda dikekalkan.",
+    "replaceContentsMessage": "Reka bentuk baharu menggantikan tajuk dan susun atur pada semua halaman kandungan anda. Baris Isi Kandungan anda dikekalkan.",
+    "appliedAllContents": "Reka bentuk digunakan pada semua halaman kandungan anda.",
+    "replaceContentsTitle": "Tukar reka bentuk semua halaman kandungan?"
   },
   "appMenu": {
     "title": "Menu",
@@ -2188,11 +2279,15 @@
     "word": "Perkataan sebelum nombor",
     "styleHint": "Menaip nombor anda sendiri dalam tajuk mengekalkan nombor itu untuk tajuk itu sahaja."
   },
-  "autoDate": {
-    "title": "Tarikh yang dikemas kini sendiri",
-    "off": "Tutup: teks yang saya taip",
-    "onHint": "Menunjukkan tarikh laporan dihasilkan, jadi ia sentiasa terkini. Untuk menaip tarikh lain, pilih Tutup.",
-    "offHint": "Pilih gaya untuk menunjukkan tarikh laporan dihasilkan dan bukannya teks yang ditaip, cth. bulan laporan bulanan.",
-    "cannotEdit": "Tarikh ini dikemas kini sendiri. Untuk menaip di atasnya, pilih Tutup di bawah \"Tarikh yang dikemas kini sendiri\" dalam sifatnya."
+  "addPageMenu": {
+    "title": "Tambah halaman",
+    "normal": "Halaman biasa",
+    "normalHint": "Ditambah di hujung laporan.",
+    "cover": "Halaman kulit",
+    "coverHint": "Di hadapan, tanpa pengepala atau pengaki halaman. Anda pilih reka bentuk seterusnya.",
+    "coverExists": "Laporan ini sudah mempunyai halaman kulit.",
+    "contents": "Isi Kandungan",
+    "contentsHint": "Selepas halaman kulit, tanpa pengepala atau pengaki halaman. Anda pilih reka bentuk seterusnya.",
+    "contentsMoreHint": "Satu lagi halaman kandungan dengan reka bentuk yang sama seperti yang terakhir."
   }
 }

@@ -168,7 +168,7 @@
 </template>
 
 <script setup lang="ts">
-import { autoDateOf, autoDateSample } from "@/utils/autoDate";
+import { resolveLegacyDateSample } from "@/utils/autoDate";
 import { useReportStore } from "@/stores/report";
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -313,9 +313,6 @@ const renderedHtmlContent = computed(() => textExpressionToHtml(props.element.ex
 
 // Clean display text for plain expressions (preserves linebreaks, strips literal quotes)
 const displayText = computed(() => {
-  // A date that updates itself: today's date
-  const dateStyle = autoDateOf(props.element);
-  if (dateStyle) return autoDateSample(dateStyle);
   if (isPageNumber.value) {
     return (
       formatPageNumber(paginationSettings.value, canvasPage.value, canvasPageCount.value) ?? ""
@@ -323,6 +320,9 @@ const displayText = computed(() => {
   }
   if (props.element.expression) {
     const expr = props.element.expression;
+    if (expr.includes("SimpleDateFormat") && expr.includes("java.util.Date")) {
+      return resolveLegacyDateSample(expr);
+    }
     if (props.pageNumber !== undefined && expr.includes('$V{PAGE_NUMBER}')) {
       const pNum = String(props.pageNumber);
       const totalP = String(props.totalPages || props.pageNumber);
@@ -362,7 +362,7 @@ const displayText = computed(() => {
 });
 
 const hasRichMarkup = computed(
-  () => !isPageNumber.value && !autoDateOf(props.element) && isRichTextElement(props.element),
+  () => !isPageNumber.value && isRichTextElement(props.element),
 );
 
 const hasContent = computed(() => {
@@ -898,7 +898,9 @@ watch(
       const raw = props.element.expression || '';
       let initialHtml = '';
       const trimmed = raw.trim();
-      if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
+      if (trimmed.includes("SimpleDateFormat") && trimmed.includes("java.util.Date")) {
+        initialHtml = resolveLegacyDateSample(trimmed);
+      } else if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
         const inner = trimmed.slice(1, -1);
         initialHtml = inner.replace(/\\"/g, '"').replace(/\\n/g, '<br>');
       } else {

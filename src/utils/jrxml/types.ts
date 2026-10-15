@@ -1,5 +1,5 @@
 import type { ReportProject } from "../../types/dataSource";
-import type { HeadingNumbering } from "../../types";
+import type { HeadingNumbering, SavedContentsStyle } from "../../types";
 
 export interface ReportProperties {
   name: string;
@@ -35,6 +35,8 @@ export interface ReportProperties {
   fullPageCover?: boolean;
   // How Section Headings number themselves (utils/headingSync.ts)
   headingNumbers?: HeadingNumbering;
+  // Table of Contents looks the user saved (utils/contentsList.ts)
+  contentsStyles?: SavedContentsStyle[];
 }
 
 export interface Field {

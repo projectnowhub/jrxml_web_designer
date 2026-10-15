@@ -124,14 +124,14 @@
         <template v-if="headerTier < 4">
           <span class="toolbar-divider"></span>
           <div class="header-toolbar-ops">
-            <button
-              class="toolbar-btn add-page-btn"
-              @click="addNewPage()"
-              :title="t('editorHeader.addNewPage')"
-            >
-              <FilePlus :size="16" :stroke-width="2" aria-hidden="true" />
-              <span v-if="headerTier < 2">{{ t("editorHeader.pageButton") }}</span>
-            </button>
+            <AddPageMenu
+              :has-cover="!!reportProperties.coverPage"
+              :has-contents="!!reportProperties.contentsPages"
+              :show-label="headerTier < 2"
+              @add-page="addNewPage()"
+              @add-cover="handlePageAction('addCover', 0)"
+              @add-contents="handlePageAction('addContents', 0)"
+            />
             <button class="toolbar-btn" @click="deleteElement" :title="t('actions.delete')">
               <Trash2 :size="16" :stroke-width="2" aria-hidden="true" />
             </button>
@@ -503,6 +503,7 @@
       :kind="designChooser.kind"
       v-model:sheet="designChooser.sheet"
       :designs="chooserDesigns"
+      :all-pages-note="designChooser.kind === 'contents' && designChooser.mode === 'replace'"
       :page-width="designContext(designChooser.kind === 'cover' && designChooser.sheet).availableWidth"
       :page-height="designContext(designChooser.kind === 'cover' && designChooser.sheet).availableHeight"
       @choose="applyChosenDesign"
@@ -645,6 +646,7 @@
 </template>
 
 <script setup lang="ts">
+import AddPageMenu from "./designer/AddPageMenu.vue";
 import ResizablePanel from "./panels/ResizablePanel.vue";
 import DesignerCanvas from "./designer/DesignerCanvas.vue";
 import HelpModal from "./modals/HelpModal.vue";
@@ -772,7 +774,8 @@ import { useSelectionStore } from "@/stores/selection";
 import { useEditorStore } from "@/stores/editor";
 import { useFilesStore } from "@/stores/files";
 import { fitContentToPage, scaleElementsToArea } from "@/utils/pageFit";
-import { autoDateOf } from "@/utils/autoDate";
+import { cleanLegacyAutoDateElement } from "@/utils/autoDate";
+import { listChain, syncFollowingLists } from "@/utils/headingSync";
 import { planBandFit, type BandFitPlan } from "@/utils/bandFit";
 import { planTextFit, type TextFitElement } from "@/utils/textFit";
 import {
@@ -846,6 +849,7 @@ import {
   COVER_DESIGN_TYPES,
   isContentsDesignType,
   isCoverDesignType,
+  unwrapLegacyCoverFrames,
   type ContentsDesignType,
 } from "../utils/pageDesigns";
 import DesignChooserModal from "./modals/DesignChooserModal.vue";
@@ -1371,6 +1375,32 @@ const insertEmptyPage = (at: number) => {
   pageCount.value = total + 1;
 };
 
+// Another contents page with the last one's design: its items copied, and its
+// Table of Contents carrying on the first one (rows that don't fit flow onto it)
+const addContentsPageLikeLast = () => {
+  const props = reportProperties.value;
+  const { contents, count } = specialPages(props);
+  const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+  if (!detail || !contents) return;
+  saveStateToHistory();
+  const source = detail.elements.filter((el) => (el.pageIndex ?? 0) === count - 1);
+  insertEmptyPage(count);
+  props.contentsPages = contents + 1;
+  for (const el of source) {
+    const copy = JSON.parse(JSON.stringify(el)) as DesignElement;
+    refreshUuids(copy);
+    copy.pageIndex = count;
+    if (copy.type === "contentsList" && el.type === "contentsList") {
+      copy.list.continues = listChain(detail.elements, el)[0]!.uuid;
+      copy.list.entries = [];
+      syncContentsListSize(copy);
+    }
+    detail.elements.push(copy);
+  }
+  notification.success(t("specialPages.contentsAddedSameDesign"));
+  updateJRXML();
+};
+
 type PageAction =
   | "addCover"
   | "makeCover"
@@ -1416,13 +1446,13 @@ const chooserDesigns = computed(() => {
   if (!designChooser.visible) return [];
   const ctx = designContext(designChooser.kind === "cover" && designChooser.sheet);
   return designChooser.kind === "cover"
-    ? COVER_DESIGN_TYPES.map((id) => ({ id, elements: [buildCoverDesign(id, ctx)] as DesignElement[] }))
+    ? COVER_DESIGN_TYPES.map((id) => ({ id, elements: buildCoverDesign(id, ctx) }))
     : CONTENTS_DESIGN_TYPES.map((id) => ({ id, elements: buildContentsDesign(id, ctx) }));
 });
 
 const designElements = (id: string, sheet: boolean): DesignElement[] => {
   const ctx = designContext(sheet);
-  if (isCoverDesignType(id)) return [{ ...buildCoverDesign(id, ctx), uuid: crypto.randomUUID(), x: 0, y: 0 }];
+  if (isCoverDesignType(id)) return buildCoverDesign(id, ctx);
   if ((CONTENTS_DESIGN_TYPES as readonly string[]).includes(id)) {
     return buildContentsDesign(id as ContentsDesignType, ctx);
   }
@@ -1464,9 +1494,18 @@ const applyChosenDesign = async (id: string) => {
   const props = reportProperties.value;
   const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
   if (!detail) return;
-  const onPage = detail.elements.filter((el) => (el.pageIndex ?? 0) === pageIndex);
+  // Contents pages all share one design: a new one goes on every contents page
+  const allContents = kind === "contents" && mode === "replace";
+  const { cover: hasCover, count: specialCount } = specialPages(props);
+  const contentsIndexes = allContents
+    ? Array.from({ length: specialCount - (hasCover ? 1 : 0) }, (_, i) => i + (hasCover ? 1 : 0))
+    : [pageIndex];
+  const onPage = detail.elements.filter((el) => contentsIndexes.includes(el.pageIndex ?? 0));
   if (mode === "replace" && onPage.length) {
-    const ok = await askConfirm(t("pageDesigns.replaceTitle"), t("pageDesigns.replaceMessage"));
+    const ok = await askConfirm(
+      t(allContents ? "pageDesigns.replaceContentsTitle" : "pageDesigns.replaceTitle"),
+      t(allContents ? "pageDesigns.replaceContentsMessage" : "pageDesigns.replaceMessage"),
+    );
     if (!ok) return;
   }
   saveStateToHistory();
@@ -1482,22 +1521,46 @@ const applyChosenDesign = async (id: string) => {
       props.contentsPages = contents + 1;
       page = count;
     }
-  } else {
-    detail.elements = detail.elements.filter((el) => (el.pageIndex ?? 0) !== pageIndex);
+  }
+  // The rows of the Table of Contents being replaced, kept in the new design
+  const oldLists = onPage.filter((el): el is ContentsListElement => el.type === "contentsList");
+  const oldFirst = oldLists.find((l) => !l.list.continues || !oldLists.some((o) => o.uuid === l.list.continues));
+  const keptRows = oldFirst && allContents ? listChain(detail.elements, oldFirst).flatMap((l) => l.list.entries) : [];
+  const keptFollow = !!oldFirst?.list.follow;
+  if (mode === "replace") {
+    detail.elements = detail.elements.filter((el) => !contentsIndexes.includes(el.pageIndex ?? 0));
   }
   if (kind === "cover") {
     if (sheet) props.fullPageCover = true;
     else delete props.fullPageCover;
   }
-  for (const element of designElements(id, sheet)) {
-    element.pageIndex = page;
-    detail.elements.push(element);
+  const design = designElements(id, sheet);
+  const designFirst = design.find((el): el is ContentsListElement => el.type === "contentsList" && !el.list.continues);
+  if (allContents && designFirst) {
+    if (keptFollow) designFirst.list.follow = true;
+    else delete designFirst.list.follow;
+    if (oldFirst) designFirst.list.entries = keptRows.map((e) => ({ ...e }));
   }
+  contentsIndexes.forEach((p, n) => {
+    for (const element of design) {
+      // Later contents pages: a copy, its lists carrying on the first page's list
+      const placed = n === 0 ? element : (JSON.parse(JSON.stringify(element)) as DesignElement);
+      if (n > 0) {
+        refreshUuids(placed);
+        if (placed.type === "contentsList" && designFirst) {
+          placed.list.continues = designFirst.uuid;
+          placed.list.entries = [];
+        }
+      }
+      placed.pageIndex = mode === "add" ? page : p;
+      detail.elements.push(placed);
+    }
+  });
   selectedElement.value = null;
   selectedElements.value = [];
   notification.success(
     mode === "replace"
-      ? t("pageDesigns.applied")
+      ? t(allContents && contentsIndexes.length > 1 ? "pageDesigns.appliedAllContents" : "pageDesigns.applied")
       : t(kind === "cover" ? "specialPages.coverAdded" : "specialPages.contentsAdded"),
   );
   updateJRXML();
@@ -1622,7 +1685,9 @@ const handlePageAction = (action: PageAction, pageIndex: number) => {
       notification.info(t("specialPages.madeNormal"));
       break;
     case "addContents":
-      openDesignChooser("contents", "add", count);
+      // More contents pages take the last one's design; the first one asks
+      if (contents) addContentsPageLikeLast();
+      else openDesignChooser("contents", "add", count);
       return;
     case "wholeSheet":
     case "keepMargins": {
@@ -2359,7 +2424,7 @@ const createLibraryElement = (type: string): DesignElement =>
   isFrameTemplateType(type)
     ? buildFrameTemplate(type, getFrameTemplateContext())
     : isReportPartType(type)
-    ? buildReportPart(type, designContext(isCoverDesignType(type) && !!reportProperties.value.fullPageCover))
+    ? buildReportPart(type, getFrameTemplateContext())
     : type === PAGE_NUMBER_TYPE
     ? buildPaginationElement(undefined, {
         fontFamily: reportProperties.value?.defaultFont?.name,
@@ -2506,11 +2571,11 @@ const addReportPart = (type: ReportPartType) => {
   }
 
   const element: DesignElement = {
-    ...buildReportPart(type, designContext(isCoverDesignType(type) && !!reportProperties.value.fullPageCover)),
+    ...buildReportPart(type, getFrameTemplateContext()),
     uuid: crypto.randomUUID(),
   };
   element.x = isFullWidthPart(type) ? 0 : 50;
-  element.y = wantedBand || isCoverDesignType(type) ? 0 : 20;
+  element.y = wantedBand ? 0 : 20;
 
   // Fits the band, growing it when it is too short; too tall is refused
   if (!placeOnPage(bandIndex, element)) return;
@@ -4006,22 +4071,29 @@ const startDragging = (
         if (draggingInfo.value) {
           const currentBand = bands.value[draggingInfo.value.bandIndex];
           let currentElement: DesignElement | undefined;
-          let containerWidth =
-            paperWidth.value -
-            (reportProperties.value?.leftMargin || 0) -
-            (reportProperties.value?.rightMargin || 0);
 
           if (draggingInfo.value.parentFrameIndex !== undefined) {
             const frame =
               currentBand?.elements[draggingInfo.value.parentFrameIndex];
             if (frame && frame.type === "frame" && frame.elements) {
               currentElement = frame.elements[draggingInfo.value.elementIndex];
-              containerWidth = frame.width;
             }
           } else {
             currentElement =
               currentBand?.elements[draggingInfo.value.elementIndex];
           }
+
+          const pageIndex = draggingInfo.value.sourcePageIndex ?? currentElement?.pageIndex ?? 0;
+          const special = draggingInfo.value.parentFrameIndex === undefined
+            ? specialPageArea(reportProperties.value, pageIndex)
+            : null;
+          let containerWidth = special
+            ? special.width
+            : draggingInfo.value.parentFrameIndex !== undefined
+            ? (currentBand?.elements[draggingInfo.value.parentFrameIndex] as FrameElement)?.width ?? paperWidth.value
+            : paperWidth.value -
+              (reportProperties.value?.leftMargin || 0) -
+              (reportProperties.value?.rightMargin || 0);
 
           if (currentBand && currentElement) {
             const currentZoom = zoomLevel.value;
@@ -4605,12 +4677,7 @@ const startEditing = (
     notification.warning(t("pagination.cannotEdit"));
     return;
   }
-  // A date that updates itself is set in its properties, not typed
-  if (autoDateOf(target)) {
-    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
-    notification.info(t("autoDate.cannotEdit"));
-    return;
-  }
+  cleanLegacyAutoDateElement(target);
 
   editingElement.value = { bandIndex, elementIndex, parentFrameIndex };
   // Select the element
@@ -5510,6 +5577,7 @@ onMounted(() => {
   setTimeout(() => {
     isLoadingFile.value = false;
     ensureBandsFitPage();
+    unwrapLegacyCoverFrames(bands.value);
     console.log("Starting initial JRXML generation...");
     updateJRXML();
     saveStatus.value = "saved";
@@ -6728,7 +6796,15 @@ const startResizingElement = (
       } else {
         element = currentBand.elements[resizingInfo.value.elementIndex];
         // On a cover or contents page the whole printable page
-        if (element) containerHeight = bandAreaHeight(resizingInfo.value.bandIndex, element.pageIndex);
+        if (element) {
+          const special = specialPageArea(reportProperties.value, element.pageIndex);
+          if (special) {
+            containerWidth = special.width;
+            containerHeight = special.height;
+          } else {
+            containerHeight = bandAreaHeight(resizingInfo.value.bandIndex, element.pageIndex);
+          }
+        }
       }
 
       if (!element) return;
@@ -6991,14 +7067,25 @@ const startResizingElement = (
         element.y = dir.includes("n") ? startElementY + startHeight - height : tempY;
         element.height = height;
       } else if (element.type === "contentsList") {
-        // Taller or shorter: the rows follow; wider or narrower: the columns stay
         const list = (element as ContentsListElement).list;
-        const rows = Math.max(1, list.entries.length);
-        list.rowHeight = Math.min(80, Math.max(12, Math.round(tempHeight / rows)));
         element.width = Math.max(80, tempWidth);
         element.x = dir.includes("w") ? startElementX + startWidth - element.width : tempX;
-        syncContentsListSize(element as ContentsListElement);
-        element.y = dir.includes("n") ? startElementY + startHeight - element.height : tempY;
+        const onContents = pageKind(reportProperties.value, element.pageIndex) === "contents";
+        if (onContents) {
+          // On a contents page the box keeps the size it is given: rows that
+          // don't fit go on to the next contents page (they reflow while dragging)
+          const top = dir.includes("n") ? Math.max(0, Math.min(tempY, startElementY + startHeight - list.rowHeight)) : startElementY;
+          const bottom = dir.includes("n") ? startElementY + startHeight : top + tempHeight;
+          const pageBottom = bandAreaHeight(bandIndex, element.pageIndex);
+          element.y = Math.round(top);
+          element.height = Math.round(Math.max(list.rowHeight, Math.min(pageBottom, bottom) - top));
+          syncFollowingLists(bands.value, reportProperties.value);
+        } else {
+          // Elsewhere taller or shorter spreads or tightens the rows
+          list.rowHeight = Math.min(80, Math.max(12, Math.round(tempHeight / Math.max(1, list.entries.length))));
+          syncContentsListSize(element as ContentsListElement);
+          element.y = dir.includes("n") ? startElementY + startHeight - element.height : tempY;
+        }
       } else if (customTableStart && element.type === "customTable") {
         const table = (element as CustomTableElement).table;
         table.columns = scaleSizes(customTableStart.columns, tempWidth, MIN_COLUMN_WIDTH);
@@ -8270,4 +8357,5 @@ const moveElementZOrder = (direction: "front" | "back") => {
   font-size: 12px;
   font-weight: 600;
 }
+
 </style>

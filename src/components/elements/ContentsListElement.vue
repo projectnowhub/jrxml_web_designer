@@ -17,13 +17,20 @@
     @start-editing="(b, e) => emit('startEditing', b, e, parentFrameIndex)"
   >
     <!-- Drawn like the PDF: the title line is cut, so the dots fill the rest -->
-    <div class="contents-list" :style="{ fontFamily: font, color: list.color, fontSize: `${list.fontSize}px` }">
+    <!-- A later part of the same Table of Contents (canvas only); outside the
+         list's box, which hides anything outside it -->
+    <span v-if="list.continues && onContents" class="cl-continued">{{ t("contentsList.continuedTag") }}</span>
+    <div
+      class="contents-list"
+      :class="{ 'is-chain-mate': chainMate }"
+      :style="{ fontFamily: font, color: list.color, fontSize: `${list.fontSize}px` }"
+    >
       <div
         v-for="(entry, i) in list.entries"
         :key="i"
         class="cl-row"
         :class="{ 'is-linked': !!headings[i] }"
-        :style="{ height: `${list.rowHeight}px` }"
+        :style="{ height: `${list.rowHeight}px`, paddingLeft: `${SIDE_PAD}px`, paddingRight: `${SIDE_PAD}px` }"
         :title="headings[i] ? t('contentsList.goToHint') : undefined"
         @dblclick.stop="goTo(i)"
       >
@@ -48,9 +55,11 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import BaseElement from "./BaseElement.vue";
 import { resolveReportFont } from "../../config/fonts.config";
-import { headingItems, LEADER_DOTS, listNumbers, matchHeadings, numberStarts, SUB_INDENT, titleLineHeight } from "../../utils/contentsList";
+import { headingItems, SIDE_PAD, LEADER_DOTS, listNumbers, matchHeadings, numberStarts, SUB_INDENT, titleLineHeight } from "../../utils/contentsList";
 import { useSelectionStore } from "@/stores/selection";
 import notification from "@/utils/notification";
+import { listChain } from "@/utils/headingSync";
+import { pageKind } from "@/utils/specialPages";
 import { useReportStore } from "@/stores/report";
 import type { ContentsEntry, ContentsListElement, EditingElementInfo, SelectedElementInfo } from "../../types";
 
@@ -82,6 +91,19 @@ const list = computed(() => props.element.list);
 // The heading each row stands for (as the PDF links them): double-click a row
 // to select that heading and bring it into view
 const selection = useSelectionStore();
+
+// Another part of the same Table of Contents is selected: this one shows it belongs
+// Only on contents pages, where its parts make one Table of Contents
+const onContents = computed(() => pageKind(report.reportProperties, props.element.pageIndex) === "contents");
+const chainMate = computed(() => {
+  const sel = selection.selectedElement;
+  if (!onContents.value) return false;
+  if (!sel || sel.parentFrameIndex !== undefined) return false;
+  const picked = report.bands[sel.bandIndex]?.elements[sel.elementIndex];
+  if (!picked || picked === props.element || picked.type !== "contentsList") return false;
+  const detail = report.bands.find((b) => b.type === "detail");
+  return !!detail && listChain(detail.elements, picked).some((l) => l.uuid === props.element.uuid);
+});
 const headings = computed(() =>
   matchHeadings(list.value.entries, headingItems(report.bands, report.reportProperties)),
 );
@@ -136,6 +158,27 @@ function titleStyle(entry: ContentsEntry) {
   width: 100%;
   height: 100%;
   overflow: hidden;
+}
+
+.contents-list.is-chain-mate {
+  outline: 1.5px dashed rgba(100, 64, 244, 0.55);
+  outline-offset: -2px;
+}
+
+.cl-continued {
+  position: absolute;
+  z-index: 1;
+  top: -15px;
+  right: 0;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: #f1edff;
+  font-family: system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 13px;
+  color: #6440f4;
+  pointer-events: none;
 }
 
 /* A row that leads to a heading lights up under the pointer */

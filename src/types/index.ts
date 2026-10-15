@@ -230,6 +230,15 @@ export interface ReportProperties {
   fullPageCover?: boolean;
   // How Section Headings number themselves (utils/headingSync.ts); unset: "SECTION 1."
   headingNumbers?: HeadingNumbering;
+  // Table of Contents looks the user saved (utils/contentsList.ts)
+  contentsStyles?: SavedContentsStyle[];
+}
+
+// A Table of Contents look saved by the user, offered next to the ready-made ones
+export interface SavedContentsStyle {
+  id: string;
+  name: string;
+  look: Partial<ContentsListData>;
 }
 
 // Section Headings counted 1, 2… in page order, shown in this style
@@ -552,6 +561,12 @@ export interface ContentsListData {
   // "word" style: the word before the number ("SECTION 1.")
   sectionWord?: string;
   subStyle?: ContentsSubStyle;
+  // On a contents page: the box keeps the size the user gives it (rows that
+  // don't fit go on to the next contents page) instead of growing with its rows
+  fixedBox?: boolean;
+  // On a contents page added by itself for rows that didn't fit (removed again
+  // by itself once it is empty and unchanged)
+  autoPage?: boolean;
   // Kept in step with the Section Headings and Sub-headings on the pages: its
   // rows are rebuilt from them after every change (utils/headingSync.ts)
   follow?: boolean;

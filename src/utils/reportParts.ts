@@ -18,7 +18,6 @@ import { applyPaginationSettings, buildPaginationElement } from "@/utils/paginat
 import { buildTablePreset, isTablePresetType, TABLE_PRESET_TYPES, type TablePresetType } from "@/utils/tablePresets";
 import { buildContentsList, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/utils/contentsList";
 import { setAutoNumbered } from "@/utils/headingSync";
-import { buildCoverDesign, COVER_DESIGN_TYPES, isCoverDesignType, type CoverDesignType } from "@/utils/pageDesigns";
 
 export const REPORT_PART_COLORS = {
   banner: "#03053A",
@@ -45,9 +44,7 @@ export const REPORT_PART_TYPES = [
   "partSignOff",
   // Tables of the report, as typed tables (utils/tablePresets.ts)
   ...TABLE_PRESET_TYPES,
-  // Cover and contents (utils/pageDesigns.ts): the contents list, cover designs
   "partContentsList",
-  ...COVER_DESIGN_TYPES,
 ] as const;
 
 export type ReportPartType = (typeof REPORT_PART_TYPES)[number];
@@ -67,8 +64,7 @@ export function reportPartBand(type: ReportPartType): "pageHeader" | "pageFooter
 export function isFullWidthPart(type: ReportPartType): boolean {
   return (
     ["partReportHeader", "partPageFooter", "partSectionHeading", "partContentsList"].includes(type) ||
-    isTablePresetType(type) ||
-    isCoverDesignType(type)
+    isTablePresetType(type)
   );
 }
 
@@ -245,9 +241,6 @@ const BUILDERS: Record<ReportPartType, (ctx: FrameTemplateContext) => DesignElem
     TABLE_PRESET_TYPES.map((type) => [type, (ctx: FrameTemplateContext) => buildTablePreset(type, ctx)]),
   ) as Record<TablePresetType, (ctx: FrameTemplateContext) => DesignElement>),
   partContentsList: (ctx) => buildContentsList(ctx.availableWidth),
-  ...(Object.fromEntries(
-    COVER_DESIGN_TYPES.map((type) => [type, (ctx: FrameTemplateContext) => buildCoverDesign(type, ctx)]),
-  ) as Record<CoverDesignType, (ctx: FrameTemplateContext) => DesignElement>),
 };
 
 export function buildReportPart(type: ReportPartType, ctx: FrameTemplateContext): DesignElement {

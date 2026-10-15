@@ -11,7 +11,7 @@ import { buildJasperReportOpenTag } from "./jrxml/xmlBuilder";
 import { generateUUID } from "./jrxml/uuidGenerator";
 import { generateCustomTableXML } from "./jrxml/customTableXml";
 import { generateContentsListXML } from "./jrxml/contentsListXml";
-import { headingItems, matchHeadings, numberStarts, type HeadingItem, type NumberStart } from "./contentsList";
+import { CONTENTS_STYLES_PROPERTY, headingItems, matchHeadings, numberStarts, serializeContentsStyles, type HeadingItem, type NumberStart } from "./contentsList";
 
 // Where each contents list's automatic numbers start (lists carrying one list
 // on keep counting); set for the report being written
@@ -214,7 +214,8 @@ export function generateJRXMLContent(
       p?.name !== SAVED_TABLE_STYLES_PROPERTY &&
       p?.name !== REPORT_PROJECTS_PROPERTY &&
       p?.name !== SPECIAL_PAGES_PROPERTY &&
-      p?.name !== HEADING_NUMBERS_PROPERTY,
+      p?.name !== HEADING_NUMBERS_PROPERTY &&
+      p?.name !== CONTENTS_STYLES_PROPERTY,
   );
   if (tableStyles.length) {
     allProperties.push({ name: SAVED_TABLE_STYLES_PROPERTY, value: JSON.stringify(tableStyles) });
@@ -223,6 +224,8 @@ export function generateJRXMLContent(
   if (specialPagesValue) allProperties.push({ name: SPECIAL_PAGES_PROPERTY, value: specialPagesValue });
   const headingNumbersValue = serializeHeadingNumbers(properties);
   if (headingNumbersValue) allProperties.push({ name: HEADING_NUMBERS_PROPERTY, value: headingNumbersValue });
+  const contentsStylesValue = serializeContentsStyles(properties.contentsStyles);
+  if (contentsStylesValue) allProperties.push({ name: CONTENTS_STYLES_PROPERTY, value: contentsStylesValue });
   // The projects chosen in the Report Data list
   if (properties.projects?.length) {
     allProperties.push({
