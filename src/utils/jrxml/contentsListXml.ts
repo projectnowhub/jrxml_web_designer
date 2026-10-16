@@ -5,6 +5,7 @@
 import type { ContentsListElement } from "@/types";
 import { resolveReportFont } from "@/config/fonts.config";
 import {
+  isRowShown,
   CONTENTS_LIST_PROPERTY,
   LEADER_DOTS,
   listNumbers,
@@ -80,8 +81,11 @@ export function generateContentsListXML(
   }
   xml += `</reportElement>`;
   const width = element.width;
+  let shown = 0;
   list.entries.forEach((entry, i) => {
-    const y = i * list.rowHeight;
+    // Sub-sections hidden by "Sections only" are not written
+    if (!isRowShown(list, entry)) return;
+    const y = shown++ * list.rowHeight;
     const bold = entry.level === 0 && list.boldSections;
     const indent = entry.level === 1 ? SUB_INDENT : 0;
     const number = numbers[i] ?? "";

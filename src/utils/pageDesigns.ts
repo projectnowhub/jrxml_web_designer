@@ -8,6 +8,7 @@ import type { Band, ContentsEntry, DesignElement, FrameElement } from "@/types";
 import { createElement } from "@/components/elements/ElementRegistry";
 import { frame, isBoxPart, photo, releaseBoxPart, text, type FrameTemplateContext, type TextOptions } from "./framePresets";
 import { buildContentsList } from "./contentsList";
+import { FIT_LIST_PROPERTY } from "./headingSync";
 
 export const DESIGN_COLORS = {
   navy: "#14284B",
@@ -543,6 +544,13 @@ function placedList(x: number, y: number, width: number, entries: ContentsEntry[
 const centredList = (W: number, y: number, width: number, entries: ContentsEntry[], patch: Parameters<typeof buildContentsList>[2]) =>
   placedList((W - width) / 2, y, width, entries, patch);
 
+// A decoration that follows the list on its page: "bottom" ends `gap` px below
+// the list (panel, divider), "after" starts `gap` px below it (a rule)
+const fitList = (el: DesignElement, how: "bottom" | "after", gap: number): DesignElement => ({
+  ...el,
+  properties: [...(el.properties ?? []), { name: FIT_LIST_PROPERTY, value: `${how}:${gap}` }],
+});
+
 const sectionWords = (ctx: FrameTemplateContext) => ["1", "2", "3"].map((n) => ctx.t("pageDesigns.placeholder.sectionN", { n }));
 
 // A centred heading
@@ -669,7 +677,7 @@ const CONTENTS_BUILDERS: Record<ContentsDesignType, (ctx: FrameTemplateContext) 
       title(ctx, W, 44, 24, DESIGN_COLORS.navy),
       ...doubleRule(W, 88, W * 0.3, DESIGN_COLORS.navy, DESIGN_COLORS.accent),
       caption(ctx, W, 104, "projectName", DESIGN_COLORS.muted),
-      own(block(W / 2 - 0.5, 150, 1, 230, DESIGN_COLORS.gold)),
+      fitList(own(block(W / 2 - 0.5, 150, 1, 230, DESIGN_COLORS.gold)), "bottom", 0),
       left,
       right,
       own(block(0, H - 6, W, 6, DESIGN_COLORS.navy)),
@@ -689,9 +697,9 @@ const CONTENTS_BUILDERS: Record<ContentsDesignType, (ctx: FrameTemplateContext) 
       heading(ctx, "colNumber", { x: x + 10, y: 117, width: 60, ...small }),
       heading(ctx, "colTitle", { x: x + 66, y: 117, width: 200, ...small }),
       heading(ctx, "colPage", { x: x + lw - 70, y: 117, width: 60, ...small, textAlignment: "Right" }),
-      own(block(x, 138, lw, 8 * 28 + 16, DESIGN_COLORS.slate)),
+      fitList(own(block(x, 138, lw, 8 * 28 + 16, DESIGN_COLORS.slate)), "bottom", 8),
       placedList(x, 146, lw, sampleEntries(ctx, ["1.0", "2.0", "3.0"]), { numberWidth: 56, leader: false, rowHeight: 28, fontSize: 11, color: DESIGN_COLORS.ink, sectionStyle: "1." }),
-      own(block(x, 138 + 8 * 28 + 16, lw, 2, DESIGN_COLORS.navy)),
+      fitList(own(block(x, 138 + 8 * 28 + 16, lw, 2, DESIGN_COLORS.navy)), "after", 8),
       own(block(W * 0.35, H - 40, W * 0.3, 1, DESIGN_COLORS.line)),
       caption(ctx, W, H - 32, "projectName", DESIGN_COLORS.muted, 8),
     ];
@@ -731,7 +739,7 @@ const CONTENTS_BUILDERS: Record<ContentsDesignType, (ctx: FrameTemplateContext) 
       own(block((W - 40) / 2, 130, 40, 2, DESIGN_COLORS.gold)),
       own(block((W - lw) / 2, 160, lw, 1, DESIGN_COLORS.line)),
       centredList(W, 172, lw, sampleEntries(ctx, ["1", "2", "3"]), { numberWidth: 30, leader: true, rowHeight: 28, fontSize: 11, color: DESIGN_COLORS.ink, sectionStyle: "1" }),
-      own(block((W - lw) / 2, 172 + 8 * 28 + 12, lw, 1, DESIGN_COLORS.line)),
+      fitList(own(block((W - lw) / 2, 172 + 8 * 28 + 12, lw, 1, DESIGN_COLORS.line)), "after", 12),
       caption(ctx, W, H - 40, "period", DESIGN_COLORS.muted, 9, true),
     ];
   },

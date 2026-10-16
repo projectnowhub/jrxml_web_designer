@@ -408,6 +408,36 @@
                         @rotate="(b, e, p) => emit('rotate', b, e, p)"
                       />
                     </template>
+                    <!-- Handles of a selected shape, box or box part, drawn above
+                         everything: the element keeps its place in the stacking
+                         order, so something on top could cover its own handles -->
+                    <div
+                      v-if="topHandles && topHandles.bandIndex === bItem.bandIndex && topHandles.pageIndex === (bItem.isDetail ? pIndex - 1 : topHandles.pageIndex)"
+                      class="top-handles"
+                      :style="{
+                        left: topHandles.x + 'px',
+                        top: topHandles.y + 'px',
+                        width: topHandles.width + 'px',
+                        height: topHandles.height + 'px',
+                      }"
+                    >
+                      <div
+                        v-for="dir in HANDLE_DIRS"
+                        :key="dir"
+                        class="top-handle"
+                        :class="`is-${dir}`"
+                        @mousedown.stop="
+                          $event.button === 0 &&
+                            startResizingElement(
+                              $event,
+                              topHandles.bandIndex,
+                              topHandles.elementIndex,
+                              topHandles.parentFrameIndex,
+                              dir,
+                            )
+                        "
+                      ></div>
+                    </div>
                   </div>
 
                   <!-- Band resize handle for non-detail bands -->
@@ -833,6 +863,39 @@ function getBandDisplayLabel(bandType: string, pIndex: number): string {
 
   return name;
 }
+
+// The selected element's handles drawn on top (see the template): for shapes
+// and boxes, and for parts inside a box, which keep their stacking order when
+// selected. Not for one being typed in, nor when several are selected
+const HANDLE_DIRS = ["nw", "n", "ne", "e", "se", "s", "sw", "w"] as const;
+const topHandles = computed(() => {
+  const sel = selectedElement.value;
+  if (!sel || (selectedElements.value?.length ?? 0) > 1) return null;
+  const band = bands.value[sel.bandIndex];
+  if (!band || band.type === "background") return null;
+  const box = sel.parentFrameIndex !== undefined ? (band.elements[sel.parentFrameIndex] as any) : null;
+  const el = box ? box.elements?.[sel.elementIndex] : band.elements[sel.elementIndex];
+  if (!el) return null;
+  if (!box && !["rectangle", "ellipse", "frame"].includes(el.type)) return null;
+  const editing = editingElement.value;
+  if (
+    editing &&
+    editing.bandIndex === sel.bandIndex &&
+    editing.elementIndex === sel.elementIndex &&
+    editing.parentFrameIndex === sel.parentFrameIndex
+  )
+    return null;
+  return {
+    bandIndex: sel.bandIndex,
+    elementIndex: sel.elementIndex,
+    parentFrameIndex: sel.parentFrameIndex,
+    pageIndex: (box ?? el).pageIndex ?? 0,
+    x: (box?.x ?? 0) + el.x,
+    y: (box?.y ?? 0) + el.y,
+    width: el.width,
+    height: el.height,
+  };
+});
 
 // The first contents page with nothing of a Table of Contents on any contents
 // page (one Table of Contents carries on over them by itself)
@@ -2014,4 +2077,31 @@ onBeforeUnmount(() => {
   background: #6440f4;
   color: #fff;
 }
+
+.top-handles {
+  position: absolute;
+  z-index: 70;
+  pointer-events: none;
+}
+
+.top-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border: 1px solid #ffffff;
+  border-radius: 1px;
+  background: #6440f4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.top-handle.is-nw { top: -4px; left: -4px; cursor: nw-resize; }
+.top-handle.is-ne { top: -4px; right: -4px; cursor: ne-resize; }
+.top-handle.is-sw { bottom: -4px; left: -4px; cursor: sw-resize; }
+.top-handle.is-se { bottom: -4px; right: -4px; cursor: se-resize; }
+.top-handle.is-n { top: -3px; left: 50%; width: 14px; height: 6px; transform: translateX(-50%); cursor: n-resize; }
+.top-handle.is-s { bottom: -3px; left: 50%; width: 14px; height: 6px; transform: translateX(-50%); cursor: s-resize; }
+.top-handle.is-w { left: -3px; top: 50%; width: 6px; height: 14px; transform: translateY(-50%); cursor: w-resize; }
+.top-handle.is-e { right: -3px; top: 50%; width: 6px; height: 14px; transform: translateY(-50%); cursor: e-resize; }
 </style>

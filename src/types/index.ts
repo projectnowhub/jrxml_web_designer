@@ -589,6 +589,9 @@ export interface ContentsListData {
   follow?: boolean;
   // Automatic mode with "Number automatically" off: numbers typed per row
   ownNumbers?: boolean;
+  // Show sections only: sub-sections are left out (Automatic) or hidden, not
+  // deleted (Manual)
+  sectionsOnly?: boolean;
   adjust?: ContentsAdjust;
 }
 

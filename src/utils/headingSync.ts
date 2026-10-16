@@ -211,7 +211,7 @@ function followedEntries(bands: Band[], props: SyncProps, first: ContentsListEle
     } else if (!left) {
       sub += 1;
     }
-    if (left) continue;
+    if (left || (first.list.sectionsOnly && h.entry.level === 1)) continue;
     const number = first.list.ownNumbers
       ? (numbers[key] ?? "")
       : h.entry.level === 0
@@ -261,6 +261,7 @@ const SHARED_KEYS = [
   "subStyle",
   "follow",
   "ownNumbers",
+  "sectionsOnly",
 ] as const;
 
 function shareLook(first: ContentsListElement, part: ContentsListElement): boolean {
@@ -307,6 +308,23 @@ export function syncFollowingLists(bands: Band[], props: SyncProps): boolean {
       first.list.follow && followed.length > 0
         ? followed
         : chain.flatMap((l) => l.list.entries.map((e) => ({ ...e })));
+    // No headings yet: the design's sample rows stay, numbered in the current
+    // style (sections like the headings would be, sub-sections in the list's)
+    if (first.list.follow && !followed.length && !first.list.ownNumbers) {
+      const numbering = headingNumbering(props);
+      let section = 0;
+      let sub = 0;
+      for (const e of rest) {
+        if (e.level === 0) {
+          section += 1;
+          sub = 0;
+          e.number = headingNumberText(numbering, section);
+        } else {
+          sub += 1;
+          e.number = subNumber(first.list, section, sub);
+        }
+      }
+    }
     chain.forEach((l, i) => {
       const take = i === chain.length - 1 ? rest.length : Math.min(capacity(bands, props, l), rest.length);
       const entries = rest
@@ -369,13 +387,53 @@ export function followOverflow(bands: Band[], props: SyncProps, list: ContentsLi
   return Math.max(0, last.list.entries.length - capacity(bands, props, last));
 }
 
+// ---------------------------------------------------------------------------
+// Decorations that follow a Table of Contents (a panel behind the rows, a line
+// between two columns, a rule under the list): they carry FIT_LIST_PROPERTY,
+// "bottom:N" = they end N px below the lists on their page, "after:N" = they
+// start N px below them. Kept within the page. True when one changed
+
+export const FIT_LIST_PROPERTY = "com.cdp.contents.fit";
+
+export function fitListDecorations(bands: Band[], props: SyncProps): boolean {
+  const detail = detailOf(bands);
+  if (!detail) return false;
+  let changed = false;
+  for (const el of detail.elements) {
+    const rule = (el.properties ?? []).find((p) => p?.name === FIT_LIST_PROPERTY)?.value;
+    const match = rule?.match(/^(bottom|after):(-?\d+)$/);
+    if (!match) continue;
+    const page = el.pageIndex ?? 0;
+    const lists = detail.elements.filter((e) => e.type === "contentsList" && (e.pageIndex ?? 0) === page);
+    if (!lists.length) continue;
+    const listBottom = Math.max(...lists.map((l) => l.y + l.height));
+    const room = pageAreaHeight(bands, props, page);
+    const gap = Number(match[2]);
+    if (match[1] === "bottom") {
+      const height = Math.max(1, Math.min(listBottom + gap, room) - el.y);
+      if (height !== el.height) {
+        el.height = height;
+        changed = true;
+      }
+    } else {
+      const y = Math.max(0, Math.min(listBottom + gap, room - el.height));
+      if (y !== el.y) {
+        el.y = y;
+        changed = true;
+      }
+    }
+  }
+  return changed;
+}
+
 // Both, in order (the lists read the headings' new numbers)
 export function syncHeadings(bands: Band[], props: SyncProps): boolean {
   const renumbered = renumberHeadings(bands, props);
   const lists = syncFollowingLists(bands, props);
   const detail = detailOf(bands);
   const boxed = detail ? syncBoxedLists(bands, props, detail.elements) : false;
-  return renumbered || lists || boxed;
+  const decorations = fitListDecorations(bands, props);
+  return renumbered || lists || boxed || decorations;
 }
 
 // ---------------------------------------------------------------------------

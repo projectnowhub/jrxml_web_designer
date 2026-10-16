@@ -2152,7 +2152,12 @@
       "bottom": "Bawah",
       "hint": "Atas / bawah menggunakan ruang di bawah tajuk. Dua lajur bergerak bersama, dan halaman kandungan seterusnya mengikut."
     },
-    "sampleRows": "{n} baris di halaman ialah contoh daripada reka bentuk. Tambah Tajuk Bahagian atau Sub-tajuk (Pratetap Elemen → Tajuk & Teks) dan tajuk anda akan menggantikannya."
+    "sampleRows": "{n} baris di halaman ialah contoh daripada reka bentuk. Tambah Tajuk Bahagian atau Sub-tajuk (Pratetap Elemen → Tajuk & Teks) dan tajuk anda akan menggantikannya.",
+    "show": "Tunjuk",
+    "showAll": "Bahagian dan sub-bahagian",
+    "showSections": "Bahagian sahaja",
+    "sectionsOnlyAuto": "Sub-tajuk tidak disenaraikan dalam kandungan. Ia kekal di halamannya.",
+    "sectionsOnlyManual": "Baris berinden disembunyikan, bukan dipadam: pilih \"Bahagian dan sub-bahagian\" untuk menunjukkannya semula."
   },
   "pageDesigns": {
     "chooseCover": "Pilih reka bentuk halaman kulit",

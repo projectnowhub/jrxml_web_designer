@@ -80,11 +80,18 @@ export function buildContentsList(width: number, entries: ContentsEntry[] = [], 
   return element;
 }
 
+// A row is shown unless the list shows sections only and it is a sub-section
+export const isRowShown = (list: Pick<ContentsListData, "sectionsOnly">, entry: ContentsEntry) =>
+  !(list.sectionsOnly && entry.level === 1);
+export const shownCount = (list: ContentsListData) => list.entries.filter((e) => isRowShown(list, e)).length;
+
 // The box is as tall as its rows (one empty row at least)
 // (a fixed box on a contents page keeps its height, one row at least)
 export function syncContentsListSize(element: ContentsListElement): void {
   const { fixedBox, rowHeight, entries } = element.list;
-  element.height = fixedBox ? Math.max(rowHeight, element.height || 0) : Math.max(1, entries.length) * rowHeight;
+  element.height = fixedBox
+    ? Math.max(rowHeight, element.height || 0)
+    : Math.max(1, entries.filter((e) => isRowShown(element.list, e)).length) * rowHeight;
 }
 
 // Rows that fit in a height
@@ -260,6 +267,7 @@ export function normalizeContentsList(raw: any): ContentsListData | null {
   if (COLOR.test(raw.numberColor)) list.numberColor = raw.numberColor;
   if (raw.follow === true) list.follow = true;
   if (raw.ownNumbers === true) list.ownNumbers = true;
+  if (raw.sectionsOnly === true) list.sectionsOnly = true;
   const adjust = normalizeAdjust(raw.adjust);
   if (adjust) list.adjust = adjust;
   if (raw.autoPage === true) list.autoPage = true;
@@ -308,10 +316,15 @@ export const serializeContentsList = (list: ContentsListData) => JSON.stringify(
 // A heading's number as the list shows it: in full in a wide number column
 // ("SECTION 1."), just the number in a narrow one ("1"), two digits in a
 // number box ("01")
+// A number fitted to a narrow column (under 80px): the words before it go
+// ("SECTION 1." → "1.", "Chapter 2:" → "2:"), its own style stays ("1)",
+// "(1)", "I", "a"); a lone digit in a number box becomes "01"
+const LEADING_WORDS = /^(?:\S*[A-Za-z]\S*\s+)+(?=\(?(?:\d|[IVXLCDMivxlcdm]+\b|[A-Za-z]\b))/;
+
 export function fitNumber(list: ContentsListData, number: string): string {
   if (!number || list.numberWidth >= 80) return number;
-  const digits = number.match(/\d+(?:\.\d+)*/)?.[0] ?? number;
-  return list.numberFill && /^\d$/.test(digits) ? digits.padStart(2, "0") : digits;
+  const short = number.replace(LEADING_WORDS, "").trim() || number;
+  return list.numberFill && /^\d$/.test(short) ? short.padStart(2, "0") : short;
 }
 
 export const entriesFor = (list: ContentsListData, entries: ContentsEntry[]): ContentsEntry[] =>

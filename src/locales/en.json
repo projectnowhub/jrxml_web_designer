@@ -2152,7 +2152,12 @@
       "bottom": "Bottom",
       "hint": "Up / down uses the space below the heading. Two columns move together, and later contents pages follow."
     },
-    "sampleRows": "The {n} rows on the page are samples from the design. Add a Section Heading or Sub-heading (Element Presets → Headings & Text) and your headings replace them."
+    "sampleRows": "The {n} rows on the page are samples from the design. Add a Section Heading or Sub-heading (Element Presets → Headings & Text) and your headings replace them.",
+    "show": "Show",
+    "showAll": "Sections and sub-sections",
+    "showSections": "Sections only",
+    "sectionsOnlyAuto": "Sub-headings are left out of the contents. They stay on their pages.",
+    "sectionsOnlyManual": "Indented rows are hidden, not deleted: choose \"Sections and sub-sections\" to show them again."
   },
   "pageDesigns": {
     "chooseCover": "Choose a cover page design",

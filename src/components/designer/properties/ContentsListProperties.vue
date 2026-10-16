@@ -60,6 +60,17 @@
           </button>
         </div>
         <p class="form-hint">{{ t(list.follow ? "contentsList.autoHint" : "contentsList.manualHint") }}</p>
+        <!-- Sections only, or sections and sub-sections -->
+        <label class="field show-field">
+          <span class="field-label">{{ t("contentsList.show") }}</span>
+          <select :value="list.sectionsOnly ? 'sections' : 'all'" @change="setSectionsOnly(($event.target as HTMLSelectElement).value === 'sections')">
+            <option value="all">{{ t("contentsList.showAll") }}</option>
+            <option value="sections">{{ t("contentsList.showSections") }}</option>
+          </select>
+        </label>
+        <p v-if="list.sectionsOnly" class="form-hint is-tight">
+          {{ t(list.follow ? "contentsList.sectionsOnlyAuto" : "contentsList.sectionsOnlyManual") }}
+        </p>
       </div>
 
       <!-- Numbers: in both modes; on for new lists -->
@@ -109,7 +120,7 @@
         <div v-if="list.follow" class="row-list">
           <template v-for="row in autoRows" :key="row.key">
             <div v-if="row.divider" class="part-divider">{{ row.divider }}</div>
-            <div class="auto-row" :class="{ 'is-sub': row.level === 1, 'is-hidden': row.hidden }">
+            <div class="auto-row" :class="{ 'is-sub': row.level === 1, 'is-hidden': row.hidden || (list.sectionsOnly && row.level === 1) }">
               <input
                 v-if="list.ownNumbers && list.numberWidth > 0"
                 class="col-number"
@@ -154,6 +165,7 @@
               class="entry-row"
               :class="{
                 'is-sub': row.entry.level === 1,
+                'is-hidden-sub': list.sectionsOnly && row.entry.level === 1,
                 'is-dragging': dragFrom === i,
                 'drop-before': dropAt === i && dragFrom !== null,
                 'drop-after': dropAt === i + 1 && i === rows.length - 1 && dragFrom !== null,
@@ -503,7 +515,11 @@ const autoRows = computed<AutoRow[]>(() => {
       };
     });
 });
-const shownCount = computed(() => (list.value.follow ? autoRows.value.filter((r) => !r.hidden).length : rows.value.length));
+const shownCount = computed(() =>
+  list.value.follow
+    ? autoRows.value.filter((r) => !r.hidden && !(list.value.sectionsOnly && r.level === 1)).length
+    : rows.value.filter((r) => !(list.value.sectionsOnly && r.entry.level === 1)).length,
+);
 
 function toggleHidden(key: string) {
   change(() => {
@@ -779,6 +795,18 @@ function setSectionNumbering(next: SectionNumberValue) {
       else delete l.sectionBefore;
       if (after) l.sectionAfter = after;
       else delete l.sectionAfter;
+    }
+  });
+}
+
+// Sections only (for the list and the lists carrying it on); Manual hides the
+// indented rows, never deletes them
+function setSectionsOnly(on: boolean) {
+  if (on === !!list.value.sectionsOnly) return;
+  change(() => {
+    for (const l of fullChain.value) {
+      if (on) l.list.sectionsOnly = true;
+      else delete l.list.sectionsOnly;
     }
   });
 }
@@ -1449,6 +1477,15 @@ function setColor(key: keyof Pick<ContentsListData, "color" | "numberFill">, val
 
 .form-hint.is-tight {
   margin: -2px 0 8px;
+}
+
+.show-field {
+  margin-top: 10px;
+}
+
+.entry-row.is-hidden-sub input {
+  opacity: 0.45;
+  text-decoration: line-through;
 }
 
 .number-styles {

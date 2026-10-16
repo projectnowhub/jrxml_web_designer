@@ -19,7 +19,7 @@ import { resetBoxPhotos } from "@/utils/framePresets";
 import { cleanLegacyAutoDate } from "@/utils/autoDate";
 import { ensureUniqueTableDatasets } from "@/utils/table/tableDocument";
 import { specialPages } from "@/utils/specialPages";
-import { fitContentsPages, syncHeadings } from "@/utils/headingSync";
+import { fitContentsPages, fitListDecorations, syncHeadings } from "@/utils/headingSync";
 import { unwrapLegacyCoverFrames } from "@/utils/pageDesigns";
 import { useEditorStore } from "./editor";
 import { useSelectionStore } from "./selection";
@@ -211,7 +211,11 @@ export const useReportStore = defineStore("report", () => {
       // A Table of Contents on contents pages gets the contents pages it needs
       const before = totalPages.value;
       const added = fitContentsPages(bands.value, reportProperties.value);
-      if (added) pageCount.value = Math.max(1, before + added);
+      if (added) {
+        pageCount.value = Math.max(1, before + added);
+        // The new pages' decorations fit their own rows
+        fitListDecorations(bands.value, reportProperties.value);
+      }
       const content = generateJRXMLContent(
         { ...reportProperties.value, pageCount: totalPages.value },
         bands.value,

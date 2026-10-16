@@ -25,9 +25,9 @@
       :class="{ 'is-chain-mate': chainMate }"
       :style="{ fontFamily: font, color: list.color, fontSize: `${list.fontSize}px` }"
     >
+      <template v-for="(entry, i) in list.entries" :key="i">
       <div
-        v-for="(entry, i) in list.entries"
-        :key="i"
+        v-if="isRowShown(list, entry)"
         class="cl-row"
         :class="{ 'is-linked': !!headings[i] }"
         :style="{ height: `${list.rowHeight}px`, paddingLeft: `${SIDE_PAD}px`, paddingRight: `${SIDE_PAD}px` }"
@@ -43,6 +43,7 @@
         <span class="cl-title" :style="titleStyle(entry)">{{ entry.title }}{{ list.leader ? LEADER_DOTS : "" }}</span>
         <span class="cl-page" :style="{ width: `${list.pageWidth}px`, fontWeight: weight(entry) }">{{ entry.page }}</span>
       </div>
+      </template>
       <div v-if="!list.entries.length" class="cl-empty" :style="{ height: `${list.rowHeight}px` }">
         {{ t(list.continues ? "contentsList.continuesHint" : list.follow ? "contentsList.followEmptyHint" : "contentsList.emptyHint") }}
       </div>
@@ -55,7 +56,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import BaseElement from "./BaseElement.vue";
 import { resolveReportFont } from "../../config/fonts.config";
-import { headingItems, SIDE_PAD, LEADER_DOTS, listNumbers, matchHeadings, numberStarts, SUB_INDENT, titleLineHeight } from "../../utils/contentsList";
+import { headingItems, isRowShown, SIDE_PAD, LEADER_DOTS, listNumbers, matchHeadings, numberStarts, SUB_INDENT, titleLineHeight } from "../../utils/contentsList";
 import { useSelectionStore } from "@/stores/selection";
 import notification from "@/utils/notification";
 import { listChain } from "@/utils/headingSync";
