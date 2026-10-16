@@ -969,7 +969,7 @@ import CustomTableProperties from "./CustomTableProperties.vue";
 import ContentsListProperties from "./ContentsListProperties.vue";
 import HeadingNumberProperties from "./HeadingNumberProperties.vue";
 import { cleanLegacyAutoDateElement, resolveLegacyDateSample } from "@/utils/autoDate";
-import { hasProperty, SECTION_HEADING_PROPERTY } from "@/utils/contentsList";
+import { hasProperty, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/utils/contentsList";
 import { resetElementStyle } from "../../../utils/resetStyle";
 import BarcodeProperties from "./BarcodeProperties.vue";
 import { isPagination } from "../../../utils/paginationPresets";
@@ -1638,6 +1638,9 @@ const panelTitle = computed(() => {
   if (!selectedElement.value || !el) return t("properties.reportProperties");
   if (isPagination(el)) return t("elementNames.pageNumber");
   if (isPageBorder.value) return t("elementNames.framePageBorder");
+  // Headings are shown by their own name, not as the box / text they are built of
+  if (hasProperty(el, SECTION_HEADING_PROPERTY)) return t("elementNames.partSectionHeading");
+  if (hasProperty(el, SUB_HEADING_PROPERTY)) return t("elementNames.partSubHeading");
   return t(getElementTypeName(el.type));
 });
 

@@ -101,6 +101,25 @@ export class ElementRegistry {
       },
     });
 
+    // Section Heading and Sub-heading, right after Text: used on almost every
+    // page (they number themselves and fill the Table of Contents). Built by
+    // buildReportPart() in utils/reportParts.ts
+    (
+      [
+        { type: "partSectionHeading", iconComponent: Heading1 },
+        { type: "partSubHeading", iconComponent: Heading2 },
+      ] as const
+    ).forEach(({ type, iconComponent }) =>
+      this.registerElement({
+        type,
+        name: `elementNames.${type}`,
+        icon: "☐",
+        iconComponent,
+        category: "basic",
+        defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
+      }),
+    );
+
     this.registerElement({
       type: "image",
       name: "elementNames.image",
@@ -323,9 +342,7 @@ export class ElementRegistry {
     const reportParts: Array<{ type: string; group: string; iconComponent: Component }> = [
       { type: "partReportHeader", group: "headerFooter", iconComponent: LayoutPanelTop },
       { type: "partPageFooter", group: "headerFooter", iconComponent: PanelBottom },
-      { type: "partSectionHeading", group: "headings", iconComponent: Heading1 },
-      { type: "partSubHeading", group: "headings", iconComponent: Heading2 },
-      { type: "partNote", group: "headings", iconComponent: StickyNote },
+      // { type: "partNote", group: "headings", iconComponent: StickyNote },
       { type: "partRiskLegend", group: "status", iconComponent: List },
       { type: "partStatusDot", group: "status", iconComponent: CircleDot },
       { type: "partSignOff", group: "signOff", iconComponent: Signature },
