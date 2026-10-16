@@ -907,6 +907,7 @@ import {
   placePaginationInBand,
   type PaginationPosition,
 } from "../utils/paginationPresets";
+import { buildDateElement, DATE_ELEMENT_TYPE, isDateElement } from "../utils/dateElement";
 import { buildChartElement } from "../utils/chart/chartElement";
 import {
   createElement,
@@ -2526,6 +2527,11 @@ const createLibraryElement = (type: string): DesignElement =>
         fontFamily: reportProperties.value?.defaultFont?.name,
         fontSize: reportProperties.value?.defaultFont?.size,
       })
+    : type === DATE_ELEMENT_TYPE
+    ? buildDateElement({
+        fontFamily: reportProperties.value?.defaultFont?.name,
+        fontSize: reportProperties.value?.defaultFont?.size,
+      })
     : type === "chart"
     ? buildChartElement()
     : type === "customTable"
@@ -3014,7 +3020,7 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
     const droppedSize =
       isFrameTemplateType(elementData.type) ||
       isReportPartType(elementData.type) ||
-      [PAGE_NUMBER_TYPE, "table", "chart", "customTable"].includes(elementData.type)
+      [PAGE_NUMBER_TYPE, DATE_ELEMENT_TYPE, "table", "chart", "customTable"].includes(elementData.type)
       ? { width: baseElement.width, height: baseElement.height }
       : getDefaultElementSize(elementData.type);
     let newElement: DesignElement = {
@@ -3326,6 +3332,8 @@ const fillDroppedProjectValue = (
           ? "reportData.dropImageOnImage"
           : isPagination(element)
             ? "reportData.dropNotOnPageNumber"
+            : isDateElement(element)
+            ? "reportData.dropNotOnDate"
             : "reportData.dropTextOnText",
       ),
     );
@@ -4778,6 +4786,12 @@ const startEditing = (
   if (isPagination(target)) {
     selectElement(bandIndex, elementIndex, false, parentFrameIndex);
     notification.warning(t("pagination.cannotEdit"));
+    return;
+  }
+  // A date fills itself in: it is changed in its properties (which can turn it into plain text)
+  if (isDateElement(target)) {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    notification.info(t("dateElement.cannotType"));
     return;
   }
   cleanLegacyAutoDateElement(target);

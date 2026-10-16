@@ -16,6 +16,7 @@ import {
   withoutLines,
 } from "../framePresets";
 import { detectPagination } from "../paginationPresets";
+import { restoreDateElement } from "../dateElement";
 import {
   CONTENTS_PAGE_PROPERTY,
   parseSpecialPages,
@@ -1212,7 +1213,8 @@ function parseElement(element: Element, type: string): any {
     case "textField":
       parseTextFieldElement(element, result);
       // A page number written by another tool becomes a page number here too
-      detectPagination(result as any);
+      // A date's expression is rebuilt from its setup
+      if (!restoreDateElement(result as any)) detectPagination(result as any);
       break;
     case "image":
       // A chart is written as an image carrying its setup

@@ -2,6 +2,7 @@ import type { Component } from "vue";
 import {
   TableOfContents,
   Banknote,
+  CalendarClock,
   Barcode,
   ChartColumn,
   ChartNoAxesColumnIncreasing,
@@ -385,6 +386,17 @@ export class ElementRegistry {
       iconComponent: FileDigit,
       category: "composite",
       defaultProps: { type: "textField", x: 0, y: 0, width: 120, height: 20 },
+    });
+
+    // Date: a text field that fills in a date by itself, built by
+    // buildDateElement() in utils/dateElement.ts
+    this.registerElement({
+      type: "dateTime",
+      name: "elementNames.dateTime",
+      icon: "D",
+      iconComponent: CalendarClock,
+      category: "composite",
+      defaultProps: { type: "textField", x: 0, y: 0, width: 160, height: 20 },
     });
   }
 

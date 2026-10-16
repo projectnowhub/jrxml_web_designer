@@ -148,6 +148,7 @@
     "chart": "Carta",
     "barcode": "Kod Bar",
     "pageNumber": "Nombor Halaman",
+    "dateTime": "Tarikh",
     "currentDate": "Tarikh Semasa",
     "pageXofY": "Halaman X daripada Y",
     "partReportHeader": "Kepala Laporan",
@@ -1348,6 +1349,44 @@
       "example": "Halaman {page} menunjukkan “{label}”"
     }
   },
+  "dateElement": {
+    "tileHint": "Tarikh yang diisi dengan sendiri: hari laporan dicetak, bulan ini atau bulan lepas. Klik untuk menambahnya, atau seret ke halaman.",
+    "lockedHint": "Tarikh – ia diisi dengan sendiri. Ubah di panel sifat.",
+    "cannotType": "Tarikh ini diisi dengan sendiri. Ubah di panel sifat, atau pilih \"Taip teks saya sendiri\" di sana.",
+    "when": {
+      "printed": "Hari ia dicetak",
+      "thisMonth": "Bulan ini",
+      "lastMonth": "Bulan lepas",
+      "fixed": "Tarikh pilihan saya"
+    },
+    "whenHints": {
+      "printed": "Halaman menunjukkan tarikh hari ini. Laporan menunjukkan hari ia dibuat, jadi ia sentiasa terkini.",
+      "thisMonth": "Laporan menunjukkan bulan ia dibuat. Sesuai untuk laporan bulanan.",
+      "lastMonth": "Laporan menunjukkan bulan sebelum bulan ia dibuat. Sesuai untuk laporan bulanan yang dibuat pada awal bulan berikutnya.",
+      "fixed": "Tarikh ini (dan masa, jika anda menambahnya) kekal sama setiap kali laporan dibuat."
+    },
+    "beforePicks": {
+      "printedOn": "Dicetak pada",
+      "reportDate": "Tarikh laporan:",
+      "asAt": "Setakat"
+    },
+    "panel": {
+      "whichTitle": "Tarikh yang mana?",
+      "chooseDate": "Tarikh",
+      "chooseTime": "Masa (jika mahu)",
+      "removeTime": "Buang masa",
+      "zone": "Dikira dalam zon waktu ini: {zone}.",
+      "lookTitle": "Rupanya",
+      "timeTitle": "Tunjukkan masa",
+      "noTime": "Tiada masa",
+      "beforeTitle": "Perkataan sebelum tarikh",
+      "beforePlaceholder": "Contohnya: Dicetak pada",
+      "noWords": "Tiada perkataan",
+      "shows": "Ia menunjukkan:",
+      "toText": "Taip teks saya sendiri",
+      "toTextHint": "Menukarnya menjadi teks biasa dengan tarikh yang ditunjukkan sekarang. Ia tidak akan berubah dengan sendiri lagi."
+    }
+  },
   "expression": {
     "builtIn": {
       "REPORT_PARAMETERS_MAP": "Peta parameter laporan yang dihantar semasa laporan diisi",
@@ -1795,6 +1834,7 @@
     "dropTextOnText": "Lepaskan butiran teks (nama, tarikh, bajet…) pada elemen teks, atau di ruang kosong.",
     "dropImageOnImage": "Lepaskan logo pada elemen imej, atau di ruang kosong.",
     "dropNotOnPageNumber": "Nombor halaman tidak boleh memaparkan data projek. Lepaskannya pada elemen teks lain.",
+    "dropNotOnDate": "Tarikh diisi dengan sendiri dan tidak boleh menunjukkan data projek. Letakkannya pada elemen teks yang lain.",
     "projectInUse": "{project} masih digunakan oleh {count} jadual atau carta dalam laporan ini. Padam jadual atau carta tersebut, atau pilih projek lain dalam datanya, sebelum mengalih keluarnya.",
     "projectSource": "{project} · {source}",
     "noValue": "{project} tiada {label} untuk ditambah.",

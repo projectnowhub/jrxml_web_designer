@@ -2,6 +2,7 @@
 // This utility migrates any legacy autoDate properties and expressions into plain literal text.
 
 import type { DesignElement } from "@/types";
+import { isDateElement } from "./dateElement";
 
 export const AUTO_DATE_PROPERTY = "com.cdp.text.autoDate";
 
@@ -24,6 +25,8 @@ export function resolveLegacyDateSample(expressionOrStyle?: string): string {
 
 export function cleanLegacyAutoDateElement(element: DesignElement | null | undefined): boolean {
   if (!element || element.type !== "textField") return false;
+  // A Date element fills itself in on purpose
+  if (isDateElement(element)) return false;
   let changed = false;
   if (Array.isArray(element.properties)) {
     const idx = element.properties.findIndex((p) => p?.name === AUTO_DATE_PROPERTY);

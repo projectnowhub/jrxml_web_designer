@@ -148,6 +148,7 @@
     "chart": "Chart",
     "barcode": "Barcode",
     "pageNumber": "Page Number",
+    "dateTime": "Date",
     "currentDate": "Current Date",
     "pageXofY": "Page X of Y",
     "partReportHeader": "Report Header",
@@ -1348,6 +1349,44 @@
       "example": "Page {page} shows “{label}”"
     }
   },
+  "dateElement": {
+    "tileHint": "A date that fills itself in: the day the report is printed, this month or last month. Click to add it, or drag it onto the page.",
+    "lockedHint": "Date – it fills itself in. Change it in the property panel.",
+    "cannotType": "This date fills itself in. Change it in the property panel, or choose \"Type my own text instead\" there.",
+    "when": {
+      "printed": "Day it's printed",
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "fixed": "A date I choose"
+    },
+    "whenHints": {
+      "printed": "The page shows today's date. The report shows the day it is made, so it is always up to date.",
+      "thisMonth": "The report shows the month it is made in. Handy for monthly reports.",
+      "lastMonth": "The report shows the month before the one it is made in. Handy for a monthly report made early in the next month.",
+      "fixed": "This date (and time, if you add one) stays the same every time the report is made."
+    },
+    "beforePicks": {
+      "printedOn": "Printed on",
+      "reportDate": "Report date:",
+      "asAt": "As at"
+    },
+    "panel": {
+      "whichTitle": "Which date?",
+      "chooseDate": "Date",
+      "chooseTime": "Time (if you want)",
+      "removeTime": "Remove the time",
+      "zone": "Worked out in this time zone: {zone}.",
+      "lookTitle": "How it looks",
+      "timeTitle": "Show the time",
+      "noTime": "No time",
+      "beforeTitle": "Words before the date",
+      "beforePlaceholder": "For example: Printed on",
+      "noWords": "No words",
+      "shows": "It shows:",
+      "toText": "Type my own text instead",
+      "toTextHint": "Turns this into ordinary text with the date it shows now. It won't change by itself any more."
+    }
+  },
   "expression": {
     "builtIn": {
       "REPORT_PARAMETERS_MAP": "Map of report parameters passed in when the user fills the report",
@@ -1795,6 +1834,7 @@
     "dropTextOnText": "Drop text details (name, dates, budget…) on a text element, or on empty space.",
     "dropImageOnImage": "Drop the logo on an image element, or on empty space.",
     "dropNotOnPageNumber": "A page number can't show project data. Drop it on another text element.",
+    "dropNotOnDate": "A date fills itself in and can't show project data. Drop it on another text element.",
     "projectInUse": "{project} is still used by {count} table(s) or chart(s) on this report. Delete them, or choose another project in their data, before removing it.",
     "projectSource": "{project} · {source}",
     "noValue": "{project} has no {label} to add.",

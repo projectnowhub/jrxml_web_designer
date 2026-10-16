@@ -320,6 +320,7 @@ const tileHint = (type: string): string | undefined => {
   if (isCoverDesignType(type) || isContentsDesignType(type)) return t(`pageDesigns.designs.${type}.tileHint`);
   if (isReportPartType(type)) return t(`reportParts.description.${type}`);
   if (type === PAGE_NUMBER_TYPE) return t("pagination.tileHint");
+  if (type === "dateTime") return t("dateElement.tileHint");
   if (type === "chart") return t("chart.tileHint");
   if (type === "barcode") return t("barcode.tileHint");
   return undefined;

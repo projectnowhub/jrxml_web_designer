@@ -417,6 +417,11 @@
               v-if="isPagination(currentElement)"
               :element="currentElement"
             />
+            <!-- Date: which date and how it looks instead of free text -->
+            <DateProperties
+              v-else-if="isDateElement(currentElement)"
+              :element="currentElement"
+            />
             <div v-else class="box-section compact">
               <div class="card-head">
                 <h5>{{ t("properties.textContent") }}</h5>
@@ -964,6 +969,7 @@ import {
 } from "../../../constants/constants";
 import ColorPickerWithOpacity from "./ColorPickerWithOpacity.vue";
 import PaginationProperties from "./PaginationProperties.vue";
+import DateProperties from "./DateProperties.vue";
 import ChartProperties from "./ChartProperties.vue";
 import CustomTableProperties from "./CustomTableProperties.vue";
 import ContentsListProperties from "./ContentsListProperties.vue";
@@ -973,6 +979,7 @@ import { hasProperty, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/u
 import { resetElementStyle } from "../../../utils/resetStyle";
 import BarcodeProperties from "./BarcodeProperties.vue";
 import { isPagination } from "../../../utils/paginationPresets";
+import { isDateElement } from "../../../utils/dateElement";
 import FrameProperties from "./FrameProperties.vue";
 import {
   getBoxCornerRadii,
@@ -1637,6 +1644,7 @@ const panelTitle = computed(() => {
   const el = currentElement.value as any;
   if (!selectedElement.value || !el) return t("properties.reportProperties");
   if (isPagination(el)) return t("elementNames.pageNumber");
+  if (isDateElement(el)) return t("elementNames.dateTime");
   if (isPageBorder.value) return t("elementNames.framePageBorder");
   // Headings are shown by their own name, not as the box / text they are built of
   if (hasProperty(el, SECTION_HEADING_PROPERTY)) return t("elementNames.partSectionHeading");

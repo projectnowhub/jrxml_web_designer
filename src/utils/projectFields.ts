@@ -10,16 +10,17 @@ import type { Band, BarcodeElement, DesignElement, FrameElement } from "@/types"
 import { checkBarcodeValue, toBarcodeExpression } from "./barcode/barcodeTypes";
 import { setImageCrop, setImageName } from "./elementUtils";
 import { isPagination } from "./paginationPresets";
+import { isDateElement } from "./dateElement";
 import type { ChartBinding, ProjectField, ReportProject, TableDataBinding } from "@/types/dataSource";
 
 export const REPORT_PROJECTS_PROPERTY = "com.cdp.projects";
 
 // Whether a project detail can be dropped onto an existing item: text details
-// onto a text item (not a page number) or onto a barcode whose type can hold
+// onto a text item (not a page number or a date) or onto a barcode whose type can hold
 // the value, an image (the logo) onto an image item
 export function canTakeProjectField(element: DesignElement, field: ProjectField, value?: string | null): boolean {
   if (element.type === "image") return field.type === "image";
-  if (element.type === "textField") return field.type !== "image" && !isPagination(element);
+  if (element.type === "textField") return field.type !== "image" && !isPagination(element) && !isDateElement(element);
   if (element.type === "barcode") return field.type !== "image" && (value == null || !projectValueProblem(element, value));
   return false;
 }
