@@ -5,7 +5,7 @@ import i18n from "@/i18n";
 // Messages here are shown to the user, so they are translated
 const t = i18n.global.t;
 
-const GENERATE_PDF_PATH = "api/pdf/generateForm";
+const GENERATE_PDF_PATH = "api/reporter/pdf/generateForm";
 
 // Only the JRXML is sent. The report server gets every table's rows and
 // every chart's numbers itself, from the setups in the JRXML
