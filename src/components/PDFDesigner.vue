@@ -443,7 +443,6 @@
             :visible="rightPanelTab === 'ai'"
             :initial-height="aiChatPanelHeight"
             :mcp-context="mcpContext"
-            :on-update="forceUpdateUI"
             :embedded="true"
             :show-settings="showAISettings"
             @update:show-settings="showAISettings = $event"
@@ -763,7 +762,7 @@ import {
   usedTableNames,
 } from "@/utils/table/tableDocument";
 import type { DesignerFile } from "@/types/designerFile";
-import type { MCPContext } from "@/mcp";
+import type { MCPContext, PageToolRequest } from "@/mcp";
 import { checkWebMCPSupport } from "@/utils/browserCompatibility";
 import {
   computed,
@@ -773,7 +772,6 @@ import {
   reactive,
   ref,
   watch,
-  getCurrentInstance,
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDesignerFiles } from "@/composables/useDesignerFiles";
@@ -950,44 +948,15 @@ const {
 const browserSupport = ref(checkWebMCPSupport());
 const isAIAssistantSupported = computed(() => browserSupport.value.isSupported);
 
-// MCP context, used by the AI dialog to execute tool calls
+// MCP context: what the AI tools borrow from the designer (they read and
+// change the report through the stores)
 const mcpContext = computed<MCPContext>(() => ({
-  bands: bands.value,
-  reportProperties: reportProperties.value,
-  fields: reportFields.value,
-  parameters: reportParameters.value,
-  variables: reportVariables.value,
-  saveStateToHistory,
-  updateJRXML,
   selectElement,
-  selectedElement: selectedElement.value,
-  selectedElements: selectedElements.value,
+  undo: () => undo(),
+  redo: () => redo(),
+  onPageSetupChange: () => handlePageSetupChange(),
+  pageTool: (request) => runPageTool(request),
 }));
-
-// Force-update function, used to trigger a UI refresh after a tool executes
-function forceUpdateUI() {
-  console.log("forceUpdateUI called");
-  console.log("bands.value before update:", bands.value);
-
-  // Create a new array via deep clone so Vue detects the change
-  const newBands = JSON.parse(JSON.stringify(bands.value));
-  bands.value = newBands;
-
-  console.log("bands.value after update:", bands.value);
-
-  // Use Vue's force-update mechanism
-  const instance = getCurrentInstance();
-  if (instance) {
-    console.log("Forcing component update");
-    instance.proxy?.$forceUpdate();
-  }
-
-  // Call nextTick to ensure the DOM has updated
-  nextTick(() => {
-    console.log("Calling updateJRXML");
-    updateJRXML();
-  });
-}
 
 // DesignerCanvas component reference
 const designerCanvasRef = ref<any>(null);
@@ -1323,6 +1292,14 @@ const addNewPage = (afterPage?: number) => {
   updateJRXML();
 };
 
+// The AI assistant runs the page actions too (runPageTool): its whole message
+// is one undo step, recorded before, and it asks the user itself before
+// replacing a page's content
+let aiDriven = false;
+const recordPageStep = () => {
+  if (!aiDriven) saveStateToHistory();
+};
+
 const deletePage = (pageIndex: number) => {
   const special = specialPages(reportProperties.value);
   const kind = pageKind(reportProperties.value, pageIndex);
@@ -1331,7 +1308,7 @@ const deletePage = (pageIndex: number) => {
     notification.warning(t("specialPages.lastNormalPage"));
     return;
   }
-  saveStateToHistory();
+  recordPageStep();
   const newTotal = totalPages.value - 1;
   const detailBand = bands.value.find(
     (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
@@ -1422,7 +1399,7 @@ const addContentsPageLikeLast = () => {
   const { contents, count } = specialPages(props);
   const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
   if (!detail || !contents) return;
-  saveStateToHistory();
+  recordPageStep();
   const source = detail.elements.filter((el) => (el.pageIndex ?? 0) === count - 1);
   insertEmptyPage(count);
   props.contentsPages = contents + 1;
@@ -1542,14 +1519,14 @@ const applyChosenDesign = async (id: string) => {
     ? Array.from({ length: specialCount - (hasCover ? 1 : 0) }, (_, i) => i + (hasCover ? 1 : 0))
     : [pageIndex];
   const onPage = detail.elements.filter((el) => contentsIndexes.includes(el.pageIndex ?? 0));
-  if (mode === "replace" && onPage.length) {
+  if (mode === "replace" && onPage.length && !aiDriven) {
     const ok = await askConfirm(
       t(allContents ? "pageDesigns.replaceContentsTitle" : "pageDesigns.replaceTitle"),
       t(allContents ? "pageDesigns.replaceContentsMessage" : "pageDesigns.replaceMessage"),
     );
     if (!ok) return;
   }
-  saveStateToHistory();
+  recordPageStep();
   let page = pageIndex;
   if (mode === "add") {
     const { contents, count } = specialPages(props);
@@ -1736,7 +1713,7 @@ const handlePageAction = (action: PageAction, pageIndex: number) => {
       if (cover || contents || pageIndex !== 0) return;
       const problem = specialProblemOnPage(0, "cover");
       if (problem) return warnSpecialPageProblem(problem);
-      saveStateToHistory();
+      recordPageStep();
       keepANormalPage();
       props.coverPage = true;
       notification.success(t("specialPages.coverMade"));
@@ -1744,7 +1721,7 @@ const handlePageAction = (action: PageAction, pageIndex: number) => {
     }
     case "coverToNormal":
       if (!cover || contents) return;
-      saveStateToHistory();
+      recordPageStep();
       // A whole-sheet cover's content is fitted inside the margins
       if (props.fullPageCover) {
         const from = specialPageArea(props, 0)!;
@@ -1769,7 +1746,7 @@ const handlePageAction = (action: PageAction, pageIndex: number) => {
       // The cover's items stay where they are on the sheet
       const sheet = action === "wholeSheet";
       if (!cover || !!props.fullPageCover === sheet) return;
-      saveStateToHistory();
+      recordPageStep();
       // The cover's content is fitted to its new area: the design keeps its
       // layout, nothing has to be resized by hand
       const from = specialPageArea(props, 0)!;
@@ -1804,7 +1781,7 @@ const handlePageAction = (action: PageAction, pageIndex: number) => {
       if (pageIndex !== count) return;
       const problem = specialProblemOnPage(pageIndex, "contents");
       if (problem) return warnSpecialPageProblem(problem);
-      saveStateToHistory();
+      recordPageStep();
       keepANormalPage();
       props.contentsPages = contents + 1;
       notification.success(t("specialPages.contentsMade"));
@@ -1812,12 +1789,86 @@ const handlePageAction = (action: PageAction, pageIndex: number) => {
     }
     case "contentsToNormal":
       if (!contents || pageIndex !== count - 1) return;
-      saveStateToHistory();
+      recordPageStep();
       props.contentsPages = contents - 1;
       notification.info(t("specialPages.madeNormal"));
       break;
   }
   updateJRXML();
+};
+
+// The AI assistant's page tools (mcp/handlers.ts): the same page actions, as
+// part of the AI's undo step, without the confirm (the AI asks the user first).
+// Returns why it can't be done, or null.
+const runPageTool = async (request: PageToolRequest): Promise<string | null> => {
+  const props = reportProperties.value;
+  const { cover, contents, count } = specialPages(props);
+  const problemText = (problem: SpecialPageProblem) => t(`specialPages.notAllowed.${problem}`);
+  aiDriven = true;
+  try {
+    switch (request.action) {
+      case "addCover":
+        if (cover) return "The report already has a cover page (page 1); give it another design with change_page_design";
+        Object.assign(designChooser, { kind: "cover", mode: "add", pageIndex: 0, sheet: request.wholeSheet });
+        await applyChosenDesign(request.design);
+        return null;
+      case "addContents":
+        // More contents pages take the last one's design (one Table of Contents over them)
+        if (contents) {
+          addContentsPageLikeLast();
+          return null;
+        }
+        Object.assign(designChooser, { kind: "contents", mode: "add", pageIndex: count, sheet: false });
+        await applyChosenDesign(request.design);
+        return null;
+      case "changeDesign": {
+        const kind = pageKind(props, request.page);
+        if (request.page >= totalPages.value) return `The report has ${totalPages.value} page(s)`;
+        if (kind === "normal") return `Page ${request.page + 1} is a normal page; designs are for the cover and contents pages`;
+        const sheet = kind === "cover" && (request.wholeSheet ?? !!props.fullPageCover);
+        Object.assign(designChooser, { kind, mode: "replace", pageIndex: request.page, sheet });
+        await applyChosenDesign(request.design);
+        return null;
+      }
+      case "setKind": {
+        const { page, kind } = request;
+        const now = pageKind(props, page);
+        if (page >= totalPages.value) return `The report has ${totalPages.value} page(s)`;
+        if (now === kind) return `Page ${page + 1} is already a ${kind} page`;
+        if (kind === "cover") {
+          if (page !== 0 || cover || contents) return "Only page 1 of a report without a cover or contents pages can become the cover (add_cover_page adds one in front)";
+          const problem = specialProblemOnPage(0, "cover");
+          if (problem) return problemText(problem);
+          handlePageAction("makeCover", 0);
+        } else if (kind === "contents") {
+          if (page !== count) return `Only the first normal page (page ${count + 1}) can become a contents page (add_contents_page adds one)`;
+          const problem = specialProblemOnPage(page, "contents");
+          if (problem) return problemText(problem);
+          handlePageAction("makeContents", page);
+        } else if (now === "cover") {
+          if (contents) return "Turn the contents pages into normal pages first (the last one first)";
+          handlePageAction("coverToNormal", 0);
+        } else {
+          if (page !== count - 1) return `Only the last contents page (page ${count}) can become a normal page`;
+          handlePageAction("contentsToNormal", page);
+        }
+        return null;
+      }
+      case "wholeSheet":
+        if (!cover) return "The report has no cover page";
+        handlePageAction(request.on ? "wholeSheet" : "keepMargins", 0);
+        return null;
+      case "deletePage": {
+        const kind = pageKind(props, request.page);
+        if (request.page >= totalPages.value) return `The report has ${totalPages.value} page(s)`;
+        if (kind === "normal" && totalPages.value - count <= 1) return t("specialPages.lastNormalPage");
+        deletePage(request.page);
+        return null;
+      }
+    }
+  } finally {
+    aiDriven = false;
+  }
 };
 
 // All possible band types
@@ -5694,7 +5745,7 @@ onMounted(() => {
   setTimeout(() => {
     isLoadingFile.value = false;
     ensureBandsFitPage();
-    unwrapLegacyCoverFrames(bands.value);
+    unwrapLegacyCoverFrames(bands.value, reportProperties.value);
     console.log("Starting initial JRXML generation...");
     updateJRXML();
     saveStatus.value = "saved";

@@ -50,7 +50,7 @@ jrxml_web_designer/
     ├── config/               # apiConfig.ts, fonts.config.ts
     ├── services/             # apiClient, auth, reportService (PDF), dataSourceService (table data), images
     ├── mocks/                # Dummy table data sources until the backend API exists
-    ├── mcp/                  # AI assistant tool schemas
+    ├── mcp/                  # AI assistant: tools, element schemas (elements/), placement rules, API calls
     ├── composables/          # useUndoRedo, useZoom, useTableRows, useDesignerFiles, useLivePreview, alignment/snap/drag…
     ├── components/
     │   ├── PDFDesigner.vue           # ★ Orchestrator: holds the whole model
@@ -154,7 +154,7 @@ Entry: `parseJRXMLContent()` in `src/utils/jrxml/parse.ts`, using the browser `D
 
 ### 5.3 AI Assistant
 
-`components/ai/AIChatPanel.vue` (right panel tab) talks to an OpenAI-compatible API (`config/aiConfig.ts`, `composables/useAIChat.ts`). The model edits the design through tools defined in `mcp/schemas/toolSchemas.ts` and run by `mcp/handlers.ts`: reading the design, creating, moving, resizing, aligning, styling and deleting elements, band heights, report properties, fields and parameters, undo and redo. Destructive actions ask for confirmation (`mcp/confirmHandler.ts`).
+`components/ai/AIChatPanel.vue` (right panel tab) talks to the Anthropic Claude Messages API or an OpenAI-compatible API (`mcp/aiService.ts`, settings in `config/aiConfig.ts`). `composables/useAIChat.ts` runs the loop: the model gets the system prompt with the current design (`mcp/design.ts` → `designStateText`), calls tools, gets their results back and carries on until it answers (at most 12 rounds); everything done for one message is one undo step. The tools (`mcp/schemas/toolSchemas.ts`, run by `mcp/handlers.ts`) read the design and the report data, create every element of the library through one schema per element (`mcp/elements/`: text, headings, image, line, shapes, box with children, typed and data tables, chart, barcode, table of contents, page number, date, page border, presets; `create_design` lays out many at once), change, move, align and delete them, set band heights, pages and page setup, and undo / redo. Placement and the designer's rules (pages, bands, boxes, cover / contents pages) are in `mcp/design.ts`. Details: `CLAUDE.md` → "AI assistant".
 
 ### 5.4 Modals
 

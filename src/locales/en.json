@@ -940,11 +940,19 @@
       "requestTimeout": "Request Timeout (seconds)",
       "requestTimeoutHint": "In seconds, default: 300 seconds (5 minutes)",
       "reset": "Reset to Default",
-      "save": "Save Configuration"
+      "save": "Save Configuration",
+      "maxTokensHint": "Longest answer the AI may write (default {value}). Whole pages need more; GPT-4o allows up to 16,384.",
+      "modelHint": "Recommended: Claude Sonnet 5.5 ({value}). Claude models need an Anthropic key (sk-ant-…); with an OpenAI key the assistant uses GPT-4o.",
+      "models": {
+        "sonnet": "Claude Sonnet 5.5 — recommended: reliable with whole reports, reads pictures and PDFs",
+        "opus": "Claude Opus 5.5 — best quality for large reports, slower and costs more",
+        "haiku": "Claude Haiku 5.5 — fastest, for small edits",
+        "gpt4o": "GPT-4o — with an OpenAI key"
+      }
     },
     "empty": {
       "title": "Start a conversation with the AI assistant",
-      "example": "e.g.: create a title in the detail band",
+      "example": "e.g.: make a cover with a dark blue panel, the report title and a logo spot",
       "currentApi": "Current API: {url}"
     },
     "unsupported": {
@@ -954,26 +962,74 @@
       "suggestion": "We recommend using the latest version of Chrome, Firefox or Safari"
     },
     "input": {
-      "placeholder": "Enter a command, e.g.: create a text field in the detail band to display the customer name",
+      "placeholder": "Describe what you want, e.g.: add a row of three KPI cards under the title",
       "unsupported": "Browser not supported, please upgrade your browser",
-      "send": "Send message (Ctrl+Enter)"
+      "send": "Send message (Ctrl+Enter)",
+      "enlarge": "Make the box bigger",
+      "shrink": "Make the box smaller",
+      "characters": "{count} characters"
     },
     "message": {
       "you": "You",
       "copied": "Copied",
-      "copy": "Copy message"
+      "copy": "Copy message",
+      "openLarge": "Open in a large view",
+      "openPicture": "Open {name} large",
+      "showAll": "Show all",
+      "showLess": "Show less",
+      "readerTitle": "Message"
     },
     "tools": {
-      "get_design_state": "Get design state",
-      "get_element": "Get element info",
+      "get_design_state": "Read the design",
+      "get_element": "Read an element",
       "find_elements": "Find elements",
-      "create_static_text": "Create static text",
-      "create_text_field": "Create dynamic text field",
-      "create_rectangle": "Create rectangle",
-      "update_element": "Update element",
+      "get_report_data": "Read report data",
+      "create_design": "Lay out a design",
+      "create_text": "Add text",
+      "create_section_heading": "Add section heading",
+      "create_sub_heading": "Add sub-heading",
+      "create_image": "Add picture",
+      "create_line": "Add line",
+      "create_rectangle": "Add rectangle",
+      "create_ellipse": "Add circle",
+      "create_box": "Add box",
+      "create_table": "Add table",
+      "create_data_table": "Add project data table",
+      "create_chart": "Add chart",
+      "create_barcode": "Add barcode",
+      "create_table_of_contents": "Add table of contents",
+      "create_page_number": "Add page number",
+      "create_date": "Add date",
+      "create_page_border": "Add page border",
+      "create_preset": "Add ready-made piece",
+      "update_element": "Change element",
       "move_element": "Move element",
+      "resize_element": "Resize element",
       "delete_element": "Delete element",
-      "update_band_height": "Adjust band height"
+      "delete_elements": "Delete elements",
+      "move_elements": "Move elements",
+      "update_elements_style": "Restyle elements",
+      "resize_elements": "Resize elements",
+      "align_elements": "Align elements",
+      "distribute_elements": "Space elements evenly",
+      "update_band_height": "Adjust band height",
+      "add_page": "Add page",
+      "update_report_properties": "Change page setup",
+      "undo": "Undo",
+      "redo": "Redo",
+      "add_cover_page": "Add cover page",
+      "add_contents_page": "Add contents page",
+      "change_page_design": "Change page design",
+      "set_page_kind": "Change page kind",
+      "set_cover_whole_sheet": "Cover page area",
+      "delete_page": "Delete page",
+      "convert_to_box": "Change into a box",
+      "stack_elements": "Line up elements",
+      "put_in_box": "Put in box",
+      "check_report": "Check the report",
+      "plan_report": "Plan the report",
+      "fill_page": "Fill a page",
+      "check_pdf": "Check the PDF"
     },
     "tool": {
       "noParameters": "No parameters",
@@ -988,7 +1044,24 @@
       "processing": "AI is processing...",
       "executingTool": "Executing tool: {tool}",
       "toolSucceeded": "Tool {tool} executed successfully",
-      "toolFailed": "Tool {tool} failed: {error}"
+      "toolFailed": "Tool {tool} failed: {error}",
+      "stoppedAfterSteps": "Stopped after {count} steps. Ask again to carry on.",
+      "cutOff": "The answer was too long for one reply; the AI is carrying on in smaller steps.",
+      "tooLong": "The answers keep getting cut off. Raise Max Tokens in the AI settings, or ask for a smaller part of the design at a time.",
+      "verifying": "Checking the result: {count} problem left, the AI is fixing it. | Checking the result: {count} problems left, the AI is fixing them.",
+      "problemsLeft": "The report still has {count} problem the AI could not fix. Ask it to “check the report” to see it. | The report still has {count} problems the AI could not fix. Ask it to “check the report” to see them."
+    },
+    "attach": {
+      "add": "Attach pictures or files (or paste / drop them here)",
+      "remove": "Remove",
+      "reading": "Reading…",
+      "drop": "Drop the files to attach them",
+      "errors": {
+        "type": "“{name}” can't be attached: use a picture (PNG, JPG, GIF, WebP), a PDF or a text file (TXT, CSV, JSON, XML…).",
+        "tooLarge": "“{name}” is too large to attach (pictures up to 15 MB, PDFs 20 MB, text files 2 MB).",
+        "unreadable": "“{name}” could not be read.",
+        "count": "At most {max} attachments per message."
+      }
     }
   },
   "editor": {

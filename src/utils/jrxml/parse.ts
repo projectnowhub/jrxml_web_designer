@@ -848,7 +848,7 @@ function parseComponentElement(componentElem: Element): any {
         child.tagName === `c:${barcodeType}`
       ) {
         // Parse the barcode element
-        const codeExprElem = child.querySelector("codeExpression");
+        const codeExprElem = directChildren(child, "codeExpression")[0] ?? child.querySelector("codeExpression");
         const codeExpression = codeExprElem
           ? codeExprElem.textContent?.trim() || ""
           : "";
@@ -865,9 +865,14 @@ function parseComponentElement(componentElem: Element): any {
           (c) => c.localName === "property" && c.getAttribute("name") === BARCODE_VALUES_PROPERTY,
         );
         const valuesByType = parseBarcodeValues(keptValues?.getAttribute("value"));
+        // Its other properties (e.g. being part of a box)
+        const others = Array.from(reportElement.children)
+          .filter((c) => c.localName === "property" && c !== keptValues && c.getAttribute("name"))
+          .map((c) => ({ name: c.getAttribute("name")!, value: c.getAttribute("value") ?? "" }));
 
         return {
           ...(valuesByType ? { valuesByType } : {}),
+          ...(others.length ? { properties: others } : {}),
           type: "barcode",
           uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
           x: parseInt(reportElement.getAttribute("x") || "0"),
@@ -1710,9 +1715,16 @@ function parseLineElement(element: Element, result: any): void {
     result.lineStyle = element.getAttribute("lineStyle");
   }
 
-  const graphicElement = parseGraphicElement(element);
+  // The pen becomes the line's own width / style / colour, which the canvas
+  // and the Line panel edit (a kept pen would win over them when written)
+  const { pen, ...graphicElement } = parseGraphicElement(element);
   if (Object.keys(graphicElement).length > 0) {
     Object.assign(result, graphicElement);
+  }
+  if (pen) {
+    if (pen.lineWidth !== undefined && result.lineWidth === undefined) result.lineWidth = pen.lineWidth;
+    if (pen.lineStyle && result.lineStyle === undefined) result.lineStyle = pen.lineStyle;
+    if (pen.lineColor && result.lineColor === undefined) result.lineColor = pen.lineColor;
   }
 }
 
@@ -1807,6 +1819,12 @@ function parseFrameElement(element: Element, result: any): void {
       const parsedElement = parseElement(child, childType);
       if (parsedElement) {
         elements.push(parsedElement);
+      }
+    } else if (childType === "componentElement") {
+      // A barcode in a box (tables never go in boxes)
+      const parsedComponent = parseComponentElement(child);
+      if (parsedComponent) {
+        elements.push(parsedComponent);
       }
     }
   });

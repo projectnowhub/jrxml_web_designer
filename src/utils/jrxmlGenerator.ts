@@ -2,7 +2,7 @@ import { headingBookmarks, HEADING_NUMBERS_PROPERTY, serializeHeadingNumbers } f
 import { xmlAttr, cdata } from "./jrxml/xmlEscape";
 import { DEFAULT_REPORT_FONT, resolveReportFont } from "../config/fonts.config";
 // Import type definitions
-import type { DesignElement, BandType, Band, ContentsListElement, ReportGroup } from "../types";
+import type { DesignElement, BandType, Band, ContentsListElement, FrameElement, ReportGroup } from "../types";
 import type { ReportProperties, Field, Parameter } from "./jrxml/types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { SAVED_TABLE_STYLES_PROPERTY } from "./table/tableThemes";
@@ -955,9 +955,30 @@ function validateElementPosition(element: any): any {
   return validatedElement;
 }
 
-// Items below a table move down with it when it grows past its design height
+// Text that grows downward in the PDF, or a box holding one (the box grows with it)
+const growsInPdf = (element: DesignElement): boolean =>
+  (element.type === "textField" && element.textAdjust === "StretchHeight") ||
+  (element.type === "frame" && ((element as FrameElement).elements ?? []).some(growsInPdf));
+
+// Below a growing text: JasperReports pushes a "Float" element down by what an
+// element wholly above it (overlapping it sideways) grew, so it never prints
+// over the longer text; one beside it stays put
+function floatsBelowGrowingText(element: DesignElement, siblings: DesignElement[]): boolean {
+  return siblings.some(
+    (other) =>
+      other !== element &&
+      growsInPdf(other) &&
+      (other as any).pageIndex === (element as any).pageIndex &&
+      element.y >= other.y + other.height,
+  );
+}
+
+// Items below a table or a growing text move down with it when it grows past
+// its design height
 function withTableFloat(element: any, siblings: DesignElement[]): any {
-  return floatsBelowTable(element, siblings) ? { ...element, positionType: "Float" } : element;
+  return floatsBelowTable(element, siblings) || floatsBelowGrowingText(element, siblings)
+    ? { ...element, positionType: "Float" }
+    : element;
 }
 
 // Get the default height for a band type
@@ -1492,7 +1513,8 @@ function generateFrameXML(element: any): string {
   // Generate child elements
   if (element.elements && element.elements.length > 0) {
     element.elements.forEach((child: any) => {
-      xml += generateElementXML(child);
+      // Inside a box too: what is below a growing text moves down with it
+      xml += generateElementXML(floatsBelowGrowingText(child, element.elements) ? { ...child, positionType: "Float" } : child);
     });
   }
 

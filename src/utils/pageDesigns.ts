@@ -7,7 +7,7 @@
 import type { Band, ContentsEntry, DesignElement, FrameElement } from "@/types";
 import { createElement } from "@/components/elements/ElementRegistry";
 import { frame, isBoxPart, photo, releaseBoxPart, text, type FrameTemplateContext, type TextOptions } from "./framePresets";
-import { buildContentsList } from "./contentsList";
+import { buildContentsList, SECTION_HEADING_PROPERTY } from "./contentsList";
 import { FIT_LIST_PROPERTY } from "./headingSync";
 
 export const DESIGN_COLORS = {
@@ -443,8 +443,12 @@ export function buildCoverDesign(type: CoverDesignType, ctx: FrameTemplateContex
   return COVER_BUILDERS[type](ctx);
 }
 
-// Unwraps old cover frames into direct editable elements on the cover page
-export function unwrapLegacyCoverFrames(bands: Band[]): boolean {
+// Unwraps old cover frames into direct editable elements on the cover page.
+// Only a report with a cover has them (they came with the cover page): on a
+// first page that is a normal page, a box with parts (a KPI card, a Section
+// Heading…) is the user's box and stays one.
+export function unwrapLegacyCoverFrames(bands: Band[], props: { coverPage?: boolean } | undefined): boolean {
+  if (!props?.coverPage) return false;
   const detail = bands.find((b) => b.type === "detail");
   if (!detail || !detail.elements) return false;
   let changed = false;
@@ -454,7 +458,7 @@ export function unwrapLegacyCoverFrames(bands: Band[]): boolean {
       el &&
       el.type === "frame" &&
       (el.pageIndex ?? 0) === 0 &&
-      !(el.properties ?? []).some((p) => p?.name === DESIGN_BOX_PROPERTY) &&
+      !(el.properties ?? []).some((p) => p?.name === DESIGN_BOX_PROPERTY || p?.name === SECTION_HEADING_PROPERTY) &&
       el.elements &&
       el.elements.length > 0 &&
       (el.elements.some(isBoxPart) || (el.width >= 400 && el.height >= 500))

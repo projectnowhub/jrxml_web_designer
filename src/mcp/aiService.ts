@@ -1,34 +1,40 @@
 /**
- * AI Service - OpenAI-compatible API calls
- *
- * Calls the AI service using configured parameters
+ * AI Service - calls the configured model (Anthropic Claude Messages API or
+ * an OpenAI-compatible API) with the tools, keeping a conversation in which
+ * the model's tool calls and their results go back to it, so it can read what
+ * it made and carry on (useAIChat runs the rounds).
  */
 
-import { SYSTEM_PROMPT } from "@/config/aiConfig";
 import type { MCPToolCall } from "./handlers";
+import { currentClaudeModel, DEFAULT_MAX_TOKENS } from "@/config/aiConfig";
+import { describeAttachment, type ChatAttachment } from "./attachments";
 import type { AIConfiguration } from "@/composables/useAIConfigManager";
 
 // ============================================
 // Type definitions
 // ============================================
 
+// One conversation entry, whichever API is used
 export interface Message {
-  role: "system" | "user" | "assistant" | "tool";
+  role: "user" | "assistant" | "tool";
   content: string;
-  tool_call?: {
-    id: string;
-    type: "function";
-    function: {
-      name: string;
-      arguments: string;
-    };
-  };
-  tool_call_id?: string;
+  // user: pictures, PDFs and text files given with the message
+  attachments?: ChatAttachment[];
+  // assistant: the tools it called (with their ids)
+  toolCalls?: MCPToolCall[];
+  // assistant: the calls were written in the text (models without tool use)
+  toolCallsInText?: boolean;
+  // tool: the call this is the result of
+  toolCallId?: string;
+  isError?: boolean;
 }
 
 export interface AIResponse {
   content: string;
   toolCalls: MCPToolCall[];
+  toolCallsInText?: boolean;
+  // The answer hit the output limit: its unfinished tool calls were dropped
+  cutOff?: boolean;
   success: boolean;
   error?: string;
 }
@@ -42,16 +48,86 @@ export interface OpenAITool {
   };
 }
 
+type ToolSchemaLike = { name: string; description: string; inputSchema: any };
+
+let callCounter = 0;
+const newCallId = () => `call_${Date.now().toString(36)}_${(callCounter++).toString(36)}`;
+
 // ============================================
-// API call functions
+// OpenAI-compatible API
 // ============================================
+
+// The user's words with the attachments listed (by id, so the model can name them)
+const userText = (m: Message) =>
+  m.attachments?.length ? `${m.content}\n\n[Attached: ${m.attachments.map(describeAttachment).join("; ")}]` : m.content;
+
+// Only the latest message with attachments carries them in full; earlier ones
+// are named (the model saw them then), so each request doesn't send them again
+const latestWithAttachments = (messages: Message[]) => {
+  for (let i = messages.length - 1; i >= 0; i--) if (messages[i]!.role === "user" && messages[i]!.attachments?.length) return i;
+  return -1;
+};
+
+const fileText = (a: ChatAttachment) => `[File ${a.id}: ${a.name}]\n${a.data}`;
+
+function toOpenAIMessages(system: string, messages: Message[]): any[] {
+  const out: any[] = [{ role: "system", content: system }];
+  const full = latestWithAttachments(messages);
+  messages.forEach((m, index) => {
+    if (m.role === "user" && m.attachments?.length && index === full) {
+      out.push({
+        role: "user",
+        content: [
+          ...m.attachments.map((a) =>
+            a.kind === "image"
+              ? { type: "image_url", image_url: { url: `data:${a.mediaType};base64,${a.data}` } }
+              : a.kind === "pdf"
+                ? { type: "file", file: { filename: a.name, file_data: `data:application/pdf;base64,${a.data}` } }
+                : { type: "text", text: fileText(a) },
+          ),
+          { type: "text", text: userText(m) },
+        ],
+      });
+      return;
+    }
+    toOpenAI(m, out);
+  });
+  return out;
+}
+
+// One message in the OpenAI form (attachments of the latest message: above)
+function toOpenAI(m: Message, out: any[]): void {
+  if (m.role === "user") {
+    out.push({ role: "user", content: userText(m) });
+  } else if (m.role === "assistant") {
+    if (m.toolCalls?.length && !m.toolCallsInText) {
+      out.push({
+        role: "assistant",
+        content: m.content || null,
+        tool_calls: m.toolCalls.map((c) => ({
+          id: c.id,
+          type: "function",
+          function: { name: c.name, arguments: JSON.stringify(c.params ?? {}) },
+        })),
+      });
+    } else {
+      out.push({ role: "assistant", content: m.content || " " });
+    }
+  } else if (m.toolCallId?.startsWith("text_")) {
+    // Results of calls written in the text go back as text
+    out.push({ role: "user", content: `[Tool result]\n${m.content}` });
+  } else {
+    out.push({ role: "tool", tool_call_id: m.toolCallId, content: m.content });
+  }
+}
 
 /**
  * Call an OpenAI-compatible API
  */
 export async function callOpenAICompatibleAPI(
+  system: string,
   messages: Message[],
-  tools: OpenAITool[],
+  tools: ToolSchemaLike[],
   config: AIConfiguration,
 ): Promise<AIResponse> {
   try {
@@ -89,21 +165,16 @@ export async function callOpenAICompatibleAPI(
 
     const requestBody: any = {
       model: modelName,
-      messages,
-      max_tokens: config.maxTokens,
+      messages: toOpenAIMessages(system, messages),
+      max_tokens: outputLimit(modelName, config.maxTokens),
       temperature: config.temperature,
     };
 
-    // If tool definitions were provided, add them to the request
-    if (tools && tools.length > 0) {
-      requestBody.tools = tools;
+    if (tools.length > 0) {
+      requestBody.tools = convertToOpenAITools(tools);
       requestBody.tool_choice = "auto";
     }
 
-    console.log("Calling AI API:", targetUrl);
-    console.log("Model:", modelName);
-
-    // Send the request
     const response = await fetch(targetUrl, {
       method: "POST",
       headers: {
@@ -111,7 +182,7 @@ export async function callOpenAICompatibleAPI(
         Authorization: `Bearer ${config.apiKey}`,
       },
       body: JSON.stringify(requestBody),
-      signal: AbortSignal.timeout(config.requestTimeout), // Use the configured timeout
+      signal: AbortSignal.timeout(config.requestTimeout),
     });
 
     if (!response.ok) {
@@ -122,36 +193,29 @@ export async function callOpenAICompatibleAPI(
     }
 
     const data = await response.json();
-
-    // Parse the response
-    const choice = data.choices[0];
+    const choice = data.choices?.[0];
     if (!choice) {
       throw new Error("No response from AI");
     }
 
     const assistantMessage = choice.message;
+    // Cut off by the output limit: its tool calls are unfinished
+    if (choice.finish_reason === "length") {
+      return { content: assistantMessage.content || "", toolCalls: [], success: true, cutOff: true };
+    }
     const toolCalls: MCPToolCall[] = [];
-
-    // Extract tool calls
-    if (assistantMessage.tool_calls) {
-      for (const toolCall of assistantMessage.tool_calls) {
-        try {
-          const args = JSON.parse(toolCall.function.arguments);
-          toolCalls.push({
-            name: toolCall.function.name,
-            params: args,
-          });
-        } catch (error) {
-          console.error("Failed to parse tool call arguments:", error);
-        }
+    for (const toolCall of assistantMessage.tool_calls ?? []) {
+      let params: Record<string, any> = {};
+      try {
+        params = JSON.parse(toolCall.function.arguments || "{}");
+      } catch {
+        // Sent back as a failed call, so the model can try again
+        params = { __unreadable: toolCall.function.arguments };
       }
+      toolCalls.push({ id: toolCall.id || newCallId(), name: toolCall.function.name, params });
     }
 
-    return {
-      content: assistantMessage.content || "",
-      toolCalls,
-      success: true,
-    };
+    return { content: assistantMessage.content || "", toolCalls, success: true };
   } catch (error) {
     console.error("AI API call failed:", error);
     return {
@@ -163,13 +227,18 @@ export async function callOpenAICompatibleAPI(
   }
 }
 
+// The answer length asked for, within what the model can write (GPT-4o:
+// 16,384 tokens; asking for more fails the request)
+function outputLimit(modelName: string, wanted: number | undefined): number {
+  const tokens = wanted || DEFAULT_MAX_TOKENS;
+  return /^gpt-4o/i.test(modelName) ? Math.min(tokens, 16384) : tokens;
+}
+
 /**
- * Extract tool calls from plain text (fallback approach)
+ * Extract tool calls from plain text (models without tool use)
  */
 function extractToolCallsFromText(text: string): MCPToolCall[] {
   const toolCalls: MCPToolCall[] = [];
-
-  // Match the ```json ... ``` format
   const jsonBlockPattern = /```json\s*([\s\S]*?)```/g;
   let match;
 
@@ -177,26 +246,11 @@ function extractToolCallsFromText(text: string): MCPToolCall[] {
     try {
       const jsonStr = match[1]?.trim() || "";
       if (!jsonStr) continue;
-
       const parsed = JSON.parse(jsonStr);
-
-      // Handle a single tool call
-      if (parsed.tool_name && parsed.parameters) {
-        toolCalls.push({
-          name: parsed.tool_name,
-          params: parsed.parameters,
-        });
-      }
-
-      // Handle multiple tool calls
-      if (parsed.tool_calls && Array.isArray(parsed.tool_calls)) {
-        for (const tc of parsed.tool_calls) {
-          if (tc.tool_name && tc.parameters) {
-            toolCalls.push({
-              name: tc.tool_name,
-              params: tc.parameters,
-            });
-          }
+      const calls = parsed.tool_calls && Array.isArray(parsed.tool_calls) ? parsed.tool_calls : [parsed];
+      for (const tc of calls) {
+        if (tc?.tool_name && tc.parameters) {
+          toolCalls.push({ id: `text_${newCallId()}`, name: tc.tool_name, params: tc.parameters });
         }
       }
     } catch (error) {
@@ -207,132 +261,6 @@ function extractToolCallsFromText(text: string): MCPToolCall[] {
   return toolCalls;
 }
 
-/**
- * Prepare the conversation history
- */
-export function prepareConversationHistory(messages: Message[]): Message[] {
-  return [{ role: "system", content: SYSTEM_PROMPT }, ...messages];
-}
-
-/**
- * Create a user message
- */
-export function createUserMessage(content: string): Message {
-  return { role: "user", content };
-}
-
-/**
- * Create an assistant message
- */
-export function createAssistantMessage(
-  content: string,
-  toolCalls?: MCPToolCall[],
-): Message {
-  const message: Message = { role: "assistant", content };
-
-  if (toolCalls && toolCalls.length > 0 && toolCalls[0]) {
-    message.tool_call = {
-      id: `call_${Date.now()}`,
-      type: "function",
-      function: {
-        name: toolCalls[0].name,
-        arguments: JSON.stringify(toolCalls[0].params),
-      },
-    };
-  }
-
-  return message;
-}
-
-/**
- * Create a design-state message
- */
-function createDesignStateMessage(designState: any): Message {
-  const stateDescription = formatDesignState(designState);
-  return {
-    role: "system",
-    content: `[Current Design State]\n${stateDescription}\n[/Current Design State]`,
-  };
-}
-
-/**
- * Format the design state into a human-readable format
- */
-function formatDesignState(designState: any): string {
-  const lines: string[] = [];
-
-  // Currently selected element
-  if (designState.selectedElement) {
-    const element = designState.selectedElement;
-    lines.push("[Currently Selected Element]");
-    lines.push(`- UUID: ${element.uuid}`);
-    lines.push(`- Type: ${element.type}`);
-    lines.push(`- Position: (${element.x}, ${element.y})`);
-    lines.push(`- Size: ${element.width}x${element.height}`);
-
-    if (element.type === "textField") {
-      lines.push(`- Text: "${element.expression || ""}"`);
-    }
-
-    if (element.forecolor) {
-      lines.push(`- Color: ${element.forecolor}`);
-    }
-    lines.push("");
-  }
-
-  // Band information
-  if (designState.bands && Array.isArray(designState.bands)) {
-    lines.push("Report structure:");
-    for (const band of designState.bands) {
-      const elementsCount = band.elements?.length || 0;
-      lines.push(
-        `- ${band.type} band: height ${band.height}px, contains ${elementsCount} element(s)`,
-      );
-
-      // List element details
-      if (band.elements && band.elements.length > 0) {
-        for (const element of band.elements) {
-          const elementType = element.type;
-          const uuid = element.uuid;
-          let description = "";
-
-          if (elementType === "textField") {
-            description = `text "${element.expression || ""}"`;
-          } else if (elementType === "rectangle") {
-            description = "rectangle";
-          } else if (elementType === "frame") {
-            description = "Frame container";
-          } else {
-            description = elementType;
-          }
-
-          lines.push(
-            `    - UUID: ${uuid} - ${description} (position: ${element.x},${element.y}, size: ${element.width}x${element.height})`,
-          );
-        }
-      }
-    }
-  }
-
-  // Field information
-  if (designState.fields && designState.fields.length > 0) {
-    lines.push("\nAvailable fields:");
-    for (const field of designState.fields) {
-      lines.push(`- $F{${field.name}} (${field.class})`);
-    }
-  }
-
-  // Parameter information
-  if (designState.parameters && designState.parameters.length > 0) {
-    lines.push("\nAvailable parameters:");
-    for (const param of designState.parameters) {
-      lines.push(`- $P{${param.name}}`);
-    }
-  }
-
-  return lines.join("\n");
-}
-
 // ============================================
 // Generate OpenAI tool definitions from tool schemas
 // ============================================
@@ -340,13 +268,7 @@ function formatDesignState(designState: any): string {
 /**
  * Convert MCP tool schemas to OpenAI tool format
  */
-export function convertToOpenAITools(
-  mcpTools: Array<{
-    name: string;
-    description: string;
-    inputSchema: any;
-  }>,
-): OpenAITool[] {
+export function convertToOpenAITools(mcpTools: ToolSchemaLike[]): OpenAITool[] {
   return mcpTools.map((tool) => ({
     type: "function" as const,
     function: {
@@ -384,64 +306,65 @@ export function isClaudeConfig(config: AIConfiguration): boolean {
   );
 }
 
+type ClaudeBlock =
+  | { type: "text"; text: string }
+  | { type: "image"; source: { type: "base64"; media_type: string; data: string } }
+  | { type: "document"; source: { type: "base64"; media_type: string; data: string }; title?: string }
+  | { type: "tool_use"; id: string; name: string; input: Record<string, any> }
+  | { type: "tool_result"; tool_use_id: string; content: string; is_error?: boolean };
+
+// Claude wants user / assistant turns in alternation; tool results are user
+// turns holding tool_result blocks right after the assistant's tool_use
+function toClaudeMessages(messages: Message[]): Array<{ role: "user" | "assistant"; content: ClaudeBlock[] }> {
+  const out: Array<{ role: "user" | "assistant"; content: ClaudeBlock[] }> = [];
+  const push = (role: "user" | "assistant", blocks: ClaudeBlock[]) => {
+    if (!blocks.length) return;
+    const last = out[out.length - 1];
+    if (last && last.role === role) last.content.push(...blocks);
+    else out.push({ role, content: blocks });
+  };
+  const full = latestWithAttachments(messages);
+  for (const [index, m] of messages.entries()) {
+    if (m.role === "user" && m.attachments?.length && index === full) {
+      push("user", [
+        ...m.attachments.map((a): ClaudeBlock =>
+          a.kind === "image"
+            ? { type: "image", source: { type: "base64", media_type: a.mediaType, data: a.data } }
+            : a.kind === "pdf"
+              ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: a.data }, title: a.name }
+              : { type: "text", text: fileText(a) },
+        ),
+        { type: "text", text: userText(m) || " " },
+      ]);
+    } else if (m.role === "user") {
+      push("user", [{ type: "text", text: userText(m) || " " }]);
+    } else if (m.role === "assistant") {
+      const blocks: ClaudeBlock[] = m.content ? [{ type: "text", text: m.content }] : [];
+      if (!m.toolCallsInText) {
+        for (const c of m.toolCalls ?? []) blocks.push({ type: "tool_use", id: c.id!, name: c.name, input: c.params ?? {} });
+      }
+      push("assistant", blocks.length ? blocks : [{ type: "text", text: " " }]);
+    } else if (m.toolCallId?.startsWith("text_")) {
+      push("user", [{ type: "text", text: `[Tool result]\n${m.content}` }]);
+    } else {
+      push("user", [{ type: "tool_result", tool_use_id: m.toolCallId!, content: m.content, ...(m.isError ? { is_error: true } : {}) }]);
+    }
+  }
+  // The conversation starts with the user
+  if (out[0]?.role !== "user") out.unshift({ role: "user", content: [{ type: "text", text: "Hello" }] });
+  return out;
+}
+
 /**
  * Call native Anthropic Claude Messages API
  */
 export async function callClaudeAPI(
   systemPrompt: string,
   messages: Message[],
-  mcpTools: Array<{
-    name: string;
-    description: string;
-    inputSchema: any;
-  }>,
+  mcpTools: ToolSchemaLike[],
   config: AIConfiguration,
 ): Promise<AIResponse> {
   try {
-    // 1. Separate user and assistant messages, ensuring valid alternating structure for Claude
-    const claudeMessages: Array<{
-      role: "user" | "assistant";
-      content: string;
-    }> = [];
-    let fullSystemPrompt = systemPrompt;
-
-    for (const msg of messages) {
-      if (msg.role === "system") {
-        if (!fullSystemPrompt.includes(msg.content)) {
-          fullSystemPrompt += `\n\n${msg.content}`;
-        }
-      } else if (msg.role === "user" || msg.role === "assistant") {
-        const lastMsg = claudeMessages[claudeMessages.length - 1];
-        if (lastMsg && lastMsg.role === msg.role) {
-          lastMsg.content += `\n\n${msg.content}`;
-        } else {
-          claudeMessages.push({
-            role: msg.role,
-            content: msg.content || " ",
-          });
-        }
-      }
-    }
-
-    // Claude requires the first message in messages array to be 'user'
-    if (claudeMessages.length === 0 || claudeMessages[0]?.role !== "user") {
-      claudeMessages.unshift({
-        role: "user",
-        content: "Hello",
-      });
-    }
-
-    // 2. Format MCP tools into Claude tools schema (Claude uses input_schema)
-    const claudeTools =
-      mcpTools && mcpTools.length > 0
-        ? mcpTools.map((tool) => ({
-            name: tool.name,
-            description: tool.description,
-            input_schema: tool.inputSchema,
-          }))
-        : undefined;
-
-    // 3. Resolve endpoint
     let endpoint =
       config.apiEndpoint || "https://api.anthropic.com/v1/messages";
     if (
@@ -457,25 +380,25 @@ export async function callClaudeAPI(
       endpoint = `${endpoint.replace(/\/+$/, "")}/messages`;
     }
 
-    // 4. Resolve model name
-    let modelName = config.modelName;
-    if (!modelName || modelName === "local-model") {
-      modelName = "claude-3-5-sonnet-20241022";
-    }
+    const modelName = currentClaudeModel(config.modelName);
 
     const requestBody: any = {
       model: modelName,
-      max_tokens: config.maxTokens || 4096,
+      max_tokens: config.maxTokens || DEFAULT_MAX_TOKENS,
       temperature: config.temperature ?? 0.7,
-      system: fullSystemPrompt,
-      messages: claudeMessages,
+      system: systemPrompt,
+      messages: toClaudeMessages(messages),
     };
 
-    if (claudeTools && claudeTools.length > 0) {
-      requestBody.tools = claudeTools;
+    if (mcpTools.length > 0) {
+      requestBody.tools = mcpTools.map((tool, i) => ({
+        name: tool.name,
+        description: tool.description,
+        input_schema: tool.inputSchema,
+        // The tools are the same on every request (several per message): cached
+        ...(i === mcpTools.length - 1 ? { cache_control: { type: "ephemeral" } } : {}),
+      }));
     }
-
-    console.log("Calling Claude API:", endpoint, "Model:", modelName);
 
     const response = await fetch(endpoint, {
       method: "POST",
@@ -500,25 +423,19 @@ export async function callClaudeAPI(
 
     let contentText = "";
     const toolCalls: MCPToolCall[] = [];
-
-    if (Array.isArray(data.content)) {
-      for (const block of data.content) {
-        if (block.type === "text") {
-          contentText += block.text;
-        } else if (block.type === "tool_use") {
-          toolCalls.push({
-            name: block.name,
-            params: block.input || {},
-          });
-        }
+    for (const block of Array.isArray(data.content) ? data.content : []) {
+      if (block.type === "text") {
+        contentText += block.text;
+      } else if (block.type === "tool_use") {
+        toolCalls.push({ id: block.id, name: block.name, params: block.input || {} });
       }
     }
+    // Cut off by the output limit: a tool call in it may be unfinished
+    if (data.stop_reason === "max_tokens") {
+      return { content: contentText, toolCalls: [], success: true, cutOff: true };
+    }
 
-    return {
-      content: contentText,
-      toolCalls,
-      success: true,
-    };
+    return { content: contentText, toolCalls, success: true };
   } catch (error) {
     console.error("Claude API call failed:", error);
     return {
@@ -535,68 +452,52 @@ export async function callClaudeAPI(
 // ============================================
 
 /**
- * Process user input and call the AI
+ * One request to the model: the system prompt (with the current design), the
+ * conversation so far and the tools. Tool calls written as JSON in the text
+ * (models without tool use) are read too.
  */
-export async function processUserInput(
-  userMessage: string,
-  conversationHistory: Message[],
-  availableTools: Array<{
-    name: string;
-    description: string;
-    inputSchema: any;
-  }>,
+export async function requestAI(
+  system: string,
+  messages: Message[],
+  tools: ToolSchemaLike[],
   config: AIConfiguration,
-  designState?: any, // Added: current design state
 ): Promise<AIResponse> {
-  // If a design state was provided, add it to the conversation history
-  if (designState) {
-    const stateMessage = createDesignStateMessage(designState);
-    // Avoid adding the same state message twice
-    const lastMessage = conversationHistory[conversationHistory.length - 1];
-    if (!lastMessage || lastMessage.content !== stateMessage.content) {
-      conversationHistory.push(stateMessage);
-    }
-  }
+  const response = isClaudeConfig(config)
+    ? await callClaudeAPI(system, messages, tools, config)
+    : await callOpenAICompatibleAPI(system, messages, tools, config);
 
-  // Add the user message to the history
-  conversationHistory.push(createUserMessage(userMessage));
-
-  let response: AIResponse;
-
-  if (isClaudeConfig(config)) {
-    // Route to native Anthropic Claude API
-    response = await callClaudeAPI(
-      SYSTEM_PROMPT,
-      conversationHistory,
-      availableTools,
-      config,
-    );
-  } else {
-    // Prepare messages (including the system prompt)
-    const messages = prepareConversationHistory(conversationHistory);
-
-    // Convert tool definitions to OpenAI format
-    const openAITools = convertToOpenAITools(availableTools);
-
-    // Call the OpenAI-compatible API
-    response = await callOpenAICompatibleAPI(messages, openAITools, config);
-  }
-
-  // If the API call didn't find tool_calls directly, try extracting tool calls from plain text
-  if (response.content && response.toolCalls.length === 0) {
+  if (response.success && !response.cutOff && response.content && response.toolCalls.length === 0) {
     const textToolCalls = extractToolCallsFromText(response.content);
     if (textToolCalls.length > 0) {
       response.toolCalls = textToolCalls;
+      response.toolCallsInText = true;
     }
   }
-
-  // Add the assistant response to the history
-  conversationHistory.push(
-    createAssistantMessage(
-      response.content,
-      response.toolCalls.length > 0 ? response.toolCalls : undefined,
-    ),
-  );
-
   return response;
+}
+
+export function createUserMessage(content: string, attachments?: ChatAttachment[]): Message {
+  return { role: "user", content, ...(attachments?.length ? { attachments } : {}) };
+}
+
+export function createAssistantMessage(response: AIResponse): Message {
+  return {
+    role: "assistant",
+    content: response.content,
+    ...(response.toolCalls.length ? { toolCalls: response.toolCalls } : {}),
+    ...(response.toolCallsInText ? { toolCallsInText: true } : {}),
+  };
+}
+
+// A tool's result for the model (long results are cut)
+const MAX_RESULT_LENGTH = 12000;
+
+export function createToolResultMessage(call: MCPToolCall, result: { success: boolean; error?: string; data?: unknown }): Message {
+  const body = result.success ? JSON.stringify(result.data ?? { ok: true }) : `Error: ${result.error ?? "failed"}`;
+  return {
+    role: "tool",
+    toolCallId: call.id,
+    content: body.length > MAX_RESULT_LENGTH ? `${body.slice(0, MAX_RESULT_LENGTH)}… (cut)` : body,
+    ...(result.success ? {} : { isError: true }),
+  };
 }

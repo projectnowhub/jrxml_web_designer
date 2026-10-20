@@ -247,14 +247,15 @@ export const useReportStore = defineStore("report", () => {
   const bandTypes = computed<BandType[]>(() => bands.value.map((b) => b.type));
 
   // Turn bands on or off (one undo step): new bands get the user's default
-  // height and go in their usual place; Detail always stays
-  function setBandTypes(types: BandType[]) {
+  // height and go in their usual place; Detail always stays. `record: false`:
+  // part of a step recorded before (the AI assistant's message)
+  function setBandTypes(types: BandType[], options: { record?: boolean } = {}) {
     const wanted = new Set<string>([...types, BAND_TYPE_CONSTANTS.DETAIL]);
     const present = new Set<string>(bandTypes.value);
     const toRemove = [...present].filter((type) => !wanted.has(type));
     const toAdd = [...wanted].filter((type) => !present.has(type));
     if (!toRemove.length && !toAdd.length) return;
-    history.saveStateToHistory();
+    if (options.record !== false) history.saveStateToHistory();
     const config = getEffectiveDefaultBandConfig();
     const order = (type: string) => ALL_CONFIGURABLE_BANDS.findIndex((b) => b.type === type);
     const next = bands.value.filter((b) => !toRemove.includes(b.type));
@@ -289,7 +290,7 @@ export const useReportStore = defineStore("report", () => {
     ensureUniqueTableDatasets(bands.value);
     resetBoxPhotos(bands.value);
     cleanLegacyAutoDate(bands.value);
-    unwrapLegacyCoverFrames(bands.value);
+    unwrapLegacyCoverFrames(bands.value, reportProperties.value);
     const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
     const lastPage = Math.max(0, ...(detail?.elements ?? []).map((e: any) => e.pageIndex || 0));
     pageCount.value = Math.max(1, data.pageCount ?? props.pageCount ?? 0, lastPage + 1);

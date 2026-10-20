@@ -940,11 +940,19 @@
       "requestTimeout": "Had Masa Permintaan (saat)",
       "requestTimeoutHint": "Dalam saat, lalai: 300 saat (5 minit)",
       "reset": "Set Semula ke Lalai",
-      "save": "Simpan Konfigurasi"
+      "save": "Simpan Konfigurasi",
+      "maxTokensHint": "Jawapan terpanjang yang boleh ditulis oleh AI (lalai {value}). Halaman penuh memerlukan lebih; GPT-4o membenarkan sehingga 16,384.",
+      "modelHint": "Disyorkan: Claude Sonnet 5.5 ({value}). Model Claude memerlukan kunci Anthropic (sk-ant-…); dengan kunci OpenAI pembantu menggunakan GPT-4o.",
+      "models": {
+        "sonnet": "Claude Sonnet 5.5 — disyorkan: boleh diharap untuk laporan penuh, membaca gambar dan PDF",
+        "opus": "Claude Opus 5.5 — kualiti terbaik untuk laporan besar, lebih perlahan dan lebih mahal",
+        "haiku": "Claude Haiku 5.5 — paling pantas, untuk suntingan kecil",
+        "gpt4o": "GPT-4o — dengan kunci OpenAI"
+      }
     },
     "empty": {
       "title": "Mulakan perbualan dengan pembantu AI",
-      "example": "cth.: cipta tajuk dalam jalur butiran",
+      "example": "cth.: buat kulit depan dengan panel biru tua, tajuk laporan dan ruang logo",
       "currentApi": "API semasa: {url}"
     },
     "unsupported": {
@@ -954,26 +962,74 @@
       "suggestion": "Kami mengesyorkan versi terkini Chrome, Firefox atau Safari"
     },
     "input": {
-      "placeholder": "Masukkan arahan, cth.: cipta medan teks dalam jalur butiran untuk memaparkan nama pelanggan",
+      "placeholder": "Terangkan apa yang anda mahu, cth.: tambah satu baris tiga kad KPI di bawah tajuk",
       "unsupported": "Pelayar tidak disokong, sila naik taraf pelayar anda",
-      "send": "Hantar mesej (Ctrl+Enter)"
+      "send": "Hantar mesej (Ctrl+Enter)",
+      "enlarge": "Besarkan kotak",
+      "shrink": "Kecilkan kotak",
+      "characters": "{count} aksara"
     },
     "message": {
       "you": "Anda",
       "copied": "Disalin",
-      "copy": "Salin mesej"
+      "copy": "Salin mesej",
+      "openLarge": "Buka dalam paparan besar",
+      "openPicture": "Buka {name} dalam saiz besar",
+      "showAll": "Tunjuk semua",
+      "showLess": "Tunjuk kurang",
+      "readerTitle": "Mesej"
     },
     "tools": {
-      "get_design_state": "Dapatkan keadaan reka bentuk",
-      "get_element": "Dapatkan maklumat elemen",
+      "get_design_state": "Baca reka bentuk",
+      "get_element": "Baca elemen",
       "find_elements": "Cari elemen",
-      "create_static_text": "Cipta teks statik",
-      "create_text_field": "Cipta medan teks dinamik",
-      "create_rectangle": "Cipta segi empat",
-      "update_element": "Kemas kini elemen",
+      "get_report_data": "Baca data laporan",
+      "create_design": "Susun reka bentuk",
+      "create_text": "Tambah teks",
+      "create_section_heading": "Tambah tajuk bahagian",
+      "create_sub_heading": "Tambah subtajuk",
+      "create_image": "Tambah gambar",
+      "create_line": "Tambah garisan",
+      "create_rectangle": "Tambah segi empat",
+      "create_ellipse": "Tambah bulatan",
+      "create_box": "Tambah kotak",
+      "create_table": "Tambah jadual",
+      "create_data_table": "Tambah jadual data projek",
+      "create_chart": "Tambah carta",
+      "create_barcode": "Tambah kod bar",
+      "create_table_of_contents": "Tambah isi kandungan",
+      "create_page_number": "Tambah nombor halaman",
+      "create_date": "Tambah tarikh",
+      "create_page_border": "Tambah sempadan halaman",
+      "create_preset": "Tambah elemen siap",
+      "update_element": "Ubah elemen",
       "move_element": "Alih elemen",
+      "resize_element": "Ubah saiz elemen",
       "delete_element": "Padam elemen",
-      "update_band_height": "Laraskan ketinggian jalur"
+      "delete_elements": "Padam elemen-elemen",
+      "move_elements": "Alih elemen-elemen",
+      "update_elements_style": "Ubah gaya elemen-elemen",
+      "resize_elements": "Ubah saiz elemen-elemen",
+      "align_elements": "Jajarkan elemen",
+      "distribute_elements": "Jarakkan elemen sama rata",
+      "update_band_height": "Laraskan ketinggian jalur",
+      "add_page": "Tambah halaman",
+      "update_report_properties": "Ubah tetapan halaman",
+      "undo": "Buat asal",
+      "redo": "Buat semula",
+      "add_cover_page": "Tambah halaman kulit",
+      "add_contents_page": "Tambah halaman kandungan",
+      "change_page_design": "Tukar reka bentuk halaman",
+      "set_page_kind": "Tukar jenis halaman",
+      "set_cover_whole_sheet": "Kawasan halaman kulit",
+      "delete_page": "Padam halaman",
+      "convert_to_box": "Tukar menjadi kotak",
+      "stack_elements": "Susun elemen",
+      "put_in_box": "Masukkan ke dalam kotak",
+      "check_report": "Semak laporan",
+      "plan_report": "Rancang laporan",
+      "fill_page": "Isi halaman",
+      "check_pdf": "Semak PDF"
     },
     "tool": {
       "noParameters": "Tiada parameter",
@@ -988,7 +1044,24 @@
       "processing": "AI sedang memproses...",
       "executingTool": "Melaksanakan alat: {tool}",
       "toolSucceeded": "Alat {tool} berjaya dilaksanakan",
-      "toolFailed": "Alat {tool} gagal: {error}"
+      "toolFailed": "Alat {tool} gagal: {error}",
+      "stoppedAfterSteps": "Berhenti selepas {count} langkah. Minta sekali lagi untuk meneruskan.",
+      "cutOff": "Jawapan terlalu panjang untuk satu balasan; AI meneruskan dalam langkah yang lebih kecil.",
+      "tooLong": "Jawapan terus terpotong. Naikkan Token Maksimum dalam tetapan AI, atau minta sebahagian kecil reka bentuk pada satu masa.",
+      "verifying": "Menyemak hasil: {count} masalah tinggal, AI sedang membetulkannya. | Menyemak hasil: {count} masalah tinggal, AI sedang membetulkannya.",
+      "problemsLeft": "Laporan masih ada {count} masalah yang tidak dapat dibetulkan oleh AI. Minta ia “semak laporan” untuk melihatnya. | Laporan masih ada {count} masalah yang tidak dapat dibetulkan oleh AI. Minta ia “semak laporan” untuk melihatnya."
+    },
+    "attach": {
+      "add": "Lampirkan gambar atau fail (atau tampal / lepaskan di sini)",
+      "remove": "Buang",
+      "reading": "Membaca…",
+      "drop": "Lepaskan fail untuk melampirkannya",
+      "errors": {
+        "type": "“{name}” tidak boleh dilampirkan: gunakan gambar (PNG, JPG, GIF, WebP), PDF atau fail teks (TXT, CSV, JSON, XML…).",
+        "tooLarge": "“{name}” terlalu besar untuk dilampirkan (gambar hingga 15 MB, PDF 20 MB, fail teks 2 MB).",
+        "unreadable": "“{name}” tidak dapat dibaca.",
+        "count": "Paling banyak {max} lampiran bagi setiap mesej."
+      }
     }
   },
   "editor": {
