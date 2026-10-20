@@ -964,7 +964,7 @@
     "input": {
       "placeholder": "Describe what you want, e.g.: add a row of three KPI cards under the title",
       "unsupported": "Browser not supported, please upgrade your browser",
-      "send": "Send message (Ctrl+Enter)",
+      "send": "Send (Enter) · New line: Shift+Enter",
       "enlarge": "Make the box bigger",
       "shrink": "Make the box smaller",
       "characters": "{count} characters"

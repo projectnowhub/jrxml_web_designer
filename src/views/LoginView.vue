@@ -168,8 +168,8 @@ const isDesktop = computed(
 onMounted(async () => {
   console.log(
     "LoginView mounted. Checking tenant verification...",
-    isDesktop.value,
-    tenantUrl.value,
+    "isDesktop :", isDesktop.value,
+    "tenantUrl :", tenantUrl.value,
   );
   if (isDesktop.value && !tenantUrl.value) {
     return;

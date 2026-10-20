@@ -964,7 +964,7 @@
     "input": {
       "placeholder": "Terangkan apa yang anda mahu, cth.: tambah satu baris tiga kad KPI di bawah tajuk",
       "unsupported": "Pelayar tidak disokong, sila naik taraf pelayar anda",
-      "send": "Hantar mesej (Ctrl+Enter)",
+      "send": "Hantar (Enter) · Baris baru: Shift+Enter",
       "enlarge": "Besarkan kotak",
       "shrink": "Kecilkan kotak",
       "characters": "{count} aksara"

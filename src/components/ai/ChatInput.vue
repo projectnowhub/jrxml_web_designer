@@ -139,8 +139,9 @@ function handleSubmit() {
 }
 
 function handleKeydown(event: KeyboardEvent) {
-  // Submit with Ctrl+Enter (or Command+Enter on Mac)
-  if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+  // Enter sends; Shift+Enter is a new line. Not while an input method is
+  // still composing a word (Enter then picks the word)
+  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
     event.preventDefault();
     handleSubmit();
   }
