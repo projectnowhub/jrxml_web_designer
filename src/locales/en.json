@@ -771,7 +771,15 @@
     "redirectingToLogin": "Redirecting to Login",
     "pleaseWait": "Please wait...",
     "desktopAuthentication": "Desktop application authentication",
-    "brandLogo": "CDP brand logo"
+    "brandLogo": "CDP brand logo",
+    "tenantSession": {
+      "title": "Signed in to another tenant",
+      "message": "You already have a session in tenant “{sessionTenant}”. Please log out there, then sign in to this tenant “{appTenant}”.",
+      "close": "Close",
+      "currentTenant": "Current tenant",
+      "sessionTenant": "Signed in to tenant",
+      "unknown": "Unknown"
+    }
   },
   "callback": {
     "secureConnection": "Secure connection",

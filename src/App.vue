@@ -13,7 +13,7 @@ import { useRouter, RouterView } from "vue-router";
 import { NConfigProvider, type GlobalThemeOverrides } from "naive-ui";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "./services/apiClient";
-import { fetchUser } from "./services/authService";
+import { fetchUser, loginErrorQuery } from "./services/authService";
 
 const router = useRouter();
 
@@ -59,8 +59,16 @@ async function handleDeepLink(urls: string[]) {
     // Login deep link
     if (token) {
       localStorage.setItem(AUTH_TOKEN_KEY, token);
-      const user = await fetchUser();
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user ?? {}));
+      try {
+        const user = await fetchUser();
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user ?? {}));
+      } catch (error) {
+        // Signed in to another tenant: the login page says which
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        localStorage.removeItem(AUTH_USER_KEY);
+        await router.replace({ path: "/login", query: loginErrorQuery(error) });
+        return;
+      }
 
       await router.replace("/");
       return;

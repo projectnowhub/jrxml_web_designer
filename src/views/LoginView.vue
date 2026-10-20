@@ -114,6 +114,31 @@
 
       <p class="footnote">{{ t("auth.secureEncrypted") }}</p>
     </div>
+
+    <!-- Signed in to another tenant in this browser -->
+    <BaseModal
+      :visible="!!tenantSession"
+      :title="t('auth.tenantSession.title')"
+      :show-footer="true"
+      :content-style="{ width: 'min(460px, 92vw)' }"
+      @update:visible="(open: boolean) => { if (!open) closeTenantSession(); }"
+    >
+      <div class="tenant-session">
+        <TriangleAlert class="tenant-session-icon" aria-hidden="true" />
+        <p>
+          {{ t("auth.tenantSession.message", tenantSession ?? {}) }}
+        </p>
+      </div>
+      <dl class="tenant-session-names">
+        <dt>{{ t("auth.tenantSession.currentTenant") }}</dt>
+        <dd>{{ tenantSession?.appTenant || currentTenant }}</dd>
+        <dt>{{ t("auth.tenantSession.sessionTenant") }}</dt>
+        <dd>{{ tenantSession?.sessionTenant || t("auth.tenantSession.unknown") }}</dd>
+      </dl>
+      <template #footer>
+        <n-button type="primary" @click="closeTenantSession">{{ t("auth.tenantSession.close") }}</n-button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -125,9 +150,11 @@ import {
   SquarePen,
   TriangleAlert,
 } from "@lucide/vue";
-import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { NButton } from "naive-ui";
+import BaseModal from "../components/modals/BaseModal.vue";
 import { desktopLogin, login } from "../services/authService";
 import LanguageSwitcher from "../components/common/LanguageSwitcher.vue";
 import {
@@ -138,11 +165,37 @@ import {
 import {
   AUTH_TOKEN_KEY,
   AUTH_USER_KEY,
+  getTenantId,
   TENANT_URL_KEY,
 } from "../services/apiClient";
 
 const { t } = useI18n();
 const router = useRouter();
+const route = useRoute();
+
+// The user couldn't be read after signing in: the session is another
+// tenant's (told by the sign-in page in the address)
+const queryText = (value: unknown) => (typeof value === "string" ? value : "");
+const tenantSession = ref<{ sessionTenant: string; appTenant: string } | null>(null);
+// This app's tenant, when the address didn't bring it
+const currentTenant = getTenantId();
+// Watched, not read once: a failed request may already have brought the user
+// here (the 401 redirect) before the sign-in page adds the tenants
+watch(
+  () => route.query,
+  (query) => {
+    if (query.error === "tenantSession") {
+      tenantSession.value = { sessionTenant: queryText(query.sessionTenant), appTenant: queryText(query.appTenant) };
+    }
+  },
+  { immediate: true },
+);
+
+const closeTenantSession = () => {
+  tenantSession.value = null;
+  router.replace({ query: {} });
+};
+
 const isLoading = ref(false);
 const isError = ref(false);
 // Messages are stored as translation keys, so they follow a language switch
@@ -267,6 +320,45 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
+.tenant-session {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1c1b26;
+}
+
+.tenant-session-names {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 14px 0 0 34px;
+  padding: 10px 12px;
+  border: 1px solid #e6e5ee;
+  border-radius: 8px;
+  background: #fafafc;
+  font-size: 13px;
+}
+
+.tenant-session-names dt {
+  color: #6b7280;
+}
+
+.tenant-session-names dd {
+  margin: 0;
+  font-weight: 600;
+  color: #1c1b26;
+  overflow-wrap: anywhere;
+}
+
+.tenant-session-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  color: #e08a1e;
+}
+
 .login-page {
   position: relative;
   min-height: 100vh;

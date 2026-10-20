@@ -771,7 +771,15 @@
     "redirectingToLogin": "Mengubah hala ke Log Masuk",
     "pleaseWait": "Sila tunggu...",
     "desktopAuthentication": "Pengesahan aplikasi desktop",
-    "brandLogo": "Logo jenama CDP"
+    "brandLogo": "Logo jenama CDP",
+    "tenantSession": {
+      "title": "Telah log masuk ke penyewa lain",
+      "message": "Anda sudah mempunyai sesi dalam penyewa “{sessionTenant}”. Sila log keluar di sana, kemudian log masuk ke penyewa ini “{appTenant}”.",
+      "close": "Tutup",
+      "currentTenant": "Penyewa semasa",
+      "sessionTenant": "Log masuk ke penyewa",
+      "unknown": "Tidak diketahui"
+    }
   },
   "callback": {
     "secureConnection": "Sambungan selamat",
