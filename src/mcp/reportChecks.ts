@@ -15,7 +15,7 @@ import { getImageName } from "@/utils/elementUtils";
 import en from "@/locales/en.json";
 import ms from "@/locales/ms.json";
 import i18n from "@/i18n";
-import { isRich, plainText } from "./elements/common";
+import { neededTextHeight, plainText, printedText } from "./elements/common";
 import { allLocations, areaOf, boxAround, kindAt, label, neighbours, overlapsOf, pageOf, shapeUnder, type Location } from "./design";
 
 export interface ReportCheck {
@@ -26,41 +26,8 @@ export interface ReportCheck {
   message: string;
 }
 
-// ---------------------------------------------------------------------------
-// Text size: how much room a text needs (Noto Sans SC: ~0.55 em per Latin
-// letter, a full em for Chinese / Japanese / Korean ones; 1.45 em per line)
-// ---------------------------------------------------------------------------
-
-const LINE_HEIGHT = 1.45;
-
-function letters(text: string): number {
-  let n = 0;
-  for (const ch of text) n += ch.codePointAt(0)! >= 0x2e80 ? 1.8 : 1;
-  return n;
-}
-
-// The words a text prints, line breaks kept (formatting tags dropped)
-function printedText(e: DesignElement): string {
-  const raw = plainText(e);
-  if (!isRich(e)) return raw;
-  return raw
-    .replace(/<br\s*\/?>|<\/(p|div|li)>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&[a-z]+;|&#\d+;/gi, "x");
-}
-
-// Height the text needs at its width
-export function neededTextHeight(e: DesignElement): number {
-  const size = e.fontSize || 10;
-  const pad = (e.box?.leftPadding ?? e.box?.padding ?? 0) + (e.box?.rightPadding ?? e.box?.padding ?? 0);
-  const vpad = (e.box?.topPadding ?? e.box?.padding ?? 0) + (e.box?.bottomPadding ?? e.box?.padding ?? 0);
-  const perLine = Math.max(1, (e.width - pad) / (size * (e.isBold ? 0.6 : 0.55)));
-  const lines = printedText(e)
-    .split("\n")
-    .reduce((n, para) => n + Math.max(1, Math.ceil(letters(para) / perLine)), 0);
-  return Math.ceil(lines * size * LINE_HEIGHT + vpad);
-}
+// Text sizes are measured in elements/common.ts (the table schema uses them too)
+export { neededTextHeight };
 
 const grows = (e: DesignElement) => e.textAdjust === "StretchHeight";
 
@@ -222,6 +189,17 @@ export function elementChecks(loc: Location): ReportCheck[] {
       if (touchesLeft || touchesRight) {
         fix(`touches the page border line on the ${touchesLeft ? "left" : "right"}: keep text at least ${BORDER_GAP} px inside the border (move ${loc.box ? "its box" : "it"} in, or make it narrower)`);
       }
+    }
+  }
+
+  // A table written as lines of text ("Label: value", or figures in columns):
+  // it prints as a block of words, not a table
+  if (e.type === "textField" && kind === "text") {
+    const lines = printedText(e).split("\n").map((l) => l.trim()).filter(Boolean);
+    const labelled = lines.filter((l) => /^[^:.!?]{2,48}:\s*\S/.test(l) && l.length < 160).length;
+    const figures = lines.filter((l) => (l.match(/-?\d[\d,.]*%?/g) ?? []).length >= 2 && l.length < 120).length;
+    if (labelled >= 4 || figures >= 4) {
+      fix(`holds a table written as ${Math.max(labelled, figures)} lines of text: make it a table element (label column + value column, or the source's columns), so it prints as a table`);
     }
   }
 

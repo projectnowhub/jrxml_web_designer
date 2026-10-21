@@ -23,9 +23,10 @@ import {
   scaleSizes,
   syncTableSize,
   DEFAULT_ROW_HEIGHT,
+  resolveCell,
   visibleCells,
 } from "@/utils/customTable";
-import { TABLE_THEMES } from "@/utils/table/tableThemes";
+import { resolveLook, TABLE_THEMES } from "@/utils/table/tableThemes";
 import {
   distributeColumnWidths,
   maxColumnsForWidth,
@@ -53,7 +54,7 @@ import {
 import { getFacets, getSchema, listProjects, queryRows } from "@/services/dataSourceService";
 import { useReportStore } from "@/stores/report";
 import { applyGeometry } from "./basic";
-import { color, defined, has, readColor } from "./common";
+import { color, defined, has, readColor, textHeightFor } from "./common";
 import { SpecError, type ElementKind, type ElementSpec, type JsonSchema, type KindContext } from "./types";
 
 const uuid = () => crypto.randomUUID();
@@ -106,6 +107,27 @@ function buildGrid(spec: ElementSpec, width: number, base?: CustomTableData): Cu
   };
 }
 
+// The words a cell prints (formatted cells: tags dropped, list items on lines)
+const cellWords = (cell: CustomTableCell) =>
+  cell.rich
+    ? cell.text.replace(/<br\s*\/?>|<\/(p|div|li)>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&[a-z]+;|&#\d+;/gi, "x")
+    : cell.text;
+
+// Each row at least as tall as its tallest single-row cell needs
+export function fitRowsToText(table: CustomTableData): void {
+  const look = resolveLook(table);
+  for (const v of visibleCells(table)) {
+    if (v.rowSpan > 1 || !v.cell.text.trim()) continue;
+    const r = resolveCell(table, look, v.row, v.cell);
+    // JasperReports indents a list by 50pt
+    const indent = v.cell.rich && /<li\b/i.test(v.cell.text) ? 50 : 0;
+    const width = table.columns.slice(v.col, v.col + v.colSpan).reduce((a, b) => a + b, 0) - 2 * table.padding - indent;
+    const needed = textHeightFor(cellWords(v.cell), Math.max(10, width), r.fontSize, r.bold) + 2 * table.padding + 2;
+    const row = table.rows[v.row]!;
+    if (row.height < needed) row.height = needed;
+  }
+}
+
 function applyTypedTable(element: CustomTableElement, spec: ElementSpec, ctx: KindContext): void {
   if (has(spec, "rows")) {
     const width = spec.width ?? (element.width || ctx.availableWidth);
@@ -141,6 +163,9 @@ function applyTypedTable(element: CustomTableElement, spec: ElementSpec, ctx: Ki
       }
     }
   }
+  // Rows as tall as their words (as the PDF grows them), so what follows the
+  // table is placed below its real height
+  if (!has(spec, "height")) fitRowsToText(table);
   syncTableSize(element);
   // A size given by the AI: columns and rows take their shares of it
   if (has(spec, "width") || has(spec, "height")) {

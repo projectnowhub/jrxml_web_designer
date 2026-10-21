@@ -5,7 +5,7 @@
 // at a sentence and carries on, and what is left moves to the next page
 // (added at the end when needed). The model never computes a y.
 
-import type { DesignElement } from "@/types";
+import type { CustomTableElement, DesignElement } from "@/types";
 import { useReportStore } from "@/stores/report";
 import { pageKind } from "@/utils/specialPages";
 import { findKind } from "./elements/registry";
@@ -70,6 +70,48 @@ function guessHeight(kind: ElementKind | undefined, spec: ElementSpec, width: nu
     return Math.min(textHeight(kind, { ...spec, text: sentences(spec.text).slice(0, 2).join("") }, width), 80);
   }
   return Math.min(spec.height ?? 60, 120);
+}
+
+type Merge = { row: number; col: number; rowSpan?: number; colSpan?: number };
+type CellStyleSpec = { row?: number } & Record<string, unknown>;
+
+// A typed table's settings cut after `rows` k: the head keeps rows before k,
+// the rest gets the heading rows again and the rows from k on (merges and cell
+// looks moved with them). k is the most rows that fit in `room`, never inside a
+// merged-down block and never leaving fewer than two rows of body on either side.
+function splitTableAt(spec: ElementSpec, probe: CustomTableElement, room: number) {
+  const rows = spec.rows as string[][];
+  const header = Math.min(probe.table.headerRows, rows.length);
+  const heights = probe.table.rows.map((r) => r.height);
+  const merges = (spec.merges as Merge[] | undefined) ?? [];
+  const crosses = (k: number) => merges.some((m) => m.row < k && m.row + (m.rowSpan ?? 1) > k);
+  const headerHeight = heights.slice(0, header).reduce((a, b) => a + b, 0);
+  let used = 0;
+  let best = 0;
+  for (let k = 1; k < rows.length; k++) {
+    used += heights[k - 1]!;
+    if (used > room) break;
+    if (k - header >= 2 && rows.length - k >= 2 && !crosses(k)) best = k;
+  }
+  // The rest must fit a page too: else it is split again on the next page
+  if (!best || headerHeight >= room) return null;
+  const styles = (spec.cellStyles as CellStyleSpec[] | undefined) ?? [];
+  const keep = (k: number) => (row: number) => row < k;
+  const head = {
+    rows: rows.slice(0, best),
+    totalRow: false,
+    merges: merges.filter((m) => keep(best)(m.row)),
+    cellStyles: styles.filter((c) => c.row === undefined || keep(best)(c.row)),
+  };
+  const shift = (row: number) => (row < header ? row : row - best + header);
+  const rest = {
+    rows: [...rows.slice(0, header), ...rows.slice(best)],
+    merges: merges.filter((m) => m.row < header || m.row >= best).map((m) => ({ ...m, row: shift(m.row) })),
+    cellStyles: styles
+      .filter((c) => c.row === undefined || c.row < header || c.row >= best)
+      .map((c) => (c.row === undefined ? c : { ...c, row: shift(c.row) })),
+  };
+  return { head, rest };
 }
 
 export async function fillPage(request: FlowRequest, refs: Refs, notes: string[]): Promise<FlowResult> {
@@ -150,6 +192,23 @@ export async function fillPage(request: FlowRequest, refs: Refs, notes: string[]
           spec.height = textHeight(kind, { ...spec, height: 1 }, width);
         } else if (facts.usedTo > 0) {
           nextPage(`items[${i}] (${kind.kind}) needs ${spec.height} px but only ${Math.max(0, room)} px are left on page ${pageIndex + 1}`, i);
+          i--;
+          continue;
+        }
+      }
+    }
+    // Typed tables: a long one is split between rows when the page fills up,
+    // its heading rows repeated on top of the rest
+    if (kind.kind === "table" && Array.isArray(spec.rows) && !has(spec, "height")) {
+      const probe = kind.create({ ...spec, x: 0, y: 0 }, kindContext(width, 2000)) as CustomTableElement;
+      if (y + probe.height > bottom) {
+        const split = splitTableAt(spec, probe, bottom - y);
+        if (split) {
+          const { ref: _ref, spaceBefore: _space, ...rest } = raw;
+          items.splice(i + 1, 0, { kind: kindName, ...rest, ...split.rest, __continued: true });
+          Object.assign(spec, split.head);
+        } else if (facts.usedTo > 0) {
+          nextPage(`items[${i}] (table) needs ${probe.height} px but only ${Math.max(0, bottom - y)} px are left on page ${pageIndex + 1}`, i);
           i--;
           continue;
         }

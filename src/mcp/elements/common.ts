@@ -190,6 +190,49 @@ export const isRich = (element: DesignElement) =>
   element.markup === "html" && /<\/?[a-z][^>]*>/i.test((element as { expression?: string }).expression ?? "");
 
 // ---------------------------------------------------------------------------
+// Text size: how much room a text needs (Noto Sans SC: ~0.55 em per Latin
+// letter, a full em for Chinese / Japanese / Korean ones; 1.45 em per line)
+// ---------------------------------------------------------------------------
+
+export const LINE_HEIGHT = 1.45;
+
+export function letters(text: string): number {
+  let n = 0;
+  for (const ch of text) n += ch.codePointAt(0)! >= 0x2e80 ? 1.8 : 1;
+  return n;
+}
+
+// The words a text prints, line breaks kept (formatting tags dropped)
+export function printedText(e: DesignElement): string {
+  const raw = plainText(e);
+  if (!isRich(e)) return raw;
+  return raw
+    .replace(/<br\s*\/?>|<\/(p|div|li)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&[a-z]+;|&#\d+;/gi, "x");
+}
+
+// Height the text needs at its width
+export function neededTextHeight(e: DesignElement): number {
+  const size = e.fontSize || 10;
+  const pad = (e.box?.leftPadding ?? e.box?.padding ?? 0) + (e.box?.rightPadding ?? e.box?.padding ?? 0);
+  const vpad = (e.box?.topPadding ?? e.box?.padding ?? 0) + (e.box?.bottomPadding ?? e.box?.padding ?? 0);
+  const perLine = Math.max(1, (e.width - pad) / (size * (e.isBold ? 0.6 : 0.55)));
+  const lines = printedText(e)
+    .split("\n")
+    .reduce((n, para) => n + Math.max(1, Math.ceil(letters(para) / perLine)), 0);
+  return Math.ceil(lines * size * LINE_HEIGHT + vpad);
+}
+
+// Height a text needs at a width (cells of a typed table, before they exist)
+export function textHeightFor(text: string, width: number, fontSize: number, bold = false): number {
+  const perLine = Math.max(1, width / (fontSize * (bold ? 0.6 : 0.55)));
+  const lines = text.split("\n").reduce((n, para) => n + Math.max(1, Math.ceil(letters(para) / perLine)), 0);
+  return Math.ceil(lines * fontSize * LINE_HEIGHT);
+}
+
+// ---------------------------------------------------------------------------
 // Writing settings
 // ---------------------------------------------------------------------------
 
