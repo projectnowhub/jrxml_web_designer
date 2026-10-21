@@ -9,8 +9,8 @@
     "showLeftPanel": "Tunjukkan Panel Kiri",
     "hideRightPanel": "Sembunyikan Panel Kanan",
     "showRightPanel": "Tunjukkan Panel Kanan",
-    "hideBottomPanel": "Sembunyikan Panel",
-    "showBottomPanel": "Tunjukkan Panel",
+    "hideBottomPanel": "Sembunyikan Tetapan Lalai",
+    "showBottomPanel": "Tunjukkan Tetapan Lalai",
     "snapMenu": "Jajaran & grid",
     "showGrid": "Tunjukkan Grid",
     "showGridInfo": "Menunjukkan garisan grid pada halaman semasa anda mereka bentuk. Ia tidak dicetak dalam PDF.",
@@ -27,32 +27,24 @@
     "help": "Bantuan",
     "delete": "Padam",
     "copy": "Salin",
-    "paste": "Tampal"
+    "paste": "Tampal",
+    "defaultSettings": "Tetapan Lalai"
   },
   "fileManager": {
     "title": "Fail",
-    "newFile": "Fail Baharu",
-    "openLocalFile": "Buka Fail Tempatan",
+    "newFile": "Baharu",
+    "openLocalFile": "Buka",
     "save": "Simpan",
     "saveAs": "Simpan Sebagai",
-    "fileList": "Senarai Fail",
-    "searchFile": "Cari fail...",
-    "noFilesFound": "Tiada fail ditemui",
-    "createNewFile": "Cipta Fail Baharu",
-    "rename": "Namakan Semula",
-    "delete": "Padam",
-    "renameFile": "Namakan Semula Fail",
-    "enterNewFileName": "Masukkan nama fail baharu:",
-    "deleteFile": "Padam Fail",
-    "deleteFileConfirm": "Adakah anda pasti mahu memadam fail \"{name}\"? Tindakan ini tidak boleh dibuat asal.",
     "loadingFileFailed": "Gagal memuatkan fail",
     "jrxmlOpened": "\"{name}\" telah dibuka",
-    "onlyJrxml": "Hanya fail laporan .jrxml boleh dibuka",
-    "deleteAllFiles": "Padam Semua Laporan",
-    "deleteAllFilesConfirm": "Padam semua laporan yang disimpan dalam pelayar ini? Laporan yang sedang dibuka juga dipadam dan laporan baharu yang kosong dibuka. Tindakan ini tidak boleh dibatalkan. Muat turun dahulu laporan yang ingin anda simpan.",
-    "deleteAllFilesDone": "Semua laporan yang disimpan telah dipadam",
+    "onlyJrxml": "Hanya fail templat .jrxml boleh dibuka",
+    "deleteAllFiles": "Padam Semua Templat",
+    "deleteAllFilesConfirm": "Padam setiap templat yang disimpan dalam pelayar ini? Templat yang dibuka turut dipadam dan templat baharu yang kosong dibuka. Ini tidak boleh dibuat asal. Muat turun dahulu templat yang ingin anda simpan.",
+    "deleteAllFilesDone": "Semua templat yang disimpan telah dipadam",
     "invalidFileFormat": "Format fail tidak sah, tidak dapat dimuatkan",
-    "untitledReport": "Laporan Tanpa Tajuk"
+    "untitledReport": "Templat Tanpa Nama",
+    "templateNotFound": "Templat itu tidak disimpan dalam pelayar ini, jadi templat baharu dimulakan."
   },
   "elementLibrary": {
     "title": "Pustaka Elemen",
@@ -120,7 +112,22 @@
     "noReportVariables": "Tiada pemboleh ubah laporan",
     "clickToAddVariable": "Klik '+' di atas untuk menambah pemboleh ubah",
     "fieldNameRequired": "Nama medan diperlukan",
-    "duplicateFieldName": "Nama medan sudah wujud, sila gunakan nama lain"
+    "duplicateFieldName": "Nama medan sudah wujud, sila gunakan nama lain",
+    "tileHowAdd": "Klik untuk menambahnya, atau seret ke halaman.",
+    "tileHowChoose": "Klik untuk memilih, atau seret ke halaman.",
+    "tileHints": {
+      "textField": "Perkataan pada halaman: tajuk, perenggan dan label.",
+      "image": "Gambar atau logo dari komputer anda.",
+      "line": "Garis lurus untuk memisahkan bahagian halaman.",
+      "rectangle": "Bentuk untuk jalur, garisan dan latar berwarna.",
+      "ellipse": "Bulatan atau bujur, contohnya titik status berwarna.",
+      "frame": "Kotak yang memegang item lain bersama, supaya ia bergerak sebagai satu.",
+      "table": "Jadual yang anda taip, atau jadual yang diisi dengan data projek anda.",
+      "chart": "Carta data projek anda: bar, garis, pai dan banyak lagi.",
+      "barcode": "Kod bar atau kod QR.",
+      "pageNumber": "Nombor halaman yang diisi sendiri, seperti Halaman 1 daripada 12.",
+      "dateTime": "Tarikh yang diisi sendiri: hari laporan dicetak, bulan ini atau bulan lepas."
+    }
   },
   "bandNames": {
     "pageHeader": "Pengepala Halaman",
@@ -153,7 +160,7 @@
     "pageXofY": "Halaman X daripada Y",
     "partReportHeader": "Kepala Laporan",
     "partPageFooter": "Kaki Halaman",
-    "partSectionHeading": "Tajuk Bahagian",
+    "partSectionHeading": "Tajuk",
     "partSubHeading": "Subtajuk",
     "partNote": "Nota",
     "partRiskLegend": "Petunjuk Risiko",
@@ -192,11 +199,11 @@
     "coverClassic": "Klasik"
   },
   "properties": {
-    "title": "Sifat",
+    "title": "Tetapan",
     "markup": "Penanda",
-    "reportProperties": "Sifat Laporan",
+    "reportProperties": "Tetapan Templat",
     "bandHeightSettings": "Tetapan Ketinggian Jalur",
-    "templateBandSettings": "Tetapan Jalur Templat",
+    "templateBandSettings": "Ketinggian Bahagian",
     "templateScopeBadge": "Templat Ini",
     "templateLimits": "Had Templat",
     "resetDefaults": "Set Semula ke Lalai",
@@ -205,7 +212,7 @@
     "maxHeight": "Ketinggian Maks",
     "detailAutoCalculated": "Dikira Secara Automatik",
     "detailAutoCalculatedHint": "Ketinggian butiran dikira secara automatik daripada ruang halaman yang tinggal",
-    "basicProperties": "Sifat Asas",
+    "basicProperties": "Tetapan Asas",
     "boxSettings": "Tetapan Kotak",
     "styleSettings": "Tetapan Gaya",
     "close": "Tutup",
@@ -472,10 +479,10 @@
     "lineSettings": "Garisan"
   },
   "bottomPanel": {
-    "pageSettings": "Tetapan Halaman",
+    "pageSettings": "Tetapan Lalai",
     "jrxmlContent": "Kandungan JRXML",
     "basicInfo": "Maklumat Asas",
-    "reportName": "Nama Laporan",
+    "reportName": "Nama Templat",
     "paperSize": "Saiz Kertas",
     "paperOrientation": "Orientasi",
     "portrait": "Potret",
@@ -485,9 +492,9 @@
     "pageMargins": "Jidar Halaman",
     "marginsPx": "Jidar (px)",
     "defaultFontSettings": "Tetapan Fon Lalai",
-    "bandSelection": "Pilihan Jalur",
-    "bandSelectionHint": "Jalur yang ditanda akan ditambah, yang tidak ditanda akan dibuang. Jalur butiran sentiasa aktif sebagai kanvas utama.",
-    "detailBandAlwaysRequired": "Jalur butiran sentiasa diperlukan sebagai kanvas utama laporan",
+    "bandSelection": "Bahagian Halaman",
+    "bandSelectionHint": "Bahagian yang ditanda ditambah, yang tidak ditanda dibuang. Butiran sentiasa ada.",
+    "detailBandAlwaysRequired": "Butiran sentiasa ada: ia memegang kandungan templat",
     "copy": "Salin",
     "apply": "Guna",
     "regenerate": "Jana Semula",
@@ -496,7 +503,7 @@
     "clickToGenerate": "Klik \"Jana JRXML\" untuk melihat kandungan",
     "generateJRXML": "Jana JRXML",
     "jrxmlTabs": {
-      "pageSettings": "Tetapan Halaman",
+      "pageSettings": "Tetapan Lalai",
       "jrxmlContent": "Kandungan JRXML"
     },
     "alerts": {
@@ -521,15 +528,15 @@
     "minShort": "Min",
     "maxShort": "Maks",
     "defaultShort": "Lalai",
-    "defaultBandSettings": "Tetapan Jalur Lalai",
-    "resetToDeveloperDefaults": "Set Semula ke Lalai Pembangun",
+    "defaultBandSettings": "Ketinggian Bahagian",
+    "resetToDeveloperDefaults": "Asal",
     "saveAsGlobalDefault": "Simpan sebagai Lalai Global",
     "resetDefaults": "Set Semula ke Lalai",
-    "applyToCurrentTemplate": "Guna pada Templat Semasa",
-    "appliedToTemplateSuccess": "Tetapan jalur lalai telah digunakan pada templat semasa.",
+    "applyToCurrentTemplate": "Guna pada templat ini",
+    "appliedToTemplateSuccess": "Digunakan pada templat ini.",
     "savedAsGlobalDefault": "Kekangan semasa disimpan sebagai lalai untuk semua templat baharu.",
     "resetToDefaultSuccess": "Kekangan jalur telah diset semula kepada lalai sistem.",
-    "resetToDeveloperDefaultsSuccess": "Kekangan jalur telah diset semula kepada lalai pembangun.",
+    "resetToDeveloperDefaultsSuccess": "Kembali kepada asal.",
     "search": "Cari... (Ctrl+F)",
     "searchPrevious": "Sebelumnya",
     "searchNext": "Seterusnya",
@@ -803,7 +810,6 @@
     "expandSidebar": "Kembangkan bar sisi",
     "collapseSidebar": "Kuncupkan bar sisi",
     "searchTemplates": "Cari templat",
-    "help": "Bantuan",
     "notifications": "Pemberitahuan",
     "myProfile": "Profil saya",
     "signOut": "Log keluar",
@@ -823,21 +829,33 @@
     "recentTemplates": "Templat terkini",
     "viewAll": "Lihat semua",
     "createNewTemplate": "Cipta templat baharu",
-    "createNewTemplateHint": "Mulakan dengan laporan JRXML kosong",
+    "createNewTemplateHint": "Mula dengan templat kosong",
     "moreOptions": "Lagi pilihan",
     "createdBy": "Dicipta oleh {name}",
     "sharedWithYou": "Dikongsi dengan anda",
     "recentlyAccessed": "Diakses baru-baru ini",
     "noSharedTemplates": "Belum ada templat dikongsi",
     "noSharedTemplatesHint": "Templat yang dikongsi dengan anda akan dipaparkan di sini.",
-    "sampleTemplates": {
-      "monthlySales": "Laporan jualan bulanan",
-      "customerInvoice": "Invois pelanggan",
-      "operationsSummary": "Ringkasan operasi",
-      "editedTodayAt": "Diedit hari ini pada {time}",
-      "editedYesterday": "Diedit semalam",
-      "editedOn": "Diedit {date}"
-    }
+    "copyName": "{name} (salinan)",
+    "edited": {
+      "today": "Disunting hari ini pada {time}",
+      "yesterday": "Disunting semalam",
+      "on": "Disunting {date}"
+    },
+    "menu": {
+      "open": "Buka",
+      "rename": "Namakan semula",
+      "duplicate": "Gandakan",
+      "delete": "Padam"
+    },
+    "renameTitle": "Namakan semula templat",
+    "renameMessage": "Taip nama baharu untuk templat ini.",
+    "deleteTitle": "Padam templat",
+    "deleteMessage": "Padam \"{name}\"? Tindakan ini tidak boleh dibatalkan.",
+    "openTitle": "Buka templat",
+    "openMessage": "Buka \"{name}\" dalam pereka untuk menyuntingnya?",
+    "duplicateTitle": "Gandakan templat",
+    "duplicateMessage": "Buat salinan \"{name}\"? Salinan itu ditambah ke templat anda."
   },
   "pages": {
     "account": "Akaun",
@@ -850,8 +868,8 @@
     "activityDescription": "Lihat aktiviti dan perubahan terkini di seluruh ruang kerja anda."
   },
   "editorHeader": {
-    "untitledReport": "Laporan Tanpa Tajuk",
-    "renameReport": "Klik untuk menamakan semula laporan",
+    "untitledReport": "Templat Tanpa Nama",
+    "renameReport": "Klik untuk menamakan semula templat",
     "saving": "Menyimpan...",
     "saveFailed": "Gagal disimpan",
     "saved": "Disimpan",
@@ -865,63 +883,574 @@
     "zoom": "Zum"
   },
   "help": {
-    "title": "Panduan Pengguna Pereka Visual JRXML",
-    "basicsTitle": "1. Asas Reka Bentuk Templat",
-    "basicsText": "Alat ini digunakan untuk mereka bentuk templat laporan PDF bagi JasperReports secara visual, supaya anda boleh mencipta laporan PDF profesional dengan cepat melalui seret dan lepas.",
-    "stepsTitle": "2. Langkah",
-    "steps": {
-      "modifyTitle": "Ubah suai JRXML sedia ada",
-      "modifyText": "Buka panel bawah, salin JRXML semasa ke kawasan kod, kemudian klik Guna",
-      "addTitle": "Tambah elemen",
-      "addText": "Seret elemen daripada pustaka elemen di sebelah kiri ke kawasan reka bentuk",
-      "layoutTitle": "Laraskan susun atur",
-      "layoutText": "Seret elemen untuk mengalihkannya, dan seret pemegang untuk mengubah saiznya",
-      "propertiesTitle": "Tetapkan sifat",
-      "propertiesText": "Selepas memilih elemen, tetapkan sifatnya dalam panel sebelah kanan",
-      "dataTitle": "Konfigurasi data",
-      "dataText": "Tambah parameter laporan dan medan data dalam panel sebelah kiri",
-      "generateTitle": "Jana JRXML",
-      "generateText": "Klik butang \"Jana JRXML\" untuk mengeksport templat laporan"
+    "menu": {
+      "button": "Bantuan",
+      "tour": "Ikuti lawatan",
+      "tourHint": "Lihat sekeliling skrin ini dalam seminit",
+      "guide": "Panduan ringkas",
+      "guideHint": "Cara membuat templat, langkah demi langkah",
+      "shortcuts": "Papan kekunci & tetikus",
+      "shortcutsHint": "Setiap pintasan, dengan kekunci dan tetikus",
+      "tutorialMode": "Mod tutorial",
+      "tutorialModeHint": "Lawatan, petua dan kad maklumat muncul dengan sendiri semasa anda bekerja. Matikan apabila anda sudah biasa.",
+      "tutorialOffDone": "Mod tutorial dimatikan: lawatan dan petua tidak akan muncul dengan sendiri. Semua bantuan masih ada dalam menu Bantuan ini.",
+      "tutorialOnDone": "Mod tutorial dihidupkan: petua dan kad maklumat muncul semula semasa anda bekerja.",
+      "allElements": "Semua elemen",
+      "allElementsHint": "Fungsi setiap elemen dan tetapan, dengan panduan langkah demi langkah"
     },
-    "elementsTitle": "3. Jenis Elemen yang Disokong",
-    "elements": {
-      "textField": "Medan teks: memaparkan medan data dinamik",
-      "image": "Imej: menyisipkan elemen imej",
-      "line": "Garisan: menambah garisan pemisah",
-      "rectangle": "Segi empat: menambah sempadan atau blok latar belakang"
+    "tour": {
+      "stepOf": "Langkah {n} daripada {total}",
+      "skip": "Langkau lawatan",
+      "notNow": "Bukan sekarang",
+      "start": "Tunjukkan saya",
+      "next": "Seterusnya",
+      "back": "Kembali",
+      "done": "Faham",
+      "close": "Tutup lawatan",
+      "turnOff": "Saya sudah biasa: matikan Mod tutorial"
     },
-    "shortcutsTitle": "4. Pintasan Papan Kekunci",
-    "shortcutColumn": "Pintasan",
-    "actionColumn": "Tindakan",
-    "arrowKey": "Kekunci anak panah",
+    "tours": {
+      "home": {
+        "welcomeTitle": "Selamat datang ke Report Studio",
+        "welcomeText": "Di sinilah anda membuat templat untuk laporan projek anda. Mahu lihat sekeliling selama seminit?",
+        "createTitle": "Mulakan templat baharu",
+        "createText": "Klik Cipta templat baharu untuk memulakannya. Anda mereka bentuknya pada halaman, seperti dokumen; setiap kali ia dijalankan ia menghasilkan laporan.",
+        "navTitle": "Cari jalan anda",
+        "navText": "Templat menunjukkan templat yang boleh anda gunakan, Templat saya templat yang anda buat, dan Aktiviti perkara yang berubah baru-baru ini.",
+        "searchTitle": "Cari templat",
+        "searchText": "Taip sebahagian nama templat dan tekan Enter: Templat saya menunjukkan yang sepadan.",
+        "accountTitle": "Akaun anda",
+        "accountText": "Klik huruf awal nama anda untuk menukar bahasa (English atau Bahasa Melayu) atau untuk log keluar.",
+        "helpTitle": "Bantuan sentiasa ada",
+        "helpText": "Klik Bantuan bila-bila masa untuk mengikuti lawatan ini semula atau membaca Panduan ringkas."
+      },
+      "templates": {
+        "listTitle": "Templat anda",
+        "listText": "Setiap templat yang anda buat. Klik satu untuk membukanya dalam pereka.",
+        "viewTitle": "Kad atau senarai",
+        "viewText": "Tukar antara kad bergambar dan senarai dengan tarikh, seperti folder fail.",
+        "orderTitle": "Susunannya",
+        "orderText": "Pilih susunan kad di sini. Dalam senarai, klik tajuk lajur untuk mengisih, dan pilih berapa baris yang ditunjukkan setiap halaman.",
+        "actionsTitle": "Buka, namakan semula, salin atau padam",
+        "actionsText": "Tiga titik pada kad, atau butang di hujung baris, membuka, menamakan semula, menyalin atau memadam templat. Setiap satu bertanya dahulu sebelum bertindak.",
+        "searchTitle": "Cari templat",
+        "searchText": "Taip sebahagian nama di sini: senarai hanya menunjukkan templat yang sepadan."
+      },
+      "designer": {
+        "welcomeTitle": "Selamat datang ke pereka templat",
+        "welcomeText": "Semua yang anda perlukan untuk membina templat ada pada skrin ini. Lawatan ringkas ini menunjukkan di mana letaknya.",
+        "projectsTitle": "Pilih projek anda",
+        "projectsText": "Mula-mula pilih projek yang dibincangkan dalam templat ini. Nama, logo, jadual dan cartanya kemudian sedia untuk digunakan.",
+        "libraryTitle": "Perkara yang boleh anda tambah",
+        "libraryText": "Teks, gambar, jadual, carta dan banyak lagi. Klik satu untuk menambahnya, atau seret ke halaman. Butiran projek anda ada di bawah Data Laporan.",
+        "pageTitle": "Halaman anda",
+        "pageText": "Inilah yang akan dicetak. Klik sesuatu untuk memilihnya, seret untuk mengalihkannya, dan klik dua kali pada teks untuk menaip.",
+        "panelTitle": "Ubah rupanya",
+        "panelText": "Apabila sesuatu dipilih, saiz, warna dan teksnya ada di sini; apabila tiada apa-apa dipilih, tetapan seluruh templat. Tab Pembantu AI boleh mereka bentuk untuk anda.",
+        "pagesTitle": "Tambah halaman",
+        "pagesText": "Klik Halaman untuk menambah halaman lain, halaman kulit atau isi kandungan.",
+        "previewTitle": "Lihat hasilnya",
+        "previewText": "Klik Pratonton PDF untuk melihat dengan tepat apa yang akan dicetak. Kerja anda disimpan sendiri semasa anda bekerja.",
+        "helpTitle": "Perlukan bantuan lagi?",
+        "helpText": "Klik Bantuan bila-bila masa untuk lawatan ini, Panduan ringkas, pintasan papan kekunci dan tetikus dan bantuan untuk setiap elemen."
+      }
+    },
+    "guide": {
+      "title": "Panduan ringkas",
+      "tabs": {
+        "guide": "Cara ia berfungsi",
+        "shortcuts": "Papan kekunci & tetikus"
+      },
+      "intro": "Report Studio membolehkan anda mereka bentuk templat pada halaman, seperti dalam dokumen. Anda letakkan teks, gambar, jadual dan carta; setiap kali templat dijalankan, ia diisi daripada projek anda dan menghasilkan laporan.",
+      "stepsTitle": "Membuat templat, langkah demi langkah",
+      "steps": {
+        "startTitle": "Mulakan templat",
+        "startText": "Di halaman utama, klik Cipta templat baharu. Pereka dibuka dengan halaman kosong.",
+        "projectTitle": "Pilih projek anda",
+        "projectText": "Di bahagian atas pereka, pilih projek yang dibincangkan dalam templat. Butiran, jadual dan cartanya muncul di bawah Data Laporan di sebelah kiri.",
+        "addTitle": "Tambah perkara pada halaman",
+        "addText": "Dalam Pustaka Elemen di sebelah kiri, klik item untuk menambahnya, atau seret ke tempat yang anda mahu. Seret butiran projek atau jadual dari Data Laporan ke halaman dengan cara yang sama.",
+        "changeTitle": "Ubah rupanya",
+        "changeText": "Klik sesuatu pada halaman. Tetapannya, seperti saiz, warna dan teks, dipaparkan di sebelah kanan di bawah Tetapan.",
+        "pagesTitle": "Tambah halaman",
+        "pagesText": "Gunakan Halaman di bahagian atas untuk menambah halaman lain, halaman kulit atau isi kandungan.",
+        "aiTitle": "Biar AI membantu",
+        "aiText": "Buka tab Pembantu AI di sebelah kanan dan tulis apa yang anda perlukan, contohnya “Buat halaman kulit untuk laporan bulan Mac”.",
+        "previewTitle": "Semak dan muat turun",
+        "previewText": "Klik Pratonton PDF untuk melihat dengan tepat rupa laporan. Muat turun menyimpan salinan templat pada komputer anda."
+      },
+      "tipsTitle": "Perlu diketahui",
+      "tips": {
+        "type": "Klik dua kali pada teks untuk menaip di dalamnya. Klik di luarnya apabila selesai.",
+        "rightClick": "Klik kanan apa-apa sahaja pada halaman untuk melihat lebih banyak pilihan.",
+        "resize": "Seret petak kecil di sekeliling item yang dipilih untuk membesarkan atau mengecilkannya.",
+        "nudge": "Tahan Shift dan tekan kekunci anak panah untuk mengalihkan item yang dipilih sedikit.",
+        "undo": "Tersilap? Tekan Ctrl+Z (⌘+Z pada Mac) untuk membuat asal.",
+        "saved": "Kerja anda disimpan sendiri dalam pelayar ini semasa anda bekerja.",
+        "open": "Templat anda ada di halaman utama dan dalam Templat saya: klik satu untuk membukanya. Dalam pereka, Fail → Buka (Ctrl+O) membuka templat lain atau fail .jrxml dari komputer anda.",
+        "keys": "Lebih banyak kekunci yang menjimatkan klik ada dalam tab Pintasan papan kekunci di atas."
+      },
+      "tourHint": "Baru di sini? Lawatan seminit menunjukkan di mana letaknya semua perkara.",
+      "takeTour": "Ikuti lawatan",
+      "guidesHint": "Mahu dibimbing melalui satu kerja, seperti menambah isi kandungan?",
+      "guidesButton": "Panduan langkah demi langkah"
+    },
+    "shortcutsIntro": "Semua yang boleh anda lakukan dengan papan kekunci dan tetikus dalam pereka.",
     "shortcuts": {
-      "save": "Simpan fail semasa",
-      "undo": "Buat asal",
-      "redo": "Buat semula",
-      "copy": "Salin elemen yang dipilih",
-      "paste": "Tampal elemen",
-      "toggleBottomPanel": "Tunjuk/sembunyi panel JRXML bawah",
-      "delete": "Padam elemen yang dipilih",
-      "selectNeighbor": "Pilih elemen bersebelahan",
-      "nudge": "Anjak kedudukan elemen (1px)",
-      "resetZoom": "Set semula zum"
+      "undo": "Buat asal perubahan terakhir",
+      "redo": "Buat semula apa yang anda buat asal",
+      "select": "Pilih item",
+      "selectMore": "Tambah item ke pilihan, atau keluarkannya",
+      "selectInBox": "Pilih item di dalam kotak (klik pertama: kotak)",
+      "selectNeighbor": "Pilih item seterusnya pada halaman",
+      "move": "Alihkan item yang dipilih",
+      "nudge": "Alihkannya sedikit (satu petak grid dengan Jajar ke Grid)",
+      "resize": "Besarkan atau kecilkannya",
+      "keepRatio": "Ubah saiz dan kekalkan nisbahnya",
+      "square": "Ubah saiz kepada segi empat sama",
+      "noSnap": "Alih atau ubah saiz tanpa jajaran",
+      "straightLine": "Kekalkan garisan lurus, melintang atau menegak",
+      "fitText": "Jadikan teks setinggi perkataannya",
+      "rotate": "Putar 90° (teks, gambar dan kod bar)",
+      "partHeight": "Tinggikan atau rendahkan bahagian halaman (Pengepala Halaman…)",
+      "copy": "Salin item yang dipilih",
+      "paste": "Tampal item yang disalin",
+      "pasteHere": "Tampal di tempat yang anda klik",
+      "delete": "Padam item yang dipilih",
+      "moreOptions": "Lebih banyak pilihan untuk item",
+      "editItem": "Taip dalam teks, sediakan jadual atau carta, tukar gambar",
+      "finishTyping": "Selesai menaip dan simpan",
+      "cancelTyping": "Berhenti menaip dan buang apa yang baru ditaip",
+      "bold": "Tebal",
+      "italic": "Condong",
+      "underline": "Garis bawah",
+      "link": "Tambah pautan",
+      "newLine": "Baris baharu, atau titik peluru seterusnya",
+      "lineInList": "Baris baharu dalam titik peluru",
+      "tableOpen": "Buka jadual untuk menaip",
+      "cellType": "Taip dalam sel yang dipilih (atau terus menaip)",
+      "cellMove": "Pergi ke sel lain",
+      "cellSelect": "Pilih beberapa sel",
+      "cellNext": "Sel seterusnya",
+      "cellPrevious": "Sel sebelumnya",
+      "cellClear": "Kosongkan sel yang dipilih",
+      "tableClose": "Tutup sel; tekan lagi untuk menutup jadual",
+      "crop": "Pilih gambar, atau pangkasnya",
+      "cropApply": "Simpan pangkasan",
+      "cropCancel": "Batalkan pangkasan",
+      "zoomIn": "Zum masuk",
+      "zoomOut": "Zum keluar",
+      "zoomWheel": "Zum masuk atau keluar",
+      "resetZoom": "Kembali ke zum biasa",
+      "toggleBottomPanel": "Tunjuk atau sembunyi Tetapan Lalai",
+      "panelDown": "Turunkan semula Tetapan Lalai yang setinggi penuh",
+      "newTemplate": "Mulakan templat baharu",
+      "openTemplate": "Buka templat (milik anda atau fail dari komputer anda)",
+      "save": "Simpan sekarang (ia juga disimpan sendiri)",
+      "aiSend": "Hantar mesej anda",
+      "aiNewLine": "Baris baharu dalam mesej anda",
+      "aiClear": "Kosongkan perbualan (semasa tab Pembantu AI dibuka)"
     },
-    "advancedTitle": "5. Ciri Lanjutan",
-    "advanced": {
-      "autoFieldsTitle": "Penciptaan medan data automatik",
-      "autoFieldsText": "Apabila ungkapan elemen teks merujuk medan yang belum wujud (cth. {example}), medan itu dicipta secara automatik",
-      "deleteTitle": "Pemadaman elemen laporan",
-      "deleteText": "Dalam senarai elemen laporan di sebelah kiri, klik butang padam di sebelah elemen untuk memadamnya",
-      "shortcutsTitle": "Pintasan merentas platform",
-      "shortcutsText": "Pada macOS, gunakan kekunci Command sebagai ganti Ctrl"
+    "panelTips": {
+      "hide": "Sembunyikan petua ini",
+      "report": "Tiada apa-apa dipilih, jadi inilah Tetapan Templat bagi templat ini: kertas, jidar, fon dan bahagian halaman. Klik sesuatu pada halaman untuk mengubahnya.",
+      "textField": "Teks pada halaman. Klik dua kali padanya di halaman untuk menaip. Ubah fon, saiz dan warnanya di sini.",
+      "image": "Gambar. Lepaskan fail gambar dari komputer anda ke atasnya, atau pilih satu di sini. Pilih bentuk, seperti Bulatan atau Bulat sedikit, dalam Tetapan Asas.",
+      "line": "Garis untuk memisahkan bahagian halaman. Ubah warna dan ketebalannya di sini.",
+      "rectangle": "Bentuk untuk jalur, garisan dan latar. Untuk menyimpan teks atau gambar bersama pada panel berwarna, gunakan Kotak.",
+      "ellipse": "Bulatan atau bujur. Untuk status, pilih hijau, kuning jingga atau merah dalam Tetapan Asas.",
+      "frame": "Kotak menyimpan item di dalamnya bersama: ia bergerak dengannya. Lepaskan item ke dalamnya. Klik kanan pada item untuk Tambah ke kotak atau Keluarkan dari kotak.",
+      "table": "Jadual yang diisi dengan data projek anda. Klik Edit data untuk memilih lajur dan penapis. Semua baris dicetak apabila laporan dijalankan.",
+      "customTable": "Jadual yang anda taip. Klik dua kali padanya untuk menaip dalam sel. Klik kanan pada sel untuk menambah baris atau lajur, atau untuk menggabungkan sel.",
+      "chart": "Carta yang dilukis daripada data projek anda. Klik Sediakan data untuk memilih apa yang ditunjukkannya.",
+      "barcode": "Kod bar atau kod QR. Pilih jenis dan nilainya dalam Tetapan Asas, atau klik contoh untuk mengisinya.",
+      "contentsList": "Isi kandungan. Pada Automatik, ia menyenaraikan Tajuk dan Subtajuk anda berserta nombor halamannya dengan sendiri.",
+      "pageNumber": "Nombor halaman yang diisi sendiri. Pilih rupanya dan halaman mana yang mendapat nombor.",
+      "dateTime": "Tarikh yang diisi sendiri, seperti hari laporan dicetak. Pilih tarikh yang mana dan rupanya.",
+      "pageBorder": "Sempadan di sekeliling setiap halaman. Ubah garis, warna dan bucunya di sini.",
+      "sectionHeading": "Tajuk yang memulakan bahagian. Nombornya dikira sendiri, dan ia dipaparkan dalam isi kandungan.",
+      "subHeading": "Tajuk yang lebih kecil dalam satu bahagian. Ia dipaparkan, berinden, dalam isi kandungan."
     },
-    "notesTitle": "6. Nota",
-    "notes": {
-      "bounds": "Elemen tidak boleh melepasi sempadan halaman",
-      "textEditing": "Semasa mengedit teks, tekan Enter untuk mengesahkan atau Esc untuk membatalkan",
-      "textFieldEdit": "Klik dua kali pada medan teks untuk mengedit ungkapannya",
-      "dragUpdate": "JRXML dikemas kini apabila anda melepaskan tetikus selepas menyeret elemen",
-      "autoSave": "Semua perubahan disimpan secara automatik ke storan tempatan"
+    "firstTips": {
+      "gotIt": "Faham",
+      "selectTitle": "Anda telah memilih item",
+      "selectText": "Seret untuk mengalihkannya, dan seret petak kecil di sekelilingnya untuk mengubah saiznya. Klik kanan untuk lebih banyak pilihan.",
+      "textTitle": "Menaip teks",
+      "textText": "Klik dua kali pada teks untuk menaip di dalamnya. Seret untuk mengalihkannya; rupanya ada di sebelah kanan, di bawah Tetapan.",
+      "boxTitle": "Kotak memegang item",
+      "boxText": "Item dalam kotak bergerak bersamanya. Klik sekali untuk memilih kotak, dan klik lagi untuk memilih item di dalamnya.",
+      "typedTableTitle": "Menaip dalam jadual",
+      "typedTableText": "Klik dua kali pada jadual untuk menaip di dalamnya. Klik kanan pada sel untuk menambah baris atau lajur, atau untuk menggabungkan sel.",
+      "dataTableTitle": "Data projek dalam jadual",
+      "dataTableText": "Klik dua kali pada jadual untuk memilih projek, lajur dan penapisnya. Baris diisi dengan sendiri.",
+      "chartTitle": "Menyediakan carta",
+      "chartText": "Klik dua kali pada carta untuk memilih data yang ditunjukkannya."
+    },
+    "guides": {
+      "title": "Tunjukkan caranya",
+      "intro": "Pilih satu kerja. Langkah ditandakan sendiri semasa anda melakukannya, dan Tunjukkan menunjuk apa yang perlu diklik.",
+      "allGuides": "Semua panduan",
+      "close": "Tutup",
+      "progress": "{done} daripada {total} selesai",
+      "stepDone": "Selesai:",
+      "showMe": "Tunjukkan",
+      "notOnScreen": "Bahagian itu tiada pada skrin sekarang. Lebarkan tetingkap, atau buka menu ☰ di bahagian atas kiri.",
+      "allDoneTitle": "Semua selesai, syabas!",
+      "allDoneText": "Anda boleh mengubah apa-apa sahaja pada bila-bila masa.",
+      "another": "Pilih panduan lain",
+      "askAi": "Atau biar Pembantu AI melakukannya",
+      "monthlyReport": {
+        "title": "Buat laporan bulanan",
+        "intro": "Kulit, isi kandungan, bahagian dan nombor halaman.",
+        "aiPrompt": "Buat laporan bulanan untuk projek saya dengan halaman kulit, isi kandungan, tiga bahagian dan nombor halaman.",
+        "steps": {
+          "coverTitle": "Tambah halaman kulit",
+          "coverText": "Klik Halaman di bahagian atas dan pilih Halaman kulit.",
+          "coverDesignTitle": "Pilih reka bentuk untuk kulit",
+          "coverDesignText": "Pilih satu dalam tetingkap yang terbuka, atau klik Tukar reka bentuk di atas kulit.",
+          "contentsTitle": "Tambah isi kandungan",
+          "contentsText": "Klik Halaman di bahagian atas dan pilih Isi Kandungan.",
+          "headingTitle": "Mulakan bahagian",
+          "headingText": "Klik Tajuk dalam Pustaka Elemen. Tambah satu untuk setiap bahagian laporan anda; isi kandungan menyenaraikannya.",
+          "pageNumberTitle": "Tambah nombor halaman",
+          "pageNumberText": "Klik Nombor Halaman dalam Pustaka Elemen di sebelah kiri dan pilih tempatnya.",
+          "previewTitle": "Semak hasilnya",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "tableOfContents": {
+        "title": "Tambah isi kandungan",
+        "intro": "Halaman kandungan yang menyenaraikan bahagian anda dengan sendiri.",
+        "aiPrompt": "Tambah halaman isi kandungan yang menyenaraikan tajuk saya berserta nombor halamannya.",
+        "steps": {
+          "headingsTitle": "Tambah Tajuk",
+          "headingsText": "Klik Tajuk dalam Pustaka Elemen untuk setiap bahagian utama laporan anda. Isi kandungan akan menyenaraikannya.",
+          "contentsPageTitle": "Tambah halaman kandungan",
+          "contentsPageText": "Klik Halaman di bahagian atas dan pilih Isi Kandungan.",
+          "tocTitle": "Pilih reka bentuk",
+          "tocText": "Pilih reka bentuk dalam tetingkap yang terbuka, atau klik Tambah Jadual Kandungan pada halaman kandungan.",
+          "listedTitle": "Lihat tajuk anda disenaraikan",
+          "listedText": "Pada Automatik, isi kandungan menyenaraikan Tajuk dan Subtajuk anda dengan sendiri. Klik padanya untuk menyemak tetapannya di sebelah kanan.",
+          "previewTitle": "Semak nombor halaman",
+          "previewText": "Klik Pratonton PDF di bahagian atas: setiap baris menunjukkan halaman tempat tajuknya dicetak."
+        }
+      },
+      "dataTable": {
+        "title": "Tunjukkan data projek dalam jadual",
+        "intro": "Jadual yang diisi sendiri daripada projek anda.",
+        "aiPrompt": "Tambah jadual yang menunjukkan data projek saya.",
+        "steps": {
+          "projectTitle": "Pilih projek anda",
+          "projectText": "Klik “Pilih projek…” di bahagian atas dan tandakan projek yang dibincangkan dalam templat ini.",
+          "tableTitle": "Tambah jadual",
+          "tableText": "Klik Jadual dalam Pustaka Elemen dan pilih Guna data projek.",
+          "tableDataTitle": "Pilih datanya",
+          "tableDataText": "Dalam tetingkap yang terbuka, pilih data dan lajurnya, kemudian klik Guna. Klik dua kali pada jadual untuk mengubahnya kemudian.",
+          "previewTitle": "Semak hasilnya",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "chart": {
+        "title": "Tambah carta",
+        "intro": "Carta yang dilukis daripada angka projek anda.",
+        "aiPrompt": "Tambah carta yang menunjukkan data projek saya.",
+        "steps": {
+          "projectTitle": "Pilih projek anda",
+          "projectText": "Klik “Pilih projek…” di bahagian atas dan tandakan projek yang dibincangkan dalam templat ini.",
+          "chartTitle": "Tambah carta",
+          "chartText": "Klik Carta dalam Pustaka Elemen dan pilih jenisnya.",
+          "chartDataTitle": "Sediakan datanya",
+          "chartDataText": "Klik dua kali pada carta, pilih data dan apa yang hendak ditunjukkan, kemudian klik Guna.",
+          "previewTitle": "Semak hasilnya",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "pageNumbers": {
+        "title": "Tambah nombor halaman",
+        "intro": "Nombor yang diisi sendiri pada setiap halaman.",
+        "aiPrompt": "Tambah nombor halaman di bahagian bawah setiap halaman, seperti Halaman 1 daripada 12.",
+        "steps": {
+          "pageNumberTitle": "Tambah nombor halaman",
+          "pageNumberText": "Klik Nombor Halaman dalam Pustaka Elemen di sebelah kiri dan pilih tempatnya.",
+          "pageNumberLookTitle": "Pilih rupanya",
+          "pageNumberLookText": "Klik nombor halaman pada halaman. Rupanya dan halaman mana yang mendapat nombor ada di sebelah kanan.",
+          "previewTitle": "Semak hasilnya",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "coverPage": {
+        "title": "Tambah halaman kulit",
+        "intro": "Kulit siap sedia yang anda ubah mengikut citarasa.",
+        "aiPrompt": "Reka bentuk halaman kulit untuk laporan saya dengan nama projek, bulan dan logo.",
+        "steps": {
+          "coverTitle": "Tambah halaman kulit",
+          "coverText": "Klik Halaman di bahagian atas dan pilih Halaman kulit.",
+          "coverDesignTitle": "Pilih reka bentuk untuk kulit",
+          "coverDesignText": "Pilih satu dalam tetingkap yang terbuka, atau klik Tukar reka bentuk di atas kulit.",
+          "coverEditTitle": "Jadikannya milik anda",
+          "coverEditText": "Klik sesuatu pada kulit untuk mengubahnya. Klik dua kali pada teks untuk menaip tajuk anda sendiri.",
+          "previewTitle": "Semak hasilnya",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "sections": {
+        "jobs": "Tugas biasa"
+      },
+      "text": {
+        "title": "Tambah teks",
+        "intro": "Perkataan yang anda taip sendiri: tajuk, nota, perenggan.",
+        "aiPrompt": "Tambah satu perenggan pendek pada halaman ini.",
+        "steps": {
+          "addTitle": "Tambah teks",
+          "addText": "Klik Teks dalam Pustaka Elemen di sebelah kiri. Ia diletakkan pada halaman yang terakhir anda klik.",
+          "typeTitle": "Taip perkataan anda",
+          "typeText": "Klik dua kali teks pada halaman dan taip. Klik di luarnya apabila selesai.",
+          "settingsTitle": "Pilih rupanya",
+          "settingsText": "Klik teks sekali. Saiz, warna, penjajaran dan sempadannya ada di sebelah kanan.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "sectionHeading": {
+        "title": "Tambah tajuk",
+        "intro": "Tajuk bernombor yang memulakan setiap bahagian.",
+        "aiPrompt": "Tambah tajuk bernama Gambaran Keseluruhan Projek.",
+        "steps": {
+          "addTitle": "Tambah tajuk",
+          "addText": "Klik Tajuk dalam Pustaka Elemen. Ia bernombor sendiri: 1, 2, 3…",
+          "settingsTitle": "Pilih penomborannya",
+          "settingsText": "Klik tajuk itu. Di sebelah kanan anda boleh mematikan nombornya atau menukar gaya untuk semua tajuk.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "subHeading": {
+        "title": "Tambah subtajuk",
+        "intro": "Tajuk lebih kecil dalam sesuatu bahagian.",
+        "aiPrompt": "Tambah subtajuk bernama Sorotan Utama.",
+        "steps": {
+          "addTitle": "Tambah subtajuk",
+          "addText": "Klik Subtajuk dalam Pustaka Elemen.",
+          "typeTitle": "Taip tajuknya",
+          "typeText": "Klik dua kali subtajuk dan taip. Senarai kandungan menyenaraikannya di bawah bahagiannya.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "image": {
+        "title": "Tambah gambar",
+        "intro": "Foto atau logo pada halaman.",
+        "aiPrompt": "Tambah ruang gambar untuk foto projek.",
+        "steps": {
+          "addTitle": "Tambah ruang gambar",
+          "addText": "Klik Imej dalam Pustaka Elemen.",
+          "pictureTitle": "Letakkan gambar",
+          "pictureText": "Lepaskan fail gambar dari komputer anda ke atas ruang itu, atau klik dan pilih satu di sebelah kanan.",
+          "settingsTitle": "Pilih bentuknya",
+          "settingsText": "Klik gambar itu. Di sebelah kanan anda boleh membulatkan bucunya atau menjadikannya bulatan.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "line": {
+        "title": "Tambah garisan",
+        "intro": "Garisan lurus untuk memisahkan bahagian halaman.",
+        "aiPrompt": "Tambah garisan nipis di bawah tajuk.",
+        "steps": {
+          "addTitle": "Tambah garisan",
+          "addText": "Klik Garisan dalam Pustaka Elemen.",
+          "settingsTitle": "Pilih rupanya",
+          "settingsText": "Klik garisan itu. Ketebalan, warna dan gayanya ada di sebelah kanan. Seret hujungnya untuk memanjangkannya.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "rectangle": {
+        "title": "Tambah segi empat",
+        "intro": "Bentuk biasa: jalur, warna latar atau garis luar.",
+        "aiPrompt": "Tambah jalur berwarna di bahagian atas halaman.",
+        "steps": {
+          "addTitle": "Tambah segi empat",
+          "addText": "Klik Segi Empat dalam Pustaka Elemen. Untuk meletakkan perkataan pada panel berwarna, gunakan Kotak.",
+          "settingsTitle": "Pilih warnanya",
+          "settingsText": "Klik segi empat itu. Isian, sempadan dan bucunya ada di sebelah kanan.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "ellipse": {
+        "title": "Tambah bulatan",
+        "intro": "Bulatan atau bujur, untuk titik atau lencana.",
+        "aiPrompt": "Tambah bulatan hijau kecil.",
+        "steps": {
+          "addTitle": "Tambah bulatan",
+          "addText": "Klik Elips dalam Pustaka Elemen. Tahan Alt semasa mengubah saiz supaya ia kekal bulat.",
+          "settingsTitle": "Pilih warnanya",
+          "settingsText": "Klik bulatan itu. Isian dan sempadannya ada di sebelah kanan.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "box": {
+        "title": "Tambah kotak",
+        "intro": "Panel yang memegang item lain supaya ia bergerak bersama.",
+        "aiPrompt": "Tambah kotak dengan tajuk dan nota pendek di dalamnya.",
+        "steps": {
+          "addTitle": "Tambah kotak",
+          "addText": "Klik Kotak dalam Pustaka Elemen.",
+          "fillTitle": "Letakkan sesuatu di dalamnya",
+          "fillText": "Seret Teks atau Imej dari pustaka dan lepaskan ke atas kotak. Selepas itu ia bergerak bersama kotak.",
+          "settingsTitle": "Pilih rupanya",
+          "settingsText": "Klik kotak itu. Sempadan, bucu dan isiannya ada di sebelah kanan.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "typedTable": {
+        "title": "Tambah jadual yang anda taip",
+        "intro": "Grid baris dan lajur yang anda isi sendiri.",
+        "aiPrompt": "Tambah jadual dengan lajur Item, Status dan Jumlah.",
+        "steps": {
+          "addTitle": "Tambah jadual",
+          "addText": "Klik Jadual dalam Pustaka Elemen dan pilih Taip sendiri.",
+          "typeTitle": "Taip di dalamnya",
+          "typeText": "Klik dua kali jadual, klik sel dan taip. Tab pergi ke sel seterusnya; klik kanan menambah baris dan lajur.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "barcode": {
+        "title": "Tambah kod bar atau kod QR",
+        "intro": "Kod bar atau kod QR yang boleh dibaca oleh telefon dan pengimbas.",
+        "aiPrompt": "Tambah kod QR yang membuka laman web kami.",
+        "steps": {
+          "addTitle": "Tambah kod bar",
+          "addText": "Klik Kod Bar dalam Pustaka Elemen dan pilih jenis, contohnya Kod QR.",
+          "settingsTitle": "Isi nilainya",
+          "settingsText": "Klik kod bar itu. Jenis dan kandungannya ada di sebelah kanan, dengan contoh untuk diklik.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "pageBorder": {
+        "title": "Tambah sempadan halaman",
+        "intro": "Bingkai di sekeliling setiap halaman.",
+        "aiPrompt": "Tambah sempadan nipis di sekeliling setiap halaman.",
+        "steps": {
+          "addTitle": "Tambah sempadan halaman",
+          "addText": "Klik Sempadan Halaman dalam Pustaka Elemen. Satu templat hanya boleh ada satu.",
+          "settingsTitle": "Pilih rupanya",
+          "settingsText": "Klik garisan sempadan pada halaman. Garisan dan bucunya ada di sebelah kanan.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "date": {
+        "title": "Tambah tarikh",
+        "intro": "Tarikh yang terisi sendiri, seperti hari laporan dicetak.",
+        "aiPrompt": "Tambah tarikh hari ini di bahagian atas kanan, seperti 21 Oktober 2026.",
+        "steps": {
+          "addTitle": "Tambah tarikh",
+          "addText": "Klik Tarikh dalam Pustaka Elemen.",
+          "settingsTitle": "Pilih tarikh yang mana",
+          "settingsText": "Klik tarikh itu. Di sebelah kanan pilih hari ia dicetak, bulan ini, bulan lepas atau tarikh pilihan anda, dan rupanya.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "presetBoxes": {
+        "title": "Tambah kotak siap",
+        "intro": "Kotak KPI, amaran, bahagian dan foto, sedia untuk diisi.",
+        "aiPrompt": "Tambah kotak nombor yang menunjukkan Jumlah Bajet: RM 2.5 juta.",
+        "steps": {
+          "addTitle": "Tambah kotak siap",
+          "addText": "Klik salah satu Kotak di bawah Preset Elemen, contohnya Kotak KPI.",
+          "typeTitle": "Gantikan perkataan contoh",
+          "typeText": "Klik kotak, klik perkataan di dalamnya, kemudian klik dua kali dan taip perkataan anda sendiri.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "presetHeaderFooter": {
+        "title": "Tambah pengepala atau pengaki",
+        "intro": "Sepanduk di atas atau pengaki di bawah setiap halaman.",
+        "aiPrompt": "Tambah pengepala laporan di bahagian atas setiap halaman.",
+        "steps": {
+          "addTitle": "Tambah pengepala atau pengaki",
+          "addText": "Klik Kepala Laporan atau Kaki Halaman di bawah Preset Elemen. Ia diletakkan dalam Pengepala Halaman atau Pengaki Halaman.",
+          "typeTitle": "Gantikan perkataan contoh",
+          "typeText": "Klik pengepala, klik perkataannya, kemudian klik dua kali dan taip perkataan anda sendiri.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "presetStatus": {
+        "title": "Tambah titik status atau petunjuk",
+        "intro": "Titik berwarna untuk mengikut jadual, berisiko dan lewat.",
+        "aiPrompt": "Tambah petunjuk risiko dengan hijau, ambar dan merah.",
+        "steps": {
+          "addTitle": "Tambah titik status",
+          "addText": "Klik Titik Status atau Petunjuk Risiko di bawah Preset Elemen.",
+          "settingsTitle": "Pilih warnanya",
+          "settingsText": "Klik satu titik. Pilihan pantas hijau, ambar dan merah ada di sebelah kanan.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "presetSignOff": {
+        "title": "Tambah pengesahan",
+        "intro": "Ruang untuk tandatangan, nama, jawatan dan tarikh.",
+        "aiPrompt": "Tambah pengesahan di hujung dengan nama dan jawatan saya.",
+        "steps": {
+          "addTitle": "Tambah pengesahan",
+          "addText": "Klik Pengesahan di bawah Preset Elemen.",
+          "typeTitle": "Isi nama",
+          "typeText": "Klik pengesahan, klik nama, kemudian klik dua kali dan taip. Lakukan yang sama untuk jawatan dan tarikh.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
+      "presetTables": {
+        "title": "Tambah jadual siap",
+        "intro": "Statistik Utama, Ringkasan Kewangan, Daftar Risiko dan lain-lain.",
+        "aiPrompt": "Tambah jadual ringkasan kewangan.",
+        "steps": {
+          "addTitle": "Tambah jadual siap",
+          "addText": "Klik salah satu Jadual di bawah Preset Elemen, contohnya Statistik Utama.",
+          "typeTitle": "Gantikan perkataan contoh",
+          "typeText": "Klik dua kali jadual, klik sel dan taip perkataan dan nombor anda sendiri.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      }
+    },
+    "shortcutOr": "atau",
+    "shortcutGroups": {
+      "history": "Buat asal dan buat semula",
+      "select": "Pilih",
+      "move": "Alih, ubah saiz dan putar",
+      "edit": "Salin, tampal dan padam",
+      "text": "Semasa menaip teks",
+      "table": "Dalam jadual taip",
+      "picture": "Gambar",
+      "view": "Paparan",
+      "file": "Simpan",
+      "ai": "Pembantu AI"
+    },
+    "mouse": {
+      "click": "Klik",
+      "clickTwice": "Klik, kemudian klik lagi",
+      "doubleClick": "Klik dua kali",
+      "rightClick": "Klik kanan",
+      "rightClickPage": "Klik kanan halaman → Tampal",
+      "drag": "Seret",
+      "dragHandle": "Seret petak kecil",
+      "dragLineEnd": "Seret hujung garisan",
+      "doubleClickEdge": "Klik dua kali petak atas atau bawah",
+      "rotateButton": "Butang bulat di atasnya",
+      "dragPartLine": "Seret garisan di bawah bahagian halaman",
+      "wheel": "Roda tetikus",
+      "clickOutside": "Klik di luarnya"
     }
   },
   "imageUpload": {
@@ -994,7 +1523,7 @@
       "get_report_data": "Baca data laporan",
       "create_design": "Susun reka bentuk",
       "create_text": "Tambah teks",
-      "create_section_heading": "Tambah tajuk bahagian",
+      "create_section_heading": "Tambah tajuk",
       "create_sub_heading": "Tambah subtajuk",
       "create_image": "Tambah gambar",
       "create_line": "Tambah garisan",
@@ -1087,12 +1616,12 @@
     "jrxmlRegenerated": "JRXML telah dijana semula",
     "previewFailed": "Gagal memaparkan pratonton PDF, sila semak konsol untuk butiran ralat",
     "bandLimits": {
-      "noSpace": "Tiada ruang untuk membesarkan {band}. Jalur Butiran telah mencapai ketinggian minimumnya ({height}px).",
-      "maxReached": "Ruang {band} telah melebihi had. Tukar tetapan jalur templat untuk mendapatkan lebih ruang.",
-      "minReached": "Ketinggian minimum dicapai. Jika anda tidak memerlukan jalur {band}, buang jalur tersebut.",
-      "textOverflow": "{band} telah mencapai had maksimumnya ({height}px). Teks melebihi kapasiti jalur. Pertimbangkan untuk melebarkan elemen atau meletakkan teks panjang dalam jalur Butiran.",
+      "noSpace": "Tiada ruang untuk memanjangkan {band}. Bahagian Butiran telah mencapai ketinggian minimumnya ({height}px).",
+      "maxReached": "{band} sudah penuh. Naikkan maksimumnya di Tetapan Templat → Ketinggian Bahagian untuk lebih ruang.",
+      "minReached": "Ketinggian minimum dicapai. Jika anda tidak memerlukan {band}, nyahtandanya di Tetapan Templat → Bahagian Halaman.",
+      "textOverflow": "{band} mencapai ketinggian maksimumnya ({height}px) dan teks tidak muat. Lebarkan item, atau letakkan teks panjang dalam bahagian Butiran.",
       "grewToFit": "{band} telah dibesarkan kepada {height}px supaya elemen muat.",
-      "tooTallForBand": "Elemen ini setinggi {height}px, tetapi {band} hanya boleh setinggi {max}px. Kecilkan elemen, atau naikkan ketinggian maksimum jalur dalam tetapan jalur templat."
+      "tooTallForBand": "Elemen ini setinggi {height}px, tetapi {band} hanya boleh setinggi {max}px. Kecilkan elemen, atau naikkan maksimum {band} di Tetapan Templat → Ketinggian Bahagian."
     },
     "confirmDelete": {
       "title": "Padam",
@@ -1111,11 +1640,12 @@
     "dropHere": "Lepaskan di sini",
     "aligned": "Dijajarkan",
     "pageOf": "Halaman {page} daripada {total}",
-    "dragOntoPage": "Seret elemen ke halaman {page}",
     "selectPageBorder": "Klik untuk memilih sempadan halaman",
     "pageBorderResized": "Saiz sempadan halaman telah diubah supaya muat dengan halaman baharu.",
     "elementsMovedToFit": "1 elemen telah dialihkan supaya muat di dalam halaman baharu. | {count} elemen telah dialihkan supaya muat di dalam halaman baharu.",
-    "addPageAfter": "Tambah halaman selepas"
+    "addPageAfter": "Tambah halaman selepas",
+    "emptyPage": "Halaman {page} kosong",
+    "emptyPageHint": "Klik item dalam Pustaka Elemen di sebelah kiri, atau seret ke sini. Anda juga boleh minta Pembantu AI mereka bentuknya."
   },
   "alignment": {
     "left": "Jajar kiri",
@@ -1178,7 +1708,7 @@
       "photoMeta": "Tarikh: – · Lokasi: –"
     },
     "customizeHint": "Laraskan setiap sisi dan jejari sudut dalam Tetapan Gaya.",
-    "pageBorderExists": "Laporan ini sudah mempunyai sempadan halaman. Anda boleh edit sempadan halaman yang sedia ada berbanding menambah yang baru.",
+    "pageBorderExists": "Templat ini sudah mempunyai sempadan halaman. Anda boleh mengedit sempadan halaman yang sedia ada dan bukannya menambah yang baharu.",
     "templateDescription": {
       "frameKpiCard": "Memaparkan satu nombor penting, dengan label kecil di atas dan nota di bawah (contoh: Kemajuan 17.93%).",
       "frameAlertBox": "Kotak berwarna dengan tajuk dan mesej ringkas, untuk amaran atau perkara yang mesti diberi perhatian.",
@@ -1190,12 +1720,12 @@
     "moveOutOfBox": "Keluarkan dari kotak"
   },
   "reportParts": {
-    "noBand": "Laporan ini tiada {band}. Hidupkannya di Tetapan Halaman → Pilihan Jalur, kemudian tambah semula.",
+    "noBand": "Templat ini tiada {band}. Hidupkannya di Tetapan Templat → Bahagian Halaman, kemudian tambah semula.",
     "statusColor": "Warna status",
     "description": {
       "partReportHeader": "Jalur gelap di bahagian atas setiap halaman dengan tiga baris tajuk (pelanggan dan projek, nombor laporan, bulan). Diletakkan di Kepala Halaman.",
       "partPageFooter": "Garis nipis, nombor halaman (Halaman 1 daripada 12) dan ruang untuk logo anda, di bahagian bawah setiap halaman. Diletakkan di Kaki Halaman.",
-      "partSectionHeading": "Tajuk besar bercetak tebal dengan nombornya, contohnya: BAHAGIAN 1.  BUTIRAN PROJEK.",
+      "partSectionHeading": "Tajuk besar bercetak tebal dengan nombornya, contohnya: 1.  BUTIRAN PROJEK.",
       "partSubHeading": "Tajuk lebih kecil, tebal dan bergaris bawah, contohnya: MENARA A: AKTIVITI UTAMA.",
       "partNote": "Baris kecil condong untuk sumber atau catatan di bawah jadual.",
       "partRiskLegend": "Titik hijau, kuning dan merah yang menerangkan warna risiko: Risiko Rendah, Sederhana dan Tinggi.",
@@ -1207,7 +1737,7 @@
       "tableComparison": "Dua baris tajuk (Semasa, Sebelum dan Perbezaan, setiap satu dibahagi kepada Dikeluarkan dan Belum Selesai), baris kategori dan baris Jumlah.",
       "tableActionPlan": "Item, keterangan, tindakan sebagai titik peluru, dan titik status berwarna: tukar warna teks titik itu kepada hijau, kuning atau merah.",
       "tableRiskRegister": "Isu bernombor dengan tindakannya, tindakan seterusnya, tarikh akhir dan sel risiko berwarna (Tinggi, Sederhana).",
-      "partContentsList": "Isi kandungan: nombor, tajuk, garisan titik dan halaman. Gunakannya pada halaman kandungan (atau mana-mana halaman biasa, bukan halaman kulit). Isikannya daripada Tajuk Bahagian anda dalam sifatnya.",
+      "partContentsList": "Isi kandungan: nombor, tajuk, garisan titik dan halaman. Gunakannya pada halaman kandungan (atau mana-mana halaman biasa, bukan halaman kulit). Isikannya daripada Tajuk anda dalam sifatnya.",
       "coverPhotoPanel": "Halaman kulit penuh: foto di kiri, panel gelap dengan logo dan tajuk.",
       "coverFullPhoto": "Halaman kulit penuh: satu foto besar dan jalur tajuk gelap.",
       "coverMinimal": "Halaman kulit penuh: logo, tajuk besar dan garisan aksen.",
@@ -1218,7 +1748,7 @@
       "headerLine1": "Pelanggan - Nama Projek",
       "headerLine2": "Laporan Bulanan #1",
       "headerLine3": "Bulan Tahun",
-      "sectionNumber": "BAHAGIAN 1.",
+      "sectionNumber": "1.",
       "sectionTitle": "TAJUK BAHAGIAN",
       "subHeading": "SUBTAJUK",
       "note": "*Sumber angka di atas",
@@ -1340,7 +1870,7 @@
     },
     "cannotEdit": "Nombor halaman dijana secara dinamik dan tidak boleh disunting secara terus. Gunakan panel sifat untuk menukar format atau julat halaman.",
     "lockedHint": "Nombor halaman – tukar format atau halamannya dalam panel sifat.",
-    "noBand": "Tambah satu jalur pada laporan sebelum memasukkan nombor halaman.",
+    "noBand": "Tambah bahagian halaman pada templat sebelum memasukkan nombor halaman.",
     "tileHint": "Klik untuk memilih kedudukan nombor halaman, atau seretnya ke halaman.",
     "choosePosition": "Masukkan nombor halaman",
     "positions": {
@@ -1410,10 +1940,10 @@
       "longerNote": "Jika laporan menjadi lebih panjang, halaman tambahan dinomborkan dengan cara yang sama.",
       "tablesNote": "Jadual boleh menjadikan laporan lebih panjang daripada yang anda lihat di sini. Halaman tambahan dinomborkan dengan cara yang sama.",
       "design": {
-        "nothingNumbered": "Belum ada halaman yang bernombor: laporan anda hanya ada 1 halaman. | Belum ada halaman yang bernombor: laporan anda ada {total} halaman.",
-        "startsAfterEnd": "Penomboran bermula pada halaman {from}, tetapi laporan anda hanya ada 1 halaman. | Penomboran bermula pada halaman {from}, tetapi laporan anda hanya ada {total} halaman.",
-        "partAfterEnd": "Bahagian {part} bermula pada halaman {from}, tetapi laporan anda hanya ada 1 halaman. | Bahagian {part} bermula pada halaman {from}, tetapi laporan anda hanya ada {total} halaman.",
-        "leftOutAfterEnd": "Halaman {pages} selepas halaman terakhir laporan anda. | Halaman {pages} selepas halaman terakhir laporan anda.",
+        "nothingNumbered": "Belum ada halaman yang bernombor: templat anda hanya ada 1 halaman. | Belum ada halaman yang bernombor: templat anda ada {total} halaman.",
+        "startsAfterEnd": "Penomboran bermula pada halaman {from}, tetapi templat anda hanya ada 1 halaman. | Penomboran bermula pada halaman {from}, tetapi templat anda hanya ada {total} halaman.",
+        "partAfterEnd": "Bahagian {part} bermula pada halaman {from}, tetapi templat anda hanya ada 1 halaman. | Bahagian {part} bermula pada halaman {from}, tetapi templat anda hanya ada {total} halaman.",
+        "leftOutAfterEnd": "Halaman {pages} berada selepas halaman terakhir templat anda. | Halaman {pages} berada selepas halaman terakhir templat anda.",
         "whatToDo": "Ini tidak mengapa jika laporan menjadi lebih panjang semasa dibuat. Jika tidak, tambah halaman atau ubah nombor halaman di atas."
       },
       "numbersTitle": "Gaya nombor",
@@ -1896,7 +2426,7 @@
     "projects": "Projek",
     "chooseProjects": "Pilih projek…",
     "noProjectMatch": "Tiada projek yang sepadan",
-    "noProjects": "Gunakan “Pilih projek…” di bahagian atas halaman untuk memilih projek yang digunakan oleh laporan ini. Satu laporan boleh memaparkan data daripada beberapa projek.",
+    "noProjects": "Gunakan “Pilih projek…” di bahagian atas halaman untuk memilih projek yang digunakan oleh templat ini. Templat boleh memaparkan data daripada beberapa projek.",
     "search": "Cari butiran, jadual dan lajur",
     "hint": "Seret butiran (nama, tarikh, pengenalan…) ke elemen teks, atau logo ke elemen imej, untuk mengisinya; lepaskan di ruang kosong untuk yang baharu. Ia menjadi teks atau imej biasa. Seret jadual ke bahagian Butiran atau ke jadual; seret lajur untuk menambah lajur itu sahaja.",
     "details": "Butiran",
@@ -1916,7 +2446,7 @@
     "dropImageOnImage": "Lepaskan logo pada elemen imej, atau di ruang kosong.",
     "dropNotOnPageNumber": "Nombor halaman tidak boleh memaparkan data projek. Lepaskannya pada elemen teks lain.",
     "dropNotOnDate": "Tarikh diisi dengan sendiri dan tidak boleh menunjukkan data projek. Letakkannya pada elemen teks yang lain.",
-    "projectInUse": "{project} masih digunakan oleh {count} jadual atau carta dalam laporan ini. Padam jadual atau carta tersebut, atau pilih projek lain dalam datanya, sebelum mengalih keluarnya.",
+    "projectInUse": "{project} masih digunakan oleh {count} jadual atau carta dalam templat ini. Padamkannya, atau pilih projek lain dalam datanya, sebelum membuangnya.",
     "projectSource": "{project} · {source}",
     "noValue": "{project} tiada {label} untuk ditambah.",
     "projectTabs": "Projek laporan",
@@ -2124,7 +2654,7 @@
     "hint": "Buang gaya item ini (warna, sempadan, fon, bentuk). Kandungan, kedudukan dan saiznya kekal. Jadual hanya mengekalkan garisannya."
   },
   "header": {
-    "reportsHome": "Laman utama laporan",
+    "reportsHome": "Laman utama templat",
     "mainMenu": "Menu Utama",
     "document": "Dokumen"
   },
@@ -2146,7 +2676,7 @@
     "deleteContents": "Padam halaman kandungan ini",
     "emptyCover": "Reka halaman kulit",
     "emptyContents": "Reka isi kandungan",
-    "lastNormalPage": "Halaman ini tidak boleh dipadam: laporan memerlukan sekurang-kurangnya satu halaman biasa selepas halaman kulit dan kandungan.",
+    "lastNormalPage": "Halaman ini tidak boleh dipadam: templat memerlukan sekurang-kurangnya satu halaman biasa selepas halaman kulit dan kandungan.",
     "coverAdded": "Halaman kulit ditambah di hadapan.",
     "coverMade": "Halaman ini kini halaman kulit.",
     "contentsAdded": "Halaman kandungan ditambah.",
@@ -2158,7 +2688,7 @@
       "pageNumber": "Nombor halaman tidak boleh diletakkan pada halaman kulit atau kandungan. Letakkannya di kepala atau kaki halaman: ia dipaparkan pada halaman lain.",
       "dataTable": "Jadual dengan data projek tidak boleh diletakkan pada halaman kulit atau kandungan kerana ia boleh memanjang ke halaman lain. Gunakan jadual yang anda taip sendiri (Taip sendiri).",
       "contentsList": "Isi kandungan tidak boleh diletakkan pada halaman kulit. Letakkannya pada halaman kandungan (atau halaman biasa).",
-      "secondContents": "Laporan ini sudah ada Jadual Kandungan di halaman kandungannya. Ia telah dipilih: ubahnya, atau tambah satu lagi di halaman biasa.",
+      "secondContents": "Templat ini sudah mempunyai Isi Kandungan pada halaman kandungannya. Ia telah dipilih: ubahnya, atau tambah satu lagi pada halaman biasa.",
       "contentsListInBox": "Kotak yang memegang Jadual Kandungan hanya boleh berada di halaman biasa. Di halaman kandungan, gunakan Jadual Kandungan secara sendiri (Keluarkan dari kotak)."
     },
     "countPages": "Kira halaman kulit dan kandungan",
@@ -2175,10 +2705,12 @@
     "contentsAddedSameDesign": "Halaman kandungan ditambah dengan reka bentuk yang sama.",
     "noToc": "Halaman kandungan ini tiada Jadual Kandungan",
     "addToc": "Tambah Jadual Kandungan",
-    "chooseDesign": "Pilih reka bentuk"
+    "chooseDesign": "Pilih reka bentuk",
+    "emptyCoverHint": "Gunakan Tukar reka bentuk di atas halaman untuk kulit siap sedia, atau tambah item dari sebelah kiri.",
+    "emptyContentsHint": "Gunakan Tukar reka bentuk di atas halaman, atau tambah Isi Kandungan dari Elemen Asas di sebelah kiri."
   },
   "contentsList": {
-    "emptyHint": "Isi kandungan: isikannya daripada Tajuk Bahagian anda dalam sifatnya",
+    "emptyHint": "Isi kandungan: isikannya daripada Tajuk anda dalam sifatnya",
     "continuesHint": "Menyambung isi kandungan",
     "continuesNote": "Senarai ini menyambung senarai lain: mengisinya akan mengisi kesemuanya.",
     "rows": "Tiada baris | 1 baris | {n} baris",
@@ -2203,7 +2735,7 @@
     "numberBox": "Kotak nombor",
     "noNumberBox": "Tiada kotak nombor",
     "onlyOnPages": "Pilih isi kandungan pada halaman dahulu.",
-    "noHeadings": "Tiada tajuk bahagian ditemui. Tambah praset Tajuk Bahagian (Preset Elemen → Tajuk & Teks) pada halaman anda dahulu.",
+    "noHeadings": "Tiada tajuk ditemui. Tambah Tajuk (Elemen Asas) pada halaman anda dahulu.",
     "notAllFit": "1 baris tidak muat. Letakkan senarai pada halaman kandungan untuk menyambungnya ke halaman lain. | {n} baris tidak muat. Letakkan senarai pada halaman kandungan untuk menyambungnya ke halaman lain.",
     "filled": "Diisi dengan 1 tajuk. | Diisi dengan {n} tajuk.",
     "filledMore": "Diisi dengan {n} tajuk; 1 halaman kandungan ditambah untuk selebihnya. | Diisi dengan {n} tajuk; {pages} halaman kandungan ditambah untuk selebihnya.",
@@ -2212,10 +2744,10 @@
     "subStyle": "Subbahagian",
     "noSubNumbers": "Tiada nombor",
     "follow": "Selaraskan dengan tajuk saya",
-    "followNone": "Belum ada tajuk. Tambah Tajuk Bahagian atau Subtajuk daripada Preset Elemen → Tajuk & Teks dan ia akan muncul di sini.",
+    "followNone": "Belum ada tajuk. Tambah Tajuk atau Subtajuk daripada Elemen Asas dan ia akan muncul di sini.",
     "overflow": "1 baris tidak muat pada halaman ini. | {n} baris tidak muat pada halaman ini.",
     "overflowNotContents": "1 baris tidak muat pada halaman ini. Kecilkan senarai atau barisnya, atau letakkannya pada halaman kandungan supaya ia boleh bersambung ke halaman seterusnya. | {n} baris tidak muat pada halaman ini. Kecilkan senarai atau barisnya, atau letakkannya pada halaman kandungan supaya ia boleh bersambung ke halaman seterusnya.",
-    "followEmptyHint": "Isi kandungan: Tajuk Bahagian dan Subtajuk anda akan muncul di sini",
+    "followEmptyHint": "Isi kandungan: Tajuk dan Subtajuk anda akan muncul di sini",
     "goTo": "Pergi ke tajuk ini",
     "goToHint": "Klik dua kali untuk pergi ke tajuk ini",
     "noHeadingForRow": "Tiada tajuk pada halaman anda yang mempunyai tajuk baris ini.",
@@ -2241,14 +2773,14 @@
     "modeManualDesc": "Taip dan susun baris sendiri",
     "autoHint": "Untuk menambah atau menukar baris, tambah atau tukar tajuk di halaman anda. Sembunyikan baris dengan ikon mata.",
     "manualHint": "Baris anda sendiri: menyuntingnya tidak pernah menukar tajuk anda. Kembali ke Automatik akan menggantikannya dengan tajuk anda.",
-    "autoNumbersOn": "Nombor bahagian sepadan dengan Tajuk Bahagian anda; sub-bahagian dikira.",
+    "autoNumbersOn": "Nombor bahagian sepadan dengan Tajuk anda; sub-bahagian dikira.",
     "manualNumbersOn": "Bahagian dan sub-bahagian dikira untuk anda.",
     "numbersOff": "Taip setiap nombor sendiri, atau biarkan kosong.",
     "manualEmpty": "Belum ada baris. Isi daripada tajuk anda, atau tambah baris sendiri.",
     "fill": "Isi daripada tajuk saya",
     "hideRow": "Sembunyikan daripada kandungan",
     "showRow": "Tunjukkan dalam kandungan",
-    "sharedStyleHint": "Turut menukar nombor pada Tajuk Bahagian anda, supaya sentiasa sepadan.",
+    "sharedStyleHint": "Turut menukar nombor pada Tajuk anda, supaya sentiasa sepadan.",
     "filledAdded": "1 baris ditambah di hujung: seret ke tempatnya. | {n} baris ditambah di hujung: seret ke tempatnya.",
     "fillAsk": {
       "title": "Kandungan anda sudah ada 1 baris. Apa yang perlu dibuat? | Kandungan anda sudah ada {n} baris. Apa yang perlu dibuat?",
@@ -2273,7 +2805,7 @@
       "bottom": "Bawah",
       "hint": "Atas / bawah menggunakan ruang di bawah tajuk. Dua lajur bergerak bersama, dan halaman kandungan seterusnya mengikut."
     },
-    "sampleRows": "{n} baris di halaman ialah contoh daripada reka bentuk. Tambah Tajuk Bahagian atau Sub-tajuk (Pratetap Elemen → Tajuk & Teks) dan tajuk anda akan menggantikannya.",
+    "sampleRows": "{n} baris di halaman ialah contoh daripada reka bentuk. Tambah Tajuk atau Subtajuk (Elemen Asas) dan tajuk anda akan menggantikannya.",
     "show": "Tunjuk",
     "showAll": "Bahagian dan sub-bahagian",
     "showSections": "Bahagian sahaja",
@@ -2437,7 +2969,7 @@
     "replaceContentsMessage": "Reka bentuk baharu menggantikan tajuk dan susun atur pada semua halaman kandungan anda. Baris Isi Kandungan anda dikekalkan.",
     "appliedAllContents": "Reka bentuk digunakan pada semua halaman kandungan anda.",
     "replaceContentsTitle": "Tukar reka bentuk semua halaman kandungan?",
-    "numbersNow": "Tajuk Bahagian anda kini bernombor seperti reka bentuk ini: {sample}… Ctrl+Z untuk buat asal."
+    "numbersNow": "Tajuk anda kini bernombor seperti reka bentuk ini: {sample}… Ctrl+Z untuk buat asal."
   },
   "appMenu": {
     "title": "Menu",
@@ -2449,7 +2981,7 @@
   "headingNumbers": {
     "title": "Nombor bahagian",
     "auto": "Nomborkan tajuk ini secara automatik",
-    "autoHint": "Ini ialah bahagian {n}. Tajuk Bahagian dikira 1, 2, 3… mengikut susunan halaman: tambah, alihkan atau padam satu dan nombornya akan mengikut.",
+    "autoHint": "Ini ialah bahagian {n}. Tajuk dikira 1, 2, 3… mengikut susunan halaman: tambah, alihkan atau padam satu dan nombornya akan mengikut.",
     "typedHint": "Tajuk ini mengekalkan nombor yang ditaip di dalamnya. Tandakan kotak untuk mengiranya semula.",
     "notCounted": "Tajuk pada halaman kulit dan halaman kandungan tidak dikira.",
     "noNumberPart": "Tajuk ini tiada nombornya sendiri.",
@@ -2458,10 +2990,10 @@
   "addPageMenu": {
     "title": "Tambah halaman",
     "normal": "Halaman biasa",
-    "normalHint": "Ditambah di hujung laporan.",
+    "normalHint": "Ditambah di hujung templat.",
     "cover": "Halaman kulit",
     "coverHint": "Di hadapan, tanpa pengepala atau pengaki halaman. Anda pilih reka bentuk seterusnya.",
-    "coverExists": "Laporan ini sudah mempunyai halaman kulit.",
+    "coverExists": "Templat ini sudah mempunyai halaman kulit.",
     "contents": "Isi Kandungan",
     "contentsHint": "Selepas halaman kulit, tanpa pengepala atau pengaki halaman. Anda pilih reka bentuk seterusnya.",
     "contentsMoreHint": "Satu lagi halaman kandungan dengan reka bentuk yang sama seperti yang terakhir."
@@ -2474,5 +3006,691 @@
     "afterPlaceholder": "cth. :",
     "preview": "Pratonton",
     "sampleTitle": "Butiran projek"
+  },
+  "helpDocs": {
+    "panel": {
+      "title": "Bantuan",
+      "expand": "Buka bantuan",
+      "tabs": {
+        "item": "Item ini",
+        "guides": "Tunjukkan caranya",
+        "elements": "Semua elemen"
+      },
+      "allPages": "Semua elemen",
+      "search": "Cari bantuan, cth. bucu bulat",
+      "noResults": "Tiada hasil. Cuba perkataan lain.",
+      "dragHint": "Seret untuk mengalihkan",
+      "minimize": "Kecilkan ke tepi"
+    },
+    "groups": {
+      "start": "Pengepala & tetapan",
+      "basic": "Elemen Asas",
+      "presets": "Preset Elemen",
+      "composite": "Elemen Komposit"
+    },
+    "parts": {
+      "when": "Bila menggunakannya",
+      "add": "Cara menambahnya",
+      "work": "Cara menggunakannya",
+      "settings": "Tetapannya",
+      "good": "Perlu diketahui",
+      "guides": "Panduan langkah demi langkah"
+    },
+    "learnMore": "Ketahui lebih lanjut",
+    "closeExplanation": "Tutup",
+    "settingHelp": "Apakah {name}?",
+    "samples": {
+      "text": "Teks anda di sini",
+      "item": "Item",
+      "status": "Status",
+      "amount": "Jumlah"
+    },
+    "tools": {
+      "projects": {
+        "title": "Projek",
+        "text": "Pilih projek yang dibincangkan dalam templat ini. Butiran, jadual dan cartanya kemudian muncul di bawah Data Laporan di sebelah kiri."
+      },
+      "reportName": {
+        "title": "Nama templat",
+        "text": "Klik nama untuk mengubahnya. Tanda di sebelahnya menunjukkan kerja anda disimpan sendiri."
+      },
+      "file": {
+        "title": "Fail",
+        "text": "Baharu memulakan templat. Buka membuka salah satu templat anda, atau fail .jrxml dari komputer anda."
+      },
+      "undo": {
+        "title": "Buat Asal",
+        "text": "Membatalkan perubahan terakhir anda. Tekan lagi untuk kembali lebih jauh."
+      },
+      "redo": {
+        "title": "Buat Semula",
+        "text": "Mengembalikan perubahan yang anda batalkan."
+      },
+      "addPage": {
+        "title": "Halaman",
+        "text": "Menambah halaman: halaman biasa di hujung, halaman kulit di hadapan, atau isi kandungan."
+      },
+      "delete": {
+        "title": "Padam",
+        "text": "Membuang item yang dipilih dari halaman. Buat Asal mengembalikannya."
+      },
+      "copy": {
+        "title": "Salin",
+        "text": "Menyalin item yang dipilih, sedia untuk ditampal."
+      },
+      "paste": {
+        "title": "Tampal",
+        "text": "Meletakkan salinan apa yang anda salin sedikit ke bawah dan ke kanan item asal. Klik kanan pada halaman dan pilih Tampal untuk meletakkannya di tempat yang anda klik."
+      },
+      "zoom": {
+        "title": "Zum",
+        "text": "Membesarkan atau mengecilkan halaman pada skrin anda; saiz cetakan tidak pernah berubah. Gunakan − dan +, taip saiz, atau pilih satu daripada senarai."
+      },
+      "bottomPanel": {
+        "title": "Tetapan Lalai",
+        "text": "Membuka Tetapan Lalai di bahagian bawah: kertas, jidar, fon dan bahagian halaman yang digunakan oleh setiap templat baharu."
+      },
+      "snap": {
+        "title": "Jajaran & grid",
+        "text": "Tiga suis yang membantu anda meletakkan item dengan kemas:",
+        "parts": {
+          "grid": {
+            "title": "Jajar ke Grid",
+            "text": "Apabila anda mengalih atau mengubah saiz item, ia melompat ke garisan grid terdekat, supaya item tersusun kemas. Shift + kekunci anak panah kemudian mengalihkannya satu petak grid setiap kali."
+          },
+          "alignment": {
+            "title": "Jajar ke Penjajaran",
+            "text": "Semasa anda menyeret, garisan berwarna muncul apabila item sejajar dengan tepi atau tengah item lain, dan ia terletak tepat di situ."
+          },
+          "showGrid": {
+            "title": "Tunjukkan Grid",
+            "text": "Memaparkan garisan grid pada halaman untuk membantu anda meletakkan item. Ia tidak pernah dicetak dalam PDF."
+          }
+        }
+      },
+      "help": {
+        "title": "Bantuan",
+        "text": "Lawatan, Panduan ringkas, pintasan papan kekunci dan tetikus, dan Semua elemen: bantuan untuk setiap elemen, dengan panduan langkah demi langkah."
+      },
+      "download": {
+        "title": "Muat turun",
+        "text": "Menyimpan templat ini sebagai fail pada komputer anda, untuk menyimpan salinan atau membukanya kemudian melalui Fail."
+      },
+      "preview": {
+        "title": "Pratonton PDF",
+        "text": "Menunjukkan dengan tepat apa yang akan dicetak, dengan data projek anda diisi."
+      }
+    },
+    "pages": {
+      "toolbar": {
+        "title": "Bar Alat Pengepala",
+        "what": "Butang dalam bar di sepanjang bahagian atas pereka. Halakan tetikus ke mana-mana butang untuk melihat fungsinya.",
+        "good": [
+          "Pada tetingkap yang sempit, alat yang tidak muat dipindahkan ke menu ☰ di bahagian atas kiri."
+        ]
+      },
+      "pageSettings": {
+        "title": "Tetapan Lalai",
+        "what": "Apa yang digunakan oleh setiap templat baharu: kertas, jidar, fon, bahagian halaman dan ketinggian bahagian. Bukanya dengan butang Tetapan Lalai di bahagian atas (Ctrl+B).",
+        "work": [
+          "Kertas, Jidar Halaman, Fon, Bahagian Halaman dan Ketinggian Bahagian berfungsi seperti dalam Tetapan Templat, tetapi hanya untuk templat yang anda buat mulai sekarang.",
+          "Guna pada templat ini menyalin salah satunya ke dalam templat yang sedang dibuka (satu langkah buat asal).",
+          "Asal pada kad (atau Set semula semua ke asal di bahagian atas) mengembalikan tetapan asal aplikasi: A4 potret, jidar 20 px dan bahagian biasa."
+        ],
+        "good": [
+          "Ia disimpan dalam pelayar ini: komputer lain bermula dengan tetapan asal.",
+          "Untuk mengubah templat yang sedang dibuka sahaja, gunakan Tetapan Templat."
+        ]
+      },
+      "text": {
+        "title": "Teks",
+        "what": "Perkataan pada halaman: tajuk, perenggan, label dan nota.",
+        "when": "Untuk apa sahaja yang anda mahu tulis. Untuk tajuk bernombor gunakan Tajuk; untuk tarikh yang diisi sendiri gunakan Tarikh.",
+        "add": "Klik Teks dalam Pustaka Elemen, atau seret ke tempat yang anda mahu.",
+        "work": [
+          "Klik dua kali pada teks untuk menaip di dalamnya. Klik di luarnya apabila selesai.",
+          "Pilih beberapa perkataan semasa menaip untuk melihat bar format: tebal, condong, garis bawah, warna, titik peluru, pautan dan banyak lagi.",
+          "Seret untuk mengalihkannya; seret petak kecil di sekelilingnya untuk mengubah saiznya.",
+          "Muat ke Teks (dalam Kandungan Teks) menjadikan kotak setinggi perkataannya.",
+          "Seret butiran projek (nama, klien…) dari Data Laporan ke atasnya untuk mengisinya dengan nilai itu."
+        ],
+        "good": [
+          "Teks yang tidak muat dalam kotaknya terpotong dalam PDF: tinggikan kotak, atau gunakan Muat ke Teks.",
+          "Fon, saiz, warna, sempadan dan isian ada dalam Tetapan Gaya."
+        ]
+      },
+      "sectionHeading": {
+        "title": "Tajuk",
+        "what": "Tajuk besar yang memulakan satu bahagian, berserta nombornya, contohnya 1.  BUTIRAN PROJEK.",
+        "when": "Pada permulaan setiap bahagian utama laporan anda. Isi kandungan menyenaraikan setiap Tajuk.",
+        "add": "Klik Tajuk dalam Pustaka Elemen (ia diletakkan pada halaman biasa), atau seret ke tempat yang anda mahu.",
+        "work": [
+          "Nombornya dikira sendiri: tajuk pertama ialah 1, seterusnya 2, dan seterusnya, mengikut susunan halaman.",
+          "Klik sekali untuk memilih keseluruhan tajuk; klik lagi untuk memilih nombor atau tajuknya. Klik dua kali pada tajuk untuk menaip.",
+          "Nombor bahagian (dalam sifatnya) memilih cara setiap tajuk dinomborkan, contohnya 1, 01, I atau A, dengan perkataan di hadapannya seperti SECTION.",
+          "Taip nombor anda sendiri di atasnya dan tajuk itu mengekalkannya."
+        ],
+        "good": [
+          "Tajuk pada halaman kulit atau kandungan tidak dikira.",
+          "Dalam PDF setiap tajuk menjadi penanda buku, dan isi kandungan memaut kepadanya."
+        ]
+      },
+      "subHeading": {
+        "title": "Subtajuk",
+        "what": "Tajuk yang lebih kecil dalam satu bahagian, contohnya MENARA A: AKTIVITI UTAMA.",
+        "when": "Untuk membahagikan satu bahagian kepada bahagian yang lebih kecil.",
+        "add": "Klik Subtajuk dalam Pustaka Elemen, atau seretnya.",
+        "work": [
+          "Klik dua kali padanya untuk menaip.",
+          "Ia tiada nombor pada halaman; isi kandungan menyenaraikannya, berinden, di bawah bahagiannya."
+        ],
+        "good": [
+          "Letakkannya selepas Tajuk: subtajuk sebelum bahagian pertama tiada bahagian untuk dimiliki."
+        ]
+      },
+      "image": {
+        "title": "Imej",
+        "what": "Gambar atau logo.",
+        "when": "Untuk foto, logo, pelan dan tandatangan.",
+        "add": "Klik Imej dalam Pustaka Elemen, atau seret ke tempat yang anda mahu.",
+        "work": [
+          "Lepaskan fail gambar dari komputer anda ke atasnya, klik dua kali padanya, atau gunakan Muat Naik Imej dalam sifatnya (PNG atau JPG, sehingga 4 MB).",
+          "Klik dua kali pada gambar untuk memangkasnya.",
+          "Bentuk membulatkannya: Bulat sedikit, Lembut, Bulatan, Pil dan banyak lagi. Bentuk mengikut gambar apabila anda mengubah saiznya.",
+          "Seret logo projek anda dari Data Laporan ke atasnya untuk menggunakan logo itu."
+        ],
+        "good": [
+          "Setiap bucu boleh ditetapkan sendiri dalam Tetapan Gaya; bentuknya kemudian dipaparkan sebagai Tersuai."
+        ]
+      },
+      "line": {
+        "title": "Garisan",
+        "what": "Garis lurus untuk memisahkan bahagian halaman.",
+        "add": "Klik Garisan dalam Pustaka Elemen, atau seretnya.",
+        "work": [
+          "Orientasi Garisan menjadikannya melintang atau menegak.",
+          "Garisan (dalam Tetapan Gaya) menetapkan gayanya, seperti padu atau putus-putus, ketebalan dan warnanya.",
+          "Seret hujungnya untuk memanjangkan atau memendekkannya."
+        ]
+      },
+      "rectangle": {
+        "title": "Segi Empat",
+        "what": "Bentuk ringkas untuk jalur, garisan, garis luar dan latar berwarna.",
+        "when": "Hanya untuk bentuk tanpa apa-apa di atasnya. Untuk panel berwarna dengan teks atau gambar di atasnya, gunakan Kotak: semua di dalamnya bergerak bersamanya.",
+        "add": "Klik Segi Empat dalam Pustaka Elemen, atau seretnya.",
+        "work": [
+          "Garis luar menetapkan garisan di sekelilingnya; Warna Latar Belakang mengisinya.",
+          "Jejari Bucu dalam Tetapan Gaya membulatkan bucunya."
+        ],
+        "good": [
+          "Memilih segi empat tidak membawanya ke hadapan, jadi apa yang terletak di atasnya kekal kelihatan."
+        ]
+      },
+      "ellipse": {
+        "title": "Elips",
+        "what": "Bulatan atau bujur.",
+        "when": "Untuk bentuk bulat dan titik status berwarna.",
+        "add": "Klik Elips dalam Pustaka Elemen, atau seretnya.",
+        "work": [
+          "Beri lebar dan tinggi yang sama untuk bulatan yang sempurna.",
+          "Warna status menjadikannya hijau, kuning jingga atau merah dengan satu klik.",
+          "Garis luar dan Warna Latar Belakang menetapkan garisan dan isiannya."
+        ]
+      },
+      "box": {
+        "title": "Kotak",
+        "what": "Bekas yang memegang item lain bersama, supaya ia bergerak sebagai satu.",
+        "when": "Untuk panel berwarna dengan teks atau gambar di atasnya, kad, atau mana-mana kumpulan item yang berkaitan.",
+        "add": "Klik Kotak dalam Pustaka Elemen, atau seretnya. Kotak siap sedia ada di bawah Preset Elemen.",
+        "work": [
+          "Lepaskan item ke atas kotak untuk memasukkannya.",
+          "Klik sekali untuk memilih kotak, dan klik lagi untuk memilih item di dalamnya.",
+          "Klik kanan pada item untuk Tambah ke kotak (ia kemudian bergerak dan berubah saiz bersama kotak) atau Keluarkan dari kotak.",
+          "Gaya Kotak memberi sempadan siap sedia; Sempadan menetapkan setiap sisi secara berasingan; Warna Latar Belakang mengisinya."
+        ],
+        "good": [
+          "Kotak tidak boleh memegang kotak lain atau jadual.",
+          "Jejari Bucu dalam Tetapan Gaya memberinya bucu bulat."
+        ]
+      },
+      "table": {
+        "title": "Jadual",
+        "what": "Baris dan lajur, sama ada ditaip oleh anda atau diisi daripada data projek anda.",
+        "when": "Taip sendiri untuk angka utama, ringkasan dan daftar. Guna data projek untuk senarai yang datang daripada projek anda, seperti perolehan atau bahan.",
+        "add": "Klik Jadual dalam Pustaka Elemen dan pilih Taip sendiri atau Guna data projek.",
+        "work": [
+          "Jadual yang ditaip: klik dua kali padanya untuk menaip dalam sel; Tab beralih ke sel seterusnya. Klik kanan pada sel untuk menambah atau memadam baris dan lajur, atau untuk menggabungkan dan memisahkan sel.",
+          "Jadual data projek: klik dua kali padanya (atau Edit data) untuk memilih projek, data, lajur, penapis, susunan dan jumlah. Baris diisi dengan sendiri setiap kali laporan dijalankan.",
+          "Rupa menetapkan gaya jadual; Sesuaikan mengubah warna jadual ini sahaja, dan Simpan sebagai gaya jadual menyimpannya untuk jadual lain.",
+          "Kandungan jadual menukar jadual antara ditaip dan data projek."
+        ],
+        "good": [
+          "Jadual data projek hanya boleh berada dalam bahagian Butiran halaman, dan tidak sekali-kali dalam kotak.",
+          "Jadual yang panjang bersambung pada halaman seterusnya.",
+          "Halaman menunjukkan sehingga 5 baris contoh; PDF mencetak setiap baris."
+        ]
+      },
+      "chart": {
+        "title": "Carta",
+        "what": "Carta yang dilukis daripada angka projek anda: bar, garis, pai, donut, tolok dan banyak lagi.",
+        "when": "Untuk menunjukkan aliran mengikut masa, membandingkan kategori, atau menunjukkan bahagian daripada keseluruhan.",
+        "add": "Klik Carta dalam Pustaka Elemen dan pilih jenis, atau seretnya untuk mendapatkan carta bar.",
+        "work": [
+          "Klik dua kali pada carta (atau Sediakan data) untuk memilih projek, data dan apa yang hendak ditunjukkan, dengan pratonton langsung.",
+          "Sehingga datanya disediakan, carta menunjukkan angka contoh dengan lencana.",
+          "Jenis carta menukar jenis carta dan mengekalkan datanya.",
+          "Carta menetapkan tajuk dan petunjuknya; Warna memilih set warna."
+        ],
+        "good": [
+          "Hanya carta yang datanya telah disediakan akan dicetak.",
+          "Angkanya diambil semula setiap kali laporan dijalankan."
+        ]
+      },
+      "tableOfContents": {
+        "title": "Isi Kandungan",
+        "what": "Senarai bahagian dan sub-bahagian anda berserta nombor halamannya.",
+        "when": "Pada halaman kandungan di hadapan laporan, atau pada mana-mana halaman biasa. Bukan pada kulit.",
+        "add": "Klik Isi Kandungan dalam Pustaka Elemen. Pada halaman kandungan yang kosong anda juga boleh klik Tambah Jadual Kandungan.",
+        "work": [
+          "Automatik menyenaraikan setiap Tajuk dan Subtajuk dengan sendiri dan mengikuti apabila anda menambah, mengalih atau menamakannya semula. Ikon mata di sebelah baris mengecualikan tajuk itu.",
+          "Manual membolehkan anda menaip dan menyusun baris sendiri; Isi daripada tajuk saya menyalin tajuk anda ke dalamnya.",
+          "Reka bentuk memberi empat rupa siap sedia; Rupa dan Warna memperhalusinya; Penjajaran Kandungan meletakkannya pada halaman.",
+          "Klik dua kali pada baris untuk pergi ke tajuknya."
+        ],
+        "good": [
+          "Apabila senarai memerlukan lebih ruang, lebih banyak halaman kandungan ditambah dengan sendiri.",
+          "Dalam PDF setiap baris ialah pautan ke tajuknya.",
+          "Jika jadual yang memanjang menolak tajuk ke halaman kemudian, semak nombor halaman dalam Pratonton PDF."
+        ]
+      },
+      "barcode": {
+        "title": "Kod Bar",
+        "what": "Kod bar atau kod QR yang boleh dibaca oleh telefon dan pengimbas.",
+        "add": "Klik Kod Bar dalam Pustaka Elemen dan pilih jenis, atau seretnya untuk mendapatkan Code 128.",
+        "work": [
+          "Jenis kod bar: kod produk (EAN, UPC), kod label dan stok (Code 128, Code 39…), kod 2D (QR Code, Data Matrix, PDF417) dan kod pos.",
+          "Nilai: taip apa yang dipegang oleh kod, atau klik contoh. Kod QR mempunyai borang untuk pautan web, e-mel, nombor telefon, Wi-Fi dan banyak lagi.",
+          "Bar memenuhi kotak: besarkan kotak untuk bar yang lebih besar."
+        ],
+        "good": [
+          "Nilai yang tidak boleh dipegang oleh jenis itu dilukis pudar dengan lencana, dan panel menerangkan sebabnya.",
+          "Jika bar menjadi terlalu nipis untuk diimbas, panel memberi amaran.",
+          "Kod QR tidak boleh diputar."
+        ]
+      },
+      "presetBoxes": {
+        "title": "Kotak siap sedia",
+        "what": "Kotak dengan bahagiannya sudah tersedia: Kotak KPI (satu angka penting), Kotak Amaran (amaran), Kotak Seksyen (kawasan bertajuk) dan Kotak Foto (foto dengan kapsyen).",
+        "add": "Klik satu di bawah Preset Elemen → Kotak, atau seretnya.",
+        "work": [
+          "Klik sekali untuk memilih kotak; klik lagi untuk memilih bahagiannya, seperti nombor atau label.",
+          "Klik dua kali pada teks bahagian untuk menaip teks anda sendiri.",
+          "Seret kotak dan semua bahagiannya bergerak bersamanya."
+        ]
+      },
+      "presetHeaderFooter": {
+        "title": "Kepala Laporan dan Kaki Halaman",
+        "what": "Sepanduk di bahagian atas setiap halaman (Kepala Laporan), dan pengaki dengan nombor halaman serta tempat untuk logo anda (Kaki Halaman).",
+        "add": "Klik padanya: Kepala Laporan dimasukkan ke Pengepala Halaman dan Kaki Halaman ke Pengaki Halaman, supaya ia dicetak pada setiap halaman. Jika bahagian halaman itu dimatikan, mesej akan memberitahu anda.",
+        "work": [
+          "Klik dua kali pada mana-mana teks di dalamnya untuk menaip teks anda sendiri.",
+          "Lepaskan logo anda ke atas tempat logo."
+        ],
+        "good": [
+          "Ia tidak dicetak pada halaman kulit atau halaman kandungan."
+        ]
+      },
+      "presetStatus": {
+        "title": "Status",
+        "what": "Petunjuk Risiko menerangkan warna risiko (rendah, sederhana, tinggi) dengan titik berwarna; Titik Status ialah satu titik berwarna.",
+        "add": "Klik satu di bawah Preset Elemen → Status, atau seretnya.",
+        "work": [
+          "Warna status menjadikan titik hijau, kuning jingga atau merah dengan satu klik."
+        ]
+      },
+      "presetSignOff": {
+        "title": "Pengesahan",
+        "what": "Tandatangan di atas garisan, dengan nama, jawatan dan tarikh.",
+        "add": "Klik Pengesahan di bawah Preset Elemen, atau seretnya.",
+        "work": [
+          "Lepaskan gambar tandatangan ke atas tempat gambarnya.",
+          "Klik dua kali pada teks untuk menaip nama, jawatan dan tarikh."
+        ]
+      },
+      "presetTables": {
+        "title": "Jadual siap sedia",
+        "what": "Jadual taip yang sudah disusun untuk laporan bulanan: Statistik Utama, Ringkasan Kewangan, Jadual Kemajuan, Jadual Perbandingan, Pelan Tindakan dan Daftar Risiko.",
+        "add": "Klik satu di bawah Preset Elemen → Jadual, atau seretnya.",
+        "work": [
+          "Klik dua kali padanya untuk menaip di atas perkataan contoh.",
+          "Status ialah titik berwarna (●) dalam selnya: tukar warna teks sel kepada hijau, kuning jingga atau merah.",
+          "Selebihnya berfungsi seperti mana-mana jadual taip."
+        ]
+      },
+      "pageBorder": {
+        "title": "Sempadan Halaman",
+        "what": "Sempadan di sekeliling setiap halaman laporan.",
+        "add": "Klik Sempadan Halaman di bawah Elemen Komposit. Templat mempunyai satu sempadan; jubin dimatikan sebaik sahaja ada satu.",
+        "work": [
+          "Klik garisan sempadan untuk memilihnya.",
+          "Gaya Kotak mengubah garisannya."
+        ],
+        "good": [
+          "Ia dicetak pada setiap halaman, termasuk halaman kulit dan kandungan, kecuali kulit yang memenuhi seluruh helaian."
+        ]
+      },
+      "pageNumber": {
+        "title": "Nombor Halaman",
+        "what": "Nombor halaman yang diisi sendiri, seperti Halaman 1 daripada 12.",
+        "add": "Klik Nombor Halaman di bawah Elemen Komposit dan pilih tempatnya, atau seretnya.",
+        "work": [
+          "Format: cara ia dibaca (1, Halaman 1, Halaman 1 daripada 12, 1 / 12) dan gaya nombor (1 2 3, i ii iii, I II III, A B C).",
+          "Halaman mana yang bernombor: setiap halaman, semua kecuali satu atau dua yang pertama, atau hanya sesetengah halaman, dalam bahagian yang masing-masing boleh mempunyai rupa sendiri.",
+          "Halaman anda menunjukkan apa yang akan dicetak oleh setiap halaman."
+        ],
+        "good": [
+          "Halaman kulit dan kandungan tidak pernah memaparkan nombor; Kira halaman kulit dan kandungan menentukan sama ada ia dikira."
+        ]
+      },
+      "date": {
+        "title": "Tarikh",
+        "what": "Tarikh yang diisi sendiri, seperti hari laporan dicetak.",
+        "add": "Klik Tarikh di bawah Elemen Komposit, atau seretnya.",
+        "work": [
+          "Tarikh yang mana: hari laporan dicetak, bulan ini, bulan lepas, atau tarikh yang anda pilih, dengan masa jika anda mahu.",
+          "Rupanya: pilih gaya tarikh, dan gaya masa jika anda memaparkan masa.",
+          "Perkataan sebelum tarikh: contohnya “Dicetak pada”."
+        ],
+        "good": [
+          "Anda tidak boleh menaip di atasnya. Untuk menulis tarikh anda sendiri, klik Taip teks saya sendiri dalam sifatnya: ia menjadi teks biasa."
+        ]
+      },
+      "templateSettings": {
+        "title": "Tetapan Templat",
+        "what": "Tetapan templat yang sedang dibuka: kertas, jidar, fon dan bahagian yang ada pada setiap halaman. Ia dipaparkan di sebelah kanan apabila tiada apa-apa dipilih.",
+        "add": "Klik bahagian halaman yang kosong (atau tekan Esc) supaya tiada apa-apa dipilih; panel kanan kemudian memaparkan Tetapan Templat.",
+        "work": [
+          "Kertas: saiz kertas (A4, Letter… atau saiz anda sendiri), potret atau landskap, dan lebar serta tinggi yang tepat.",
+          "Jidar Halaman: ruang kosong di sekeliling tepi setiap halaman. Tiada apa-apa dicetak di situ.",
+          "Fon: fon dan saiz yang digunakan oleh teks baharu.",
+          "Bahagian Halaman: bahagian yang ada pada setiap halaman. Pengepala Halaman dicetak di bahagian atas setiap halaman dan Pengaki Halaman di bahagian bawah; Pengepala Lajur dan Pengaki Lajur terletak tepat di dalamnya. Nyahtanda bahagian yang tidak anda perlukan. Butiran, tempat kandungan anda, sentiasa ada. Latar Belakang ialah lapisan di belakang setiap halaman yang memegang Sempadan Halaman.",
+          "Ketinggian Bahagian: ketinggian setiap bahagian, serta saiz terkecil dan terbesarnya.",
+          "Guna lalai pada kad (atau Set semula semua ke lalai di bahagian atas) mengambilnya daripada Tetapan Lalai anda."
+        ],
+        "good": [
+          "Setiap perubahan di sini boleh dibuat asal (Ctrl+Z).",
+          "Menukar kertas atau jidar mengalihkan item yang tidak lagi muat kembali ke dalam halaman.",
+          "Apa yang digunakan oleh templat baharu ditetapkan dalam Tetapan Lalai."
+        ]
+      }
+    },
+    "settings": {
+      "reportSections": {
+        "title": "Ketinggian Bahagian",
+        "text": "Ketinggian setiap bahagian halaman (Pengepala Halaman, Pengepala Lajur, Pengaki Lajur, Pengaki Halaman), serta saiz terkecil dan terbesarnya. Butiran dikira dengan sendiri."
+      },
+      "tableContent": {
+        "title": "Kandungan jadual",
+        "text": "Sama ada anda menaip jadual sendiri atau ia diisi daripada data projek anda. Menukarnya mengekalkan apa yang ditunjukkan oleh jadual."
+      },
+      "positionSize": {
+        "title": "Kedudukan & saiz",
+        "text": "Tempat item terletak (X dari kiri, Y dari atas bahagian halamannya) dan lebar serta tingginya, dalam piksel.",
+        "example": "X 0 meletakkannya rapat ke jidar kiri."
+      },
+      "picture": {
+        "title": "Nama Imej",
+        "text": "Gambar yang dipaparkan. Muat naik satu dari komputer anda (PNG atau JPG, sehingga 4 MB); namanya dipaparkan di sini."
+      },
+      "imageShape": {
+        "title": "Bentuk",
+        "text": "Membulatkan gambar: Bulat sedikit, Lembut, Bulatan, Pil, Daun dan banyak lagi. Bentuk mengikut gambar apabila anda mengubah saiznya.",
+        "example": "Bulatan pada gambar segi empat sama memberi foto bulat."
+      },
+      "rotation": {
+        "title": "Putaran",
+        "text": "Memutar item suku pusingan setiap kali: 0°, 90°, 180° atau 270°."
+      },
+      "statusColor": {
+        "title": "Warna status",
+        "text": "Satu klik menjadikan titik hijau, kuning jingga atau merah."
+      },
+      "lineOrientation": {
+        "title": "Orientasi Garisan",
+        "text": "Sama ada garisan melintang atau menegak pada halaman."
+      },
+      "textContent": {
+        "title": "Kandungan Teks",
+        "text": "Perkataan yang dipaparkan. Anda juga boleh klik dua kali pada teks di halaman untuk menaip. Muat ke Teks menjadikan kotak setinggi perkataannya."
+      },
+      "outline": {
+        "title": "Garis luar",
+        "text": "Garisan di sekeliling item: gaya, ketebalan dan warnanya.",
+        "example": "Garis luar kelabu nipis membingkai panel dengan halus."
+      },
+      "sideBorders": {
+        "title": "Sempadan",
+        "text": "Garisan pada setiap sisi secara berasingan: atas, bawah, kiri dan kanan.",
+        "example": "Garisan di bawah sahaja memberi garis di bawah tajuk."
+      },
+      "innerSpace": {
+        "title": "Tetapan Jidar",
+        "text": "Ruang di dalam item, antara tepinya dan kandungannya: untuk semua sisi sekali gus, atau sisi demi sisi.",
+        "example": "10 px menjauhkan teks daripada sempadan."
+      },
+      "lineSettings": {
+        "title": "Garisan",
+        "text": "Gaya garisan (padu, putus-putus…), ketebalan dan warnanya."
+      },
+      "textSettings": {
+        "title": "Teks",
+        "text": "Fon, saiz, tebal, condong dan garis bawah, penjajaran (kiri, tengah, kanan; atas, tengah, bawah) dan warna."
+      },
+      "background": {
+        "title": "Warna Latar Belakang",
+        "text": "Warna yang mengisi item. Biarkan kosong untuk melihat menembusinya."
+      },
+      "boxStyle": {
+        "title": "Gaya Kotak",
+        "text": "Sempadan siap sedia untuk kotak atau sempadan halaman, seperti tiada, garis luar atau garis halus. Pilih satu, kemudian perhalusinya dengan Sempadan."
+      },
+      "headingNumbers": {
+        "title": "Nombor bahagian",
+        "text": "Sama ada tajuk ini menomborkan dirinya sendiri, dan gaya nombor yang digunakan oleh setiap Tajuk (1, 1., 01, I, i, A, a), dengan perkataan sebelum atau selepasnya jika mahu, seperti SECTION atau Bab."
+      },
+      "pnLook": {
+        "title": "Format",
+        "text": "Cara nombor halaman dibaca (1, Halaman 1, Halaman 1 daripada 12, 1 / 12) dan gaya nombornya (1 2 3, i ii iii, I II III, A B C)."
+      },
+      "pnPages": {
+        "title": "Halaman mana yang bernombor?",
+        "text": "Setiap halaman, setiap halaman kecuali satu atau dua yang pertama, atau hanya sesetengah halaman. Hanya sesetengah halaman membolehkan anda membuat bahagian (contohnya halaman 1 hingga 10), masing-masing dengan rupa sendiri, dan menyenaraikan halaman yang tidak bernombor."
+      },
+      "pnYourPages": {
+        "title": "Halaman anda",
+        "text": "Jubin untuk setiap halaman dengan apa yang akan dicetaknya, supaya anda boleh menyemak sebelum mencetak."
+      },
+      "dateWhich": {
+        "title": "Tarikh yang mana?",
+        "text": "Hari laporan dicetak, bulan ini, bulan lepas, atau tarikh yang anda pilih, dengan masa jika anda mahu."
+      },
+      "dateLook": {
+        "title": "Rupanya",
+        "text": "Gaya tarikh, contohnya 21 Oktober 2026 atau 21/10/2026, dan gaya masa (tiada, 24 jam atau 12 jam)."
+      },
+      "dateBefore": {
+        "title": "Perkataan sebelum tarikh",
+        "text": "Teks yang dipaparkan di hadapan tarikh, contohnya “Dicetak pada” atau “Tarikh:”."
+      },
+      "chartType": {
+        "title": "Jenis carta",
+        "text": "Jenis carta: Stat KPI, Tolok, Carta Garis, Carta Kawasan, Carta Bar, Bar Mendatar, Carta Pai, Carta Donut atau Peta Pokok. Menukarnya mengekalkan data anda."
+      },
+      "chartData": {
+        "title": "Data",
+        "text": "Dari mana angka datang. Sediakan data (atau Edit data) membuka tetingkap untuk memilih projek, data, apa yang hendak dikira atau dijumlahkan, kategori dan penapis."
+      },
+      "chartTitle": {
+        "title": "Carta",
+        "text": "Tajuk carta, dan sama ada ia memaparkan petunjuk."
+      },
+      "chartColors": {
+        "title": "Warna",
+        "text": "Set warna yang digunakan oleh carta. Setiap bar, hirisan atau garis mendapat warnanya sendiri."
+      },
+      "barcodeType": {
+        "title": "Jenis kod bar",
+        "text": "Jenis kod, dikumpulkan mengikut kegunaan: produk di kedai; label, stok dan penghantaran; kod 2D seperti QR; dan pos."
+      },
+      "barcodeValue": {
+        "title": "Nilai",
+        "text": "Apa yang dipegang oleh kod. Klik contoh untuk mengisinya; kod QR dan GS1-128 mempunyai borang yang membina nilai untuk anda."
+      },
+      "tableData": {
+        "title": "Data",
+        "text": "Nama jadual, dari mana barisnya datang dan penapisnya. Edit data membuka tetingkap untuk menukar projek, data, lajur, penapis, susunan dan jumlah."
+      },
+      "tableLook": {
+        "title": "Rupa",
+        "text": "Gaya jadual: Tiada, Biru Korporat, Minimal, Zamrud, atau gaya yang anda simpan. Sesuaikan mengubah warna jadual ini sahaja."
+      },
+      "tableRowSizes": {
+        "title": "Saiz baris",
+        "text": "Ketinggian baris tajuk dan baris lain."
+      },
+      "tableCustomize": {
+        "title": "Sesuaikan",
+        "text": "Warna dan garisan untuk jadual ini: tajuk, warna baris (sehingga 4, bergilir-gilir), jumlah, garisan dan saiz teks. Simpan sebagai gaya jadual menyimpannya untuk digunakan pada jadual lain."
+      },
+      "typedGrid": {
+        "title": "Baris dan lajur",
+        "text": "Bilangan baris, lajur dan baris tajuk dalam jadual, dan sama ada baris terakhir ialah jumlah."
+      },
+      "typedCells": {
+        "title": "Sel",
+        "text": "Rupa sel yang anda pilih (semua sel apabila jadual tidak dibuka): isian, warna teks, tebal, penjajaran dan saiz teks. Gabung sel menyatukannya; Pisah sel membatalkannya; butang set semula kembali kepada gaya jadual."
+      },
+      "typedText": {
+        "title": "Teks",
+        "text": "Saiz teks dan ruang di dalam setiap sel, untuk seluruh jadual."
+      },
+      "tocDesign": {
+        "title": "Reka bentuk",
+        "text": "Empat rupa siap sedia untuk senarai: Klasik, Garis bertitik, Kotak bernombor dan Ringkas. Hanya rupa yang berubah, bukan barisnya."
+      },
+      "tocRowsFrom": {
+        "title": "Dari mana baris datang",
+        "text": "Automatik menyenaraikan tajuk anda dengan sendiri; Manual membolehkan anda menaip dan menyusun baris. Nombor secara automatik mengira bahagian untuk anda. Tunjukkan memilih bahagian dan sub-bahagian, atau bahagian sahaja."
+      },
+      "tocRows": {
+        "title": "Baris",
+        "text": "Setiap baris senarai. Pada Automatik anda boleh mengecualikan tajuk dengan ikon mata, atau pergi kepadanya; pada Manual anda boleh menambah, menyeret, menginden dan memadam baris."
+      },
+      "tocPlace": {
+        "title": "Penjajaran Kandungan",
+        "text": "Meletakkan senarai secara mendatar (kiri, tengah, kanan) dan menegak (atas, tengah, bawah) pada halaman."
+      },
+      "tocLook": {
+        "title": "Rupa",
+        "text": "Tinggi baris, saiz teks, ruang untuk nombor dan nombor halaman, titik antara tajuk dan halaman, dan bahagian dalam huruf tebal."
+      },
+      "tocColours": {
+        "title": "Warna",
+        "text": "Warna teks senarai, dan kotak nombor apabila ada."
+      },
+      "templatePaper": {
+        "title": "Kertas",
+        "text": "Saiz kertas (A4, Letter… atau saiz anda sendiri), potret atau landskap, dan lebar serta tinggi halaman yang tepat.",
+        "example": "A4 landskap sesuai untuk jadual yang lebar."
+      },
+      "templateMargins": {
+        "title": "Jidar Halaman",
+        "text": "Ruang kosong di sekeliling tepi setiap halaman, bagi setiap sisi. Tiada apa-apa dicetak di situ.",
+        "example": "20 px di semua sisi adalah biasa."
+      },
+      "templateFont": {
+        "title": "Fon",
+        "text": "Fon dan saiz yang digunakan oleh teks baharu dalam templat ini, dan sama ada ia bermula tebal, condong atau bergaris bawah."
+      },
+      "templateBands": {
+        "title": "Bahagian Halaman",
+        "text": "Bahagian yang ada pada setiap halaman: Pengepala Halaman dan Pengaki Halaman dicetak pada setiap halaman, Pengepala Lajur dan Pengaki Lajur tepat di dalamnya. Nyahtanda bahagian yang tidak anda perlukan; Butiran sentiasa ada."
+      }
+    }
+  },
+  "templateSettings": {
+    "paper": "Kertas",
+    "font": "Fon",
+    "bandsHint": "Bahagian yang ditanda ada pada setiap halaman templat ini; nyahtanda satu untuk membuangnya. Butiran, tempat kandungan anda, sentiasa ada.",
+    "useDefault": "Guna lalai",
+    "useDefaultHeightsTitle": "Ambil ketinggian bahagian daripada Tetapan Lalai",
+    "useDefaultDone": "Diambil daripada Tetapan Lalai.",
+    "resetAll": "Set semula semua ke lalai",
+    "resetAllDone": "Tetapan Templat kini sama dengan Tetapan Lalai.",
+    "scope": "Templat ini sahaja",
+    "scopeHint": "Tetapan ini hanya mengubah templat yang sedang dibuka. Templat baharu bermula daripada Tetapan Lalai."
+  },
+  "defaultSettings": {
+    "intro": "Templat baharu bermula dengan tetapan ini. Untuk mengubah templat yang sedang dibuka, gunakan Tetapan Templat di sebelah kanan (klik bahagian halaman yang kosong).",
+    "reset": "Set semula ke lalai aplikasi",
+    "resetDone": "Tetapan Lalai kembali kepada tetapan asal.",
+    "apply": "Guna pada templat ini",
+    "applied": "Digunakan pada templat ini.",
+    "bandsHint": "Bahagian yang ada pada setiap templat baharu. Butiran, tempat kandungan anda, sentiasa ada.",
+    "original": "Asal",
+    "originalDone": "Kembali kepada asal.",
+    "resetAll": "Set semula semua ke asal"
+  },
+  "myTemplates": {
+    "count": "Tiada templat | 1 templat | {count} templat",
+    "noMatch": "Tiada templat bernama \"{query}\"",
+    "noMatchHint": "Semak ejaan, atau cuba kurangkan perkataan.",
+    "resultsFor": "Templat yang sepadan dengan \"{query}\"",
+    "clearSearch": "Kosongkan",
+    "columns": {
+      "name": "Nama",
+      "lastModified": "Terakhir disunting",
+      "createdAt": "Dicipta",
+      "owner": "Pemilik",
+      "actions": "Tindakan"
+    },
+    "sortBy": "Isih mengikut",
+    "sort": {
+      "lastModified": "Terakhir disunting",
+      "createdAt": "Terbaharu dahulu",
+      "nameAsc": "Nama A hingga Z",
+      "nameDesc": "Nama Z hingga A"
+    },
+    "view": "Tunjukkan templat sebagai",
+    "views": {
+      "grid": "Grid",
+      "list": "Senarai"
+    },
+    "loadFailed": "Templat anda tidak dapat dimuatkan.",
+    "tryAgain": "Cuba lagi",
+    "empty": "Anda belum mempunyai templat.",
+    "pages": "Halaman",
+    "range": "{from}–{to} daripada {total}",
+    "previous": "Sebelumnya",
+    "next": "Seterusnya",
+    "perPage": "Setiap halaman",
+    "showing": "Menunjukkan {shown} daripada {total}",
+    "loadMore": "Muat lagi",
+    "first": "Halaman pertama",
+    "last": "Halaman terakhir"
+  },
+  "openTemplate": {
+    "title": "Buka templat",
+    "tabs": {
+      "mine": "Templat saya",
+      "computer": "Dari komputer saya"
+    },
+    "openNow": "Sedang dibuka",
+    "none": "Anda belum mempunyai templat yang disimpan.",
+    "dropTitle": "Lepaskan fail .jrxml di sini, atau klik untuk memilih",
+    "dropHint": "Templat yang dimuat turun dari sini atau dibuat dalam Jaspersoft Studio",
+    "addedNote": "Ia dibuka sebagai templat baharu dan ditambah ke Templat saya.",
+    "seeAll": "Lihat semua dalam Templat Saya",
+    "notFound": "Templat itu tidak ditemui. Ia mungkin telah dipadam."
   }
 }

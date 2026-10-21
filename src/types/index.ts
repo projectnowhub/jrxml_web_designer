@@ -676,14 +676,6 @@ export interface DraggingInfo {
   lastTargetPageIndex?: number;
 }
 
-// Selection box interface
-export interface SelectionBox {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 // Element library item interface
 export interface ElementLibraryItem {
   type: ElementType;

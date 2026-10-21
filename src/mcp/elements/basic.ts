@@ -1,4 +1,4 @@
-// Basic Elements of the library: Text, Section Heading, Sub-heading, Image,
+// Basic Elements of the library: Text, Heading, Sub-heading, Image,
 // Line, Rectangle, Circle (ellipse) and Box. The text schema is the one the
 // others follow: plain words for what a user sets in the property panels.
 
@@ -146,7 +146,7 @@ export const subHeadingKind: ElementKind = {
   kind: "subHeading",
   tool: "create_sub_heading",
   description:
-    "Add a Sub-heading (e.g. \"TOWER A: KEY ACTIVITIES\"): a bold underlined line that the Table of Contents lists as a sub-section under the Section Heading before it. Use only on normal pages.",
+    "Add a Sub-heading (e.g. \"TOWER A: KEY ACTIVITIES\"): a bold underlined line that the Table of Contents lists as a sub-section under the Heading before it. Use only on normal pages.",
   properties: { text: TEXT_PROPS.text, ...TEXT_STYLE_PROPS },
   required: ["text"],
   inBox: true,
@@ -169,7 +169,7 @@ export const frameCtx = (ctx: KindContext) => ({
 });
 
 // ---------------------------------------------------------------------------
-// Section Heading: "SECTION 1.  PROJECT DETAILS", numbers itself
+// Heading: "1.  PROJECT DETAILS", numbers itself in the report's style
 // ---------------------------------------------------------------------------
 
 function applySectionHeading(box: FrameElement, spec: ElementSpec, ctx: KindContext): void {
@@ -192,14 +192,15 @@ function applySectionHeading(box: FrameElement, spec: ElementSpec, ctx: KindCont
   ensureTextHeight(probe, ctx);
   box.height = probe.height;
   for (const part of parts) part.height = box.height;
-  if (title && numberPart) title.width = Math.max(20, box.width - title.x);
+  // The title keeps the same space inside the right edge as the number on the left
+  if (title && numberPart) title.width = Math.max(20, box.width - title.x - numberPart.x);
 }
 
 export const sectionHeadingKind: ElementKind = {
   kind: "sectionHeading",
   tool: "create_section_heading",
   description:
-    "Add a Section Heading: a number (\"SECTION 1.\", counted automatically in page order in the report's numbering style) and a title across the page. Section Headings fill the Table of Contents and get PDF bookmarks. Use on normal pages, usually x 0 and the full printable width.",
+    "Add a Heading (the library's Heading tile): a number (\"1.\", counted automatically in page order in the report's numbering style) and a title across the page. Headings fill the Table of Contents and get PDF bookmarks. Use on normal pages, usually x 0; it starts about three quarters of the printable width wide.",
   properties: {
     title: { type: "string", description: "The heading's title, e.g. \"PROJECT DETAILS\"" },
     numbered: { type: "boolean", description: "Shows its automatic number (default true)" },

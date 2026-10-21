@@ -4,6 +4,10 @@
     <div id="app">
       <RouterView />
     </div>
+    <!-- Help (home page and designer): the guided tour, the Quick guide and the toolbar's hover cards -->
+    <GuidedTour />
+    <HelpModal />
+    <HintLayer />
   </NConfigProvider>
 </template>
 
@@ -14,6 +18,10 @@ import { NConfigProvider, type GlobalThemeOverrides } from "naive-ui";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "./services/apiClient";
 import { fetchUser, loginErrorQuery } from "./services/authService";
+import GuidedTour from "./components/help/GuidedTour.vue";
+import HelpModal from "./components/modals/HelpModal.vue";
+import HintLayer from "./components/help/HintLayer.vue";
+import { missingHelpTexts } from "./utils/helpCoverage";
 
 const router = useRouter();
 
@@ -82,6 +90,12 @@ async function handleDeepLink(urls: string[]) {
   } catch (error) {
     console.error("Failed to handle deep link:", error);
   }
+}
+
+// Development: help texts that are missing in any language are named in the console
+if (import.meta.env.DEV) {
+  const missing = missingHelpTexts();
+  if (missing.length) console.warn(`[help] Missing help texts:\n${missing.join("\n")}`);
 }
 
 onMounted(async () => {

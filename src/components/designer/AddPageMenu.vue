@@ -5,12 +5,13 @@
       type="button"
       class="page-btn"
       :class="{ 'is-open': isOpen }"
-      :title="t('addPageMenu.title')"
+      :title="isOpen ? undefined : t('addPageMenu.title')"
+      :aria-label="t('addPageMenu.title')"
       aria-haspopup="menu"
       :aria-expanded="isOpen"
       @click="isOpen = !isOpen"
     >
-      <FilePlus :size="16" :stroke-width="2" aria-hidden="true" />
+      <CopyPlus :size="16" :stroke-width="2" aria-hidden="true" />
       <span v-if="showLabel">{{ t("editorHeader.pageButton") }}</span>
       <ChevronDown class="caret" :class="{ 'is-up': isOpen }" :size="13" aria-hidden="true" />
     </button>
@@ -52,7 +53,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { BookImage, ChevronDown, FilePlus, TableOfContents } from "@lucide/vue";
+import { BookImage, ChevronDown, CopyPlus, FilePlus, TableOfContents } from "@lucide/vue";
 
 defineProps<{
   hasCover?: boolean;

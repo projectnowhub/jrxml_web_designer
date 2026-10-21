@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { File as FileIcon, FileText, Maximize2, Minimize2, Paperclip, SendHorizontal, X } from '@lucide/vue';
-import { ref, computed, nextTick, onBeforeUnmount } from 'vue';
+import { ref, computed, nextTick, onBeforeUnmount, watch } from 'vue';
+import { useHelpStore } from '@/stores/help';
 import { useI18n } from 'vue-i18n';
 import notification from '@/utils/notification';
 import {
@@ -43,6 +44,23 @@ const textarea = ref<HTMLTextAreaElement | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 // Ids for attachments, unique while the panel is open ("img-1", "file-2")
 let attachmentCount = 0;
+
+// A request handed over from Help ("let the AI assistant do it"): put in the
+// box, ready to change and send
+const help = useHelpStore();
+watch(
+  () => help.aiDraft,
+  (draft) => {
+    if (!draft) return;
+    inputValue.value = draft;
+    help.aiDraft = '';
+    nextTick(() => {
+      fitHeight();
+      textarea.value?.focus();
+    });
+  },
+  { immediate: true },
+);
 
 // Computed properties
 const canSubmit = computed(() =>

@@ -1,32 +1,69 @@
 <template>
-  <div class="element-properties">
+  <div ref="panelRoot" class="element-properties">
     <!-- Panel header: what the panel is showing (the selected element, or the report) -->
     <div class="panel-header">
       <h3>{{ panelTitle }}</h3>
+      <!-- Template Settings: say they change only the open template -->
+      <span
+        v-if="!selectedElement || !currentElement"
+        class="template-scope-pill"
+        :title="t('templateSettings.scopeHint')"
+      >
+        <Info :size="12" :stroke-width="2.25" aria-hidden="true" />
+        {{ t("templateSettings.scope") }}
+      </span>
     </div>
+    <!-- What it is and what to do with it (Help) -->
+    <PanelTip :kind="panelKind" />
 
-    <!-- Report properties -->
+    <!-- Template Settings: nothing selected, so the settings of this report
+         (paper, margins, font, the parts of each page, their heights).
+         What new reports start with is Default Settings (bottom panel). -->
     <div v-if="!selectedElement || !currentElement" class="property-section">
+      <!-- Resets only ever take Default Settings, never the original ones -->
+      <div class="template-reset-row">
+        <button type="button" class="template-reset-btn" @click="resetAllToDefault">
+          <RotateCcw :size="12" :stroke-width="2.2" aria-hidden="true" />
+          {{ t("templateSettings.resetAll") }}
+        </button>
+      </div>
+      <div class="template-setup">
+        <PageSetupSection
+          v-for="card in TEMPLATE_CARDS"
+          :key="card.section"
+          :section="card.section"
+          :title="t(card.title)"
+          :help-id="card.help"
+          :value="templateSetup"
+          :bands-hint="t('templateSettings.bandsHint')"
+          @change="changeTemplate"
+        >
+          <template #actions>
+            <button type="button" class="template-reset-btn" @click="useDefault(card.section)">
+              <RotateCcw :size="11" :stroke-width="2.2" aria-hidden="true" />
+              {{ t("templateSettings.useDefault") }}
+            </button>
+          </template>
+        </PageSetupSection>
+      </div>
 
-      <!-- Band height and template limits settings -->
-      <div class="form-group">
+      <!-- Section Heights: one card, like the others -->
+      <div class="heights-card">
         <div class="band-settings-header-wrapper">
           <div class="band-settings-title-group">
-            <h4>{{ t("properties.templateBandSettings") }}</h4>
-            <span class="template-scope-pill">{{
-              t("properties.templateScopeBadge")
-            }}</span>
+            <h5>{{ t("properties.templateBandSettings") }}<SettingHelpButton id="reportSections" /></h5>
           </div>
           <button
             type="button"
-            class="reset-template-limits-btn"
-            :title="t('properties.resetToDefaultTooltip')"
-            @click="resetTemplateBandLimitsToDefault"
+            class="template-reset-btn"
+            :title="t('templateSettings.useDefaultHeightsTitle')"
+            @click="useDefaultHeights"
           >
-            <RotateCcw :size="11" :stroke-width="2.2" />
-            {{ t("properties.resetDefaults") }}
+            <RotateCcw :size="11" :stroke-width="2.2" aria-hidden="true" />
+            {{ t("templateSettings.useDefault") }}
           </button>
         </div>
+        <SettingHelpText id="reportSections" />
         <div class="band-cards-grid">
           <!-- Background is an underlay sized to the page, not a stacked band -->
           <div
@@ -161,7 +198,8 @@
         <div v-if="activeTab === 'basic'" key="basic" class="prop-tab-pane" role="tabpanel">
           <!-- Table: where its content comes from (one Table element, two kinds) -->
           <div v-if="isTableElement" class="box-section compact">
-            <h5>{{ t("customTable.content") }}</h5>
+            <h5>{{ t("customTable.content") }}<SettingHelpButton id="tableContent" /></h5>
+            <SettingHelpText id="tableContent" />
             <div class="seg" role="radiogroup" :aria-label="t('customTable.content')">
               <button
                 v-for="kind in TABLE_CONTENT_KINDS"
@@ -181,7 +219,8 @@
           </div>
 
           <div class="box-section compact">
-            <h5>{{ t("properties.positionSize") }}</h5>
+            <h5>{{ t("properties.positionSize") }}<SettingHelpButton id="positionSize" /></h5>
+            <SettingHelpText id="positionSize" />
             <div class="geometry-grid">
               <label v-for="dim in GEOMETRY_FIELDS" :key="dim" class="field">
                 <span class="field-label">{{ t(`properties.${dim}`) }}</span>
@@ -241,7 +280,8 @@
           <!-- Image properties -->
           <template v-if="currentElement && currentElement.type === 'image'">
             <div class="box-section compact">
-              <h5>{{ t("properties.imageName") }}</h5>
+              <h5>{{ t("properties.imageName") }}<SettingHelpButton id="picture" /></h5>
+              <SettingHelpText id="picture" />
               <div class="image-name-row">
                 <input
                   type="text"
@@ -274,9 +314,10 @@
                  (custom corners are in Style Settings) -->
             <div class="box-section compact">
               <div class="shape-card-head">
-                <h5>{{ t("properties.imageShape") }}</h5>
+                <h5>{{ t("properties.imageShape") }}<SettingHelpButton id="imageShape" /></h5>
                 <span v-if="!currentImageShape" class="shape-custom-badge">{{ t("properties.imageShapeCustom") }}</span>
               </div>
+              <SettingHelpText id="imageShape" />
               <span class="field-label shape-field-label">{{ t("properties.imageShapePresets") }}</span>
               <div class="shape-grid" role="radiogroup" :aria-label="t('properties.imageShapePresets')">
                 <button
@@ -299,7 +340,8 @@
               <small class="card-hint">{{ t("properties.imageShapeHint") }}</small>
             </div>
             <div class="box-section compact">
-              <h5>{{ t("properties.rotation") }}</h5>
+              <h5>{{ t("properties.rotation") }}<SettingHelpButton id="rotation" /></h5>
+              <SettingHelpText id="rotation" />
               <div class="seg" role="radiogroup" :aria-label="t('properties.rotation')">
                 <button
                   v-for="rot in ROTATIONS"
@@ -336,7 +378,8 @@
           <!-- QR codes aren't turned (JasperReports has no orientation for them) -->
           <template v-if="currentElement.type === 'barcode' && currentElement.barcodeType !== 'QRCode'">
             <div class="box-section compact">
-              <h5>{{ t("properties.rotation") }}</h5>
+              <h5>{{ t("properties.rotation") }}<SettingHelpButton id="rotation" /></h5>
+              <SettingHelpText id="rotation" />
               <div class="seg" role="radiogroup" :aria-label="t('properties.rotation')">
                 <button
                   v-for="rot in ROTATIONS"
@@ -358,7 +401,8 @@
 
           <!-- Circle: traffic-light colours for status columns (Low / Moderate / High risk) -->
           <div v-if="currentElement.type === 'ellipse'" class="box-section compact">
-            <h5>{{ t("reportParts.statusColor") }}</h5>
+            <h5>{{ t("reportParts.statusColor") }}<SettingHelpButton id="statusColor" /></h5>
+            <SettingHelpText id="statusColor" />
             <div class="seg" role="radiogroup" :aria-label="t('reportParts.statusColor')">
               <button
                 v-for="status in STATUS_COLORS"
@@ -379,7 +423,8 @@
           <!-- Line: which way it runs (its look is in Style Settings) -->
           <template v-if="currentElement && currentElement.type === 'line'">
             <div class="box-section compact">
-              <h5>{{ t("properties.lineOrientation") }}</h5>
+              <h5>{{ t("properties.lineOrientation") }}<SettingHelpButton id="lineOrientation" /></h5>
+              <SettingHelpText id="lineOrientation" />
               <div class="seg" role="radiogroup" :aria-label="t('properties.lineOrientation')">
                 <button
                   v-for="dir in LINE_ORIENTATIONS"
@@ -424,7 +469,7 @@
             />
             <div v-else class="box-section compact">
               <div class="card-head">
-                <h5>{{ t("properties.textContent") }}</h5>
+                <h5>{{ t("properties.textContent") }}<SettingHelpButton id="textContent" /></h5>
                 <button
                   type="button"
                   class="chip-btn"
@@ -435,6 +480,7 @@
                   {{ t("properties.fitToText") }}
                 </button>
               </div>
+              <SettingHelpText id="textContent" />
               <textarea
                 class="card-textarea"
                 :value="getTextFieldDisplay(currentElement)"
@@ -454,7 +500,8 @@
               </label>
             </div>
             <div class="box-section compact">
-              <h5>{{ t("properties.rotation") }}</h5>
+              <h5>{{ t("properties.rotation") }}<SettingHelpButton id="rotation" /></h5>
+              <SettingHelpText id="rotation" />
               <div class="seg" role="radiogroup" :aria-label="t('properties.rotation')">
                 <button
                   v-for="rot in ROTATIONS"
@@ -527,7 +574,8 @@
               >
                 <!-- Outline: line style, then width / colour / corners in one row -->
                 <div class="box-section compact">
-                  <h5>{{ t("properties.outline") }}</h5>
+                  <h5>{{ t("properties.outline") }}<SettingHelpButton id="outline" /></h5>
+                  <SettingHelpText id="outline" />
                   <span class="field-label">{{ t("properties.lineStyle") }}</span>
                   <div class="style-tiles style-tiles-4" role="radiogroup" :aria-label="t('properties.lineStyle')">
                     <button
@@ -588,7 +636,8 @@
               <template v-else>
                 <!-- Borders: every side on its own row (All sets the four at once) -->
                 <div class="box-section compact border-designer">
-                  <h5>{{ t("properties.sideBorders") }}</h5>
+                  <h5>{{ t("properties.sideBorders") }}<SettingHelpButton id="sideBorders" /></h5>
+                  <SettingHelpText id="sideBorders" />
                   <div class="border-table" role="table" :aria-label="t('properties.sideBorders')">
                     <div class="border-table-head" role="row">
                       <span role="columnheader">{{ t("properties.side") }}</span>
@@ -700,7 +749,7 @@
                 <!-- Margins (space inside the element; a page border has no content to pad) -->
                 <div v-if="!isPageBorder" class="box-section compact">
                   <div class="pad-head">
-                    <h5 class="pad-title">{{ t("properties.marginSettings") }}</h5>
+                    <h5 class="pad-title">{{ t("properties.marginSettings") }}<SettingHelpButton id="innerSpace" /></h5>
                     <label class="pad-all">
                       <span class="field-label">{{ t("properties.allSides") }}</span>
                       <span class="unit-input">
@@ -714,6 +763,7 @@
                       </span>
                     </label>
                   </div>
+                  <SettingHelpText id="innerSpace" />
                   <div class="margin-pad">
                     <label
                       v-for="side in MARGIN_SIDES"
@@ -741,7 +791,8 @@
             </template>
             <!-- Line: style, then thickness and colour in one row -->
             <div v-if="currentElement.type === 'line'" class="box-section compact">
-              <h5>{{ t("properties.lineSettings") }}</h5>
+              <h5>{{ t("properties.lineSettings") }}<SettingHelpButton id="lineSettings" /></h5>
+              <SettingHelpText id="lineSettings" />
               <span class="field-label">{{ t("properties.lineStyle") }}</span>
               <div class="style-tiles style-tiles-4" role="radiogroup" :aria-label="t('properties.lineStyle')">
                 <button
@@ -785,7 +836,8 @@
 
             <!-- Text: font, size, style, alignment and colour together -->
             <div v-if="showFontName || showTextAlignmentAndStyle || showTextColor" class="box-section compact text-card">
-              <h5>{{ t("properties.textSettings") }}</h5>
+              <h5>{{ t("properties.textSettings") }}<SettingHelpButton id="textSettings" /></h5>
+              <SettingHelpText id="textSettings" />
               <div v-if="showFontName" class="field-row">
                 <label class="field grow">
                   <span class="field-label">{{ t("properties.fontName") }}</span>
@@ -885,7 +937,8 @@
 
             <!-- Fill -->
             <div v-if="showBackgroundColor" class="box-section compact">
-              <h5>{{ t("properties.backgroundColor") }}</h5>
+              <h5>{{ t("properties.backgroundColor") }}<SettingHelpButton id="background" /></h5>
+              <SettingHelpText id="background" />
               <ColorPickerWithOpacity
                 :model-value="currentElement.backcolor"
                 :mode="currentElement.mode"
@@ -936,7 +989,7 @@ import {
 } from "@lucide/vue";
 import { DEFAULT_REPORT_FONT, resolveReportFont } from "../../../config/fonts.config";
 import ColorSwatchPicker from '../../common/ColorSwatchPicker.vue';
-import { computed, ref, onMounted, watch, nextTick } from "vue";
+import { computed, ref, onMounted, onUpdated, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
 import notification from "@/utils/notification";
@@ -974,6 +1027,12 @@ import ChartProperties from "./ChartProperties.vue";
 import CustomTableProperties from "./CustomTableProperties.vue";
 import ContentsListProperties from "./ContentsListProperties.vue";
 import HeadingNumberProperties from "./HeadingNumberProperties.vue";
+import PanelTip from "../../help/PanelTip.vue";
+import SettingHelpButton from "../../help/SettingHelpButton.vue";
+import SettingHelpText from "../../help/SettingHelpText.vue";
+import PageSetupSection, { type PageSetupValue } from "../PageSetupSection.vue";
+import { loadReportDefaults } from "@/utils/reportDefaults";
+import { cardsWithoutHelp } from "@/utils/helpCoverage";
 import { cleanLegacyAutoDateElement, resolveLegacyDateSample } from "@/utils/autoDate";
 import { hasProperty, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/utils/contentsList";
 import { resetElementStyle } from "../../../utils/resetStyle";
@@ -1013,6 +1072,8 @@ interface Emits {
   (e: "table-content", kind: "data" | "typed"): void;
   (e: "fill-contents-list"): void;
   (e: "configure-chart"): void;
+  // Paper or margins changed: the designer fits the page's content to it
+  (e: "page-setup-change"): void;
 }
 
 const props = defineProps<Props>();
@@ -1111,9 +1172,15 @@ function onTemplateMaxChange(bandType: string) {
   report.updateJrxml();
 }
 
-function resetTemplateBandLimitsToDefault() {
+// Section Heights → Use default: the heights and limits of Default Settings
+function useDefaultHeights() {
+  resetTemplateBandLimitsToDefault();
+  notification.success(t("templateSettings.useDefaultDone"));
+}
+
+function resetTemplateBandLimitsToDefault(record = true) {
   if (!reportProperties.value) return;
-  report.saveStateToHistory();
+  if (record) report.saveStateToHistory();
   const config = getEffectiveDefaultBandConfig();
   const limits: Record<string, { min: number; max: number }> = {};
   for (const key of Object.keys(config)) {
@@ -1652,6 +1719,106 @@ const panelTitle = computed(() => {
   return t(getElementTypeName(el.type));
 });
 
+// Development: a settings card without its (i) explanation is named in the console
+const panelRoot = ref<HTMLElement | null>(null);
+if (import.meta.env.DEV) {
+  const warned = new Set<string>();
+  const checkCardHelp = () => {
+    if (!panelRoot.value) return;
+    for (const title of cardsWithoutHelp(panelRoot.value)) {
+      if (warned.has(title)) continue;
+      warned.add(title);
+      console.warn(`[help] The settings card "${title}" has no explanation: add SettingHelpButton / SettingHelpText (utils/helpDocs.ts).`);
+    }
+  };
+  onMounted(checkCardHelp);
+  onUpdated(checkCardHelp);
+}
+
+// Template Settings (nothing selected): this report's page setup, one undo
+// step per change; paper or margins refit the page's content
+const TEMPLATE_CARDS = [
+  { section: "paper", title: "templateSettings.paper", help: "templatePaper" },
+  { section: "margins", title: "bottomPanel.pageMargins", help: "templateMargins" },
+  { section: "font", title: "templateSettings.font", help: "templateFont" },
+  { section: "bands", title: "bottomPanel.bandSelection", help: "templateBands" },
+] as const;
+
+const templateSetup = computed<PageSetupValue>(() => {
+  const page = reportProperties.value;
+  return {
+    pageWidth: page.pageWidth,
+    pageHeight: page.pageHeight,
+    leftMargin: page.leftMargin,
+    rightMargin: page.rightMargin,
+    topMargin: page.topMargin,
+    bottomMargin: page.bottomMargin,
+    font: { ...page.defaultFont },
+    bandTypes: report.bandTypes,
+  };
+});
+
+const PAGE_KEYS = ["pageWidth", "pageHeight", "leftMargin", "rightMargin", "topMargin", "bottomMargin"] as const;
+
+// One card from Default Settings (never the original settings)
+type SetupSection = (typeof TEMPLATE_CARDS)[number]["section"];
+function defaultsFor(section: SetupSection): Partial<PageSetupValue> {
+  const defaults = loadReportDefaults();
+  if (section === "paper") return { pageWidth: defaults.pageWidth, pageHeight: defaults.pageHeight };
+  if (section === "margins") {
+    const { leftMargin, rightMargin, topMargin, bottomMargin } = defaults;
+    return { leftMargin, rightMargin, topMargin, bottomMargin };
+  }
+  if (section === "font") return { font: { ...defaults.font } };
+  return { bandTypes: defaults.bandTypes };
+}
+
+function useDefault(section: SetupSection) {
+  changeTemplate(defaultsFor(section));
+  notification.success(t("templateSettings.useDefaultDone"));
+}
+
+// Every card and the section heights from Default Settings: one undo step
+function resetAllToDefault() {
+  const defaults = loadReportDefaults();
+  report.saveStateToHistory();
+  const page = reportProperties.value;
+  for (const key of PAGE_KEYS) page[key] = defaults[key];
+  page.defaultFont = { ...defaults.font };
+  report.setBandTypes(defaults.bandTypes, { record: false });
+  resetTemplateBandLimitsToDefault(false);
+  emit("page-setup-change");
+  notification.success(t("templateSettings.resetAllDone"));
+}
+function changeTemplate(patch: Partial<PageSetupValue>) {
+  if (patch.bandTypes) {
+    report.setBandTypes(patch.bandTypes);
+    return;
+  }
+  report.saveStateToHistory();
+  const page = reportProperties.value;
+  if (patch.font) page.defaultFont = { ...patch.font };
+  const pageChanged = PAGE_KEYS.some((key) => patch[key] !== undefined);
+  for (const key of PAGE_KEYS) {
+    const value = patch[key];
+    if (value !== undefined) page[key] = value;
+  }
+  if (pageChanged) emit("page-setup-change");
+  else report.updateJrxml();
+}
+
+// The kind of thing shown, for its one-line tip (help.panelTips.<kind>)
+const panelKind = computed(() => {
+  const el = currentElement.value as any;
+  if (!selectedElement.value || !el) return "report";
+  if (isPagination(el)) return "pageNumber";
+  if (isDateElement(el)) return "dateTime";
+  if (isPageBorder.value) return "pageBorder";
+  if (hasProperty(el, SECTION_HEADING_PROPERTY)) return "sectionHeading";
+  if (hasProperty(el, SUB_HEADING_PROPERTY)) return "subHeading";
+  return el.type as string;
+});
+
 // Element tabs. The open tab is kept when another element is selected, unless
 // that element doesn't have it (e.g. Table Properties): then Basic opens, instead
 // of an empty panel.
@@ -2173,6 +2340,41 @@ function addPropertyExpression() {
   box-sizing: border-box;
 }
 
+.template-reset-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+/* Use default / Reset all to default: a small pill */
+.template-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: 1px solid #e6e5ee;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #45425a;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.template-reset-btn:hover {
+  border-color: rgba(124, 92, 247, 0.55);
+  background: rgba(124, 92, 247, 0.06);
+  color: #6440f4;
+}
+
+.template-setup {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
 .panel-header {
   display: flex;
   align-items: center;
@@ -2401,15 +2603,43 @@ function addPropertyExpression() {
   min-width: 0;
 }
 
-.band-settings-title-group h4 {
+.band-settings-title-group h5 {
+  display: flex;
+  align-items: center;
   margin: 0;
+  color: #1c1b26;
   font-size: 13px;
-  font-weight: 650;
-  color: var(--prop-text-primary);
+  font-weight: 700;
   white-space: nowrap;
 }
 
+/* Section Heights: a card like Paper, Margins… with a light block per section */
+.heights-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(28, 27, 38, 0.08);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
+}
+
+.heights-card .band-settings-header-wrapper {
+  margin-bottom: 0;
+}
+
+.heights-card .template-band-card {
+  padding: 9px 10px;
+  border-color: #eeedf4;
+  background: #fafafd;
+  box-shadow: none;
+}
+
 .template-scope-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: help;
   padding: 2px 8px;
   border-radius: 999px;
   background: rgba(99, 102, 241, 0.08);

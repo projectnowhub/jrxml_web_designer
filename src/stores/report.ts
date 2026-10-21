@@ -19,10 +19,12 @@ import { resetBoxPhotos } from "@/utils/framePresets";
 import { cleanLegacyAutoDate } from "@/utils/autoDate";
 import { ensureUniqueTableDatasets } from "@/utils/table/tableDocument";
 import { specialPages } from "@/utils/specialPages";
-import { fitContentsPages, fitListDecorations, syncHeadings } from "@/utils/headingSync";
+import { fitContentsPages, fitListDecorations, NEW_REPORT_HEADING_NUMBERING, syncHeadings } from "@/utils/headingSync";
 import { unwrapLegacyCoverFrames } from "@/utils/pageDesigns";
+import { loadReportDefaults } from "@/utils/reportDefaults";
 import { useEditorStore } from "./editor";
 import { useSelectionStore } from "./selection";
+import { useFilesStore } from "./files";
 import {
   ALL_CONFIGURABLE_BANDS,
   BAND_CONSTANTS,
@@ -63,45 +65,41 @@ export interface ReportData {
   jrxmlContent?: string | null;
 }
 
+// A new report: the paper, margins and font of Default Settings (kept in this
+// browser, utils/reportDefaults.ts)
 function newReportProperties(): ReportProperties {
+  const defaults = loadReportDefaults();
   return {
     name: "NewReport",
-    pageWidth: REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH,
-    pageHeight: REPORT_CONSTANTS.DEFAULT_PAGE_HEIGHT,
-    leftMargin: REPORT_CONSTANTS.DEFAULT_MARGIN,
-    rightMargin: REPORT_CONSTANTS.DEFAULT_MARGIN,
-    topMargin: REPORT_CONSTANTS.DEFAULT_MARGIN,
-    bottomMargin: REPORT_CONSTANTS.DEFAULT_MARGIN,
-    defaultFont: {
-      name: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
-      size: REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
-      isBold: false,
-      isItalic: false,
-      isUnderline: false,
-    },
+    pageWidth: defaults.pageWidth,
+    pageHeight: defaults.pageHeight,
+    leftMargin: defaults.leftMargin,
+    rightMargin: defaults.rightMargin,
+    topMargin: defaults.topMargin,
+    bottomMargin: defaults.bottomMargin,
+    defaultFont: { ...defaults.font },
     bandLimits: getEffectiveDefaultBandLimits(),
+    headingNumbers: { ...NEW_REPORT_HEADING_NUMBERING },
   };
 }
 
-// The bands of a new report, at the user's default heights; Detail takes the
-// rest of an A4 page
+// The bands of a new report: the parts chosen in Default Settings, at the
+// user's default heights; Detail takes the rest of the default page
 function newBands(): Band[] {
+  const defaults = loadReportDefaults();
   const config = getEffectiveDefaultBandConfig();
-  const height = (type: string, fallback: number) =>
-    config[type]?.defaultHeight ?? (BAND_HEIGHT_CONSTANTS[type as keyof typeof BAND_HEIGHT_CONSTANTS] || fallback);
-  const pageHeader = height(BAND_TYPE_CONSTANTS.PAGE_HEADER, 50);
-  const columnHeader = height(BAND_TYPE_CONSTANTS.COLUMN_HEADER, 30);
-  const columnFooter = height(BAND_TYPE_CONSTANTS.COLUMN_FOOTER, 30);
-  const pageFooter = height(BAND_TYPE_CONSTANTS.PAGE_FOOTER, 40);
-  const detail = Math.max(50, 802 - (pageHeader + columnHeader + columnFooter + pageFooter));
-  const band = (type: string, h: number): Band => ({ type: type as BandType, height: h, elements: [] });
-  return [
-    band(BAND_TYPE_CONSTANTS.PAGE_HEADER, pageHeader),
-    band(BAND_TYPE_CONSTANTS.COLUMN_HEADER, columnHeader),
-    band(BAND_TYPE_CONSTANTS.DETAIL, detail),
-    band(BAND_TYPE_CONSTANTS.COLUMN_FOOTER, columnFooter),
-    band(BAND_TYPE_CONSTANTS.PAGE_FOOTER, pageFooter),
-  ];
+  const height = (type: string) =>
+    config[type]?.defaultHeight ?? (BAND_HEIGHT_CONSTANTS[type as keyof typeof BAND_HEIGHT_CONSTANTS] || 0);
+  const others = defaults.bandTypes.filter(
+    (type) => type !== BAND_TYPE_CONSTANTS.DETAIL && type !== BAND_TYPE_CONSTANTS.BACKGROUND,
+  );
+  const printable = defaults.pageHeight - defaults.topMargin - defaults.bottomMargin;
+  const detail = Math.max(50, printable - others.reduce((sum, type) => sum + height(type), 0));
+  return defaults.bandTypes.map((type) => ({
+    type,
+    height: type === BAND_TYPE_CONSTANTS.DETAIL ? detail : height(type),
+    elements: [],
+  }));
 }
 
 export const useReportStore = defineStore("report", () => {
@@ -217,7 +215,7 @@ export const useReportStore = defineStore("report", () => {
         fitListDecorations(bands.value, reportProperties.value);
       }
       const content = generateJRXMLContent(
-        { ...reportProperties.value, pageCount: totalPages.value },
+        propertiesForJrxml(),
         bands.value,
         reportFields.value,
         reportParameters.value,
@@ -284,6 +282,9 @@ export const useReportStore = defineStore("report", () => {
       bandLimits: props.bandLimits || getEffectiveDefaultBandLimits(),
       // Each report has its own projects
       projects: props.projects ?? [],
+      // A new template numbers its Headings "1."; an opened one keeps its own
+      // (none = "SECTION 1.", what templates used before)
+      headingNumbers: data.reportProperties ? props.headingNumbers : { ...NEW_REPORT_HEADING_NUMBERING },
     } as ReportProperties;
     bands.value = Array.isArray(data.bands) && data.bands.length ? data.bands : newBands();
     ensureUniqueUuids(bands.value);
@@ -310,7 +311,16 @@ export const useReportStore = defineStore("report", () => {
     loadReport({});
   }
 
+  // The report's properties as written to the JRXML. The report has one name,
+  // the one in the header (the open file's): the name inside the file always
+  // follows it, so the two can never differ (not even after an undo)
+  function propertiesForJrxml(): ReportProperties & { pageCount: number } {
+    const name = useFilesStore().currentFileName.trim();
+    return { ...reportProperties.value, name: name || reportProperties.value.name, pageCount: totalPages.value };
+  }
+
   return {
+    propertiesForJrxml,
     jrxmlContent,
     reportProperties,
     bands,

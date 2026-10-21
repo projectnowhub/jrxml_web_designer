@@ -146,21 +146,29 @@ function pageFooter(ctx: FrameTemplateContext): FrameElement {
   ]);
 }
 
-// "SECTION 1.   PROJECT DETAILS"
+// A Heading: "1.  PROJECT DETAILS" (or "SECTION 1." in the report's style).
+// About three quarters of the page wide, with a little space inside its left
+// edge (the number stays clear of the selection handles) and a short gap
+// before the title
 function sectionHeading(ctx: FrameTemplateContext): FrameElement {
-  const w = ctx.availableWidth;
-  const numberW = 90;
+  const w = Math.round(ctx.availableWidth * 0.75);
+  const h = 22;
+  const pad = 6;
+  const gap = 6;
+  // Room for "1."; a longer number ("SECTION 1.") widens it (headingSync.ts)
+  const numberW = 30;
   const heading = (x: number, width: number, key: string) =>
-    text({ x, y: 0, width, height: 18, fontSize: 11, isBold: true,
+    text({ x, y: 0, width, height: h, fontSize: 11, isBold: true,
       forecolor: REPORT_PART_COLORS.ink, verticalAlignment: "Middle", text: placeholder(ctx, key) });
   // Marked, so "Fill from my section headings" (Contents list) finds it
-  // Its number counts itself (headingSync.ts: "SECTION 1.", "SECTION 2."…)
-  const number = heading(0, numberW, "sectionNumber");
+  // Its number counts itself (headingSync.ts: "1.", "2."… in the report's style)
+  const number = heading(pad, numberW, "sectionNumber");
   setAutoNumbered(number, true);
+  const titleX = pad + numberW + gap;
   return {
-    ...frame(w, 18, { box: undefined, mode: "Transparent", backcolor: "#FFFFFF" }, [
+    ...frame(w, h, { box: undefined, mode: "Transparent", backcolor: "#FFFFFF" }, [
       number,
-      heading(numberW, w - numberW, "sectionTitle"),
+      heading(titleX, w - titleX - pad, "sectionTitle"),
     ]),
     properties: [{ name: SECTION_HEADING_PROPERTY, value: "true" }],
   };

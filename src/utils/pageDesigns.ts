@@ -520,8 +520,9 @@ const SAMPLE_ROWS: [key: string, level: 0 | 1][] = [
 ];
 
 // `numbers`: the first sections' numbers; later ones follow their pattern
-// ("1." → "5.", "01" → "05", "SECTION 1." → "SECTION 5.")
-function sampleEntries(ctx: FrameTemplateContext, numbers: string[]): ContentsEntry[] {
+// ("1." → "5.", "01" → "05", "SECTION 1." → "SECTION 5."). Also the Help
+// panel's picture of a Table of Contents.
+export function sampleEntries(ctx: FrameTemplateContext, numbers: string[]): ContentsEntry[] {
   let section = -1;
   let sub = 0;
   const sectionNo = (n: number) =>

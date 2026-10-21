@@ -59,7 +59,7 @@ const router = createRouter({
       component: DesktopLoginView,
     },
     {
-      path: "/designer",
+      path: "/designer/:id?",
       name: "designer",
       component: PDFDesigner,
       meta: { requiresAuth: true },

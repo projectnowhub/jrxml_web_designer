@@ -321,18 +321,18 @@ export function reportChecks(): ReportCheck[] {
   for (const s of sections) byTitle.set(titleOf(s).toLowerCase(), [...(byTitle.get(titleOf(s).toLowerCase()) ?? []), s]);
   for (const [title, same] of byTitle) {
     if (title && same.length > 1) {
-      out.push({ level: "check", where: same.map(whereOf).join(", "), message: `${same.length} Section Headings are titled "${titleOf(same[0]!)}" (${same.map((s) => s.element.uuid).join(", ")}): the Table of Contents lists it ${same.length} times. Delete the extra one(s) unless they are meant` });
+      out.push({ level: "check", where: same.map(whereOf).join(", "), message: `${same.length} Headings are titled "${titleOf(same[0]!)}" (${same.map((s) => s.element.uuid).join(", ")}): the Table of Contents lists it ${same.length} times. Delete the extra one(s) unless they are meant` });
     }
   }
   const looks = new Set(sections.map((s) => { const t = sectionHeadingParts(s.element as FrameElement).titleParts[0]; return `${t?.fontSize}|${t?.forecolor}|${t?.isBold}`; }));
-  if (looks.size > 1) out.push({ level: "check", where: "report", message: `the Section Headings don't all look the same (${looks.size} different sizes / colours): give them one look (update_elements_style)` });
+  if (looks.size > 1) out.push({ level: "check", where: "report", message: `the Headings don't all look the same (${looks.size} different sizes / colours): give them one look (update_elements_style)` });
   const firstSub = ordered.find((h) => hasProperty(h.element, SUB_HEADING_PROPERTY));
   if (firstSub && (!sections.length || ordered.indexOf(firstSub) < ordered.indexOf(sections[0]!))) {
-    out.push({ level: "check", where: whereOf(firstSub), uuid: firstSub.element.uuid, message: `the Sub-heading ${firstSub.element.uuid} comes before any Section Heading: the Table of Contents has no section to put it under` });
+    out.push({ level: "check", where: whereOf(firstSub), uuid: firstSub.element.uuid, message: `the Sub-heading ${firstSub.element.uuid} comes before any Heading: the Table of Contents has no section to put it under` });
   }
   const followingToc = locations.find((l) => l.element.type === "contentsList" && (l.element as { list?: { follow?: boolean } }).list?.follow);
   if (followingToc && !sections.length) {
-    out.push({ level: "check", where: whereOf(followingToc), uuid: followingToc.element.uuid, message: "the automatic Table of Contents has no Section Headings to list: it shows sample rows. Add Section Headings to the pages (or give it manual rows)" });
+    out.push({ level: "check", where: whereOf(followingToc), uuid: followingToc.element.uuid, message: "the automatic Table of Contents has no Headings to list: it shows sample rows. Add Headings to the pages (or give it manual rows)" });
   }
   return out;
 }

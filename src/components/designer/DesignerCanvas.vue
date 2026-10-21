@@ -130,7 +130,7 @@
               @drop="handleDrop($event, pIndex - 1)"
               @dragover="handleDragOver"
               @dragleave="handleDragLeave"
-              @mousedown="startSelection"
+              @mousedown="notePageClicked"
             >
               <!-- Floating Page Sheet Header / Badge in margin -->
               <div
@@ -145,6 +145,7 @@
                 <button
                   v-if="isSpecial(pIndex - 1)"
                   class="add-page-after-btn"
+                  data-help="change-design"
                   :title="t('specialPages.changeDesignHint')"
                   @click.stop="emit('page-action', 'chooseDesign', pIndex - 1)"
                 >
@@ -237,7 +238,7 @@
                     <TableOfContents :size="20" aria-hidden="true" />
                     <span class="no-toc-title">{{ t("specialPages.noToc") }}</span>
                     <div class="no-toc-actions">
-                      <button type="button" class="no-toc-btn is-primary" @click.stop="emit('page-action', 'addToc', pIndex - 1)">
+                      <button type="button" class="no-toc-btn is-primary" data-help="add-toc" @click.stop="emit('page-action', 'addToc', pIndex - 1)">
                         <Plus :size="13" aria-hidden="true" />
                         {{ t("specialPages.addToc") }}
                       </button>
@@ -360,13 +361,21 @@
                           <span class="empty-state-icon" aria-hidden="true">
                             <MousePointerClick :size="18" />
                           </span>
-                          {{
+                          <!-- What to do on an empty page (Help) -->
+                          <strong class="empty-state-title">{{
                             kindOf(pIndex - 1) === "cover"
                               ? t("specialPages.emptyCover")
                               : kindOf(pIndex - 1) === "contents"
                                 ? t("specialPages.emptyContents")
-                                : t("canvas.dragOntoPage", { page: pIndex })
-                          }}
+                                : t("canvas.emptyPage", { page: pIndex })
+                          }}</strong>
+                          <span>{{
+                            kindOf(pIndex - 1) === "cover"
+                              ? t("specialPages.emptyCoverHint")
+                              : kindOf(pIndex - 1) === "contents"
+                                ? t("specialPages.emptyContentsHint")
+                                : t("canvas.emptyPageHint")
+                          }}</span>
                         </div>
                       </div>
                     </template>
@@ -539,14 +548,6 @@
         </div>
       </div>
 
-      <!-- Selection box -->
-      <SelectionBox
-        :start-x="selectionBox.startX"
-        :start-y="selectionBox.startY"
-        :end-x="selectionBox.endX"
-        :end-y="selectionBox.endY"
-        :visible="selectionBox.visible"
-      />
     </div>
   </div>
 </template>
@@ -571,7 +572,6 @@ import {
 import { pageKind, specialPageArea } from "@/utils/specialPages";
 import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import ElementFactory from "../elements/ElementFactory.vue";
-import SelectionBox from "./SelectionBox.vue";
 import DragFeedbackLayer from "./DragFeedbackLayer.vue";
 import { BAND_CONSTANTS } from "@/constants/constants";
 import { getBandDisplayName } from "@/utils/bandUtils";
@@ -650,8 +650,6 @@ const emit = defineEmits([
   "cancel-editing",
   "start-resizing-band",
   "zoom-change",
-  "select-elements-in-rect", // Added rect-selection event
-  "clear-selection", // Added clear-selection event
   "check-fields", // Added field-check event
   "contextmenu", // Added context menu event
   "update:enableSnapToGrid", // Added snap-to-grid toggle event
@@ -978,16 +976,6 @@ const getBandsForPage = (pIndex: number): PageBandInfo[] => {
   return result;
 };
 
-// Selection box state
-const selectionBox = ref({
-  startX: 0,
-  startY: 0,
-  endX: 0,
-  endY: 0,
-  visible: false,
-});
-
-const isSelecting = ref(false);
 
 const designerCanvasRef = ref<HTMLElement | null>(null);
 const horizontalRulerRef = ref<HTMLElement | null>(null);
@@ -1147,144 +1135,10 @@ const handleWheel = (event: WheelEvent) => {
   }
 };
 
-// Rectangle selection feature
-const startSelection = (event: MouseEvent) => {
-  // Library tiles clicked next add their element to this page
+// Library tiles clicked next add their element to this page
+const notePageClicked = (event: MouseEvent) => {
   const sheetPage = (event.currentTarget as HTMLElement | null)?.dataset?.pageIndex;
   if (sheetPage !== undefined) selectionStore.lastClickedPageIndex = parseInt(sheetPage, 10);
-  // Only the left mouse button can trigger rectangle selection
-  if (event.button !== 0) {
-    return;
-  }
-
-  // Only start rectangle selection when clicking a blank area
-  if (
-    event.target === event.currentTarget ||
-    (event.target as HTMLElement).classList.contains("pager")
-  ) {
-    isSelecting.value = true;
-
-    // Get the position info of the paper element
-    const paperEl = document.querySelector(".paper") as HTMLElement;
-    const paperContainer = document.querySelector(
-      ".paper-container",
-    ) as HTMLElement;
-    if (paperEl && paperContainer) {
-      const containerRect = paperContainer.getBoundingClientRect();
-      const currentZoom = zoomLevel.value;
-
-      // Get the scroll position
-      const scrollLeft = paperContainer.scrollLeft;
-      const scrollTop = paperContainer.scrollTop;
-
-      // Calculate coordinates relative to the paper, accounting for zoom and scroll position
-      // Mouse position - container position + scroll position = position relative to the unscaled paper
-      const paperStartX =
-        (event.clientX - containerRect.left + scrollLeft) / currentZoom;
-      const paperStartY =
-        (event.clientY - containerRect.top + scrollTop) / currentZoom;
-
-      // Set the selection box coordinates, accounting for the zoom factor since SelectionBox now sits outside paper-container
-      selectionBox.value.startX = paperStartX * currentZoom;
-      selectionBox.value.startY = paperStartY * currentZoom;
-      selectionBox.value.endX = selectionBox.value.startX;
-      selectionBox.value.endY = selectionBox.value.startY;
-      selectionBox.value.visible = true;
-
-      // Add global mousemove and mouseup event listeners
-      document.addEventListener("mousemove", updateSelection);
-      document.addEventListener("mouseup", endSelection);
-
-      // Prevent default behavior and stop propagation
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }
-};
-
-const updateSelection = (event: MouseEvent) => {
-  if (!isSelecting.value) return;
-
-  // Get the position info of the paper element
-  const paperEl = document.querySelector(".paper") as HTMLElement;
-  const paperContainer = document.querySelector(
-    ".paper-container",
-  ) as HTMLElement;
-  if (paperEl && paperContainer) {
-    const containerRect = paperContainer.getBoundingClientRect();
-    const currentZoom = zoomLevel.value;
-
-    // Get the scroll position
-    const scrollLeft = paperContainer.scrollLeft;
-    const scrollTop = paperContainer.scrollTop;
-
-    // Calculate coordinates relative to the paper, accounting for zoom and scroll position
-    const paperEndX =
-      (event.clientX - containerRect.left + scrollLeft) / currentZoom;
-    const paperEndY =
-      (event.clientY - containerRect.top + scrollTop) / currentZoom;
-
-    // Update the selection box end coordinates, accounting for the zoom factor since SelectionBox now sits outside paper-container
-    selectionBox.value.endX = paperEndX * currentZoom;
-    selectionBox.value.endY = paperEndY * currentZoom;
-  }
-};
-
-const endSelection = () => {
-  if (!isSelecting.value) return;
-
-  // Remove global event listeners
-  document.removeEventListener("mousemove", updateSelection);
-  document.removeEventListener("mouseup", endSelection);
-
-  // Calculate the selection area (scaled coordinates)
-  const scaledLeft = Math.min(
-    selectionBox.value.startX,
-    selectionBox.value.endX,
-  );
-  const scaledTop = Math.min(
-    selectionBox.value.startY,
-    selectionBox.value.endY,
-  );
-  const scaledRight = Math.max(
-    selectionBox.value.startX,
-    selectionBox.value.endX,
-  );
-  const scaledBottom = Math.max(
-    selectionBox.value.startY,
-    selectionBox.value.endY,
-  );
-
-  // If the selection area is too small (less than 5 pixels), skip selection and clear it instead
-  if (
-    Math.abs(scaledRight - scaledLeft) < 5 ||
-    Math.abs(scaledBottom - scaledTop) < 5
-  ) {
-    selectionBox.value.visible = false;
-    isSelecting.value = false;
-    // Emit the clear-selection event
-    emit("clear-selection");
-    return;
-  }
-
-  // Convert the scaled coordinates to coordinates relative to the paper
-  const currentZoom = zoomLevel.value;
-  const left = scaledLeft / currentZoom;
-  const top = scaledTop / currentZoom;
-  const right = scaledRight / currentZoom;
-  const bottom = scaledBottom / currentZoom;
-
-  // Emit the rect-selection event, passing the selection area coordinates (relative to the paper)
-  emit("select-elements-in-rect", {
-    left,
-    top,
-    right,
-    bottom,
-  });
-
-  // Hide the selection box
-  selectionBox.value.visible = false;
-  isSelecting.value = false;
 };
 
 // Lifecycle hooks
@@ -1876,7 +1730,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  max-width: 260px;
+  max-width: 300px;
   padding: 16px 20px;
   border: 1px dashed #d9d4ec;
   border-radius: 12px;
@@ -1886,6 +1740,12 @@ onBeforeUnmount(() => {
   color: #8a84a3;
   text-align: center;
   pointer-events: none;
+}
+
+.empty-state-title {
+  color: #45425a;
+  font-size: 13.5px;
+  font-weight: 700;
 }
 
 .empty-state-icon {

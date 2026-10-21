@@ -3,7 +3,8 @@
     <!-- Basic Properties: size of the grid, then the look of the chosen cells -->
     <template v-if="part === 'basic'">
       <div class="card">
-        <h5>{{ t("customTable.grid") }}</h5>
+        <h5>{{ t("customTable.grid") }}<SettingHelpButton id="typedGrid" /></h5>
+        <SettingHelpText id="typedGrid" />
         <div class="counter-row">
           <span class="field-label">{{ t("customTable.rows") }}</span>
           <div class="counter">
@@ -90,7 +91,8 @@
       </div>
 
       <div class="card">
-        <h5>{{ targetTitle }}</h5>
+        <h5>{{ targetTitle }}<SettingHelpButton id="typedCells" /></h5>
+        <SettingHelpText id="typedCells" />
 
         <div class="color-row">
           <div class="field">
@@ -196,7 +198,8 @@
     <!-- Style Settings (below the table style editor): space inside the cells -->
     <template v-else>
       <div class="card">
-        <h5>{{ t("customTable.text") }}</h5>
+        <h5>{{ t("customTable.text") }}<SettingHelpButton id="typedText" /></h5>
+        <SettingHelpText id="typedText" />
         <label class="field">
           <span class="field-label">{{ t("customTable.padding") }}</span>
           <span class="unit-input">
@@ -217,6 +220,8 @@
 </template>
 
 <script setup lang="ts">
+import SettingHelpButton from "../../help/SettingHelpButton.vue";
+import SettingHelpText from "../../help/SettingHelpText.vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";

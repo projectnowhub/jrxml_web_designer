@@ -3,7 +3,8 @@
     <!-- Type: sample cards like the image shape presets -->
     <div class="section">
       <div class="section-head">
-        <h5>{{ t("barcode.type") }}</h5>
+        <h5>{{ t("barcode.type") }}<SettingHelpButton id="barcodeType" /></h5>
+        <SettingHelpText id="barcodeType" />
         <span class="type-badge">{{ t(`barcode.types.${element.barcodeType}`) }}</span>
       </div>
       <div v-for="group in BARCODE_GROUPS" :key="group" class="type-group">
@@ -38,7 +39,8 @@
 
     <!-- Value: a form for QR codes and GS1-128, plain text otherwise -->
     <div class="section" @focusin="onFocusIn">
-      <h5>{{ t("barcode.value") }}</h5>
+      <h5>{{ t("barcode.value") }}<SettingHelpButton id="barcodeValue" /></h5>
+      <SettingHelpText id="barcodeValue" />
       <QrContentEditor
         v-if="editor === 'qr'"
         :key="`qr-${element.uuid}`"
@@ -110,6 +112,8 @@
 </template>
 
 <script setup lang="ts">
+import SettingHelpButton from "../../help/SettingHelpButton.vue";
+import SettingHelpText from "../../help/SettingHelpText.vue";
 import { useReportStore } from "@/stores/report";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";

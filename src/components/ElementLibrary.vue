@@ -32,16 +32,17 @@
             v-for="element in section.elements"
             :key="element.type"
             class="element-item"
+            :data-tile="element.type"
             :class="{
               'is-disabled': isUnavailable(element.type),
               'is-open': tileMenu?.type === element.type,
             }"
-            :title="tileHint(element.type)"
             :draggable="!isUnavailable(element.type)"
             :aria-haspopup="hasTileMenu(element.type) ? 'dialog' : undefined"
             @dragstart="handleDragStart($event, element)"
             @click="handleTileClick($event, element)"
-            @dblclick="handleElementDoubleClick($event, element)"
+            @mouseenter="showTileCard($event, element)"
+            @mouseleave="hideTileCard"
           >
             <span class="element-icon">
               <component
@@ -66,6 +67,24 @@
         :projects="projects ?? []"
       />
     </div>
+
+    <!-- Hovering a tile: what it is and how to add it (Help) -->
+    <Teleport to="body">
+      <div
+        v-if="tileCard && !tileMenu"
+        ref="tileCardRef"
+        class="tile-card"
+        role="tooltip"
+        :style="{ left: tileCard.x + 'px', top: tileCard.y + 'px' }"
+      >
+        <strong class="tile-card-name">{{ tileCard.name }}</strong>
+        <span v-if="tileCard.text" class="tile-card-text">{{ tileCard.text }}</span>
+        <span v-if="tileCard.how" class="tile-card-how">
+          <MousePointerClick :size="13" :stroke-width="2.25" aria-hidden="true" />
+          {{ tileCard.how }}
+        </span>
+      </div>
+    </Teleport>
 
     <!-- Page Number tile: where on the page to put it; Chart / Barcode tile: which type -->
     <Teleport to="body">
@@ -173,12 +192,14 @@
 import Collapse from "./common/Collapse.vue";
 import { storeToRefs } from "pinia";
 import { useReportStore } from "@/stores/report";
+import { useHelpStore } from "@/stores/help";
 import { ref, computed, nextTick, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
 import {
   ChevronDown,
   Database,
+  MousePointerClick,
   PencilLine,
 } from "@lucide/vue";
 import ReportDataPanel from "./designer/ReportDataPanel.vue";
@@ -205,7 +226,7 @@ import { barcodeSamplePicture, type BarcodePicture } from "../utils/barcode/barc
 import { CHART_TYPE_ICONS } from "./elements/chartIcons";
 import { getElementIcon, getElementIconComponent } from "../utils/elementUtils";
 
-const { t } = useI18n();
+const { t, te } = useI18n();
 
 
 // Define component props
@@ -218,7 +239,7 @@ interface Props {
 // Define component events
 interface Emits {
   (e: "drag-start", event: DragEvent, element: any): void;
-  (e: "element-double-click", element: any): void;
+  (e: "add-element", element: any): void;
   (e: "insert-page-number", position: PaginationPosition): void;
   (e: "insert-chart", chartType: ChartType): void;
   (e: "insert-barcode", barcodeType: BarcodeType): void;
@@ -232,6 +253,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Report, selection and editor state come from the stores
 const reportStore = useReportStore();
+const helpStore = useHelpStore();
 const { reportFields, reportParameters, reportVariables, bands } = storeToRefs(reportStore);
 
 const emit = defineEmits<Emits>();
@@ -313,9 +335,11 @@ function getFieldTypeName(className: string): string {
 const hasPageBorder = computed(() => findPageBorder(bands.value) !== null);
 const isUnavailable = (type: string) => type === PAGE_BORDER_TYPE && hasPageBorder.value;
 
-// Hover text: why a tile is disabled, or what a ready-made box is for
+// Hover text: why a tile is disabled, or what the tile adds (its own line in
+// elementLibrary.tileHints, else the preset's description)
 const tileHint = (type: string): string | undefined => {
   if (isUnavailable(type)) return t("framePresets.pageBorderExists");
+  if (te(`elementLibrary.tileHints.${type}`)) return t(`elementLibrary.tileHints.${type}`);
   if (isFrameTemplateType(type)) return t(`framePresets.templateDescription.${type}`);
   if (isCoverDesignType(type) || isContentsDesignType(type)) return t(`pageDesigns.designs.${type}.tileHint`);
   if (isReportPartType(type)) return t(`reportParts.description.${type}`);
@@ -326,11 +350,57 @@ const tileHint = (type: string): string | undefined => {
   return undefined;
 };
 
+// The hover card: after a short pause, beside the tile, kept inside the window
+const TILE_CARD_DELAY = 450;
+const tileCard = ref<{ name: string; text?: string; how?: string; x: number; y: number } | null>(null);
+const tileCardRef = ref<HTMLElement | null>(null);
+let tileCardTimer: ReturnType<typeof setTimeout> | undefined;
+
+function showTileCard(event: MouseEvent, element: any): void {
+  // Part of Tutorial mode (Help menu)
+  if (!helpStore.tutorialMode) return;
+  const tile = event.currentTarget as HTMLElement;
+  clearTimeout(tileCardTimer);
+  tileCardTimer = setTimeout(() => {
+    if (tileMenu.value) return;
+    const rect = tile.getBoundingClientRect();
+    const unavailable = isUnavailable(element.type);
+    tileCard.value = {
+      name: t(element.name),
+      text: tileHint(element.type),
+      how: unavailable
+        ? undefined
+        : t(hasTileMenu(element.type) ? "elementLibrary.tileHowChoose" : "elementLibrary.tileHowAdd"),
+      x: rect.right + MENU_GAP,
+      y: rect.top,
+    };
+    nextTick(() => {
+      const card = tileCardRef.value;
+      if (!card || !tileCard.value) return;
+      const { width, height } = card.getBoundingClientRect();
+      let { x, y } = tileCard.value;
+      if (x + width > window.innerWidth - WINDOW_MARGIN) {
+        x = rect.left;
+        y = rect.bottom + MENU_GAP;
+      }
+      x = Math.max(WINDOW_MARGIN, Math.min(x, window.innerWidth - width - WINDOW_MARGIN));
+      y = Math.max(WINDOW_MARGIN, Math.min(y, window.innerHeight - height - WINDOW_MARGIN));
+      tileCard.value = { ...tileCard.value, x, y };
+    });
+  }, TILE_CARD_DELAY);
+}
+
+function hideTileCard(): void {
+  clearTimeout(tileCardTimer);
+  tileCard.value = null;
+}
+
 function handleDragStart(event: DragEvent, element: any): void {
+  hideTileCard();
   closeTileMenu();
   if (isUnavailable(element.type)) {
     event.preventDefault();
-    emit("element-double-click", element);
+    emit("add-element", element);
     return;
   }
   emit("drag-start", event, element);
@@ -348,17 +418,22 @@ const TABLE_KINDS = [
   { value: "data", labelKey: "customTable.fromData", descKey: "customTable.fromDataDesc", icon: Database },
 ] as const;
 
-// Handle element double-click (tiles with a question open it instead)
-function handleElementDoubleClick(event: MouseEvent, element: any): void {
+// One click adds the tile's item (tiles with a question open it instead). A
+// double-click out of habit adds one, not two: a second click on the same tile
+// within the double-click time is ignored.
+const DOUBLE_CLICK_MS = 500;
+let lastAdded: { type: string; at: number } | null = null;
+
+function handleTileClick(event: MouseEvent, element: any): void {
+  hideTileCard();
   if (hasTileMenu(element.type)) {
     openTileMenu(element.type, event.currentTarget as HTMLElement);
     return;
   }
-  emit("element-double-click", element);
-}
-
-function handleTileClick(event: MouseEvent, element: any): void {
-  if (hasTileMenu(element.type)) openTileMenu(element.type, event.currentTarget as HTMLElement);
+  const now = Date.now();
+  if (lastAdded && lastAdded.type === element.type && now - lastAdded.at < DOUBLE_CLICK_MS) return;
+  lastAdded = { type: element.type, at: now };
+  emit("add-element", element);
 }
 
 // The question popover: beside the tile, kept inside the window
@@ -453,7 +528,10 @@ const barcodeSamples = computed(() => {
   return out;
 });
 
-onBeforeUnmount(closeTileMenu);
+onBeforeUnmount(() => {
+  closeTileMenu();
+  hideTileCard();
+});
 
 </script>
 
@@ -611,6 +689,56 @@ onBeforeUnmount(closeTileMenu);
 .element-item.is-open {
   border-color: #7c5cf7;
   box-shadow: 0 0 0 3px rgba(124, 92, 247, 0.14);
+}
+
+.tile-card {
+  position: fixed;
+  z-index: 2000;
+  display: grid;
+  gap: 4px;
+  width: max-content;
+  max-width: 260px;
+  padding: 10px 12px;
+  border: 1px solid #e6e5ee;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow:
+    0 12px 28px rgba(23, 20, 44, 0.14),
+    0 2px 6px rgba(23, 20, 44, 0.06);
+  pointer-events: none;
+  animation: tile-card-in 0.14s ease;
+}
+@keyframes tile-card-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tile-card {
+    animation: none;
+  }
+}
+.tile-card-name {
+  color: #1c1b26;
+  font-size: 13px;
+  font-weight: 700;
+}
+.tile-card-text {
+  color: #45425a;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.tile-card-how {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  color: #6440f4;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .tile-menu {

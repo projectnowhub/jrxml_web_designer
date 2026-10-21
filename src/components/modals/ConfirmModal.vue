@@ -5,7 +5,7 @@
       <p class="confirm-message">{{ message }}</p>
       <div class="confirm-actions">
     <n-button type="default" @click="handleCancel">{{ t('modal.cancel') }}</n-button>
-    <n-button type="primary" @click="handleConfirm">{{ t('modal.confirm') }}</n-button>
+    <n-button :type="danger ? 'error' : 'primary'" @click="handleConfirm">{{ confirmText || t('modal.confirm') }}</n-button>
   </div>
     </div>
   </div>
@@ -29,6 +29,16 @@ const props = defineProps({
   message: {
     type: String,
     default: ''
+  },
+  // The confirm button's word ("Delete", "Open"…); Confirm when empty
+  confirmText: {
+    type: String,
+    default: ''
+  },
+  // A red confirm button, for what can't be undone
+  danger: {
+    type: Boolean,
+    default: false
   }
 });
 

@@ -17,6 +17,8 @@
         @toggle="toggleCollapse"
       />
       <span v-if="title" class="collapsed-rail-label">{{ title }}</span>
+      <!-- More tabs under the name (e.g. the minimized Help window) -->
+      <slot name="rail"></slot>
     </div>
 
     <!-- Resize handle -->
@@ -206,6 +208,9 @@ const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value;
   emit('collapse-change', isCollapsed.value);
 };
+
+// The designer opens a collapsed panel from outside (a guide's "Or let the AI assistant do it")
+defineExpose({ toggleCollapse });
 
 // Start resizing
 let stopResizing: (() => void) | null = null;

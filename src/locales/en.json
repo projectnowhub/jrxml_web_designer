@@ -9,8 +9,8 @@
     "showLeftPanel": "Show Left Panel",
     "hideRightPanel": "Hide Right Panel",
     "showRightPanel": "Show Right Panel",
-    "hideBottomPanel": "Hide Panel",
-    "showBottomPanel": "Show Panel",
+    "hideBottomPanel": "Hide Default Settings",
+    "showBottomPanel": "Show Default Settings",
     "snapMenu": "Snap & grid",
     "showGrid": "Show Grid",
     "showGridInfo": "Shows the grid lines on the page while you design. They never print in the PDF.",
@@ -27,32 +27,24 @@
     "help": "Help",
     "delete": "Delete",
     "copy": "Copy",
-    "paste": "Paste"
+    "paste": "Paste",
+    "defaultSettings": "Default Settings"
   },
   "fileManager": {
     "title": "File",
-    "newFile": "New File",
-    "openLocalFile": "Open Local File",
+    "newFile": "New",
+    "openLocalFile": "Open",
     "save": "Save",
     "saveAs": "Save As",
-    "fileList": "File List",
-    "searchFile": "Search files...",
-    "noFilesFound": "No files found",
-    "createNewFile": "Create New File",
-    "rename": "Rename",
-    "delete": "Delete",
-    "renameFile": "Rename File",
-    "enterNewFileName": "Enter new file name:",
-    "deleteFile": "Delete File",
-    "deleteFileConfirm": "Are you sure you want to delete file \"{name}\"? This action cannot be undone.",
     "loadingFileFailed": "Loading file failed",
     "jrxmlOpened": "Opened \"{name}\"",
-    "onlyJrxml": "Only .jrxml report files can be opened",
-    "deleteAllFiles": "Delete All Reports",
-    "deleteAllFilesConfirm": "Delete every report saved in this browser? The open report is deleted too and a new, empty one is opened. This can't be undone. Download any report you want to keep first.",
-    "deleteAllFilesDone": "All saved reports were deleted",
+    "onlyJrxml": "Only .jrxml template files can be opened",
+    "deleteAllFiles": "Delete All Templates",
+    "deleteAllFilesConfirm": "Delete every template saved in this browser? The open template is deleted too and a new, empty one is opened. This can't be undone. Download any template you want to keep first.",
+    "deleteAllFilesDone": "All saved templates were deleted",
     "invalidFileFormat": "Invalid file format, cannot load",
-    "untitledReport": "Untitled Report"
+    "untitledReport": "Untitled Template",
+    "templateNotFound": "That template isn't saved in this browser, so a new one was started."
   },
   "elementLibrary": {
     "title": "Element Library",
@@ -120,7 +112,22 @@
     "noReportVariables": "No report variables",
     "clickToAddVariable": "Click '+' above to add variables",
     "fieldNameRequired": "Field name is required",
-    "duplicateFieldName": "Field name already exists, please use another name"
+    "duplicateFieldName": "Field name already exists, please use another name",
+    "tileHowAdd": "Click to add it, or drag it onto the page.",
+    "tileHowChoose": "Click to choose, or drag it onto the page.",
+    "tileHints": {
+      "textField": "Words on the page: titles, paragraphs and labels.",
+      "image": "A picture or logo from your computer.",
+      "line": "A straight line to separate parts of the page.",
+      "rectangle": "A shape for bars, rules and coloured backgrounds.",
+      "ellipse": "A circle or oval, for example a coloured status dot.",
+      "frame": "A box that holds other items together, so they move as one.",
+      "table": "A table you type into, or one filled with your project's data.",
+      "chart": "A chart of your project's data: bars, lines, pie and more.",
+      "barcode": "A barcode or QR code.",
+      "pageNumber": "Page numbers that fill in by themselves, such as Page 1 of 12.",
+      "dateTime": "A date that fills itself in: the day the report is printed, this month or last month."
+    }
   },
   "bandNames": {
     "pageHeader": "Page Header",
@@ -153,7 +160,7 @@
     "pageXofY": "Page X of Y",
     "partReportHeader": "Report Header",
     "partPageFooter": "Page Footer",
-    "partSectionHeading": "Section Heading",
+    "partSectionHeading": "Heading",
     "partSubHeading": "Sub-heading",
     "partNote": "Note",
     "partRiskLegend": "Risk Legend",
@@ -192,11 +199,11 @@
     "coverClassic": "Classic"
   },
   "properties": {
-    "title": "Properties",
+    "title": "Settings",
     "markup": "Markup",
-    "reportProperties": "Report Properties",
+    "reportProperties": "Template Settings",
     "bandHeightSettings": "Band Height Settings",
-    "templateBandSettings": "Template Band Settings",
+    "templateBandSettings": "Section Heights",
     "templateScopeBadge": "This Template",
     "templateLimits": "Template Limits",
     "resetDefaults": "Reset to Defaults",
@@ -205,7 +212,7 @@
     "maxHeight": "Max Height",
     "detailAutoCalculated": "Auto Calculated",
     "detailAutoCalculatedHint": "Detail height is automatically calculated from remaining page space",
-    "basicProperties": "Basic Properties",
+    "basicProperties": "Basic Settings",
     "boxSettings": "Box Settings",
     "styleSettings": "Style Settings",
     "close": "Close",
@@ -472,10 +479,10 @@
     "lineSettings": "Line"
   },
   "bottomPanel": {
-    "pageSettings": "Page Settings",
+    "pageSettings": "Default Settings",
     "jrxmlContent": "JRXML Content",
     "basicInfo": "Basic Info",
-    "reportName": "Report Name",
+    "reportName": "Template Name",
     "paperSize": "Paper Size",
     "paperOrientation": "Orientation",
     "portrait": "Portrait",
@@ -485,9 +492,9 @@
     "pageMargins": "Page Margins",
     "marginsPx": "Margins (px)",
     "defaultFontSettings": "Default Font Settings",
-    "bandSelection": "Band Selection",
-    "bandSelectionHint": "Checked bands will be added, unchecked will be removed. The detail band is always active as the main canvas.",
-    "detailBandAlwaysRequired": "Detail band is always required as the main report canvas",
+    "bandSelection": "Page Sections",
+    "bandSelectionHint": "Ticked sections are added, unticked ones removed. Detail is always there.",
+    "detailBandAlwaysRequired": "Detail is always there: it holds the template's content",
     "copy": "Copy",
     "apply": "Apply",
     "regenerate": "Regenerate",
@@ -496,7 +503,7 @@
     "clickToGenerate": "Click \"Generate JRXML\" to view content",
     "generateJRXML": "Generate JRXML",
     "jrxmlTabs": {
-      "pageSettings": "Page Settings",
+      "pageSettings": "Default Settings",
       "jrxmlContent": "JRXML Content"
     },
     "alerts": {
@@ -521,15 +528,15 @@
     "minShort": "Min",
     "maxShort": "Max",
     "defaultShort": "Default",
-    "defaultBandSettings": "Default Band Settings",
-    "resetToDeveloperDefaults": "Reset to Developer Defaults",
+    "defaultBandSettings": "Section Heights",
+    "resetToDeveloperDefaults": "Original",
     "saveAsGlobalDefault": "Save as Global Defaults",
     "resetDefaults": "Reset to Defaults",
-    "applyToCurrentTemplate": "Apply to Current Template",
-    "appliedToTemplateSuccess": "Applied default band settings to current template.",
+    "applyToCurrentTemplate": "Apply to this template",
+    "appliedToTemplateSuccess": "Applied to this template.",
     "savedAsGlobalDefault": "Current constraints saved as default for all new templates.",
     "resetToDefaultSuccess": "Reset band constraints to system defaults.",
-    "resetToDeveloperDefaultsSuccess": "Band constraints reset to developer defaults.",
+    "resetToDeveloperDefaultsSuccess": "Back to the original.",
     "search": "Search... (Ctrl+F)",
     "searchPrevious": "Previous",
     "searchNext": "Next",
@@ -803,7 +810,6 @@
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar",
     "searchTemplates": "Search templates",
-    "help": "Help",
     "notifications": "Notifications",
     "myProfile": "My profile",
     "signOut": "Sign out",
@@ -823,21 +829,33 @@
     "recentTemplates": "Recent templates",
     "viewAll": "View all",
     "createNewTemplate": "Create a new template",
-    "createNewTemplateHint": "Start with a blank JRXML report",
+    "createNewTemplateHint": "Start with a blank template",
     "moreOptions": "More options",
     "createdBy": "Created by {name}",
     "sharedWithYou": "Shared with you",
     "recentlyAccessed": "Recently accessed",
     "noSharedTemplates": "No shared templates yet",
     "noSharedTemplatesHint": "Templates shared with you will appear here.",
-    "sampleTemplates": {
-      "monthlySales": "Monthly sales report",
-      "customerInvoice": "Customer invoice",
-      "operationsSummary": "Operations summary",
-      "editedTodayAt": "Edited today at {time}",
-      "editedYesterday": "Edited yesterday",
-      "editedOn": "Edited {date}"
-    }
+    "copyName": "{name} (copy)",
+    "edited": {
+      "today": "Edited today at {time}",
+      "yesterday": "Edited yesterday",
+      "on": "Edited {date}"
+    },
+    "menu": {
+      "open": "Open",
+      "rename": "Rename",
+      "duplicate": "Duplicate",
+      "delete": "Delete"
+    },
+    "renameTitle": "Rename template",
+    "renameMessage": "Type the new name for this template.",
+    "deleteTitle": "Delete template",
+    "deleteMessage": "Delete \"{name}\"? This can't be undone.",
+    "openTitle": "Open template",
+    "openMessage": "Open \"{name}\" in the designer to edit it?",
+    "duplicateTitle": "Duplicate template",
+    "duplicateMessage": "Make a copy of \"{name}\"? The copy is added to your templates."
   },
   "pages": {
     "account": "Account",
@@ -850,8 +868,8 @@
     "activityDescription": "View recent activity and changes across your workspace."
   },
   "editorHeader": {
-    "untitledReport": "Untitled Report",
-    "renameReport": "Click to rename report",
+    "untitledReport": "Untitled Template",
+    "renameReport": "Click to rename the template",
     "saving": "Saving...",
     "saveFailed": "Save failed",
     "saved": "Saved",
@@ -865,63 +883,574 @@
     "zoom": "Zoom"
   },
   "help": {
-    "title": "JRXML Visual Designer User Guide",
-    "basicsTitle": "1. Template Design Basics",
-    "basicsText": "This tool is used to visually design PDF report templates for JasperReports, allowing you to quickly create professional PDF reports through drag and drop.",
-    "stepsTitle": "2. Steps",
-    "steps": {
-      "modifyTitle": "Modify an existing JRXML",
-      "modifyText": "Open the bottom panel, copy the current JRXML into the code area, then click Apply",
-      "addTitle": "Add elements",
-      "addText": "Drag elements from the element library on the left into the design area",
-      "layoutTitle": "Adjust the layout",
-      "layoutText": "Drag elements to reposition them, and drag the handles to resize them",
-      "propertiesTitle": "Set properties",
-      "propertiesText": "After selecting an element, set its properties in the right-hand panel",
-      "dataTitle": "Configure data",
-      "dataText": "Add report parameters and data fields in the left-hand panel",
-      "generateTitle": "Generate JRXML",
-      "generateText": "Click the \"Generate JRXML\" button to export the report template"
+    "menu": {
+      "button": "Help",
+      "tour": "Take the tour",
+      "tourHint": "A one-minute look around this screen",
+      "guide": "Quick guide",
+      "guideHint": "How to make a template, step by step",
+      "shortcuts": "Keyboard & mouse",
+      "shortcutsHint": "Every shortcut, with the keys and the mouse",
+      "tutorialMode": "Tutorial mode",
+      "tutorialModeHint": "Tours, tips and hover cards appear by themselves while you work. Turn off when you know your way around.",
+      "tutorialOffDone": "Tutorial mode is off: tours and tips won't appear by themselves. All help is still in this Help menu.",
+      "tutorialOnDone": "Tutorial mode is on: tips and hover cards appear again as you work.",
+      "allElements": "All elements",
+      "allElementsHint": "What every element and setting does, with step-by-step guides"
     },
-    "elementsTitle": "3. Supported Element Types",
-    "elements": {
-      "textField": "Text field: displays a dynamic data field",
-      "image": "Image: inserts an image element",
-      "line": "Line: adds a divider line",
-      "rectangle": "Rectangle: adds a border or background block"
+    "tour": {
+      "stepOf": "Step {n} of {total}",
+      "skip": "Skip tour",
+      "notNow": "Not now",
+      "start": "Show me around",
+      "next": "Next",
+      "back": "Back",
+      "done": "Got it",
+      "close": "Close the tour",
+      "turnOff": "I know my way around: turn off Tutorial mode"
     },
-    "shortcutsTitle": "4. Keyboard Shortcuts",
-    "shortcutColumn": "Shortcut",
-    "actionColumn": "Action",
-    "arrowKey": "Arrow key",
+    "tours": {
+      "home": {
+        "welcomeTitle": "Welcome to Report Studio",
+        "welcomeText": "This is where you make templates for your project reports. Would you like a one-minute look around?",
+        "createTitle": "Start a new template",
+        "createText": "Click Create a new template to start one. You design it on a page, much like a document; each time it runs it makes a report.",
+        "navTitle": "Find your way",
+        "navText": "Templates shows the templates you can use, My templates the ones you made, and Activity what changed lately.",
+        "searchTitle": "Find a template",
+        "searchText": "Type part of a template's name and press Enter: My templates shows the ones that match.",
+        "accountTitle": "Your account",
+        "accountText": "Click your initial to change the language (English or Bahasa Melayu) or to sign out.",
+        "helpTitle": "Help is always here",
+        "helpText": "Click Help any time to take this tour again or to read the Quick guide."
+      },
+      "templates": {
+        "listTitle": "Your templates",
+        "listText": "Every template you have made. Click one to open it in the designer.",
+        "viewTitle": "Cards or a list",
+        "viewText": "Switch between cards with a picture and a list with the dates, like a file folder.",
+        "orderTitle": "Their order",
+        "orderText": "Choose the order of the cards here. In the list, click a column title to sort by it, and choose how many rows a page shows.",
+        "actionsTitle": "Open, rename, copy or delete",
+        "actionsText": "The three dots on a card, or the buttons at the end of a row, open, rename, copy or delete a template. Each one asks before it does anything.",
+        "searchTitle": "Find a template",
+        "searchText": "Type part of a name here: the list shows only the templates that match."
+      },
+      "designer": {
+        "welcomeTitle": "Welcome to the template designer",
+        "welcomeText": "Everything you need to build your template is on this screen. This short tour shows you where things are.",
+        "projectsTitle": "Choose your project",
+        "projectsText": "First pick the project this template is about. Its name, logo, tables and charts then become ready to use.",
+        "libraryTitle": "Things you can add",
+        "libraryText": "Text, pictures, tables, charts and more. Click one to add it, or drag it onto the page. Your project's details are under Report Data.",
+        "pageTitle": "Your page",
+        "pageText": "This is what will print. Click something to select it, drag it to move it, and double-click text to type in it.",
+        "panelTitle": "Change how it looks",
+        "panelText": "When something is selected, its size, colours and text are here; with nothing selected, the settings of the whole template. The AI Assistant tab can design for you.",
+        "pagesTitle": "Add pages",
+        "pagesText": "Click Page to add another page, a cover page or a table of contents.",
+        "previewTitle": "See the result",
+        "previewText": "Click Preview PDF to see exactly what will print. Your work is saved by itself as you go.",
+        "helpTitle": "Need help again?",
+        "helpText": "Click Help any time for this tour, the Quick guide, keyboard and mouse shortcuts and help for every element."
+      }
+    },
+    "guide": {
+      "title": "Quick guide",
+      "tabs": {
+        "guide": "How it works",
+        "shortcuts": "Keyboard & mouse"
+      },
+      "intro": "Report Studio lets you design a template on a page, the way you would in a document. You place text, pictures, tables and charts; each time the template runs, they fill in from your project and make the report.",
+      "stepsTitle": "Making a template, step by step",
+      "steps": {
+        "startTitle": "Start a template",
+        "startText": "On the home page, click Create a new template. The designer opens with an empty page.",
+        "projectTitle": "Choose your project",
+        "projectText": "At the top of the designer, pick the project the template is about. Its details, tables and charts appear under Report Data on the left.",
+        "addTitle": "Add things to the page",
+        "addText": "In the Element Library on the left, click an item to add it, or drag it to the spot you want. Drag a project detail or table from Report Data onto the page the same way.",
+        "changeTitle": "Change how it looks",
+        "changeText": "Click something on the page. Its settings, such as size, colours and text, show on the right under Settings.",
+        "pagesTitle": "Add pages",
+        "pagesText": "Use Page at the top to add another page, a cover page or a table of contents.",
+        "aiTitle": "Let the AI help",
+        "aiText": "Open the AI Assistant tab on the right and write what you need, for example “Make a cover page for the March report”.",
+        "previewTitle": "Check and download",
+        "previewText": "Click Preview PDF to see exactly what the report will look like. Download saves a copy of the template on your computer."
+      },
+      "tipsTitle": "Good to know",
+      "tips": {
+        "type": "Double-click a text to type in it. Click outside it when you are done.",
+        "rightClick": "Right-click anything on the page to see more options.",
+        "resize": "Drag the small squares around a selected item to make it bigger or smaller.",
+        "nudge": "Hold Shift and press the arrow keys to move a selected item a little.",
+        "undo": "Made a mistake? Press Ctrl+Z (⌘+Z on a Mac) to undo it.",
+        "saved": "Your work is saved by itself in this browser as you go.",
+        "open": "Your templates are on the home page and in My templates: click one to open it. In the designer, File → Open (Ctrl+O) opens another one or a .jrxml file from your computer.",
+        "keys": "More keys that save you clicks are in the Keyboard shortcuts tab above."
+      },
+      "tourHint": "New here? A one-minute tour shows you where everything is.",
+      "takeTour": "Take the tour",
+      "guidesHint": "Want to be walked through a job, such as adding a table of contents?",
+      "guidesButton": "Step-by-step guides"
+    },
+    "shortcutsIntro": "Everything you can do with the keyboard and mouse in the designer.",
     "shortcuts": {
-      "save": "Save the current file",
-      "undo": "Undo",
-      "redo": "Redo",
-      "copy": "Copy the selected element",
-      "paste": "Paste an element",
-      "toggleBottomPanel": "Toggle the bottom JRXML panel",
-      "delete": "Delete the selected element",
-      "selectNeighbor": "Select a neighboring element",
-      "nudge": "Nudge the element's position (1px)",
-      "resetZoom": "Reset zoom"
+      "undo": "Undo the last change",
+      "redo": "Redo what you undid",
+      "select": "Select an item",
+      "selectMore": "Add an item to the selection, or take it out",
+      "selectInBox": "Select an item inside a box (first click: the box)",
+      "selectNeighbor": "Select the next item on the page",
+      "move": "Move the selected item",
+      "nudge": "Move it a little (one grid square with Snap to Grid)",
+      "resize": "Make it bigger or smaller",
+      "keepRatio": "Resize and keep its proportions",
+      "square": "Resize to a perfect square",
+      "noSnap": "Move or resize without snapping",
+      "straightLine": "Keep a line straight, across or up and down",
+      "fitText": "Make a text exactly as tall as its words",
+      "rotate": "Rotate 90° (text, pictures and barcodes)",
+      "partHeight": "Make a part of the page (Page Header…) taller or shorter",
+      "copy": "Copy the selected item",
+      "paste": "Paste the copied item",
+      "pasteHere": "Paste where you clicked",
+      "delete": "Delete the selected item",
+      "moreOptions": "More options for an item",
+      "editItem": "Type in a text, set up a table or chart, change a picture",
+      "finishTyping": "Finish typing and keep it",
+      "cancelTyping": "Stop typing and throw away what you just typed",
+      "bold": "Bold",
+      "italic": "Italic",
+      "underline": "Underline",
+      "link": "Add a link",
+      "newLine": "New line, or the next bullet point",
+      "lineInList": "New line inside a bullet point",
+      "tableOpen": "Open the table for typing",
+      "cellType": "Type in the chosen cell (or just start typing)",
+      "cellMove": "Go to another cell",
+      "cellSelect": "Choose several cells",
+      "cellNext": "Next cell",
+      "cellPrevious": "Previous cell",
+      "cellClear": "Clear the chosen cells",
+      "tableClose": "Close the cell; press again to close the table",
+      "crop": "Choose a picture, or crop it",
+      "cropApply": "Keep the crop",
+      "cropCancel": "Cancel the crop",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "zoomWheel": "Zoom in or out",
+      "resetZoom": "Go back to the normal zoom",
+      "toggleBottomPanel": "Show or hide Default Settings",
+      "panelDown": "Bring the full-height Default Settings back down",
+      "newTemplate": "Start a new template",
+      "openTemplate": "Open a template (yours or a file from your computer)",
+      "save": "Save now (it also saves by itself)",
+      "aiSend": "Send your message",
+      "aiNewLine": "New line in your message",
+      "aiClear": "Clear the conversation (while the AI Assistant tab is open)"
     },
-    "advancedTitle": "5. Advanced Features",
-    "advanced": {
-      "autoFieldsTitle": "Automatic data field creation",
-      "autoFieldsText": "When a text element's expression references a field that doesn't exist yet (e.g. {example}), the field is created automatically",
-      "deleteTitle": "Report element deletion",
-      "deleteText": "In the report element list on the left, click the delete button next to an element to delete it",
-      "shortcutsTitle": "Cross-platform shortcuts",
-      "shortcutsText": "On macOS, use the Command key in place of Ctrl"
+    "panelTips": {
+      "hide": "Hide this tip",
+      "report": "Nothing is selected, so these are this template's Template Settings: paper, margins, font and page sections. Click something on the page to change it instead.",
+      "textField": "Text on the page. Double-click it on the page to type. Change its font, size and colours here.",
+      "image": "A picture. Drop a picture file from your computer onto it, or choose one here. Pick a shape, such as Circle or Rounded, in Basic Settings.",
+      "line": "A line to separate parts of the page. Change its colour and thickness here.",
+      "rectangle": "A shape for bars, rules and backgrounds. To keep text or pictures together on a coloured panel, use a Box instead.",
+      "ellipse": "A circle or oval. For a status, pick green, amber or red in Basic Settings.",
+      "frame": "A box keeps the items inside it together: they move with it. Drop items into it. Right-click an item for Add to box or Move out of box.",
+      "table": "A table filled with your project's data. Click Edit data to choose the columns and filters. All the rows print when the report runs.",
+      "customTable": "A table you type into. Double-click it to type in the cells. Right-click a cell to add rows or columns, or to merge cells.",
+      "chart": "A chart drawn from your project's data. Click Set up data to choose what it shows.",
+      "barcode": "A barcode or QR code. Choose the type and its value in Basic Settings, or click an example to fill it in.",
+      "contentsList": "The table of contents. On Automatic it lists your Headings and Sub-headings with their page numbers by itself.",
+      "pageNumber": "Page numbers that fill in by themselves. Choose how they look and which pages get a number.",
+      "dateTime": "A date that fills itself in, such as the day the report is printed. Choose which date and how it looks.",
+      "pageBorder": "A border around every page. Change its line, colour and corners here.",
+      "sectionHeading": "A heading that starts a section. Its number counts itself, and it shows in the table of contents.",
+      "subHeading": "A smaller heading inside a section. It shows, indented, in the table of contents."
     },
-    "notesTitle": "6. Notes",
-    "notes": {
-      "bounds": "Elements cannot extend beyond the page boundary",
-      "textEditing": "While editing text, press Enter to confirm or Esc to cancel",
-      "textFieldEdit": "Double-click a text field to edit its expression",
-      "dragUpdate": "The JRXML updates when you release the mouse after dragging an element",
-      "autoSave": "All changes are automatically saved to local storage"
+    "firstTips": {
+      "gotIt": "Got it",
+      "selectTitle": "You selected an item",
+      "selectText": "Drag it to move it, and drag the small squares around it to resize it. Right-click it for more options.",
+      "textTitle": "Typing text",
+      "textText": "Double-click the text to type in it. Drag it to move it; its look is on the right, under Settings.",
+      "boxTitle": "Boxes hold items",
+      "boxText": "Items in a box move with it. Click once to select the box, and click again to select an item inside it.",
+      "typedTableTitle": "Typing in a table",
+      "typedTableText": "Double-click the table to type in it. Right-click a cell to add rows or columns, or to merge cells.",
+      "dataTableTitle": "Project data in a table",
+      "dataTableText": "Double-click the table to choose its project, columns and filters. The rows fill in by themselves.",
+      "chartTitle": "Setting up a chart",
+      "chartText": "Double-click the chart to choose the data it shows."
+    },
+    "guides": {
+      "title": "Show me how",
+      "intro": "Choose a job. The steps tick themselves off as you do them, and Show me points at what to click.",
+      "allGuides": "All guides",
+      "close": "Close",
+      "progress": "{done} of {total} done",
+      "stepDone": "Done:",
+      "showMe": "Show me",
+      "notOnScreen": "That part isn't on screen right now. Make the window wider, or open the ☰ menu at the top left.",
+      "allDoneTitle": "All done, well done!",
+      "allDoneText": "You can change anything again at any time.",
+      "another": "Choose another guide",
+      "askAi": "Or let the AI assistant do it",
+      "monthlyReport": {
+        "title": "Make a monthly report",
+        "intro": "Cover, table of contents, sections and page numbers.",
+        "aiPrompt": "Make a monthly report for my project with a cover page, a table of contents, three sections and page numbers.",
+        "steps": {
+          "coverTitle": "Add a cover page",
+          "coverText": "Click Page at the top and choose Cover page.",
+          "coverDesignTitle": "Choose a design for the cover",
+          "coverDesignText": "Pick one in the window that opens, or click Change design above the cover.",
+          "contentsTitle": "Add a table of contents",
+          "contentsText": "Click Page at the top and choose Table of Contents.",
+          "headingTitle": "Start a section",
+          "headingText": "Click Heading in the Element Library. Add one for each part of your report; the table of contents lists them.",
+          "pageNumberTitle": "Add page numbers",
+          "pageNumberText": "Click Page Number in the Element Library on the left and choose where it goes.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "tableOfContents": {
+        "title": "Add a table of contents",
+        "intro": "A contents page that lists your sections by itself.",
+        "aiPrompt": "Add a table of contents page that lists my headings with their page numbers.",
+        "steps": {
+          "headingsTitle": "Add Headings",
+          "headingsText": "Click Heading in the Element Library for each main part of your report. The table of contents will list them.",
+          "contentsPageTitle": "Add a contents page",
+          "contentsPageText": "Click Page at the top and choose Table of Contents.",
+          "tocTitle": "Choose a design",
+          "tocText": "Pick a design in the window that opens, or click Add Table of Contents on the contents page.",
+          "listedTitle": "See your headings listed",
+          "listedText": "On Automatic, the table of contents lists your Headings and Sub-headings by itself. Click it to check its settings on the right.",
+          "previewTitle": "Check the page numbers",
+          "previewText": "Click Preview PDF at the top: every row shows the page its heading prints on."
+        }
+      },
+      "dataTable": {
+        "title": "Show project data in a table",
+        "intro": "A table that fills itself from your project.",
+        "aiPrompt": "Add a table that shows my project's data.",
+        "steps": {
+          "projectTitle": "Choose your project",
+          "projectText": "Click “Choose projects…” at the top and tick the project this template is about.",
+          "tableTitle": "Add a table",
+          "tableText": "Click Table in the Element Library and choose Use project data.",
+          "tableDataTitle": "Choose its data",
+          "tableDataText": "In the window that opens, pick the data and the columns, then click Apply. Double-click the table to change it later.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "chart": {
+        "title": "Add a chart",
+        "intro": "A chart drawn from your project's numbers.",
+        "aiPrompt": "Add a chart that shows my project's data.",
+        "steps": {
+          "projectTitle": "Choose your project",
+          "projectText": "Click “Choose projects…” at the top and tick the project this template is about.",
+          "chartTitle": "Add a chart",
+          "chartText": "Click Chart in the Element Library and choose a type.",
+          "chartDataTitle": "Set up its data",
+          "chartDataText": "Double-click the chart, choose the data and what to show, then click Apply.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "pageNumbers": {
+        "title": "Add page numbers",
+        "intro": "Numbers that fill in by themselves on every page.",
+        "aiPrompt": "Add page numbers at the bottom of every page, like Page 1 of 12.",
+        "steps": {
+          "pageNumberTitle": "Add page numbers",
+          "pageNumberText": "Click Page Number in the Element Library on the left and choose where it goes.",
+          "pageNumberLookTitle": "Choose how they look",
+          "pageNumberLookText": "Click the page number on the page. How it looks and which pages get a number are on the right.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "coverPage": {
+        "title": "Add a cover page",
+        "intro": "A ready-made cover that you make your own.",
+        "aiPrompt": "Design a cover page for my report with the project name, the month and the logo.",
+        "steps": {
+          "coverTitle": "Add a cover page",
+          "coverText": "Click Page at the top and choose Cover page.",
+          "coverDesignTitle": "Choose a design for the cover",
+          "coverDesignText": "Pick one in the window that opens, or click Change design above the cover.",
+          "coverEditTitle": "Make it yours",
+          "coverEditText": "Click something on the cover to change it. Double-click a text to type your own title.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "sections": {
+        "jobs": "Common jobs"
+      },
+      "text": {
+        "title": "Add text",
+        "intro": "Words you type yourself: titles, notes, paragraphs.",
+        "aiPrompt": "Add a short paragraph of text to this page.",
+        "steps": {
+          "addTitle": "Add a text",
+          "addText": "Click Text in the Element Library on the left. It goes on the page you last clicked.",
+          "typeTitle": "Type your words",
+          "typeText": "Double-click the text on the page and type. Click outside it when you are done.",
+          "settingsTitle": "Choose how it looks",
+          "settingsText": "Click the text once. Its size, colour, alignment and border are on the right.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "sectionHeading": {
+        "title": "Add a heading",
+        "intro": "A numbered title that starts each section.",
+        "aiPrompt": "Add a heading called Project Overview.",
+        "steps": {
+          "addTitle": "Add a heading",
+          "addText": "Click Heading in the Element Library. It numbers itself: 1, 2, 3…",
+          "settingsTitle": "Choose its numbering",
+          "settingsText": "Click the heading. On the right you can turn its number off or change the style for every heading.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "subHeading": {
+        "title": "Add a sub-heading",
+        "intro": "A smaller title inside a section.",
+        "aiPrompt": "Add a sub-heading called Key Highlights.",
+        "steps": {
+          "addTitle": "Add a sub-heading",
+          "addText": "Click Sub-heading in the Element Library.",
+          "typeTitle": "Type its title",
+          "typeText": "Double-click the sub-heading and type. The table of contents lists it under its section.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "image": {
+        "title": "Add a picture",
+        "intro": "A photo or logo on the page.",
+        "aiPrompt": "Add a picture spot for the project photo.",
+        "steps": {
+          "addTitle": "Add a picture spot",
+          "addText": "Click Image in the Element Library.",
+          "pictureTitle": "Put a picture in it",
+          "pictureText": "Drop a picture file from your computer onto the spot, or click it and choose one on the right.",
+          "settingsTitle": "Choose its shape",
+          "settingsText": "Click the picture. On the right you can round its corners or make it a circle.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "line": {
+        "title": "Add a line",
+        "intro": "A straight line to separate parts of the page.",
+        "aiPrompt": "Add a thin line under the title.",
+        "steps": {
+          "addTitle": "Add a line",
+          "addText": "Click Line in the Element Library.",
+          "settingsTitle": "Choose how it looks",
+          "settingsText": "Click the line. Its thickness, colour and style are on the right. Drag its ends to make it longer.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "rectangle": {
+        "title": "Add a rectangle",
+        "intro": "A plain shape: a bar, a band of colour or an outline.",
+        "aiPrompt": "Add a coloured bar across the top of the page.",
+        "steps": {
+          "addTitle": "Add a rectangle",
+          "addText": "Click Rectangle in the Element Library. To put words on a coloured panel, use a Box instead.",
+          "settingsTitle": "Choose its colours",
+          "settingsText": "Click the rectangle. Its fill, border and corners are on the right.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "ellipse": {
+        "title": "Add a circle",
+        "intro": "A circle or oval, for a dot or a badge.",
+        "aiPrompt": "Add a small green circle.",
+        "steps": {
+          "addTitle": "Add a circle",
+          "addText": "Click Ellipse in the Element Library. Hold Alt while resizing to keep it round.",
+          "settingsTitle": "Choose its colours",
+          "settingsText": "Click the circle. Its fill and border are on the right.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "box": {
+        "title": "Add a box",
+        "intro": "A panel that holds other items, so they move together.",
+        "aiPrompt": "Add a box with a title and a short note inside it.",
+        "steps": {
+          "addTitle": "Add a box",
+          "addText": "Click Box in the Element Library.",
+          "fillTitle": "Put something in it",
+          "fillText": "Drag a Text or Image from the library and drop it onto the box. It moves with the box from then on.",
+          "settingsTitle": "Choose its look",
+          "settingsText": "Click the box. Its border, corners and fill are on the right.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "typedTable": {
+        "title": "Add a table you type in",
+        "intro": "A grid of rows and columns you fill in yourself.",
+        "aiPrompt": "Add a table with columns Item, Status and Amount.",
+        "steps": {
+          "addTitle": "Add a table",
+          "addText": "Click Table in the Element Library and choose Type my own.",
+          "typeTitle": "Type in it",
+          "typeText": "Double-click the table, click a cell and type. Tab goes to the next cell; right-click adds rows and columns.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "barcode": {
+        "title": "Add a barcode or QR code",
+        "intro": "A barcode or QR code that phones and scanners can read.",
+        "aiPrompt": "Add a QR code that opens our website.",
+        "steps": {
+          "addTitle": "Add a barcode",
+          "addText": "Click Barcode in the Element Library and choose a type, for example QR Code.",
+          "settingsTitle": "Fill in its value",
+          "settingsText": "Click the barcode. Its type and what it holds are on the right, with examples to click.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "pageBorder": {
+        "title": "Add a page border",
+        "intro": "A frame around every page.",
+        "aiPrompt": "Add a thin border around every page.",
+        "steps": {
+          "addTitle": "Add a page border",
+          "addText": "Click Page Border in the Element Library. A template has one at most.",
+          "settingsTitle": "Choose its look",
+          "settingsText": "Click the border line on the page. Its line and corners are on the right.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "date": {
+        "title": "Add a date",
+        "intro": "A date that fills itself in, like the day the report is printed.",
+        "aiPrompt": "Add today's date at the top right, like 21 October 2026.",
+        "steps": {
+          "addTitle": "Add a date",
+          "addText": "Click Date in the Element Library.",
+          "settingsTitle": "Choose which date",
+          "settingsText": "Click the date. On the right choose the day it is printed, this month, last month or a date you pick, and how it looks.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "presetBoxes": {
+        "title": "Add a ready-made box",
+        "intro": "KPI, alert, section and photo boxes, ready to fill in.",
+        "aiPrompt": "Add a number box showing Total Budget: RM 2.5 million.",
+        "steps": {
+          "addTitle": "Add a ready-made box",
+          "addText": "Click one of the Boxes under Element Presets, for example KPI Box.",
+          "typeTitle": "Replace the sample words",
+          "typeText": "Click the box, click the words inside, then double-click them and type your own.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "presetHeaderFooter": {
+        "title": "Add a header or footer",
+        "intro": "A banner at the top or a footer at the bottom of every page.",
+        "aiPrompt": "Add the report header to the top of every page.",
+        "steps": {
+          "addTitle": "Add a header or footer",
+          "addText": "Click Report Header or Page Footer under Element Presets. It goes in the Page Header or Page Footer.",
+          "typeTitle": "Replace the sample words",
+          "typeText": "Click the header, click its words, then double-click them and type your own.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "presetStatus": {
+        "title": "Add a status dot or legend",
+        "intro": "Coloured dots for on track, at risk and late.",
+        "aiPrompt": "Add a risk legend with green, amber and red.",
+        "steps": {
+          "addTitle": "Add a status dot",
+          "addText": "Click Status Dot or Risk Legend under Element Presets.",
+          "settingsTitle": "Choose its colour",
+          "settingsText": "Click a dot. Green, amber and red quick picks are on the right.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "presetSignOff": {
+        "title": "Add a sign-off",
+        "intro": "A place for a signature, name, role and date.",
+        "aiPrompt": "Add a sign-off at the end with my name and role.",
+        "steps": {
+          "addTitle": "Add a sign-off",
+          "addText": "Click Sign-off under Element Presets.",
+          "typeTitle": "Fill in the name",
+          "typeText": "Click the sign-off, click the name, then double-click it and type. Do the same for the role and date.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
+      "presetTables": {
+        "title": "Add a ready-made table",
+        "intro": "Key Statistics, Financial Summary, Risk Register and more.",
+        "aiPrompt": "Add a financial summary table.",
+        "steps": {
+          "addTitle": "Add a ready-made table",
+          "addText": "Click one of the Tables under Element Presets, for example Key Statistics.",
+          "typeTitle": "Replace the sample words",
+          "typeText": "Double-click the table, click a cell and type your own words and numbers.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      }
+    },
+    "shortcutOr": "or",
+    "shortcutGroups": {
+      "history": "Undo and redo",
+      "select": "Select",
+      "move": "Move, resize and turn",
+      "edit": "Copy, paste and delete",
+      "text": "While typing text",
+      "table": "In a typed table",
+      "picture": "Pictures",
+      "view": "View",
+      "file": "Save",
+      "ai": "AI Assistant"
+    },
+    "mouse": {
+      "click": "Click",
+      "clickTwice": "Click, then click again",
+      "doubleClick": "Double-click",
+      "rightClick": "Right-click",
+      "rightClickPage": "Right-click the page → Paste",
+      "drag": "Drag",
+      "dragHandle": "Drag a small square",
+      "dragLineEnd": "Drag a line's end",
+      "doubleClickEdge": "Double-click the top or bottom square",
+      "rotateButton": "The round button above it",
+      "dragPartLine": "Drag the line under a page part",
+      "wheel": "Mouse wheel",
+      "clickOutside": "Click outside it"
     }
   },
   "imageUpload": {
@@ -994,7 +1523,7 @@
       "get_report_data": "Read report data",
       "create_design": "Lay out a design",
       "create_text": "Add text",
-      "create_section_heading": "Add section heading",
+      "create_section_heading": "Add heading",
       "create_sub_heading": "Add sub-heading",
       "create_image": "Add picture",
       "create_line": "Add line",
@@ -1087,12 +1616,12 @@
     "jrxmlRegenerated": "JRXML has been regenerated",
     "previewFailed": "Failed to preview PDF, please check the console for error details",
     "bandLimits": {
-      "noSpace": "You don't have space to extend {band}. The Detail band has reached its minimum height ({height}px).",
-      "maxReached": "{band} space is exceeded. Change the template band settings for more space.",
-      "minReached": "Minimum height reached. If you don't need the {band} band, remove it.",
-      "textOverflow": "{band} reached its maximum limit ({height}px). The text exceeds the band capacity. Consider widening the element or placing long text in the Detail band.",
+      "noSpace": "You don't have space to extend {band}. The Detail section has reached its minimum height ({height}px).",
+      "maxReached": "{band} is full. Raise its maximum in Template Settings → Section Heights for more space.",
+      "minReached": "Minimum height reached. If you don't need {band}, untick it in Template Settings → Page Sections.",
+      "textOverflow": "{band} reached its maximum height ({height}px) and the text doesn't fit. Make the item wider, or put long text in the Detail section.",
       "grewToFit": "{band} grew to {height}px to fit the element.",
-      "tooTallForBand": "This element is {height}px tall, but {band} can be at most {max}px. Make the element smaller, or raise the band's maximum height in the template band settings."
+      "tooTallForBand": "This element is {height}px tall, but {band} can be at most {max}px. Make the element smaller, or raise {band}'s maximum in Template Settings → Section Heights."
     },
     "confirmDelete": {
       "title": "Delete",
@@ -1111,11 +1640,12 @@
     "dropHere": "Drop here",
     "aligned": "Aligned",
     "pageOf": "Page {page} of {total}",
-    "dragOntoPage": "Drag elements onto page {page}",
     "selectPageBorder": "Click to select the page border",
     "pageBorderResized": "The page border was resized to fit the new page.",
     "elementsMovedToFit": "1 element was moved to fit inside the new page. | {count} elements were moved to fit inside the new page.",
-    "addPageAfter": "Add page after"
+    "addPageAfter": "Add page after",
+    "emptyPage": "Page {page} is empty",
+    "emptyPageHint": "Click an item in the Element Library on the left, or drag it here. You can also ask the AI Assistant to design it."
   },
   "alignment": {
     "left": "Align left",
@@ -1178,7 +1708,7 @@
       "photoMeta": "Date: – · Location: –"
     },
     "customizeHint": "Fine-tune each side and the corner radius in Style Settings.",
-    "pageBorderExists": "This report already has a page border. You can edit the existing page border instead of adding a new one.",
+    "pageBorderExists": "This template already has a page border. You can edit the existing page border instead of adding a new one.",
     "templateDescription": {
       "frameKpiCard": "Shows one important number, with a small label above and a note below (for example: Progress 17.93%).",
       "frameAlertBox": "A coloured box with a heading and a short message, for warnings or things readers must notice.",
@@ -1190,12 +1720,12 @@
     "moveOutOfBox": "Move out of box"
   },
   "reportParts": {
-    "noBand": "This report has no {band}. Turn it on under Page Settings → Band Selection, then add it again.",
+    "noBand": "This template has no {band}. Turn it on under Template Settings → Page Sections, then add it again.",
     "statusColor": "Status colour",
     "description": {
       "partReportHeader": "A dark banner across the top of every page with three lines of title (client and project, report number, month). Goes in the Page Header.",
       "partPageFooter": "A thin line, the page number (Page 1 of 12) and a spot for your logo, at the bottom of every page. Goes in the Page Footer.",
-      "partSectionHeading": "A large bold heading with its number, for example: SECTION 1.  PROJECT DETAILS.",
+      "partSectionHeading": "A large bold heading with its number, for example: 1.  PROJECT DETAILS.",
       "partSubHeading": "A smaller bold, underlined heading, for example: TOWER A: KEY ACTIVITIES.",
       "partNote": "A small italic line for a source or remark under a table.",
       "partRiskLegend": "Green, amber and red dots that explain the risk colours: Low, Moderate and High Risk.",
@@ -1207,7 +1737,7 @@
       "tableComparison": "Two heading rows (Current, Previous and Difference, each split into Issued and Pending), category rows and a Total row.",
       "tableActionPlan": "Item, description, the actions as bullet points, and a coloured status dot: change the dot's text colour to green, amber or red.",
       "tableRiskRegister": "Numbered issues with their actions, the next action, a due date and a coloured risk cell (High, Moderate).",
-      "partContentsList": "A table of contents: number, title, dotted line and page. Use it on a contents page (or any normal page, not on the cover). Fill it from your Section Headings in its properties.",
+      "partContentsList": "A table of contents: number, title, dotted line and page. Use it on a contents page (or any normal page, not on the cover). Fill it from your Headings in its properties.",
       "coverPhotoPanel": "A whole cover page: photos on the left, a dark panel with logo and title.",
       "coverFullPhoto": "A whole cover page: one large photo and a dark title band.",
       "coverMinimal": "A whole cover page: logo, large title and an accent line.",
@@ -1218,7 +1748,7 @@
       "headerLine1": "Client - Project Name",
       "headerLine2": "Monthly Report #1",
       "headerLine3": "Month Year",
-      "sectionNumber": "SECTION 1.",
+      "sectionNumber": "1.",
       "sectionTitle": "SECTION TITLE",
       "subHeading": "SUB-HEADING",
       "note": "*Source of the figures above",
@@ -1340,7 +1870,7 @@
     },
     "cannotEdit": "Page numbers are dynamically generated and cannot be edited directly. Use the property panel to change format or page range.",
     "lockedHint": "Page number – change its format or pages in the property panel.",
-    "noBand": "Add a band to the report before inserting a page number.",
+    "noBand": "Add a page section to the template before inserting a page number.",
     "tileHint": "Click to choose where the page number goes, or drag it onto the page.",
     "choosePosition": "Insert page number",
     "positions": {
@@ -1410,10 +1940,10 @@
       "longerNote": "If the report becomes longer, the extra pages are numbered the same way.",
       "tablesNote": "A table can make the report longer than you see here. The extra pages are numbered the same way.",
       "design": {
-        "nothingNumbered": "No page gets a number yet: your report has only 1 page. | No page gets a number yet: your report has {total} pages.",
-        "startsAfterEnd": "Numbering starts on page {from}, but your report has only 1 page. | Numbering starts on page {from}, but your report has only {total} pages.",
-        "partAfterEnd": "Part {part} starts on page {from}, but your report has only 1 page. | Part {part} starts on page {from}, but your report has only {total} pages.",
-        "leftOutAfterEnd": "Page {pages} is after the last page of your report. | Pages {pages} are after the last page of your report.",
+        "nothingNumbered": "No page gets a number yet: your template has only 1 page. | No page gets a number yet: your template has {total} pages.",
+        "startsAfterEnd": "Numbering starts on page {from}, but your template has only 1 page. | Numbering starts on page {from}, but your template has only {total} pages.",
+        "partAfterEnd": "Part {part} starts on page {from}, but your template has only 1 page. | Part {part} starts on page {from}, but your template has only {total} pages.",
+        "leftOutAfterEnd": "Page {pages} is after the last page of your template. | Pages {pages} are after the last page of your template.",
         "whatToDo": "This is fine if the report grows longer when it is made. Otherwise, add pages or change the page numbers above."
       },
       "numbersTitle": "Number style",
@@ -1896,7 +2426,7 @@
     "projects": "Projects",
     "chooseProjects": "Choose projects…",
     "noProjectMatch": "No projects match",
-    "noProjects": "Use “Choose projects…” at the top of the page to pick the projects this report uses. A report can show data from several projects.",
+    "noProjects": "Use “Choose projects…” at the top of the page to pick the projects this template uses. A template can show data from several projects.",
     "search": "Search details, tables and columns",
     "hint": "Drag a detail (name, date, introduction…) onto a text element, or the logo onto an image element, to fill it; drop it on empty space for a new one. It becomes normal text or a normal image. Drag a table onto the Detail section or onto a table; drag a column to add just that column.",
     "details": "Details",
@@ -1916,7 +2446,7 @@
     "dropImageOnImage": "Drop the logo on an image element, or on empty space.",
     "dropNotOnPageNumber": "A page number can't show project data. Drop it on another text element.",
     "dropNotOnDate": "A date fills itself in and can't show project data. Drop it on another text element.",
-    "projectInUse": "{project} is still used by {count} table(s) or chart(s) on this report. Delete them, or choose another project in their data, before removing it.",
+    "projectInUse": "{project} is still used by {count} table(s) or chart(s) on this template. Delete them, or choose another project in their data, before removing it.",
     "projectSource": "{project} · {source}",
     "noValue": "{project} has no {label} to add.",
     "projectTabs": "Report projects",
@@ -2124,7 +2654,7 @@
     "hint": "Remove this item's styling (colours, borders, fonts, shapes). Its content, place and size stay. Tables keep only their lines."
   },
   "header": {
-    "reportsHome": "Reports home",
+    "reportsHome": "Templates home",
     "mainMenu": "Main Menu",
     "document": "Document"
   },
@@ -2146,7 +2676,7 @@
     "deleteContents": "Delete this contents page",
     "emptyCover": "Design the cover page",
     "emptyContents": "Design the table of contents",
-    "lastNormalPage": "This page can't be deleted: a report needs at least one normal page after the cover and contents pages.",
+    "lastNormalPage": "This page can't be deleted: a template needs at least one normal page after the cover and contents pages.",
     "coverAdded": "Cover page added at the front.",
     "coverMade": "This page is now the cover page.",
     "contentsAdded": "Contents page added.",
@@ -2158,7 +2688,7 @@
       "pageNumber": "Page numbers can't go on the cover or contents pages. Put them in the page header or footer: they show on the other pages.",
       "dataTable": "Tables with project data can't go on the cover or contents pages, because they can grow onto more pages. Use a table you type yourself (Type my own).",
       "contentsList": "A table of contents can't go on the cover page. Put it on a contents page (or a normal page).",
-      "secondContents": "This report already has a Table of Contents on its contents pages. It is selected: change it, or add another one on a normal page.",
+      "secondContents": "This template already has a Table of Contents on its contents pages. It is selected: change it, or add another one on a normal page.",
       "contentsListInBox": "A box holding a Table of Contents can only be on a normal page. On a contents page, use the Table of Contents on its own (Move out of box)."
     },
     "countPages": "Count the cover and contents pages",
@@ -2175,10 +2705,12 @@
     "contentsAddedSameDesign": "Contents page added with the same design.",
     "noToc": "This contents page has no Table of Contents",
     "addToc": "Add Table of Contents",
-    "chooseDesign": "Choose a design"
+    "chooseDesign": "Choose a design",
+    "emptyCoverHint": "Use Change design above the page for a ready-made cover, or add items from the left.",
+    "emptyContentsHint": "Use Change design above the page, or add the Table of Contents from Basic Elements on the left."
   },
   "contentsList": {
-    "emptyHint": "Table of contents: fill it from your Section Headings in its properties",
+    "emptyHint": "Table of contents: fill it from your Headings in its properties",
     "continuesHint": "Carries on the table of contents",
     "continuesNote": "This list carries on another one: filling it fills them all.",
     "rows": "No rows | 1 row | {n} rows",
@@ -2203,7 +2735,7 @@
     "numberBox": "Number box",
     "noNumberBox": "No number box",
     "onlyOnPages": "Select a table of contents on a page first.",
-    "noHeadings": "No section headings found. Add Section Heading presets (Element Presets → Headings & Text) to your pages first.",
+    "noHeadings": "No headings found. Add a Heading (Basic Elements) to your pages first.",
     "notAllFit": "1 row didn't fit. Put the list on a contents page to carry it on to more pages. | {n} rows didn't fit. Put the list on a contents page to carry it on to more pages.",
     "filled": "Filled with 1 heading. | Filled with {n} headings.",
     "filledMore": "Filled with {n} headings; 1 contents page was added for the rest. | Filled with {n} headings; {pages} contents pages were added for the rest.",
@@ -2212,10 +2744,10 @@
     "subStyle": "Sub-sections",
     "noSubNumbers": "No numbers",
     "follow": "Keep in step with my headings",
-    "followNone": "No headings yet. Add a Section Heading or Sub-heading from Element Presets → Headings & Text and it appears here.",
+    "followNone": "No headings yet. Add a Heading or Sub-heading from Basic Elements and it appears here.",
     "overflow": "1 row doesn't fit on this page. | {n} rows don't fit on this page.",
     "overflowNotContents": "1 row doesn't fit on this page. Make the list or its rows smaller, or put it on a contents page so it can carry on to the next one. | {n} rows don't fit on this page. Make the list or its rows smaller, or put it on a contents page so it can carry on to the next one.",
-    "followEmptyHint": "Table of contents: your Section Headings and Sub-headings will appear here",
+    "followEmptyHint": "Table of contents: your Headings and Sub-headings will appear here",
     "goTo": "Go to this heading",
     "goToHint": "Double-click to go to this heading",
     "noHeadingForRow": "No heading on your pages has this row's title.",
@@ -2241,14 +2773,14 @@
     "modeManualDesc": "Type and arrange the rows yourself",
     "autoHint": "To add or change a row, add or change a heading on your pages. Hide a row with the eye.",
     "manualHint": "Your own rows: editing them never changes your headings. Switching back to Automatic replaces them with your headings.",
-    "autoNumbersOn": "Section numbers match your Section Headings; sub-sections are counted.",
+    "autoNumbersOn": "Section numbers match your Headings; sub-sections are counted.",
     "manualNumbersOn": "Sections and sub-sections are counted for you.",
     "numbersOff": "Type each number yourself, or leave it empty.",
     "manualEmpty": "No rows yet. Fill them from your headings, or add your own.",
     "fill": "Fill from my headings",
     "hideRow": "Hide from the contents",
     "showRow": "Show in the contents",
-    "sharedStyleHint": "Also changes the numbers on your Section Headings, so they always match.",
+    "sharedStyleHint": "Also changes the numbers on your Headings, so they always match.",
     "filledAdded": "Added 1 row at the end: drag it into place. | Added {n} rows at the end: drag them into place.",
     "fillAsk": {
       "title": "Your contents already has 1 row. What should we do? | Your contents already has {n} rows. What should we do?",
@@ -2273,7 +2805,7 @@
       "bottom": "Bottom",
       "hint": "Up / down uses the space below the heading. Two columns move together, and later contents pages follow."
     },
-    "sampleRows": "The {n} rows on the page are samples from the design. Add a Section Heading or Sub-heading (Element Presets → Headings & Text) and your headings replace them.",
+    "sampleRows": "The {n} rows on the page are samples from the design. Add a Heading or Sub-heading (Basic Elements) and your headings replace them.",
     "show": "Show",
     "showAll": "Sections and sub-sections",
     "showSections": "Sections only",
@@ -2437,7 +2969,7 @@
     "replaceContentsMessage": "The new design replaces the heading and layout on all your contents pages. Your Table of Contents rows are kept.",
     "appliedAllContents": "Design applied to all your contents pages.",
     "replaceContentsTitle": "Change the design of all contents pages?",
-    "numbersNow": "Your Section Headings are now numbered like this design: {sample}… Ctrl+Z undoes it."
+    "numbersNow": "Your Headings are now numbered like this design: {sample}… Ctrl+Z undoes it."
   },
   "appMenu": {
     "title": "Menu",
@@ -2449,7 +2981,7 @@
   "headingNumbers": {
     "title": "Section number",
     "auto": "Number this heading automatically",
-    "autoHint": "This is section {n}. Section Headings count 1, 2, 3… in page order: add, move or delete one and the numbers follow.",
+    "autoHint": "This is section {n}. Headings count 1, 2, 3… in page order: add, move or delete one and the numbers follow.",
     "typedHint": "This heading keeps the number typed in it. Tick the box to count it again.",
     "notCounted": "Headings on the cover and contents pages aren't counted.",
     "noNumberPart": "This heading has no number of its own.",
@@ -2458,10 +2990,10 @@
   "addPageMenu": {
     "title": "Add a page",
     "normal": "Normal page",
-    "normalHint": "Added at the end of the report.",
+    "normalHint": "Added at the end of the template.",
     "cover": "Cover page",
     "coverHint": "At the front, without the page header or footer. You choose a design next.",
-    "coverExists": "This report already has a cover page.",
+    "coverExists": "This template already has a cover page.",
     "contents": "Table of Contents",
     "contentsHint": "After the cover, without the page header or footer. You choose a design next.",
     "contentsMoreHint": "Another contents page with the same design as the last one."
@@ -2474,5 +3006,691 @@
     "afterPlaceholder": "e.g. :",
     "preview": "Preview",
     "sampleTitle": "Project details"
+  },
+  "helpDocs": {
+    "panel": {
+      "title": "Help",
+      "expand": "Open help",
+      "tabs": {
+        "item": "This item",
+        "guides": "Show me how",
+        "elements": "All elements"
+      },
+      "allPages": "All elements",
+      "search": "Search the help, e.g. rounded corners",
+      "noResults": "Nothing found. Try another word.",
+      "dragHint": "Drag to move",
+      "minimize": "Minimize to the side"
+    },
+    "groups": {
+      "start": "Header & settings",
+      "basic": "Basic Elements",
+      "presets": "Element Presets",
+      "composite": "Composite Elements"
+    },
+    "parts": {
+      "when": "When to use it",
+      "add": "How to add it",
+      "work": "How to work with it",
+      "settings": "Its settings",
+      "good": "Good to know",
+      "guides": "Step-by-step guides"
+    },
+    "learnMore": "Learn more",
+    "closeExplanation": "Close",
+    "settingHelp": "What is {name}?",
+    "samples": {
+      "text": "Your text here",
+      "item": "Item",
+      "status": "Status",
+      "amount": "Amount"
+    },
+    "tools": {
+      "projects": {
+        "title": "Projects",
+        "text": "Choose the projects this template is about. Their details, tables and charts then appear under Report Data on the left."
+      },
+      "reportName": {
+        "title": "Template name",
+        "text": "Click the name to change it. The tick next to it shows your work is saved by itself."
+      },
+      "file": {
+        "title": "File",
+        "text": "New starts a template. Open opens one of your templates, or a .jrxml file from your computer."
+      },
+      "undo": {
+        "title": "Undo",
+        "text": "Takes back your last change. Press it again to go further back."
+      },
+      "redo": {
+        "title": "Redo",
+        "text": "Brings back a change you undid."
+      },
+      "addPage": {
+        "title": "Page",
+        "text": "Adds a page: a normal page at the end, a cover page at the front, or a table of contents."
+      },
+      "delete": {
+        "title": "Delete",
+        "text": "Removes the selected item from the page. Undo brings it back."
+      },
+      "copy": {
+        "title": "Copy",
+        "text": "Copies the selected item, ready to paste."
+      },
+      "paste": {
+        "title": "Paste",
+        "text": "Puts a copy of what you copied a little below and to the right of the original. Right-click the page and choose Paste to put it where you clicked."
+      },
+      "zoom": {
+        "title": "Zoom",
+        "text": "Makes the page bigger or smaller on your screen; the printed size never changes. Use − and +, type a size, or pick one from the list."
+      },
+      "bottomPanel": {
+        "title": "Default Settings",
+        "text": "Opens Default Settings at the bottom: the paper, margins, font and page sections every new template starts with."
+      },
+      "snap": {
+        "title": "Snap & grid",
+        "text": "Three switches that help you place items neatly:",
+        "parts": {
+          "grid": {
+            "title": "Snap to Grid",
+            "text": "When you move or resize an item, it jumps to the nearest grid line, so items line up neatly. Shift + arrow keys then move it one grid square at a time."
+          },
+          "alignment": {
+            "title": "Snap to Alignment",
+            "text": "While you drag, a coloured line appears when the item lines up with the edge or the middle of another item, and it clicks into place."
+          },
+          "showGrid": {
+            "title": "Show Grid",
+            "text": "Shows the grid lines on the page to help you place things. They never print in the PDF."
+          }
+        }
+      },
+      "help": {
+        "title": "Help",
+        "text": "The tour, the Quick guide, keyboard and mouse shortcuts, and All elements: help for every element, with step-by-step guides."
+      },
+      "download": {
+        "title": "Download",
+        "text": "Saves this template as a file on your computer, to keep a copy or open it later with File."
+      },
+      "preview": {
+        "title": "Preview PDF",
+        "text": "Shows exactly what will print, with your project's data filled in."
+      }
+    },
+    "pages": {
+      "toolbar": {
+        "title": "Header Toolbar",
+        "what": "The buttons in the bar along the top of the designer. Hover over any of them to see what it does.",
+        "good": [
+          "On a narrow window, tools that don't fit move into the ☰ menu at the top left."
+        ]
+      },
+      "pageSettings": {
+        "title": "Default Settings",
+        "what": "What every new template starts with: its paper, margins, font, page sections and section heights. Open them with the Default Settings button at the top (Ctrl+B).",
+        "work": [
+          "Paper, Page Margins, Font, Page Sections and Section Heights work as in Template Settings, but only for templates you create from now on.",
+          "Apply to this template copies one of them into the template you have open (one undo step).",
+          "Original on a card (or Reset all to original at the top) puts back what the app came with: A4 portrait, 20 px margins and the usual sections."
+        ],
+        "good": [
+          "They are kept in this browser: another computer starts with the original settings.",
+          "To change only the template you have open, use Template Settings."
+        ]
+      },
+      "text": {
+        "title": "Text",
+        "what": "Words on the page: titles, paragraphs, labels and notes.",
+        "when": "For anything you want to write. For a numbered section title use a Heading; for a date that fills itself in use Date.",
+        "add": "Click Text in the Element Library, or drag it to the spot you want.",
+        "work": [
+          "Double-click the text to type in it. Click outside it when you are done.",
+          "Select some words while typing to see the formatting bar: bold, italic, underline, colours, bullet points, links and more.",
+          "Drag it to move it; drag the small squares around it to resize it.",
+          "Fit to Text (in Text Content) makes the box exactly as tall as its words.",
+          "Drag a project detail (name, client…) from Report Data onto it to fill it with that value."
+        ],
+        "good": [
+          "Text that doesn't fit its box is cut off in the PDF: make the box taller, or use Fit to Text.",
+          "Font, size, colour, borders and fill are in Style Settings."
+        ]
+      },
+      "sectionHeading": {
+        "title": "Heading",
+        "what": "A large heading that starts a section, with its number, for example 1.  PROJECT DETAILS.",
+        "when": "At the start of each main part of your report. The table of contents lists every Heading.",
+        "add": "Click Heading in the Element Library (it goes on a normal page), or drag it where you want it.",
+        "work": [
+          "The number counts itself: the first heading is 1, the next 2, and so on, in page order.",
+          "Click once to select the whole heading; click again to select its number or its title. Double-click the title to type.",
+          "Section number (in its properties) chooses how every heading is numbered, for example 1, 01, I or A, with words before it such as SECTION.",
+          "Type your own number over it and that heading keeps it."
+        ],
+        "good": [
+          "Headings on the cover or contents pages are not counted.",
+          "In the PDF each heading becomes a bookmark, and the table of contents links to it."
+        ]
+      },
+      "subHeading": {
+        "title": "Sub-heading",
+        "what": "A smaller heading inside a section, for example TOWER A: KEY ACTIVITIES.",
+        "when": "To split a section into smaller parts.",
+        "add": "Click Sub-heading in the Element Library, or drag it.",
+        "work": [
+          "Double-click it to type.",
+          "It has no number on the page; the table of contents lists it, indented, under its section."
+        ],
+        "good": [
+          "Put it after a Heading: a sub-heading before the first section has no section to belong to."
+        ]
+      },
+      "image": {
+        "title": "Image",
+        "what": "A picture or logo.",
+        "when": "For photos, logos, plans and signatures.",
+        "add": "Click Image in the Element Library, or drag it to the spot you want.",
+        "work": [
+          "Drop a picture file from your computer onto it, double-click it, or use Upload Image in its properties (PNG or JPG, up to 4 MB).",
+          "Double-click a picture to crop it.",
+          "Shape rounds it: Rounded, Soft, Circle, Pill and more. The shape follows the picture when you resize it.",
+          "Drag your project's logo from Report Data onto it to use that logo."
+        ],
+        "good": [
+          "Each corner can be set on its own in Style Settings; the shape then shows as Custom."
+        ]
+      },
+      "line": {
+        "title": "Line",
+        "what": "A straight line to separate parts of the page.",
+        "add": "Click Line in the Element Library, or drag it.",
+        "work": [
+          "Line Orientation turns it across the page or up and down.",
+          "Line (in Style Settings) sets its style, such as solid or dashed, its thickness and its colour.",
+          "Drag its ends to make it longer or shorter."
+        ]
+      },
+      "rectangle": {
+        "title": "Rectangle",
+        "what": "A plain shape for bars, rules, outlines and coloured backgrounds.",
+        "when": "Only for shapes with nothing on them. For a coloured panel with text or pictures on it, use a Box: everything inside moves with it.",
+        "add": "Click Rectangle in the Element Library, or drag it.",
+        "work": [
+          "Outline sets the line around it; Background Color fills it.",
+          "Corner Radius in Style Settings rounds its corners."
+        ],
+        "good": [
+          "Selecting a rectangle doesn't bring it to the front, so what lies on it stays visible."
+        ]
+      },
+      "ellipse": {
+        "title": "Ellipse",
+        "what": "A circle or oval.",
+        "when": "For round shapes and coloured status dots.",
+        "add": "Click Ellipse in the Element Library, or drag it.",
+        "work": [
+          "Give it the same width and height for a perfect circle.",
+          "Status colour makes it green, amber or red in one click.",
+          "Outline and Background Color set its line and fill."
+        ]
+      },
+      "box": {
+        "title": "Box",
+        "what": "A container that holds other items together, so they move as one.",
+        "when": "For a coloured panel with text or pictures on it, a card, or any group of items that belong together.",
+        "add": "Click Box in the Element Library, or drag it. Ready-made boxes are under Element Presets.",
+        "work": [
+          "Drop items onto the box to put them in it.",
+          "Click once to select the box, and again to select an item inside it.",
+          "Right-click an item for Add to box (it then moves and resizes with the box) or Move out of box.",
+          "Box Style gives ready-made borders; Borders sets each side on its own; Background Color fills it."
+        ],
+        "good": [
+          "A box can't hold another box or a table.",
+          "Corner Radius in Style Settings gives it rounded corners."
+        ]
+      },
+      "table": {
+        "title": "Table",
+        "what": "Rows and columns, either typed by you or filled from your project's data.",
+        "when": "Type my own for key figures, summaries and registers. Use project data for lists that come from your project, such as procurement or materials.",
+        "add": "Click Table in the Element Library and choose Type my own or Use project data.",
+        "work": [
+          "A typed table: double-click it to type in the cells; Tab moves to the next cell. Right-click a cell to add or delete rows and columns, or to merge and split cells.",
+          "A project data table: double-click it (or Edit data) to choose the project, the data, the columns, filters, sort and totals. The rows fill in by themselves every time the report runs.",
+          "Look sets the table style; Customize changes this table's colours only, and Save as table style keeps them for other tables.",
+          "Table content switches a table between typed and project data."
+        ],
+        "good": [
+          "A project data table only goes in the Detail part of the page, and never in a box.",
+          "A long table continues on the next page.",
+          "The page shows up to 5 sample rows; the PDF prints every row."
+        ]
+      },
+      "chart": {
+        "title": "Chart",
+        "what": "A chart drawn from your project's numbers: bars, lines, pie, donut, gauge and more.",
+        "when": "To show a trend over time, compare categories, or show the parts of a whole.",
+        "add": "Click Chart in the Element Library and choose a type, or drag it to get a bar chart.",
+        "work": [
+          "Double-click the chart (or Set up data) to choose the project, the data and what to show, with a live preview.",
+          "Until its data is set up, the chart shows sample numbers with a badge.",
+          "Chart type changes the kind of chart and keeps its data.",
+          "Chart sets its title and legend; Colors picks the colour set."
+        ],
+        "good": [
+          "Only charts with their data set up print.",
+          "The numbers are fetched fresh every time the report runs."
+        ]
+      },
+      "tableOfContents": {
+        "title": "Table of Contents",
+        "what": "The list of your sections and sub-sections with their page numbers.",
+        "when": "On a contents page at the front of the report, or on any normal page. Not on the cover.",
+        "add": "Click Table of Contents in the Element Library. On an empty contents page you can also click Add Table of Contents.",
+        "work": [
+          "Automatic lists every Heading and Sub-heading by itself and keeps up as you add, move or rename them. The eye next to a row leaves that heading out.",
+          "Manual lets you type and arrange the rows yourself; Fill from my headings copies your headings in.",
+          "Design gives four ready-made looks; Look and Colours fine-tune it; Content Alignment places it on the page.",
+          "Double-click a row to go to its heading."
+        ],
+        "good": [
+          "When the list needs more room, more contents pages are added by themselves.",
+          "In the PDF every row is a link to its heading.",
+          "If a growing table pushes a heading to a later page, check the page numbers in Preview PDF."
+        ]
+      },
+      "barcode": {
+        "title": "Barcode",
+        "what": "A barcode or QR code that phones and scanners can read.",
+        "add": "Click Barcode in the Element Library and choose a type, or drag it to get a Code 128.",
+        "work": [
+          "Barcode type: product codes (EAN, UPC), label and stock codes (Code 128, Code 39…), 2D codes (QR Code, Data Matrix, PDF417) and postal codes.",
+          "Value: type what the code holds, or click an example. A QR code has a form for a web link, email, phone number, Wi-Fi and more.",
+          "The bars fill the box: make the box bigger for bigger bars."
+        ],
+        "good": [
+          "A value the type can't hold is drawn faded with a badge, and the panel says why.",
+          "If the bars get too thin to scan, the panel warns you.",
+          "A QR code can't be rotated."
+        ]
+      },
+      "presetBoxes": {
+        "title": "Ready-made boxes",
+        "what": "Boxes with their parts already in place: KPI Box (one important number), Alert Box (a warning), Section Box (a titled area) and Photo Box (a photo with a caption).",
+        "add": "Click one under Element Presets → Boxes, or drag it.",
+        "work": [
+          "Click once to select the box; click again to select a part, such as the number or the label.",
+          "Double-click a part's text to type your own.",
+          "Drag the box and all its parts move with it."
+        ]
+      },
+      "presetHeaderFooter": {
+        "title": "Report Header and Page Footer",
+        "what": "A banner across the top of every page (Report Header), and a footer with the page number and a spot for your logo (Page Footer).",
+        "add": "Click it: the Report Header goes in the Page Header and the Page Footer in the Page Footer, so they print on every page. If that part of the page is turned off, a message tells you.",
+        "work": [
+          "Double-click any text in it to type your own.",
+          "Drop your logo onto the logo spot."
+        ],
+        "good": [
+          "They don't print on the cover or the contents pages."
+        ]
+      },
+      "presetStatus": {
+        "title": "Status",
+        "what": "Risk Legend explains the risk colours (low, moderate, high) with coloured dots; Status Dot is one coloured dot.",
+        "add": "Click one under Element Presets → Status, or drag it.",
+        "work": [
+          "Status colour turns a dot green, amber or red in one click."
+        ]
+      },
+      "presetSignOff": {
+        "title": "Sign-off",
+        "what": "A signature above a line, with the name, job title and date.",
+        "add": "Click Sign-off under Element Presets, or drag it.",
+        "work": [
+          "Drop a picture of the signature onto its picture spot.",
+          "Double-click the texts to type the name, job title and date."
+        ]
+      },
+      "presetTables": {
+        "title": "Ready-made tables",
+        "what": "Typed tables already laid out for monthly reports: Key Statistics, Financial Summary, Progress Table, Comparison Table, Action Plan and Risk Register.",
+        "add": "Click one under Element Presets → Tables, or drag it.",
+        "work": [
+          "Double-click it to type over the sample words.",
+          "A status is a coloured dot (●) in its cell: change the cell's text colour to green, amber or red.",
+          "Everything else works as in any typed table."
+        ]
+      },
+      "pageBorder": {
+        "title": "Page Border",
+        "what": "A border around every page of the report.",
+        "add": "Click Page Border under Composite Elements. A template has one border; the tile is turned off once there is one.",
+        "work": [
+          "Click the border's line to select it.",
+          "Box Style changes its line."
+        ],
+        "good": [
+          "It prints on every page, cover and contents pages included, except a cover that fills the whole sheet."
+        ]
+      },
+      "pageNumber": {
+        "title": "Page Number",
+        "what": "Page numbers that fill in by themselves, such as Page 1 of 12.",
+        "add": "Click Page Number under Composite Elements and choose where it goes, or drag it.",
+        "work": [
+          "Format: how it reads (1, Page 1, Page 1 of 12, 1 / 12) and the number style (1 2 3, i ii iii, I II III, A B C).",
+          "Which pages get a number: every page, all but the first one or two, or only some pages, in parts that can each have their own look.",
+          "Your pages shows what every page will print."
+        ],
+        "good": [
+          "The cover and contents pages never show a number; Count the cover and contents pages decides whether they are counted."
+        ]
+      },
+      "date": {
+        "title": "Date",
+        "what": "A date that fills itself in, such as the day the report is printed.",
+        "add": "Click Date under Composite Elements, or drag it.",
+        "work": [
+          "Which date: the day the report is printed, this month, last month, or a date you choose, with a time if you want one.",
+          "How it looks: pick a date style, and a time style if you show the time.",
+          "Words before the date: for example “Printed on”."
+        ],
+        "good": [
+          "You can't type over it. To write your own date, click Type my own text instead in its properties: it becomes plain text."
+        ]
+      },
+      "templateSettings": {
+        "title": "Template Settings",
+        "what": "The settings of the template you have open: its paper, margins, font and the sections every page has. They show on the right when nothing is selected.",
+        "add": "Click an empty part of the page (or press Esc) so nothing is selected; the right panel then shows Template Settings.",
+        "work": [
+          "Paper: the paper size (A4, Letter… or your own), portrait or landscape, and the exact width and height.",
+          "Page Margins: the empty space around the edge of every page. Nothing prints in it.",
+          "Font: the font and size new text starts with.",
+          "Page Sections: the sections every page has. Page Header prints at the top of every page and Page Footer at the bottom; Column Header and Column Footer sit just inside them. Untick a section you don't need. Detail, where your content goes, is always there. Background is the layer behind every page that holds the Page Border.",
+          "Section Heights: how tall each section is, with the smallest and largest it may become.",
+          "Use default on a card (or Reset all to default at the top) takes it from your Default Settings."
+        ],
+        "good": [
+          "Every change here can be undone (Ctrl+Z).",
+          "Changing the paper or margins moves items that no longer fit back onto the page.",
+          "What new templates start with is set in Default Settings."
+        ]
+      }
+    },
+    "settings": {
+      "reportSections": {
+        "title": "Section Heights",
+        "text": "How tall each page section is (Page Header, Column Header, Column Footer, Page Footer), with the smallest and largest it may become. Detail is worked out by itself."
+      },
+      "tableContent": {
+        "title": "Table content",
+        "text": "Whether you type the table yourself or it fills from your project's data. Switching keeps what the table shows."
+      },
+      "positionSize": {
+        "title": "Position & size",
+        "text": "Where the item sits (X from the left, Y from the top of its part of the page) and how wide and tall it is, in pixels.",
+        "example": "X 0 puts it against the left margin."
+      },
+      "picture": {
+        "title": "Image Name",
+        "text": "The picture shown. Upload one from your computer (PNG or JPG, up to 4 MB); its name is shown here."
+      },
+      "imageShape": {
+        "title": "Shape",
+        "text": "Rounds the picture: Rounded, Soft, Circle, Pill, Leaf and more. The shape follows the picture when you resize it.",
+        "example": "Circle on a square picture gives a round photo."
+      },
+      "rotation": {
+        "title": "Rotation",
+        "text": "Turns the item a quarter at a time: 0°, 90°, 180° or 270°."
+      },
+      "statusColor": {
+        "title": "Status colour",
+        "text": "One click makes the dot green, amber or red."
+      },
+      "lineOrientation": {
+        "title": "Line Orientation",
+        "text": "Whether the line runs across the page or up and down."
+      },
+      "textContent": {
+        "title": "Text Content",
+        "text": "The words shown. You can also double-click the text on the page to type. Fit to Text makes the box exactly as tall as the words."
+      },
+      "outline": {
+        "title": "Outline",
+        "text": "The line around the item: its style, thickness and colour.",
+        "example": "A thin grey outline frames a panel quietly."
+      },
+      "sideBorders": {
+        "title": "Borders",
+        "text": "A line on each side on its own: top, bottom, left and right.",
+        "example": "A line on the bottom only gives a rule under a heading."
+      },
+      "innerSpace": {
+        "title": "Margin Settings",
+        "text": "Space inside the item, between its edge and its content: for all sides at once, or side by side.",
+        "example": "10 px keeps text away from the border."
+      },
+      "lineSettings": {
+        "title": "Line",
+        "text": "The line's style (solid, dashed…), thickness and colour."
+      },
+      "textSettings": {
+        "title": "Text",
+        "text": "Font, size, bold, italic and underline, alignment (left, centre, right; top, middle, bottom) and colour."
+      },
+      "background": {
+        "title": "Background Color",
+        "text": "The colour that fills the item. Leave it empty to see through it."
+      },
+      "boxStyle": {
+        "title": "Box Style",
+        "text": "Ready-made borders for a box or the page border, such as none, outline or hairline. Pick one, then fine-tune it with Borders."
+      },
+      "headingNumbers": {
+        "title": "Section number",
+        "text": "Whether this heading numbers itself, and the number style every Heading uses (1, 1., 01, I, i, A, a), with words before or after it if you want, such as SECTION or Chapter."
+      },
+      "pnLook": {
+        "title": "Format",
+        "text": "How the page number reads (1, Page 1, Page 1 of 12, 1 / 12) and its number style (1 2 3, i ii iii, I II III, A B C)."
+      },
+      "pnPages": {
+        "title": "Which pages get a number?",
+        "text": "Every page, every page except the first one or two, or only some pages. Only some pages lets you make parts (for example pages 1 to 10), each with its own look, and list pages that get no number."
+      },
+      "pnYourPages": {
+        "title": "Your pages",
+        "text": "A tile for every page with what it will print, so you can check before printing."
+      },
+      "dateWhich": {
+        "title": "Which date?",
+        "text": "The day the report is printed, this month, last month, or a date you choose, with a time if you want one."
+      },
+      "dateLook": {
+        "title": "How it looks",
+        "text": "The date style, for example 21 October 2026 or 21/10/2026, and the time style (none, 24-hour or 12-hour)."
+      },
+      "dateBefore": {
+        "title": "Words before the date",
+        "text": "Text shown in front of the date, for example “Printed on” or “Date:”."
+      },
+      "chartType": {
+        "title": "Chart type",
+        "text": "The kind of chart: KPI Stat, Gauge, Line, Area, Bar, Horizontal Bar, Pie, Donut or Tree Map. Changing it keeps your data."
+      },
+      "chartData": {
+        "title": "Data",
+        "text": "Where the numbers come from. Set up data (or Edit data) opens a window to choose the project, the data, what to count or add up, the categories and the filters."
+      },
+      "chartTitle": {
+        "title": "Chart",
+        "text": "The chart's title, and whether it shows a legend."
+      },
+      "chartColors": {
+        "title": "Colors",
+        "text": "The colour set the chart uses. Every bar, slice or line gets a colour of its own."
+      },
+      "barcodeType": {
+        "title": "Barcode type",
+        "text": "The kind of code, grouped by use: products in shops; labels, stock and shipping; 2D codes such as QR; and post."
+      },
+      "barcodeValue": {
+        "title": "Value",
+        "text": "What the code holds. Click an example to fill it in; QR codes and GS1-128 have a form that builds the value for you."
+      },
+      "tableData": {
+        "title": "Data",
+        "text": "The table's name, where its rows come from and its filters. Edit data opens the window to change the project, data, columns, filters, sort and totals."
+      },
+      "tableLook": {
+        "title": "Look",
+        "text": "The table style: None, Corporate Blue, Minimal, Emerald, or a style you saved. Customize changes this table's colours only."
+      },
+      "tableRowSizes": {
+        "title": "Row sizes",
+        "text": "How tall the heading row and the other rows are."
+      },
+      "tableCustomize": {
+        "title": "Customize",
+        "text": "Colours and lines for this table: the heading, row colours (up to 4, taken in turn), totals, lines and text size. Save as table style keeps them to use on other tables."
+      },
+      "typedGrid": {
+        "title": "Rows and columns",
+        "text": "How many rows, columns and heading rows the table has, and whether the last row is a total."
+      },
+      "typedCells": {
+        "title": "Cells",
+        "text": "The look of the cells you chose (all cells when the table isn't open): fill, text colour, bold, alignment and text size. Merge cells joins them into one; Split cells undoes it; the reset button goes back to the table style."
+      },
+      "typedText": {
+        "title": "Text",
+        "text": "Text size and the space inside every cell, for the whole table."
+      },
+      "tocDesign": {
+        "title": "Design",
+        "text": "Four ready-made looks for the list: Classic, Dotted lines, Numbered boxes and Plain. Only the look changes, never the rows."
+      },
+      "tocRowsFrom": {
+        "title": "Where the rows come from",
+        "text": "Automatic lists your headings by itself; Manual lets you type and arrange the rows. Number automatically counts the sections for you. Show chooses sections and sub-sections, or sections only."
+      },
+      "tocRows": {
+        "title": "Rows",
+        "text": "Every row of the list. On Automatic you can leave a heading out with the eye, or go to it; on Manual you can add, drag, indent and delete rows."
+      },
+      "tocPlace": {
+        "title": "Content Alignment",
+        "text": "Places the list across the page (left, centre, right) and up or down (top, middle, bottom)."
+      },
+      "tocLook": {
+        "title": "Look",
+        "text": "Row height, text size, the space for numbers and for page numbers, the dots between title and page, and sections in bold."
+      },
+      "tocColours": {
+        "title": "Colours",
+        "text": "The colours of the list's text, and of the number box when it has one."
+      },
+      "templatePaper": {
+        "title": "Paper",
+        "text": "The paper size (A4, Letter… or your own), portrait or landscape, and the exact width and height of the page.",
+        "example": "Landscape A4 suits wide tables."
+      },
+      "templateMargins": {
+        "title": "Page Margins",
+        "text": "The empty space around the edge of every page, for each side. Nothing prints in it.",
+        "example": "20 px all round is the usual."
+      },
+      "templateFont": {
+        "title": "Font",
+        "text": "The font and size new text starts with in this template, and whether it starts bold, italic or underlined."
+      },
+      "templateBands": {
+        "title": "Page Sections",
+        "text": "The sections every page has: Page Header and Page Footer print on every page, Column Header and Column Footer just inside them. Untick a section you don't need; Detail is always there."
+      }
+    }
+  },
+  "templateSettings": {
+    "paper": "Paper",
+    "font": "Font",
+    "bandsHint": "Ticked sections are on every page of this template; untick one to remove it. Detail, where your content goes, is always there.",
+    "useDefault": "Use default",
+    "useDefaultHeightsTitle": "Take the section heights from Default Settings",
+    "useDefaultDone": "Taken from Default Settings.",
+    "resetAll": "Reset all to default",
+    "resetAllDone": "Template Settings now match Default Settings.",
+    "scope": "This template only",
+    "scopeHint": "These settings change only the template you have open. New templates start from Default Settings."
+  },
+  "defaultSettings": {
+    "intro": "New templates start with these settings. To change the template you have open, use Template Settings on the right (click an empty part of the page).",
+    "reset": "Reset to the app's defaults",
+    "resetDone": "Default Settings are back to the original settings.",
+    "apply": "Apply to this template",
+    "applied": "Applied to this template.",
+    "bandsHint": "The sections every new template starts with. Detail, where your content goes, is always there.",
+    "original": "Original",
+    "originalDone": "Back to the original.",
+    "resetAll": "Reset all to original"
+  },
+  "myTemplates": {
+    "count": "No templates | 1 template | {count} templates",
+    "noMatch": "No template is called \"{query}\"",
+    "noMatchHint": "Check the spelling, or try fewer words.",
+    "resultsFor": "Templates matching \"{query}\"",
+    "clearSearch": "Clear",
+    "columns": {
+      "name": "Name",
+      "lastModified": "Last edited",
+      "createdAt": "Created",
+      "owner": "Owner",
+      "actions": "Actions"
+    },
+    "sortBy": "Sort by",
+    "sort": {
+      "lastModified": "Last edited",
+      "createdAt": "Newest first",
+      "nameAsc": "Name A to Z",
+      "nameDesc": "Name Z to A"
+    },
+    "view": "Show templates as",
+    "views": {
+      "grid": "Grid",
+      "list": "List"
+    },
+    "loadFailed": "Your templates couldn't be loaded.",
+    "tryAgain": "Try again",
+    "empty": "You have no templates yet.",
+    "pages": "Pages",
+    "range": "{from}–{to} of {total}",
+    "previous": "Previous",
+    "next": "Next",
+    "perPage": "Per page",
+    "showing": "Showing {shown} of {total}",
+    "loadMore": "Load more",
+    "first": "First page",
+    "last": "Last page"
+  },
+  "openTemplate": {
+    "title": "Open a template",
+    "tabs": {
+      "mine": "My templates",
+      "computer": "From my computer"
+    },
+    "openNow": "Open now",
+    "none": "You have no saved templates yet.",
+    "dropTitle": "Drop a .jrxml file here, or click to choose one",
+    "dropHint": "A template downloaded from here or made in Jaspersoft Studio",
+    "addedNote": "It opens as a new template and is added to My templates.",
+    "seeAll": "See all in My Templates",
+    "notFound": "That template couldn't be found. It may have been deleted."
   }
 }
