@@ -23,24 +23,23 @@
           <span class="brand-badge">REPORT STUDIO</span>
         </div>
       </div>
-      <label class="search-box">
+      <label class="search-box" data-help="search">
         <Search :size="20" :stroke-width="2.25" aria-hidden="true" />
         <input
           v-model="searchQuery"
           type="search"
+          @keydown.enter="findTemplates"
           :placeholder="t('layout.searchTemplates')"
           :aria-label="t('layout.searchTemplates')"
         />
         <kbd>/</kbd>
       </label>
       <div class="topbar-actions">
-        <button class="icon-button" type="button" :aria-label="t('layout.help')">
-          <CircleHelp :size="20" :stroke-width="2.25" aria-hidden="true" />
-        </button>
+        <HelpMenu context="home" class="help-icon" />
         <button class="icon-button notification-icon" type="button" :aria-label="t('layout.notifications')">
           <Bell :size="20" :stroke-width="2.25" aria-hidden="true" />
         </button>
-        <AccountMenu />
+        <AccountMenu data-help="account" />
       </div>
     </header>
 
@@ -49,7 +48,7 @@
       :class="{ 'sidebar-collapsed': isSidebarCollapsed }"
     >
       <aside class="sidebar">
-        <nav>
+        <nav data-help="nav">
           <button
             v-for="menu in sidebarMenus"
             :key="menu.routeName"
@@ -85,19 +84,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { RouterView, useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import {
   Activity,
   Bell,
-  CircleHelp,
   Files,
   LayoutTemplate,
   Menu,
   Search,
 } from "@lucide/vue";
 import AccountMenu from "./common/AccountMenu.vue";
+import HelpMenu from "./help/HelpMenu.vue";
 
 const { t } = useI18n();
 
@@ -126,6 +125,29 @@ const router = useRouter();
 const route = useRoute();
 const isSidebarCollapsed = ref(false);
 const searchQuery = ref("");
+
+// The search box lists matching templates in My Templates: typing there
+// filters as you type, Enter elsewhere goes there with the words
+const findTemplates = () => {
+  const q = searchQuery.value.trim();
+  router.push({ name: "mytemplates", query: q ? { q } : {} });
+};
+watch(searchQuery, (value) => {
+  if (route.name !== "mytemplates") return;
+  const q = value.trim();
+  if (q === (route.query.q ?? "")) return;
+  // Keep the view and order; a new search starts on the first page
+  const { q: _q, page: _page, ...rest } = route.query;
+  router.replace({ query: q ? { ...rest, q } : rest });
+});
+watch(
+  () => [route.name, route.query.q] as const,
+  ([name, q]) => {
+    const text = name === "mytemplates" && typeof q === "string" ? q : "";
+    if (text.trim() !== searchQuery.value.trim()) searchQuery.value = text;
+  },
+  { immediate: true },
+);
 </script>
 
 <style scoped>
@@ -207,6 +229,9 @@ button:active {
 .topbar-actions {
   display: flex;
   align-items: center;
+}
+.help-icon {
+  margin-right: 4px;
 }
 .notification-icon {
   margin-right: 12px;
@@ -352,8 +377,8 @@ button:active {
 .main-content {
   flex: 1 1 auto;
   min-width: 0;
-  width: min(1180px, 100%);
-  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
   padding: 54px 52px 80px;
 }
 .menu-button {
@@ -531,7 +556,7 @@ button:active {
   .search-box kbd {
     display: none;
   }
-  .topbar-actions .icon-button:first-of-type {
+  .topbar-actions .help-icon {
     display: none;
   }
   .sidebar-collapsed .sidebar {

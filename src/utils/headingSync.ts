@@ -45,7 +45,11 @@ export const HEADING_NUMBER_PROPERTY = "com.cdp.heading.number";
 // Report property: {"style":"1."} (left out for the default)
 export const HEADING_NUMBERS_PROPERTY = "com.cdp.headingNumbers";
 
+// What a report without the property uses ("SECTION 1."): every template made
+// before new ones started with "1.", so they print as they always did
 export const DEFAULT_HEADING_NUMBERING: HeadingNumbering = { style: "word", word: "SECTION" };
+// What a new template starts with: just the number ("1.", "2."…)
+export const NEW_REPORT_HEADING_NUMBERING: HeadingNumbering = { style: "1." };
 
 type SyncProps = Pick<
   ReportProperties,
@@ -125,8 +129,32 @@ export function renumberHeadings(bands: Band[], props: SyncProps): boolean {
       writeNumber(part, wanted);
       changed = true;
     }
+    if (fitNumberPart(heading, part, wanted)) changed = true;
   });
   return changed;
+}
+
+// A number longer than its part ("SECTION 12." in a part made for "1.")
+// widens it and moves the title along; never narrows what the user sized
+function fitNumberPart(heading: FrameElement, part: DesignElement, text: string): boolean {
+  const fontSize = part.type === "textField" ? (part.fontSize ?? 11) : 11;
+  const needed = Math.ceil(text.length * fontSize * 0.62) + 10;
+  const grow = needed - part.width;
+  if (grow <= 0) return false;
+  const { titleParts } = sectionHeadingParts(heading);
+  // The title keeps at least 20px; without a title, the box's own edge
+  const room = Math.min(
+    grow,
+    ...titleParts.map((title) => title.width - 20),
+    titleParts.length ? Infinity : heading.width - part.x - part.width,
+  );
+  if (room <= 0) return false;
+  part.width += room;
+  for (const title of titleParts) {
+    title.x += room;
+    title.width -= room;
+  }
+  return true;
 }
 
 // ---------------------------------------------------------------------------

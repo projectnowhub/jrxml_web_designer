@@ -2,7 +2,8 @@
   <!-- A Section Heading's number: counted for it, or typed; and the style
        every Section Heading uses -->
   <div class="box-section compact heading-number-card">
-    <h5>{{ t("headingNumbers.title") }}</h5>
+    <h5>{{ t("headingNumbers.title") }}<SettingHelpButton id="headingNumbers" /></h5>
+    <SettingHelpText id="headingNumbers" />
     <template v-if="numberPart">
       <label class="toggle-row">
         <input type="checkbox" :checked="auto" @change="setAuto(($event.target as HTMLInputElement).checked)" />
@@ -22,6 +23,8 @@
 </template>
 
 <script setup lang="ts">
+import SettingHelpButton from "../../help/SettingHelpButton.vue";
+import SettingHelpText from "../../help/SettingHelpText.vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useReportStore } from "@/stores/report";

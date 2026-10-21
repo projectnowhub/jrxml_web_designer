@@ -4,7 +4,8 @@
   <div class="date-properties">
     <!-- 1. Which date -->
     <section class="card">
-      <h5 class="step"><span class="step-no" aria-hidden="true">1</span>{{ t("dateElement.panel.whichTitle") }}</h5>
+      <h5 class="step"><span class="step-no" aria-hidden="true">1</span>{{ t("dateElement.panel.whichTitle") }}<SettingHelpButton id="dateWhich" /></h5>
+      <SettingHelpText id="dateWhich" />
       <div class="when-list" role="radiogroup" :aria-label="t('dateElement.panel.whichTitle')">
         <button
           v-for="when in DATE_WHENS"
@@ -65,7 +66,8 @@
 
     <!-- 2. How it looks -->
     <section class="card">
-      <h5 class="step"><span class="step-no" aria-hidden="true">2</span>{{ t("dateElement.panel.lookTitle") }}</h5>
+      <h5 class="step"><span class="step-no" aria-hidden="true">2</span>{{ t("dateElement.panel.lookTitle") }}<SettingHelpButton id="dateLook" /></h5>
+      <SettingHelpText id="dateLook" />
       <div class="look-grid" role="radiogroup" :aria-label="t('dateElement.panel.lookTitle')">
         <button
           v-for="look in formatsFor(setup.when)"
@@ -103,7 +105,8 @@
 
     <!-- 3. Words before the date -->
     <section class="card">
-      <h5 class="step"><span class="step-no" aria-hidden="true">3</span>{{ t("dateElement.panel.beforeTitle") }}</h5>
+      <h5 class="step"><span class="step-no" aria-hidden="true">3</span>{{ t("dateElement.panel.beforeTitle") }}<SettingHelpButton id="dateBefore" /></h5>
+      <SettingHelpText id="dateBefore" />
       <input
         class="before-input"
         type="text"
@@ -152,6 +155,8 @@
 </template>
 
 <script setup lang="ts">
+import SettingHelpButton from "../../help/SettingHelpButton.vue";
+import SettingHelpText from "../../help/SettingHelpText.vue";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { Type, X } from "@lucide/vue";

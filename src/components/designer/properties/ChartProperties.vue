@@ -3,7 +3,8 @@
     <!-- Basic Properties: data, chart type, title, legend -->
     <template v-if="part === 'basic'">
       <div class="card">
-        <h5>{{ t("chart.data") }}</h5>
+        <h5>{{ t("chart.data") }}<SettingHelpButton id="chartData" /></h5>
+        <SettingHelpText id="chartData" />
         <template v-if="isChartBound(binding)">
           <p class="data-source">
             <Database :size="13" aria-hidden="true" />
@@ -21,7 +22,8 @@
       </div>
 
       <div class="card">
-        <h5>{{ t("chart.type") }}</h5>
+        <h5>{{ t("chart.type") }}<SettingHelpButton id="chartType" /></h5>
+        <SettingHelpText id="chartType" />
         <div v-for="group in CHART_GROUPS" :key="group" class="type-group">
           <span class="field-label">{{ t(`chart.groups.${group}`) }}</span>
           <div class="type-grid" role="radiogroup" :aria-label="t(`chart.groups.${group}`)">
@@ -43,7 +45,8 @@
       </div>
 
       <div class="card">
-        <h5>{{ t("chart.title") }}</h5>
+        <h5>{{ t("chart.title") }}<SettingHelpButton id="chartTitle" /></h5>
+        <SettingHelpText id="chartTitle" />
         <label class="field">
           <span class="field-label">{{ t("chart.chartTitle") }}</span>
           <input
@@ -66,7 +69,8 @@
 
     <!-- Style Settings: colours -->
     <div v-else class="card">
-      <h5>{{ t("chart.colors") }}</h5>
+      <h5>{{ t("chart.colors") }}<SettingHelpButton id="chartColors" /></h5>
+      <SettingHelpText id="chartColors" />
       <div class="palette-list" role="radiogroup" :aria-label="t('chart.colors')">
         <button
           v-for="palette in CHART_PALETTES"
@@ -89,6 +93,8 @@
 </template>
 
 <script setup lang="ts">
+import SettingHelpButton from "../../help/SettingHelpButton.vue";
+import SettingHelpText from "../../help/SettingHelpText.vue";
 import { useReportStore } from "@/stores/report";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";

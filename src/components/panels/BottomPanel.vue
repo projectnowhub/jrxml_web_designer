@@ -9,9 +9,9 @@ import {
   SlidersHorizontal,
   Maximize2,
   Minimize2,
+  RotateCcw,
   X,
 } from "@lucide/vue";
-import { DEFAULT_REPORT_FONT, resolveReportFont } from "../../config/fonts.config";
 import {
   ref,
   computed,
@@ -47,8 +47,15 @@ import {
   getEffectiveDefaultBandConfig,
   getEffectiveDefaultBandLimits,
 } from "../../constants/constants";
-import { getAvailableFonts } from "../../utils/fontUtils";
-import type { BandType } from "../../types";
+import PageSetupSection, { type PageSetupValue } from "../designer/PageSetupSection.vue";
+import {
+  DEFAULT_BAND_CHOICES,
+  loadReportDefaults,
+  resetReportDefaults,
+  saveReportDefaults,
+  builtInReportDefaults,
+  type ReportDefaults,
+} from "../../utils/reportDefaults";
 
 const { t } = useI18n();
 
@@ -97,22 +104,36 @@ const emit = defineEmits<Emits>();
 
 // Tab-related state
 const activeTab = ref("pageSettings");
+// JRXML Content is for developers: shown when running the app locally (npm run
+// dev), never in a production build, where anything asking for it gets Page settings
+const SHOW_JRXML_TAB = import.meta.env.DEV;
+watch(activeTab, (tab) => {
+  if (tab === "jrxml" && !SHOW_JRXML_TAB) activeTab.value = "pageSettings";
+});
 // Computed so the labels follow a language switch
 const tabs = computed(() => [
   { id: "pageSettings", name: t("bottomPanel.jrxmlTabs.pageSettings"), icon: SlidersHorizontal },
-  { id: "jrxml", name: t("bottomPanel.jrxmlContent"), icon: FileCode2 },
+  ...(SHOW_JRXML_TAB ? [{ id: "jrxml", name: t("bottomPanel.jrxmlContent"), icon: FileCode2 }] : []),
 ]);
 
 // Bottom panel height
 const HEADER_HEIGHT = 56;
 const bottomPanelHeight = ref(props.initialHeight);
 
-// Opened: the limit is measured again (the header may have changed height)
+// Opened (also after a reload, with the height kept from last time): the limit
+// is measured again (the header may have changed height), and a panel at the
+// full height shows Restore, not Maximize
 watch(
   () => props.visible,
   (open) => {
-    if (open) nextTick(updateMaxSize);
+    if (!open) return;
+    nextTick(() => {
+      updateMaxSize();
+      if (bottomPanelHeight.value > currentMaxSize.value) bottomPanelHeight.value = currentMaxSize.value;
+      isFullscreen.value = bottomPanelHeight.value >= currentMaxSize.value - 2;
+    });
   },
+  { immediate: true },
 );
 
 // Fullscreen state
@@ -128,64 +149,8 @@ const updateMaxSize = () => {
 };
 
 // Paper size definitions
-const PAPER_SIZES = [
-  { name: "Letter", width: 612, height: 792 },
-  { name: "Legal", width: 612, height: 1008 },
-  { name: "A0", width: 2384, height: 3370 },
-  { name: "A1", width: 1684, height: 2384 },
-  { name: "A2", width: 1191, height: 1684 },
-  { name: "A3", width: 842, height: 1190 },
-  { name: "A4", width: 595, height: 842 },
-  { name: "A5", width: 420, height: 595 },
-  { name: "A6", width: 298, height: 420 },
-  { name: "A7", width: 210, height: 298 },
-  { name: "A8", width: 147, height: 210 },
-  { name: "A9", width: 105, height: 147 },
-  { name: "A10", width: 74, height: 105 },
-  { name: "B0", width: 2835, height: 4008 },
-  { name: "B1", width: 2004, height: 2835 },
-  { name: "B2", width: 1417, height: 2004 },
-  { name: "B3", width: 1001, height: 1417 },
-  { name: "B4", width: 708, height: 1000 },
-  { name: "B5", width: 498, height: 708 },
-  { name: "B6", width: 354, height: 499 },
-  { name: "B7", width: 249, height: 354 },
-  { name: "B8", width: 176, height: 249 },
-  { name: "B9", width: 125, height: 176 },
-  { name: "B10", width: 88, height: 125 },
-  { name: "C0", width: 2599, height: 3676 },
-  { name: "C1", width: 1837, height: 2599 },
-  { name: "C2", width: 1298, height: 1837 },
-  { name: "C3", width: 918, height: 1298 },
-  { name: "C4", width: 649, height: 918 },
-  { name: "C5", width: 459, height: 649 },
-  { name: "C6", width: 323, height: 459 },
-  { name: "C7", width: 230, height: 323 },
-  { name: "C8", width: 162, height: 230 },
-  { name: "C9", width: 113, height: 162 },
-  { name: "C10", width: 79, height: 113 },
-  { name: "RA0", width: 2437, height: 3458 },
-  { name: "RA1", width: 1729, height: 2437 },
-  { name: "RA2", width: 1218, height: 1729 },
-  { name: "SRA0", width: 2551, height: 3628 },
-  { name: "SRA1", width: 1814, height: 2551 },
-  { name: "SRA2", width: 1275, height: 1814 },
-  { name: "Executive", width: 522, height: 756 },
-  { name: "Statement", width: 396, height: 612 },
-  { name: "Tabloid", width: 792, height: 1224 },
-  { name: "Ledger", width: 1224, height: 792 },
-  { name: "Note", width: 540, height: 780 },
-  { name: "Folio", width: 612, height: 936 },
-  { name: "Quarto", width: 610, height: 780 },
-  { name: "10x14", width: 720, height: 1008 },
-  { name: "Custom", width: 0, height: 0 },
-];
 
-const selectedPaperSize = ref("A4");
-const orientation = ref("Portrait");
 
-// List of available fonts
-const availableFonts = ref<string[]>([]);
 
 // PDF preview modal visibility state
 
@@ -261,10 +226,6 @@ const closeSearch = () => {
   codeMirrorEditorRef.value?.closeSearch();
 };
 
-onMounted(async () => {
-  availableFonts.value = await getAvailableFonts();
-});
-
 // Open the PDF preview (the designer owns it, with the report's table data)
 const openPdfPreview = (): void => {
   if (!localJrxmlContent.value) {
@@ -279,6 +240,13 @@ const localReportProperties = computed({
   get: () => reportProperties.value,
   set: (value) => emit("update:report-properties", value),
 });
+
+// The sections in page order (as Template Settings lists them), Detail included
+const PAGE_ORDER = ["pageHeader", "columnHeader", "detail", "columnFooter", "pageFooter"];
+const pageOrder = (type: string) => {
+  const index = PAGE_ORDER.indexOf(type);
+  return index === -1 ? PAGE_ORDER.length : index;
+};
 
 // Resizable band types list for limit constraints (excluding background and detail which is auto-calculated)
 const resizableBandTypes = computed(() => {
@@ -410,7 +378,7 @@ const autoSaveGlobalBandConfig = () => {
   }
 };
 
-const resetBandLimitsToDefault = () => {
+const resetBandLimitsToDefault = (notify: boolean | Event = true) => {
   globalDefaultBandConfig.value = JSON.parse(
     JSON.stringify(DEVELOPER_DEFAULT_BAND_CONFIG),
   );
@@ -419,7 +387,7 @@ const resetBandLimitsToDefault = () => {
   } catch (e) {
     console.error("Failed to remove saved band limits from localStorage:", e);
   }
-  notification.success(t("bottomPanel.resetToDeveloperDefaultsSuccess"));
+  if (notify !== false) notification.success(t("defaultSettings.originalDone"));
 };
 
 const applyGlobalDefaultsToCurrentTemplate = () => {
@@ -458,111 +426,67 @@ const applyGlobalDefaultsToCurrentTemplate = () => {
   notification.success(t("bottomPanel.appliedToTemplateSuccess"));
 };
 
-// Detect the paper size and orientation
-const detectPaperSizeAndOrientation = () => {
-  if (!reportProperties.value) return;
+// Default Settings: what new reports start with, saved in this browser on
+// every change. "Apply to this report" copies one part into the open report
+// (one undo step; paper and margins refit the page).
+const defaults = ref<ReportDefaults>(loadReportDefaults());
+const DEFAULT_CARDS = [
+  { section: "paper", title: "templateSettings.paper" },
+  { section: "margins", title: "bottomPanel.pageMargins" },
+  { section: "font", title: "templateSettings.font" },
+  { section: "bands", title: "bottomPanel.bandSelection" },
+] as const;
 
-  const w = reportProperties.value.pageWidth;
-  const h = reportProperties.value.pageHeight;
-  const isLandscape = w > h;
+function changeDefaults(patch: Partial<PageSetupValue>) {
+  const bandTypes = patch.bandTypes
+    ? DEFAULT_BAND_CHOICES.filter((type) => patch.bandTypes!.includes(type) || type === BAND_TYPE_CONSTANTS.DETAIL)
+    : defaults.value.bandTypes;
+  defaults.value = { ...defaults.value, ...patch, bandTypes };
+  saveReportDefaults(defaults.value);
+}
 
-  // Ideally we'd only update orientation when it wasn't changed manually (to avoid update loops),
-  // but this is mainly used for initial detection.
-  // In practice we should always trust the current width/height ratio.
-  orientation.value = isLandscape ? "Landscape" : "Portrait";
+// One card back to the app's original settings
+function useOriginal(section: (typeof DEFAULT_CARDS)[number]["section"]) {
+  const original = builtInReportDefaults();
+  if (section === "paper") changeDefaults({ pageWidth: original.pageWidth, pageHeight: original.pageHeight });
+  else if (section === "margins") {
+    const { leftMargin, rightMargin, topMargin, bottomMargin } = original;
+    changeDefaults({ leftMargin, rightMargin, topMargin, bottomMargin });
+  } else if (section === "font") changeDefaults({ font: { ...original.font } });
+  else changeDefaults({ bandTypes: original.bandTypes });
+  notification.success(t("defaultSettings.originalDone"));
+}
 
-  // Check whether it matches a preset size
-  // For landscape, width is the long side; for portrait, height is the long side.
-  // In the preset sizes, width is the short side and height is the long side.
-  const checkW = isLandscape ? h : w;
-  const checkH = isLandscape ? w : h;
+// Every card and the section heights back to the original settings
+function resetAllToOriginal() {
+  defaults.value = resetReportDefaults();
+  resetBandLimitsToDefault(false);
+  notification.success(t("defaultSettings.resetDone"));
+}
 
-  const match = PAPER_SIZES.find(
-    (s) => s.name !== "Custom" && s.width === checkW && s.height === checkH,
-  );
-  selectedPaperSize.value = match ? match.name : "Custom";
-};
-
-// Watch for reportProperties changes and update the selected state
-// Use deep: true to watch changes to nested properties
-watch(
-  () => reportProperties.value,
-  () => {
-    // Re-detect whenever width/height change
-    // Note: this may also fire while we're in the middle of changing width/height, so handle it carefully
-    // Here we only update when width/height no longer match the currently selected size
-    detectPaperSizeAndOrientation();
-  },
-  { deep: true, immediate: true },
-);
-
-// Handle paper size changes
-const handlePaperSizeChange = () => {
-  if (selectedPaperSize.value === "Custom") return;
-
-  const size = PAPER_SIZES.find((s) => s.name === selectedPaperSize.value);
-  if (!size) return;
-
-  // Apply the size based on the current orientation
-  const landscape = orientation.value === "Landscape";
-  setPageSize(
-    landscape ? size.height : size.width,
-    landscape ? size.width : size.height,
-  );
-};
-
-// Change the page size as one undo step, then let the designer fit the content
-const setPageSize = (width: number, height: number) => {
+function applyToThisReport(section: (typeof DEFAULT_CARDS)[number]["section"]) {
   const page = localReportProperties.value;
-  if (page.pageWidth === width && page.pageHeight === height) return;
-  report.saveStateToHistory();
-  page.pageWidth = width;
-  page.pageHeight = height;
-  emit("page-setup-change");
-};
-
-type PageSetting =
-  | "pageWidth"
-  | "pageHeight"
-  | "leftMargin"
-  | "rightMargin"
-  | "topMargin"
-  | "bottomMargin";
-
-// Page size and margins apply when the edit is committed (Enter or leaving the
-// field), not on every keystroke: typing "600" must not fit the content to a
-// 6px page on the way
-const setPageSetting = (key: PageSetting, event: Event) => {
-  const input = event.target as HTMLInputElement;
-  const value = Number(input.value);
-  const isSize = key === "pageWidth" || key === "pageHeight";
-  if (input.value.trim() === "" || !Number.isFinite(value) || value < 0 || (isSize && value === 0)) {
-    input.value = String(localReportProperties.value[key] ?? "");
-    return;
+  const wanted = defaults.value;
+  if (section === "bands") {
+    report.setBandTypes(wanted.bandTypes);
+  } else {
+    report.saveStateToHistory();
+    if (section === "paper") {
+      page.pageWidth = wanted.pageWidth;
+      page.pageHeight = wanted.pageHeight;
+    } else if (section === "margins") {
+      page.leftMargin = wanted.leftMargin;
+      page.rightMargin = wanted.rightMargin;
+      page.topMargin = wanted.topMargin;
+      page.bottomMargin = wanted.bottomMargin;
+    } else {
+      page.defaultFont = { ...wanted.font };
+    }
+    if (section === "font") report.updateJrxml();
+    else emit("page-setup-change");
   }
-  if (value === localReportProperties.value[key]) return;
-  report.saveStateToHistory();
-  localReportProperties.value[key] = value;
-  emit("page-setup-change");
-};
-
-// Handle orientation changes
-const handleOrientationChange = () => {
-  const w = localReportProperties.value.pageWidth;
-  const h = localReportProperties.value.pageHeight;
-
-  // Landscape: swap a portrait page (width < height); portrait: the reverse
-  if (orientation.value === "Landscape" ? w < h : w > h) {
-    setPageSize(h, w);
-  }
-};
-
-// The band switches: the report's bands (report store); turning one on or
-// off is one undo step there. Detail is always on.
-const localSelectedBandTypes = computed({
-  get: () => report.bandTypes,
-  set: (value: BandType[]) => report.setBandTypes(value),
-});
+  notification.success(t("defaultSettings.applied"));
+}
 
 // Computed property: local binding for jrxmlContent
 const localJrxmlContent = computed({
@@ -640,7 +564,7 @@ function handleKeyDown(event: KeyboardEvent) {
   }
 
   // Listen for Cmd+F or Ctrl+F to switch to the JRXML tab and enter fullscreen
-  if ((event.metaKey || event.ctrlKey) && event.key === "f") {
+  if (SHOW_JRXML_TAB && (event.metaKey || event.ctrlKey) && event.key === "f") {
     event.preventDefault(); // Prevent the browser's default search functionality
 
     // Open the bottom panel if it isn't already open
@@ -821,214 +745,62 @@ onBeforeUnmount(() => {
       class="tab-content page-settings-tab"
       v-show="activeTab === 'pageSettings'"
     >
+      <!-- Default Settings: what new reports start with (kept in this browser,
+           utils/reportDefaults.ts). This report's own settings are Template
+           Settings, in the right panel when nothing is selected. -->
+      <div class="defaults-intro">
+        <Info :size="15" :stroke-width="2" aria-hidden="true" />
+        <span>{{ t("defaultSettings.intro") }}</span>
+        <button type="button" class="defaults-reset" @click="resetAllToOriginal">
+          <RotateCcw :size="12" :stroke-width="2.2" aria-hidden="true" />
+          {{ t("defaultSettings.resetAll") }}
+        </button>
+      </div>
       <div class="settings-grid">
-        <div class="settings-section">
-          <h4>{{ t("bottomPanel.basicInfo") }}</h4>
-          <div class="form-group">
-            <label>{{ t("bottomPanel.reportName") }}</label>
-            <input v-model="localReportProperties.name" type="text" />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label>{{ t("bottomPanel.paperSize") }}</label>
-              <select
-                v-model="selectedPaperSize"
-                @change="handlePaperSizeChange"
-              >
-                <option
-                  v-for="size in PAPER_SIZES"
-                  :key="size.name"
-                  :value="size.name"
-                >
-                  {{ size.name === "Custom" ? t("bottomPanel.customPaperSize") : size.name }}
-                </option>
-              </select>
-            </div>
-            <div class="form-group flex-1">
-              <label>{{ t("bottomPanel.paperOrientation") }}</label>
-              <select v-model="orientation" @change="handleOrientationChange">
-                <option value="Portrait">
-                  {{ t("bottomPanel.portrait") }}
-                </option>
-                <option value="Landscape">
-                  {{ t("bottomPanel.landscape") }}
-                </option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label>{{ t("bottomPanel.pageWidth") }}</label>
-              <input
-                :value="localReportProperties.pageWidth"
-                @change="setPageSetting('pageWidth', $event)"
-                type="number"
-              />
-            </div>
-            <div class="form-group flex-1">
-              <label>{{ t("bottomPanel.pageHeight") }}</label>
-              <input
-                :value="localReportProperties.pageHeight"
-                @change="setPageSetting('pageHeight', $event)"
-                type="number"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="settings-section">
-          <h4>{{ t("bottomPanel.pageMargins") }}</h4>
-          <div class="form-group">
-            <label>{{ t("bottomPanel.marginsPx") }}</label>
-            <div class="margin-inputs">
-              <input
-                :value="localReportProperties.leftMargin"
-                @change="setPageSetting('leftMargin', $event)"
-                type="number"
-                :placeholder="t('properties.leftSide')"
-              />
-              <input
-                :value="localReportProperties.rightMargin"
-                @change="setPageSetting('rightMargin', $event)"
-                type="number"
-                :placeholder="t('properties.rightSide')"
-              />
-              <input
-                :value="localReportProperties.topMargin"
-                @change="setPageSetting('topMargin', $event)"
-                type="number"
-                :placeholder="t('properties.topSide')"
-              />
-              <input
-                :value="localReportProperties.bottomMargin"
-                @change="setPageSetting('bottomMargin', $event)"
-                type="number"
-                :placeholder="t('properties.bottomSide')"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Font settings - compact layout -->
-        <div class="settings-section font-settings-compact">
-          <h4>{{ t("bottomPanel.defaultFontSettings") }}</h4>
-          <div class="font-settings-row">
-            <div class="font-setting-item">
-              <label>{{ t("properties.fontName") }}</label>
-              <!-- Read-only until the report server supports more fonts -->
-              <select
-                :value="resolveReportFont(localReportProperties.defaultFont.name)"
-                :disabled="availableFonts.length <= 1"
-                @change="localReportProperties.defaultFont.name = ($event.target as HTMLSelectElement).value"
-              >
-                <option
-                  v-for="font in availableFonts"
-                  :key="font"
-                  :value="font"
-                >
-                  {{ font }}
-                </option>
-              </select>
-            </div>
-            <div class="font-setting-item">
-              <label>{{ t("properties.fontSize") }}</label>
-              <input
-                v-model.number="localReportProperties.defaultFont.size"
-                type="number"
-              />
-            </div>
-          </div>
-          <p v-if="availableFonts.length <= 1" class="font-info">
-            <Info :size="13" :stroke-width="2" />
-            <span>{{ t("properties.fontLimitedInfo", { font: DEFAULT_REPORT_FONT }) }}</span>
-          </p>
-          <div class="font-style-options">
-            <label>
-              <input
-                v-model="localReportProperties.defaultFont.isBold"
-                type="checkbox"
-              />
-              {{ t("properties.bold") }}
-            </label>
-            <label>
-              <input
-                v-model="localReportProperties.defaultFont.isItalic"
-                type="checkbox"
-              />
-              {{ t("properties.italic") }}
-            </label>
-            <label>
-              <input
-                v-model="localReportProperties.defaultFont.isUnderline"
-                type="checkbox"
-              />
-              {{ t("properties.underline") }}
-            </label>
-          </div>
-        </div>
-
-        <!-- Band selection -->
-        <div class="settings-section band-selection-section">
-          <h4>{{ t("bottomPanel.bandSelection") }}</h4>
-          <div class="band-selection-grid">
-            <div
-              v-for="bandType in allBandTypes"
-              :key="bandType.type"
-              class="band-selection-item"
-            >
-              <label :class="{ 'is-disabled': bandType.type === BAND_TYPE_CONSTANTS.DETAIL }">
-                <input
-                  type="checkbox"
-                  :value="bandType.type"
-                  v-model="localSelectedBandTypes"
-                  :disabled="bandType.type === BAND_TYPE_CONSTANTS.DETAIL"
-                />
-                {{ getBandDisplayName(bandType.type) }}
-                <span
-                  v-if="bandType.type === BAND_TYPE_CONSTANTS.DETAIL"
-                  class="band-required-tag"
-                  :title="t('bottomPanel.detailBandAlwaysRequired')"
-                >
-                  {{ t("common.required") }}
-                </span>
-              </label>
-            </div>
-          </div>
-          <div class="band-selection-note">
-            <small>{{ t("bottomPanel.bandSelectionHint") }}</small>
-          </div>
-        </div>
+        <PageSetupSection
+          v-for="card in DEFAULT_CARDS"
+          :key="card.section"
+          :section="card.section"
+          :title="t(card.title)"
+          :value="defaults"
+          :bands-hint="t('defaultSettings.bandsHint')"
+          @change="changeDefaults"
+        >
+          <template #actions>
+            <span class="defaults-actions">
+              <button type="button" class="defaults-reset" @click="useOriginal(card.section)">
+                <RotateCcw :size="11" :stroke-width="2.2" aria-hidden="true" />
+                {{ t("defaultSettings.original") }}
+              </button>
+              <button type="button" class="defaults-apply" @click="applyToThisReport(card.section)">
+                {{ t("defaultSettings.apply") }}
+              </button>
+            </span>
+          </template>
+        </PageSetupSection>
 
         <!-- Band height limits constraints -->
         <div class="settings-section band-limits-section">
           <div class="band-limits-header">
             <div class="band-limits-title-area">
-              <h4>{{ t("bottomPanel.defaultBandSettings") }}</h4>
+              <h5>{{ t("bottomPanel.defaultBandSettings") }}</h5>
             </div>
-            <div class="band-limits-actions">
-              <n-button
-                size="tiny"
-                type="default"
-                @click="resetBandLimitsToDefault"
-              >
-                {{ t("bottomPanel.resetToDeveloperDefaults") }}
-              </n-button>
-              <n-button
-                size="tiny"
-                type="info"
-                secondary
-                @click="applyGlobalDefaultsToCurrentTemplate"
-              >
-                {{ t("bottomPanel.applyToCurrentTemplate") }}
-              </n-button>
-            </div>
+            <span class="defaults-actions">
+              <button type="button" class="defaults-reset" @click="resetBandLimitsToDefault">
+                <RotateCcw :size="11" :stroke-width="2.2" aria-hidden="true" />
+                {{ t("defaultSettings.original") }}
+              </button>
+              <button type="button" class="defaults-apply" @click="applyGlobalDefaultsToCurrentTemplate">
+                {{ t("defaultSettings.apply") }}
+              </button>
+            </span>
           </div>
           <div class="band-limits-grid">
             <div
               v-for="bType in resizableBandTypes"
               :key="bType.type"
               class="band-limit-card"
+              :style="{ order: pageOrder(bType.type) }"
             >
               <div class="band-limit-title">
                 {{ getBandDisplayName(bType.type) }}
@@ -1083,7 +855,7 @@ onBeforeUnmount(() => {
             </div>
 
             <!-- Detail Band (Auto-Calculated Remaining A4 Space) -->
-            <div class="band-limit-card band-limit-card-detail">
+            <div class="band-limit-card band-limit-card-detail" :style="{ order: pageOrder('detail') }">
               <div class="band-limit-title">
                 <span>{{ t("bandNames.detail") }}</span>
                 <span class="band-badge-auto">{{
@@ -1113,7 +885,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- JRXML content tab -->
-    <div class="tab-content jrxml-tab" v-show="activeTab === 'jrxml'">
+    <div v-if="SHOW_JRXML_TAB" class="tab-content jrxml-tab" v-show="activeTab === 'jrxml'">
       <div class="jrxml-container">
         <div class="jrxml-header">
           <div class="jrxml-actions">
@@ -1440,6 +1212,59 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 4px;
   margin-left: auto;
+}
+
+/* Default Settings: what they are for, and putting back the app's own */
+.defaults-intro {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(124, 92, 247, 0.22);
+  border-radius: 10px;
+  background: rgba(124, 92, 247, 0.07);
+  color: #45425a;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.defaults-intro > :first-child {
+  flex-shrink: 0;
+  color: #6440f4;
+}
+.defaults-intro > span {
+  flex: 1;
+}
+.defaults-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.defaults-reset,
+.defaults-apply {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: 1px solid #e6e5ee;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #45425a;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.defaults-apply {
+  border-color: rgba(124, 92, 247, 0.35);
+  color: #6440f4;
+}
+.defaults-reset:hover,
+.defaults-apply:hover {
+  border-color: rgba(124, 92, 247, 0.55);
+  background: rgba(124, 92, 247, 0.06);
 }
 
 .settings-grid {
@@ -1787,8 +1612,12 @@ onBeforeUnmount(() => {
   font-size: 11px;
 }
 
+/* Section Heights: the same card look as Paper, Margins… across the row */
 .band-limits-section {
   grid-column: 1 / -1;
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
 }
 
 .band-limits-header {
@@ -1796,16 +1625,15 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid rgba(28, 27, 38, 0.06);
-  padding-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
-.band-limits-title-area h4 {
+.band-limits-title-area h5 {
   margin: 0;
-  border-bottom: none;
-  padding-bottom: 0;
+  color: #1c1b26;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .band-limits-actions {
@@ -1850,14 +1678,15 @@ onBeforeUnmount(() => {
   padding-bottom: 6px;
 }
 
+/* The same green pill as Template Settings */
 .band-badge-auto {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
   font-size: 10px;
-  color: #6366f1;
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-weight: 600;
+  font-weight: 650;
+  color: #059669;
 }
 
 .band-limit-inputs {

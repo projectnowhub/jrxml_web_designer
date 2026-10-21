@@ -24,6 +24,17 @@ function normalizeContent(content: unknown): string {
 
 let isFilesLoaded = false;
 
+// The templates saved in this browser, read straight from storage (the
+// template list service pages through them until the templates API exists)
+export function readStoredFiles(): DesignerFile[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.FILES);
+    return stored ? (JSON.parse(stored) as DesignerFile[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 // The file list and the open file are in the files store, shared by every
 // caller (the designer and its File menu)
 export function useDesignerFiles(options?: { defaultFileName?: string }) {
@@ -52,6 +63,8 @@ export function useDesignerFiles(options?: { defaultFileName?: string }) {
         files.value = nextFiles;
       }
       localStorage.setItem(STORAGE_KEYS.FILES, JSON.stringify(files.value));
+      // Template lists showing a page of them fetch it again
+      useFilesStore().templatesVersion++;
       return true;
     } catch {
       return false;
@@ -87,7 +100,7 @@ export function useDesignerFiles(options?: { defaultFileName?: string }) {
     const ok = saveFilesToStorage(nextFiles);
     if (currentFileId.value === id) {
       currentFileId.value = null;
-      currentFileName.value = options?.defaultFileName ?? 'Untitled Report';
+      currentFileName.value = useFilesStore().newReportName(options?.defaultFileName ?? 'Untitled Report');
     }
     return ok;
   }

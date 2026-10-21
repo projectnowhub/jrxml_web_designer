@@ -315,7 +315,7 @@ export const UPDATE_REPORT_PROPERTIES_SCHEMA = tool(
     },
     sectionNumbering: {
       type: 'object',
-      description: 'How every Section Heading is numbered (and the automatic Table of Contents with it): style "word" with word, e.g. "SECTION" → "SECTION 1."; or a style with optional before / after, e.g. style "1", before "Chapter ", after ":" → "Chapter 1:"',
+      description: 'How every Heading is numbered (and the automatic Table of Contents with it): style "word" with word, e.g. "SECTION" → "SECTION 1."; or a style with optional before / after, e.g. style "1", before "Chapter ", after ":" → "Chapter 1:"',
       properties: {
         style: { type: 'string', enum: [...SECTION_STYLES, 'word'] },
         word: { type: 'string' },
@@ -355,7 +355,7 @@ export const ADD_COVER_PAGE_SCHEMA = tool(
 
 export const ADD_CONTENTS_PAGE_SCHEMA = tool(
   'add_contents_page',
-  `Add a contents page after the cover (and after the other contents pages). The first one gets a design: blank, or ${designList(CONTENTS_DESIGN_TYPES)}; later ones copy the last contents page and carry its Table of Contents on. A contents design also sets how the Section Headings are numbered.`,
+  `Add a contents page after the cover (and after the other contents pages). The first one gets a design: blank, or ${designList(CONTENTS_DESIGN_TYPES)}; later ones copy the last contents page and carry its Table of Contents on. A contents design also sets how the Headings are numbered.`,
   { design: { type: 'string', enum: ['blank', ...CONTENTS_DESIGN_TYPES], description: 'For the first contents page (default contentsPlain)' } }
 );
 

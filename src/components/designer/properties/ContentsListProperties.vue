@@ -4,7 +4,8 @@
     <template v-if="part === 'basic'">
       <!-- Design: a ready-made look for the list (on contents pages, for all of them) -->
       <div class="card">
-        <h5>{{ t("contentsList.design") }}</h5>
+        <h5>{{ t("contentsList.design") }}<SettingHelpButton id="tocDesign" /></h5>
+        <SettingHelpText id="tocDesign" />
         <div class="look-grid" role="radiogroup" :aria-label="t('contentsList.design')">
           <button
             v-for="look in LIST_LOOKS"
@@ -32,7 +33,8 @@
 
       <!-- Where the rows come from: two clear modes -->
       <div class="card">
-        <h5>{{ t("contentsList.rowsFrom") }}</h5>
+        <h5>{{ t("contentsList.rowsFrom") }}<SettingHelpButton id="tocRowsFrom" /></h5>
+        <SettingHelpText id="tocRowsFrom" />
         <div class="mode-cards" role="radiogroup" :aria-label="t('contentsList.rowsFrom')">
           <button
             type="button"
@@ -98,12 +100,13 @@
       <!-- The rows -->
       <div class="card">
         <div class="card-head">
-          <h5>{{ t("contentsList.rows", { n: shownCount }, shownCount) }}</h5>
+          <h5>{{ t("contentsList.rows", { n: shownCount }, shownCount) }}<SettingHelpButton id="tocRows" /></h5>
           <button v-if="!list.follow" type="button" class="add-btn" @click="addRow">
             <Plus :size="13" aria-hidden="true" />
             {{ t("contentsList.addRow") }}
           </button>
         </div>
+        <SettingHelpText id="tocRows" />
         <button v-if="!list.follow" type="button" class="wide-btn fill-btn" @click="emit('fill')">
           <ListRestart :size="14" aria-hidden="true" />
           {{ t("contentsList.fill") }}
@@ -236,7 +239,8 @@
       <!-- Content alignment on the page (with a second column, as a pair);
            a list in a box is placed with its box -->
       <div v-if="!inBox" class="card">
-        <h5>{{ t("contentsList.place.title") }}</h5>
+        <h5>{{ t("contentsList.place.title") }}<SettingHelpButton id="tocPlace" /></h5>
+        <SettingHelpText id="tocPlace" />
         <div class="align-row">
           <div class="field">
             <span class="field-label">{{ t("contentsList.place.across") }}</span>
@@ -279,7 +283,8 @@
       </div>
 
       <div class="card">
-        <h5>{{ t("contentsList.look") }}</h5>
+        <h5>{{ t("contentsList.look") }}<SettingHelpButton id="tocLook" /></h5>
+        <SettingHelpText id="tocLook" />
         <div class="grid-2">
           <label class="field">
             <span class="field-label">{{ t("contentsList.textSize") }}</span>
@@ -322,7 +327,8 @@
       </div>
 
       <div class="card">
-        <h5>{{ t("contentsList.colours") }}</h5>
+        <h5>{{ t("contentsList.colours") }}<SettingHelpButton id="tocColours" /></h5>
+        <SettingHelpText id="tocColours" />
         <div class="grid-2">
           <div class="field">
             <span class="field-label">{{ t("contentsList.textColour") }}</span>
@@ -357,6 +363,8 @@
 </template>
 
 <script setup lang="ts">
+import SettingHelpButton from "../../help/SettingHelpButton.vue";
+import SettingHelpText from "../../help/SettingHelpText.vue";
 import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {

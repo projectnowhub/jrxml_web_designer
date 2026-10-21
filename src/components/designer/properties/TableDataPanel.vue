@@ -3,7 +3,8 @@
   <template v-if="part === 'basic'">
   <!-- Data: what the table shows (edited in the Configure popup) -->
   <div v-if="!isTyped" class="tdp-section">
-    <h5>{{ t("dataTable.panel.data") }}</h5>
+    <h5>{{ t("dataTable.panel.data") }}<SettingHelpButton id="tableData" /></h5>
+    <SettingHelpText id="tableData" />
 
     <template v-if="binding">
       <label class="tdp-field">
@@ -67,7 +68,8 @@
 
   <!-- Look: a table style (built-in or saved), changes for this table, row sizes -->
   <div class="tdp-section">
-    <h5>{{ t("dataTable.panel.look") }}</h5>
+    <h5>{{ t("dataTable.panel.look") }}<SettingHelpButton id="tableLook" /></h5>
+    <SettingHelpText id="tableLook" />
     <span class="tdp-label">{{ t("dataTable.style.label") }}</span>
     <div class="tdp-themes" role="radiogroup" :aria-label="t('dataTable.style.label')">
       <button
@@ -140,7 +142,8 @@
 
   <!-- Row sizes -->
   <div v-if="!isTyped" class="tdp-section">
-    <h5>{{ t("dataTable.panel.rowSizes") }}</h5>
+    <h5>{{ t("dataTable.panel.rowSizes") }}<SettingHelpButton id="tableRowSizes" /></h5>
+    <SettingHelpText id="tableRowSizes" />
     <div class="tdp-grid is-first">
       <label class="tdp-field">
         <span class="tdp-label">{{ t("dataTable.panel.headerHeight") }}</span>
@@ -175,7 +178,8 @@
   <!-- Style settings: change the look of this table -->
   <template v-else>
   <div class="tdp-section">
-    <h5>{{ t("dataTable.style.customize") }}</h5>
+    <h5>{{ t("dataTable.style.customize") }}<SettingHelpButton id="tableCustomize" /></h5>
+    <SettingHelpText id="tableCustomize" />
     <p v-if="!holder" class="tdp-hint">{{ t("dataTable.style.needData") }}</p>
     <template v-else>
       <p class="tdp-hint">{{ t("dataTable.style.customizeHint") }}</p>
@@ -340,6 +344,8 @@
 </template>
 
 <script setup lang="ts">
+import SettingHelpButton from "../../help/SettingHelpButton.vue";
+import SettingHelpText from "../../help/SettingHelpText.vue";
 import { useReportStore } from "@/stores/report";
 import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";

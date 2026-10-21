@@ -8,7 +8,7 @@ import {
   TriangleAlert,
   X,
 } from '@lucide/vue';
-import { ref, computed, nextTick, watch, onMounted } from 'vue';
+import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAIChat } from '@/composables/useAIChat';
 import { useAIConfigManager, type AIConfiguration } from '@/composables/useAIConfigManager';
@@ -158,13 +158,16 @@ onMounted(() => {
   document.addEventListener('keydown', handleKeyDown);
 });
 
-// Keyboard shortcut handling
+onBeforeUnmount(() => document.removeEventListener('keydown', handleKeyDown));
+
+// Ctrl+K / Cmd+K clears the conversation, only while the AI Assistant tab is
+// open and on screen (not when the right panel is hidden or collapsed)
+const panelRef = ref<HTMLElement | null>(null);
 function handleKeyDown(event: KeyboardEvent) {
-  // Ctrl+K or Cmd+K (Mac)
-  if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
-    event.preventDefault();
-    clearHistory();
-  }
+  if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return;
+  if (!props.visible || !panelRef.value?.offsetParent) return;
+  event.preventDefault();
+  clearHistory();
 }
 
 // Browser compatibility check
@@ -173,7 +176,7 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
 </script>
 
 <template>
-  <div class="ai-chat-panel" :class="{ 'ai-chat-panel--embedded': embedded }" :style="panelStyle" v-show="visible">
+  <div ref="panelRef" class="ai-chat-panel" :class="{ 'ai-chat-panel--embedded': embedded }" :style="panelStyle" v-show="visible">
     <!-- Header (shown when not in embedded mode) -->
     <div v-if="!embedded" class="panel-header" @click="toggleExpand">
       <div class="header-left">

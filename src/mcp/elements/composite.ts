@@ -404,7 +404,7 @@ export const tableOfContentsKind: ElementKind = {
   kind: "tableOfContents",
   tool: "create_table_of_contents",
   description:
-    "Add a Table of Contents. Automatic (default): one row per Section Heading / Sub-heading on the normal pages, with their page numbers, kept up to date. Manual: give the rows. Not allowed on the cover; only one on the contents pages. Its height follows its rows.",
+    "Add a Table of Contents. Automatic (default): one row per Heading / Sub-heading on the normal pages, with their page numbers, kept up to date. Manual: give the rows. Not allowed on the cover; only one on the contents pages. Its height follows its rows.",
   properties: {
     mode: { type: "string", enum: ["automatic", "manual"], description: "automatic (default) follows the headings; manual uses rows" },
     rows: {

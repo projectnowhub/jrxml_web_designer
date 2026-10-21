@@ -54,6 +54,7 @@
           <input
             v-model="headerFileName"
             class="document-title-input"
+            data-hint="reportName"
             @focus="isTitleEditing = true"
             @blur="handleHeaderTitleCommit"
             @keydown.enter.prevent="onTitleEnter"
@@ -88,6 +89,8 @@
 
         <!-- 4. File Manager -->
         <FileManager
+          ref="fileManagerRef"
+          data-hint="file"
           :compact="headerTier >= 3"
           @create-new-file="createNewFile"
           @load-file="loadFile"
@@ -100,6 +103,7 @@
           <span class="toolbar-divider"></span>
           <div class="header-undo-redo">
             <n-button
+              data-hint="undo"
               @click="undo"
               type="default"
               quaternary
@@ -109,6 +113,7 @@
               <Undo2 :size="16" :stroke-width="2" aria-hidden="true" />
             </n-button>
             <n-button
+              data-hint="redo"
               @click="redo"
               type="default"
               quaternary
@@ -125,6 +130,8 @@
           <span class="toolbar-divider"></span>
           <div class="header-toolbar-ops">
             <AddPageMenu
+              data-help="add-page"
+              data-hint="addPage"
               :has-cover="!!reportProperties.coverPage"
               :has-contents="!!reportProperties.contentsPages"
               :show-label="headerTier < 2"
@@ -132,13 +139,13 @@
               @add-cover="handlePageAction('addCover', 0)"
               @add-contents="handlePageAction('addContents', 0)"
             />
-            <button class="toolbar-btn" @click="deleteElement" :title="t('actions.delete')">
+            <button class="toolbar-btn" data-hint="delete" @click="deleteElement" :title="t('actions.delete')">
               <Trash2 :size="16" :stroke-width="2" aria-hidden="true" />
             </button>
-            <button class="toolbar-btn" @click="copyElement" :title="t('actions.copy')">
+            <button class="toolbar-btn" data-hint="copy" @click="copyElement" :title="t('actions.copy')">
               <Copy :size="16" :stroke-width="2" aria-hidden="true" />
             </button>
-            <button class="toolbar-btn" @click="pasteElement()" :title="t('actions.paste')">
+            <button class="toolbar-btn" data-hint="paste" @click="pasteElement()" :title="t('actions.paste')">
               <ClipboardPaste :size="16" :stroke-width="2" aria-hidden="true" />
             </button>
           </div>
@@ -149,6 +156,7 @@
 
           <!-- 7. Zoom controls -->
           <ZoomControls
+            data-hint="zoom"
             :zoom-level="zoomLevel"
             :paper-width="reportProperties.pageWidth"
             :paper-height="reportProperties.pageHeight"
@@ -158,42 +166,37 @@
           <span class="toolbar-divider"></span>
 
           <!-- 8. Show Bottom Panel -->
-          <n-button
-            @click="toggleBottomPanel"
-            type="default"
-            size="small"
-            class="bottom-panel-btn"
+          <!-- The report's Default Settings (paper, margins, page parts, font): an icon button -->
+          <button
+            type="button"
+            class="toolbar-btn default-settings-btn"
+            :class="{ 'is-open': showBottomPanel }"
+            data-hint="bottomPanel"
+            :aria-pressed="showBottomPanel"
+            :aria-label="t('actions.defaultSettings')"
             :title="showBottomPanel ? t('actions.hideBottomPanel') : t('actions.showBottomPanel')"
+            @click="toggleBottomPanel"
           >
-            <component
-              :is="showBottomPanel ? PanelBottomClose : PanelBottom"
-              v-if="headerTier >= 2"
-              :size="16"
-              :stroke-width="2"
-              aria-hidden="true"
-            />
-            <template v-else>
-              {{
-                showBottomPanel
-                  ? t("actions.hideBottomPanel")
-                  : t("actions.showBottomPanel")
-              }}
-            </template>
-          </n-button>
+            <SlidersHorizontal :size="16" :stroke-width="2" aria-hidden="true" />
+          </button>
 
           <span class="toolbar-divider"></span>
 
           <!-- 9. Snap & grid (dropdown) -->
-          <SnapMenu :compact="headerTier >= 2" />
+          <SnapMenu data-hint="snap" :compact="headerTier >= 2" />
         </template>
       </div>
 
       <div class="header-actions">
+        <!-- 10. Help: the tour, the Quick guide, shortcuts, the AI assistant -->
+        <HelpMenu context="designer" :show-label="headerTier < 2" />
+
         <!-- 11. Download JRXML / Preview PDF -->
         <button
           v-if="headerTier < 4"
           type="button"
           class="header-btn header-btn-secondary"
+          data-hint="download"
           :class="{ 'is-icon': headerTier >= 1 }"
           :title="t('actions.downloadJRXML')"
           :aria-label="t('actions.downloadJRXML')"
@@ -205,6 +208,8 @@
         <button
           type="button"
           class="header-btn header-btn-primary"
+          data-help="preview"
+          data-hint="preview"
           :class="{ 'is-icon': headerTier >= 5 }"
           :title="t('actions.previewPDF')"
           :aria-label="t('actions.previewPDF')"
@@ -246,6 +251,7 @@
       <ResizablePanel
         v-show="showLeftPanel"
         position="left"
+        data-help="library"
         :initial-size="leftPanelWidth"
         :min-size="PANEL_CONSTANTS.LEFT_PANEL_MIN_WIDTH"
         :max-size="PANEL_CONSTANTS.LEFT_PANEL_MAX_WIDTH"
@@ -260,7 +266,7 @@
           :elements="elements"
           :projects="reportProjects"
           @drag-start="handleDragStart"
-          @element-double-click="handleElementDoubleClick"
+          @add-element="handleElementDoubleClick"
           @insert-page-number="addPageNumber"
           @insert-chart="addChart"
           @insert-barcode="addBarcode"
@@ -289,6 +295,13 @@
         class="design-area-wrapper"
         style="position: relative; flex: 1; overflow: hidden; min-width: 0; display: flex; flex-direction: column;"
       >
+        <!-- The first time something is selected: how to work with it (Help) -->
+        <FirstTimeTip />
+        <!-- Help window (a popup the user drags anywhere): help for the selected
+             item, the Show me how guides, every element. Minimized, its tab
+             sits on the Properties panel's edge (or in its collapsed rail). -->
+        <HelpPanel @ask-ai="openAIAssistant" />
+        <HelpDockTab v-if="!rightPanelCollapsed || !showRightPanel" />
         <MultiSelectToolbar
           :visible="selectedElements.length > 1"
           :count="selectedElements.length"
@@ -334,8 +347,6 @@
           @handle-drag-leave="handleDragLeave"
           @start-resizing-band="startResizingBand"
           @zoom-change="handleZoomChange"
-          @select-elements-in-rect="selectElementsInRect"
-          @clear-selection="clearSelection"
           @check-fields="handleCheckFields"
           @contextmenu="handleElementContextMenu"
           @canvas-contextmenu="handleCanvasContextMenu"
@@ -354,7 +365,9 @@
       <Transition name="side-panel-right">
       <ResizablePanel
         v-show="showRightPanel"
+        ref="rightPanelRef"
         position="right"
+        data-help="side-panel"
         :initial-size="propertyPanelWidth"
         :min-size="PANEL_CONSTANTS.PROPERTY_PANEL_MIN_WIDTH"
         :max-size="PANEL_CONSTANTS.PROPERTY_PANEL_MAX_WIDTH"
@@ -364,6 +377,9 @@
         @collapse-change="rightPanelCollapsed = $event; glideCanvas()"
         :title="rightPanelTab === 'ai' ? t('ai.title') : t('properties.title')"
       >
+        <template #rail>
+          <HelpDockTab in-rail />
+        </template>
         <template #default="{ toggleCollapse }">
         <!-- Right panel tabs -->
         <div class="right-panel-tabs">
@@ -414,6 +430,7 @@
         <div v-show="rightPanelTab === 'properties'">
           <ElementProperties
             @update:bands="bands = $event"
+            @page-setup-change="handlePageSetupChange"
             @delete-element="deleteElement"
             @fit-to-text="
               selectedElement &&
@@ -473,9 +490,6 @@
 
     <!-- Drag feedback layer -->
     <DragFeedbackLayer :feedback="dragFeedback" />
-
-    <!-- Help modal -->
-    <HelpModal v-model:visible="showHelp" />
 
     <!-- Field management modal -->
     <FieldManagementModal
@@ -656,7 +670,10 @@
 import AddPageMenu from "./designer/AddPageMenu.vue";
 import ResizablePanel from "./panels/ResizablePanel.vue";
 import DesignerCanvas from "./designer/DesignerCanvas.vue";
-import HelpModal from "./modals/HelpModal.vue";
+import HelpMenu from "./help/HelpMenu.vue";
+import FirstTimeTip from "./help/FirstTimeTip.vue";
+import HelpPanel from "./help/HelpPanel.vue";
+import HelpDockTab from "./help/HelpDockTab.vue";
 import FieldManagementModal from "./modals/FieldManagementModal.vue";
 import PdfPreviewModal from "./modals/PdfPreviewModal.vue";
 import ConfirmModal from "./modals/ConfirmModal.vue";
@@ -692,8 +709,6 @@ import {
   Download,
   Eye,
   FilePlus,
-  PanelBottom,
-  PanelBottomClose,
   Redo2,
   SendToBack,
   RotateCcw,
@@ -774,12 +789,14 @@ import {
   watch,
 } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import { useDesignerFiles } from "@/composables/useDesignerFiles";
 import { storeToRefs } from "pinia";
 import { useReportStore } from "@/stores/report";
 import { useSelectionStore } from "@/stores/selection";
 import { useEditorStore } from "@/stores/editor";
 import { useFilesStore } from "@/stores/files";
+import { useHelpStore } from "@/stores/help";
 import { fitContentToPage, scaleElementsToArea } from "@/utils/pageFit";
 import { cleanLegacyAutoDateElement } from "@/utils/autoDate";
 import { headingNumberText, headingNumbering, listChain, sectionHeadings, syncFollowingLists } from "@/utils/headingSync";
@@ -848,7 +865,15 @@ import {
 } from "../utils/framePresets";
 import { emptyDataTable, emptyTypedTable, typedTableFromData } from "../utils/table/tableConversion";
 import { resetElementStyle } from "../utils/resetStyle";
-import { collectHeadings, entriesFor, rowsThatFit, syncContentsListSize } from "../utils/contentsList";
+import {
+  collectHeadings,
+  entriesFor,
+  hasProperty,
+  rowsThatFit,
+  SECTION_HEADING_PROPERTY,
+  SUB_HEADING_PROPERTY,
+  syncContentsListSize,
+} from "../utils/contentsList";
 import {
   buildContentsDesign,
   buildCoverDesign,
@@ -923,6 +948,7 @@ const reportStore = useReportStore();
 const selectionStore = useSelectionStore();
 const editorStore = useEditorStore();
 const filesStore = useFilesStore();
+const helpStore = useHelpStore();
 reportStore.reset();
 selectionStore.reset();
 editorStore.reset();
@@ -986,7 +1012,6 @@ const {
   currentFileName,
   currentFileId,
   loadFilesFromStorage,
-  loadLastFile,
   findFileById,
   saveCurrentFileContent,
   setLastFile,
@@ -1008,19 +1033,22 @@ watch(currentFileName, (newVal) => {
 
 function handleHeaderTitleCommit() {
   isTitleEditing.value = false;
-  const trimmed = headerFileName.value.trim();
-  if (!trimmed) {
+  if (!renameReport(headerFileName.value)) {
     headerFileName.value = currentFileName.value || t("fileManager.untitledReport");
-    return;
   }
-  if (currentFileId.value) {
-    renameFile(currentFileId.value, trimmed);
-  }
+}
+
+// The report's one name (header, Template Settings, the saved file, the name
+// inside the report file); an empty name is refused
+function renameReport(name: string): boolean {
+  const trimmed = name.trim();
+  if (!trimmed) return false;
+  if (trimmed === currentFileName.value) return true;
+  if (currentFileId.value) renameFile(currentFileId.value, trimmed);
   currentFileName.value = trimmed;
-  if (reportProperties.value) {
-    reportProperties.value.name = trimmed;
-  }
+  reportStore.updateJrxml();
   scheduleAutoSave(true);
+  return true;
 }
 
 // Auto-save state and helpers
@@ -1093,7 +1121,7 @@ function createNewFile(saveOpenFile = true) {
 
   // Logic for creating a new file
   const timestamp = new Date().getTime();
-  currentFileName.value = `${t("fileManager.untitledReport")}${timestamp}`;
+  currentFileName.value = filesStore.newReportName(t("fileManager.untitledReport"));
   currentFileId.value = `file_${timestamp}`;
 
   // A new, empty report (every part reset, no undo history, nothing selected)
@@ -2530,6 +2558,11 @@ const placeOnPage = (bandIndex: number, element: DesignElement): boolean => {
   if (element.type === "contentsList" && pageKind(props, page) === "cover") {
     page = contents ? 1 : count;
   }
+  // Section Headings and Sub-headings belong on normal pages (the contents only
+  // count them there): from a cover or contents page, on the first normal page
+  const isHeading =
+    hasProperty(element, SECTION_HEADING_PROPERTY) || hasProperty(element, SUB_HEADING_PROPERTY);
+  if (isHeading && pageKind(props, page) !== "normal") page = count;
   element.pageIndex = page;
   const problem = pageProblem(element, page);
   if (problem) {
@@ -2875,7 +2908,7 @@ const handlePageSetupChange = () => {
   updateJRXML();
 };
 
-// Handle element double-click events
+// A library tile clicked: add its item (where it goes depends on the kind)
 const handleElementDoubleClick = (element: any) => {
   if (element.type === PAGE_BORDER_TYPE) {
     addPageBorder();
@@ -3931,77 +3964,6 @@ watch(
   },
 );
 
-const selectElementsInRect = (rect: {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-}) => {
-  // Clear the current selection
-  selectedElements.value = [];
-  selectedElement.value = null;
-
-  // Calculate the cumulative height of the bands, used to convert absolute coordinates to coordinates relative to a band
-  // The initial offset must account for the top margin
-  let bandOffsetY = reportProperties.value?.topMargin || 0;
-
-  // Iterate over all bands and elements, checking whether each falls within the marquee area
-  bands.value.forEach((band, bandIndex) => {
-    // Check whether the current band overlaps the marquee area
-    const bandTop = bandOffsetY;
-    const bandBottom = bandOffsetY + band.height;
-
-    // If the band does not overlap the marquee area, skip it
-    if (bandBottom < rect.top || bandTop > rect.bottom) {
-      bandOffsetY += band.height;
-      return;
-    }
-
-    // Iterate over all elements in the current band
-    band.elements.forEach((element, elementIndex) => {
-      // Calculate the element's absolute position on the canvas
-      // The element's X coordinate must account for the left margin
-      const elementLeft = (reportProperties.value?.leftMargin || 0) + element.x;
-      const elementTop = bandOffsetY + element.y;
-      const elementRight = elementLeft + element.width;
-      const elementBottom = elementTop + element.height;
-
-      // Check whether the element overlaps the marquee area
-      const isOverlapping = !(
-        elementRight < rect.left ||
-        elementLeft > rect.right ||
-        elementBottom < rect.top ||
-        elementTop > rect.bottom
-      );
-
-      // If it overlaps, add it to the selection list
-      if (isOverlapping) {
-        selectedElements.value.push({
-          bandIndex,
-          elementIndex,
-          uuid: element.uuid,
-        });
-      }
-    });
-
-    // Update the band's Y offset
-    bandOffsetY += band.height;
-  });
-
-  // If any elements are selected, use the last-selected one as the current selection
-  if (selectedElements.value.length > 0) {
-    const lastSelected =
-      selectedElements.value[selectedElements.value.length - 1];
-    if (lastSelected) {
-      selectedElement.value = {
-        bandIndex: lastSelected.bandIndex,
-        elementIndex: lastSelected.elementIndex,
-        uuid: lastSelected.uuid,
-      };
-    }
-  }
-};
-
 // Cache the event handler functions to avoid recreating them
 let cachedMouseMoveHandler: ((e: MouseEvent) => void) | null = null;
 let cachedMouseUpHandler: ((e: MouseEvent) => void) | null = null;
@@ -4882,7 +4844,7 @@ const saveToLocalStorageWrapper = () => {
       reportFields: reportFields.value,
       jrxmlContent: jrxmlContent.value,
     },
-    reportProperties.value?.name || "report",
+    currentFileName.value.trim() || "report",
   );
 };
 
@@ -4911,10 +4873,7 @@ const initBox = (element: DesignElement) => {
 const downloadJRXML = async () => {
   await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value)]);
   const content = generateJRXMLContent(
-    {
-      ...reportProperties.value,
-      pageCount: totalPages.value,
-    },
+    reportStore.propertiesForJrxml(),
     bands.value,
     reportFields.value,
     reportParameters.value,
@@ -4935,7 +4894,7 @@ const downloadJRXML = async () => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${reportProperties.value?.name || "report"}.jrxml`;
+  link.download = `${currentFileName.value.trim() || "report"}.jrxml`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -5389,6 +5348,9 @@ const processPastedElement = (
   updateJRXML();
 };
 
+// The File menu, for the Open shortcut
+const fileManagerRef = ref<InstanceType<typeof FileManager> | null>(null);
+
 // Define the handleKeyDown function at the top level of the component
 const handleKeyDown = (event: KeyboardEvent) => {
   // Get the currently active element, used to determine focus state
@@ -5425,6 +5387,22 @@ const handleKeyDown = (event: KeyboardEvent) => {
   if (isCtrlOrMetaPressed && (event.key === "-" || event.key === "_")) {
     event.preventDefault();
     zoomOut();
+    return;
+  }
+
+  // Alt+N starts a new template (the browser keeps Ctrl+N for a new window)
+  // Not while typing: on a Mac, Option+N types accents (ñ)
+  const isTyping = isInputFocused || (activeEl as HTMLElement | null)?.isContentEditable;
+  if (event.altKey && !isCtrlOrMetaPressed && event.code === "KeyN" && !isTyping) {
+    event.preventDefault();
+    createNewFile();
+    return;
+  }
+
+  // CTRL/CMD+O opens the Open window (My templates / From my computer)
+  if (isCtrlOrMetaPressed && !event.altKey && event.key.toLowerCase() === "o") {
+    event.preventDefault();
+    fileManagerRef.value?.showOpenWindow();
     return;
   }
 
@@ -5715,30 +5693,42 @@ const moveElementByKeyboard = (direction: string, repeat = false) => {
   updateOutOfBoundsElements();
 };
 
+// The address names the open template (/designer/<id>), so a reload or a link
+// opens it again; going back / forward to another template's address opens it
+const route = useRoute();
+const router = useRouter();
+watch(currentFileId, (id) => {
+  if (id && route.params.id !== id) router.replace({ name: "designer", params: { id } });
+});
+watch(
+  () => route.params.id,
+  (id) => {
+    if (typeof id !== "string" || !id || id === currentFileId.value) return;
+    const file = findFileById(id);
+    if (file) loadFile(file);
+  },
+);
+
 // Load data when the component mounts
 onMounted(() => {
   isLoadingFile.value = true;
   console.log("Component mount started...");
-  const hasLocalData = loadFromLocalStorageWrapper();
+  loadFromLocalStorageWrapper();
   console.log("Local data load complete");
 
-  // Try loading the last-edited file
+  // /designer/<id> opens that template; /designer starts a new one
   loadFilesFromStorage();
-  const lastFile = loadLastFile();
-  let hasFileData = false;
-  if (lastFile) {
-    const lastFileInList = findFileById(lastFile.id);
-    if (lastFileInList) {
-      loadFile(lastFileInList);
-      hasFileData = true;
-    }
-  }
-
-  if (!hasFileData) {
-    if (!currentFileId.value) {
-      currentFileId.value = `file_${Date.now()}`;
-    }
-    saveCurrentFileToStorage(false);
+  const routeId = typeof route.params.id === "string" ? route.params.id : "";
+  const requested = routeId ? findFileById(routeId) : undefined;
+  if (routeId && !requested) notification.warning(t("fileManager.templateNotFound"));
+  const isNewTemplate = !requested;
+  if (requested) {
+    loadFile(requested);
+  } else {
+    // A fresh template: a name no template saved in this browser has
+    currentFileId.value = `file_${Date.now()}`;
+    currentFileName.value = filesStore.newReportName(t("fileManager.untitledReport"));
+    reportStore.loadReport({});
   }
 
   // Update JRXML after the initial load; use setTimeout to ensure all data has finished loading
@@ -5748,6 +5738,8 @@ onMounted(() => {
     unwrapLegacyCoverFrames(bands.value, reportProperties.value);
     console.log("Starting initial JRXML generation...");
     updateJRXML();
+    // Saved at once, so it is in the list and its address works after a reload
+    if (isNewTemplate) saveCurrentFileToStorage(false);
     saveStatus.value = "saved";
   }, 100);
 
@@ -5856,6 +5848,7 @@ const regenerateJRXML = (): void => {
 
 // Open the PDF preview (charts drawn with their numbers, barcodes sized, first)
 const openPdfPreview = async (): Promise<void> => {
+  helpStore.noteGuideAction("preview");
   flushAutoSave();
   try {
     await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value)]);
@@ -5863,10 +5856,7 @@ const openPdfPreview = async (): Promise<void> => {
     if (!jrxmlContent.value) {
       // Generate the JRXML content directly, without downloading it
       const content = generateJRXMLContent(
-        {
-          ...reportProperties.value,
-          pageCount: totalPages.value,
-        },
+        reportStore.propertiesForJrxml(),
         bands.value,
         reportFields.value,
         reportParameters.value,
@@ -7380,8 +7370,25 @@ onUnmounted(() => {
   }
 });
 
-// Help-related state
-const showHelp = ref(false);
+// The right panel, opened on the AI tab (a guide's "Or let the AI assistant do it")
+const rightPanelRef = ref<{ toggleCollapse: () => void } | null>(null);
+function openAIAssistant() {
+  showRightPanel.value = true;
+  if (rightPanelCollapsed.value) rightPanelRef.value?.toggleCollapse();
+  rightPanelTab.value = "ai";
+}
+
+// First visit: a short tour of the designer (once per browser), once the
+// page has settled. The "Show me how" guides start afresh with the report.
+let tourTimer: ReturnType<typeof setTimeout> | undefined;
+onMounted(() => {
+  tourTimer = setTimeout(() => helpStore.startTourOnce("designer"), 900);
+});
+onUnmounted(() => {
+  clearTimeout(tourTimer);
+  if (helpStore.tourId === "designer") helpStore.endTour();
+  helpStore.resetGuides();
+});
 
 // PDF preview related state
 const showPdfPreview = ref(false);
@@ -8236,10 +8243,10 @@ const moveElementZOrder = (direction: "front" | "back") => {
   flex-shrink: 0;
 }
 
-.bottom-panel-btn {
-  font-size: 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
+/* Default Settings open: tinted purple */
+.default-settings-btn.is-open {
+  background: rgba(124, 92, 247, 0.12);
+  color: #6440f4;
 }
 
 .header-actions {

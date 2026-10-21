@@ -5,7 +5,8 @@
   <div class="pagination-properties">
     <!-- 1. How it looks: each card shows the real text -->
     <section class="card">
-      <h5 class="step"><span class="step-no" aria-hidden="true">1</span>{{ t("pagination.panel.lookTitle") }}</h5>
+      <h5 class="step"><span class="step-no" aria-hidden="true">1</span>{{ t("pagination.panel.lookTitle") }}<SettingHelpButton id="pnLook" /></h5>
+      <SettingHelpText id="pnLook" />
       <div class="look-grid" role="radiogroup" :aria-label="t('pagination.panel.lookTitle')">
         <button
           v-for="format in PAGINATION_FORMATS"
@@ -46,7 +47,8 @@
 
     <!-- 2. Which pages get a number -->
     <section class="card">
-      <h5 class="step"><span class="step-no" aria-hidden="true">2</span>{{ t("pagination.panel.pagesTitle") }}</h5>
+      <h5 class="step"><span class="step-no" aria-hidden="true">2</span>{{ t("pagination.panel.pagesTitle") }}<SettingHelpButton id="pnPages" /></h5>
+      <SettingHelpText id="pnPages" />
       <!-- With a cover / contents pages: do they count? (they never show a number) -->
       <div v-if="report.special.count" class="count-special">
         <label class="count-special-row">
@@ -217,7 +219,8 @@
 
     <!-- 3. The pages, with what each one prints -->
     <section class="card">
-      <h5 class="step"><span class="step-no" aria-hidden="true">3</span>{{ t("pagination.panel.yourPages", { n: designPages }, designPages) }}</h5>
+      <h5 class="step"><span class="step-no" aria-hidden="true">3</span>{{ t("pagination.panel.yourPages", { n: designPages }, designPages) }}<SettingHelpButton id="pnYourPages" /></h5>
+      <SettingHelpText id="pnYourPages" />
       <div v-if="designWarnings.length" class="note is-warning box" role="status">
         <TriangleAlert :size="15" aria-hidden="true" />
         <div>
@@ -247,6 +250,8 @@
 
 
 <script setup lang="ts">
+import SettingHelpButton from "../../help/SettingHelpButton.vue";
+import SettingHelpText from "../../help/SettingHelpText.vue";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { Plus, TriangleAlert, X } from "@lucide/vue";
