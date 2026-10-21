@@ -91,6 +91,12 @@ export async function generatePdf(
 ): Promise<Blob> {
   const form = new FormData();
   form.append("jrxml", payload.jrxml);
+  // For now we send emty parameter, dataSource and subDataSource, as the report server expects them. 
+  // In the future, we have to remove them and send only the JRXML, as the report server will
+  // get the data itself from the setups in the JRXML.  
+  form.append("parameters", JSON.stringify({})); 
+  form.append("dataSource", JSON.stringify({})); 
+  form.append("subDataSources", JSON.stringify([{}]));
 
   let blob: Blob;
   try {
