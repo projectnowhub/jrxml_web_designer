@@ -23,7 +23,7 @@
       </thead>
       <tbody>
         <tr
-          v-for="template in templates"
+          v-for="(template, index) in templates"
           :key="template.id"
           class="template-row"
           tabindex="0"
@@ -42,7 +42,7 @@
             <span class="owner-cell"><i>{{ owner.charAt(0) }}</i>{{ owner }}</span>
           </td>
           <td class="col-actions">
-            <div class="row-actions">
+            <div class="row-actions" :data-help="index === 0 ? 'template-actions' : undefined">
               <button
                 v-for="action in ACTIONS"
                 :key="action.key"

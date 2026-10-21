@@ -100,6 +100,7 @@ import {
   Eye,
   FilePlus,
   Files,
+  FolderOpen,
   FolderKanban,
   Keyboard,
   ListChecks,
@@ -146,6 +147,7 @@ const TIPS = [
   { id: "nudge", icon: Move },
   { id: "undo", icon: Undo2 },
   { id: "saved", icon: Save },
+  { id: "open", icon: FolderOpen },
   { id: "keys", icon: Keyboard },
 ];
 

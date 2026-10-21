@@ -7,7 +7,7 @@
 // Properties panel (help.panelTips.<kind>, closed per kind) and the tips shown
 // the first time something is selected (help.firstTips.<id>, once each).
 
-export type TourId = "home" | "designer";
+export type TourId = "home" | "templates" | "designer";
 
 export type TourSide = "top" | "bottom" | "left" | "right";
 
@@ -30,6 +30,14 @@ export const TOURS: Record<TourId, TourStep[]> = {
     { key: "search", target: '[data-help="search"]', side: "bottom" },
     { key: "account", target: '[data-help="account"]', side: "bottom" },
     { key: "help", target: '[data-help="help"]', side: "bottom" },
+  ],
+  // My templates: the list, its two views, the order, a template's actions
+  templates: [
+    { key: "list", target: '[data-help="template-list"]', side: "top" },
+    { key: "view", target: '[data-help="template-view"]', side: "bottom" },
+    { key: "order", target: '[data-help="template-order"]', side: "bottom" },
+    { key: "actions", target: '[data-help="template-actions"]', side: "left" },
+    { key: "search", target: '[data-help="search"]', side: "bottom" },
   ],
   designer: [
     { key: "welcome" },

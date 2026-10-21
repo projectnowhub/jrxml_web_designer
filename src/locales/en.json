@@ -918,11 +918,23 @@
         "navTitle": "Find your way",
         "navText": "Templates shows the templates you can use, My templates the ones you made, and Activity what changed lately.",
         "searchTitle": "Find a template",
-        "searchText": "Type part of a template's name here to find it quickly.",
+        "searchText": "Type part of a template's name and press Enter: My templates shows the ones that match.",
         "accountTitle": "Your account",
         "accountText": "Click your initial to change the language (English or Bahasa Melayu) or to sign out.",
         "helpTitle": "Help is always here",
         "helpText": "Click Help any time to take this tour again or to read the Quick guide."
+      },
+      "templates": {
+        "listTitle": "Your templates",
+        "listText": "Every template you have made. Click one to open it in the designer.",
+        "viewTitle": "Cards or a list",
+        "viewText": "Switch between cards with a picture and a list with the dates, like a file folder.",
+        "orderTitle": "Their order",
+        "orderText": "Choose the order of the cards here. In the list, click a column title to sort by it, and choose how many rows a page shows.",
+        "actionsTitle": "Open, rename, copy or delete",
+        "actionsText": "The three dots on a card, or the buttons at the end of a row, open, rename, copy or delete a template. Each one asks before it does anything.",
+        "searchTitle": "Find a template",
+        "searchText": "Type part of a name here: the list shows only the templates that match."
       },
       "designer": {
         "welcomeTitle": "Welcome to the template designer",
@@ -975,6 +987,7 @@
         "nudge": "Hold Shift and press the arrow keys to move a selected item a little.",
         "undo": "Made a mistake? Press Ctrl+Z (⌘+Z on a Mac) to undo it.",
         "saved": "Your work is saved by itself in this browser as you go.",
+        "open": "Your templates are on the home page and in My templates: click one to open it. In the designer, File → Open (Ctrl+O) opens another one or a .jrxml file from your computer.",
         "keys": "More keys that save you clicks are in the Keyboard shortcuts tab above."
       },
       "tourHint": "New here? A one-minute tour shows you where everything is.",
@@ -1204,7 +1217,7 @@
         "aiPrompt": "Add a heading called Project Overview.",
         "steps": {
           "addTitle": "Add a heading",
-          "addText": "Click Heading in the Element Library. It numbers itself: SECTION 1, SECTION 2…",
+          "addText": "Click Heading in the Element Library. It numbers itself: 1, 2, 3…",
           "settingsTitle": "Choose its numbering",
           "settingsText": "Click the heading. On the right you can turn its number off or change the style for every heading.",
           "previewTitle": "Check it",
@@ -1712,7 +1725,7 @@
     "description": {
       "partReportHeader": "A dark banner across the top of every page with three lines of title (client and project, report number, month). Goes in the Page Header.",
       "partPageFooter": "A thin line, the page number (Page 1 of 12) and a spot for your logo, at the bottom of every page. Goes in the Page Footer.",
-      "partSectionHeading": "A large bold heading with its number, for example: SECTION 1.  PROJECT DETAILS.",
+      "partSectionHeading": "A large bold heading with its number, for example: 1.  PROJECT DETAILS.",
       "partSubHeading": "A smaller bold, underlined heading, for example: TOWER A: KEY ACTIVITIES.",
       "partNote": "A small italic line for a source or remark under a table.",
       "partRiskLegend": "Green, amber and red dots that explain the risk colours: Low, Moderate and High Risk.",
@@ -2722,7 +2735,7 @@
     "numberBox": "Number box",
     "noNumberBox": "No number box",
     "onlyOnPages": "Select a table of contents on a page first.",
-    "noHeadings": "No headings found. Add Heading presets (Element Presets → Headings & Text) to your pages first.",
+    "noHeadings": "No headings found. Add a Heading (Basic Elements) to your pages first.",
     "notAllFit": "1 row didn't fit. Put the list on a contents page to carry it on to more pages. | {n} rows didn't fit. Put the list on a contents page to carry it on to more pages.",
     "filled": "Filled with 1 heading. | Filled with {n} headings.",
     "filledMore": "Filled with {n} headings; 1 contents page was added for the rest. | Filled with {n} headings; {pages} contents pages were added for the rest.",
@@ -2731,7 +2744,7 @@
     "subStyle": "Sub-sections",
     "noSubNumbers": "No numbers",
     "follow": "Keep in step with my headings",
-    "followNone": "No headings yet. Add a Heading or Sub-heading from Element Presets → Headings & Text and it appears here.",
+    "followNone": "No headings yet. Add a Heading or Sub-heading from Basic Elements and it appears here.",
     "overflow": "1 row doesn't fit on this page. | {n} rows don't fit on this page.",
     "overflowNotContents": "1 row doesn't fit on this page. Make the list or its rows smaller, or put it on a contents page so it can carry on to the next one. | {n} rows don't fit on this page. Make the list or its rows smaller, or put it on a contents page so it can carry on to the next one.",
     "followEmptyHint": "Table of contents: your Headings and Sub-headings will appear here",
@@ -2792,7 +2805,7 @@
       "bottom": "Bottom",
       "hint": "Up / down uses the space below the heading. Two columns move together, and later contents pages follow."
     },
-    "sampleRows": "The {n} rows on the page are samples from the design. Add a Heading or Sub-heading (Element Presets → Headings & Text) and your headings replace them.",
+    "sampleRows": "The {n} rows on the page are samples from the design. Add a Heading or Sub-heading (Basic Elements) and your headings replace them.",
     "show": "Show",
     "showAll": "Sections and sub-sections",
     "showSections": "Sections only",
@@ -3148,7 +3161,7 @@
       },
       "sectionHeading": {
         "title": "Heading",
-        "what": "A large heading that starts a section, with its number, for example SECTION 1. PROJECT DETAILS.",
+        "what": "A large heading that starts a section, with its number, for example 1.  PROJECT DETAILS.",
         "when": "At the start of each main part of your report. The table of contents lists every Heading.",
         "add": "Click Heading in the Element Library (it goes on a normal page), or drag it where you want it.",
         "work": [
@@ -3483,7 +3496,7 @@
       },
       "headingNumbers": {
         "title": "Section number",
-        "text": "Whether this heading numbers itself, and the number style every Heading uses (1, 1., 01, I, i, A, a), with words before or after it such as SECTION."
+        "text": "Whether this heading numbers itself, and the number style every Heading uses (1, 1., 01, I, i, A, a), with words before or after it if you want, such as SECTION or Chapter."
       },
       "pnLook": {
         "title": "Format",

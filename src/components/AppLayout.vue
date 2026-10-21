@@ -35,7 +35,7 @@
         <kbd>/</kbd>
       </label>
       <div class="topbar-actions">
-        <HelpMenu context="home" class="help-icon" />
+        <HelpMenu :context="route.name === 'mytemplates' ? 'templates' : 'home'" class="help-icon" />
         <button class="icon-button notification-icon" type="button" :aria-label="t('layout.notifications')">
           <Bell :size="20" :stroke-width="2.25" aria-hidden="true" />
         </button>

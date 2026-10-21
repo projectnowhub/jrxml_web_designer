@@ -15,7 +15,7 @@
       <div class="bar-tools">
         <span class="count">{{ t("myTemplates.count", { count: total }, total) }}</span>
         <!-- Grid has no column headings, so its order is chosen here -->
-        <label v-if="view === 'grid'" class="sort-select">
+        <label v-if="view === 'grid'" class="sort-select" data-help="template-order">
           <span>{{ t("myTemplates.sortBy") }}</span>
           <select :value="sortChoice" @change="chooseSort(($event.target as HTMLSelectElement).value)">
             <option v-for="choice in SORT_CHOICES" :key="choice" :value="choice">
@@ -26,14 +26,14 @@
         </label>
         <!-- List: how many rows a page shows (always here, so it can be
              changed back even when everything fits on one page) -->
-        <label v-else class="page-size">
+        <label v-else class="page-size" data-help="template-order">
           <span>{{ t("myTemplates.perPage") }}</span>
           <select :value="pageSize" @change="choosePageSize(Number(($event.target as HTMLSelectElement).value))">
             <option v-for="size in PAGE_SIZES" :key="size" :value="size">{{ size }}</option>
           </select>
           <ChevronDown :size="14" :stroke-width="2.25" aria-hidden="true" />
         </label>
-        <div class="view-toggle" role="radiogroup" :aria-label="t('myTemplates.view')">
+        <div class="view-toggle" data-help="template-view" role="radiogroup" :aria-label="t('myTemplates.view')">
           <button
             v-for="option in VIEWS"
             :key="option"
@@ -56,7 +56,7 @@
       <button type="button" @click="reload">{{ t("myTemplates.tryAgain") }}</button>
     </div>
 
-    <template v-else-if="view === 'grid'">
+    <div v-else-if="view === 'grid'" data-help="template-list">
       <TemplateGrid
         :templates="items"
         :owner="displayName"
@@ -74,9 +74,9 @@
           {{ t("myTemplates.loadMore") }}
         </button>
       </div>
-    </template>
+    </div>
 
-    <template v-else>
+    <div v-else data-help="template-list">
       <TemplateList
         v-if="items.length || loading"
         :templates="items"
@@ -134,7 +134,7 @@
           </button>
         </div>
       </nav>
-    </template>
+    </div>
 
     <div v-if="!failed && !loading && !items.length" class="no-match">
       <template v-if="query">
@@ -178,6 +178,7 @@ import {
 } from "@lucide/vue";
 import { useTemplates } from "@/composables/useTemplates";
 import { useFilesStore } from "@/stores/files";
+import { useHelpStore } from "@/stores/help";
 import { AUTH_USER_KEY } from "@/services/apiClient";
 import {
   listTemplates,
@@ -392,8 +393,18 @@ function observeSentinel() {
   observer.observe(sentinelRef.value);
 }
 
-onMounted(reload);
-onBeforeUnmount(() => observer?.disconnect());
+// First visit: a short tour of this page, once the templates are on screen
+const help = useHelpStore();
+let tourTimer: ReturnType<typeof setTimeout> | undefined;
+onMounted(async () => {
+  await reload();
+  tourTimer = setTimeout(() => help.startTourOnce("templates"), 600);
+});
+onBeforeUnmount(() => {
+  observer?.disconnect();
+  clearTimeout(tourTimer);
+  if (help.tourId === "templates") help.endTour();
+});
 </script>
 
 <style scoped>

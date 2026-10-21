@@ -135,6 +135,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "basic",
     tile: "textField",
     settings: ["positionSize", "textContent", "rotation", "textSettings", "outline", "sideBorders", "innerSpace", "background"],
+    guides: ["text"],
     sample: (ctx) => [sampleText(ctx.t("helpDocs.samples.text"))],
   },
   {
@@ -142,7 +143,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "basic",
     tile: "partSectionHeading",
     settings: ["positionSize", "headingNumbers", "boxStyle", "textSettings"],
-    guides: ["tableOfContents", "monthlyReport"],
+    guides: ["sectionHeading", "tableOfContents", "monthlyReport"],
     sample: (ctx) => [buildReportPart("partSectionHeading", ctx)],
   },
   {
@@ -150,6 +151,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "basic",
     tile: "partSubHeading",
     settings: ["positionSize", "textContent", "textSettings"],
+    guides: ["subHeading", "tableOfContents"],
     sample: (ctx) => [buildReportPart("partSubHeading", ctx)],
   },
   {
@@ -157,6 +159,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "basic",
     tile: "image",
     settings: ["positionSize", "picture", "imageShape", "rotation", "outline"],
+    guides: ["image"],
     sample: () => [createElement("image", { width: 160, height: 100 } as Partial<DesignElement>)],
   },
   {
@@ -164,6 +167,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "basic",
     tile: "line",
     settings: ["positionSize", "lineOrientation", "lineSettings"],
+    guides: ["line"],
     sample: () => [createElement("line", { width: 240, height: 1 } as Partial<DesignElement>)],
   },
   {
@@ -171,6 +175,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "basic",
     tile: "rectangle",
     settings: ["positionSize", "outline", "background"],
+    guides: ["rectangle"],
     sample: () => [createElement("rectangle", { width: 200, height: 80 } as Partial<DesignElement>)],
   },
   {
@@ -178,6 +183,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "basic",
     tile: "ellipse",
     settings: ["positionSize", "statusColor", "outline", "background"],
+    guides: ["ellipse"],
     sample: () => [createElement("ellipse", { width: 80, height: 80 } as Partial<DesignElement>)],
   },
   {
@@ -185,6 +191,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "basic",
     tile: "frame",
     settings: ["positionSize", "boxStyle", "sideBorders", "background"],
+    guides: ["box"],
     sample: (ctx) => [buildFrameTemplate("frameTitledSection", ctx)],
   },
   {
@@ -202,7 +209,7 @@ export const DOC_PAGES: DocPage[] = [
       "typedCells",
       "typedText",
     ],
-    guides: ["dataTable"],
+    guides: ["typedTable", "dataTable"],
     sample: (ctx) => [
       createElement("customTable", {
         width: 300,
@@ -242,6 +249,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "basic",
     tile: "barcode",
     settings: ["positionSize", "barcodeType", "barcodeValue", "rotation"],
+    guides: ["barcode"],
     sample: () => [{ ...buildBarcodeElement("Code128"), uuid: crypto.randomUUID() } as DesignElement],
   },
   {
@@ -249,6 +257,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "presets",
     tile: "frameKpiCard",
     settings: ["positionSize", "boxStyle", "background", "textSettings"],
+    guides: ["presetBoxes"],
     sample: (ctx) => [buildFrameTemplate("frameKpiCard", ctx)],
   },
   {
@@ -256,6 +265,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "presets",
     tile: "partReportHeader",
     settings: ["positionSize", "boxStyle", "textSettings"],
+    guides: ["presetHeaderFooter"],
     sample: (ctx) => [buildReportPart("partReportHeader", ctx)],
   },
   {
@@ -263,6 +273,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "presets",
     tile: "partRiskLegend",
     settings: ["statusColor", "positionSize"],
+    guides: ["presetStatus"],
     sample: (ctx) => [buildReportPart("partRiskLegend", ctx)],
   },
   {
@@ -270,6 +281,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "presets",
     tile: "partSignOff",
     settings: ["positionSize", "textSettings", "picture"],
+    guides: ["presetSignOff"],
     sample: (ctx) => [buildReportPart("partSignOff", ctx)],
   },
   {
@@ -277,6 +289,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "presets",
     tile: "tableKeyValue",
     settings: ["typedGrid", "typedCells", "typedText", "tableLook"],
+    guides: ["presetTables"],
     sample: (ctx) => [buildTablePreset("tableKeyValue", ctx)],
   },
   {
@@ -284,6 +297,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "composite",
     tile: "framePageBorder",
     settings: ["boxStyle"],
+    guides: ["pageBorder"],
     sample: (ctx) => [buildFrameTemplate("framePageBorder", { ...ctx, availableHeight: 200 })],
   },
   {
@@ -299,6 +313,7 @@ export const DOC_PAGES: DocPage[] = [
     group: "composite",
     tile: "dateTime",
     settings: ["dateWhich", "dateLook", "dateBefore", "textSettings"],
+    guides: ["date"],
     sample: () => [buildDateElement()],
   },
 ];

@@ -1147,9 +1147,22 @@ function deleteAllFiles() {
   notification.success(t("fileManager.deleteAllFilesDone"));
 }
 
+// A new template nobody has touched: nothing on its pages, still its
+// "Untitled Template" name, never saved. It isn't saved, so opening the
+// designer and leaving doesn't fill the template list with empty ones
+function isUntouchedNewTemplate(): boolean {
+  if (currentFileId.value && findFileById(currentFileId.value)) return false;
+  if (!currentFileName.value.startsWith(t("fileManager.untitledReport"))) return false;
+  return bands.value.every((band) => !(band.elements?.length));
+}
+
 function saveCurrentFileToStorage(showNotification = false): boolean {
   if (isLoadingFile.value) {
     return false;
+  }
+  if (isUntouchedNewTemplate()) {
+    saveStatus.value = "saved";
+    return true;
   }
 
   try {
@@ -5697,8 +5710,13 @@ const moveElementByKeyboard = (direction: string, repeat = false) => {
 // opens it again; going back / forward to another template's address opens it
 const route = useRoute();
 const router = useRouter();
-watch(currentFileId, (id) => {
-  if (id && route.params.id !== id) router.replace({ name: "designer", params: { id } });
+// A template not saved yet (new and untouched) keeps /designer, so a reload
+// starts a new one instead of looking for it
+watch([currentFileId, () => filesStore.templatesVersion], ([id]) => {
+  const saved = !!id && !!findFileById(id);
+  const shown = typeof route.params.id === "string" ? route.params.id : "";
+  if (saved && shown !== id) router.replace({ name: "designer", params: { id } });
+  else if (!saved && shown) router.replace({ name: "designer" });
 });
 watch(
   () => route.params.id,
@@ -5721,7 +5739,6 @@ onMounted(() => {
   const routeId = typeof route.params.id === "string" ? route.params.id : "";
   const requested = routeId ? findFileById(routeId) : undefined;
   if (routeId && !requested) notification.warning(t("fileManager.templateNotFound"));
-  const isNewTemplate = !requested;
   if (requested) {
     loadFile(requested);
   } else {
@@ -5738,8 +5755,6 @@ onMounted(() => {
     unwrapLegacyCoverFrames(bands.value, reportProperties.value);
     console.log("Starting initial JRXML generation...");
     updateJRXML();
-    // Saved at once, so it is in the list and its address works after a reload
-    if (isNewTemplate) saveCurrentFileToStorage(false);
     saveStatus.value = "saved";
   }, 100);
 

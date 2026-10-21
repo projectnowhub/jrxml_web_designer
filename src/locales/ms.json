@@ -918,11 +918,23 @@
         "navTitle": "Cari jalan anda",
         "navText": "Templat menunjukkan templat yang boleh anda gunakan, Templat saya templat yang anda buat, dan Aktiviti perkara yang berubah baru-baru ini.",
         "searchTitle": "Cari templat",
-        "searchText": "Taip sebahagian nama templat di sini untuk mencarinya dengan cepat.",
+        "searchText": "Taip sebahagian nama templat dan tekan Enter: Templat saya menunjukkan yang sepadan.",
         "accountTitle": "Akaun anda",
         "accountText": "Klik huruf awal nama anda untuk menukar bahasa (English atau Bahasa Melayu) atau untuk log keluar.",
         "helpTitle": "Bantuan sentiasa ada",
         "helpText": "Klik Bantuan bila-bila masa untuk mengikuti lawatan ini semula atau membaca Panduan ringkas."
+      },
+      "templates": {
+        "listTitle": "Templat anda",
+        "listText": "Setiap templat yang anda buat. Klik satu untuk membukanya dalam pereka.",
+        "viewTitle": "Kad atau senarai",
+        "viewText": "Tukar antara kad bergambar dan senarai dengan tarikh, seperti folder fail.",
+        "orderTitle": "Susunannya",
+        "orderText": "Pilih susunan kad di sini. Dalam senarai, klik tajuk lajur untuk mengisih, dan pilih berapa baris yang ditunjukkan setiap halaman.",
+        "actionsTitle": "Buka, namakan semula, salin atau padam",
+        "actionsText": "Tiga titik pada kad, atau butang di hujung baris, membuka, menamakan semula, menyalin atau memadam templat. Setiap satu bertanya dahulu sebelum bertindak.",
+        "searchTitle": "Cari templat",
+        "searchText": "Taip sebahagian nama di sini: senarai hanya menunjukkan templat yang sepadan."
       },
       "designer": {
         "welcomeTitle": "Selamat datang ke pereka templat",
@@ -975,6 +987,7 @@
         "nudge": "Tahan Shift dan tekan kekunci anak panah untuk mengalihkan item yang dipilih sedikit.",
         "undo": "Tersilap? Tekan Ctrl+Z (⌘+Z pada Mac) untuk membuat asal.",
         "saved": "Kerja anda disimpan sendiri dalam pelayar ini semasa anda bekerja.",
+        "open": "Templat anda ada di halaman utama dan dalam Templat saya: klik satu untuk membukanya. Dalam pereka, Fail → Buka (Ctrl+O) membuka templat lain atau fail .jrxml dari komputer anda.",
         "keys": "Lebih banyak kekunci yang menjimatkan klik ada dalam tab Pintasan papan kekunci di atas."
       },
       "tourHint": "Baru di sini? Lawatan seminit menunjukkan di mana letaknya semua perkara.",
@@ -1204,7 +1217,7 @@
         "aiPrompt": "Tambah tajuk bernama Gambaran Keseluruhan Projek.",
         "steps": {
           "addTitle": "Tambah tajuk",
-          "addText": "Klik Tajuk dalam Pustaka Elemen. Ia bernombor sendiri: SECTION 1, SECTION 2…",
+          "addText": "Klik Tajuk dalam Pustaka Elemen. Ia bernombor sendiri: 1, 2, 3…",
           "settingsTitle": "Pilih penomborannya",
           "settingsText": "Klik tajuk itu. Di sebelah kanan anda boleh mematikan nombornya atau menukar gaya untuk semua tajuk.",
           "previewTitle": "Semak",
@@ -1712,7 +1725,7 @@
     "description": {
       "partReportHeader": "Jalur gelap di bahagian atas setiap halaman dengan tiga baris tajuk (pelanggan dan projek, nombor laporan, bulan). Diletakkan di Kepala Halaman.",
       "partPageFooter": "Garis nipis, nombor halaman (Halaman 1 daripada 12) dan ruang untuk logo anda, di bahagian bawah setiap halaman. Diletakkan di Kaki Halaman.",
-      "partSectionHeading": "Tajuk besar bercetak tebal dengan nombornya, contohnya: BAHAGIAN 1.  BUTIRAN PROJEK.",
+      "partSectionHeading": "Tajuk besar bercetak tebal dengan nombornya, contohnya: 1.  BUTIRAN PROJEK.",
       "partSubHeading": "Tajuk lebih kecil, tebal dan bergaris bawah, contohnya: MENARA A: AKTIVITI UTAMA.",
       "partNote": "Baris kecil condong untuk sumber atau catatan di bawah jadual.",
       "partRiskLegend": "Titik hijau, kuning dan merah yang menerangkan warna risiko: Risiko Rendah, Sederhana dan Tinggi.",
@@ -2722,7 +2735,7 @@
     "numberBox": "Kotak nombor",
     "noNumberBox": "Tiada kotak nombor",
     "onlyOnPages": "Pilih isi kandungan pada halaman dahulu.",
-    "noHeadings": "Tiada tajuk ditemui. Tambah praset Tajuk (Preset Elemen → Tajuk & Teks) pada halaman anda dahulu.",
+    "noHeadings": "Tiada tajuk ditemui. Tambah Tajuk (Elemen Asas) pada halaman anda dahulu.",
     "notAllFit": "1 baris tidak muat. Letakkan senarai pada halaman kandungan untuk menyambungnya ke halaman lain. | {n} baris tidak muat. Letakkan senarai pada halaman kandungan untuk menyambungnya ke halaman lain.",
     "filled": "Diisi dengan 1 tajuk. | Diisi dengan {n} tajuk.",
     "filledMore": "Diisi dengan {n} tajuk; 1 halaman kandungan ditambah untuk selebihnya. | Diisi dengan {n} tajuk; {pages} halaman kandungan ditambah untuk selebihnya.",
@@ -2731,7 +2744,7 @@
     "subStyle": "Subbahagian",
     "noSubNumbers": "Tiada nombor",
     "follow": "Selaraskan dengan tajuk saya",
-    "followNone": "Belum ada tajuk. Tambah Tajuk atau Subtajuk daripada Preset Elemen → Tajuk & Teks dan ia akan muncul di sini.",
+    "followNone": "Belum ada tajuk. Tambah Tajuk atau Subtajuk daripada Elemen Asas dan ia akan muncul di sini.",
     "overflow": "1 baris tidak muat pada halaman ini. | {n} baris tidak muat pada halaman ini.",
     "overflowNotContents": "1 baris tidak muat pada halaman ini. Kecilkan senarai atau barisnya, atau letakkannya pada halaman kandungan supaya ia boleh bersambung ke halaman seterusnya. | {n} baris tidak muat pada halaman ini. Kecilkan senarai atau barisnya, atau letakkannya pada halaman kandungan supaya ia boleh bersambung ke halaman seterusnya.",
     "followEmptyHint": "Isi kandungan: Tajuk dan Subtajuk anda akan muncul di sini",
@@ -2792,7 +2805,7 @@
       "bottom": "Bawah",
       "hint": "Atas / bawah menggunakan ruang di bawah tajuk. Dua lajur bergerak bersama, dan halaman kandungan seterusnya mengikut."
     },
-    "sampleRows": "{n} baris di halaman ialah contoh daripada reka bentuk. Tambah Tajuk atau Sub-tajuk (Pratetap Elemen → Tajuk & Teks) dan tajuk anda akan menggantikannya.",
+    "sampleRows": "{n} baris di halaman ialah contoh daripada reka bentuk. Tambah Tajuk atau Subtajuk (Elemen Asas) dan tajuk anda akan menggantikannya.",
     "show": "Tunjuk",
     "showAll": "Bahagian dan sub-bahagian",
     "showSections": "Bahagian sahaja",
@@ -3148,7 +3161,7 @@
       },
       "sectionHeading": {
         "title": "Tajuk",
-        "what": "Tajuk besar yang memulakan satu bahagian, berserta nombornya, contohnya SECTION 1. BUTIRAN PROJEK.",
+        "what": "Tajuk besar yang memulakan satu bahagian, berserta nombornya, contohnya 1.  BUTIRAN PROJEK.",
         "when": "Pada permulaan setiap bahagian utama laporan anda. Isi kandungan menyenaraikan setiap Tajuk.",
         "add": "Klik Tajuk dalam Pustaka Elemen (ia diletakkan pada halaman biasa), atau seret ke tempat yang anda mahu.",
         "work": [
@@ -3483,7 +3496,7 @@
       },
       "headingNumbers": {
         "title": "Nombor bahagian",
-        "text": "Sama ada tajuk ini menomborkan dirinya sendiri, dan gaya nombor yang digunakan oleh setiap Tajuk (1, 1., 01, I, i, A, a), dengan perkataan sebelum atau selepasnya seperti SECTION."
+        "text": "Sama ada tajuk ini menomborkan dirinya sendiri, dan gaya nombor yang digunakan oleh setiap Tajuk (1, 1., 01, I, i, A, a), dengan perkataan sebelum atau selepasnya jika mahu, seperti SECTION atau Bab."
       },
       "pnLook": {
         "title": "Format",

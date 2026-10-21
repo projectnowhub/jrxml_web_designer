@@ -35,6 +35,7 @@
             type="button"
             class="more-button"
             data-template-menu
+            :data-help="index === 0 ? 'template-actions' : undefined"
             :class="{ open: menuRef?.openId === template.id }"
             :aria-label="t('home.moreOptions')"
             aria-haspopup="menu"
