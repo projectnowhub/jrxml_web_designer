@@ -57,6 +57,48 @@
           <Strikethrough :size="14" :stroke-width="2.5" />
         </button>
 
+        <!-- Superscript / subscript ("1st", "m²", "H₂O") -->
+        <button
+          type="button"
+          class="format-btn"
+          :class="{ 'is-active': activeFormats.superscript }"
+          :title="t('textToolbar.superscript')"
+          @click="emitFormat('superscript')"
+        >
+          <Superscript :size="14" :stroke-width="2" />
+        </button>
+        <button
+          type="button"
+          class="format-btn"
+          :class="{ 'is-active': activeFormats.subscript }"
+          :title="t('textToolbar.subscript')"
+          @click="emitFormat('subscript')"
+        >
+          <Subscript :size="14" :stroke-width="2" />
+        </button>
+
+        <span class="btn-separator"></span>
+
+        <!-- Lists: the chosen lines become bullet points or numbered points -->
+        <button
+          type="button"
+          class="format-btn"
+          :class="{ 'is-active': activeFormats.bulletList }"
+          :title="t('textToolbar.bulletList')"
+          @click="emitFormat('insertUnorderedList')"
+        >
+          <List :size="14" :stroke-width="2" />
+        </button>
+        <button
+          type="button"
+          class="format-btn"
+          :class="{ 'is-active': activeFormats.numberedList }"
+          :title="t('textToolbar.numberedList')"
+          @click="emitFormat('insertOrderedList')"
+        >
+          <ListOrdered :size="14" :stroke-width="2" />
+        </button>
+
         <span class="btn-separator"></span>
 
         <!-- Text Color picker trigger -->
@@ -391,11 +433,15 @@ import {
   Highlighter,
   Italic,
   Link,
+  List,
+  ListOrdered,
   Mail,
   Palette,
   Phone,
   RemoveFormatting,
   Strikethrough,
+  Subscript,
+  Superscript,
   Underline,
   Unlink,
   X,
@@ -412,6 +458,10 @@ const props = defineProps<{
     italic?: boolean;
     underline?: boolean;
     strike?: boolean;
+    superscript?: boolean;
+    subscript?: boolean;
+    bulletList?: boolean;
+    numberedList?: boolean;
     link?: boolean;
     color?: string;
     highlight?: string;
@@ -865,8 +915,8 @@ defineExpose({
 }
 
 .format-btn.is-active {
-  background: #e6f7ff;
-  color: #1890ff;
+  background: #f1edff;
+  color: #6440f4;
   font-weight: 600;
 }
 
@@ -959,9 +1009,9 @@ defineExpose({
 }
 
 .clear-highlight-btn.is-active-none {
-  background: #e6f7ff;
-  border-color: #1890ff;
-  color: #1890ff;
+  background: #f1edff;
+  border-color: #6440f4;
+  color: #6440f4;
   font-weight: 600;
 }
 
@@ -1000,7 +1050,7 @@ defineExpose({
 }
 
 .color-swatch-btn.is-selected {
-  outline: 2px solid #1890ff;
+  outline: 2px solid #6440f4;
   outline-offset: 1px;
 }
 
@@ -1056,8 +1106,8 @@ defineExpose({
 }
 
 .custom-color-text:focus {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+  border-color: #6440f4;
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.15);
 }
 
 .custom-apply-btn {
@@ -1100,8 +1150,8 @@ defineExpose({
 }
 
 .link-tab.is-active {
-  background: #1890ff;
-  border-color: #1890ff;
+  background: #6440f4;
+  border-color: #6440f4;
   color: #ffffff;
   font-weight: 500;
 }
@@ -1137,8 +1187,8 @@ defineExpose({
 }
 
 .input-row:focus-within {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+  border-color: #6440f4;
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.15);
 }
 
 .input-prefix-label {
@@ -1162,8 +1212,8 @@ defineExpose({
 }
 
 .link-text-input:focus {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+  border-color: #6440f4;
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.15);
 }
 
 .input-row .inline-input {
@@ -1185,7 +1235,7 @@ defineExpose({
 }
 
 .action-btn-primary {
-  background: #1890ff;
+  background: #6440f4;
   color: #ffffff;
   border: none;
   font-size: 11px;
@@ -1197,7 +1247,7 @@ defineExpose({
 }
 
 .action-btn-primary:hover:not(:disabled) {
-  background: #40a9ff;
+  background: #7c5cf7;
 }
 
 .action-btn-primary:disabled {

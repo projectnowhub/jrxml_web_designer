@@ -9,8 +9,20 @@
     <div class="tcm">
       <!-- Settings -->
       <div class="tcm-settings">
-        <!-- Source -->
+        <!-- Project, then one of its sources -->
         <section class="tcm-section">
+          <h4><FolderKanban :size="14" aria-hidden="true" />{{ t("dataTable.config.project") }}</h4>
+          <p v-if="!projectOptions.length" class="tcm-note">{{ t("dataTable.config.noProjects") }}</p>
+          <div v-else class="tcm-select-wrap">
+            <select class="tcm-select" :value="projectId" @change="changeProject(($event.target as HTMLSelectElement).value)">
+              <option value="" disabled>{{ t("dataTable.config.chooseProject") }}</option>
+              <option v-for="p in projectOptions" :key="p.id" :value="p.id">{{ p.name }}</option>
+            </select>
+            <ChevronDown class="tcm-chevron" :size="14" aria-hidden="true" />
+          </div>
+        </section>
+
+        <section v-if="projectId" class="tcm-section">
           <h4><Database :size="14" aria-hidden="true" />{{ t("dataTable.config.source") }}</h4>
           <div class="tcm-select-wrap">
             <select class="tcm-select" :value="sourceId" @change="changeSource(($event.target as HTMLSelectElement).value)">
@@ -37,16 +49,33 @@
                 {{ t("dataTable.config.columnCounter", { count: columns.length, max: maxColumns }) }}
               </span>
             </h4>
-            <ul class="tcm-list">
-              <li v-for="(col, i) in columns" :key="col.key" class="tcm-col">
-                <div class="tcm-move">
-                  <button type="button" class="tcm-icon-btn" :disabled="i === 0" :title="t('dataTable.config.moveUp')" @click="moveColumn(i, -1)">
-                    <ChevronUp :size="13" />
-                  </button>
-                  <button type="button" class="tcm-icon-btn" :disabled="i === columns.length - 1" :title="t('dataTable.config.moveDown')" @click="moveColumn(i, 1)">
-                    <ChevronDown :size="13" />
-                  </button>
-                </div>
+            <!-- Drag a row by its grip to change the column order -->
+            <ul
+              class="tcm-list"
+              @dragover="onColumnDragOver"
+              @dragleave="onColumnDragLeave"
+              @drop="onColumnDrop"
+            >
+              <li
+                v-for="(col, i) in columns"
+                :key="col.key"
+                class="tcm-col"
+                :class="{
+                  'is-dragged': dragFrom === i,
+                  'drop-before': showDropLine && dropAt === i,
+                  'drop-after': showDropLine && dropAt === columns.length && i === columns.length - 1,
+                }"
+              >
+                <span
+                  class="tcm-grip"
+                  draggable="true"
+                  :title="t('dataTable.config.dragToReorder')"
+                  :aria-label="t('dataTable.config.dragToReorder')"
+                  @dragstart="onColumnDragStart($event, i)"
+                  @dragend="endColumnDrag"
+                >
+                  <GripVertical :size="14" aria-hidden="true" />
+                </span>
                 <component :is="TYPE_ICONS[col.type]" :size="13" class="tcm-type" :title="t(`dataTable.types.${col.type}`)" />
                 <input
                   class="tcm-input"
@@ -55,6 +84,20 @@
                   :aria-label="t('dataTable.config.headerText')"
                   @input="col.label = ($event.target as HTMLInputElement).value"
                 />
+                <!-- Text values can print as a barcode -->
+                <div v-if="col.type === 'text'" class="tcm-select-wrap is-small">
+                  <select
+                    class="tcm-select"
+                    :value="col.barcode ?? ''"
+                    :title="t('dataTable.config.showAs')"
+                    :aria-label="t('dataTable.config.showAs')"
+                    @change="setBarcode(col, ($event.target as HTMLSelectElement).value)"
+                  >
+                    <option value="">{{ t("dataTable.config.showAsText") }}</option>
+                    <option v-for="code in TABLE_BARCODE_TYPES" :key="code" :value="code">{{ t(`barcode.types.${code}`) }}</option>
+                  </select>
+                  <ChevronDown class="tcm-chevron" :size="12" aria-hidden="true" />
+                </div>
                 <div v-if="showTotals" class="tcm-select-wrap is-small">
                   <select
                     class="tcm-select"
@@ -73,17 +116,25 @@
               </li>
             </ul>
             <div v-if="unusedColumns.length" class="tcm-select-wrap">
+              <!-- Every unused column is listed, even when the table is full, so
+                   the user can see what else there is -->
               <select
                 class="tcm-select"
                 value=""
-                :disabled="columns.length >= maxColumns"
                 @change="addColumn(($event.target as HTMLSelectElement))"
               >
-                <option value="">{{ t("dataTable.config.addColumn") }}</option>
-                <option v-for="c in unusedColumns" :key="c.key" :value="c.key">{{ c.label }}</option>
+                <option value="" disabled hidden>
+                  {{ t(columns.length >= maxColumns ? "dataTable.config.tableFull" : "dataTable.config.addColumn") }}
+                </option>
+                <option v-for="c in unusedColumns" :key="c.key" :value="c.key" :disabled="columns.length >= maxColumns">
+                  {{ c.label }}
+                </option>
               </select>
               <ChevronDown class="tcm-chevron" :size="14" aria-hidden="true" />
             </div>
+            <p v-if="columns.some((c) => tableColumnBarcode(c))" class="tcm-hint">
+              {{ t("dataTable.config.barcodeHint") }}
+            </p>
             <p v-if="columns.length >= maxColumns && unusedColumns.length" class="tcm-hint">
               {{ t("dataTable.config.columnLimitHint") }}
             </p>
@@ -106,6 +157,7 @@
           <!-- Rows, totals -->
           <section class="tcm-section">
             <h4><ListOrdered :size="14" aria-hidden="true" />{{ t("dataTable.config.rows") }}</h4>
+            <p class="tcm-hint is-top">{{ t("dataTable.config.rowsNote") }}</p>
             <label class="tcm-check">
               <input type="checkbox" :checked="rowLimit !== undefined" @change="toggleRowLimit(($event.target as HTMLInputElement).checked)" />
               {{ t("dataTable.config.limitRows") }}
@@ -164,6 +216,7 @@
 </template>
 
 <script setup lang="ts">
+import { TABLE_BARCODE_TYPES, isTableBarcodeType, tableColumnBarcode } from "@/utils/barcode/barcodeTypes";
 import { computed, ref, watch, type Component } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
@@ -171,9 +224,10 @@ import {
   ArrowDownUp,
   Calendar,
   ChevronDown,
-  ChevronUp,
   Columns3,
   Database,
+  FolderKanban,
+  GripVertical,
   DatabaseZap,
   DollarSign,
   Funnel,
@@ -204,6 +258,7 @@ import type {
   DataRow,
   DataSourceSchema,
   DataSourceSummary,
+  ReportProject,
   TableColumnBinding,
   TableDataBinding,
   TableFilter,
@@ -217,7 +272,10 @@ const props = defineProps<{
   // The table being set up; null when the table is created on Apply
   table: TableElement | null;
   tableWidth: number;
-  // Source (and column) dragged onto the table, if it was opened by a drop
+  // The report's projects (the Report Data list)
+  projects: ReportProject[];
+  // Project, source (and column) dragged onto the table, if it was opened by a drop
+  initialProjectId?: string;
   initialSourceId?: string;
   initialColumnKey?: string;
   existingTableNames: string[];
@@ -239,7 +297,21 @@ const TYPE_ICONS: Record<DataColumnType, Component> = {
 };
 
 const sources = ref<DataSourceSummary[]>([]);
+const projectId = ref("");
 const sourceId = ref("");
+
+// The report's projects, plus the table's own if it was removed from the list
+const projectOptions = computed<ReportProject[]>(() => {
+  const list = [...props.projects];
+  const own = props.table?.binding;
+  if (own?.projectId && !list.some((p) => p.id === own.projectId)) {
+    list.push({ id: own.projectId, name: own.projectName });
+  }
+  return list;
+});
+const projectName = computed(
+  () => projectOptions.value.find((p) => p.id === projectId.value)?.name ?? projectId.value,
+);
 const schema = ref<DataSourceSchema | null>(null);
 const loadError = ref(false);
 
@@ -256,7 +328,11 @@ const maxColumns = computed(() => maxColumnsForWidth(props.tableWidth));
 // Another source than the table shows: Apply replaces its data, like a new image
 const replacedSource = computed(() => {
   const current = props.table?.binding;
-  return current && sourceId.value && sourceId.value !== current.sourceId ? current.sourceName : "";
+  return current &&
+    sourceId.value &&
+    (sourceId.value !== current.sourceId || projectId.value !== current.projectId)
+    ? current.sourceName
+    : "";
 });
 const unusedColumns = computed(() =>
   (schema.value?.columns ?? []).filter((c) => !columns.value.some((col) => col.key === c.key)),
@@ -278,13 +354,14 @@ function loadDraft(binding: TableDataBinding) {
 // Filter choices of the source (values with counts, ranges)
 const facets = ref<SourceFacets | null>(null);
 
-async function loadFacets(id: string) {
+async function loadFacets(project: string, id: string) {
   facets.value = null;
+  const stillCurrent = () => projectId.value === project && sourceId.value === id;
   try {
-    const loaded = await getFacets(id);
-    if (sourceId.value === id) facets.value = loaded;
+    const loaded = await getFacets(project, id);
+    if (stillCurrent()) facets.value = loaded;
   } catch {
-    if (sourceId.value === id) facets.value = {};
+    if (stillCurrent()) facets.value = {};
   }
 }
 
@@ -293,14 +370,17 @@ const look = computed(() => resolveLook(props.table?.binding));
 
 async function useSchema(id: string, freshColumns: boolean) {
   loadError.value = false;
+  const project = projectId.value;
+  const stillCurrent = () => projectId.value === project && sourceId.value === id;
   try {
-    const loaded = await getSchema(id);
-    if (sourceId.value !== id) return;
+    const loaded = await getSchema(project, id);
+    if (!stillCurrent()) return;
     schema.value = loaded;
-    loadFacets(id);
+    loadFacets(project, id);
     if (freshColumns) {
       // A new source: start with as many of its columns as fit; keep the look
       const start = createBinding({
+        project: { id: project, name: projectName.value },
         schema: loaded,
         tableName: draftName.value,
         datasetName: datasetName.value,
@@ -312,8 +392,18 @@ async function useSchema(id: string, freshColumns: boolean) {
       sort.value = [];
     }
   } catch {
-    if (sourceId.value === id) loadError.value = true;
+    if (stillCurrent()) loadError.value = true;
   }
+}
+
+function loadSources(project: string) {
+  sources.value = [];
+  if (!project) return;
+  listSources(project)
+    .then((list) => {
+      if (projectId.value === project) sources.value = list;
+    })
+    .catch(() => (loadError.value = true));
 }
 
 // Fill the draft each time the popup opens
@@ -334,25 +424,96 @@ watch(
       rowLimit.value = undefined;
       showTotals.value = false;
     }
-    const id = props.initialSourceId ?? current?.sourceId ?? "";
+    // A dropped source, the table's own, or the only project there is
+    const project =
+      props.initialProjectId ??
+      (current?.projectId || undefined) ??
+      (projectOptions.value.length === 1 ? projectOptions.value[0]!.id : "");
+    const id = props.initialSourceId ?? (project === current?.projectId ? current?.sourceId : "") ?? "";
+    projectId.value = project;
     sourceId.value = id;
-    listSources()
-      .then((list) => (sources.value = list))
-      .catch(() => (loadError.value = true));
-    if (id) await useSchema(id, id !== current?.sourceId);
+    loadError.value = false;
+    loadSources(project);
+    if (project && id) {
+      await useSchema(id, id !== current?.sourceId || project !== current?.projectId);
+    }
   },
   { immediate: true },
 );
+
+// Another project: choose one of its sources again
+function changeProject(id: string) {
+  projectId.value = id;
+  sourceId.value = "";
+  schema.value = null;
+  loadError.value = false;
+  loadSources(id);
+}
 
 function changeSource(id: string) {
   sourceId.value = id;
   useSchema(id, true);
 }
 
-function moveColumn(index: number, step: number) {
-  const list = columns.value;
-  const [col] = list.splice(index, 1);
-  if (col) list.splice(index + step, 0, col);
+// ── Column order: drag a row by its grip ──
+const dragFrom = ref<number | null>(null);
+// Where the dragged column would go: before row dropAt (columns.length = at the end)
+const dropAt = ref<number | null>(null);
+// No line where dropping wouldn't move anything
+const showDropLine = computed(
+  () =>
+    dragFrom.value !== null &&
+    dropAt.value !== null &&
+    dropAt.value !== dragFrom.value &&
+    dropAt.value !== dragFrom.value + 1,
+);
+const COLUMN_DRAG_TYPE = "application/x-table-column";
+
+function onColumnDragStart(event: DragEvent, index: number) {
+  dragFrom.value = index;
+  dropAt.value = null;
+  const dt = event.dataTransfer;
+  if (!dt) return;
+  dt.effectAllowed = "move";
+  dt.setData(COLUMN_DRAG_TYPE, String(index));
+  // Drag the whole row, not just the grip
+  const row = (event.currentTarget as HTMLElement).closest("li");
+  if (row) dt.setDragImage(row, 12, row.offsetHeight / 2);
+}
+
+function onColumnDragOver(event: DragEvent) {
+  if (dragFrom.value === null) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+  const rows = Array.from((event.currentTarget as HTMLElement).children);
+  const at = rows.findIndex((row) => {
+    const r = row.getBoundingClientRect();
+    return event.clientY < r.top + r.height / 2;
+  });
+  dropAt.value = at === -1 ? rows.length : at;
+}
+
+function onColumnDragLeave(event: DragEvent) {
+  const list = event.currentTarget as HTMLElement;
+  if (!list.contains(event.relatedTarget as Node | null)) dropAt.value = null;
+}
+
+function onColumnDrop(event: DragEvent) {
+  const from = dragFrom.value;
+  const at = dropAt.value;
+  if (from === null || at === null) return;
+  event.preventDefault();
+  const to = at > from ? at - 1 : at;
+  if (to !== from) {
+    const [col] = columns.value.splice(from, 1);
+    if (col) columns.value.splice(to, 0, col);
+  }
+  endColumnDrag();
+}
+
+function endColumnDrag() {
+  dragFrom.value = null;
+  dropAt.value = null;
 }
 
 function removeColumn(index: number) {
@@ -364,6 +525,11 @@ function addColumn(select: HTMLSelectElement) {
   select.value = "";
   if (!column || columns.value.length >= maxColumns.value) return;
   columns.value.push(toColumnBinding(column, 0));
+}
+
+// A text column printed as a barcode (rows get taller when applied)
+function setBarcode(col: TableColumnBinding, value: string) {
+  col.barcode = isTableBarcodeType(value) ? value : undefined;
 }
 
 function setTotal(col: TableColumnBinding, value: string) {
@@ -393,10 +559,12 @@ const current = computed(() => props.table?.binding);
 
 // The setup as it would be applied
 const draftBinding = computed<TableDataBinding | null>(() => {
-  if (!schema.value || !sourceId.value) return null;
+  if (!schema.value || !sourceId.value || !projectId.value) return null;
   return {
     tableName: draftName.value,
     datasetName: datasetName.value,
+    projectId: projectId.value,
+    projectName: projectName.value,
     sourceId: sourceId.value,
     sourceName: schema.value.name,
     columns: evenColumnWidths(
@@ -423,7 +591,10 @@ let previewTimer: ReturnType<typeof setTimeout> | undefined;
 let previewController: AbortController | null = null;
 
 watch(
-  () => (draftBinding.value ? JSON.stringify([sourceId.value, toDataQuery(draftBinding.value, PREVIEW_ROW_LIMIT)]) : ""),
+  () =>
+    draftBinding.value
+      ? JSON.stringify([projectId.value, sourceId.value, toDataQuery(draftBinding.value, PREVIEW_ROW_LIMIT)])
+      : "",
   (key) => {
     clearTimeout(previewTimer);
     previewController?.abort();
@@ -439,7 +610,12 @@ watch(
       const controller = new AbortController();
       previewController = controller;
       try {
-        const result = await queryRows(binding.sourceId, toDataQuery(binding, PREVIEW_ROW_LIMIT), controller.signal);
+        const result = await queryRows(
+          binding.projectId,
+          binding.sourceId,
+          toDataQuery(binding, PREVIEW_ROW_LIMIT),
+          controller.signal,
+        );
         if (controller.signal.aborted) return;
         previewRows.value = result.rows;
         previewTotal.value = result.totalCount;
@@ -532,9 +708,56 @@ function apply() {
 }
 
 .tcm-col {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.tcm-col.is-dragged {
+  opacity: 0.4;
+}
+
+/* Where the dragged column will land */
+.tcm-col.drop-before::before,
+.tcm-col.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: #6440f4;
+  pointer-events: none;
+}
+
+.tcm-col.drop-before::before {
+  top: -4px;
+}
+
+.tcm-col.drop-after::after {
+  bottom: -4px;
+}
+
+.tcm-grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 30px;
+  border-radius: 4px;
+  color: #9ca3af;
+  cursor: grab;
+}
+
+.tcm-grip:hover {
+  background: #eef0f4;
+  color: #4b5563;
+}
+
+.tcm-grip:active {
+  cursor: grabbing;
 }
 
 .tcm-empty {
@@ -542,11 +765,6 @@ function apply() {
   font-size: 12px;
   line-height: 1.4;
   color: #6b7280;
-}
-
-.tcm-move {
-  display: flex;
-  flex-direction: column;
 }
 
 .tcm-type {
@@ -571,8 +789,8 @@ function apply() {
 .tcm-input:focus,
 .tcm-select:focus {
   outline: none;
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+  border-color: #6440f4;
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.15);
 }
 
 .tcm-input.is-narrow {
@@ -621,10 +839,6 @@ function apply() {
   cursor: pointer;
 }
 
-.tcm-move .tcm-icon-btn {
-  height: 14px;
-}
-
 .tcm-icon-btn:hover:not(:disabled) {
   background: #eef0f4;
   color: #1f2937;
@@ -665,6 +879,10 @@ function apply() {
 
 .tcm-error {
   color: #dc2626;
+}
+
+.tcm-hint.is-top {
+  margin: -4px 0 6px;
 }
 
 .tcm-note {

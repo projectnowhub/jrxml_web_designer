@@ -3,7 +3,7 @@
 // panel, the Configure popup and the read-only preview.
 
 import type { DataColumnType, TableDataBinding, TableFilter, TableSort } from "@/types/dataSource";
-import { isActiveFilter } from "./dataBinding";
+import { isActiveFilter, periodRange } from "./dataBinding";
 import { formatCellValue } from "./dataTable";
 
 type Translate = (key: string, values?: Record<string, unknown>) => string;
@@ -20,12 +20,15 @@ const typeOf = (binding: TableDataBinding | undefined, item: { column: string; t
 // How many ticked values a chip lists before "+N"
 const LISTED_VALUES = 2;
 
-// "Approved, Pending +1" or "1,000 – 5,000" (without the column name)
+// "Approved, Pending +1" or "1,000 – 5,000" (without the column name). With
+// `today`, a moving date range also names its dates: "This month (1 Oct
+// 2026 – 31 Oct 2026)".
 export function describeFilterValue(
   filter: TableFilter,
   type: DataColumnType,
   t: Translate,
   locale?: string,
+  today?: Date,
 ): string {
   if (filter.operator === "in") {
     const values = filter.values ?? [];
@@ -35,6 +38,12 @@ export function describeFilterValue(
       : listed;
   }
   const show = (v?: string) => formatCellValue(type === "date" ? v : Number(v), type, locale);
+  if (filter.period) {
+    const name = t(`dataTable.filter.periods.${filter.period}`);
+    if (!today) return name;
+    const { from, to } = periodRange(filter.period, today);
+    return `${name} (${t("dataTable.filter.range", { from: show(from), to: show(to) })})`;
+  }
   const hasFrom = filter.value !== undefined && filter.value !== "";
   const hasTo = filter.value2 !== undefined && filter.value2 !== "";
   if (hasFrom && hasTo) return t("dataTable.filter.range", { from: show(filter.value), to: show(filter.value2) });
@@ -47,8 +56,9 @@ export function describeFilter(
   filter: TableFilter,
   t: Translate,
   locale?: string,
+  today?: Date,
 ): string {
-  return `${labelOf(binding, filter)}: ${describeFilterValue(filter, typeOf(binding, filter), t, locale)}`;
+  return `${labelOf(binding, filter)}: ${describeFilterValue(filter, typeOf(binding, filter), t, locale, today)}`;
 }
 
 export function activeFilters(binding: TableDataBinding): TableFilter[] {

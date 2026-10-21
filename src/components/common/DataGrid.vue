@@ -21,7 +21,10 @@
         </tr>
         <tr v-for="(row, r) in rows" v-else :key="r" :class="{ 'is-stale': loading }">
           <td v-for="(col, i) in columns" :key="col.key" :style="cellStyle('row', col, i, r)">
-            {{ formatCellValue(row[col.key], col.type, locale) }}
+            <div v-if="tableColumnBarcode(col)" class="dg-barcode">
+              <BarcodeCell :type="tableColumnBarcode(col)!" :value="row[col.key]" :height="BARCODE_CELL_HEIGHT" />
+            </div>
+            <template v-else>{{ formatCellValue(row[col.key], col.type, locale) }}</template>
           </td>
         </tr>
       </tbody>
@@ -43,7 +46,12 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { DataRow, TableColumnBinding, TableLook } from "@/types/dataSource";
 import { cellAlignmentFor, computeTotal, formatCellValue } from "@/utils/table/dataTable";
-import { lookPartStyles, tableCellCss, type TableStylePart } from "@/utils/table/tableThemes";
+import { lookPartStyles, rowColorAt, tableCellCss, type TableStylePart } from "@/utils/table/tableThemes";
+import { tableColumnBarcode } from "@/utils/barcode/barcodeTypes";
+import BarcodeCell from "./BarcodeCell.vue";
+
+// Barcode columns in the preview: a row this tall (points)
+const BARCODE_CELL_HEIGHT = 30;
 
 const props = defineProps<{
   columns: TableColumnBinding[];
@@ -59,7 +67,7 @@ const { t, locale } = useI18n();
 const styles = computed(() => lookPartStyles(props.look));
 
 function cellStyle(part: TableStylePart, col: TableColumnBinding, index: number, rowIndex = 0) {
-  const css: Record<string, string> = tableCellCss(styles.value[part], part === "row" && rowIndex % 2 === 1);
+  const css: Record<string, string> = tableCellCss(styles.value[part], part === "row" ? rowColorAt(props.look, rowIndex) : undefined);
   css.textAlign = part === "header" ? "left" : cellAlignmentFor(col.type).toLowerCase();
   if (part === "totals" && col.total) css.textAlign = "right";
   if (index > 0) css.borderLeft = "none";
@@ -123,5 +131,10 @@ tfoot td {
 
 .dg-message.is-error {
   color: #dc2626;
+}
+
+.dg-barcode {
+  width: 100%;
+  height: 30px;
 }
 </style>

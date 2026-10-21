@@ -5,7 +5,7 @@
  */
 
 import { ref, watch } from "vue";
-import { AI_CONFIG } from "@/config/aiConfig";
+import { AI_CONFIG, currentClaudeModel, DEFAULT_MAX_TOKENS, LEGACY_MAX_TOKENS } from "@/config/aiConfig";
 
 // ============================================
 // Type definitions
@@ -34,8 +34,8 @@ export interface AIConfigManagerReturn {
 const DEFAULT_CONFIG: AIConfiguration = {
   apiEndpoint: AI_CONFIG.API_ENDPOINT || "https://api.anthropic.com/v1",
   apiKey: AI_CONFIG.API_KEY || "",
-  modelName: AI_CONFIG.MODEL_NAME || "claude-3-5-sonnet-20241022",
-  maxTokens: AI_CONFIG.MAX_TOKENS || 4096,
+  modelName: AI_CONFIG.MODEL_NAME,
+  maxTokens: AI_CONFIG.MAX_TOKENS || DEFAULT_MAX_TOKENS,
   temperature: AI_CONFIG.TEMPERATURE || 0.7,
   requestTimeout: AI_CONFIG.REQUEST_TIMEOUT_MS || 300000, // 5 minutes
 };
@@ -62,10 +62,10 @@ export function useAIConfigManager(): AIConfigManagerReturn {
           merged.apiEndpoint =
             AI_CONFIG.API_ENDPOINT || "https://api.anthropic.com/v1";
         }
-        if (merged.modelName === "local-model") {
-          merged.modelName =
-            AI_CONFIG.MODEL_NAME || "claude-3-5-sonnet-20241022";
-        }
+        // A retired Claude model (or the old local placeholder) becomes the current default
+        merged.modelName = currentClaudeModel(merged.modelName);
+        // The old default answer length was too short for whole designs
+        if (merged.maxTokens === LEGACY_MAX_TOKENS) merged.maxTokens = DEFAULT_CONFIG.maxTokens;
         if (
           merged.apiKey === "lm-studio" ||
           (!merged.apiKey && AI_CONFIG.API_KEY)

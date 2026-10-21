@@ -1,12 +1,51 @@
+import { headingBookmarks, HEADING_NUMBERS_PROPERTY, serializeHeadingNumbers } from "./headingSync";
 import { xmlAttr, cdata } from "./jrxml/xmlEscape";
-import { DEFAULT_REPORT_FONT } from "../config/fonts.config";
+import { DEFAULT_REPORT_FONT, resolveReportFont } from "../config/fonts.config";
 // Import type definitions
-import type { DesignElement, BandType, Band, ReportGroup } from "../types";
+import type { DesignElement, BandType, Band, ContentsListElement, FrameElement, ReportGroup } from "../types";
 import type { ReportProperties, Field, Parameter } from "./jrxml/types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { SAVED_TABLE_STYLES_PROPERTY } from "./table/tableThemes";
+import { REPORT_PROJECTS_PROPERTY } from "./projectFields";
 import { buildJasperReportOpenTag } from "./jrxml/xmlBuilder";
 import { generateUUID } from "./jrxml/uuidGenerator";
+import { generateCustomTableXML } from "./jrxml/customTableXml";
+import { generateContentsListXML } from "./jrxml/contentsListXml";
+import { CONTENTS_STYLES_PROPERTY, headingItems, matchHeadings, numberStarts, serializeContentsStyles, type HeadingItem, type NumberStart } from "./contentsList";
+
+// Where each contents list's automatic numbers start (lists carrying one list
+// on keep counting); set for the report being written
+let contentsNumberStarts = new Map<string, NumberStart>();
+// The frame holding contents page n and the break before Detail page `page`:
+// the same id every time they are written (the parser keeps neither), so an
+// unchanged report gives the same JRXML
+const pageBreakUuid = (page: number) => `b0b0b0b0-0000-4000-8000-${page.toString(16).padStart(12, "0")}`;
+const contentsPageUuid = (n: number) => `c0c0c0c0-0000-4000-8000-${n.toString(16).padStart(12, "0")}`;
+// Headings' titles written as PDF bookmarks (utils/headingSync.ts), by uuid
+let bookmarks = new Map<string, { level: number; label: string }>();
+// Every heading with a bookmark, for the contents rows that jump to them
+let headingLinks: HeadingItem[] = [];
+
+// Per contents row: the bookmark of the heading with the same title and level
+// (the nth row with a title goes to the nth heading with it)
+const contentsLinks = (element: ContentsListElement): (string | undefined)[] =>
+  matchHeadings(element.list.entries, headingLinks).map((h) => h?.label);
+import {
+  afterSpecialPages,
+  CONTENTS_PAGE_PROPERTY,
+  guardPrintWhen,
+  onlyOnPage,
+  pageKind,
+  serializeSpecialPages,
+  shiftPageNumbers,
+  SPECIAL_PAGES_PROPERTY,
+  specialPages,
+} from "./specialPages";
+import { reportElementProperties } from "./elementUtils";
+import { CHART_BINDING_PROPERTY, normalizeChartBinding } from "./chart/chartTypes";
+import { chartImageDataUri } from "./chart/chartImage";
+import { BARCODE_VALUES_PROPERTY, printedBarcodeText, serializeBarcodeValues } from "./barcode/barcodeTypes";
+import { barcodeSizing } from "./barcode/barcodeImage";
 import {
   BOX_CORNER_RADIUS_PROPERTY,
   encodeCornerRadii,
@@ -26,6 +65,7 @@ import {
   floatsBelowTable,
   generateTableDatasetsXML,
   generateTableXML,
+  javaString,
   tableReportStyles,
 } from "./jrxml/tableXml";
 
@@ -63,8 +103,10 @@ function generateReportElementAttrs(element: any): string {
 function generateReportElementChildren(element: any): string {
   let xml = "";
   // Generate property elements
-  if (element.properties && element.properties.length > 0) {
-    element.properties.forEach((prop: any) => {
+  // (an image with a preset shape gets the corner radii for its current size)
+  const properties = reportElementProperties(element);
+  if (properties.length > 0) {
+    properties.forEach((prop: any) => {
       if (prop.name) {
         xml += `<property name="${xmlAttr(prop.name)}" value="${xmlAttr(prop.value || "")}"/>`;
       }
@@ -108,6 +150,22 @@ export function generateJRXMLContent(
     topMargin: properties.topMargin || 0,
     bottomMargin: properties.bottomMargin || 0,
   };
+  contentsNumberStarts = numberStarts(bands.find((b) => b.type === "detail")?.elements ?? []);
+  bookmarks = headingBookmarks(bands, properties);
+  headingLinks = headingItems(bands, properties).filter((h) => h.target?.uuid && h.label);
+  // Cover and contents pages (utils/specialPages.ts): the cover is the title,
+  // on a page of its own
+  const special = specialPages(properties);
+  safeProperties.isTitleNewPage = special.cover;
+  const printableWidth = safeProperties.pageWidth - safeProperties.leftMargin - safeProperties.rightMargin;
+  const printableHeight = safeProperties.pageHeight - safeProperties.topMargin - safeProperties.bottomMargin;
+  // Page numbers that don't count the cover and contents pages
+  const pageNumberShift = special.countPages ? 0 : special.count;
+  // A whole-sheet cover: an element can't reach below its band, so the bottom
+  // margin is written as 0 and its space added to the page footer instead
+  // (the normal pages print the same); the real margin is in com.cdp.specialPages
+  const footerExtra = special.fullPageCover ? safeProperties.bottomMargin : 0;
+  if (special.fullPageCover) safeProperties.bottomMargin = 0;
 
   // Build a map of field names for quick lookup
   const fieldMap = new Map<string, Field>();
@@ -151,9 +209,29 @@ export function generateJRXMLContent(
   // Order 1: properties (report properties)
   // ============================================================
   // Saved table styles travel with the report as one JSON property
-  const allProperties = [...(reportProperties || [])].filter((p) => p?.name !== SAVED_TABLE_STYLES_PROPERTY);
+  const allProperties = [...(reportProperties || [])].filter(
+    (p) =>
+      p?.name !== SAVED_TABLE_STYLES_PROPERTY &&
+      p?.name !== REPORT_PROJECTS_PROPERTY &&
+      p?.name !== SPECIAL_PAGES_PROPERTY &&
+      p?.name !== HEADING_NUMBERS_PROPERTY &&
+      p?.name !== CONTENTS_STYLES_PROPERTY,
+  );
   if (tableStyles.length) {
     allProperties.push({ name: SAVED_TABLE_STYLES_PROPERTY, value: JSON.stringify(tableStyles) });
+  }
+  const specialPagesValue = serializeSpecialPages(properties);
+  if (specialPagesValue) allProperties.push({ name: SPECIAL_PAGES_PROPERTY, value: specialPagesValue });
+  const headingNumbersValue = serializeHeadingNumbers(properties);
+  if (headingNumbersValue) allProperties.push({ name: HEADING_NUMBERS_PROPERTY, value: headingNumbersValue });
+  const contentsStylesValue = serializeContentsStyles(properties.contentsStyles);
+  if (contentsStylesValue) allProperties.push({ name: CONTENTS_STYLES_PROPERTY, value: contentsStylesValue });
+  // The projects chosen in the Report Data list
+  if (properties.projects?.length) {
+    allProperties.push({
+      name: REPORT_PROJECTS_PROPERTY,
+      value: JSON.stringify(properties.projects.map(({ id, name }) => ({ id, name }))),
+    });
   }
   if (allProperties.length > 0) {
     jrxml += "<!-- Report properties -->";
@@ -181,25 +259,6 @@ export function generateJRXMLContent(
     allStyles.forEach((style) => {
       jrxml += generateStyleXML(style);
     });
-  }
-
-  // Add parameter definitions
-  if (parameters.length > 0) {
-    jrxml += "<!-- Report parameter definitions -->";
-    parameters.forEach((param) => {
-      if (param.name && param.class) {
-        jrxml += `<parameter name="${xmlAttr(param.name)}" class="${xmlAttr(param.class)}">`;
-        if (param.defaultValue !== undefined) {
-          jrxml += `<defaultValueExpression>${cdata(param.defaultValue)}</defaultValueExpression>`;
-        }
-        jrxml += "</parameter>";
-      }
-    });
-  }
-
-  // Add the main report's query statement
-  if (properties.query && properties.query.text) {
-    jrxml += `<queryString language="${xmlAttr(properties.query.language || "sql")}">${cdata(properties.query.text)}</queryString>`;
   }
 
   // Add sub-dataset definitions
@@ -255,6 +314,25 @@ export function generateJRXMLContent(
 
   // Each data table has its own dataset; its rows are passed in by its name
   jrxml += generateTableDatasetsXML(bands);
+
+  // Add parameter definitions (after every subDataset, as the schema requires)
+  if (parameters.length > 0) {
+    jrxml += "<!-- Report parameter definitions -->";
+    parameters.forEach((param) => {
+      if (param.name && param.class) {
+        jrxml += `<parameter name="${xmlAttr(param.name)}" class="${xmlAttr(param.class)}">`;
+        if (param.defaultValue !== undefined) {
+          jrxml += `<defaultValueExpression>${cdata(param.defaultValue)}</defaultValueExpression>`;
+        }
+        jrxml += "</parameter>";
+      }
+    });
+  }
+
+  // Add the main report's query statement
+  if (properties.query && properties.query.text) {
+    jrxml += `<queryString language="${xmlAttr(properties.query.language || "sql")}">${cdata(properties.query.text)}</queryString>`;
+  }
 
   // Add field definitions
   if (updatedFields.length > 0) {
@@ -391,95 +469,134 @@ export function generateJRXMLContent(
     });
   }
 
-  // Add report bands. The XSD requires <background> before every other band,
-  // while the designer keeps it at the end of its band list.
-  const orderedBands = [
-    ...bands.filter((band) => band.type === "background"),
-    ...bands.filter((band) => band.type !== "background"),
-  ];
-  orderedBands.forEach((band) => {
-    if (band.elements.length > 0 || band.height > 0) {
-      if (band.type === "detail") {
-        // Check for multi-page detail
-        let maxPageIndex = 0;
-        band.elements.forEach((el) => {
-          if (el.pageIndex !== undefined && el.pageIndex > maxPageIndex) {
-            maxPageIndex = el.pageIndex;
-          }
-        });
-        const numPages = Math.max(
-          safeProperties.pageCount || 1,
-          maxPageIndex + 1,
-          totalPagesCount || 1,
-        );
+  // An element as written: inside its area, floating below a table, page
+  // numbers shifted when the special pages aren't counted
+  const prepare = (element: DesignElement, siblings: DesignElement[]) =>
+    shiftPageNumbers(withTableFloat(validateElementPosition(element), siblings), pageNumberShift);
+  const detailBand = bands.find((band) => band.type === "detail");
+  const elementsOfPage = (page: number) =>
+    (detailBand?.elements ?? []).filter((el) => (el.pageIndex ?? 0) === page);
+  const splitAttr = (band: Band) =>
+    band.splitType
+      ? ` splitType="${xmlAttr(band.splitType)}"`
+      : band.isSplitAllowed !== undefined
+        ? ` splitType="${band.isSplitAllowed ? "Stretch" : "Prevent"}"`
+        : "";
+  // Designer pages: at least one normal page after the special ones
+  const maxPageIndex = Math.max(0, ...(detailBand?.elements ?? []).map((el) => el.pageIndex ?? 0));
+  const numPages = Math.max(safeProperties.pageCount || 1, maxPageIndex + 1, totalPagesCount || 1, special.count + 1);
 
-        if (numPages > 1) {
-          jrxml += `<detail>`;
-          const colWidth =
-            safeProperties.pageWidth -
-            safeProperties.leftMargin -
-            safeProperties.rightMargin;
-          for (let p = 0; p < numPages; p++) {
-            const pageElements = band.elements.filter(
-              (el) => (el.pageIndex ?? 0) === p,
-            );
-            const bandHeight = band.height > 0 ? band.height : 100;
-            let bandAttrs = `height="${xmlAttr(bandHeight)}"`;
-            if (band.splitType) {
-              bandAttrs += ` splitType="${xmlAttr(band.splitType)}"`;
-            } else {
-              bandAttrs += ` splitType="Stretch"`;
-            }
-
-            jrxml += `<band ${bandAttrs}>`;
-            if (p > 0) {
-              // Standard JasperReports page break at top of subsequent detail page bands
-              jrxml += `<break type="Page"><reportElement x="0" y="0" width="${xmlAttr(colWidth)}" height="1" uuid="${xmlAttr(generateUUID())}"/></break>`;
-            }
-            pageElements.forEach((element) => {
-              const validatedElement = withTableFloat(
-                validateElementPosition(element),
-                pageElements,
-              );
-              jrxml += generateElementXML(validatedElement);
-            });
-            jrxml += `</band>`;
-          }
-          jrxml += `</detail>`;
-          return;
-        }
-      }
-
-      jrxml += `<${band.type}>`;
-
-      // Per the XSD spec, the height attribute belongs on the band element, but band does not allow a uuid attribute
-      let bandAttributes = `height="${xmlAttr(band.height)}"`;
-
-      // Prefer the non-deprecated splitType attribute; only fall back to the deprecated isSplitAllowed attribute if splitType is absent
-      if (band.splitType) {
-        // If splitType is already specified, use it directly
-        bandAttributes += ` splitType="${xmlAttr(band.splitType)}"`;
-      } else if (band.isSplitAllowed !== undefined) {
-        // Only use the deprecated isSplitAllowed attribute if splitType is absent
-        const splitTypeValue = band.isSplitAllowed ? "Stretch" : "Prevent";
-        bandAttributes += ` splitType="${xmlAttr(splitTypeValue)}"`;
-      }
-
-      jrxml += `<band ${bandAttributes}>`;
-
-      // Add the elements within the band, validating element positions per the band type
-      band.elements.forEach((element) => {
-        // Validate the position of each element using the current band type's height limit
-        const validatedElement = withTableFloat(
-          validateElementPosition(element),
-          band.elements,
-        );
-        jrxml += generateElementXML(validatedElement);
+  // <background> first (the XSD order). Its own items (the page border) print on
+  // every page but a whole-sheet cover; each contents page is a frame of the whole printable area printed
+  // only on its page.
+  const backgroundBand = bands.find((band) => band.type === "background");
+  const backgroundElements = backgroundBand?.elements ?? [];
+  const backgroundHeight = Math.max(backgroundBand?.height ?? 0, special.contents ? printableHeight : 0);
+  if (backgroundElements.length > 0 || backgroundHeight > 0) {
+    jrxml += `<background><band height="${xmlAttr(backgroundHeight)}"${backgroundBand ? splitAttr(backgroundBand) : ""}>`;
+    backgroundElements.forEach((element) => {
+      const prepared = prepare(element, backgroundElements);
+      // On every page (cover and contents pages too), except a whole-sheet cover
+      jrxml += generateElementXML(
+        special.fullPageCover
+          ? { ...prepared, printWhenExpression: guardPrintWhen(1, prepared.printWhenExpression) }
+          : prepared,
+      );
+    });
+    for (let n = 1; n <= special.contents; n++) {
+      const page = (special.cover ? 1 : 0) + n - 1;
+      const pageElements = elementsOfPage(page);
+      jrxml += `<frame><reportElement x="0" y="0" width="${xmlAttr(printableWidth)}" height="${xmlAttr(printableHeight)}" uuid="${xmlAttr(contentsPageUuid(n))}" mode="Transparent">`;
+      jrxml += `<property name="${CONTENTS_PAGE_PROPERTY}" value="${xmlAttr(n)}"/>`;
+      jrxml += `<printWhenExpression>${cdata(onlyOnPage(page + 1))}</printWhenExpression></reportElement>`;
+      pageElements.forEach((element) => {
+        jrxml += generateElementXML(prepare(element, pageElements));
       });
-
-      jrxml += `</band></${band.type}>`;
+      jrxml += `</frame>`;
     }
+    jrxml += `</band></background>`;
+  }
+
+  // The cover: the title band, the whole printable page. A whole-sheet cover's
+  // elements are placed from the sheet's corner: they start in the margins
+  // (negative x / y, which JasperReports allows) and its band reaches the foot
+  // of the sheet (the bottom margin is 0).
+  if (special.cover) {
+    const coverElements = elementsOfPage(0);
+    const left = special.fullPageCover ? safeProperties.leftMargin : 0;
+    const top = special.fullPageCover ? safeProperties.topMargin : 0;
+    jrxml += `<title><band height="${xmlAttr(printableHeight + footerExtra)}" splitType="Prevent">`;
+    coverElements.forEach((element) => {
+      const prepared = prepare(element, coverElements);
+      jrxml += generateElementXML(
+        left || top ? { ...prepared, x: (element.x ?? 0) - left, y: (element.y ?? 0) - top } : prepared,
+      );
+    });
+    jrxml += `</band></title>`;
+  }
+
+  // The other bands in their order; the shared ones print only after the special pages
+  const SHARED_BANDS = ["pageHeader", "columnHeader", "columnFooter", "pageFooter", "lastPageFooter"];
+  // A whole-sheet cover with no page footer: an empty one holds the bottom margin's space
+  let footerSpaceWritten =
+    !footerExtra || bands.some((b) => b.type === "pageFooter" && (b.elements.length > 0 || b.height > 0));
+  const writeFooterSpace = () => {
+    if (footerSpaceWritten) return;
+    footerSpaceWritten = true;
+    jrxml += `<pageFooter><band height="${xmlAttr(footerExtra)}">`;
+    jrxml += `<printWhenExpression>${cdata(afterSpecialPages(special.count))}</printWhenExpression>`;
+    jrxml += `</band></pageFooter>`;
+  };
+  bands.forEach((band) => {
+    if (band.type === "background") return;
+    if (["lastPageFooter", "summary", "noData"].includes(band.type)) writeFooterSpace();
+    if (!(band.elements.length > 0 || band.height > 0)) return;
+
+    if (band.type === "detail") {
+      // Each designer page is a band; the next one starts with a page break.
+      // A contents page's band is empty (its content is in the background).
+      const firstPage = special.cover ? 1 : 0;
+      const pages = Array.from({ length: numPages - firstPage }, (_, i) => firstPage + i);
+      const bandHeight = band.height > 0 ? band.height : 100;
+      if (pages.length === 1 && !special.count) {
+        jrxml += `<detail><band height="${xmlAttr(band.height)}"${splitAttr(band)}>`;
+        band.elements.forEach((element) => {
+          jrxml += generateElementXML(prepare(element, band.elements));
+        });
+        jrxml += `</band></detail>`;
+        return;
+      }
+      jrxml += `<detail>`;
+      pages.forEach((page, i) => {
+        jrxml += `<band height="${xmlAttr(bandHeight)}"${splitAttr(band) || ' splitType="Stretch"'}>`;
+        if (i > 0) {
+          // Standard JasperReports page break at top of subsequent detail page bands
+          jrxml += `<break type="Page"><reportElement x="0" y="0" width="${xmlAttr(printableWidth)}" height="1" uuid="${xmlAttr(pageBreakUuid(page))}"/></break>`;
+        }
+        if (pageKind(properties, page) === "normal") {
+          const pageElements = elementsOfPage(page);
+          pageElements.forEach((element) => {
+            jrxml += generateElementXML(prepare(element, pageElements));
+          });
+        }
+        jrxml += `</band>`;
+      });
+      jrxml += `</detail>`;
+      return;
+    }
+
+    // Per the XSD spec, the height attribute belongs on the band element, but band does not allow a uuid attribute
+    const height = band.height + (["pageFooter", "lastPageFooter"].includes(band.type) ? footerExtra : 0);
+    jrxml += `<${band.type}><band height="${xmlAttr(height)}"${splitAttr(band)}>`;
+    if (special.count && SHARED_BANDS.includes(band.type)) {
+      jrxml += `<printWhenExpression>${cdata(afterSpecialPages(special.count))}</printWhenExpression>`;
+    }
+    band.elements.forEach((element) => {
+      jrxml += generateElementXML(prepare(element, band.elements));
+    });
+    jrxml += `</band></${band.type}>`;
   });
+  writeFooterSpace();
 
   jrxml += "</jasperReport>";
   return jrxml;
@@ -496,7 +613,7 @@ function styleAttributesXML(style: any): string {
   if (style.textAlignment) attrs += ` hTextAlign="${xmlAttr(style.textAlignment)}"`;
   if (style.verticalAlignment) attrs += ` vTextAlign="${xmlAttr(style.verticalAlignment)}"`;
   if (style.fontFamily || style.fontSize || style.isBold || style.isItalic || style.isUnderline) {
-    attrs += ` fontName="${xmlAttr(style.fontFamily || DEFAULT_FONT)}"`;
+    attrs += ` fontName="${xmlAttr(resolveReportFont(style.fontFamily))}"`;
     if (style.fontSize) attrs += ` fontSize="${xmlAttr(style.fontSize)}"`;
     if (style.isBold) attrs += ` isBold="true"`;
     if (style.isItalic) attrs += ` isItalic="true"`;
@@ -553,6 +670,15 @@ function generateElementXML(element: any): string {
       return generateChartXML(element);
     case "barcode":
       return generateBarcodeXML(element);
+    case "customTable":
+      return generateCustomTableXML(element);
+    case "contentsList":
+      return generateContentsListXML(
+        element,
+        generateReportElementAttrs({ ...element, mode: undefined, forecolor: undefined, backcolor: undefined }),
+        element.uuid ? contentsNumberStarts.get(element.uuid) : undefined,
+        contentsLinks(element),
+      );
     default:
       return "";
   }
@@ -829,9 +955,30 @@ function validateElementPosition(element: any): any {
   return validatedElement;
 }
 
-// Items below a table move down with it when it grows past its design height
+// Text that grows downward in the PDF, or a box holding one (the box grows with it)
+const growsInPdf = (element: DesignElement): boolean =>
+  (element.type === "textField" && element.textAdjust === "StretchHeight") ||
+  (element.type === "frame" && ((element as FrameElement).elements ?? []).some(growsInPdf));
+
+// Below a growing text: JasperReports pushes a "Float" element down by what an
+// element wholly above it (overlapping it sideways) grew, so it never prints
+// over the longer text; one beside it stays put
+function floatsBelowGrowingText(element: DesignElement, siblings: DesignElement[]): boolean {
+  return siblings.some(
+    (other) =>
+      other !== element &&
+      growsInPdf(other) &&
+      (other as any).pageIndex === (element as any).pageIndex &&
+      element.y >= other.y + other.height,
+  );
+}
+
+// Items below a table or a growing text move down with it when it grows past
+// its design height
 function withTableFloat(element: any, siblings: DesignElement[]): any {
-  return floatsBelowTable(element, siblings) ? { ...element, positionType: "Float" } : element;
+  return floatsBelowTable(element, siblings) || floatsBelowGrowingText(element, siblings)
+    ? { ...element, positionType: "Float" }
+    : element;
 }
 
 // Get the default height for a band type
@@ -854,6 +1001,11 @@ function getDefaultBandHeight(bandType: string): number {
 
 // Generate text field XML
 function generateTextFieldXML(element: any): string {
+  // A heading's title: a PDF bookmark (worked out each time, never stored)
+  const bookmark = element?.uuid ? bookmarks.get(element.uuid) : undefined;
+  if (bookmark) {
+    element = { ...element, bookmarkLevel: bookmark.level, anchorNameExpression: javaString(bookmark.label) };
+  }
   let xml = `<textField`;
 
   // Add textField-specific attributes, ensuring compliance with the XSD spec
@@ -946,7 +1098,7 @@ function generateTextFieldXML(element: any): string {
         : "none"
       : undefined);
   if (!markup || markup === "none") {
-    if (element.expression && /<(b|strong|i|em|u|s|strike|del|font|a|span)\b[^>]*>/i.test(element.expression)) {
+    if (element.expression && /<(b|strong|i|em|u|s|strike|del|font|a|span|ul|ol|li|sup|sub)\b[^>]*>/i.test(element.expression)) {
       markup = "html";
     }
   }
@@ -954,16 +1106,16 @@ function generateTextFieldXML(element: any): string {
     markup = "html";
   }
 
-  if (markup !== "none") {
-    textElementAttrs += ` markup="${xmlAttr(markup)}"`;
-  }
+  // Plain text is written too ("none"), so a reload keeps it plain instead of
+  // falling back to the html default above
+  textElementAttrs += ` markup="${xmlAttr(markup)}"`;
 
   xml += `<textElement${textElementAttrs}>`;
 
   // Add the font configuration
   let fontAttrs = "";
-  // Add the font name attribute (defaults to DEFAULT_FONT)
-  fontAttrs += ` fontName="${xmlAttr(element.fontFamily || DEFAULT_FONT)}"`;
+  // Add the font name attribute (only fonts the report server has; others become DEFAULT_FONT)
+  fontAttrs += ` fontName="${xmlAttr(resolveReportFont(element.fontFamily))}"`;
   if (element.fontSize) {
     fontAttrs += ` size="${xmlAttr(element.fontSize)}"`;
   }
@@ -1361,7 +1513,8 @@ function generateFrameXML(element: any): string {
   // Generate child elements
   if (element.elements && element.elements.length > 0) {
     element.elements.forEach((child: any) => {
-      xml += generateElementXML(child);
+      // Inside a box too: what is below a growing text moves down with it
+      xml += generateElementXML(floatsBelowGrowingText(child, element.elements) ? { ...child, positionType: "Float" } : child);
     });
   }
 
@@ -1425,363 +1578,64 @@ function generateRoundedFrameBorderXML(frame: any): string {
   return back + front;
 }
 
-// Generate chart XML
+// Chart: an image of the chart (an SVG data URI) carrying its setup, which
+// the parser turns back into the chart
 function generateChartXML(element: any): string {
-  const chartType = element.chartType || "pie";
-  const chartTagMap: Record<string, string> = {
-    pie: "pieChart",
-    pie3D: "pie3DChart",
-    bar: "barChart",
-    bar3D: "bar3DChart",
-    xyBar: "xyBarChart",
-    stackedBar: "stackedBarChart",
-    stackedBar3D: "stackedBar3DChart",
-    line: "lineChart",
-    xyLine: "xyLineChart",
-    area: "areaChart",
-    xyArea: "xyAreaChart",
-    stackedArea: "stackedAreaChart",
-    scatter: "scatterChart",
-    bubble: "bubbleChart",
-    timeSeries: "timeSeriesChart",
-    highLow: "highLowChart",
-    candlestick: "candlestickChart",
-    meter: "meterChart",
-    thermometer: "thermometerChart",
-    multiAxis: "multiAxisChart",
-    gantt: "ganttChart",
-    spider: "spiderChart",
-  };
-  const chartTag = chartTagMap[chartType] || "pieChart";
-
-  let xml = `<${chartTag}>`;
-
-  // The <chart> element
-  xml += `<chart`;
-  if (element.evaluationTime && element.evaluationTime !== "Now") {
-    xml += ` evaluationTime="${xmlAttr(element.evaluationTime)}"`;
-  }
-  if (element.evaluationGroup) {
-    xml += ` evaluationGroup="${xmlAttr(element.evaluationGroup)}"`;
-  }
-  if (element.renderType) {
-    xml += ` renderType="${xmlAttr(element.renderType)}"`;
-  }
-  if (element.customizerClass) {
-    xml += ` customizerClass="${xmlAttr(element.customizerClass)}"`;
-  }
-  xml += `>`;
-
-  // reportElement
-  xml += `<reportElement${generateReportElementAttrs(element)}>`;
-  xml += `${generateReportElementChildren(element)}`;
-  xml += "</reportElement>";
-
-  // chartTitle
-  if (
-    element.isShowTitle !== false &&
-    (element.titleExpression || element.title)
-  ) {
-    xml += `<chartTitle>`;
-    if (element.titleExpression) {
-      xml += `<titleExpression>${cdata(element.titleExpression)}</titleExpression>`;
-    } else if (element.title) {
-      xml += `<titleExpression>${cdata(`"${String(element.title).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`)}</titleExpression>`;
-    }
-    xml += `</chartTitle>`;
-  }
-
-  // chartSubtitle
-  if (element.isShowSubtitle !== false && element.subtitleExpression) {
-    xml += `<chartSubtitle>`;
-    xml += `<subtitleExpression>${cdata(element.subtitleExpression)}</subtitleExpression>`;
-    xml += `</chartSubtitle>`;
-  }
-
-  // chartLegend
-  if (element.isShowLegend !== false) {
-    xml += `<chartLegend`;
-    if (element.legendExpression) {
-      xml += `><labelExpression>${cdata(element.legendExpression)}</labelExpression></chartLegend>`;
-    } else {
-      xml += `/>`;
-    }
-  }
-
-  // hyperlinkTooltipExpression
-  if (element.hyperlinkTooltipExpression) {
-    xml += `<hyperlinkTooltipExpression>${cdata(element.hyperlinkTooltipExpression)}</hyperlinkTooltipExpression>`;
-  }
-
-  // hyperlinkReferenceExpression
-  if (element.hyperlinkExpression && element.hyperlinkType) {
-    xml += `<hyperlinkReferenceExpression target="${xmlAttr(element.hyperlinkTarget || "Self")}" type="${xmlAttr(element.hyperlinkType)}"`;
-    if (element.bookmarkLevel) {
-      xml += ` bookmarkLevel="${xmlAttr(element.bookmarkLevel)}"`;
-    }
-    xml += `>${cdata(element.hyperlinkExpression)}</hyperlinkReferenceExpression>`;
-  } else if (element.bookmarkLevel) {
-    xml += `<hyperlinkReferenceExpression bookmarkLevel="${xmlAttr(element.bookmarkLevel)}"/>`;
-  }
-
-  xml += `</chart>`;
-
-  // Dataset
-  const datasetTag = getDatasetTag(chartType);
-  const datasetItemTag = getDatasetItemTag(chartType);
-
-  xml += `<${datasetTag}>`;
-  xml += `<dataset`;
-  if (element.incrementType && element.incrementType !== "None") {
-    xml += ` incrementType="${xmlAttr(element.incrementType)}"`;
-    if (element.incrementType === "Group" && element.incrementGroup) {
-      xml += ` incrementGroup="${xmlAttr(element.incrementGroup)}"`;
-    }
-  }
-  xml += `>`;
-  if (element.subDataset) {
-    xml += `<datasetRun subDataset="${xmlAttr(element.subDataset)}"`;
-    if (element.uuid) {
-      xml += ` uuid="${xmlAttr(element.uuid)}"`;
-    }
-    xml += `>`;
-    if (element.dataSourceExpression) {
-      xml += `<dataSourceExpression>${cdata(element.dataSourceExpression)}</dataSourceExpression>`;
-    }
-    xml += `</datasetRun>`;
-  }
-  xml += `</dataset>`;
-
-  // Series expressions
-  xml += generateDatasetSeries(chartType, element);
-
-  xml += `</${datasetTag}>`;
-
-  // Plot
-  xml += generatePlot(chartType, element);
-
-  xml += `</${chartTag}>`;
-  return xml;
-}
-
-// Get the dataset tag
-function getDatasetTag(chartType: string): string {
-  const map: Record<string, string> = {
-    pie: "pieDataset",
-    pie3D: "pieDataset",
-    bar: "categoryDataset",
-    bar3D: "categoryDataset",
-    stackedBar: "categoryDataset",
-    stackedBar3D: "categoryDataset",
-    line: "categoryDataset",
-    area: "categoryDataset",
-    stackedArea: "categoryDataset",
-    xyBar: "xyDataset",
-    xyLine: "xyDataset",
-    xyArea: "xyDataset",
-    scatter: "xyDataset",
-    bubble: "xyDataset",
-    timeSeries: "xyDataset",
-    highLow: "highLowDataset",
-    candlestick: "highLowDataset",
-    meter: "categoryDataset",
-    thermometer: "categoryDataset",
-  };
-  return map[chartType] || "categoryDataset";
-}
-
-// Get the data series tag
-function getDatasetItemTag(chartType: string): string {
-  const map: Record<string, string> = {
-    pie: "keyExpression",
-    pie3D: "keyExpression",
-    bar: "categorySeries",
-    bar3D: "categorySeries",
-    stackedBar: "categorySeries",
-    stackedBar3D: "categorySeries",
-    line: "categorySeries",
-    area: "categorySeries",
-    stackedArea: "categorySeries",
-    meter: "categorySeries",
-    thermometer: "categorySeries",
-  };
-  return map[chartType] || "categorySeries";
-}
-
-// Generate the series expressions
-function generateDatasetSeries(chartType: string, element: any): string {
-  let xml = "";
-
-  if (["pie", "pie3D"].includes(chartType)) {
-    // Pie chart: keyExpression + valueExpression
-    if (element.keyExpression) {
-      xml += `<keyExpression>${cdata(element.keyExpression)}</keyExpression>`;
-    }
-    if (element.valueExpression) {
-      xml += `<valueExpression>${cdata(element.valueExpression)}</valueExpression>`;
-    }
-  } else if (
-    [
-      "scatter",
-      "bubble",
-      "xyLine",
-      "xyArea",
-      "xyBar",
-      "timeSeries",
-      "highLow",
-      "candlestick",
-    ].includes(chartType)
-  ) {
-    // XY chart: xySeries
-    xml += `<xySeries>`;
-    if (element.seriesExpression) {
-      xml += `<seriesExpression>${cdata(element.seriesExpression)}</seriesExpression>`;
-    }
-    if (element.xValueExpression) {
-      xml += `<xValueExpression>${cdata(element.xValueExpression)}</xValueExpression>`;
-    }
-    if (element.yValueExpression) {
-      xml += `<yValueExpression>${cdata(element.yValueExpression)}</yValueExpression>`;
-    }
-    xml += `</xySeries>`;
-  } else {
-    // Category chart: categorySeries
-    xml += `<categorySeries>`;
-    if (element.seriesExpression) {
-      xml += `<seriesExpression>${cdata(element.seriesExpression)}</seriesExpression>`;
-    }
-    if (element.categoryExpression) {
-      xml += `<categoryExpression>${cdata(element.categoryExpression)}</categoryExpression>`;
-    }
-    if (element.valueExpression) {
-      xml += `<valueExpression>${cdata(element.valueExpression)}</valueExpression>`;
-    }
-    xml += `</categorySeries>`;
-  }
-
-  return xml;
-}
-
-// Generate Plot
-function generatePlot(chartType: string, element: any): string {
-  const plotTagMap: Record<string, string> = {
-    pie: "piePlot",
-    pie3D: "pie3DPlot",
-    bar: "barPlot",
-    bar3D: "bar3DPlot",
-    stackedBar: "barPlot",
-    stackedBar3D: "bar3DPlot",
-    line: "linePlot",
-    xyLine: "linePlot",
-    area: "areaPlot",
-    xyArea: "areaPlot",
-    stackedArea: "areaPlot",
-    scatter: "scatterPlot",
-    bubble: "bubblePlot",
-    timeSeries: "linePlot",
-    highLow: "highLowPlot",
-    candlestick: "highLowPlot",
-    meter: "meterPlot",
-    thermometer: "thermometerPlot",
-  };
-  const plotTag = plotTagMap[chartType] || "plot";
-
-  let xml = `<${plotTag}`;
-
-  // Pie-chart-specific attributes
-  if (["pie", "pie3D"].includes(chartType)) {
-    if (element.isCircular !== undefined) {
-      xml += ` isCircular="${xmlAttr(element.isCircular)}"`;
-    }
-  }
-
-  // Line-chart-specific attributes
-  if (["line", "xyLine", "timeSeries"].includes(chartType)) {
-    if (element.isShowShapes !== undefined) {
-      xml += ` isShowShapes="${xmlAttr(element.isShowShapes)}"`;
-    }
-  }
-
-  xml += `>`;
-
-  // The plot child element
-  xml += `<plot/>`;
-
-  // itemLabel (category charts and pie charts)
-  if (
-    ![
-      "scatter",
-      "bubble",
-      "highLow",
-      "candlestick",
-      "meter",
-      "thermometer",
-    ].includes(chartType)
-  ) {
-    const itemLabelColor = element.itemLabelColor || "#000000";
-    const itemLabelBg = element.itemLabelBackgroundColor || "#FFFFFF";
-    xml += `<itemLabel color="${xmlAttr(itemLabelColor)}" backgroundColor="${xmlAttr(itemLabelBg)}"/>`;
-  }
-
-  // Category axis label (category charts)
-  if (
-    [
-      "bar",
-      "bar3D",
-      "stackedBar",
-      "stackedBar3D",
-      "line",
-      "area",
-      "stackedArea",
-      "meter",
-      "thermometer",
-    ].includes(chartType)
-  ) {
-    if (element.categoryAxisLabelExpression) {
-      xml += `<categoryAxisLabelExpression>${cdata(element.categoryAxisLabelExpression)}</categoryAxisLabelExpression>`;
-    }
-    xml += `<categoryAxisFormat><axisFormat/></categoryAxisFormat>`;
-  }
-
-  // Value axis label (category charts)
-  if (
-    [
-      "bar",
-      "bar3D",
-      "stackedBar",
-      "stackedBar3D",
-      "line",
-      "area",
-      "stackedArea",
-    ].includes(chartType)
-  ) {
-    if (element.valueAxisLabelExpression) {
-      xml += `<valueAxisLabelExpression>${cdata(element.valueAxisLabelExpression)}</valueAxisLabelExpression>`;
-    }
-    xml += `<valueAxisFormat><axisFormat/></valueAxisFormat>`;
-  }
-
-  xml += `</${plotTag}>`;
-  return xml;
+  const properties = [
+    ...(element.properties || []).filter((p: any) => p?.name !== CHART_BINDING_PROPERTY),
+    { name: CHART_BINDING_PROPERTY, value: JSON.stringify(normalizeChartBinding(element.binding)) },
+  ];
+  return generateImageXML({
+    ...element,
+    type: "image",
+    properties,
+    scaleType: "RetainShape",
+    hAlign: "Center",
+    vAlign: "Middle",
+    imageExpression: `"${chartImageDataUri(element)}"`,
+  });
 }
 
 // Generate barcode XML
 function generateBarcodeXML(element: any): string {
   const barcodeType = element.barcodeType || "Code128";
-  // Barcode4j elements are wrapped in componentElement
+  // Barcode4j elements are wrapped in componentElement; transparent like on
+  // the canvas (JasperReports paints a barcode's box white otherwise)
   let xml = `<componentElement>`;
-  xml += `<reportElement${generateReportElementAttrs(element)}>`;
-  xml += `${generateReportElementChildren(element)}`;
+  xml += `<reportElement${generateReportElementAttrs({ ...element, mode: element.mode || "Transparent" })}>`;
+  // Values typed for the other types come back when the type is switched back
+  const keptValues = serializeBarcodeValues(element.valuesByType);
+  const properties = (element.properties ?? []).filter((p: any) => p?.name !== BARCODE_VALUES_PROPERTY);
+  if (keptValues) properties.push({ name: BARCODE_VALUES_PROPERTY, value: keptValues });
+  xml += `${generateReportElementChildren({ ...element, properties })}`;
   xml += "</reportElement>";
 
+  // JasperReports' barcode orientation: 90 = left, 270 = right
   let orientationAttr = "";
-  if (element.rotation === "Right") orientationAttr = ' orientation="90"';
+  if (element.rotation === "Right") orientationAttr = ' orientation="270"';
   else if (element.rotation === "UpsideDown") orientationAttr = ' orientation="180"';
-  else if (element.rotation === "Left") orientationAttr = ' orientation="270"';
+  else if (element.rotation === "Left") orientationAttr = ' orientation="90"';
   else if (element.rotation === "None") orientationAttr = ' orientation="0"';
+  // A QR code has no orientation in the schema (JasperReports rejects it)
+  if (barcodeType === "QRCode") orientationAttr = "";
+
+  // Sized to fill its box, like the canvas (JasperReports' defaults draw it
+  // at its natural width); turned a quarter, the bars run along the height
+  const sideways = element.rotation === "Right" || element.rotation === "Left";
+  const sizing = barcodeSizing(
+    barcodeType,
+    printedBarcodeText(barcodeType, element.codeExpression),
+    sideways ? element.height : element.width,
+    sideways ? element.width : element.height,
+  );
+  let sizeAttrs = Object.entries(sizing?.attributes ?? {})
+    .map(([name, value]) => ` ${name}="${xmlAttr(String(value))}"`)
+    .join("");
+  // Data Matrix square, as drawn on the canvas (barcode4j may pick a rectangle)
+  if (barcodeType === "DataMatrix") sizeAttrs += ' shape="force-square"';
 
   // Barcode4j uses the components namespace
-  xml += `<c:${barcodeType} xmlns:c="http://jasperreports.sourceforge.net/jasperreports/components"${orientationAttr}>`;
+  xml += `<c:${barcodeType} xmlns:c="http://jasperreports.sourceforge.net/jasperreports/components"${orientationAttr}${sizeAttrs}>`;
   if (element.codeExpression) {
     xml += `<c:codeExpression>${cdata(element.codeExpression)}</c:codeExpression>`;
   }

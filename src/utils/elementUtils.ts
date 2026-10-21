@@ -151,10 +151,13 @@ const CORNER_RADIUS_PROPERTIES: Record<string, string> = {
 };
 
 // Stored as one value when all corners match ("12"), else four in CSS order
-// ("12 0 12 0")
+// ("12 0 12 0"). An image with a preset shape works its radii out from its
+// current size instead (see IMAGE_SHAPES).
 export function getPropertyCornerRadii(element: DesignElement): CornerRadii {
   const property = element && CORNER_RADIUS_PROPERTIES[element.type];
   if (!property) return { ...NO_RADII };
+  const shape = getImageShape(element);
+  if (shape) return shapeRadii(shape, element);
   const values = getElementPropertyValue(element, property)
     .split(/\s+/)
     .filter(Boolean)
@@ -164,10 +167,12 @@ export function getPropertyCornerRadii(element: DesignElement): CornerRadii {
   return Object.fromEntries(CORNER_NAMES.map((c, i) => [c, at(i)])) as CornerRadii;
 }
 
-// All zero removes the property
+// All zero removes the property. Typed radii replace an image's preset shape
+// (it becomes "Custom")
 export function setPropertyCornerRadii(element: DesignElement, radii: CornerRadii): void {
   const property = element && CORNER_RADIUS_PROPERTIES[element.type];
   if (!property) return;
+  if (element.type === "image") setElementPropertyValue(element, IMAGE_SHAPE_PROPERTY, "");
   const values = CORNER_NAMES.map((c) => Math.max(0, Math.round(radii[c] || 0)));
   const value = values.every((v) => v === 0)
     ? ""
@@ -182,6 +187,83 @@ export function propertyCornerRadiusCss(element: DesignElement): string | undefi
   const radii = getPropertyCornerRadii(element);
   if (CORNER_NAMES.every((c) => radii[c] === 0)) return undefined;
   return CORNER_NAMES.map((c) => `${radii[c]}px`).join(" ");
+}
+
+// Image shapes
+// ---------------------------------------------------------------------------
+// Preset looks for images (Basic tab → Shape). The shape is kept as
+// IMAGE_SHAPE_PROPERTY and its corner radii are worked out from the image's
+// size, so a circle stays round when the image is resized. The report server
+// still gets plain pixels: the generator writes the radii for the current
+// size into IMAGE_CORNER_RADIUS_PROPERTY (reportElementProperties).
+
+export const IMAGE_SHAPE_PROPERTY = "com.cdp.image.shape";
+
+export type ImageShapeId =
+  | "square"
+  | "rounded"
+  | "soft"
+  | "circle"
+  | "pill"
+  | "leaf"
+  | "tab"
+  | "drop";
+
+// Each corner as a share of the image's short side (0.5 = fully round),
+// in CSS order: top-left, top-right, bottom-right, bottom-left.
+// Choosing a shape never changes the image's size: Circle and Pill both
+// round it fully (a circle on a square image, a pill on a wide one).
+export const IMAGE_SHAPES: { id: ImageShapeId; corners: [number, number, number, number] }[] = [
+  { id: "square", corners: [0, 0, 0, 0] },
+  { id: "rounded", corners: [0.08, 0.08, 0.08, 0.08] },
+  { id: "soft", corners: [0.22, 0.22, 0.22, 0.22] },
+  { id: "circle", corners: [0.5, 0.5, 0.5, 0.5] },
+  { id: "pill", corners: [0.5, 0.5, 0.5, 0.5] },
+  { id: "leaf", corners: [0.4, 0, 0.4, 0] },
+  { id: "tab", corners: [0.16, 0.16, 0, 0] },
+  { id: "drop", corners: [0.5, 0.5, 0, 0.5] },
+];
+
+const findImageShape = (id: string) => IMAGE_SHAPES.find((s) => s.id === id);
+
+// The image's preset shape, or undefined for square / custom corners
+export function getImageShape(element: DesignElement): ImageShapeId | undefined {
+  if (element?.type !== "image") return undefined;
+  const shape = findImageShape(getElementPropertyValue(element, IMAGE_SHAPE_PROPERTY));
+  return shape && shape.id !== "square" ? shape.id : undefined;
+}
+
+// Corner radii (px) of a shape at the element's size
+function shapeRadii(id: ImageShapeId, element: DesignElement): CornerRadii {
+  const shape = findImageShape(id)!;
+  const side = Math.max(0, Math.min(Number(element.width) || 0, Number(element.height) || 0));
+  return Object.fromEntries(
+    CORNER_NAMES.map((c, i) => [c, Math.round(side * shape.corners[i]!)]),
+  ) as CornerRadii;
+}
+
+// Gives the image a preset shape. "square" removes the corners.
+export function setImageShape(element: DesignElement, id: ImageShapeId): void {
+  if (element?.type !== "image" || !findImageShape(id)) return;
+  setPropertyCornerRadii(element, shapeRadii(id, element));
+  if (id !== "square") setElementPropertyValue(element, IMAGE_SHAPE_PROPERTY, id);
+}
+
+// The <reportElement> properties to write: an image with a preset shape gets
+// the corner radii for its current size
+export function reportElementProperties(element: any): { name: string; value?: string }[] {
+  const properties: { name: string; value?: string }[] = Array.isArray(element?.properties)
+    ? element.properties
+    : [];
+  const shape = getImageShape(element);
+  if (!shape) return properties;
+  const radii = shapeRadii(shape, element);
+  const values = CORNER_NAMES.map((c) => radii[c]);
+  const value = values.every((v) => v === values[0]) ? String(values[0]) : values.join(" ");
+  const rest = properties.filter((p) => p?.name !== IMAGE_CORNER_RADIUS_PROPERTY);
+  return values.every((v) => v === 0)
+    ? rest
+    : [...rest, { name: IMAGE_CORNER_RADIUS_PROPERTY, value }];
 }
 
 // Images
@@ -360,7 +442,7 @@ export interface TextFontDefaults {
 
 // Formatting tags the rich text editor writes into a text expression
 export const hasHtmlTags = (str: string): boolean =>
-  /<\/?(b|strong|i|em|u|s|strike|del|font|a|span|p|div|br)\b[^>]*>/i.test(str);
+  /<\/?(b|strong|i|em|u|s|strike|del|font|a|span|p|div|br|ul|ol|li|sup|sub)\b[^>]*>/i.test(str);
 
 export const isRichTextElement = (element: { markup?: string; expression?: string }): boolean =>
   element.markup === 'html' || hasHtmlTags(element.expression || '');
@@ -375,6 +457,33 @@ export const sanitizeHtml = (html: string): string =>
     .replace(/\s*on\w+\s*=\s*(['"]).*?\1/gi, '')
     .replace(/\s*on\w+\s*=\s*[^>\s]+/gi, '')
     .replace(/javascript:/gi, '');
+
+// rgb(r, g, b) colours (what the browser's editor writes) as #rrggbb, which JasperReports reads
+export const rgbToHex = (str: string): string =>
+  str.replace(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*[\d.]+)?\s*\)/gi, (_, r, g, b) => {
+    const toH = (n: string) => parseInt(n, 10).toString(16).padStart(2, '0');
+    return `#${toH(r)}${toH(g)}${toH(b)}`;
+  });
+
+// HTML from the browser's editor made into what JasperReports' html markup reads
+// (colour spans as <font>, no web-only attributes, no empty spans)
+export function cleanEditorHtml(html: string): string {
+  let clean = rgbToHex(html);
+  clean = clean.replace(/<span\s+style="color:\s*([^";]+);?">([\s\S]*?)<\/span>/gi, '<font color="$1">$2</font>');
+  clean = clean.replace(/\s*class="[^"]*"/gi, '');
+  clean = clean.replace(/\s*rel="[^"]*"/gi, '');
+  clean = clean.replace(/\s*target="[^"]*"/gi, '');
+  clean = clean.replace(/(<a\s+[^>]*?)\s+style="color:\s*[^";]+;?"/gi, '$1');
+  clean = clean.replace(/<span>([\s\S]*?)<\/span>/gi, '$1');
+  return clean;
+}
+
+// Formatting beyond line breaks (bold, colour, lists, superscript...)
+export const hasFormatting = (html: string): boolean =>
+  /<\/?(b|strong|i|em|u|s|strike|del|font|a|span|ul|ol|li|sup|sub)\b[^>]*>/i.test(html);
+
+export const escapeHtml = (text: string): string =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 // HTML the canvas shows for a formatted text expression
 export function textExpressionToHtml(expression: string): string {

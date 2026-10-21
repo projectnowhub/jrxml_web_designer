@@ -171,8 +171,8 @@ const getLineStyle = (line: DragFeedback['snapLines'][0]) => {
 }
 
 .drag-preview {
-  background: rgba(24, 144, 255, 0.1);
-  border: 2px dashed #1890ff;
+  background: rgba(100, 64, 244, 0.1);
+  border: 2px dashed #6440f4;
   border-radius: 4px;
   animation: drag-pulse 1.5s ease-in-out infinite;
   display: flex;
@@ -191,7 +191,7 @@ const getLineStyle = (line: DragFeedback['snapLines'][0]) => {
 .preview-icon {
   width: 32px;
   height: 32px;
-  background: #1890ff;
+  background: #6440f4;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -213,7 +213,7 @@ const getLineStyle = (line: DragFeedback['snapLines'][0]) => {
 }
 
 .element-type {
-  color: #1890ff;
+  color: #6440f4;
   font-weight: 500;
 }
 
@@ -229,12 +229,12 @@ const getLineStyle = (line: DragFeedback['snapLines'][0]) => {
 }
 
 .droppable-zone.highlighted {
-  border-color: #1890ff;
-  background: rgba(24, 144, 255, 0.05);
+  border-color: #6440f4;
+  background: rgba(100, 64, 244, 0.05);
 }
 
 .droppable-zone.active {
-  border-color: rgba(24, 144, 255, 0.3);
+  border-color: rgba(100, 64, 244, 0.3);
 }
 
 .zone-border {
@@ -243,7 +243,7 @@ const getLineStyle = (line: DragFeedback['snapLines'][0]) => {
   left: 0;
   right: 0;
   bottom: 0;
-  border: 1px dashed rgba(24, 144, 255, 0.2);
+  border: 1px dashed rgba(100, 64, 244, 0.2);
   pointer-events: none;
 }
 
@@ -252,7 +252,7 @@ const getLineStyle = (line: DragFeedback['snapLines'][0]) => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: #1890ff;
+  background: #6440f4;
   color: white;
   padding: 6px 12px;
   border-radius: 4px;
@@ -352,10 +352,10 @@ const getLineStyle = (line: DragFeedback['snapLines'][0]) => {
 
 @keyframes drag-pulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.4);
+    box-shadow: 0 0 0 0 rgba(100, 64, 244, 0.4);
   }
   50% {
-    box-shadow: 0 0 0 10px rgba(24, 144, 255, 0);
+    box-shadow: 0 0 0 10px rgba(100, 64, 244, 0);
   }
 }
 

@@ -85,12 +85,12 @@ const languages: { code: AppLocale; short: string; nameKey: string }[] = [
 }
 
 .language-option.active {
-  background: #4f46e5;
+  background: #6440f4;
   color: #fff;
 }
 
 .language-option:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: 2px solid #6440f4;
   outline-offset: 1px;
 }
 </style>

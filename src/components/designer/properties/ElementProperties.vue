@@ -148,9 +148,38 @@
         </button>
       </div>
 
+      <!-- Style Settings: take every style off this element (content, place and size stay) -->
+      <div v-if="activeTab === 'style'" class="reset-style-row">
+        <button type="button" class="chip-btn" :title="t('resetStyle.hint')" @click="resetStyle">
+          <RotateCcw :size="13" aria-hidden="true" />
+          {{ t("resetStyle.label") }}
+        </button>
+      </div>
+
       <Transition name="prop-tab-fade" mode="out-in">
         <!-- Basic properties tab -->
         <div v-if="activeTab === 'basic'" key="basic" class="prop-tab-pane" role="tabpanel">
+          <!-- Table: where its content comes from (one Table element, two kinds) -->
+          <div v-if="isTableElement" class="box-section compact">
+            <h5>{{ t("customTable.content") }}</h5>
+            <div class="seg" role="radiogroup" :aria-label="t('customTable.content')">
+              <button
+                v-for="kind in TABLE_CONTENT_KINDS"
+                :key="kind.value"
+                type="button"
+                role="radio"
+                class="seg-btn"
+                :class="{ active: tableContentKind === kind.value }"
+                :aria-checked="tableContentKind === kind.value"
+                @click="tableContentKind !== kind.value && emit('table-content', kind.value)"
+              >
+                <component :is="kind.icon" :size="14" aria-hidden="true" />
+                <span>{{ t(kind.labelKey) }}</span>
+              </button>
+            </div>
+            <small class="card-hint">{{ t(tableContentKind === "typed" ? "customTable.typedHint" : "customTable.fromDataHint") }}</small>
+          </div>
+
           <div class="box-section compact">
             <h5>{{ t("properties.positionSize") }}</h5>
             <div class="geometry-grid">
@@ -167,6 +196,31 @@
               </label>
             </div>
           </div>
+
+          <!-- Custom table: grid size and the look of the chosen cells -->
+          <!-- Contents list: fill from the headings, its rows -->
+          <ContentsListProperties
+            v-if="currentElement.type === 'contentsList'"
+            part="basic"
+            :element="currentElement as ContentsListElement"
+            @fill="emit('fill-contents-list')"
+          />
+
+          <!-- Section Heading (or one of its parts): its number -->
+          <HeadingNumberProperties v-if="sectionHeading" :heading="sectionHeading" />
+
+          <CustomTableProperties
+            v-if="currentElement.type === 'customTable'"
+            part="basic"
+            :element="currentElement as CustomTableElement"
+          />
+          <!-- Its table style: the same styles as a data table -->
+          <TableDataPanel
+            v-if="currentElement.type === 'customTable'"
+            part="basic"
+            v-bind="tablePanelProps"
+            v-on="tablePanelEvents"
+          />
 
           <!-- Table: data, style, row sizes -->
           <TableDataPanel
@@ -216,6 +270,34 @@
                 @change="handlePropertiesImageUpload"
               />
             </div>
+            <!-- Shape: preset corner looks, cards like the box border presets
+                 (custom corners are in Style Settings) -->
+            <div class="box-section compact">
+              <div class="shape-card-head">
+                <h5>{{ t("properties.imageShape") }}</h5>
+                <span v-if="!currentImageShape" class="shape-custom-badge">{{ t("properties.imageShapeCustom") }}</span>
+              </div>
+              <span class="field-label shape-field-label">{{ t("properties.imageShapePresets") }}</span>
+              <div class="shape-grid" role="radiogroup" :aria-label="t('properties.imageShapePresets')">
+                <button
+                  v-for="shape in IMAGE_SHAPES"
+                  :key="shape.id"
+                  type="button"
+                  role="radio"
+                  class="shape-swatch"
+                  :class="{ active: currentImageShape === shape.id }"
+                  :aria-checked="currentImageShape === shape.id"
+                  :title="t(`properties.imageShapes.${shape.id}Title`)"
+                  @click="applyImageShape(shape.id)"
+                >
+                  <span class="shape-sample-wrap">
+                    <span class="shape-sample" :style="shapePreviewStyle(shape)" aria-hidden="true"></span>
+                  </span>
+                  <span class="shape-name">{{ t(`properties.imageShapes.${shape.id}`) }}</span>
+                </button>
+              </div>
+              <small class="card-hint">{{ t("properties.imageShapeHint") }}</small>
+            </div>
             <div class="box-section compact">
               <h5>{{ t("properties.rotation") }}</h5>
               <div class="seg" role="radiogroup" :aria-label="t('properties.rotation')">
@@ -237,99 +319,22 @@
             </div>
           </template>
 
-          <!-- Chart: type, title and the data it plots -->
-          <template v-if="currentElement.type === 'chart'">
-            <div class="box-section compact">
-              <h5>{{ t("chart.title") }}</h5>
-              <label class="field">
-                <span class="field-label">{{ t("chart.type") }}</span>
-                <select
-                  class="card-select"
-                  :value="currentElement.chartType"
-                  @change="setTextProperty('chartType', ($event.target as HTMLSelectElement).value)"
-                >
-                  <option v-for="type in chartTypeOptions" :key="type" :value="type">{{ t(`chart.types.${type}`) }}</option>
-                </select>
-              </label>
-              <label class="field card-gap-sm">
-                <span class="field-label">{{ t("chart.chartTitle") }}</span>
-                <input
-                  class="card-input"
-                  type="text"
-                  :value="chartTitleText"
-                  :placeholder="t('chart.chartTitlePlaceholder')"
-                  @change="setChartTitle(($event.target as HTMLInputElement).value)"
-                />
-              </label>
-              <label class="toggle-row card-gap-sm">
-                <input
-                  type="checkbox"
-                  :checked="currentElement.isShowLegend !== false"
-                  @change="setTextProperty('isShowLegend', ($event.target as HTMLInputElement).checked)"
-                />
-                <span>{{ t("chart.showLegend") }}</span>
-              </label>
-            </div>
+          <!-- Chart: type, title, legend -->
+          <ChartProperties
+            v-if="currentElement.type === 'chart'"
+            part="basic"
+            :element="currentElement as ChartElement"
+            @configure="emit('configure-chart')"
+          />
 
-            <div class="box-section compact">
-              <h5>{{ t("chart.data") }}</h5>
-              <label class="field">
-                <span class="field-label">{{ t("chart.dataFrom") }}</span>
-                <select
-                  class="card-select"
-                  :value="currentElement.subDataset ?? ''"
-                  @change="setTextProperty('subDataset', ($event.target as HTMLSelectElement).value || undefined)"
-                >
-                  <option value="">{{ t("chart.reportData") }}</option>
-                  <option v-for="ds in subDatasets || []" :key="ds.name" :value="ds.name">{{ ds.name }}</option>
-                </select>
-              </label>
-              <label v-for="field in chartDataFields" :key="field.key" class="field card-gap-sm">
-                <span class="field-label">{{ t(field.labelKey) }}</span>
-                <input
-                  class="card-input mono"
-                  type="text"
-                  list="chart-field-options"
-                  :value="(currentElement as any)[field.key] ?? ''"
-                  :placeholder="'$F{' + t('chart.fieldPlaceholder') + '}'"
-                  @change="setTextProperty(field.key, ($event.target as HTMLInputElement).value.trim() || undefined)"
-                />
-              </label>
-              <datalist id="chart-field-options">
-                <option v-for="f in reportFields || []" :key="f.name" :value="`$F{${f.name}}`" />
-              </datalist>
-              <small class="card-hint">{{ t(chartDataHintKey) }}</small>
-            </div>
-          </template>
+          <!-- Barcode: type (with samples) and value -->
+          <BarcodeProperties
+            v-if="currentElement.type === 'barcode'"
+            :element="currentElement as BarcodeElement"
+          />
 
-          <!-- Barcode: symbology and value -->
-          <template v-if="currentElement.type === 'barcode'">
-            <div class="box-section compact">
-              <h5>{{ t("properties.barcodeProperties") }}</h5>
-              <label class="field">
-                <span class="field-label">{{ t("properties.barcodeType") }}</span>
-                <select
-                  class="card-select"
-                  :value="currentElement.barcodeType"
-                  @change="setTextProperty('barcodeType', ($event.target as HTMLSelectElement).value)"
-                >
-                  <option v-for="code in BARCODE_TYPES" :key="code.value" :value="code.value">{{ code.label }}</option>
-                </select>
-              </label>
-              <label class="field card-gap-sm">
-                <span class="field-label">{{ t("properties.barcodeValue") }}</span>
-                <input
-                  class="card-input"
-                  type="text"
-                  :value="getBarcodeValue(currentElement)"
-                  @input="updateBarcodeValue(($event.target as HTMLInputElement).value)"
-                  :placeholder="t('properties.barcodeValuePlaceholder')"
-                />
-              </label>
-            </div>
-          </template>
-
-          <template v-if="currentElement.type === 'barcode'">
+          <!-- QR codes aren't turned (JasperReports has no orientation for them) -->
+          <template v-if="currentElement.type === 'barcode' && currentElement.barcodeType !== 'QRCode'">
             <div class="box-section compact">
               <h5>{{ t("properties.rotation") }}</h5>
               <div class="seg" role="radiogroup" :aria-label="t('properties.rotation')">
@@ -350,6 +355,26 @@
               </div>
             </div>
           </template>
+
+          <!-- Circle: traffic-light colours for status columns (Low / Moderate / High risk) -->
+          <div v-if="currentElement.type === 'ellipse'" class="box-section compact">
+            <h5>{{ t("reportParts.statusColor") }}</h5>
+            <div class="seg" role="radiogroup" :aria-label="t('reportParts.statusColor')">
+              <button
+                v-for="status in STATUS_COLORS"
+                :key="status.id"
+                type="button"
+                role="radio"
+                class="seg-btn"
+                :class="{ active: isStatusColor(status.color) }"
+                :aria-checked="isStatusColor(status.color)"
+                @click="setStatusColor(status.color)"
+              >
+                <span class="status-swatch" :style="{ background: status.color }" aria-hidden="true" />
+                <span>{{ t(`reportParts.placeholder.${status.id}Risk`) }}</span>
+              </button>
+            </div>
+          </div>
 
           <!-- Line: which way it runs (its look is in Style Settings) -->
           <template v-if="currentElement && currentElement.type === 'line'">
@@ -391,8 +416,11 @@
             <PaginationProperties
               v-if="isPagination(currentElement)"
               :element="currentElement"
-              @save-state="emit('save-state')"
-              @update-jrxml="emit('update-jrxml')"
+            />
+            <!-- Date: which date and how it looks instead of free text -->
+            <DateProperties
+              v-else-if="isDateElement(currentElement)"
+              :element="currentElement"
             />
             <div v-else class="box-section compact">
               <div class="card-head">
@@ -448,6 +476,26 @@
         </div>
 
 
+        <!-- Custom table: lines, text size, space in the cells -->
+        <div
+          v-else-if="activeTab === 'style' && currentElement.type === 'contentsList'"
+          key="contents-list-style"
+          class="prop-tab-pane"
+          role="tabpanel"
+        >
+          <ContentsListProperties part="style" :element="currentElement as ContentsListElement" />
+        </div>
+
+        <div
+          v-else-if="activeTab === 'style' && currentElement.type === 'customTable'"
+          key="custom-table-style"
+          class="prop-tab-pane"
+          role="tabpanel"
+        >
+          <TableDataPanel part="style" v-bind="tablePanelProps" v-on="tablePanelEvents" />
+          <CustomTableProperties part="style" :element="currentElement as CustomTableElement" />
+        </div>
+
         <!-- Table: Style Settings is where its look is changed -->
         <div
           v-else-if="activeTab === 'style' && currentElement.type === 'table'"
@@ -460,6 +508,12 @@
 
         <!-- Style settings tab -->
         <div v-else key="style" class="prop-tab-pane" role="tabpanel">
+
+            <ChartProperties
+              v-if="currentElement.type === 'chart'"
+              part="style"
+              :element="currentElement as ChartElement"
+            />
 
             <!-- Border settings (not supported for table and line elements) -->
             <template v-if="currentElement.type !== 'table' && currentElement.type !== 'line'">
@@ -735,11 +789,12 @@
               <div v-if="showFontName" class="field-row">
                 <label class="field grow">
                   <span class="field-label">{{ t("properties.fontName") }}</span>
+                  <!-- Read-only until the report server supports more fonts -->
                   <select
-                    :value="currentElement.fontFamily ?? ''"
+                    :value="resolveReportFont(currentElement.fontFamily)"
+                    :disabled="availableFonts.length <= 1"
                     @change="setTextProperty('fontFamily', ($event.target as HTMLSelectElement).value)"
                   >
-                    <option value="">{{ t("properties.useDefaultFont") }}</option>
                     <option v-for="font in availableFonts" :key="font" :value="font">{{ font }}</option>
                   </select>
                 </label>
@@ -757,6 +812,10 @@
                   </span>
                 </label>
               </div>
+              <p v-if="showFontName && availableFonts.length <= 1" class="font-info">
+                <Info :size="13" :stroke-width="2" />
+                <span>{{ t("properties.fontLimitedInfo", { font: DEFAULT_REPORT_FONT }) }}</span>
+              </p>
 
               <div v-if="showTextAlignmentAndStyle" class="field-row">
                 <div class="field">
@@ -851,12 +910,17 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
+import { useSelectionStore } from "@/stores/selection";
+import { useReportStore } from "@/stores/report";
 import {
   AlignVerticalJustifyCenter,
   AlignVerticalJustifyEnd,
   AlignVerticalJustifyStart,
   Ban,
+  Database,
   FileText,
+  PencilLine,
   Minus,
   Plus,
   RotateCcw,
@@ -866,14 +930,17 @@ import {
   TextAlignEnd,
   TextAlignStart,
   Trash2,
+  Info,
   Upload,
   X,
 } from "@lucide/vue";
+import { DEFAULT_REPORT_FONT, resolveReportFont } from "../../../config/fonts.config";
 import ColorSwatchPicker from '../../common/ColorSwatchPicker.vue';
 import { computed, ref, onMounted, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
-import type { Band, SelectedElementInfo, TableDataset } from "../../../types";
+import notification from "@/utils/notification";
+import type { Band, BarcodeElement, ChartElement, ContentsListElement, CustomTableElement, FrameElement, SelectedElementInfo } from "../../../types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
@@ -881,8 +948,10 @@ import {
   getElementTypeName,
   getImageDisplayName,
   getPropertyCornerRadii,
-  quoteExpressionValue,
-  stripExpressionQuotes,
+  getImageShape,
+  IMAGE_SHAPES,
+  type ImageShapeId,
+  setImageShape,
   setPropertyCornerRadii,
   type CornerName,
   type CornerRadii,
@@ -900,7 +969,17 @@ import {
 } from "../../../constants/constants";
 import ColorPickerWithOpacity from "./ColorPickerWithOpacity.vue";
 import PaginationProperties from "./PaginationProperties.vue";
+import DateProperties from "./DateProperties.vue";
+import ChartProperties from "./ChartProperties.vue";
+import CustomTableProperties from "./CustomTableProperties.vue";
+import ContentsListProperties from "./ContentsListProperties.vue";
+import HeadingNumberProperties from "./HeadingNumberProperties.vue";
+import { cleanLegacyAutoDateElement, resolveLegacyDateSample } from "@/utils/autoDate";
+import { hasProperty, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/utils/contentsList";
+import { resetElementStyle } from "../../../utils/resetStyle";
+import BarcodeProperties from "./BarcodeProperties.vue";
 import { isPagination } from "../../../utils/paginationPresets";
+import { isDateElement } from "../../../utils/dateElement";
 import FrameProperties from "./FrameProperties.vue";
 import {
   getBoxCornerRadii,
@@ -909,6 +988,7 @@ import {
   isBoxPart,
   isUniformBorder,
 } from "../../../utils/framePresets";
+import { STATUS_COLORS } from "../../../utils/reportParts";
 import TableDataPanel from "./TableDataPanel.vue";
 import { useLivePreview } from "@/composables/useLivePreview";
 import SwitchControl from "./common/SwitchControl.vue";
@@ -916,23 +996,12 @@ import SwitchControl from "./common/SwitchControl.vue";
 const { t } = useI18n();
 
 interface Props {
-  selectedBandIndex: number | null;
-  selectedElement: SelectedElementInfo | null;
-  bands: Band[];
-  reportProperties: any;
-  subDatasets?: TableDataset[];
   // Table styles saved in the report
-  tableStyles?: SavedTableStyle[];
-  reportFields?: Array<{ name: string; class?: string }>;
-  reportParameters?: Array<{ name: string; class?: string }>;
-  reportVariables?: Array<{ name: string; class?: string }>;
 }
 
 interface Emits {
   (e: "update:bands", bands: Band[]): void;
   (e: "delete-element"): void;
-  (e: "update-jrxml"): void;
-  (e: "save-state"): void;
   // Fit the selected text element's box to its text (done by the designer)
   (e: "fit-to-text"): void;
   (e: "save-table-style", name: string): void;
@@ -941,30 +1010,42 @@ interface Emits {
   (e: "delete-table-style", id: string): void;
   // Open the Configure popup for the selected table
   (e: "configure-table"): void;
+  (e: "table-content", kind: "data" | "typed"): void;
+  (e: "fill-contents-list"): void;
+  (e: "configure-chart"): void;
 }
 
 const props = defineProps<Props>();
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
+// Report, selection and editor state come from the stores
+const selectionStore = useSelectionStore();
+const { selectedBandIndex, selectedElement } = storeToRefs(selectionStore);
+const reportStore = useReportStore();
+const { bands, reportProperties, tableStyles, reportFields, reportParameters, reportVariables } = storeToRefs(reportStore);
+
 const emit = defineEmits<Emits>();
 
 function getBandLimit(bandType: string) {
-  if (!props.reportProperties) return { min: 20, max: 70 };
-  if (!props.reportProperties.bandLimits) {
-    props.reportProperties.bandLimits = getEffectiveDefaultBandLimits();
+  if (!reportProperties.value) return { min: 20, max: 70 };
+  if (!reportProperties.value.bandLimits) {
+    reportProperties.value.bandLimits = getEffectiveDefaultBandLimits();
   }
-  if (!props.reportProperties.bandLimits[bandType]) {
-    props.reportProperties.bandLimits[bandType] = { min: 20, max: 70 };
+  if (!reportProperties.value.bandLimits[bandType]) {
+    reportProperties.value.bandLimits[bandType] = { min: 20, max: 70 };
   }
-  return props.reportProperties.bandLimits[bandType];
+  return reportProperties.value.bandLimits[bandType];
 }
 
 function getMaxPhysicalHeight(bandType: string): number {
-  const pageH = props.reportProperties?.pageHeight || 842;
-  const topM = props.reportProperties?.topMargin || 20;
-  const bottomM = props.reportProperties?.bottomMargin || 20;
+  const pageH = reportProperties.value?.pageHeight || 842;
+  const topM = reportProperties.value?.topMargin || 20;
+  const bottomM = reportProperties.value?.bottomMargin || 20;
   const printableH = pageH - topM - bottomM;
   let otherBandsH = 0;
-  if (props.bands && Array.isArray(props.bands)) {
-    props.bands.forEach((b) => {
+  if (bands.value && Array.isArray(bands.value)) {
+    bands.value.forEach((b) => {
       if (b.type !== bandType && b.type !== "detail" && b.type !== "background") {
         otherBandsH += b.height || 0;
       }
@@ -975,13 +1056,13 @@ function getMaxPhysicalHeight(bandType: string): number {
 }
 
 function getMaxAllowedLimit(bandType: string): number {
-  const pageH = props.reportProperties?.pageHeight || 842;
-  const topM = props.reportProperties?.topMargin || 20;
-  const bottomM = props.reportProperties?.bottomMargin || 20;
+  const pageH = reportProperties.value?.pageHeight || 842;
+  const topM = reportProperties.value?.topMargin || 20;
+  const bottomM = reportProperties.value?.bottomMargin || 20;
   const printableH = pageH - topM - bottomM;
   let otherBandsMin = 0;
-  if (props.bands && Array.isArray(props.bands)) {
-    props.bands.forEach((b) => {
+  if (bands.value && Array.isArray(bands.value)) {
+    bands.value.forEach((b) => {
       if (b.type !== bandType && b.type !== "detail" && b.type !== "background") {
         const limit = getBandLimit(b.type);
         otherBandsMin += Math.max(10, limit?.min || 10);
@@ -1002,11 +1083,11 @@ function onTemplateMinChange(bandType: string) {
       limit.max = limit.min;
     }
   }
-  const band = props.bands?.find((b) => b.type === bandType);
+  const band = bands.value?.find((b) => b.type === bandType);
   if (band && typeof band.height === "number" && band.height < limit.min) {
     band.height = limit.min;
   }
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function onTemplateMaxChange(bandType: string) {
@@ -1023,16 +1104,16 @@ function onTemplateMaxChange(bandType: string) {
       limit.min = limit.max;
     }
   }
-  const band = props.bands?.find((b) => b.type === bandType);
+  const band = bands.value?.find((b) => b.type === bandType);
   if (band && typeof band.height === "number" && band.height > limit.max) {
     band.height = limit.max;
   }
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function resetTemplateBandLimitsToDefault() {
-  if (!props.reportProperties) return;
-  emit("save-state");
+  if (!reportProperties.value) return;
+  report.saveStateToHistory();
   const config = getEffectiveDefaultBandConfig();
   const limits: Record<string, { min: number; max: number }> = {};
   for (const key of Object.keys(config)) {
@@ -1041,10 +1122,10 @@ function resetTemplateBandLimitsToDefault() {
       limits[key] = { min: item.min, max: item.max };
     }
   }
-  props.reportProperties.bandLimits = limits;
+  reportProperties.value.bandLimits = limits;
 
-  if (props.bands && Array.isArray(props.bands)) {
-    props.bands.forEach((band, index) => {
+  if (bands.value && Array.isArray(bands.value)) {
+    bands.value.forEach((band, index) => {
       const bConf = config[band.type];
       if (band.type !== "detail" && bConf?.defaultHeight) {
         band.height = bConf.defaultHeight;
@@ -1070,17 +1151,17 @@ onMounted(async () => {
 
 // Computed properties
 const currentElement = computed(() => {
-  if (props.selectedElement && props.bands && Array.isArray(props.bands)) {
-    const band = props.bands[props.selectedElement.bandIndex];
+  if (selectedElement.value && bands.value && Array.isArray(bands.value)) {
+    const band = bands.value[selectedElement.value.bandIndex];
     if (band && band.elements && Array.isArray(band.elements)) {
       // Check whether this is an element nested inside a Frame
-      if (props.selectedElement.parentFrameIndex !== undefined) {
-        const frame = band.elements[props.selectedElement.parentFrameIndex];
+      if (selectedElement.value.parentFrameIndex !== undefined) {
+        const frame = band.elements[selectedElement.value.parentFrameIndex];
         if (frame && frame.type === "frame" && frame.elements) {
-          return frame.elements[props.selectedElement.elementIndex];
+          return frame.elements[selectedElement.value.elementIndex];
         }
       } else {
-        return band.elements[props.selectedElement.elementIndex];
+        return band.elements[selectedElement.value.elementIndex];
       }
     }
   }
@@ -1095,50 +1176,59 @@ const elementType = computed(() => {
 // Style property visibility computed properties
 const showTextColor = computed(() => {
   if (!currentElement.value) return false;
-  return !["image", "line", "rectangle", "ellipse", "frame", "barcode", "chart"].includes(currentElement.value.type);
+  return !["image", "line", "rectangle", "ellipse", "frame", "barcode", "chart", "customTable", "contentsList"].includes(currentElement.value.type);
 });
 
 // Frame in the Background band: a border drawn on every page, with no fill or padding
+// The Section Heading box selected, or the one holding the selected part
+const sectionHeading = computed<FrameElement | null>(() => {
+  const sel = selectedElement.value;
+  if (!sel) return null;
+  const band = bands.value?.[sel.bandIndex];
+  const box = sel.parentFrameIndex !== undefined ? band?.elements[sel.parentFrameIndex] : currentElement.value;
+  return box?.type === "frame" && hasProperty(box, SECTION_HEADING_PROPERTY) ? (box as FrameElement) : null;
+});
+
 const isPageBorder = computed(
   () =>
     currentElement.value?.type === "frame" &&
-    !!props.selectedElement &&
-    props.selectedElement.parentFrameIndex === undefined &&
-    props.bands[props.selectedElement.bandIndex]?.type === "background",
+    !!selectedElement.value &&
+    selectedElement.value.parentFrameIndex === undefined &&
+    bands.value[selectedElement.value.bandIndex]?.type === "background",
 );
 
 const showBackgroundColor = computed(() => {
   if (!currentElement.value || isPageBorder.value) return false;
-  return !["line", "barcode"].includes(currentElement.value.type);
+  return !["line", "barcode", "customTable", "contentsList"].includes(currentElement.value.type);
 });
 
 const showFontName = computed(() => {
   if (!currentElement.value) return false;
-  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "table", "chart"].includes(currentElement.value.type);
+  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "table", "chart", "customTable", "contentsList"].includes(currentElement.value.type);
 });
 
 const showTextAlignmentAndStyle = computed(() => {
   if (!currentElement.value) return false;
-  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "chart", "table"].includes(currentElement.value.type);
+  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "chart", "table", "customTable", "contentsList"].includes(currentElement.value.type);
 });
 
 // Style management modal control
 
 // Frame property update handler
 const handleFramePropertyUpdate = (updatedElement: any) => {
-  if (currentElement.value && props.selectedElement) {
-    const band = props.bands[props.selectedElement.bandIndex];
+  if (currentElement.value && selectedElement.value) {
+    const band = bands.value[selectedElement.value.bandIndex];
     if (band && band.elements) {
-      if (props.selectedElement.parentFrameIndex !== undefined) {
-        const frame = band.elements[props.selectedElement.parentFrameIndex];
+      if (selectedElement.value.parentFrameIndex !== undefined) {
+        const frame = band.elements[selectedElement.value.parentFrameIndex];
         if (frame && frame.type === "frame" && frame.elements) {
-          frame.elements[props.selectedElement.elementIndex] = updatedElement;
+          frame.elements[selectedElement.value.elementIndex] = updatedElement;
         }
       } else {
-        band.elements[props.selectedElement.elementIndex] = updatedElement;
+        band.elements[selectedElement.value.elementIndex] = updatedElement;
       }
-      emit("update:bands", props.bands);
-      emit("update-jrxml");
+      emit("update:bands", bands.value);
+      report.updateJrxml();
     }
   }
 };
@@ -1146,7 +1236,7 @@ const handleFramePropertyUpdate = (updatedElement: any) => {
 // Replace the selected element with an updated copy (frame panel edits:
 // border presets, layout), recorded for undo first
 const replaceCurrentElement = (updatedElement: any) => {
-  emit("save-state");
+  report.saveStateToHistory();
   handleFramePropertyUpdate(updatedElement);
 };
 
@@ -1169,7 +1259,7 @@ function getBandDisplayName(bandType: string): string {
 
 // Update Band height
 function updateBandHeight(index: number) {
-  const band = props.bands[index];
+  const band = bands.value[index];
   if (band && band.type !== "detail") {
     const limit = getBandLimit(band.type);
     const maxAllowed = getMaxPhysicalHeight(band.type);
@@ -1194,14 +1284,14 @@ function updateBandHeight(index: number) {
   }
 
   // Recalculate Detail band height so it automatically absorbs the change (A4 page fitting)
-  const detailBand = props.bands.find((b) => b.type === "detail");
+  const detailBand = bands.value.find((b) => b.type === "detail");
   if (detailBand) {
-    const pageH = props.reportProperties?.pageHeight || 842;
-    const topM = props.reportProperties?.topMargin || 20;
-    const bottomM = props.reportProperties?.bottomMargin || 20;
+    const pageH = reportProperties.value?.pageHeight || 842;
+    const topM = reportProperties.value?.topMargin || 20;
+    const bottomM = reportProperties.value?.bottomMargin || 20;
     const availableH = pageH - topM - bottomM;
     let otherBandsH = 0;
-    props.bands.forEach((b) => {
+    bands.value.forEach((b) => {
       if (b.type !== "detail" && b.type !== "background") {
         otherBandsH += b.height || 0;
       }
@@ -1210,9 +1300,9 @@ function updateBandHeight(index: number) {
   }
 
   // Callers take the undo snapshot before changing the height
-  const updatedBands = [...props.bands];
+  const updatedBands = [...bands.value];
   emit("update:bands", updatedBands);
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Apply a typed whole-number value (position, size, band height). The undo
@@ -1226,39 +1316,39 @@ function setIntegerValue(target: any, property: string, event: Event): boolean {
     input.value = String(target[property] ?? "");
     return false;
   }
-  emit("save-state");
+  report.saveStateToHistory();
   target[property] = parsed;
   // A ready-made box's own part keeps inside the box when its position or size is typed
-  const parentIndex = props.selectedElement?.parentFrameIndex;
+  const parentIndex = selectedElement.value?.parentFrameIndex;
   if (
     parentIndex !== undefined &&
     target === currentElement.value &&
     isBoxPart(target) &&
     ["x", "y", "width", "height"].includes(property)
   ) {
-    const box = props.bands[props.selectedElement!.bandIndex]?.elements[parentIndex];
+    const box = bands.value[selectedElement.value!.bandIndex]?.elements[parentIndex];
     if (box?.type === "frame") Object.assign(target, clampRectInBox(target, box));
   }
   input.value = String(target[property]);
-  emit("update-jrxml");
+  report.updateJrxml();
   return true;
 }
 
 // Set horizontal alignment
 function setHorizontalAlignment(alignment: "Left" | "Center" | "Right") {
   if (currentElement.value) {
-    emit("save-state");
+    report.saveStateToHistory();
     currentElement.value.textAlignment = alignment;
-    emit("update-jrxml");
+    report.updateJrxml();
   }
 }
 
 // Set vertical alignment
 function setVerticalAlignment(alignment: "Top" | "Middle" | "Bottom") {
   if (currentElement.value) {
-    emit("save-state");
+    report.saveStateToHistory();
     currentElement.value.verticalAlignment = alignment;
-    emit("update-jrxml");
+    report.updateJrxml();
   }
 }
 
@@ -1277,10 +1367,10 @@ function updateTextFieldExpression(newExpression: string) {
   if (!currentElement.value || currentElement.value.type !== "textField")
     return;
 
-  emit("save-state");
+  report.saveStateToHistory();
   currentElement.value.expression = newExpression;
 
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Get clean text field content for display (strips quotes if static text, preserves field expressions)
@@ -1288,6 +1378,9 @@ function getTextFieldDisplay(element: any) {
   if (!element) return "";
   const raw = element.expression || (element.fieldName ? `$F{${element.fieldName}}` : "");
   const trimmed = String(raw).trim();
+  if (trimmed.includes("SimpleDateFormat") && trimmed.includes("java.util.Date")) {
+    return resolveLegacyDateSample(trimmed);
+  }
   if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
     return trimmed.slice(1, -1).replace(/\\n/g, '\n');
   }
@@ -1297,7 +1390,8 @@ function getTextFieldDisplay(element: any) {
 // Update text field content (wraps static text in quotes, preserves $F{...} / $V{...} expressions)
 function updateTextFieldDisplay(val: string) {
   if (!currentElement.value || currentElement.value.type !== "textField") return;
-  emit("save-state");
+  cleanLegacyAutoDateElement(currentElement.value);
+  report.saveStateToHistory();
   const elem = currentElement.value as any;
   if (!elem.markup) {
     elem.markup = "html";
@@ -1310,23 +1404,55 @@ function updateTextFieldDisplay(val: string) {
   } else {
     elem.expression = `"${val}"`;
   }
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Insert a selected field into the text field
 function insertFieldIntoTextField(fieldExpr: string) {
   if (!fieldExpr || !currentElement.value || currentElement.value.type !== "textField") return;
-  emit("save-state");
+  report.saveStateToHistory();
   currentElement.value.expression = fieldExpr;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Set rotation for text, image, and barcode elements
 function setElementRotation(rot: "None" | "Right" | "UpsideDown" | "Left") {
   if (!currentElement.value) return;
-  emit("save-state");
+  report.saveStateToHistory();
   (currentElement.value as any).rotation = rot;
-  emit("update-jrxml");
+  report.updateJrxml();
+}
+
+// Image shape: the preset in use, "square" for plain corners, null for custom corners
+const currentImageShape = computed<ImageShapeId | null>(() => {
+  const element = currentElement.value;
+  if (element?.type !== "image") return null;
+  const shape = getImageShape(element);
+  if (shape) return shape;
+  const radii = getPropertyCornerRadii(element);
+  return CORNER_NAMES.every((c) => radii[c] === 0) ? "square" : null;
+});
+
+// One undo step. The image keeps its position and size: only its corners change.
+function applyImageShape(id: ImageShapeId) {
+  const element = currentElement.value as any;
+  if (!element || element.type !== "image") return;
+  if (currentImageShape.value === id) return;
+  report.saveStateToHistory();
+  setImageShape(element, id);
+  report.updateJrxml();
+}
+
+// Card sample: a small picture cut to the shape (wide for the pill)
+function shapePreviewStyle(shape: (typeof IMAGE_SHAPES)[number]) {
+  const width = shape.id === "pill" ? 46 : 30;
+  const height = shape.id === "pill" ? 22 : 30;
+  const side = Math.min(width, height);
+  return {
+    width: `${width}px`,
+    height: `${height}px`,
+    borderRadius: shape.corners.map((c) => `${Math.round(side * c)}px`).join(" "),
+  };
 }
 
 // Current orientation of selected line element
@@ -1341,7 +1467,7 @@ const currentLineOrientation = computed(() => {
 // Set orientation for line element
 function setLineOrientation(type: "horizontal" | "vertical" | "topdown" | "bottomup") {
   if (!currentElement.value || currentElement.value.type !== "line") return;
-  emit("save-state");
+  report.saveStateToHistory();
   const el = currentElement.value as any;
   if (type === "horizontal") {
     el.height = 1;
@@ -1360,7 +1486,7 @@ function setLineOrientation(type: "horizontal" | "vertical" | "topdown" | "botto
     if (el.width <= 1) el.width = 100;
     el.lineDirection = "BottomUp";
   }
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Add a crossing line element to form an "X"
@@ -1368,11 +1494,11 @@ function addCrossingLine() {
   if (
     !currentElement.value ||
     currentElement.value.type !== "line" ||
-    !props.selectedElement ||
-    !props.bands
+    !selectedElement.value ||
+    !bands.value
   )
     return;
-  emit("save-state");
+  report.saveStateToHistory();
   const el = currentElement.value as any;
   if (el.width <= 1) el.width = 100;
   if (el.height <= 1) el.height = 60;
@@ -1386,10 +1512,10 @@ function addCrossingLine() {
     lineDirection: oppositeDir,
   };
 
-  const band = props.bands[props.selectedElement.bandIndex];
+  const band = bands.value[selectedElement.value.bandIndex];
   if (band && band.elements) {
-    if (props.selectedElement.parentFrameIndex !== undefined) {
-      const frame = band.elements[props.selectedElement.parentFrameIndex];
+    if (selectedElement.value.parentFrameIndex !== undefined) {
+      const frame = band.elements[selectedElement.value.parentFrameIndex];
       if (frame && frame.type === "frame" && frame.elements) {
         frame.elements.push(crossLine);
       }
@@ -1397,33 +1523,7 @@ function addCrossingLine() {
       band.elements.push(crossLine);
     }
   }
-  emit("update-jrxml");
-}
-
-// Get clean barcode value for display (without quotes if static text)
-function getBarcodeValue(element: any) {
-  if (!element || !element.codeExpression) return "";
-  const raw = String(element.codeExpression).trim();
-  if (raw.startsWith('"') && raw.endsWith('"')) {
-    return raw.slice(1, -1);
-  }
-  return raw;
-}
-
-// Update barcode value (wraps plain text in quotes, preserves $F{...} expressions)
-function updateBarcodeValue(val: string) {
-  if (!currentElement.value || currentElement.value.type !== "barcode") return;
-  // Typing the value is one undo step
-  recordBorderEdit("barcode-value");
-  const trimmed = val.trim();
-  if (!trimmed) {
-    currentElement.value.codeExpression = '""';
-  } else if (trimmed.startsWith("$") || (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
-    currentElement.value.codeExpression = trimmed;
-  } else {
-    currentElement.value.codeExpression = `"${trimmed}"`;
-  }
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Image upload handling for Image elements in Properties panel
@@ -1451,16 +1551,16 @@ async function handlePropertiesImageUpload(event: Event) {
     const source = await resolveImageSource(file);
     // The upload is async: apply it to the element that started it, even if selection changed
     if (element.type !== "image") return;
-    emit("save-state");
+    report.saveStateToHistory();
     (element as any).imageExpression = toImageExpression(source);
     // Use the uploaded file name as the image name shown in the panels
     setImageName(element, file.name || "");
     // A crop belongs to the previous picture
     setImageCrop(element, null);
-    emit("update-jrxml");
+    report.updateJrxml();
   } catch (error) {
     console.error("Image upload failed:", error);
-    alert(
+    notification.error(
       error instanceof ImageUploadError
         ? t(error.messageKey, error.params)
         : t("imageUpload.uploadFailed"),
@@ -1542,9 +1642,13 @@ const marginPreviewStyle = computed(() => {
 
 const panelTitle = computed(() => {
   const el = currentElement.value as any;
-  if (!props.selectedElement || !el) return t("properties.reportProperties");
+  if (!selectedElement.value || !el) return t("properties.reportProperties");
   if (isPagination(el)) return t("elementNames.pageNumber");
+  if (isDateElement(el)) return t("elementNames.dateTime");
   if (isPageBorder.value) return t("elementNames.framePageBorder");
+  // Headings are shown by their own name, not as the box / text they are built of
+  if (hasProperty(el, SECTION_HEADING_PROPERTY)) return t("elementNames.partSectionHeading");
+  if (hasProperty(el, SUB_HEADING_PROPERTY)) return t("elementNames.partSubHeading");
   return t(getElementTypeName(el.type));
 });
 
@@ -1558,13 +1662,31 @@ const TAB_LABELS: Record<string, string> = {
 };
 const availableTabs = computed(() => ["basic", "style"]);
 
+// "Reset style": one undo step
+function resetStyle() {
+  const element = currentElement.value;
+  if (!element) return;
+  report.saveStateToHistory();
+  resetElementStyle(element, {
+    fontSize: reportProperties.value?.defaultFont?.size,
+    isPageBorder: isPageBorder.value,
+  });
+  report.updateJrxml();
+}
+
+// One Table element: its content comes from project data, or is typed by the user
+const TABLE_CONTENT_KINDS = [
+  { value: "data", labelKey: "customTable.fromData", icon: Database },
+  { value: "typed", labelKey: "customTable.typed", icon: PencilLine },
+] as const;
+const isTableElement = computed(() => ["table", "customTable"].includes(currentElement.value?.type ?? ""));
+const tableContentKind = computed(() => (currentElement.value?.type === "customTable" ? "typed" : "data"));
+
 // The table panel appears in both tabs (Basic: data, style, row sizes;
 // Style Settings: changes to its look)
-const tablePanelProps = computed(() => ({ element: currentElement.value as any, tableStyles: props.tableStyles ?? [] }));
+const tablePanelProps = computed(() => ({ element: currentElement.value as any, tableStyles: tableStyles.value ?? [] }));
 const tablePanelEvents = {
   configure: () => emit("configure-table"),
-  "save-state": () => emit("save-state"),
-  "update-jrxml": () => emit("update-jrxml"),
   "save-table-style": (name: string) => emit("save-table-style", name),
   "update-table-style": (id: string) => emit("update-table-style", id),
   "rename-table-style": (id: string, name: string) => emit("rename-table-style", id, name),
@@ -1597,82 +1719,6 @@ const SHAPE_STYLES = LINE_ONLY_STYLES;
 // so below 3pt it prints (and shows on the canvas) as one solid line
 const MIN_DOUBLE_LINE_WIDTH = 3;
 
-// Chart types offered in the picker (the ones the generator writes fully);
-// an imported chart of another type keeps its own type in the list
-const CHART_TYPES = [
-  "pie", "pie3D", "bar", "bar3D", "stackedBar", "stackedBar3D",
-  "line", "area", "stackedArea", "xyLine", "xyArea", "xyBar", "scatter",
-];
-const PIE_CHARTS = ["pie", "pie3D"];
-const XY_CHARTS = ["xyLine", "xyArea", "xyBar", "scatter", "bubble", "timeSeries", "highLow", "candlestick"];
-
-const chartTypeOptions = computed(() => {
-  const current = (currentElement.value as any)?.chartType;
-  return current && !CHART_TYPES.includes(current) ? [current, ...CHART_TYPES] : CHART_TYPES;
-});
-
-// The expressions a chart of this type reads (same split as the generator)
-const chartDataFields = computed(() => {
-  const type = (currentElement.value as any)?.chartType || "pie";
-  if (PIE_CHARTS.includes(type)) {
-    return [
-      { key: "keyExpression", labelKey: "chart.fields.key" },
-      { key: "valueExpression", labelKey: "chart.fields.value" },
-    ];
-  }
-  if (XY_CHARTS.includes(type)) {
-    return [
-      { key: "seriesExpression", labelKey: "chart.fields.series" },
-      { key: "xValueExpression", labelKey: "chart.fields.x" },
-      { key: "yValueExpression", labelKey: "chart.fields.y" },
-    ];
-  }
-  return [
-    { key: "seriesExpression", labelKey: "chart.fields.series" },
-    { key: "categoryExpression", labelKey: "chart.fields.category" },
-    { key: "valueExpression", labelKey: "chart.fields.value" },
-  ];
-});
-const chartDataHintKey = computed(() => {
-  const type = (currentElement.value as any)?.chartType || "pie";
-  if (PIE_CHARTS.includes(type)) return "chart.hints.pie";
-  if (XY_CHARTS.includes(type)) return "chart.hints.xy";
-  return "chart.hints.category";
-});
-
-// Title: plain text is stored as a quoted expression, $F{}/$P{} as typed
-const chartTitleText = computed(() => {
-  const el = currentElement.value as any;
-  if (!el) return "";
-  return el.titleExpression ? stripExpressionQuotes(el.titleExpression) : el.title || "";
-});
-function setChartTitle(value: string) {
-  const el = currentElement.value as any;
-  const text = value.trim();
-  const expression = text ? quoteExpressionValue(text) : "";
-  if (!el || (el.titleExpression || "") === expression) return;
-  emit("save-state");
-  el.titleExpression = expression;
-  el.title = undefined;
-  emit("update-jrxml");
-}
-
-// Barcode symbologies (value = JasperReports barcode type)
-const BARCODE_TYPES = [
-  { value: "Code128", label: "Code 128" },
-  { value: "Code39", label: "Code 39" },
-  { value: "EAN13", label: "EAN-13" },
-  { value: "EAN8", label: "EAN-8" },
-  { value: "UPCA", label: "UPC-A" },
-  { value: "UPCE", label: "UPC-E" },
-  { value: "QRCode", label: "QR Code" },
-  { value: "DataMatrix", label: "Data Matrix" },
-  { value: "Interleaved2Of5", label: "Interleaved 2 of 5" },
-  { value: "Codabar", label: "Codabar" },
-  { value: "EAN128", label: "EAN-128" },
-  { value: "PDF417", label: "PDF417" },
-];
-
 // Text card
 const FONT_TOGGLES = [
   { key: "isBold", glyph: "B", labelKey: "properties.bold" },
@@ -1694,9 +1740,9 @@ const V_ALIGNS = [
 function setTextProperty(key: string, value: unknown) {
   const element = currentElement.value as any;
   if (!element || element[key] === value) return;
-  emit("save-state");
+  report.saveStateToHistory();
   element[key] = value;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function setFontSize(value: string) {
@@ -1706,12 +1752,27 @@ function setFontSize(value: string) {
 
 // Colour pickers send the colour and then the mode (and repeat while the
 // opacity slider moves): these share one undo step per colour
+// Status dot: fill with one of the traffic-light colours (an outline of width 0
+// follows the fill, so the dot stays one colour)
+const isStatusColor = (color: string) =>
+  currentElement.value?.mode === "Opaque" &&
+  currentElement.value?.backcolor?.toUpperCase() === color;
+function setStatusColor(color: string) {
+  const element = currentElement.value as any;
+  if (!element || isStatusColor(color)) return;
+  report.saveStateToHistory();
+  element.mode = "Opaque";
+  element.backcolor = color;
+  if (element.pen && !element.pen.lineWidth) element.pen = { ...element.pen, lineColor: color };
+  report.updateJrxml();
+}
+
 function setColorProperty(group: string, key: string, value: unknown) {
   const element = currentElement.value as any;
   if (!element || element[key] === value) return;
   recordBorderEdit(`color-${group}`);
   element[key] = value;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Corner preview: the radii, scaled down to fit the small box
@@ -1742,10 +1803,10 @@ function setCornerRadius(corner: CornerName | null, value: string) {
   const next = { ...current };
   for (const c of corner ? [corner] : CORNER_NAMES) next[c] = radius;
   if (CORNER_NAMES.every((c) => next[c] === current[c])) return;
-  emit("save-state");
+  report.saveStateToHistory();
   if (element.type === "frame") setBoxCornerRadii(element, next);
   else setPropertyCornerRadii(element, next);
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Undo step for a border edit. Repeated edits of the same control in quick
@@ -1754,7 +1815,7 @@ let lastBorderEdit = { key: "", time: 0 };
 function recordBorderEdit(key: string) {
   const now = Date.now();
   if (key !== lastBorderEdit.key || now - lastBorderEdit.time > 1000) {
-    emit("save-state");
+    report.saveStateToHistory();
   }
   lastBorderEdit = { key, time: now };
 }
@@ -1784,7 +1845,7 @@ function setSideBorderWidth(side: string, value: string, record = true) {
     currentElement.value.box[penKey] = {};
   }
   currentElement.value.box[penKey].lineWidth = numValue;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function getSideBorderStyle(side: string): string {
@@ -1835,7 +1896,7 @@ function setSideBorderStyle(side: string, value: string, record = true) {
     box[widthKey] = 0;
   }
 
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function getSideBorderColor(side: string): string {
@@ -1862,7 +1923,7 @@ function setSideBorderColor(side: string, value: string, record = true) {
     box[penKey] = {};
   }
   box[penKey].lineColor = value;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Functions related to the unified four-side setting ("All" row).
@@ -1897,7 +1958,7 @@ function setUnifiedBorderStyle(value: string) {
   BORDER_SIDE_NAMES.forEach((side) => {
     setSideBorderStyle(side, value, false);
   });
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function getUnifiedBorderWidth(): number | "" {
@@ -1916,7 +1977,7 @@ function setUnifiedBorderWidth(value: string) {
     if (turningOn) setSideBorderStyle(side, "Solid", false);
     setSideBorderWidth(side, value, false);
   });
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function getUnifiedBorderColor(): string {
@@ -1931,7 +1992,7 @@ function setUnifiedBorderColor(value: string) {
   unifiedTargetSides().forEach((side) => {
     setSideBorderColor(side, value, false);
   });
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Handle Global Margin input: sets all four sides and global padding
@@ -1942,7 +2003,7 @@ function handleGlobalMarginInput(event: Event) {
   }
   const input = event.target as HTMLInputElement;
   const rawVal = input.value;
-  emit("save-state");
+  report.saveStateToHistory();
 
   if (rawVal === "" || rawVal === undefined || rawVal === null) {
     currentElement.value.box.padding = undefined;
@@ -1958,7 +2019,7 @@ function handleGlobalMarginInput(event: Event) {
     currentElement.value.box.leftPadding = num;
     currentElement.value.box.rightPadding = num;
   }
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Handle individual side margin input: resets global padding and sets specific side
@@ -1973,7 +2034,7 @@ function handleSideMarginInput(
   const box = currentElement.value.box;
   const input = event.target as HTMLInputElement;
   const rawVal = input.value;
-  emit("save-state");
+  report.saveStateToHistory();
 
   // If individual margins weren't explicitly initialized yet but global padding was set,
   // seed the other sides with the current global value before diverging.
@@ -2009,7 +2070,7 @@ function handleSideMarginInput(
     box.padding = box.topPadding;
   }
 
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // Delete element
@@ -2028,13 +2089,13 @@ function setRectangleBorderWidth(value: string) {
   if (!currentElement.value) return;
   const el = currentElement.value as any;
   const numValue = parseFloat(value) || 0;
-  emit("save-state");
+  report.saveStateToHistory();
   if (!el.pen) {
     el.pen = {};
   }
   el.pen.lineWidth = numValue;
   el.lineWidth = numValue;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function getRectangleBorderStyle(): string {
@@ -2046,7 +2107,7 @@ function getRectangleBorderStyle(): string {
 function setRectangleBorderStyle(value: string) {
   if (!currentElement.value) return;
   const el = currentElement.value as any;
-  emit("save-state");
+  report.saveStateToHistory();
   if (!el.pen) {
     el.pen = {};
   }
@@ -2057,7 +2118,7 @@ function setRectangleBorderStyle(value: string) {
     el.pen.lineWidth = MIN_DOUBLE_LINE_WIDTH;
     el.lineWidth = MIN_DOUBLE_LINE_WIDTH;
   }
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function getRectangleBorderColor(): string {
@@ -2069,7 +2130,7 @@ function getRectangleBorderColor(): string {
 function setRectangleBorderColor(value: string) {
   if (!currentElement.value) return;
   const el = currentElement.value as any;
-  emit("save-state");
+  report.saveStateToHistory();
   if (!el.pen) {
     el.pen = {};
   }
@@ -2079,7 +2140,7 @@ function setRectangleBorderColor(value: string) {
     el.pen.lineWidth = 1;
   }
   el.lineWidth = el.pen.lineWidth;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function addProperty() {
@@ -2088,7 +2149,7 @@ function addProperty() {
     (currentElement.value as any).properties = [];
   }
   (currentElement.value as any).properties.push({ name: "", value: "" });
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function addPropertyExpression() {
@@ -2100,13 +2161,16 @@ function addPropertyExpression() {
     name: "",
     valueExpression: "",
   });
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 </script>
 
 <style scoped>
 .element-properties {
-  padding: var(--prop-spacing-md);
+  padding: 12px;
+  background: #fcfcfe;
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 .panel-header {
@@ -2116,16 +2180,17 @@ function addPropertyExpression() {
   gap: 8px;
   margin-bottom: 14px;
   padding-bottom: 10px;
-  border-bottom: 1px solid var(--prop-divider-color);
+  border-bottom: 1px solid rgba(28, 27, 38, 0.07);
 }
 
 .element-properties .panel-header h3 {
   margin: 0;
   padding: 0;
   border: none;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--prop-text-primary);
+  font-size: 14px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  color: #1c1b26;
 }
 
 .section-title {
@@ -2143,7 +2208,8 @@ function addPropertyExpression() {
   grid-template-columns: repeat(var(--tab-count), minmax(0, 1fr));
   padding: 3px;
   border-radius: 9px;
-  background: var(--prop-bg-tertiary, #eef0f4);
+  background: #f1f0f6;
+  border: 1px solid rgba(28, 27, 38, 0.05);
 }
 
 .prop-tab-indicator {
@@ -2154,7 +2220,7 @@ function addPropertyExpression() {
   width: calc((100% - 6px) / var(--tab-count));
   border-radius: 7px;
   background: #fff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.08);
   transform: translateX(calc(100% * var(--tab-index)));
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -2182,12 +2248,12 @@ function addPropertyExpression() {
 }
 
 .prop-tab.active {
-  font-weight: 600;
-  color: var(--prop-primary-color, #1890ff);
+  font-weight: 650;
+  color: #5b3ee0;
 }
 
 .prop-tab:focus-visible {
-  outline: 2px solid var(--prop-border-focus, #1890ff);
+  outline: 2px solid var(--prop-border-focus, #7c5cf7);
   outline-offset: 1px;
   border-radius: 7px;
 }
@@ -2231,8 +2297,8 @@ function addPropertyExpression() {
   margin: 0 0 var(--prop-spacing-sm) 0;
   padding: 0;
   font-size: var(--prop-font-size-sm);
-  font-weight: var(--prop-font-weight-semibold);
-  color: var(--prop-text-secondary);
+  font-weight: 650;
+  color: #1c1b26;
 }
 
 .property-section {
@@ -2338,18 +2404,19 @@ function addPropertyExpression() {
 .band-settings-title-group h4 {
   margin: 0;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 650;
   color: var(--prop-text-primary);
   white-space: nowrap;
 }
 
 .template-scope-pill {
-  padding: 1px 8px;
+  padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(24, 144, 255, 0.1);
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.18);
   font-size: 10px;
-  font-weight: 600;
-  color: var(--prop-primary-color, #1890ff);
+  font-weight: 700;
+  color: #6366f1;
   white-space: nowrap;
 }
 
@@ -2359,11 +2426,11 @@ function addPropertyExpression() {
   gap: 4px;
   height: 24px;
   padding: 0 10px;
-  border: 1px solid var(--prop-border-color);
+  border: 1px solid rgba(28, 27, 38, 0.1);
   border-radius: 999px;
   background: #fff;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--prop-text-secondary);
   cursor: pointer;
   white-space: nowrap;
@@ -2371,8 +2438,9 @@ function addPropertyExpression() {
 }
 
 .reset-template-limits-btn:hover {
-  border-color: var(--prop-primary-color, #1890ff);
-  color: var(--prop-primary-color, #1890ff);
+  border-color: rgba(124, 92, 247, 0.35);
+  background: rgba(124, 92, 247, 0.06);
+  color: #5b3ee0;
 }
 
 .band-cards-grid {
@@ -2381,20 +2449,22 @@ function addPropertyExpression() {
   gap: 8px;
 }
 
-/* One card per band, with a coloured edge so the bands are easy to tell apart */
+/* Clean modern card per band matching Home page cards */
 .template-band-card {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px 12px;
-  border-radius: var(--prop-border-radius-md);
-  background: var(--prop-bg-secondary);
-  border-left: 3px solid var(--prop-primary-color, #1890ff);
-  transition: background-color 0.15s ease;
+  padding: 11px 12px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid rgba(28, 27, 38, 0.08);
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .template-band-card:hover {
-  background: #f3f6fa;
+  border-color: rgba(124, 92, 247, 0.35);
+  box-shadow: 0 6px 16px rgba(124, 92, 247, 0.08);
 }
 
 .template-band-header {
@@ -2404,17 +2474,18 @@ function addPropertyExpression() {
 }
 
 .template-band-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--prop-text-primary);
+  font-size: 12.5px;
+  font-weight: 650;
+  color: #1c1b26;
 }
 
 .band-badge-auto {
-  padding: 1px 8px;
+  padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(16, 185, 129, 0.12);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 650;
   color: #059669;
 }
 
@@ -2445,19 +2516,21 @@ function addPropertyExpression() {
   align-items: center;
   height: 30px;
   padding: 0 8px;
-  border: 1px solid var(--prop-border-color);
-  border-radius: 6px;
-  background: #fff;
+  border: 1px solid rgba(28, 27, 38, 0.11);
+  border-radius: 7px;
+  background: #fafafc;
   box-sizing: border-box;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
 .input-unit-wrapper:hover {
-  border-color: var(--prop-border-hover);
+  border-color: rgba(124, 92, 247, 0.35);
+  background: #ffffff;
 }
 
 .input-unit-wrapper:focus-within {
   border-color: var(--prop-border-focus);
+  background: #ffffff;
   box-shadow: var(--prop-focus-ring);
 }
 
@@ -2493,15 +2566,17 @@ function addPropertyExpression() {
 }
 
 .box-section {
-  margin-bottom: var(--prop-spacing-lg);
-  padding: var(--prop-spacing-md);
-  background-color: var(--prop-bg-secondary);
-  border-radius: var(--prop-border-radius-md);
+  margin-bottom: 12px;
+  padding: 12px;
+  background-color: #ffffff;
+  border: 1px solid rgba(28, 27, 38, 0.08);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
 }
 
 .box-section.compact {
-  margin-bottom: var(--prop-spacing-md);
-  padding: var(--prop-spacing-sm);
+  margin-bottom: 10px;
+  padding: 10px 12px;
 }
 
 .border-quick-actions {
@@ -2566,7 +2641,7 @@ function addPropertyExpression() {
 .unit-input input:focus,
 .text-card select:focus {
   outline: none;
-  border-color: var(--prop-border-focus, #1890ff);
+  border-color: var(--prop-border-focus, #6440f4);
   box-shadow: var(--prop-focus-ring);
 }
 
@@ -2680,13 +2755,13 @@ function addPropertyExpression() {
 
 .line-style-btn.active {
   background: #fff;
-  color: var(--prop-border-focus, #1890ff);
+  color: var(--prop-border-focus, #6440f4);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
 }
 
 .line-style-btn:focus-visible,
 .icon-btn:focus-visible {
-  outline: 2px solid var(--prop-border-focus, #1890ff);
+  outline: 2px solid var(--prop-border-focus, #6440f4);
   outline-offset: 1px;
 }
 
@@ -2785,8 +2860,8 @@ function addPropertyExpression() {
   grid-row: 1 / span 2;
   align-self: stretch;
   min-height: 70px;
-  border: 2px solid var(--prop-border-focus, #1890ff);
-  background: rgba(24, 144, 255, 0.06);
+  border: 2px solid var(--prop-border-focus, #6440f4);
+  background: rgba(100, 64, 244, 0.06);
   transition: border-radius 0.2s ease;
 }
 
@@ -2815,9 +2890,9 @@ function addPropertyExpression() {
 
 .margin-preview-content {
   position: absolute;
-  border: 1.5px dashed var(--prop-border-focus, #1890ff);
+  border: 1.5px dashed var(--prop-border-focus, #6440f4);
   border-radius: 3px;
-  background: rgba(24, 144, 255, 0.08);
+  background: rgba(100, 64, 244, 0.08);
   transition: all 0.2s ease;
 }
 
@@ -2855,7 +2930,7 @@ function addPropertyExpression() {
 .card-select:focus,
 .card-textarea:focus {
   outline: none;
-  border-color: var(--prop-border-focus, #1890ff);
+  border-color: var(--prop-border-focus, #6440f4);
   box-shadow: var(--prop-focus-ring);
 }
 
@@ -2925,7 +3000,7 @@ function addPropertyExpression() {
   width: 16px;
   height: 16px;
   margin: 0;
-  accent-color: var(--prop-primary-color, #1890ff);
+  accent-color: var(--prop-primary-color, #6440f4);
 }
 
 .image-name-row {
@@ -2946,26 +3021,32 @@ function addPropertyExpression() {
 }
 
 /* Small pill action in a card header */
+.reset-style-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 8px;
+}
+
 .chip-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   height: 24px;
   padding: 0 10px;
-  border: 1px solid rgba(24, 144, 255, 0.35);
+  border: 1px solid rgba(100, 64, 244, 0.35);
   border-radius: 999px;
-  background: rgba(24, 144, 255, 0.06);
+  background: rgba(100, 64, 244, 0.06);
   font-size: 11px;
   font-weight: 500;
-  color: var(--prop-border-focus, #1890ff);
+  color: var(--prop-border-focus, #6440f4);
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s ease;
 }
 
 .chip-btn:hover:not(:disabled) {
-  background: var(--prop-border-focus, #1890ff);
-  border-color: var(--prop-border-focus, #1890ff);
+  background: var(--prop-border-focus, #6440f4);
+  border-color: var(--prop-border-focus, #6440f4);
   color: #fff;
 }
 
@@ -2975,13 +3056,13 @@ function addPropertyExpression() {
 }
 
 .chip-btn-solid {
-  background: var(--prop-border-focus, #1890ff);
-  border-color: var(--prop-border-focus, #1890ff);
+  background: var(--prop-border-focus, #6440f4);
+  border-color: var(--prop-border-focus, #6440f4);
   color: #fff;
 }
 
 .chip-btn-solid:hover:not(:disabled) {
-  background: var(--prop-primary-active, #096dd9);
+  background: var(--prop-primary-active, #5b3ee0);
 }
 
 .chip-btn-muted {
@@ -2999,6 +3080,13 @@ function addPropertyExpression() {
   padding: 2px;
   border-radius: 8px;
   background: var(--prop-bg-tertiary, #f3f4f6);
+}
+
+.status-swatch {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
 }
 
 .seg-btn {
@@ -3037,7 +3125,7 @@ function addPropertyExpression() {
 
 .seg-btn.active {
   background: #fff;
-  color: var(--prop-border-focus, #1890ff);
+  color: var(--prop-border-focus, #6440f4);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
   font-weight: 600;
 }
@@ -3045,7 +3133,7 @@ function addPropertyExpression() {
 .seg-btn:focus-visible,
 .chip-btn:focus-visible,
 .ghost-btn:focus-visible {
-  outline: 2px solid var(--prop-border-focus, #1890ff);
+  outline: 2px solid var(--prop-border-focus, #6440f4);
   outline-offset: 1px;
 }
 
@@ -3067,10 +3155,10 @@ function addPropertyExpression() {
 }
 
 .ghost-btn:hover {
-  border-color: var(--prop-border-focus, #1890ff);
+  border-color: var(--prop-border-focus, #6440f4);
   border-style: solid;
-  color: var(--prop-border-focus, #1890ff);
-  background: rgba(24, 144, 255, 0.05);
+  color: var(--prop-border-focus, #6440f4);
+  background: rgba(100, 64, 244, 0.05);
 }
 
 /* Line style names above an icon picker outside the border table */
@@ -3090,6 +3178,114 @@ function addPropertyExpression() {
   font-weight: 600;
   text-transform: uppercase;
   color: var(--prop-text-tertiary, #9ca3af);
+}
+
+/* Image shape cards, styled like the box border presets (FrameProperties.vue) */
+.shape-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.shape-card-head h5 {
+  margin: 0;
+}
+
+.shape-custom-badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(100, 64, 244, 0.1);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--prop-border-focus, #6440f4);
+}
+
+.shape-field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--prop-text-secondary, #6b7280);
+}
+
+.shape-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+
+.shape-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--prop-border-color, #e5e7eb);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.shape-swatch:hover {
+  border-color: var(--prop-border-hover, #9ca3af);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+.shape-swatch.active {
+  border-color: var(--prop-border-focus, #6440f4);
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.2);
+}
+
+.shape-swatch:focus-visible {
+  outline: none;
+  border-color: var(--prop-border-focus, #6440f4);
+  box-shadow: var(--prop-focus-ring);
+}
+
+/* Small "page" the picture sits on */
+.shape-sample-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  border-radius: 5px;
+  background: var(--prop-bg-tertiary, #f3f4f6);
+}
+
+.shape-swatch.active .shape-sample-wrap {
+  background: rgba(100, 64, 244, 0.08);
+}
+
+/* A tiny landscape photo (sun and hills, plain CSS) cut to the shape */
+.shape-sample {
+  display: block;
+  flex-shrink: 0;
+  background:
+    radial-gradient(circle at 72% 30%, #fde68a 0 11%, transparent 12%),
+    radial-gradient(ellipse 70% 50% at 25% 100%, #1e40af 0 98%, transparent 100%),
+    radial-gradient(ellipse 80% 42% at 85% 100%, #6440f4 0 98%, transparent 100%),
+    linear-gradient(160deg, #c4b5fd, #60a5fa);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
+}
+
+.shape-name {
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--prop-text-secondary, #6b7280);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shape-swatch.active .shape-name {
+  color: var(--prop-border-focus, #6440f4);
+  font-weight: 600;
 }
 
 /* Line style tiles: the line drawn above its name */
@@ -3138,13 +3334,13 @@ function addPropertyExpression() {
 
 .style-tile.active {
   background: #fff;
-  color: var(--prop-primary-color, #1890ff);
+  color: var(--prop-primary-color, #6440f4);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
 }
 
 .style-tile:focus-visible {
-  outline: 2px solid var(--prop-border-focus, #1890ff);
+  outline: 2px solid var(--prop-border-focus, #6440f4);
   outline-offset: 1px;
 }
 
@@ -3189,6 +3385,21 @@ function addPropertyExpression() {
 
 .text-card h5 {
   margin-bottom: 0;
+}
+
+.font-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #6b7280;
+}
+
+.font-info svg {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .field-row {
@@ -3250,7 +3461,7 @@ function addPropertyExpression() {
 
 .icon-btn.active {
   background: #fff;
-  color: var(--prop-border-focus, #1890ff);
+  color: var(--prop-border-focus, #6440f4);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
 }
 
@@ -3589,7 +3800,7 @@ function addPropertyExpression() {
 }
 
 .field-item.selected {
-  background-color: #e6f7ff;
+  background-color: #f1edff;
   border-color: #91d5ff;
 }
 
@@ -3724,7 +3935,7 @@ function addPropertyExpression() {
   padding: 2px 7px;
   font-size: 11px;
   background-color: #f0f7ff;
-  color: #1890ff;
+  color: #6440f4;
   border: 1px solid #91d5ff;
   border-radius: 3px;
   cursor: pointer;
@@ -3733,9 +3944,9 @@ function addPropertyExpression() {
 }
 
 .btn-autofit-height:hover {
-  background-color: #1890ff;
+  background-color: #6440f4;
   color: #ffffff;
-  border-color: #1890ff;
+  border-color: #6440f4;
 }
 
 .rotation-segmented-group,
@@ -3775,8 +3986,8 @@ function addPropertyExpression() {
 .rotation-btn.active,
 .line-orientation-btn.active {
   background-color: #ffffff;
-  color: #1890ff;
-  border-color: #1890ff;
+  color: #6440f4;
+  border-color: #6440f4;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   font-weight: 600;
 }
@@ -3792,15 +4003,15 @@ function addPropertyExpression() {
   font-size: 11px;
   font-weight: 500;
   border-radius: 4px;
-  border: 1px dashed #1890ff;
+  border: 1px dashed #6440f4;
   background-color: #f0f7ff;
-  color: #1890ff;
+  color: #6440f4;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .btn-cross-line:hover {
-  background-color: #1890ff;
+  background-color: #6440f4;
   color: #ffffff;
 }
 </style>

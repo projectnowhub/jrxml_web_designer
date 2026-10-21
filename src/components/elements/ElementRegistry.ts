@@ -1,21 +1,38 @@
 import type { Component } from "vue";
 import {
+  TableOfContents,
+  Banknote,
+  CalendarClock,
   Barcode,
-  ChartNoAxesColumn,
+  ChartColumn,
+  ChartNoAxesColumnIncreasing,
   Circle,
+  Columns3,
+  CircleDot,
   FileDigit,
+  Gauge,
+  Heading1,
+  Heading2,
   Image as ImageIcon,
   Images,
+  LayoutPanelTop,
+  List,
+  ListChecks,
   Minus,
+  PanelBottom,
   PanelTop,
+  ShieldAlert,
+  Signature,
   Square,
-  SquareActivity,
   SquareDashed,
   SquareSquare,
+  StickyNote,
   Table as TableIcon,
+  TableProperties,
   TriangleAlert,
   Type as TypeIcon,
 } from "@lucide/vue";
+import { buildBarcodeElement } from "../../utils/barcode/barcodeTypes";
 import type { DesignElement } from "../../types";
 import { TABLE_HEADER_HEIGHT, TABLE_ROW_HEIGHT } from "../../utils/table/dataTable";
 import { ELEMENT_DEFAULT_SIZES } from "../../constants/constants";
@@ -27,6 +44,8 @@ export interface ElementConfig {
   icon: string;
   iconComponent?: Component;
   category?: string;
+  // Sub-group inside a category (Element Presets: boxes, headerFooter, headings, status, signOff)
+  group?: string;
   defaultProps: Partial<DesignElement>;
   component?: any;
   validator?: (element: DesignElement) => boolean;
@@ -82,6 +101,25 @@ export class ElementRegistry {
         verticalAlignment: "Top",
       },
     });
+
+    // Section Heading and Sub-heading, right after Text: used on almost every
+    // page (they number themselves and fill the Table of Contents). Built by
+    // buildReportPart() in utils/reportParts.ts
+    (
+      [
+        { type: "partSectionHeading", iconComponent: Heading1 },
+        { type: "partSubHeading", iconComponent: Heading2 },
+      ] as const
+    ).forEach(({ type, iconComponent }) =>
+      this.registerElement({
+        type,
+        name: `elementNames.${type}`,
+        icon: "☐",
+        iconComponent,
+        category: "basic",
+        defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
+      }),
+    );
 
     this.registerElement({
       type: "image",
@@ -190,7 +228,7 @@ export class ElementRegistry {
     });
 
     // Table: starts empty (3 columns, one row); data is dropped on it from
-    // the "Table Data" list. Its size follows its content (utils/table/dataTable.ts).
+    // the "Report Data" list. Its size follows its content (utils/table/dataTable.ts).
     this.registerElement({
       type: "table",
       name: "elementNames.table",
@@ -208,27 +246,49 @@ export class ElementRegistry {
       },
     });
 
-    // Chart element
+    // Chart: one tile for the nine chart types. Clicking it asks for a type;
+    // dragging it drops a bar chart. Built by buildChartElement() (utils/chart).
     this.registerElement({
       type: "chart",
       name: "elementNames.chart",
       icon: "▊",
-      iconComponent: ChartNoAxesColumn,
+      iconComponent: ChartColumn,
       category: "basic",
-      defaultProps: {
-        type: "chart",
-        x: 0,
-        y: 0,
-        width: 200,
-        height: 150,
-        chartType: "pie",
-        title: "Chart",
-        titleExpression: "",
-        subtitleExpression: "",
-        legendExpression: "",
-        evaluationTime: "Now",
-        printWhenExpression: "",
-      },
+      defaultProps: { type: "chart", x: 0, y: 0, width: 320, height: 200 },
+    });
+
+    // Custom table ("Typed by me" content of a Table): a grid the user types into
+    // (cells, merges, fills). Built by buildCustomTable() in utils/customTable.ts;
+    // edited on the canvas
+    this.registerElement({
+      type: "customTable",
+      name: "elementNames.customTable",
+      icon: "⊞",
+      iconComponent: TableProperties,
+      // Not a tile of its own: the Table tile makes a table, typed or with project data
+      category: "hidden",
+      defaultProps: { type: "customTable", x: 0, y: 0, width: 300, height: 60 },
+    });
+
+    // Table of Contents tile: on a contents page (one there) or any normal page
+    // (as many as wanted); never on the cover
+    this.registerElement({
+      type: "partContentsList",
+      name: "elementNames.partContentsList",
+      icon: "≡",
+      iconComponent: TableOfContents,
+      category: "basic",
+      defaultProps: { type: "contentsList", x: 0, y: 0, width: 400, height: 22 },
+    });
+
+    // The contents list element itself (no tile of its own)
+    this.registerElement({
+      type: "contentsList",
+      name: "elementNames.contentsList",
+      icon: "≡",
+      iconComponent: TableOfContents,
+      category: "hidden",
+      defaultProps: { type: "contentsList", x: 0, y: 0, width: 400, height: 22 },
     });
 
     // Barcode element
@@ -238,17 +298,7 @@ export class ElementRegistry {
       icon: "▐",
       iconComponent: Barcode,
       category: "basic",
-      defaultProps: {
-        type: "barcode",
-        x: 0,
-        y: 0,
-        width: 150,
-        height: 60,
-        barcodeType: "Code128",
-        codeExpression: '"1234567890"',
-        evaluationTime: "Now",
-        printWhenExpression: "",
-      },
+      defaultProps: buildBarcodeElement("Code128"),
     });
 
     // Frame templates: styled frames with placeholder content.
@@ -258,7 +308,7 @@ export class ElementRegistry {
       {
         type: "frameKpiCard",
         name: "elementNames.frameKpiCard",
-        iconComponent: SquareActivity,
+        iconComponent: Gauge,
       },
       {
         type: "frameAlertBox",
@@ -283,6 +333,35 @@ export class ElementRegistry {
         icon: "☐",
         iconComponent,
         category: "frames",
+        group: "boxes",
+        defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
+      }),
+    );
+
+    // More element presets, from a monthly project report: header banner, footer,
+    // headings, legend, sign-off... Built by buildReportPart() in utils/reportParts.ts
+    const reportParts: Array<{ type: string; group: string; iconComponent: Component }> = [
+      { type: "partReportHeader", group: "headerFooter", iconComponent: LayoutPanelTop },
+      { type: "partPageFooter", group: "headerFooter", iconComponent: PanelBottom },
+      // { type: "partNote", group: "headings", iconComponent: StickyNote },
+      { type: "partRiskLegend", group: "status", iconComponent: List },
+      { type: "partStatusDot", group: "status", iconComponent: CircleDot },
+      { type: "partSignOff", group: "signOff", iconComponent: Signature },
+      { type: "tableKeyValue", group: "tables", iconComponent: TableProperties },
+      { type: "tableFinancial", group: "tables", iconComponent: Banknote },
+      { type: "tableProgress", group: "tables", iconComponent: ChartNoAxesColumnIncreasing },
+      { type: "tableComparison", group: "tables", iconComponent: Columns3 },
+      { type: "tableActionPlan", group: "tables", iconComponent: ListChecks },
+      { type: "tableRiskRegister", group: "tables", iconComponent: ShieldAlert },
+    ];
+    reportParts.forEach(({ type, group, iconComponent }) =>
+      this.registerElement({
+        type,
+        name: `elementNames.${type}`,
+        icon: "☐",
+        iconComponent,
+        category: "frames",
+        group,
         defaultProps: { type: "frame", x: 0, y: 0, width: 200, height: 100, elements: [] },
       }),
     );
@@ -307,6 +386,17 @@ export class ElementRegistry {
       iconComponent: FileDigit,
       category: "composite",
       defaultProps: { type: "textField", x: 0, y: 0, width: 120, height: 20 },
+    });
+
+    // Date: a text field that fills in a date by itself, built by
+    // buildDateElement() in utils/dateElement.ts
+    this.registerElement({
+      type: "dateTime",
+      name: "elementNames.dateTime",
+      icon: "D",
+      iconComponent: CalendarClock,
+      category: "composite",
+      defaultProps: { type: "textField", x: 0, y: 0, width: 160, height: 20 },
     });
   }
 

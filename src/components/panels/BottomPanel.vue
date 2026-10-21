@@ -1,9 +1,17 @@
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
+import { useReportStore } from "@/stores/report";
 import {
   ChevronDown,
   ChevronUp,
+  FileCode2,
+  Info,
+  SlidersHorizontal,
+  Maximize2,
+  Minimize2,
   X,
 } from "@lucide/vue";
+import { DEFAULT_REPORT_FONT, resolveReportFont } from "../../config/fonts.config";
 import {
   ref,
   computed,
@@ -14,7 +22,9 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, NAlert } from "naive-ui";
+import notification from "@/utils/notification";
 import ResizablePanel from "./ResizablePanel.vue";
+import Collapse from "../common/Collapse.vue";
 import CodeMirrorEditor from "../editor/CodeMirrorEditor.vue";
 
 import {
@@ -52,11 +62,7 @@ function getBandDisplayName(bandType: string): string {
 interface Props {
   visible: boolean;
   initialHeight?: number;
-  reportProperties: any;
-  bands: Band[];
   allBandTypes: any[];
-  selectedBandTypes: BandType[];
-  jrxmlContent: string;
 }
 
 // Define component events
@@ -65,15 +71,12 @@ interface Emits {
   (e: "update:visible", value: boolean): void;
   (e: "size-change", value: number): void;
   (e: "update:report-properties", value: any): void;
-  (e: "update:selected-band-types", value: BandType[]): void;
   (e: "update:jrxml-content", value: string): void;
   (e: "copy-jrxml"): void;
   (e: "save-jrxml"): void;
   (e: "regenerate-jrxml"): void;
   (e: "download-jrxml"): void;
-  (e: "band-selection-change"): void;
   // Before a page size/margin change (undo snapshot), and after it (fit content)
-  (e: "save-state"): void;
   (e: "page-setup-change"): void;
 }
 
@@ -83,23 +86,46 @@ const props = withDefaults(defineProps<Props>(), {
   initialHeight: PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT,
 });
 
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
+// Report, selection and editor state come from the stores
+const reportStore = useReportStore();
+const { reportProperties, bands, jrxmlContent } = storeToRefs(reportStore);
+
 const emit = defineEmits<Emits>();
 
 // Tab-related state
 const activeTab = ref("pageSettings");
 // Computed so the labels follow a language switch
 const tabs = computed(() => [
-  { id: "pageSettings", name: t("bottomPanel.jrxmlTabs.pageSettings") },
-  { id: "jrxml", name: t("bottomPanel.jrxmlContent") },
+  { id: "pageSettings", name: t("bottomPanel.jrxmlTabs.pageSettings"), icon: SlidersHorizontal },
+  { id: "jrxml", name: t("bottomPanel.jrxmlContent"), icon: FileCode2 },
 ]);
 
 // Bottom panel height
+const HEADER_HEIGHT = 56;
 const bottomPanelHeight = ref(props.initialHeight);
+
+// Opened: the limit is measured again (the header may have changed height)
+watch(
+  () => props.visible,
+  (open) => {
+    if (open) nextTick(updateMaxSize);
+  },
+);
 
 // Fullscreen state
 const isFullscreen = ref(false);
 const originalPanelHeight = ref(props.initialHeight);
-const currentMaxSize = ref(window.innerHeight); // No maximum height limit
+const currentMaxSize = ref(Math.max(150, window.innerHeight - HEADER_HEIGHT)); // Extend up to the header
+
+// Up to the header's bottom edge (measured: the header's height changes with the window)
+const updateMaxSize = () => {
+  const header = document.querySelector(".designer-header");
+  const top = header ? header.getBoundingClientRect().bottom : HEADER_HEIGHT;
+  currentMaxSize.value = Math.max(150, Math.floor(window.innerHeight - top));
+};
 
 // Paper size definitions
 const PAPER_SIZES = [
@@ -242,7 +268,7 @@ onMounted(async () => {
 // Open the PDF preview (the designer owns it, with the report's table data)
 const openPdfPreview = (): void => {
   if (!localJrxmlContent.value) {
-    alert(t("bottomPanel.alerts.generateJrxmlFirst"));
+    notification.warning(t("bottomPanel.alerts.generateJrxmlFirst"));
     return;
   }
   emit("open-preview");
@@ -250,7 +276,7 @@ const openPdfPreview = (): void => {
 
 // Computed property: local binding for reportProperties
 const localReportProperties = computed({
-  get: () => props.reportProperties,
+  get: () => reportProperties.value,
   set: (value) => emit("update:report-properties", value),
 });
 
@@ -393,7 +419,7 @@ const resetBandLimitsToDefault = () => {
   } catch (e) {
     console.error("Failed to remove saved band limits from localStorage:", e);
   }
-  alert(t("bottomPanel.resetToDeveloperDefaultsSuccess"));
+  notification.success(t("bottomPanel.resetToDeveloperDefaultsSuccess"));
 };
 
 const applyGlobalDefaultsToCurrentTemplate = () => {
@@ -409,9 +435,9 @@ const applyGlobalDefaultsToCurrentTemplate = () => {
   localReportProperties.value.bandLimits = limits;
   emit("update:report-properties", localReportProperties.value);
 
-  if (props.bands && Array.isArray(props.bands)) {
+  if (bands.value && Array.isArray(bands.value)) {
     let otherBandsH = 0;
-    props.bands.forEach((band) => {
+    bands.value.forEach((band) => {
       const bConf = config[band.type];
       if (band.type !== "detail" && bConf?.defaultHeight) {
         band.height = bConf.defaultHeight;
@@ -419,7 +445,7 @@ const applyGlobalDefaultsToCurrentTemplate = () => {
       }
     });
     // Detail band absorbs whatever space remains on the page
-    const detailBand = props.bands.find((b) => b.type === "detail");
+    const detailBand = bands.value.find((b) => b.type === "detail");
     if (detailBand) {
       const pageH = localReportProperties.value?.pageHeight || 842;
       const topM = localReportProperties.value?.topMargin || 20;
@@ -429,15 +455,15 @@ const applyGlobalDefaultsToCurrentTemplate = () => {
     emit("save-jrxml");
   }
 
-  alert(t("bottomPanel.appliedToTemplateSuccess"));
+  notification.success(t("bottomPanel.appliedToTemplateSuccess"));
 };
 
 // Detect the paper size and orientation
 const detectPaperSizeAndOrientation = () => {
-  if (!props.reportProperties) return;
+  if (!reportProperties.value) return;
 
-  const w = props.reportProperties.pageWidth;
-  const h = props.reportProperties.pageHeight;
+  const w = reportProperties.value.pageWidth;
+  const h = reportProperties.value.pageHeight;
   const isLandscape = w > h;
 
   // Ideally we'd only update orientation when it wasn't changed manually (to avoid update loops),
@@ -460,7 +486,7 @@ const detectPaperSizeAndOrientation = () => {
 // Watch for reportProperties changes and update the selected state
 // Use deep: true to watch changes to nested properties
 watch(
-  () => props.reportProperties,
+  () => reportProperties.value,
   () => {
     // Re-detect whenever width/height change
     // Note: this may also fire while we're in the middle of changing width/height, so handle it carefully
@@ -489,7 +515,7 @@ const handlePaperSizeChange = () => {
 const setPageSize = (width: number, height: number) => {
   const page = localReportProperties.value;
   if (page.pageWidth === width && page.pageHeight === height) return;
-  emit("save-state");
+  report.saveStateToHistory();
   page.pageWidth = width;
   page.pageHeight = height;
   emit("page-setup-change");
@@ -515,7 +541,7 @@ const setPageSetting = (key: PageSetting, event: Event) => {
     return;
   }
   if (value === localReportProperties.value[key]) return;
-  emit("save-state");
+  report.saveStateToHistory();
   localReportProperties.value[key] = value;
   emit("page-setup-change");
 };
@@ -531,27 +557,18 @@ const handleOrientationChange = () => {
   }
 };
 
-// Computed property: local binding for selectedBandTypes (Detail band is permanently required)
+// The band switches: the report's bands (report store); turning one on or
+// off is one undo step there. Detail is always on.
 const localSelectedBandTypes = computed({
-  get: () => {
-    if (!props.selectedBandTypes.includes(BAND_TYPE_CONSTANTS.DETAIL as BandType)) {
-      return [...props.selectedBandTypes, BAND_TYPE_CONSTANTS.DETAIL as BandType];
-    }
-    return props.selectedBandTypes;
-  },
-  set: (value: BandType[]) => {
-    const safeValue = value.includes(BAND_TYPE_CONSTANTS.DETAIL as BandType)
-      ? value
-      : [...value, BAND_TYPE_CONSTANTS.DETAIL as BandType];
-    emit("update:selected-band-types", safeValue);
-  },
+  get: () => report.bandTypes,
+  set: (value: BandType[]) => report.setBandTypes(value),
 });
 
 // Computed property: local binding for jrxmlContent
 const localJrxmlContent = computed({
   get: () => {
-    if (!props.jrxmlContent) return props.jrxmlContent;
-    return formatXml(props.jrxmlContent);
+    if (!jrxmlContent.value) return jrxmlContent.value;
+    return formatXml(jrxmlContent.value);
   },
   set: (value) => emit("update:jrxml-content", value),
 });
@@ -565,14 +582,9 @@ const syncScroll = () => {
 // Handle bottom panel size changes
 const handleBottomPanelSizeChange = (newSize: number) => {
   bottomPanelHeight.value = newSize;
+  // Dragged to the top it is full height; dragged down it is not any more
+  isFullscreen.value = newSize >= currentMaxSize.value - 2;
   emit("size-change", newSize);
-};
-
-// Handle Band selection changes
-const handleBandSelectionChange = () => {
-  // localSelectedBandTypes is a computed property already synced to the parent via v-model
-  // Here we just need to emit the band-selection-change event so the parent can run related logic
-  emit("band-selection-change");
 };
 
 // Copy the JRXML content to the clipboard
@@ -605,27 +617,26 @@ const saveJRXML = (): void => {
 const toggleFullscreen = (): void => {
   isFullscreen.value = !isFullscreen.value;
   if (isFullscreen.value) {
-    // Enter fullscreen mode
+    // Enter fullscreen mode up to the header
     originalPanelHeight.value = bottomPanelHeight.value;
-    currentMaxSize.value = window.innerHeight; // Set a larger max height
-    bottomPanelHeight.value = window.innerHeight - 100; // Leave some space for other UI elements
+    updateMaxSize();
+    bottomPanelHeight.value = currentMaxSize.value;
   } else {
-    // Exit fullscreen mode
-    bottomPanelHeight.value = originalPanelHeight.value;
-    currentMaxSize.value = window.innerHeight; // Restore the unlimited max height
+    // Exit fullscreen mode (to a smaller height if the last one was full too)
+    updateMaxSize();
+    bottomPanelHeight.value =
+      originalPanelHeight.value >= currentMaxSize.value - 2
+        ? Math.round(currentMaxSize.value / 2)
+        : originalPanelHeight.value;
   }
+  emit("size-change", bottomPanelHeight.value);
 };
 
 // Listen for keyboard events
 function handleKeyDown(event: KeyboardEvent) {
-  // Listen for the ESC key to exit fullscreen or hide the bottom panel
-  if (event.key === "Escape") {
-    if (isFullscreen.value) {
-      toggleFullscreen();
-    } else if (props.visible) {
-      // When the bottom panel is visible and not fullscreen, ESC hides the bottom panel
-      emit("update:visible", false);
-    }
+  // ESC only leaves fullscreen; the panel closes only from its close button or the header toggle
+  if (event.key === "Escape" && isFullscreen.value) {
+    toggleFullscreen();
   }
 
   // Listen for Cmd+F or Ctrl+F to switch to the JRXML tab and enter fullscreen
@@ -652,11 +663,6 @@ function handleKeyDown(event: KeyboardEvent) {
   }
 }
 
-// Add the event listener when the component is mounted
-onMounted(() => {
-  window.addEventListener("keydown", handleKeyDown);
-});
-
 // Validation-related state
 const validationResult = ref<ValidationResult | null>(null);
 const isValidating = ref(false);
@@ -664,7 +670,7 @@ const isValidating = ref(false);
 // Run XSD validation
 const runValidation = async () => {
   if (!localJrxmlContent.value) {
-    alert(t("bottomPanel.alerts.generateJrxmlFirst"));
+    notification.warning(t("bottomPanel.alerts.generateJrxmlFirst"));
     return;
   }
 
@@ -676,8 +682,8 @@ const runValidation = async () => {
 
     // Automatically expand the bottom panel when validation fails
     if (!validationResult.value.valid) {
-      bottomPanelHeight.value = window.innerHeight - 100;
-      currentMaxSize.value = window.innerHeight;
+      updateMaxSize();
+      bottomPanelHeight.value = Math.min(currentMaxSize.value, 500);
       activeTab.value = "jrxml";
     }
   } catch (error) {
@@ -692,8 +698,8 @@ const runValidation = async () => {
       ],
     };
     // Automatically expand the bottom panel when validation fails
-    bottomPanelHeight.value = window.innerHeight - 100;
-    currentMaxSize.value = window.innerHeight;
+    updateMaxSize();
+    bottomPanelHeight.value = Math.min(currentMaxSize.value, 500);
     activeTab.value = "jrxml";
   } finally {
     isValidating.value = false;
@@ -719,7 +725,7 @@ const autoFixResult = ref<AutoFixResult | null>(null);
 // Run auto-fix
 const runAutoFix = async () => {
   if (!localJrxmlContent.value) {
-    alert(t("bottomPanel.alerts.generateJrxmlFirst"));
+    notification.warning(t("bottomPanel.alerts.generateJrxmlFirst"));
     return;
   }
 
@@ -747,36 +753,56 @@ const clearAutoFixResult = () => {
   autoFixResult.value = null;
 };
 
-// Add the event listener when the component is mounted
+// Add event listeners when the component is mounted
 onMounted(() => {
   window.addEventListener("keydown", handleKeyDown);
+  window.addEventListener("resize", updateMaxSize);
+  updateMaxSize();
 });
 
-// Remove the event listener before the component is unmounted
+// Remove event listeners before the component is unmounted
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", handleKeyDown);
+  window.removeEventListener("resize", updateMaxSize);
 });
 </script>
 
 <template>
+  <Collapse>
   <ResizablePanel
     v-show="visible"
     position="bottom"
     :initial-size="bottomPanelHeight"
     :min-size="150"
     :max-size="currentMaxSize"
+    :snap-fractions="[1 / 3, 1 / 2, 1]"
     :collapsible="false"
     @size-change="handleBottomPanelSizeChange"
+    @handle-dblclick="toggleFullscreen"
   >
     <div class="tab-navigation">
+      <div class="tabs-list">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          class="tab-button"
+          :class="{ active: activeTab === tab.id }"
+          @click="activeTab = tab.id"
+        >
+          <component :is="tab.icon" :size="14" class="tab-icon" />
+          <span>{{ tab.name }}</span>
+        </button>
+      </div>
+      <!-- Full height / back, then close: together on the right -->
+      <div class="panel-actions">
       <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        class="tab-button"
-        :class="{ active: activeTab === tab.id }"
-        @click="activeTab = tab.id"
+        type="button"
+        class="panel-close-button"
+        :title="t(isFullscreen ? 'bottomPanel.restore' : 'bottomPanel.maximize')"
+        :aria-label="t(isFullscreen ? 'bottomPanel.restore' : 'bottomPanel.maximize')"
+        @click="toggleFullscreen"
       >
-        {{ tab.name }}
+        <component :is="isFullscreen ? Minimize2 : Maximize2" :size="14" aria-hidden="true" />
       </button>
       <button
         type="button"
@@ -785,8 +811,9 @@ onBeforeUnmount(() => {
         :aria-label="t('actions.hideBottomPanel')"
         @click="emit('update:visible', false)"
       >
-        <X :size="14" aria-hidden="true" />
+        <X :size="15" aria-hidden="true" />
       </button>
+      </div>
     </div>
 
     <!-- Page settings tab -->
@@ -889,7 +916,12 @@ onBeforeUnmount(() => {
           <div class="font-settings-row">
             <div class="font-setting-item">
               <label>{{ t("properties.fontName") }}</label>
-              <select v-model="localReportProperties.defaultFont.name">
+              <!-- Read-only until the report server supports more fonts -->
+              <select
+                :value="resolveReportFont(localReportProperties.defaultFont.name)"
+                :disabled="availableFonts.length <= 1"
+                @change="localReportProperties.defaultFont.name = ($event.target as HTMLSelectElement).value"
+              >
                 <option
                   v-for="font in availableFonts"
                   :key="font"
@@ -907,6 +939,10 @@ onBeforeUnmount(() => {
               />
             </div>
           </div>
+          <p v-if="availableFonts.length <= 1" class="font-info">
+            <Info :size="13" :stroke-width="2" />
+            <span>{{ t("properties.fontLimitedInfo", { font: DEFAULT_REPORT_FONT }) }}</span>
+          </p>
           <div class="font-style-options">
             <label>
               <input
@@ -947,7 +983,6 @@ onBeforeUnmount(() => {
                   :value="bandType.type"
                   v-model="localSelectedBandTypes"
                   :disabled="bandType.type === BAND_TYPE_CONSTANTS.DETAIL"
-                  @change="handleBandSelectionChange"
                 />
                 {{ getBandDisplayName(bandType.type) }}
                 <span
@@ -968,24 +1003,26 @@ onBeforeUnmount(() => {
         <!-- Band height limits constraints -->
         <div class="settings-section band-limits-section">
           <div class="band-limits-header">
-            <h4>{{ t("bottomPanel.defaultBandSettings") }}</h4>
-          </div>
-          <div class="band-limits-actions">
-            <n-button
-              size="tiny"
-              type="default"
-              @click="resetBandLimitsToDefault"
-            >
-              {{ t("bottomPanel.resetToDeveloperDefaults") }}
-            </n-button>
-            <n-button
-              size="tiny"
-              type="info"
-              secondary
-              @click="applyGlobalDefaultsToCurrentTemplate"
-            >
-              {{ t("bottomPanel.applyToCurrentTemplate") }}
-            </n-button>
+            <div class="band-limits-title-area">
+              <h4>{{ t("bottomPanel.defaultBandSettings") }}</h4>
+            </div>
+            <div class="band-limits-actions">
+              <n-button
+                size="tiny"
+                type="default"
+                @click="resetBandLimitsToDefault"
+              >
+                {{ t("bottomPanel.resetToDeveloperDefaults") }}
+              </n-button>
+              <n-button
+                size="tiny"
+                type="info"
+                secondary
+                @click="applyGlobalDefaultsToCurrentTemplate"
+              >
+                {{ t("bottomPanel.applyToCurrentTemplate") }}
+              </n-button>
+            </div>
           </div>
           <div class="band-limits-grid">
             <div
@@ -998,7 +1035,7 @@ onBeforeUnmount(() => {
               </div>
               <div class="band-limit-inputs">
                 <div class="band-limit-input-group">
-                  <label>{{ t("bottomPanel.defaultHeight") }}</label>
+                  <label :title="t('bottomPanel.defaultHeight')">{{ t("bottomPanel.defaultShort") }}</label>
                   <div class="input-unit-wrapper">
                     <input
                       v-model.number="
@@ -1014,7 +1051,7 @@ onBeforeUnmount(() => {
                   </div>
                 </div>
                 <div class="band-limit-input-group">
-                  <label>{{ t("bottomPanel.minHeight") }}</label>
+                  <label :title="t('bottomPanel.minHeight')">{{ t("bottomPanel.minShort") }}</label>
                   <div class="input-unit-wrapper">
                     <input
                       v-model.number="getGlobalBandConfig(bType.type).min"
@@ -1028,7 +1065,7 @@ onBeforeUnmount(() => {
                   </div>
                 </div>
                 <div class="band-limit-input-group">
-                  <label>{{ t("bottomPanel.maxHeight") }}</label>
+                  <label :title="t('bottomPanel.maxHeight')">{{ t("bottomPanel.maxShort") }}</label>
                   <div class="input-unit-wrapper">
                     <input
                       v-model.number="getGlobalBandConfig(bType.type).max"
@@ -1055,7 +1092,7 @@ onBeforeUnmount(() => {
               </div>
               <div class="band-limit-inputs">
                 <div class="band-limit-input-group">
-                  <label>{{ t("bottomPanel.defaultHeight") }}</label>
+                  <label :title="t('bottomPanel.defaultHeight')">{{ t("bottomPanel.defaultShort") }}</label>
                   <div
                     class="input-unit-wrapper is-disabled"
                     :title="t('properties.detailAutoCalculatedHint')"
@@ -1282,38 +1319,71 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </ResizablePanel>
+  </Collapse>
 
 </template>
 
 <style scoped>
 .tabs-container {
-  background-color: #f5f5f5;
-  border-top: 1px solid #ddd;
+  background-color: #ffffff;
+  border-top: 1px solid rgba(28, 27, 38, 0.08);
   display: flex;
   flex-direction: column;
   height: 100%;
-  max-height: 70vh; /* Limit the maximum height to avoid taking up too much screen space */
 }
 
 .tab-navigation {
   display: flex;
-  background-color: #e9e9e9;
-  border-bottom: 1px solid #ddd;
-  padding: 0 8px;
-  flex-shrink: 0; /* Ensure the navigation bar doesn't get compressed */
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.08);
+  padding: 0 16px;
+  flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: 10;
+  height: 42px;
+}
+
+.tabs-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
 }
 
 .tab-button {
-  padding: 6px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 100%;
+  padding: 0 14px;
   border: none;
-  background: none;
+  background: transparent;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #6f6a7e;
   border-bottom: 2px solid transparent;
-  transition: all 0.3s ease;
+  transition: all 0.18s ease;
+  letter-spacing: -0.01em;
+}
+
+.tab-icon {
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.tab-button:hover:not(.active) {
+  color: #1c1b26;
+  background-color: rgba(99, 102, 241, 0.04);
+}
+
+.tab-button.active {
+  border-bottom-color: #6366f1;
+  color: #6366f1;
+  font-weight: 600;
 }
 
 .panel-close-button {
@@ -1322,13 +1392,13 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: none;
-  border-radius: 4px;
-  background: none;
-  color: #666;
+  border-radius: 6px;
+  background: transparent;
+  color: #8a84a3;
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -1336,30 +1406,20 @@ onBeforeUnmount(() => {
 .panel-close-button:hover,
 .panel-close-button:focus-visible {
   outline: none;
-  background-color: #dcdcdc;
-  color: #222;
-}
-
-.tab-button.active {
-  border-bottom-color: #4a90e2;
-  color: #4a90e2;
-  font-weight: bold;
-}
-
-.tab-button:hover:not(.active) {
-  background-color: #f0f0f0;
+  background-color: rgba(28, 27, 38, 0.06);
+  color: #1c1b26;
 }
 
 .tab-content {
   flex: 1;
   overflow: auto;
-  min-height: 0; /* Ensure flex child elements can shrink */
-  padding: 10px;
+  min-height: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
 .jrxml-tab {
-  background-color: white;
+  background-color: #ffffff;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -1367,7 +1427,7 @@ onBeforeUnmount(() => {
 }
 
 .page-settings-tab {
-  background-color: white;
+  background-color: #f8f9fb;
   height: 100%;
   box-sizing: border-box;
   display: flex;
@@ -1375,38 +1435,89 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
 .settings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  /* Four cards fill the row (auto-fit left an empty fifth column next to them,
+     because the full-width Default Band Settings keeps every track) */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
-  padding: 15px;
+  padding: 16px 20px 24px;
+}
+
+@media (max-width: 1280px) {
+  .settings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .settings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.settings-grid::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.settings-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.settings-grid::-webkit-scrollbar-thumb {
+  background: #cfd5e1;
+  border-radius: 4px;
+}
+
+.settings-grid::-webkit-scrollbar-thumb:hover {
+  background: #b0b8c9;
 }
 
 .settings-section {
-  background-color: #f9f9f9;
-  border-radius: v-bind('UI_CONSTANTS.BORDER_RADIUS_MEDIUM + "px"');
-  padding: v-bind('UI_CONSTANTS.PANEL_PADDING + "px"');
-  border: v-bind('UI_CONSTANTS.BORDER_THIN + "px"') solid #e8e8e8;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 16px 18px;
+  border: 1px solid rgba(28, 27, 38, 0.08);
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.settings-section:hover {
+  border-color: rgba(124, 92, 247, 0.22);
+  box-shadow: 0 4px 12px rgba(23, 20, 44, 0.05);
 }
 
 .settings-section h4 {
   margin-top: 0;
-  margin-bottom: v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
-  color: #333;
-  font-size: v-bind('UI_CONSTANTS.FONT_SIZE_MEDIUM + "px"');
-  font-weight: 600;
-  border-bottom: v-bind('UI_CONSTANTS.BORDER_THIN + "px"') solid #e0e0e0;
-  padding-bottom: v-bind('UI_CONSTANTS.SMALL_MARGIN + "px"');
+  margin-bottom: 14px;
+  color: #1c1b26;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.06);
+  padding-bottom: 8px;
 }
 
 /* Form row layout */
 .form-row {
   display: flex;
-  gap: v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
-  margin-bottom: 0.75rem;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-row:last-child {
+  margin-bottom: 0;
 }
 
 .flex-1 {
@@ -1420,56 +1531,73 @@ onBeforeUnmount(() => {
 
 .font-settings-row {
   display: flex;
-  gap: v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
-  margin-bottom: v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.font-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #6b7280;
+}
+
+.font-info svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #6366f1;
 }
 
 .font-setting-item {
   flex: 1;
 }
 
-.font-setting-item select,
-.font-setting-item input {
-  width: 100%;
-  padding: v-bind("UI_CONSTANTS.INPUT_PADDING_SMALL");
-  border: v-bind('UI_CONSTANTS.BORDER_THIN + "px"') solid #ddd;
-  border-radius: v-bind('UI_CONSTANTS.BORDER_RADIUS_SMALL + "px"');
-  font-size: v-bind('UI_CONSTANTS.FONT_SIZE_SMALL + "px"');
-}
-
 .font-style-options {
   display: flex;
-  gap: v-bind('UI_CONSTANTS.MEDIUM_GAP + "px"');
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .font-style-options label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: v-bind('UI_CONSTANTS.SMALL_GAP + "px"');
+  gap: 6px;
   margin-bottom: 0;
-  font-weight: normal;
-  font-size: v-bind('UI_CONSTANTS.FONT_SIZE_SMALL + "px"');
+  font-weight: 500;
+  font-size: 12px;
+  color: #45425a;
+  cursor: pointer;
+  user-select: none;
+}
+
+.font-style-options label input[type="checkbox"],
+.band-selection-item label input[type="checkbox"] {
+  accent-color: #6366f1;
+  cursor: pointer;
 }
 
 .checkbox-group {
   display: flex;
-  gap: v-bind('UI_CONSTANTS.MEDIUM_GAP + "px"');
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .checkbox-group label {
   display: flex;
   align-items: center;
-  gap: v-bind('UI_CONSTANTS.SMALL_GAP + "px"');
+  gap: 6px;
   margin-bottom: 0;
-  font-weight: normal;
-  font-size: v-bind('UI_CONSTANTS.FONT_SIZE_DEFAULT + "px"');
+  font-weight: 500;
+  font-size: 12px;
+  color: #45425a;
 }
 
 .jrxml-container {
-  background-color: #f5f5f5;
-  border-radius: v-bind('UI_CONSTANTS.BORDER_RADIUS_SMALL + "px"');
+  background-color: #ffffff;
+  border-radius: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1482,18 +1610,17 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: v-bind('UI_CONSTANTS.SMALL_MARGIN + "px"')
-    v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
-  background-color: #e9e9e9;
-  border-bottom: v-bind('UI_CONSTANTS.BORDER_THIN + "px"') solid #ddd;
+  padding: 8px 16px;
+  background-color: #fafafc;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.08);
   flex-shrink: 0;
 }
 
 .jrxml-content {
   flex: 1;
   min-height: 0;
-  border-radius: v-bind('UI_CONSTANTS.BORDER_RADIUS_SMALL + "px"');
-  border: v-bind('UI_CONSTANTS.BORDER_THIN + "px"') solid #ddd;
+  border-radius: 0;
+  border: none;
 }
 
 .editor-container {
@@ -1504,17 +1631,17 @@ onBeforeUnmount(() => {
 
 .line-numbers {
   flex-shrink: 0;
-  width: 40px;
-  background-color: #f0f0f0;
-  color: #999;
+  width: 44px;
+  background-color: #f8f9fb;
+  color: #8a84a3;
   text-align: right;
-  padding: v-bind('UI_CONSTANTS.PANEL_PADDING + "px"') 8px;
+  padding: 10px 8px;
   font-family: "Consolas", "Monaco", "Courier New", monospace;
-  font-size: v-bind('UI_CONSTANTS.FONT_SIZE_SMALL + "px"');
+  font-size: 12px;
   line-height: 1.5;
   overflow: hidden;
   user-select: none;
-  border-right: 1px solid #ddd;
+  border-right: 1px solid rgba(28, 27, 38, 0.08);
   white-space: pre;
   box-sizing: border-box;
 }
@@ -1523,20 +1650,20 @@ onBeforeUnmount(() => {
   flex: 1;
   width: 100%;
   height: 100%;
-  padding: v-bind('UI_CONSTANTS.PANEL_PADDING + "px"');
-  background-color: #f8f9fa;
+  padding: 10px 12px;
+  background-color: #ffffff;
   font-family: "Consolas", "Monaco", "Courier New", monospace;
-  font-size: v-bind('UI_CONSTANTS.FONT_SIZE_SMALL + "px"');
+  font-size: 12px;
   line-height: 1.5;
-  white-space: pre; /* Keep pre (no wrapping) to preserve line-number alignment */
-  word-wrap: normal; /* Do not wrap automatically */
-  overflow-x: auto; /* Allow horizontal scrolling */
+  white-space: pre;
+  word-wrap: normal;
+  overflow-x: auto;
   border: none;
   outline: none;
   resize: none;
   tab-size: 2;
   box-sizing: border-box;
-  color: #333;
+  color: #1c1b26;
 }
 
 .jrxml-editor:focus {
@@ -1554,44 +1681,47 @@ onBeforeUnmount(() => {
 .action-separator {
   width: 1px;
   height: 20px;
-  background-color: #ddd;
-  margin: 0 2px;
+  background-color: rgba(28, 27, 38, 0.12);
+  margin: 0 4px;
   flex-shrink: 0;
 }
 
 .inline-search-input {
   width: 160px;
-  padding: 3px 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 4px 10px;
+  border: 1px solid rgba(28, 27, 38, 0.12);
+  border-radius: 6px;
   font-size: 12px;
-  font-family: "Consolas", "Monaco", "Courier New", monospace;
-  height: 20px;
+  font-family: inherit;
+  height: 24px;
   flex-shrink: 0;
+  background: #ffffff;
+  color: #1c1b26;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .inline-search-input:focus {
   outline: none;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(124, 92, 247, 0.14);
 }
 
 .search-status {
   font-size: 11px;
-  color: #666;
+  color: #8a84a3;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .jrxml-actions .fullscreen-active {
-  background-color: #4a90e2;
+  background-color: #6366f1;
   color: white;
 }
 
 .jrxml-placeholder {
   padding: 16px 12px;
   text-align: center;
-  color: #999;
+  color: #8a84a3;
   height: 100%;
   display: flex;
   align-items: center;
@@ -1600,8 +1730,8 @@ onBeforeUnmount(() => {
 
 .band-selection-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
 }
 
 .band-selection-item {
@@ -1611,124 +1741,182 @@ onBeforeUnmount(() => {
 .band-selection-item label {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
+  padding: 6px 10px;
+  background: #fbfbfe;
+  border: 1px solid rgba(28, 27, 38, 0.08);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1c1b26;
   cursor: pointer;
   user-select: none;
+  transition: all 0.15s ease;
+}
+
+.band-selection-item label:hover:not(.is-disabled) {
+  background: rgba(99, 102, 241, 0.05);
+  border-color: rgba(99, 102, 241, 0.25);
+  color: #5b3ee0;
 }
 
 .band-selection-item label.is-disabled {
   cursor: not-allowed;
-  opacity: 0.85;
-  color: #4b5563;
+  opacity: 0.7;
+  background: #f6f6fa;
+  color: #8a84a3;
 }
 
 .band-required-tag {
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 650;
   color: #059669;
   background: #ecfdf5;
   border: 1px solid #a7f3d0;
   padding: 1px 5px;
   border-radius: 4px;
   line-height: 1.2;
+  margin-left: auto;
 }
 
 .band-selection-note {
-  margin-top: 0.75rem;
-  padding-top: 0.5rem;
-  border-top: 1px dashed #e0e0e0;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(28, 27, 38, 0.08);
+  color: #8a84a3;
+  font-size: 11px;
+}
+
+.band-limits-section {
+  grid-column: 1 / -1;
 }
 
 .band-limits-header {
-  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.06);
+  padding-bottom: 10px;
 }
 
-.band-limits-header h4 {
+.band-limits-title-area h4 {
   margin: 0;
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .band-limits-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin: 0;
 }
 
 .band-limits-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
   gap: 12px;
 }
 
 .band-limit-card {
-  background-color: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 8px 12px;
+  background-color: #fbfbfe;
+  border: 1px solid rgba(28, 27, 38, 0.08);
+  border-radius: 8px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  min-width: 0;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.band-limit-card:hover {
+  border-color: rgba(99, 102, 241, 0.25);
+  background-color: #ffffff;
+  box-shadow: 0 2px 6px rgba(23, 20, 44, 0.04);
 }
 
 .band-limit-title {
-  font-weight: 600;
+  font-weight: 650;
   font-size: 12px;
-  color: #1e293b;
+  color: #1c1b26;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.05);
+  padding-bottom: 6px;
 }
 
 .band-badge-auto {
   font-size: 10px;
-  color: #0284c7;
-  background: #f0f9ff;
-  border: 1px solid #e0f2fe;
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
   padding: 1px 6px;
   border-radius: 4px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .band-limit-inputs {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
+.band-limit-card-detail .band-limit-inputs {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .band-limit-input-group {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+  min-width: 0;
 }
 
 .band-limit-input-group label {
   font-size: 11px;
-  color: #64748b;
+  font-weight: 600;
+  color: #6f6a7e;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
 }
 
 .input-unit-wrapper {
   display: flex;
   align-items: center;
-  border: none;
-  border-radius: 4px;
-  padding: 3px 6px;
-  background-color: #f1f5f9;
-  transition: background-color 0.15s ease;
+  border: 1px solid rgba(28, 27, 38, 0.1);
+  border-radius: 6px;
+  padding: 4px 6px;
+  background-color: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.input-unit-wrapper:hover,
+.input-unit-wrapper:hover {
+  border-color: #c4b5fd;
+}
+
 .input-unit-wrapper:focus-within {
-  background-color: #e2e8f0;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(124, 92, 247, 0.14);
 }
 
 .input-unit-wrapper.is-disabled {
   opacity: 0.65;
-  background-color: #f8fafc;
+  background-color: #f6f6fa;
   cursor: not-allowed;
+  border-color: rgba(28, 27, 38, 0.06);
 }
 
 .input-unit-wrapper.is-disabled input {
   cursor: not-allowed;
-  color: #64748b;
+  color: #8a84a3;
 }
 
 .input-unit-wrapper input {
@@ -1738,46 +1926,91 @@ onBeforeUnmount(() => {
   font-size: 12px;
   outline: none;
   padding: 0;
+  color: #1c1b26;
 }
 
 .input-unit-wrapper .unit {
-  font-size: 11px;
-  color: #94a3b8;
+  font-size: 10px;
+  color: #8a84a3;
   margin-left: 2px;
+  font-weight: 500;
 }
 
 .margin-inputs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  gap: 8px;
+}
+
+.margin-inputs input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  background-color: #ffffff;
+  border: 1px solid rgba(28, 27, 38, 0.12);
+  border-radius: 7px;
+  font-size: 12px;
+  color: #1c1b26;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.margin-inputs input:hover {
+  border-color: #c4b5fd;
+}
+
+.margin-inputs input:focus {
+  border-color: #6366f1;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(124, 92, 247, 0.14);
 }
 
 .form-group {
-  margin-bottom: 0.75rem;
+  margin-bottom: 12px;
 }
 
-.form-group label {
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label,
+.font-setting-item label {
   display: block;
-  margin-bottom: 0.25rem;
-  font-weight: 500;
-  font-size: v-bind('UI_CONSTANTS.FONT_SIZE_SMALL + "px"');
-  color: #555;
+  margin-bottom: 5px;
+  font-weight: 550;
+  font-size: 11.5px;
+  color: #6f6a7e;
+  letter-spacing: 0.01em;
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.font-setting-item select,
+.font-setting-item input {
   width: 100%;
-  padding: v-bind("UI_CONSTANTS.INPUT_PADDING_SMALL");
-  border: v-bind('UI_CONSTANTS.BORDER_THIN + "px"') solid #ddd;
-  border-radius: v-bind('UI_CONSTANTS.BORDER_RADIUS_SMALL + "px"');
-  font-size: v-bind('UI_CONSTANTS.FONT_SIZE_SMALL + "px"');
-  transition: border-color 0.2s;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  background-color: #ffffff;
+  border: 1px solid rgba(28, 27, 38, 0.12);
+  border-radius: 7px;
+  font-size: 12px;
+  color: #1c1b26;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.form-group input:hover,
+.form-group select:hover,
+.font-setting-item select:hover,
+.font-setting-item input:hover {
+  border-color: #c4b5fd;
 }
 
 .form-group input:focus,
-.form-group select:focus {
-  border-color: #4a90e2;
+.form-group select:focus,
+.font-setting-item select:focus,
+.font-setting-item input:focus {
+  border-color: #6366f1;
   outline: none;
+  box-shadow: 0 0 0 3px rgba(124, 92, 247, 0.14);
 }
 
 .validation-btn {
@@ -1785,7 +2018,8 @@ onBeforeUnmount(() => {
 }
 
 .validation-result {
-  margin: 8px;
+  margin: 8px 16px;
+  border-radius: 8px;
   max-height: 150px;
   overflow-y: auto;
 }
@@ -1800,8 +2034,8 @@ onBeforeUnmount(() => {
 
 .validation-error-list li {
   padding: 4px 0;
-  border-bottom: 1px solid #eee;
-  font-size: 13px;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.06);
+  font-size: 12px;
 }
 
 .validation-error-list li:last-child {
@@ -1810,15 +2044,15 @@ onBeforeUnmount(() => {
 
 .validation-error-list li.clickable {
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s;
 }
 
 .validation-error-list li.clickable:hover {
-  background-color: #f5f5f5;
+  background-color: rgba(99, 102, 241, 0.05);
 }
 
 .validation-error-list .error-location {
-  color: #999;
+  color: #8a84a3;
   margin-right: 8px;
   font-family: monospace;
 }
@@ -1828,7 +2062,7 @@ onBeforeUnmount(() => {
 }
 
 .validation-error-list .warning .error-message {
-  color: #ffc107;
+  color: #eab308;
 }
 
 .validation-error-list .fatal .error-message {
@@ -1838,11 +2072,12 @@ onBeforeUnmount(() => {
 
 /* Auto-fix button style */
 .autofix-btn {
-  margin-left: 8px;
+  margin-left: 4px;
 }
 
 .autofix-result {
-  margin: 8px;
+  margin: 8px 16px;
+  border-radius: 8px;
   max-height: 150px;
   overflow-y: auto;
 }
@@ -1857,8 +2092,8 @@ onBeforeUnmount(() => {
 
 .autofix-list li {
   padding: 4px 0;
-  border-bottom: 1px solid #eee;
-  font-size: 13px;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.06);
+  font-size: 12px;
 }
 
 .autofix-list li:last-child {
@@ -1867,41 +2102,41 @@ onBeforeUnmount(() => {
 
 .autofix-list li.clickable {
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s;
 }
 
 .autofix-list li.clickable:hover {
-  background-color: #f5f5f5;
+  background-color: rgba(99, 102, 241, 0.05);
 }
 
 .autofix-list .fix-location {
-  color: #999;
+  color: #8a84a3;
   margin-right: 8px;
   font-family: monospace;
 }
 
 .autofix-list .fix-message {
-  color: #28a745;
+  color: #10b981;
 }
 
 /* Warning list style */
 .autofix-warnings {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid rgba(28, 27, 38, 0.08);
 }
 
 .warning-list li {
   color: #856404;
-  background-color: #fff3cd;
+  background-color: #fffbe6;
   padding: 6px 10px;
   margin: 4px 0;
-  border-radius: 4px;
-  border-left: 3px solid #ffc107;
+  border-radius: 6px;
+  border-left: 3px solid #f59e0b;
 }
 
 .warning-list .warning-message {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .warning-list strong {

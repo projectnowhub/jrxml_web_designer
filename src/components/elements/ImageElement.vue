@@ -18,7 +18,6 @@
     @resize-start="handleResizeStart"
     @contextmenu="handleContextMenu"
     @rotate="(b, e, p) => emit('rotate', b, e, p)"
-    @save-state="emit('save-state')"
   >
     <div
       class="image-container"
@@ -32,10 +31,10 @@
         class="image-upload-zone is-stored"
         @click.stop
         @dblclick.stop="triggerFileInput"
-        @dragover.prevent.stop="handleDragOver"
-        @dragenter.prevent.stop="handleDragOver"
-        @dragleave.prevent.stop="handleDragLeave"
-        @drop.prevent.stop="handleDrop"
+        @dragover="handleDragOver"
+        @dragenter="handleDragOver"
+        @dragleave="handleDragLeave"
+        @drop="handleDrop"
         :title="getImageName(element) || storedFileRef"
       >
         <span class="upload-text">{{ getImageName(element) || t("properties.storedImage") }}</span>
@@ -51,10 +50,10 @@
         :class="{ 'is-drag-over': isDraggingOver, 'is-uploading': isUploading }"
         @click.stop
         @dblclick.stop="triggerFileInput"
-        @dragover.prevent.stop="handleDragOver"
-        @dragenter.prevent.stop="handleDragOver"
-        @dragleave.prevent.stop="handleDragLeave"
-        @drop.prevent.stop="handleDrop"
+        @dragover="handleDragOver"
+        @dragenter="handleDragOver"
+        @dragleave="handleDragLeave"
+        @drop="handleDrop"
         :title="
           t('properties.dropOrDoubleClickToUpload')
         "
@@ -73,10 +72,10 @@
         v-else
         class="image-preview-wrapper"
         :title="t('properties.doubleClickToCrop')"
-        @dragover.prevent.stop="handleDragOver"
-        @dragenter.prevent.stop="handleDragOver"
-        @dragleave.prevent.stop="handleDragLeave"
-        @drop.prevent.stop="handleDrop"
+        @dragover="handleDragOver"
+        @dragenter="handleDragOver"
+        @dragleave="handleDragLeave"
+        @drop="handleDrop"
         @dblclick.stop="startCropping"
       >
         <img
@@ -188,10 +187,11 @@
 </template>
 
 <script setup lang="ts">
+import { useReportStore } from "@/stores/report";
 import { Check, RotateCcw, Upload, X } from "@lucide/vue";
 import { computed, inject, onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { createDiscreteApi } from "naive-ui";
+import notification from "@/utils/notification";
 import BaseElement from "./BaseElement.vue";
 import type { ImageElement, SelectedElementInfo } from "../../types";
 import {
@@ -208,6 +208,7 @@ import {
   resolveImageSource,
   toImageExpression,
 } from "../../services/imageService";
+import { readDataSourceDrag } from "../../utils/table/dataDrag";
 
 const { t } = useI18n();
 
@@ -236,6 +237,9 @@ const cornerRadiusStyle = computed(() => {
 });
 
 // Emits
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
 const emit = defineEmits<{
   select: [
     bandIndex: number,
@@ -257,8 +261,6 @@ const emit = defineEmits<{
     direction?: string,
   ];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  "update-jrxml": [];
-  "save-state": [];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
@@ -450,13 +452,7 @@ const imageUrl = computed(() => {
 });
 
 function showUploadError(message: string) {
-  try {
-    const { message: discreteMessage } = createDiscreteApi(["message"]);
-    discreteMessage.error(message);
-  } catch {
-    // Discrete API fallback
-  }
-  alert(message);
+  notification.error(message, 5000);
 }
 
 async function processImageFile(file: File) {
@@ -465,14 +461,14 @@ async function processImageFile(file: File) {
   try {
     const source = await resolveImageSource(file);
     // Undo snapshot before the element changes
-    emit("save-state");
+    report.saveStateToHistory();
     props.element.imageExpression = toImageExpression(source);
     // Remember the uploaded file name so the panels can show it
     setImageName(props.element, file.name || "");
     // A crop belongs to the previous picture
     setImageCrop(props.element, null);
     imageError.value = false;
-    emit("update-jrxml");
+    report.updateJrxml();
   } catch (error) {
     console.error("Image upload failed:", error);
     showUploadError(
@@ -501,19 +497,35 @@ function handleFileInputChange(event: Event) {
   }
 }
 
+// Drags from the Report Data list are for the designer (link this image to a
+// project's logo); only dropped files are handled here
+// The image only takes picture files dropped from the computer. Anything else
+// (library elements, Report Data) goes on to the page, which puts it on top
+const isFileDrag = (event: DragEvent) =>
+  !readDataSourceDrag(event) && Array.from(event.dataTransfer?.types ?? []).includes("Files");
+
 function handleDragOver(event: DragEvent) {
+  if (!isFileDrag(event)) return;
+  event.preventDefault();
+  event.stopPropagation();
   if (event.dataTransfer) {
     event.dataTransfer.dropEffect = "copy";
   }
   isDraggingOver.value = true;
 }
 
-function handleDragLeave() {
+function handleDragLeave(event: DragEvent) {
   isDraggingOver.value = false;
+  if (!isFileDrag(event)) return;
+  event.preventDefault();
+  event.stopPropagation();
 }
 
 function handleDrop(event: DragEvent) {
   isDraggingOver.value = false;
+  if (!isFileDrag(event)) return;
+  event.preventDefault();
+  event.stopPropagation();
   const file = event.dataTransfer?.files?.[0];
   if (file) {
     processImageFile(file);
@@ -702,7 +714,7 @@ function applyCrop() {
   if (unchanged) return;
 
   // Undo snapshot before the element changes
-  emit("save-state");
+  report.saveStateToHistory();
   setImageCrop(props.element, {
     left: (rect.x - full.x) / full.w,
     top: (rect.y - full.y) / full.h,
@@ -714,7 +726,7 @@ function applyCrop() {
   props.element.y = Math.round((Number(props.element.y) || 0) + kept.y);
   props.element.width = Math.max(1, Math.round(kept.w));
   props.element.height = Math.max(1, Math.round(kept.h));
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function cancelCrop() {
@@ -876,7 +888,7 @@ const handleContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: n
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 2px dashed #93c5fd;
+  border: 2px dashed #c4b5fd;
   border-radius: 4px;
   background-color: #f8faff;
   color: #4b5563;
@@ -890,9 +902,9 @@ const handleContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: n
 
 .image-upload-zone:hover,
 .image-upload-zone.is-drag-over {
-  border-color: #2563eb;
-  background-color: #eff6ff;
-  color: #1d4ed8;
+  border-color: #6440f4;
+  background-color: #f4f1ff;
+  color: #5b3ee0;
 }
 
 .image-upload-zone.is-stored {

@@ -17,7 +17,7 @@
 
 body {
   margin: 0;
-  min-width: 320px;
+  min-width: 300px;
   min-height: 100vh;
 }
 
@@ -63,4 +63,170 @@ input[type="number"]::-webkit-inner-spin-button {
   opacity: 1;
   margin-left: 2px;
   cursor: pointer;
+}
+
+/* ==========================================================================
+   Global Custom Scrollbar System
+   Unified modern slim scrollbars matching the right side panel and element library.
+   ========================================================================== */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cfd5e1 transparent;
+}
+
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background: #cfd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background: #b0b8c9;
+}
+
+::-webkit-scrollbar-corner,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ---- Motion: menus, popups, pages, tab content (none for reduced motion) ---- */
+.menu-pop-enter-active,
+.menu-pop-leave-active {
+  transition: opacity 0.14s ease, transform 0.14s cubic-bezier(0.2, 0, 0, 1);
+}
+.menu-pop-enter-from,
+.menu-pop-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+}
+
+.modal-pop-enter-active,
+.modal-pop-leave-active {
+  transition: opacity 0.18s ease;
+}
+.modal-pop-enter-active > *,
+.modal-pop-leave-active > * {
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), opacity 0.18s ease;
+}
+.modal-pop-enter-from,
+.modal-pop-leave-to {
+  opacity: 0;
+}
+.modal-pop-enter-from > *,
+.modal-pop-leave-to > * {
+  transform: scale(0.96) translateY(6px);
+  opacity: 0;
+}
+
+.fade-swap-enter-active,
+.fade-swap-leave-active {
+  transition: opacity 0.14s ease;
+}
+.fade-swap-enter-from,
+.fade-swap-leave-to {
+  opacity: 0;
+}
+
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-pop-enter-active, .menu-pop-leave-active,
+  .modal-pop-enter-active, .modal-pop-leave-active,
+  .modal-pop-enter-active > *, .modal-pop-leave-active > *,
+  .fade-swap-enter-active, .fade-swap-leave-active,
+  .page-fade-enter-active, .page-fade-leave-active {
+    transition: none !important;
+  }
+}
+
+/* Menus that only animate opening (shown with v-if inside an overlay) */
+@keyframes menu-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+.context-menu,
+.page-menu,
+.tile-menu {
+  animation: menu-pop-in 0.14s cubic-bezier(0.2, 0, 0, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .context-menu, .page-menu, .tile-menu { animation: none; }
+}
+
+/* Properties / AI tabs: the new tab fades in (the old one goes at once) */
+.right-panel-fade-enter-active {
+  transition: opacity 0.16s ease;
+}
+.right-panel-fade-enter-from {
+  opacity: 0;
+}
+
+/* A page fades in when it is added */
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.page-sheet-wrapper {
+  animation: page-fade-in 0.22s cubic-bezier(0.2, 0, 0, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .right-panel-fade-enter-active { transition: none; }
+  .page-sheet-wrapper { animation: none; }
+}
+
+/* Same, for a menu centred under its button (translateX(-50%)) */
+.menu-pop-centered-enter-active,
+.menu-pop-centered-leave-active {
+  transition: opacity 0.14s ease, transform 0.14s cubic-bezier(0.2, 0, 0, 1);
+}
+.menu-pop-centered-enter-from,
+.menu-pop-centered-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-4px) scale(0.98);
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-pop-centered-enter-active, .menu-pop-centered-leave-active { transition: none; }
+}
+
+/* Side panels shown again: they take their width at once (the canvas is laid
+   out once) and slide in from their edge; hiding is instant */
+.side-panel-left-enter-active,
+.side-panel-right-enter-active {
+  transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.2, 0, 0, 1);
+}
+.side-panel-left-enter-from {
+  opacity: 0;
+  transform: translateX(-16px);
+}
+.side-panel-right-enter-from {
+  opacity: 0;
+  transform: translateX(16px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .side-panel-left-enter-active, .side-panel-right-enter-active { transition: none; }
 }

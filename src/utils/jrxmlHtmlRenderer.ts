@@ -18,6 +18,7 @@ import type {
   TableElement,
 } from "@/types";
 import { parseJRXMLContent } from "./jrxmlGenerator";
+import { resolveReportFont } from "@/config/fonts.config";
 
 export interface HtmlRendererOptions {
   scale?: number;
@@ -58,9 +59,7 @@ function escapeHtml(text: string): string {
 
 function buildFontStyle(element: DesignElement, scale: number): string {
   let style = "";
-  if (element.fontFamily) {
-    style += `font-family: '${element.fontFamily}', Arial, sans-serif;`;
-  }
+  style += `font-family: '${resolveReportFont(element.fontFamily)}', Arial, sans-serif;`;
   if (element.fontSize) {
     style += `font-size: ${element.fontSize * scale}px;`;
   }

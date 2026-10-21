@@ -2,7 +2,7 @@
   <!-- Basic: data, which style, row sizes -->
   <template v-if="part === 'basic'">
   <!-- Data: what the table shows (edited in the Configure popup) -->
-  <div class="tdp-section">
+  <div v-if="!isTyped" class="tdp-section">
     <h5>{{ t("dataTable.panel.data") }}</h5>
 
     <template v-if="binding">
@@ -17,7 +17,9 @@
 
       <div class="tdp-source">
         <Database :size="14" aria-hidden="true" />
-        <span class="tdp-source-name">{{ binding.sourceName }}</span>
+        <span class="tdp-source-name">{{
+          t("reportData.projectSource", { project: binding.projectName, source: binding.sourceName })
+        }}</span>
         <span class="tdp-muted">{{ t("dataTable.panel.columnCount", binding.columns.length) }}</span>
       </div>
 
@@ -28,7 +30,7 @@
       <div v-if="filters.length" class="tdp-row">
         <Funnel :size="13" class="tdp-row-icon" aria-hidden="true" />
         <div class="tdp-chips">
-          <span v-for="(f, i) in filters" :key="i" class="tdp-chip is-filter">
+          <span v-for="(f, i) in filters" :key="i" class="tdp-chip is-applied">
             {{ describeFilter(binding, f, t, locale) }}
           </span>
         </div>
@@ -37,13 +39,15 @@
       <div v-if="sorts.length" class="tdp-row">
         <ArrowDownUp :size="13" class="tdp-row-icon" aria-hidden="true" />
         <div class="tdp-chips">
-          <span v-for="(s, i) in sorts" :key="i" class="tdp-chip">{{ s }}</span>
+          <span v-for="(s, i) in sorts" :key="i" class="tdp-chip is-applied">{{ s }}</span>
         </div>
       </div>
 
       <div v-if="binding.rowLimit" class="tdp-row">
         <ListOrdered :size="13" class="tdp-row-icon" aria-hidden="true" />
-        <span class="tdp-muted">{{ t("dataTable.panel.firstRows", binding.rowLimit) }}</span>
+        <div class="tdp-chips">
+          <span class="tdp-chip is-applied">{{ t("dataTable.panel.firstRows", binding.rowLimit) }}</span>
+        </div>
       </div>
 
       <button type="button" class="tdp-btn" @click="emit('configure')">
@@ -74,7 +78,7 @@
         class="tdp-theme"
         :class="{ active: isActiveStyle(option.id) }"
         :aria-checked="isActiveStyle(option.id)"
-        :disabled="!binding"
+        :disabled="!holder"
         :title="option.name"
         @click="applyStyle(option.id)"
       >
@@ -119,15 +123,15 @@
     </div>
 
     <!-- This table's own changes -->
-    <div v-if="binding && binding.customized" class="tdp-custom-note">
+    <div v-if="holder && holder.customized" class="tdp-custom-note">
       <Paintbrush :size="13" aria-hidden="true" />
       <span>{{ t("dataTable.style.customizedFrom", { name: baseStyleName }) }}</span>
-      <button type="button" class="tdp-link" @click="applyStyle(binding.theme)">
+      <button type="button" class="tdp-link" @click="applyStyle(holder.theme)">
         {{ t("dataTable.style.reset") }}
       </button>
     </div>
 
-    <button type="button" class="tdp-toggle" :disabled="!binding" @click="emit('open-style-settings')">
+    <button type="button" class="tdp-toggle" :disabled="!holder" @click="emit('open-style-settings')">
       <Paintbrush :size="13" aria-hidden="true" />
       <span>{{ t("dataTable.style.customize") }}</span>
       <ChevronRight :size="13" aria-hidden="true" />
@@ -135,7 +139,7 @@
   </div>
 
   <!-- Row sizes -->
-  <div class="tdp-section">
+  <div v-if="!isTyped" class="tdp-section">
     <h5>{{ t("dataTable.panel.rowSizes") }}</h5>
     <div class="tdp-grid is-first">
       <label class="tdp-field">
@@ -172,19 +176,19 @@
   <template v-else>
   <div class="tdp-section">
     <h5>{{ t("dataTable.style.customize") }}</h5>
-    <p v-if="!binding" class="tdp-hint">{{ t("dataTable.style.needData") }}</p>
+    <p v-if="!holder" class="tdp-hint">{{ t("dataTable.style.needData") }}</p>
     <template v-else>
       <p class="tdp-hint">{{ t("dataTable.style.customizeHint") }}</p>
-      <div class="tdp-based-on" :class="{ 'is-custom': binding.customized }">
+      <div class="tdp-based-on" :class="{ 'is-custom': holder.customized }">
         <span class="tdp-swatch" aria-hidden="true">
           <span :style="{ background: lookSwatch(look).header }"></span>
           <span :style="{ background: lookSwatch(look).row }"></span>
           <span :style="{ background: lookSwatch(look).stripe }"></span>
         </span>
         <span class="tdp-based-text">
-          {{ binding.customized ? t("dataTable.style.customizedFrom", { name: baseStyleName }) : t("dataTable.style.usingStyle", { name: baseStyleName }) }}
+          {{ holder.customized ? t("dataTable.style.customizedFrom", { name: baseStyleName }) : t("dataTable.style.usingStyle", { name: baseStyleName }) }}
         </span>
-        <button v-if="binding.customized" type="button" class="tdp-link" @click="applyStyle(binding.theme)">
+        <button v-if="holder.customized" type="button" class="tdp-link" @click="applyStyle(holder.theme)">
           {{ t("dataTable.style.reset") }}
         </button>
       </div>
@@ -194,7 +198,7 @@
         <span class="tdp-editor-title">{{ t(`dataTable.style.parts.${group.part}`) }}</span>
         <div class="tdp-editor-row">
           <label
-            v-for="field in group.colors.filter((f) => f !== 'stripe' || look.stripe !== null)"
+            v-for="field in group.colors"
             :key="field"
             class="tdp-color"
           >
@@ -214,10 +218,46 @@
             {{ t("dataTable.style.bold") }}
           </label>
         </div>
-        <label v-if="group.part === 'rows'" class="tdp-check">
-          <input type="checkbox" :checked="look.stripe !== null" @change="toggleStripes(($event.target as HTMLInputElement).checked)" />
-          {{ t("dataTable.style.stripes") }}
-        </label>
+        <!-- Body rows take these colours in turn (1 to 4) -->
+        <div v-if="group.part === 'rows'" class="tdp-row-colors">
+          <span class="tdp-label">{{ t("dataTable.style.rowColors") }}</span>
+          <div class="tdp-editor-row">
+            <div v-for="(rowColor, i) in look.rowColors" :key="i" class="tdp-row-color">
+              <label class="tdp-color">
+                <ColorSwatchPicker
+                  :model-value="rowColor"
+                  @update:model-value="setRowColor(i, $event)"
+                  @change="endEdit"
+                />
+                <span>{{ t("dataTable.style.rowN", { n: i + 1 }) }}</span>
+              </label>
+              <button
+                v-if="look.rowColors.length > 1"
+                type="button"
+                class="tdp-icon-btn is-danger"
+                :title="t('dataTable.style.removeRowColor', { n: i + 1 })"
+                :aria-label="t('dataTable.style.removeRowColor', { n: i + 1 })"
+                @click="removeRowColor(i)"
+              >
+                <Trash2 :size="12" />
+              </button>
+            </div>
+            <button
+              v-if="look.rowColors.length < MAX_ROW_COLORS"
+              type="button"
+              class="tdp-add-btn"
+              :title="t('dataTable.style.addRowColorHint')"
+              @click="addRowColor"
+            >
+              <Plus :size="13" aria-hidden="true" />
+              {{ t("dataTable.style.addRowColor") }}
+            </button>
+          </div>
+          <span class="tdp-row-preview" aria-hidden="true">
+            <span v-for="n in 8" :key="n" :style="{ background: look.rowColors[(n - 1) % look.rowColors.length] }"></span>
+          </span>
+          <small class="tdp-hint">{{ t("dataTable.style.rowColorsHint") }}</small>
+        </div>
       </div>
 
       <div class="tdp-editor-group">
@@ -262,7 +302,7 @@
       </label>
 
       <!-- Keep the changes for this table only, or save them as a style -->
-      <div v-if="binding.customized" class="tdp-save">
+      <div v-if="holder.customized" class="tdp-save">
         <template v-if="naming">
           <input
             ref="nameInput"
@@ -300,6 +340,7 @@
 </template>
 
 <script setup lang="ts">
+import { useReportStore } from "@/stores/report";
 import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -314,12 +355,13 @@ import {
   Lock,
   Paintbrush,
   Pencil,
+  Plus,
   RefreshCw,
   SlidersHorizontal,
   Trash2,
 } from "@lucide/vue";
 import ColorSwatchPicker from "@/components/common/ColorSwatchPicker.vue";
-import type { TableElement } from "@/types";
+import type { CustomTableElement, TableElement } from "@/types";
 import type { SavedTableStyle, TableLook } from "@/types/dataSource";
 import {
   TABLE_HEADER_HEIGHT,
@@ -330,6 +372,7 @@ import {
 import { nextTableName } from "@/utils/table/dataBinding";
 import {
   BUILTIN_LOOKS,
+  MAX_ROW_COLORS,
   TABLE_THEMES,
   isBuiltinTheme,
   lookSwatch,
@@ -338,19 +381,21 @@ import {
 import { activeFilters, describeFilter, describeSorts } from "@/utils/table/summary";
 
 const props = defineProps<{
-  element: TableElement;
+  // A data table, or a typed table (style sections only)
+  element: TableElement | CustomTableElement;
   // Which tab shows the panel: Basic Properties or Style Settings
   part: "basic" | "style";
   // Table styles saved in this report
   tableStyles: SavedTableStyle[];
 }>();
 
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
 const emit = defineEmits<{
   configure: [];
   // "Customize" in the Basic tab opens Style Settings
   "open-style-settings": [];
-  "save-state": [];
-  "update-jrxml": [];
   // Save this table's look as a new reusable style
   "save-table-style": [name: string];
   // Overwrite a saved style with this table's look (all its tables follow)
@@ -361,19 +406,26 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n();
 
-const binding = computed(() => props.element.binding);
+// A data table's binding; a typed table has no data (its setup holds the style)
+const binding = computed(() => (props.element.type === "table" ? props.element.binding : undefined));
+const isTyped = computed(() => props.element.type === "customTable");
+// What carries the table's style: the data table's binding or the typed table's setup
+const holder = computed(() =>
+  props.element.type === "customTable" ? props.element.table : props.element.binding,
+);
 const filters = computed(() => (binding.value ? activeFilters(binding.value) : []));
 const sorts = computed(() => (binding.value ? describeSorts(binding.value, t) : []));
-const headerHeight = computed(() => props.element.headerHeight ?? TABLE_HEADER_HEIGHT);
-const rowHeight = computed(() => props.element.rowHeight ?? TABLE_ROW_HEIGHT);
-const look = computed(() => resolveLook(binding.value));
+const dataTable = computed(() => (props.element.type === "table" ? props.element : null));
+const headerHeight = computed(() => dataTable.value?.headerHeight ?? TABLE_HEADER_HEIGHT);
+const rowHeight = computed(() => dataTable.value?.rowHeight ?? TABLE_ROW_HEIGHT);
+const look = computed(() => resolveLook(holder.value));
 
 function renameTable(value: string) {
   const name = value.trim();
   if (!binding.value || !name || name === binding.value.tableName) return;
-  emit("save-state");
+  report.saveStateToHistory();
   binding.value.tableName = name;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // ── Choosing a style ──
@@ -389,25 +441,25 @@ const styleOptions = computed<StyleOption[]>(() => [
   ...props.tableStyles.map((s) => ({ id: s.id, name: s.name, look: s.look, builtin: false })),
 ]);
 
-const baseSavedStyle = computed(() => props.tableStyles.find((s) => s.id === binding.value?.theme));
+const baseSavedStyle = computed(() => props.tableStyles.find((s) => s.id === holder.value?.theme));
 const baseStyleName = computed(
-  () => styleOptions.value.find((o) => o.id === binding.value?.theme)?.name ?? t("dataTable.theme.corporateBlue"),
+  () => styleOptions.value.find((o) => o.id === holder.value?.theme)?.name ?? t("dataTable.theme.corporateBlue"),
 );
 
-const isActiveStyle = (id: string) => !!binding.value && !binding.value.customized && binding.value.theme === id;
+const isActiveStyle = (id: string) => !!holder.value && !holder.value.customized && holder.value.theme === id;
 
-const copyLook = (value: TableLook): TableLook => ({ ...value });
+const copyLook = (value: TableLook): TableLook => ({ ...value, rowColors: [...value.rowColors] });
 
 // Use a style as it is (also "Reset" after changes)
 function applyStyle(id: string) {
-  const b = binding.value;
+  const b = holder.value;
   if (!b || isActiveStyle(id)) return;
-  emit("save-state");
+  report.saveStateToHistory();
   b.theme = id;
   b.customized = undefined;
   const saved = props.tableStyles.find((s) => s.id === id);
   b.look = saved ? copyLook(saved.look) : isBuiltinTheme(id) ? undefined : b.look;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
 // ── Renaming or deleting the saved style the table uses ──
@@ -441,11 +493,11 @@ function deleteSavedStyle() {
 type LookField = keyof TableLook;
 const LOOK_GROUPS: {
   part: "header" | "rows" | "totals";
-  colors: ("headerBackground" | "headerText" | "rowBackground" | "rowText" | "stripe" | "totalsBackground" | "totalsText")[];
+  colors: ("headerBackground" | "headerText" | "rowText" | "totalsBackground" | "totalsText")[];
   bold?: "headerBold" | "totalsBold";
 }[] = [
   { part: "header", colors: ["headerBackground", "headerText"], bold: "headerBold" },
-  { part: "rows", colors: ["rowBackground", "rowText", "stripe"] },
+  { part: "rows", colors: ["rowText"] },
   { part: "totals", colors: ["totalsBackground", "totalsText"], bold: "totalsBold" },
 ];
 
@@ -456,21 +508,35 @@ function endEdit() {
 }
 
 function setLook<K extends LookField>(field: K, value: TableLook[K], single = false) {
-  const b = binding.value;
+  const b = holder.value;
   if (!b) return;
   if (look.value[field] === value) return;
   if (editing !== field) {
-    emit("save-state");
+    report.saveStateToHistory();
     editing = single ? null : field;
   }
   // The first change makes the table's own copy of its style
   b.look = { ...look.value, [field]: value };
   b.customized = true;
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 
-function toggleStripes(on: boolean) {
-  setLook("stripe", on ? (BUILTIN_LOOKS.corporateBlue.stripe as string) : null, true);
+// Row colours: one changed, one added (a soft colour not used yet), the last removed
+const NEW_ROW_COLORS = ["#F1F5F9", "#E0E7FF", "#FEF3C7", "#DCFCE7", "#FCE7F3"];
+function setRowColor(index: number, value: string | null) {
+  if (!value) return;
+  setLook("rowColors", look.value.rowColors.map((c, i) => (i === index ? value.toUpperCase() : c)));
+}
+function addRowColor() {
+  const used = look.value.rowColors;
+  if (used.length >= MAX_ROW_COLORS) return;
+  const next = NEW_ROW_COLORS.find((c) => !used.includes(c)) ?? "#FFFFFF";
+  setLook("rowColors", [...used, next], true);
+}
+function removeRowColor(index: number) {
+  if (look.value.rowColors.length > 1) {
+    setLook("rowColors", look.value.rowColors.filter((_, i) => i !== index), true);
+  }
 }
 
 function setFontSize(value: string) {
@@ -501,25 +567,72 @@ function saveAsStyle() {
 
 // Header / row height; the table keeps its number of sample rows
 function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
+  const table = dataTable.value;
+  if (!table) return;
   const value = Math.round(Number((event.target as HTMLInputElement).value));
-  if (!Number.isFinite(value) || value < 12 || value === props.element[key]) return;
-  const table = props.element;
+  if (!Number.isFinite(value) || value < 12 || value === table[key]) return;
   const slots = rowSlots(table);
-  emit("save-state");
+  report.saveStateToHistory();
   table[key] = value;
   const header = table.headerHeight ?? TABLE_HEADER_HEIGHT;
   const row = table.rowHeight ?? TABLE_ROW_HEIGHT;
   table.height = header + slots * row + (hasTotalsRow(table.binding) ? row : 0);
-  emit("update-jrxml");
+  report.updateJrxml();
 }
 </script>
 
 <style scoped>
+.tdp-row-colors {
+  margin-top: 8px;
+}
+
+.tdp-row-color {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.tdp-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px dashed var(--prop-border-color, #d1d5db);
+  border-radius: 6px;
+  background: #fff;
+  font-size: 12px;
+  color: var(--prop-text-primary, #1f2937);
+  cursor: pointer;
+}
+
+.tdp-add-btn:hover {
+  border-color: var(--prop-primary-color, #6440f4);
+  color: var(--prop-primary-color, #6440f4);
+}
+
+.tdp-row-preview {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: 6px;
+  overflow: hidden;
+  border: 1px solid var(--prop-border-color, #e5e7eb);
+  border-radius: 4px;
+}
+
+.tdp-row-preview span {
+  height: 5px;
+}
+
 .tdp-section {
-  padding: 12px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  background: var(--prop-bg-secondary, #f7f8fa);
+  /* Same card as the other property sections */
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(28, 27, 38, 0.08);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
 }
 
 .tdp-section h5 {
@@ -556,7 +669,7 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
 .tdp-input:focus,
 .tdp-unit input:focus {
   outline: none;
-  border-color: var(--prop-border-focus, #1890ff);
+  border-color: var(--prop-border-focus, #6440f4);
   box-shadow: var(--prop-focus-ring);
 }
 
@@ -643,10 +756,10 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
   white-space: nowrap;
 }
 
-.tdp-chip.is-filter {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
+.tdp-chip.is-applied {
+  background: #f4f1ff;
+  border-color: #ddd6fe;
+  color: #5b3ee0;
 }
 
 .tdp-hint {
@@ -664,9 +777,9 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
   width: 100%;
   height: 32px;
   margin-top: 12px;
-  border: 1px solid var(--prop-primary-color, #1890ff);
+  border: 1px solid var(--prop-primary-color, #6440f4);
   border-radius: 6px;
-  background: var(--prop-primary-color, #1890ff);
+  background: var(--prop-primary-color, #6440f4);
   color: #fff;
   font-size: 12px;
   font-weight: 600;
@@ -703,10 +816,10 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
 }
 
 .tdp-theme.active {
-  border-color: var(--prop-primary-color, #1890ff);
-  color: var(--prop-primary-color, #1890ff);
+  border-color: var(--prop-primary-color, #6440f4);
+  color: var(--prop-primary-color, #6440f4);
   font-weight: 600;
-  box-shadow: 0 0 0 1px var(--prop-primary-color, #1890ff);
+  box-shadow: 0 0 0 1px var(--prop-primary-color, #6440f4);
 }
 
 .tdp-swatch {
@@ -762,7 +875,7 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
   padding: 0;
   border: none;
   background: none;
-  color: var(--prop-primary-color, #1890ff);
+  color: var(--prop-primary-color, #6440f4);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -906,7 +1019,7 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
 .tdp-btn.is-outline {
   margin-top: 8px;
   background: #fff;
-  color: var(--prop-primary-color, #1890ff);
+  color: var(--prop-primary-color, #6440f4);
 }
 
 .tdp-btn:disabled {

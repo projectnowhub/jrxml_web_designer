@@ -30,7 +30,7 @@ export class ApiError extends Error {
   }
 }
 
-const getAccessToken = (): string | null => {
+export const getAccessToken = (): string | null => {
   const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
 
   if (!storedToken) {
@@ -48,7 +48,7 @@ const getAccessToken = (): string | null => {
   }
 };
 
-const getTenantId = (): string => {
+export const getTenantId = (): string => {
   const isTauri = Boolean(
     (
       window as Window & {

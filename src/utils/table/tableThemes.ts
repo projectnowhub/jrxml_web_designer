@@ -10,16 +10,30 @@ import type { SavedTableStyle, TableDataBinding, TableLook, TableTheme } from "@
 
 export type TableStylePart = "header" | "row" | "totals";
 
-export const TABLE_THEMES: TableTheme[] = ["corporateBlue", "minimal", "emerald"];
+export const TABLE_THEMES: TableTheme[] = ["none", "corporateBlue", "minimal", "emerald"];
 
 export const BUILTIN_LOOKS: Record<TableTheme, TableLook> = {
+  // No colours, nothing bold: only thin black lines
+  none: {
+    headerBackground: "#FFFFFF",
+    headerText: "#000000",
+    headerBold: false,
+    rowColors: ["#FFFFFF"],
+    rowText: "#000000",
+    totalsBackground: "#FFFFFF",
+    totalsText: "#000000",
+    totalsBold: false,
+    lines: "grid",
+    lineColor: "#000000",
+    ruleColor: "#000000",
+    fontSize: 9,
+  },
   corporateBlue: {
     headerBackground: "#1E3A8A",
     headerText: "#FFFFFF",
     headerBold: true,
-    rowBackground: "#FFFFFF",
+    rowColors: ["#FFFFFF", "#F1F5F9"],
     rowText: "#1F2937",
-    stripe: "#F1F5F9",
     totalsBackground: "#E0E7FF",
     totalsText: "#1E3A8A",
     totalsBold: true,
@@ -32,9 +46,8 @@ export const BUILTIN_LOOKS: Record<TableTheme, TableLook> = {
     headerBackground: "#F3F4F6",
     headerText: "#111827",
     headerBold: true,
-    rowBackground: "#FFFFFF",
+    rowColors: ["#FFFFFF"],
     rowText: "#374151",
-    stripe: null,
     totalsBackground: "#FFFFFF",
     totalsText: "#111827",
     totalsBold: true,
@@ -47,9 +60,8 @@ export const BUILTIN_LOOKS: Record<TableTheme, TableLook> = {
     headerBackground: "#047857",
     headerText: "#FFFFFF",
     headerBold: true,
-    rowBackground: "#FFFFFF",
+    rowColors: ["#FFFFFF", "#ECFDF5"],
     rowText: "#1F2937",
-    stripe: "#ECFDF5",
     totalsBackground: "#D1FAE5",
     totalsText: "#065F46",
     totalsBold: true,
@@ -61,6 +73,7 @@ export const BUILTIN_LOOKS: Record<TableTheme, TableLook> = {
 };
 
 const BUILTIN_PREFIX: Record<TableTheme, string> = {
+  none: "Table_None",
   corporateBlue: "Table_CorporateBlue",
   minimal: "Table_Minimal",
   emerald: "Table_Emerald",
@@ -73,6 +86,20 @@ const COLOR = /^#[0-9a-fA-F]{6}$/;
 const color = (value: unknown, fallback: string) =>
   typeof value === "string" && COLOR.test(value) ? value.toUpperCase() : fallback;
 
+export const MAX_ROW_COLORS = 4;
+
+// Row colours from a stored look: the list (1 to 4), or a look saved before
+// the list (one row colour and an optional stripe colour)
+function readRowColors(raw: Partial<TableLook> & { rowBackground?: unknown; stripe?: unknown }): string[] {
+  const base = BUILTIN_LOOKS.corporateBlue.rowColors;
+  if (Array.isArray(raw.rowColors) && raw.rowColors.length > 0) {
+    return raw.rowColors.slice(0, MAX_ROW_COLORS).map((c, i) => color(c, base[i % base.length]!));
+  }
+  const first = color(raw.rowBackground, base[0]!);
+  if (raw.stripe === null) return [first];
+  return [first, color(raw.stripe, base[1]!)];
+}
+
 // A look read from a saved report, with anything missing or invalid replaced
 export function normalizeLook(raw: Partial<TableLook>): TableLook {
   const base = BUILTIN_LOOKS.corporateBlue;
@@ -80,9 +107,8 @@ export function normalizeLook(raw: Partial<TableLook>): TableLook {
     headerBackground: color(raw.headerBackground, base.headerBackground),
     headerText: color(raw.headerText, base.headerText),
     headerBold: raw.headerBold !== false,
-    rowBackground: color(raw.rowBackground, base.rowBackground),
+    rowColors: readRowColors(raw),
     rowText: color(raw.rowText, base.rowText),
-    stripe: raw.stripe === null ? null : color(raw.stripe, base.stripe!),
     totalsBackground: color(raw.totalsBackground, base.totalsBackground),
     totalsText: color(raw.totalsText, base.totalsText),
     totalsBold: raw.totalsBold !== false,
@@ -96,9 +122,9 @@ export function normalizeLook(raw: Partial<TableLook>): TableLook {
   };
 }
 
-// What a table looks like now
-export function resolveLook(binding: Pick<TableDataBinding, "theme" | "look"> | undefined): TableLook {
-  if (binding?.look) return binding.look;
+// What a table looks like now (a data table's binding or a typed table's setup)
+export function resolveLook(binding: { theme?: string; look?: TableLook } | undefined): TableLook {
+  if (binding?.look) return normalizeLook(binding.look);
   const theme = binding?.theme;
   return BUILTIN_LOOKS[theme && isBuiltinTheme(theme) ? theme : "corporateBlue"];
 }
@@ -120,12 +146,20 @@ const PART_SUFFIX: Record<TableStylePart, string> = {
 export const tableStyleName = (prefix: string, part: TableStylePart) =>
   `${prefix}_${PART_SUFFIX[part]}`;
 
-// Every second row; REPORT_COUNT inside a table counts that table's rows
-export const STRIPE_CONDITION = "new Boolean($V{REPORT_COUNT}.intValue() % 2 == 0)";
+// Body row `index` (from 0) takes the row colours in turn
+export const rowColorAt = (look: TableLook, index: number): string =>
+  look.rowColors[((index % look.rowColors.length) + look.rowColors.length) % look.rowColors.length]!;
+
+// Row colour `i` of `count`: REPORT_COUNT inside a table counts that table's rows from 1
+export const rowColorCondition = (i: number, count: number) =>
+  `new Boolean(($V{REPORT_COUNT}.intValue() - 1) % ${count} == ${i})`;
 
 const CELL_PADDING = { leftPadding: 4, rightPadding: 4 };
-const THIN = 0.5;
-const RULE = 1;
+// Line widths: the lines between cells, and the stronger line under the header / above the totals
+export const TABLE_LINE_WIDTH = 0.5;
+export const TABLE_RULE_WIDTH = 1;
+const THIN = TABLE_LINE_WIDTH;
+const RULE = TABLE_RULE_WIDTH;
 const pen = (lineWidth: number, lineColor: string) => ({ lineWidth, lineStyle: "Solid", lineColor });
 
 // Borders of one part, as JasperReports pens
@@ -155,15 +189,17 @@ export function buildLookStyles(prefix: string, look: TableLook): ReportStyle[] 
   const row: ReportStyle = {
     name: tableStyleName(prefix, "row"),
     mode: "Opaque",
-    backcolor: look.rowBackground,
+    backcolor: look.rowColors[0],
     forecolor: look.rowText,
     ...font,
     box: partBox(look, "row"),
   };
-  if (look.stripe) {
-    row.conditionalStyles = [
-      { conditionExpression: STRIPE_CONDITION, properties: { mode: "Opaque", backcolor: look.stripe } },
-    ];
+  const count = look.rowColors.length;
+  if (count > 1) {
+    row.conditionalStyles = look.rowColors.slice(1).map((backcolor, i) => ({
+      conditionExpression: rowColorCondition(i + 1, count),
+      properties: { mode: "Opaque", backcolor },
+    }));
   }
   const totals: ReportStyle = {
     name: tableStyleName(prefix, "totals"),
@@ -185,7 +221,7 @@ export function lookPartStyles(look: TableLook): Record<TableStylePart, ReportSt
 
 // Colours shown on a style tile
 export function lookSwatch(look: TableLook): { header: string; row: string; stripe: string } {
-  return { header: look.headerBackground, row: look.rowBackground, stripe: look.stripe ?? look.rowBackground };
+  return { header: look.headerBackground, row: look.rowColors[0]!, stripe: look.rowColors[1] ?? look.rowColors[0]! };
 }
 
 // ── Saved table styles ──────────────────────────────────────────────────────
@@ -227,11 +263,10 @@ const penCss = (p?: { lineWidth?: number; lineStyle?: string; lineColor?: string
   return `${p.lineWidth}px ${style} ${p.lineColor || "#000000"}`;
 };
 
-// CSS for a table cell drawn with a report style
-export function tableCellCss(style: ReportStyle, striped = false): Record<string, string> {
+// CSS for a table cell drawn with a report style (`rowColor`: a body row's colour)
+export function tableCellCss(style: ReportStyle, rowColor?: string): Record<string, string> {
   const css: Record<string, string> = {};
-  const stripe = striped ? style.conditionalStyles?.[0]?.properties?.backcolor : undefined;
-  const background = stripe || (style.mode !== "Transparent" ? style.backcolor : undefined);
+  const background = rowColor || (style.mode !== "Transparent" ? style.backcolor : undefined);
   if (background) css.backgroundColor = background;
   if (style.forecolor) css.color = style.forecolor;
   if (style.fontSize) css.fontSize = `${style.fontSize}px`;

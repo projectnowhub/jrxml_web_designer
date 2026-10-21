@@ -50,12 +50,12 @@ jrxml_web_designer/
     ├── config/               # apiConfig.ts, fonts.config.ts
     ├── services/             # apiClient, auth, reportService (PDF), dataSourceService (table data), images
     ├── mocks/                # Dummy table data sources until the backend API exists
-    ├── mcp/                  # AI assistant tool schemas
+    ├── mcp/                  # AI assistant: tools, element schemas (elements/), placement rules, API calls
     ├── composables/          # useUndoRedo, useZoom, useTableRows, useDesignerFiles, useLivePreview, alignment/snap/drag…
     ├── components/
     │   ├── PDFDesigner.vue           # ★ Orchestrator: holds the whole model
-    │   ├── ElementLibrary.vue        # Left panel: element tiles, Table Data, Styles
-    │   ├── designer/                 # DesignerCanvas, TableDataList, selection/alignment layers
+    │   ├── ElementLibrary.vue        # Left panel: element tiles, Report Data, Styles
+    │   ├── designer/                 # DesignerCanvas, ReportDataPanel, selection/alignment layers
     │   │   └── properties/           # ElementProperties (right panel), TableDataPanel, FrameProperties, PaginationProperties…
     │   ├── elements/                 # One component per element type + ElementRegistry.ts (library tiles, defaults)
     │   ├── modals/                   # BaseModal, PdfPreviewModal, TableConfigModal…
@@ -67,6 +67,11 @@ jrxml_web_designer/
         ├── jrxmlGenerator.ts         # ★ JSON → JRXML
         ├── jrxmlHtmlRenderer.ts      # JRXML → HTML (canvas rendering helper)
         ├── framePresets.ts           # Boxes, templates, page border, rounded borders
+        ├── reportParts.ts            # Element presets from a monthly report (header, footer, headings, legend, sign-off)
+        ├── customTable.ts            # Custom (typed) tables: grid, merges, rows/columns
+        ├── specialPages.ts           # Cover and contents pages (title / background in JRXML)
+        ├── pageDesigns.ts            # Cover / contents page designs
+        ├── contentsList.ts           # Contents list element (fill from section headings)
         ├── paginationPresets.ts      # Page Number element
         ├── jrxml/
         │   ├── parse.ts              # ★ JRXML → JSON
@@ -76,7 +81,8 @@ jrxml_web_designer/
         │   ├── tableXml.ts           # Data tables ⇄ JRXML
         │   ├── xsdValidator.ts       # Validate XSD + Auto Fix
         │   └── validator.ts, types.ts, uuidGenerator.ts
-        └── table/                    # Data table logic: binding, layout, themes, drag payloads
+        ├── table/                    # Data table logic: binding, layout, themes, drag payloads
+        └── barcode/                  # Barcode types, samples, input rules; drawing like the report prints it
 ```
 
 ## 3. Data Model (`src/types/index.ts`)
@@ -123,7 +129,7 @@ Entry: `parseJRXMLContent()` in `src/utils/jrxml/parse.ts`, using the browser `D
 
 ### 5.1 Layout
 
-- **Left**: `ElementLibrary.vue`, with element tiles (Basic, Composite, Element Presets), the Table Data source list and Styles
+- **Left**: `ElementLibrary.vue`, with element tiles (Basic, Composite, Element Presets), the Report Data list (projects, their details and tables) and Styles
 - **Centre**: `DesignerCanvas.vue`, with page sheets, bands, element components, rulers and grid
 - **Right**: `ElementProperties.vue`, with the selected element's properties (Basic / Style Settings / Table tabs), or report and band settings when nothing is selected
 - **Bottom**: `BottomPanel.vue`, with Page Settings and JRXML Content (CodeMirror editor, Validate XSD, Auto Fix, Preview PDF, Download)
@@ -133,18 +139,22 @@ Entry: `parseJRXMLContent()` in `src/utils/jrxml/parse.ts`, using the browser `D
 | Feature | Where |
 |---------|-------|
 | Pages | One Detail band per page (`pageIndex` on elements); "Add page after" in the canvas; written as `<break type="Page">` |
-| Boxes, presets, page border | `utils/framePresets.ts`, `elements/FrameElement.vue` |
+| Boxes, presets, page border | `utils/framePresets.ts`, `utils/reportParts.ts`, `elements/FrameElement.vue` |
+| Custom (typed) tables | `utils/customTable.ts`, `utils/jrxml/customTableXml.ts`, `elements/CustomTableElement.vue`, `properties/CustomTableProperties.vue` |
 | Page Number | `utils/paginationPresets.ts`, `properties/PaginationProperties.vue` |
 | Text editing | `elements/TextFieldElement.vue`, `TextFormatToolbar.vue`, `utils/textFit.ts` |
 | Images | `services/imageService.ts` (upload to `<VITE_OAUTH_BASE_URL>/rest/files`), crop and corner radius in `utils/elementUtils.ts` |
-| Data tables | `utils/table/`, `jrxml/tableXml.ts`, `modals/TableConfigModal.vue`, `designer/TableDataList.vue` |
+| Data tables | `utils/table/`, `jrxml/tableXml.ts`, `modals/TableConfigModal.vue`, `designer/ReportDataPanel.vue` |
+| Report engine (server-side charts and table queries) | `src/engine/`, `vite.engine.config.ts`, `npm run build:engine`; contract in `docs/REPORT_ENGINE.md` |
+| Barcodes | `utils/barcode/` (types, examples, input rules, sizing and drawing with bwip-js, QR content, GS1 fields), `properties/BarcodeProperties.vue` (+ `QrContentEditor.vue`, `Gs1Editor.vue`), `elements/BarcodeElement.vue`; barcode table columns: `jrxml/tableXml.ts`, `common/BarcodeCell.vue` |
+| Project details on the page | `utils/projectFields.ts` (a dropped detail becomes plain text or a fixed image) |
 | Band fitting | `utils/bandFit.ts`, `utils/pageFit.ts`, `properties/BandHeightControls.vue` |
 | Undo / redo | `composables/useUndoRedo.ts` (whole-model snapshots) |
 | Auto-save, files | `composables/useDesignerFiles.ts`, `utils/fileUtils.ts` (browser localStorage) |
 
 ### 5.3 AI Assistant
 
-`components/ai/AIChatPanel.vue` (right panel tab) talks to an OpenAI-compatible API (`config/aiConfig.ts`, `composables/useAIChat.ts`). The model edits the design through tools defined in `mcp/schemas/toolSchemas.ts` and run by `mcp/handlers.ts`: reading the design, creating, moving, resizing, aligning, styling and deleting elements, band heights, report properties, fields and parameters, undo and redo. Destructive actions ask for confirmation (`mcp/confirmHandler.ts`).
+`components/ai/AIChatPanel.vue` (right panel tab) talks to the Anthropic Claude Messages API or an OpenAI-compatible API (`mcp/aiService.ts`, settings in `config/aiConfig.ts`). `composables/useAIChat.ts` runs the loop: the model gets the system prompt with the current design (`mcp/design.ts` → `designStateText`), calls tools, gets their results back and carries on until it answers (at most 12 rounds); everything done for one message is one undo step. The tools (`mcp/schemas/toolSchemas.ts`, run by `mcp/handlers.ts`) read the design and the report data, create every element of the library through one schema per element (`mcp/elements/`: text, headings, image, line, shapes, box with children, typed and data tables, chart, barcode, table of contents, page number, date, page border, presets; `create_design` lays out many at once), change, move, align and delete them, set band heights, pages and page setup, and undo / redo. Placement and the designer's rules (pages, bands, boxes, cover / contents pages) are in `mcp/design.ts`. Details: `CLAUDE.md` → "AI assistant".
 
 ### 5.4 Modals
 
@@ -158,14 +168,14 @@ All are built on `BaseModal.vue`: `TableConfigModal` (table setup), `PdfPreviewM
 
 ## 6. Data Tables
 
-Tables show rows from a backend source (dummy data in `src/mocks/` until `VITE_DATA_SOURCE_API` is set). The user drags a source from Table Data onto a table and sets columns, filters, sort and totals in `TableConfigModal` (filters in `TableFilterPanel.vue`); the table's Basic Properties tab picks the style, its Style Settings tab customizes it (`TableDataPanel.vue`). The JRXML gets one sub-dataset per table, and the setup is saved as JSON in the `com.cdp.table.binding` property. Full rules: `CLAUDE.md`, "Data Tables".
+Report data comes from the backend per project (dummy projects in `src/mocks/` until `VITE_DATA_SOURCE_API` is set). The user picks the report's projects in Report Data; each project offers its details (name, logo, introduction…; dragged onto the page, the value is copied into a normal Text or Image element) and its table sources. Tables show rows from a project's source: the user drags a source from Report Data onto a table and sets columns, filters, sort and totals in `TableConfigModal` (filters in `TableFilterPanel.vue`); the table's Basic Properties tab picks the style, its Style Settings tab customizes it (`TableDataPanel.vue`). The JRXML gets one sub-dataset per table, and the setup is saved as JSON in the `com.cdp.table.binding` property. Full rules: `CLAUDE.md`, "Data Tables".
 
 ## 7. External Services
 
 ### 7.1 PDF preview server
 
 - `POST https://preview.report.projectnowcdp.com/api/pdf/generateForm` (configurable in Preview Server Settings)
-- Sends the JRXML, parameters, one main data row, and each table's rows as `subDataSources[datasetName]`; returns the PDF
+- Sends only the JRXML (form field `jrxml`); the report server fetches table rows and chart numbers itself from the setups in it (`docs/REPORT_ENGINE.md`); returns the PDF
 - Code: `services/reportService.ts`, `PdfPreviewModal.vue`. Server source: https://github.com/fengyunhe/jrxml_preview_server
 
 ### 7.2 CDP backend

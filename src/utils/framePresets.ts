@@ -25,16 +25,16 @@ export const FRAME_COLORS = {
   danger: "#E5484D",
 } as const;
 
-const pen = (lineWidth: number, lineColor: string, lineStyle = "Solid"): Pen => ({
+export const pen = (lineWidth: number, lineColor: string, lineStyle = "Solid"): Pen => ({
   lineWidth,
   lineStyle,
   lineColor,
 });
 
-type FrameStylePatch = Pick<FrameElement, "box" | "mode" | "backcolor">;
+export type FrameStylePatch = Pick<FrameElement, "box" | "mode" | "backcolor">;
 
 // Looks used by the card templates
-const tint = (backcolor: string): FrameStylePatch => ({ box: undefined, mode: "Opaque", backcolor });
+export const tint = (backcolor: string): FrameStylePatch => ({ box: undefined, mode: "Opaque", backcolor });
 const lined = (box: Box, backcolor?: string): FrameStylePatch =>
   backcolor
     ? { box, mode: "Opaque", backcolor }
@@ -295,10 +295,12 @@ export interface FrameTemplateContext {
   // Printable height (page height minus top/bottom margins)
   availableHeight: number;
   // Translator for placeholder text
-  t: (key: string) => string;
+  t: (key: string, named?: Record<string, unknown>) => string;
+  // Space kept clear at the sheet's edges by text and logos (a whole-sheet cover)
+  inset?: number;
 }
 
-interface TextOptions {
+export interface TextOptions {
   x: number;
   y: number;
   width: number;
@@ -308,6 +310,7 @@ interface TextOptions {
   forecolor?: string;
   isBold?: boolean;
   isItalic?: boolean;
+  isUnderline?: boolean;
   textAlignment?: "Left" | "Center" | "Right" | "Justified";
   verticalAlignment?: "Top" | "Middle" | "Bottom";
   backcolor?: string;
@@ -344,7 +347,7 @@ export function releaseBoxPart(element: { properties?: { name?: string }[] }): v
   if (element.properties.length === 0) delete element.properties;
 }
 
-function text(options: TextOptions): DesignElement {
+export function text(options: TextOptions): DesignElement {
   const box: Box | undefined = options.leftPadding
     ? { leftPadding: options.leftPadding }
     : undefined;
@@ -359,6 +362,7 @@ function text(options: TextOptions): DesignElement {
     fontSize: options.fontSize,
     isBold: options.isBold ?? false,
     isItalic: options.isItalic ?? false,
+    isUnderline: options.isUnderline ?? false,
     forecolor: options.forecolor ?? FRAME_COLORS.textDark,
     textAlignment: options.textAlignment ?? "Left",
     verticalAlignment: options.verticalAlignment ?? "Top",
@@ -391,7 +395,7 @@ const FRAME_DEFAULTS: FrameElement = {
   isPrintRepeatedValues: true,
 };
 
-function frame(
+export function frame(
   width: number,
   height: number,
   look: FrameStylePatch,
@@ -447,7 +451,7 @@ function titledSection({ t, availableWidth }: FrameTemplateContext): FrameElemen
 // Photo area of the Photo Box: a normal image element (same settings as the
 // Image tile), so uploading works the same, fitting the picture's proportions.
 // "Blank" on error: an empty image source would otherwise stop the PDF.
-function photo(x: number, y: number, width: number, height: number): DesignElement {
+export function photo(x: number, y: number, width: number, height: number): DesignElement {
   return createElement("image", {
     uuid: crypto.randomUUID(),
     x,

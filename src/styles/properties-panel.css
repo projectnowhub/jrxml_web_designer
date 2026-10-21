@@ -2,30 +2,30 @@
 
 :root {
   /* Colors */
-  --prop-primary-color: #1890ff;
-  --prop-primary-hover: #40a9ff;
-  --prop-primary-active: #096dd9;
+  --prop-primary-color: #6366f1;
+  --prop-primary-hover: #7c5cf7;
+  --prop-primary-active: #4f46e5;
 
   /* Text colors */
-  --prop-text-primary: #1f2937;
-  --prop-text-secondary: #6b7280;
-  --prop-text-tertiary: #9ca3af;
+  --prop-text-primary: #1c1b26;
+  --prop-text-secondary: #6f6a7e;
+  --prop-text-tertiary: #8a84a3;
   --prop-text-placeholder: #bfbfbf;
 
   /* Border colors */
-  --prop-border-color: #e5e7eb;
-  --prop-border-hover: #93c5fd;
-  --prop-border-focus: #1890ff;
+  --prop-border-color: #e6e5ee;
+  --prop-border-hover: #c4b5fd;
+  --prop-border-focus: #7c5cf7;
 
   /* Background colors */
   --prop-bg-primary: #fff;
-  --prop-bg-secondary: #f8f9fb;
-  --prop-bg-tertiary: #eef0f4;
-  --prop-bg-hover: #f0f0f0;
+  --prop-bg-secondary: #ffffff;
+  --prop-bg-tertiary: #f6f5fb;
+  --prop-bg-hover: rgba(124, 92, 247, 0.05);
   --prop-bg-disabled: #f5f5f5;
 
   /* Dividers */
-  --prop-divider-color: #eceef2;
+  --prop-divider-color: #ecebf2;
 
   /* Danger / delete */
   --prop-danger-color: #ff4d4f;
@@ -59,11 +59,11 @@
   --prop-border-radius-lg: 10px;
 
   /* Shadows */
-  --prop-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+  --prop-shadow-sm: 0 1px 2px 0 rgba(23, 20, 44, 0.04), 0 1px 3px rgba(23, 20, 44, 0.05);
   --prop-shadow-md: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
 
   /* Focus state */
-  --prop-focus-ring: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  --prop-focus-ring: 0 0 0 2px rgba(124, 92, 247, 0.16);
 
   /* Transitions */
   --prop-transition-fast: 0.1s ease;
@@ -780,4 +780,21 @@
 
 .table-properties .prop-list {
   background: #fff;
+}
+
+/* Cards that appear (a new selection, an option turned on) fade in */
+@keyframes prop-card-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.prop-form-group {
+  animation: prop-card-in 0.18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prop-form-group {
+    animation: none;
+  }
 }

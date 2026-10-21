@@ -415,7 +415,7 @@ import {
 } from "@lucide/vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { exchangeCode, fetchUser } from "../services/authService";
+import { exchangeCode, fetchUser, loginErrorQuery } from "../services/authService";
 import { closeTab } from "../utils/closeTab";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
 
@@ -490,7 +490,7 @@ onMounted(async () => {
   } catch (error) {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_USER_KEY);
-    await router.replace({ path: "/login", query: { error: "callback" } });
+    await router.replace({ path: "/login", query: loginErrorQuery(error) });
   }
 });
 </script>

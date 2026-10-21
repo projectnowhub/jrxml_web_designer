@@ -4,7 +4,10 @@ import {
   Check,
   CircleX,
   Copy,
+  File as FileIcon,
+  FileText,
   Info,
+  Maximize2,
   MessageSquare,
   User,
   Wrench,
@@ -13,6 +16,8 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { LOCALE_TAGS, type AppLocale } from '@/i18n';
 import type { ChatMessage } from '@/composables/useAIChat';
+import type { ChatAttachment } from '@/mcp/attachments';
+import BaseModal from '@/components/modals/BaseModal.vue';
 import ToolCallDisplay from './ToolCallDisplay.vue';
 
 // Props
@@ -22,6 +27,15 @@ const props = defineProps<{
 
 // State
 const copied = ref(false);
+// A long message shows its start in a scrolling box until "Show all"
+const showAll = ref(false);
+// The large reader: the whole text, or one attached picture
+const reader = ref<{ kind: 'text' } | { kind: 'image'; attachment: ChatAttachment } | null>(null);
+
+// Long enough to scroll in place (and to offer the large reader)
+const isLong = computed(() => props.message.content.length > 600 || props.message.content.split('\n').length > 12);
+const pictures = computed(() => (props.message.attachments ?? []).filter((a) => a.previewUrl));
+const files = computed(() => (props.message.attachments ?? []).filter((a) => !a.previewUrl));
 
 // Style computation
 const messageClass = computed(() => ({
@@ -86,7 +100,15 @@ async function copyMessage() {
         <span class="role-name">{{ message.role === 'user' ? t('ai.message.you') : t('ai.title') }}</span>
         <span class="timestamp">{{ formattedTime }}</span>
         <button
-          v-if="message.role === 'assistant' && message.content"
+          v-if="isLong"
+          class="copy-btn"
+          @click="reader = { kind: 'text' }"
+          :title="t('ai.message.openLarge')"
+        >
+          <Maximize2 :size="14" />
+        </button>
+        <button
+          v-if="(message.role === 'assistant' || message.role === 'user') && message.content"
           class="copy-btn"
           @click="copyMessage"
           :title="copied ? t('ai.message.copied') : t('ai.message.copy')"
@@ -96,10 +118,29 @@ async function copyMessage() {
         </button>
       </div>
 
-      <!-- Message body -->
-      <div class="message-body">
-        {{ message.content }}
+      <!-- Attached pictures and files -->
+      <div v-if="message.attachments?.length" class="message-attachments">
+        <button
+          v-for="a in pictures"
+          :key="a.id"
+          type="button"
+          class="message-picture"
+          :title="t('ai.message.openPicture', { name: a.name })"
+          @click="reader = { kind: 'image', attachment: a }"
+        >
+          <img :src="a.previewUrl" :alt="a.name" />
+        </button>
+        <span v-for="a in files" :key="a.id" class="message-file" :title="a.name">
+          <component :is="a.kind === 'pdf' ? FileIcon : FileText" :size="14" />
+          {{ a.name }}
+        </span>
       </div>
+
+      <!-- Message body: a long one scrolls in place until "Show all" -->
+      <div v-if="message.content" :class="['message-body', { 'is-long': isLong && !showAll }]">{{ message.content }}</div>
+      <button v-if="isLong" type="button" class="show-all" @click="showAll = !showAll">
+        {{ showAll ? t('ai.message.showLess') : t('ai.message.showAll') }}
+      </button>
 
       <!-- Tool call display -->
       <ToolCallDisplay
@@ -108,6 +149,19 @@ async function copyMessage() {
         :tool-result="message.toolResult"
       />
     </div>
+
+    <!-- The large reader -->
+    <BaseModal
+      :visible="!!reader"
+      :title="reader?.kind === 'image' ? reader.attachment.name : t('ai.message.readerTitle')"
+      :show-footer="false"
+      :content-style="{ width: 'min(960px, 94vw)', maxWidth: '94vw' }"
+      :body-style="{ maxHeight: '78vh', overflow: 'auto' }"
+      @update:visible="(open: boolean) => { if (!open) reader = null; }"
+    >
+      <img v-if="reader?.kind === 'image'" :src="reader.attachment.previewUrl" :alt="reader.attachment.name" class="reader-picture" />
+      <div v-else class="reader-text">{{ message.content }}</div>
+    </BaseModal>
   </div>
 </template>
 
@@ -218,7 +272,73 @@ async function copyMessage() {
 .message-body {
   line-height: 1.5;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   user-select: text;
   cursor: text;
+}
+
+/* A long message scrolls in its own box (Show all lets it grow) */
+.message-body.is-long {
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.show-all {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--prop-primary-color, #6440f4);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.message-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.message-picture {
+  padding: 0;
+  border: 1px solid var(--prop-border-color, #e6e5ee);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  cursor: zoom-in;
+}
+
+.message-picture img {
+  display: block;
+  height: 72px;
+  max-width: 160px;
+  object-fit: cover;
+}
+
+.message-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--prop-border-color, #e6e5ee);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+}
+
+.reader-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+  font-size: 14px;
+  user-select: text;
+}
+
+.reader-picture {
+  display: block;
+  max-width: 100%;
+  margin: 0 auto;
 }
 </style>

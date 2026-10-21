@@ -49,7 +49,11 @@
             class="dt-cell dt-more"
             :style="cellStyle('row', undefined, 0, r)"
           >
-            {{ t("dataTable.moreRows", slot.count) }}
+            {{
+              slot.limit
+                ? t("dataTable.moreRowsLimited", { count: slot.count, limit: slot.limit }, slot.count)
+                : t("dataTable.moreRows", slot.count)
+            }}
           </div>
           <div
             v-else-if="slot.kind === 'message'"
@@ -65,7 +69,13 @@
               class="dt-cell"
               :style="cellStyle('row', col, i, r)"
             >
-              {{ formatCellValue(slot.row[col.key], col.type, locale) }}
+              <BarcodeCell
+                v-if="tableColumnBarcode(col)"
+                :type="tableColumnBarcode(col)!"
+                :value="slot.row[col.key]"
+                :height="rowHeight"
+              />
+              <template v-else>{{ formatCellValue(slot.row[col.key], col.type, locale) }}</template>
             </div>
           </template>
         </div>
@@ -107,6 +117,8 @@ import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { DatabaseZap } from "@lucide/vue";
 import BaseElement from "./BaseElement.vue";
+import BarcodeCell from "@/components/common/BarcodeCell.vue";
+import { tableColumnBarcode } from "@/utils/barcode/barcodeTypes";
 import { useTableRows } from "@/composables/useTableRows";
 import {
   CANVAS_SAMPLE_ROWS,
@@ -119,7 +131,7 @@ import {
   rowSlots,
 } from "@/utils/table/dataTable";
 import { distributeColumnWidths } from "@/utils/table/dataBinding";
-import { lookPartStyles, resolveLook, tableCellCss, type TableStylePart } from "@/utils/table/tableThemes";
+import { lookPartStyles, resolveLook, rowColorAt, tableCellCss, type TableStylePart } from "@/utils/table/tableThemes";
 import { isDataSourceDrag } from "@/utils/table/dataDrag";
 import type { SelectedElementInfo, TableElement } from "@/types";
 import type { DataRow, TableColumnBinding } from "@/types/dataSource";
@@ -170,7 +182,7 @@ const displayColumns = computed<PreviewColumn[]>(() => {
 
 type Slot =
   | { kind: "row"; row: DataRow }
-  | { kind: "more"; count: number }
+  | { kind: "more"; count: number; limit?: number }
   | { kind: "message"; text: string };
 
 // Fill the table's height with sample rows; the last slot says how many more
@@ -179,16 +191,21 @@ const rowSlotsShown = computed<Slot[]>(() => {
   if (loading.value && !rows.value.length) return [{ kind: "message", text: t("dataTable.loading") }];
   if (failed.value) return [{ kind: "message", text: t("dataTable.loadFailed") }];
   if (!rows.value.length) return [{ kind: "message", text: t("dataTable.noRows") }];
-  const fits = totalCount.value <= slots ? totalCount.value : slots - 1;
+  // The report prints only the first rowLimit rows when there is a limit
+  const limit = binding.value?.rowLimit;
+  const limited = limit !== undefined && limit < totalCount.value;
+  const printed = limited ? limit : totalCount.value;
+  const fits = printed <= slots ? printed : slots - 1;
   const shown: Slot[] = rows.value.slice(0, fits).map((row) => ({ kind: "row", row }));
-  if (totalCount.value > fits) shown.push({ kind: "more", count: totalCount.value - fits });
+  if (printed > fits) shown.push({ kind: "more", count: printed - fits, limit: limited ? limit : undefined });
   return shown;
 });
 
-const partStyles = computed(() => lookPartStyles(resolveLook(binding.value)));
+const look = computed(() => resolveLook(binding.value));
+const partStyles = computed(() => lookPartStyles(look.value));
 
 function cellStyle(part: TableStylePart, col: PreviewColumn | undefined, index: number, rowIndex = 0) {
-  const css: Record<string, string> = tableCellCss(partStyles.value[part], part === "row" && rowIndex % 2 === 1);
+  const css: Record<string, string> = tableCellCss(partStyles.value[part], part === "row" ? rowColorAt(look.value, rowIndex) : undefined);
   if (col) {
     css.width = `${col.width}px`;
     css.justifyContent =
@@ -226,7 +243,7 @@ function onDragLeave(event: DragEvent) {
 }
 
 .data-table.is-drop-target {
-  outline: 2px dashed #1890ff;
+  outline: 2px dashed #6440f4;
   outline-offset: 2px;
 }
 
@@ -234,7 +251,7 @@ function onDragLeave(event: DragEvent) {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(24, 144, 255, 0.08);
+  background: rgba(100, 64, 244, 0.08);
   pointer-events: none;
 }
 
@@ -279,7 +296,7 @@ function onDragLeave(event: DragEvent) {
   gap: 6px;
   font-size: 11px;
   font-weight: 600;
-  color: #1890ff;
+  color: #6440f4;
   background: rgba(255, 255, 255, 0.55);
   pointer-events: none;
 }

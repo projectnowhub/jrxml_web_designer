@@ -14,6 +14,8 @@ import { useAIChat } from '@/composables/useAIChat';
 import { useAIConfigManager, type AIConfiguration } from '@/composables/useAIConfigManager';
 import { checkWebMCPSupport, type BrowserSupportResult } from '@/utils/browserCompatibility';
 import type { MCPContext } from '@/mcp';
+import { DEFAULT_CLAUDE_MODEL, DEFAULT_MAX_TOKENS, MODEL_OPTIONS } from '@/config/aiConfig';
+import type { ChatAttachment } from '@/mcp/attachments';
 import ChatMessage from './ChatMessage.vue';
 import ChatInput from './ChatInput.vue';
 
@@ -124,8 +126,8 @@ function handleResetConfig() {
 }
 
 // Send message
-async function handleSendMessage(content: string) {
-  await sendMessage(content);
+async function handleSendMessage({ text, attachments }: { text: string; attachments: ChatAttachment[] }) {
+  await sendMessage(text, attachments);
 }
 
 // Scroll to bottom
@@ -236,10 +238,15 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             id="modelName"
             v-model="configForm.modelName"
             type="text"
-            placeholder="claude-3-5-sonnet-20241022"
+            list="ai-model-options"
+            :placeholder="DEFAULT_CLAUDE_MODEL"
             class="form-input"
           />
-          <span class="form-hint">{{ t("ai.settings.defaultValue", { value: "claude-3-5-sonnet-20241022" }) }}</span>
+          <!-- Suggestions; any other model name can be typed -->
+          <datalist id="ai-model-options">
+            <option v-for="m in MODEL_OPTIONS" :key="m.id" :value="m.id">{{ t(`ai.settings.models.${m.label}`) }}</option>
+          </datalist>
+          <span class="form-hint">{{ t("ai.settings.modelHint", { value: DEFAULT_CLAUDE_MODEL }) }}</span>
         </div>
 
         <!-- Token limit -->
@@ -253,7 +260,7 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
             max="100000"
             class="form-input"
           />
-          <span class="form-hint">{{ t("ai.settings.defaultValue", { value: 4096 }) }}</span>
+          <span class="form-hint">{{ t("ai.settings.maxTokensHint", { value: DEFAULT_MAX_TOKENS }) }}</span>
         </div>
 
         <!-- Temperature parameter -->

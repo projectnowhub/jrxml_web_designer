@@ -113,10 +113,10 @@ const previewStyle = (preset: BorderPreset) => {
 .custom-badge {
   padding: 1px 8px;
   border-radius: 999px;
-  background: rgba(24, 144, 255, 0.1);
+  background: rgba(100, 64, 244, 0.1);
   font-size: 10px;
   font-weight: 600;
-  color: var(--prop-border-focus, #1890ff);
+  color: var(--prop-border-focus, #6440f4);
 }
 
 .field-label {
@@ -153,13 +153,13 @@ const previewStyle = (preset: BorderPreset) => {
 }
 
 .preset-swatch.active {
-  border-color: var(--prop-border-focus, #1890ff);
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  border-color: var(--prop-border-focus, #6440f4);
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.2);
 }
 
 .preset-swatch:focus-visible {
   outline: none;
-  border-color: var(--prop-border-focus, #1890ff);
+  border-color: var(--prop-border-focus, #6440f4);
   box-shadow: var(--prop-focus-ring);
 }
 
@@ -174,7 +174,7 @@ const previewStyle = (preset: BorderPreset) => {
 }
 
 .preset-swatch.active .preset-sample-wrap {
-  background: rgba(24, 144, 255, 0.08);
+  background: rgba(100, 64, 244, 0.08);
 }
 
 .preset-sample {
@@ -201,7 +201,7 @@ const previewStyle = (preset: BorderPreset) => {
 }
 
 .preset-swatch.active .preset-name {
-  color: var(--prop-border-focus, #1890ff);
+  color: var(--prop-border-focus, #6440f4);
   font-weight: 600;
 }
 

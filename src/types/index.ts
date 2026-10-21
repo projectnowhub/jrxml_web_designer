@@ -1,4 +1,4 @@
-import type { TableDataBinding } from "./dataSource";
+import type { ChartBinding, ReportProject, TableDataBinding, TableLook } from "./dataSource";
 
 // Element type enum
 export type ElementType =
@@ -10,7 +10,9 @@ export type ElementType =
   | "frame"
   | "table"
   | "chart"
-  | "barcode";
+  | "barcode"
+  | "customTable"
+  | "contentsList";
 
 // Query interface
 export interface Query {
@@ -216,6 +218,37 @@ export interface ReportProperties {
   orientation?: "portrait" | "landscape";
   pageCount?: number;
   bandLimits?: Record<string, { min: number; max: number }>;
+  // Projects whose data the report uses (the "Report Data" list)
+  projects?: ReportProject[];
+  // Pages at the front with no shared sections (utils/specialPages.ts): a
+  // cover (designer page 0) and contents pages after it
+  coverPage?: boolean;
+  contentsPages?: number;
+  // false: page numbers don't count the cover and contents pages
+  countSpecialPages?: boolean;
+  // The cover uses the whole sheet (written with a 0 bottom margin, see specialPages.ts)
+  fullPageCover?: boolean;
+  // How Section Headings number themselves (utils/headingSync.ts); unset: "SECTION 1."
+  headingNumbers?: HeadingNumbering;
+  // Table of Contents looks the user saved (utils/contentsList.ts)
+  contentsStyles?: SavedContentsStyle[];
+}
+
+// A Table of Contents look saved by the user, offered next to the ready-made ones
+export interface SavedContentsStyle {
+  id: string;
+  name: string;
+  look: Partial<ContentsListData>;
+}
+
+// Section Headings counted 1, 2… in page order, shown in this style
+export interface HeadingNumbering {
+  style: ContentsSectionStyle;
+  // "word" style: the word before the number ("SECTION 1.")
+  word?: string;
+  // Any other style: text before and after the number ("Chapter 1:")
+  before?: string;
+  after?: string;
 }
 
 // Base design element interface
@@ -407,96 +440,12 @@ export interface TableElement extends DesignElementBase {
   rowHeight?: number;
 }
 
-// Chart element interface
+// Chart element: one of nine chart types (utils/chart). Written to the JRXML
+// as an image of the chart with its setup (com.cdp.chart.binding), which the
+// parser reads back.
 export interface ChartElement extends DesignElementBase {
   type: "chart";
-  chartType:
-    | "pie"
-    | "pie3D"
-    | "bar"
-    | "bar3D"
-    | "xyBar"
-    | "stackedBar"
-    | "stackedBar3D"
-    | "line"
-    | "xyLine"
-    | "area"
-    | "xyArea"
-    | "scatter"
-    | "bubble"
-    | "timeSeries"
-    | "highLow"
-    | "candlestick"
-    | "meter"
-    | "thermometer"
-    | "multiAxis"
-    | "stackedArea"
-    | "gantt"
-    | "spider";
-  // Chart title
-  title?: string;
-  titleExpression?: string;
-  subtitleExpression?: string;
-  legendExpression?: string;
-  // Chart settings
-  isShowLegend?: boolean;
-  isShowTitle?: boolean;
-  isShowSubtitle?: boolean;
-  renderType?: "svg" | "draw" | "image";
-  customizerClass?: string;
-  // Hyperlink
-  hyperlinkTooltipExpression?: string;
-  hyperlinkTarget?: "Self" | "Blank" | "Top" | "Parent";
-  hyperlinkType?:
-    | "None"
-    | "Reference"
-    | "LocalAnchor"
-    | "LocalPage"
-    | "RemoteAnchor"
-    | "RemotePage"
-    | "Tooltip";
-  hyperlinkExpression?: string;
-  bookmarkLevel?: number;
-  // Evaluation settings
-  evaluationTime?:
-    | "Now"
-    | "Report"
-    | "Page"
-    | "Column"
-    | "Group"
-    | "Band"
-    | "Auto"
-    | "Master";
-  evaluationGroup?: string;
-  printWhenExpression?: string;
-  // Dataset
-  subDataset?: string;
-  dataSourceExpression?: string;
-  incrementType?: "None" | "Group" | "Page" | "Column" | "Report";
-  incrementGroup?: string;
-  // Series expressions (categorical charts: bar, line, area, stackedBar, etc.)
-  seriesExpression?: string;
-  categoryExpression?: string;
-  valueExpression?: string;
-  // Pie chart expression
-  keyExpression?: string;
-  // XY chart expressions (scatter, bubble, xyLine, xyArea, timeSeries, etc.)
-  xValueExpression?: string;
-  yValueExpression?: string;
-  // Rendering settings
-  isCircular?: boolean;
-  isShowShapes?: boolean;
-  itemLabelColor?: string;
-  itemLabelBackgroundColor?: string;
-  categoryAxisLabelExpression?: string;
-  valueAxisLabelExpression?: string;
-  // Specific to gauge/thermometer charts
-  dataExpression?: string;
-  shape?: "chord" | "pie" | "circle" | "fan" | "dash" | "bullet";
-  lowExpression?: string;
-  mediumExpression?: string;
-  highExpression?: string;
-  units?: string;
+  binding: ChartBinding;
 }
 
 // Barcode element interface
@@ -519,6 +468,9 @@ export interface BarcodeElement extends DesignElementBase {
     | "RoyalMailCustomer"
     | "USPSIntelligentMail";
   codeExpression?: string;
+  // Values typed for the other types (their code expressions): switching
+  // back to a type brings its own value back (com.cdp.barcode.values)
+  valuesByType?: Partial<Record<string, string>>;
   printWhenExpression?: string;
   rotation?: "None" | "Left" | "Right" | "UpsideDown";
   evaluationTime?:
@@ -531,6 +483,136 @@ export interface BarcodeElement extends DesignElementBase {
     | "Auto";
 }
 
+// Custom table: a grid the user types into (not project data). A merged cell is
+// the top-left cell of the block with colSpan / rowSpan; the cells it covers stay
+// in the grid but are not shown or written.
+export interface CustomTableCell {
+  // Plain text ("\n" for new lines), or HTML when `rich` (bold words, colours,
+  // bullet points, superscript...: what JasperReports' html markup reads)
+  text: string;
+  rich?: boolean;
+  colSpan?: number;
+  rowSpan?: number;
+  fill?: string;
+  color?: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  align?: "Left" | "Center" | "Right" | "Justified";
+  vAlign?: "Top" | "Middle" | "Bottom";
+  fontSize?: number;
+}
+
+export interface CustomTableRow {
+  // Design height; in the PDF a row grows to its tallest text
+  height: number;
+  cells: CustomTableCell[];
+}
+
+// Its look is a table style, like a data table's: `theme` is the built-in or saved
+// style it started from, `look` its actual look (none for an unchanged built-in),
+// `customized` = changed for this table only. Colours set on cells are exceptions
+// on top of the style.
+export interface CustomTableData {
+  columns: number[];
+  rows: CustomTableRow[];
+  theme: string;
+  look?: TableLook;
+  customized?: boolean;
+  // Top rows drawn as headings (0 to 3)
+  headerRows: number;
+  // The last row drawn as a totals row
+  totalRow: boolean;
+  padding: number;
+}
+
+export interface CustomTableElement extends DesignElementBase {
+  type: "customTable";
+  table: CustomTableData;
+}
+
+// Contents list (table of contents): one row per entry, written as plain text
+// fields (utils/contentsList.ts)
+export interface ContentsEntry {
+  number: string;
+  title: string;
+  page: string;
+  // 0: a section, 1: a sub-section (indented, not bold)
+  level: 0 | 1;
+  // Which heading (its uuid) the row stands for, in a list that follows the
+  // headings
+  key?: string;
+}
+
+// Automatic mode: the user's choices for the heading rows (kept on the first
+// part, keyed by the heading's uuid): headings left out, and the numbers typed
+// in when "Number automatically" is off (`ContentsListData.ownNumbers`)
+export interface ContentsAdjust {
+  hidden?: string[];
+  numbers?: Record<string, string>;
+}
+
+export interface ContentsListData {
+  entries: ContentsEntry[];
+  rowHeight: number;
+  fontSize: number;
+  // Width of the number column (0: no numbers) and of the page column
+  numberWidth: number;
+  pageWidth: number;
+  // Dots between each title and its page
+  leader: boolean;
+  boldSections: boolean;
+  color: string;
+  // A filled box behind each number ("Numbered blocks"), and its text colour
+  numberFill?: string;
+  numberColor?: string;
+  // The list this one carries on (a second column or a later contents page)
+  continues?: string;
+  // Numbers counted automatically (sections 1, 2…; sub-sections i, ii…); off:
+  // the numbers typed in the rows
+  autoNumber?: boolean;
+  sectionStyle?: ContentsSectionStyle;
+  // "word" style: the word before the number ("SECTION 1.")
+  sectionWord?: string;
+  // Any style: text before and after the number ("Chapter 1:")
+  sectionBefore?: string;
+  sectionAfter?: string;
+  subStyle?: ContentsSubStyle;
+  // On a contents page: the box keeps the size the user gives it (rows that
+  // don't fit go on to the next contents page) instead of growing with its rows
+  fixedBox?: boolean;
+  // On a contents page added by itself for rows that didn't fit (removed again
+  // by itself once it is empty and unchanged)
+  autoPage?: boolean;
+  // Kept in step with the Section Headings and Sub-headings on the pages: its
+  // rows are rebuilt from them after every change (utils/headingSync.ts)
+  follow?: boolean;
+  // Automatic mode with "Number automatically" off: numbers typed per row
+  ownNumbers?: boolean;
+  // Show sections only: sub-sections are left out (Automatic) or hidden, not
+  // deleted (Manual)
+  sectionsOnly?: boolean;
+  adjust?: ContentsAdjust;
+}
+
+export type ContentsSectionStyle = "1" | "1." | "01" | "I" | "A" | "a" | "i" | "1)" | "(1)" | "word";
+export type ContentsSubStyle =
+  | "roman"
+  | "letters"
+  | "decimal"
+  | "romanUpper"
+  | "lettersUpper"
+  | "lettersParen"
+  | "romanParen"
+  | "lettersBracket"
+  | "sectionLetter"
+  | "none";
+
+export interface ContentsListElement extends DesignElementBase {
+  type: "contentsList";
+  list: ContentsListData;
+}
+
 // Design element union type
 export type DesignElement =
   | TextFieldElement
@@ -541,7 +623,9 @@ export type DesignElement =
   | FrameElement
   | TableElement
   | ChartElement
-  | BarcodeElement;
+  | BarcodeElement
+  | CustomTableElement
+  | ContentsListElement;
 
 // Report band interface
 export interface Band {

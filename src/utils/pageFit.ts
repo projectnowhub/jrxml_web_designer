@@ -43,6 +43,8 @@ function fitElement(el: DesignElement, width: number, bandHeight: number): boole
 export function fitContentToPage(
   bands: Band[],
   area: { width: number; height: number },
+  // Detail pages with their own area (a cover or contents page): its size
+  pageArea: (pageIndex: number | undefined) => { width: number; height: number } | null = () => null,
 ): PageFitResult {
   const width = Math.max(1, Math.round(area.width));
   const height = Math.max(1, Math.round(area.height));
@@ -65,9 +67,39 @@ export function fitContentToPage(
         }
         return;
       }
-      if (fitElement(el, width, band.height)) moved++;
+      const area = band.type === "detail" ? pageArea(el.pageIndex) : null;
+      if (fitElement(el, area ? area.width : width, area ? area.height : band.height)) moved++;
     });
   });
 
   return { borderResized, moved };
+}
+
+/**
+ * A whole page's content fitted to a new area (a cover switched between the
+ * whole sheet and the printable page): every position and size is scaled in
+ * proportion, so the design keeps its layout. Text keeps its height (it
+ * follows the font size); boxes scale their parts the same way.
+ */
+export function scaleElementsToArea(
+  elements: DesignElement[],
+  from: { width: number; height: number },
+  to: { width: number; height: number },
+): void {
+  const sx = to.width / Math.max(1, from.width);
+  const sy = to.height / Math.max(1, from.height);
+  const scale = (list: DesignElement[], limit: { width: number; height: number }) => {
+    for (const el of list) {
+      const keepHeight = el.type === "textField";
+      el.x = Math.max(0, Math.round(el.x * sx));
+      el.y = Math.max(0, Math.round(el.y * sy));
+      el.width = Math.max(1, Math.min(Math.round(el.width * sx), limit.width - el.x));
+      if (!keepHeight) el.height = Math.max(1, Math.round(el.height * sy));
+      el.height = Math.min(el.height, Math.max(1, limit.height - el.y));
+      if (el.type === "frame" && el.elements?.length) {
+        scale(el.elements, { width: el.width, height: el.height });
+      }
+    }
+  };
+  scale(elements, to);
 }

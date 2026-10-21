@@ -3,6 +3,7 @@ import type { Ref } from 'vue';
 
 export function useZoom(options: {
   paperWidth: Ref<number>;
+  paperHeight?: Ref<number>;
   zoomConstants: {
     DEFAULT_ZOOM: number;
     MIN_ZOOM: number;
@@ -27,8 +28,8 @@ export function useZoom(options: {
 
   function zoomIn() {
     const current = Number(zoomLevel.value);
-    const levels = [...options.zoomConstants.ZOOM_LEVELS].sort((a, b) => a - b);
-    const nextLevel = levels.find((level) => level > current + 0.01);
+    const levels = options.zoomConstants.ZOOM_LEVELS;
+    const nextLevel = levels.find((level) => level > current + 0.005);
     if (nextLevel !== undefined) {
       zoomLevel.value = nextLevel;
     } else {
@@ -38,12 +39,12 @@ export function useZoom(options: {
 
   function zoomOut() {
     const current = Number(zoomLevel.value);
-    const levels = [...options.zoomConstants.ZOOM_LEVELS].sort((a, b) => a - b);
-    const prevLevel = [...levels].reverse().find((level) => level < current - 0.01);
+    const levels = options.zoomConstants.ZOOM_LEVELS;
+    const prevLevel = [...levels].reverse().find((level) => level < current - 0.005);
     if (prevLevel !== undefined) {
       zoomLevel.value = prevLevel;
     } else {
-      zoomLevel.value = options.zoomConstants.MIN_ZOOM;
+      zoomLevel.value = levels[0] ?? options.zoomConstants.MIN_ZOOM;
     }
   }
 
@@ -56,30 +57,24 @@ export function useZoom(options: {
   }
 
   function calculateOptimalZoom(): number {
-    const designerContainer = document.querySelector('.designer-canvas') || document.querySelector('.pdf-designer');
-    if (!designerContainer) {
-      return options.zoomConstants.DEFAULT_ZOOM;
+    const container =
+      (document.querySelector('.paper-container') as HTMLElement) ||
+      (document.querySelector('.designer-canvas') as HTMLElement) ||
+      (document.querySelector('.design-area-wrapper') as HTMLElement);
+
+    let availableWidth: number;
+    if (container) {
+      const isPaperContainer = container.classList.contains('paper-container');
+      // Fit 100% flush to available width (reserve 1px to prevent subpixel rounding scrollbar)
+      availableWidth = isPaperContainer ? container.clientWidth - 1 : container.clientWidth - 31;
+    } else {
+      availableWidth = 800;
     }
 
-    const availableWidth = (designerContainer as HTMLElement).clientWidth - 40;
-    const widthRatio = availableWidth / options.paperWidth.value;
-    const optimalZoom = widthRatio * options.zoomConstants.OPTIMAL_ZOOM_MARGIN;
-
-    const zoomLevels = options.zoomConstants.ZOOM_LEVELS;
-    let closestZoom = zoomLevels[0] ?? options.zoomConstants.DEFAULT_ZOOM;
-    let minDiff = Math.abs(closestZoom - optimalZoom);
-
-    for (let i = 1; i < zoomLevels.length; i++) {
-      const level = zoomLevels[i];
-      if (level === undefined) continue;
-      const diff = Math.abs(level - optimalZoom);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestZoom = level;
-      }
-    }
-
-    return Math.max(options.zoomConstants.MIN_ZOOM, Math.min(options.zoomConstants.MAX_ZOOM, closestZoom));
+    const pWidth = options.paperWidth.value || 595;
+    const optimalZoom = Math.max(100, availableWidth) / pWidth;
+    const exactZoom = Math.round(optimalZoom * 100) / 100;
+    return Math.max(options.zoomConstants.MIN_ZOOM, Math.min(options.zoomConstants.MAX_ZOOM, exactZoom));
   }
 
   return {

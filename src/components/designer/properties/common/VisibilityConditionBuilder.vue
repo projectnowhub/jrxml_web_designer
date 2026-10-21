@@ -337,8 +337,8 @@ onMounted(() => {
 }
 
 .form-select:focus, .form-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  border-color: #6440f4;
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.2);
 }
 
 .custom-conditions-panel {
@@ -431,7 +431,7 @@ onMounted(() => {
   gap: 4px;
   background: #ffffff;
   border: 1px dashed #d1d5db;
-  color: #2563eb;
+  color: #6440f4;
   font-size: 12px;
   font-weight: 500;
   padding: 4px 10px;
@@ -441,8 +441,8 @@ onMounted(() => {
 }
 
 .add-cond-btn:hover {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: #6440f4;
+  background: #f4f1ff;
 }
 
 .logic-toggle {
@@ -464,8 +464,8 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: #f4f1ff;
+  border: 1px solid #ddd6fe;
   border-radius: 6px;
   font-size: 12px;
   color: #1e40af;

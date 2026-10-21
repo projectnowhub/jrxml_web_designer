@@ -16,53 +16,66 @@
     :bodyStyle="{ padding: '0', overflow: 'hidden', display: 'flex' }"
   >
     <div class="pdf-preview-body">
-      <!-- The report's tables and the rows each one prints (read-only) -->
+      <!-- The report's tables and charts, in page order, and the data each one
+           prints (read-only) -->
       <div class="tables-panel" v-show="showTables">
         <div class="tables-head">
-          <h4>{{ t("pdfPreview.tables.title") }}</h4>
+          <h4>{{ t("pdfPreview.data.title") }}</h4>
           <span class="muted">{{ t("pdfPreview.tables.readOnly") }}</span>
         </div>
         <div class="tables-list">
-          <div v-if="!tables.length" class="empty-hint">{{ t("pdfPreview.tables.none") }}</div>
-          <section v-for="item in tables" :key="item.table.uuid" class="table-card">
+          <div v-if="!dataItems.length" class="empty-hint">{{ t("pdfPreview.data.none") }}</div>
+          <p v-else class="server-note">
+            <Info :size="12" aria-hidden="true" />
+            {{ t("pdfPreview.data.serverNote") }}
+          </p>
+          <template v-for="entry in dataItems" :key="entry.element.uuid">
+          <PreviewChartCard
+            v-if="entry.kind === 'chart'"
+            :chart="entry.element"
+            :number="entry.number"
+            @edit="editChart(entry.element.uuid ?? '')"
+          />
+          <section v-else-if="entry.kind === 'table'" class="table-card">
             <div class="card-head">
               <div class="card-title">
                 <Table2 :size="14" aria-hidden="true" />
-                <strong>{{ item.binding.tableName }}</strong>
+                <strong>{{ entry.binding.tableName }}</strong>
               </div>
-              <n-button size="tiny" quaternary @click="editTable(item.table.uuid ?? '')">
+              <n-button size="tiny" quaternary @click="editTable(entry.table.uuid ?? '')">
                 <template #icon><SquarePen :size="13" /></template>
                 {{ t("pdfPreview.tables.edit") }}
               </n-button>
             </div>
             <div class="card-source">
               <Database :size="12" aria-hidden="true" />
-              {{ item.binding.sourceName }}
-              <span class="muted">· {{ rowCountText(item.binding.datasetName) }}</span>
+              {{ t("reportData.projectSource", { project: entry.binding.projectName, source: entry.binding.sourceName }) }}
+              <span class="muted">· {{ rowCountText(entry.binding.datasetName) }}</span>
             </div>
             <div class="chips">
-              <span class="chip">{{ t("dataTable.panel.columnCount", item.binding.columns.length) }}</span>
-              <span v-for="(f, i) in activeFilters(item.binding)" :key="`f${i}`" class="chip is-filter">
-                <Funnel :size="10" aria-hidden="true" />{{ describeFilter(item.binding, f, t, locale) }}
+              <span class="chip">{{ t("dataTable.panel.columnCount", entry.binding.columns.length) }}</span>
+              <span v-for="(f, i) in activeFilters(entry.binding)" :key="`f${i}`" class="chip is-applied">
+                <Funnel :size="10" aria-hidden="true" />{{ describeFilter(entry.binding, f, t, locale) }}
               </span>
-              <span v-for="(s, i) in describeSorts(item.binding, t)" :key="`s${i}`" class="chip">
+              <span v-for="(s, i) in describeSorts(entry.binding, t)" :key="`s${i}`" class="chip is-applied">
                 <ArrowDownUp :size="10" aria-hidden="true" />{{ s }}
               </span>
-              <span v-if="item.binding.rowLimit" class="chip">
-                {{ t("dataTable.panel.firstRows", item.binding.rowLimit) }}
+              <span v-if="entry.binding.rowLimit" class="chip is-applied">
+                <ListOrdered :size="10" aria-hidden="true" />{{ t("dataTable.panel.firstRows", entry.binding.rowLimit) }}
               </span>
             </div>
             <div class="card-grid">
               <DataGrid
-                :columns="item.binding.columns"
-                :rows="tableRows[item.binding.datasetName]?.rows ?? []"
-                :look="resolveLook(item.binding)"
-                :show-totals="item.binding.showTotals"
-                :loading="tableRows[item.binding.datasetName]?.loading"
-                :failed="tableRows[item.binding.datasetName]?.failed"
+                :columns="entry.binding.columns"
+                :rows="tableRows[entry.binding.datasetName]?.rows ?? []"
+                :look="resolveLook(entry.binding)"
+                :show-totals="entry.binding.showTotals"
+                :loading="tableRows[entry.binding.datasetName]?.loading"
+                :failed="tableRows[entry.binding.datasetName]?.failed"
               />
             </div>
           </section>
+          </template>
         </div>
       </div>
 
@@ -92,22 +105,25 @@
 <script setup lang="ts">
 import {
   ArrowDownUp,
+  ListOrdered,
   ChevronLeft,
   ChevronRight,
   Database,
   Funnel,
+  Info,
   RefreshCw,
   SquarePen,
   Table2,
 } from "@lucide/vue";
 import BaseModal from "./BaseModal.vue";
 import DataGrid from "../common/DataGrid.vue";
+import PreviewChartCard from "./PreviewChartCard.vue";
 import { ref, computed, watch, onUnmounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
-import type { Band, ReportField, ReportParameter } from "../../types";
+import type { Band, ChartElement, DesignElement, FrameElement } from "../../types";
+import type { TableDataBinding } from "@/types/dataSource";
 import type { DataRow } from "@/types/dataSource";
-import { generateMockParameters, generateMockDataSource } from "../../utils/mockDataGenerator";
 import { generatePdf, ReportGenerationError } from "../../services/reportService";
 import { fetchTableRows } from "@/composables/useTableRows";
 import { PREVIEW_ROW_LIMIT } from "@/utils/table/dataBinding";
@@ -122,14 +138,14 @@ const props = defineProps<{
   visible: boolean;
   jrxmlContent: string;
   bands: Band[];
-  reportParameters?: ReportParameter[];
-  reportFields?: ReportField[];
 }>();
 
 const emit = defineEmits<{
   "update:visible": [visible: boolean];
   // Close the preview and open this table's Configure popup
   "edit-table": [uuid: string];
+  // Close the preview and open this chart's Set up data popup
+  "edit-chart": [uuid: string];
 }>();
 
 const showTables = ref(true);
@@ -141,6 +157,37 @@ let previewController: AbortController | null = null;
 const tables = computed(() =>
   collectBoundTables(props.bands).map((table) => ({ table, binding: table.binding })),
 );
+
+// Tables (with data) and charts as they come in the report: band by band,
+// then page, top to bottom, left to right (items in boxes at their place)
+type DataItem =
+  | { kind: "table"; element: DesignElement; table: (typeof tables.value)[number]["table"]; binding: TableDataBinding }
+  | { kind: "chart"; element: ChartElement; number: number };
+
+const dataItems = computed<DataItem[]>(() => {
+  const items: DataItem[] = [];
+  let charts = 0;
+  for (const band of props.bands) {
+    const found: { element: DesignElement; page: number; y: number; x: number }[] = [];
+    const visit = (elements: DesignElement[] | undefined, dx: number, dy: number, page?: number) => {
+      for (const el of elements ?? []) {
+        const at = { page: (el as any).pageIndex ?? page ?? 0, y: dy + el.y, x: dx + el.x };
+        if (el.type === "chart" || (el.type === "table" && (el as any).binding)) found.push({ element: el, ...at });
+        if (el.type === "frame") visit((el as FrameElement).elements, at.x, at.y, at.page);
+      }
+    };
+    visit(band.elements, 0, 0);
+    found.sort((a, b) => a.page - b.page || a.y - b.y || a.x - b.x);
+    for (const { element } of found) {
+      if (element.type === "chart") items.push({ kind: "chart", element: element as ChartElement, number: ++charts });
+      else {
+        const table = tables.value.find((t) => t.table === element);
+        if (table) items.push({ kind: "table", element, table: table.table, binding: table.binding });
+      }
+    }
+  }
+  return items;
+});
 
 // Rows per table, by dataset name (the report reads them by that name)
 interface TableRowsState {
@@ -193,21 +240,9 @@ async function generatePreview() {
   isGenerating.value = true;
 
   try {
-    const subDataSources: Record<string, DataRow[]> = {};
-    for (const [name, state] of Object.entries(tableRows)) {
-      if (!state.failed) subDataSources[name] = state.rows;
-    }
-    const pdf = await generatePdf(
-      {
-        jrxml: props.jrxmlContent,
-        // Fill-in values for anything else the report reads, so it still prints
-        parameters: generateMockParameters(props.reportParameters || []),
-        // One row: the Detail section (where tables live) prints once
-        dataSource: generateMockDataSource(props.reportFields || [], 1),
-        subDataSources,
-      },
-      controller.signal,
-    );
+    // Only the JRXML: the report server fetches the tables' rows and the
+    // charts' numbers from the setups inside it
+    const pdf = await generatePdf({ jrxml: props.jrxmlContent }, controller.signal);
     if (controller.signal.aborted) return;
     setPreviewUrl(URL.createObjectURL(pdf));
   } catch (error) {
@@ -229,6 +264,11 @@ function editTable(uuid: string) {
   emit("edit-table", uuid);
 }
 
+function editChart(uuid: string) {
+  emit("update:visible", false);
+  emit("edit-chart", uuid);
+}
+
 const closeModal = () => {
   emit("update:visible", false);
 };
@@ -238,17 +278,18 @@ onUnmounted(() => {
   setPreviewUrl("about:blank");
 });
 
-// Opening the preview fetches every table's rows, then builds the PDF
+// Opening the preview builds the PDF and, side by side, fetches every
+// table's rows for the panel (they are shown here, not sent)
 watch(
   () => props.visible,
-  async (open) => {
+  (open) => {
     if (!open) {
       previewController?.abort();
       return;
     }
     setPreviewUrl("about:blank");
-    await loadAllRows();
-    if (props.visible) generatePreview();
+    generatePreview();
+    loadAllRows();
   },
   { immediate: true },
 );
@@ -297,6 +338,21 @@ watch(
   flex: 1;
   overflow-y: auto;
   padding: 12px;
+}
+
+.server-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #6b7280;
+}
+
+.server-note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .table-card {
@@ -350,10 +406,10 @@ watch(
   background: #fff;
 }
 
-.chip.is-filter {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
+.chip.is-applied {
+  background: #f4f1ff;
+  border-color: #ddd6fe;
+  color: #5b3ee0;
 }
 
 .card-grid {

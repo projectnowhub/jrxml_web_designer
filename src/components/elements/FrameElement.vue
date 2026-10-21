@@ -55,8 +55,6 @@
           @finish-editing="handleChildFinishEditing"
           @cancel-editing="handleChildCancelEditing"
           @check-fields="handleChildCheckFields"
-          @update-jrxml="emit('update-jrxml')"
-          @save-state="emit('save-state')"
           @auto-fit-height="(b: number, e: number, p?: number) => emit('autoFitHeight', b, e, p)"
           @rotate="(b: number, e: number, p?: number) => emit('rotate', b, e, p)"
         />
@@ -75,6 +73,7 @@ import { computed, defineAsyncComponent } from 'vue';
 import BaseElement from './BaseElement.vue';
 import type { FrameElement, SelectedElementInfo, EditingElementInfo } from '../../types';
 import { isBoxPart } from '../../utils/framePresets';
+import { hasProperty, SECTION_HEADING_PROPERTY } from '../../utils/contentsList';
 import { getElementBoxPadding } from '../../utils/elementUtils';
 
 // Asynchronously import ElementFactory to avoid circular dependencies
@@ -115,8 +114,6 @@ const emit = defineEmits<{
   finishEditing: [];
   cancelEditing: [];
   checkFields: [fields: string[]];
-  'update-jrxml': [];
-  'save-state': [];
   // From items in the box: passed on to the designer
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
@@ -165,7 +162,10 @@ const rememberSelectionAtPress = () => {
   boxDraggedThisPress = false;
 };
 
-const isPart = (childIndex: number) => isBoxPart(props.element.elements?.[childIndex]);
+// A Section Heading's number and title always behave as its parts, marked or
+// not (a heading is one line tall, so every click lands on one of them)
+const isHeading = computed(() => hasProperty(props.element, SECTION_HEADING_PROPERTY));
+const isPart = (childIndex: number) => isHeading.value || isBoxPart(props.element.elements?.[childIndex]);
 
 const selectBox = (isMultiSelect?: boolean) =>
   emit('select', props.bandIndex, props.elementIndex, isMultiSelect, props.parentFrameIndex);

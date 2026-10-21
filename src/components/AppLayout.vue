@@ -166,7 +166,7 @@ button:active {
 }
 
 .primary {
-  background: linear-gradient(135deg, #7c5cf7, #6366f1);
+  background: linear-gradient(135deg, #7c5cf7, #6440f4);
   color: white;
 }
 
@@ -181,7 +181,7 @@ button:active {
   width: 100%;
   color: #1c1b26;
   background:
-    radial-gradient(circle at top, rgba(99, 102, 241, 0.1), transparent 32%),
+    radial-gradient(circle at top, rgba(100, 64, 244, 0.1), transparent 32%),
     radial-gradient(circle at top right, rgba(124, 92, 247, 0.06), transparent 38%),
     #ffffff;
 }
@@ -307,7 +307,7 @@ button:active {
   background: linear-gradient(
     135deg,
     rgba(124, 92, 247, 0.14),
-    rgba(99, 102, 241, 0.09)
+    rgba(100, 64, 244, 0.09)
   );
   color: #5b3ee0;
   font-weight: 700;

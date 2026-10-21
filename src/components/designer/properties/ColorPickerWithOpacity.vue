@@ -167,7 +167,7 @@ watch(localColor, (newColor) => {
   height: 4px;
   padding: 0;
   margin: 0;
-  accent-color: var(--prop-border-focus, #1890ff);
+  accent-color: var(--prop-border-focus, #6440f4);
 }
 
 .opacity-value {

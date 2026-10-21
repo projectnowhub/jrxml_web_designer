@@ -4,20 +4,37 @@ import { DEFAULT_REPORT_FONT } from "../config/fonts.config";
 // Zoom-related constants
 export const ZOOM_CONSTANTS = {
   DEFAULT_ZOOM: 1,
-  ZOOM_LEVELS: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3],
-  MIN_ZOOM: 0.25,
-  MAX_ZOOM: 3,
-  OPTIMAL_ZOOM_MARGIN: 0.9, // margin coefficient used when calculating the optimal zoom ratio
+  ZOOM_LEVELS: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 4.0, 5.0],
+  MIN_ZOOM: 0.1,
+  MAX_ZOOM: 5,
+  OPTIMAL_ZOOM_MARGIN: 0.92, // margin coefficient used when calculating the optimal zoom ratio
 };
 
 // Panel size constants
 export const PANEL_CONSTANTS = {
   DEFAULT_BOTTOM_PANEL_HEIGHT: 320,
-  DEFAULT_PROPERTY_PANEL_WIDTH: 320,
-  DEFAULT_LEFT_PANEL_WIDTH: 240, // default width of the left panel
-  LEFT_PANEL_MIN_WIDTH: 150, // minimum width of the left panel
-  LEFT_PANEL_MAX_WIDTH: 400, // maximum width of the left panel
+  // Side panels: dragged between min and max, and never wider than their share
+  // of the window, so the canvas keeps room on small screens
+  DEFAULT_PROPERTY_PANEL_WIDTH: 450,
+  PROPERTY_PANEL_MIN_WIDTH: 450,
+  PROPERTY_PANEL_MAX_WIDTH: 600,
+  PROPERTY_PANEL_WINDOW_SHARE: 0.36,
+  DEFAULT_LEFT_PANEL_WIDTH: 260, // default width of the left panel
+  LEFT_PANEL_MIN_WIDTH: 200, // minimum width of the left panel (two tile columns)
+  LEFT_PANEL_MAX_WIDTH: 480, // maximum width of the left panel
+  LEFT_PANEL_WINDOW_SHARE: 0.3,
 };
+
+// Side panels opening / closing: the panel's content is revealed from its edge
+// and the canvas glides to its new place (transforms only, no layout per frame)
+export const PANEL_MOTION = {
+  // Quick, and slowing down only briefly at the end (a long tail feels sluggish)
+  duration: 220,
+  easing: "cubic-bezier(0.25, 0.8, 0.25, 1)",
+};
+
+export const prefersReducedMotion = () =>
+  typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 // Report property constants
 export const REPORT_CONSTANTS = {
@@ -284,17 +301,6 @@ export function getEffectiveDefaultBandLimits(): Record<
   }
   return limits;
 }
-
-// Evaluation time constants
-export const EVALUATION_TIME_CONSTANTS = {
-  NOW: "Now",
-  REPORT: "Report",
-  PAGE: "Page",
-  COLUMN: "Column",
-  GROUP: "Group",
-  BAND: "Band",
-  AUTO: "Auto",
-};
 
 // Ruler-related constants
 export const RULER_CONSTANTS = {

@@ -5,6 +5,7 @@
  */
 
 import type { MCPToolCall } from './handlers';
+import { ALL_MCP_TOOL_SCHEMAS } from './schemas/toolSchemas';
 
 // ============================================
 // Type definitions
@@ -37,27 +38,17 @@ export interface ConfirmResponse {
 // Risk level mapping
 // ============================================
 
-const RISK_LEVELS: Record<string, OperationRisk> = {
-  // Query tools - safe
-  'get_design_state': OperationRisk.SAFE,
-  'get_element': OperationRisk.SAFE,
-  'find_elements': OperationRisk.SAFE,
-
-  // Create tools - low risk
-  'create_static_text': OperationRisk.LOW,
-  'create_text_field': OperationRisk.LOW,
-  'create_rectangle': OperationRisk.LOW,
-
-  // Modify tools - low risk
-  'update_element': OperationRisk.LOW,
-  'move_element': OperationRisk.LOW,
-
-  // Delete tools - medium/high risk
-  'delete_element': OperationRisk.MEDIUM,
-
-  // Band operation tools - low risk
-  'update_band_height': OperationRisk.LOW
-};
+// Reading is safe; deleting needs a look; every other change is one undo step away
+const RISK_LEVELS: Record<string, OperationRisk> = Object.fromEntries(
+  ALL_MCP_TOOL_SCHEMAS.map((schema) => [
+    schema.name,
+    schema.readOnly
+      ? OperationRisk.SAFE
+      : schema.name.startsWith('delete_')
+        ? OperationRisk.MEDIUM
+        : OperationRisk.LOW
+  ])
+);
 
 // ============================================
 // Smart confirmation logic
@@ -137,15 +128,6 @@ function generateToolDescription(toolCall: MCPToolCall): string {
   const { name, params } = toolCall;
 
   switch (name) {
-    case 'create_static_text':
-      return `Create static text "${params.text || 'unnamed'}" in the ${params.bandType} band`;
-
-    case 'create_text_field':
-      return `Create a dynamic text field "${params.expression || 'undefined'}" in the ${params.bandType} band`;
-
-    case 'create_rectangle':
-      return `Create a rectangle in the ${params.bandType} band`;
-
     case 'update_element':
       return `Update element ${params.uuid} properties: ${Object.keys(params.properties || {}).join(', ')}`;
 
@@ -159,7 +141,9 @@ function generateToolDescription(toolCall: MCPToolCall): string {
       return `Adjust the ${params.bandType} band height to ${params.height}px`;
 
     default:
-      return `Execute tool ${name}`;
+      return name.startsWith('create_')
+        ? `Create ${name.slice('create_'.length).replace(/_/g, ' ')}${params.bandType ? ` in the ${params.bandType} band` : ''}`
+        : `Execute tool ${name}`;
   }
 }
 

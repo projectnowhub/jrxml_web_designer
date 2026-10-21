@@ -4,8 +4,16 @@
     :class="{ 
       'selected': isSelected,
       'out-of-bounds': isOutOfBounds,
-      'is-dragging': isDragging
+      'is-dragging': isDragging,
+      'is-in-box': parentFrameIndex !== undefined,
+      'keeps-order': KEEPS_ORDER.has(element.type),
+      'is-project-drop': projectDrop === 'ok',
+      'is-project-drop-blocked': projectDrop === 'blocked'
     }"
+    :data-element-uuid="element.uuid"
+    @dragover="handleProjectDragOver"
+    @dragleave="handleProjectDragLeave"
+    @drop="projectDrop = null"
     @click.stop="handleSelect"
     :style="elementStyle"
     @mousedown.stop="handleMouseDown"
@@ -83,8 +91,15 @@
 </template>
 
 <script setup lang="ts">
+import { useReportStore } from "@/stores/report";
+
+// Shapes and boxes stay in their place in the stacking order when selected
+const KEEPS_ORDER = new Set(["rectangle", "ellipse", "frame"]);
 import { RotateCw } from '@lucide/vue';
-import { computed } from 'vue';
+import { resolveReportFont } from '../../config/fonts.config';
+import { computed, ref } from 'vue';
+import { canTakeProjectField } from '../../utils/projectFields';
+import { readDataSourceDrag } from '../../utils/table/dataDrag';
 import type { DesignElement, SelectedElementInfo } from '../../types';
 import { getElementBoxPadding, propertyCornerRadiusCss } from '../../utils/elementUtils';
 import { boxCornerRadiusCss, getLayeredBorder, type BorderSide } from '../../utils/framePresets';
@@ -107,6 +122,9 @@ const props = defineProps<{
 }>();
 
 // Emits
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
 const emit = defineEmits<{
   select: [bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number];
   dragStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
@@ -115,7 +133,6 @@ const emit = defineEmits<{
   startEditing: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  'save-state': [];
 }>();
 
 const isRotatableElement = computed(() => 
@@ -132,7 +149,7 @@ const handleQuickRotate = () => {
   else next = 'Right';
 
   // Undo snapshot must be taken before the element changes
-  emit('save-state');
+  report.saveStateToHistory();
   (props.element as any).rotation = next;
   emit('rotate', props.bandIndex, props.elementIndex, props.parentFrameIndex);
 };
@@ -232,7 +249,7 @@ const elementStyle = computed(() => {
     borderBottom: calculateBorder('bottom'),
     borderRight: calculateBorder('right'),
     borderRadius: props.element.type === 'ellipse' ? '50%' : props.element.type === 'frame' ? boxCornerRadiusCss(props.element as any) : ((props.element.type === 'rectangle' && (props.element as any).radius) ? `${(props.element as any).radius}px` : (props.element.type === 'image' || props.element.type === 'textField') ? propertyCornerRadiusCss(props.element) : undefined),
-    fontFamily: props.element.fontFamily || props.reportFontFamily,
+    fontFamily: resolveReportFont(props.element.fontFamily || props.reportFontFamily),
     fontSize: props.element.fontSize ? `${props.element.fontSize}px` : (props.reportFontSize ? `${props.reportFontSize}px` : '10px'),
     fontWeight: (props.element.isBold === true || (props.element.isBold === undefined && props.reportIsBold)) ? 'bold' : 'normal',
     fontStyle: (props.element.isItalic === true || (props.element.isItalic === undefined && props.reportIsItalic)) ? 'italic' : 'normal',
@@ -469,6 +486,30 @@ const handleContextMenu = (event: MouseEvent) => {
 const handleDoubleClick = () => {
   emit('startEditing', props.bandIndex, props.elementIndex, props.parentFrameIndex);
 };
+
+// ---- Project details (Report Data) ------------------------------------------
+
+// While a project detail is dragged over this item: can it take it? Only text,
+// image and barcode items react; the drop itself is handled by the designer.
+const projectDrop = ref<'ok' | 'blocked' | null>(null);
+
+const handleProjectDragOver = (event: DragEvent) => {
+  if (!['textField', 'image', 'barcode'].includes(props.element.type)) return;
+  const drag = readDataSourceDrag(event);
+  if (drag?.kind !== 'projectField') return;
+  // The innermost item under the pointer decides (an item inside a box)
+  event.stopPropagation();
+  event.preventDefault();
+  const ok = canTakeProjectField(props.element, drag.field, drag.value);
+  projectDrop.value = ok ? 'ok' : 'blocked';
+  // A refused drop still reaches the designer, which says why
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+};
+
+const handleProjectDragLeave = (event: DragEvent) => {
+  const next = event.relatedTarget as Node | null;
+  if (!next || !(event.currentTarget as HTMLElement).contains(next)) projectDrop.value = null;
+};
 </script>
 
 <style scoped>
@@ -487,9 +528,8 @@ const handleDoubleClick = () => {
   white-space: pre-wrap;
 }
 
-.design-element:hover {
-  z-index: 35;
-}
+/* Hovering keeps the stacking order: raising an item hid what lies on top of
+   it (e.g. a cover's title over its colour panel) */
 
 .design-element.out-of-bounds {
   /* Highlight style for out-of-bounds elements */
@@ -501,7 +541,7 @@ const handleDoubleClick = () => {
 }
 
 .design-element.selected {
-  outline: 2px solid #1890ff;
+  outline: 2px solid #6440f4;
   outline-offset: -1px;
   /* Raise the z-index of the selected element to ensure correct interaction */
   z-index: 50;
@@ -511,9 +551,53 @@ const handleDoubleClick = () => {
   z-index: 100;
 }
 
+/* Inside a box the parts keep their order even when selected: a selected
+   colour panel must not cover the texts on it. Shapes and boxes keep theirs
+   too (a background or panel must not cover what lies on it) */
+.design-element.is-in-box.selected,
+.design-element.keeps-order.selected {
+  z-index: 10;
+}
+
+/* While dragged, an element is always on top so it stays in view (after the
+   rules above, and as specific, so it wins over them) */
+.design-element.design-element.design-element.is-dragging {
+  z-index: 100;
+}
+
+/* A project detail dragged over: blue dotted when it can be dropped here, red
+   when not. After the other states and more specific, so it also shows on a
+   selected element; the tint is an overlay because elements paint their own
+   background colour. */
+.design-element.design-element.is-project-drop,
+.design-element.design-element.is-project-drop-blocked {
+  outline: 2px dashed #6440f4;
+  outline-offset: 1px;
+  z-index: 60;
+}
+
+.design-element.design-element.is-project-drop-blocked {
+  outline-color: #dc2626;
+  cursor: no-drop;
+}
+
+.design-element.is-project-drop::after,
+.design-element.is-project-drop-blocked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: rgba(100, 64, 244, 0.08);
+  pointer-events: none;
+}
+
+.design-element.is-project-drop-blocked::after {
+  background: rgba(220, 38, 38, 0.08);
+}
+
 .resize-handle {
   position: absolute;
-  background-color: #1890ff;
+  background-color: #6440f4;
   z-index: 60;
   box-sizing: border-box;
   border: 1px solid #ffffff;
@@ -522,7 +606,7 @@ const handleDoubleClick = () => {
 }
 
 .resize-handle:hover {
-  background-color: #40a9ff;
+  background-color: #7c5cf7;
 }
 
 .resize-handle-nw {
@@ -617,7 +701,7 @@ const handleDoubleClick = () => {
 .element-rotate-stem {
   width: 1px;
   height: 6px;
-  background-color: #1890ff;
+  background-color: #6440f4;
 }
 
 .element-rotate-btn {
@@ -625,8 +709,8 @@ const handleDoubleClick = () => {
   height: 18px;
   border-radius: 50%;
   background: #ffffff;
-  border: 1px solid #1890ff;
-  color: #1890ff;
+  border: 1px solid #6440f4;
+  color: #6440f4;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -637,7 +721,7 @@ const handleDoubleClick = () => {
 }
 
 .element-rotate-btn:hover {
-  background: #1890ff;
+  background: #6440f4;
   color: #ffffff;
   transform: scale(1.15);
 }

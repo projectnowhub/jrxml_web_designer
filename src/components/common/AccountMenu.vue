@@ -64,7 +64,7 @@ onBeforeUnmount(() => {
     >
       <span class="avatar">{{ userInitial }}</span>
     </button>
-    <div v-if="isOpen" class="account-popover" role="menu">
+    <Transition name="menu-pop"><div v-if="isOpen" class="account-popover" role="menu">
       <div class="account-popover-header">
         <span class="avatar">{{ userInitial }}</span>
         <div>
@@ -97,7 +97,7 @@ onBeforeUnmount(() => {
         <LogOut :size="17" :stroke-width="2.25" aria-hidden="true" />
         <span>{{ t("layout.signOut") }}</span>
       </button>
-    </div>
+    </div></Transition>
   </div>
 </template>
 
@@ -128,13 +128,13 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   border: 2px solid #7c5cf7;
   border-radius: 50%;
-  background: linear-gradient(135deg, #7c5cf7, #6366f1);
+  background: linear-gradient(135deg, #7c5cf7, #6440f4);
   color: white;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 14px;
   font-weight: 800;
   line-height: 1;
-  box-shadow: 0 3px 12px rgba(99, 102, 241, 0.32);
+  box-shadow: 0 3px 12px rgba(100, 64, 244, 0.32);
   box-sizing: border-box;
 }
 .account-popover {

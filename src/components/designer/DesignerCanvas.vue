@@ -126,7 +126,7 @@
                 transform: `scale(${zoomLevel})`,
                 transformOrigin: 'top left',
               }"
-              :class="{ focused: isDesignAreaFocused }"
+              :class="{ focused: isDesignAreaFocused, [`is-${kindOf(pIndex - 1)}-page`]: isSpecial(pIndex - 1) }"
               @drop="handleDrop($event, pIndex - 1)"
               @dragover="handleDragOver"
               @dragleave="handleDragLeave"
@@ -135,49 +135,119 @@
               <!-- Floating Page Sheet Header / Badge in margin -->
               <div
                 class="page-sheet-header"
-                :style="{ transform: `scale(${1 / zoomLevel})` }"
+                :class="{ 'is-compact': compactPageToolbar }"
+                :style="{ transform: `scale(${pageToolbarScale})` }"
               >
-                <span class="page-sheet-badge">{{
-                  t("canvas.pageOf", { page: pIndex, total: totalPages })
+                <span class="page-sheet-badge" :class="{ 'is-special': isSpecial(pIndex - 1) }">{{
+                  pageBadge(pIndex - 1)
                 }}</span>
+                <!-- Cover / contents page: change its design (all of it stays editable) -->
                 <button
+                  v-if="isSpecial(pIndex - 1)"
+                  class="add-page-after-btn"
+                  :title="t('specialPages.changeDesignHint')"
+                  @click.stop="emit('page-action', 'chooseDesign', pIndex - 1)"
+                >
+                  <LayoutTemplate :size="13" aria-hidden="true" />
+                  <span class="btn-label">{{ t("specialPages.changeDesign") }}</span>
+                </button>
+                <button
+                  v-if="kindOf(pIndex - 1) === 'normal'"
                   class="add-page-after-btn"
                   @click.stop="emit('add-page', pIndex)"
                   :title="t('canvas.addPageAfter')"
                 >
                   <Plus :size="13" :stroke-width="2.2" aria-hidden="true" />
-                  {{ t("canvas.addPageAfter") }}
+                  <span class="btn-label">{{ t("canvas.addPageAfter") }}</span>
                 </button>
                 <button
-                  v-if="pIndex > 1"
+                  v-else-if="pIndex - 1 === special.count - 1 && kindOf(pIndex - 1) === 'contents'"
+                  class="add-page-after-btn"
+                  @click.stop="emit('page-action', 'addContents', pIndex - 1)"
+                  :title="t('specialPages.addAnotherContentsHint')"
+                >
+                  <Plus :size="13" :stroke-width="2.2" aria-hidden="true" />
+                  <span class="btn-label">{{ t("specialPages.addAnotherContents") }}</span>
+                </button>
+                <button
+                  v-if="canDeletePage(pIndex - 1)"
                   class="delete-page-btn"
                   @click.stop="emit('delete-page', pIndex - 1)"
                   :title="t('canvas.deletePage')"
                 >
                   <Trash2 :size="13" aria-hidden="true" />
-                  {{ t("canvas.deletePage") }}
+                  <span class="btn-label">{{ t("canvas.deletePage") }}</span>
                 </button>
+                <!-- Cover / contents choices for this page -->
+                <div v-if="pageMenuItems(pIndex - 1).length" class="page-menu-wrap">
+                  <button
+                    type="button"
+                    class="page-menu-btn"
+                    :class="{ 'is-open': openPageMenu === pIndex - 1 }"
+                    :title="t('specialPages.pageOptions')"
+                    :aria-label="t('specialPages.pageOptions')"
+                    aria-haspopup="menu"
+                    :aria-expanded="openPageMenu === pIndex - 1"
+                    @mousedown.stop
+                    @click.stop="togglePageMenu(pIndex - 1)"
+                  >
+                    <EllipsisVertical :size="14" aria-hidden="true" />
+                  </button>
+                  <div v-if="openPageMenu === pIndex - 1" class="page-menu" role="menu" @mousedown.stop>
+                    <button
+                      v-for="item in pageMenuItems(pIndex - 1)"
+                      :key="item.action"
+                      type="button"
+                      role="menuitem"
+                      class="page-menu-item"
+                      :class="{ 'is-danger': item.danger }"
+                      @click.stop="runPageAction(item.action, pIndex - 1)"
+                    >
+                      <component :is="item.icon" :size="14" aria-hidden="true" />
+                      <span>{{ t(item.labelKey) }}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <!-- Report margin container -->
               <div
                 class="pager"
                 :style="{
-                  padding:
-                    (reportProperties.topMargin || 0) +
-                    'px ' +
-                    (reportProperties.rightMargin || 0) +
-                    'px ' +
-                    (reportProperties.bottomMargin || 0) +
-                    'px ' +
-                    (reportProperties.leftMargin || 0) +
-                    'px',
+                  padding: isSheetPage(pIndex - 1)
+                    ? '0'
+                    : (reportProperties.topMargin || 0) +
+                      'px ' +
+                      (reportProperties.rightMargin || 0) +
+                      'px ' +
+                      (reportProperties.bottomMargin || 0) +
+                      'px ' +
+                      (reportProperties.leftMargin || 0) +
+                      'px',
                   width: '100%',
                   height: '100%',
                   boxSizing: 'border-box',
                   position: 'relative',
                 }"
               >
+                <!-- A contents page without a Table of Contents: offer to add one
+                     (designer only; never printed) -->
+                <div v-if="contentsPageWithoutToc(pIndex - 1)" class="no-toc-prompt">
+                  <div class="no-toc-card" @mousedown.stop>
+                    <TableOfContents :size="20" aria-hidden="true" />
+                    <span class="no-toc-title">{{ t("specialPages.noToc") }}</span>
+                    <div class="no-toc-actions">
+                      <button type="button" class="no-toc-btn is-primary" @click.stop="emit('page-action', 'addToc', pIndex - 1)">
+                        <Plus :size="13" aria-hidden="true" />
+                        {{ t("specialPages.addToc") }}
+                      </button>
+                      <button type="button" class="no-toc-btn" @click.stop="emit('page-action', 'chooseDesign', pIndex - 1)">
+                        <LayoutTemplate :size="13" aria-hidden="true" />
+                        {{ t("specialPages.chooseDesign") }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 <!-- Dynamic Bands for this Page -->
                 <div
                   v-for="bItem in getBandsForPage(pIndex)"
@@ -205,12 +275,12 @@
                   <svg
                     v-if="showGrid && bItem.effectiveHeight > 0"
                     class="band-grid"
-                    :width="printableWidth"
+                    :width="isSheetPage(pIndex - 1) ? paperWidth : printableWidth"
                     :height="bItem.effectiveHeight"
                     aria-hidden="true"
                   >
                     <path
-                      :d="gridPath(printableWidth, bItem.effectiveHeight)"
+                      :d="gridPath(isSheetPage(pIndex - 1) ? paperWidth : printableWidth, bItem.effectiveHeight)"
                       :stroke-width="1 / zoomLevel"
                     />
                   </svg>
@@ -228,7 +298,7 @@
                       class="alignment-line horizontal"
                       :style="{
                         top: line + 'px',
-                        left: -marginLeft + 'px',
+                        left: -(isSheetPage(pIndex - 1) ? 0 : marginLeft) + 'px',
                         width: paperWidth + 'px',
                         height: 1 / zoomLevel + 'px',
                       }"
@@ -278,8 +348,6 @@
                         @finish-editing="finishEditing"
                         @cancel-editing="cancelEditing"
                         @check-fields="checkFields"
-                        @update-jrxml="emit('update-jrxml')"
-                        @save-state="emit('save-state')"
                         @rotate="(b, e, p) => emit('rotate', b, e, p)"
                       />
                       <div
@@ -289,7 +357,16 @@
                         class="canvas-empty-state"
                       >
                         <div class="empty-state-text">
-                          {{ t("canvas.dragOntoPage", { page: pIndex }) }}
+                          <span class="empty-state-icon" aria-hidden="true">
+                            <MousePointerClick :size="18" />
+                          </span>
+                          {{
+                            kindOf(pIndex - 1) === "cover"
+                              ? t("specialPages.emptyCover")
+                              : kindOf(pIndex - 1) === "contents"
+                                ? t("specialPages.emptyContents")
+                                : t("canvas.dragOntoPage", { page: pIndex })
+                          }}
                         </div>
                       </div>
                     </template>
@@ -328,11 +405,39 @@
                         @finish-editing="finishEditing"
                         @cancel-editing="cancelEditing"
                         @check-fields="checkFields"
-                        @update-jrxml="emit('update-jrxml')"
-                        @save-state="emit('save-state')"
                         @rotate="(b, e, p) => emit('rotate', b, e, p)"
                       />
                     </template>
+                    <!-- Handles of a selected shape, box or box part, drawn above
+                         everything: the element keeps its place in the stacking
+                         order, so something on top could cover its own handles -->
+                    <div
+                      v-if="topHandles && topHandles.bandIndex === bItem.bandIndex && topHandles.pageIndex === (bItem.isDetail ? pIndex - 1 : topHandles.pageIndex)"
+                      class="top-handles"
+                      :style="{
+                        left: topHandles.x + 'px',
+                        top: topHandles.y + 'px',
+                        width: topHandles.width + 'px',
+                        height: topHandles.height + 'px',
+                      }"
+                    >
+                      <div
+                        v-for="dir in HANDLE_DIRS"
+                        :key="dir"
+                        class="top-handle"
+                        :class="`is-${dir}`"
+                        @mousedown.stop="
+                          $event.button === 0 &&
+                            startResizingElement(
+                              $event,
+                              topHandles.bandIndex,
+                              topHandles.elementIndex,
+                              topHandles.parentFrameIndex,
+                              dir,
+                            )
+                        "
+                      ></div>
+                    </div>
                   </div>
 
                   <!-- Band resize handle for non-detail bands -->
@@ -350,7 +455,7 @@
                      background while lines still show. Not interactive on the canvas; select
                      its elements from Report Elements. -->
                 <div
-                  v-if="backgroundElements.length > 0"
+                  v-if="backgroundElements.length > 0 && !isSheetPage(pIndex - 1)"
                   class="background-band-layer"
                   :style="{
                     top: (reportProperties.topMargin || 0) + 'px',
@@ -398,6 +503,23 @@
                   </template>
                 </div>
 
+                <!-- While the Page Border tile is dragged: the Background band (the whole
+                     printable area, behind every page) is the drop target, not a band -->
+                <div
+                  v-if="backgroundDropTarget && !isSheetPage(pIndex - 1)"
+                  class="background-drop-target"
+                  :style="{
+                    top: (reportProperties.topMargin || 0) + 'px',
+                    left: (reportProperties.leftMargin || 0) + 'px',
+                    right: (reportProperties.rightMargin || 0) + 'px',
+                    bottom: (reportProperties.bottomMargin || 0) + 'px',
+                  }"
+                >
+                  <span class="background-drop-label">{{
+                    getBandDisplayName("background")
+                  }}</span>
+                </div>
+
                 <!-- Vertical alignment guides, across the whole page (X is shared by all bands) -->
                 <template v-if="alignmentLines && alignmentLines.pageIndex === pIndex - 1">
                   <div
@@ -405,7 +527,7 @@
                     :key="'guide-x-' + line"
                     class="alignment-line vertical"
                     :style="{
-                      left: marginLeft + line + 'px',
+                      left: (isSheetPage(pIndex - 1) ? 0 : marginLeft) + line + 'px',
                       width: 1 / zoomLevel + 'px',
                     }"
                   ></div>
@@ -430,7 +552,23 @@
 </template>
 
 <script setup lang="ts">
-import { Plus, Trash2 } from "@lucide/vue";
+import { storeToRefs } from "pinia";
+import { useEditorStore } from "@/stores/editor";
+import { useReportStore } from "@/stores/report";
+import { useSelectionStore } from "@/stores/selection";
+import {
+  BookImage,
+  EllipsisVertical,
+  Expand,
+  FileText,
+  LayoutTemplate,
+  MousePointerClick,
+  Shrink,
+  Plus,
+  TableOfContents,
+  Trash2,
+} from "@lucide/vue";
+import { pageKind, specialPageArea } from "@/utils/specialPages";
 import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import ElementFactory from "../elements/ElementFactory.vue";
 import SelectionBox from "./SelectionBox.vue";
@@ -448,66 +586,34 @@ const { t } = useI18n();
 
 // Props
 interface Props {
-  paperWidth: number;
-  paperHeight: number;
-  zoomLevel: number;
-  totalPages?: number;
-  reportProperties: any;
-  bands: Band[];
-  selectedBandIndex: number | null;
   highlightedBandIndex: number | null;
-  selectedElement: any;
-  selectedElements: {
-    bandIndex: number;
-    elementIndex: number;
-    parentFrameIndex?: number;
-  }[]; // Added multi-select support
-  editingElement: any;
   isDraggingOrResizing: boolean;
   // The highlighted band can't take the element being dragged (too tall)
   dropTargetBlocked?: boolean;
+  // The Page Border tile is being dragged over the page: highlight the Background band
+  backgroundDropTarget?: boolean;
   horizontalRulerTicks: any[];
   horizontalRulerLabels: any[];
   verticalRulerTicks: any[];
   verticalRulerLabels: any[];
-  alignmentLines: AlignmentGuideLines | null;
-  isDesignAreaFocused: boolean;
   uiConstants: any;
   outOfBoundsElements: Array<{
     bandIndex: number;
     elementIndex: number;
     element: any;
   }>;
-  enableSnapToGrid: boolean;
-  enableSnapToAlignment: boolean;
-  showGrid: boolean;
   dragFeedback?: DragFeedback; // New: drag feedback
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  paperWidth: 0,
-  paperHeight: 0,
-  zoomLevel: 1,
-  totalPages: 1,
-  reportProperties: () => ({}),
-  bands: () => [],
-  selectedBandIndex: null,
   highlightedBandIndex: null,
-  selectedElement: null,
-  selectedElements: () => [], // Default value for multi-select support
-  editingElement: null,
   isDraggingOrResizing: false,
   horizontalRulerTicks: () => [],
   horizontalRulerLabels: () => [],
   verticalRulerTicks: () => [],
   verticalRulerLabels: () => [],
-  alignmentLines: null,
-  isDesignAreaFocused: false,
   uiConstants: () => ({}),
   outOfBoundsElements: () => [],
-  enableSnapToGrid: false,
-  enableSnapToAlignment: false,
-  showGrid: true,
   dragFeedback: () => ({
     previewElement: null,
     previewPosition: null,
@@ -521,6 +627,15 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 // Emits
+// Report, selection and editor state come from the stores
+const editorStore = useEditorStore();
+const { zoomLevel, alignmentLines, enableSnapToGrid, enableSnapToAlignment, showGrid, isDesignAreaFocused } = storeToRefs(editorStore);
+const reportStore = useReportStore();
+const { reportProperties, bands, paperWidth, paperHeight, totalPages: pageTotal, special } =
+  storeToRefs(reportStore);
+const selectionStore = useSelectionStore();
+const { selectedBandIndex, selectedElement, selectedElements, editingElement } = storeToRefs(selectionStore);
+
 const emit = defineEmits([
   "set-design-area-focused",
   "handle-drop",
@@ -543,28 +658,28 @@ const emit = defineEmits([
   "update:enableSnapToAlignment", // Added snap-to-alignment toggle event
   "update:showGrid", // Added show/hide grid event
   "reset-zoom", // Added reset zoom event
-  "update-jrxml", // Added JRXML update event
-  "save-state", // Undo snapshot requested by an element before it changes itself
   "canvas-contextmenu", // Added canvas context menu event
   "add-page",
   "delete-page",
+  // Cover / contents page actions: (action, pageIndex)
+  "page-action",
   "auto-fit-height",
   "rotate",
 ]);
 
 // Computed detail band index
 const detailBandIndex = computed(() =>
-  props.bands.findIndex((b) => b.type === "detail"),
+  bands.value.findIndex((b) => b.type === "detail"),
 );
 
-const totalPages = computed(() => Math.max(1, props.totalPages || 1));
+const totalPages = computed(() => Math.max(1, pageTotal.value || 1));
 
 // Background band is drawn as an underlay on every page, not in the stacked band flow
 const backgroundBandIndex = computed(() =>
-  props.bands.findIndex((b) => b.type === "background"),
+  bands.value.findIndex((b) => b.type === "background"),
 );
 const backgroundElements = computed(
-  () => props.bands[backgroundBandIndex.value]?.elements ?? [],
+  () => bands.value[backgroundBandIndex.value]?.elements ?? [],
 );
 
 // Click targets for background elements: a strip centred on each edge
@@ -587,28 +702,28 @@ const edgeHitStyle = (
 const totalRulerHeight = computed(() => {
   const pages = totalPages.value;
   const pageGap = 32;
-  return props.paperHeight * pages + Math.max(0, (pages - 1) * pageGap);
+  return paperHeight.value * pages + Math.max(0, (pages - 1) * pageGap);
 });
 
 // Extra ruler length past the last page, so the rulers can scroll as far as the
 // canvas (which also holds the add-page button and its scrollbar)
 const RULER_SCROLL_SLACK = 120;
 
-const marginLeft = computed(() => props.reportProperties.leftMargin || 0);
-const marginRight = computed(() => props.reportProperties.rightMargin || 0);
-const marginTop = computed(() => props.reportProperties.topMargin || 0);
-const marginBottom = computed(() => props.reportProperties.bottomMargin || 0);
+const marginLeft = computed(() => reportProperties.value.leftMargin || 0);
+const marginRight = computed(() => reportProperties.value.rightMargin || 0);
+const marginTop = computed(() => reportProperties.value.topMargin || 0);
+const marginBottom = computed(() => reportProperties.value.bottomMargin || 0);
 const printableWidth = computed(() =>
-  Math.max(0, props.paperWidth - marginLeft.value - marginRight.value),
+  Math.max(0, paperWidth.value - marginLeft.value - marginRight.value),
 );
 
 // Top of page sheet n (1-based) on the vertical ruler
-const pageRulerOffset = (pIndex: number) => (pIndex - 1) * (props.paperHeight + 32);
+const pageRulerOffset = (pIndex: number) => (pIndex - 1) * (paperHeight.value + 32);
 
 // Ruler numbers are centred on their tick, except at the paper edges where
 // centring would cut them in half
 const rulerLabelAlign = (position: number, pageLength: number) => {
-  const edge = 10 / props.zoomLevel;
+  const edge = 10 / zoomLevel.value;
   if (position < edge) return "label-start";
   if (position > pageLength - edge) return "label-end";
   return "";
@@ -616,24 +731,115 @@ const rulerLabelAlign = (position: number, pageLength: number) => {
 
 const gridPathCache = new Map<string, string>();
 const gridPath = (width: number, height: number) => {
-  const key = `${width}x${height}@${props.zoomLevel}`;
+  const key = `${width}x${height}@${zoomLevel.value}`;
   let path = gridPathCache.get(key);
   if (path === undefined) {
     if (gridPathCache.size > 200) gridPathCache.clear();
-    path = buildGridPath(width, height, 1 / props.zoomLevel);
+    path = buildGridPath(width, height, 1 / zoomLevel.value);
     gridPathCache.set(key, path);
   }
   return path;
 };
 
+// ---- Cover and contents pages (utils/specialPages.ts) ----
+
+const kindOf = (pageIdx: number) => pageKind(reportProperties.value, pageIdx);
+const isSpecial = (pageIdx: number) => kindOf(pageIdx) !== "normal";
+// A whole-sheet cover: drawn edge to edge, no margins
+const isSheetPage = (pageIdx: number) => !!specialPageArea(reportProperties.value, pageIdx)?.sheet;
+
+function pageBadge(pageIdx: number): string {
+  const kind = kindOf(pageIdx);
+  if (kind === "cover") return t("specialPages.cover");
+  if (kind === "contents") {
+    const n = pageIdx - (special.value.cover ? 1 : 0) + 1;
+    return special.value.contents > 1 ? t("specialPages.contentsN", { n }) : t("specialPages.contents");
+  }
+  return t("canvas.pageOf", { page: pageIdx + 1, total: totalPages.value });
+}
+
+// A page can go while one normal page is left
+const canDeletePage = (pageIdx: number) =>
+  isSpecial(pageIdx) || totalPages.value - special.value.count > 1;
+
+type PageAction =
+  | "addCover"
+  | "addContents"
+  | "makeCover"
+  | "makeContents"
+  | "coverToNormal"
+  | "contentsToNormal"
+  | "chooseDesign"
+  | "addToc"
+  | "wholeSheet"
+  | "keepMargins"
+  | "delete";
+// Each page's toolbar keeps its size when zoomed in, shrinks with the page
+// when zoomed out (to 75% at most), and shows icons only on a narrow page
+const pageToolbarScale = computed(() => Math.max(0.75, Math.min(1, zoomLevel.value)) / zoomLevel.value);
+const compactPageToolbar = computed(() => paperWidth.value * zoomLevel.value < 620);
+
+function pageMenuItems(pageIdx: number) {
+  const kind = kindOf(pageIdx);
+  const { cover, contents, count } = special.value;
+  const items: { action: PageAction; labelKey: string; icon: unknown; danger?: boolean }[] = [];
+  // Adding the pages at the front (also in the header's Page menu)
+  if (pageIdx === 0 && !cover) items.push({ action: "addCover", labelKey: "specialPages.addCover", icon: BookImage });
+  if (!contents && (kind === "cover" || pageIdx === count)) {
+    items.push({ action: "addContents", labelKey: "specialPages.addContents", icon: TableOfContents });
+  }
+  if (kind === "normal") {
+    if (pageIdx === 0 && !cover && !contents) {
+      items.push({ action: "makeCover", labelKey: "specialPages.makeCover", icon: BookImage });
+    }
+    if (pageIdx === count) {
+      items.push({ action: "makeContents", labelKey: "specialPages.makeContents", icon: TableOfContents });
+    }
+  } else if (kind === "cover") {
+    items.push(
+      special.value.fullPageCover
+        ? { action: "keepMargins", labelKey: "specialPages.keepMargins", icon: Shrink }
+        : { action: "wholeSheet", labelKey: "specialPages.wholeSheet", icon: Expand },
+    );
+    if (!contents) items.push({ action: "coverToNormal", labelKey: "specialPages.toNormal", icon: FileText });
+    items.push({ action: "delete", labelKey: "specialPages.deleteCover", icon: Trash2, danger: true });
+  } else {
+    if (pageIdx === count - 1) items.push({ action: "contentsToNormal", labelKey: "specialPages.toNormal", icon: FileText });
+    items.push({ action: "delete", labelKey: "specialPages.deleteContents", icon: Trash2, danger: true });
+  }
+  return items;
+}
+
+const openPageMenu = ref<number | null>(null);
+const closePageMenu = () => {
+  openPageMenu.value = null;
+  document.removeEventListener("mousedown", closePageMenu);
+};
+function togglePageMenu(pageIdx: number) {
+  if (openPageMenu.value === pageIdx) {
+    closePageMenu();
+    return;
+  }
+  openPageMenu.value = pageIdx;
+  document.addEventListener("mousedown", closePageMenu);
+}
+function runPageAction(action: PageAction, pageIdx: number) {
+  closePageMenu();
+  if (action === "delete") emit("delete-page", pageIdx);
+  else emit("page-action", action, pageIdx);
+}
+onBeforeUnmount(closePageMenu);
+
 // Determine if a band is visible on the given page
 function isBandVisibleOnPage(
   band: Band,
-  _pIndex: number,
+  pIndex: number,
   _total: number,
 ): boolean {
   // Background is an underlay layer, excluded from stacked vertical flow
   if (band.type === "background") return false;
+  // A cover or contents page has only its own area: no shared sections
+  if (isSpecial(pIndex - 1)) return band.type === "detail";
 
   // Non-detail bands with <= 0 height and no elements are hidden
   if (
@@ -651,15 +857,58 @@ function isBandVisibleOnPage(
 function getBandDisplayLabel(bandType: string, pIndex: number): string {
   const name = getBandDisplayName(bandType);
   if (bandType === "detail") {
+    if (isSpecial(pIndex - 1)) return pageBadge(pIndex - 1);
     return `${name} (Page ${pIndex})`;
   }
 
   return name;
 }
 
+// The selected element's handles drawn on top (see the template): for shapes
+// and boxes, and for parts inside a box, which keep their stacking order when
+// selected. Not for one being typed in, nor when several are selected
+const HANDLE_DIRS = ["nw", "n", "ne", "e", "se", "s", "sw", "w"] as const;
+const topHandles = computed(() => {
+  const sel = selectedElement.value;
+  if (!sel || (selectedElements.value?.length ?? 0) > 1) return null;
+  const band = bands.value[sel.bandIndex];
+  if (!band || band.type === "background") return null;
+  const box = sel.parentFrameIndex !== undefined ? (band.elements[sel.parentFrameIndex] as any) : null;
+  const el = box ? box.elements?.[sel.elementIndex] : band.elements[sel.elementIndex];
+  if (!el) return null;
+  if (!box && !["rectangle", "ellipse", "frame"].includes(el.type)) return null;
+  const editing = editingElement.value;
+  if (
+    editing &&
+    editing.bandIndex === sel.bandIndex &&
+    editing.elementIndex === sel.elementIndex &&
+    editing.parentFrameIndex === sel.parentFrameIndex
+  )
+    return null;
+  return {
+    bandIndex: sel.bandIndex,
+    elementIndex: sel.elementIndex,
+    parentFrameIndex: sel.parentFrameIndex,
+    pageIndex: (box ?? el).pageIndex ?? 0,
+    x: (box?.x ?? 0) + el.x,
+    y: (box?.y ?? 0) + el.y,
+    width: el.width,
+    height: el.height,
+  };
+});
+
+// The first contents page with nothing of a Table of Contents on any contents
+// page (one Table of Contents carries on over them by itself)
+const contentsPageWithoutToc = (pageIdx: number) =>
+  kindOf(pageIdx) === "contents" &&
+  pageIdx === (special.value.cover ? 1 : 0) &&
+  !(bands.value[detailBandIndex.value]?.elements ?? []).some(
+    (el) => el.type === "contentsList" && kindOf(el.pageIndex ?? 0) === "contents",
+  );
+
 const getDetailElementsForPage = (pageIdx: number) => {
   if (detailBandIndex.value === -1) return [];
-  const detailBand = props.bands[detailBandIndex.value];
+  const detailBand = bands.value[detailBandIndex.value];
   if (!detailBand || !detailBand.elements) return [];
   const result: Array<{ element: any; originalIndex: number }> = [];
   detailBand.elements.forEach((el, index) => {
@@ -674,16 +923,19 @@ const getDetailElementsForPage = (pageIdx: number) => {
 // Calculate remaining height for detail band dynamically based on all visible non-detail bands on page
 const getPageDetailHeight = (pageIdx: number) => {
   if (detailBandIndex.value === -1) return 100;
-  const detailBand = props.bands[detailBandIndex.value];
+  const detailBand = bands.value[detailBandIndex.value];
   if (!detailBand) return 100;
 
   const pIndex = pageIdx + 1;
-  const topMargin = props.reportProperties?.topMargin || 0;
-  const bottomMargin = props.reportProperties?.bottomMargin || 0;
-  const availableHeight = props.paperHeight - topMargin - bottomMargin;
+  // A cover or contents page: the whole printable page (or sheet)
+  const area = specialPageArea(reportProperties.value, pageIdx);
+  if (area) return Math.max(20, area.height);
+  const topMargin = reportProperties.value?.topMargin || 0;
+  const bottomMargin = reportProperties.value?.bottomMargin || 0;
+  const availableHeight = paperHeight.value - topMargin - bottomMargin;
 
   let otherBandsHeight = 0;
-  props.bands.forEach((b) => {
+  bands.value.forEach((b) => {
     if (
       b.type !== "detail" &&
       isBandVisibleOnPage(b, pIndex, totalPages.value)
@@ -707,7 +959,7 @@ interface PageBandInfo {
 // Get the dynamic list of bands for a given page
 const getBandsForPage = (pIndex: number): PageBandInfo[] => {
   const result: PageBandInfo[] = [];
-  props.bands.forEach((band, bandIndex) => {
+  bands.value.forEach((band, bandIndex) => {
     if (!isBandVisibleOnPage(band, pIndex, totalPages.value)) {
       return;
     }
@@ -822,14 +1074,14 @@ const startEditing = (
 
 const finishEditing = () => {
   // Since ElementFactory's finishEditing event doesn't pass parameters, we need to get the info from editingElement
-  if (props.editingElement) {
+  if (editingElement.value) {
     emit("finish-editing");
   }
 };
 
 const cancelEditing = () => {
   // Since ElementFactory's cancelEditing event doesn't pass parameters, we need to get the info from editingElement
-  if (props.editingElement) {
+  if (editingElement.value) {
     emit("cancel-editing");
   }
 };
@@ -863,9 +1115,9 @@ const startResizingBand = (event: MouseEvent, bandIndex: number) => {
 const isElementOutOfBounds = (bandIndex: number, elementIndex: number) => {
   if (
     props.isDraggingOrResizing &&
-    props.selectedElement?.bandIndex === bandIndex &&
-    props.selectedElement?.elementIndex === elementIndex &&
-    props.selectedElement?.parentFrameIndex === undefined
+    selectedElement.value?.bandIndex === bandIndex &&
+    selectedElement.value?.elementIndex === elementIndex &&
+    selectedElement.value?.parentFrameIndex === undefined
   ) {
     return false;
   }
@@ -897,6 +1149,9 @@ const handleWheel = (event: WheelEvent) => {
 
 // Rectangle selection feature
 const startSelection = (event: MouseEvent) => {
+  // Library tiles clicked next add their element to this page
+  const sheetPage = (event.currentTarget as HTMLElement | null)?.dataset?.pageIndex;
+  if (sheetPage !== undefined) selectionStore.lastClickedPageIndex = parseInt(sheetPage, 10);
   // Only the left mouse button can trigger rectangle selection
   if (event.button !== 0) {
     return;
@@ -916,7 +1171,7 @@ const startSelection = (event: MouseEvent) => {
     ) as HTMLElement;
     if (paperEl && paperContainer) {
       const containerRect = paperContainer.getBoundingClientRect();
-      const currentZoom = props.zoomLevel;
+      const currentZoom = zoomLevel.value;
 
       // Get the scroll position
       const scrollLeft = paperContainer.scrollLeft;
@@ -957,7 +1212,7 @@ const updateSelection = (event: MouseEvent) => {
   ) as HTMLElement;
   if (paperEl && paperContainer) {
     const containerRect = paperContainer.getBoundingClientRect();
-    const currentZoom = props.zoomLevel;
+    const currentZoom = zoomLevel.value;
 
     // Get the scroll position
     const scrollLeft = paperContainer.scrollLeft;
@@ -1013,7 +1268,7 @@ const endSelection = () => {
   }
 
   // Convert the scaled coordinates to coordinates relative to the paper
-  const currentZoom = props.zoomLevel;
+  const currentZoom = zoomLevel.value;
   const left = scaledLeft / currentZoom;
   const top = scaledTop / currentZoom;
   const right = scaledRight / currentZoom;
@@ -1094,12 +1349,13 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* The desk the pages lie on: the home page's soft lavender grey */
 .designer-canvas {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: #f0f0f0;
+  background-color: #f1f0f7;
   position: relative;
   min-height: 0;
 }
@@ -1107,8 +1363,8 @@ onBeforeUnmount(() => {
 .top-ruler-container {
   display: flex;
   height: 30px;
-  background-color: #e8e8e8;
-  border-bottom: 1px solid #ccc;
+  background-color: #f7f6fb;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.08);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -1117,16 +1373,17 @@ onBeforeUnmount(() => {
 .corner-space {
   width: 30px;
   height: 30px;
-  background-color: #e0e0e0;
-  border-right: 1px solid #ccc;
+  background-color: #f1f0f6;
+  border-right: 1px solid rgba(28, 27, 38, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .unit-label {
-  font-size: 10px;
-  color: #666;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #8a84a3;
 }
 
 .horizontal-ruler {
@@ -1134,8 +1391,8 @@ onBeforeUnmount(() => {
   flex: 1;
   width: 0;
   height: 30px;
-  background-color: #e8e8e8;
-  border-bottom: 1px solid #ccc;
+  background-color: #f7f6fb;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.08);
   overflow-x: auto;
   overflow-y: hidden;
   /* Hide scrollbar */
@@ -1162,8 +1419,8 @@ onBeforeUnmount(() => {
 
 .vertical-ruler-container {
   width: 30px;
-  background-color: #e8e8e8;
-  border-right: 1px solid #ccc;
+  background-color: #f7f6fb;
+  border-right: 1px solid rgba(28, 27, 38, 0.08);
   position: sticky;
   left: 0;
   z-index: 5;
@@ -1173,7 +1430,7 @@ onBeforeUnmount(() => {
   position: relative;
   width: 100%;
   height: 100%;
-  background-color: #e8e8e8;
+  background-color: #f7f6fb;
   overflow-x: hidden;
   overflow-y: auto;
   /* Hide scrollbar */
@@ -1194,6 +1451,30 @@ onBeforeUnmount(() => {
   overflow: auto;
   min-width: 0;
   min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #cfd5e1 transparent;
+}
+
+.paper-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.paper-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.paper-container::-webkit-scrollbar-thumb {
+  background: #cfd5e1;
+  border-radius: 4px;
+}
+
+.paper-container::-webkit-scrollbar-thumb:hover {
+  background: #b0b8c9;
+}
+
+.paper-container::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .pages-wrapper {
@@ -1212,20 +1493,20 @@ onBeforeUnmount(() => {
 .paper {
   background-color: white;
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.12),
-    0 1px 3px rgba(0, 0, 0, 0.08);
+    0 4px 20px rgba(23, 20, 44, 0.08),
+    0 1px 3px rgba(23, 20, 44, 0.05);
   position: relative;
   transition: box-shadow 0.2s ease;
   flex-shrink: 0;
-  border-radius: 2px;
+  border-radius: 3px;
   box-sizing: border-box;
   overflow: hidden;
 }
 
 .paper.focused {
   box-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.18),
-    0 2px 6px rgba(0, 0, 0, 0.12);
+    0 8px 26px rgba(23, 20, 44, 0.14),
+    0 2px 6px rgba(23, 20, 44, 0.08);
 }
 
 /* Page tools: a small pill above the page's top-right corner, the same size
@@ -1240,22 +1521,114 @@ onBeforeUnmount(() => {
   gap: 2px;
   padding: 3px;
   background: rgba(255, 255, 255, 0.96);
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(28, 27, 38, 0.08);
   border-radius: 999px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 2px 8px rgba(23, 20, 44, 0.06);
   transform-origin: top right;
   user-select: none;
   backdrop-filter: blur(4px);
+}
+
+
+
+
+
+.page-sheet-badge.is-special {
+  color: #6366f1;
+}
+
+.page-sheet.is-cover-page,
+.page-sheet.is-contents-page {
+  box-shadow: 0 0 0 2px rgba(124, 92, 247, 0.22), 0 4px 16px rgba(23, 20, 44, 0.1);
+}
+
+.page-menu-wrap {
+  position: relative;
+}
+
+.page-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #6f6a7e;
+  cursor: pointer;
+}
+
+.page-menu-btn:hover,
+.page-menu-btn.is-open {
+  background: rgba(124, 92, 247, 0.08);
+  color: #1c1b26;
+}
+
+.page-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: 210px;
+  padding: 6px;
+  border: 1px solid rgba(28, 27, 38, 0.1);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow:
+    0 16px 36px rgba(23, 20, 44, 0.14),
+    0 2px 6px rgba(23, 20, 44, 0.06);
+}
+
+.page-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #45425a;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.page-menu-item:hover {
+  background: rgba(124, 92, 247, 0.08);
+  color: #1c1b26;
+}
+
+.page-menu-item.is-danger {
+  color: #dc2626;
+}
+
+.page-menu-item.is-danger:hover {
+  background: #fef2f2;
+}
+
+/* Narrow page on screen: icons only (the names are in the tooltips) */
+.page-sheet-header.is-compact .btn-label {
+  display: none;
+}
+
+.page-sheet-header.is-compact .add-page-after-btn,
+.page-sheet-header.is-compact .delete-page-btn {
+  padding: 0 7px;
 }
 
 .page-sheet-badge {
   padding: 0 10px 0 8px;
   font-size: 11px;
   font-weight: 600;
-  color: #6b7280;
+  color: #6f6a7e;
   letter-spacing: 0.02em;
   white-space: nowrap;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid rgba(28, 27, 38, 0.08);
   margin-right: 2px;
 }
 
@@ -1267,7 +1640,7 @@ onBeforeUnmount(() => {
   height: 24px;
   padding: 0 10px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   background: transparent;
   border: none;
   border-radius: 999px;
@@ -1277,15 +1650,16 @@ onBeforeUnmount(() => {
 }
 
 .add-page-after-btn {
-  color: #1d4ed8;
+  color: #6366f1;
 }
 
 .add-page-after-btn:hover {
-  background: #eff6ff;
+  background: rgba(124, 92, 247, 0.08);
+  color: #5b3ee0;
 }
 
 .delete-page-btn {
-  color: #6b7280;
+  color: #6f6a7e;
 }
 
 .delete-page-btn:hover {
@@ -1295,7 +1669,7 @@ onBeforeUnmount(() => {
 
 .add-page-after-btn:focus-visible,
 .delete-page-btn:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid #7c5cf7;
   outline-offset: 1px;
 }
 
@@ -1345,7 +1719,7 @@ onBeforeUnmount(() => {
 }
 
 .background-band-layer .background-edge-hit:hover {
-  background-color: rgba(24, 144, 255, 0.35);
+  background-color: rgba(100, 64, 244, 0.35);
 }
 
 /* The outline is an inset shadow, not a border: a border would push the band's
@@ -1368,13 +1742,33 @@ onBeforeUnmount(() => {
 /* While dragging: the band the element will land in (calm blue), or red when
    it is too tall for that band and the drop would be refused */
 .band.drop-target {
-  box-shadow: inset 0 0 0 1.5px #2563eb;
-  background-color: rgba(37, 99, 235, 0.05);
+  box-shadow: inset 0 0 0 1.5px #6440f4;
+  background-color: rgba(100, 64, 244, 0.05);
 }
 
 .band.drop-target.drop-blocked {
   box-shadow: inset 0 0 0 1.5px #dc2626;
   background-color: rgba(220, 38, 38, 0.06);
+}
+
+/* Drop target for the Page Border tile: the whole printable area (Background band) */
+.background-drop-target {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1.5px #6440f4;
+  background-color: rgba(100, 64, 244, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.background-drop-label {
+  font-size: 40px;
+  font-weight: bold;
+  color: rgba(100, 64, 244, 0.25);
+  user-select: none;
+  white-space: nowrap;
 }
 
 .band-background-label-container {
@@ -1411,7 +1805,7 @@ onBeforeUnmount(() => {
   right: 0;
   height: 6px;
   cursor: ns-resize;
-  background-color: rgba(74, 144, 226, 0.4);
+  background-color: rgba(124, 92, 247, 0.35);
   opacity: 0;
   transition:
     opacity 0.2s ease,
@@ -1422,7 +1816,7 @@ onBeforeUnmount(() => {
 .band:hover .band-resize-handle,
 .band-resize-handle:hover {
   opacity: 1;
-  background-color: rgba(74, 144, 226, 0.95);
+  background-color: rgba(124, 92, 247, 0.9);
   z-index: 4;
 }
 
@@ -1441,14 +1835,14 @@ onBeforeUnmount(() => {
 .detail-band:hover + .pageFooter-band .band-resize-handle,
 .detail-band:hover + .page-footer-band .band-resize-handle {
   opacity: 0.7;
-  background-color: rgba(74, 144, 226, 0.6);
+  background-color: rgba(124, 92, 247, 0.55);
 }
 
 /* When hovering Column Footer, also highlight the dragger between Column Footer and Page Footer */
 .columnFooter-band:hover + .pageFooter-band .band-resize-handle,
 .column-footer-band:hover + .page-footer-band .band-resize-handle {
   opacity: 0.7;
-  background-color: rgba(74, 144, 226, 0.6);
+  background-color: rgba(124, 92, 247, 0.55);
 }
 
 /* Snap guides: one screen pixel wide at any zoom (set inline), above the content */
@@ -1466,8 +1860,11 @@ onBeforeUnmount(() => {
 
 .canvas-empty-state {
   display: flex;
-  align-items: center;
+  /* Near the top of the page, not lost in the middle */
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 48px;
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
   min-height: 60px;
@@ -1475,50 +1872,85 @@ onBeforeUnmount(() => {
 }
 
 .empty-state-text {
-  font-size: 13px;
-  color: var(--prop-text-tertiary, #999);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 260px;
+  padding: 16px 20px;
+  border: 1px dashed #d9d4ec;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #8a84a3;
   text-align: center;
   pointer-events: none;
 }
 
+.empty-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #f1edff;
+  color: #6440f4;
+}
+
 .tick {
   position: absolute;
-  background-color: #666;
-}
-
-.tick.major {
-  height: 10px;
-  width: 1px;
-}
-
-.tick.minor {
-  height: 5px;
-  width: 1px;
+  background-color: #b5b0c7;
 }
 
 .horizontal-ruler .tick {
-  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.horizontal-ruler .tick.major {
+  height: 6px;
+  background-color: #9e97b5;
+}
+
+.horizontal-ruler .tick.minor {
+  height: 3px;
+  background-color: #c9c5d8;
 }
 
 .vertical-ruler .tick {
-  left: 0;
-  width: 10px;
+  right: 0;
   height: 1px;
+}
+
+.vertical-ruler .tick.major {
+  width: 5px;
+  background-color: #9e97b5;
+}
+
+.vertical-ruler .tick.minor {
+  width: 3px;
+  background-color: #c9c5d8;
 }
 
 .label {
   position: absolute;
-  font-size: 10px;
-  color: #666;
+  font-size: 9.5px;
+  font-weight: 500;
+  color: #78728c;
+  line-height: 1;
+  user-select: none;
 }
 
 .horizontal-ruler .label {
-  top: 12px;
+  top: 4px;
   transform: translateX(-50%);
 }
 
 .vertical-ruler .label {
-  left: 12px;
+  right: 8px;
+  text-align: right;
   transform: translateY(-50%);
 }
 
@@ -1541,7 +1973,7 @@ onBeforeUnmount(() => {
 /* Page margins on the rulers: outside the area X/Y count from */
 .ruler-margin {
   position: absolute;
-  background-color: #d4d4d4;
+  background-color: rgba(28, 27, 38, 0.055);
 }
 
 .horizontal-ruler .ruler-margin {
@@ -1585,4 +2017,91 @@ onBeforeUnmount(() => {
   padding: 0 !important;
   gap: 4px !important;
 }
+
+.no-toc-prompt {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.no-toc-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  border: 1px dashed rgba(100, 64, 244, 0.45);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 16px rgba(23, 20, 44, 0.08);
+  color: #6440f4;
+  pointer-events: auto;
+}
+
+.no-toc-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1c1b26;
+}
+
+.no-toc-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.no-toc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid #e6e5ee;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1c1b26;
+  cursor: pointer;
+}
+
+.no-toc-btn:hover {
+  border-color: #6440f4;
+}
+
+.no-toc-btn.is-primary {
+  border-color: #6440f4;
+  background: #6440f4;
+  color: #fff;
+}
+
+.top-handles {
+  position: absolute;
+  z-index: 70;
+  pointer-events: none;
+}
+
+.top-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border: 1px solid #ffffff;
+  border-radius: 1px;
+  background: #6440f4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+.top-handle.is-nw { top: -4px; left: -4px; cursor: nw-resize; }
+.top-handle.is-ne { top: -4px; right: -4px; cursor: ne-resize; }
+.top-handle.is-sw { bottom: -4px; left: -4px; cursor: sw-resize; }
+.top-handle.is-se { bottom: -4px; right: -4px; cursor: se-resize; }
+.top-handle.is-n { top: -3px; left: 50%; width: 14px; height: 6px; transform: translateX(-50%); cursor: n-resize; }
+.top-handle.is-s { bottom: -3px; left: 50%; width: 14px; height: 6px; transform: translateX(-50%); cursor: s-resize; }
+.top-handle.is-w { left: -3px; top: 50%; width: 6px; height: 14px; transform: translateY(-50%); cursor: w-resize; }
+.top-handle.is-e { right: -3px; top: 50%; width: 6px; height: 14px; transform: translateY(-50%); cursor: e-resize; }
 </style>

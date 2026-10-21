@@ -18,10 +18,10 @@ export function fetchTableRows(
   limit?: number,
 ): Promise<DataQueryResult> {
   const query = toDataQuery(binding, limit);
-  const key = JSON.stringify([binding.sourceId, query]);
+  const key = JSON.stringify([binding.projectId, binding.sourceId, query]);
   let result = cache.get(key);
   if (!result) {
-    result = queryRows(binding.sourceId, query);
+    result = queryRows(binding.projectId, binding.sourceId, query);
     // A failed request is tried again next time
     result.catch(() => cache.delete(key));
     cache.set(key, result);
@@ -64,7 +64,10 @@ export function useTableRows(
 
   // Re-fetch only when what is asked for changes (not on column widths or theme)
   watch(
-    () => (binding.value ? JSON.stringify([binding.value.sourceId, toDataQuery(binding.value, limit)]) : ""),
+    () =>
+      binding.value
+        ? JSON.stringify([binding.value.projectId, binding.value.sourceId, toDataQuery(binding.value, limit)])
+        : "",
     load,
     { immediate: true },
   );
