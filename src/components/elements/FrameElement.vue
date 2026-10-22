@@ -74,6 +74,7 @@ import BaseElement from './BaseElement.vue';
 import type { FrameElement, SelectedElementInfo, EditingElementInfo } from '../../types';
 import { isBoxPart } from '../../utils/framePresets';
 import { hasProperty, SECTION_HEADING_PROPERTY } from '../../utils/contentsList';
+import { isLocationElement } from '../../utils/location/locationElement';
 import { getElementBoxPadding } from '../../utils/elementUtils';
 
 // Asynchronously import ElementFactory to avoid circular dependencies
@@ -183,7 +184,8 @@ const handleChildSelect = (bIndex: number, childIndex: number, isMultiSelect?: b
 
 const handleChildDragStart = (event: MouseEvent, bIndex: number, childIndex: number) => {
   event.stopPropagation(); // Prevent the event from bubbling up to the Frame
-  if (isPart(childIndex) && selectedPartAtPress !== childIndex) {
+  // (A Location's map or address always moves the whole Location: its layout places them)
+  if (isPart(childIndex) && (selectedPartAtPress !== childIndex || isLocationElement(props.element))) {
     boxDraggedThisPress = true;
     emit('dragStart', event, props.bandIndex, props.elementIndex, props.parentFrameIndex);
     return;
@@ -193,6 +195,7 @@ const handleChildDragStart = (event: MouseEvent, bIndex: number, childIndex: num
 
 const handleChildResizeStart = (event: MouseEvent, bIndex: number, childIndex: number, _parentFrameIndex?: number, direction?: string) => {
   event.stopPropagation(); // Prevent the event from bubbling up to the Frame
+  if (isLocationElement(props.element)) return;
   emit('resizeStart', event, props.bandIndex, childIndex, props.elementIndex, direction);
 };
 

@@ -581,6 +581,7 @@ import type { DragFeedback } from "@/composables/useDragFeedback";
 import type { AlignmentGuideLines } from "@/composables/useSnapAlignment";
 import { useI18n } from "vue-i18n";
 import { NCheckbox, NSpace } from "naive-ui";
+import { isLocationPart } from "@/utils/location/locationElement";
 
 const { t } = useI18n();
 
@@ -873,7 +874,8 @@ const topHandles = computed(() => {
   if (!band || band.type === "background") return null;
   const box = sel.parentFrameIndex !== undefined ? (band.elements[sel.parentFrameIndex] as any) : null;
   const el = box ? box.elements?.[sel.elementIndex] : band.elements[sel.elementIndex];
-  if (!el) return null;
+  // A Location's map or address has no handles of its own (its layout places it)
+  if (!el || isLocationPart(el)) return null;
   const editing = editingElement.value;
   if (
     editing &&

@@ -5739,12 +5739,14 @@ const navigateElements = (direction: string) => {
 const moveElementByKeyboard = (direction: string, repeat = false) => {
   if (!selectedElement.value) return;
 
-  const {
-    bandIndex: currentBandIndex,
-    elementIndex: currentElementIndex,
-    parentFrameIndex,
-  } = selectedElement.value;
+  const { bandIndex: currentBandIndex } = selectedElement.value;
+  let { elementIndex: currentElementIndex, parentFrameIndex } = selectedElement.value;
   const currentBand = bands.value[currentBandIndex];
+  // A Location's map or address: the whole Location moves (its layout places them)
+  if (parentFrameIndex !== undefined && isLocationElement(currentBand?.elements[parentFrameIndex])) {
+    currentElementIndex = parentFrameIndex;
+    parentFrameIndex = undefined;
+  }
   // An item in a box is found inside the box, and moves only within it
   const parentBox =
     parentFrameIndex !== undefined

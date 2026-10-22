@@ -218,7 +218,8 @@
             <small class="card-hint">{{ t(tableContentKind === "typed" ? "customTable.typedHint" : "customTable.fromDataHint") }}</small>
           </div>
 
-          <div class="box-section compact">
+          <!-- A Location's map and address are placed by its layout -->
+          <div v-if="!isLocationPart(currentElement)" class="box-section compact">
             <h5>{{ t("properties.positionSize") }}<SettingHelpButton id="positionSize" /></h5>
             <SettingHelpText id="positionSize" />
             <div class="geometry-grid">
@@ -1734,6 +1735,8 @@ const panelTitle = computed(() => {
   if (isPagination(el)) return t("elementNames.pageNumber");
   if (isDateElement(el)) return t("elementNames.dateTime");
   if (isLocationElement(el)) return t("elementNames.location");
+  // Its map or address: still the Location, with the part named
+  if (isLocationPart(el)) return t("location.partTitle", { part: t(`location.parts.${el.type === "image" ? "map" : "address"}`) });
   if (isPageBorder.value) return t("elementNames.framePageBorder");
   // Headings are shown by their own name, not as the box / text they are built of
   if (hasProperty(el, SECTION_HEADING_PROPERTY)) return t("elementNames.partSectionHeading");
@@ -1835,7 +1838,7 @@ const panelKind = computed(() => {
   if (!selectedElement.value || !el) return "report";
   if (isPagination(el)) return "pageNumber";
   if (isDateElement(el)) return "dateTime";
-  if (isLocationElement(el)) return "location";
+  if (isLocationElement(el) || isLocationPart(el)) return "location";
   if (isPageBorder.value) return "pageBorder";
   if (hasProperty(el, SECTION_HEADING_PROPERTY)) return "sectionHeading";
   if (hasProperty(el, SUB_HEADING_PROPERTY)) return "subHeading";

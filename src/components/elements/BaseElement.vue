@@ -23,7 +23,8 @@
     <slot></slot>
 
     <!-- 8 Resize handles (box UI used for all elements) -->
-    <template v-if="isSelected">
+    <!-- A Location's map and address are placed by its layout: no handles -->
+    <template v-if="isSelected && !isLocationPart(element)">
       <!-- 4 Corners -->
       <div 
         class="resize-handle resize-handle-nw"
@@ -133,8 +134,8 @@ const emit = defineEmits<{
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
-const isRotatableElement = computed(() => 
-  ['textField', 'image', 'barcode'].includes(props.element.type)
+const isRotatableElement = computed(() =>
+  ['textField', 'image', 'barcode'].includes(props.element.type) && !isLocationPart(props.element)
 );
 
 // Quick 90-degree step rotation

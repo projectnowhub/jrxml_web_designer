@@ -3762,6 +3762,11 @@
     "notFound": "That template couldn't be found. It may have been deleted."
   },
   "location": {
+    "partTitle": "Location · {part}",
+    "parts": {
+      "map": "Map",
+      "address": "Address"
+    },
     "fields": {
       "country": "Country",
       "state": "State / Province",

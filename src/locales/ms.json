@@ -3762,6 +3762,11 @@
     "notFound": "Templat itu tidak ditemui. Ia mungkin telah dipadam."
   },
   "location": {
+    "partTitle": "Lokasi · {part}",
+    "parts": {
+      "map": "Peta",
+      "address": "Alamat"
+    },
     "fields": {
       "country": "Negara",
       "state": "Negeri / Wilayah",
