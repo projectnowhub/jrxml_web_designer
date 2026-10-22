@@ -417,9 +417,9 @@
                         @rotate="(b, e, p) => emit('rotate', b, e, p)"
                       />
                     </template>
-                    <!-- Handles of a selected shape, box or box part, drawn above
-                         everything: the element keeps its place in the stacking
-                         order, so something on top could cover its own handles -->
+                    <!-- The selected item's outline and handles, drawn above
+                         everything: the item keeps its place in the stacking
+                         order, so something on top could cover its own -->
                     <div
                       v-if="topHandles && topHandles.bandIndex === bItem.bandIndex && topHandles.pageIndex === (bItem.isDetail ? pIndex - 1 : topHandles.pageIndex)"
                       class="top-handles"
@@ -862,9 +862,9 @@ function getBandDisplayLabel(bandType: string, pIndex: number): string {
   return name;
 }
 
-// The selected element's handles drawn on top (see the template): for shapes
-// and boxes, and for parts inside a box, which keep their stacking order when
-// selected. Not for one being typed in, nor when several are selected
+// The selected element's outline and handles drawn on top (see the template):
+// a selected element keeps its place in the stacking order. Not for one being
+// typed in (it is raised), nor when several are selected
 const HANDLE_DIRS = ["nw", "n", "ne", "e", "se", "s", "sw", "w"] as const;
 const topHandles = computed(() => {
   const sel = selectedElement.value;
@@ -874,7 +874,6 @@ const topHandles = computed(() => {
   const box = sel.parentFrameIndex !== undefined ? (band.elements[sel.parentFrameIndex] as any) : null;
   const el = box ? box.elements?.[sel.elementIndex] : band.elements[sel.elementIndex];
   if (!el) return null;
-  if (!box && !["rectangle", "ellipse", "frame"].includes(el.type)) return null;
   const editing = editingElement.value;
   if (
     editing &&
@@ -1942,6 +1941,8 @@ onBeforeUnmount(() => {
   position: absolute;
   z-index: 70;
   pointer-events: none;
+  outline: 2px solid #6440f4;
+  outline-offset: -1px;
 }
 
 .top-handle {

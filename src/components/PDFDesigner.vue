@@ -593,21 +593,24 @@
         :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
       >
         <div v-if="contextMenu.type === 'element'" class="context-menu-items">
-          <div
-            class="context-menu-item"
-            @click="handleContextMenuAction('copy')"
-          >
-            <Copy class="menu-icon" :size="16" />
-            {{ t("actions.copy") }}
-          </div>
-          <div
-            class="context-menu-item"
-            @click="handleContextMenuAction('paste')"
-          >
-            <ClipboardPaste class="menu-icon" :size="16" />
-            {{ t("actions.paste") }}
-          </div>
-          <div class="context-menu-divider"></div>
+          <!-- Copy and paste take one item: not offered for several -->
+          <template v-if="!severalSelected">
+            <div
+              class="context-menu-item"
+              @click="handleContextMenuAction('copy')"
+            >
+              <Copy class="menu-icon" :size="16" />
+              {{ t("actions.copy") }}
+            </div>
+            <div
+              class="context-menu-item"
+              @click="handleContextMenuAction('paste')"
+            >
+              <ClipboardPaste class="menu-icon" :size="16" />
+              {{ t("actions.paste") }}
+            </div>
+            <div class="context-menu-divider"></div>
+          </template>
           <div
             class="context-menu-item"
             @click="handleContextMenuAction('delete')"
@@ -7796,7 +7799,13 @@ const handleElementContextMenu = (
 ): void => {
   event.preventDefault();
   event.stopPropagation();
-  selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+  // Right-clicking one of several selected items keeps them all selected, so
+  // the menu's Delete, Bring to Front, Send to Back and Reset style act on all
+  const inSelection = selectedElements.value.some(
+    (sel) =>
+      sel.bandIndex === bandIndex && sel.elementIndex === elementIndex && sel.parentFrameIndex === parentFrameIndex,
+  );
+  if (!(severalSelected.value && inSelection)) selectElement(bandIndex, elementIndex, false, parentFrameIndex);
   contextMenu.value = {
     visible: true,
     x: event.clientX,
@@ -7804,6 +7813,8 @@ const handleElementContextMenu = (
     type: "element",
   };
 };
+
+const severalSelected = computed(() => selectedElements.value.length > 1);
 
 // Handle the canvas context menu
 const handleCanvasContextMenu = (event: MouseEvent): void => {
@@ -7874,7 +7885,7 @@ const resetSelectedStyles = () => {
 // of the box's parts (kept inside) or an item that was dropped in (moves freely)
 const selectedBoxItem = computed(() => {
   const selection = selectedElement.value;
-  if (!selection || selection.parentFrameIndex === undefined) return null;
+  if (!selection || selection.parentFrameIndex === undefined || severalSelected.value) return null;
   const box = bands.value[selection.bandIndex]?.elements[selection.parentFrameIndex] as
     | FrameElement
     | undefined;
@@ -7917,23 +7928,54 @@ const moveElementOutOfBox = () => {
   updateJRXML();
 };
 
-// Move an element's Z-order
+// Bring to Front / Send to Back: the selected items go on top of (or under)
+// everything else in their section or box, keeping their own order. The order
+// is the drawing order in the PDF (later items print over earlier ones). One
+// undo step, none when nothing would change (already at the front / back of
+// their page)
 const moveElementZOrder = (direction: "front" | "back") => {
-  if (!selectedElement.value) return;
+  const picked = selectedElements.value.length
+    ? selectedElements.value
+    : selectedElement.value
+      ? [selectedElement.value]
+      : [];
+  const moving = new Set(picked.map((sel) => elementAtLocation(sel)).filter((el) => el !== undefined));
+  if (!moving.size) return;
+
+  // Each list holding a selected item (a section, or a box's items), reordered
+  const containers = new Set<DesignElement[]>();
+  for (const sel of picked) {
+    const band = bands.value[sel.bandIndex];
+    const list =
+      sel.parentFrameIndex !== undefined
+        ? (band?.elements[sel.parentFrameIndex] as FrameElement | undefined)?.elements
+        : band?.elements;
+    if (list) containers.add(list);
+  }
+  const page = (el: DesignElement) => el.pageIndex ?? 0;
+  const pageOrder = (list: DesignElement[]) => list.map((el) => `${page(el)}:${el.uuid}`).join("|");
+  const changes = [...containers]
+    .map((list) => {
+      const mine = list.filter((el) => moving.has(el));
+      const rest = list.filter((el) => !moving.has(el));
+      const next = direction === "front" ? [...rest, ...mine] : [...mine, ...rest];
+      // Detail pages share one list: what counts is the order on each page
+      const byPage = (items: DesignElement[]) =>
+        [...new Set(items.map(page))].map((p) => pageOrder(items.filter((el) => page(el) === p))).join("#");
+      return byPage(next) === byPage(list) ? null : { list, next };
+    })
+    .filter((change) => change !== null);
+  if (!changes.length) return;
+
   saveStateToHistory();
-  const { bandIndex, elementIndex, parentFrameIndex } = selectedElement.value;
-  const band = bands.value[bandIndex];
-  if (!band) return;
-  const elements =
-    parentFrameIndex !== undefined
-      ? (band.elements[parentFrameIndex] as any).elements
-      : band.elements;
-  if (!elements) return;
-  const [element] = elements.splice(elementIndex, 1);
-  if (direction === "front") elements.push(element);
-  else elements.unshift(element);
-  const newIndex = direction === "front" ? elements.length - 1 : 0;
-  selectElement(bandIndex, newIndex, false, parentFrameIndex);
+  for (const { list, next } of changes) list.splice(0, list.length, ...next);
+  // The selection follows the items to their new places
+  const follow = (sel: { uuid?: string }) => {
+    const loc = sel.uuid ? findElementByUuid(sel.uuid) : null;
+    return loc ? { ...loc, uuid: sel.uuid } : null;
+  };
+  selectedElements.value = picked.map(follow).filter((sel) => sel !== null);
+  selectedElement.value = selectedElement.value ? follow(selectedElement.value) : null;
   updateJRXML();
 };
 

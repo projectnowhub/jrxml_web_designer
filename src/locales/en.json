@@ -1019,7 +1019,7 @@
       "paste": "Paste the copied item",
       "pasteHere": "Paste where you clicked",
       "delete": "Delete the selected item",
-      "moreOptions": "More options for an item",
+      "moreOptions": "More options for an item (Delete, Bring to Front, Send to Back…); with several selected, for all of them",
       "editItem": "Type in a text, set up a table or chart, change a picture",
       "finishTyping": "Finish typing and keep it",
       "cancelTyping": "Stop typing and throw away what you just typed",
@@ -3202,7 +3202,8 @@
           "Drag your project's logo from Report Data onto it to use that logo."
         ],
         "good": [
-          "Each corner can be set on its own in Style Settings; the shape then shows as Custom."
+          "Each corner can be set on its own in Style Settings; the shape then shows as Custom.",
+          "Text over a picture: right-click the picture → Send to Back (or the text → Bring to Front). Items further back print under the ones in front."
         ]
       },
       "line": {
@@ -3225,7 +3226,7 @@
           "Corner Radius in Style Settings rounds its corners."
         ],
         "good": [
-          "Selecting a rectangle doesn't bring it to the front, so what lies on it stays visible."
+          "Selecting an item doesn't bring it to the front, so the page shows what prints. To put it over or under other items, right-click it → Bring to Front or Send to Back."
         ]
       },
       "ellipse": {

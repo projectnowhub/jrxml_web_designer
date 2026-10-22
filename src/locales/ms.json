@@ -1019,7 +1019,7 @@
       "paste": "Tampal item yang disalin",
       "pasteHere": "Tampal di tempat yang anda klik",
       "delete": "Padam item yang dipilih",
-      "moreOptions": "Lebih banyak pilihan untuk item",
+      "moreOptions": "Lebih banyak pilihan untuk item (Padam, Bawa ke Hadapan, Hantar ke Belakang…); jika beberapa item dipilih, untuk semuanya",
       "editItem": "Taip dalam teks, sediakan jadual atau carta, tukar gambar",
       "finishTyping": "Selesai menaip dan simpan",
       "cancelTyping": "Berhenti menaip dan buang apa yang baru ditaip",
@@ -3202,7 +3202,8 @@
           "Seret logo projek anda dari Data Laporan ke atasnya untuk menggunakan logo itu."
         ],
         "good": [
-          "Setiap bucu boleh ditetapkan sendiri dalam Tetapan Gaya; bentuknya kemudian dipaparkan sebagai Tersuai."
+          "Setiap bucu boleh ditetapkan sendiri dalam Tetapan Gaya; bentuknya kemudian dipaparkan sebagai Tersuai.",
+          "Teks di atas gambar: klik kanan gambar → Hantar ke Belakang (atau teks → Bawa ke Hadapan). Item di belakang dicetak di bawah item di hadapan."
         ]
       },
       "line": {
@@ -3225,7 +3226,7 @@
           "Jejari Bucu dalam Tetapan Gaya membulatkan bucunya."
         ],
         "good": [
-          "Memilih segi empat tidak membawanya ke hadapan, jadi apa yang terletak di atasnya kekal kelihatan."
+          "Memilih item tidak membawanya ke hadapan, jadi halaman menunjukkan apa yang akan dicetak. Untuk meletakkannya di atas atau di bawah item lain, klik kanan padanya → Bawa ke Hadapan atau Hantar ke Belakang."
         ]
       },
       "ellipse": {

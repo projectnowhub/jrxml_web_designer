@@ -5,8 +5,7 @@
       'selected': isSelected,
       'out-of-bounds': isOutOfBounds,
       'is-dragging': isDragging,
-      'is-in-box': parentFrameIndex !== undefined,
-      'keeps-order': KEEPS_ORDER.has(element.type),
+      'is-typing': isBeingTyped,
       'is-project-drop': projectDrop === 'ok',
       'is-project-drop-blocked': projectDrop === 'blocked'
     }"
@@ -92,9 +91,7 @@
 
 <script setup lang="ts">
 import { useReportStore } from "@/stores/report";
-
-// Shapes and boxes stay in their place in the stacking order when selected
-const KEEPS_ORDER = new Set(["rectangle", "ellipse", "frame"]);
+import { useSelectionStore } from "@/stores/selection";
 import { RotateCw } from '@lucide/vue';
 import { resolveReportFont } from '../../config/fonts.config';
 import { computed, ref } from 'vue';
@@ -153,6 +150,18 @@ const handleQuickRotate = () => {
   (props.element as any).rotation = next;
   emit('rotate', props.bandIndex, props.elementIndex, props.parentFrameIndex);
 };
+
+// Being typed in: drawn above everything, so the typing is never covered
+const selection = useSelectionStore();
+const isBeingTyped = computed(() => {
+  const editing = selection.editingElement;
+  return (
+    !!editing &&
+    editing.bandIndex === props.bandIndex &&
+    editing.elementIndex === props.elementIndex &&
+    editing.parentFrameIndex === props.parentFrameIndex
+  );
+});
 
 // Whether selected
 const isSelected = computed(() => {
@@ -528,8 +537,11 @@ const handleProjectDragLeave = (event: DragEvent) => {
   white-space: pre-wrap;
 }
 
-/* Hovering keeps the stacking order: raising an item hid what lies on top of
-   it (e.g. a cover's title over its colour panel) */
+/* Hovering and selecting keep the stacking order, so the page shows what
+   prints: raising an item hid what lies on top of it (a cover's title over its
+   colour panel), and an item just sent to back still showed in front. The
+   canvas draws a selected item's outline and handles again above everything
+   (top handles in DesignerCanvas.vue) */
 
 .design-element.out-of-bounds {
   /* Highlight style for out-of-bounds elements */
@@ -543,20 +555,14 @@ const handleProjectDragLeave = (event: DragEvent) => {
 .design-element.selected {
   outline: 2px solid #6440f4;
   outline-offset: -1px;
-  /* Raise the z-index of the selected element to ensure correct interaction */
+}
+
+.design-element.is-typing {
   z-index: 50;
 }
 
 .design-element.is-dragging {
   z-index: 100;
-}
-
-/* Inside a box the parts keep their order even when selected: a selected
-   colour panel must not cover the texts on it. Shapes and boxes keep theirs
-   too (a background or panel must not cover what lies on it) */
-.design-element.is-in-box.selected,
-.design-element.keeps-order.selected {
-  z-index: 10;
 }
 
 /* While dragged, an element is always on top so it stays in view (after the
