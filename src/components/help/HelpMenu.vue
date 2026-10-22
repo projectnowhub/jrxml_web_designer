@@ -1,7 +1,7 @@
 <template>
   <!-- Help in the header (home page and designer), kept short: the tour, the
-       Quick guide, and in the designer keyboard shortcuts and All elements
-       (the Help window, whose tabs also hold This item and Show me how); at
+       Quick guide, and in the designer keyboard shortcuts, Guides and All
+       elements (the Help window, whose tabs also hold This item); at
        the bottom, the Tutorial mode switch -->
   <div ref="menuRef" class="help-menu" data-help="help">
     <button
@@ -51,13 +51,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, type Component } from "vue";
 import { useI18n } from "vue-i18n";
-import { BookOpen, CircleHelp, Compass, Keyboard, LayoutGrid } from "@lucide/vue";
+import { BookOpen, CircleHelp, Compass, Keyboard, LayoutGrid, ListChecks } from "@lucide/vue";
 import { useHelpStore } from "@/stores/help";
 import notification from "@/utils/notification";
 import SwitchControl from "../designer/properties/common/SwitchControl.vue";
 import type { TourId } from "@/utils/helpTours";
 
-type ItemId = "tour" | "guide" | "shortcuts" | "allElements";
+type ItemId = "tour" | "guide" | "shortcuts" | "showMeHow" | "allElements";
 
 const props = withDefaults(
   defineProps<{
@@ -80,7 +80,11 @@ const items = computed(() => {
     { id: "guide", icon: BookOpen },
   ];
   if (props.context === "designer") {
-    list.push({ id: "shortcuts", icon: Keyboard }, { id: "allElements", icon: LayoutGrid });
+    list.push(
+      { id: "shortcuts", icon: Keyboard },
+      { id: "showMeHow", icon: ListChecks },
+      { id: "allElements", icon: LayoutGrid },
+    );
   }
   return list;
 });
@@ -90,6 +94,7 @@ function choose(id: ItemId) {
   if (id === "tour") help.startTour(props.context);
   else if (id === "guide") help.openGuide(props.context);
   else if (id === "shortcuts") help.openGuide(props.context, "shortcuts");
+  else if (id === "showMeHow") help.openPanel("guides");
   else help.openPanel("elements");
 }
 

@@ -139,14 +139,16 @@
               @add-cover="handlePageAction('addCover', 0)"
               @add-contents="handlePageAction('addContents', 0)"
             />
-            <button class="toolbar-btn" data-hint="delete" @click="deleteElement" :title="t('actions.delete')">
-              <Trash2 :size="16" :stroke-width="2" aria-hidden="true" />
-            </button>
+            <span v-if="headerTier < 3" class="toolbar-divider"></span>
+
             <button class="toolbar-btn" data-hint="copy" @click="copyElement" :title="t('actions.copy')">
               <Copy :size="16" :stroke-width="2" aria-hidden="true" />
             </button>
             <button class="toolbar-btn" data-hint="paste" @click="pasteElement()" :title="t('actions.paste')">
               <ClipboardPaste :size="16" :stroke-width="2" aria-hidden="true" />
+            </button>
+            <button class="toolbar-btn" data-hint="delete" @click="deleteElement" :title="t('actions.delete')">
+              <Trash2 :size="16" :stroke-width="2" aria-hidden="true" />
             </button>
           </div>
         </template>
@@ -298,7 +300,7 @@
         <!-- The first time something is selected: how to work with it (Help) -->
         <FirstTimeTip />
         <!-- Help window (a popup the user drags anywhere): help for the selected
-             item, the Show me how guides, every element. Minimized, its tab
+             item, the step-by-step guides, every element. Minimized, its tab
              sits on the Properties panel's edge (or in its collapsed rail). -->
         <HelpPanel @ask-ai="openAIAssistant" />
         <HelpDockTab v-if="!rightPanelCollapsed || !showRightPanel" />
@@ -7394,7 +7396,7 @@ function openAIAssistant() {
 }
 
 // First visit: a short tour of the designer (once per browser), once the
-// page has settled. The "Show me how" guides start afresh with the report.
+// page has settled. The step-by-step guides start afresh with the report.
 let tourTimer: ReturnType<typeof setTimeout> | undefined;
 onMounted(() => {
   tourTimer = setTimeout(() => helpStore.startTourOnce("designer"), 900);

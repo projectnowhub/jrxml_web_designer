@@ -55,7 +55,7 @@
         </n-button>
       </div>
 
-      <!-- In the designer: the step-by-step guides (Help window → Show me how) -->
+      <!-- In the designer: the step-by-step guides (Help window → Guides) -->
       <div v-if="help.guideTour === 'designer'" class="help-tour-cta">
         <span>{{ t("help.guide.guidesHint") }}</span>
         <n-button @click="openGuides">

@@ -1,7 +1,7 @@
 // Help for the whole app (home page and designer): the guided tour running
 // now and its step, the Quick guide popup, the designer's tips (closed
 // "what is this" lines, the first-time tip on show), and the designer's Help
-// panel (This item / Show me how / All elements) with the settings
+// panel (This item / Guides / All elements) with the settings
 // explanations open in the Properties panel. Drawn once in App.vue
 // (GuidedTour, HelpModal); the Help menus and the pages start them.
 import { defineStore } from "pinia";
@@ -144,7 +144,7 @@ export const useHelpStore = defineStore("help", () => {
   }
 
   // The Help panel (designer): its tab; on This item, the selected element's
-  // page; on All elements, the page open (none: the list); on Show me how,
+  // page; on All elements, the page open (none: the list); on Guides,
   // the guide open (none: the list)
   const panelOpen = ref(false);
   const panelMinimized = ref(false);
@@ -199,7 +199,7 @@ export const useHelpStore = defineStore("help", () => {
     docPage.value = null;
   }
 
-  // "Show me how": what was done in this designer visit that the report
+  // Guides: what was done in this designer visit that the report
   // doesn't record, and steps ticked once seen (`<guide>.<step>`)
   const guideActions = ref<GuideAction[]>([]);
   const stickySteps = ref<string[]>([]);
