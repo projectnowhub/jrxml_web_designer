@@ -812,7 +812,7 @@ onBeforeUnmount(() => {
                 <div class="band-limit-input-group">
                   <label :title="t('bottomPanel.defaultHeight')">{{ t("bottomPanel.defaultShort") }}</label>
                   <div class="input-unit-wrapper">
-                    <input
+                    <input v-live-change
                       v-model.number="
                         getGlobalBandConfig(bType.type).defaultHeight
                       "
@@ -828,7 +828,7 @@ onBeforeUnmount(() => {
                 <div class="band-limit-input-group">
                   <label :title="t('bottomPanel.minHeight')">{{ t("bottomPanel.minShort") }}</label>
                   <div class="input-unit-wrapper">
-                    <input
+                    <input v-live-change
                       v-model.number="getGlobalBandConfig(bType.type).min"
                       type="number"
                       min="10"
@@ -842,7 +842,7 @@ onBeforeUnmount(() => {
                 <div class="band-limit-input-group">
                   <label :title="t('bottomPanel.maxHeight')">{{ t("bottomPanel.maxShort") }}</label>
                   <div class="input-unit-wrapper">
-                    <input
+                    <input v-live-change
                       v-model.number="getGlobalBandConfig(bType.type).max"
                       type="number"
                       :min="getGlobalBandConfig(bType.type).min || 10"

@@ -140,7 +140,7 @@
             <component :is="toggle.icon" :size="14" aria-hidden="true" />
           </button>
           <label class="size-input" :title="t('customTable.textSize')">
-            <input
+            <input v-live-change
               type="number"
               min="4"
               max="72"
@@ -203,7 +203,7 @@
         <label class="field">
           <span class="field-label">{{ t("customTable.padding") }}</span>
           <span class="unit-input">
-            <input
+            <input v-live-change
               type="number"
               min="0"
               max="40"

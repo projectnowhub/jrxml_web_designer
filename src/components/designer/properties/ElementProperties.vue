@@ -93,7 +93,7 @@
                   class="input-unit-wrapper"
                   :class="{ 'is-disabled': band.type === 'detail' }"
                 >
-                  <input
+                  <input v-live-change
                     :value="band.height"
                     type="number"
                     :min="
@@ -124,7 +124,7 @@
                 <div class="band-limit-input-group">
                   <label>{{ t("properties.minHeight") }}</label>
                   <div class="input-unit-wrapper">
-                    <input
+                    <input v-live-change
                       :value="getBandLimit(band.type).min"
                       type="number"
                       min="10"
@@ -140,7 +140,7 @@
                 <div class="band-limit-input-group">
                   <label>{{ t("properties.maxHeight") }}</label>
                   <div class="input-unit-wrapper">
-                    <input
+                    <input v-live-change
                       :value="getBandLimit(band.type).max"
                       type="number"
                       :min="getBandLimit(band.type).min || 10"
@@ -225,7 +225,7 @@
               <label v-for="dim in GEOMETRY_FIELDS" :key="dim" class="field">
                 <span class="field-label">{{ t(`properties.${dim}`) }}</span>
                 <span class="unit-input">
-                  <input
+                  <input v-live-change
                     :value="currentElement[dim]"
                     type="number"
                     @change="setIntegerValue(currentElement, dim, $event)"
@@ -602,7 +602,7 @@
                     <label class="field">
                       <span class="field-label">{{ t("properties.width") }}</span>
                       <span class="unit-input">
-                        <input
+                        <input v-live-change
                           :value="getRectangleBorderWidth()"
                           @change="setRectangleBorderWidth(($event.target as HTMLInputElement).value)"
                           type="number"
@@ -624,7 +624,7 @@
                     <label v-if="currentElement.type === 'rectangle'" class="field">
                       <span class="field-label">{{ t("properties.cornerRadius") }}</span>
                       <span class="unit-input">
-                        <input
+                        <input v-live-change
                           :value="currentElement.radius ?? 0"
                           @change="setTextProperty('radius', Math.max(0, Math.round(parseFloat(($event.target as HTMLInputElement).value) || 0)))"
                           type="number"
@@ -707,7 +707,7 @@
                       <label class="pad-all">
                         <span class="field-label">{{ t("properties.cornerAll") }}</span>
                         <span class="unit-input">
-                          <input
+                          <input v-live-change
                             :value="sharedCornerRadius"
                             @change="setCornerRadius(null, ($event.target as HTMLInputElement).value)"
                             type="number"
@@ -728,7 +728,7 @@
                       >
                         <span class="field-label">{{ t(`properties.corner.${corner}`) }}</span>
                         <span class="unit-input">
-                          <input
+                          <input v-live-change
                             :value="cornerRadii?.[corner] ?? 0"
                             @change="setCornerRadius(corner, ($event.target as HTMLInputElement).value)"
                             type="number"
@@ -819,7 +819,7 @@
                 <label class="field">
                   <span class="field-label">{{ t("properties.lineThickness") }}</span>
                   <span class="unit-input">
-                    <input
+                    <input v-live-change
                       :value="currentElement.lineWidth ?? 1"
                       @change="setTextProperty('lineWidth', Math.max(0.25, parseFloat(($event.target as HTMLInputElement).value) || 1))"
                       type="number"
@@ -859,7 +859,7 @@
                 <label class="field font-size-field">
                   <span class="field-label">{{ t("properties.fontSize") }}</span>
                   <span class="unit-input">
-                    <input
+                    <input v-live-change
                       :value="currentElement.fontSize ?? ''"
                       @change="setFontSize(($event.target as HTMLInputElement).value)"
                       type="number"

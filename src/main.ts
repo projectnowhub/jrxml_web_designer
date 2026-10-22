@@ -8,6 +8,7 @@ import i18n, { LOCALE_TAGS, type AppLocale } from "./i18n";
 import { setChartTextSource } from "./utils/chart/chartText";
 import router from "./router";
 import { initializeAllPlugins } from "./plugins/PluginRegistry";
+import { vLiveChange } from "./directives/liveChange";
 
 // Initialize the plugin system
 initializeAllPlugins();
@@ -22,4 +23,6 @@ const app = createApp(App);
 app.use(createPinia());
 app.use(i18n);
 app.use(router);
+// Settings fields apply their value once the user stops typing
+app.directive("live-change", vLiveChange);
 app.mount("#app");

@@ -10,7 +10,7 @@
     <div class="affixes">
       <label class="field">
         <span class="field-label">{{ t("sectionNumbers.before") }}</span>
-        <input
+        <input v-live-change
           class="text-input"
           :value="value.before"
           :maxlength="AFFIX_MAX"
@@ -20,7 +20,7 @@
       </label>
       <label class="field">
         <span class="field-label">{{ t("sectionNumbers.after") }}</span>
-        <input
+        <input v-live-change
           class="text-input"
           :value="value.after"
           :maxlength="AFFIX_MAX"

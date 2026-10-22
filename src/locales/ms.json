@@ -3668,12 +3668,12 @@
       },
       "locationPlace": {
         "title": "Tempat",
-        "text": "Medan tempat itu, seperti dalam borang projek CDP. Peta memerlukan latitud dan longitud; alamat menunjukkan medan lain. Tampal “3.1390, 101.6869” ke dalam mana-mana satu dan kedua-duanya diisi.",
+        "text": "Medan tempat itu, seperti dalam borang projek CDP. Peta memerlukan latitud dan longitud; alamat menunjukkan medan lain. Tampal “3.1390, 101.6869” ke dalam mana-mana satu dan kedua-duanya diisi. Senarai projek menunjukkan projek asal tempat itu, atau Tempat saya sendiri sebaik sahaja anda menukar medan atau mengalihkan pin.",
         "example": "Kuala Lumpur, 3.1390, 101.6869"
       },
       "locationMap": {
         "title": "Peta",
-        "text": "Klik peta, atau seret pin, untuk menetapkan tempat; seret peta untuk melihat sekeliling. Roda tetikus (atau + dan −) menukar berapa banyak kawasan di sekeliling pin yang ditunjukkan, dari seluruh negara hingga bangunan tunggal: peta yang dicetak menggunakan zum itu, dengan pin di tengah. Isi alamat daripada pin menaip negara, negeri, bandar, poskod dan jalan bagi titik itu."
+        "text": "Klik peta, atau seret pin, untuk menetapkan tempat; seret peta untuk melihat sekeliling. Roda tetikus (atau + dan −) menukar berapa banyak kawasan di sekeliling pin yang ditunjukkan, dari seluruh dunia hingga bangunan tunggal: peta yang dicetak menggunakan zum itu, dengan pin di tengah. Isi alamat daripada pin menaip negara, negeri, bandar, poskod dan jalan bagi titik itu."
       },
       "locationLayout": {
         "title": "Susun atur",
@@ -3800,6 +3800,8 @@
       "coordinates": "Latitud dan longitud"
     },
     "levels": {
+      "world": "Seluruh dunia",
+      "continent": "Benua",
       "country": "Seluruh negara",
       "region": "Wilayah",
       "city": "Bandar",
@@ -3819,6 +3821,7 @@
       "placeTitle": "Tempat",
       "copyFrom": "Salin daripada projek",
       "chooseProject": "Pilih projek…",
+      "ownPlace": "Tempat saya sendiri (diubah)",
       "mapTitle": "Peta",
       "mapHint": "Klik peta, atau seret pin, untuk menetapkan tempat. Seret peta untuk melihat sekeliling; roda tetikus (atau + dan −) mengezum. Peta yang dicetak menggunakan zum ini, dengan pin di tengah.",
       "mapLabel": "Peta: klik satu titik untuk menetapkan tempat, atau seret pin",

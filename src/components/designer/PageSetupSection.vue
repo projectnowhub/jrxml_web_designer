@@ -43,14 +43,14 @@
         <label class="setup-field">
           <span class="setup-label">{{ t("bottomPanel.pageWidth") }}</span>
           <span class="setup-unit">
-            <input type="number" min="1" :value="value.pageWidth" @change="commitNumber('pageWidth', $event, 1)" />
+            <input v-live-change="{ atLeast: 100 }" type="number" min="1" :value="value.pageWidth" @change="commitNumber('pageWidth', $event, 1)" />
             <span>px</span>
           </span>
         </label>
         <label class="setup-field">
           <span class="setup-label">{{ t("bottomPanel.pageHeight") }}</span>
           <span class="setup-unit">
-            <input type="number" min="1" :value="value.pageHeight" @change="commitNumber('pageHeight', $event, 1)" />
+            <input v-live-change="{ atLeast: 100 }" type="number" min="1" :value="value.pageHeight" @change="commitNumber('pageHeight', $event, 1)" />
             <span>px</span>
           </span>
         </label>
@@ -62,7 +62,7 @@
       <label v-for="side in MARGINS" :key="side.key" class="setup-field">
         <span class="setup-label">{{ t(side.label) }}</span>
         <span class="setup-unit">
-          <input type="number" min="0" :value="value[side.key]" @change="commitNumber(side.key, $event, 0)" />
+          <input v-live-change type="number" min="0" :value="value[side.key]" @change="commitNumber(side.key, $event, 0)" />
           <span>px</span>
         </span>
       </label>
@@ -84,7 +84,7 @@
         <label class="setup-field">
           <span class="setup-label">{{ t("properties.fontSize") }}</span>
           <span class="setup-unit">
-            <input type="number" min="1" :value="value.font.size" @change="commitFontSize($event)" />
+            <input v-live-change type="number" min="1" :value="value.font.size" @change="commitFontSize($event)" />
             <span>pt</span>
           </span>
         </label>

@@ -49,7 +49,7 @@
         <SettingHelpText id="chartTitle" />
         <label class="field">
           <span class="field-label">{{ t("chart.chartTitle") }}</span>
-          <input
+          <input v-live-change
             type="text"
             :value="binding.title"
             :placeholder="t('chart.chartTitlePlaceholder')"

@@ -124,7 +124,7 @@
           <template v-for="row in autoRows" :key="row.key">
             <div v-if="row.divider" class="part-divider">{{ row.divider }}</div>
             <div class="auto-row" :class="{ 'is-sub': row.level === 1, 'is-hidden': row.hidden || (list.sectionsOnly && row.level === 1) }">
-              <input
+              <input v-live-change
                 v-if="list.ownNumbers && list.numberWidth > 0"
                 class="col-number"
                 :value="row.number"
@@ -185,7 +185,7 @@
               >
                 <GripVertical :size="13" aria-hidden="true" />
               </span>
-              <input
+              <input v-live-change
                 v-if="list.numberWidth > 0"
                 class="col-number"
                 :style="{ width: numberColumnWidth }"
@@ -194,13 +194,13 @@
                 :aria-label="t('contentsList.number')"
                 @change="setEntry(row, 'number', ($event.target as HTMLInputElement).value)"
               />
-              <input
+              <input v-live-change
                 class="col-title"
                 :value="row.entry.title"
                 :aria-label="t('contentsList.titleColumn')"
                 @change="setEntry(row, 'title', ($event.target as HTMLInputElement).value)"
               />
-              <input
+              <input v-live-change
                 class="col-page"
                 :value="row.entry.page"
                 :aria-label="t('contentsList.page')"
@@ -289,28 +289,28 @@
           <label class="field">
             <span class="field-label">{{ t("contentsList.textSize") }}</span>
             <span class="unit-input">
-              <input type="number" min="6" max="36" :value="list.fontSize" @change="setNumber('fontSize', $event, 6, 36)" />
+              <input v-live-change type="number" min="6" max="36" :value="list.fontSize" @change="setNumber('fontSize', $event, 6, 36)" />
               <span>pt</span>
             </span>
           </label>
           <label class="field">
             <span class="field-label">{{ t("contentsList.rowHeight") }}</span>
             <span class="unit-input">
-              <input type="number" min="12" max="80" :value="list.rowHeight" @change="setNumber('rowHeight', $event, 12, 80)" />
+              <input v-live-change type="number" min="12" max="80" :value="list.rowHeight" @change="setNumber('rowHeight', $event, 12, 80)" />
               <span>px</span>
             </span>
           </label>
           <label class="field">
             <span class="field-label">{{ t("contentsList.numberWidth") }}</span>
             <span class="unit-input">
-              <input type="number" min="0" max="300" :value="list.numberWidth" @change="setNumber('numberWidth', $event, 0, 300)" />
+              <input v-live-change type="number" min="0" max="300" :value="list.numberWidth" @change="setNumber('numberWidth', $event, 0, 300)" />
               <span>px</span>
             </span>
           </label>
           <label class="field">
             <span class="field-label">{{ t("contentsList.pageWidth") }}</span>
             <span class="unit-input">
-              <input type="number" min="20" max="120" :value="list.pageWidth" @change="setNumber('pageWidth', $event, 20, 120)" />
+              <input v-live-change type="number" min="20" max="120" :value="list.pageWidth" @change="setNumber('pageWidth', $event, 20, 120)" />
               <span>px</span>
             </span>
           </label>

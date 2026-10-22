@@ -9,7 +9,7 @@
     <template v-if="binding">
       <label class="tdp-field">
         <span class="tdp-label">{{ t("dataTable.panel.tableName") }}</span>
-        <input
+        <input v-live-change
           class="tdp-input"
           :value="binding.tableName"
           @change="renameTable(($event.target as HTMLInputElement).value)"
@@ -148,7 +148,7 @@
       <label class="tdp-field">
         <span class="tdp-label">{{ t("dataTable.panel.headerHeight") }}</span>
         <span class="tdp-unit">
-          <input
+          <input v-live-change
             type="number"
             min="12"
             max="80"
@@ -161,7 +161,7 @@
       <label class="tdp-field">
         <span class="tdp-label">{{ t("dataTable.panel.rowHeight") }}</span>
         <span class="tdp-unit">
-          <input
+          <input v-live-change
             type="number"
             min="12"
             max="80"
@@ -294,7 +294,7 @@
       <label class="tdp-field">
         <span class="tdp-label">{{ t("dataTable.style.fontSize") }}</span>
         <span class="tdp-unit">
-          <input
+          <input v-live-change
             type="number"
             min="6"
             max="24"

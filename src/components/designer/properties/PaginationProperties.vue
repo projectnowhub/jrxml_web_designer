@@ -88,7 +88,7 @@
           </div>
           <div class="pages-row">
             <span class="pages-word">{{ t("pagination.panel.pages") }}</span>
-            <input
+            <input v-live-change
               type="number"
               min="1"
               step="1"
@@ -97,7 +97,7 @@
               @change="updatePart(i, 'from', $event)"
             />
             <span class="pages-word">{{ t("pagination.panel.to") }}</span>
-            <input
+            <input v-live-change
               type="number"
               min="1"
               step="1"
@@ -373,12 +373,13 @@ function updatePart(index: number, side: "from" | "to", event: Event) {
   }
   if (error) {
     partError.value = error;
-    // Back to what it was
+    // Back to what it was on Enter or leaving the field; not after a pause
+    // while typing (12 passes through 1: the typing isn't taken away)
     const saved = partRows.value[index]!;
-    input.value = String((side === "from" ? saved.from : saved.to) ?? "");
+    if (event.isTrusted) input.value = String((side === "from" ? saved.from : saved.to) ?? "");
     return;
   }
-  input.value = page ? String(page) : "";
+  if (event.isTrusted) input.value = page ? String(page) : "";
   applyParts(parts);
 }
 

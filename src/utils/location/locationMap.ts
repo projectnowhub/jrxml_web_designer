@@ -10,8 +10,10 @@ export const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 // Required by the OpenStreetMap licence wherever the map is shown
 export const MAP_CREDIT = "© OpenStreetMap contributors";
 
-export const MIN_MAP_ZOOM = 3;
-export const MAX_MAP_ZOOM = 18;
+// Every level the tile server draws: 0 = the whole world on one tile (wider
+// maps show it repeated, as any web map), 19 = single buildings
+export const MIN_MAP_ZOOM = 0;
+export const MAX_MAP_ZOOM = 19;
 const TILE = 256;
 // The picture has twice the pixels of its place on the page, so it prints
 // sharp; the tiles come from the next zoom level, which covers the same area
@@ -29,9 +31,9 @@ export interface MapView {
 
 const clampLatitude = (lat: number) => Math.max(-85.0511, Math.min(85.0511, lat));
 
-// A point's place in the world, in pixels at this zoom
-export function project(lat: number, lng: number, zoom: number): { x: number; y: number } {
-  const world = TILE * 2 ** zoom;
+// A point's place in the world, in pixels at this zoom (tiles of `tileSize`)
+export function project(lat: number, lng: number, zoom: number, tileSize = TILE): { x: number; y: number } {
+  const world = tileSize * 2 ** zoom;
   const rad = (clampLatitude(lat) * Math.PI) / 180;
   return {
     x: ((lng + 180) / 360) * world,
@@ -41,22 +43,22 @@ export function project(lat: number, lng: number, zoom: number): { x: number; y:
 
 // The tiles that cover a box of width × height pixels centred on the point,
 // with where each goes in the box (also the canvas's live map while the
-// picture is drawn)
-export function tilesFor(view: MapView, width: number, height: number) {
+// picture is drawn). Tiles are drawn `tileSize` wide (256: as they come)
+export function tilesFor(view: MapView, width: number, height: number, tileSize = TILE) {
   const zoom = Math.round(view.zoom);
-  const centre = project(view.latitude, view.longitude, zoom);
+  const centre = project(view.latitude, view.longitude, zoom, tileSize);
   const left = centre.x - width / 2;
   const top = centre.y - height / 2;
   const count = 2 ** zoom;
   const tiles: { url: string | null; left: number; top: number }[] = [];
-  for (let ty = Math.floor(top / TILE); ty <= Math.floor((top + height) / TILE); ty++) {
-    for (let tx = Math.floor(left / TILE); tx <= Math.floor((left + width) / TILE); tx++) {
+  for (let ty = Math.floor(top / tileSize); ty <= Math.floor((top + height) / tileSize); ty++) {
+    for (let tx = Math.floor(left / tileSize); tx <= Math.floor((left + width) / tileSize); tx++) {
       const wrapped = ((tx % count) + count) % count;
       tiles.push({
         // Above the top or below the bottom of the world: sea
         url: ty < 0 || ty >= count ? null : TILE_URL.replace("{z}", String(zoom)).replace("{x}", String(wrapped)).replace("{y}", String(ty)),
-        left: Math.round(tx * TILE - left),
-        top: Math.round(ty * TILE - top),
+        left: Math.round(tx * tileSize - left),
+        top: Math.round(ty * tileSize - top),
       });
     }
   }
@@ -128,9 +130,14 @@ export async function renderMapPicture(view: MapView, width: number, height: num
   const scale = Math.min(PRINT_SCALE, MAX_PICTURE_SIDE / Math.max(width, height, 1));
   const w = Math.max(1, Math.round(width * scale));
   const h = Math.max(1, Math.round(height * scale));
-  // The next zoom level when drawn at twice the size: the same area, sharper
-  const zoom = Math.min(MAX_MAP_ZOOM + 1, Math.round(view.zoom) + (scale >= 2 ? 1 : 0));
-  const tiles = tilesFor({ ...view, zoom }, w, h);
+  // The same area as the map shows at its zoom, with tiles of the level that
+  // matches the picture's pixels (twice the size: the next level, sharper).
+  // Past the closest level the tile server has, its tiles are drawn larger
+  const zoom = Math.round(view.zoom);
+  const tileZoom = Math.max(MIN_MAP_ZOOM, Math.min(MAX_MAP_ZOOM, Math.round(zoom + Math.log2(scale))));
+  const tileSize = (TILE * scale * 2 ** zoom) / 2 ** tileZoom;
+  const tiles = tilesFor({ ...view, zoom: tileZoom }, w, h, tileSize);
+  const drawn = Math.ceil(tileSize);
   const images = await Promise.all(tiles.map((tile) => (tile.url ? loadTile(tile.url) : Promise.resolve(null))));
 
   const canvas = document.createElement("canvas");
@@ -141,7 +148,7 @@ export async function renderMapPicture(view: MapView, width: number, height: num
   ctx.fillRect(0, 0, w, h);
   tiles.forEach((tile, i) => {
     const image = images[i];
-    if (image) ctx.drawImage(image, tile.left, tile.top, TILE, TILE);
+    if (image) ctx.drawImage(image, tile.left, tile.top, drawn, drawn);
   });
 
   drawPin(ctx, w / 2, h / 2, Math.min(30 * scale, h * 0.45));

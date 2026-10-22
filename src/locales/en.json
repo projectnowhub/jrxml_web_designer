@@ -3668,12 +3668,12 @@
       },
       "locationPlace": {
         "title": "The place",
-        "text": "The fields of the place, as in the CDP project form. The map needs the latitude and longitude; the address shows the other fields. Paste “3.1390, 101.6869” into either and both are filled.",
+        "text": "The fields of the place, as in the CDP project form. The map needs the latitude and longitude; the address shows the other fields. Paste “3.1390, 101.6869” into either and both are filled. The project list shows which project the place came from, or My own place once you change a field or move the pin.",
         "example": "Kuala Lumpur, 3.1390, 101.6869"
       },
       "locationMap": {
         "title": "The map",
-        "text": "Click the map, or drag the pin, to set the place; drag the map to look around. The mouse wheel (or + and −) changes how much around the pin shows, from the whole country to single buildings: the printed map uses that zoom, centred on the pin. Fill the address from the pin types in the country, state, city, postcode and street of that spot."
+        "text": "Click the map, or drag the pin, to set the place; drag the map to look around. The mouse wheel (or + and −) changes how much around the pin shows, from the whole world to single buildings: the printed map uses that zoom, centred on the pin. Fill the address from the pin types in the country, state, city, postcode and street of that spot."
       },
       "locationLayout": {
         "title": "Layout",
@@ -3800,6 +3800,8 @@
       "coordinates": "Latitude and longitude"
     },
     "levels": {
+      "world": "Whole world",
+      "continent": "Continent",
       "country": "Whole country",
       "region": "Region",
       "city": "City",
@@ -3819,6 +3821,7 @@
       "placeTitle": "The place",
       "copyFrom": "Copy from a project",
       "chooseProject": "Choose a project…",
+      "ownPlace": "My own place (changed)",
       "mapTitle": "The map",
       "mapHint": "Click the map, or drag the pin, to set the place. Drag the map to look around; the mouse wheel (or + and −) zooms. The printed map uses this zoom, centred on the pin.",
       "mapLabel": "Map: click a spot to set the place, or drag the pin",

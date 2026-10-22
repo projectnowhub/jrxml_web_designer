@@ -344,7 +344,7 @@ export const locationKind: ElementKind = {
       type: "integer",
       minimum: MIN_MAP_ZOOM,
       maximum: MAX_MAP_ZOOM,
-      description: "How close the map is: 5 whole country, 8 region, 11 city, 14 town area, 15 streets (default), 17 buildings",
+      description: "How close the map is: 0 whole world, 3 continent, 5 whole country, 8 region, 11 city, 14 town area, 15 streets (default), 17-19 buildings",
     },
     layout: { type: "string", enum: LOCATION_LAYOUTS, description: "mapAbove (default), mapBeside, mapOnly, addressOnly" },
     show: {

@@ -8,9 +8,12 @@
       <SettingHelpText id="locationPlace" />
       <label v-if="projectPlaces.length" class="copy-row">
         <span class="field-label is-first">{{ t("location.panel.copyFrom") }}</span>
-        <select class="card-select" :value="''" @change="copyFrom(($event.target as HTMLSelectElement))">
-          <option value="">{{ t("location.panel.chooseProject") }}</option>
+        <!-- Shows where the place came from: the project it matches, or the
+             user's own place once it was typed in or the pin moved -->
+        <select class="card-select" :value="placeSource" @change="copyFrom(($event.target as HTMLSelectElement))">
+          <option value="" :disabled="placeSource !== ''">{{ t("location.panel.chooseProject") }}</option>
           <option v-for="p in projectPlaces" :key="p.id" :value="p.id">{{ p.name }}</option>
+          <option v-if="placeSource === OWN_PLACE" :value="OWN_PLACE" disabled>{{ t("location.panel.ownPlace") }}</option>
         </select>
       </label>
       <div class="place-grid">
@@ -137,6 +140,7 @@ import {
   isLocationMap,
   LOCATION_LAYOUTS,
   normalizeLocationSetup,
+  parseCoordinate,
   PLACE_FIELDS,
   placePoint,
   splitPastedPoint,
@@ -232,7 +236,21 @@ const mapRatio = computed(() => (mapPart.value ? mapPart.value.height / Math.max
 // How close the map is, in words
 const zoomLevel = computed(() => {
   const z = setup.value.zoom;
-  return z <= 5 ? "country" : z <= 8 ? "region" : z <= 11 ? "city" : z <= 14 ? "area" : z <= 16 ? "streets" : "buildings";
+  return z <= 2
+    ? "world"
+    : z <= 4
+      ? "continent"
+      : z <= 6
+        ? "country"
+        : z <= 8
+          ? "region"
+          : z <= 11
+            ? "city"
+            : z <= 14
+              ? "area"
+              : z <= 16
+                ? "streets"
+                : "buildings";
 });
 
 const mapState = computed(() => (props.box.uuid ? mapStates[props.box.uuid] : undefined));
@@ -260,10 +278,28 @@ watch(
   { immediate: true },
 );
 
+// Where the place came from, worked out from the place itself (nothing links
+// it to the project): the project whose location it is exactly, "" when it
+// is empty, else the user's own (typed in, or the pin moved)
+const OWN_PLACE = "__own__";
+const samePoint = (a: string, b: string) => {
+  const x = parseCoordinate(a);
+  const y = parseCoordinate(b);
+  return x === null || y === null ? a.trim() === b.trim() : Math.abs(x - y) < 1e-7;
+};
+const samePlace = (a: Place, b: Place) =>
+  PLACE_FIELDS.every((f) => (f === "latitude" || f === "longitude" ? samePoint(a[f], b[f]) : a[f].trim() === b[f].trim()));
+const placeSource = computed(() => {
+  const current = toPlace(setup.value);
+  if (PLACE_FIELDS.every((f) => !current[f])) return "";
+  return projectPlaces.value.find((p) => samePlace(p.place, current))?.id ?? OWN_PLACE;
+});
+
 function copyFrom(select: HTMLSelectElement) {
   const project = projectPlaces.value.find((p) => p.id === select.value);
-  select.value = "";
   if (project) update(project.place);
+  // The list shows the place's source again (the copied project)
+  select.value = placeSource.value;
 }
 </script>
 
