@@ -1,10 +1,11 @@
 import router from "@/router";
+import { API_BASE_URL } from "@/config/apiConfig";
 
 export const AUTH_TOKEN_KEY = "jrxml_auth_token";
 export const AUTH_USER_KEY = "jrxml_auth_user";
 export const TENANT_URL_KEY = "cdp_tenant_url";
 
-const baseURL = import.meta.env.VITE_OAUTH_BASE_URL;
+const baseURL = API_BASE_URL;
 
 export type ApiResponseType = "json" | "text" | "blob" | "arrayBuffer";
 

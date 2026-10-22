@@ -75,7 +75,6 @@ Reuses the same names as the `projectnowcdp` reference repo:
 | `DOCKER_REGISTRY_USERNAME` | registry login                                   |
 | `DOCKER_REGISTRY_PASSWORD` | registry password / token                        |
 | `KUBE_CONFIG`              | the Rancher kubeconfig as **raw YAML** (written straight to `~/.kube/config`, same as the reference) |
-| `VITE_PDF_PREVIEW_API`     | Report server for Preview PDF, e.g. `https://preview.report.projectnowcdp.com` (read by `src/config/apiConfig.ts`) |
 
 **Sign-in (OAuth), one set per environment.** The workflow picks the `_DEV` secret for
 dev, `_STAGING` for staging, and the unsuffixed one for production:
@@ -83,11 +82,9 @@ dev, `_STAGING` for staging, and the unsuffixed one for production:
 | Secret (production) | dev / staging variants | Value |
 | ------------------- | ---------------------- | ----- |
 | `VITE_OAUTH_CLIENT_ID`  | `…_DEV`, `…_STAGING` | OAuth client ID of the report studio app |
-| `VITE_OAUTH_BASE_URL`   | `…_DEV`, `…_STAGING` | CDP base URL (also used for image uploads: `<base>/rest/files`) |
-| `VITE_OAUTH_AUTH_URL`   | `…_DEV`, `…_STAGING` | Authorize endpoint |
-| `VITE_OAUTH_TOKEN_URL`  | `…_DEV`, `…_STAGING` | Token endpoint |
-| `VITE_OAUTH_USER_URL`   | `…_DEV`, `…_STAGING` | Current-user endpoint |
-| `VITE_OAUTH_LOGOUT_URI` | `…_DEV`, `…_STAGING` | Logout redirect |
+| `VITE_API_BASE_URL`     | `…_DEV`, `…_STAGING` | CDP server. Every API is this address plus its route (`API_ROUTES` in `src/config/apiConfig.ts`: `/oauth2/authorize`, `/oauth2/token`, `/v1/user/me`, `/logout`, `/rest/files`, `/v2`, `/v2/analytics/aggregate`) |
+
+No other URL secrets are read (the old `VITE_OAUTH_BASE_URL`, `_AUTH_URL`, `_TOKEN_URL`, `_USER_URL`, `_LOGOUT_URI` and `VITE_PDF_PREVIEW_API` are gone).
 
 > All `VITE_*` values are build-time: they are compiled into the JS bundle shipped to
 > browsers, so none of them is truly secret (they are stored as secrets for convenience).

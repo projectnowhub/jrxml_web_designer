@@ -49,8 +49,8 @@ pnpm dev                 # http://localhost:1420
 
 | Variable | Purpose |
 |----------|---------|
-| `VITE_OAUTH_BASE_URL`, `VITE_OAUTH_CLIENT_ID`, `VITE_OAUTH_AUTH_URL`, `VITE_OAUTH_TOKEN_URL`, `VITE_OAUTH_USER_URL`, `VITE_OAUTH_LOGOUT_URI` | Sign-in (OAuth). The base URL also serves image uploads |
-| `VITE_PDF_PREVIEW_API` | Report server used by Preview PDF |
+| `VITE_API_BASE_URL` | The CDP server. Every API is this address plus its route (`API_ROUTES` in `src/config/apiConfig.ts`): sign-in, current user, logout, images, report server, charts |
+| `VITE_OAUTH_CLIENT_ID` | OAuth client ID of the report studio app |
 | `VITE_DATA_SOURCE_API` | Backend for table data. Empty: built-in dummy data |
 | `VITE_AI_API_ENDPOINT`, `VITE_AI_MODEL_NAME`, `VITE_AI_MAX_TOKENS`, `VITE_AI_TEMPERATURE` | AI Assistant (any OpenAI-compatible API) |
 

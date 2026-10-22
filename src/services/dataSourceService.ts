@@ -13,7 +13,7 @@
 //
 // Chart numbers come from the CDP backend's analytics endpoint, the one the
 // CDP app's dashboards use (same request and response, see AggregateRequest):
-//   POST {VITE_OAUTH_BASE_URL}/v2/analytics/aggregate  body: AggregateRequest -> AggregateResult
+//   POST {VITE_API_BASE_URL}/v2/analytics/aggregate  body: AggregateRequest -> AggregateResult
 // with the user's login. A source's schema names the CDP entity it reads
 // (entityName) and its column keys are that entity's property paths.
 //
@@ -27,7 +27,7 @@
 // saved report must do the same with that day's date.
 
 import apiClient from "./apiClient";
-import { DATA_SOURCE_API } from "@/config/apiConfig";
+import { API_ROUTES, DATA_SOURCE_API } from "@/config/apiConfig";
 import { MOCK_PROJECTS } from "@/mocks/projects";
 import { aggregateRows, columnFacets, queryRows as queryMockRows } from "@/mocks/queryDataSource";
 import { resolveFilterDates } from "@/utils/table/dataBinding";
@@ -202,6 +202,6 @@ export async function aggregate(request: AggregateRequest, signal?: AbortSignal)
     if (!source) throw new Error(`Unknown data source: ${request.entityName}`);
     return aggregateRows(source.rows, source.columns, request);
   }
-  const body = await apiClient.post<unknown>("/analytics/aggregate", JSON.stringify(request), { signal });
+  const body = await apiClient.post<unknown>(API_ROUTES.analytics, JSON.stringify(request), { signal });
   return unwrap<AggregateResult>(body);
 }
