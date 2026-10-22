@@ -895,8 +895,10 @@
       "tutorialModeHint": "Lawatan, petua dan kad maklumat muncul dengan sendiri semasa anda bekerja. Matikan apabila anda sudah biasa.",
       "tutorialOffDone": "Mod tutorial dimatikan: lawatan dan petua tidak akan muncul dengan sendiri. Semua bantuan masih ada dalam menu Bantuan ini.",
       "tutorialOnDone": "Mod tutorial dihidupkan: petua dan kad maklumat muncul semula semasa anda bekerja.",
+      "showMeHow": "Panduan langkah demi langkah",
+      "showMeHowHint": "Panduan langkah demi langkah yang menandakan setiap langkah semasa anda melakukannya",
       "allElements": "Semua elemen",
-      "allElementsHint": "Fungsi setiap elemen dan tetapan, dengan panduan langkah demi langkah"
+      "allElementsHint": "Fungsi setiap elemen dan tetapan"
     },
     "tour": {
       "stepOf": "Langkah {n} daripada {total}",
@@ -1087,7 +1089,7 @@
       "chartText": "Klik dua kali pada carta untuk memilih data yang ditunjukkannya."
     },
     "guides": {
-      "title": "Tunjukkan caranya",
+      "title": "Panduan langkah demi langkah",
       "intro": "Pilih satu kerja. Langkah ditandakan sendiri semasa anda melakukannya, dan Tunjukkan menunjuk apa yang perlu diklik.",
       "allGuides": "Semua panduan",
       "close": "Tutup",
@@ -3013,7 +3015,7 @@
       "expand": "Buka bantuan",
       "tabs": {
         "item": "Item ini",
-        "guides": "Tunjukkan caranya",
+        "guides": "Panduan",
         "elements": "Semua elemen"
       },
       "allPages": "Semua elemen",

@@ -1,7 +1,7 @@
 <template>
   <!-- The designer's Help window (Help menu, "Learn more"): a popup the user
        drags anywhere by its title bar, the Properties panel staying open.
-       This item = the help page of what is selected; Show me how = the
+       This item = the help page of what is selected; Guides = the
        guides; All elements = every help page. Minimized, it becomes the Help
        tab at the right side (HelpDockTab). -->
   <Teleport to="body">

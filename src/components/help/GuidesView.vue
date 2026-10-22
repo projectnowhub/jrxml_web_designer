@@ -1,5 +1,5 @@
 <template>
-  <!-- Help panel → Show me how: a list of common jobs, then the chosen one as a
+  <!-- Help panel → Guides: a list of common jobs, then the chosen one as a
        checklist that ticks itself off as the user works -->
       <!-- The list of guides -->
       <div v-if="!guide" class="guide-body">

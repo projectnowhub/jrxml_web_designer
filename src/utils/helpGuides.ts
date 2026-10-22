@@ -1,4 +1,4 @@
-// "Show me how" guides (Help menu): short checklists for common jobs that tick
+// Step-by-step guides (Help menu): short checklists for common jobs that tick
 // themselves off as the user works, read from the report itself. Each step
 // says when it is done and what "Show me" points at (the first selector on
 // screen). Texts: help.guides.<guide>.steps.<key>Title / <key>Text.
@@ -131,7 +131,7 @@ const ADD_PAGE_NUMBER: GuideStep = {
   target: () => tile("pageNumber"),
 };
 
-// ---- One element each (Show me how, under the library's headings) ----------
+// ---- One element each (Guides, under the library's headings) ----------
 
 type Test = (el: DesignElement, band: Band) => boolean;
 const findIn = (ctx: GuideContext, test: Test) =>

@@ -895,8 +895,10 @@
       "tutorialModeHint": "Tours, tips and hover cards appear by themselves while you work. Turn off when you know your way around.",
       "tutorialOffDone": "Tutorial mode is off: tours and tips won't appear by themselves. All help is still in this Help menu.",
       "tutorialOnDone": "Tutorial mode is on: tips and hover cards appear again as you work.",
+      "showMeHow": "Step-by-step guides",
+      "showMeHowHint": "Step-by-step guides that check off each step as you do it",
       "allElements": "All elements",
-      "allElementsHint": "What every element and setting does, with step-by-step guides"
+      "allElementsHint": "What every element and setting does"
     },
     "tour": {
       "stepOf": "Step {n} of {total}",
@@ -1087,7 +1089,7 @@
       "chartText": "Double-click the chart to choose the data it shows."
     },
     "guides": {
-      "title": "Show me how",
+      "title": "Step-by-step guides",
       "intro": "Choose a job. The steps tick themselves off as you do them, and Show me points at what to click.",
       "allGuides": "All guides",
       "close": "Close",
@@ -3013,7 +3015,7 @@
       "expand": "Open help",
       "tabs": {
         "item": "This item",
-        "guides": "Show me how",
+        "guides": "Guides",
         "elements": "All elements"
       },
       "allPages": "All elements",
