@@ -100,6 +100,7 @@ import HelpMenu from "./help/HelpMenu.vue";
 
 const { t } = useI18n();
 
+// Activity is hidden until it has something to show (its page and route stay)
 const sidebarMenus = [
   {
     labelKey: "layout.templates",
@@ -118,8 +119,9 @@ const sidebarMenus = [
     route: "/activity",
     routeName: "activity",
     icon: Activity,
+    hidden: true,
   },
-];
+].filter((menu) => !menu.hidden);
 
 const router = useRouter();
 const route = useRoute();

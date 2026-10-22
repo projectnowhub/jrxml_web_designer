@@ -16,7 +16,8 @@
       </div>
       <TemplateGrid :templates="recent" :owner="displayName" show-new />
     </section>
-    <section class="section-block shared-section">
+    <!-- Hidden until templates can be shared -->
+    <section v-if="SHOW_SHARED" class="section-block shared-section">
       <div class="section-heading">
         <h2>{{ t("home.sharedWithYou") }}</h2>
         <span class="muted-label">{{ t("home.recentlyAccessed") }}</span>
@@ -38,6 +39,8 @@ import { ArrowRight, Inbox } from "@lucide/vue";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
 import { listTemplates, type TemplateSummary } from "@/services/templateService";
 import { useFilesStore } from "@/stores/files";
+
+const SHOW_SHARED = false;
 import TemplateGrid from "@/components/templates/TemplateGrid.vue";
 import { useHelpStore } from "../stores/help";
 
