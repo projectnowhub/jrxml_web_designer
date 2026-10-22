@@ -143,7 +143,7 @@ Entry: `parseJRXMLContent()` in `src/utils/jrxml/parse.ts`, using the browser `D
 | Custom (typed) tables | `utils/customTable.ts`, `utils/jrxml/customTableXml.ts`, `elements/CustomTableElement.vue`, `properties/CustomTableProperties.vue` |
 | Page Number | `utils/paginationPresets.ts`, `properties/PaginationProperties.vue` |
 | Text editing | `elements/TextFieldElement.vue`, `TextFormatToolbar.vue`, `utils/textFit.ts` |
-| Images | `services/imageService.ts` (upload to `<VITE_OAUTH_BASE_URL>/rest/files`), crop and corner radius in `utils/elementUtils.ts` |
+| Images | `services/imageService.ts` (upload to `<VITE_API_BASE_URL>/rest/files`), crop and corner radius in `utils/elementUtils.ts` |
 | Data tables | `utils/table/`, `jrxml/tableXml.ts`, `modals/TableConfigModal.vue`, `designer/ReportDataPanel.vue` |
 | Report engine (server-side charts and table queries) | `src/engine/`, `vite.engine.config.ts`, `npm run build:engine`; contract in `docs/REPORT_ENGINE.md` |
 | Barcodes | `utils/barcode/` (types, examples, input rules, sizing and drawing with bwip-js, QR content, GS1 fields), `properties/BarcodeProperties.vue` (+ `QrContentEditor.vue`, `Gs1Editor.vue`), `elements/BarcodeElement.vue`; barcode table columns: `jrxml/tableXml.ts`, `common/BarcodeCell.vue` |
@@ -180,7 +180,7 @@ Report data comes from the backend per project (dummy projects in `src/mocks/` u
 
 ### 7.2 CDP backend
 
-`VITE_OAUTH_*` settings: sign-in, the current user, image uploads (`/rest/files`) and templates (`services/home/homeServices.ts`, `rest/reports/report`).
+`VITE_API_BASE_URL` (one server; each API's route is in `API_ROUTES`, `src/config/apiConfig.ts`) and `VITE_OAUTH_CLIENT_ID`: sign-in, the current user, image uploads (`/rest/files`), the report server (`/v2`), charts and templates (`services/home/homeServices.ts`, `rest/reports/report`).
 
 ### 7.3 Table data API
 

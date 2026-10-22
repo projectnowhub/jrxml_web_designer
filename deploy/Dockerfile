@@ -21,29 +21,17 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
 COPY . .
 
 # Build-time config — baked into the JS bundle by Vite.
-#   VITE_PDF_PREVIEW_API : JasperReports preview server for this environment.
-#                          Optional — the app falls back to its in-code default
-#                          and the in-app "Preview Server" setting still overrides
-#                          it at runtime.
+#   VITE_API_BASE_URL    : CDP server; sign-in, images, charts and the PDF
+#                          report server (<base>/v2) are its routes.
 #   VITE_APP_VERSION     : short git SHA, for display / cache-busting.
-ARG VITE_PDF_PREVIEW_API=""
 ARG VITE_APP_VERSION="dev"
 
 ARG VITE_OAUTH_CLIENT_ID=""
-ARG VITE_OAUTH_BASE_URL=""
-ARG VITE_OAUTH_AUTH_URL=""
-ARG VITE_OAUTH_TOKEN_URL=""
-ARG VITE_OAUTH_USER_URL=""
-ARG VITE_OAUTH_LOGOUT_URI=""
+ARG VITE_API_BASE_URL=""
 
-ENV VITE_PDF_PREVIEW_API=${VITE_PDF_PREVIEW_API} \
-    VITE_APP_VERSION=${VITE_APP_VERSION} \
+ENV VITE_APP_VERSION=${VITE_APP_VERSION} \
     VITE_OAUTH_CLIENT_ID=${VITE_OAUTH_CLIENT_ID} \
-    VITE_OAUTH_BASE_URL=${VITE_OAUTH_BASE_URL} \
-    VITE_OAUTH_AUTH_URL=${VITE_OAUTH_AUTH_URL} \
-    VITE_OAUTH_TOKEN_URL=${VITE_OAUTH_TOKEN_URL} \
-    VITE_OAUTH_USER_URL=${VITE_OAUTH_USER_URL} \
-    VITE_OAUTH_LOGOUT_URI=${VITE_OAUTH_LOGOUT_URI}
+    VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
 # "pnpm build" runs "vue-tsc -b && vite build" — a type error fails the image.
 # If that ever becomes a CI bottleneck, swap to "pnpm exec vite build" here and
