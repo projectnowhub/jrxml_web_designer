@@ -484,6 +484,7 @@
               <textarea
                 class="card-textarea"
                 :value="getTextFieldDisplay(currentElement)"
+                @focus="textRecorded = false"
                 @input="updateTextFieldDisplay(($event.target as HTMLTextAreaElement).value)"
                 :placeholder="t('properties.textFieldPlaceholder', { example: '$F{field_name}' })"
                 rows="3"
@@ -1455,10 +1456,15 @@ function getTextFieldDisplay(element: any) {
 }
 
 // Update text field content (wraps static text in quotes, preserves $F{...} / $V{...} expressions)
+// Typing in the Text box is one undo step per visit to it, not one per key
+const textRecorded = ref(false);
 function updateTextFieldDisplay(val: string) {
   if (!currentElement.value || currentElement.value.type !== "textField") return;
+  if (!textRecorded.value) {
+    report.saveStateToHistory();
+    textRecorded.value = true;
+  }
   cleanLegacyAutoDateElement(currentElement.value);
-  report.saveStateToHistory();
   const elem = currentElement.value as any;
   if (!elem.markup) {
     elem.markup = "html";

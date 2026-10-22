@@ -2188,12 +2188,27 @@ function handleMultiResize(type: "sameWidth" | "sameHeight" | "sameSize") {
 }
 
 // Undo/redo restore the model; the JRXML is rewritten after each
-const undo = () => {
-  if (reportStore.undo()) updateJRXML();
-};
-const redo = () => {
-  if (reportStore.redo()) updateJRXML();
-};
+const undo = () => restoreKeepingSelection(reportStore.undo);
+const redo = () => restoreKeepingSelection(reportStore.redo);
+
+// The selection is kept by place (band, index), and a restored report can
+// have other elements there (Bring to front undone): it follows the selected
+// elements by uuid, and drops those that are gone, so the panel and Delete
+// never act on another element
+function restoreKeepingSelection(restore: () => boolean) {
+  const editingUuid = editingElement.value ? elementAtLocation(editingElement.value)?.uuid : undefined;
+  if (!restore()) return;
+  const follow = (sel: { uuid?: string }) => {
+    const loc = sel.uuid ? findElementByUuid(sel.uuid) : null;
+    return loc ? { ...loc, uuid: sel.uuid } : null;
+  };
+  const many = selectedElements.value.map(follow).filter((s) => s !== null);
+  const one = selectedElement.value ? follow(selectedElement.value) : null;
+  selectedElements.value = many;
+  selectedElement.value = one ?? many[many.length - 1] ?? null;
+  editingElement.value = editingUuid ? findElementByUuid(editingUuid) : null;
+  updateJRXML();
+}
 
 // A drag or resize is in progress (editor store)
 const { isDraggingOrResizing } = storeToRefs(editorStore);
@@ -4734,11 +4749,15 @@ const deleteElement = () => {
     // Delete multiple selected elements
     saveStateToHistory();
 
-    // Delete from last to first to avoid index-shift issues
+    // Delete from last to first to avoid index-shift issues; items inside
+    // boxes first, since removing an item of the band moves the boxes after it
     const sortedElements = [...selectedElements.value].sort((a, b) => {
       if (a.bandIndex !== b.bandIndex) {
         return b.bandIndex - a.bandIndex; // Descending by band index
       }
+      const inBox = (s: typeof a) => (s.parentFrameIndex !== undefined ? 1 : 0);
+      if (inBox(a) !== inBox(b)) return inBox(b) - inBox(a);
+      if (a.parentFrameIndex !== b.parentFrameIndex) return (b.parentFrameIndex ?? 0) - (a.parentFrameIndex ?? 0);
       return b.elementIndex - a.elementIndex; // Descending by element index
     });
 
@@ -5435,15 +5454,20 @@ const handleKeyDown = (event: KeyboardEvent) => {
     return;
   }
 
-  // CTRL/CMD+Z undoes an action
-  if (isCtrlOrMetaPressed && event.key === "z") {
+  // CTRL/CMD+Z undoes an action. While typing in a box (AI chat, a panel
+  // field, a popup's search) the browser undoes the typing instead
+  const isTypingText =
+    activeEl?.tagName === "TEXTAREA" ||
+    (activeEl as HTMLElement | null)?.isContentEditable ||
+    (activeEl instanceof HTMLInputElement && ["text", "search", "email", "url", "tel", "password"].includes(activeEl.type));
+  if (isCtrlOrMetaPressed && event.key === "z" && !isTypingText) {
     event.preventDefault();
     undo();
     return;
   }
 
   // CTRL/CMD+Y redoes an action
-  if (isCtrlOrMetaPressed && event.key === "y") {
+  if (isCtrlOrMetaPressed && event.key === "y" && !isTypingText) {
     event.preventDefault();
     redo();
     return;
@@ -6750,8 +6774,15 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
     }
   };
 
+  // Undo step before the first move (taken on mouse-up it held the new height,
+  // so undo didn't bring the old one back); a click that moves nothing adds none
+  let historySaved = false;
   const handleMouseMove = (e: MouseEvent): void => {
     if (!bands.value || !bands.value[bandIndex]) return;
+    if (!historySaved) {
+      saveStateToHistory();
+      historySaved = true;
+    }
     const deltaY = (e.clientY - startY) / currentZoom;
 
     // For bottom bands (handle at top edge): dragging UP (-deltaY) expands
@@ -6819,7 +6850,6 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
     document.removeEventListener("mouseup", handleMouseUp);
     ensureBandsFitPage();
     updateOutOfBoundsElements();
-    saveStateToHistory();
     updateJRXML();
   };
 
@@ -7744,9 +7774,8 @@ const handleCheckFields = (fields: string[]): void => {
   });
 
   if (fieldsAdded) {
-    // Save state to history
-    saveStateToHistory();
-    // Update JRXML
+    // Part of the text edit that named them (its undo step is already taken;
+    // one taken here held the added fields, an undo step that did nothing)
     updateJRXML();
   }
 };

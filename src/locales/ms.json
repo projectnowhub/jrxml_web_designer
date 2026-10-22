@@ -999,8 +999,8 @@
     },
     "shortcutsIntro": "Semua yang boleh anda lakukan dengan papan kekunci dan tetikus dalam pereka.",
     "shortcuts": {
-      "undo": "Buat asal perubahan terakhir",
-      "redo": "Buat semula apa yang anda buat asal",
+      "undo": "Buat asal perubahan terakhir (semasa menaip dalam kotak: buat asal taipan)",
+      "redo": "Buat semula apa yang anda buat asal (semasa menaip dalam kotak: buat semula taipan)",
       "select": "Pilih item",
       "selectMore": "Tambah item ke pilihan, atau keluarkannya",
       "selectInBox": "Pilih item di dalam kotak (klik pertama: kotak)",

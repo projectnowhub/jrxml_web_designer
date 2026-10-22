@@ -390,8 +390,11 @@ const resetBandLimitsToDefault = (notify: boolean | Event = true) => {
   if (notify !== false) notification.success(t("defaultSettings.originalDone"));
 };
 
+// One undo step; the JRXML is written from the changed report (re-reading the
+// JRXML text, which still held the old heights, put them back)
 const applyGlobalDefaultsToCurrentTemplate = () => {
   if (!localReportProperties.value) return;
+  report.saveStateToHistory();
   const config = globalDefaultBandConfig.value;
   const limits: Record<string, { min: number; max: number }> = {};
   for (const key of Object.keys(config)) {
@@ -420,8 +423,8 @@ const applyGlobalDefaultsToCurrentTemplate = () => {
       const bottomM = localReportProperties.value?.bottomMargin || 20;
       detailBand.height = Math.max(20, pageH - topM - bottomM - otherBandsH);
     }
-    emit("save-jrxml");
   }
+  report.updateJrxml();
 
   notification.success(t("bottomPanel.appliedToTemplateSuccess"));
 };

@@ -999,8 +999,8 @@
     },
     "shortcutsIntro": "Everything you can do with the keyboard and mouse in the designer.",
     "shortcuts": {
-      "undo": "Undo the last change",
-      "redo": "Redo what you undid",
+      "undo": "Undo the last change (while typing in a box: undo the typing)",
+      "redo": "Redo what you undid (while typing in a box: redo the typing)",
       "select": "Select an item",
       "selectMore": "Add an item to the selection, or take it out",
       "selectInBox": "Select an item inside a box (first click: the box)",
