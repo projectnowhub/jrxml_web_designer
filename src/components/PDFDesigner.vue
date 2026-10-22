@@ -51,16 +51,21 @@
 
         <!-- 2. File Name (Inline Editable Google Docs Style) & Auto-save Status -->
         <div class="document-title-wrap">
-          <input
-            v-model="headerFileName"
-            class="document-title-input"
-            data-hint="reportName"
-            @focus="isTitleEditing = true"
-            @blur="handleHeaderTitleCommit"
-            @keydown.enter.prevent="onTitleEnter"
-            :placeholder="t('editorHeader.untitledReport')"
-            :title="t('editorHeader.renameReport')"
-          />
+          <!-- As wide as the name (Google Docs style): a hidden copy of it
+               sizes the field, which gives way first when the header is full -->
+          <div class="document-title-field" :data-value="headerFileName || t('editorHeader.untitledReport')">
+            <input
+              v-model="headerFileName"
+              class="document-title-input"
+              data-hint="reportName"
+              size="1"
+              @focus="isTitleEditing = true"
+              @blur="handleHeaderTitleCommit"
+              @keydown.enter.prevent="onTitleEnter"
+              :placeholder="t('editorHeader.untitledReport')"
+              :title="t('editorHeader.renameReport')"
+            />
+          </div>
           <!-- Narrow screens: the icon only (the words are in its tooltip) -->
           <div class="auto-save-badge" :title="saveStatusTitle">
             <span v-if="saveStatus === 'saving'" class="save-status-text saving">
@@ -1930,7 +1935,7 @@ const allBandTypes = ALL_CONFIGURABLE_BANDS;
 // Preview as icons ·
 // 6: logo and "Saved" hidden). Works down to a 300px wide window. The widths
 // are a first guess; if the header still overflows (longer Malay labels, a
-// long project code…), the next step is taken until it fits.
+// long project code, a long report name…), the next step is taken until it fits.
 const HEADER_TIER_WIDTHS = [1500, 1320, 1140, 900, 680, 440];
 const MAX_HEADER_TIER = HEADER_TIER_WIDTHS.length;
 const headerRef = ref<HTMLElement | null>(null);
@@ -1963,6 +1968,8 @@ window.addEventListener("resize", fitHeader);
 onUnmounted(() => window.removeEventListener("resize", fitHeader));
 onMounted(fitHeader);
 watch(locale, () => nextTick(fitHeader));
+// A longer name can need a more compact header (a shorter one, a roomier one)
+watch(headerFileName, () => nextTick(fitHeader));
 
 // Projects chosen in the header (kept with the report properties,
 // so undo and saving cover them)
@@ -8187,31 +8194,78 @@ const moveElementZOrder = (direction: "front" | "back") => {
   flex-wrap: nowrap;
 }
 
-/* Google Docs style editable document title */
+/* Google Docs style editable document title: the field is as wide as the
+   name. It may shrink to --title-keep (or the name, if shorter; then "…");
+   needing more than the header has, it makes the header take its next, more
+   compact step (fitHeader), so the name gets room as tools turn into icons */
 .document-title-wrap {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-shrink: 0;
-  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.document-title-field {
+  --title-floor: 64px;
+  --title-keep: 360px;
+  --title-pad: 8px;
+  display: grid;
+  grid-template-columns: 1fr;
+  flex: 0 1 auto;
+}
+
+/* The input and two hidden copies of the name share one cell and one font.
+   ::before gives the field its wanted width (the whole name, at least
+   --title-floor) and can wrap, so it never stops the field shrinking;
+   ::after can't wrap and is at most --title-keep wide: the field's least width */
+.document-title-field::before,
+.document-title-field::after,
+.document-title-input {
+  grid-area: 1 / 1;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  padding: 5px var(--title-pad);
+  border: 1px solid transparent;
+}
+
+.document-title-field::before,
+.document-title-field::after {
+  content: attr(data-value);
+  /* Room for the caret at the end */
+  padding-right: calc(var(--title-pad) + 2px);
+  padding-block: 0;
+  border-block-width: 0;
+  height: 0;
+  /* clip, not hidden: a scroll container's least width counts as 0 */
+  overflow: clip;
+  visibility: hidden;
+}
+
+.document-title-field::before {
+  min-width: var(--title-floor);
+  white-space: break-spaces;
+  word-break: break-all;
+}
+
+.document-title-field::after {
+  max-width: var(--title-keep);
+  white-space: pre;
 }
 
 .document-title-input {
-  font-size: 14px;
-  font-weight: 650;
+  width: 100%;
+  min-width: 0;
   color: #1c1b26;
-  padding: 5px 8px;
-  border: 1px solid rgba(28, 27, 38, 0.09);
+  border-color: rgba(28, 27, 38, 0.09);
   border-radius: 7px;
   background-color: #fafafc;
   outline: none;
-  min-width: 80px;
-  max-width: 170px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   transition: all 0.16s ease;
-  font-family: inherit;
 }
 
 .document-title-input:hover {
@@ -8227,6 +8281,7 @@ const moveElementZOrder = (direction: "front" | "back") => {
 
 .auto-save-badge {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   margin-left: 4px;
   font-size: 11px;
@@ -8368,30 +8423,24 @@ const moveElementZOrder = (direction: "front" | "back") => {
 
 /* Narrow headers (headerTier): the report name takes the room that is left,
    spacing tightens, and nothing is allowed to push the header wider */
-.designer-header .header-left,
-.designer-header .document-title-wrap {
+.designer-header .header-left {
   min-width: 0;
 }
 
-/* The report name keeps its usual width while there is room and gives way
-   first when there isn't (down to 120px, 56px on the narrowest screens) */
-.designer-header.tier-3 .document-title-wrap,
-.designer-header.tier-4 .document-title-wrap,
-.designer-header.tier-5 .document-title-wrap,
-.designer-header.tier-6 .document-title-wrap {
-  flex-shrink: 0;
+/* The room a long report name keeps on narrower headers */
+.designer-header.tier-3 .document-title-field,
+.designer-header.tier-4 .document-title-field {
+  --title-keep: 200px;
 }
 
-.designer-header.tier-3 .document-title-input,
-.designer-header.tier-4 .document-title-input {
-  max-width: 130px;
-  min-width: 70px;
+.designer-header.tier-5 .document-title-field {
+  --title-floor: 48px;
+  --title-keep: 140px;
 }
 
-.designer-header.tier-5 .document-title-input,
-.designer-header.tier-6 .document-title-input {
-  max-width: 90px;
-  min-width: 50px;
+.designer-header.tier-6 .document-title-field {
+  --title-floor: 48px;
+  --title-keep: 80px;
 }
 
 .designer-header.tier-3 .header-left.header-workflow,
@@ -8441,9 +8490,12 @@ const moveElementZOrder = (direction: "front" | "back") => {
   gap: 4px;
 }
 
+.designer-header.tier-6 .document-title-field {
+  --title-pad: 6px;
+}
+
 .designer-header.tier-6 .document-title-input {
-  padding: 4px 6px;
-  font-size: 14px;
+  padding-block: 4px;
 }
 
 .designer-header.tier-6 .auto-save-badge {
