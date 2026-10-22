@@ -126,7 +126,8 @@
       "chart": "Carta data projek anda: bar, garis, pai dan banyak lagi.",
       "barcode": "Kod bar atau kod QR.",
       "pageNumber": "Nombor halaman yang diisi sendiri, seperti Halaman 1 daripada 12.",
-      "dateTime": "Tarikh yang diisi sendiri: hari laporan dicetak, bulan ini atau bulan lepas."
+      "dateTime": "Tarikh yang diisi sendiri: hari laporan dicetak, bulan ini atau bulan lepas.",
+      "location": "Peta sesuatu tempat dengan pin, dan alamatnya. Taip tempat itu, atau seret Lokasi dari Data Laporan."
     }
   },
   "bandNames": {
@@ -196,7 +197,8 @@
     "contentsStatesman": "Negarawan",
     "contentsBurgundy": "Marun",
     "contentsPlain": "Klasik",
-    "coverClassic": "Klasik"
+    "coverClassic": "Klasik",
+    "location": "Lokasi"
   },
   "properties": {
     "title": "Tetapan",
@@ -1051,7 +1053,11 @@
       "save": "Simpan sekarang (ia juga disimpan sendiri)",
       "aiSend": "Hantar mesej anda",
       "aiNewLine": "Baris baharu dalam mesej anda",
-      "aiClear": "Kosongkan perbualan (semasa tab Pembantu AI dibuka)"
+      "aiClear": "Kosongkan perbualan (semasa tab Pembantu AI dibuka)",
+      "locationMoveMap": "Lihat sekeliling peta",
+      "locationPlacePin": "Letakkan pin pada titik yang anda klik",
+      "locationZoomMap": "Tunjukkan lebih sedikit atau lebih banyak di sekeliling pin (zum masuk atau keluar)",
+      "locationDragPin": "Alihkan pin"
     },
     "panelTips": {
       "hide": "Sembunyikan petua ini",
@@ -1071,7 +1077,8 @@
       "dateTime": "Tarikh yang diisi sendiri, seperti hari laporan dicetak. Pilih tarikh yang mana dan rupanya.",
       "pageBorder": "Sempadan di sekeliling setiap halaman. Ubah garis, warna dan bucunya di sini.",
       "sectionHeading": "Tajuk yang memulakan bahagian. Nombornya dikira sendiri, dan ia dipaparkan dalam isi kandungan.",
-      "subHeading": "Tajuk yang lebih kecil dalam satu bahagian. Ia dipaparkan, berinden, dalam isi kandungan."
+      "subHeading": "Tajuk yang lebih kecil dalam satu bahagian. Ia dipaparkan, berinden, dalam isi kandungan.",
+      "location": "Peta dengan pin dan alamat. Taip tempat di bawah, salin daripada projek, atau klik peta kecil untuk meletakkan pin di situ."
     },
     "firstTips": {
       "gotIt": "Faham",
@@ -1086,7 +1093,9 @@
       "dataTableTitle": "Data projek dalam jadual",
       "dataTableText": "Klik dua kali pada jadual untuk memilih projek, lajur dan penapisnya. Baris diisi dengan sendiri.",
       "chartTitle": "Menyediakan carta",
-      "chartText": "Klik dua kali pada carta untuk memilih data yang ditunjukkannya."
+      "chartText": "Klik dua kali pada carta untuk memilih data yang ditunjukkannya.",
+      "locationTitle": "Peta dan alamat",
+      "locationText": "Taip tempat di sebelah kanan, atau seret Lokasi dari Data Laporan ke atasnya. Atau klik peta kecil di sebelah kanan untuk meletakkan pin di situ."
     },
     "guides": {
       "title": "Panduan langkah demi langkah",
@@ -1424,6 +1433,19 @@
           "previewTitle": "Semak",
           "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
         }
+      },
+      "location": {
+        "title": "Tambah lokasi",
+        "intro": "Peta dengan pin dan alamat sesuatu tempat, seperti tapak projek.",
+        "aiPrompt": "Tambah lokasi projek (peta dan alamat) di bawah pengenalan.",
+        "steps": {
+          "addTitle": "Tambah lokasi",
+          "addText": "Klik Lokasi dalam Pustaka Elemen, atau seret Lokasi daripada projek dalam Data Laporan.",
+          "placeTitle": "Tetapkan tempat",
+          "placeText": "Klik lokasi itu. Di sebelah kanan taip alamat, latitud dan longitud, salin daripada projek, atau klik peta kecil untuk meletakkan pin di situ.",
+          "previewTitle": "Semaknya",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
       }
     },
     "shortcutOr": "atau",
@@ -1435,6 +1457,7 @@
       "text": "Semasa menaip teks",
       "table": "Dalam jadual taip",
       "picture": "Gambar",
+      "location": "Peta lokasi (dalam sifatnya)",
       "view": "Paparan",
       "file": "Simpan",
       "ai": "Pembantu AI"
@@ -1452,7 +1475,8 @@
       "rotateButton": "Butang bulat di atasnya",
       "dragPartLine": "Seret garisan di bawah bahagian halaman",
       "wheel": "Roda tetikus",
-      "clickOutside": "Klik di luarnya"
+      "clickOutside": "Klik di luarnya",
+      "dragPin": "Seret pin"
     }
   },
   "imageUpload": {
@@ -1539,6 +1563,7 @@
       "create_table_of_contents": "Tambah isi kandungan",
       "create_page_number": "Tambah nombor halaman",
       "create_date": "Tambah tarikh",
+      "create_location": "Tambah lokasi",
       "create_page_border": "Tambah sempadan halaman",
       "create_preset": "Tambah elemen siap",
       "update_element": "Ubah elemen",
@@ -2453,7 +2478,11 @@
     "noValue": "{project} tiada {label} untuk ditambah.",
     "projectTabs": "Projek laporan",
     "dropNotForBarcode": "{type} tidak boleh memuatkan “{value}”: {problem} Gunakan Code 128 atau kod QR untuk nilai seperti ini.",
-    "projectsSelected": "{count} projek dipilih"
+    "projectsSelected": "{count} projek dipilih",
+    "location": "Lokasi",
+    "locationWhole": "Peta dan alamat",
+    "dragLocation": "Seret ke halaman untuk peta beserta alamat, atau ke atas Lokasi untuk menukar tempatnya",
+    "dropNotOnLocation": "Lokasi menunjukkan sesuatu tempat. Lepaskan Lokasi projek (atau salah satu medannya, seperti Bandar) di atasnya, atau lepaskan butiran ini di ruang kosong."
   },
   "barcode": {
     "chooseType": "Pilih jenis kod bar",
@@ -3425,6 +3454,24 @@
           "Menukar kertas atau jidar mengalihkan item yang tidak lagi muat kembali ke dalam halaman.",
           "Apa yang digunakan oleh templat baharu ditetapkan dalam Tetapan Lalai."
         ]
+      },
+      "location": {
+        "title": "Lokasi",
+        "what": "Peta sesuatu tempat dengan pin di atasnya, dan alamat tempat itu di bawah atau di sebelahnya.",
+        "when": "Untuk lokasi projek: tapaknya, pejabatnya atau titik mula laluan. Setiap medan dalam langkah Lokasi borang projek CDP boleh ditunjukkan.",
+        "add": "Klik Lokasi di bawah Elemen Komposit, atau seretnya. Atau seret Lokasi daripada projek dalam Data Laporan: peta dan alamat datang bersamanya.",
+        "work": [
+          "Tempat: taip negara, negeri, bandar, poskod, alamat penuh, latitud dan longitud, atau salin daripada salah satu projek templat.",
+          "Peta: klik satu titik, atau seret pin, untuk menetapkan tempat; roda tetikus (atau + dan −) mengezum. Isi alamat daripada pin mengisi alamat titik itu.",
+          "Susun atur: peta di atas alamat, peta di sebelahnya, peta sahaja atau alamat sahaja.",
+          "Pilih baris alamat yang ditunjukkan; pratonton di bawahnya menunjukkan teksnya.",
+          "Klik peta atau alamat kali kedua untuk menukar rupanya: bucu dan sempadan untuk peta, fon dan warna untuk alamat."
+        ],
+        "good": [
+          "Peta ialah gambar OpenStreetMap, peta yang ditunjukkan oleh aplikasi CDP. Ia dilukis apabila tempat berubah, jadi ia memerlukan internet ketika itu; PDF mencetak gambar yang disimpan.",
+          "Melepaskan Lokasi projek (atau satu medan, seperti Bandar) di atas Lokasi menukar tempatnya dan mengekalkan rupanya.",
+          "Tiada apa yang kekal terpaut kepada projek: seret Lokasi sekali lagi untuk menunjukkan tempat yang lebih baharu."
+        ]
       }
     },
     "settings": {
@@ -3618,6 +3665,24 @@
       "templateBands": {
         "title": "Bahagian Halaman",
         "text": "Bahagian yang ada pada setiap halaman: Pengepala Halaman dan Pengaki Halaman dicetak pada setiap halaman, Pengepala Lajur dan Pengaki Lajur tepat di dalamnya. Nyahtanda bahagian yang tidak anda perlukan; Butiran sentiasa ada."
+      },
+      "locationPlace": {
+        "title": "Tempat",
+        "text": "Medan tempat itu, seperti dalam borang projek CDP. Peta memerlukan latitud dan longitud; alamat menunjukkan medan lain. Tampal “3.1390, 101.6869” ke dalam mana-mana satu dan kedua-duanya diisi.",
+        "example": "Kuala Lumpur, 3.1390, 101.6869"
+      },
+      "locationMap": {
+        "title": "Peta",
+        "text": "Klik peta, atau seret pin, untuk menetapkan tempat; seret peta untuk melihat sekeliling. Roda tetikus (atau + dan −) menukar berapa banyak kawasan di sekeliling pin yang ditunjukkan, dari seluruh negara hingga bangunan tunggal: peta yang dicetak menggunakan zum itu, dengan pin di tengah. Isi alamat daripada pin menaip negara, negeri, bandar, poskod dan jalan bagi titik itu."
+      },
+      "locationLayout": {
+        "title": "Susun atur",
+        "text": "Tempat peta dan alamat diletakkan: peta di atas alamat, di sebelahnya, peta sahaja, atau alamat sahaja. Seret tepi Lokasi untuk membesarkannya."
+      },
+      "locationLines": {
+        "title": "Alamat menunjukkan",
+        "text": "Medan yang dicetak oleh alamat. Alamat penuh dahulu, kemudian poskod dan bandar, kemudian negeri dan negara, kemudian latitud dan longitud jika ditandakan.",
+        "example": "Jalan Stesen Sentral 5 · 50470 Kuala Lumpur · Wilayah Persekutuan Kuala Lumpur, Malaysia"
       }
     }
   },
@@ -3695,5 +3760,80 @@
     "addedNote": "Ia dibuka sebagai templat baharu dan ditambah ke Templat saya.",
     "seeAll": "Lihat semua dalam Templat Saya",
     "notFound": "Templat itu tidak ditemui. Ia mungkin telah dipadam."
+  },
+  "location": {
+    "fields": {
+      "country": "Negara",
+      "state": "Negeri / Wilayah",
+      "city": "Bandar",
+      "postcode": "Poskod",
+      "address": "Alamat Penuh",
+      "latitude": "Latitud",
+      "longitude": "Longitud"
+    },
+    "placeholders": {
+      "country": "Cth. Malaysia",
+      "state": "Cth. Selangor",
+      "city": "Cth. Kuala Lumpur",
+      "postcode": "Cth. 40150",
+      "address": "Alamat jalan, bangunan, mercu tanda…",
+      "latitude": "Cth. 3.1390",
+      "longitude": "Cth. 101.6869"
+    },
+    "problems": {
+      "notNumber": "Taip nombor, seperti 3.1390.",
+      "latitudeRange": "Latitud ialah antara -90 dan 90.",
+      "longitudeRange": "Longitud ialah antara -180 dan 180."
+    },
+    "layouts": {
+      "mapAbove": "Peta di atas alamat",
+      "mapBeside": "Peta di sebelah alamat",
+      "mapOnly": "Peta sahaja",
+      "addressOnly": "Alamat sahaja"
+    },
+    "lines": {
+      "address": "Alamat penuh",
+      "postcode": "Poskod",
+      "city": "Bandar",
+      "state": "Negeri / Wilayah",
+      "country": "Negara",
+      "coordinates": "Latitud dan longitud"
+    },
+    "levels": {
+      "country": "Seluruh negara",
+      "region": "Wilayah",
+      "city": "Bandar",
+      "area": "Kawasan bandar",
+      "streets": "Jalan",
+      "buildings": "Bangunan"
+    },
+    "states": {
+      "loading": "Melukis peta…",
+      "loadingHint": "Gambar peta untuk PDF sedang dibuat. Ia mengambil sedikit masa.",
+      "error": "Peta tidak dimuatkan",
+      "errorHint": "Peta tidak dapat dimuatkan. Semak sambungan internet, kemudian cuba lagi."
+    },
+    "canvasEmpty": "Taip latitud dan longitud, atau seret Lokasi dari Data Laporan",
+    "cannotType": "Peta dan alamat ini datang daripada tempat Lokasi. Tukarkannya di sebelah kanan, di bawah Tetapan.",
+    "panel": {
+      "placeTitle": "Tempat",
+      "copyFrom": "Salin daripada projek",
+      "chooseProject": "Pilih projek…",
+      "mapTitle": "Peta",
+      "mapHint": "Klik peta, atau seret pin, untuk menetapkan tempat. Seret peta untuk melihat sekeliling; roda tetikus (atau + dan −) mengezum. Peta yang dicetak menggunakan zum ini, dengan pin di tengah.",
+      "mapLabel": "Peta: klik satu titik untuk menetapkan tempat, atau seret pin",
+      "clickToPlace": "Klik peta untuk meletakkan pin",
+      "zoomIn": "Tunjukkan lebih sedikit di sekeliling pin (lebih dekat)",
+      "zoomOut": "Tunjukkan lebih banyak di sekeliling pin (lebih jauh)",
+      "retry": "Cuba lagi",
+      "layoutTitle": "Susun atur",
+      "linesTitle": "Alamat menunjukkan",
+      "shows": "Ia menunjukkan:",
+      "noLines": "Belum ada: taip tempat di atas, atau tandakan satu baris.",
+      "backToPin": "Tunjukkan pin",
+      "fillAddress": "Isi alamat daripada pin",
+      "fillingAddress": "Mencari alamat…",
+      "fillFailed": "Alamat tidak dapat ditemui. Semak sambungan internet, atau taipkannya di atas."
+    }
   }
 }

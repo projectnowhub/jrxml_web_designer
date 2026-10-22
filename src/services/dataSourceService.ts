@@ -5,7 +5,10 @@
 //
 // Backend contract:
 //   GET  {api}/projects                              -> ProjectSummary[]
-//   GET  {api}/projects/{pid}                        -> ProjectDetails (fields + values)
+//   GET  {api}/projects/{pid}                        -> ProjectDetails (fields + values,
+//                                                      and its location: country, state,
+//                                                      city, postcode, address, latitude,
+//                                                      longitude, as in the CDP project form)
 //   GET  {api}/projects/{pid}/sources                -> DataSourceSummary[]
 //   GET  {api}/projects/{pid}/sources/{id}/schema    -> DataSourceSchema
 //   GET  {api}/projects/{pid}/sources/{id}/facets    -> SourceFacets (filter choices per column)

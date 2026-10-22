@@ -96,6 +96,7 @@ import { RotateCw } from '@lucide/vue';
 import { resolveReportFont } from '../../config/fonts.config';
 import { computed, ref } from 'vue';
 import { canTakeProjectField } from '../../utils/projectFields';
+import { isLocationElement, isLocationPart } from '../../utils/location/locationElement';
 import { readDataSourceDrag } from '../../utils/table/dataDrag';
 import type { DesignElement, SelectedElementInfo } from '../../types';
 import { getElementBoxPadding, propertyCornerRadiusCss } from '../../utils/elementUtils';
@@ -503,9 +504,12 @@ const handleDoubleClick = () => {
 const projectDrop = ref<'ok' | 'blocked' | null>(null);
 
 const handleProjectDragOver = (event: DragEvent) => {
-  if (!['textField', 'image', 'barcode'].includes(props.element.type)) return;
+  const isLocation = isLocationElement(props.element) || isLocationPart(props.element);
+  if (!isLocation && !['textField', 'image', 'barcode'].includes(props.element.type)) return;
   const drag = readDataSourceDrag(event);
   if (drag?.kind !== 'projectField') return;
+  // A whole location dropped elsewhere becomes a new Location there
+  if (drag.field.type === 'location' && !isLocation) return;
   // The innermost item under the pointer decides (an item inside a box)
   event.stopPropagation();
   event.preventDefault();

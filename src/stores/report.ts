@@ -21,6 +21,7 @@ import { ensureUniqueTableDatasets } from "@/utils/table/tableDocument";
 import { specialPages } from "@/utils/specialPages";
 import { fitContentsPages, fitListDecorations, NEW_REPORT_HEADING_NUMBERING, syncHeadings } from "@/utils/headingSync";
 import { unwrapLegacyCoverFrames } from "@/utils/pageDesigns";
+import { syncLocations } from "@/utils/location/locationElement";
 import { loadReportDefaults } from "@/utils/reportDefaults";
 import { useEditorStore } from "./editor";
 import { useSelectionStore } from "./selection";
@@ -206,6 +207,11 @@ export const useReportStore = defineStore("report", () => {
       // Headings renumbered, contents lists that follow them rebuilt (part of
       // the change being written, so the same undo step)
       syncHeadings(bands.value, reportProperties.value);
+      // Locations: their parts laid out, their address written from the setup
+      syncLocations(bands.value, {
+        fontFamily: reportProperties.value.defaultFont?.name,
+        fontSize: reportProperties.value.defaultFont?.size,
+      });
       // A Table of Contents on contents pages gets the contents pages it needs
       const before = totalPages.value;
       const added = fitContentsPages(bands.value, reportProperties.value);

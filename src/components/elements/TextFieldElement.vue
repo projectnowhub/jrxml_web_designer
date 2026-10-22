@@ -205,6 +205,7 @@ import {
   showsTotalPages,
 } from '../../utils/paginationPresets';
 import { dateText, getDateSetup, isDateElement } from '../../utils/dateElement';
+import { isLocationAddress } from '../../utils/location/locationElement';
 
 const { t } = useI18n();
 
@@ -357,6 +358,10 @@ const displayText = computed(() => {
 
     // Strip surrounding quotes for plain literal strings so user sees clean text
     const trimmed = expr.trim();
+    // A Location's address is a full Java string (quotes and backslashes escaped)
+    if (isAddress.value && trimmed.startsWith('"') && trimmed.endsWith('"')) {
+      return trimmed.slice(1, -1).replace(/\\([\\"n])/g, (_, c: string) => (c === 'n' ? '\n' : c));
+    }
     if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
       return trimmed.slice(1, -1).replace(/\\n/g, '\n');
     }
@@ -366,8 +371,10 @@ const displayText = computed(() => {
   return '';
 });
 
+// A Location's address is always plain ("<b>" in it shows as typed)
+const isAddress = computed(() => isLocationAddress(props.element));
 const hasRichMarkup = computed(
-  () => !isPageNumber.value && !isDate.value && isRichTextElement(props.element),
+  () => !isPageNumber.value && !isDate.value && !isAddress.value && isRichTextElement(props.element),
 );
 
 const hasContent = computed(() => {

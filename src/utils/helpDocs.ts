@@ -15,6 +15,7 @@ import { buildReportPart } from "@/utils/reportParts";
 import { buildTablePreset } from "@/utils/tablePresets";
 import { buildPaginationElement, isPagination } from "@/utils/paginationPresets";
 import { buildDateElement, isDateElement } from "@/utils/dateElement";
+import { buildLocationElement, isLocationElement, isLocationPart } from "@/utils/location/locationElement";
 import { buildBarcodeElement } from "@/utils/barcode/barcodeTypes";
 import { buildChartElement } from "@/utils/chart/chartElement";
 import { buildCustomTable } from "@/utils/customTable";
@@ -50,6 +51,10 @@ export type SettingId =
   | "dateWhich"
   | "dateLook"
   | "dateBefore"
+  | "locationPlace"
+  | "locationMap"
+  | "locationLayout"
+  | "locationLines"
   | "chartType"
   | "chartData"
   | "chartTitle"
@@ -95,7 +100,8 @@ export type DocPageId =
   | "presetTables"
   | "pageBorder"
   | "pageNumber"
-  | "date";
+  | "date"
+  | "location";
 
 export interface DocPage {
   id: DocPageId;
@@ -316,6 +322,27 @@ export const DOC_PAGES: DocPage[] = [
     guides: ["date"],
     sample: () => [buildDateElement()],
   },
+  {
+    id: "location",
+    group: "composite",
+    tile: "location",
+    settings: ["locationPlace", "locationMap", "locationLayout", "locationLines", "imageShape", "textSettings"],
+    guides: ["location"],
+    sample: () => [
+      buildLocationElement(
+        {
+          country: "Malaysia",
+          state: "Wilayah Persekutuan Kuala Lumpur",
+          city: "Kuala Lumpur",
+          postcode: "50470",
+          address: "Jalan Stesen Sentral 5, KL Sentral",
+          latitude: "3.134",
+          longitude: "101.6865",
+        },
+        { layout: "mapBeside" },
+      ),
+    ],
+  },
 ];
 
 export const docPageById = (id: DocPageId) => DOC_PAGES.find((page) => page.id === id)!;
@@ -324,6 +351,7 @@ export const docPageById = (id: DocPageId) => DOC_PAGES.find((page) => page.id =
 export function docPageFor(element: DesignElement, bandType: string | undefined, inBox: boolean): DocPageId {
   if (isPagination(element)) return "pageNumber";
   if (isDateElement(element)) return "date";
+  if (isLocationElement(element) || isLocationPart(element)) return "location";
   if (element.type === "frame" && bandType === "background" && !inBox) return "pageBorder";
   if (hasProperty(element, SECTION_HEADING_PROPERTY)) return "sectionHeading";
   if (hasProperty(element, SUB_HEADING_PROPERTY)) return "subHeading";

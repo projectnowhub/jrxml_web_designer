@@ -12,7 +12,7 @@ import {
   subHeadingKind,
   textKind,
 } from "./basic";
-import { barcodeKind, dateKind, pageBorderKind, pageNumberKind, presetKind, tableOfContentsKind } from "./composite";
+import { barcodeKind, dateKind, locationKind, pageBorderKind, pageNumberKind, presetKind, tableOfContentsKind } from "./composite";
 import { chartKind, dataTableKind, typedTableKind } from "./tables";
 import { PLACE_PROPS, POSITION_PROPS } from "./common";
 import type { ElementKind, JsonSchema } from "./types";
@@ -33,14 +33,16 @@ export const ELEMENT_KINDS: ElementKind[] = [
   tableOfContentsKind,
   pageNumberKind,
   dateKind,
+  locationKind,
   pageBorderKind,
   presetKind,
 ];
 
-// Most specific first: a section heading and the page border are boxes, a
-// page number, a date and a sub-heading are texts
+// Most specific first: a section heading, a location and the page border are
+// boxes, a page number, a date and a sub-heading are texts
 const MATCH_ORDER: ElementKind[] = [
   sectionHeadingKind,
+  locationKind,
   pageBorderKind,
   boxKind,
   subHeadingKind,

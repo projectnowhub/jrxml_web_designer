@@ -90,6 +90,28 @@
             </li>
           </ul>
 
+          <!-- Location: the whole place (map and address) or one of its fields -->
+          <template v-if="locationRows(project.id).length">
+            <div class="rdp-group">{{ t("reportData.location") }}</div>
+            <ul class="rdp-list">
+              <li
+                v-for="row in locationRows(project.id)"
+                :key="row.field.key"
+                class="rdp-item"
+                :class="{ 'is-location': row.field.type === 'location' }"
+                draggable="true"
+                :title="t(row.field.type === 'location' ? 'reportData.dragLocation' : 'reportData.dragDetail')"
+                @dragstart="dragField($event, project, row.field, row.value)"
+                @dragend="endDataSourceDrag"
+              >
+                <component :is="FIELD_ICONS[row.field.type]" :size="12" class="rdp-type" aria-hidden="true" />
+                <span class="rdp-name">{{ row.field.label }}</span>
+                <span class="rdp-value" :title="row.shown">{{ row.shown }}</span>
+                <GripVertical :size="12" class="rdp-grip" aria-hidden="true" />
+              </li>
+            </ul>
+          </template>
+
           <!-- Tables: drag onto a table or the Detail section -->
           <div v-if="visibleSources(project.id).length" class="rdp-group">{{ t("reportData.tables") }}</div>
           <ul class="rdp-list">
@@ -148,7 +170,7 @@
           </ul>
 
           <div
-            v-if="query.trim() && !visibleFields(project.id).length && !visibleSources(project.id).length"
+            v-if="query.trim() && !visibleFields(project.id).length && !locationRows(project.id).length && !visibleSources(project.id).length"
             class="rdp-message"
           >
             {{ t("reportData.noMatch") }}
@@ -172,6 +194,7 @@ import {
   GripVertical,
   Hash,
   Image as ImageIcon,
+  MapPin,
   RefreshCw,
   Search,
   Type,
@@ -184,6 +207,7 @@ import {
 } from "@/services/dataSourceService";
 import { clearTableRowsCache } from "@/composables/useTableRows";
 import { endDataSourceDrag, startDataSourceDrag } from "@/utils/table/dataDrag";
+import { PLACE_FIELDS, toPlace } from "@/utils/location/locationElement";
 import { collectBoundTables } from "@/utils/table/tableDocument";
 import { clearChartDataCache } from "@/utils/chart/chartDataStore";
 import { isChartBound, normalizeChartBinding } from "@/utils/chart/chartTypes";
@@ -209,6 +233,7 @@ const FIELD_ICONS: Record<ProjectFieldType, Component> = {
   text: Type,
   longText: Type,
   image: ImageIcon,
+  location: MapPin,
 };
 
 const COLUMN_ICONS: Record<DataColumnType, Component> = {
@@ -329,6 +354,33 @@ const matches = (text: string) => text.toLowerCase().includes(query.value.trim()
 const visibleFields = (projectId: string): ProjectField[] =>
   (details[projectId]?.fields ?? []).filter((f) => !query.value.trim() || matches(f.label));
 
+// The project's location: the whole place (a Location element: map and
+// address) and each of its fields (text), in the order of the CDP project form
+interface LocationRow {
+  field: ProjectField;
+  value: string | null;
+  shown: string;
+}
+const locationRows = (projectId: string): LocationRow[] => {
+  const location = details[projectId]?.location;
+  if (!location) return [];
+  const place = toPlace(location);
+  if (PLACE_FIELDS.every((f) => !place[f])) return [];
+  const rows: LocationRow[] = [
+    {
+      field: { key: "location", label: t("reportData.locationWhole"), type: "location" },
+      value: JSON.stringify(place),
+      shown: [place.city, place.country].filter(Boolean).join(", "),
+    },
+    ...PLACE_FIELDS.map((f) => ({
+      field: { key: `location.${f}`, label: t(`location.fields.${f}`), type: "text" as const },
+      value: place[f] || null,
+      shown: place[f],
+    })),
+  ];
+  return rows.filter((row) => !query.value.trim() || matches(row.field.label));
+};
+
 const visibleSources = (projectId: string): DataSourceSummary[] =>
   (sources[projectId] ?? []).filter(
     (s) =>
@@ -363,13 +415,13 @@ const usedBy = (projectId: string, sourceId: string) =>
 
 // ---- Dragging ---------------------------------------------------------------
 
-function dragField(event: DragEvent, project: ReportProject, field: ProjectField) {
+function dragField(event: DragEvent, project: ReportProject, field: ProjectField, value = valueOf(project.id, field.key)) {
   startDataSourceDrag(event, {
     kind: "projectField",
     projectId: project.id,
     projectName: project.name,
     field: { ...field },
-    value: valueOf(project.id, field.key),
+    value,
   });
 }
 
@@ -587,6 +639,11 @@ function dragColumn(
 
 .rdp-item.is-source {
   padding-left: 2px;
+}
+
+/* The whole place: the row that adds a Location element */
+.rdp-item.is-location .rdp-name {
+  font-weight: 600;
 }
 
 .rdp-columns .rdp-item {

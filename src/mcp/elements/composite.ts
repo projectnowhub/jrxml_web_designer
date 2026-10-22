@@ -82,6 +82,21 @@ import {
 } from "./common";
 import { SpecError, type ElementKind, type ElementSpec, type KindContext } from "./types";
 import i18n from "@/i18n";
+import {
+  ADDRESS_LINES,
+  addressLines,
+  buildLocationElement,
+  coordinateProblem,
+  getLocationSetup,
+  isLocationElement,
+  LOCATION_LAYOUTS,
+  PLACE_FIELDS,
+  toPlace,
+  updateLocation,
+  type LocationSetup,
+} from "@/utils/location/locationElement";
+import { MAX_MAP_ZOOM, MIN_MAP_ZOOM } from "@/utils/location/locationMap";
+import { getProject } from "@/services/dataSourceService";
 
 const uuid = () => crypto.randomUUID();
 
@@ -274,6 +289,90 @@ export const dateKind: ElementKind = {
   describe(e) {
     const s = getDateSetup(e);
     return defined({ when: s.when, date: s.date, format: s.format, time: s.time !== "none" ? s.time : undefined, textBefore: s.before, ...describeTextStyle(e) });
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Location: a box with a map of the place (with a pin) and its address
+// ---------------------------------------------------------------------------
+
+async function applyLocation(box: FrameElement, spec: ElementSpec, ctx: KindContext): Promise<void> {
+  const patch: Partial<LocationSetup> = {};
+  // A project's location first, then any field given on top of it
+  if (has(spec, "projectId")) {
+    const details = await getProject(String(spec.projectId)).catch(() => null);
+    if (!details) throw new SpecError(`projectId: no project ${spec.projectId} (get_report_data lists them)`);
+    const place = toPlace(details.location);
+    if (!PLACE_FIELDS.some((f) => place[f])) throw new SpecError(`projectId: ${details.name} has no location`);
+    Object.assign(patch, place);
+  }
+  for (const field of PLACE_FIELDS) {
+    if (has(spec, field)) patch[field] = String(spec[field]).trim();
+  }
+  for (const field of ["latitude", "longitude"] as const) {
+    const problem = patch[field] !== undefined ? coordinateProblem(field, patch[field]!) : null;
+    if (problem) throw new SpecError(`${field}: ${problem === "notNumber" ? "a number" : field === "latitude" ? "between -90 and 90" : "between -180 and 180"}`);
+  }
+  if (has(spec, "zoom")) patch.zoom = spec.zoom;
+  if (has(spec, "layout")) patch.layout = spec.layout;
+  if (has(spec, "show")) patch.show = { ...getLocationSetup(box).show, ...spec.show };
+  applyGeometry(box, { x: spec.x, y: spec.y });
+  if (has(spec, "width")) box.width = Math.max(80, Math.min(Number(spec.width), ctx.availableWidth));
+  if (has(spec, "height")) box.height = Math.max(40, Number(spec.height));
+  updateLocation(box, patch, { fontFamily: ctx.fontName, fontSize: ctx.fontSize });
+  applyBoxLines(box, spec);
+  if (!getLocationSetup(box).latitude || !getLocationSetup(box).longitude) {
+    ctx.notes.push("no latitude / longitude yet: the map stays empty until they are set");
+  }
+}
+
+export const locationKind: ElementKind = {
+  kind: "location",
+  tool: "create_location",
+  description:
+    "Add a Location: a map of a place with a pin on it (OpenStreetMap, drawn by the designer) and the place's address. Give projectId to copy a project's location (get_report_data with projectId shows it), or the fields yourself; the map needs latitude and longitude. The box's height follows the layout and the address.",
+  properties: {
+    projectId: { type: "string", description: "Copy this project's location (country, state, city, postcode, address, latitude, longitude)" },
+    country: { type: "string" },
+    state: { type: "string", description: "State / province" },
+    city: { type: "string" },
+    postcode: { type: "string" },
+    address: { type: "string", description: "Full address (street, building, landmark)" },
+    latitude: { type: "number", minimum: -90, maximum: 90 },
+    longitude: { type: "number", minimum: -180, maximum: 180 },
+    zoom: {
+      type: "integer",
+      minimum: MIN_MAP_ZOOM,
+      maximum: MAX_MAP_ZOOM,
+      description: "How close the map is: 5 whole country, 8 region, 11 city, 14 town area, 15 streets (default), 17 buildings",
+    },
+    layout: { type: "string", enum: LOCATION_LAYOUTS, description: "mapAbove (default), mapBeside, mapOnly, addressOnly" },
+    show: {
+      type: "object",
+      description: "Address lines to print (default: all but coordinates)",
+      properties: Object.fromEntries(ADDRESS_LINES.map((line) => [line, { type: "boolean" }])),
+      additionalProperties: false,
+    },
+    borderPreset: BORDER_PROPS.borderPreset!,
+    border: BORDER_PROPS.border!,
+  },
+  inBox: false,
+  matches: (e) => isLocationElement(e),
+  async create(spec, ctx) {
+    const box = buildLocationElement({}, { font: { fontFamily: ctx.fontName, fontSize: ctx.fontSize }, maxWidth: ctx.availableWidth });
+    await applyLocation(box, spec, ctx);
+    return box;
+  },
+  update: (e, spec, ctx) => applyLocation(e as FrameElement, spec, ctx),
+  describe(e) {
+    const s = getLocationSetup(e);
+    return defined({
+      ...Object.fromEntries(PLACE_FIELDS.map((f) => [f, s[f] || undefined])),
+      zoom: s.zoom,
+      layout: s.layout,
+      addressShows: addressLines(s).join(" / ") || undefined,
+      ...describeBoxLines(e),
+    });
   },
 };
 

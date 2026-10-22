@@ -25,3 +25,8 @@ export const IMAGE_UPLOAD_API = apiUrl(API_ROUTES.files);
 // (src/mocks/dataSources.ts) until the backend API is ready.
 export const DATA_SOURCE_API: string | undefined =
   import.meta.env.VITE_DATA_SOURCE_API || undefined;
+
+// Address of a point on the map (Location → "Fill the address from the pin"):
+// the reverse geocoder the CDP app's location picker uses, same setting name
+export const REVERSE_GEOCODE_API: string =
+  import.meta.env.VITE_LAT_AND_LANG_API || "https://nominatim.openstreetmap.org/reverse";

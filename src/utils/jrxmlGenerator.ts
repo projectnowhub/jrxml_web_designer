@@ -44,6 +44,7 @@ import {
 import { reportElementProperties } from "./elementUtils";
 import { CHART_BINDING_PROPERTY, normalizeChartBinding } from "./chart/chartTypes";
 import { chartImageDataUri } from "./chart/chartImage";
+import { isLocationAddress } from "./location/locationElement";
 import { BARCODE_VALUES_PROPERTY, printedBarcodeText, serializeBarcodeValues } from "./barcode/barcodeTypes";
 import { barcodeSizing } from "./barcode/barcodeImage";
 import {
@@ -1097,7 +1098,8 @@ function generateTextFieldXML(element: any): string {
         ? "styled"
         : "none"
       : undefined);
-  if (!markup || markup === "none") {
+  // (Not a Location's address: it is always plain, "<b>" in it prints as typed)
+  if ((!markup || markup === "none") && !isLocationAddress(element)) {
     if (element.expression && /<(b|strong|i|em|u|s|strike|del|font|a|span|ul|ol|li|sup|sub)\b[^>]*>/i.test(element.expression)) {
       markup = "html";
     }

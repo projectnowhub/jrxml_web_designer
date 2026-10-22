@@ -17,6 +17,7 @@ export type ShortcutGroupId =
   | "text"
   | "table"
   | "picture"
+  | "location"
   | "view"
   | "file"
   | "ai";
@@ -103,6 +104,16 @@ export const SHORTCUT_GROUPS: { id: ShortcutGroupId; rows: ShortcutRow[] }[] = [
       { id: "crop", combos: [["mouse:doubleClick"]] },
       { id: "cropApply", combos: [["Enter"]] },
       { id: "cropCancel", combos: [["Esc"]] },
+    ],
+  },
+  {
+    // The small map in a Location's properties
+    id: "location",
+    rows: [
+      { id: "locationPlacePin", combos: [["mouse:click"]] },
+      { id: "locationDragPin", combos: [["mouse:dragPin"]] },
+      { id: "locationMoveMap", combos: [["mouse:drag"]] },
+      { id: "locationZoomMap", combos: [["mouse:wheel"]] },
     ],
   },
   {

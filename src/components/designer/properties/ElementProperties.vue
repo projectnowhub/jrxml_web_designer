@@ -248,6 +248,9 @@
           <!-- Section Heading (or one of its parts): its number -->
           <HeadingNumberProperties v-if="sectionHeading" :heading="sectionHeading" />
 
+          <!-- Location (or its map / address): the place, map, layout and lines -->
+          <LocationProperties v-if="locationBox" :key="locationBox.uuid" :box="locationBox" />
+
           <CustomTableProperties
             v-if="currentElement.type === 'customTable'"
             part="basic"
@@ -279,7 +282,8 @@
 
           <!-- Image properties -->
           <template v-if="currentElement && currentElement.type === 'image'">
-            <div class="box-section compact">
+            <!-- A Location's map is drawn from its place: no picture to upload -->
+            <div v-if="!isLocationPart(currentElement)" class="box-section compact">
               <h5>{{ t("properties.imageName") }}<SettingHelpButton id="picture" /></h5>
               <SettingHelpText id="picture" />
               <div class="image-name-row">
@@ -467,7 +471,8 @@
               v-else-if="isDateElement(currentElement)"
               :element="currentElement"
             />
-            <div v-else class="box-section compact">
+            <!-- A Location's address is written from its place -->
+            <div v-else-if="!isLocationPart(currentElement)" class="box-section compact">
               <div class="card-head">
                 <h5>{{ t("properties.textContent") }}<SettingHelpButton id="textContent" /></h5>
                 <button
@@ -1028,6 +1033,8 @@ import ChartProperties from "./ChartProperties.vue";
 import CustomTableProperties from "./CustomTableProperties.vue";
 import ContentsListProperties from "./ContentsListProperties.vue";
 import HeadingNumberProperties from "./HeadingNumberProperties.vue";
+import LocationProperties from "./LocationProperties.vue";
+import { isLocationElement, isLocationPart } from "../../../utils/location/locationElement";
 import PanelTip from "../../help/PanelTip.vue";
 import SettingHelpButton from "../../help/SettingHelpButton.vue";
 import SettingHelpText from "../../help/SettingHelpText.vue";
@@ -1255,6 +1262,14 @@ const sectionHeading = computed<FrameElement | null>(() => {
   const band = bands.value?.[sel.bandIndex];
   const box = sel.parentFrameIndex !== undefined ? band?.elements[sel.parentFrameIndex] : currentElement.value;
   return box?.type === "frame" && hasProperty(box, SECTION_HEADING_PROPERTY) ? (box as FrameElement) : null;
+});
+
+// The Location shown when it, its map or its address is selected
+const locationBox = computed<FrameElement | null>(() => {
+  const sel = selectedElement.value;
+  if (!sel) return null;
+  const box = sel.parentFrameIndex !== undefined ? bands.value?.[sel.bandIndex]?.elements[sel.parentFrameIndex] : currentElement.value;
+  return isLocationElement(box) ? (box as FrameElement) : null;
 });
 
 const isPageBorder = computed(
@@ -1718,6 +1733,7 @@ const panelTitle = computed(() => {
   if (!selectedElement.value || !el) return t("properties.reportProperties");
   if (isPagination(el)) return t("elementNames.pageNumber");
   if (isDateElement(el)) return t("elementNames.dateTime");
+  if (isLocationElement(el)) return t("elementNames.location");
   if (isPageBorder.value) return t("elementNames.framePageBorder");
   // Headings are shown by their own name, not as the box / text they are built of
   if (hasProperty(el, SECTION_HEADING_PROPERTY)) return t("elementNames.partSectionHeading");
@@ -1819,6 +1835,7 @@ const panelKind = computed(() => {
   if (!selectedElement.value || !el) return "report";
   if (isPagination(el)) return "pageNumber";
   if (isDateElement(el)) return "dateTime";
+  if (isLocationElement(el)) return "location";
   if (isPageBorder.value) return "pageBorder";
   if (hasProperty(el, SECTION_HEADING_PROPERTY)) return "sectionHeading";
   if (hasProperty(el, SUB_HEADING_PROPERTY)) return "subHeading";

@@ -21,7 +21,6 @@ const PROJECT_FIELDS: ProjectField[] = [
   { key: "description", label: "Description", type: "text" },
   { key: "introduction", label: "Introduction", type: "longText" },
   { key: "client", label: "Client", type: "text" },
-  { key: "location", label: "Location", type: "text" },
   { key: "manager", label: "Project Manager", type: "text" },
   { key: "start_date", label: "Start Date", type: "text" },
   { key: "end_date", label: "End Date", type: "text" },
@@ -58,7 +57,6 @@ export const MOCK_PROJECTS: MockProject[] = [
         "connecting 31 stations with the existing LRT and MRT network. This report covers " +
         "procurement, materials, vendors and milestones for the civil and systems packages.",
       client: "Klang Valley Transit Authority",
-      location: "Kuala Lumpur, Malaysia",
       manager: "Aisyah Rahman",
       start_date: "15 Jan 2025",
       end_date: "30 Jun 2028",
@@ -71,6 +69,15 @@ export const MOCK_PROJECTS: MockProject[] = [
       asset_tag: "KLM3-AT-000451",
       item_number: "9551234000010",
       postcode: "50450",
+    },
+    location: {
+      country: "Malaysia",
+      state: "Wilayah Persekutuan Kuala Lumpur",
+      city: "Kuala Lumpur",
+      postcode: "50470",
+      address: "Jalan Stesen Sentral 5, KL Sentral",
+      latitude: 3.134,
+      longitude: 101.6865,
     },
     sources: buildProjectSources({
       prefix: "KLM",
@@ -103,7 +110,6 @@ export const MOCK_PROJECTS: MockProject[] = [
         "coast. Phase 2 adds a 4 km sea viaduct, two interchanges and coastal protection " +
         "works. Figures in this report are for Phase 2 only.",
       client: "Penang State Public Works",
-      location: "Penang, Malaysia",
       manager: "Lee Mei Ling",
       start_date: "1 Apr 2025",
       end_date: "31 Dec 2027",
@@ -116,6 +122,15 @@ export const MOCK_PROJECTS: MockProject[] = [
       asset_tag: "PGCH2-AT-000318",
       item_number: "9551234000027",
       postcode: "11960",
+    },
+    location: {
+      country: "Malaysia",
+      state: "Pulau Pinang",
+      city: "Batu Maung",
+      postcode: "11960",
+      address: "Jalan Batu Maung, Bayan Lepas",
+      latitude: "5.2836",
+      longitude: "100.2874",
     },
     sources: buildProjectSources({
       prefix: "PCH",
@@ -146,7 +161,6 @@ export const MOCK_PROJECTS: MockProject[] = [
         "built on 180 hectares near Kluang. Power is sold to the national grid under a " +
         "21-year agreement.",
       client: "Southern Green Energy Sdn Bhd",
-      location: "Kluang, Johor, Malaysia",
       manager: "Farid Ismail",
       start_date: "10 Jun 2025",
       end_date: "28 Feb 2027",
@@ -159,6 +173,15 @@ export const MOCK_PROJECTS: MockProject[] = [
       asset_tag: "JHSF1-AT-000127",
       item_number: "9551234000034",
       postcode: "86000",
+    },
+    location: {
+      country: "Malaysia",
+      state: "Johor",
+      city: "Kluang",
+      postcode: "86000",
+      address: "Lot 1203, Jalan Mengkibol",
+      latitude: 2.0301,
+      longitude: 103.318,
     },
     sources: buildProjectSources({
       prefix: "JSF",
@@ -188,7 +211,6 @@ export const MOCK_PROJECTS: MockProject[] = [
         "cancer treatment centre, eight operating theatres and a rooftop heliport. The " +
         "existing hospital stays open throughout construction.",
       client: "Ministry of Health Malaysia",
-      location: "Kota Kinabalu, Sabah, Malaysia",
       manager: "Jonathan Liew",
       start_date: "3 Mar 2025",
       end_date: "30 Sep 2028",
@@ -201,6 +223,15 @@ export const MOCK_PROJECTS: MockProject[] = [
       asset_tag: "SBGH4-AT-000902",
       item_number: "9551234000041",
       postcode: "88586",
+    },
+    location: {
+      country: "Malaysia",
+      state: "Sabah",
+      city: "Kota Kinabalu",
+      postcode: "88586",
+      address: "Jalan Penampang, Mile 2",
+      latitude: 5.9629,
+      longitude: 116.0921,
     },
     sources: buildProjectSources({
       prefix: "SGH",

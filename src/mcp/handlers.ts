@@ -16,7 +16,8 @@ import { formatXml } from '@/utils/jrxml/formatXml';
 import { generatePdf } from '@/services/reportService';
 import { fillPage } from './flow';
 import { attachmentImageSource, type ChatAttachment } from './attachments';
-import { getFacets, getSchema, listProjects, listSources } from '@/services/dataSourceService';
+import { getFacets, getProject, getSchema, listProjects, listSources } from '@/services/dataSourceService';
+import { PLACE_FIELDS, toPlace } from '@/utils/location/locationElement';
 import { ELEMENT_KINDS, createSchema, findKind, updateSchema } from './elements/registry';
 import { validateValue } from './elements/validate';
 import { SpecError, type ElementKind, type ElementSpec } from './elements/types';
@@ -307,7 +308,13 @@ const getReportDataHandler: MCPToolHandler = {
       }
       if (projectId) {
         const sources = await listSources(projectId);
-        return { success: true, data: { sources: sources.map((s) => ({ sourceId: s.id, name: s.name, rows: s.rowCount })) } };
+        // Where the project is (create_location with projectId copies it)
+        const place = toPlace((await getProject(projectId).catch(() => null))?.location);
+        const location = PLACE_FIELDS.some((f) => place[f]) ? place : null;
+        return {
+          success: true,
+          data: { sources: sources.map((s) => ({ sourceId: s.id, name: s.name, rows: s.rowCount })), location }
+        };
       }
       const chosen = useReportStore().reportProperties.projects ?? [];
       const all = await listProjects();

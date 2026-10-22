@@ -126,7 +126,8 @@
       "chart": "A chart of your project's data: bars, lines, pie and more.",
       "barcode": "A barcode or QR code.",
       "pageNumber": "Page numbers that fill in by themselves, such as Page 1 of 12.",
-      "dateTime": "A date that fills itself in: the day the report is printed, this month or last month."
+      "dateTime": "A date that fills itself in: the day the report is printed, this month or last month.",
+      "location": "A map of a place with a pin, and its address. Type the place, or drag Location from Report Data."
     }
   },
   "bandNames": {
@@ -196,7 +197,8 @@
     "contentsStatesman": "Statesman",
     "contentsBurgundy": "Burgundy",
     "contentsPlain": "Classic",
-    "coverClassic": "Classic"
+    "coverClassic": "Classic",
+    "location": "Location"
   },
   "properties": {
     "title": "Settings",
@@ -1051,7 +1053,11 @@
       "save": "Save now (it also saves by itself)",
       "aiSend": "Send your message",
       "aiNewLine": "New line in your message",
-      "aiClear": "Clear the conversation (while the AI Assistant tab is open)"
+      "aiClear": "Clear the conversation (while the AI Assistant tab is open)",
+      "locationMoveMap": "Look around the map",
+      "locationPlacePin": "Put the pin on the spot you click",
+      "locationZoomMap": "Show less or more around the pin (zoom in or out)",
+      "locationDragPin": "Move the pin"
     },
     "panelTips": {
       "hide": "Hide this tip",
@@ -1071,7 +1077,8 @@
       "dateTime": "A date that fills itself in, such as the day the report is printed. Choose which date and how it looks.",
       "pageBorder": "A border around every page. Change its line, colour and corners here.",
       "sectionHeading": "A heading that starts a section. Its number counts itself, and it shows in the table of contents.",
-      "subHeading": "A smaller heading inside a section. It shows, indented, in the table of contents."
+      "subHeading": "A smaller heading inside a section. It shows, indented, in the table of contents.",
+      "location": "A map with a pin and the address. Type the place below, copy it from a project, or click the small map to put the pin there."
     },
     "firstTips": {
       "gotIt": "Got it",
@@ -1086,7 +1093,9 @@
       "dataTableTitle": "Project data in a table",
       "dataTableText": "Double-click the table to choose its project, columns and filters. The rows fill in by themselves.",
       "chartTitle": "Setting up a chart",
-      "chartText": "Double-click the chart to choose the data it shows."
+      "chartText": "Double-click the chart to choose the data it shows.",
+      "locationTitle": "A map and an address",
+      "locationText": "Type the place on the right, or drag Location from Report Data onto it. Or click the small map on the right to put the pin there."
     },
     "guides": {
       "title": "Step-by-step guides",
@@ -1424,6 +1433,19 @@
           "previewTitle": "Check it",
           "previewText": "Click Preview PDF at the top to see exactly what will print."
         }
+      },
+      "location": {
+        "title": "Add a location",
+        "intro": "A map with a pin and the address of a place, such as the project site.",
+        "aiPrompt": "Add the project's location (map and address) below the introduction.",
+        "steps": {
+          "addTitle": "Add a location",
+          "addText": "Click Location in the Element Library, or drag Location from a project in Report Data.",
+          "placeTitle": "Set the place",
+          "placeText": "Click the location. On the right type the address, latitude and longitude, copy them from a project, or click the small map to put the pin there.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
       }
     },
     "shortcutOr": "or",
@@ -1435,6 +1457,7 @@
       "text": "While typing text",
       "table": "In a typed table",
       "picture": "Pictures",
+      "location": "Location map (in its properties)",
       "view": "View",
       "file": "Save",
       "ai": "AI Assistant"
@@ -1452,7 +1475,8 @@
       "rotateButton": "The round button above it",
       "dragPartLine": "Drag the line under a page part",
       "wheel": "Mouse wheel",
-      "clickOutside": "Click outside it"
+      "clickOutside": "Click outside it",
+      "dragPin": "Drag the pin"
     }
   },
   "imageUpload": {
@@ -1539,6 +1563,7 @@
       "create_table_of_contents": "Add table of contents",
       "create_page_number": "Add page number",
       "create_date": "Add date",
+      "create_location": "Add location",
       "create_page_border": "Add page border",
       "create_preset": "Add ready-made piece",
       "update_element": "Change element",
@@ -2453,7 +2478,11 @@
     "noValue": "{project} has no {label} to add.",
     "projectTabs": "Report projects",
     "dropNotForBarcode": "{type} can't hold “{value}”: {problem} Use Code 128 or a QR code for values like this.",
-    "projectsSelected": "{count} project selected | {count} projects selected"
+    "projectsSelected": "{count} project selected | {count} projects selected",
+    "location": "Location",
+    "locationWhole": "Map and address",
+    "dragLocation": "Drag onto the page for a map with the address, or onto a Location to change its place",
+    "dropNotOnLocation": "A Location shows a place. Drop the project's Location (or one of its fields, such as City) on it, or drop this detail on empty space."
   },
   "barcode": {
     "chooseType": "Choose a barcode type",
@@ -3425,6 +3454,24 @@
           "Changing the paper or margins moves items that no longer fit back onto the page.",
           "What new templates start with is set in Default Settings."
         ]
+      },
+      "location": {
+        "title": "Location",
+        "what": "A map of a place with a pin on it, and the place's address under or beside it.",
+        "when": "For where a project is: its site, office or route start. Every field of the CDP project form's Location step can show.",
+        "add": "Click Location under Composite Elements, or drag it. Or drag Location from a project in Report Data: the map and address come with it.",
+        "work": [
+          "The place: type the country, state, city, postcode, full address, latitude and longitude, or copy them from one of the template's projects.",
+          "The map: click a spot, or drag the pin, to set the place; the mouse wheel (or + and −) zooms. Fill the address from the pin fills in the address of that spot.",
+          "Layout: map above the address, map beside it, the map only or the address only.",
+          "Choose which address lines show; the preview under them shows the text.",
+          "Click the map or the address a second time to change its look: corners and border for the map, font and colour for the address."
+        ],
+        "good": [
+          "The map is a picture of OpenStreetMap, the map the CDP app shows. It is drawn when the place changes, so it needs the internet then; the PDF prints the saved picture.",
+          "Dropping a project's Location (or one field, such as City) on a Location changes its place and keeps its look.",
+          "Nothing stays linked to the project: drag the Location again to show a newer place."
+        ]
       }
     },
     "settings": {
@@ -3618,6 +3665,24 @@
       "templateBands": {
         "title": "Page Sections",
         "text": "The sections every page has: Page Header and Page Footer print on every page, Column Header and Column Footer just inside them. Untick a section you don't need; Detail is always there."
+      },
+      "locationPlace": {
+        "title": "The place",
+        "text": "The fields of the place, as in the CDP project form. The map needs the latitude and longitude; the address shows the other fields. Paste “3.1390, 101.6869” into either and both are filled.",
+        "example": "Kuala Lumpur, 3.1390, 101.6869"
+      },
+      "locationMap": {
+        "title": "The map",
+        "text": "Click the map, or drag the pin, to set the place; drag the map to look around. The mouse wheel (or + and −) changes how much around the pin shows, from the whole country to single buildings: the printed map uses that zoom, centred on the pin. Fill the address from the pin types in the country, state, city, postcode and street of that spot."
+      },
+      "locationLayout": {
+        "title": "Layout",
+        "text": "Where the map and the address go: the map above the address, beside it, the map only, or the address only. Drag the Location's edges to make it bigger."
+      },
+      "locationLines": {
+        "title": "The address shows",
+        "text": "Which fields the address prints. The full address comes first, then postcode and city, then state and country, then the latitude and longitude if ticked.",
+        "example": "Jalan Stesen Sentral 5 · 50470 Kuala Lumpur · Wilayah Persekutuan Kuala Lumpur, Malaysia"
       }
     }
   },
@@ -3695,5 +3760,80 @@
     "addedNote": "It opens as a new template and is added to My templates.",
     "seeAll": "See all in My Templates",
     "notFound": "That template couldn't be found. It may have been deleted."
+  },
+  "location": {
+    "fields": {
+      "country": "Country",
+      "state": "State / Province",
+      "city": "City",
+      "postcode": "Postcode",
+      "address": "Full Address",
+      "latitude": "Latitude",
+      "longitude": "Longitude"
+    },
+    "placeholders": {
+      "country": "Eg. Malaysia",
+      "state": "Eg. Selangor",
+      "city": "Eg. Kuala Lumpur",
+      "postcode": "Eg. 40150",
+      "address": "Street address, building, landmark…",
+      "latitude": "Eg. 3.1390",
+      "longitude": "Eg. 101.6869"
+    },
+    "problems": {
+      "notNumber": "Type a number, like 3.1390.",
+      "latitudeRange": "A latitude is between -90 and 90.",
+      "longitudeRange": "A longitude is between -180 and 180."
+    },
+    "layouts": {
+      "mapAbove": "Map above address",
+      "mapBeside": "Map beside address",
+      "mapOnly": "Map only",
+      "addressOnly": "Address only"
+    },
+    "lines": {
+      "address": "Full address",
+      "postcode": "Postcode",
+      "city": "City",
+      "state": "State / Province",
+      "country": "Country",
+      "coordinates": "Latitude and longitude"
+    },
+    "levels": {
+      "country": "Whole country",
+      "region": "Region",
+      "city": "City",
+      "area": "Town area",
+      "streets": "Streets",
+      "buildings": "Buildings"
+    },
+    "states": {
+      "loading": "Drawing the map…",
+      "loadingHint": "The map picture for the PDF is being made. It takes a moment.",
+      "error": "Map not loaded",
+      "errorHint": "The map couldn't be loaded. Check the internet connection, then try again."
+    },
+    "canvasEmpty": "Type the latitude and longitude, or drag Location from Report Data",
+    "cannotType": "This map and address come from the Location's place. Change them on the right, under Settings.",
+    "panel": {
+      "placeTitle": "The place",
+      "copyFrom": "Copy from a project",
+      "chooseProject": "Choose a project…",
+      "mapTitle": "The map",
+      "mapHint": "Click the map, or drag the pin, to set the place. Drag the map to look around; the mouse wheel (or + and −) zooms. The printed map uses this zoom, centred on the pin.",
+      "mapLabel": "Map: click a spot to set the place, or drag the pin",
+      "clickToPlace": "Click the map to place the pin",
+      "zoomIn": "Show less around the pin (closer)",
+      "zoomOut": "Show more around the pin (further)",
+      "retry": "Try again",
+      "layoutTitle": "Layout",
+      "linesTitle": "The address shows",
+      "shows": "It shows:",
+      "noLines": "Nothing yet: type the place above, or tick a line.",
+      "backToPin": "Show the pin",
+      "fillAddress": "Fill the address from the pin",
+      "fillingAddress": "Looking up the address…",
+      "fillFailed": "The address couldn't be found. Check the internet connection, or type it above."
+    }
   }
 }

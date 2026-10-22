@@ -17,6 +17,7 @@ import ms from "@/locales/ms.json";
 import i18n from "@/i18n";
 import { neededTextHeight, plainText, printedText } from "./elements/common";
 import { allLocations, areaOf, boxAround, kindAt, label, neighbours, overlapsOf, pageOf, shapeUnder, type Location } from "./design";
+import { getLocationSetup, isLocationElement, isLocationMap, placePoint } from "@/utils/location/locationElement";
 
 export interface ReportCheck {
   level: "fix" | "check";
@@ -212,7 +213,12 @@ export function elementChecks(loc: Location): ReportCheck[] {
   }
 
   // Things that print nothing, or the wrong thing
-  if (e.type === "image" && !(e as { imageExpression?: string }).imageExpression?.replace(/"/g, "").trim()) {
+  // A Location without coordinates: its map prints nothing (its picture is
+  // drawn by the designer once they are set)
+  if (isLocationElement(e) && !placePoint(getLocationSetup(e)) && getLocationSetup(e).layout !== "addressOnly") {
+    check("is a Location without latitude and longitude: its map prints nothing until they are set (projectId copies a project's location)");
+  }
+  if (e.type === "image" && !isLocationMap(e) && !(e as { imageExpression?: string }).imageExpression?.replace(/"/g, "").trim()) {
     check(`is an empty ${getImageName(e) ? `"${getImageName(e)}" ` : ""}photo spot: it prints nothing until the user drops a picture on it`);
   }
   if (e.type === "chart") {

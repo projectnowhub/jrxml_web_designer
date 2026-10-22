@@ -11,14 +11,21 @@ import { checkBarcodeValue, toBarcodeExpression } from "./barcode/barcodeTypes";
 import { setImageCrop, setImageName } from "./elementUtils";
 import { isPagination } from "./paginationPresets";
 import { isDateElement } from "./dateElement";
+import { isLocationElement, isLocationPart } from "./location/locationElement";
 import type { ChartBinding, ProjectField, ReportProject, TableDataBinding } from "@/types/dataSource";
 
 export const REPORT_PROJECTS_PROPERTY = "com.cdp.projects";
 
+// The project's whole location (a Location element) or one of its fields
+export const isLocationField = (field: ProjectField) => field.type === "location" || field.key.startsWith("location.");
+
 // Whether a project detail can be dropped onto an existing item: text details
 // onto a text item (not a page number or a date) or onto a barcode whose type can hold
-// the value, an image (the logo) onto an image item
+// the value, an image (the logo) onto an image item, the location or one of
+// its fields onto a Location (it changes the place)
 export function canTakeProjectField(element: DesignElement, field: ProjectField, value?: string | null): boolean {
+  if (isLocationElement(element) || isLocationPart(element)) return isLocationField(field);
+  if (field.type === "location") return false;
   if (element.type === "image") return field.type === "image";
   if (element.type === "textField") return field.type !== "image" && !isPagination(element) && !isDateElement(element);
   if (element.type === "barcode") return field.type !== "image" && (value == null || !projectValueProblem(element, value));

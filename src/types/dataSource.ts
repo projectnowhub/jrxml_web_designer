@@ -11,8 +11,9 @@ export interface ProjectSummary {
 }
 
 // What a project detail holds: text and long text go in Text elements, an
-// image (the logo) in an Image element
-export type ProjectFieldType = "text" | "longText" | "image";
+// image (the logo) in an Image element, a location (the whole place, its value
+// a ProjectLocation as JSON) in a Location element
+export type ProjectFieldType = "text" | "longText" | "image" | "location";
 
 // One detail of a project (name, logo, introduction…)
 export interface ProjectField {
@@ -26,6 +27,19 @@ export interface ProjectField {
 export interface ProjectDetails extends ProjectSummary {
   fields: ProjectField[];
   values: Record<string, string | null>;
+  // Where the project is, as in the CDP project form (Location step)
+  location?: ProjectLocation | null;
+}
+
+// A project's place. Latitude and longitude may come as numbers or text
+export interface ProjectLocation {
+  country?: string | null;
+  state?: string | null;
+  city?: string | null;
+  postcode?: string | null;
+  address?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
 }
 
 // A project chosen for the report (kept in the report as `com.cdp.projects`)

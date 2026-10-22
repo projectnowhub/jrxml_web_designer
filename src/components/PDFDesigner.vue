@@ -941,6 +941,17 @@ import {
   type PaginationPosition,
 } from "../utils/paginationPresets";
 import { buildDateElement, DATE_ELEMENT_TYPE, isDateElement } from "../utils/dateElement";
+import {
+  buildLocationElement,
+  isLocationElement,
+  isLocationPart,
+  LOCATION_ELEMENT_TYPE,
+  toPlace,
+  updateLocation,
+  type Place,
+  type PlaceField,
+} from "../utils/location/locationElement";
+import { ensureLocationMaps, refreshLocationMaps } from "../utils/location/locationMaps";
 import { buildChartElement } from "../utils/chart/chartElement";
 import {
   createElement,
@@ -2656,6 +2667,8 @@ const createLibraryElement = (type: string): DesignElement =>
         fontFamily: reportProperties.value?.defaultFont?.name,
         fontSize: reportProperties.value?.defaultFont?.size,
       })
+    : type === LOCATION_ELEMENT_TYPE
+    ? buildLocation()
     : type === "chart"
     ? buildChartElement()
     : type === "customTable"
@@ -2664,6 +2677,13 @@ const createLibraryElement = (type: string): DesignElement =>
         ...createElement(type),
         ...getDefaultElementProperties(type),
       } as DesignElement);
+
+// A new Location (map and address), empty or with a project's place
+const buildLocation = (place?: Partial<Place>): DesignElement =>
+  buildLocationElement(place, {
+    font: { fontFamily: reportProperties.value?.defaultFont?.name, fontSize: reportProperties.value?.defaultFont?.size },
+    maxWidth: getFrameTemplateContext().availableWidth,
+  });
 
 // A new custom table: a dark header row and two empty rows, across most of the page
 const buildNewCustomTable = (): DesignElement => {
@@ -3050,9 +3070,9 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
     }
     // Onto an existing text or image element: its content becomes the value
     if (fillDroppedProjectValue(event, dataDrag)) return;
-    // Elsewhere: a new Text element (or an Image for the logo) placed like a
-    // library element, holding the value
-    elementData = {
+    // Elsewhere: a new Text element (or an Image for the logo, a Location for
+    // the location) placed like a library element, holding the value
+    elementData = dataDrag.field.type === "location" ? { type: LOCATION_ELEMENT_TYPE, place: readPlace(dataDrag.value) } : {
       type: dataDrag.field.type === "image" ? "image" : "textField",
       projectValue: {
         project: { id: dataDrag.projectId, name: dataDrag.projectName },
@@ -3140,11 +3160,11 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
 
     // Create the new element
     // Center it on the cursor using its own compact default size
-    const baseElement = createLibraryElement(elementData.type);
+    const baseElement = elementData.place ? buildLocation(elementData.place) : createLibraryElement(elementData.type);
     const droppedSize =
       isFrameTemplateType(elementData.type) ||
       isReportPartType(elementData.type) ||
-      [PAGE_NUMBER_TYPE, DATE_ELEMENT_TYPE, "table", "chart", "customTable"].includes(elementData.type)
+      [PAGE_NUMBER_TYPE, DATE_ELEMENT_TYPE, LOCATION_ELEMENT_TYPE, "table", "chart", "customTable"].includes(elementData.type)
       ? { width: baseElement.width, height: baseElement.height }
       : getDefaultElementSize(elementData.type);
     let newElement: DesignElement = {
@@ -3421,6 +3441,43 @@ const elementAtLocation = (location: TableLocation): DesignElement | undefined =
     : band?.elements[location.elementIndex];
 };
 
+// The place a dragged location carries (a ProjectLocation as JSON)
+const readPlace = (value: string | null): Place => {
+  try {
+    return toPlace(value ? JSON.parse(value) : null);
+  } catch {
+    return toPlace(null);
+  }
+};
+
+// A project's location (or one of its fields) dropped onto a Location (its
+// box or a part): its place changes, its look, layout and zoom stay. Other
+// details are refused with a message. One undo step.
+const fillDroppedLocation = (
+  location: TableLocation,
+  drag: Extract<DataSourceDragPayload, { kind: "projectField" }>,
+) => {
+  const boxLocation =
+    location.parentFrameIndex !== undefined
+      ? { bandIndex: location.bandIndex, elementIndex: location.parentFrameIndex }
+      : location;
+  const box = elementAtLocation(boxLocation);
+  if (!box || !isLocationElement(box)) return;
+  const field = drag.field;
+  if (field.type !== "location" && !field.key.startsWith("location.")) {
+    notification.warning(t("reportData.dropNotOnLocation"));
+    return;
+  }
+  saveStateToHistory();
+  const patch =
+    field.type === "location"
+      ? readPlace(drag.value)
+      : { [field.key.slice("location.".length) as PlaceField]: drag.value ?? "" };
+  updateLocation(box as FrameElement, patch, { fontFamily: reportProperties.value?.defaultFont?.name, fontSize: reportProperties.value?.defaultFont?.size });
+  selectElement(boxLocation.bandIndex, boxLocation.elementIndex);
+  updateJRXML();
+};
+
 // A project detail dropped onto a text, image or barcode element: its content
 // becomes the value, keeping its place, size and look (one undo step). Text
 // details go in text elements and barcodes (when the type can hold the value),
@@ -3432,6 +3489,12 @@ const fillDroppedProjectValue = (
   const target = (event.target as HTMLElement)?.closest?.("[data-element-uuid]") as HTMLElement | null;
   const location = target?.dataset.elementUuid ? findElementByUuid(target.dataset.elementUuid) : null;
   const element = location ? elementAtLocation(location) : undefined;
+  if (location && element && (isLocationElement(element) || isLocationPart(element))) {
+    fillDroppedLocation(location, drag);
+    return true;
+  }
+  // The whole location dropped elsewhere: a new Location there
+  if (drag.field.type === "location") return false;
   if (!location || !element || !["textField", "image", "barcode"].includes(element.type)) return false;
 
   // A barcode takes a text detail whose value its type can hold
@@ -4845,6 +4908,12 @@ const startEditing = (
     notification.warning(t("pagination.cannotEdit"));
     return;
   }
+  // A Location's map and address come from its place, changed in its properties
+  if (isLocationElement(target) || isLocationPart(target)) {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    notification.info(t("location.cannotType"));
+    return;
+  }
   // A date fills itself in: it is changed in its properties (which can turn it into plain text)
   if (isDateElement(target)) {
     selectElement(bandIndex, elementIndex, false, parentFrameIndex);
@@ -4915,7 +4984,7 @@ const initBox = (element: DesignElement) => {
 
 // Download the JRXML file (charts drawn with their numbers, barcodes sized, first)
 const downloadJRXML = async () => {
-  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value)]);
+  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps()]);
   const content = generateJRXMLContent(
     reportStore.propertiesForJrxml(),
     bands.value,
@@ -5027,6 +5096,12 @@ const updateJRXML = () => reportStore.updateJrxml();
 
 // Auto-save each JRXML the store writes, right away
 watch(() => reportStore.jrxmlVersion, () => saveToLocalStorageWrapper(), { flush: "sync" });
+
+// Location maps: a picture drawn when a Location's place, zoom or map size
+// changed; it goes into the same undo step as that change
+const drawMaps = () => refreshLocationMaps(() => bands.value, updateJRXML);
+watch(() => reportStore.jrxmlVersion, drawMaps);
+const ensureMaps = () => ensureLocationMaps(() => bands.value, updateJRXML);
 
 // Copy an element to the clipboard
 const copyElement = async () => {
@@ -5902,7 +5977,7 @@ const openPdfPreview = async (): Promise<void> => {
   helpStore.noteGuideAction("preview");
   flushAutoSave();
   try {
-    await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value)]);
+    await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps()]);
     updateJRXML();
     if (!jrxmlContent.value) {
       // Generate the JRXML content directly, without downloading it
@@ -7890,7 +7965,8 @@ const selectedBoxItem = computed(() => {
     | FrameElement
     | undefined;
   const item = box?.elements?.[selection.elementIndex];
-  if (!box || !item) return null;
+  // A Location's map and address belong to it
+  if (!box || !item || isLocationPart(item)) return null;
   return { box, item, isPart: isBoxPart(item) };
 });
 

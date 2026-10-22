@@ -9,6 +9,7 @@ import { createElement } from "@/components/elements/ElementRegistry";
 import { frame, isBoxPart, photo, releaseBoxPart, text, type FrameTemplateContext, type TextOptions } from "./framePresets";
 import { buildContentsList, SECTION_HEADING_PROPERTY } from "./contentsList";
 import { FIT_LIST_PROPERTY } from "./headingSync";
+import { LOCATION_PROPERTY } from "./location/locationElement";
 
 export const DESIGN_COLORS = {
   navy: "#14284B",
@@ -458,7 +459,9 @@ export function unwrapLegacyCoverFrames(bands: Band[], props: { coverPage?: bool
       el &&
       el.type === "frame" &&
       (el.pageIndex ?? 0) === 0 &&
-      !(el.properties ?? []).some((p) => p?.name === DESIGN_BOX_PROPERTY || p?.name === SECTION_HEADING_PROPERTY) &&
+      !(el.properties ?? []).some(
+        (p) => p?.name === DESIGN_BOX_PROPERTY || p?.name === SECTION_HEADING_PROPERTY || p?.name === LOCATION_PROPERTY,
+      ) &&
       el.elements &&
       el.elements.length > 0 &&
       (el.elements.some(isBoxPart) || (el.width >= 400 && el.height >= 500))
