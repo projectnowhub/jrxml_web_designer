@@ -856,6 +856,7 @@ import {
 import { getOutOfBoundsElements } from "../utils/elementBoundsValidator";
 import {
   calculateTextElementHeight,
+  getImageShape,
   measureTextElementWidth,
   refreshUuids,
 } from "../utils/elementUtils";
@@ -2534,6 +2535,8 @@ const isOverBox = (
   return (band?.elements ?? []).some(
     (el) =>
       el.type === "frame" &&
+      // A Location holds only its map and address
+      !isLocationElement(el) &&
       (band?.type !== BAND_TYPE_CONSTANTS.DETAIL || pageIndex === undefined || (el.pageIndex ?? 0) === pageIndex) &&
       cx >= el.x &&
       cx <= el.x + el.width &&
@@ -3254,7 +3257,8 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
         if (!el) continue;
         // Only the boxes on the page it is dropped on
         if (targetBand.type === BAND_TYPE_CONSTANTS.DETAIL && (el.pageIndex ?? 0) !== (newElement.pageIndex ?? 0)) continue;
-        if (el.type === "frame") {
+        // (not a Location: it holds only its map and address)
+        if (el.type === "frame" && !isLocationElement(el)) {
           // Check whether the new element's center point is inside the Frame
           const centerX = newElement.x + newElement.width / 2;
           const centerY = newElement.y + newElement.height / 2;
@@ -3957,6 +3961,13 @@ const selectElement = (
   isMultiSelect = false,
   parentFrameIndex?: number,
 ) => {
+  // A Location's map or address: the whole Location is selected (it is one
+  // element; its panel styles the map and the address)
+  if (parentFrameIndex !== undefined && isLocationElement(bands.value[bandIndex]?.elements[parentFrameIndex])) {
+    elementIndex = parentFrameIndex;
+    parentFrameIndex = undefined;
+  }
+
   // Get the element reference in order to obtain its UUID
   const band = bands.value[bandIndex];
   let element;
@@ -4607,7 +4618,8 @@ const startDragging = (
                 // Only the boxes on the page it is dropped on (a cover's design
                 // box must not catch what is dropped on another page)
                 if (targetBand.type === BAND_TYPE_CONSTANTS.DETAIL && (el.pageIndex ?? 0) !== targetSheetPageIndex) continue;
-                if (el.type === "frame") {
+                // (not a Location: it holds only its map and address)
+                if (el.type === "frame" && !isLocationElement(el)) {
                   const centerX =
                     elementRelTargetBandX + currentElement.width / 2;
                   const centerY =
@@ -6988,6 +7000,8 @@ const startResizingElement = (
   if (element) {
     // Get the current zoom scale
     const currentZoom = zoomLevel.value;
+    // A picture shaped as a Circle stays square while resized (as with Alt)
+    const keepsSquare = element.type === "image" && getImageShape(element) === "circle";
 
     // Get the page sheet element's position info, for more accurate coordinate calculations
     const targetSheet =
@@ -7306,8 +7320,8 @@ const startResizingElement = (
             }
           }
         }
-      } else if (e.altKey) {
-        // If ALT key is held, lock aspect ratio to 1:1
+      } else if (e.altKey || keepsSquare) {
+        // If ALT key is held (or the picture is a Circle), lock aspect ratio to 1:1
         const widthChange = Math.abs(newWidth - startWidth);
         const heightChange = Math.abs(newHeight - startHeight);
 

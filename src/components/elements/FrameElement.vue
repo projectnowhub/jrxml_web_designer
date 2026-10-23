@@ -20,7 +20,9 @@
   >
     <!-- Frame element content -->
     <div
+      ref="contentRef"
       class="frame-content"
+      :style="locationContentStyle"
       @mousedown.capture="rememberSelectionAtPress"
     >
       <!-- Render child elements -->
@@ -69,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue';
+import { computed, defineAsyncComponent, onMounted, onUpdated, ref } from 'vue';
 import BaseElement from './BaseElement.vue';
 import type { FrameElement, SelectedElementInfo, EditingElementInfo } from '../../types';
 import { isBoxPart } from '../../utils/framePresets';
@@ -104,6 +106,33 @@ const props = defineProps<{
 
 
 const padding = computed(() => getElementBoxPadding(props.element.box));
+
+// A Location's items are placed from the box's edge, as JasperReports places
+// a frame's items (inside its padding only; its border line is drawn over the
+// edge), so the canvas shows exactly what prints. Other boxes keep the canvas'
+// usual place inside the border.
+const contentRef = ref<HTMLElement | null>(null);
+const borderOffset = ref({ top: 0, left: 0 });
+const measureBorder = () => {
+  const host = contentRef.value?.parentElement;
+  if (!host || !isLocationElement(props.element)) return;
+  const cs = getComputedStyle(host);
+  const next = { top: parseFloat(cs.borderTopWidth) || 0, left: parseFloat(cs.borderLeftWidth) || 0 };
+  if (next.top !== borderOffset.value.top || next.left !== borderOffset.value.left) borderOffset.value = next;
+};
+onMounted(measureBorder);
+onUpdated(measureBorder);
+const locationContentStyle = computed(() => {
+  if (!isLocationElement(props.element)) return undefined;
+  const pad = padding.value;
+  return {
+    position: 'absolute' as const,
+    left: `${pad.left - borderOffset.value.left}px`,
+    top: `${pad.top - borderOffset.value.top}px`,
+    width: `${Math.max(0, props.element.width - pad.left - pad.right)}px`,
+    height: `${Math.max(0, props.element.height - pad.top - pad.bottom)}px`,
+  };
+});
 
 // Emits
 const emit = defineEmits<{

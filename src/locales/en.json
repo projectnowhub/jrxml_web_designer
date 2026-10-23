@@ -446,7 +446,7 @@
     "imageShape": "Shape",
     "imageShapePresets": "Shape presets",
     "imageShapeCustom": "Custom corners",
-    "imageShapeHint": "The shape follows the image when it is resized. Fine-tune each corner in Style Settings.",
+    "imageShapeHint": "Circle makes the picture square and keeps it square when resized; Pill makes a square picture wide. Fine-tune each corner in Style Settings.",
     "imageShapes": {
       "square": "Square",
       "squareTitle": "Square corners",
@@ -455,15 +455,23 @@
       "soft": "Soft",
       "softTitle": "Soft rounded corners, like an app icon",
       "circle": "Circle",
-      "circleTitle": "Circle: fully round; a circle on a square image, for photos and logos",
+      "circleTitle": "Circle: makes the picture square and fully round, for photos and logos",
       "pill": "Pill",
-      "pillTitle": "Pill: fully rounded ends; a pill on a wide image, for banners and wide images",
+      "pillTitle": "Pill: fully rounded ends on a wide picture (a square one is made wide), for banners",
       "leaf": "Leaf",
       "leafTitle": "Top-left and bottom-right corners rounded",
       "tab": "Top round",
       "tabTitle": "Top corners rounded, for card headers",
       "drop": "Drop",
-      "dropTitle": "Round, with a sharp bottom-right corner"
+      "dropTitle": "Round, with a sharp bottom-right corner",
+      "cornerTopLeft": "Top left",
+      "cornerTopLeftTitle": "Only the top-left corner rounded",
+      "cornerTopRight": "Top right",
+      "cornerTopRightTitle": "Only the top-right corner rounded",
+      "cornerBottomRight": "Bottom right",
+      "cornerBottomRightTitle": "Only the bottom-right corner rounded",
+      "cornerBottomLeft": "Bottom left",
+      "cornerBottomLeftTitle": "Only the bottom-left corner rounded"
     },
     "cornerAll": "All corners",
     "corner": {
@@ -3465,12 +3473,13 @@
           "The map: click a spot, or drag the pin, to set the place; the mouse wheel (or + and −) zooms. Fill the address from the pin fills in the address of that spot.",
           "Layout: map above the address, map beside it, the map only or the address only.",
           "Choose which address lines show; the preview under them shows the text.",
-          "Click the map or the address a second time to change its look: corners and border for the map, font and colour for the address."
+          "Click it once: everything is in its panel. Map shape rounds the map's corners; How the address looks sets its size, colour, bold and alignment; Frame around it adds a border."
         ],
         "good": [
           "The map is a picture of OpenStreetMap, the map the CDP app shows. It is drawn when the place changes, so it needs the internet then; the PDF prints the saved picture.",
           "Dropping a project's Location (or one field, such as City) on a Location changes its place and keeps its look.",
-          "Nothing stays linked to the project: drag the Location again to show a newer place."
+          "Nothing stays linked to the project: drag the Location again to show a newer place.",
+          "It is one element: other items can't be dropped into it, they go on top of it on the page."
         ]
       }
     },
@@ -3494,8 +3503,8 @@
       },
       "imageShape": {
         "title": "Shape",
-        "text": "Rounds the picture: Rounded, Soft, Circle, Pill, Leaf and more. The shape follows the picture when you resize it.",
-        "example": "Circle on a square picture gives a round photo."
+        "text": "Rounds the picture: Rounded, Soft, Circle, Pill, Leaf, one rounded corner (Top left, Top right, Bottom right, Bottom left) and more. Circle makes the picture square (and keeps it square when you resize it), so it is a real circle; Pill makes a square or tall picture twice as wide as tall. The other shapes keep the size and follow the picture when you resize it.",
+        "example": "Circle on a wide photo makes it square, so it prints round."
       },
       "rotation": {
         "title": "Rotation",
@@ -3673,7 +3682,7 @@
       },
       "locationMap": {
         "title": "The map",
-        "text": "Click the map, or drag the pin, to set the place; drag the map to look around. The mouse wheel (or + and −) changes how much around the pin shows, from the whole world to single buildings: the printed map uses that zoom, centred on the pin. Fill the address from the pin types in the country, state, city, postcode and street of that spot."
+        "text": "Click the map, or drag the pin, to set the place; drag the map to look around. The mouse wheel (or + and −) changes how much around the pin shows, from the whole world to single buildings: the printed map uses that zoom, centred on the pin. Fill the address from the pin types in the country, state, city, postcode and street of that spot. Map shape sets the map's corners (square, rounded, circle…)."
       },
       "locationLayout": {
         "title": "Layout",
@@ -3681,7 +3690,7 @@
       },
       "locationLines": {
         "title": "The address shows",
-        "text": "Which fields the address prints. The full address comes first, then postcode and city, then state and country, then the latitude and longitude if ticked.",
+        "text": "Which fields the address prints. The full address comes first, then postcode and city, then state and country, then the latitude and longitude if ticked. How the address looks sets its text size, colour, bold and alignment.",
         "example": "Jalan Stesen Sentral 5 · 50470 Kuala Lumpur · Wilayah Persekutuan Kuala Lumpur, Malaysia"
       }
     }
@@ -3762,11 +3771,6 @@
     "notFound": "That template couldn't be found. It may have been deleted."
   },
   "location": {
-    "partTitle": "Location · {part}",
-    "parts": {
-      "map": "Map",
-      "address": "Address"
-    },
     "fields": {
       "country": "Country",
       "state": "State / Province",
@@ -3841,7 +3845,12 @@
       "backToPin": "Show the pin",
       "fillAddress": "Fill the address from the pin",
       "fillingAddress": "Looking up the address…",
-      "fillFailed": "The address couldn't be found. Check the internet connection, or type it above."
-    }
+      "fillFailed": "The address couldn't be found. Check the internet connection, or type it above.",
+      "mapShape": "Map shape",
+      "addressLook": "How the address looks",
+      "textColour": "Text colour",
+      "frameTitle": "Frame around it"
+    },
+    "addressPlaceholder": "Address"
   }
 }

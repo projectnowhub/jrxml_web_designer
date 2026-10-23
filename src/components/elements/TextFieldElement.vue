@@ -66,7 +66,7 @@
         >{{ displayText }}</span>
         <span v-else-if="hasRichMarkup" class="rich-html-span" v-html="renderedHtmlContent"></span>
         <template v-else>
-          {{ hasContent ? displayText : (t('properties.defaultTextFieldExpression')) }}
+          {{ hasContent ? displayText : isAddress ? t('location.addressPlaceholder') : t('properties.defaultTextFieldExpression') }}
         </template>
       </div>
     </div>

@@ -207,12 +207,16 @@ export type ImageShapeId =
   | "pill"
   | "leaf"
   | "tab"
-  | "drop";
+  | "drop"
+  | "cornerTopLeft"
+  | "cornerTopRight"
+  | "cornerBottomRight"
+  | "cornerBottomLeft";
 
 // Each corner as a share of the image's short side (0.5 = fully round),
 // in CSS order: top-left, top-right, bottom-right, bottom-left.
-// Choosing a shape never changes the image's size: Circle and Pill both
-// round it fully (a circle on a square image, a pill on a wide one).
+// Circle and Pill set the proportions they need (shapeSize); the others never
+// change the image's size. The four corner shapes round one corner only.
 export const IMAGE_SHAPES: { id: ImageShapeId; corners: [number, number, number, number] }[] = [
   { id: "square", corners: [0, 0, 0, 0] },
   { id: "rounded", corners: [0.08, 0.08, 0.08, 0.08] },
@@ -222,6 +226,10 @@ export const IMAGE_SHAPES: { id: ImageShapeId; corners: [number, number, number,
   { id: "leaf", corners: [0.4, 0, 0.4, 0] },
   { id: "tab", corners: [0.16, 0.16, 0, 0] },
   { id: "drop", corners: [0.5, 0.5, 0, 0.5] },
+  { id: "cornerTopLeft", corners: [0.4, 0, 0, 0] },
+  { id: "cornerTopRight", corners: [0, 0.4, 0, 0] },
+  { id: "cornerBottomRight", corners: [0, 0, 0.4, 0] },
+  { id: "cornerBottomLeft", corners: [0, 0, 0, 0.4] },
 ];
 
 const findImageShape = (id: string) => IMAGE_SHAPES.find((s) => s.id === id);
@@ -243,6 +251,15 @@ function shapeRadii(id: ImageShapeId, element: DesignElement): CornerRadii {
 }
 
 // Gives the image a preset shape. "square" removes the corners.
+// The size a shape needs to look like itself: a Circle is square (its width
+// kept), a Pill at least twice as wide as tall (a square or tall picture
+// keeps its width and gets half as tall). Other shapes keep any size
+export function shapeSize(id: ImageShapeId | null | undefined, width: number, height: number): { width: number; height: number } {
+  if (id === "circle") return { width, height: width };
+  if (id === "pill" && height > width / 2) return { width, height: Math.max(1, Math.round(width / 2)) };
+  return { width, height };
+}
+
 export function setImageShape(element: DesignElement, id: ImageShapeId): void {
   if (element?.type !== "image" || !findImageShape(id)) return;
   setPropertyCornerRadii(element, shapeRadii(id, element));

@@ -326,7 +326,7 @@ export const DOC_PAGES: DocPage[] = [
     id: "location",
     group: "composite",
     tile: "location",
-    settings: ["locationPlace", "locationMap", "locationLayout", "locationLines", "imageShape", "textSettings"],
+    settings: ["locationPlace", "locationMap", "locationLayout", "locationLines", "boxStyle"],
     guides: ["location"],
     sample: () => [
       buildLocationElement(

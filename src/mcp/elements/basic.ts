@@ -281,7 +281,7 @@ export const imageKind: ElementKind = {
     shape: {
       type: "string",
       enum: IMAGE_SHAPES.map((s) => s.id),
-      description: "Corner shape: square, rounded, soft, circle (on a square image), pill (on a wide one), leaf, tab, drop",
+      description: "Corner shape: square, rounded, soft, circle (makes the image square), pill (makes a square image wide), leaf, tab, drop, or one rounded corner: cornerTopLeft, cornerTopRight, cornerBottomRight, cornerBottomLeft",
     },
     ...BORDER_PROPS,
     ...CORNER_PROPS,

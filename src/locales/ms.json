@@ -446,7 +446,7 @@
     "imageShape": "Bentuk",
     "imageShapePresets": "Pratetap bentuk",
     "imageShapeCustom": "Bucu tersuai",
-    "imageShapeHint": "Bentuk mengikut imej apabila saiznya diubah. Laraskan setiap bucu dalam Tetapan Gaya.",
+    "imageShapeHint": "Bulatan menjadikan gambar segi empat sama dan mengekalkannya apabila saiz diubah; Pil menjadikan gambar segi empat sama lebar. Laraskan setiap bucu dalam Tetapan Gaya.",
     "imageShapes": {
       "square": "Segi empat",
       "squareTitle": "Bucu tajam",
@@ -455,15 +455,23 @@
       "soft": "Lembut",
       "softTitle": "Bucu bulat lembut, seperti ikon aplikasi",
       "circle": "Bulatan",
-      "circleTitle": "Bulatan: bulat penuh; bulatan pada imej segi empat sama, untuk foto dan logo",
+      "circleTitle": "Bulatan: menjadikan gambar segi empat sama dan bulat penuh, untuk foto dan logo",
       "pill": "Pil",
-      "pillTitle": "Pil: hujung bulat penuh; bentuk pil pada imej lebar, untuk sepanduk dan imej lebar",
+      "pillTitle": "Pil: hujung bulat penuh pada gambar lebar (gambar segi empat sama dijadikan lebar), untuk sepanduk",
       "leaf": "Daun",
       "leafTitle": "Bucu kiri atas dan kanan bawah dibulatkan",
       "tab": "Atas bulat",
       "tabTitle": "Bucu atas dibulatkan, untuk kepala kad",
       "drop": "Titisan",
-      "dropTitle": "Bulat, dengan bucu kanan bawah yang tajam"
+      "dropTitle": "Bulat, dengan bucu kanan bawah yang tajam",
+      "cornerTopLeft": "Atas kiri",
+      "cornerTopLeftTitle": "Hanya bucu atas kiri dibulatkan",
+      "cornerTopRight": "Atas kanan",
+      "cornerTopRightTitle": "Hanya bucu atas kanan dibulatkan",
+      "cornerBottomRight": "Bawah kanan",
+      "cornerBottomRightTitle": "Hanya bucu bawah kanan dibulatkan",
+      "cornerBottomLeft": "Bawah kiri",
+      "cornerBottomLeftTitle": "Hanya bucu bawah kiri dibulatkan"
     },
     "cornerAll": "Semua bucu",
     "corner": {
@@ -3465,12 +3473,13 @@
           "Peta: klik satu titik, atau seret pin, untuk menetapkan tempat; roda tetikus (atau + dan −) mengezum. Isi alamat daripada pin mengisi alamat titik itu.",
           "Susun atur: peta di atas alamat, peta di sebelahnya, peta sahaja atau alamat sahaja.",
           "Pilih baris alamat yang ditunjukkan; pratonton di bawahnya menunjukkan teksnya.",
-          "Klik peta atau alamat kali kedua untuk menukar rupanya: bucu dan sempadan untuk peta, fon dan warna untuk alamat."
+          "Klik sekali: semuanya ada dalam panelnya. Bentuk peta membulatkan bucu peta; Rupa alamat menetapkan saiz, warna, huruf tebal dan penjajarannya; Bingkai di sekelilingnya menambah sempadan."
         ],
         "good": [
           "Peta ialah gambar OpenStreetMap, peta yang ditunjukkan oleh aplikasi CDP. Ia dilukis apabila tempat berubah, jadi ia memerlukan internet ketika itu; PDF mencetak gambar yang disimpan.",
           "Melepaskan Lokasi projek (atau satu medan, seperti Bandar) di atas Lokasi menukar tempatnya dan mengekalkan rupanya.",
-          "Tiada apa yang kekal terpaut kepada projek: seret Lokasi sekali lagi untuk menunjukkan tempat yang lebih baharu."
+          "Tiada apa yang kekal terpaut kepada projek: seret Lokasi sekali lagi untuk menunjukkan tempat yang lebih baharu.",
+          "Ia satu elemen: item lain tidak boleh dilepaskan ke dalamnya, ia diletakkan di atasnya pada halaman."
         ]
       }
     },
@@ -3494,8 +3503,8 @@
       },
       "imageShape": {
         "title": "Bentuk",
-        "text": "Membulatkan gambar: Bulat sedikit, Lembut, Bulatan, Pil, Daun dan banyak lagi. Bentuk mengikut gambar apabila anda mengubah saiznya.",
-        "example": "Bulatan pada gambar segi empat sama memberi foto bulat."
+        "text": "Membulatkan gambar: Bulat sedikit, Lembut, Bulatan, Pil, Daun, satu bucu bulat (Atas kiri, Atas kanan, Bawah kanan, Bawah kiri) dan banyak lagi. Bulatan menjadikan gambar segi empat sama (dan mengekalkannya apabila anda mengubah saiz), jadi ia bulatan sebenar; Pil menjadikan gambar segi empat sama atau tinggi dua kali lebih lebar daripada tingginya. Bentuk lain mengekalkan saiz dan mengikut gambar apabila anda mengubah saiznya.",
+        "example": "Bulatan pada foto lebar menjadikannya segi empat sama, jadi ia dicetak bulat."
       },
       "rotation": {
         "title": "Putaran",
@@ -3673,7 +3682,7 @@
       },
       "locationMap": {
         "title": "Peta",
-        "text": "Klik peta, atau seret pin, untuk menetapkan tempat; seret peta untuk melihat sekeliling. Roda tetikus (atau + dan −) menukar berapa banyak kawasan di sekeliling pin yang ditunjukkan, dari seluruh dunia hingga bangunan tunggal: peta yang dicetak menggunakan zum itu, dengan pin di tengah. Isi alamat daripada pin menaip negara, negeri, bandar, poskod dan jalan bagi titik itu."
+        "text": "Klik peta, atau seret pin, untuk menetapkan tempat; seret peta untuk melihat sekeliling. Roda tetikus (atau + dan −) menukar berapa banyak kawasan di sekeliling pin yang ditunjukkan, dari seluruh dunia hingga bangunan tunggal: peta yang dicetak menggunakan zum itu, dengan pin di tengah. Isi alamat daripada pin menaip negara, negeri, bandar, poskod dan jalan bagi titik itu. Bentuk peta menetapkan bucu peta (segi empat, bulat, bulatan…)."
       },
       "locationLayout": {
         "title": "Susun atur",
@@ -3681,7 +3690,7 @@
       },
       "locationLines": {
         "title": "Alamat menunjukkan",
-        "text": "Medan yang dicetak oleh alamat. Alamat penuh dahulu, kemudian poskod dan bandar, kemudian negeri dan negara, kemudian latitud dan longitud jika ditandakan.",
+        "text": "Medan yang dicetak oleh alamat. Alamat penuh dahulu, kemudian poskod dan bandar, kemudian negeri dan negara, kemudian latitud dan longitud jika ditandakan. Rupa alamat menetapkan saiz teks, warna, huruf tebal dan penjajarannya.",
         "example": "Jalan Stesen Sentral 5 · 50470 Kuala Lumpur · Wilayah Persekutuan Kuala Lumpur, Malaysia"
       }
     }
@@ -3762,11 +3771,6 @@
     "notFound": "Templat itu tidak ditemui. Ia mungkin telah dipadam."
   },
   "location": {
-    "partTitle": "Lokasi · {part}",
-    "parts": {
-      "map": "Peta",
-      "address": "Alamat"
-    },
     "fields": {
       "country": "Negara",
       "state": "Negeri / Wilayah",
@@ -3841,7 +3845,12 @@
       "backToPin": "Tunjukkan pin",
       "fillAddress": "Isi alamat daripada pin",
       "fillingAddress": "Mencari alamat…",
-      "fillFailed": "Alamat tidak dapat ditemui. Semak sambungan internet, atau taipkannya di atas."
-    }
+      "fillFailed": "Alamat tidak dapat ditemui. Semak sambungan internet, atau taipkannya di atas.",
+      "mapShape": "Bentuk peta",
+      "addressLook": "Rupa alamat",
+      "textColour": "Warna teks",
+      "frameTitle": "Bingkai di sekelilingnya"
+    },
+    "addressPlaceholder": "Alamat"
   }
 }

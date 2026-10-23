@@ -1,7 +1,7 @@
 <template>
   <div class="frame-properties">
     <div class="frame-card-head">
-      <h5>{{ isPageBorder ? t("framePresets.pageBorderTitle") : t("frame.title") }}<SettingHelpButton id="boxStyle" /></h5>
+      <h5>{{ titleKey ? t(titleKey) : isPageBorder ? t("framePresets.pageBorderTitle") : t("frame.title") }}<SettingHelpButton id="boxStyle" /></h5>
       <span v-if="!activePreset" class="custom-badge">{{ t("framePresets.custom") }}</span>
     </div>
     <SettingHelpText id="boxStyle" />
@@ -48,6 +48,8 @@ const props = defineProps<{
   element: any;
   // Frame lives in the Background band (drawn on every page)
   isPageBorder?: boolean;
+  // Its own title (a Location's frame)
+  titleKey?: string;
   reportFields?: Array<{ name: string; class?: string }>;
   reportParameters?: Array<{ name: string; class?: string }>;
   reportVariables?: Array<{ name: string; class?: string }>;

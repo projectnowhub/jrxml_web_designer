@@ -16,7 +16,8 @@
 import type { Band, DesignElement, FrameElement, ImageElement, TextFieldElement } from "@/types";
 import { createElement } from "@/components/elements/ElementRegistry";
 import { DEFAULT_REPORT_FONT } from "@/config/fonts.config";
-import { BOX_PART_PROPERTY, frame } from "../framePresets";
+import { BORDER_SIDES, BOX_PART_PROPERTY, frame, getSidePen, type BorderSide } from "../framePresets";
+import { getElementBoxPadding, getImageShape, shapeSize } from "../elementUtils";
 import { MAX_MAP_ZOOM, MIN_MAP_ZOOM } from "./locationMap";
 
 export const LOCATION_PROPERTY = "com.cdp.location";
@@ -308,32 +309,53 @@ export function layoutLocation(box: FrameElement, font: LocationFont = {}): bool
     setLocationSetup(box, { ...setup, spare: Object.keys(spare).length ? spare : undefined });
   }
 
+  // The parts go inside the box's inner space: a border preset's padding
+  // pushes them in (JasperReports places a frame's items inside its padding)
+  // and inside its border line: the parts start one line width in, so the
+  // whole line shows (JasperReports draws it on the box's edge, over what is there)
+  const pad = getElementBoxPadding(box.box);
+  const line = locationBorderWidths(box);
+  const padX = pad.left + pad.right + line.left + line.right;
+  const padY = pad.top + pad.bottom + line.top + line.bottom;
   const W = Math.max(40, Math.round(box.width));
+  const innerW = Math.max(20, W - padX);
+  const innerH = Math.round(box.height) - padY;
   const lines = addressLines(setup);
   if (address) address.expression = literal(lines.join("\n"));
   const fontSize = address?.fontSize || font.fontSize || 9;
 
+  // The map's shape decides its proportions: Circle square, Pill wide (shapeSize)
+  const shape = map ? getImageShape(map) : undefined;
+  const shaped = (width: number, wanted: number) => shapeSize(shape, width, wanted).height;
+  let height: number;
   if (map && address && setup.layout === "mapAbove") {
-    const addrH = addressHeight(lines, W, fontSize);
-    const mapH = Math.max(MIN_MAP, mapBack ? Math.round(map.height) : Math.round(box.height) - GAP - addrH);
-    Object.assign(map, { x: 0, y: 0, width: W, height: mapH });
-    Object.assign(address, { x: 0, y: mapH + GAP, width: W, height: addrH });
-    box.height = mapH + GAP + addrH;
+    const addrH = addressHeight(lines, innerW, fontSize);
+    const mapH = shaped(innerW, Math.max(MIN_MAP, mapBack ? Math.round(map.height) : innerH - GAP - addrH));
+    Object.assign(map, { x: line.left, y: line.top, width: innerW, height: mapH });
+    Object.assign(address, { x: line.left, y: line.top + mapH + GAP, width: innerW, height: addrH });
+    height = mapH + GAP + addrH;
   } else if (map && address) {
-    const mapW = Math.round(W * 0.55);
-    const addrW = Math.max(20, W - mapW - GAP);
+    const mapW = Math.round(innerW * 0.55);
+    const addrW = Math.max(20, innerW - mapW - GAP);
     const addrH = addressHeight(lines, addrW, fontSize);
-    box.height = Math.max(Math.round(box.height), addrH, MIN_MAP, mapBack ? Math.round(map.height) : 0);
-    Object.assign(map, { x: 0, y: 0, width: mapW, height: box.height });
-    Object.assign(address, { x: mapW + GAP, y: 0, width: addrW, height: addrH });
+    if (shape === "circle" || shape === "pill") {
+      // The map keeps its shape; the Location is as tall as the taller part
+      const mapH = shaped(mapW, Math.max(innerH, MIN_MAP));
+      height = Math.max(mapH, addrH);
+      Object.assign(map, { x: line.left, y: line.top, width: mapW, height: mapH });
+    } else {
+      height = Math.max(innerH, addrH, MIN_MAP, mapBack ? Math.round(map.height) : 0);
+      Object.assign(map, { x: line.left, y: line.top, width: mapW, height });
+    }
+    Object.assign(address, { x: line.left + mapW + GAP, y: line.top, width: addrW, height: addrH });
   } else if (map) {
-    box.height = Math.max(MIN_MAP, mapBack ? Math.round(map.height) : Math.round(box.height));
-    Object.assign(map, { x: 0, y: 0, width: W, height: box.height });
-  } else if (address) {
-    const addrH = addressHeight(lines, W, fontSize);
-    Object.assign(address, { x: 0, y: 0, width: W, height: addrH });
-    box.height = addrH;
+    height = shaped(innerW, Math.max(MIN_MAP, mapBack ? Math.round(map.height) : innerH));
+    Object.assign(map, { x: line.left, y: line.top, width: innerW, height });
+  } else {
+    height = addressHeight(lines, innerW, fontSize);
+    if (address) Object.assign(address, { x: line.left, y: line.top, width: innerW, height });
   }
+  box.height = height + padY;
   box.width = W;
 
   if (map) {
@@ -349,6 +371,13 @@ export function layoutLocation(box: FrameElement, font: LocationFont = {}): bool
     }
   }
   return JSON.stringify(box) !== before;
+}
+
+// The border line's width on each side (0 where there is none), whole pixels
+export function locationBorderWidths(box: FrameElement): Record<BorderSide, number> {
+  return Object.fromEntries(
+    BORDER_SIDES.map((side) => [side, Math.ceil(getSidePen(box.box, side)?.lineWidth ?? 0)]),
+  ) as Record<BorderSide, number>;
 }
 
 // Every Location of the report, laid out and its address written (run with

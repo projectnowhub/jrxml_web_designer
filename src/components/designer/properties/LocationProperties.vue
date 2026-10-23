@@ -72,6 +72,24 @@
         {{ t("location.states.errorHint") }}
         <button type="button" class="link-btn" @click="retryMap">{{ t("location.panel.retry") }}</button>
       </p>
+      <!-- The map's corners: the picture shapes (as for an image) -->
+      <span class="field-label">{{ t("location.panel.mapShape") }}</span>
+      <div class="shape-row" role="radiogroup" :aria-label="t('location.panel.mapShape')">
+        <button
+          v-for="shape in IMAGE_SHAPES"
+          :key="shape.id"
+          type="button"
+          role="radio"
+          class="shape-chip"
+          :class="{ active: mapShape === shape.id }"
+          :aria-checked="mapShape === shape.id"
+          :title="t(`properties.imageShapes.${shape.id}Title`)"
+          @click="setMapShape(shape.id)"
+        >
+          <span class="shape-sample" :style="shapeSample(shape.corners)" aria-hidden="true"></span>
+          <span class="shape-name">{{ t(`properties.imageShapes.${shape.id}`) }}</span>
+        </button>
+      </div>
     </section>
 
     <!-- 3. The layout -->
@@ -115,6 +133,57 @@
         </template>
         <em v-else>{{ t("location.panel.noLines") }}</em>
       </p>
+      <!-- How the address looks -->
+      <template v-if="addressPart">
+        <span class="field-label">{{ t("location.panel.addressLook") }}</span>
+        <div class="look-row">
+          <label class="size-field" :title="t('properties.fontSize')">
+            <input
+              v-live-change
+              type="number"
+              min="6"
+              max="72"
+              :value="addressPart.fontSize ?? 10"
+              :aria-label="t('properties.fontSize')"
+              @change="setAddressSize(($event.target as HTMLInputElement).value)"
+            />
+            <span>pt</span>
+          </label>
+          <ColorSwatchPicker
+            class="color-control"
+            :model-value="addressPart.forecolor || '#333333'"
+            :aria-label="t('location.panel.textColour')"
+            @update:model-value="setAddress({ forecolor: $event }, 'colour')"
+          />
+          <button
+            type="button"
+            class="look-btn"
+            :class="{ active: addressPart.isBold }"
+            :aria-pressed="!!addressPart.isBold"
+            :title="t('properties.bold')"
+            :aria-label="t('properties.bold')"
+            @click="setAddress({ isBold: !addressPart.isBold })"
+          >
+            <Bold :size="14" aria-hidden="true" />
+          </button>
+          <span class="look-group" role="radiogroup" :aria-label="t('properties.textAlignment')">
+            <button
+              v-for="a in ALIGNMENTS"
+              :key="a.value"
+              type="button"
+              role="radio"
+              class="look-btn"
+              :class="{ active: (addressPart.textAlignment ?? 'Left') === a.value }"
+              :aria-checked="(addressPart.textAlignment ?? 'Left') === a.value"
+              :title="t(a.label)"
+              :aria-label="t(a.label)"
+              @click="setAddress({ textAlignment: a.value })"
+            >
+              <component :is="a.icon" :size="14" aria-hidden="true" />
+            </button>
+          </span>
+        </div>
+      </template>
     </section>
   </div>
 </template>
@@ -128,8 +197,10 @@ import { useI18n } from "vue-i18n";
 import { useReportStore } from "@/stores/report";
 import { getProject } from "@/services/dataSourceService";
 import { reverseGeocode } from "@/services/geocodeService";
-import { Loader2, MapPinned } from "@lucide/vue";
-import type { FrameElement } from "../../../types";
+import { AlignCenter, AlignLeft, AlignRight, Bold, Loader2, MapPinned } from "@lucide/vue";
+import ColorSwatchPicker from "../../common/ColorSwatchPicker.vue";
+import type { FrameElement, TextFieldElement } from "../../../types";
+import { getImageShape, IMAGE_SHAPES, setImageShape, type ImageShapeId } from "../../../utils/elementUtils";
 import type { ReportProject } from "@/types/dataSource";
 import {
   ADDRESS_LINES,
@@ -137,6 +208,7 @@ import {
   coordinateProblem,
   formatCoordinate,
   getLocationSetup,
+  isLocationAddress,
   isLocationMap,
   LOCATION_LAYOUTS,
   normalizeLocationSetup,
@@ -232,6 +304,51 @@ const setZoom = (zoom: number) => update({ zoom });
 // The map part's proportions, so the panel's map shows what prints
 const mapPart = computed(() => (props.box.elements ?? []).find(isLocationMap));
 const mapRatio = computed(() => (mapPart.value ? mapPart.value.height / Math.max(1, mapPart.value.width) : 0.6));
+
+// The map's shape (its corners): one undo step each
+const mapShape = computed<ImageShapeId | null>(() => {
+  const map = mapPart.value;
+  if (!map) return null;
+  const shape = getImageShape(map);
+  if (shape) return shape;
+  return map.properties?.some((p) => p?.name === "com.cdp.image.cornerRadius" && p.value && p.value !== "0") ? null : "square";
+});
+function setMapShape(id: ImageShapeId) {
+  const map = mapPart.value;
+  if (!map || mapShape.value === id) return;
+  report.saveStateToHistory();
+  setImageShape(map, id);
+  report.updateJrxml();
+}
+// A small square with the shape's corners (each a share of the short side)
+const shapeSample = (corners: [number, number, number, number]) => ({
+  borderRadius: corners.map((c) => `${Math.round(c * 22)}px`).join(" "),
+});
+
+// The address's look: size, colour, bold, alignment. One undo step per
+// change; a colour being dragged in the picker is one step
+const addressPart = computed(() => (props.box.elements ?? []).find(isLocationAddress) as TextFieldElement | undefined);
+const ALIGNMENTS = [
+  { value: "Left", icon: AlignLeft, label: "properties.left" },
+  { value: "Center", icon: AlignCenter, label: "properties.center" },
+  { value: "Right", icon: AlignRight, label: "properties.right" },
+] as const;
+let lastLook = { key: "", time: 0 };
+function setAddress(patch: Partial<TextFieldElement>, key?: string) {
+  const part = addressPart.value;
+  if (!part) return;
+  if (Object.entries(patch).every(([k, v]) => (part as unknown as Record<string, unknown>)[k] === v)) return;
+  const now = Date.now();
+  if (!key || key !== lastLook.key || now - lastLook.time > 1000) report.saveStateToHistory();
+  lastLook = { key: key ?? "", time: now };
+  Object.assign(part, patch);
+  report.updateJrxml();
+}
+function setAddressSize(raw: string) {
+  const size = Math.round(Number(raw));
+  if (!Number.isFinite(size) || size < 6 || size > 72) return;
+  setAddress({ fontSize: size });
+}
 
 // How close the map is, in words
 const zoomLevel = computed(() => {
@@ -582,6 +699,105 @@ input.has-problem {
 
 .lp-lines i:nth-child(3) {
   width: 60%;
+}
+
+.shape-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.shape-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 4px;
+  border: 1px solid var(--prop-border-color);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.shape-chip:hover {
+  border-color: var(--prop-border-hover, #9ca3af);
+}
+
+.shape-chip.active {
+  border-color: var(--prop-primary-color, #6440f4);
+  box-shadow: inset 0 0 0 1px var(--prop-primary-color, #6440f4);
+  background: #f1edff;
+}
+
+.shape-sample {
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, #cfe8d5 0 45%, #aad3df 45%);
+}
+
+.shape-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 11px;
+  color: var(--prop-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shape-chip.active .shape-name {
+  color: var(--prop-primary-color, #6440f4);
+  font-weight: 600;
+}
+
+.look-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.size-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--prop-text-secondary);
+}
+
+.size-field input {
+  width: 58px;
+  height: 32px;
+  padding: 0 6px;
+  border: 1px solid var(--prop-border-color);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--prop-text-primary);
+}
+
+.look-group {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.look-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--prop-border-color);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--prop-text-primary);
+  cursor: pointer;
+}
+
+.look-btn.active {
+  border-color: var(--prop-primary-color, #6440f4);
+  background: #f1edff;
+  color: var(--prop-primary-color, #6440f4);
 }
 
 .lines-list {

@@ -278,6 +278,7 @@
             v-if="currentElement && currentElement.type === 'frame'"
             :element="currentElement"
             :is-page-border="isPageBorder"
+            :title-key="locationBox ? 'location.panel.frameTitle' : undefined"
             @update:element="replaceCurrentElement"
           />
 
@@ -702,7 +703,9 @@
                   </div>
 
                   <!-- Images, boxes and text: corner radius for all corners at once, or each corner -->
-                  <div v-if="cornerRadii" class="corner-designer">
+                  <!-- (not a Location: its square map would stick out of round corners;
+                       the map's own shape is in its panel) -->
+                  <div v-if="cornerRadii && !locationBox" class="corner-designer">
                     <div class="pad-head">
                       <span class="pad-title">{{ t("properties.cornerRadius") }}</span>
                       <label class="pad-all">
@@ -1012,6 +1015,7 @@ import {
   IMAGE_SHAPES,
   type ImageShapeId,
   setImageShape,
+  shapeSize,
   setPropertyCornerRadii,
   type CornerName,
   type CornerRadii,
@@ -1528,6 +1532,22 @@ function applyImageShape(id: ImageShapeId) {
   if (!element || element.type !== "image") return;
   if (currentImageShape.value === id) return;
   report.saveStateToHistory();
+  // Circle makes the picture square, Pill wide (shapeSize), in the same undo
+  // step; a square that would not fit below the picture in its section or box
+  // is made smaller instead
+  const next = shapeSize(id, element.width, element.height);
+  if (next.height > element.height) {
+    const sel = selectedElement.value;
+    const band = sel ? bands.value[sel.bandIndex] : undefined;
+    const box = sel?.parentFrameIndex !== undefined ? band?.elements[sel.parentFrameIndex] : undefined;
+    const room = (box ? box.height : (band?.height ?? next.height)) - element.y;
+    if (room > 0 && next.height > room) {
+      next.width = Math.max(1, Math.round(room));
+      next.height = next.width;
+    }
+  }
+  element.width = next.width;
+  element.height = next.height;
   setImageShape(element, id);
   report.updateJrxml();
 }
@@ -1735,8 +1755,6 @@ const panelTitle = computed(() => {
   if (isPagination(el)) return t("elementNames.pageNumber");
   if (isDateElement(el)) return t("elementNames.dateTime");
   if (isLocationElement(el)) return t("elementNames.location");
-  // Its map or address: still the Location, with the part named
-  if (isLocationPart(el)) return t("location.partTitle", { part: t(`location.parts.${el.type === "image" ? "map" : "address"}`) });
   if (isPageBorder.value) return t("elementNames.framePageBorder");
   // Headings are shown by their own name, not as the box / text they are built of
   if (hasProperty(el, SECTION_HEADING_PROPERTY)) return t("elementNames.partSectionHeading");
