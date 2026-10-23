@@ -15,7 +15,7 @@
 
 import type { Band, DesignElement, FrameElement, ImageElement, TextFieldElement } from "@/types";
 import { createElement } from "@/components/elements/ElementRegistry";
-import { DEFAULT_REPORT_FONT } from "@/config/fonts.config";
+import { DEFAULT_REPORT_FONT, resolveReportFont } from "@/config/fonts.config";
 import { BORDER_SIDES, BOX_PART_PROPERTY, frame, getSidePen, type BorderSide } from "../framePresets";
 import { getElementBoxPadding, getImageShape, shapeSize } from "../elementUtils";
 import { MAX_MAP_ZOOM, MIN_MAP_ZOOM } from "./locationMap";
@@ -169,10 +169,49 @@ const literal = (value: string) =>
   `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r\n|\r|\n/g, "\\n")}"`;
 
 // Height the address needs at this width: lines wrap at about 0.58 em per letter
-function addressHeight(lines: string[], width: number, fontSize: number): number {
-  const perLine = Math.max(1, Math.floor((width - 4) / (fontSize * 0.58)));
-  const count = Math.max(1, lines.reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / perLine)), 0));
-  return Math.ceil(count * fontSize * LINE) + 4;
+// How many lines the address takes at this width: its words measured in its
+// own font, size and weight, wrapped like the canvas and the PDF wrap them
+// (a word that doesn't fit goes to the next line). Without a browser (no
+// canvas to measure with) an estimate of 0.58 em per letter
+let measureCtx: CanvasRenderingContext2D | null | undefined;
+function lineCount(lines: string[], width: number, look: AddressLook): number {
+  if (measureCtx === undefined) {
+    measureCtx = typeof document === "undefined" ? null : document.createElement("canvas").getContext("2d");
+  }
+  const room = Math.max(1, width - 4);
+  if (!measureCtx) {
+    const perLine = Math.max(1, Math.floor(room / (look.fontSize * 0.58)));
+    return lines.reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / perLine)), 0);
+  }
+  const ctx = measureCtx;
+  ctx.font = `${look.isBold ? "bold " : ""}${look.isItalic ? "italic " : ""}${look.fontSize}px "${look.fontFamily}", sans-serif`;
+  let count = 0;
+  for (const line of lines) {
+    let current = "";
+    count++;
+    for (const word of line.split(/\s+/).filter(Boolean)) {
+      const tried = current ? `${current} ${word}` : word;
+      if (current && ctx.measureText(tried).width > room) {
+        count++;
+        current = word;
+      } else current = tried;
+    }
+  }
+  return count;
+}
+
+interface AddressLook {
+  fontSize: number;
+  fontFamily: string;
+  isBold?: boolean;
+  isItalic?: boolean;
+}
+
+// The address's height: its lines at 1.45 × the text size each (what
+// JasperReports needs per line with this font), plus a little room
+function addressHeight(lines: string[], width: number, look: AddressLook): number {
+  const count = Math.max(1, lineCount(lines, width, look));
+  return Math.ceil(count * look.fontSize * LINE) + 4;
 }
 
 // ── The map picture's key: what it was drawn for ──
@@ -322,14 +361,19 @@ export function layoutLocation(box: FrameElement, font: LocationFont = {}): bool
   const innerH = Math.round(box.height) - padY;
   const lines = addressLines(setup);
   if (address) address.expression = literal(lines.join("\n"));
-  const fontSize = address?.fontSize || font.fontSize || 9;
+  const look: AddressLook = {
+    fontSize: address?.fontSize || font.fontSize || 9,
+    fontFamily: resolveReportFont(address?.fontFamily || font.fontFamily),
+    isBold: address?.isBold,
+    isItalic: address?.isItalic,
+  };
 
   // The map's shape decides its proportions: Circle square, Pill wide (shapeSize)
   const shape = map ? getImageShape(map) : undefined;
   const shaped = (width: number, wanted: number) => shapeSize(shape, width, wanted).height;
   let height: number;
   if (map && address && setup.layout === "mapAbove") {
-    const addrH = addressHeight(lines, innerW, fontSize);
+    const addrH = addressHeight(lines, innerW, look);
     const mapH = shaped(innerW, Math.max(MIN_MAP, mapBack ? Math.round(map.height) : innerH - GAP - addrH));
     Object.assign(map, { x: line.left, y: line.top, width: innerW, height: mapH });
     Object.assign(address, { x: line.left, y: line.top + mapH + GAP, width: innerW, height: addrH });
@@ -337,7 +381,7 @@ export function layoutLocation(box: FrameElement, font: LocationFont = {}): bool
   } else if (map && address) {
     const mapW = Math.round(innerW * 0.55);
     const addrW = Math.max(20, innerW - mapW - GAP);
-    const addrH = addressHeight(lines, addrW, fontSize);
+    const addrH = addressHeight(lines, addrW, look);
     if (shape === "circle" || shape === "pill") {
       // The map keeps its shape; the Location is as tall as the taller part
       const mapH = shaped(mapW, Math.max(innerH, MIN_MAP));
@@ -352,7 +396,7 @@ export function layoutLocation(box: FrameElement, font: LocationFont = {}): bool
     height = shaped(innerW, Math.max(MIN_MAP, mapBack ? Math.round(map.height) : innerH));
     Object.assign(map, { x: line.left, y: line.top, width: innerW, height });
   } else {
-    height = addressHeight(lines, innerW, fontSize);
+    height = addressHeight(lines, innerW, look);
     if (address) Object.assign(address, { x: line.left, y: line.top, width: innerW, height });
   }
   box.height = height + padY;

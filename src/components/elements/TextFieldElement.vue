@@ -897,7 +897,9 @@ const typographyStyle = computed(() => {
         : 'none',
     color: props.element.forecolor || 'inherit',
     textAlign: textAlign as any,
-    lineHeight: '1.3',
+    // A Location's address: the line spacing the PDF prints with this font
+    // (its box is sized for it), so the canvas shows its real height
+    lineHeight: isAddress.value ? '1.45' : '1.3',
   };
 });
 
