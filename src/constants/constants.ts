@@ -49,6 +49,11 @@ export const REPORT_CONSTANTS = {
 };
 
 // History constants
+// How many projects a template may use (the header's project picker, the AI).
+// One for now; the report keeps a list (`ReportProperties.projects`), so
+// raising this brings back choosing several.
+export const MAX_REPORT_PROJECTS = 1;
+
 export const HISTORY_CONSTANTS = {
   MAX_HISTORY_SIZE: 50,
 };

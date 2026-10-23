@@ -53,6 +53,8 @@ import {
 } from "@/utils/chart/chartTypes";
 import { getFacets, getSchema, listProjects, queryRows } from "@/services/dataSourceService";
 import { useReportStore } from "@/stores/report";
+import { MAX_REPORT_PROJECTS } from "@/constants/constants";
+import { countProjectUsage } from "@/utils/projectFields";
 import { applyGeometry } from "./basic";
 import { color, defined, has, readColor, textHeightFor } from "./common";
 import { SpecError, type ElementKind, type ElementSpec, type JsonSchema, type KindContext } from "./types";
@@ -268,10 +270,25 @@ async function projectName(projectId: string): Promise<string> {
   return found.name;
 }
 
-// The report uses the project from now on (the header's project list)
+// The report uses the project from now on (the header's project list). One
+// project per template for now (MAX_REPORT_PROJECTS): another one replaces
+// the report's project, unless that one still feeds tables or charts
 function useProject(projectId: string, name: string): void {
-  const props = useReportStore().reportProperties;
-  if (!props.projects?.some((p) => p.id === projectId)) props.projects = [...(props.projects ?? []), { id: projectId, name }];
+  const report = useReportStore();
+  const props = report.reportProperties;
+  const chosen = props.projects ?? [];
+  if (chosen.some((p) => p.id === projectId)) return;
+  if (chosen.length >= MAX_REPORT_PROJECTS) {
+    const inUse = chosen.find((p) => countProjectUsage(report.bands, p.id) > 0);
+    if (inUse) {
+      throw new SpecError(
+        `projectId: this template uses ${inUse.name} (${inUse.id}), and a template uses one project for now; use that project, or ask the user before changing the template's project`,
+      );
+    }
+    props.projects = [{ id: projectId, name }];
+    return;
+  }
+  props.projects = [...chosen, { id: projectId, name }];
 }
 
 async function sourceSchema(projectId: string, sourceId: string): Promise<DataSourceSchema> {

@@ -658,7 +658,7 @@ export function designStateText(selectedUuid?: string): string {
       .join(", ")}.`,
   );
   const projects = p.projects ?? [];
-  lines.push(projects.length ? `Report data projects: ${projects.map((x) => `${x.name} (${x.id})`).join(", ")}.` : "Report data: no project chosen yet (get_report_data lists them).");
+  lines.push(projects.length ? `Report data projects: ${projects.map((x) => `${x.name} (${x.id})`).join(", ")} (a template uses one project for now: use this one).` : "Report data: no project chosen yet (get_report_data lists them; a template uses one project for now).");
   if (selectedUuid) {
     const sel = findElement(selectedUuid);
     if (sel) lines.push(`Selected element ("this"): ${line(sel, "").slice(2)}`);

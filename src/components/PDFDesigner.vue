@@ -1990,13 +1990,20 @@ watch(headerFileName, () => nextTick(fitHeader));
 // so undo and saving cover them)
 const reportProjects = computed<ReportProject[]>(() => reportProperties.value?.projects ?? []);
 
-// A project still shown on the report can't be removed from the list
+// A project still shown on the report can't be removed from the list (nor
+// replaced by another one: one project per template for now)
 const setReportProjects = (projects: ReportProject[]) => {
-  const removed = reportProjects.value.find((p) => !projects.some((n) => n.id === p.id));
-  const usage = removed ? countProjectUsage(bands.value, removed.id) : 0;
-  if (removed && usage > 0) {
-    notification.warning(t("reportData.projectInUse", { project: removed.name, count: usage }));
-    return;
+  for (const removed of reportProjects.value.filter((p) => !projects.some((n) => n.id === p.id))) {
+    const usage = countProjectUsage(bands.value, removed.id);
+    if (usage > 0) {
+      const added = projects.find((n) => !reportProjects.value.some((p) => p.id === n.id));
+      notification.warning(
+        added
+          ? t("reportData.projectSwitchInUse", { project: removed.name, other: added.name, count: usage })
+          : t("reportData.projectInUse", { project: removed.name, count: usage }),
+      );
+      return;
+    }
   }
   saveStateToHistory();
   reportProperties.value = { ...reportProperties.value, projects };

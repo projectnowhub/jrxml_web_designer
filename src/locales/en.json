@@ -1160,7 +1160,7 @@
         "aiPrompt": "Add a table that shows my project's data.",
         "steps": {
           "projectTitle": "Choose your project",
-          "projectText": "Click “Choose projects…” at the top and tick the project this template is about.",
+          "projectText": "Click “Choose a project…” at the top and pick the project this template is about.",
           "tableTitle": "Add a table",
           "tableText": "Click Table in the Element Library and choose Use project data.",
           "tableDataTitle": "Choose its data",
@@ -1175,7 +1175,7 @@
         "aiPrompt": "Add a chart that shows my project's data.",
         "steps": {
           "projectTitle": "Choose your project",
-          "projectText": "Click “Choose projects…” at the top and tick the project this template is about.",
+          "projectText": "Click “Choose a project…” at the top and pick the project this template is about.",
           "chartTitle": "Add a chart",
           "chartText": "Click Chart in the Element Library and choose a type.",
           "chartDataTitle": "Set up its data",
@@ -2459,9 +2459,9 @@
     "title": "Report Data",
     "reload": "Reload projects and data",
     "projects": "Projects",
-    "chooseProjects": "Choose projects…",
+    "chooseProjects": "Choose a project…",
     "noProjectMatch": "No projects match",
-    "noProjects": "Use “Choose projects…” at the top of the page to pick the projects this template uses. A template can show data from several projects.",
+    "noProjects": "Use “Choose a project…” at the top of the page to pick the project this template uses. A template uses one project for now.",
     "search": "Search details, tables and columns",
     "hint": "Drag a detail (name, date, introduction…) onto a text element, or the logo onto an image element, to fill it; drop it on empty space for a new one. It becomes normal text or a normal image. Drag a table onto the Detail section or onto a table; drag a column to add just that column.",
     "details": "Details",
@@ -2490,7 +2490,8 @@
     "location": "Location",
     "locationWhole": "Map and address",
     "dragLocation": "Drag onto the page for a map with the address, or onto a Location to change its place",
-    "dropNotOnLocation": "A Location shows a place. Drop the project's Location (or one of its fields, such as City) on it, or drop this detail on empty space."
+    "dropNotOnLocation": "A Location shows a place. Drop the project's Location (or one of its fields, such as City) on it, or drop this detail on empty space.",
+    "projectSwitchInUse": "{project} is still used by {count} table(s) or chart(s) on this template, so it can't be changed to {other}. Delete them, or choose {other} in their data first. A template uses one project for now."
   },
   "barcode": {
     "chooseType": "Choose a barcode type",
@@ -3087,7 +3088,7 @@
     "tools": {
       "projects": {
         "title": "Projects",
-        "text": "Choose the projects this template is about. Their details, tables and charts then appear under Report Data on the left."
+        "text": "Choose the project this template is about (one project per template for now). Its details, tables and charts then appear under Report Data on the left."
       },
       "reportName": {
         "title": "Template name",

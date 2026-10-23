@@ -1160,7 +1160,7 @@
         "aiPrompt": "Tambah jadual yang menunjukkan data projek saya.",
         "steps": {
           "projectTitle": "Pilih projek anda",
-          "projectText": "Klik “Pilih projek…” di bahagian atas dan tandakan projek yang dibincangkan dalam templat ini.",
+          "projectText": "Klik “Pilih projek…” di bahagian atas dan pilih projek yang dibincangkan dalam templat ini.",
           "tableTitle": "Tambah jadual",
           "tableText": "Klik Jadual dalam Pustaka Elemen dan pilih Guna data projek.",
           "tableDataTitle": "Pilih datanya",
@@ -1175,7 +1175,7 @@
         "aiPrompt": "Tambah carta yang menunjukkan data projek saya.",
         "steps": {
           "projectTitle": "Pilih projek anda",
-          "projectText": "Klik “Pilih projek…” di bahagian atas dan tandakan projek yang dibincangkan dalam templat ini.",
+          "projectText": "Klik “Pilih projek…” di bahagian atas dan pilih projek yang dibincangkan dalam templat ini.",
           "chartTitle": "Tambah carta",
           "chartText": "Klik Carta dalam Pustaka Elemen dan pilih jenisnya.",
           "chartDataTitle": "Sediakan datanya",
@@ -2461,7 +2461,7 @@
     "projects": "Projek",
     "chooseProjects": "Pilih projek…",
     "noProjectMatch": "Tiada projek yang sepadan",
-    "noProjects": "Gunakan “Pilih projek…” di bahagian atas halaman untuk memilih projek yang digunakan oleh templat ini. Templat boleh memaparkan data daripada beberapa projek.",
+    "noProjects": "Gunakan “Pilih projek…” di bahagian atas halaman untuk memilih projek yang digunakan oleh templat ini. Buat masa ini, templat menggunakan satu projek.",
     "search": "Cari butiran, jadual dan lajur",
     "hint": "Seret butiran (nama, tarikh, pengenalan…) ke elemen teks, atau logo ke elemen imej, untuk mengisinya; lepaskan di ruang kosong untuk yang baharu. Ia menjadi teks atau imej biasa. Seret jadual ke bahagian Butiran atau ke jadual; seret lajur untuk menambah lajur itu sahaja.",
     "details": "Butiran",
@@ -2490,7 +2490,8 @@
     "location": "Lokasi",
     "locationWhole": "Peta dan alamat",
     "dragLocation": "Seret ke halaman untuk peta beserta alamat, atau ke atas Lokasi untuk menukar tempatnya",
-    "dropNotOnLocation": "Lokasi menunjukkan sesuatu tempat. Lepaskan Lokasi projek (atau salah satu medannya, seperti Bandar) di atasnya, atau lepaskan butiran ini di ruang kosong."
+    "dropNotOnLocation": "Lokasi menunjukkan sesuatu tempat. Lepaskan Lokasi projek (atau salah satu medannya, seperti Bandar) di atasnya, atau lepaskan butiran ini di ruang kosong.",
+    "projectSwitchInUse": "{project} masih digunakan oleh {count} jadual atau carta dalam templat ini, jadi ia tidak boleh ditukar kepada {other}. Padamkannya, atau pilih {other} dalam datanya dahulu. Buat masa ini, templat menggunakan satu projek."
   },
   "barcode": {
     "chooseType": "Pilih jenis kod bar",
@@ -3087,7 +3088,7 @@
     "tools": {
       "projects": {
         "title": "Projek",
-        "text": "Pilih projek yang dibincangkan dalam templat ini. Butiran, jadual dan cartanya kemudian muncul di bawah Data Laporan di sebelah kiri."
+        "text": "Pilih projek yang dibincangkan dalam templat ini (buat masa ini, satu projek bagi setiap templat). Butiran, jadual dan cartanya kemudian muncul di bawah Data Laporan di sebelah kiri."
       },
       "reportName": {
         "title": "Nama templat",

@@ -1,16 +1,18 @@
 <template>
-  <!-- The report's projects, chosen in the header: one dropdown, several
-       projects allowed. Their details and tables are in the Report Data list. -->
+  <!-- The report's project(s), chosen in the header: one dropdown. One project
+       for now (MAX_REPORT_PROJECTS); several when that allows. Their details
+       and tables are in the Report Data list. -->
   <Multiselect
     :key="selectKey"
     class="hpp-select"
     :class="{ 'is-compact': compact }"
-    mode="multiple"
+    :mode="single ? 'single' : 'multiple'"
     :attrs="{ 'aria-label': t('reportData.projects') }"
-    :model-value="projects.map((p) => p.id)"
+    :model-value="single ? (projects[0]?.id ?? null) : projects.map((p) => p.id)"
     :options="projectOptions"
     :searchable="true"
-    :close-on-select="false"
+    :close-on-select="single"
+    :can-deselect="true"
     :hide-selected="false"
     :can-clear="false"
     :loading="!allProjects.length && !allProjectsFailed"
@@ -31,6 +33,13 @@
         <span v-else class="hpp-label-name">{{ t("reportData.projectsSelected", projects.length) }}</span>
       </div>
     </template>
+    <!-- One project: its short code (the whole name in the tooltip) -->
+    <template #singlelabel>
+      <div class="multiselect-single-label hpp-label">
+        <FolderKanban class="hpp-label-icon" :size="15" aria-hidden="true" />
+        <span v-if="!compact && projects[0]" class="hpp-label-name">{{ shortName(projects[0]) }}</span>
+      </div>
+    </template>
     <template #placeholder>
       <div class="multiselect-placeholder hpp-label is-empty">
         <FolderKanban class="hpp-label-icon" :size="15" aria-hidden="true" />
@@ -41,8 +50,10 @@
     </template>
     <template #option="{ option, isSelected }">
       <span class="hpp-option">
-        <span class="hpp-check" :class="{ 'is-on': isSelected(option) }">
-          <Check v-if="isSelected(option)" :size="11" :stroke-width="3" />
+        <!-- One project: a round mark (one choice); several: a tick box -->
+        <span class="hpp-check" :class="{ 'is-on': isSelected(option), 'is-radio': single }">
+          <span v-if="single && isSelected(option)" class="hpp-dot" aria-hidden="true"></span>
+          <Check v-else-if="isSelected(option)" :size="11" :stroke-width="3" />
         </span>
         <span class="hpp-name">{{ option.label }}</span>
         <span class="hpp-code">{{ option.code }}</span>
@@ -71,6 +82,10 @@ import { useI18n } from "vue-i18n";
 import { Plus, Check, ChevronDown, FolderKanban, LoaderCircle } from "@lucide/vue";
 import { listProjects } from "@/services/dataSourceService";
 import type { ProjectSummary, ReportProject } from "@/types/dataSource";
+import { MAX_REPORT_PROJECTS } from "@/constants/constants";
+
+// One project per template for now: picking another replaces it
+const single = MAX_REPORT_PROJECTS === 1;
 
 // `compact`: just the icon and how many projects (narrow screens)
 const props = defineProps<{ projects: ReportProject[]; compact?: boolean }>();
@@ -121,7 +136,8 @@ const projectsTitle = computed(() =>
 // the field then shows the report's projects again
 const selectKey = ref(0);
 
-async function selectProjects(ids: string[]) {
+async function selectProjects(value: string[] | string | null) {
+  const ids = Array.isArray(value) ? value : value ? [value] : [];
   const nameOf = (id: string) =>
     props.projects.find((p) => p.id === id)?.name ??
     allProjects.value.find((p) => p.id === id)?.name ??
@@ -334,6 +350,21 @@ async function selectProjects(ids: string[]) {
 
 .hpp-check.is-on {
   border-color: #7c5cf7;
+  background: #7c5cf7;
+}
+
+.hpp-check.is-radio {
+  border-radius: 50%;
+}
+
+.hpp-check.is-radio.is-on {
+  background: #fff;
+}
+
+.hpp-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
   background: #7c5cf7;
 }
 
