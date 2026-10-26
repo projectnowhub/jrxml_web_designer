@@ -2,9 +2,9 @@ import { h, render } from 'vue';
 import { CircleCheck, CircleX, Info, TriangleAlert, X } from '@lucide/vue';
 import i18n from '@/i18n';
 
-// Toast messages at the top right, coloured by type like the CDP app's Sonner
-// toasts (richColors): light green for success, light red for errors, amber
-// for warnings, purple for information, each with a close button. A message
+// Toast messages at the top right: white cards in the app's theme whose
+// headline and icon take the type's colour (green success, red error, amber
+// warning, purple information), each with a close button. A message
 // written "Headline\nExplanation" shows its first line bold and the rest
 // under it, smaller. Plain DOM, so any code can show one: notification.success("…").
 
@@ -32,36 +32,29 @@ const CSS = `
   pointer-events: none;
 }
 .app-toast {
-  --toast-color: #5b3fd6;
-  --toast-bg: #f7f5ff;
-  --toast-line: #ddd6fe;
-  --toast-text: #2e1f7a;
+  --toast-color: #6440f4;
+  --toast-soft: #efebfe;
   position: relative;
   display: flex;
   align-items: flex-start;
   gap: 10px;
   padding: 12px 12px 12px 14px;
   overflow: hidden;
-  border: 1px solid var(--toast-line);
+  border: 1px solid #e6e5ee;
   border-radius: 12px;
-  background: var(--toast-bg);
+  background: #ffffff;
   box-shadow:
     0 12px 32px rgba(23, 20, 44, 0.12),
     0 2px 6px rgba(23, 20, 44, 0.05);
-  color: var(--toast-text);
+  color: #1c1b26;
   font-family: inherit;
   pointer-events: auto;
   animation: app-toast-in 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.app-toast.is-success {
-  --toast-color: #16a34a; --toast-bg: #f0fdf4; --toast-line: #bbf7d0; --toast-text: #14532d;
-}
-.app-toast.is-error {
-  --toast-color: #dc2626; --toast-bg: #fef2f2; --toast-line: #fecaca; --toast-text: #7f1d1d;
-}
-.app-toast.is-warning {
-  --toast-color: #d97706; --toast-bg: #fffbeb; --toast-line: #fde68a; --toast-text: #78350f;
-}
+/* Only the headline, the icon and the timer line take the type's colour */
+.app-toast.is-success { --toast-color: #15803d; --toast-soft: #dcfce7; }
+.app-toast.is-error { --toast-color: #dc2626; --toast-soft: #fee2e2; }
+.app-toast.is-warning { --toast-color: #b45309; --toast-soft: #fef3c7; }
 .app-toast.is-leaving {
   animation: app-toast-out 0.2s ease-in forwards;
 }
@@ -73,8 +66,7 @@ const CSS = `
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  background: #ffffff;
-  box-shadow: inset 0 0 0 1px var(--toast-line);
+  background: var(--toast-soft);
   color: var(--toast-color);
 }
 .app-toast-message {
@@ -87,6 +79,7 @@ const CSS = `
 }
 .app-toast-title {
   display: block;
+  color: var(--toast-color);
   font-weight: 650;
 }
 .app-toast-detail {
@@ -94,7 +87,7 @@ const CSS = `
   margin-top: 2px;
   font-size: 12.5px;
   font-weight: 450;
-  opacity: 0.85;
+  color: #4b4a5c;
   white-space: pre-line;
 }
 .app-toast-close {
@@ -109,14 +102,13 @@ const CSS = `
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--toast-text);
-  opacity: 0.55;
+  color: #9a98a8;
   cursor: pointer;
-  transition: background 0.15s ease, opacity 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 .app-toast-close:hover {
-  background: rgba(255, 255, 255, 0.7);
-  opacity: 1;
+  background: #f4f3f8;
+  color: #1c1b26;
 }
 .app-toast-close:focus-visible {
   outline: 2px solid #6440f4;
