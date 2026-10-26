@@ -112,13 +112,43 @@
                   :checked="isTicked(activeColumn.key, item.value)"
                   @change="toggleValue(activeColumn, item.value, ($event.target as HTMLInputElement).checked)"
                 />
-                <span class="tfp-option-text">{{ item.value }}</span>
-                <span class="tfp-count">{{ item.count }}</span>
+                <span class="tfp-option-text">{{ item.label ?? item.value }}</span>
+                <span v-if="item.count !== undefined" class="tfp-count">{{ item.count }}</span>
               </label>
               <div v-if="!shownValues.length" class="tfp-message">
                 {{ t(activeFacet.values.length ? "dataTable.filter.noMatchingValues" : "dataTable.filter.noValues") }}
               </div>
             </div>
+          </template>
+
+          <!-- Yes / no: one of them (the CDP app's checkbox); click it again for both -->
+          <template v-else-if="activeFacet?.kind === 'boolean'">
+            <div class="tfp-options">
+              <label v-for="choice in BOOLEAN_CHOICES" :key="choice" class="tfp-option">
+                <input
+                  type="checkbox"
+                  :checked="equalsOf(activeColumn.key) === choice"
+                  @change="setEquals(activeColumn, ($event.target as HTMLInputElement).checked ? choice : null)"
+                />
+                <span class="tfp-option-text">{{ t(choice === "true" ? "dataTable.yes" : "dataTable.no") }}</span>
+              </label>
+            </div>
+            <p class="tfp-hint">{{ t("dataTable.filter.booleanHint") }}</p>
+          </template>
+
+          <!-- Text: the words the cells must contain (any case) -->
+          <template v-else-if="activeFacet?.kind === 'text'">
+            <label class="tfp-search tfp-contains">
+              <Search :size="13" aria-hidden="true" />
+              <input
+                type="text"
+                :value="containsOf(activeColumn.key)"
+                :placeholder="t('dataTable.filter.containsPlaceholder', { column: activeColumn.label })"
+                :aria-label="t('dataTable.filter.containsPlaceholder', { column: activeColumn.label })"
+                @input="setContains(activeColumn, ($event.target as HTMLInputElement).value)"
+              />
+            </label>
+            <p class="tfp-hint">{{ t("dataTable.filter.containsHint") }}</p>
           </template>
 
           <!-- Number, amount, date: a range -->
@@ -250,12 +280,13 @@ const SEARCH_FROM = 8;
 
 const search = ref("");
 
-// Columns with something to choose from (a column whose cells are all empty has nothing)
+// Columns that can be filtered: a list of values to tick, words to type, or a
+// range (its ends typed when the smallest / largest values aren't known)
 const filterableColumns = computed(() =>
   props.columns.filter((c) => {
     const facet = props.facets?.[c.key];
     if (!facet) return !props.facets;
-    return facet.kind === "values" ? facet.values.length > 0 : facet.min !== null;
+    return facet.kind === "values" ? facet.values.length > 0 : true;
   }),
 );
 
@@ -325,23 +356,55 @@ const shownValues = computed(() => {
   const facet = activeFacet.value;
   if (facet?.kind !== "values") return [];
   const q = search.value.trim().toLowerCase();
-  return q ? facet.values.filter((v) => v.value.toLowerCase().includes(q)) : facet.values;
+  return q ? facet.values.filter((v) => (v.label ?? v.value).toLowerCase().includes(q)) : facet.values;
 });
 
 const isTicked = (key: string, value: string) => filterOf(key)?.values?.includes(value) ?? false;
 
+// The ticked values with their names as shown (the chips show the names,
+// the stored values are what is filtered on)
+function inFilter(col: DataColumn, values: string[]): TableFilter | null {
+  if (!values.length) return null;
+  const facet = props.facets?.[col.key];
+  const labels: Record<string, string> = {};
+  if (facet?.kind === "values") {
+    for (const v of facet.values) if (v.label && values.includes(v.value)) labels[v.value] = v.label;
+  }
+  return { column: col.key, label: col.label, type: col.type, operator: "in", values, ...(Object.keys(labels).length ? { labels } : {}) };
+}
+
 function toggleValue(col: DataColumn, value: string, on: boolean) {
   const current = filterOf(col.key)?.values ?? [];
-  const values = on ? [...current, value] : current.filter((v) => v !== value);
-  putFilter(col.key, values.length ? { column: col.key, label: col.label, type: col.type, operator: "in", values } : null);
+  putFilter(col.key, inFilter(col, on ? [...current, value] : current.filter((v) => v !== value)));
 }
 
 function selectAllShown() {
   const col = activeColumn.value;
   if (!col) return;
   const current = filterOf(col.key)?.values ?? [];
-  const values = [...new Set([...current, ...shownValues.value.map((v) => v.value)])];
-  putFilter(col.key, { column: col.key, label: col.label, type: col.type, operator: "in", values });
+  putFilter(col.key, inFilter(col, [...new Set([...current, ...shownValues.value.map((v) => v.value)])]));
+}
+
+// ── Yes / no ──
+const BOOLEAN_CHOICES = ["true", "false"] as const;
+
+const equalsOf = (key: string) => {
+  const f = filterOf(key);
+  return f?.operator === "equals" ? f.value : undefined;
+};
+
+function setEquals(col: DataColumn, value: "true" | "false" | null) {
+  putFilter(col.key, value ? { column: col.key, label: col.label, type: col.type, operator: "equals", value } : null);
+}
+
+// ── Typed words ──
+const containsOf = (key: string) => {
+  const f = filterOf(key);
+  return f?.operator === "contains" ? (f.value ?? "") : "";
+};
+
+function setContains(col: DataColumn, words: string) {
+  putFilter(col.key, words.trim() ? { column: col.key, label: col.label, type: col.type, operator: "contains", value: words } : null);
 }
 
 // ── Ranges ──

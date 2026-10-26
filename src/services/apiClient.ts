@@ -116,6 +116,7 @@ const redirectToLogin = async (): Promise<void> => {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_USER_KEY);
 
+    // Also empties the TanStack Query cache (queries/queryClient.ts listens)
     notifyStatus(401);
 
     if (router.currentRoute.value.name !== "login") {
@@ -163,12 +164,14 @@ const parseResponse = async <T>(
   return (await response.json()) as T;
 };
 
-const request = async <T>(
+// Sends the request with the login; throws ApiError when it fails
+const send = async (
   path: string,
   options: ApiRequestOptions = {},
-): Promise<T> => {
+): Promise<Response> => {
+  // responseType is for reading the answer, not part of the request
   const {
-    responseType = "json",
+    responseType: _responseType,
     baseURL: requestBaseURL,
     headers,
     body,
@@ -223,11 +226,40 @@ const request = async <T>(
     throw new ApiError(message, response.status, response);
   }
 
-  return parseResponse<T>(response, responseType);
+  return response;
 };
+
+const request = async <T>(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<T> =>
+  parseResponse<T>(await send(path, options), options.responseType ?? "json");
+
+// The answer and its headers (e.g. a list's x-total-count)
+const requestWithHeaders = async <T>(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<{ data: T; headers: Headers }> => {
+  const response = await send(path, options);
+  return {
+    data: await parseResponse<T>(response, options.responseType ?? "json"),
+    headers: response.headers,
+  };
+};
+
+// The CDP backend answers either with the data itself or wrapped as
+// { data, message, status }; this returns the data either way (cdp-fe-app's unwrap)
+export function unwrap<T>(body: unknown): T {
+  if (body && typeof body === "object" && !Array.isArray(body) && "data" in body) {
+    const envelope = body as { data: T; message?: unknown; status?: unknown };
+    if ("message" in envelope || "status" in envelope) return envelope.data;
+  }
+  return body as T;
+}
 
 export const apiClient = {
   request,
+  requestWithHeaders,
 
   get: <T>(path: string, options?: ApiRequestOptions): Promise<T> =>
     request<T>(path, {

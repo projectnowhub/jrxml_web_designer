@@ -8,6 +8,8 @@ import {
 import { openUrl } from "@tauri-apps/plugin-opener";
 import apiClient, { ApiError, AUTH_TOKEN_KEY, AUTH_USER_KEY, getAccessToken, getTenantId } from "./apiClient";
 import { AUTH_CONFIG, type AuthClientConfig } from "../config/auth.config";
+import { queryClient } from "../queries/queryClient";
+import { forgetLastProject } from "../utils/lastProject";
 
 export type AuthConfig = AuthClientConfig;
 
@@ -143,6 +145,9 @@ const sessionTenantOf = async (error: unknown, token: string | null): Promise<st
 export const logout = async (redirectTo = "/login"): Promise<void> => {
   localStorage.removeItem(AUTH_USER_KEY);
   localStorage.removeItem(AUTH_TOKEN_KEY);
+  // The next person to sign in never sees this one's projects or data
+  queryClient.clear();
+  forgetLastProject();
 
   const isTauri = Boolean(
     (

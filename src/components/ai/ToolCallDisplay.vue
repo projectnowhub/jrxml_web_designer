@@ -1,3 +1,34 @@
+<template>
+  <div :class="statusClass">
+    <!-- Tool name -->
+    <div class="tool-header">
+      <Wrench class="tool-icon" :size="14" />
+      <span class="tool-name">{{ displayName }}</span>
+      <span v-if="toolResult" class="tool-status" :class="toolStatus">
+        <component :is="toolStatus === 'success' ? Check : X" :size="12" />
+        {{ toolStatus === 'success' ? t('ai.tool.success') : t('ai.tool.failed') }}
+      </span>
+    </div>
+
+    <!-- Tool parameters -->
+    <div class="tool-params">
+      <div class="params-label">{{ t("ai.tool.parameters") }}</div>
+      <pre class="params-code">{{ formattedParams }}</pre>
+    </div>
+
+    <!-- Tool result -->
+    <div v-if="toolResult" class="tool-result">
+      <div class="result-label">{{ t("ai.tool.result") }}</div>
+      <div v-if="toolResult.success" class="result-success">
+        {{ toolResult.data?.message || t('ai.tool.executed') }}
+      </div>
+      <div v-else class="result-error">
+        {{ toolResult.error || t('ai.tool.executionFailed') }}
+      </div>
+    </div>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { Check, Wrench, X } from '@lucide/vue';
 import { computed } from 'vue';
@@ -41,37 +72,6 @@ const statusClass = computed(() => ({
   'status-failed': toolStatus.value === 'failed'
 }));
 </script>
-
-<template>
-  <div :class="statusClass">
-    <!-- Tool name -->
-    <div class="tool-header">
-      <Wrench class="tool-icon" :size="14" />
-      <span class="tool-name">{{ displayName }}</span>
-      <span v-if="toolResult" class="tool-status" :class="toolStatus">
-        <component :is="toolStatus === 'success' ? Check : X" :size="12" />
-        {{ toolStatus === 'success' ? t('ai.tool.success') : t('ai.tool.failed') }}
-      </span>
-    </div>
-
-    <!-- Tool parameters -->
-    <div class="tool-params">
-      <div class="params-label">{{ t("ai.tool.parameters") }}</div>
-      <pre class="params-code">{{ formattedParams }}</pre>
-    </div>
-
-    <!-- Tool result -->
-    <div v-if="toolResult" class="tool-result">
-      <div class="result-label">{{ t("ai.tool.result") }}</div>
-      <div v-if="toolResult.success" class="result-success">
-        {{ toolResult.data?.message || t('ai.tool.executed') }}
-      </div>
-      <div v-else class="result-error">
-        {{ toolResult.error || t('ai.tool.executionFailed') }}
-      </div>
-    </div>
-  </div>
-</template>
 
 <style scoped>
 .tool-call-display {

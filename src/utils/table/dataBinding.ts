@@ -24,6 +24,8 @@ export function isActiveFilter(filter: TableFilter): boolean {
   if (filter.operator === "between") {
     return !!filter.period || !isBlank(filter.value) || !isBlank(filter.value2);
   }
+  if (filter.operator === "contains") return !isBlank(filter.value);
+  if (filter.operator === "equals") return filter.value === "true" || filter.value === "false";
   return false;
 }
 
@@ -111,7 +113,7 @@ export function toDataQuery(binding: TableDataBinding, limit?: number): DataQuer
 export function readFilters(value: unknown): TableFilter[] {
   if (!Array.isArray(value)) return [];
   return value
-    .filter((f: TableFilter) => f && typeof f.column === "string" && (f.operator === "in" || f.operator === "between"))
+    .filter((f: TableFilter) => f && typeof f.column === "string" && ["in", "between", "contains", "equals"].includes(f.operator))
     .map((f: TableFilter) => (f.period && !RELATIVE_PERIODS.includes(f.period) ? { ...f, period: undefined } : f));
 }
 

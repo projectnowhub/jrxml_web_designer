@@ -35,6 +35,7 @@ import {
   needsColumnStyle,
 } from "@/utils/table/columnLook";
 import { tableColumnBarcode, type TableBarcodeType } from "@/utils/barcode/barcodeTypes";
+import { javaString } from "./javaString";
 
 export { collectBoundTables };
 
@@ -43,8 +44,8 @@ const t = i18n.global.t;
 const toInt = (n: unknown) => Math.round(Number(n) || 0);
 
 // A Java string literal for a label typed by the user
-export const javaString = (text: string) =>
-  `"${text.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r?\n/g, "\\n")}"`;
+// Typed text as a Java string (other writers import it from here)
+export { javaString };
 
 // The report styles every table needs: three per look (header, row, totals),
 // written once per built-in or saved style and once per customised table; and

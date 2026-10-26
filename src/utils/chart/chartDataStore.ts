@@ -1,11 +1,16 @@
-// Chart numbers fetched from the backend, kept for the session by request
-// (like table rows), so the canvas, the Configure popup and the JRXML image
-// share them. Nothing here is saved with the report.
+// Chart numbers fetched from the backend, kept in the TanStack Query cache by
+// request (queries/keys.ts chartKeys), so the canvas, the Configure popup and
+// the JRXML image share them. Charts on the canvas and in the popup watch
+// their numbers with useChartData (refetched once stale); printing and the
+// JRXML writer read the same cache. Nothing here is saved with the report.
 
-import { reactive, ref } from "vue";
+import { computed, ref, toValue, type MaybeRefOrGetter } from "vue";
+import { queryOptions, useQuery } from "@tanstack/vue-query";
 import type { AggregateResult, ChartBinding } from "@/types/dataSource";
 import type { DesignElement } from "@/types";
-import { aggregate } from "@/services/dataSourceService";
+import { dataSourceApi } from "@/services/dataSourceService";
+import { DATA_STALE_TIME, queryClient } from "@/queries/queryClient";
+import { chartKeys } from "@/queries/keys";
 import { chartRequests } from "./chartQuery";
 import { isChartComplete, normalizeChartBinding } from "./chartTypes";
 
@@ -14,56 +19,54 @@ export interface ChartDataEntry {
   results?: AggregateResult[];
 }
 
-const entries = reactive(new Map<string, ChartDataEntry>());
-const pending = new Map<string, Promise<void>>();
-
-// Goes up whenever a chart's numbers arrive (the designer then rewrites the JRXML)
+// Goes up whenever a chart's numbers arrive or fail (the designer then
+// rewrites the JRXML, and chartDataEntry readers update)
 export const chartDataVersion = ref(0);
-// Goes up when the cache is emptied, so every chart asks again
-const generation = ref(0);
 
-// Same requests = same numbers (moving date ranges are in them as today's dates)
-export function chartDataKey(binding: ChartBinding): string {
-  return JSON.stringify([chartRequests(binding), generation.value]);
-}
+queryClient.getQueryCache().subscribe((event) => {
+  if (event.type !== "updated" || event.query.queryKey[0] !== chartKeys.all[0]) return;
+  if (event.action.type === "success" || event.action.type === "error") chartDataVersion.value++;
+});
+
+// One answer per series request (see chartRequests)
+export const chartDataQuery = (binding: ChartBinding) => {
+  const requests = chartRequests(binding);
+  return queryOptions({
+    queryKey: chartKeys.data(requests),
+    queryFn: ({ signal }) => Promise.all(requests.map((request) => dataSourceApi.aggregate(request, signal))),
+    staleTime: DATA_STALE_TIME,
+  });
+};
 
 // The chart's numbers as far as they are known (reactive); undefined until asked for
 export function chartDataEntry(binding: ChartBinding): ChartDataEntry | undefined {
-  return isChartComplete(binding) ? entries.get(chartDataKey(binding)) : undefined;
+  void chartDataVersion.value;
+  if (!isChartComplete(binding)) return undefined;
+  const state = queryClient.getQueryState<AggregateResult[]>(chartDataQuery(binding).queryKey);
+  if (!state) return undefined;
+  if (state.data) return { status: "ready", results: state.data };
+  return { status: state.status === "error" ? "failed" : "loading" };
 }
 
-// Fetch a chart's numbers unless they are known or on their way
+// Keeps a chart's numbers loaded while it is shown (canvas, Configure popup's
+// preview), and fetches them again once stale
+export function useChartData(binding: MaybeRefOrGetter<ChartBinding | undefined>) {
+  return useQuery(
+    computed(() => {
+      const current = normalizeChartBinding(toValue(binding));
+      return { ...chartDataQuery(current), enabled: !!toValue(binding) && isChartComplete(current) };
+    }),
+  );
+}
+
+// Fetch a chart's numbers unless they are fresh or on their way (a failure is
+// recorded in the cache; the chart then shows it)
 export function loadChartData(binding: ChartBinding): Promise<void> {
   if (!isChartComplete(binding)) return Promise.resolve();
-  const key = chartDataKey(binding);
-  if (entries.get(key)?.status === "ready") return Promise.resolve();
-  const running = pending.get(key);
-  if (running) return running;
-
-  const requests = chartRequests(binding);
-  entries.set(key, { status: "loading", results: entries.get(key)?.results });
-  const promise = Promise.all(requests.map((request) => aggregate(request)))
-    .then((results) => {
-      entries.set(key, { status: "ready", results });
-    })
-    .catch(() => {
-      // Asked again the next time the chart is drawn or the report printed
-      entries.set(key, { status: "failed" });
-    })
-    .finally(() => {
-      pending.delete(key);
-      chartDataVersion.value++;
-    });
-  pending.set(key, promise);
-  return promise;
-}
-
-// Forget every chart's numbers (e.g. after the backend changed); charts on
-// the page fetch them again
-export function clearChartDataCache(): void {
-  entries.clear();
-  pending.clear();
-  generation.value++;
+  return queryClient.fetchQuery(chartDataQuery(binding)).then(
+    () => undefined,
+    () => undefined,
+  );
 }
 
 function collectCharts(elements: DesignElement[], into: ChartBinding[]): void {
@@ -78,10 +81,5 @@ function collectCharts(elements: DesignElement[], into: ChartBinding[]): void {
 export async function ensureChartData(bands: { elements?: DesignElement[] }[]): Promise<void> {
   const charts: ChartBinding[] = [];
   bands.forEach((band) => collectCharts(band.elements ?? [], charts));
-  await Promise.all(
-    charts.map((binding) => {
-      const entry = chartDataEntry(binding);
-      return entry?.status === "ready" ? undefined : loadChartData(binding);
-    }),
-  );
+  await Promise.all(charts.map(loadChartData));
 }

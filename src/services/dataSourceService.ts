@@ -1,18 +1,21 @@
-// Report data from the backend: projects, each project's details (name, logo,
-// introduction…) and its table sources with their columns and rows (filtered,
-// sorted and limited). Uses dummy data until VITE_DATA_SOURCE_API is set;
-// callers never need to know which.
+// Report data API (plain calls): a table's filter choices and rows (filtered,
+// sorted and limited), and the numbers of charts. The tables and their columns
+// are the CDP entities (entityService.ts, GET /v2/entities); the projects are
+// in projectService.ts. Caching is TanStack Query's: queries/dataSources.ts,
+// utils/chart/chartDataStore.ts.
 //
-// Backend contract:
-//   GET  {api}/projects                              -> ProjectSummary[]
-//   GET  {api}/projects/{pid}                        -> ProjectDetails (fields + values,
-//                                                      and its location: country, state,
-//                                                      city, postcode, address, latitude,
-//                                                      longitude, as in the CDP project form)
-//   GET  {api}/projects/{pid}/sources                -> DataSourceSummary[]
-//   GET  {api}/projects/{pid}/sources/{id}/schema    -> DataSourceSchema
-//   GET  {api}/projects/{pid}/sources/{id}/facets    -> SourceFacets (filter choices per column)
-//   POST {api}/projects/{pid}/sources/{id}/query     body: DataQuery -> DataQueryResult
+// Rows: the entity's records in the project, read like the CDP app's lists
+// (jmixService.ts, createJmixCrudService().list()):
+//   GET {VITE_API_BASE_URL}/v2/table/{entityName}?limit&offset=0
+//       &fetchPlanName=<the CDP app's list plan, only where it has one>&returnCount=true&dynamicAttributes=true
+//       &filter={"group":"AND","conditions":[{"property":"project.id","operator":"in","value":[pid]}, …]}
+//       &sort=-createdDate
+// The table's filters join the project condition ("in" = ticked values,
+// "contains" = typed words, "equals" = "=" true / false, "between" = >= / <=,
+// as the CDP app's buildJmixFilter); its sort ("-field" when descending, as the
+// CDP app's toSortParam) replaces the newest-first default.
+//
+// Filter choices come from the table's fields (entityService.ts toSourceFacets).
 //
 // Chart numbers come from the CDP backend's analytics endpoint, the one the
 // CDP app's dashboards use (same request and response, see AggregateRequest):
@@ -20,191 +23,128 @@
 // with the user's login. A source's schema names the CDP entity it reads
 // (entityName) and its column keys are that entity's property paths.
 //
-// Project values are ready to print (dates and amounts formatted); an image's
-// value is its location. DataQuery filters: every filter must match. "in" =
-// the cell equals one of `values` (case-insensitive); "between" = value <=
-// cell <= value2, either end optional (dates as ISO yyyy-mm-dd). At most one
-// sort; empty cells sort last. A saved "between" filter may carry a `period`
-// (thisMonth, lastMonth, thisQuarter, thisYear, last30Days) instead of dates:
-// the designer sends it already turned into dates, and a backend running a
-// saved report must do the same with that day's date.
+// DataQuery filters: every filter must match. "in" = the cell equals one of
+// `values` (case-insensitive); "between" = value <= cell <= value2, either end
+// optional (dates as ISO yyyy-mm-dd). At most one sort; empty cells sort last.
+// A saved "between" filter may carry a `period` (thisMonth, lastMonth,
+// thisQuarter, thisYear, last30Days) instead of dates: the designer sends it
+// already turned into dates, and a backend running a saved report must do the
+// same with that day's date.
 
-import apiClient from "./apiClient";
-import { API_ROUTES, DATA_SOURCE_API } from "@/config/apiConfig";
-import { MOCK_PROJECTS } from "@/mocks/projects";
-import { aggregateRows, columnFacets, queryRows as queryMockRows } from "@/mocks/queryDataSource";
+import apiClient, { unwrap } from "./apiClient";
+import { jmixList, type JmixListParams } from "./jmixService";
+import { API_ROUTES } from "@/config/apiConfig";
+import i18n from "@/i18n";
+import { Entity } from "@/types/entity";
 import { resolveFilterDates } from "@/utils/table/dataBinding";
 import type {
   AggregateRequest,
   AggregateResult,
-  JmixCondition,
   DataQuery,
   DataQueryResult,
-  DataSourceSchema,
-  DataSourceSummary,
-  ProjectDetails,
-  ProjectSummary,
-  SourceFacets,
+  DataRow,
+  JmixCondition,
+  TableFilter,
 } from "@/types/dataSource";
 
-export const usesMockDataSources = () => !DATA_SOURCE_API;
-// Short pause so loading states behave as they will with the real API
-const MOCK_DELAY_MS = 150;
-const mockDelay = () =>
-  new Promise<void>((resolve) => setTimeout(resolve, MOCK_DELAY_MS));
-
-const findMockProject = (projectId: string) => {
-  const project = MOCK_PROJECTS.find((p) => p.id === projectId);
-  if (!project) throw new Error(`Unknown project: ${projectId}`);
-  return project;
+// The fetch plans the CDP app's lists ask for (its procurement, risk, QA/QC
+// and issue registers, projects, companies). Every other list there sends none
+// (createJmixCrudService without one, e.g. the compliance register), so the
+// server uses its default plan: the entity's own fields, every column a table
+// offers. Asking for a plan the server doesn't have fails (500 "FetchPlan …
+// not found"), so only these are named.
+const LIST_FETCH_PLANS: Record<string, string> = {
+  [Entity.PROCUREMENT_REGISTER]: "procurementRegister-list-fp",
+  [Entity.RISK_REGISTER]: "riskRegister-list-fp",
+  [Entity.QAQC_REGISTER]: "qaQcRegister-list-fp",
+  [Entity.ISSUE_REGISTER]: "issueRegister-list-fp",
+  [Entity.PROJECT]: "project-list-fp",
+  [Entity.STAKEHOLDER]: "company-list-fp",
 };
 
-const findMockSource = (projectId: string, sourceId: string) => {
-  const source = findMockProject(projectId).sources.find((s) => s.id === sourceId);
-  if (!source) throw new Error(`Unknown data source: ${projectId}/${sourceId}`);
-  return source;
-};
+// Rows when a table shows them all (the PDF reads its rows itself)
+const ALL_ROWS = 1000;
 
-const projectPath = (projectId: string) => `projects/${encodeURIComponent(projectId)}`;
-const sourcePath = (projectId: string, sourceId: string) =>
-  `${projectPath(projectId)}/sources/${encodeURIComponent(sourceId)}`;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Fetched once per key; a failed fetch is tried again next time
-function cached<T>(cache: Map<string, Promise<T>>, key: string, load: () => Promise<T>): Promise<T> {
-  let result = cache.get(key);
-  if (!result) {
-    result = load();
-    result.catch(() => cache.delete(key));
-    cache.set(key, result);
-  }
-  return result;
-}
+// The project's records only (its UUID; its own reference while projects
+// come without one, see projectKey in projectService.ts)
+const projectCondition = (projectId: string): JmixCondition => ({
+  property: UUID_PATTERN.test(projectId) ? "project.id" : "project.projectId",
+  operator: "in",
+  value: [projectId],
+});
 
-export async function listProjects(): Promise<ProjectSummary[]> {
-  if (usesMockDataSources()) {
-    await mockDelay();
-    return MOCK_PROJECTS.map(({ id, name, code }) => ({ id, name, code }));
-  }
-  return apiClient.get<ProjectSummary[]>("projects", { baseURL: DATA_SOURCE_API });
-}
-
-// A project's details: every text and image item showing one asks for them
-const projectCache = new Map<string, Promise<ProjectDetails>>();
-
-export function getProject(projectId: string): Promise<ProjectDetails> {
-  return cached(projectCache, projectId, async () => {
-    if (usesMockDataSources()) {
-      await mockDelay();
-      const { sources: _sources, ...details } = findMockProject(projectId);
-      return JSON.parse(JSON.stringify(details)) as ProjectDetails;
+// The table's filters as Jmix conditions (moving date ranges already turned into dates)
+function filterConditions(filters: TableFilter[]): JmixCondition[] {
+  const asValue = (filter: TableFilter, value: string) =>
+    filter.type === "number" || filter.type === "currency" ? Number(value) : value;
+  return filters.flatMap((filter): JmixCondition[] => {
+    if (filter.operator === "in") {
+      return filter.values?.length ? [{ property: filter.column, operator: "in", value: filter.values }] : [];
     }
-    return apiClient.get<ProjectDetails>(projectPath(projectId), { baseURL: DATA_SOURCE_API });
+    if (filter.operator === "contains") {
+      const words = (filter.value ?? "").trim();
+      return words ? [{ property: filter.column, operator: "contains", value: words }] : [];
+    }
+    if (filter.operator === "equals") {
+      return filter.value === "true" || filter.value === "false"
+        ? [{ property: filter.column, operator: "=", value: filter.value === "true" }]
+        : [];
+    }
+    const range: JmixCondition[] = [];
+    if (filter.value) range.push({ property: filter.column, operator: ">=", value: asValue(filter, filter.value) });
+    if (filter.value2) range.push({ property: filter.column, operator: "<=", value: asValue(filter, filter.value2) });
+    return range;
   });
 }
 
-export async function listSources(projectId: string): Promise<DataSourceSummary[]> {
-  if (usesMockDataSources()) {
-    await mockDelay();
-    return findMockProject(projectId).sources.map(({ id, name, rows }) => ({
-      id,
-      name,
-      rowCount: rows.length,
-    }));
+// What a cell prints: numbers and text as they are, yes / no in the app's
+// language, a linked record by its name
+function cellValue(value: unknown): string | number | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "number" || typeof value === "string") return value;
+  if (typeof value === "boolean") return i18n.global.t(value ? "dataTable.yes" : "dataTable.no");
+  if (Array.isArray(value)) return value.map(cellValue).filter((v) => v !== null && v !== "").join(", ");
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const name = record._instanceName ?? record.name ?? record.title;
+    return typeof name === "string" ? name : null;
   }
-  return apiClient.get<DataSourceSummary[]>(`${projectPath(projectId)}/sources`, {
-    baseURL: DATA_SOURCE_API,
-  });
+  return String(value);
 }
 
-// Several tables can use one source, so its columns are fetched only once
-const schemaCache = new Map<string, Promise<DataSourceSchema>>();
-
-export function getSchema(projectId: string, sourceId: string): Promise<DataSourceSchema> {
-  return cached(schemaCache, `${projectId}/${sourceId}`, async () => {
-    if (usesMockDataSources()) {
-      await mockDelay();
-      const { id, name, entityName, columns } = findMockSource(projectId, sourceId);
-      return { id, name, entityName, columns: columns.map((c) => ({ ...c })) };
-    }
-    return apiClient.get<DataSourceSchema>(`${sourcePath(projectId, sourceId)}/schema`, {
-      baseURL: DATA_SOURCE_API,
-    });
-  });
-}
-
-// Filter choices of a source, fetched once per source like its columns
-const facetsCache = new Map<string, Promise<SourceFacets>>();
-
-export function getFacets(projectId: string, sourceId: string): Promise<SourceFacets> {
-  return cached(facetsCache, `${projectId}/${sourceId}`, async () => {
-    if (usesMockDataSources()) {
-      await mockDelay();
-      const source = findMockSource(projectId, sourceId);
-      return columnFacets(source.rows, source.columns);
-    }
-    return apiClient.get<SourceFacets>(`${sourcePath(projectId, sourceId)}/facets`, {
-      baseURL: DATA_SOURCE_API,
-    });
-  });
-}
-
-// Forget cached project details, columns and filter choices (e.g. after the
-// backend changed them)
-export function clearSchemaCache(): void {
-  projectCache.clear();
-  schemaCache.clear();
-  facetsCache.clear();
-}
-
-export async function queryRows(
+// The project's rows of an entity: only the asked columns, newest first unless sorted
+async function queryRows(
   projectId: string,
   sourceId: string,
   query: DataQuery,
   signal?: AbortSignal,
 ): Promise<DataQueryResult> {
-  const sent = { ...query, filters: resolveFilterDates(query.filters) };
-  if (usesMockDataSources()) {
-    await mockDelay();
-    signal?.throwIfAborted();
-    const source = findMockSource(projectId, sourceId);
-    return queryMockRows(source.rows, source.columns, sent);
-  }
-  return apiClient.post<DataQueryResult>(
-    `${sourcePath(projectId, sourceId)}/query`,
-    JSON.stringify(sent),
-    { baseURL: DATA_SOURCE_API, signal },
+  const params: JmixListParams = {
+    limit: query.limit ?? ALL_ROWS,
+    offset: 0,
+    filter: { group: "AND", conditions: [projectCondition(projectId), ...filterConditions(resolveFilterDates(query.filters))] },
+    sort: query.sort.length
+      ? query.sort.map((s) => ({ id: s.column, desc: s.direction === "desc" }))
+      : [{ id: "createdDate", desc: true }],
+    dynamicAttributes: true,
+  };
+  const page = await jmixList<Record<string, unknown>>(
+    sourceId,
+    { ...params, fetchPlan: LIST_FETCH_PLANS[sourceId] },
+    signal,
   );
+  const rows: DataRow[] = page.rows.map((record) =>
+    Object.fromEntries(query.columns.map((key) => [key, cellValue(record[key])])),
+  );
+  return { rows, totalCount: page.total };
 }
 
-// The project a request is for (its globalFilter's project.id)
-const projectOf = (request: AggregateRequest): string => {
-  const condition = request.globalFilter?.conditions.find(
-    (c): c is JmixCondition => "property" in c && c.property === "project.id",
-  );
-  return condition ? String(condition.value) : "";
-};
-
-// The CDP backend may wrap answers as { data, message, status }; like the CDP app's unwrap()
-function unwrap<T>(body: unknown): T {
-  if (body && typeof body === "object" && !Array.isArray(body) && "data" in body) {
-    const envelope = body as { data: T; message?: unknown; status?: unknown };
-    if ("message" in envelope || "status" in envelope) return envelope.data;
-  }
-  return body as T;
-}
-
-// A chart's numbers for one series (see the header). With dummy data the same
-// request is answered from the dummy rows.
-export async function aggregate(request: AggregateRequest, signal?: AbortSignal): Promise<AggregateResult> {
-  if (usesMockDataSources()) {
-    await mockDelay();
-    signal?.throwIfAborted();
-    const source = findMockProject(projectOf(request)).sources.find(
-      (s) => s.entityName === request.entityName || s.id === request.entityName,
-    );
-    if (!source) throw new Error(`Unknown data source: ${request.entityName}`);
-    return aggregateRows(source.rows, source.columns, request);
-  }
+// A chart's numbers for one series (see the header)
+async function aggregate(request: AggregateRequest, signal?: AbortSignal): Promise<AggregateResult> {
   const body = await apiClient.post<unknown>(API_ROUTES.analytics, JSON.stringify(request), { signal });
   return unwrap<AggregateResult>(body);
 }
+
+export const dataSourceApi = { queryRows, aggregate };

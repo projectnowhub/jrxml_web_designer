@@ -48,8 +48,8 @@ jrxml_web_designer/
     ├── locales/              # en.json, ms.json (kept in sync)
     ├── types/                # index.ts (design model), dataSource.ts (table data)
     ├── config/               # apiConfig.ts, fonts.config.ts
-    ├── services/             # apiClient, auth, reportService (PDF), dataSourceService (table data), images
-    ├── mocks/                # Dummy table data sources until the backend API exists
+    ├── services/             # plain API calls: apiClient, auth, jmixService (CDP entity lists), projectService, dataSourceService (table data, charts), templateService, reportService (PDF), images
+    ├── queries/              # TanStack Query: queryClient (CDP defaults), keys, projects, dataSources, templates
     ├── mcp/                  # AI assistant: tools, element schemas (elements/), placement rules, API calls
     ├── composables/          # useUndoRedo, useZoom, useTableRows, useDesignerFiles, useLivePreview, alignment/snap/drag…
     ├── components/
@@ -168,7 +168,7 @@ All are built on `BaseModal.vue`: `TableConfigModal` (table setup), `PdfPreviewM
 
 ## 6. Data Tables
 
-Report data comes from the backend per project (dummy projects in `src/mocks/` until `VITE_DATA_SOURCE_API` is set). The user picks the report's projects in Report Data; each project offers its details (name, logo, introduction…; dragged onto the page, the value is copied into a normal Text or Image element) and its table sources. Tables show rows from a project's source: the user drags a source from Report Data onto a table and sets columns, filters, sort and totals in `TableConfigModal` (filters in `TableFilterPanel.vue`); the table's Basic Properties tab picks the style, its Style Settings tab customizes it (`TableDataPanel.vue`). The JRXML gets one sub-dataset per table, and the setup is saved as JSON in the `com.cdp.table.binding` property. Full rules: `CLAUDE.md`, "Data Tables".
+Report data comes from the backend per project: the CDP projects and their details from `services/projectService.ts` (`/v2/table/cdp_Project`), tables and filter choices from the CDP entities (`services/entityService.ts`, `/v2/entities`), rows from `services/dataSourceService.ts` (`/v2/table/{entity}`). The user picks the report's projects in Report Data; each project offers its details (name, logo, introduction…; dragged onto the page, the value is copied into a normal Text or Image element) and its table sources. Tables show rows from a project's source: the user drags a source from Report Data onto a table and sets columns, filters, sort and totals in `TableConfigModal` (filters in `TableFilterPanel.vue`); the table's Basic Properties tab picks the style, its Style Settings tab customizes it (`TableDataPanel.vue`). The JRXML gets one sub-dataset per table, and the setup is saved as JSON in the `com.cdp.table.binding` property. Full rules: `CLAUDE.md`, "Data Tables".
 
 ## 7. External Services
 

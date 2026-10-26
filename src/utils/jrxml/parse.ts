@@ -27,6 +27,7 @@ import { CHART_BINDING_PROPERTY, parseChartBinding } from "../chart/chartTypes";
 import { SAVED_TABLE_STYLES_PROPERTY, parseSavedTableStyles } from "../table/tableThemes";
 import { REPORT_PROJECTS_PROPERTY, parseReportProjects } from "../projectFields";
 import { BARCODE_TYPE_IDS, BARCODE_VALUES_PROPERTY, parseBarcodeValues } from "../barcode/barcodeTypes";
+import { joinSplitReferences } from "./javaString";
 import type { SavedTableStyle } from "@/types/dataSource";
 import type {
   ReportProperties,
@@ -1552,8 +1553,11 @@ function parseTextFieldElement(element: Element, result: any): void {
 
   const expressionElem = findChildElement(element, "textFieldExpression");
   if (expressionElem) {
-    result.expression = expressionElem.textContent || "";
-    const fieldMatch = result.expression.match(/\$F\{([^}]+)\}/);
+    // Text the generator split so "$F{…}" stays text is one literal again
+    result.expression = joinSplitReferences(expressionElem.textContent || "");
+    // A field it shows (never "$F{…}" typed inside one quoted text)
+    const isOneLiteral = /^"(?:[^"\\]|\\.)*"$/.test(result.expression.trim());
+    const fieldMatch = isOneLiteral ? null : result.expression.match(/\$F\{([^}]+)\}/);
     if (fieldMatch) {
       result.fieldName = fieldMatch[1];
     }

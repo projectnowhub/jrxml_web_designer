@@ -77,6 +77,8 @@ Filters are part of both setups and are never resolved in the JRXML:
 |---|---|---|
 | Ticked values | `{ "column", "operator": "in", "values": ["Approved", "Pending"] }` | cell equals one of them (case-insensitive) |
 | Range | `{ "column", "operator": "between", "value": "2026-01-01", "value2": "2026-03-31" }` | value ≤ cell ≤ value2, either end optional |
+| Typed words (version 2) | `{ "column", "operator": "contains", "value": "permit" }` | the text cell contains the words (any case); a Jmix `contains` condition, as the CDP app's text filters |
+| Yes / No (version 2) | `{ "column", "operator": "equals", "value": "true" }` | a yes / no field is true (`"false"`: false); a Jmix `=` condition with a boolean, as the CDP app's checkbox |
 | Moving date range | `{ "column", "operator": "between", "period": "thisMonth" }` | `thisMonth`, `lastMonth`, `thisQuarter`, `thisYear`, `last30Days`, worked out **on the day the report runs** |
 
 Don't interpret filters in Java: pass the setup and the run date to the
@@ -97,7 +99,7 @@ whenever the chart or table code changes. It defines one global,
 
 | Function | Arguments | Returns |
 |---|---|---|
-| `ENGINE_VERSION` | – | number (now `1`), bumped when a function's arguments or results change |
+| `ENGINE_VERSION` | – | number (now `2`: filters may be `contains` or `equals`), bumped when a function's arguments or results change |
 | `LOCALES` | – | languages charts can print in: `["en", "ms"]` |
 | `chartRequests(bindingJson, todayIso)` | chart setup JSON; run date `"2026-11-15"` | JSON array of `AggregateRequest`s; `"[]"` when the chart isn't set up (it prints nothing) |
 | `chartSvg(bindingJson, resultsJson, width, height, locale, fontName?)` | setup; JSON array of the `AggregateResult`s, **in the same order as the requests**; the image's width and height from `<reportElement>`; `"en"` / `"ms"`; font (default Noto Sans SC) | SVG text; `""` when the chart isn't set up |

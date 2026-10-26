@@ -43,22 +43,6 @@ let current: HTMLElement | null = null;
 // After a click on a tool, its card stays away until the pointer leaves it
 let quiet: HTMLElement | null = null;
 let timer: ReturnType<typeof setTimeout> | undefined;
-// Tooltips (title) held back while the card shows, put back after
-const heldTitles = new Map<Element, string>();
-
-function holdTitles(root: HTMLElement) {
-  for (const el of [root, ...root.querySelectorAll("[title]")]) {
-    const title = el.getAttribute("title");
-    if (title === null) continue;
-    heldTitles.set(el, title);
-    el.removeAttribute("title");
-  }
-}
-
-function restoreTitles() {
-  for (const [el, title] of heldTitles) el.setAttribute("title", title);
-  heldTitles.clear();
-}
 
 // The tool's menu is open (File, Page, Snap & grid): its items are being
 // chosen, so no card over them
@@ -69,7 +53,6 @@ function show(root: HTMLElement) {
   if (menuOpen(root)) return;
   const id = root.dataset.hint as ToolId;
   if (!te(`helpDocs.tools.${id}.title`)) return;
-  holdTitles(root);
   const rect = root.getBoundingClientRect();
   hint.value = { id, x: rect.left, y: rect.bottom + GAP };
   nextTick(() => {
@@ -87,7 +70,6 @@ function show(root: HTMLElement) {
 function hide() {
   clearTimeout(timer);
   hint.value = null;
-  restoreTitles();
 }
 
 function onOver(event: MouseEvent) {

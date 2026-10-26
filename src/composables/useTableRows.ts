@@ -1,79 +1,37 @@
-// Rows for a data table, fetched with its own columns/filters/sort. Results are
-// cached by request, so redrawing a table (or several tables asking for the
-// same rows) doesn't call the backend again.
+// Rows for a data table, fetched with its own columns/filters/sort through
+// TanStack Query (queries/dataSources.ts), so redrawing a table, or several
+// tables asking for the same rows, doesn't call the backend again.
 
-import { ref, watch, onBeforeUnmount, type Ref } from "vue";
-import { queryRows } from "@/services/dataSourceService";
+import { computed, type Ref } from "vue";
+import { keepPreviousData, useQuery } from "@tanstack/vue-query";
+import { fetchRows, rowsQuery } from "@/queries/dataSources";
 import { toDataQuery } from "@/utils/table/dataBinding";
-import type { DataQueryResult, DataRow, TableDataBinding } from "@/types/dataSource";
+import type { DataQuery, DataQueryResult, DataRow, TableDataBinding } from "@/types/dataSource";
 
-const cache = new Map<string, Promise<DataQueryResult>>();
-
-export function clearTableRowsCache(): void {
-  cache.clear();
+export function fetchTableRows(binding: TableDataBinding, limit?: number): Promise<DataQueryResult> {
+  return fetchRows(binding.projectId, binding.sourceId, toDataQuery(binding, limit));
 }
 
-export function fetchTableRows(
-  binding: TableDataBinding,
-  limit?: number,
-): Promise<DataQueryResult> {
-  const query = toDataQuery(binding, limit);
-  const key = JSON.stringify([binding.projectId, binding.sourceId, query]);
-  let result = cache.get(key);
-  if (!result) {
-    result = queryRows(binding.projectId, binding.sourceId, query);
-    // A failed request is tried again next time
-    result.catch(() => cache.delete(key));
-    cache.set(key, result);
-  }
-  return result;
-}
+const NO_QUERY = {} as DataQuery;
 
-export function useTableRows(
-  binding: Ref<TableDataBinding | undefined>,
-  limit?: number,
-) {
-  const rows = ref<DataRow[]>([]);
-  const totalCount = ref(0);
-  const loading = ref(false);
-  const failed = ref(false);
-  let latest = 0;
-
-  const load = async () => {
-    const current = binding.value;
-    const request = ++latest;
-    if (!current) {
-      rows.value = [];
-      totalCount.value = 0;
-      return;
-    }
-    loading.value = true;
-    failed.value = false;
-    try {
-      const result = await fetchTableRows(current, limit);
-      // Ignore answers to an older version of the setup
-      if (request !== latest) return;
-      rows.value = result.rows;
-      totalCount.value = result.totalCount;
-    } catch {
-      if (request === latest) failed.value = true;
-    } finally {
-      if (request === latest) loading.value = false;
-    }
-  };
-
-  // Re-fetch only when what is asked for changes (not on column widths or theme)
-  watch(
-    () =>
-      binding.value
-        ? JSON.stringify([binding.value.projectId, binding.value.sourceId, toDataQuery(binding.value, limit)])
-        : "",
-    load,
-    { immediate: true },
+export function useTableRows(binding: Ref<TableDataBinding | undefined>, limit?: number) {
+  // Same key while only widths or the theme change, so nothing is fetched then
+  const query = useQuery(
+    computed(() => {
+      const current = binding.value;
+      return {
+        ...rowsQuery(current?.projectId ?? "", current?.sourceId ?? "", current ? toDataQuery(current, limit) : NO_QUERY),
+        enabled: !!current,
+        // While the next rows load, the table keeps showing the last ones
+        placeholderData: keepPreviousData,
+      };
+    }),
   );
-  onBeforeUnmount(() => {
-    latest++;
-  });
 
-  return { rows, totalCount, loading, failed, reload: load };
+  const rows = computed<DataRow[]>(() => (binding.value ? (query.data.value?.rows ?? []) : []));
+  const totalCount = computed(() => (binding.value ? (query.data.value?.totalCount ?? 0) : 0));
+  const loading = computed(() => !!binding.value && query.isFetching.value);
+  const failed = computed(() => !!binding.value && query.isError.value);
+
+  return { rows, totalCount, loading, failed, reload: () => query.refetch() };
 }

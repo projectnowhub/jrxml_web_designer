@@ -69,7 +69,7 @@
            the window is big enough to show it); the button is there too -->
       <div v-if="items.length < total && !loading" class="load-more">
         <span>{{ t("myTemplates.showing", { shown: items.length, total }) }}</span>
-        <button type="button" @click="loadGrid('more')">
+        <button type="button" @click="loadMore">
           <ChevronDown :size="15" :stroke-width="2.25" aria-hidden="true" />
           {{ t("myTemplates.loadMore") }}
         </button>
@@ -159,8 +159,10 @@
 // scroll) or as a table (List: pages of 25 / 50 / 100). The view, order, page
 // and the top bar's search are in the address (?view=list&sort=name&dir=asc
 // &page=2&q=…), so Back and reload keep the place. Pages come from
-// listTemplates (services/templateService.ts).
+// TanStack Query (queries/templates.ts): List = one page, Grid = an infinite
+// list; saving a template invalidates them, so they fetch again.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/vue-query";
 import { useRoute, useRouter, type LocationQueryRaw } from "vue-router";
 import { useI18n } from "vue-i18n";
 import {
@@ -177,15 +179,10 @@ import {
   X,
 } from "@lucide/vue";
 import { useTemplates } from "@/composables/useTemplates";
-import { useFilesStore } from "@/stores/files";
 import { useHelpStore } from "@/stores/help";
 import { AUTH_USER_KEY } from "@/services/apiClient";
-import {
-  listTemplates,
-  type SortDirection,
-  type TemplateSort,
-  type TemplateSummary,
-} from "@/services/templateService";
+import type { SortDirection, TemplateSort, TemplateSummary } from "@/services/templateService";
+import { templateGridQuery, templateListQuery } from "@/queries/templates";
 import TemplateGrid from "@/components/templates/TemplateGrid.vue";
 import TemplateList from "@/components/templates/TemplateList.vue";
 
@@ -201,7 +198,6 @@ const PAGE_SIZE_KEY = "templates.pageSize";
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const filesStore = useFilesStore();
 const { newTemplate } = useTemplates();
 
 const storedUser = JSON.parse(localStorage.getItem(AUTH_USER_KEY) ?? "{}") as { firstName?: string };
@@ -285,7 +281,6 @@ function choosePageSize(size: number) {
   pageSize.value = size;
   remember(PAGE_SIZE_KEY, String(size));
   setQuery({ page: undefined });
-  loadList();
 }
 
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)));
@@ -304,81 +299,54 @@ const pageNumbers = computed(() => {
 });
 
 // What is shown
-const items = ref<TemplateSummary[]>([]);
-const total = ref(0);
-const loading = ref(false);
-const failed = ref(false);
-let request = 0;
+const baseQuery = computed(() => ({ q: query.value, sort: sort.value, dir: dir.value }));
 
-const baseQuery = () => ({ q: query.value, sort: sort.value, dir: dir.value });
-
-// List: exactly the page in the address (a page past the end goes back to the last)
-async function loadList() {
-  const id = ++request;
-  loading.value = true;
-  failed.value = false;
-  try {
-    const result = await listTemplates({ ...baseQuery(), page: page.value, size: pageSize.value });
-    if (id !== request) return;
-    if (!result.items.length && page.value > 1 && result.total) {
-      setQuery({ page: Math.ceil(result.total / pageSize.value) });
-      return;
-    }
-    items.value = result.items;
-    total.value = result.total;
-  } catch {
-    if (id === request) failed.value = true;
-  } finally {
-    if (id === request) loading.value = false;
-  }
-}
-
-// Grid: from the start, or the next 25 after what is shown. `keep` reloads
-// as many as are shown (after a rename or delete) without jumping back
-async function loadGrid(mode: "start" | "more" | "keep") {
-  if (mode === "more" && (loading.value || items.value.length >= total.value)) return;
-  const id = ++request;
-  loading.value = true;
-  failed.value = false;
-  try {
-    const size = mode === "keep" ? Math.max(PAGE_SIZE, items.value.length) : PAGE_SIZE;
-    const nextPage = mode === "more" ? Math.floor(items.value.length / PAGE_SIZE) + 1 : 1;
-    const result = await listTemplates({ ...baseQuery(), page: nextPage, size });
-    if (id !== request) return;
-    if (mode === "more") {
-      // After a delete the pages shift by one: skip cards already shown
-      const shown = new Set(items.value.map((item) => item.id));
-      items.value = [...items.value, ...result.items.filter((item) => !shown.has(item.id))];
-    } else {
-      items.value = result.items;
-    }
-    total.value = result.total;
-  } catch {
-    if (id === request) failed.value = true;
-  } finally {
-    if (id === request) loading.value = false;
-  }
-  // A tall window may show the end already: keep filling it
-  await nextTick();
-  observeSentinel();
-}
-
-const reload = () => (view.value === "grid" ? loadGrid("start") : loadList());
-
-// Search, order or view changed: start again
-watch([query, sort, dir, view], () => {
-  items.value = [];
-  total.value = 0;
-  reload();
-});
-watch(page, () => view.value === "list" && loadList());
-// A template renamed, copied or deleted here
-watch(
-  () => filesStore.templatesVersion,
-  () => (view.value === "grid" ? loadGrid("keep") : loadList()),
+// List: exactly the page in the address (the last page stays while the next loads)
+const listQuery = useQuery(
+  computed(() => ({
+    ...templateListQuery({ ...baseQuery.value, page: page.value, size: pageSize.value }),
+    enabled: view.value === "list",
+    placeholderData: keepPreviousData,
+  })),
+);
+// Grid: from the start, the next 25 added near the end
+const gridQuery = useInfiniteQuery(
+  computed(() => ({ ...templateGridQuery(baseQuery.value, PAGE_SIZE), enabled: view.value === "grid" })),
 );
 
-// Load more when the end of the grid comes near
+const items = computed<TemplateSummary[]>(() => {
+  if (view.value === "list") return listQuery.data.value?.items ?? [];
+  // After a delete the pages shift by one: a card is shown once
+  const seen = new Set<string>();
+  return (gridQuery.data.value?.pages ?? [])
+    .flatMap((p) => p.items)
+    .filter((item) => !seen.has(item.id) && !!seen.add(item.id));
+});
+const total = computed(() =>
+  view.value === "list" ? (listQuery.data.value?.total ?? 0) : (gridQuery.data.value?.pages[0]?.total ?? 0),
+);
+const loading = computed(() => (view.value === "list" ? listQuery.isFetching.value : gridQuery.isFetching.value));
+const failed = computed(() => (view.value === "list" ? listQuery.isError.value : gridQuery.isError.value));
+const settled = computed(() => (view.value === "list" ? !listQuery.isPending.value : !gridQuery.isPending.value));
+
+const reload = () => (view.value === "grid" ? gridQuery.refetch() : listQuery.refetch());
+
+// A page past the end (after deleting) goes back to the last one
+watch(
+  () => listQuery.data.value,
+  (result) => {
+    if (view.value === "list" && result && !result.items.length && page.value > 1 && result.total) {
+      setQuery({ page: Math.ceil(result.total / pageSize.value) });
+    }
+  },
+);
+
+function loadMore() {
+  if (gridQuery.hasNextPage.value && !gridQuery.isFetching.value) gridQuery.fetchNextPage();
+}
+
+// Load more when the end of the grid comes near (a tall window may show the
+// end already: it keeps filling as each page arrives)
 const sentinelRef = ref<HTMLElement | null>(null);
 let observer: IntersectionObserver | null = null;
 function observeSentinel() {
@@ -386,19 +354,30 @@ function observeSentinel() {
   if (!sentinelRef.value) return;
   observer = new IntersectionObserver(
     (entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) loadGrid("more");
+      if (entries.some((entry) => entry.isIntersecting)) loadMore();
     },
     { rootMargin: "400px 0px" },
   );
   observer.observe(sentinelRef.value);
 }
+watch(
+  () => [items.value.length, loading.value, view.value],
+  () => nextTick(observeSentinel),
+);
 
 // First visit: a short tour of this page, once the templates are on screen
 const help = useHelpStore();
 let tourTimer: ReturnType<typeof setTimeout> | undefined;
-onMounted(async () => {
-  await reload();
-  tourTimer = setTimeout(() => help.startTourOnce("templates"), 600);
+onMounted(() => {
+  const stop = watch(
+    settled,
+    (ready) => {
+      if (!ready) return;
+      stop();
+      tourTimer = setTimeout(() => help.startTourOnce("templates"), 600);
+    },
+    { immediate: true },
+  );
 });
 onBeforeUnmount(() => {
   observer?.disconnect();

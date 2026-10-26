@@ -1,6 +1,7 @@
 import { storeToRefs } from 'pinia';
 import type { DesignerFile } from '@/types/designerFile';
 import { useFilesStore } from '@/stores/files';
+import { invalidateTemplates } from '@/queries/templates';
 
 const STORAGE_KEYS = {
   FILES: 'pdfDesignerFiles',
@@ -63,7 +64,8 @@ export function useDesignerFiles(options?: { defaultFileName?: string }) {
         files.value = nextFiles;
       }
       localStorage.setItem(STORAGE_KEYS.FILES, JSON.stringify(files.value));
-      // Template lists showing a page of them fetch it again
+      // Template lists fetch again; the designer's address follows the saved files
+      invalidateTemplates();
       useFilesStore().templatesVersion++;
       return true;
     } catch {

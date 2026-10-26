@@ -87,6 +87,15 @@
             @mousedown.stop.prevent="chooseColumn($event, c)"
             @contextmenu.prevent.stop="chooseColumn($event, c, true)"
           >{{ columnName(c) }}</button>
+          <!-- Grips between the letters: drag to change the two columns' widths -->
+          <div
+            v-for="(edge, i) in columnEdges"
+            :key="`hce${i}`"
+            class="ct-bar-edge is-col"
+            :style="{ left: `${edge}%` }"
+            :title="t('customTable.dragColumn')"
+            @mousedown.stop.prevent="startEdgeDrag($event, 'col', i)"
+          />
         </div>
         <div class="ct-handles is-rows" @mousedown.stop.prevent>
           <button
@@ -101,6 +110,15 @@
             @mousedown.stop.prevent="chooseRow($event, r)"
             @contextmenu.prevent.stop="chooseRow($event, r, true)"
           >{{ r + 1 }}</button>
+          <!-- Grips under each number: drag to change the row's height -->
+          <div
+            v-for="(edge, i) in rowEdges"
+            :key="`hre${i}`"
+            class="ct-bar-edge is-row"
+            :style="{ top: `${edge}%` }"
+            :title="t('customTable.dragRow')"
+            @mousedown.stop.prevent="startEdgeDrag($event, 'row', i)"
+          />
         </div>
       </template>
 
@@ -1190,6 +1208,55 @@ function runMenu(id: MenuId) {
   border-color: #6440f4;
   background: #6440f4;
   color: #ffffff;
+}
+
+/* Resize grips in the row / column bars: a short line between the handles */
+.ct-bar-edge {
+  position: absolute;
+  z-index: 4;
+}
+
+.ct-bar-edge.is-col {
+  top: -2px;
+  bottom: -2px;
+  width: 9px;
+  margin-left: -4px;
+  cursor: col-resize;
+}
+
+.ct-bar-edge.is-row {
+  left: -2px;
+  right: -2px;
+  height: 9px;
+  margin-top: -4px;
+  cursor: row-resize;
+}
+
+.ct-bar-edge::after {
+  content: "";
+  position: absolute;
+  border-radius: 1px;
+  background: #94a3b8;
+  transition: background 0.12s ease;
+}
+
+.ct-bar-edge.is-col::after {
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 3px;
+}
+
+.ct-bar-edge.is-row::after {
+  left: 0;
+  right: 0;
+  top: 3px;
+  height: 3px;
+}
+
+.ct-bar-edge:hover::after,
+.ct-bar-edge:active::after {
+  background: #6440f4;
 }
 
 .ct-col-edge,

@@ -122,6 +122,38 @@
           </button>
         </template>
       </div>
+
+      <!-- The columns: each one's name (its cell in the first heading row), and delete -->
+      <div class="card">
+        <h5>{{ t("customTable.columnList") }}<SettingHelpButton id="typedColumns" /></h5>
+        <SettingHelpText id="typedColumns" />
+        <p v-if="!table.headerRows" class="form-hint column-hint">{{ t("customTable.columnsNoHeader") }}</p>
+        <ul class="column-list">
+          <li v-for="col in columnRows" :key="col.index" class="column-row">
+            <span class="column-letter" aria-hidden="true">{{ columnName(col.index) }}</span>
+            <input v-live-change
+              class="column-input"
+              type="text"
+              :value="col.name"
+              :disabled="!col.editable"
+              :placeholder="table.headerRows ? t('customTable.columnNamePlaceholder') : ''"
+              :title="col.mergedWith !== undefined ? t('customTable.columnMerged', { name: columnName(col.mergedWith) }) : t('customTable.columnName')"
+              :aria-label="t('customTable.columnNameOf', { name: columnName(col.index) })"
+              @change="renameColumn(col.index, $event)"
+            />
+            <button
+              type="button"
+              class="column-delete"
+              :disabled="table.columns.length <= 1"
+              :title="t('customTable.deleteColumnNamed', { name: col.name || columnName(col.index) })"
+              :aria-label="t('customTable.deleteColumnNamed', { name: col.name || columnName(col.index) })"
+              @click="removeColumn(col.index)"
+            >
+              <Trash2 :size="13" aria-hidden="true" />
+            </button>
+          </li>
+        </ul>
+      </div>
     </template>
 
     <!-- Style Settings: the look of the chosen cells (the whole table's look,
@@ -262,6 +294,7 @@ import { useReportStore } from "@/stores/report";
 import { useSelectionStore } from "@/stores/selection";
 import { hasFormatting, stripInlineColors } from "@/utils/elementUtils";
 import {
+  anchorMap,
   columnName,
   customTableLook,
   MAX_HEADER_ROWS,
@@ -280,7 +313,7 @@ import {
   syncTableSize,
   visibleCells,
 } from "@/utils/customTable";
-import type { CustomTableElement } from "@/types";
+import type { CustomTableCell, CustomTableElement } from "@/types";
 
 const props = defineProps<{
   element: CustomTableElement;
@@ -478,6 +511,51 @@ function change(mutate: () => void) {
   done();
 }
 
+// ---- Columns card ----
+
+// A heading cell's words (formatted text without its formatting)
+const plainText = (cell: CustomTableCell) =>
+  cell.rich ? (new DOMParser().parseFromString(cell.text, "text/html").body.textContent ?? "") : cell.text;
+
+interface ColumnRow {
+  index: number;
+  name: string;
+  editable: boolean;
+  // The column whose heading is merged across this one
+  mergedWith?: number;
+}
+
+// Each column's name: its cell in the first heading row (none without heading rows)
+const columnRows = computed<ColumnRow[]>(() => {
+  const tbl = table.value;
+  const map = tbl.headerRows ? anchorMap(tbl) : null;
+  return tbl.columns.map((_, index) => {
+    const anchor = map?.[0]?.[index];
+    if (!anchor) return { index, name: "", editable: false };
+    const cell = tbl.rows[anchor.row]?.cells[anchor.col];
+    const merged = anchor.col !== index;
+    return { index, name: cell ? plainText(cell) : "", editable: !merged, mergedWith: merged ? anchor.col : undefined };
+  });
+});
+
+// A new name for a column: its heading cell becomes that plain text (one undo step)
+function renameColumn(index: number, event: Event) {
+  const cell = table.value.rows[0]?.cells[index];
+  const value = (event.target as HTMLInputElement).value;
+  if (!cell || !table.value.headerRows || value === plainText(cell)) return;
+  change(() => {
+    cell.text = value;
+    delete cell.rich;
+  });
+}
+
+// The column and everything in it go (one undo step); cells chosen in the table are let go
+function removeColumn(index: number) {
+  if (table.value.columns.length <= 1) return;
+  change(() => deleteColumns(table.value, index, index));
+  if (tableCells.value?.uuid === (props.element.uuid ?? "")) tableCells.value = null;
+}
+
 // Set on each target cell; a value the table style already gives is not kept
 // (so the cell follows the style again)
 function setStyle<K extends StyleKey>(key: K, value: ResolvedCell[K], recordKey?: string) {
@@ -578,6 +656,84 @@ function split() {
   border-radius: 10px;
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
+}
+
+.column-hint {
+  margin: 0 0 8px;
+}
+
+.column-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.column-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.column-letter {
+  flex-shrink: 0;
+  width: 18px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--prop-text-secondary);
+}
+
+.column-input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--prop-text-primary);
+  font: inherit;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+.column-input:focus {
+  outline: none;
+  border-color: #c4b5fd;
+  box-shadow: 0 0 0 3px rgba(100, 64, 244, 0.12);
+}
+
+.column-input:disabled {
+  background: #f9fafb;
+  color: var(--prop-text-secondary);
+}
+
+.column-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.column-delete:hover:not(:disabled) {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.column-delete:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .card h5 {

@@ -1070,7 +1070,8 @@
       "tableChooseLine": "Pilih seluruh baris atau lajur (Shift: beberapa)",
       "tableSelectAll": "Pilih semua sel (semasa jadual dibuka)",
       "tableLineMenu": "Sisip atau padam baris dan lajur",
-      "tableChooseColumn": "Jadual data projek: pilih lajur untuk menggayakannya (Tetapan Gaya → Sel)"
+      "tableChooseColumn": "Jadual data projek: pilih lajur untuk menggayakannya (Tetapan Gaya → Sel)",
+      "tableResizeLine": "Tukar lebar lajur atau ketinggian baris (jadual yang ditaip: garisan dalam bar di atas dan di sebelahnya, semasa ia dibuka; jadual data projek: garisan padanya, semasa ia dipilih)"
     },
     "panelTips": {
       "hide": "Sembunyikan petua ini",
@@ -1492,7 +1493,8 @@
       "dragPin": "Seret pin",
       "clickHandle": "Klik pemegang baris / lajur",
       "rightClickHandle": "Klik kanan pemegang baris / lajur",
-      "clickPlus": "Klik + di antara dua pemegang"
+      "clickPlus": "Klik + di antara dua pemegang",
+      "dragTableLine": "Seret garisan antara lajur atau baris"
     }
   },
   "imageUpload": {
@@ -1856,6 +1858,13 @@
     "grid": "Baris dan lajur",
     "rows": "Baris",
     "columns": "Lajur",
+    "columnList": "Lajur",
+    "columnName": "Nama lajur (selnya dalam baris tajuk pertama)",
+    "columnNameOf": "Nama lajur {name}",
+    "columnNamePlaceholder": "Nama lajur",
+    "columnMerged": "Tajuknya digabungkan dengan lajur {name}: tukar namanya di sana",
+    "columnsNoHeader": "Tambah baris tajuk (Baris tajuk di atas) untuk memberi nama kepada lajur.",
+    "deleteColumnNamed": "Padam lajur {name}",
     "addRow": "Tambah baris",
     "removeRow": "Padam baris",
     "addColumn": "Tambah lajur",
@@ -2295,6 +2304,11 @@
     }
   },
   "dataTable": {
+    "yes": "Ya",
+    "no": "Tidak",
+    "dragColumnEdge": "Seret untuk menukar lebar kedua-dua lajur ini",
+    "dragHeaderEdge": "Seret untuk menukar ketinggian baris tajuk",
+    "dragRowEdge": "Seret untuk menukar ketinggian baris (semua baris)",
     "dropHint": "Seret data jadual ke sini, atau klik dua kali untuk menyediakannya",
     "placeholderColumn": "Lajur {n}",
     "moreRows": "+1 baris lagi | +{count} baris lagi",
@@ -2377,6 +2391,10 @@
       "barcodeHint": "Lajur kod bar mencetak setiap nilai sebagai kod bar; nilai kosong tidak dicetak. Baris menjadi sekurang-kurangnya 36 px tinggi supaya kod boleh diimbas."
     },
     "filter": {
+      "booleanHint": "Hanya baris yang Ya, atau hanya baris yang Tidak. Nyahtanda untuk mengekalkan kedua-duanya.",
+      "containsPlaceholder": "Perkataan dalam {column}",
+      "containsHint": "Hanya baris yang selnya mengandungi perkataan ini (huruf besar atau kecil tidak penting).",
+      "containsChip": "mengandungi “{words}”",
       "title": "Tapis & isih",
       "applied": "Penapis digunakan",
       "remove": "Buang",
@@ -2533,6 +2551,57 @@
     "projects": "Projek",
     "chooseProjects": "Pilih projek…",
     "noProjectMatch": "Tiada projek yang sepadan",
+    "searchProjects": "Cari mengikut nama atau kod",
+    "loadingProjects": "Memuatkan projek…",
+    "projectsLoadFailed": "Projek tidak dapat dimuatkan.",
+    "noProjectsAvailable": "Belum ada projek",
+    "lists": "Senarai",
+    "moreDetails": "Butiran lain",
+    "managerCard": "Semua butiran (jadual)",
+    "dragTable": "Seret ke halaman untuk menambah senarai ini sebagai jadual",
+    "dragCard": "Seret ke halaman untuk menambah butiran ini sebagai jadual",
+    "listRows": "Tiada baris | 1 baris | {count} baris",
+    "projectTables": {
+      "manager": "Pengurus Projek",
+      "team": "Pasukan Projek",
+      "companies": "Syarikat",
+      "contracts": "Kontrak"
+    },
+    "columns": {
+      "name": "Nama",
+      "designation": "Jawatan",
+      "email": "E-mel",
+      "phone": "Telefon",
+      "country": "Negara",
+      "businessTypes": "Jenis Perniagaan",
+      "website": "Laman Web",
+      "contract": "Kontrak",
+      "contractNumber": "No.",
+      "contractType": "Jenis",
+      "originalSum": "Jumlah Asal",
+      "adjustedSum": "Jumlah Terlaras",
+      "startDate": "Tarikh Mula",
+      "finishDate": "Tarikh Siap"
+    },
+    "fields": {
+      "name": "Nama Projek",
+      "code": "ID Projek",
+      "status": "Status",
+      "manager": "Pengurus Projek",
+      "scope": "Skop Projek",
+      "startDate": "Tarikh Mula",
+      "finishDate": "Tarikh Siap",
+      "description": "Keterangan",
+      "milestones": "Pencapaian Kontrak"
+    },
+    "projectStatus": {
+      "planned": "Dirancang",
+      "tendering": "Tender",
+      "active": "Aktif",
+      "on_hold": "Ditangguhkan",
+      "completed": "Selesai",
+      "cancelled": "Dibatalkan"
+    },
     "noProjects": "Gunakan “Pilih projek…” di bahagian atas halaman untuk memilih projek yang digunakan oleh templat ini. Buat masa ini, templat menggunakan satu projek.",
     "search": "Cari butiran, jadual dan lajur",
     "hint": "Seret butiran (nama, tarikh, pengenalan…) ke elemen teks, atau logo ke elemen imej, untuk mengisinya; lepaskan di ruang kosong untuk yang baharu. Ia menjadi teks atau imej biasa. Seret jadual ke bahagian Butiran atau ke jadual; seret lajur untuk menambah lajur itu sahaja.",
@@ -2545,6 +2614,9 @@
     "expand": "Tunjukkan lajur",
     "collapse": "Sembunyikan lajur",
     "rows": "1 baris | {count} baris",
+    "columnCount": "Tiada lajur | 1 lajur | {count} lajur",
+    "standardFields": "Lajur asas",
+    "customFields": "Lajur takrifan pengguna",
     "usedIn": "Digunakan dalam: {tables}",
     "noMatch": "Tiada yang sepadan",
     "loadFailed": "Data projek ini tidak dapat dimuatkan.",
@@ -3160,7 +3232,7 @@
     "tools": {
       "projects": {
         "title": "Projek",
-        "text": "Pilih projek yang dibincangkan dalam templat ini (buat masa ini, satu projek bagi setiap templat). Butiran, jadual dan cartanya kemudian muncul di bawah Data Laporan di sebelah kiri."
+        "text": "Pilih projek yang dibincangkan dalam templat ini (buat masa ini, satu projek bagi setiap templat). Butiran, senarai (pasukan, syarikat, kontrak), jadual dan cartanya kemudian muncul di bawah Data Laporan di sebelah kiri."
       },
       "reportName": {
         "title": "Nama templat",
@@ -3370,9 +3442,10 @@
         "title": "Jadual",
         "what": "Baris dan lajur, sama ada ditaip oleh anda atau diisi daripada data projek anda.",
         "when": "Taip sendiri untuk angka utama, ringkasan dan daftar. Guna data projek untuk senarai yang datang daripada projek anda, seperti perolehan atau bahan.",
-        "add": "Klik Jadual dalam Pustaka Elemen dan pilih Taip sendiri atau Guna data projek.",
+        "add": "Klik Jadual dalam Pustaka Elemen dan pilih Taip sendiri atau Guna data projek. Atau seret senarai (Pasukan Projek, Syarikat, Kontrak) atau butiran Pengurus Projek dari Data Laporan: ia muncul sebagai jadual yang ditaip dan diisi dengannya.",
         "work": [
           "Jadual yang ditaip: klik dua kali untuk menaip dalam sel; Tab bergerak ke sel seterusnya. Pemegang di atas lajur dan di sebelah baris memilih seluruh lajur atau baris; kemudian Sisip di atas / di bawah / di kiri / di kanan, Padam, Gabung dan Pisah ada dalam Tetapan Asas dan pada klik kanan. Warna, huruf tebal, penjajaran dan saiz teks sel yang dipilih ada dalam Tetapan Gaya.",
+        "Saiz: seret garisan antara lajur untuk menukar lebarnya, dan garisan di bawah baris untuk menukar ketinggiannya. Jadual yang ditaip: buka (klik dua kali) dan gunakan garisan pendek antara huruf di atasnya dan nombor di sebelahnya. Jadual data projek: pilih jadual, kemudian seret garisan ungu padanya (baris tajuk dan baris masing-masing mempunyai satu ketinggian).",
           "Jadual data projek: klik dua kali padanya (atau Edit data) untuk memilih projek, data, lajur, penapis, susunan dan jumlah. Baris diisi dengan sendiri setiap kali laporan dijalankan.",
           "Tetapan Gaya: Sesuaikan menetapkan rupa seluruh jadual; klik lajur jadual data projek pada halaman untuk menggayakan sel Pengepala, Data dan Jumlahnya secara berasingan. Peraturan penyerlahan, yang mewarnakan baris atau sel mengikut nilainya (Status ialah Lewat, Stok hingga 100, tarikh sebelum hari ini), ditetapkan dalam persediaan data, di sebelah Tapis & isih.",
           "Rupa menetapkan gaya jadual; Sesuaikan mengubah warna jadual ini sahaja, dan Simpan sebagai gaya jadual menyimpannya untuk jadual lain.",
@@ -3699,6 +3772,11 @@
       "typedGrid": {
         "title": "Baris dan lajur",
         "text": "Berapa baris dan lajur jadual, baris tajuk, dan sama ada baris terakhir ialah jumlah. Menanda Baris terakhir ialah jumlah menambah baris di bawah dengan Jumlah dan hasil tambah setiap lajur nombor, dikemas kini semasa anda menaip (taip dalam sel jumlah untuk menulis sendiri). Butang + dan − menambah atau membuang baris atau lajur di hujung. Untuk menambah di tempat lain, buka jadual, pilih baris atau lajur (klik pemegangnya) dan gunakan Sisip di atas / di bawah / di kiri / di kanan di sini atau pada klik kanan; Padam, Gabung sel dan Pisah sel juga ada di sini. Pisahkan jadual di sini memindahkan baris yang dipilih dan baris di bawahnya ke jadual baharu di halaman baharu, bersama salinan baris tajuk."
+      },
+      "typedColumns": {
+        "title": "Lajur",
+        "text": "Setiap lajur jadual, mengikut susunan. Taip nama baharu untuk menukar tajuk lajur (selnya dalam baris tajuk pertama), atau gunakan tong sampah untuk memadam lajur bersama semua isinya. Tajuk yang digabungkan merentasi lajur ditukar namanya pada lajur pertamanya.",
+        "example": "Tukar \"Telefon\" kepada \"Mudah alih\", atau padam lajur Laman Web."
       },
       "typedCells": {
         "title": "Sel",

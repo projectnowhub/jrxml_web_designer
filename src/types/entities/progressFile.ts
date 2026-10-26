@@ -1,0 +1,53 @@
+// cdp-fe-app Entities/ProgressFile/ProgressFile.entity.ts
+import type { BaseEntity } from "./base";
+import type { BaselineType } from "./baselineType";
+import type { Job } from "./job";
+import type { ProjectType, SourceApplication, SourceFormat } from "./projectSourceInfo";
+
+export interface ProgressFile extends BaseEntity {
+  totalActivityCount: number;
+  minutesPerMonth: number;
+  projectType: ProjectType;
+  mustFinish: string;
+  plannedCost: number;
+  totalStartMilestoneCount: number;
+  earlyFinish: string;
+  tenant: string;
+  totalDuration: number;
+  globalCalenderName: string;
+  minutesPerYear: number;
+  ignoreErrors: boolean;
+  version: number;
+  criticalActivityCount: number;
+  plannedStartDate: string;
+  plannedFinishDate: string;
+  projectName: string;
+  projectId: string;
+  startDate: string;
+  globalCalenderId: string;
+  totalWbsCount: number;
+  totalNotStartedActivity: number;
+  totalCompletedActivity: number;
+  calendarHours: number;
+  sourceFormat: SourceFormat;
+  sourceApplication: SourceApplication;
+  objectId: number;
+  dataDate: string;
+  minutesPerWeek: number;
+  lastModifiedDate: string;
+  importFile: string;
+  lastModifiedBy: string;
+  totalResourcesDependent: number;
+  lateFinish: string;
+  totalResources: number;
+  createdDate: string;
+  totalLoeCount: number;
+  createdBy: string;
+  totalInProgressActivity: number;
+  minutesPerDay: number;
+  finishDate: string;
+  totalTaskDependentCount: number;
+  baselineType: BaselineType;
+  currentJob: Job;
+  jobs: Job[];
+}

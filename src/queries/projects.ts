@@ -1,0 +1,155 @@
+// The CDP projects through TanStack Query (the CDP app's useProjectList /
+// useInfiniteQuery pattern): the picker's list a page at a time, one project,
+// and its details. Components use the hooks; the AI assistant, the Location
+// panel and Report Data's details use the fetch functions, which read the
+// same cache.
+
+import { computed, toValue, watchEffect, type MaybeRefOrGetter } from "vue";
+import { infiniteQueryOptions, queryOptions, useInfiniteQuery } from "@tanstack/vue-query";
+import { projectApi, projectKey, toProjectDetails, toProjectSummary } from "@/services/projectService";
+import type { JmixListResponse } from "@/services/jmixService";
+import type { Project } from "@/types/entities";
+import type { ProjectDetails, ProjectSummary } from "@/types/dataSource";
+import { DATA_STALE_TIME, queryClient } from "./queryClient";
+import { projectKeys } from "./keys";
+
+// A list page also answers for each project on it (opening one fetches nothing)
+function seedProjects(rows: Project[]) {
+  for (const project of rows) queryClient.setQueryData(projectKeys.detail(projectKey(project)), project);
+}
+
+// Search is done here in the browser, never by the API: every word must be in
+// the project's name or code (any case)
+export function matchesSearch(project: ProjectSummary, search: string): boolean {
+  const words = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const text = `${project.name} ${project.code}`.toLowerCase();
+  return words.every((word) => text.includes(word));
+}
+
+// The picker's list: pages of 30, the next one from where the loaded rows end
+export const projectListQuery = () =>
+  infiniteQueryOptions({
+    queryKey: projectKeys.list(),
+    queryFn: async ({ pageParam, signal }) => {
+      const page = await projectApi.list({ offset: pageParam }, signal);
+      seedProjects(page.rows);
+      return page;
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.hasMore ? allPages.reduce((sum, p) => sum + p.rows.length, 0) : undefined,
+    staleTime: DATA_STALE_TIME,
+  });
+
+// One project by its key (null: no such project). The list's pages (loaded
+// when the designer opens) usually hold it already: it is taken from there
+// (waiting for that request when it is still on its way), and asked for on
+// its own only when it isn't on them
+export const projectQuery = (key: string) =>
+  queryOptions({
+    queryKey: projectKeys.detail(key),
+    queryFn: async ({ signal }) => {
+      const list = await queryClient.fetchInfiniteQuery(projectListQuery()).catch(() => null);
+      const found = list?.pages.flatMap((page) => page.rows).find((project) => projectKey(project) === key);
+      return found ?? projectApi.getByKey(key, signal);
+    },
+    staleTime: DATA_STALE_TIME,
+  });
+
+// The picker's first page, loaded as soon as the designer opens (as the CDP app
+// prefetches its dashboards), so the list is there before the picker opens
+export const prefetchProjects = (): Promise<void> => queryClient.prefetchInfiniteQuery(projectListQuery());
+
+// The picker's list: every loaded page as one list of projects (a project that
+// moved to a later page after a change is shown once), and those matching the
+// search. While a search is typed, the remaining pages load one after another
+// so it finds every project
+export function useProjectList(search: MaybeRefOrGetter<string>, enabled: MaybeRefOrGetter<boolean>) {
+  const query = useInfiniteQuery(computed(() => ({ ...projectListQuery(), enabled: toValue(enabled) })));
+  const projects = computed<ProjectSummary[]>(() => {
+    const seen = new Set<string>();
+    return (query.data.value?.pages ?? [])
+      .flatMap((page) => page.rows)
+      .filter((project) => {
+        const key = projectKey(project);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .map(toProjectSummary);
+  });
+  const matching = computed(() => {
+    const words = toValue(search);
+    return words.trim() ? projects.value.filter((p) => matchesSearch(p, words)) : projects.value;
+  });
+  watchEffect(() => {
+    if (!toValue(enabled) || !toValue(search).trim()) return;
+    if (query.hasNextPage.value && !query.isFetching.value && !query.isError.value) query.fetchNextPage();
+  });
+  return { ...query, projects, matching };
+}
+
+// ---- Outside components (same cache) ---------------------------------------
+
+export const fetchProject = (key: string): Promise<Project | null> => queryClient.fetchQuery(projectQuery(key));
+
+// A project's details for Report Data (throws for an unknown project)
+export async function getProject(key: string): Promise<ProjectDetails> {
+  const project = await fetchProject(key);
+  if (!project) throw new Error(`Unknown project: ${key}`);
+  return toProjectDetails(project, key);
+}
+
+// A project's name and code (a chosen project may not be on the pages loaded so far)
+export async function getProjectSummary(key: string): Promise<ProjectSummary | null> {
+  const project = await fetchProject(key);
+  return project ? { ...toProjectSummary(project), id: key } : null;
+}
+
+// Every project, all pages (the AI assistant's search)
+const fetchAllProjects = () =>
+  queryClient.fetchQuery({
+    queryKey: projectKeys.everything(),
+    queryFn: async ({ signal }) => {
+      const rows: Project[] = [];
+      for (let more = true; more; ) {
+        const page = await projectApi.list({ offset: rows.length }, signal);
+        seedProjects(page.rows);
+        rows.push(...page.rows);
+        more = page.hasMore && page.rows.length > 0;
+      }
+      return rows;
+    },
+    staleTime: DATA_STALE_TIME,
+  });
+
+// Projects for the AI assistant: the first page, or every project matching a
+// search (searched here, like the picker)
+export async function listProjects({ search = "" }: { search?: string } = {}): Promise<JmixListResponse<ProjectSummary>> {
+  if (!search.trim()) {
+    const data = await queryClient.fetchInfiniteQuery(projectListQuery());
+    const first = data.pages[0] ?? { rows: [], total: 0, hasMore: false };
+    return { ...first, rows: first.rows.map(toProjectSummary) };
+  }
+  const rows = (await fetchAllProjects()).map(toProjectSummary).filter((p) => matchesSearch(p, search));
+  return { rows, total: rows.length, hasMore: false };
+}
+
+// The projects in the picker's list as far as it is loaded: code -> UUID.
+// Read from the cache only: never a request
+export function cachedProjectIds(): Map<string, string> {
+  const ids = new Map<string, string>();
+  const data = queryClient.getQueryData<{ pages: JmixListResponse<Project>[] }>(projectKeys.list());
+  for (const project of data?.pages.flatMap((page) => page.rows) ?? []) {
+    if (project.id && project.projectId) ids.set(project.projectId, project.id);
+  }
+  return ids;
+}
+
+// Runs `listener` whenever the picker's list in the cache changes
+export function onProjectListChange(listener: () => void): () => void {
+  const key = JSON.stringify(projectKeys.list());
+  return queryClient.getQueryCache().subscribe((event) => {
+    if (event.type === "updated" && JSON.stringify(event.query.queryKey) === key) listener();
+  });
+}

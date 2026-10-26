@@ -99,6 +99,7 @@ export const SHORTCUT_GROUPS: { id: ShortcutGroupId; rows: ShortcutRow[] }[] = [
       { id: "tableSelectAll", combos: [["Mod", "A"]] },
       { id: "tableLineMenu", combos: [["mouse:rightClickHandle"]] },
       { id: "tableChooseColumn", combos: [["mouse:clickTwice"]] },
+      { id: "tableResizeLine", combos: [["mouse:dragTableLine"]] },
       { id: "tableClose", combos: [["Esc"]] },
     ],
   },

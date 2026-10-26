@@ -8,6 +8,7 @@
 import type { ReportStyle } from "@/types";
 import type { DataRow, TableColumnBinding, TableColumnLook, TableColumnPartLook, TableDataBinding, TableHighlight } from "@/types/dataSource";
 import { buildLookStyles, resolveLook, tableStylePrefix } from "./tableThemes";
+import { javaString } from "@/utils/jrxml/javaString";
 
 const text = (value: unknown) => (value == null ? "" : String(value).trim());
 const num = (value: unknown) => {
@@ -52,8 +53,8 @@ export function ruleMatches(rule: TableHighlight, col: TableColumnBinding | unde
   return (from === null || n >= from) && (to === null || n <= to);
 }
 
-// A Java string literal
-const javaText = (s: string) => `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r?\n/g, " ")}"`;
+// A Java string literal on one line
+const javaText = (s: string) => javaString(s, " ");
 
 // The rule as a JasperReports expression on the table's dataset (fields are
 // typed loosely: numbers as java.lang.Number, the rest as Object)

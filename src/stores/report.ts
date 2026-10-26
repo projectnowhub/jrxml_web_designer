@@ -27,6 +27,7 @@ import { loadReportDefaults } from "@/utils/reportDefaults";
 import { useEditorStore } from "./editor";
 import { useSelectionStore } from "./selection";
 import { useFilesStore } from "./files";
+import { lastProject } from "@/utils/lastProject";
 import {
   ALL_CONFIGURABLE_BANDS,
   BAND_CONSTANTS,
@@ -103,6 +104,12 @@ function newBands(): Band[] {
     elements: [],
   }));
 }
+
+// A new template's projects: the one last chosen, when there is one
+const startingProjects = () => {
+  const project = lastProject();
+  return project ? [project] : [];
+};
 
 export const useReportStore = defineStore("report", () => {
   // The JRXML written from the model (shown, validated and saved)
@@ -195,6 +202,8 @@ export const useReportStore = defineStore("report", () => {
   // Bumped each time updateJrxml() writes a different JRXML: the designer
   // auto-saves on it (loading a file sets jrxmlContent without bumping it)
   const jrxmlVersion = ref(0);
+  // Goes up each time a report is opened (loadReport)
+  const loadedVersion = ref(0);
   let writing = false;
   const isWritingJrxml = () => writing;
 
@@ -286,13 +295,15 @@ export const useReportStore = defineStore("report", () => {
   // are repaired, and nothing is selected. The history starts empty, unless
   // keepHistory (applying edited JRXML is one undo step, recorded before).
   function loadReport(data: ReportData, options: { keepHistory?: boolean } = {}) {
+    loadedVersion.value++;
     const props = data.reportProperties ?? {};
     reportProperties.value = {
       ...newReportProperties(),
       ...props,
       bandLimits: props.bandLimits || getEffectiveDefaultBandLimits(),
-      // Each report has its own projects
-      projects: props.projects ?? [],
+      // Each report has its own projects; a new template starts with the one
+      // last chosen in this browser
+      projects: props.projects ?? (data.reportProperties ? [] : startingProjects()),
       // A new template numbers its Headings "1."; an opened one keeps its own
       // (none = "SECTION 1.", what templates used before)
       headingNumbers: data.reportProperties ? props.headingNumbers : { ...NEW_REPORT_HEADING_NUMBERING },
@@ -353,6 +364,7 @@ export const useReportStore = defineStore("report", () => {
     undo: history.undo,
     redo: history.redo,
     jrxmlVersion,
+    loadedVersion,
     bandTypes,
     setBandTypes,
     loadReport,

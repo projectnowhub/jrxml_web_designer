@@ -16,7 +16,8 @@ import { formatXml } from '@/utils/jrxml/formatXml';
 import { generatePdf } from '@/services/reportService';
 import { fillPage } from './flow';
 import { attachmentImageSource, type ChatAttachment } from './attachments';
-import { getFacets, getProject, getSchema, listProjects, listSources } from '@/services/dataSourceService';
+import { fetchFacets, fetchSchema, fetchSources } from '@/queries/dataSources';
+import { getProject, listProjects } from '@/queries/projects';
 import { PLACE_FIELDS, toPlace } from '@/utils/location/locationElement';
 import { ELEMENT_KINDS, createSchema, findKind, updateSchema } from './elements/registry';
 import { validateValue } from './elements/validate';
@@ -289,40 +290,53 @@ const checkReportHandler: MCPToolHandler = {
 
 const getReportDataHandler: MCPToolHandler = {
   execute: async (params) => {
-    const { projectId, sourceId } = params;
+    const { projectId, sourceId, search } = params;
     try {
       if (projectId && sourceId) {
-        const schema = await getSchema(projectId, sourceId);
-        const facets = await getFacets(projectId, sourceId).catch(() => ({} as Record<string, never>));
+        const schema = await fetchSchema(projectId, sourceId);
+        const facets = await fetchFacets(projectId, sourceId).catch(() => ({} as Record<string, never>));
         // What each column holds, for filters: its values (text) or its range
         const holds = (key: string) => {
           const facet = (facets as Record<string, any>)[key];
           if (facet?.kind === 'values') return { values: facet.values.slice(0, 20).map((v: { value: string }) => v.value), ...(facet.values.length > 20 ? { moreValues: facet.values.length - 20 } : {}) };
           if (facet?.kind === 'range') return { min: facet.min, max: facet.max };
+          if (facet?.kind === 'text') return { filter: 'contains' };
+          if (facet?.kind === 'boolean') return { filter: 'is' };
           return {};
         };
         return {
           success: true,
-          data: { source: schema.name, columns: schema.columns.map((c) => ({ key: c.key, name: c.label, type: c.type, ...holds(c.key) })) }
+          data: { source: schema.name, columns: schema.columns.map((c) => ({ key: c.key, name: c.label, type: c.type, ...(c.userDefined ? { userDefined: true } : {}), ...holds(c.key) })) }
         };
       }
       if (projectId) {
-        const sources = await listSources(projectId);
+        const sources = await fetchSources(projectId);
+        const project = await getProject(projectId).catch(() => null);
         // Where the project is (create_location with projectId copies it)
-        const place = toPlace((await getProject(projectId).catch(() => null))?.location);
+        const place = toPlace(project?.location);
         const location = PLACE_FIELDS.some((f) => place[f]) ? place : null;
+        // Its details, lists (team, companies, contracts, the manager's card) and
+        // its own fields' values, to copy into text and typed tables
+        const details = Object.fromEntries((project?.fields ?? []).map((f) => [f.label, project?.values[f.key] ?? null]));
+        const lists = (project?.tables ?? []).map((table) => ({
+          name: table.label,
+          ...(table.card ? { labelValueRows: table.rows } : { columns: table.columns, rows: table.rows })
+        }));
+        const moreDetails = (project?.moreDetails ?? []).map((f) => f.label);
         return {
           success: true,
-          data: { sources: sources.map((s) => ({ sourceId: s.id, name: s.name, rows: s.rowCount })), location }
+          data: { sources: sources.map((s) => ({ sourceId: s.id, name: s.name, columns: s.columnCount })), location, details, lists, moreDetails }
         };
       }
       const chosen = useReportStore().reportProperties.projects ?? [];
-      const all = await listProjects();
+      // The first projects A to Z; `search` finds the others by name or code
+      const page = await listProjects({ search: typeof search === 'string' ? search : '' });
       return {
         success: true,
         data: {
           inThisReport: chosen.map((p) => ({ projectId: p.id, name: p.name })),
-          available: all.map((p) => ({ projectId: p.id, name: p.name, code: p.code }))
+          available: page.rows.map((p) => ({ projectId: p.id, name: p.name, code: p.code })),
+          ...(page.hasMore ? { moreProjects: `${page.total - page.rows.length} more; call again with search (name or code) to find one` } : {})
         }
       };
     } catch (error) {

@@ -78,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import { FileText, HardDrive, LayoutTemplate, Maximize2, Search, Upload } from "@lucide/vue";
@@ -88,7 +88,9 @@ import notification from "@/utils/notification";
 import { useTemplates } from "@/composables/useTemplates";
 import { useFilesStore } from "@/stores/files";
 import type { DesignerFile } from "@/types/designerFile";
-import { getTemplate, listTemplates, type TemplateSummary } from "@/services/templateService";
+import { useQuery } from "@tanstack/vue-query";
+import type { TemplateSummary } from "@/services/templateService";
+import { fetchTemplate, templateListQuery } from "@/queries/templates";
 
 const props = defineProps<{ visible: boolean }>();
 const emit = defineEmits<{
@@ -107,21 +109,16 @@ const query = ref("");
 const dragOver = ref(false);
 const searchRef = ref<HTMLInputElement | null>(null);
 // The first 25 that match, last edited first; See all shows the rest
-const shown = ref<TemplateSummary[]>([]);
-let request = 0;
-async function loadShown() {
-  const id = ++request;
-  const page = await listTemplates({ q: query.value, size: 25 });
-  if (id === request) shown.value = page.items;
-}
-watch(query, loadShown);
+const shownQuery = useQuery(
+  computed(() => ({ ...templateListQuery({ q: query.value, size: 25 }), enabled: props.visible })),
+);
+const shown = computed<TemplateSummary[]>(() => shownQuery.data.value?.items ?? []);
 
 watch(
   () => props.visible,
   (open) => {
     if (!open) return;
     query.value = "";
-    loadShown();
     dragOver.value = false;
     tab.value = "mine";
     nextTick(() => searchRef.value?.focus());
@@ -139,7 +136,7 @@ function openFullPage() {
 }
 
 async function choose(file: TemplateSummary) {
-  const whole = await getTemplate(file.id);
+  const whole = await fetchTemplate(file.id);
   close();
   if (whole) emit("load-file", whole);
   else notification.error(t("openTemplate.notFound"));

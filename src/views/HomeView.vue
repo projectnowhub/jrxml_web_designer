@@ -32,17 +32,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { ArrowRight, Inbox } from "@lucide/vue";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
-import { listTemplates, type TemplateSummary } from "@/services/templateService";
-import { useFilesStore } from "@/stores/files";
-
-const SHOW_SHARED = false;
+import { useQuery } from "@tanstack/vue-query";
+import { templateListQuery } from "@/queries/templates";
 import TemplateGrid from "@/components/templates/TemplateGrid.vue";
 import { useHelpStore } from "../stores/help";
+
+const SHOW_SHARED = false;
 
 const { t } = useI18n();
 const router = useRouter();
@@ -59,16 +59,10 @@ const displayName = computed(
 );
 // The 7 last edited templates; View all goes to My Templates
 const RECENT_COUNT = 7;
-const recent = ref<TemplateSummary[]>([]);
-const total = ref(0);
-const filesStore = useFilesStore();
-const loadRecent = async () => {
-  const page = await listTemplates({ size: RECENT_COUNT, sort: "lastModified", dir: "desc" });
-  recent.value = page.items;
-  total.value = page.total;
-};
-// A template renamed, copied or deleted here shows at once
-watch(() => filesStore.templatesVersion, loadRecent);
+// (a template renamed, copied or deleted here shows at once: saving invalidates the list)
+const recentQuery = useQuery(templateListQuery({ size: RECENT_COUNT, sort: "lastModified", dir: "desc" }));
+const recent = computed(() => recentQuery.data.value?.items ?? []);
+const total = computed(() => recentQuery.data.value?.total ?? 0);
 
 // First visit: a short tour of the home page (once per browser)
 const help = useHelpStore();
@@ -76,7 +70,6 @@ let tourTimer: ReturnType<typeof setTimeout> | undefined;
 
 onMounted(() => {
   tourTimer = setTimeout(() => help.startTourOnce("home"), 600);
-  loadRecent();
 });
 
 onBeforeUnmount(() => {

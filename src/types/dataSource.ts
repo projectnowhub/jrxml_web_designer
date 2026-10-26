@@ -29,6 +29,24 @@ export interface ProjectDetails extends ProjectSummary {
   values: Record<string, string | null>;
   // Where the project is, as in the CDP project form (Location step)
   location?: ProjectLocation | null;
+  // The project's lists (team, companies, contracts) and its manager's card,
+  // each dragged onto the page as a typed table holding the values
+  tables?: ProjectTable[];
+  // The values of the project's own fields (dynamic attributes), each dragged
+  // as text; their names aren't sent yet, so only the values are shown
+  moreDetails?: ProjectField[];
+}
+
+// A project list as a typed table: heading row + one row per item, or (a card)
+// a label and its value per row with no heading row
+export interface ProjectTable {
+  key: "team" | "companies" | "contracts" | "manager";
+  label: string;
+  columns: string[];
+  // Each column's share of the table's width
+  shares: number[];
+  rows: string[][];
+  card?: boolean;
 }
 
 // A project's place. Latitude and longitude may come as numbers or text
@@ -56,7 +74,10 @@ export type DataColumnType = "text" | "number" | "currency" | "date";
 export interface DataSourceSummary {
   id: string;
   name: string;
-  rowCount: number;
+  // How many rows it has, when the backend says (the entities list doesn't)
+  rowCount?: number;
+  // How many columns it offers
+  columnCount?: number;
 }
 
 // A column of a source, as the backend describes it
@@ -64,6 +85,9 @@ export interface DataColumn {
   key: string;
   label: string;
   type: DataColumnType;
+  // A field the tenant added to the entity (its user-defined fields), not one
+  // every tenant has (its base fields)
+  userDefined?: boolean;
 }
 
 export interface DataSourceSchema {
@@ -77,11 +101,14 @@ export interface DataSourceSchema {
 
 export type DataRow = Record<string, string | number | null>;
 
-// Filters work like a shop's filter panel: tick values of a text column
-// ("in"), or set a range for a number, amount or date ("between", either
-// end optional). Filters on different columns must all match; ticked values
-// of one column match any of them.
-export type FilterOperator = "in" | "between";
+// Filters work like a shop's filter panel, and become the same Jmix
+// conditions as the CDP app's buildJmixFilter: tick values of a column with a
+// fixed list of values ("in"), type words a text column must contain
+// ("contains"), choose Yes or No for a yes / no column ("equals", sent as
+// "=" true / false, the CDP app's checkbox), or set a range for a number,
+// amount or date ("between", >= / <=, either end optional). Filters on
+// different columns must all match; ticked values of one column match any.
+export type FilterOperator = "in" | "between" | "contains" | "equals";
 
 // Date ranges that move with today's date, so a report reused next month
 // shows next month's data (utils/table/dataBinding.ts periodRange)
@@ -93,9 +120,13 @@ export interface TableFilter {
   label?: string;
   type?: DataColumnType;
   operator: FilterOperator;
-  // "in": the ticked values
+  // "in": the ticked values (as stored, e.g. "IN_PROGRESS")
   values?: string[];
-  // "between": lower and upper bound (inclusive); either may be empty
+  // "in": each ticked value's name as shown ("In Progress"), for the chips
+  // (the CDP app's SelectFilterValue.labels)
+  labels?: Record<string, string>;
+  // "between": lower and upper bound (inclusive); either may be empty.
+  // "contains": the words typed; "equals": "true" or "false" (in `value`)
   value?: string;
   value2?: string;
   // "between" on a date column: a moving range instead of value/value2,
@@ -236,11 +267,15 @@ export interface DataQueryResult {
   totalCount: number;
 }
 
-// What a column holds, for the filter panel: its distinct values with how
-// many rows have each (text), or its smallest and largest value (number,
-// amount, date as ISO text)
+// How a column is filtered, as the CDP app decides it from the field's type
+// (fieldManifest toFilterSpec): a fixed list of values to tick (ENUM fields:
+// their enumValues; a count when the backend gives one), typed words (text),
+// or a range (number, amount, date; its smallest and largest value when
+// known, as ISO text for dates)
 export type ColumnFacet =
-  | { kind: "values"; values: { value: string; count: number }[] }
+  | { kind: "values"; values: { value: string; label?: string; count?: number }[] }
+  | { kind: "text" }
+  | { kind: "boolean" }
   | { kind: "range"; min: string | number | null; max: string | number | null };
 
 export type SourceFacets = Record<string, ColumnFacet>;

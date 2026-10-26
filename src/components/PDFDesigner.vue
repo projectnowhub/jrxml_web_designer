@@ -762,6 +762,10 @@ import {
   countProjectUsage,
   projectFieldSize,
 } from "@/utils/projectFields";
+import { buildProjectTable } from "@/utils/projectTables";
+import { cachedProjectIds, fetchProject, onProjectListChange, prefetchProjects } from "@/queries/projects";
+import { forgetLastProject, lastProject, rememberLastProject } from "@/utils/lastProject";
+import { upgradeBindings, upgradedProjects } from "@/utils/projectKeys";
 import {
   endDataSourceDrag,
   isDataSourceDrag,
@@ -2008,7 +2012,42 @@ const setReportProjects = (projects: ReportProject[]) => {
   saveStateToHistory();
   reportProperties.value = { ...reportProperties.value, projects };
   updateJRXML();
+  // New templates start with the project chosen last (utils/lastProject.ts)
+  if (projects.length) rememberLastProject(projects[projects.length - 1]);
 };
+
+// The remembered project no longer exists (deleted, or another tenant's): it
+// is forgotten, so the next new template starts without it. A template's own
+// projects are never changed here (Report Data says when one can't be read)
+const checkRememberedProject = async () => {
+  const remembered = lastProject();
+  if (!remembered) return;
+  const found = await fetchProject(remembered.id).catch(() => undefined);
+  if (found === null && lastProject()?.id === remembered.id) forgetLastProject();
+};
+onMounted(checkRememberedProject);
+
+// A template saved while projects came without their UUID keeps a project's
+// code ("project1"): once the loaded project list knows that code's UUID it
+// takes its place in the report and in its tables' and charts' setup, so
+// their requests use project.id as the CDP app does. From the cached list
+// only (no request); a repair like loadReport's, so no undo step of its own
+const upgradeProjectKeys = () => {
+  const ids = cachedProjectIds();
+  if (!ids.size || !reportProperties.value) return;
+  // The remembered project too
+  const remembered = lastProject();
+  const rememberedId = remembered ? ids.get(remembered.id) : undefined;
+  if (remembered && rememberedId) rememberLastProject({ ...remembered, id: rememberedId });
+  const projects = upgradedProjects(reportProperties.value.projects ?? [], ids);
+  const bindingsChanged = upgradeBindings(bands.value, ids);
+  if (projects) reportProperties.value = { ...reportProperties.value, projects };
+  if (projects || bindingsChanged) updateJRXML();
+};
+const stopProjectKeyUpgrade = onProjectListChange(upgradeProjectKeys);
+onUnmounted(stopProjectKeyUpgrade);
+// A template opened while the list is already loaded
+watch(() => reportStore.loadedVersion, upgradeProjectKeys);
 
 
 
@@ -3090,6 +3129,17 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
         value: dataDrag.value,
       },
     };
+  } else if (dataDrag?.kind === "projectTable") {
+    endDataSourceDrag();
+    highlightedBandIndex.value = null;
+    dropTargetBlocked.value = false;
+    // A list without rows has nothing to copy
+    if (!dataDrag.table.rows.length) {
+      notification.info(t("reportData.noValue", { project: dataDrag.projectName, label: dataDrag.table.label }));
+      return;
+    }
+    // A typed table holding the list, placed like a library table
+    elementData = { type: "customTable", projectTable: dataDrag.table };
   } else if (dataDrag) {
     endDataSourceDrag();
     highlightedBandIndex.value = null;
@@ -3170,7 +3220,11 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
 
     // Create the new element
     // Center it on the cursor using its own compact default size
-    const baseElement = elementData.place ? buildLocation(elementData.place) : createLibraryElement(elementData.type);
+    const baseElement = elementData.place
+      ? buildLocation(elementData.place)
+      : elementData.projectTable
+      ? buildProjectTable(elementData.projectTable, getFrameTemplateContext().availableWidth)
+      : createLibraryElement(elementData.type);
     const droppedSize =
       isFrameTemplateType(elementData.type) ||
       isReportPartType(elementData.type) ||
@@ -3802,7 +3856,7 @@ watch(barcodeLibraryLoaded, () => updateJRXML());
 // A source or column dropped from the "Report Data" list
 const handleDataSourceDrop = (
   event: DragEvent,
-  drag: Exclude<DataSourceDragPayload, { kind: "projectField" }>,
+  drag: Exclude<DataSourceDragPayload, { kind: "projectField" | "projectTable" }>,
   pageIndex?: number,
 ) => {
   const columnKey = drag.kind === "column" ? drag.column.key : undefined;
@@ -5861,6 +5915,8 @@ watch(
 
 // Load data when the component mounts
 onMounted(() => {
+  // The project list, so the header's picker has it before it is opened
+  prefetchProjects();
   isLoadingFile.value = true;
   console.log("Component mount started...");
   loadFromLocalStorageWrapper();

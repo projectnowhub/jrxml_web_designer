@@ -15,6 +15,7 @@
     @start-editing="(b, i) => emit('startEditing', b, i, parentFrameIndex)"
   >
     <div
+      ref="tableRef"
       class="data-table"
       :class="{ 'is-drop-target': isDropTarget }"
       :data-table-uuid="element.uuid"
@@ -113,6 +114,28 @@
         </div>
       </template>
 
+      <!-- While selected: lines to drag, between columns (their widths) and
+           under the heading and the sample rows (heading / row height) -->
+      <template v-if="isSelected && binding && !isDragging">
+        <div
+          v-for="(edge, i) in columnEdges"
+          :key="`c${i}`"
+          class="dt-col-edge"
+          :style="{ left: `${edge}px` }"
+          :title="t('dataTable.dragColumnEdge')"
+          @mousedown.stop.prevent="startColumnDrag($event, i)"
+        />
+        <div
+          v-for="edge in rowEdges"
+          :key="`r${edge.index}`"
+          class="dt-row-edge"
+          :class="{ 'is-bottom': edge.y >= element.height - 1 }"
+          :style="{ top: `${edge.y}px` }"
+          :title="t(edge.index < 0 ? 'dataTable.dragHeaderEdge' : 'dataTable.dragRowEdge')"
+          @mousedown.stop.prevent="startRowDrag($event, edge.index)"
+        />
+      </template>
+
       <!-- One outline around the chosen column -->
       <div
         v-if="chosenColumnBounds"
@@ -127,7 +150,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRef } from "vue";
+import { computed, onBeforeUnmount, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { DatabaseZap } from "@lucide/vue";
 import BaseElement from "./BaseElement.vue";
@@ -144,11 +167,12 @@ import {
   hasTotalsRow,
   rowSlots,
 } from "@/utils/table/dataTable";
-import { distributeColumnWidths } from "@/utils/table/dataBinding";
+import { distributeColumnWidths, MIN_TABLE_COLUMN_WIDTH } from "@/utils/table/dataBinding";
 import { lookPartStyles, resolveLook, rowColorAt, tableCellCss, type TableStylePart } from "@/utils/table/tableThemes";
 import { isDataSourceDrag } from "@/utils/table/dataDrag";
 import { columnPartLook, partLookCss } from "@/utils/table/columnLook";
 import { useSelectionStore } from "@/stores/selection";
+import { useReportStore } from "@/stores/report";
 import { storeToRefs } from "pinia";
 import type { SelectedElementInfo, TableElement } from "@/types";
 import type { DataRow, TableColumnBinding } from "@/types/dataSource";
@@ -265,6 +289,91 @@ function chooseColumn(key: string, part: "header" | "data" | "total" = "data") {
   tableColumn.value = { uuid: props.element.uuid, key, part };
 }
 
+// ---- Dragging column and row lines ---------------------------------------------
+
+const report = useReportStore();
+// The same limits as the heading / row height fields in Basic Settings
+const MIN_ROW_SIZE = 12;
+const MAX_ROW_SIZE = 80;
+
+// Where the lines between columns are (px from the table's left)
+const columnEdges = computed(() => {
+  const edges: number[] = [];
+  let left = 0;
+  (binding.value?.columns ?? []).slice(0, -1).forEach((col) => edges.push((left += col.width)));
+  return edges;
+});
+
+// The line under the heading (index -1) and under each sample row shown
+const rowEdges = computed(() => {
+  const edges = [{ index: -1, y: headerHeight.value }];
+  rowSlotsShown.value.forEach((_, k) => edges.push({ index: k, y: headerHeight.value + (k + 1) * rowHeight.value }));
+  return edges;
+});
+
+// How many canvas pixels one design pixel takes (the page's zoom)
+const tableRef = ref<HTMLElement | null>(null);
+const scale = () => {
+  const width = tableRef.value?.getBoundingClientRect().width ?? 0;
+  return width > 0 && props.element.width > 0 ? width / props.element.width : 1;
+};
+
+let stopDrag: (() => void) | null = null;
+onBeforeUnmount(() => stopDrag?.());
+
+function track(onMove: (e: MouseEvent) => void) {
+  const onUp = () => {
+    stopDrag?.();
+    report.updateJrxml();
+  };
+  stopDrag = () => {
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+    stopDrag = null;
+  };
+  document.addEventListener("mousemove", onMove);
+  document.addEventListener("mouseup", onUp);
+}
+
+// The two columns next to the line share their width, so the table keeps its width
+function startColumnDrag(event: MouseEvent, index: number) {
+  const columns = binding.value?.columns;
+  const left = columns?.[index];
+  const right = columns?.[index + 1];
+  if (!left || !right) return;
+  report.saveStateToHistory();
+  const zoom = scale();
+  const startX = event.clientX;
+  const startLeft = left.width;
+  const pair = left.width + right.width;
+  track((e) => {
+    const width = Math.round(startLeft + (e.clientX - startX) / zoom);
+    left.width = Math.min(pair - MIN_TABLE_COLUMN_WIDTH, Math.max(MIN_TABLE_COLUMN_WIDTH, width));
+    right.width = pair - left.width;
+  });
+}
+
+// The heading's height, or (any body row's line) the one height all rows share;
+// the line follows the pointer, and the table keeps its number of sample rows
+function startRowDrag(event: MouseEvent, index: number) {
+  const table = props.element;
+  report.saveStateToHistory();
+  const zoom = scale();
+  const startY = event.clientY;
+  const slots = rowSlots(table);
+  const startHeader = headerHeight.value;
+  const startRow = rowHeight.value;
+  track((e) => {
+    const delta = (e.clientY - startY) / zoom;
+    const clamp = (value: number) => Math.round(Math.min(MAX_ROW_SIZE, Math.max(MIN_ROW_SIZE, value)));
+    if (index < 0) table.headerHeight = clamp(startHeader + delta);
+    else table.rowHeight = clamp(startRow + delta / (index + 1));
+    const header = table.headerHeight ?? TABLE_HEADER_HEIGHT;
+    const row = table.rowHeight ?? TABLE_ROW_HEIGHT;
+    table.height = header + slots * row + (showTotals.value ? row : 0);
+  });
+}
+
 // Highlight while a data source is dragged over this table
 const isDropTarget = ref(false);
 function onDragOver(event: DragEvent) {
@@ -310,6 +419,79 @@ function onDragLeave(event: DragEvent) {
 /* Every row after the first shares the line above it */
 .dt-row + .dt-row .dt-cell {
   border-top: none !important;
+}
+
+/* Lines to drag (shown while the table is selected) */
+.dt-col-edge,
+.dt-row-edge {
+  position: absolute;
+  z-index: 3;
+}
+
+.dt-col-edge {
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  margin-left: -4px;
+  cursor: col-resize;
+}
+
+.dt-row-edge {
+  left: 0;
+  right: 0;
+  height: 9px;
+  margin-top: -4px;
+  cursor: row-resize;
+}
+
+/* A line on the table's bottom edge: its strip stays inside */
+.dt-row-edge.is-bottom {
+  margin-top: -9px;
+}
+
+.dt-col-edge::after,
+.dt-row-edge::after {
+  content: "";
+  position: absolute;
+  background: rgba(100, 64, 244, 0.35);
+  transition: background 0.12s ease;
+}
+
+.dt-col-edge::after {
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 1px;
+}
+
+.dt-row-edge::after {
+  left: 0;
+  right: 0;
+  top: 4px;
+  height: 1px;
+}
+
+.dt-row-edge.is-bottom::after {
+  top: 8px;
+}
+
+.dt-col-edge:hover::after,
+.dt-col-edge:active::after {
+  left: 3px;
+  width: 3px;
+  background: #6440f4;
+}
+
+.dt-row-edge:hover::after,
+.dt-row-edge:active::after {
+  top: 3px;
+  height: 3px;
+  background: #6440f4;
+}
+
+.dt-row-edge.is-bottom:hover::after,
+.dt-row-edge.is-bottom:active::after {
+  top: 6px;
 }
 
 .dt-column-frame {

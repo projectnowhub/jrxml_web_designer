@@ -1,7 +1,8 @@
 <template>
-  <!-- Every `title` in the app as a tooltip in the app's light look (the
-       browser draws its own in black and can't be styled): the title is held
-       back while the pointer is on the element and put back after. -->
+  <!-- Every `title` in the app as a tooltip in the app's white look. The
+       browser draws its own (black, can't be styled) for any `title` attribute,
+       so every title is moved to data-app-title the moment it appears, and
+       only this card is ever shown. -->
   <Teleport to="body">
     <div
       v-if="tip"
@@ -31,13 +32,80 @@ const WARM = 400;
 const GAP = 8;
 const EDGE = 8;
 
+// Where a title is kept instead: the browser only draws its own (black)
+// tooltip for a `title` attribute, so none is ever left in the page
+const TEXT_ATTR = "data-app-title";
+// Marks an aria-label this layer added (an icon-only element named by its title)
+const NAMED_ATTR = "data-app-title-named";
+
 const tip = ref<{ text: string; x: number; y: number; side: "top" | "bottom"; arrowX: number; placed: boolean } | null>(null);
 const tipRef = ref<HTMLElement | null>(null);
 
 let current: HTMLElement | null = null;
-let held: { el: HTMLElement; title: string } | null = null;
 let timer: ReturnType<typeof setTimeout> | undefined;
 let lastHidden = 0;
+let observer: MutationObserver | null = null;
+
+// ---- Titles out of the page --------------------------------------------------
+
+// The title moves to data-app-title. An element with no other name (an icon
+// button) keeps it for screen readers as its aria-label
+function moveTitle(el: Element) {
+  const title = el.getAttribute("title");
+  if (title === null) return;
+  el.removeAttribute("title");
+  el.setAttribute(TEXT_ATTR, title);
+  const named = el.hasAttribute(NAMED_ATTR);
+  if (named || (!el.hasAttribute("aria-label") && !el.hasAttribute("aria-labelledby") && !el.textContent?.trim())) {
+    if (title.trim()) {
+      el.setAttribute("aria-label", title);
+      el.setAttribute(NAMED_ATTR, "");
+    } else if (named) {
+      el.removeAttribute("aria-label");
+      el.removeAttribute(NAMED_ATTR);
+    }
+  }
+  if (el === current) refreshTip();
+}
+
+// The page removed a title: its kept text (and the name added for it) go too
+function dropTitle(el: Element) {
+  el.removeAttribute(TEXT_ATTR);
+  if (el.hasAttribute(NAMED_ATTR)) {
+    el.removeAttribute("aria-label");
+    el.removeAttribute(NAMED_ATTR);
+  }
+  if (el === current) refreshTip();
+}
+
+function moveTitlesIn(root: Element) {
+  if (root.hasAttribute("title")) moveTitle(root);
+  root.querySelectorAll("[title]").forEach(moveTitle);
+}
+
+function onMutations(records: MutationRecord[]) {
+  // Each element once, by how it ends up (a title set twice in a row is one
+  // change, not a removal): read every record first, then move or drop
+  const changed = new Map<Element, boolean>();
+  const added: Element[] = [];
+  for (const record of records) {
+    if (record.type === "attributes") {
+      const el = record.target as Element;
+      changed.set(el, (changed.get(el) ?? false) || record.oldValue !== null);
+    } else {
+      record.addedNodes.forEach((node) => node instanceof Element && added.push(node));
+    }
+  }
+  changed.forEach((hadTitle, el) => {
+    if (el.hasAttribute("title")) moveTitle(el);
+    else if (hadTitle) dropTitle(el);
+  });
+  added.forEach(moveTitlesIn);
+  // Our own changes are not the page's: their records are dropped
+  observer?.takeRecords();
+}
+
+// ---- The tooltip ---------------------------------------------------------------
 
 // The help hover card (HintLayer) shows for this element instead
 function hintCardFor(el: HTMLElement): boolean {
@@ -48,23 +116,18 @@ function hintCardFor(el: HTMLElement): boolean {
   return !menuOpen;
 }
 
-function release() {
-  if (held) {
-    // Put the title back unless the page has given it a new one meanwhile
-    if (!held.el.hasAttribute("title")) held.el.setAttribute("title", held.title);
-    held = null;
-  }
-}
+const textOf = (el: HTMLElement) => el.getAttribute(TEXT_ATTR)?.trim() ?? "";
 
 function hide() {
   clearTimeout(timer);
+  timer = undefined;
   if (tip.value) lastHidden = Date.now();
   tip.value = null;
-  release();
 }
 
-function show(el: HTMLElement, text: string) {
-  if (!el.isConnected) return;
+function show(el: HTMLElement) {
+  const text = textOf(el);
+  if (!el.isConnected || !text) return;
   const rect = el.getBoundingClientRect();
   tip.value = { text, x: -9999, y: -9999, side: "top", arrowX: 0, placed: false };
   nextTick(() => {
@@ -84,40 +147,54 @@ function show(el: HTMLElement, text: string) {
   });
 }
 
-function onOver(event: MouseEvent) {
-  const el = (event.target as Element | null)?.closest?.<HTMLElement>("[title]") ?? null;
+// The hovered element's text changed while its tooltip shows
+function refreshTip() {
+  if (!current || !tip.value) return;
+  if (textOf(current)) show(current);
+  else hide();
+}
+
+function onOver(event: PointerEvent) {
+  if (event.pointerType === "touch") return;
+  const el = (event.target as Element | null)?.closest?.<HTMLElement>(`[${TEXT_ATTR}]`) ?? null;
   if (el === current) return;
   hide();
   current = el;
-  if (!el) return;
-  const text = el.getAttribute("title")?.trim() ?? "";
-  if (!text) return;
-  // The browser's own tooltip never appears
-  held = { el, title: el.getAttribute("title")! };
-  el.removeAttribute("title");
-  if (hintCardFor(el)) return;
+  if (!el || !textOf(el) || hintCardFor(el)) return;
   const wait = Date.now() - lastHidden < WARM ? 0 : DELAY;
-  timer = setTimeout(() => show(el, text), wait);
+  timer = setTimeout(() => current === el && show(el), wait);
 }
 
-function onOut(event: MouseEvent) {
+function onOut(event: PointerEvent) {
   const to = event.relatedTarget as Node | null;
   if (current && to && current.contains(to)) return;
   current = null;
   hide();
 }
 
-// Clicking, typing or scrolling: the tooltip gets out of the way
+// Clicking, typing, scrolling or dragging: the tooltip gets out of the way
 function dismiss() {
   if (!tip.value && !timer) return;
   clearTimeout(timer);
+  timer = undefined;
   tip.value = null;
 }
 
 onMounted(() => {
-  document.addEventListener("mouseover", onOver);
-  document.addEventListener("mouseout", onOut);
+  moveTitlesIn(document.body);
+  observer = new MutationObserver(onMutations);
+  observer.observe(document.body, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ["title"],
+    attributeOldValue: true,
+  });
+  // Capture: a component stopping the event can't keep its tooltip from showing
+  document.addEventListener("pointerover", onOver, true);
+  document.addEventListener("pointerout", onOut, true);
   document.addEventListener("mousedown", dismiss, true);
+  document.addEventListener("dragstart", dismiss, true);
   document.addEventListener("keydown", dismiss, true);
   window.addEventListener("scroll", dismiss, true);
   window.addEventListener("blur", hide);
@@ -125,9 +202,12 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   hide();
-  document.removeEventListener("mouseover", onOver);
-  document.removeEventListener("mouseout", onOut);
+  observer?.disconnect();
+  observer = null;
+  document.removeEventListener("pointerover", onOver, true);
+  document.removeEventListener("pointerout", onOut, true);
   document.removeEventListener("mousedown", dismiss, true);
+  document.removeEventListener("dragstart", dismiss, true);
   document.removeEventListener("keydown", dismiss, true);
   window.removeEventListener("scroll", dismiss, true);
   window.removeEventListener("blur", hide);

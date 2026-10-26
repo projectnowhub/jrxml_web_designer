@@ -14,6 +14,7 @@
 import type { DesignElement, TextFieldElement } from "@/types";
 import { createElement } from "@/components/elements/ElementRegistry";
 import { DEFAULT_REPORT_FONT } from "@/config/fonts.config";
+import { javaString } from "@/utils/jrxml/javaString";
 
 export const DATE_PROPERTY = "com.cdp.date";
 export const DATE_ELEMENT_TYPE = "dateTime";
@@ -232,10 +233,6 @@ export function formatSample(setup: DateSetup, format: string, now: Date = new D
 }
 
 // ── JRXML ──
-
-// A Java string literal (same escaping as table labels)
-const javaString = (text: string) =>
-  `"${text.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r?\n/g, "\\n")}"`;
 
 // The text field's expression. A chosen date is plain text; the others are
 // worked out by the report server when the report is made.

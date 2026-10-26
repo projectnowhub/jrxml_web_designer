@@ -1,3 +1,52 @@
+<template>
+  <div ref="menuRef" class="account-menu">
+    <button
+      class="account-button"
+      type="button"
+      :aria-label="t('layout.accountMenu')"
+      aria-haspopup="menu"
+      :aria-expanded="isOpen"
+      @click="isOpen = !isOpen"
+    >
+      <span class="avatar">{{ userInitial }}</span>
+    </button>
+    <Transition name="menu-pop"><div v-if="isOpen" class="account-popover" role="menu">
+      <div class="account-popover-header">
+        <span class="avatar">{{ userInitial }}</span>
+        <div>
+          <strong>{{ userName || t("home.defaultUserName") }}</strong>
+          <span>{{ userEmail || t("layout.defaultWorkspace") }}</span>
+        </div>
+      </div>
+      <div class="account-popover-divider" />
+      <button
+        class="account-action"
+        type="button"
+        role="menuitem"
+        @click="goToMyProfile"
+      >
+        <UserRound :size="17" :stroke-width="2.25" aria-hidden="true" />
+        <span>{{ t("layout.myProfile") }}</span>
+      </button>
+      <div class="account-language">
+        <Languages :size="17" :stroke-width="2.25" aria-hidden="true" />
+        <span>{{ t("language.label") }}</span>
+        <LanguageSwitcher :show-icon="false" />
+      </div>
+      <div class="account-popover-divider" />
+      <button
+        class="account-action sign-out"
+        type="button"
+        role="menuitem"
+        @click="signOut"
+      >
+        <LogOut :size="17" :stroke-width="2.25" aria-hidden="true" />
+        <span>{{ t("layout.signOut") }}</span>
+      </button>
+    </div></Transition>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -51,55 +100,6 @@ onBeforeUnmount(() => {
   document.removeEventListener("keydown", handleKeydown);
 });
 </script>
-
-<template>
-  <div ref="menuRef" class="account-menu">
-    <button
-      class="account-button"
-      type="button"
-      :aria-label="t('layout.accountMenu')"
-      aria-haspopup="menu"
-      :aria-expanded="isOpen"
-      @click="isOpen = !isOpen"
-    >
-      <span class="avatar">{{ userInitial }}</span>
-    </button>
-    <Transition name="menu-pop"><div v-if="isOpen" class="account-popover" role="menu">
-      <div class="account-popover-header">
-        <span class="avatar">{{ userInitial }}</span>
-        <div>
-          <strong>{{ userName || t("home.defaultUserName") }}</strong>
-          <span>{{ userEmail || t("layout.defaultWorkspace") }}</span>
-        </div>
-      </div>
-      <div class="account-popover-divider" />
-      <button
-        class="account-action"
-        type="button"
-        role="menuitem"
-        @click="goToMyProfile"
-      >
-        <UserRound :size="17" :stroke-width="2.25" aria-hidden="true" />
-        <span>{{ t("layout.myProfile") }}</span>
-      </button>
-      <div class="account-language">
-        <Languages :size="17" :stroke-width="2.25" aria-hidden="true" />
-        <span>{{ t("language.label") }}</span>
-        <LanguageSwitcher :show-icon="false" />
-      </div>
-      <div class="account-popover-divider" />
-      <button
-        class="account-action sign-out"
-        type="button"
-        role="menuitem"
-        @click="signOut"
-      >
-        <LogOut :size="17" :stroke-width="2.25" aria-hidden="true" />
-        <span>{{ t("layout.signOut") }}</span>
-      </button>
-    </div></Transition>
-  </div>
-</template>
 
 <style scoped>
 .account-menu {

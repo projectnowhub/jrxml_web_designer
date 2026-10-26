@@ -37,7 +37,7 @@
               <select class="ccm-select" :value="sourceId" @change="changeSource(($event.target as HTMLSelectElement).value)">
                 <option value="" disabled>{{ t("dataTable.config.chooseSource") }}</option>
                 <option v-for="s in sources" :key="s.id" :value="s.id">
-                  {{ t("dataTable.config.sourceOption", { name: s.name, count: s.rowCount }) }}
+                  {{ s.rowCount !== undefined ? t("dataTable.config.sourceOption", { name: s.name, count: s.rowCount }) : s.name }}
                 </option>
               </select>
               <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
@@ -244,7 +244,7 @@ import { ChartColumn, ChevronDown, FolderKanban, Plus, Replace, Sigma, SlidersHo
 import BaseModal from "./BaseModal.vue";
 import ChartCanvas from "../common/ChartCanvas.vue";
 import TableFilterPanel from "../designer/TableFilterPanel.vue";
-import { getFacets, getSchema, listSources } from "@/services/dataSourceService";
+import { fetchFacets, fetchSchema, fetchSources } from "@/queries/dataSources";
 import {
   CATEGORY_LIMITS,
   CHART_AGGREGATIONS,
@@ -261,7 +261,7 @@ import {
 } from "@/utils/chart/chartTypes";
 import { chartView } from "@/utils/chart/chartImage";
 import { buildChartOption, chartFontFamily } from "@/utils/chart/chartOption";
-import { chartDataEntry, loadChartData } from "@/utils/chart/chartDataStore";
+import { chartDataEntry, useChartData } from "@/utils/chart/chartDataStore";
 import type {
   ChartAggregation,
   ChartBinding,
@@ -481,7 +481,7 @@ const hasCategoryLimit = computed(
 function loadSources(project: string) {
   sources.value = [];
   if (!project) return;
-  listSources(project)
+  fetchSources(project)
     .then((list) => {
       if (projectId.value === project) sources.value = list;
     })
@@ -494,7 +494,7 @@ async function useSource(id: string, fresh: boolean) {
   const project = projectId.value;
   const stillCurrent = () => projectId.value === project && sourceId.value === id;
   try {
-    const loaded = await getSchema(project, id);
+    const loaded = await fetchSchema(project, id);
     if (!stillCurrent()) return;
     schema.value = loaded;
     if (fresh) {
@@ -508,7 +508,7 @@ async function useSource(id: string, fresh: boolean) {
     }
     // The filter choices also tell which columns group well
     try {
-      const loadedFacets = await getFacets(project, id);
+      const loadedFacets = await fetchFacets(project, id);
       if (!stillCurrent()) return;
       facets.value = loadedFacets;
     } catch {
@@ -570,16 +570,20 @@ const draftBinding = computed<ChartBinding>(() =>
   }),
 );
 
-// Fetch the preview's numbers shortly after the setup stops changing
+// The preview's numbers, asked for shortly after the setup stops changing (a
+// copy, so editing the draft doesn't skip the pause)
+const previewBinding = shallowRef<ChartBinding | undefined>();
 let previewTimer: ReturnType<typeof setTimeout> | undefined;
 watch(
   () => (props.visible && isChartComplete(draftBinding.value) ? JSON.stringify(draftBinding.value) : ""),
   (key) => {
     clearTimeout(previewTimer);
-    if (key) previewTimer = setTimeout(() => loadChartData(draftBinding.value), 250);
+    if (!key) previewBinding.value = undefined;
+    else previewTimer = setTimeout(() => (previewBinding.value = JSON.parse(key) as ChartBinding), 250);
   },
   { immediate: true },
 );
+useChartData(previewBinding);
 
 const previewView = computed(() => {
   void locale.value;

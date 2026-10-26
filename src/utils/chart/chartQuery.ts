@@ -51,12 +51,21 @@ const GRANULARITIES: Record<DateGranularity, AggregateGranularity> = {
 export const PROJECT_PROPERTY = "project.id";
 
 // The chart's filters as a Jmix filter (moving date ranges as today's dates),
-// like the CDP app's buildJmixFilter: ticked values = "in", a range = >= and <=
+// like the CDP app's buildJmixFilter: ticked values = "in", typed words =
+// "contains", Yes / No = "=" true / false, a range = >= and <=
 export function toJmixFilter(filters: TableFilter[], today = new Date()): JmixFilter | undefined {
   const conditions: JmixCondition[] = [];
   for (const f of resolveFilterDates(filters.filter(isActiveFilter), today)) {
     if (f.operator === "in") {
       conditions.push({ property: f.column, operator: "in", value: f.values ?? [] });
+      continue;
+    }
+    if (f.operator === "contains") {
+      conditions.push({ property: f.column, operator: "contains", value: (f.value ?? "").trim() });
+      continue;
+    }
+    if (f.operator === "equals") {
+      conditions.push({ property: f.column, operator: "=", value: f.value === "true" });
       continue;
     }
     const bound = (v: string) => (f.type === "date" ? v : Number(v));

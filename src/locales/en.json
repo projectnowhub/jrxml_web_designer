@@ -1070,7 +1070,8 @@
       "tableChooseLine": "Choose a whole row or column (Shift: several)",
       "tableSelectAll": "Choose every cell (while the table is open)",
       "tableLineMenu": "Insert or delete rows and columns",
-      "tableChooseColumn": "Project data table: choose a column to style it (Style Settings → Cells)"
+      "tableChooseColumn": "Project data table: choose a column to style it (Style Settings → Cells)",
+      "tableResizeLine": "Change a column's width or a row's height (a typed table: the lines in the bars above and beside it, while it is open; a project data table: the lines on it, while it is selected)"
     },
     "panelTips": {
       "hide": "Hide this tip",
@@ -1492,7 +1493,8 @@
       "dragPin": "Drag the pin",
       "clickHandle": "Click a row / column handle",
       "rightClickHandle": "Right-click a row / column handle",
-      "clickPlus": "Click the + between two handles"
+      "clickPlus": "Click the + between two handles",
+      "dragTableLine": "Drag a line between columns or rows"
     }
   },
   "imageUpload": {
@@ -1856,6 +1858,13 @@
     "grid": "Rows and columns",
     "rows": "Rows",
     "columns": "Columns",
+    "columnList": "Columns",
+    "columnName": "Column name (its cell in the first heading row)",
+    "columnNameOf": "Name of column {name}",
+    "columnNamePlaceholder": "Column name",
+    "columnMerged": "Its heading is merged with column {name}: rename it there",
+    "columnsNoHeader": "Add a heading row (Header rows above) to give the columns names.",
+    "deleteColumnNamed": "Delete column {name}",
     "addRow": "Add row",
     "removeRow": "Remove row",
     "addColumn": "Add column",
@@ -2295,6 +2304,11 @@
     }
   },
   "dataTable": {
+    "yes": "Yes",
+    "no": "No",
+    "dragColumnEdge": "Drag to change these two columns' widths",
+    "dragHeaderEdge": "Drag to change the heading row's height",
+    "dragRowEdge": "Drag to change the height of the rows (all rows)",
     "dropHint": "Drag table data here, or double-click to set it up",
     "placeholderColumn": "Column {n}",
     "moreRows": "+1 more row | +{count} more rows",
@@ -2377,6 +2391,10 @@
       "barcodeHint": "Barcode columns print each value as a barcode; empty values print nothing. Rows become at least 36 px tall so the codes can be scanned."
     },
     "filter": {
+      "booleanHint": "Only rows where it is Yes, or only rows where it is No. Untick to keep both.",
+      "containsPlaceholder": "Words in {column}",
+      "containsHint": "Only rows whose cell contains these words (capitals don't matter).",
+      "containsChip": "contains “{words}”",
       "title": "Filter & sort",
       "applied": "Applied filters",
       "remove": "Remove",
@@ -2533,6 +2551,57 @@
     "projects": "Projects",
     "chooseProjects": "Choose a project…",
     "noProjectMatch": "No projects match",
+    "searchProjects": "Search by name or code",
+    "loadingProjects": "Loading projects…",
+    "projectsLoadFailed": "Couldn't load the projects.",
+    "noProjectsAvailable": "No projects yet",
+    "lists": "Lists",
+    "moreDetails": "More details",
+    "managerCard": "All details (table)",
+    "dragTable": "Drag onto the page to add this list as a table",
+    "dragCard": "Drag onto the page to add these details as a table",
+    "listRows": "No rows | 1 row | {count} rows",
+    "projectTables": {
+      "manager": "Project Manager",
+      "team": "Project Team",
+      "companies": "Companies",
+      "contracts": "Contracts"
+    },
+    "columns": {
+      "name": "Name",
+      "designation": "Designation",
+      "email": "Email",
+      "phone": "Phone",
+      "country": "Country",
+      "businessTypes": "Business Type",
+      "website": "Website",
+      "contract": "Contract",
+      "contractNumber": "No.",
+      "contractType": "Type",
+      "originalSum": "Original Sum",
+      "adjustedSum": "Adjusted Sum",
+      "startDate": "Start Date",
+      "finishDate": "Finish Date"
+    },
+    "fields": {
+      "name": "Project Name",
+      "code": "Project ID",
+      "status": "Status",
+      "manager": "Project Manager",
+      "scope": "Project Scope",
+      "startDate": "Start Date",
+      "finishDate": "Finish Date",
+      "description": "Description",
+      "milestones": "Contractual Milestones"
+    },
+    "projectStatus": {
+      "planned": "Planned",
+      "tendering": "Tendering",
+      "active": "Active",
+      "on_hold": "On Hold",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
     "noProjects": "Use “Choose a project…” at the top of the page to pick the project this template uses. A template uses one project for now.",
     "search": "Search details, tables and columns",
     "hint": "Drag a detail (name, date, introduction…) onto a text element, or the logo onto an image element, to fill it; drop it on empty space for a new one. It becomes normal text or a normal image. Drag a table onto the Detail section or onto a table; drag a column to add just that column.",
@@ -2545,6 +2614,9 @@
     "expand": "Show columns",
     "collapse": "Hide columns",
     "rows": "1 row | {count} rows",
+    "columnCount": "No columns | 1 column | {count} columns",
+    "standardFields": "Base columns",
+    "customFields": "User-defined columns",
     "usedIn": "Used in: {tables}",
     "noMatch": "Nothing matches",
     "loadFailed": "Couldn't load this project's data.",
@@ -3160,7 +3232,7 @@
     "tools": {
       "projects": {
         "title": "Projects",
-        "text": "Choose the project this template is about (one project per template for now). Its details, tables and charts then appear under Report Data on the left."
+        "text": "Choose the project this template is about (one project per template for now). Its details, lists (team, companies, contracts), tables and charts then appear under Report Data on the left."
       },
       "reportName": {
         "title": "Template name",
@@ -3370,9 +3442,10 @@
         "title": "Table",
         "what": "Rows and columns, either typed by you or filled from your project's data.",
         "when": "Type my own for key figures, summaries and registers. Use project data for lists that come from your project, such as procurement or materials.",
-        "add": "Click Table in the Element Library and choose Type my own or Use project data.",
+        "add": "Click Table in the Element Library and choose Type my own or Use project data. Or drag a list (Project Team, Companies, Contracts) or the Project Manager's details from Report Data: it arrives as a typed table filled with them.",
         "work": [
           "A typed table: double-click it to type in the cells; Tab moves to the next cell. Handles above the columns and beside the rows choose a whole column or row; then Insert above / below / left / right, Delete, Merge and Split are in Basic Settings and on right-click. The chosen cells' colours, bold, alignment and text size are in Style Settings.",
+        "Sizes: drag the lines between columns to change their widths, and the lines under rows to change their heights. A typed table: open it (double-click) and use the short lines between the letters above it and the numbers beside it. A project data table: select it, then drag the purple lines on it (the heading row and the rows have one height each).",
           "A project data table: double-click it (or Edit data) to choose the project, the data, the columns, filters, sort and totals. The rows fill in by themselves every time the report runs.",
           "Style Settings: Customize sets the whole table's look; click a column of a project data table on the page to style its Header, Data and Total cells on their own. Highlight rules, which colour rows or cells by their values (Status is Delayed, Stock up to 100, a date before today), are set in the data setup, next to Filter & sort.",
           "Look sets the table style; Customize changes this table's colours only, and Save as table style keeps them for other tables.",
@@ -3699,6 +3772,11 @@
       "typedGrid": {
         "title": "Rows and columns",
         "text": "How many rows and columns the table has, heading rows, and whether the last row is a total. Ticking Last row is a total adds a row at the bottom with Total and the sum of every number column, kept up to date as you type (type in a total cell to write your own). The + and − add or remove a row or column at the end. To add one anywhere else, open the table, choose a row or column (click its handle) and use Insert above / below / left / right here or on right-click; Delete, Merge cells and Split cells are here too. Split table here moves the chosen row and the rows below it to a new table on a new page, with the heading rows copied."
+      },
+      "typedColumns": {
+        "title": "Columns",
+        "text": "Every column of the table, in order. Type a new name to change the column's heading (its cell in the first heading row), or use the bin to delete the column with everything in it. A heading merged across columns is renamed at its first column.",
+        "example": "Rename \"Phone\" to \"Mobile\", or delete the Website column."
       },
       "typedCells": {
         "title": "Cells",

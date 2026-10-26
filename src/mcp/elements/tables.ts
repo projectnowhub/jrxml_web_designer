@@ -56,7 +56,8 @@ import {
   isChartComplete,
   normalizeChartBinding,
 } from "@/utils/chart/chartTypes";
-import { getFacets, getSchema, listProjects, queryRows } from "@/services/dataSourceService";
+import { fetchFacets, fetchRows, fetchSchema } from "@/queries/dataSources";
+import { getProjectSummary } from "@/queries/projects";
 import { useReportStore } from "@/stores/report";
 import { MAX_REPORT_PROJECTS } from "@/constants/constants";
 import { countProjectUsage } from "@/utils/projectFields";
@@ -269,8 +270,7 @@ async function projectName(projectId: string): Promise<string> {
   const report = useReportStore();
   const chosen = report.reportProperties.projects?.find((p) => p.id === projectId);
   if (chosen) return chosen.name;
-  const all = await listProjects();
-  const found = all.find((p) => p.id === projectId);
+  const found = await getProjectSummary(projectId);
   if (!found) throw new SpecError(`projectId: no project "${projectId}"; call get_report_data to see the projects`);
   return found.name;
 }
@@ -298,7 +298,7 @@ function useProject(projectId: string, name: string): void {
 
 async function sourceSchema(projectId: string, sourceId: string): Promise<DataSourceSchema> {
   try {
-    return await getSchema(projectId, sourceId);
+    return await fetchSchema(projectId, sourceId);
   } catch {
     throw new SpecError(`sourceId: project "${projectId}" has no source "${sourceId}"; call get_report_data with the projectId to see its sources`);
   }
@@ -314,17 +314,19 @@ function column(schema: DataSourceSchema, key: string, field: string): DataColum
 // Filters: which rows a data table or chart uses (as the Filter panel sets them)
 // ---------------------------------------------------------------------------
 
-type FilterSpec = { column: string; values?: string[]; from?: string | number; to?: string | number; period?: RelativePeriod };
+type FilterSpec = { column: string; values?: string[]; contains?: string; is?: boolean; from?: string | number; to?: string | number; period?: RelativePeriod };
 
 export const FILTERS_PROP: JsonSchema = {
   type: "array",
   description:
-    "Which rows are used (all filters apply together; [] for none). Per column: values (rows with any of these texts; see get_report_data for the values), from / to (numbers, amounts, or dates yyyy-MM-dd; either may be left out), or period for dates (moves with the run date, so next month's report shows next month's rows)",
+    "Which rows are used (all filters apply together; [] for none). Per column: values (a column with a list of values: rows with any of them; see get_report_data for the values), contains (a text column: rows whose cell contains these words, any case), is (a yes / no column: true or false), from / to (numbers, amounts, or dates yyyy-MM-dd; either may be left out), or period for dates (moves with the run date, so next month's report shows next month's rows)",
   items: {
     type: "object",
     properties: {
       column: { type: "string", description: "Column key" },
       values: { type: "array", items: { type: "string" }, minItems: 1 },
+      contains: { type: "string" },
+      is: { type: "boolean" },
       from: { type: ["string", "number"] },
       to: { type: ["string", "number"] },
       period: { type: "string", enum: RELATIVE_PERIODS },
@@ -337,25 +339,34 @@ export const FILTERS_PROP: JsonSchema = {
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 async function readFilters(projectId: string, sourceId: string, schema: DataSourceSchema, raw: FilterSpec[], field: string): Promise<TableFilter[]> {
-  let facets: Awaited<ReturnType<typeof getFacets>> | null = null;
+  let facets: Awaited<ReturnType<typeof fetchFacets>> | null = null;
   const out: TableFilter[] = [];
   for (const [i, f] of raw.entries()) {
     const at = `${field}[${i}]`;
     const c = column(schema, f.column, `${at}.column`);
     const base = { column: c.key, label: c.label, type: c.type };
     const ranged = f.from !== undefined || f.to !== undefined;
-    if ([f.values?.length, ranged, f.period].filter(Boolean).length !== 1) {
-      throw new SpecError(`${at}: give exactly one of values, from / to, or period`);
+    if ([f.values?.length, f.contains !== undefined, f.is !== undefined, ranged, f.period].filter(Boolean).length !== 1) {
+      throw new SpecError(`${at}: give exactly one of values, contains, is, from / to, or period`);
     }
-    if (f.values) {
-      facets ??= await getFacets(projectId, sourceId).catch(() => ({}));
+    if (f.is !== undefined) {
+      facets ??= await fetchFacets(projectId, sourceId).catch(() => ({}));
+      if (facets?.[c.key]?.kind !== "boolean") throw new SpecError(`${at}.is: only for yes / no columns; ${c.key} is not one`);
+      out.push({ ...base, operator: "equals", value: f.is ? "true" : "false" });
+    } else if (f.contains !== undefined) {
+      if (!f.contains.trim()) throw new SpecError(`${at}.contains: the words to look for`);
+      if (c.type !== "text") throw new SpecError(`${at}.contains: only for text columns; ${c.key} is ${c.type}`);
+      out.push({ ...base, operator: "contains", value: f.contains.trim() });
+    } else if (f.values) {
+      facets ??= await fetchFacets(projectId, sourceId).catch(() => ({}));
       const facet = facets?.[c.key];
       const known = facet?.kind === "values" ? facet.values.map((v) => v.value) : null;
       const unknown = known ? f.values.filter((v) => !known.includes(v)) : [];
       if (unknown.length) {
         throw new SpecError(`${at}.values: ${unknown.map((v) => `"${v}"`).join(", ")} not found in ${c.key} (its values: ${known!.slice(0, 25).map((v) => `"${v}"`).join(", ")})`);
       }
-      out.push({ ...base, operator: "in", values: [...f.values] });
+      const labels = facet?.kind === "values" ? Object.fromEntries(facet.values.filter((v) => v.label && f.values!.includes(v.value)).map((v) => [v.value, v.label!])) : {};
+      out.push({ ...base, operator: "in", values: [...f.values], ...(Object.keys(labels).length ? { labels } : {}) });
     } else if (f.period) {
       if (c.type !== "date") throw new SpecError(`${at}.period: only for date columns; ${c.key} is ${c.type}`);
       out.push({ ...base, operator: "between", period: f.period });
@@ -382,6 +393,8 @@ export const describeFilters = (filters: TableFilter[] | undefined) =>
         defined({
           column: f.column,
           values: f.operator === "in" ? f.values : undefined,
+          contains: f.operator === "contains" ? f.value : undefined,
+          is: f.operator === "equals" ? f.value === "true" : undefined,
           period: f.period,
           from: f.operator === "between" && !f.period ? f.value : undefined,
           to: f.operator === "between" && !f.period ? f.value2 : undefined,
@@ -534,7 +547,7 @@ async function applyDataTable(element: TableElement, spec: ElementSpec, ctx: Kin
   // As tall as the canvas shows it (header, up to 5 sample rows, totals)
   let rowCount = 1;
   try {
-    rowCount = (await queryRows(projectId, sourceId, toDataQuery(binding, PREVIEW_ROW_LIMIT))).totalCount;
+    rowCount = (await fetchRows(projectId, sourceId, toDataQuery(binding, PREVIEW_ROW_LIMIT))).totalCount;
   } catch {
     ctx.notes.push("rows could not be fetched now; they are fetched again on the page and in the PDF");
   }

@@ -28,7 +28,7 @@
             <select class="tcm-select" :value="sourceId" @change="changeSource(($event.target as HTMLSelectElement).value)">
               <option value="" disabled>{{ t("dataTable.config.chooseSource") }}</option>
               <option v-for="s in sources" :key="s.id" :value="s.id">
-                {{ t("dataTable.config.sourceOption", { name: s.name, count: s.rowCount }) }}
+                {{ s.rowCount !== undefined ? t("dataTable.config.sourceOption", { name: s.name, count: s.rowCount }) : s.name }}
               </option>
             </select>
             <ChevronDown class="tcm-chevron" :size="14" aria-hidden="true" />
@@ -126,9 +126,19 @@
                 <option value="" disabled hidden>
                   {{ t(columns.length >= maxColumns ? "dataTable.config.tableFull" : "dataTable.config.addColumn") }}
                 </option>
-                <option v-for="c in unusedColumns" :key="c.key" :value="c.key" :disabled="columns.length >= maxColumns">
-                  {{ c.label }}
-                </option>
+                <!-- Standard fields, then the ones the tenant added -->
+                <template v-for="group in unusedColumnGroups" :key="group.key">
+                  <optgroup v-if="group.title" :label="group.title">
+                    <option v-for="c in group.columns" :key="c.key" :value="c.key" :disabled="columns.length >= maxColumns">
+                      {{ c.label }}
+                    </option>
+                  </optgroup>
+                  <template v-else>
+                    <option v-for="c in group.columns" :key="c.key" :value="c.key" :disabled="columns.length >= maxColumns">
+                      {{ c.label }}
+                    </option>
+                  </template>
+                </template>
               </select>
               <ChevronDown class="tcm-chevron" :size="14" aria-hidden="true" />
             </div>
@@ -229,7 +239,8 @@
 
 <script setup lang="ts">
 import { TABLE_BARCODE_TYPES, isTableBarcodeType, tableColumnBarcode } from "@/utils/barcode/barcodeTypes";
-import { computed, ref, watch, type Component } from "vue";
+import { computed, ref, shallowRef, watch, type Component } from "vue";
+import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
 import {
@@ -256,7 +267,7 @@ import BaseModal from "./BaseModal.vue";
 import DataGrid from "../common/DataGrid.vue";
 import TableFilterPanel from "../designer/TableFilterPanel.vue";
 import TableHighlights from "../designer/properties/TableHighlights.vue";
-import { getFacets, getSchema, listSources, queryRows } from "@/services/dataSourceService";
+import { fetchFacets, fetchSchema, fetchSources, rowsQuery } from "@/queries/dataSources";
 import {
   PREVIEW_ROW_LIMIT,
   createDatasetName,
@@ -269,6 +280,7 @@ import { resolveLook } from "@/utils/table/tableThemes";
 import type { TableElement } from "@/types";
 import type {
   DataColumnType,
+  DataQuery,
   DataRow,
   DataSourceSchema,
   DataSourceSummary,
@@ -353,6 +365,17 @@ const replacedSource = computed(() => {
 const unusedColumns = computed(() =>
   (schema.value?.columns ?? []).filter((c) => !columns.value.some((col) => col.key === c.key)),
 );
+// The add-column list in two groups: standard fields, then the ones the
+// tenant added (titled only when there are both)
+const unusedColumnGroups = computed(() => {
+  const standard = unusedColumns.value.filter((c) => !c.userDefined);
+  const custom = unusedColumns.value.filter((c) => c.userDefined);
+  const both = standard.length > 0 && custom.length > 0;
+  return [
+    { key: "standard", title: both ? t("reportData.standardFields") : "", columns: standard },
+    { key: "custom", title: both ? t("reportData.customFields") : "", columns: custom },
+  ].filter((group) => group.columns.length);
+});
 
 // The table's setup is reactive (structuredClone can't copy it) and plain JSON
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value));
@@ -375,7 +398,7 @@ async function loadFacets(project: string, id: string) {
   facets.value = null;
   const stillCurrent = () => projectId.value === project && sourceId.value === id;
   try {
-    const loaded = await getFacets(project, id);
+    const loaded = await fetchFacets(project, id);
     if (stillCurrent()) facets.value = loaded;
   } catch {
     if (stillCurrent()) facets.value = {};
@@ -390,7 +413,7 @@ async function useSchema(id: string, freshColumns: boolean) {
   const project = projectId.value;
   const stillCurrent = () => projectId.value === project && sourceId.value === id;
   try {
-    const loaded = await getSchema(project, id);
+    const loaded = await fetchSchema(project, id);
     if (!stillCurrent()) return;
     schema.value = loaded;
     loadFacets(project, id);
@@ -417,7 +440,7 @@ async function useSchema(id: string, freshColumns: boolean) {
 function loadSources(project: string) {
   sources.value = [];
   if (!project) return;
-  listSources(project)
+  fetchSources(project)
     .then((list) => {
       if (projectId.value === project) sources.value = list;
     })
@@ -607,53 +630,44 @@ const draftBinding = computed<TableDataBinding | null>(() => {
   };
 });
 
-// Preview rows: refetched (shortly after typing stops) when the request changes
-const previewRows = ref<DataRow[]>([]);
-const previewTotal = ref(0);
-const previewLoading = ref(false);
-const previewFailed = ref(false);
+// Preview rows: asked for shortly after typing stops, whenever the request
+// changes (the last rows stay while the next ones load)
+type PreviewRequest = [projectId: string, sourceId: string, query: DataQuery];
+const previewRequest = shallowRef<PreviewRequest | null>(null);
+const previewWaiting = ref(false);
 let previewTimer: ReturnType<typeof setTimeout> | undefined;
-let previewController: AbortController | null = null;
 
 watch(
   () =>
-    draftBinding.value
+    draftBinding.value && props.visible
       ? JSON.stringify([projectId.value, sourceId.value, toDataQuery(draftBinding.value, PREVIEW_ROW_LIMIT)])
       : "",
   (key) => {
     clearTimeout(previewTimer);
-    previewController?.abort();
-    if (!key || !draftBinding.value || !props.visible) {
-      previewRows.value = [];
-      previewTotal.value = 0;
-      previewLoading.value = false;
+    if (!key) {
+      previewRequest.value = null;
+      previewWaiting.value = false;
       return;
     }
-    previewLoading.value = true;
-    const binding = draftBinding.value;
-    previewTimer = setTimeout(async () => {
-      const controller = new AbortController();
-      previewController = controller;
-      try {
-        const result = await queryRows(
-          binding.projectId,
-          binding.sourceId,
-          toDataQuery(binding, PREVIEW_ROW_LIMIT),
-          controller.signal,
-        );
-        if (controller.signal.aborted) return;
-        previewRows.value = result.rows;
-        previewTotal.value = result.totalCount;
-        previewFailed.value = false;
-      } catch {
-        if (!controller.signal.aborted) previewFailed.value = true;
-      } finally {
-        if (!controller.signal.aborted) previewLoading.value = false;
-      }
+    previewWaiting.value = true;
+    previewTimer = setTimeout(() => {
+      previewRequest.value = JSON.parse(key) as PreviewRequest;
+      previewWaiting.value = false;
     }, 250);
   },
   { immediate: true },
 );
+
+const previewQuery = useQuery(
+  computed(() => {
+    const [project = "", source = "", query = {} as DataQuery] = previewRequest.value ?? [];
+    return { ...rowsQuery(project, source, query), enabled: !!previewRequest.value, placeholderData: keepPreviousData };
+  }),
+);
+const previewRows = computed<DataRow[]>(() => (previewRequest.value ? (previewQuery.data.value?.rows ?? []) : []));
+const previewTotal = computed(() => (previewRequest.value ? (previewQuery.data.value?.totalCount ?? 0) : 0));
+const previewLoading = computed(() => previewWaiting.value || (!!previewRequest.value && previewQuery.isFetching.value));
+const previewFailed = computed(() => !!previewRequest.value && previewQuery.isError.value);
 
 // Rows the report will print, as far as the preview can tell
 const printedRowCount = computed(() =>

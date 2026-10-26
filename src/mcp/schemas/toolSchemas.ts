@@ -80,10 +80,11 @@ export const FIND_ELEMENTS_SCHEMA = tool(
 
 export const GET_REPORT_DATA_SCHEMA = tool(
   'get_report_data',
-  'List the projects whose data a report can show; with projectId, that project\'s data sources (tables of rows) and its location (for create_location); with projectId and sourceId, the source\'s columns (key, name, type). Needed for create_data_table and the data of create_chart.',
+  'List the projects whose data a report can show (the first 30 A to Z; search finds others by name or code); with projectId, that project\'s details, lists (team, companies, contracts, the manager\'s details: copy them into text / typed tables), data sources (tables of rows) and its location (for create_location); with projectId and sourceId, the source\'s columns (key, name, type). Needed for create_data_table and the data of create_chart.',
   {
     projectId: { type: 'string' },
-    sourceId: { type: 'string' }
+    sourceId: { type: 'string' },
+    search: { type: 'string', description: 'Only projects whose name or code contains this' }
   },
   [],
   true
