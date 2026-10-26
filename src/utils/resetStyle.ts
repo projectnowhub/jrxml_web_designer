@@ -95,6 +95,9 @@ export function resetElementStyle(element: DesignElement, options: ResetOptions 
         el.binding.theme = "none";
         delete el.binding.look;
         delete el.binding.customized;
+        // Columns' own colours go; highlight rules stay (they are what the
+        // user decided to show, not a look)
+        for (const col of el.binding.columns) delete col.look;
       }
       break;
     case "contentsList":

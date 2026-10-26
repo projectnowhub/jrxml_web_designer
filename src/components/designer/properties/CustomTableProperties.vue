@@ -79,7 +79,7 @@
           <input
             type="checkbox"
             :checked="table.totalRow"
-            @change="change(() => (table.totalRow = ($event.target as HTMLInputElement).checked))"
+            @change="change(() => setTotalRow(table, ($event.target as HTMLInputElement).checked, t('dataTable.totals.label')))"
           />
           {{ t("customTable.totalRow") }}
         </label>
@@ -88,8 +88,45 @@
           {{ t("customTable.editCells") }}
         </button>
         <p class="form-hint">{{ t(isEditing ? "customTable.editingHint" : "customTable.editHint") }}</p>
-      </div>
 
+        <!-- The chosen rows / columns: insert next to them, or delete them -->
+        <template v-if="rect">
+          <span class="field-label" style="margin-top: 10px">{{ t("customTable.rowsAndColumns") }}</span>
+          <div class="action-grid">
+            <button v-for="a in ROW_ACTIONS" :key="a.id" type="button" class="action-btn" :disabled="a.disabled?.()" @click="runAction(a.id)">
+              <component :is="a.icon" :size="13" aria-hidden="true" />
+              {{ a.label() }}
+            </button>
+          </div>
+          <div class="merge-row">
+            <button type="button" class="wide-btn" :disabled="!canMerge" @click="merge">
+              <TableCellsMerge :size="13" aria-hidden="true" />
+              {{ t("customTable.menu.merge") }}
+            </button>
+            <button type="button" class="wide-btn" :disabled="!canSplit" @click="split">
+              <TableCellsSplit :size="13" aria-hidden="true" />
+              {{ t("customTable.menu.split") }}
+            </button>
+          </div>
+          <!-- The rows from the chosen one on: a new table on a new page -->
+          <button
+            v-if="canSplitPlace"
+            type="button"
+            class="wide-btn split-table-btn"
+            :disabled="!canSplitHere"
+            :title="canSplitHere ? t('customTable.splitHint', { row: rect.top + 1 }) : t('customTable.splitCant', { row: table.headerRows + 2 })"
+            @click="splitHere"
+          >
+            <Scissors :size="13" aria-hidden="true" />
+            {{ t("customTable.menu.splitTable") }}
+          </button>
+        </template>
+      </div>
+    </template>
+
+    <!-- Style Settings: the look of the chosen cells (the whole table's look,
+         space inside cells included, is in Customize below) -->
+    <template v-else-if="rect">
       <div class="card">
         <h5>{{ targetTitle }}<SettingHelpButton id="typedCells" /></h5>
         <SettingHelpText id="typedCells" />
@@ -100,6 +137,7 @@
             <div class="color-with-clear">
               <ColorSwatchPicker
                 :model-value="shown('fill') ?? null"
+                :mixed="shown('fill') === undefined"
                 class="swatch-fill"
                 @update:model-value="$event && setStyle('fill', $event, 'fill')"
               />
@@ -119,6 +157,7 @@
             <span class="field-label">{{ t("customTable.textColor") }}</span>
             <ColorSwatchPicker
               :model-value="shown('color') ?? null"
+              :mixed="shown('color') === undefined"
               class="swatch-fill"
               @update:model-value="$event && setStyle('color', $event, 'color')"
             />
@@ -181,39 +220,6 @@
             <component :is="align.icon" :size="14" aria-hidden="true" />
           </button>
         </div>
-
-        <div v-if="rect" class="merge-row">
-          <button type="button" class="wide-btn" :disabled="!canMerge" @click="merge">
-            <TableCellsMerge :size="13" aria-hidden="true" />
-            {{ t("customTable.menu.merge") }}
-          </button>
-          <button type="button" class="wide-btn" :disabled="!canSplit" @click="split">
-            <TableCellsSplit :size="13" aria-hidden="true" />
-            {{ t("customTable.menu.split") }}
-          </button>
-        </div>
-      </div>
-    </template>
-
-    <!-- Style Settings (below the table style editor): space inside the cells -->
-    <template v-else>
-      <div class="card">
-        <h5>{{ t("customTable.text") }}<SettingHelpButton id="typedText" /></h5>
-        <SettingHelpText id="typedText" />
-        <label class="field">
-          <span class="field-label">{{ t("customTable.padding") }}</span>
-          <span class="unit-input">
-            <input v-live-change
-              type="number"
-              min="0"
-              max="40"
-              step="1"
-              :value="table.padding"
-              @change="setPadding(($event.target as HTMLInputElement).value)"
-            />
-            <span>px</span>
-          </span>
-        </label>
       </div>
     </template>
   </div>
@@ -222,13 +228,17 @@
 <script setup lang="ts">
 import SettingHelpButton from "../../help/SettingHelpButton.vue";
 import SettingHelpText from "../../help/SettingHelpText.vue";
-import { computed } from "vue";
+import { computed, type Component } from "vue";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import {
   AlignVerticalJustifyCenter,
   AlignVerticalJustifyEnd,
   AlignVerticalJustifyStart,
+  ArrowDownToLine,
+  ArrowLeftToLine,
+  ArrowRightToLine,
+  ArrowUpToLine,
   Bold,
   Italic,
   Minus,
@@ -241,12 +251,18 @@ import {
   TextAlignEnd,
   TextAlignJustify,
   TextAlignStart,
+  Scissors,
+  Trash2,
   Underline,
 } from "@lucide/vue";
+import notification from "@/utils/notification";
+import { canSplitTypedTable, splitPlace, splitTypedTable } from "@/utils/table/splitTypedTable";
 import ColorSwatchPicker from "../../common/ColorSwatchPicker.vue";
 import { useReportStore } from "@/stores/report";
 import { useSelectionStore } from "@/stores/selection";
+import { hasFormatting, stripInlineColors } from "@/utils/elementUtils";
 import {
+  columnName,
   customTableLook,
   MAX_HEADER_ROWS,
   resolveCell,
@@ -257,8 +273,9 @@ import {
   insertColumn,
   insertRow,
   mergeCells,
-  rectCellCount,
+  canMergeRect,
   selectionRect,
+  setTotalRow,
   splitCells,
   syncTableSize,
   visibleCells,
@@ -335,9 +352,88 @@ const targets = computed(() => {
     : all;
 });
 
-const targetTitle = computed(() =>
-  rect.value ? t("customTable.selectedCells", targets.value.length) : t("customTable.allCells"),
-);
+// What the chosen cells are: whole rows ("Row 2", "Rows 2–3"), whole columns
+// ("Column B", "Columns B–C"), else how many cells
+const targetTitle = computed(() => {
+  const r = rect.value;
+  if (!r) return "";
+  const tbl = table.value;
+  const wholeRows = r.left === 0 && r.right === tbl.columns.length - 1;
+  const wholeCols = r.top === 0 && r.bottom === tbl.rows.length - 1;
+  if (wholeRows && wholeCols) return t("customTable.allCells");
+  if (wholeRows && !wholeCols) {
+    return r.top === r.bottom
+      ? t("customTable.chosenRow", { n: r.top + 1 })
+      : t("customTable.chosenRows", { from: r.top + 1, to: r.bottom + 1 });
+  }
+  if (wholeCols && !wholeRows) {
+    return r.left === r.right
+      ? t("customTable.chosenColumn", { name: columnName(r.left) })
+      : t("customTable.chosenColumns", { from: columnName(r.left), to: columnName(r.right) });
+  }
+  return t("customTable.selectedCells", targets.value.length);
+});
+
+// Choose cells (the table stays open)
+const choose = (anchor: { row: number; col: number }, focus = anchor) =>
+  (tableCells.value = { uuid: props.element.uuid ?? "", anchor, focus });
+
+// Next to / instead of the chosen cells (as in the right-click menu)
+type RowActionId = "rowAbove" | "rowBelow" | "colLeft" | "colRight" | "deleteRows" | "deleteCols";
+const rowsChosen = () => (rect.value ? rect.value.bottom - rect.value.top + 1 : 0);
+const colsChosen = () => (rect.value ? rect.value.right - rect.value.left + 1 : 0);
+const ROW_ACTIONS: { id: RowActionId; icon: Component; label: () => string; disabled?: () => boolean }[] = [
+  { id: "rowAbove", icon: ArrowUpToLine, label: () => t("customTable.menu.rowAbove") },
+  { id: "rowBelow", icon: ArrowDownToLine, label: () => t("customTable.menu.rowBelow") },
+  { id: "colLeft", icon: ArrowLeftToLine, label: () => t("customTable.menu.colLeft") },
+  { id: "colRight", icon: ArrowRightToLine, label: () => t("customTable.menu.colRight") },
+  {
+    id: "deleteRows",
+    icon: Trash2,
+    label: () => t("customTable.menu.deleteRows", rowsChosen()),
+    disabled: () => rowsChosen() >= table.value.rows.length,
+  },
+  {
+    id: "deleteCols",
+    icon: Trash2,
+    label: () => t("customTable.menu.deleteCols", colsChosen()),
+    disabled: () => colsChosen() >= table.value.columns.length,
+  },
+];
+
+function runAction(id: RowActionId) {
+  const r = rect.value;
+  if (!r) return;
+  const tbl = table.value;
+  const lastCol = () => tbl.columns.length - 1;
+  const lastRow = () => tbl.rows.length - 1;
+  switch (id) {
+    case "rowAbove":
+      change(() => insertRow(tbl, r.top, r.top));
+      choose({ row: r.top, col: 0 }, { row: r.top, col: lastCol() });
+      break;
+    case "rowBelow":
+      change(() => insertRow(tbl, r.bottom + 1, r.bottom));
+      choose({ row: r.bottom + 1, col: 0 }, { row: r.bottom + 1, col: lastCol() });
+      break;
+    case "colLeft":
+      change(() => insertColumn(tbl, r.left, r.left));
+      choose({ row: 0, col: r.left }, { row: lastRow(), col: r.left });
+      break;
+    case "colRight":
+      change(() => insertColumn(tbl, r.right + 1, r.right));
+      choose({ row: 0, col: r.right + 1 }, { row: lastRow(), col: r.right + 1 });
+      break;
+    case "deleteRows":
+      change(() => deleteRows(tbl, r.top, r.bottom));
+      choose({ row: Math.min(r.top, lastRow()), col: r.left });
+      break;
+    case "deleteCols":
+      change(() => deleteColumns(tbl, r.left, r.right));
+      choose({ row: r.top, col: Math.min(r.left, lastCol()) });
+      break;
+  }
+}
 
 type StyleKey = keyof ResolvedCell;
 
@@ -390,6 +486,13 @@ function setStyle<K extends StyleKey>(key: K, value: ResolvedCell[K], recordKey?
     const cell = v.cell as unknown as Record<string, unknown>;
     if (styleOf(v.row)[key] === value) delete cell[key];
     else cell[key] = value;
+
+    if (key === "color" && typeof v.cell.text === "string" && v.cell.rich) {
+      v.cell.text = stripInlineColors(v.cell.text);
+      if (!hasFormatting(v.cell.text)) {
+        delete v.cell.rich;
+      }
+    }
   }
   done();
 }
@@ -400,13 +503,7 @@ function setFontSize(raw: string) {
   setStyle("fontSize", size);
 }
 
-function setPadding(raw: string) {
-  const value = Number(raw);
-  if (!Number.isFinite(value)) return;
-  change(() => (table.value.padding = Math.min(40, Math.max(0, value))));
-}
-
-const canMerge = computed(() => !!rect.value && rectCellCount(table.value, rect.value) > 1);
+const canMerge = computed(() => !!rect.value && canMergeRect(table.value, rect.value));
 const canSplit = computed(() => !!rect.value && hasMergedCells(table.value, rect.value));
 
 function merge() {
@@ -416,6 +513,19 @@ function merge() {
   tableCells.value = { uuid: props.element.uuid ?? "", anchor: { row: r.top, col: r.left }, focus: { row: r.top, col: r.left } };
 }
 
+// Split table here: the rows from the chosen one on go to a new page
+const canSplitPlace = computed(() => !!splitPlace(props.element));
+const canSplitHere = computed(() => !!rect.value && canSplitTypedTable(props.element, rect.value.top));
+function splitHere() {
+  const r = rect.value;
+  if (!r) return;
+  const moved = splitTypedTable(props.element, r.top);
+  if (!moved) return;
+  editingElement.value = null;
+  tableCells.value = null;
+  notification.success(t("customTable.splitDone", { row: r.top + 1, page: (moved.pageIndex ?? 0) + 1 }));
+}
+
 function split() {
   const r = rect.value;
   if (r) change(() => splitCells(table.value, r));
@@ -423,6 +533,43 @@ function split() {
 </script>
 
 <style scoped>
+.split-table-btn {
+  margin-top: 6px;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--prop-border-color);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  color: var(--prop-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.action-btn:hover:not(:disabled) {
+  border-color: var(--prop-primary-color, #6440f4);
+  color: var(--prop-primary-color, #6440f4);
+}
+
+.action-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .card {
   /* Same card as the other property sections */
   margin-bottom: 12px;
@@ -478,8 +625,7 @@ function split() {
   color: var(--prop-text-primary);
 }
 
-.counter button,
-.icon-btn {
+.counter button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -491,6 +637,21 @@ function split() {
   background: #fff;
   color: var(--prop-text-primary);
   cursor: pointer;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--prop-border-color);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--prop-text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .counter button:disabled {
@@ -547,12 +708,8 @@ function split() {
 
 .color-with-clear {
   display: flex;
+  align-items: center;
   gap: 4px;
-}
-
-.color-with-clear > :first-child {
-  flex: 1;
-  min-width: 0;
 }
 
 .seg {

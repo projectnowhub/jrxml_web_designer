@@ -26,6 +26,14 @@ import {
   tableStylePrefix,
 } from "@/utils/table/tableThemes";
 import { collectBoundTables } from "@/utils/table/tableDocument";
+import {
+  columnCellStyle,
+  columnPartStyle,
+  columnPartStyleName,
+  columnStyleName,
+  needsColumnPartStyle,
+  needsColumnStyle,
+} from "@/utils/table/columnLook";
 import { tableColumnBarcode, type TableBarcodeType } from "@/utils/barcode/barcodeTypes";
 
 export { collectBoundTables };
@@ -39,14 +47,24 @@ export const javaString = (text: string) =>
   `"${text.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r?\n/g, "\\n")}"`;
 
 // The report styles every table needs: three per look (header, row, totals),
-// written once per built-in or saved style and once per customised table
+// written once per built-in or saved style and once per customised table; and
+// a body cell style for each column with its own look or highlight rules
 export function tableReportStyles(bands: Band[]): ReportStyle[] {
   const byPrefix = new Map<string, ReportStyle[]>();
+  const columnStyles: ReportStyle[] = [];
   for (const table of collectBoundTables(bands)) {
     const prefix = tableStylePrefix(table.binding);
     if (!byPrefix.has(prefix)) byPrefix.set(prefix, buildLookStyles(prefix, resolveLook(table.binding)));
+    table.binding.columns.forEach((_, i) => {
+      const headerStyle = columnPartStyle(table.binding, i, "header");
+      if (headerStyle) columnStyles.push(headerStyle);
+      const style = columnCellStyle(table.binding, i);
+      if (style) columnStyles.push(style);
+      const totalStyle = columnPartStyle(table.binding, i, "totals");
+      if (totalStyle) columnStyles.push(totalStyle);
+    });
   }
-  return [...byPrefix.values()].flat();
+  return [...[...byPrefix.values()].flat(), ...columnStyles];
 }
 
 // One <subDataset> per bound table
@@ -130,16 +148,19 @@ function columnXML(
 ): string {
   const width = toInt(col.width);
   const style = (part: "header" | "row" | "totals") => tableStyleName(tableStylePrefix(binding), part);
-  const alignment = cellAlignmentFor(col.type);
+  const headerStyle = needsColumnPartStyle(binding, col, "header") ? columnPartStyleName(binding, index, "header") : style("header");
+  const bodyStyle = needsColumnStyle(binding, col) ? columnStyleName(binding, index) : style("row");
+  const totalsStyle = needsColumnPartStyle(binding, col, "totals") ? columnPartStyleName(binding, index, "totals") : style("totals");
+  const alignment = col.look?.align ?? cellAlignmentFor(col.type);
   let xml = `<jr:column width="${width}" uuid="${crypto.randomUUID()}">`;
 
   xml += `<jr:columnHeader height="${headerHeight}" rowSpan="1">`;
   xml += textFieldXML({
     width,
     height: headerHeight,
-    style: style("header"),
+    style: headerStyle,
     expression: javaString(col.label),
-    alignment: "Left",
+    alignment: col.look?.header?.align ?? "Left",
     stretch: true,
   });
   xml += `</jr:columnHeader>`;
@@ -150,9 +171,9 @@ function columnXML(
     xml += textFieldXML({
       width,
       height: rowHeight,
-      style: style("totals"),
+      style: totalsStyle,
       expression: total ? `$V{${total.name}}` : index === 0 ? javaString(t("dataTable.totals.label")) : '""',
-      alignment: total ? "Right" : "Left",
+      alignment: col.look?.total?.align ?? (total ? "Right" : "Left"),
       pattern: total ? (col.total === "count" ? "#,##0" : cellPatternFor(col.type) ?? "#,##0.##") : undefined,
     });
     xml += `</jr:columnFooter>`;
@@ -161,11 +182,11 @@ function columnXML(
   xml += `<jr:detailCell height="${rowHeight}">`;
   const barcode = tableColumnBarcode(col);
   xml += barcode
-    ? barcodeCellXML(barcode, col, width, rowHeight, style("row"))
+    ? barcodeCellXML(barcode, col, width, rowHeight, bodyStyle)
     : textFieldXML({
         width,
         height: rowHeight,
-        style: style("row"),
+        style: bodyStyle,
         expression: cellExpression(col),
         alignment,
         pattern: cellPatternFor(col.type),

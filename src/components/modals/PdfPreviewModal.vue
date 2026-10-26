@@ -69,6 +69,7 @@
                 :columns="entry.binding.columns"
                 :rows="tableRows[entry.binding.datasetName]?.rows ?? []"
                 :look="resolveLook(entry.binding)"
+                :highlights="entry.binding.highlights"
                 :show-totals="entry.binding.showTotals"
                 :loading="tableRows[entry.binding.datasetName]?.loading"
                 :failed="tableRows[entry.binding.datasetName]?.failed"

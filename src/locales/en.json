@@ -38,13 +38,13 @@
     "saveAs": "Save As",
     "loadingFileFailed": "Loading file failed",
     "jrxmlOpened": "Opened \"{name}\"",
-    "onlyJrxml": "Only .jrxml template files can be opened",
+    "onlyJrxml": "Only .jrxml files\nChoose a template file ending in .jrxml.",
     "deleteAllFiles": "Delete All Templates",
     "deleteAllFilesConfirm": "Delete every template saved in this browser? The open template is deleted too and a new, empty one is opened. This can't be undone. Download any template you want to keep first.",
     "deleteAllFilesDone": "All saved templates were deleted",
-    "invalidFileFormat": "Invalid file format, cannot load",
+    "invalidFileFormat": "This file can't be opened\nIt isn't a valid template file.",
     "untitledReport": "Untitled Template",
-    "templateNotFound": "That template isn't saved in this browser, so a new one was started."
+    "templateNotFound": "Template not found\nIt isn't saved in this browser, so a new one was started."
   },
   "elementLibrary": {
     "title": "Element Library",
@@ -633,7 +633,7 @@
       "showPanel": "Show tables",
       "hidePanel": "Hide tables"
     },
-    "generationFailed": "PDF generation failed",
+    "generationFailed": "Preview couldn't be made\nPlease try again in a moment.",
     "errors": {
       "httpFailure": "PDF generation failed (HTTP {status})",
       "invalidJson": "The server returned invalid JSON instead of a PDF",
@@ -747,15 +747,16 @@
     "ok": "OK",
     "confirm": "Confirm",
     "required": "Required",
-    "unknownError": "Unknown error"
+    "unknownError": "Unknown error",
+    "close": "Close"
   },
   "notifications": {
     "fileSavedSuccess": "File saved successfully",
-    "fileSaveFailed": "Failed to save file",
+    "fileSaveFailed": "Couldn't save the file\nPlease try again.",
     "jrxmlCopiedSuccess": "JRXML content copied to clipboard",
-    "jrxmlCopyFailed": "Copy failed, please copy manually",
+    "jrxmlCopyFailed": "Couldn't copy\nPlease select the text and copy it yourself.",
     "jrxmlEditSaved": "JRXML edit saved, interface updated",
-    "jrxmlEditSaveFailed": "Save failed: {error}"
+    "jrxmlEditSaveFailed": "Couldn't save the change\n{error}"
   },
   "designer": {
     "relativeToBand": "relative to Band",
@@ -903,8 +904,8 @@
       "shortcutsHint": "Every shortcut, with the keys and the mouse",
       "tutorialMode": "Tutorial mode",
       "tutorialModeHint": "Tours, tips and hover cards appear by themselves while you work. Turn off when you know your way around.",
-      "tutorialOffDone": "Tutorial mode is off: tours and tips won't appear by themselves. All help is still in this Help menu.",
-      "tutorialOnDone": "Tutorial mode is on: tips and hover cards appear again as you work.",
+      "tutorialOffDone": "Tutorial mode is off\nTours and tips won't appear by themselves. All help is still in this menu.",
+      "tutorialOnDone": "Tutorial mode is on\nTips and hover cards appear again as you work.",
       "showMeHow": "Step-by-step guides",
       "showMeHowHint": "Step-by-step guides that check off each step as you do it",
       "allElements": "All elements",
@@ -1065,7 +1066,11 @@
       "locationMoveMap": "Look around the map",
       "locationPlacePin": "Put the pin on the spot you click",
       "locationZoomMap": "Show less or more around the pin (zoom in or out)",
-      "locationDragPin": "Move the pin"
+      "locationDragPin": "Move the pin",
+      "tableChooseLine": "Choose a whole row or column (Shift: several)",
+      "tableSelectAll": "Choose every cell (while the table is open)",
+      "tableLineMenu": "Insert or delete rows and columns",
+      "tableChooseColumn": "Project data table: choose a column to style it (Style Settings → Cells)"
     },
     "panelTips": {
       "hide": "Hide this tip",
@@ -1113,7 +1118,7 @@
       "progress": "{done} of {total} done",
       "stepDone": "Done:",
       "showMe": "Show me",
-      "notOnScreen": "That part isn't on screen right now. Make the window wider, or open the ☰ menu at the top left.",
+      "notOnScreen": "That part isn't on screen\nMake the window wider, or open the ☰ menu at the top left.",
       "allDoneTitle": "All done, well done!",
       "allDoneText": "You can change anything again at any time.",
       "another": "Choose another guide",
@@ -1484,15 +1489,18 @@
       "dragPartLine": "Drag the line under a page part",
       "wheel": "Mouse wheel",
       "clickOutside": "Click outside it",
-      "dragPin": "Drag the pin"
+      "dragPin": "Drag the pin",
+      "clickHandle": "Click a row / column handle",
+      "rightClickHandle": "Right-click a row / column handle",
+      "clickPlus": "Click the + between two handles"
     }
   },
   "imageUpload": {
-    "invalidFormat": "You cannot upload this file. Only PNG and JPEG images are supported.",
-    "tooLarge": "Image is too large. Maximum size is 4 MB.",
-    "tooLargeWithSize": "Image is too large ({size} MB). Maximum size is 4 MB.",
-    "uploadFailed": "Image upload failed. Please try again.",
-    "invalidResponse": "The server did not return a stored image reference."
+    "invalidFormat": "Can't use this file\nOnly PNG and JPEG pictures can be added.",
+    "tooLarge": "Picture too large\nThe most is 4 MB.",
+    "tooLargeWithSize": "Picture too large ({size} MB)\nThe most is 4 MB.",
+    "uploadFailed": "Picture couldn't be added\nPlease try again.",
+    "invalidResponse": "Picture couldn't be saved\nThe server didn't keep it. Please try again."
   },
   "ai": {
     "title": "AI Assistant",
@@ -1629,8 +1637,8 @@
       "reading": "Reading…",
       "drop": "Drop the files to attach them",
       "errors": {
-        "type": "“{name}” can't be attached: use a picture (PNG, JPG, GIF, WebP), a PDF or a text file (TXT, CSV, JSON, XML…).",
-        "tooLarge": "“{name}” is too large to attach (pictures up to 15 MB, PDFs 20 MB, text files 2 MB).",
+        "type": "Can't attach “{name}”\nUse a picture (PNG, JPG, GIF, WebP), a PDF or a text file.",
+        "tooLarge": "“{name}” is too large\nPictures up to 15 MB, PDFs 20 MB, text files 2 MB.",
         "unreadable": "“{name}” could not be read.",
         "count": "At most {max} attachments per message."
       }
@@ -1649,14 +1657,14 @@
     "pageAdded": "Page {page} added",
     "pageDeleted": "Page {page} deleted",
     "jrxmlRegenerated": "JRXML has been regenerated",
-    "previewFailed": "Failed to preview PDF, please check the console for error details",
+    "previewFailed": "Preview couldn't be made\nPlease try again in a moment.",
     "bandLimits": {
-      "noSpace": "You don't have space to extend {band}. The Detail section has reached its minimum height ({height}px).",
-      "maxReached": "{band} is full. Raise its maximum in Template Settings → Section Heights for more space.",
-      "minReached": "Minimum height reached. If you don't need {band}, untick it in Template Settings → Page Sections.",
-      "textOverflow": "{band} reached its maximum height ({height}px) and the text doesn't fit. Make the item wider, or put long text in the Detail section.",
+      "noSpace": "No room to make {band} taller\nDetail is already at its smallest ({height}px).",
+      "maxReached": "{band} is full\nRaise its maximum in Template Settings → Section Heights.",
+      "minReached": "Smallest height reached\nIf you don't need {band}, untick it in Page Sections.",
+      "textOverflow": "The text doesn't fit\n{band} is at its maximum ({height}px). Make the item wider, or put long text in Detail.",
       "grewToFit": "{band} grew to {height}px to fit the element.",
-      "tooTallForBand": "This element is {height}px tall, but {band} can be at most {max}px. Make the element smaller, or raise {band}'s maximum in Template Settings → Section Heights."
+      "tooTallForBand": "Too tall for {band}\nIt is {height}px; {band} allows {max}px. Make it smaller, or raise the maximum in Section Heights."
     },
     "confirmDelete": {
       "title": "Delete",
@@ -1665,9 +1673,9 @@
       "variable": "Are you sure you want to delete variable \"{name}\"?"
     },
     "duplicateName": {
-      "variable": "A variable with this name already exists, please use a different name",
-      "parameter": "A parameter with this name already exists, please use a different name",
-      "field": "A field with this name already exists, please use a different name"
+      "variable": "That name is taken\nA variable already has it. Please choose another name.",
+      "parameter": "That name is taken\nA parameter already has it. Please choose another name.",
+      "field": "That name is taken\nA field already has it. Please choose another name."
     }
   },
   "canvas": {
@@ -1743,7 +1751,7 @@
       "photoMeta": "Date: – · Location: –"
     },
     "customizeHint": "Fine-tune each side and the corner radius in Style Settings.",
-    "pageBorderExists": "This template already has a page border. You can edit the existing page border instead of adding a new one.",
+    "pageBorderExists": "There's already a page border\nChange the existing one instead of adding another.",
     "templateDescription": {
       "frameKpiCard": "Shows one important number, with a small label above and a note below (for example: Progress 17.93%).",
       "frameAlertBox": "A coloured box with a heading and a short message, for warnings or things readers must notice.",
@@ -1755,7 +1763,7 @@
     "moveOutOfBox": "Move out of box"
   },
   "reportParts": {
-    "noBand": "This template has no {band}. Turn it on under Template Settings → Page Sections, then add it again.",
+    "noBand": "This template has no {band}\nTurn it on in Template Settings → Page Sections, then add it again.",
     "statusColor": "Status colour",
     "description": {
       "partReportHeader": "A dark banner across the top of every page with three lines of title (client and project, report number, month). Goes in the Page Header.",
@@ -1848,22 +1856,20 @@
     "grid": "Rows and columns",
     "rows": "Rows",
     "columns": "Columns",
-    "addRow": "Add a row at the bottom",
-    "removeRow": "Remove the last row",
-    "addColumn": "Add a column on the right",
-    "removeColumn": "Remove the last column",
+    "addRow": "Add row",
+    "removeRow": "Remove row",
+    "addColumn": "Add column",
+    "removeColumn": "Remove column",
     "editCells": "Type in the table",
     "editHint": "Double-click the table to type in it. Right-click a cell to add rows, merge cells and more.",
     "editingHint": "Click a cell to type. Drag across cells (or Shift+click) to choose several. Press Esc when you are done.",
     "selectedCells": "1 selected cell | {n} selected cells",
-    "allCells": "All cells",
     "fill": "Fill",
     "textColor": "Text colour",
     "textStyle": "Text style",
     "textSize": "Text size",
     "alignment": "Alignment",
     "justified": "Justify",
-    "text": "Text",
     "padding": "Space inside cells",
     "menu": {
       "rowAbove": "Insert row above",
@@ -1874,7 +1880,8 @@
       "deleteCols": "Delete column | Delete {n} columns",
       "merge": "Merge cells",
       "split": "Split cells",
-      "clear": "Clear text"
+      "clear": "Clear text",
+      "splitTable": "Split table here"
     },
     "content": "Table content",
     "fromData": "Use project data",
@@ -1883,8 +1890,8 @@
     "typedHint": "You type every cell yourself. Double-click the table to type in it.",
     "toDataTitle": "Use project data?",
     "toDataMessage": "Your typed cells will be replaced by rows from a project. You can undo this with Ctrl+Z.",
-    "rowsLeftOut": "1 row didn't fit on this page and was left out. | {n} rows didn't fit on this page and were left out.",
-    "convertFailed": "The table's rows couldn't be loaded, so the table was not changed. Please try again.",
+    "rowsLeftOut": "1 row was left out\nIt didn't fit on this page. | {n} rows were left out\nThey didn't fit on this page.",
+    "convertFailed": "Rows couldn't load\nThe table wasn't changed. Please try again.",
     "chooseKind": "What goes in the table?",
     "typedDesc": "You type the text in each cell.",
     "fromDataDesc": "Rows come from a project and update every time the report runs.",
@@ -1893,7 +1900,21 @@
     "fewerHeaderRows": "One header row less",
     "moreHeaderRows": "One more header row",
     "totalRow": "Last row is a total",
-    "styleColors": "Back to the table style's colours"
+    "styleColors": "Back to the table style's colours",
+    "gridSize": "{rows} rows · {columns} columns",
+    "rowsAndColumns": "Rows and columns",
+    "chosenRow": "Row {n}",
+    "chosenRows": "Rows {from}–{to}",
+    "chosenColumn": "Column {name}",
+    "chosenColumns": "Columns {from}–{to}",
+    "handles": {
+      "column": "Column {name}: click to choose it (Shift+click for several), right-click for more",
+      "row": "Row {n}: click to choose it (Shift+click for several), right-click for more"
+    },
+    "allCells": "All cells",
+    "splitDone": "Table split\nRows from row {row} are on page {page}, with the heading rows.",
+    "splitHint": "Move row {row} and the rows below it to a new table on a new page, with the heading rows copied",
+    "splitCant": "Choose row {row} or lower: at least one data row stays above the cut, it can't be the total row, and no merged cell may run across it."
   },
   "pagination": {
     "title": "Page Number",
@@ -1903,9 +1924,9 @@
       "pageXofY": "Page number and total pages",
       "slash": "Number / total pages"
     },
-    "cannotEdit": "Page numbers are dynamically generated and cannot be edited directly. Use the property panel to change format or page range.",
+    "cannotEdit": "Page numbers fill in by themselves\nChange their format or pages in the panel on the right.",
     "lockedHint": "Page number – change its format or pages in the property panel.",
-    "noBand": "Add a page section to the template before inserting a page number.",
+    "noBand": "No page section yet\nTurn on a page header or footer before adding a page number.",
     "tileHint": "Click to choose where the page number goes, or drag it onto the page.",
     "choosePosition": "Insert page number",
     "positions": {
@@ -1998,7 +2019,7 @@
   "dateElement": {
     "tileHint": "A date that fills itself in: the day the report is printed, this month or last month. Click to add it, or drag it onto the page.",
     "lockedHint": "Date – it fills itself in. Change it in the property panel.",
-    "cannotType": "This date fills itself in. Change it in the property panel, or choose \"Type my own text instead\" there.",
+    "cannotType": "This date fills itself in\nChange it on the right, or choose “Type my own text instead” there.",
     "when": {
       "printed": "Day it's printed",
       "thisMonth": "This month",
@@ -2283,7 +2304,7 @@
     "noRows": "No records found",
     "onlyInDetail": "Tables can only be placed in the Detail section.",
     "columnAlreadyShown": "\"{column}\" is already in this table.",
-    "columnLimitReached": "This table is full: it fits at most {max} columns. Widen it or remove a column first.",
+    "columnLimitReached": "This table is full\nIt fits {max} columns. Widen it or remove a column first.",
     "totals": {
       "label": "Total",
       "sum": "Sum",
@@ -2300,7 +2321,12 @@
       "none": "None",
       "corporateBlue": "Corporate Blue",
       "minimal": "Minimal",
-      "emerald": "Emerald"
+      "emerald": "Emerald",
+      "slate": "Slate",
+      "burgundy": "Burgundy",
+      "teal": "Teal",
+      "gold": "Gold",
+      "violet": "Violet"
     },
     "panel": {
       "data": "Data",
@@ -2441,10 +2467,7 @@
       "defaultName": "My style",
       "saved": "Table style \"{name}\" saved",
       "updated": "Table style \"{name}\" updated",
-      "rename": "Rename",
-      "delete": "Delete",
       "deleteConfirm": "Delete \"{name}\"?",
-      "savedStyle": "Saved style: {name}",
       "needData": "Add data to the table first, then change its look here.",
       "usingStyle": "Using {name}",
       "rowColors": "Row colours",
@@ -2452,7 +2475,56 @@
       "addRowColor": "Add",
       "removeRowColor": "Remove row colour {n}",
       "rowColorsHint": "Rows take these colours in turn, then start again.",
-      "addRowColorHint": "Add a row colour (up to 4)"
+      "addRowColorHint": "Add a row colour (up to 4)",
+      "cellsHintTyped": "To style only some cells, open the table (double-click it) and choose cells, a row or column by its handle, or every cell with Ctrl+A.",
+      "cellsHintData": "To style one column, click it in the table on the page.",
+      "myStyles": "My styles",
+      "renameStyle": "Rename “{name}”",
+      "deleteStyle": "Delete “{name}”"
+    },
+    "cells": {
+      "columnTitle": "Column “{name}”",
+      "partHeader": "Header",
+      "partData": "Data",
+      "partTotal": "Total",
+      "reset": "Back to the table style"
+    },
+    "highlight": {
+      "title": "Highlight rows or cells",
+      "noRules": "No highlight rules",
+      "rulesCount": "1 highlight rule | {count} highlight rules",
+      "editInSetup": "Edit in data setup",
+      "empty": "Colour rows, or single cells, by their values: for example the rows whose Status is Delayed, or the Stock cells below 100.",
+      "add": "Add a rule",
+      "delete": "Delete this rule",
+      "moveUp": "Move up (rules higher up win)",
+      "colour": "Colour",
+      "scopes": {
+        "row": "Whole row",
+        "cell": "Only the cell"
+      },
+      "when": "When",
+      "isOneOf": "Is one of",
+      "blank": "(empty)",
+      "noValues": "No values found for this column.",
+      "from": "From",
+      "to": "To",
+      "dateOps": {
+        "past": "Before today",
+        "future": "After today",
+        "between": "Between dates"
+      },
+      "look": "How it looks",
+      "fill": "Fill",
+      "textColour": "Text colour",
+      "incomplete": "This rule does nothing yet: choose a value or range, and a colour.",
+      "order": "When several rules match a row, the one higher up wins.",
+      "summary": "{scope} · {column} {condition}",
+      "summaryIn": "is {values}",
+      "summaryBetween": "from {from} to {to}",
+      "summaryFrom": "from {from}",
+      "summaryTo": "up to {to}",
+      "summaryNothing": "(not set yet)"
     }
   },
   "reportData": {
@@ -2477,21 +2549,21 @@
     "noMatch": "Nothing matches",
     "loadFailed": "Couldn't load this project's data.",
     "retry": "Try again",
-    "dropTextOnText": "Drop text details (name, dates, budget…) on a text element, or on empty space.",
+    "dropTextOnText": "Drop it on a text\nText details (name, dates, budget…) go on a text element or empty space.",
     "dropImageOnImage": "Drop the logo on an image element, or on empty space.",
-    "dropNotOnPageNumber": "A page number can't show project data. Drop it on another text element.",
-    "dropNotOnDate": "A date fills itself in and can't show project data. Drop it on another text element.",
-    "projectInUse": "{project} is still used by {count} table(s) or chart(s) on this template. Delete them, or choose another project in their data, before removing it.",
+    "dropNotOnPageNumber": "A page number can't show project data\nDrop it on another text element.",
+    "dropNotOnDate": "A date can't show project data\nDrop it on another text element.",
+    "projectInUse": "Can't remove {project}\nIt is still used by {count} table(s) or chart(s). Delete them, or choose another project in their data.",
     "projectSource": "{project} · {source}",
     "noValue": "{project} has no {label} to add.",
     "projectTabs": "Report projects",
-    "dropNotForBarcode": "{type} can't hold “{value}”: {problem} Use Code 128 or a QR code for values like this.",
+    "dropNotForBarcode": "{type} can't hold “{value}”\n{problem} Use Code 128 or a QR code for values like this.",
     "projectsSelected": "{count} project selected | {count} projects selected",
     "location": "Location",
     "locationWhole": "Map and address",
     "dragLocation": "Drag onto the page for a map with the address, or onto a Location to change its place",
-    "dropNotOnLocation": "A Location shows a place. Drop the project's Location (or one of its fields, such as City) on it, or drop this detail on empty space.",
-    "projectSwitchInUse": "{project} is still used by {count} table(s) or chart(s) on this template, so it can't be changed to {other}. Delete them, or choose {other} in their data first. A template uses one project for now."
+    "dropNotOnLocation": "A Location only takes a place\nDrop the project's Location (or a field like City), or drop this on empty space.",
+    "projectSwitchInUse": "Can't change to {other}\n{project} is still used by {count} table(s) or chart(s). Delete them, or switch their data first."
   },
   "barcode": {
     "chooseType": "Choose a barcode type",
@@ -2716,20 +2788,20 @@
     "deleteContents": "Delete this contents page",
     "emptyCover": "Design the cover page",
     "emptyContents": "Design the table of contents",
-    "lastNormalPage": "This page can't be deleted: a template needs at least one normal page after the cover and contents pages.",
+    "lastNormalPage": "This page can't be deleted\nA template needs at least one normal page.",
     "coverAdded": "Cover page added at the front.",
     "coverMade": "This page is now the cover page.",
     "contentsAdded": "Contents page added.",
     "contentsMade": "This page is now a contents page.",
-    "madeNormal": "This page is a normal page again: the page header and footer print on it.",
+    "madeNormal": "This is a normal page again\nThe page header and footer print on it.",
     "coverDeleted": "Cover page deleted.",
     "contentsDeleted": "Contents page deleted.",
     "notAllowed": {
-      "pageNumber": "Page numbers can't go on the cover or contents pages. Put them in the page header or footer: they show on the other pages.",
-      "dataTable": "Tables with project data can't go on the cover or contents pages, because they can grow onto more pages. Use a table you type yourself (Type my own).",
-      "contentsList": "A table of contents can't go on the cover page. Put it on a contents page (or a normal page).",
-      "secondContents": "This template already has a Table of Contents on its contents pages. It is selected: change it, or add another one on a normal page.",
-      "contentsListInBox": "A box holding a Table of Contents can only be on a normal page. On a contents page, use the Table of Contents on its own (Move out of box)."
+      "pageNumber": "No page numbers here\nPut them in the page header or footer: they show on the other pages.",
+      "dataTable": "Project data tables can't go here\nThey can grow onto more pages. Use a table you type (Type my own).",
+      "contentsList": "No table of contents on the cover\nPut it on a contents page or a normal page.",
+      "secondContents": "There's already a Table of Contents\nIt is now selected. Change it, or add another on a normal page.",
+      "contentsListInBox": "Not in a box on this page\nOn a contents page the Table of Contents stands alone. Use Move out of box."
     },
     "countPages": "Count the cover and contents pages",
     "countPagesYes": "They get no number, but they are counted: the first normal page is page {n}.",
@@ -2740,8 +2812,8 @@
     "wholeSheetOff": "The cover now keeps the page margins.",
     "changeDesign": "Change design",
     "changeDesignHint": "Pick another design for this page. Every part of it can still be changed afterwards.",
-    "borderNotOnCover": "Page border added to every page except the cover: the cover uses the whole sheet, so it has no border. To give the cover a border too, choose \"Keep the page margins\" in the cover's ⋯ menu.",
-    "borderRefusedOnCover": "The cover uses the whole sheet, so it can't have a page border. To give the cover a border, choose \"Keep the page margins\" in the cover's ⋯ menu. To put a border on the other pages, drop it on any of them.",
+    "borderNotOnCover": "Page border added\nNot on the cover: it uses the whole sheet. Choose “Keep the page margins” in its ⋯ menu to add one.",
+    "borderRefusedOnCover": "No page border on this cover\nIt uses the whole sheet. To add one, choose “Keep the page margins” in the cover's ⋯ menu.",
     "contentsAddedSameDesign": "Contents page added with the same design.",
     "noToc": "This contents page has no Table of Contents",
     "addToc": "Add Table of Contents",
@@ -2775,10 +2847,10 @@
     "numberBox": "Number box",
     "noNumberBox": "No number box",
     "onlyOnPages": "Select a table of contents on a page first.",
-    "noHeadings": "No headings found. Add a Heading (Basic Elements) to your pages first.",
-    "notAllFit": "1 row didn't fit. Put the list on a contents page to carry it on to more pages. | {n} rows didn't fit. Put the list on a contents page to carry it on to more pages.",
+    "noHeadings": "No headings found\nAdd a Heading (Basic Elements) to your pages first.",
+    "notAllFit": "1 row didn't fit\nPut the list on a contents page to carry it on. | {n} rows didn't fit\nPut the list on a contents page to carry it on.",
     "filled": "Filled with 1 heading. | Filled with {n} headings.",
-    "filledMore": "Filled with {n} headings; 1 contents page was added for the rest. | Filled with {n} headings; {pages} contents pages were added for the rest.",
+    "filledMore": "Filled with {n} headings\n1 contents page was added for the rest. | Filled with {n} headings\n{pages} contents pages were added for the rest.",
     "numbers": "Numbers",
     "autoNumber": "Number automatically",
     "subStyle": "Sub-sections",
@@ -2821,7 +2893,7 @@
     "hideRow": "Hide from the contents",
     "showRow": "Show in the contents",
     "sharedStyleHint": "Also changes the numbers on your Headings, so they always match.",
-    "filledAdded": "Added 1 row at the end: drag it into place. | Added {n} rows at the end: drag them into place.",
+    "filledAdded": "Added 1 row at the end\nDrag it into place. | Added {n} rows at the end\nDrag them into place.",
     "fillAsk": {
       "title": "Your contents already has 1 row. What should we do? | Your contents already has {n} rows. What should we do?",
       "new": "Add only the new headings",
@@ -3009,7 +3081,7 @@
     "replaceContentsMessage": "The new design replaces the heading and layout on all your contents pages. Your Table of Contents rows are kept.",
     "appliedAllContents": "Design applied to all your contents pages.",
     "replaceContentsTitle": "Change the design of all contents pages?",
-    "numbersNow": "Your Headings are now numbered like this design: {sample}… Ctrl+Z undoes it."
+    "numbersNow": "Headings now numbered like this design\n{sample}… Ctrl+Z undoes it."
   },
   "appMenu": {
     "title": "Menu",
@@ -3300,14 +3372,16 @@
         "when": "Type my own for key figures, summaries and registers. Use project data for lists that come from your project, such as procurement or materials.",
         "add": "Click Table in the Element Library and choose Type my own or Use project data.",
         "work": [
-          "A typed table: double-click it to type in the cells; Tab moves to the next cell. Right-click a cell to add or delete rows and columns, or to merge and split cells.",
+          "A typed table: double-click it to type in the cells; Tab moves to the next cell. Handles above the columns and beside the rows choose a whole column or row; then Insert above / below / left / right, Delete, Merge and Split are in Basic Settings and on right-click. The chosen cells' colours, bold, alignment and text size are in Style Settings.",
           "A project data table: double-click it (or Edit data) to choose the project, the data, the columns, filters, sort and totals. The rows fill in by themselves every time the report runs.",
+          "Style Settings: Customize sets the whole table's look; click a column of a project data table on the page to style its Header, Data and Total cells on their own. Highlight rules, which colour rows or cells by their values (Status is Delayed, Stock up to 100, a date before today), are set in the data setup, next to Filter & sort.",
           "Look sets the table style; Customize changes this table's colours only, and Save as table style keeps them for other tables.",
           "Table content switches a table between typed and project data."
         ],
         "good": [
           "A project data table only goes in the Detail part of the page, and never in a box.",
           "A long table continues on the next page.",
+          "A typed table that gets too long for its page: choose a row and use Split table here, so the next page starts with the heading rows again.",
           "The page shows up to 5 sample rows; the PDF prints every row."
         ]
       },
@@ -3612,7 +3686,7 @@
       },
       "tableLook": {
         "title": "Look",
-        "text": "The table style: None, Corporate Blue, Minimal, Emerald, or a style you saved. Customize changes this table's colours only."
+        "text": "The table style: None, Corporate Blue, Minimal, Emerald, Slate, Burgundy, Teal, Gold, Violet, or a style you saved. Customize changes this table's colours only. Styles you saved are under My styles; rename or delete one with the buttons in its tile's corner (tables using a deleted style keep its look)."
       },
       "tableRowSizes": {
         "title": "Row sizes",
@@ -3620,19 +3694,15 @@
       },
       "tableCustomize": {
         "title": "Customize",
-        "text": "Colours and lines for this table: the heading, row colours (up to 4, taken in turn), totals, lines and text size. Save as table style keeps them to use on other tables."
+        "text": "The look of the whole table: the heading, row colours (up to 4, taken in turn), totals, lines, text size and, in a typed table, the space inside every cell. Save as table style keeps them to use on other tables. Some cells or one column can have their own look, in the card above this one."
       },
       "typedGrid": {
         "title": "Rows and columns",
-        "text": "How many rows, columns and heading rows the table has, and whether the last row is a total."
+        "text": "How many rows and columns the table has, heading rows, and whether the last row is a total. Ticking Last row is a total adds a row at the bottom with Total and the sum of every number column, kept up to date as you type (type in a total cell to write your own). The + and − add or remove a row or column at the end. To add one anywhere else, open the table, choose a row or column (click its handle) and use Insert above / below / left / right here or on right-click; Delete, Merge cells and Split cells are here too. Split table here moves the chosen row and the rows below it to a new table on a new page, with the heading rows copied."
       },
       "typedCells": {
         "title": "Cells",
-        "text": "The look of the cells you chose (all cells when the table isn't open): fill, text colour, bold, alignment and text size. Merge cells joins them into one; Split cells undoes it; the reset button goes back to the table style."
-      },
-      "typedText": {
-        "title": "Text",
-        "text": "Text size and the space inside every cell, for the whole table."
+        "text": "The look of the cells you chose while the table is open: a whole row or column (click its handle), several cells (drag or Shift+click), or every cell (Ctrl+A). Fill, text colour, bold, italic, underline, text size and alignment; a text colour chosen here replaces colours given to words inside those cells. The reset button goes back to the table style. The whole table's look is in Customize."
       },
       "tocDesign": {
         "title": "Design",
@@ -3693,6 +3763,16 @@
         "title": "The address shows",
         "text": "Which fields the address prints. The full address comes first, then postcode and city, then state and country, then the latitude and longitude if ticked. How the address looks sets its text size, colour, bold and alignment.",
         "example": "Jalan Stesen Sentral 5 · 50470 Kuala Lumpur · Wilayah Persekutuan Kuala Lumpur, Malaysia"
+      },
+      "tableCells": {
+        "title": "Cells",
+        "text": "Styles the column you clicked in the table on the page, over the table style. Its three tabs, Header, Data and Total, style each part of the column separately. The whole table's look is in Customize.",
+        "example": "The Amount column right-aligned, or its total cell bold."
+      },
+      "tableHighlights": {
+        "title": "Highlight rows or cells",
+        "text": "Colours rows, or only one column's cells, by their values each time the report runs: a text column when it is one of the ticked values, a number in a range, a date before or after the day the report is printed, or between two dates. Each rule sets a fill, a text colour and bold. When several rules match a row, the one higher up wins.",
+        "example": "Whole row red when Status is Delayed; the Stock cell amber when it is up to 100."
       }
     }
   },
@@ -3769,7 +3849,7 @@
     "dropHint": "A template downloaded from here or made in Jaspersoft Studio",
     "addedNote": "It opens as a new template and is added to My templates.",
     "seeAll": "See all in My Templates",
-    "notFound": "That template couldn't be found. It may have been deleted."
+    "notFound": "Template not found\nIt may have been deleted."
   },
   "location": {
     "fields": {
@@ -3826,7 +3906,7 @@
       "errorHint": "The map couldn't be loaded. Check the internet connection, then try again."
     },
     "canvasEmpty": "Type the latitude and longitude, or drag Location from Report Data",
-    "cannotType": "This map and address come from the Location's place. Change them on the right, under Settings.",
+    "cannotType": "This comes from the Location's place\nChange the map and address on the right.",
     "panel": {
       "placeTitle": "The place",
       "copyFrom": "Copy from a project",
@@ -3853,5 +3933,8 @@
       "frameTitle": "Frame around it"
     },
     "addressPlaceholder": "Address"
+  },
+  "colorPicker": {
+    "mixed": "Mixed colours"
   }
 }

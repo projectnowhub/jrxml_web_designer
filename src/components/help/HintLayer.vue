@@ -140,38 +140,44 @@ onBeforeUnmount(() => {
   gap: 3px;
   width: max-content;
   max-width: 300px;
-  padding: 9px 12px;
+  padding: 10px 12px;
   border-radius: 10px;
-  background: #1c1b26;
-  color: #e9e7f2;
+  background: #ffffff;
+  color: #45425a;
   font-size: 12.5px;
   line-height: 1.45;
-  box-shadow: 0 12px 28px rgba(23, 20, 44, 0.24);
+  box-shadow:
+    0 0 0 1px rgba(28, 27, 38, 0.08),
+    0 12px 28px rgba(23, 20, 44, 0.14),
+    0 2px 6px rgba(23, 20, 44, 0.06);
   pointer-events: none;
-  animation: hint-in 0.12s ease;
+  animation: hint-in 0.14s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 @keyframes hint-in {
   from {
     opacity: 0;
+    transform: translateY(-2px);
   }
   to {
     opacity: 1;
+    transform: none;
   }
 }
 .hint-card strong {
-  color: #ffffff;
+  color: #1c1b26;
   font-size: 13px;
+  font-weight: 700;
 }
 .hint-part {
   display: grid;
   gap: 1px;
   margin-top: 6px;
   padding-left: 8px;
-  border-left: 2px solid rgba(167, 148, 255, 0.6);
-  color: #d6d3e3;
+  border-left: 2px solid #c9bcff;
+  color: #45425a;
 }
 .hint-part strong {
-  color: #ffffff;
+  color: #1c1b26;
   font-size: 12.5px;
 }
 .hint-keys {
@@ -179,21 +185,22 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   align-items: center;
   gap: 3px;
-  margin-top: 3px;
+  margin-top: 4px;
 }
 .hint-keys kbd {
   padding: 1px 6px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid #e6e5ee;
+  border-bottom-width: 2px;
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  background: #f7f6fb;
+  color: #3b2a99;
   font-family: inherit;
   font-size: 11px;
   font-weight: 600;
 }
 .hint-keys-or {
   margin: 0 3px;
-  color: #9a94ab;
+  color: #9a98a8;
 }
 @media (prefers-reduced-motion: reduce) {
   .hint-card {

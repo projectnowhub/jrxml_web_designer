@@ -38,13 +38,13 @@
     "saveAs": "Simpan Sebagai",
     "loadingFileFailed": "Gagal memuatkan fail",
     "jrxmlOpened": "\"{name}\" telah dibuka",
-    "onlyJrxml": "Hanya fail templat .jrxml boleh dibuka",
+    "onlyJrxml": "Hanya fail .jrxml\nPilih fail templat yang berakhir dengan .jrxml.",
     "deleteAllFiles": "Padam Semua Templat",
     "deleteAllFilesConfirm": "Padam setiap templat yang disimpan dalam pelayar ini? Templat yang dibuka turut dipadam dan templat baharu yang kosong dibuka. Ini tidak boleh dibuat asal. Muat turun dahulu templat yang ingin anda simpan.",
     "deleteAllFilesDone": "Semua templat yang disimpan telah dipadam",
-    "invalidFileFormat": "Format fail tidak sah, tidak dapat dimuatkan",
+    "invalidFileFormat": "Fail ini tidak boleh dibuka\nIa bukan fail templat yang sah.",
     "untitledReport": "Templat Tanpa Nama",
-    "templateNotFound": "Templat itu tidak disimpan dalam pelayar ini, jadi templat baharu dimulakan."
+    "templateNotFound": "Templat tidak ditemui\nIa tidak disimpan dalam pelayar ini, jadi templat baharu dimulakan."
   },
   "elementLibrary": {
     "title": "Pustaka Elemen",
@@ -633,7 +633,7 @@
       "showPanel": "Tunjukkan jadual",
       "hidePanel": "Sembunyikan jadual"
     },
-    "generationFailed": "Penjanaan PDF gagal",
+    "generationFailed": "Pratonton tidak dapat dibuat\nSila cuba lagi sebentar lagi.",
     "errors": {
       "httpFailure": "Penjanaan PDF gagal (HTTP {status})",
       "invalidJson": "Pelayan mengembalikan JSON yang tidak sah dan bukannya PDF",
@@ -747,15 +747,16 @@
     "ok": "OK",
     "confirm": "Sahkan",
     "required": "Wajib",
-    "unknownError": "Ralat tidak diketahui"
+    "unknownError": "Ralat tidak diketahui",
+    "close": "Tutup"
   },
   "notifications": {
     "fileSavedSuccess": "Fail berjaya disimpan",
-    "fileSaveFailed": "Gagal menyimpan fail",
+    "fileSaveFailed": "Tidak dapat menyimpan fail\nSila cuba lagi.",
     "jrxmlCopiedSuccess": "Kandungan JRXML disalin ke papan keratan",
-    "jrxmlCopyFailed": "Gagal menyalin, sila salin secara manual",
+    "jrxmlCopyFailed": "Tidak dapat menyalin\nSila pilih teks dan salin sendiri.",
     "jrxmlEditSaved": "Suntingan JRXML disimpan, antara muka dikemas kini",
-    "jrxmlEditSaveFailed": "Gagal menyimpan: {error}"
+    "jrxmlEditSaveFailed": "Tidak dapat menyimpan perubahan\n{error}"
   },
   "designer": {
     "relativeToBand": "relatif kepada Jalur",
@@ -903,8 +904,8 @@
       "shortcutsHint": "Setiap pintasan, dengan kekunci dan tetikus",
       "tutorialMode": "Mod tutorial",
       "tutorialModeHint": "Lawatan, petua dan kad maklumat muncul dengan sendiri semasa anda bekerja. Matikan apabila anda sudah biasa.",
-      "tutorialOffDone": "Mod tutorial dimatikan: lawatan dan petua tidak akan muncul dengan sendiri. Semua bantuan masih ada dalam menu Bantuan ini.",
-      "tutorialOnDone": "Mod tutorial dihidupkan: petua dan kad maklumat muncul semula semasa anda bekerja.",
+      "tutorialOffDone": "Mod tutorial dimatikan\nLawatan dan petua tidak akan muncul dengan sendiri. Semua bantuan masih dalam menu ini.",
+      "tutorialOnDone": "Mod tutorial dihidupkan\nPetua dan kad maklumat muncul semula semasa anda bekerja.",
       "showMeHow": "Panduan langkah demi langkah",
       "showMeHowHint": "Panduan langkah demi langkah yang menandakan setiap langkah semasa anda melakukannya",
       "allElements": "Semua elemen",
@@ -1065,7 +1066,11 @@
       "locationMoveMap": "Lihat sekeliling peta",
       "locationPlacePin": "Letakkan pin pada titik yang anda klik",
       "locationZoomMap": "Tunjukkan lebih sedikit atau lebih banyak di sekeliling pin (zum masuk atau keluar)",
-      "locationDragPin": "Alihkan pin"
+      "locationDragPin": "Alihkan pin",
+      "tableChooseLine": "Pilih seluruh baris atau lajur (Shift: beberapa)",
+      "tableSelectAll": "Pilih semua sel (semasa jadual dibuka)",
+      "tableLineMenu": "Sisip atau padam baris dan lajur",
+      "tableChooseColumn": "Jadual data projek: pilih lajur untuk menggayakannya (Tetapan Gaya → Sel)"
     },
     "panelTips": {
       "hide": "Sembunyikan petua ini",
@@ -1113,7 +1118,7 @@
       "progress": "{done} daripada {total} selesai",
       "stepDone": "Selesai:",
       "showMe": "Tunjukkan",
-      "notOnScreen": "Bahagian itu tiada pada skrin sekarang. Lebarkan tetingkap, atau buka menu ☰ di bahagian atas kiri.",
+      "notOnScreen": "Bahagian itu tiada pada skrin\nLebarkan tetingkap, atau buka menu ☰ di bahagian atas kiri.",
       "allDoneTitle": "Semua selesai, syabas!",
       "allDoneText": "Anda boleh mengubah apa-apa sahaja pada bila-bila masa.",
       "another": "Pilih panduan lain",
@@ -1484,15 +1489,18 @@
       "dragPartLine": "Seret garisan di bawah bahagian halaman",
       "wheel": "Roda tetikus",
       "clickOutside": "Klik di luarnya",
-      "dragPin": "Seret pin"
+      "dragPin": "Seret pin",
+      "clickHandle": "Klik pemegang baris / lajur",
+      "rightClickHandle": "Klik kanan pemegang baris / lajur",
+      "clickPlus": "Klik + di antara dua pemegang"
     }
   },
   "imageUpload": {
-    "invalidFormat": "Anda tidak boleh memuat naik fail ini. Hanya imej PNG dan JPEG disokong.",
-    "tooLarge": "Imej terlalu besar. Saiz maksimum ialah 4 MB.",
-    "tooLargeWithSize": "Imej terlalu besar ({size} MB). Saiz maksimum ialah 4 MB.",
-    "uploadFailed": "Muat naik imej gagal. Sila cuba lagi.",
-    "invalidResponse": "Pelayan tidak mengembalikan rujukan imej yang disimpan."
+    "invalidFormat": "Fail ini tidak boleh digunakan\nHanya gambar PNG dan JPEG boleh ditambah.",
+    "tooLarge": "Gambar terlalu besar\nPaling besar 4 MB.",
+    "tooLargeWithSize": "Gambar terlalu besar ({size} MB)\nPaling besar 4 MB.",
+    "uploadFailed": "Gambar tidak dapat ditambah\nSila cuba lagi.",
+    "invalidResponse": "Gambar tidak dapat disimpan\nPelayan tidak menyimpannya. Sila cuba lagi."
   },
   "ai": {
     "title": "Pembantu AI",
@@ -1629,8 +1637,8 @@
       "reading": "Membaca…",
       "drop": "Lepaskan fail untuk melampirkannya",
       "errors": {
-        "type": "“{name}” tidak boleh dilampirkan: gunakan gambar (PNG, JPG, GIF, WebP), PDF atau fail teks (TXT, CSV, JSON, XML…).",
-        "tooLarge": "“{name}” terlalu besar untuk dilampirkan (gambar hingga 15 MB, PDF 20 MB, fail teks 2 MB).",
+        "type": "Tidak boleh melampirkan “{name}”\nGunakan gambar (PNG, JPG, GIF, WebP), PDF atau fail teks.",
+        "tooLarge": "“{name}” terlalu besar\nGambar hingga 15 MB, PDF 20 MB, fail teks 2 MB.",
         "unreadable": "“{name}” tidak dapat dibaca.",
         "count": "Paling banyak {max} lampiran bagi setiap mesej."
       }
@@ -1649,14 +1657,14 @@
     "pageAdded": "Halaman {page} ditambah",
     "pageDeleted": "Halaman {page} dipadam",
     "jrxmlRegenerated": "JRXML telah dijana semula",
-    "previewFailed": "Gagal memaparkan pratonton PDF, sila semak konsol untuk butiran ralat",
+    "previewFailed": "Pratonton tidak dapat dibuat\nSila cuba lagi sebentar lagi.",
     "bandLimits": {
-      "noSpace": "Tiada ruang untuk memanjangkan {band}. Bahagian Butiran telah mencapai ketinggian minimumnya ({height}px).",
-      "maxReached": "{band} sudah penuh. Naikkan maksimumnya di Tetapan Templat → Ketinggian Bahagian untuk lebih ruang.",
-      "minReached": "Ketinggian minimum dicapai. Jika anda tidak memerlukan {band}, nyahtandanya di Tetapan Templat → Bahagian Halaman.",
-      "textOverflow": "{band} mencapai ketinggian maksimumnya ({height}px) dan teks tidak muat. Lebarkan item, atau letakkan teks panjang dalam bahagian Butiran.",
+      "noSpace": "Tiada ruang untuk meninggikan {band}\nButiran sudah pada saiz terkecilnya ({height}px).",
+      "maxReached": "{band} sudah penuh\nNaikkan maksimumnya di Tetapan Templat → Ketinggian Bahagian.",
+      "minReached": "Ketinggian terkecil dicapai\nJika tidak memerlukan {band}, nyahtandanya di Bahagian Halaman.",
+      "textOverflow": "Teks tidak muat\n{band} pada ketinggian maksimumnya ({height}px). Lebarkan item, atau letakkan teks panjang dalam Butiran.",
       "grewToFit": "{band} telah dibesarkan kepada {height}px supaya elemen muat.",
-      "tooTallForBand": "Elemen ini setinggi {height}px, tetapi {band} hanya boleh setinggi {max}px. Kecilkan elemen, atau naikkan maksimum {band} di Tetapan Templat → Ketinggian Bahagian."
+      "tooTallForBand": "Terlalu tinggi untuk {band}\nIa {height}px; {band} membenarkan {max}px. Kecilkan, atau naikkan maksimum di Ketinggian Bahagian."
     },
     "confirmDelete": {
       "title": "Padam",
@@ -1665,9 +1673,9 @@
       "variable": "Adakah anda pasti mahu memadam pemboleh ubah \"{name}\"?"
     },
     "duplicateName": {
-      "variable": "Pemboleh ubah dengan nama ini sudah wujud, sila gunakan nama lain",
-      "parameter": "Parameter dengan nama ini sudah wujud, sila gunakan nama lain",
-      "field": "Medan dengan nama ini sudah wujud, sila gunakan nama lain"
+      "variable": "Nama itu sudah digunakan\nSatu pemboleh ubah sudah menggunakannya. Sila pilih nama lain.",
+      "parameter": "Nama itu sudah digunakan\nSatu parameter sudah menggunakannya. Sila pilih nama lain.",
+      "field": "Nama itu sudah digunakan\nSatu medan sudah menggunakannya. Sila pilih nama lain."
     }
   },
   "canvas": {
@@ -1743,7 +1751,7 @@
       "photoMeta": "Tarikh: – · Lokasi: –"
     },
     "customizeHint": "Laraskan setiap sisi dan jejari sudut dalam Tetapan Gaya.",
-    "pageBorderExists": "Templat ini sudah mempunyai sempadan halaman. Anda boleh mengedit sempadan halaman yang sedia ada dan bukannya menambah yang baharu.",
+    "pageBorderExists": "Sudah ada sempadan halaman\nUbah yang sedia ada dan bukan menambah yang baharu.",
     "templateDescription": {
       "frameKpiCard": "Memaparkan satu nombor penting, dengan label kecil di atas dan nota di bawah (contoh: Kemajuan 17.93%).",
       "frameAlertBox": "Kotak berwarna dengan tajuk dan mesej ringkas, untuk amaran atau perkara yang mesti diberi perhatian.",
@@ -1755,7 +1763,7 @@
     "moveOutOfBox": "Keluarkan dari kotak"
   },
   "reportParts": {
-    "noBand": "Templat ini tiada {band}. Hidupkannya di Tetapan Templat → Bahagian Halaman, kemudian tambah semula.",
+    "noBand": "Templat ini tiada {band}\nHidupkannya di Tetapan Templat → Bahagian Halaman, kemudian tambah semula.",
     "statusColor": "Warna status",
     "description": {
       "partReportHeader": "Jalur gelap di bahagian atas setiap halaman dengan tiga baris tajuk (pelanggan dan projek, nombor laporan, bulan). Diletakkan di Kepala Halaman.",
@@ -1848,22 +1856,20 @@
     "grid": "Baris dan lajur",
     "rows": "Baris",
     "columns": "Lajur",
-    "addRow": "Tambah baris di bawah",
-    "removeRow": "Buang baris terakhir",
-    "addColumn": "Tambah lajur di kanan",
-    "removeColumn": "Buang lajur terakhir",
+    "addRow": "Tambah baris",
+    "removeRow": "Padam baris",
+    "addColumn": "Tambah lajur",
+    "removeColumn": "Padam lajur",
     "editCells": "Taip dalam jadual",
     "editHint": "Klik dua kali pada jadual untuk menaip. Klik kanan pada sel untuk menambah baris, menggabungkan sel dan lain-lain.",
     "editingHint": "Klik sel untuk menaip. Seret merentasi sel (atau Shift+klik) untuk memilih beberapa sel. Tekan Esc apabila selesai.",
     "selectedCells": "1 sel dipilih | {n} sel dipilih",
-    "allCells": "Semua sel",
     "fill": "Isian",
     "textColor": "Warna teks",
     "textStyle": "Gaya teks",
     "textSize": "Saiz teks",
     "alignment": "Penjajaran",
     "justified": "Jajar penuh",
-    "text": "Teks",
     "padding": "Ruang dalam sel",
     "menu": {
       "rowAbove": "Sisip baris di atas",
@@ -1874,7 +1880,8 @@
       "deleteCols": "Padam lajur | Padam {n} lajur",
       "merge": "Gabung sel",
       "split": "Pisah sel",
-      "clear": "Kosongkan teks"
+      "clear": "Kosongkan teks",
+      "splitTable": "Pisahkan jadual di sini"
     },
     "content": "Kandungan jadual",
     "fromData": "Guna data projek",
@@ -1883,8 +1890,8 @@
     "typedHint": "Anda menaip setiap sel sendiri. Klik dua kali pada jadual untuk menaip.",
     "toDataTitle": "Guna data projek?",
     "toDataMessage": "Sel yang anda taip akan diganti dengan baris daripada projek. Anda boleh membatalkannya dengan Ctrl+Z.",
-    "rowsLeftOut": "1 baris tidak muat di halaman ini dan ditinggalkan. | {n} baris tidak muat di halaman ini dan ditinggalkan.",
-    "convertFailed": "Baris jadual tidak dapat dimuatkan, jadi jadual tidak diubah. Sila cuba lagi.",
+    "rowsLeftOut": "1 baris ditinggalkan\nIa tidak muat di halaman ini. | {n} baris ditinggalkan\nIa tidak muat di halaman ini.",
+    "convertFailed": "Baris tidak dapat dimuatkan\nJadual tidak diubah. Sila cuba lagi.",
     "chooseKind": "Apakah isi jadual ini?",
     "typedDesc": "Anda menaip teks dalam setiap sel.",
     "fromDataDesc": "Baris datang daripada projek dan dikemas kini setiap kali laporan dijalankan.",
@@ -1893,7 +1900,21 @@
     "fewerHeaderRows": "Kurangkan satu baris tajuk",
     "moreHeaderRows": "Tambah satu baris tajuk",
     "totalRow": "Baris terakhir ialah jumlah",
-    "styleColors": "Kembali kepada warna gaya jadual"
+    "styleColors": "Kembali kepada warna gaya jadual",
+    "gridSize": "{rows} baris · {columns} lajur",
+    "rowsAndColumns": "Baris dan lajur",
+    "chosenRow": "Baris {n}",
+    "chosenRows": "Baris {from}–{to}",
+    "chosenColumn": "Lajur {name}",
+    "chosenColumns": "Lajur {from}–{to}",
+    "handles": {
+      "column": "Lajur {name}: klik untuk memilihnya (Shift+klik untuk beberapa), klik kanan untuk lagi",
+      "row": "Baris {n}: klik untuk memilihnya (Shift+klik untuk beberapa), klik kanan untuk lagi"
+    },
+    "allCells": "Semua sel",
+    "splitDone": "Jadual dipisahkan\nBaris dari baris {row} ada di halaman {page}, bersama baris tajuk.",
+    "splitHint": "Pindahkan baris {row} dan baris di bawahnya ke jadual baharu di halaman baharu, bersama salinan baris tajuk",
+    "splitCant": "Pilih baris {row} atau ke bawah: sekurang-kurangnya satu baris data kekal di atas potongan, ia tidak boleh baris jumlah, dan tiada sel bergabung boleh merentasinya."
   },
   "pagination": {
     "title": "Nombor Halaman",
@@ -1903,9 +1924,9 @@
       "pageXofY": "Nombor halaman dan jumlah halaman",
       "slash": "Nombor / jumlah halaman"
     },
-    "cannotEdit": "Nombor halaman dijana secara dinamik dan tidak boleh disunting secara terus. Gunakan panel sifat untuk menukar format atau julat halaman.",
+    "cannotEdit": "Nombor halaman diisi dengan sendiri\nUbah format atau halamannya dalam panel di sebelah kanan.",
     "lockedHint": "Nombor halaman – tukar format atau halamannya dalam panel sifat.",
-    "noBand": "Tambah bahagian halaman pada templat sebelum memasukkan nombor halaman.",
+    "noBand": "Belum ada bahagian halaman\nHidupkan kepala atau kaki halaman sebelum menambah nombor halaman.",
     "tileHint": "Klik untuk memilih kedudukan nombor halaman, atau seretnya ke halaman.",
     "choosePosition": "Masukkan nombor halaman",
     "positions": {
@@ -1998,7 +2019,7 @@
   "dateElement": {
     "tileHint": "Tarikh yang diisi dengan sendiri: hari laporan dicetak, bulan ini atau bulan lepas. Klik untuk menambahnya, atau seret ke halaman.",
     "lockedHint": "Tarikh – ia diisi dengan sendiri. Ubah di panel sifat.",
-    "cannotType": "Tarikh ini diisi dengan sendiri. Ubah di panel sifat, atau pilih \"Taip teks saya sendiri\" di sana.",
+    "cannotType": "Tarikh ini diisi dengan sendiri\nUbah di sebelah kanan, atau pilih “Taip teks saya sendiri” di sana.",
     "when": {
       "printed": "Hari ia dicetak",
       "thisMonth": "Bulan ini",
@@ -2283,7 +2304,7 @@
     "noRows": "Tiada rekod ditemui",
     "onlyInDetail": "Jadual hanya boleh diletakkan dalam bahagian Butiran.",
     "columnAlreadyShown": "\"{column}\" sudah ada dalam jadual ini.",
-    "columnLimitReached": "Jadual ini sudah penuh: paling banyak {max} lajur muat. Lebarkan jadual atau buang satu lajur dahulu.",
+    "columnLimitReached": "Jadual ini sudah penuh\nIa memuatkan {max} lajur. Lebarkan atau buang satu lajur dahulu.",
     "totals": {
       "label": "Jumlah",
       "sum": "Hasil tambah",
@@ -2300,7 +2321,12 @@
       "none": "Tiada",
       "corporateBlue": "Biru Korporat",
       "minimal": "Minimal",
-      "emerald": "Zamrud"
+      "emerald": "Zamrud",
+      "slate": "Batu Loh",
+      "burgundy": "Merah Anggur",
+      "teal": "Biru Kehijauan",
+      "gold": "Emas",
+      "violet": "Ungu"
     },
     "panel": {
       "data": "Data",
@@ -2441,10 +2467,7 @@
       "defaultName": "Gaya saya",
       "saved": "Gaya jadual \"{name}\" disimpan",
       "updated": "Gaya jadual \"{name}\" dikemas kini",
-      "rename": "Namakan semula",
-      "delete": "Padam",
       "deleteConfirm": "Padam \"{name}\"?",
-      "savedStyle": "Gaya disimpan: {name}",
       "needData": "Tambah data pada jadual dahulu, kemudian ubah rupanya di sini.",
       "usingStyle": "Menggunakan {name}",
       "rowColors": "Warna baris",
@@ -2452,7 +2475,56 @@
       "addRowColor": "Tambah",
       "removeRowColor": "Buang warna baris {n}",
       "rowColorsHint": "Baris mengambil warna ini secara bergilir, kemudian bermula semula.",
-      "addRowColorHint": "Tambah warna baris (hingga 4)"
+      "addRowColorHint": "Tambah warna baris (hingga 4)",
+      "cellsHintTyped": "Untuk menggayakan sesetengah sel sahaja, buka jadual (klik dua kali) dan pilih sel, baris atau lajur melalui pemegangnya, atau semua sel dengan Ctrl+A.",
+      "cellsHintData": "Untuk menggayakan satu lajur, klik lajur itu dalam jadual pada halaman.",
+      "myStyles": "Gaya saya",
+      "renameStyle": "Namakan semula “{name}”",
+      "deleteStyle": "Padam “{name}”"
+    },
+    "cells": {
+      "columnTitle": "Lajur “{name}”",
+      "partHeader": "Pengepala",
+      "partData": "Data",
+      "partTotal": "Jumlah",
+      "reset": "Kembali kepada gaya jadual"
+    },
+    "highlight": {
+      "title": "Serlahkan baris atau sel",
+      "noRules": "Tiada peraturan penyerlahan",
+      "rulesCount": "1 peraturan penyerlahan | {count} peraturan penyerlahan",
+      "editInSetup": "Edit dalam persediaan data",
+      "empty": "Warnakan baris, atau sel tunggal, mengikut nilainya: contohnya baris yang Statusnya Lewat, atau sel Stok di bawah 100.",
+      "add": "Tambah peraturan",
+      "delete": "Padam peraturan ini",
+      "moveUp": "Alih ke atas (peraturan di atas menang)",
+      "colour": "Warnakan",
+      "scopes": {
+        "row": "Seluruh baris",
+        "cell": "Sel sahaja"
+      },
+      "when": "Apabila",
+      "isOneOf": "Ialah salah satu daripada",
+      "blank": "(kosong)",
+      "noValues": "Tiada nilai ditemui untuk lajur ini.",
+      "from": "Dari",
+      "to": "Hingga",
+      "dateOps": {
+        "past": "Sebelum hari ini",
+        "future": "Selepas hari ini",
+        "between": "Antara tarikh"
+      },
+      "look": "Rupanya",
+      "fill": "Isian",
+      "textColour": "Warna teks",
+      "incomplete": "Peraturan ini belum berfungsi: pilih nilai atau julat, dan warna.",
+      "order": "Apabila beberapa peraturan sepadan dengan satu baris, yang di atas menang.",
+      "summary": "{scope} · {column} {condition}",
+      "summaryIn": "ialah {values}",
+      "summaryBetween": "dari {from} hingga {to}",
+      "summaryFrom": "dari {from}",
+      "summaryTo": "hingga {to}",
+      "summaryNothing": "(belum ditetapkan)"
     }
   },
   "reportData": {
@@ -2477,21 +2549,21 @@
     "noMatch": "Tiada yang sepadan",
     "loadFailed": "Data projek ini tidak dapat dimuatkan.",
     "retry": "Cuba lagi",
-    "dropTextOnText": "Lepaskan butiran teks (nama, tarikh, bajet…) pada elemen teks, atau di ruang kosong.",
+    "dropTextOnText": "Lepaskan pada teks\nButiran teks (nama, tarikh, bajet…) pada elemen teks atau ruang kosong.",
     "dropImageOnImage": "Lepaskan logo pada elemen imej, atau di ruang kosong.",
-    "dropNotOnPageNumber": "Nombor halaman tidak boleh memaparkan data projek. Lepaskannya pada elemen teks lain.",
-    "dropNotOnDate": "Tarikh diisi dengan sendiri dan tidak boleh menunjukkan data projek. Letakkannya pada elemen teks yang lain.",
-    "projectInUse": "{project} masih digunakan oleh {count} jadual atau carta dalam templat ini. Padamkannya, atau pilih projek lain dalam datanya, sebelum membuangnya.",
+    "dropNotOnPageNumber": "Nombor halaman tidak boleh memaparkan data projek\nLepaskannya pada elemen teks lain.",
+    "dropNotOnDate": "Tarikh tidak boleh menunjukkan data projek\nLepaskannya pada elemen teks lain.",
+    "projectInUse": "Tidak boleh membuang {project}\nIa masih digunakan oleh {count} jadual atau carta. Padamkannya, atau pilih projek lain dalam datanya.",
     "projectSource": "{project} · {source}",
     "noValue": "{project} tiada {label} untuk ditambah.",
     "projectTabs": "Projek laporan",
-    "dropNotForBarcode": "{type} tidak boleh memuatkan “{value}”: {problem} Gunakan Code 128 atau kod QR untuk nilai seperti ini.",
+    "dropNotForBarcode": "{type} tidak boleh memuatkan “{value}”\n{problem} Gunakan Code 128 atau kod QR untuk nilai seperti ini.",
     "projectsSelected": "{count} projek dipilih",
     "location": "Lokasi",
     "locationWhole": "Peta dan alamat",
     "dragLocation": "Seret ke halaman untuk peta beserta alamat, atau ke atas Lokasi untuk menukar tempatnya",
-    "dropNotOnLocation": "Lokasi menunjukkan sesuatu tempat. Lepaskan Lokasi projek (atau salah satu medannya, seperti Bandar) di atasnya, atau lepaskan butiran ini di ruang kosong.",
-    "projectSwitchInUse": "{project} masih digunakan oleh {count} jadual atau carta dalam templat ini, jadi ia tidak boleh ditukar kepada {other}. Padamkannya, atau pilih {other} dalam datanya dahulu. Buat masa ini, templat menggunakan satu projek."
+    "dropNotOnLocation": "Lokasi hanya menerima tempat\nLepaskan Lokasi projek (atau medan seperti Bandar), atau lepaskan ini di ruang kosong.",
+    "projectSwitchInUse": "Tidak boleh ditukar kepada {other}\n{project} masih digunakan oleh {count} jadual atau carta. Padamkannya, atau tukar datanya dahulu."
   },
   "barcode": {
     "chooseType": "Pilih jenis kod bar",
@@ -2716,20 +2788,20 @@
     "deleteContents": "Padam halaman kandungan ini",
     "emptyCover": "Reka halaman kulit",
     "emptyContents": "Reka isi kandungan",
-    "lastNormalPage": "Halaman ini tidak boleh dipadam: templat memerlukan sekurang-kurangnya satu halaman biasa selepas halaman kulit dan kandungan.",
+    "lastNormalPage": "Halaman ini tidak boleh dipadam\nTemplat memerlukan sekurang-kurangnya satu halaman biasa.",
     "coverAdded": "Halaman kulit ditambah di hadapan.",
     "coverMade": "Halaman ini kini halaman kulit.",
     "contentsAdded": "Halaman kandungan ditambah.",
     "contentsMade": "Halaman ini kini halaman kandungan.",
-    "madeNormal": "Halaman ini kembali menjadi halaman biasa: kepala dan kaki halaman dicetak padanya.",
+    "madeNormal": "Ini halaman biasa semula\nKepala dan kaki halaman dicetak padanya.",
     "coverDeleted": "Halaman kulit dipadam.",
     "contentsDeleted": "Halaman kandungan dipadam.",
     "notAllowed": {
-      "pageNumber": "Nombor halaman tidak boleh diletakkan pada halaman kulit atau kandungan. Letakkannya di kepala atau kaki halaman: ia dipaparkan pada halaman lain.",
-      "dataTable": "Jadual dengan data projek tidak boleh diletakkan pada halaman kulit atau kandungan kerana ia boleh memanjang ke halaman lain. Gunakan jadual yang anda taip sendiri (Taip sendiri).",
-      "contentsList": "Isi kandungan tidak boleh diletakkan pada halaman kulit. Letakkannya pada halaman kandungan (atau halaman biasa).",
-      "secondContents": "Templat ini sudah mempunyai Isi Kandungan pada halaman kandungannya. Ia telah dipilih: ubahnya, atau tambah satu lagi pada halaman biasa.",
-      "contentsListInBox": "Kotak yang memegang Jadual Kandungan hanya boleh berada di halaman biasa. Di halaman kandungan, gunakan Jadual Kandungan secara sendiri (Keluarkan dari kotak)."
+      "pageNumber": "Tiada nombor halaman di sini\nLetakkannya di kepala atau kaki halaman: ia dipaparkan pada halaman lain.",
+      "dataTable": "Jadual data projek tidak boleh di sini\nIa boleh memanjang ke halaman lain. Gunakan jadual yang ditaip (Taip sendiri).",
+      "contentsList": "Tiada isi kandungan pada halaman kulit\nLetakkannya pada halaman kandungan atau halaman biasa.",
+      "secondContents": "Sudah ada Isi Kandungan\nIa kini dipilih. Ubahnya, atau tambah satu lagi pada halaman biasa.",
+      "contentsListInBox": "Tidak dalam kotak di halaman ini\nDi halaman kandungan, Jadual Kandungan berdiri sendiri. Gunakan Keluarkan dari kotak."
     },
     "countPages": "Kira halaman kulit dan kandungan",
     "countPagesYes": "Halaman ini tiada nombor tetapi dikira: halaman biasa pertama ialah halaman {n}.",
@@ -2740,8 +2812,8 @@
     "wholeSheetOff": "Halaman kulit kini mengekalkan jidar halaman.",
     "changeDesign": "Tukar reka bentuk",
     "changeDesignHint": "Pilih reka bentuk lain untuk halaman ini. Setiap bahagiannya masih boleh diubah kemudian.",
-    "borderNotOnCover": "Sempadan halaman ditambah pada setiap halaman kecuali halaman kulit: halaman kulit menggunakan seluruh helaian, jadi ia tiada sempadan. Untuk memberikan sempadan pada halaman kulit juga, pilih \"Kekalkan jidar halaman\" dalam menu ⋯ halaman kulit.",
-    "borderRefusedOnCover": "Halaman kulit menggunakan seluruh helaian, jadi ia tidak boleh mempunyai sempadan halaman. Untuk memberikan sempadan pada halaman kulit, pilih \"Kekalkan jidar halaman\" dalam menu ⋯ halaman kulit. Untuk meletakkan sempadan pada halaman lain, lepaskannya pada mana-mana halaman tersebut.",
+    "borderNotOnCover": "Sempadan halaman ditambah\nKecuali pada halaman kulit: ia menggunakan seluruh helaian. Pilih “Kekalkan jidar halaman” dalam menu ⋯nya untuk menambahnya.",
+    "borderRefusedOnCover": "Tiada sempadan halaman pada kulit ini\nIa menggunakan seluruh helaian. Untuk menambahnya, pilih “Kekalkan jidar halaman” dalam menu ⋯ halaman kulit.",
     "contentsAddedSameDesign": "Halaman kandungan ditambah dengan reka bentuk yang sama.",
     "noToc": "Halaman kandungan ini tiada Jadual Kandungan",
     "addToc": "Tambah Jadual Kandungan",
@@ -2775,10 +2847,10 @@
     "numberBox": "Kotak nombor",
     "noNumberBox": "Tiada kotak nombor",
     "onlyOnPages": "Pilih isi kandungan pada halaman dahulu.",
-    "noHeadings": "Tiada tajuk ditemui. Tambah Tajuk (Elemen Asas) pada halaman anda dahulu.",
-    "notAllFit": "1 baris tidak muat. Letakkan senarai pada halaman kandungan untuk menyambungnya ke halaman lain. | {n} baris tidak muat. Letakkan senarai pada halaman kandungan untuk menyambungnya ke halaman lain.",
+    "noHeadings": "Tiada tajuk ditemui\nTambah Tajuk (Elemen Asas) pada halaman anda dahulu.",
+    "notAllFit": "1 baris tidak muat\nLetakkan senarai pada halaman kandungan untuk menyambungnya. | {n} baris tidak muat\nLetakkan senarai pada halaman kandungan untuk menyambungnya.",
     "filled": "Diisi dengan 1 tajuk. | Diisi dengan {n} tajuk.",
-    "filledMore": "Diisi dengan {n} tajuk; 1 halaman kandungan ditambah untuk selebihnya. | Diisi dengan {n} tajuk; {pages} halaman kandungan ditambah untuk selebihnya.",
+    "filledMore": "Diisi dengan {n} tajuk\n1 halaman kandungan ditambah untuk selebihnya. | Diisi dengan {n} tajuk\n{pages} halaman kandungan ditambah untuk selebihnya.",
     "numbers": "Nombor",
     "autoNumber": "Nombor secara automatik",
     "subStyle": "Subbahagian",
@@ -2821,7 +2893,7 @@
     "hideRow": "Sembunyikan daripada kandungan",
     "showRow": "Tunjukkan dalam kandungan",
     "sharedStyleHint": "Turut menukar nombor pada Tajuk anda, supaya sentiasa sepadan.",
-    "filledAdded": "1 baris ditambah di hujung: seret ke tempatnya. | {n} baris ditambah di hujung: seret ke tempatnya.",
+    "filledAdded": "1 baris ditambah di hujung\nSeret ke tempatnya. | {n} baris ditambah di hujung\nSeret ke tempatnya.",
     "fillAsk": {
       "title": "Kandungan anda sudah ada 1 baris. Apa yang perlu dibuat? | Kandungan anda sudah ada {n} baris. Apa yang perlu dibuat?",
       "new": "Tambah tajuk baharu sahaja",
@@ -3009,7 +3081,7 @@
     "replaceContentsMessage": "Reka bentuk baharu menggantikan tajuk dan susun atur pada semua halaman kandungan anda. Baris Isi Kandungan anda dikekalkan.",
     "appliedAllContents": "Reka bentuk digunakan pada semua halaman kandungan anda.",
     "replaceContentsTitle": "Tukar reka bentuk semua halaman kandungan?",
-    "numbersNow": "Tajuk anda kini bernombor seperti reka bentuk ini: {sample}… Ctrl+Z untuk buat asal."
+    "numbersNow": "Tajuk kini bernombor seperti reka bentuk ini\n{sample}… Ctrl+Z untuk buat asal."
   },
   "appMenu": {
     "title": "Menu",
@@ -3300,14 +3372,16 @@
         "when": "Taip sendiri untuk angka utama, ringkasan dan daftar. Guna data projek untuk senarai yang datang daripada projek anda, seperti perolehan atau bahan.",
         "add": "Klik Jadual dalam Pustaka Elemen dan pilih Taip sendiri atau Guna data projek.",
         "work": [
-          "Jadual yang ditaip: klik dua kali padanya untuk menaip dalam sel; Tab beralih ke sel seterusnya. Klik kanan pada sel untuk menambah atau memadam baris dan lajur, atau untuk menggabungkan dan memisahkan sel.",
+          "Jadual yang ditaip: klik dua kali untuk menaip dalam sel; Tab bergerak ke sel seterusnya. Pemegang di atas lajur dan di sebelah baris memilih seluruh lajur atau baris; kemudian Sisip di atas / di bawah / di kiri / di kanan, Padam, Gabung dan Pisah ada dalam Tetapan Asas dan pada klik kanan. Warna, huruf tebal, penjajaran dan saiz teks sel yang dipilih ada dalam Tetapan Gaya.",
           "Jadual data projek: klik dua kali padanya (atau Edit data) untuk memilih projek, data, lajur, penapis, susunan dan jumlah. Baris diisi dengan sendiri setiap kali laporan dijalankan.",
+          "Tetapan Gaya: Sesuaikan menetapkan rupa seluruh jadual; klik lajur jadual data projek pada halaman untuk menggayakan sel Pengepala, Data dan Jumlahnya secara berasingan. Peraturan penyerlahan, yang mewarnakan baris atau sel mengikut nilainya (Status ialah Lewat, Stok hingga 100, tarikh sebelum hari ini), ditetapkan dalam persediaan data, di sebelah Tapis & isih.",
           "Rupa menetapkan gaya jadual; Sesuaikan mengubah warna jadual ini sahaja, dan Simpan sebagai gaya jadual menyimpannya untuk jadual lain.",
           "Kandungan jadual menukar jadual antara ditaip dan data projek."
         ],
         "good": [
           "Jadual data projek hanya boleh berada dalam bahagian Butiran halaman, dan tidak sekali-kali dalam kotak.",
           "Jadual yang panjang bersambung pada halaman seterusnya.",
+          "Jadual yang ditaip menjadi terlalu panjang untuk halamannya: pilih satu baris dan gunakan Pisahkan jadual di sini, supaya halaman seterusnya bermula dengan baris tajuk semula.",
           "Halaman menunjukkan sehingga 5 baris contoh; PDF mencetak setiap baris."
         ]
       },
@@ -3612,7 +3686,7 @@
       },
       "tableLook": {
         "title": "Rupa",
-        "text": "Gaya jadual: Tiada, Biru Korporat, Minimal, Zamrud, atau gaya yang anda simpan. Sesuaikan mengubah warna jadual ini sahaja."
+        "text": "Gaya jadual: Tiada, Biru Korporat, Minimal, Zamrud, Batu Loh, Merah Anggur, Biru Kehijauan, Emas, Ungu, atau gaya yang anda simpan. Sesuaikan mengubah warna jadual ini sahaja. Gaya yang anda simpan ada di bawah Gaya saya; namakan semula atau padam dengan butang di penjuru jubinnya (jadual yang menggunakan gaya yang dipadam mengekalkan rupanya)."
       },
       "tableRowSizes": {
         "title": "Saiz baris",
@@ -3620,19 +3694,15 @@
       },
       "tableCustomize": {
         "title": "Sesuaikan",
-        "text": "Warna dan garisan untuk jadual ini: tajuk, warna baris (sehingga 4, bergilir-gilir), jumlah, garisan dan saiz teks. Simpan sebagai gaya jadual menyimpannya untuk digunakan pada jadual lain."
+        "text": "Rupa seluruh jadual: tajuk, warna baris (hingga 4, bergilir), jumlah, garisan, saiz teks dan, dalam jadual yang ditaip, ruang di dalam setiap sel. Simpan sebagai gaya jadual menyimpannya untuk digunakan pada jadual lain. Sesetengah sel atau satu lajur boleh mempunyai rupa sendiri, dalam kad di atas kad ini."
       },
       "typedGrid": {
         "title": "Baris dan lajur",
-        "text": "Bilangan baris, lajur dan baris tajuk dalam jadual, dan sama ada baris terakhir ialah jumlah."
+        "text": "Berapa baris dan lajur jadual, baris tajuk, dan sama ada baris terakhir ialah jumlah. Menanda Baris terakhir ialah jumlah menambah baris di bawah dengan Jumlah dan hasil tambah setiap lajur nombor, dikemas kini semasa anda menaip (taip dalam sel jumlah untuk menulis sendiri). Butang + dan − menambah atau membuang baris atau lajur di hujung. Untuk menambah di tempat lain, buka jadual, pilih baris atau lajur (klik pemegangnya) dan gunakan Sisip di atas / di bawah / di kiri / di kanan di sini atau pada klik kanan; Padam, Gabung sel dan Pisah sel juga ada di sini. Pisahkan jadual di sini memindahkan baris yang dipilih dan baris di bawahnya ke jadual baharu di halaman baharu, bersama salinan baris tajuk."
       },
       "typedCells": {
         "title": "Sel",
-        "text": "Rupa sel yang anda pilih (semua sel apabila jadual tidak dibuka): isian, warna teks, tebal, penjajaran dan saiz teks. Gabung sel menyatukannya; Pisah sel membatalkannya; butang set semula kembali kepada gaya jadual."
-      },
-      "typedText": {
-        "title": "Teks",
-        "text": "Saiz teks dan ruang di dalam setiap sel, untuk seluruh jadual."
+        "text": "Rupa sel yang anda pilih semasa jadual dibuka: seluruh baris atau lajur (klik pemegangnya), beberapa sel (seret atau Shift+klik), atau semua sel (Ctrl+A). Isian, warna teks, tebal, condong, garis bawah, saiz teks dan penjajaran; warna teks yang dipilih di sini menggantikan warna yang diberi kepada perkataan dalam sel tersebut. Butang set semula kembali kepada gaya jadual. Rupa seluruh jadual ada dalam Sesuaikan."
       },
       "tocDesign": {
         "title": "Reka bentuk",
@@ -3693,6 +3763,16 @@
         "title": "Alamat menunjukkan",
         "text": "Medan yang dicetak oleh alamat. Alamat penuh dahulu, kemudian poskod dan bandar, kemudian negeri dan negara, kemudian latitud dan longitud jika ditandakan. Rupa alamat menetapkan saiz teks, warna, huruf tebal dan penjajarannya.",
         "example": "Jalan Stesen Sentral 5 · 50470 Kuala Lumpur · Wilayah Persekutuan Kuala Lumpur, Malaysia"
+      },
+      "tableCells": {
+        "title": "Sel",
+        "text": "Menggayakan lajur yang anda klik dalam jadual pada halaman, mengatasi gaya jadual. Tiga tabnya, Pengepala, Data dan Jumlah, menggayakan setiap bahagian lajur secara berasingan. Rupa seluruh jadual ada dalam Sesuaikan.",
+        "example": "Lajur Amaun dijajarkan ke kanan, atau sel jumlahnya ditebalkan."
+      },
+      "tableHighlights": {
+        "title": "Serlahkan baris atau sel",
+        "text": "Mewarnakan baris, atau sel satu lajur sahaja, mengikut nilainya setiap kali laporan dijalankan: lajur teks apabila ia salah satu nilai yang ditandakan, nombor dalam julat, tarikh sebelum atau selepas hari laporan dicetak, atau antara dua tarikh. Setiap peraturan menetapkan isian, warna teks dan huruf tebal. Apabila beberapa peraturan sepadan dengan satu baris, yang di atas menang.",
+        "example": "Seluruh baris merah apabila Status ialah Lewat; sel Stok ambar apabila hingga 100."
       }
     }
   },
@@ -3769,7 +3849,7 @@
     "dropHint": "Templat yang dimuat turun dari sini atau dibuat dalam Jaspersoft Studio",
     "addedNote": "Ia dibuka sebagai templat baharu dan ditambah ke Templat saya.",
     "seeAll": "Lihat semua dalam Templat Saya",
-    "notFound": "Templat itu tidak ditemui. Ia mungkin telah dipadam."
+    "notFound": "Templat tidak ditemui\nIa mungkin telah dipadam."
   },
   "location": {
     "fields": {
@@ -3826,7 +3906,7 @@
       "errorHint": "Peta tidak dapat dimuatkan. Semak sambungan internet, kemudian cuba lagi."
     },
     "canvasEmpty": "Taip latitud dan longitud, atau seret Lokasi dari Data Laporan",
-    "cannotType": "Peta dan alamat ini datang daripada tempat Lokasi. Tukarkannya di sebelah kanan, di bawah Tetapan.",
+    "cannotType": "Ini datang daripada tempat Lokasi\nUbah peta dan alamat di sebelah kanan.",
     "panel": {
       "placeTitle": "Tempat",
       "copyFrom": "Salin daripada projek",
@@ -3853,5 +3933,8 @@
       "frameTitle": "Bingkai di sekelilingnya"
     },
     "addressPlaceholder": "Alamat"
+  },
+  "colorPicker": {
+    "mixed": "Warna bercampur"
   }
 }

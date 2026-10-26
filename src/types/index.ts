@@ -494,6 +494,9 @@ export interface CustomTableCell {
   // bullet points, superscript...: what JasperReports' html markup reads)
   text: string;
   rich?: boolean;
+  // A total-row cell showing its column's sum, kept up to date (syncTableTotals)
+  // until the user types their own text in it
+  sum?: boolean;
   colSpan?: number;
   rowSpan?: number;
   fill?: string;

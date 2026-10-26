@@ -10,10 +10,15 @@ import type {
   DataColumn,
   DataSourceSchema,
   RelativePeriod,
+  TableColumnBinding,
+  TableColumnLook,
+  TableColumnPartLook,
   TableDataBinding,
   TableFilter,
+  TableHighlight,
   TotalFunction,
 } from "@/types/dataSource";
+import { hasLook, hasPartLook, newHighlightId } from "@/utils/table/columnLook";
 import { createElement } from "@/components/elements/ElementRegistry";
 import {
   fitTableToBox,
@@ -193,7 +198,7 @@ export const typedTableKind: ElementKind = {
     columnWidths: { type: "array", items: { type: "number", minimum: 0.1 }, description: "Relative column widths, e.g. [1, 3, 1] (default equal)" },
     headerRows: { type: "integer", minimum: 0, maximum: MAX_HEADER_ROWS, description: "Heading rows at the top (default 1)" },
     totalRow: { type: "boolean", description: "Last row drawn as a total" },
-    theme: { type: "string", enum: TABLE_THEMES, description: "Table style: corporateBlue (default), minimal, emerald, none" },
+    theme: { type: "string", enum: TABLE_THEMES, description: "Table style: corporateBlue (default), minimal, emerald, slate, burgundy, teal, gold, violet, none" },
     rowHeight: { type: "number", minimum: 12, maximum: 200, description: "Row height in px (default 20)" },
     padding: { type: "number", minimum: 0, maximum: 20, description: "Space inside cells in px (default 3)" },
     merges: {
@@ -388,6 +393,75 @@ export const describeFilters = (filters: TableFilter[] | undefined) =>
 // Data table (the Table tile's "Use project data")
 // ---------------------------------------------------------------------------
 
+// A data table column's own look (its data cells, header and total cell)
+const PART_LOOK_PROPS = {
+  fill: color("Fill"),
+  color: color("Text colour"),
+  bold: { type: "boolean" as const },
+  italic: { type: "boolean" as const },
+  underline: { type: "boolean" as const },
+  align: { type: "string" as const, enum: ["Left", "Center", "Right"] },
+  fontSize: { type: "number" as const, minimum: 4, maximum: 72 },
+};
+const PART_LOOK: JsonSchema = { type: "object", properties: PART_LOOK_PROPS, additionalProperties: false };
+
+function partLook(raw: Record<string, any> | undefined, field: string): TableColumnPartLook | undefined {
+  if (!raw) return undefined;
+  const look: TableColumnPartLook = {};
+  const fill = has(raw, "fill") ? readColor(raw.fill, `${field}.fill`) : null;
+  const text = has(raw, "color") ? readColor(raw.color, `${field}.color`) : null;
+  if (fill) look.fill = fill;
+  if (text) look.color = text;
+  for (const k of ["bold", "italic", "underline"] as const) if (has(raw, k)) look[k] = !!raw[k];
+  if (has(raw, "align")) look.align = raw.align;
+  if (has(raw, "fontSize")) look.fontSize = Math.round(raw.fontSize);
+  return hasPartLook(look) ? look : undefined;
+}
+
+function columnLookOf(raw: Record<string, any> | undefined, field: string): TableColumnLook | undefined {
+  if (!raw) return undefined;
+  const look: TableColumnLook = { ...partLook(raw, field) };
+  const header = partLook(raw.header, `${field}.header`);
+  const total = partLook(raw.total, `${field}.total`);
+  if (header) look.header = header;
+  if (total) look.total = total;
+  return hasLook(look) ? look : undefined;
+}
+
+function readHighlightRules(raw: any[], columns: TableColumnBinding[], field: string): TableHighlight[] {
+  return raw.map((r, i) => {
+    const at = `${field}[${i}]`;
+    const col = columns.find((c) => c.key === r.column);
+    if (!col) throw new SpecError(`${at}.column: "${r.column}" is not a column the table shows (${columns.map((c) => c.key).join(", ")})`);
+    const rule: TableHighlight = { id: newHighlightId(), column: col.key, operator: r.operator, scope: r.scope === "cell" ? "cell" : "row" };
+    if (r.operator === "in") {
+      const values = (r.values ?? []).map((v: unknown) => String(v).trim()).filter(Boolean);
+      if (!values.length) throw new SpecError(`${at}.values: "in" needs at least one value`);
+      rule.values = values;
+    } else if (r.operator === "between") {
+      if (!r.from && !r.to) throw new SpecError(`${at}: "between" needs from or to`);
+      const isDate = col.type === "date";
+      for (const k of ["from", "to"] as const) {
+        if (!r[k]) continue;
+        const v = String(r[k]).trim();
+        if (isDate ? !ISO_DAY.test(v) : !Number.isFinite(Number(v))) {
+          throw new SpecError(`${at}.${k}: "${v}" must be ${isDate ? "a date as yyyy-mm-dd" : "a number"} for ${col.key}`);
+        }
+        rule[k] = v;
+      }
+    } else if (col.type !== "date") {
+      throw new SpecError(`${at}.operator: "${r.operator}" only works on a date column; ${col.key} is ${col.type}`);
+    }
+    const fill = readColor(r.fill, `${at}.fill`);
+    const text = readColor(r.color, `${at}.color`);
+    if (fill) rule.fill = fill;
+    if (text) rule.color = text;
+    if (r.bold) rule.bold = true;
+    if (!rule.fill && !rule.color && !rule.bold) throw new SpecError(`${at}: give a fill, color or bold`);
+    return rule;
+  });
+}
+
 async function applyDataTable(element: TableElement, spec: ElementSpec, ctx: KindContext): Promise<void> {
   applyGeometry(element, spec);
   const current = element.binding;
@@ -403,7 +477,7 @@ async function applyDataTable(element: TableElement, spec: ElementSpec, ctx: Kin
   const same = current && current.sourceId === sourceId ? current : undefined;
   let columns = same?.columns ?? [];
   if (has(spec, "columns") || !columns.length) {
-    const wanted: Array<{ column: string; header?: string; total?: string }> =
+    const wanted: Array<{ column: string; header?: string; total?: string; look?: Record<string, any> }> =
       spec.columns ?? schema.columns.slice(0, max).map((c) => ({ column: c.key }));
     if (wanted.length > max) throw new SpecError(`columns: at most ${max} fit in ${width} px (60 px each); make the table wider or show fewer`);
     const widths = distributeColumnWidths(wanted.length, width);
@@ -412,7 +486,17 @@ async function applyDataTable(element: TableElement, spec: ElementSpec, ctx: Kin
       if (w.total && w.total !== "count" && c.type !== "number" && c.type !== "currency") {
         throw new SpecError(`columns[${i}].total: "${w.total}" needs a number or amount column; ${c.key} is ${c.type}`);
       }
-      return { key: c.key, label: w.header ?? c.label, type: c.type, width: widths[i] ?? MIN_COLUMN_WIDTH, ...(w.total ? { total: w.total as TotalFunction } : {}) };
+      // A column the table already showed keeps its own look (and barcode)
+      const before = same?.columns.find((old) => old.key === c.key);
+      return {
+        key: c.key,
+        label: w.header ?? c.label,
+        type: c.type,
+        width: widths[i] ?? MIN_COLUMN_WIDTH,
+        ...(w.total ? { total: w.total as TotalFunction } : {}),
+        ...(w.look ? { look: columnLookOf(w.look, `columns[${i}].look`) } : before?.look ? { look: before.look } : {}),
+        ...(before?.barcode ? { barcode: before.barcode } : {}),
+      };
     });
   }
   const sortSpec = spec.sort as { column: string; direction?: "asc" | "desc" } | undefined;
@@ -439,6 +523,11 @@ async function applyDataTable(element: TableElement, spec: ElementSpec, ctx: Kin
     theme: spec.theme ?? current?.theme ?? "corporateBlue",
     ...(!has(spec, "theme") && current?.look ? { look: current.look, customized: current.customized } : {}),
   };
+  // Highlight rules: the given ones, else the table's own while their column is shown
+  const rules = has(spec, "highlights")
+    ? readHighlightRules(spec.highlights, columns, "highlights")
+    : (same?.highlights ?? []).filter((r) => columns.some((c) => c.key === r.column));
+  if (rules.length) binding.highlights = rules;
   element.binding = binding;
   useProject(projectId, name);
 
@@ -470,6 +559,12 @@ export const dataTableKind: ElementKind = {
           column: { type: "string", description: "Column key" },
           header: { type: "string", description: "Heading text (default the column's name)" },
           total: { type: "string", enum: ["sum", "avg", "count"], description: "Total under the column" },
+          look: {
+            type: "object",
+            description: "This column's own look over the table style: its data cells, plus header / total for its heading and total cell",
+            properties: { ...PART_LOOK_PROPS, header: PART_LOOK, total: PART_LOOK },
+            additionalProperties: false,
+          },
         },
         required: ["column"],
         additionalProperties: false,
@@ -483,8 +578,29 @@ export const dataTableKind: ElementKind = {
     },
     filters: FILTERS_PROP,
     rowLimit: { type: "integer", minimum: 0, description: "Show at most this many rows (0: all)" },
-    theme: { type: "string", enum: TABLE_THEMES, description: "Table style (default corporateBlue)" },
+    theme: { type: "string", enum: TABLE_THEMES, description: "Table style: corporateBlue (default), minimal, emerald, slate, burgundy, teal, gold, violet, none" },
     tableName: { type: "string" },
+    highlights: {
+      type: "array",
+      description:
+        "Colour rows (scope row) or one cell (scope cell) by their values each time the report runs; the first matching rule wins. in: the column is one of values (text, any case); between: from / to (numbers, or dates yyyy-mm-dd), either may be left out; past / future: a date before / after the print day. Replaces the table's rules; [] removes them.",
+      items: {
+        type: "object",
+        properties: {
+          column: { type: "string", description: "Column key (a column the table shows)" },
+          operator: { type: "string", enum: ["in", "between", "past", "future"] },
+          values: { type: "array", items: { type: "string" } },
+          from: { type: "string" },
+          to: { type: "string" },
+          scope: { type: "string", enum: ["row", "cell"], description: "Whole row (default) or only this column's cell" },
+          fill: color("Fill"),
+          color: color("Text colour"),
+          bold: { type: "boolean" },
+        },
+        required: ["column", "operator"],
+        additionalProperties: false,
+      },
+    },
   },
   required: ["projectId", "sourceId"],
   inBox: false,
@@ -519,7 +635,8 @@ export const dataTableKind: ElementKind = {
       projectId: b.projectId,
       sourceId: b.sourceId,
       source: b.sourceName,
-      columns: b.columns.map((c) => defined({ column: c.key, header: c.label, total: c.total })),
+      columns: b.columns.map((c) => defined({ column: c.key, header: c.label, total: c.total, look: c.look })),
+      highlights: b.highlights?.map(({ id: _id, ...rule }) => rule),
       sort: b.sort[0] ? { column: b.sort[0].column, direction: b.sort[0].direction } : undefined,
       rowLimit: b.rowLimit,
       theme: b.theme,

@@ -8672,8 +8672,12 @@ const moveElementZOrder = (direction: "front" | "back") => {
 .coordinates-display,
 .band-height-display {
   position: absolute;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
+  background-color: #ffffff;
+  color: #1c1b26;
+  font-weight: 600;
+  box-shadow:
+    0 0 0 1px rgba(28, 27, 38, 0.08),
+    0 8px 24px rgba(23, 20, 44, 0.14);
   padding: v-bind('UI_CONSTANTS.SMALL_MARGIN + "px"')
     v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
   border-radius: v-bind('UI_CONSTANTS.BORDER_RADIUS_SMALL + "px"');

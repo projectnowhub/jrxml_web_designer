@@ -44,9 +44,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { DataRow, TableColumnBinding, TableLook } from "@/types/dataSource";
+import type { DataRow, TableColumnBinding, TableHighlight, TableLook } from "@/types/dataSource";
 import { cellAlignmentFor, computeTotal, formatCellValue } from "@/utils/table/dataTable";
 import { lookPartStyles, rowColorAt, tableCellCss, type TableStylePart } from "@/utils/table/tableThemes";
+import { columnPartLook, partLookCss } from "@/utils/table/columnLook";
 import { tableColumnBarcode } from "@/utils/barcode/barcodeTypes";
 import BarcodeCell from "./BarcodeCell.vue";
 
@@ -57,6 +58,7 @@ const props = defineProps<{
   columns: TableColumnBinding[];
   rows: DataRow[];
   look: TableLook;
+  highlights?: TableHighlight[];
   showTotals?: boolean;
   loading?: boolean;
   failed?: boolean;
@@ -68,8 +70,15 @@ const styles = computed(() => lookPartStyles(props.look));
 
 function cellStyle(part: TableStylePart, col: TableColumnBinding, index: number, rowIndex = 0) {
   const css: Record<string, string> = tableCellCss(styles.value[part], part === "row" ? rowColorAt(props.look, rowIndex) : undefined);
-  css.textAlign = part === "header" ? "left" : cellAlignmentFor(col.type).toLowerCase();
-  if (part === "totals" && col.total) css.textAlign = "right";
+  // The column's own look (body cells: with the highlight rules on this row)
+  const own = columnPartLook(
+    { columns: props.columns, highlights: props.highlights },
+    col,
+    part,
+    part === "row" ? (props.rows[rowIndex] ?? null) : null,
+  );
+  Object.assign(css, partLookCss(own));
+  css.textAlign = (own?.align ?? (part === "header" ? "Left" : part === "totals" && col.total ? "Right" : cellAlignmentFor(col.type))).toLowerCase();
   if (index > 0) css.borderLeft = "none";
   return css;
 }

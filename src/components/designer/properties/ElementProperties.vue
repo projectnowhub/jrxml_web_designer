@@ -547,8 +547,8 @@
           class="prop-tab-pane"
           role="tabpanel"
         >
-          <TableDataPanel part="style" v-bind="tablePanelProps" v-on="tablePanelEvents" />
           <CustomTableProperties part="style" :element="currentElement as CustomTableElement" />
+          <TableDataPanel part="style" v-bind="tablePanelProps" v-on="tablePanelEvents" />
         </div>
 
         <!-- Table: Style Settings is where its look is changed -->
@@ -1095,7 +1095,7 @@ const report = useReportStore();
 
 // Report, selection and editor state come from the stores
 const selectionStore = useSelectionStore();
-const { selectedBandIndex, selectedElement } = storeToRefs(selectionStore);
+const { selectedBandIndex, selectedElement, tableColumn } = storeToRefs(selectionStore);
 const reportStore = useReportStore();
 const { bands, reportProperties, tableStyles, reportFields, reportParameters, reportVariables } = storeToRefs(reportStore);
 
@@ -1906,6 +1906,11 @@ const tablePanelEvents = {
 };
 watch(availableTabs, (tabs) => {
   if (!tabs.includes(activeTab.value)) activeTab.value = "basic";
+});
+watch(tableColumn, (col) => {
+  if (col && currentElement.value?.uuid === col.uuid) {
+    activeTab.value = "style";
+  }
 });
 
 // Basic tab

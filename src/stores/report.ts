@@ -22,6 +22,7 @@ import { specialPages } from "@/utils/specialPages";
 import { fitContentsPages, fitListDecorations, NEW_REPORT_HEADING_NUMBERING, syncHeadings } from "@/utils/headingSync";
 import { unwrapLegacyCoverFrames } from "@/utils/pageDesigns";
 import { syncLocations } from "@/utils/location/locationElement";
+import { syncTotals } from "@/utils/customTable";
 import { loadReportDefaults } from "@/utils/reportDefaults";
 import { useEditorStore } from "./editor";
 import { useSelectionStore } from "./selection";
@@ -212,6 +213,10 @@ export const useReportStore = defineStore("report", () => {
         fontFamily: reportProperties.value.defaultFont?.name,
         fontSize: reportProperties.value.defaultFont?.size,
       });
+      // Typed tables: the sums in their total row follow the numbers above
+      for (const band of bands.value) {
+        for (const element of band.elements) if (element.type === "customTable") syncTotals(element.table);
+      }
       // A Table of Contents on contents pages gets the contents pages it needs
       const before = totalPages.value;
       const added = fitContentsPages(bands.value, reportProperties.value);

@@ -495,6 +495,16 @@ export function cleanEditorHtml(html: string): string {
   return clean;
 }
 
+// Strip inline text color overrides so a cell or element style can take effect
+export function stripInlineColors(html: string): string {
+  return html
+    .replace(/<font\s+color="[^"]*">([\s\S]*?)<\/font>/gi, '$1')
+    .replace(/<span\s+style="color:\s*[^";]+;?">([\s\S]*?)<\/span>/gi, '$1')
+    .replace(/<span\s+style="([^"]*?)color:\s*[^";]+;?([^"]*)">([\s\S]*?)<\/span>/gi, '<span style="$1$2">$3</span>')
+    .replace(/<span\s*>\s*<\/span>/gi, '')
+    .replace(/<span>([\s\S]*?)<\/span>/gi, '$1');
+}
+
 // Formatting beyond line breaks (bold, colour, lists, superscript...)
 export const hasFormatting = (html: string): boolean =>
   /<\/?(b|strong|i|em|u|s|strike|del|font|a|span|ul|ol|li|sup|sub)\b[^>]*>/i.test(html);

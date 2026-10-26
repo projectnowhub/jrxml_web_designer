@@ -3,7 +3,8 @@
 // one into the other at the same place.
 
 import type { CustomTableCell, CustomTableElement, CustomTableRow, TableElement } from "@/types";
-import type { DataRow } from "@/types/dataSource";
+import type { DataRow, TableColumnPartLook } from "@/types/dataSource";
+import { cellLook } from "./columnLook";
 import { buildCustomTable, MIN_ROW_HEIGHT, syncTableSize } from "@/utils/customTable";
 import {
   cellAlignmentFor,
@@ -38,6 +39,21 @@ export function emptyTypedTable(source: TableElement, headers: string[]): Custom
   return typedAt(source, buildCustomTable(Math.round(source.width), headers));
 }
 
+// A column's own look (or a highlight rule's colours) as a typed cell's own
+// settings, so the typed table looks as the data table did
+function cellSettings(look: TableColumnPartLook | undefined): Partial<CustomTableCell> {
+  if (!look) return {};
+  const out: Partial<CustomTableCell> = {};
+  if (look.fill) out.fill = look.fill;
+  if (look.color) out.color = look.color;
+  if (look.bold !== undefined) out.bold = look.bold;
+  if (look.italic !== undefined) out.italic = look.italic;
+  if (look.underline !== undefined) out.underline = look.underline;
+  if (look.fontSize) out.fontSize = look.fontSize;
+  if (look.align) out.align = look.align;
+  return out;
+}
+
 // Rows kept when a data table becomes a typed table
 export const CONVERTED_ROW_LIMIT = 10;
 
@@ -60,7 +76,7 @@ export function typedTableFromData(
 
   const header: CustomTableRow = {
     height: headerHeight,
-    cells: binding.columns.map((col) => ({ text: col.label })),
+    cells: binding.columns.map((col) => ({ text: col.label, ...cellSettings(col.look?.header) })),
   };
   const body: CustomTableRow[] = printed.slice(0, fits).map((row) => ({
     height: rowHeight,
@@ -70,6 +86,8 @@ export function typedTableFromData(
         text: formatCellValue(row[col.key], col.type, options.locale),
         ...(align !== "Left" ? { align } : {}),
         vAlign: "Middle",
+        // The column's look and the highlight rules this row matches
+        ...cellSettings(cellLook(binding, col, row)),
       };
     }),
   }));
@@ -87,7 +105,7 @@ export function typedTableFromData(
                   ? options.totalLabel
                   : "";
             const align = value !== null ? cellAlignmentFor(col.type) : "Left";
-            return { text, ...(align !== "Left" ? { align } : {}) };
+            return { text, ...(align !== "Left" ? { align } : {}), ...cellSettings(col.look?.total) };
           }),
         },
       ]

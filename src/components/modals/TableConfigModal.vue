@@ -154,6 +154,17 @@
             />
           </section>
 
+          <!-- Highlight rules, next to Filter & sort -->
+          <section class="tcm-section">
+            <h4><Highlighter :size="14" aria-hidden="true" />{{ t("dataTable.highlight.title") }}</h4>
+            <TableHighlights
+              :columns="columns"
+              :facets="facets ?? {}"
+              :highlights="highlights"
+              @update:highlights="highlights = $event"
+            />
+          </section>
+
           <!-- Rows, totals -->
           <section class="tcm-section">
             <h4><ListOrdered :size="14" aria-hidden="true" />{{ t("dataTable.config.rows") }}</h4>
@@ -197,6 +208,7 @@
             :columns="columns"
             :rows="previewRows"
             :look="look"
+            :highlights="highlights"
             :show-totals="showTotals"
             :loading="previewLoading"
             :failed="previewFailed"
@@ -228,6 +240,7 @@ import {
   Database,
   FolderKanban,
   GripVertical,
+  Highlighter,
   DatabaseZap,
   DollarSign,
   Funnel,
@@ -242,6 +255,7 @@ import {
 import BaseModal from "./BaseModal.vue";
 import DataGrid from "../common/DataGrid.vue";
 import TableFilterPanel from "../designer/TableFilterPanel.vue";
+import TableHighlights from "../designer/properties/TableHighlights.vue";
 import { getFacets, getSchema, listSources, queryRows } from "@/services/dataSourceService";
 import {
   PREVIEW_ROW_LIMIT,
@@ -262,6 +276,7 @@ import type {
   TableColumnBinding,
   TableDataBinding,
   TableFilter,
+  TableHighlight,
   TableSort,
   SourceFacets,
   TotalFunction,
@@ -323,6 +338,7 @@ const filters = ref<TableFilter[]>([]);
 const sort = ref<TableSort[]>([]);
 const rowLimit = ref<number | undefined>(undefined);
 const showTotals = ref(false);
+const highlights = ref<TableHighlight[]>([]);
 
 const maxColumns = computed(() => maxColumnsForWidth(props.tableWidth));
 // Another source than the table shows: Apply replaces its data, like a new image
@@ -349,6 +365,7 @@ function loadDraft(binding: TableDataBinding) {
   sort.value = copy(binding.sort);
   rowLimit.value = binding.rowLimit;
   showTotals.value = binding.showTotals;
+  highlights.value = copy(binding.highlights ?? []);
 }
 
 // Filter choices of the source (values with counts, ranges)
@@ -390,6 +407,7 @@ async function useSchema(id: string, freshColumns: boolean) {
       columns.value = only ? [toColumnBinding(only, props.tableWidth)] : start.columns;
       filters.value = [];
       sort.value = [];
+      highlights.value = [];
     }
   } catch {
     if (stillCurrent()) loadError.value = true;
@@ -423,6 +441,7 @@ watch(
       sort.value = [];
       rowLimit.value = undefined;
       showTotals.value = false;
+      highlights.value = [];
     }
     // A dropped source, the table's own, or the only project there is
     const project =
@@ -579,6 +598,12 @@ const draftBinding = computed<TableDataBinding | null>(() => {
     theme: current.value?.theme ?? "corporateBlue",
     look: current.value?.look ? copy(current.value.look) : undefined,
     customized: current.value?.customized || undefined,
+    // Highlight rules: kept while their column is shown
+    highlights: (() => {
+      const shown = new Set(columns.value.map((c) => c.key));
+      const kept = highlights.value.filter((r) => shown.has(r.column));
+      return kept.length ? copy(kept) : undefined;
+    })(),
   };
 });
 

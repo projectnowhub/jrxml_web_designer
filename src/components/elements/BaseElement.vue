@@ -544,9 +544,7 @@ const handleProjectDragLeave = (event: DragEvent) => {
 
 /* Hovering and selecting keep the stacking order, so the page shows what
    prints: raising an item hid what lies on top of it (a cover's title over its
-   colour panel), and an item just sent to back still showed in front. The
-   canvas draws a selected item's outline and handles again above everything
-   (top handles in DesignerCanvas.vue) */
+   colour panel), and an item just sent to back still showed in front. */
 
 .design-element.out-of-bounds {
   /* Highlight style for out-of-bounds elements */

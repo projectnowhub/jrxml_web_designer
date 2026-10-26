@@ -65,9 +65,10 @@ export type SettingId =
   | "tableLook"
   | "tableRowSizes"
   | "tableCustomize"
+  | "tableCells"
+  | "tableHighlights"
   | "typedGrid"
   | "typedCells"
-  | "typedText"
   | "tocDesign"
   | "tocRowsFrom"
   | "tocRows"
@@ -209,11 +210,12 @@ export const DOC_PAGES: DocPage[] = [
       "positionSize",
       "tableData",
       "tableLook",
+      "tableCells",
+      "tableHighlights",
       "tableRowSizes",
       "tableCustomize",
       "typedGrid",
       "typedCells",
-      "typedText",
     ],
     guides: ["typedTable", "dataTable"],
     sample: (ctx) => [
@@ -294,7 +296,7 @@ export const DOC_PAGES: DocPage[] = [
     id: "presetTables",
     group: "presets",
     tile: "tableKeyValue",
-    settings: ["typedGrid", "typedCells", "typedText", "tableLook"],
+    settings: ["typedGrid", "typedCells", "tableLook", "tableCustomize"],
     guides: ["presetTables"],
     sample: (ctx) => [buildTablePreset("tableKeyValue", ctx)],
   },

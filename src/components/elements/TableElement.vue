@@ -18,6 +18,7 @@
       class="data-table"
       :class="{ 'is-drop-target': isDropTarget }"
       :data-table-uuid="element.uuid"
+      @mousedown.capture="wasSelected = isSelected"
       @dragenter="onDragOver"
       @dragover="onDragOver"
       @dragleave="onDragLeave"
@@ -31,6 +32,7 @@
           class="dt-cell"
           :class="{ 'is-placeholder': !binding }"
           :style="cellStyle('header', col, i)"
+          @click="chooseColumn(col.key, 'header')"
         >
           {{ col.label }}
         </div>
@@ -67,7 +69,8 @@
               v-for="(col, i) in binding.columns"
               :key="col.key"
               class="dt-cell"
-              :style="cellStyle('row', col, i, r)"
+              :style="cellStyle('row', col, i, r, slot.row)"
+              @click="chooseColumn(col.key, 'data')"
             >
               <BarcodeCell
                 v-if="tableColumnBarcode(col)"
@@ -87,6 +90,7 @@
             :key="col.key"
             class="dt-cell"
             :style="cellStyle('totals', col, i)"
+            @click="chooseColumn(col.key, 'total')"
           >
             {{ col.total ? t(`dataTable.totals.${col.total}`) : i === 0 ? t("dataTable.totals.label") : "" }}
           </div>
@@ -108,6 +112,16 @@
           <span>{{ t("dataTable.dropHint") }}</span>
         </div>
       </template>
+
+      <!-- One outline around the chosen column -->
+      <div
+        v-if="chosenColumnBounds"
+        class="dt-column-frame"
+        :style="{
+          left: `${chosenColumnBounds.left}px`,
+          width: `${chosenColumnBounds.width}px`,
+        }"
+      />
     </div>
   </BaseElement>
 </template>
@@ -133,6 +147,9 @@ import {
 import { distributeColumnWidths } from "@/utils/table/dataBinding";
 import { lookPartStyles, resolveLook, rowColorAt, tableCellCss, type TableStylePart } from "@/utils/table/tableThemes";
 import { isDataSourceDrag } from "@/utils/table/dataDrag";
+import { columnPartLook, partLookCss } from "@/utils/table/columnLook";
+import { useSelectionStore } from "@/stores/selection";
+import { storeToRefs } from "pinia";
 import type { SelectedElementInfo, TableElement } from "@/types";
 import type { DataRow, TableColumnBinding } from "@/types/dataSource";
 
@@ -204,18 +221,48 @@ const rowSlotsShown = computed<Slot[]>(() => {
 const look = computed(() => resolveLook(binding.value));
 const partStyles = computed(() => lookPartStyles(look.value));
 
-function cellStyle(part: TableStylePart, col: PreviewColumn | undefined, index: number, rowIndex = 0) {
+function cellStyle(part: TableStylePart, col: PreviewColumn | undefined, index: number, rowIndex = 0, row?: DataRow) {
   const css: Record<string, string> = tableCellCss(partStyles.value[part], part === "row" ? rowColorAt(look.value, rowIndex) : undefined);
+  const bCol = col && binding.value ? (col as TableColumnBinding) : undefined;
+  // The column's own look (body cells: with the highlight rules on this row)
+  const own = bCol && binding.value ? columnPartLook(binding.value, bCol, part, row ?? null) : undefined;
+  Object.assign(css, partLookCss(own));
+  const ownAlign = own?.align ?? (part === "row" && col ? cellAlignmentFor(col.type) : undefined);
+  if (ownAlign) css.justifyContent = { Left: "flex-start", Center: "center", Right: "flex-end" }[ownAlign];
+
   if (col) {
     css.width = `${col.width}px`;
-    css.justifyContent =
-      part === "header" ? "flex-start" : { Left: "flex-start", Center: "center", Right: "flex-end" }[cellAlignmentFor(col.type)];
+    if (!css.justifyContent) {
+      css.justifyContent =
+        part === "header" ? "flex-start" : { Left: "flex-start", Center: "center", Right: "flex-end" }[cellAlignmentFor(col.type)];
+    }
   } else {
     css.flex = "1";
   }
   // Neighbouring cells share one border line
   if (index > 0) css.borderLeft = "none";
   return css;
+}
+
+// A click on a column of the selected table chooses it: its look in the panel
+const { tableColumn } = storeToRefs(useSelectionStore());
+const isSelected = computed(() => !!props.element.uuid && props.selectedElement?.uuid === props.element.uuid);
+// Selected before this press: the first click selects the table, the next one a column
+const wasSelected = ref(false);
+const chosenColumnBounds = computed(() => {
+  if (!isSelected.value || !tableColumn.value || tableColumn.value.uuid !== props.element.uuid) return null;
+  const key = tableColumn.value.key;
+  let left = 0;
+  for (const col of displayColumns.value) {
+    if (col.key === key) return { left, width: col.width };
+    left += col.width;
+  }
+  return null;
+});
+
+function chooseColumn(key: string, part: "header" | "data" | "total" = "data") {
+  if (!binding.value || !wasSelected.value || !props.element.uuid) return;
+  tableColumn.value = { uuid: props.element.uuid, key, part };
 }
 
 // Highlight while a data source is dragged over this table
@@ -263,6 +310,17 @@ function onDragLeave(event: DragEvent) {
 /* Every row after the first shares the line above it */
 .dt-row + .dt-row .dt-cell {
   border-top: none !important;
+}
+
+.dt-column-frame {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border: 2px solid #6440f4;
+  background: rgba(100, 64, 244, 0.08);
+  pointer-events: none;
+  box-sizing: border-box;
+  z-index: 2;
 }
 
 .dt-cell {

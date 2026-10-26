@@ -124,11 +124,48 @@ export interface TableColumnBinding {
   total?: TotalFunction;
   // Text columns can print each value as a barcode (types that hold any text)
   barcode?: "Code128" | "QRCode" | "DataMatrix";
+  // How this column's cells look (body rows), over the table style
+  look?: TableColumnLook;
+}
+
+// How one cell or group of cells in a column looks
+export interface TableColumnPartLook {
+  fill?: string;
+  color?: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  align?: "Left" | "Center" | "Right";
+  fontSize?: number;
+}
+
+// A column's own look; anything left out follows the table style.
+// Root properties style the data cells; header and total cells have their own overrides.
+export interface TableColumnLook extends TableColumnPartLook {
+  header?: TableColumnPartLook;
+  total?: TableColumnPartLook;
+}
+
+// "Colour the row (or just the cell) when this column's value is…".
+// "in": one of the ticked values (text, case-insensitive); "between": from /
+// to, either may be empty (numbers, amounts, dates as yyyy-mm-dd); "past" /
+// "future": a date before / after the day the report is printed
+export interface TableHighlight {
+  id: string;
+  column: string;
+  operator: "in" | "between" | "past" | "future";
+  values?: string[];
+  from?: string;
+  to?: string;
+  scope: "row" | "cell";
+  fill?: string;
+  color?: string;
+  bold?: boolean;
 }
 
 // Built-in table styles; they can't be changed
 // "none": no colours, only thin lines (what Reset style gives a table)
-export type TableTheme = "none" | "corporateBlue" | "minimal" | "emerald";
+export type TableTheme = "none" | "corporateBlue" | "minimal" | "emerald" | "slate" | "burgundy" | "teal" | "gold" | "violet";
 
 // How a table looks. Built-in styles, saved table styles and one-off
 // customisations are all a TableLook.
@@ -181,6 +218,8 @@ export interface TableDataBinding {
   // this table only (customized). Empty for an unchanged built-in style.
   look?: TableLook;
   customized?: boolean;
+  // Rows or cells coloured by their values; the first matching rule wins
+  highlights?: TableHighlight[];
 }
 
 // What the designer asks the backend for

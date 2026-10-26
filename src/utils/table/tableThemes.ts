@@ -10,7 +10,7 @@ import type { SavedTableStyle, TableDataBinding, TableLook, TableTheme } from "@
 
 export type TableStylePart = "header" | "row" | "totals";
 
-export const TABLE_THEMES: TableTheme[] = ["none", "corporateBlue", "minimal", "emerald"];
+export const TABLE_THEMES: TableTheme[] = ["none", "corporateBlue", "minimal", "emerald", "slate", "burgundy", "teal", "gold", "violet"];
 
 export const BUILTIN_LOOKS: Record<TableTheme, TableLook> = {
   // No colours, nothing bold: only thin black lines
@@ -70,6 +70,81 @@ export const BUILTIN_LOOKS: Record<TableTheme, TableLook> = {
     ruleColor: "#047857",
     fontSize: 9,
   },
+  // Charcoal heading, a line under each row
+  slate: {
+    headerBackground: "#334155",
+    headerText: "#FFFFFF",
+    headerBold: true,
+    rowColors: ["#FFFFFF"],
+    rowText: "#1E293B",
+    totalsBackground: "#F1F5F9",
+    totalsText: "#0F172A",
+    totalsBold: true,
+    lines: "rows",
+    lineColor: "#CBD5E1",
+    ruleColor: "#334155",
+    fontSize: 9,
+  },
+  // Deep red heading, soft rose stripes
+  burgundy: {
+    headerBackground: "#7F1D1D",
+    headerText: "#FFFFFF",
+    headerBold: true,
+    rowColors: ["#FFFFFF", "#FEF2F2"],
+    rowText: "#1F2937",
+    totalsBackground: "#FEE2E2",
+    totalsText: "#7F1D1D",
+    totalsBold: true,
+    lines: "grid",
+    lineColor: "#FECACA",
+    ruleColor: "#7F1D1D",
+    fontSize: 9,
+  },
+  // Teal heading, light aqua stripes
+  teal: {
+    headerBackground: "#0F766E",
+    headerText: "#FFFFFF",
+    headerBold: true,
+    rowColors: ["#FFFFFF", "#F0FDFA"],
+    rowText: "#1F2937",
+    totalsBackground: "#CCFBF1",
+    totalsText: "#115E59",
+    totalsBold: true,
+    lines: "grid",
+    lineColor: "#99F6E4",
+    ruleColor: "#0F766E",
+    fontSize: 9,
+  },
+  // Warm gold heading, cream stripes
+  gold: {
+    headerBackground: "#B45309",
+    headerText: "#FFFFFF",
+    headerBold: true,
+    rowColors: ["#FFFFFF", "#FFFBEB"],
+    rowText: "#292524",
+    totalsBackground: "#FEF3C7",
+    totalsText: "#78350F",
+    totalsBold: true,
+    lines: "grid",
+    lineColor: "#FDE68A",
+    ruleColor: "#B45309",
+    fontSize: 9,
+  },
+  // The app's purple, lavender stripes, lines under rows
+  violet: {
+    headerBackground: "#6440F4",
+    headerText: "#FFFFFF",
+    headerBold: true,
+    rowColors: ["#FFFFFF", "#F5F3FF"],
+    rowText: "#1F2937",
+    totalsBackground: "#EDE9FE",
+    totalsText: "#4C1D95",
+    totalsBold: true,
+    lines: "rows",
+    lineColor: "#DDD6FE",
+    ruleColor: "#6440F4",
+    fontSize: 9,
+  },
 };
 
 const BUILTIN_PREFIX: Record<TableTheme, string> = {
@@ -77,6 +152,11 @@ const BUILTIN_PREFIX: Record<TableTheme, string> = {
   corporateBlue: "Table_CorporateBlue",
   minimal: "Table_Minimal",
   emerald: "Table_Emerald",
+  slate: "Table_Slate",
+  burgundy: "Table_Burgundy",
+  teal: "Table_Teal",
+  gold: "Table_Gold",
+  violet: "Table_Violet",
 };
 
 export const isBuiltinTheme = (id: string): id is TableTheme =>

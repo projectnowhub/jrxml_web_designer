@@ -8,6 +8,8 @@
     <GuidedTour />
     <HelpModal />
     <HintLayer />
+    <!-- Every title as a tooltip in the app's light look -->
+    <TooltipLayer />
   </NConfigProvider>
 </template>
 
@@ -21,6 +23,7 @@ import { fetchUser, loginErrorQuery } from "./services/authService";
 import GuidedTour from "./components/help/GuidedTour.vue";
 import HelpModal from "./components/modals/HelpModal.vue";
 import HintLayer from "./components/help/HintLayer.vue";
+import TooltipLayer from "./components/common/TooltipLayer.vue";
 import { missingHelpTexts } from "./utils/helpCoverage";
 
 const router = useRouter();
@@ -36,6 +39,14 @@ const themeOverrides: GlobalThemeOverrides = {
     textColorBase: "#1C1B26",
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif",
+  },
+  // Tooltips in the light look, like the title tooltips (TooltipLayer)
+  Tooltip: {
+    color: "#FFFFFF",
+    textColor: "#1C1B26",
+    borderRadius: "8px",
+    padding: "6px 10px",
+    boxShadow: "0 0 0 1px rgba(28, 27, 38, 0.08), 0 8px 24px rgba(23, 20, 44, 0.14), 0 2px 6px rgba(23, 20, 44, 0.06)",
   },
 };
 

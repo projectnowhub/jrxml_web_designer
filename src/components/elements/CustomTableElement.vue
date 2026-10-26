@@ -61,6 +61,49 @@
         <div v-else :ref="(el) => setTextRef(v, el)" class="ct-text" :style="textStyle(v)">{{ v.cell.text }}</div>
       </div>
 
+      <!-- A single outline around the selected cells / chosen row / chosen column -->
+      <div
+        v-if="isEditing && selectedRect"
+        class="ct-selection-frame"
+        :style="{
+          gridColumn: `${selectedRect.left + 1} / ${selectedRect.right + 2}`,
+          gridRow: `${selectedRect.top + 1} / ${selectedRect.bottom + 2}`,
+        }"
+      />
+
+      <!-- Row and column handles while the table is open: a click chooses the
+           whole column / row (Shift+click several), right-click opens its menu -->
+      <template v-if="isEditing">
+        <div class="ct-handles is-cols" @mousedown.stop.prevent>
+          <button
+            v-for="(span, c) in columnSpans"
+            :key="`hc${c}`"
+            type="button"
+            class="ct-handle"
+            :class="{ 'is-on': wholeColumnChosen(c) }"
+            :style="{ left: `${span.start}%`, width: `${span.size}%` }"
+            :title="t('customTable.handles.column', { name: columnName(c) })"
+            :aria-label="t('customTable.handles.column', { name: columnName(c) })"
+            @mousedown.stop.prevent="chooseColumn($event, c)"
+            @contextmenu.prevent.stop="chooseColumn($event, c, true)"
+          >{{ columnName(c) }}</button>
+        </div>
+        <div class="ct-handles is-rows" @mousedown.stop.prevent>
+          <button
+            v-for="(span, r) in rowSpans"
+            :key="`hr${r}`"
+            type="button"
+            class="ct-handle"
+            :class="{ 'is-on': wholeRowChosen(r) }"
+            :style="{ top: `${span.start}%`, height: `${span.size}%` }"
+            :title="t('customTable.handles.row', { n: r + 1 })"
+            :aria-label="t('customTable.handles.row', { n: r + 1 })"
+            @mousedown.stop.prevent="chooseRow($event, r)"
+            @contextmenu.prevent.stop="chooseRow($event, r, true)"
+          >{{ r + 1 }}</button>
+        </div>
+      </template>
+
       <!-- Edges to drag: between columns, and under each row -->
       <template v-if="isEditing">
         <div
@@ -117,7 +160,10 @@
         @click="runMenu(item.id)"
       >
         <component :is="item.icon" :size="15" aria-hidden="true" />
-        <span>{{ item.label }}</span>
+        <span class="ct-menu-text">
+          <span>{{ item.label }}</span>
+          <small v-if="item.disabled && item.hint" class="ct-menu-hint">{{ item.hint }}</small>
+        </span>
       </button>
     </div>
   </Teleport>
@@ -133,15 +179,18 @@ import {
   ArrowRightToLine,
   ArrowUpToLine,
   Eraser,
+  Scissors,
   TableCellsMerge,
   TableCellsSplit,
   Trash2,
 } from '@lucide/vue';
 import BaseElement from './BaseElement.vue';
 import TextFormatToolbar from './TextFormatToolbar.vue';
-import { cleanEditorHtml, escapeHtml, hasFormatting, sanitizeHtml } from '../../utils/elementUtils';
+import { cleanEditorHtml, escapeHtml, hasFormatting, rgbToHex, sanitizeHtml } from '../../utils/elementUtils';
 import { useReportStore } from '@/stores/report';
 import { useSelectionStore } from '@/stores/selection';
+import notification from '@/utils/notification';
+import { canSplitTypedTable, splitTypedTable } from '@/utils/table/splitTypedTable';
 import { resolveReportFont } from '../../config/fonts.config';
 import {
   deleteColumns,
@@ -153,12 +202,13 @@ import {
   mergeCells,
   MIN_COLUMN_WIDTH,
   MIN_ROW_HEIGHT,
-  rectCellCount,
+  canMergeRect,
   selectionRect,
   splitCells,
   syncTableSize,
   TEXT_LINE_HEIGHT,
   cellPens,
+  columnName,
   customTableLook,
   resolveCell,
   visibleCells,
@@ -346,6 +396,53 @@ watch(
   },
 );
 
+// ---- Row and column handles ------------------------------------------------
+
+// Each column's / row's start and size as shares of the table (%), and the
+// lines between them, the outer edges included (where + inserts)
+const shares = (sizes: number[]) => {
+  const total = sizes.reduce((a, b) => a + b, 0) || 1;
+  let start = 0;
+  return sizes.map((s) => {
+    const span = { start: (start / total) * 100, size: (s / total) * 100 };
+    start += s;
+    return span;
+  });
+};
+const columnSpans = computed(() => shares(table.value.columns));
+const rowSpans = computed(() => shares(table.value.rows.map((r) => r.height)));
+
+const lastRow = () => table.value.rows.length - 1;
+const lastCol = () => table.value.columns.length - 1;
+const wholeColumnChosen = (c: number) => {
+  const r = selectedRect.value;
+  return !!r && r.top === 0 && r.bottom === lastRow() && c >= r.left && c <= r.right;
+};
+const wholeRowChosen = (row: number) => {
+  const r = selectedRect.value;
+  return !!r && r.left === 0 && r.right === lastCol() && row >= r.top && row <= r.bottom;
+};
+
+// A column handle: the whole column (Shift: from the chosen column to this one);
+// right-click also opens the menu
+function chooseColumn(event: MouseEvent, c: number, withMenu = false) {
+  commitEditor(false);
+  closeMenu();
+  rootRef.value?.focus();
+  const from = event.shiftKey && selection.value ? selection.value.anchor.col : c;
+  if (!(withMenu && wholeColumnChosen(c))) selectCells({ row: 0, col: from }, { row: lastRow(), col: c });
+  if (withMenu) openMenuAt(event);
+}
+
+function chooseRow(event: MouseEvent, row: number, withMenu = false) {
+  commitEditor(false);
+  closeMenu();
+  rootRef.value?.focus();
+  const from = event.shiftKey && selection.value ? selection.value.anchor.row : row;
+  if (!(withMenu && wholeRowChosen(row))) selectCells({ row: from, col: 0 }, { row, col: lastCol() });
+  if (withMenu) openMenuAt(event);
+}
+
 // ---- Selecting cells ---------------------------------------------------------
 
 // Kept inside the grid (an undo can make the table smaller)
@@ -491,6 +588,8 @@ function commitEditor(refocus = true) {
         cell.text = text;
         if (rich) cell.rich = true;
         else delete cell.rich;
+        // Typed over: no longer the column's sum
+        delete cell.sum;
       });
     }
   }
@@ -511,8 +610,26 @@ function onEditorBlur(event: FocusEvent) {
 // ---- Formatting toolbar ----
 
 const toolbarPosition = ref<{ x: number; y: number } | null>(null);
-const activeFormats = ref<Record<string, boolean>>({});
+const activeFormats = ref<Record<string, boolean | string | undefined>>({});
 let savedRange: Range | null = null;
+
+function getExplicitColor(node: Node | null, root: HTMLElement): string {
+  let curr: Node | null = node;
+  while (curr && curr !== root) {
+    if (curr.nodeType === Node.ELEMENT_NODE) {
+      const el = curr as HTMLElement;
+      if (el.tagName.toLowerCase() === 'font' && (el as HTMLFontElement).color) {
+        return (el as HTMLFontElement).color;
+      }
+      const color = el.style?.color;
+      if (color && color !== 'inherit') {
+        return color;
+      }
+    }
+    curr = curr.parentNode;
+  }
+  return '';
+}
 
 // Shown above the cell; the buttons reflect the text where the cursor is
 function updateToolbar() {
@@ -531,6 +648,24 @@ function updateToolbar() {
       return false;
     }
   };
+
+  let colorVal = '';
+  if (sel && sel.anchorNode && el.contains(sel.anchorNode)) {
+    colorVal = getExplicitColor(sel.anchorNode, el);
+    if (!colorVal && sel.focusNode) {
+      colorVal = getExplicitColor(sel.focusNode, el);
+    }
+  }
+  if (!colorVal && editor.value) {
+    const curCell = table.value.rows[editor.value.row]?.cells[editor.value.col];
+    const lookVal = customTableLook(table.value);
+    const rowStyle = resolveCell(table.value, lookVal, editor.value.row, { text: '' });
+    colorVal = curCell?.color || rowStyle.color || '';
+  }
+  if (colorVal) {
+    colorVal = rgbToHex(colorVal).toLowerCase();
+  }
+
   activeFormats.value = {
     bold: state('bold'),
     italic: state('italic'),
@@ -540,6 +675,7 @@ function updateToolbar() {
     subscript: state('subscript'),
     bulletList: state('insertUnorderedList'),
     numberedList: state('insertOrderedList'),
+    color: colorVal || undefined,
   };
 }
 
@@ -625,6 +761,12 @@ function onGridKeyDown(event: KeyboardEvent) {
     emit('finishEditing');
     return;
   }
+  // Ctrl / Cmd + A: every cell (to style them all at once)
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a' && !event.altKey) {
+    handled();
+    selectCells({ row: 0, col: 0 }, { row: lastRow(), col: lastCol() });
+    return;
+  }
   if (!sel) return;
   const arrows: Record<string, [number, number]> = {
     ArrowUp: [-1, 0],
@@ -670,6 +812,7 @@ function clearSelectedText() {
       targets.forEach((v) => {
         v.cell.text = '';
         delete v.cell.rich;
+        delete v.cell.sum;
       }),
     );
   }
@@ -758,6 +901,7 @@ type MenuId =
   | 'deleteCols'
   | 'merge'
   | 'split'
+  | 'splitTable'
   | 'clear';
 
 const menu = ref<{ x: number; y: number } | null>(null);
@@ -778,10 +922,14 @@ function onCellContextMenu(event: MouseEvent, v: VisibleCell) {
   event.stopPropagation();
   commitEditor(false);
   if (!inSelection(v)) selectCells({ row: v.row, col: v.col });
-  // Keep the menu inside the window
+  openMenuAt(event);
+}
+
+// Keep the menu inside the window
+function openMenuAt(event: MouseEvent) {
   menu.value = {
     x: Math.min(event.clientX, window.innerWidth - 220),
-    y: Math.min(event.clientY, window.innerHeight - 330),
+    y: Math.max(8, Math.min(event.clientY, window.innerHeight - 430)),
   };
   document.addEventListener('mousedown', onMenuOutside, true);
 }
@@ -790,7 +938,7 @@ const menuItems = computed(() => {
   const rect = selectedRect.value;
   const rows = rect ? rect.bottom - rect.top + 1 : 1;
   const cols = rect ? rect.right - rect.left + 1 : 1;
-  const items: { id: MenuId; label: string; icon: Component; disabled?: boolean; divider?: boolean }[] = [
+  const items: { id: MenuId; label: string; icon: Component; disabled?: boolean; divider?: boolean; hint?: string }[] = [
     { id: 'rowAbove', label: t('customTable.menu.rowAbove'), icon: ArrowUpToLine },
     { id: 'rowBelow', label: t('customTable.menu.rowBelow'), icon: ArrowDownToLine },
     { id: 'colLeft', label: t('customTable.menu.colLeft'), icon: ArrowLeftToLine },
@@ -813,7 +961,7 @@ const menuItems = computed(() => {
       label: t('customTable.menu.merge'),
       icon: TableCellsMerge,
       divider: true,
-      disabled: !rect || rectCellCount(table.value, rect) < 2,
+      disabled: !rect || !canMergeRect(table.value, rect),
     },
     {
       id: 'split',
@@ -822,9 +970,26 @@ const menuItems = computed(() => {
       disabled: !rect || !hasMergedCells(table.value, rect),
     },
     { id: 'clear', label: t('customTable.menu.clear'), icon: Eraser, divider: true },
+    {
+      id: 'splitTable',
+      label: t('customTable.menu.splitTable'),
+      icon: Scissors,
+      divider: true,
+      disabled: !rect || !canSplitTypedTable(props.element, rect.top),
+      // Why it can't split here
+      hint: t('customTable.splitCant', { row: table.value.headerRows + 2 }),
+    },
   ];
   return items;
 });
+
+// The rows from `at` on go to a new table on a new page after this one
+function splitHere(at: number) {
+  const moved = splitTypedTable(props.element, at);
+  if (!moved) return;
+  emit('finishEditing');
+  notification.success(t('customTable.splitDone', { row: at + 1, page: (moved.pageIndex ?? 0) + 1 }));
+}
 
 function runMenu(id: MenuId) {
   const rect = selectedRect.value;
@@ -866,6 +1031,9 @@ function runMenu(id: MenuId) {
     case 'clear':
       clearSelectedText();
       break;
+    case 'splitTable':
+      splitHere(rect.top);
+      return;
   }
   nextTick(() => rootRef.value?.focus());
 }
@@ -904,9 +1072,17 @@ function runMenu(id: MenuId) {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(100, 64, 244, 0.16);
-  box-shadow: inset 0 0 0 1px rgba(100, 64, 244, 0.7);
+  background: rgba(100, 64, 244, 0.08);
   pointer-events: none;
+}
+
+/* One outline around the selected cells / chosen row / chosen column */
+.ct-selection-frame {
+  position: relative;
+  pointer-events: none;
+  z-index: 2;
+  border: 2px solid #6440f4;
+  box-sizing: border-box;
 }
 
 .ct-editor {
@@ -942,6 +1118,78 @@ function runMenu(id: MenuId) {
 .ct-rich :deep(sub) {
   font-size: 0.7em;
   line-height: 0;
+}
+
+.ct-menu-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ct-menu-hint {
+  max-width: 190px;
+  margin-top: 2px;
+  font-size: 10.5px;
+  line-height: 1.3;
+  white-space: normal;
+  color: #9ca3af;
+}
+
+/* Row and column handles, just outside the table */
+.ct-handles {
+  position: absolute;
+  z-index: 3;
+}
+
+.ct-handles.is-cols {
+  left: 0;
+  right: 0;
+  top: -14px;
+  height: 11px;
+}
+
+.ct-handles.is-rows {
+  top: 0;
+  bottom: 0;
+  left: -14px;
+  width: 11px;
+}
+
+.ct-handle {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 2px;
+  background: #f8fafc;
+  color: #94a3b8;
+  font: 500 8px/1 sans-serif;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.is-cols .ct-handle {
+  top: 0;
+  bottom: 0;
+}
+
+.is-rows .ct-handle {
+  left: 0;
+  right: 0;
+}
+
+.ct-handle:hover {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.ct-handle.is-on {
+  border-color: #6440f4;
+  background: #6440f4;
+  color: #ffffff;
 }
 
 .ct-col-edge,

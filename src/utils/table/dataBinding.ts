@@ -2,7 +2,7 @@
 // generator/parser and the preview. Each table on a report has its own
 // TableDataBinding, so several tables can use the same source independently.
 
-import type { DataQuery, RelativePeriod, TableDataBinding, TableFilter } from "@/types/dataSource";
+import type { DataQuery, RelativePeriod, TableDataBinding, TableFilter, TableHighlight } from "@/types/dataSource";
 import { normalizeLook } from "./tableThemes";
 
 // JRXML property on the table's <reportElement> holding its TableDataBinding
@@ -119,6 +119,19 @@ export function serializeBinding(binding: TableDataBinding): string {
   return JSON.stringify(binding);
 }
 
+// Highlight rules as saved; unreadable ones are left out
+function readHighlights(value: unknown): TableHighlight[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const rules = value.filter(
+    (r): r is TableHighlight =>
+      !!r &&
+      typeof r.column === "string" &&
+      ["in", "between", "past", "future"].includes(r.operator) &&
+      (r.scope === "row" || r.scope === "cell"),
+  );
+  return rules.length ? rules : undefined;
+}
+
 // Reads a saved binding back; anything unreadable gives null (an unlinked table)
 export function parseBinding(json: string | null | undefined): TableDataBinding | null {
   if (!json) return null;
@@ -148,7 +161,8 @@ export function parseBinding(json: string | null | undefined): TableDataBinding 
       showTotals: b.showTotals === true,
       theme: typeof b.theme === "string" && b.theme ? b.theme : "corporateBlue",
       look: b.look && typeof b.look === "object" ? normalizeLook(b.look) : undefined,
-      customized: b.customized === true,
+      customized: b.customized === true || undefined,
+      highlights: readHighlights(b.highlights),
     };
   } catch {
     return null;

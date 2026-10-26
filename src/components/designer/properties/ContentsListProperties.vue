@@ -1221,12 +1221,8 @@ function setColor(key: keyof Pick<ContentsListData, "color" | "numberFill">, val
 
 .color-with-clear {
   display: flex;
+  align-items: center;
   gap: 4px;
-}
-
-.color-with-clear > :first-child {
-  flex: 1;
-  min-width: 0;
 }
 .card-head {
   display: flex;
