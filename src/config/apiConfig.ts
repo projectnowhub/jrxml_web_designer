@@ -5,7 +5,7 @@ export const API_BASE_URL: string = (import.meta.env.VITE_API_BASE_URL || "").re
 export const API_ROUTES = {
   authorize: "/oauth2/authorize",
   token: "/oauth2/token",
-  currentUser: "/v1/user/me",
+  currentUser: "/v2/user/me",
   logout: "/logout",
   files: "/rest/files",
   reportServer: "/v2",
