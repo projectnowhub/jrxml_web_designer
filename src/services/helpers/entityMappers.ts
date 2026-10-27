@@ -29,6 +29,8 @@ function toColumnType(dataType: string): DataColumnType {
   return "text";
 }
 
+const BOOLEAN_TYPES = new Set(["boolean", "bool"]);
+
 const isLinkField = (field: EntityFieldMetadata) => field.dataType.toUpperCase() === "ENTITY";
 
 // A field a table column can show: one value per row (a link to another
@@ -47,6 +49,7 @@ const toDataColumn = (field: EntityFieldMetadata, userDefined: boolean): DataCol
   ...(field.enumValues?.length && !isLinkField(field)
     ? { choices: field.enumValues.map((value) => ({ value: storedEnumValue(value), label: enumLabel(value) })) }
     : {}),
+  ...(BOOLEAN_TYPES.has(field.dataType.toLowerCase()) ? { yesNo: true } : {}),
 });
 
 // Base fields first, then the tenant's own (user-defined) ones, each in the backend's order
@@ -80,8 +83,6 @@ export const toSourceSchema = (entity: EntityMetadata, columnOrder: readonly str
   entityName: entity.entityName,
   columns: orderColumns(entityColumns(entity), columnOrder),
 });
-
-const BOOLEAN_TYPES = new Set(["boolean", "bool"]);
 
 // An ENUM value as stored (and filtered on): the metadata writes it as the
 // Java name ("Construction_Permit", "open"), records hold it in capitals

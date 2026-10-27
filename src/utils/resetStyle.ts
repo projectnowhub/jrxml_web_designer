@@ -87,6 +87,7 @@ export function resetElementStyle(element: DesignElement, options: ResetOptions 
       if (el.binding) {
         el.binding.palette = DEFAULT_CHART_PALETTE;
         el.binding.showLegend = true;
+        delete el.binding.colors;
       }
       break;
     case "table":

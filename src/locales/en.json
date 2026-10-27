@@ -2202,6 +2202,12 @@
     "chartTitlePlaceholder": "e.g. Sales by region",
     "showLegend": "Show legend",
     "colors": "Colors",
+    "note": "Description",
+    "notePlaceholder": "e.g. Inspections each month, by type",
+    "ownColors": "Colour of each value",
+    "ownColorsHint": "Set up the chart's data first: then each value it shows can get a colour of its own.",
+    "useSetColor": "Back to the colour set's colour",
+    "useSetColors": "Use the colour set for all",
     "groups": {
       "metric": "Track one number",
       "trend": "Show a trend",
@@ -2241,6 +2247,9 @@
     "noData": "No data",
     "blank": "(Blank)",
     "other": "Other",
+    "yes": "Yes",
+    "no": "No",
+    "titles": {"by": "{measure} by {field}", "byPair": "{first} by {second}", "splitBy": "{measure}, split by {field}", "and": "&", "andNMore": "{first} & {count} more", "totalRecords": "Total Records", "records": "Records", "treemap": "Tree Map", "aggregations": {"sum": "Sum", "avg": "Avg", "min": "Min", "max": "Max"}},
     "quarterLabel": "Q{quarter} {year}",
     "measures": {
       "countOf": "Count",
@@ -2282,6 +2291,8 @@
       "groups": "Groups",
       "items": "Items in each group",
       "chooseColumn": "Choose a column",
+      "otherColumns": "Other columns (many different values)",
+      "cantGroup": "{name} (can't group by)",
       "groupDatesBy": "Group dates",
       "noTextColumns": "This source has no columns to group by.",
       "noDateColumns": "This source has no date column. Bar charts can compare other columns.",
@@ -3467,11 +3478,14 @@
           "Double-click the chart (or Set up data) to choose the project, the data and what to show, with a live preview.",
           "Until its data is set up, the chart shows sample numbers with a badge.",
           "Chart type changes the kind of chart and keeps its data.",
-          "Chart sets its title and legend; Colors picks the colour set."
+          "Chart sets its title, the description under it and the legend; Colors picks the colour set, and Colour of each value gives single values a colour of their own."
         ],
         "good": [
           "Only charts with their data set up print.",
-          "The numbers are fetched fresh every time the report runs."
+          "The numbers are fetched fresh every time the report runs.",
+          "For a register with a dashboard in ProjectNow CDP, the chart offers exactly that dashboard's fields: e.g. a QA/QC line chart starts on Planned Inspection Date by month, and One per can split it by Inspection Type.",
+          "Columns with a fixed list of values (like Status), yes / no columns and dates make the best categories. Bar, line and area charts show a list's values in its own order; pie, donut and tree map put the largest first.",
+          "Columns where almost every row is different (like Description) are listed under Other columns. Columns that link to another record (like Contract) can't be used as categories."
         ]
       },
       "tableOfContents": {
@@ -3736,11 +3750,16 @@
       },
       "chartData": {
         "title": "Data",
-        "text": "Where the numbers come from. Set up data (or Edit data) opens a window to choose the project, the data, what to count or add up, the categories and the filters."
+        "text": "Where the numbers come from. Set up data (or Edit data) opens a window to choose the project, the data, what to count or add up, the categories and the filters. The filters open with the columns the chart groups by and its dates; the fields button adds others. For a register that has a dashboard in ProjectNow CDP (QA/QC, Procurement, Risk, Issue, EOT, LAD, Compliance, Incident and the audits), the chart offers the same fields as the dashboard there, with the same names, and starts the same way."
       },
       "chartTitle": {
         "title": "Chart",
-        "text": "The chart's title, and whether it shows a legend."
+        "text": "The chart's title, a short description printed under the title in small grey letters, and whether it shows a legend. A new chart gets a title like the CDP dashboards' (e.g. Records by Planned Inspection Date) that you can change."
+      },
+      "chartOwnColors": {
+        "title": "Colour of each value",
+        "text": "Give a value its own colour, e.g. Delayed in red and Completed in green. It keeps that colour wherever it appears in the chart, also when the numbers change. Values you don't change keep the colour set's colours. The arrow puts a value back to the colour set.",
+        "example": "Status chart: Pending amber, In Progress blue, Completed green."
       },
       "chartColors": {
         "title": "Colors",
@@ -4018,5 +4037,116 @@
     "last": "Last page",
     "perPage": "Per page",
     "noRows": "No rows"
+  },
+  "chartFields": {
+    "cdp_ContractionComplianceRegister": {
+      "complianceItem": "Compliance Item",
+      "category": "Category",
+      "issuingAuthority": "Issuing Authority",
+      "status": "Status",
+      "depositAmount": "Deposit Amount",
+      "submissionDate": "Submission Date",
+      "expiryDate": "Expiry Date"
+    },
+    "cdp_EOTEntry": {
+      "claimId": "EOT Claim ID",
+      "submissionDate": "EOT Submission Date",
+      "status": "Status",
+      "causeCategory": "Contract Clause",
+      "responsibility": "Responsibility",
+      "daysRequested": "EOT Days Requested",
+      "daysApproved": "EOT Days Approved",
+      "claimAgeing": "EOT Claim Ageing (Days)",
+      "costImplication": "Cost Implication (RM)",
+      "revisedCompletionDate": "Revised Completion Date",
+      "approvalDate": "EOT Approval Date",
+      "impactOnCriticalPath": "Impact on Critical Path",
+      "linkedCostClaim": "Linked Loss and Expense",
+      "delayAnalysisMethod": "Delay Analysis Method"
+    },
+    "cdp_SHEIncidentRegister": {
+      "incidentId": "Incident ID",
+      "dateOfIncident": "Date of Incident",
+      "location": "Location",
+      "reportedBy": "Reported By",
+      "incidentType": "Incident Type",
+      "personResponsible": "Person Responsible",
+      "targetClosureDate": "Target Closure Date",
+      "dateClosed": "Date Closed",
+      "status": "Status",
+      "severityLevel": "Severity Level",
+      "injuryType": "Injury Type",
+      "lostTimeInjury": "Lost Time Injury",
+      "impactHours": "Impact Hours"
+    },
+    "cdp_IssueRegister": {
+      "raisedDate": "Raised Date",
+      "status": "Status",
+      "priority": "Priority",
+      "targetResolutionDate": "Target Resolution Date",
+      "costImpact": "Cost Impact"
+    },
+    "cdp_LADReport": {
+      "ladId": "Lad ID",
+      "contractTitle": "Contract Title",
+      "contractValue": "Contract Value",
+      "contractFinishDate": "Contract Finish Date",
+      "actualFinishDate": "Actual Finish Date",
+      "delayDuration": "Delay Days",
+      "deductionUnit": "Unit",
+      "deductionValue": "LAD % / Amount",
+      "dailyAmount": "LAD Per Day",
+      "potentialAmount": "Potential LAD Amount"
+    },
+    "cdp_ProcurementRegister": {
+      "packageOrItemCode": "Package / Item Code",
+      "itemName": "Item Name",
+      "supplier_name": "Supplier",
+      "needByDate": "Need-by Date",
+      "poDate": "PO Date",
+      "actualDelivery": "Actual Delivery",
+      "status": "Status",
+      "leadTime": "Lead Time (Days)",
+      "varianceDays": "Variance (Days)",
+      "budgetCost": "Budget Cost",
+      "poValue": "PO Value",
+      "cost": "Cost Variance"
+    },
+    "cdp_QaQcRegister": {
+      "qaQcReportNo": "Report No.",
+      "inspectionDate": "Planned Inspection Date",
+      "inspectionType": "Inspection Type",
+      "result": "Result",
+      "ncrStatus": "NCR Status",
+      "approvedBy": "Approved By",
+      "testConducted": "Test Conducted",
+      "remarks": "Remarks"
+    },
+    "cdp_QsheQualityStandardAudit": {
+      "inspectionDate": "Inspection Date",
+      "inspectedBy": "Inspected By",
+      "qlassicScore": "QLASSIC Score (%)",
+      "qsScore": "QS Score (%)",
+      "actualScore": "Actual Score (%)"
+    },
+    "cdp_RiskRegister": {
+      "riskCategory": "Risk Category",
+      "riskOwner": "Risk Owner",
+      "status": "Status",
+      "responseStrategy": "Response Strategy",
+      "riskRating": "Risk Rating",
+      "likelihood": "Likelihood (1–5)",
+      "consequence": "Consequence (1–5)",
+      "riskLevel": "Risk Level",
+      "finalRisk": "Final Risk Score",
+      "dateIdentified": "Date Identified",
+      "nextReviewDate": "Next Review Date"
+    },
+    "cdp_QsheSafetyHealthHousekeepingAudit": {
+      "inspectionDate": "Inspection Date",
+      "inspectedBy": "Inspected By",
+      "shhScore": "SHH Score (%)",
+      "actualScore": "Actual Score (%)"
+    }
   }
 }

@@ -56,6 +56,16 @@
             @change="update({ title: ($event.target as HTMLInputElement).value.trim() })"
           />
         </label>
+        <label class="field">
+          <span class="field-label">{{ t("chart.note") }}</span>
+          <input v-live-change
+            type="text"
+            :value="binding.note ?? ''"
+            :maxlength="MAX_CHART_NOTE"
+            :placeholder="t('chart.notePlaceholder')"
+            @change="setNote(($event.target as HTMLInputElement).value)"
+          />
+        </label>
         <label v-if="hasLegend" class="toggle-row">
           <input
             type="checkbox"
@@ -68,7 +78,8 @@
     </template>
 
     <!-- Style Settings: colours -->
-    <div v-else class="card">
+    <template v-else>
+    <div class="card">
       <h5>{{ t("chart.colors") }}<SettingHelpButton id="chartColors" /></h5>
       <SettingHelpText id="chartColors" />
       <div class="palette-list" role="radiogroup" :aria-label="t('chart.colors')">
@@ -89,6 +100,40 @@
         </button>
       </div>
     </div>
+
+    <!-- A colour of its own for some values, over the colour set -->
+    <div v-if="binding.chartType !== 'gauge'" class="card">
+      <h5>{{ t("chart.ownColors") }}<SettingHelpButton id="chartOwnColors" /></h5>
+      <SettingHelpText id="chartOwnColors" />
+      <template v-if="colorItems.length">
+        <ul class="own-colors">
+          <li v-for="item in colorItems" :key="item.key" class="own-color">
+            <ColorSwatchPicker
+              :model-value="item.color"
+              @update:model-value="setOwnColor(item.key, $event)"
+              @change="endColorEdit"
+            />
+            <span class="own-color-name" :title="item.name">{{ item.name }}</span>
+            <button
+              v-if="item.own"
+              type="button"
+              class="own-color-reset"
+              :title="t('chart.useSetColor')"
+              :aria-label="t('chart.useSetColor')"
+              @click="clearOwnColor(item.key)"
+            >
+              <RotateCcw :size="12" />
+            </button>
+          </li>
+        </ul>
+        <button v-if="hasOwnColors" type="button" class="data-btn" @click="clearAllOwnColors">
+          <RotateCcw :size="13" aria-hidden="true" />
+          {{ t("chart.useSetColors") }}
+        </button>
+      </template>
+      <p v-else class="form-hint is-top">{{ t("chart.ownColorsHint") }}</p>
+    </div>
+    </template>
   </div>
 </template>
 
@@ -99,11 +144,15 @@ import { useReportStore } from "@/stores/report";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ChartElement } from "../../../types";
-import { Database, SlidersHorizontal } from "@lucide/vue";
+import { Database, RotateCcw, SlidersHorizontal } from "@lucide/vue";
+import ColorSwatchPicker from "../../common/ColorSwatchPicker.vue";
+import { chartView } from "../../../utils/chart/chartImage";
+import { chartColorItems } from "../../../utils/chart/chartOption";
 import type { ChartBinding, ChartType } from "../../../types/dataSource";
 import {
   CHART_GROUPS,
   CHART_PALETTES,
+  MAX_CHART_NOTE,
   changeChartType,
   chartTypeInfo,
   chartTypesInGroup,
@@ -147,6 +196,43 @@ const update = (patch: Partial<ChartBinding>) => commit({ ...binding.value, ...p
 
 // Another type for the same data
 const setType = (chartType: ChartType) => commit(changeChartType(binding.value, chartType));
+
+const setNote = (value: string) => {
+  const note = value.replace(/\s+/g, " ").trim().slice(0, MAX_CHART_NOTE);
+  const { note: _old, ...rest } = binding.value;
+  commit(note ? { ...rest, note } : rest);
+};
+
+// ── A colour of its own per value (real numbers only) ──
+const colorItems = computed(() => {
+  void locale.value;
+  const view = chartView(props.element.binding);
+  return view.state === "ready" ? chartColorItems(view.binding, view.data) : [];
+});
+const hasOwnColors = computed(() => Object.keys(binding.value.colors ?? {}).length > 0);
+
+// One undo step per colour picked: a colour dragged in the picker is one change
+let editingColor: string | null = null;
+function setOwnColor(key: string, color: string) {
+  if (binding.value.colors?.[key] === color) return;
+  if (editingColor !== key) {
+    report.saveStateToHistory();
+    editingColor = key;
+  }
+  props.element.binding = { ...binding.value, colors: { ...binding.value.colors, [key]: color } };
+  report.updateJrxml();
+}
+function endColorEdit() {
+  editingColor = null;
+}
+function withoutColors(keys: string[]): ChartBinding {
+  const colors = { ...binding.value.colors };
+  keys.forEach((key) => delete colors[key]);
+  const { colors: _old, ...rest } = binding.value;
+  return Object.keys(colors).length ? { ...rest, colors } : rest;
+}
+const clearOwnColor = (key: string) => commit(withoutColors([key]));
+const clearAllOwnColors = () => commit(withoutColors(Object.keys(binding.value.colors ?? {})));
 </script>
 
 <style scoped>
@@ -159,6 +245,49 @@ const setType = (chartType: ChartType) => commit(changeChartType(binding.value, 
   border-radius: 10px;
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
+}
+
+.own-colors {
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.own-color {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.own-color-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: var(--prop-text-primary);
+}
+
+.own-color-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--prop-border, #e6e5ee);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--prop-text-secondary, #6b7280);
+  cursor: pointer;
+}
+
+.own-color-reset:hover {
+  color: #6440f4;
+  border-color: #6440f4;
 }
 
 .card h5 {

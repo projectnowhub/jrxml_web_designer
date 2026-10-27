@@ -15,7 +15,7 @@ export interface ChartTextSource {
 
 // The chart texts per language, straight from the locale files
 type Messages = Record<string, unknown>;
-const CHART_KEYS = ["measures", "blank", "quarterLabel", "other", "noData", "sample"] as const;
+const CHART_KEYS = ["measures", "blank", "quarterLabel", "other", "yes", "no", "noData", "sample"] as const;
 const pickChart = (chart: Messages) => Object.fromEntries(CHART_KEYS.map((k) => [k, chart[k]])) as Messages;
 
 export const CHART_TEXTS: Record<string, { tag: string; messages: Messages }> = {

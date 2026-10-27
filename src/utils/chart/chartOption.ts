@@ -72,12 +72,9 @@ function isEmpty(data: ChartData): boolean {
   }
 }
 
-// Bars of a single series: each category gets its own colour (the axis names them)
-const barsByCategory = (binding: ChartBinding, data: ChartData) =>
-  (binding.chartType === "bar" || binding.chartType === "barH") && data.kind === "series" && data.series.length === 1;
-
-const legendNames = (binding: ChartBinding, data: ChartData): string[] => {
-  if (barsByCategory(binding, data)) return [];
+// Lines and bars take one colour per series, as the CDP app's charts (a single
+// series of bars is all one colour, its legend the number's name)
+const legendNames = (_binding: ChartBinding, data: ChartData): string[] => {
   return data.kind === "series" ? data.series.map((s) => s.name) : data.kind === "parts" ? data.categories : [];
 };
 
@@ -91,8 +88,64 @@ function colorCount(binding: ChartBinding, data: ChartData): number {
     case "tree":
       return data.nodes.length;
     case "series":
-      return barsByCategory(binding, data) ? data.categories.length : data.series.length;
+      return data.series.length;
   }
+}
+
+// The colour key of each colour the chart draws, in colorCount's order
+// (none for sample numbers: their colours can't be changed)
+export const KPI_COLOR_KEY = "__single";
+function chartColorKeys(binding: ChartBinding, data: ChartData): (string | undefined)[] {
+  switch (data.kind) {
+    case "value":
+      return [KPI_COLOR_KEY];
+    case "parts":
+      return data.categories.map((_, i) => data.keys?.[i]);
+    case "tree":
+      return data.nodes.map((n) => n.key);
+    case "series":
+      return data.series.map((s) => s.key);
+  }
+}
+
+// The colours drawn: the colour set's, with the user's own over them
+function chartPaint(binding: ChartBinding, data: ChartData): string[] {
+  const keys = chartColorKeys(binding, data);
+  const base = chartColors(binding.palette, Math.max(1, colorCount(binding, data)));
+  return base.map((color, i) => {
+    const key = keys[i];
+    return (key !== undefined && binding.colors?.[key]) || color;
+  });
+}
+
+// What can get a colour of its own (Style Settings): each value's name, key,
+// the colour it is drawn in and whether that is the user's own. Empty for
+// sample numbers and for a gauge (its bands are fixed)
+export function chartColorItems(
+  binding: ChartBinding,
+  data: ChartData,
+): { key: string; name: string; color: string; own: boolean }[] {
+  if (binding.chartType === "gauge") return [];
+  const keys = chartColorKeys(binding, data);
+  const paint = chartPaint(binding, data);
+  const names =
+    data.kind === "value"
+      ? [data.label]
+      : data.kind === "parts"
+        ? data.categories
+        : data.kind === "tree"
+          ? data.nodes.map((n) => n.name)
+          : data.series.map((s) => s.name);
+  return keys.flatMap((key, i) =>
+    key === undefined ? [] : [{ key, name: names[i] ?? key, color: paint[i]!, own: !!binding.colors?.[key] }],
+  );
+}
+
+// Lines the description takes at this width (at most 3)
+const NOTE_LINE = LABEL_SIZE + 3;
+function noteLines(note: string, width: number): number {
+  const perLine = Math.max(10, Math.floor((width - 2 * PAD) / (LABEL_SIZE * 0.55)));
+  return Math.min(3, Math.max(1, Math.ceil(note.length / perLine)));
 }
 
 // Rows a legend needs at this width (each entry: marker, text, gap)
@@ -116,13 +169,16 @@ export function buildChartOption(
   ctx: ChartOptionContext,
 ): EChartsCoreOption {
   const { width, height } = ctx;
-  const colors = chartColors(binding.palette, Math.max(1, colorCount(binding, data)));
+  const colors = chartPaint(binding, data);
   const title = binding.title.trim();
+  const note = (binding.note ?? "").trim();
+  const noteHeight = note ? noteLines(note, width) * NOTE_LINE + 4 : 0;
   const names = legendNames(binding, data);
   const showLegend = chartTypeInfo(binding.chartType).hasLegend && binding.showLegend && names.length > 0;
 
-  // Plot area between the title and the legend
-  const plotTop = PAD + (title ? TITLE_SIZE + 8 : 0);
+  // Plot area between the title (with the description under it) and the legend
+  const titleHeight = title ? TITLE_SIZE + 4 : 0;
+  const plotTop = PAD + titleHeight + noteHeight + (title || note ? 4 : 0);
   const legendHeight = showLegend ? legendRows(names, width) * LEGEND_ROW : 0;
   const plotBottom = PAD + legendHeight;
   const plotHeight = Math.max(10, height - plotTop - plotBottom);
@@ -137,6 +193,22 @@ export function buildChartOption(
       left: "center",
       top: PAD,
       textStyle: { fontSize: TITLE_SIZE, fontWeight: 600, color: TEXT_COLOR },
+    });
+  }
+  // The description: small grey words under the title, as the CDP app shows a widget's
+  if (note) {
+    titles.push({
+      text: note,
+      left: "center",
+      top: PAD + titleHeight,
+      textStyle: {
+        fontSize: LABEL_SIZE,
+        fontWeight: 400,
+        color: MUTED_COLOR,
+        lineHeight: NOTE_LINE,
+        width: width - 2 * PAD,
+        overflow: "break",
+      },
     });
   }
 
@@ -157,8 +229,23 @@ export function buildChartOption(
     },
   };
 
-  // Dates: labels that would overlap are skipped, and the first and last stay
-  // inside the chart. Text: every category keeps its label, shortened to fit.
+  // Dates: every bucket keeps its label, as the CDP app's charts; slanted when
+  // they don't fit side by side, and only when even slanted they would touch
+  // is every second (third…) one left out. Text: every category keeps its
+  // label, shortened to fit.
+  const LABEL_SLANT = 40;
+  // A slanted label needs about this much room across, so labels never touch
+  const SLANTED_ACROSS = LABEL_SIZE * 1.8;
+  const labelSpacing = (categories: string[]) => plotWidth / Math.max(1, categories.length);
+  const longestLabel = (categories: string[]) => Math.max(0, ...categories.map((c) => c.length)) * LABEL_SIZE * 0.58;
+  const slantsDates = (categories: string[]) =>
+    binding.dimension?.type === "date" && longestLabel(categories) > labelSpacing(categories) - 4;
+  const dateLabels = (categories: string[], horizontal: boolean) => {
+    if (horizontal) return { hideOverlap: true };
+    if (!slantsDates(categories)) return { interval: 0, alignMinLabel: "left", alignMaxLabel: "right" };
+    const spacing = labelSpacing(categories);
+    return { interval: spacing >= SLANTED_ACROSS ? 0 : Math.ceil(SLANTED_ACROSS / spacing) - 1, rotate: LABEL_SLANT };
+  };
   const categoryAxis = (categories: string[], boundaryGap: boolean, horizontal = false) => ({
     type: "category",
     data: categories,
@@ -174,7 +261,7 @@ export function buildChartOption(
             overflow: "truncate",
             width: horizontal ? Math.max(30, width * 0.28) : Math.max(16, plotWidth / Math.max(1, categories.length) - 6),
           }
-        : { hideOverlap: true, ...(horizontal ? {} : { alignMinLabel: "left", alignMaxLabel: "right" }) }),
+        : dateLabels(categories, horizontal)),
     },
   });
   const valueAxis = {
@@ -193,6 +280,11 @@ export function buildChartOption(
     right: PAD + 4,
     containLabel: true,
   };
+  // Slanted date labels reach left of the first bucket: room for the first one
+  const gridFor = (categories: string[]) =>
+    slantsDates(categories)
+      ? { ...grid, left: PAD + Math.max(0, longestLabel(categories) * Math.cos((LABEL_SLANT * Math.PI) / 180) - labelSpacing(categories) / 2) }
+      : grid;
 
   // Nothing matched the filters: say so instead of drawing empty axes
   if (isEmpty(data)) {
@@ -280,7 +372,7 @@ export function buildChartOption(
     case "area": {
       if (data.kind !== "series") break;
       const isArea = binding.chartType === "area";
-      option.grid = grid;
+      option.grid = gridFor(data.categories);
       option.xAxis = categoryAxis(data.categories, false);
       option.yAxis = valueAxes(data.series);
       option.series = data.series.map((s) => ({
@@ -288,6 +380,8 @@ export function buildChartOption(
         name: s.name,
         data: s.values,
         yAxisIndex: s.axis ?? 0,
+        // Smooth lines with their points, as the CDP app's line charts
+        smooth: true,
         symbol: "circle",
         symbolSize: 4,
         lineStyle: { width: 2 },
@@ -301,17 +395,16 @@ export function buildChartOption(
     case "barH": {
       if (data.kind !== "series") break;
       const horizontal = binding.chartType === "barH";
-      option.grid = grid;
+      option.grid = horizontal ? grid : gridFor(data.categories);
       // Horizontal bars list the first category at the top
       option.xAxis = horizontal ? valueAxes(data.series) : categoryAxis(data.categories, true);
       option.yAxis = horizontal ? { ...categoryAxis(data.categories, true, true), inverse: true } : valueAxes(data.series);
-      const byCategory = barsByCategory(binding, data);
       option.series = data.series.map((s) => ({
         type: "bar",
         name: s.name,
-        data: byCategory ? s.values.map((value, i) => ({ value, itemStyle: { color: colors[i] } })) : s.values,
+        data: s.values,
         [horizontal ? "xAxisIndex" : "yAxisIndex"]: s.axis ?? 0,
-        barMaxWidth: 24,
+        barMaxWidth: 48,
         barGap: "20%",
         ...(binding.stacked ? { stack: `total${s.axis ?? 0}` } : {}),
         itemStyle: { borderRadius: binding.stacked ? 0 : horizontal ? [0, 2, 2, 0] : [2, 2, 0, 0] },

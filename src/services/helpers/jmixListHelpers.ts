@@ -2,7 +2,7 @@
 // read, the way cdp-fe-app's createJmixCrudService().list() does
 // (packages/core/api/src/jmix/createJmixCrudService.ts). No API calls here.
 //
-//   GET /v2/table/{entityName}?limit&offset&fetchPlanName&returnCount=true&dynamicAttributes&filter&sort
+//   GET /v2/table/{entityName}?limit&offset&fetchPlan&returnCount=true&dynamicAttributes&filter&sort
 // `filter` is a Jmix filter as JSON; `sort` is "name" or "-name" (descending),
 // comma-separated. The rows come back as a list (bare or wrapped as
 // { data, message, status }), the total of all matching rows in the
@@ -17,7 +17,7 @@ const toJmixSortParam = (sort: JmixSort[]): string =>
   sort.map((s) => `${s.desc ? "-" : ""}${s.id.replace("+", "")}`).join(",");
 
 // The query string of a list request. /v2/table names the fetch plan
-export function buildJmixListQuery(params: JmixListParams, fetchPlanParam = "fetchPlanName"): URLSearchParams {
+export function buildJmixListQuery(params: JmixListParams, fetchPlanParam = "fetchPlan"): URLSearchParams {
   const { limit = JMIX_PAGE_SIZE, offset = 0, filter, sort, fetchPlan, dynamicAttributes } = params;
   const query = new URLSearchParams({ limit: String(limit), offset: String(offset), returnCount: "true" });
   if (fetchPlan) query.set(fetchPlanParam, fetchPlan);

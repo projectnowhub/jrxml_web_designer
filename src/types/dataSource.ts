@@ -102,12 +102,28 @@ export interface DataColumn {
   // A choice field (ENUM): each stored value with the words it prints as
   // ("PENDING" → "Pending"), as the CDP app shows it
   choices?: ColumnChoice[];
+  // A yes / no field (its values print as Yes / No)
+  yesNo?: boolean;
 }
 
 // One value of a choice field: as stored, and as printed
 export interface ColumnChoice {
   value: string;
   label: string;
+}
+
+// One field of a CDP dashboard's field list (constants/chartFieldConstants.ts,
+// the CDP app's FieldManifestEntry without its label)
+export interface ChartFieldRule {
+  // Jmix property path ("status", "supplier.name")
+  key: string;
+  type: "date" | "enum" | "text" | "number" | "boolean";
+  // Can group the chart (X-axis / categories, split by, tree map levels)
+  groupBy: boolean;
+  // Can be added up (Sum / Avg / Min / Max)
+  measurable: boolean;
+  // Can filter the chart
+  filterable: boolean;
 }
 
 export interface DataSourceSchema {
@@ -346,6 +362,10 @@ export interface ChartDimension {
   type: DataColumnType;
   // Date columns only
   granularity?: DateGranularity;
+  // A choice field: its values' words, in the field's order (DataColumn.choices)
+  choices?: ColumnChoice[];
+  // A yes / no field: "true" / "false" print as Yes / No
+  yesNo?: boolean;
 }
 
 // One line or set of bars; split by a column it becomes one per value
@@ -364,6 +384,12 @@ export interface ChartBinding {
   title: string;
   showLegend: boolean;
   palette: ChartPaletteId;
+  // A colour of its own for some values, over the colour set ("#rrggbb" by
+  // colour key: a category / split value as stored, "series2", "__other__",
+  // "__blank__", "__single" for a KPI's number; chartColorKeys in chartOption.ts)
+  colors?: Record<string, string>;
+  // A short note printed under the chart (e.g. where the numbers come from)
+  note?: string;
   // Where the numbers come from
   projectId?: string;
   projectName?: string;

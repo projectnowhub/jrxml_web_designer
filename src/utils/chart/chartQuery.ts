@@ -110,6 +110,39 @@ export function measureLabel(measure: ChartMeasure): string {
     : t(`chart.measures.${measure.aggregation}Of`, { column: measure.columnLabel ?? measure.column ?? "" });
 }
 
+// ── A title to start with, worded as the CDP app's suggestTitle ──
+// ("Records by Planned Inspection Date"; the user can change it)
+const titleMeasure = (m: ChartMeasure) =>
+  m.aggregation === "count"
+    ? t("chart.titles.records")
+    : `${t(`chart.titles.aggregations.${m.aggregation}`)} ${m.columnLabel ?? m.column ?? ""}`.trim();
+
+export function suggestChartTitle(binding: ChartBinding): string {
+  const info = chartTypeInfo(binding.chartType);
+  if (info.shape === "tree") {
+    return binding.dimension && binding.level2
+      ? t("chart.titles.byPair", { first: binding.dimension.label, second: binding.level2.label })
+      : t("chart.titles.treemap");
+  }
+  if (info.shape === "value") {
+    const m = binding.measure ?? { aggregation: "count" as const };
+    return m.aggregation === "count" ? t("chart.titles.totalRecords") : titleMeasure(m);
+  }
+  let measure: string;
+  if (info.shape === "parts") {
+    measure = titleMeasure(binding.measure ?? { aggregation: "count" });
+  } else {
+    const blocks = (binding.series ?? []).map((s) =>
+      s.splitBy ? t("chart.titles.splitBy", { measure: titleMeasure(s.measure), field: s.splitBy.label }) : titleMeasure(s.measure),
+    );
+    measure =
+      blocks.length <= 2
+        ? blocks.join(` ${t("chart.titles.and")} `)
+        : t("chart.titles.andNMore", { first: blocks[0] ?? "", count: blocks.length - 1 });
+  }
+  return binding.dimension ? t("chart.titles.by", { measure, field: binding.dimension.label }) : measure;
+}
+
 // Sums and counts can be added up into "Other"; averages and extremes can't
 const isAdditive = (measure: ChartMeasure) => measure.aggregation === "count" || measure.aggregation === "sum";
 
@@ -149,9 +182,13 @@ function fillDateGaps(keys: string[], granularity: DateGranularity): string[] {
   return merged.slice(-MAX_DATE_BUCKETS);
 }
 
-// "Jan 2026", "Q1 2026", "7 Jan"…; other values as the backend labels them
+// "Jan 2026", "Q1 2026", "7 Jan"…; a choice field's words ("Pending"), Yes /
+// No; other values as the backend labels them
 export function categoryLabel(key: string | null, dimension: ChartDimension, label?: string | null): string {
   if (key === null || key === "") return t("chart.blank");
+  if (dimension.yesNo && /^(true|false)$/i.test(String(key))) return t(String(key).toLowerCase() === "true" ? "chart.yes" : "chart.no");
+  const choice = dimension.choices?.find((c) => c.value.toUpperCase() === String(key).toUpperCase());
+  if (choice) return choice.label;
   if (dimension.type !== "date") return label || key;
   const d = parseDay(key);
   if (Number.isNaN(d.getTime())) return key;
@@ -181,15 +218,40 @@ const labelsOf = (results: AggregateResult[]) => {
   return labels;
 };
 
-// Categories in order (dates by time, text by size), cut to the limit with the
-// rest added up as "Other", and each map's value per category
+// Colour keys (binding.colors): a value as stored, the empty one and "Other"
+export const BLANK_COLOR_KEY = "__blank__";
+export const OTHER_COLOR_KEY = "__other__";
+const colorKeyOf = (key: string | null) => (key === null || key === "" ? BLANK_COLOR_KEY : String(key));
+
+// Where a choice field's value comes in the field's own order (unknown values after)
+const choiceRank = (dimension: ChartDimension | undefined, key: string | null) => {
+  const i = dimension?.choices?.findIndex((c) => c.value.toUpperCase() === String(key).toUpperCase()) ?? -1;
+  return i < 0 ? Number.MAX_SAFE_INTEGER : i;
+};
+
+// Keys in a choice field's own order (Pending, In progress, Completed), as the
+// CDP app orders them; keys of other fields keep their order (the empty one last)
+function inFieldOrder(keys: (string | null)[], dimension: ChartDimension | undefined): (string | null)[] {
+  if (!dimension?.choices?.length) return keys;
+  return keys
+    .map((key, i) => ({ key, i }))
+    .sort((a, b) =>
+      a.key === null ? 1 : b.key === null ? -1 : choiceRank(dimension, a.key) - choiceRank(dimension, b.key) || a.i - b.i,
+    )
+    .map((k) => k.key);
+}
+
+// Categories in order (dates by time, text by size; a choice field in its own
+// order when fieldOrder: bars, lines, areas), cut to the limit (the largest)
+// with the rest added up as "Other", and each map's value per category
 function arrangeCategories(
   dimension: ChartDimension,
   maps: ValueMap[],
   additive: boolean,
   limit: number,
   backendLabels = new Map<string | null, string>(),
-): { labels: string[]; values: (number | null)[][] } {
+  fieldOrder = false,
+): { labels: string[]; values: (number | null)[][]; keys: string[] } {
   const allKeys = new Set<string | null>();
   maps.forEach((m) => m.forEach((_v, k) => allKeys.add(k)));
   const missing = additive ? 0 : null;
@@ -205,18 +267,25 @@ function arrangeCategories(
     keys = [...allKeys].sort((a, b) => (a === null ? 1 : b === null ? -1 : size(b) - size(a)));
   }
 
-  const labels = keys.map((k) => categoryLabel(k, dimension, backendLabels.get(k)));
-  let values = maps.map((m) => keys.map((k) => valueAt(m, k)));
+  // The largest ones are kept; then a choice field is put in its own order
+  let rest: (string | null)[] = [];
   if (dimension.type !== "date" && limit > 0 && keys.length > limit) {
-    labels.splice(limit);
-    values = maps.map((m, i) => {
-      const kept = values[i]!.slice(0, limit);
-      if (additive) kept.push(keys.slice(limit).reduce<number>((sum, k) => sum + (m.get(k) ?? 0), 0));
-      return kept;
-    });
-    if (additive) labels.push(t("chart.other"));
+    rest = keys.slice(limit);
+    keys = keys.slice(0, limit);
   }
-  return { labels, values };
+  if (fieldOrder) keys = inFieldOrder(keys, dimension);
+  const labels = keys.map((k) => categoryLabel(k, dimension, backendLabels.get(k)));
+  const values = maps.map((m) => {
+    const kept = keys.map((k) => valueAt(m, k));
+    if (rest.length && additive) kept.push(rest.reduce<number>((sum, k) => sum + (m.get(k) ?? 0), 0));
+    return kept;
+  });
+  const colorKeys = keys.map(colorKeyOf);
+  if (rest.length && additive) {
+    labels.push(t("chart.other"));
+    colorKeys.push(OTHER_COLOR_KEY);
+  }
+  return { labels, values, keys: colorKeys };
 }
 
 const limitOf = (binding: ChartBinding) => binding.limit ?? DEFAULT_CATEGORY_LIMIT;
@@ -230,18 +299,22 @@ export function mergeChartData(binding: ChartBinding, results: AggregateResult[]
       return { kind: "value", value: results[0]?.rows?.[0]?.value ?? results[0]?.totalValue ?? null, label: measureLabel(binding.measure!) };
 
     case "parts": {
-      const { labels, values } = arrangeCategories(
+      const { labels, values, keys } = arrangeCategories(
         binding.dimension!,
         [toMap(results[0]?.rows)],
         isAdditive(binding.measure!),
         limitOf(binding),
         labelsOf(results),
       );
-      return { kind: "parts", categories: labels, values: values[0] ?? [] };
+      return { kind: "parts", categories: labels, values: values[0] ?? [], keys };
     }
 
     case "series": {
-      const columns: { name: string; map: ValueMap; axis: 0 | 1 }[] = [];
+      const columns: { name: string; key: string; map: ValueMap; axis: 0 | 1 }[] = [];
+      // One series: its split values are its keys; several: "series2", "series2:PENDING"
+      const several = binding.series!.length > 1;
+      const seriesKey = (i: number, part?: string) =>
+        several ? `series${i + 1}${part === undefined ? "" : `:${part}`}` : part ?? `series${i + 1}`;
       // Series measuring something else than the first get their own scale
       const sameAs = (a: ChartMeasure, b: ChartMeasure) => a.aggregation === b.aggregation && a.column === b.column;
       const first = binding.series![0]!.measure;
@@ -250,20 +323,28 @@ export function mergeChartData(binding: ChartBinding, results: AggregateResult[]
         if (!result) return;
         const axis = sameAs(s.measure, first) ? 0 : 1;
         if (!s.splitBy || !result.series) {
-          columns.push({ name: measureLabel(s.measure), map: toMap(result.rows), axis });
+          columns.push({ name: measureLabel(s.measure), key: seriesKey(i), map: toMap(result.rows), axis });
           return;
         }
-        // One line or set of bars per split value, the largest first
+        // One line or set of bars per split value, in the order the backend
+        // sends them (as the CDP app, whose colours follow that order); with
+        // more than MAX_SPLIT_VALUES the largest are kept and the rest is "Other"
         const total = (rows: AggregateRow[]) => rows.reduce((sum, r) => sum + Math.abs(r.value ?? 0), 0);
         const parts = [...result.series].sort((a, b) => total(b.rows) - total(a.rows));
-        parts.slice(0, MAX_SPLIT_VALUES).forEach((part) =>
-          columns.push({ name: categoryLabel(part.key, s.splitBy!, part.label), map: toMap(part.rows), axis }),
+        const kept = new Set(parts.slice(0, MAX_SPLIT_VALUES));
+        result.series.filter((part) => kept.has(part)).forEach((part) =>
+          columns.push({
+            name: categoryLabel(part.key, s.splitBy!, part.label),
+            key: seriesKey(i, colorKeyOf(part.key)),
+            map: toMap(part.rows),
+            axis,
+          }),
         );
         const rest = parts.slice(MAX_SPLIT_VALUES);
         if (rest.length && isAdditive(s.measure)) {
           const other: ValueMap = new Map();
           rest.forEach((part) => part.rows.forEach((r) => other.set(r.key, (other.get(r.key) ?? 0) + (r.value ?? 0))));
-          columns.push({ name: t("chart.other"), map: other, axis });
+          columns.push({ name: t("chart.other"), key: seriesKey(i, OTHER_COLOR_KEY), map: other, axis });
         }
       });
       const additive = binding.series!.every((s) => isAdditive(s.measure));
@@ -273,11 +354,12 @@ export function mergeChartData(binding: ChartBinding, results: AggregateResult[]
         additive,
         limitOf(binding),
         labelsOf(results),
+        true,
       );
       return {
         kind: "series",
         categories: labels,
-        series: columns.map((c, i) => ({ name: c.name, values: values[i] ?? [], axis: c.axis })),
+        series: columns.map((c, i) => ({ name: c.name, key: c.key, values: values[i] ?? [], axis: c.axis })),
       };
     }
 
@@ -285,7 +367,12 @@ export function mergeChartData(binding: ChartBinding, results: AggregateResult[]
       const result = results[0];
       const groups = new Map<string | null, ChartTreeNode>();
       for (const row of result?.rows ?? []) {
-        groups.set(row.key, { name: categoryLabel(row.key, binding.dimension!, row.label), value: row.value ?? 0, children: [] });
+        groups.set(row.key, {
+          name: categoryLabel(row.key, binding.dimension!, row.label),
+          key: colorKeyOf(row.key),
+          value: row.value ?? 0,
+          children: [],
+        });
       }
       for (const part of result?.series ?? []) {
         const name = categoryLabel(part.key, binding.level2!, part.label);

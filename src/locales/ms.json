@@ -2201,6 +2201,12 @@
     "chartTitle": "Tajuk",
     "chartTitlePlaceholder": "cth. Jualan mengikut wilayah",
     "showLegend": "Tunjukkan petunjuk",
+    "note": "Penerangan",
+    "notePlaceholder": "cth. Pemeriksaan setiap bulan, mengikut jenis",
+    "ownColors": "Warna setiap nilai",
+    "ownColorsHint": "Sediakan data carta dahulu: kemudian setiap nilai yang ditunjukkannya boleh mendapat warnanya sendiri.",
+    "useSetColor": "Kembali kepada warna set warna",
+    "useSetColors": "Gunakan set warna untuk semua",
     "colors": "Warna",
     "groups": {
       "metric": "Jejak satu nombor",
@@ -2241,6 +2247,9 @@
     "noData": "Tiada data",
     "blank": "(Kosong)",
     "other": "Lain-lain",
+    "yes": "Ya",
+    "no": "Tidak",
+    "titles": {"by": "{measure} mengikut {field}", "byPair": "{first} mengikut {second}", "splitBy": "{measure}, dipisahkan mengikut {field}", "and": "&", "andNMore": "{first} & {count} lagi", "totalRecords": "Jumlah Rekod", "records": "Rekod", "treemap": "Peta Pokok", "aggregations": {"sum": "Jumlah", "avg": "Purata", "min": "Min", "max": "Maks"}},
     "quarterLabel": "S{quarter} {year}",
     "measures": {
       "countOf": "Bilangan",
@@ -2282,6 +2291,8 @@
       "groups": "Kumpulan",
       "items": "Item dalam setiap kumpulan",
       "chooseColumn": "Pilih lajur",
+      "otherColumns": "Lajur lain (banyak nilai berbeza)",
+      "cantGroup": "{name} (tidak boleh dikumpulkan)",
       "groupDatesBy": "Kumpulkan tarikh",
       "noTextColumns": "Sumber ini tiada lajur untuk dikumpulkan.",
       "noDateColumns": "Sumber ini tiada lajur tarikh. Carta bar boleh membandingkan lajur lain.",
@@ -3467,11 +3478,14 @@
           "Klik dua kali pada carta (atau Sediakan data) untuk memilih projek, data dan apa yang hendak ditunjukkan, dengan pratonton langsung.",
           "Sehingga datanya disediakan, carta menunjukkan angka contoh dengan lencana.",
           "Jenis carta menukar jenis carta dan mengekalkan datanya.",
-          "Carta menetapkan tajuk dan petunjuknya; Warna memilih set warna."
+          "Carta menetapkan tajuk, penerangan di bawahnya dan petunjuknya; Warna memilih set warna, dan Warna setiap nilai memberi nilai tertentu warnanya sendiri."
         ],
         "good": [
           "Hanya carta yang datanya telah disediakan akan dicetak.",
-          "Angkanya diambil semula setiap kali laporan dijalankan."
+          "Angkanya diambil semula setiap kali laporan dijalankan.",
+          "Bagi daftar yang mempunyai papan pemuka dalam ProjectNow CDP, carta menawarkan medan papan pemuka itu sahaja: cth. carta garis QA/QC bermula dengan Tarikh Pemeriksaan Dirancang mengikut bulan, dan Satu bagi setiap boleh memisahkannya mengikut Jenis Pemeriksaan.",
+          "Lajur dengan senarai nilai tetap (seperti Status), lajur ya / tidak dan tarikh paling sesuai sebagai kategori. Carta bar, garis dan kawasan menunjukkan nilai senarai mengikut susunannya sendiri; pai, donat dan peta pokok meletakkan yang terbesar dahulu.",
+          "Lajur yang hampir setiap barisnya berbeza (seperti Penerangan) disenaraikan di bawah Lajur lain. Lajur yang memaut kepada rekod lain (seperti Kontrak) tidak boleh digunakan sebagai kategori."
         ]
       },
       "tableOfContents": {
@@ -3736,11 +3750,16 @@
       },
       "chartData": {
         "title": "Data",
-        "text": "Dari mana angka datang. Sediakan data (atau Edit data) membuka tetingkap untuk memilih projek, data, apa yang hendak dikira atau dijumlahkan, kategori dan penapis."
+        "text": "Dari mana angka datang. Sediakan data (atau Edit data) membuka tetingkap untuk memilih projek, data, apa yang hendak dikira atau dijumlahkan, kategori dan penapis. Penapis dibuka dengan lajur yang dikumpulkan oleh carta dan tarikhnya; butang medan menambah yang lain. Bagi daftar yang mempunyai papan pemuka dalam ProjectNow CDP (QA/QC, Perolehan, Risiko, Isu, EOT, LAD, Pematuhan, Insiden dan audit), carta menawarkan medan yang sama seperti papan pemuka di sana, dengan nama yang sama, dan bermula dengan cara yang sama."
       },
       "chartTitle": {
         "title": "Carta",
-        "text": "Tajuk carta, dan sama ada ia memaparkan petunjuk."
+        "text": "Tajuk carta, penerangan pendek yang dicetak di bawah tajuk dalam huruf kelabu kecil, dan sama ada ia memaparkan petunjuk. Carta baharu mendapat tajuk seperti papan pemuka CDP (cth. Rekod mengikut Tarikh Pemeriksaan Dirancang) yang boleh anda ubah."
+      },
+      "chartOwnColors": {
+        "title": "Warna setiap nilai",
+        "text": "Beri sesuatu nilai warnanya sendiri, cth. Lewat dalam merah dan Selesai dalam hijau. Ia mengekalkan warna itu di mana-mana ia muncul dalam carta, juga apabila angka berubah. Nilai yang tidak anda ubah mengekalkan warna set warna. Anak panah mengembalikan nilai kepada set warna.",
+        "example": "Carta status: Belum Selesai kuning, Sedang Dijalankan biru, Selesai hijau."
       },
       "chartColors": {
         "title": "Warna",
@@ -4018,5 +4037,116 @@
     "last": "Halaman terakhir",
     "perPage": "Setiap halaman",
     "noRows": "Tiada baris"
+  },
+  "chartFields": {
+    "cdp_ContractionComplianceRegister": {
+      "complianceItem": "Item Pematuhan",
+      "category": "Kategori",
+      "issuingAuthority": "Pihak Berkuasa Pengeluar",
+      "status": "Status",
+      "depositAmount": "Jumlah Deposit",
+      "submissionDate": "Tarikh Penyerahan",
+      "expiryDate": "Tarikh Luput"
+    },
+    "cdp_EOTEntry": {
+      "claimId": "ID Tuntutan EOT",
+      "submissionDate": "Tarikh Penyerahan EOT",
+      "status": "Status",
+      "causeCategory": "Klausa Kontrak",
+      "responsibility": "Tanggungjawab",
+      "daysRequested": "Hari EOT Dipohon",
+      "daysApproved": "Hari EOT Diluluskan",
+      "claimAgeing": "Tempoh Tuntutan EOT (Hari)",
+      "costImplication": "Implikasi Kos (RM)",
+      "revisedCompletionDate": "Tarikh Siap Disemak Semula",
+      "approvalDate": "Tarikh Kelulusan EOT",
+      "impactOnCriticalPath": "Kesan Terhadap Laluan Kritikal",
+      "linkedCostClaim": "Kerugian dan Perbelanjaan Berkaitan",
+      "delayAnalysisMethod": "Kaedah Analisis Kelewatan"
+    },
+    "cdp_SHEIncidentRegister": {
+      "incidentId": "ID Insiden",
+      "dateOfIncident": "Tarikh Insiden",
+      "location": "Lokasi",
+      "reportedBy": "Dilaporkan Oleh",
+      "incidentType": "Jenis Insiden",
+      "personResponsible": "Orang Bertanggungjawab",
+      "targetClosureDate": "Sasaran Tarikh Penutupan",
+      "dateClosed": "Tarikh Ditutup",
+      "status": "Status",
+      "severityLevel": "Tahap Keterukan",
+      "injuryType": "Jenis Kecederaan",
+      "lostTimeInjury": "Kecederaan Kehilangan Masa",
+      "impactHours": "Jam Kesan"
+    },
+    "cdp_IssueRegister": {
+      "raisedDate": "Tarikh Dibangkitkan",
+      "status": "Status",
+      "priority": "Keutamaan",
+      "targetResolutionDate": "Sasaran Tarikh Penyelesaian",
+      "costImpact": "Kesan Kos"
+    },
+    "cdp_LADReport": {
+      "ladId": "ID LAD",
+      "contractTitle": "Tajuk Kontrak",
+      "contractValue": "Nilai Kontrak",
+      "contractFinishDate": "Tarikh Siap Kontrak",
+      "actualFinishDate": "Tarikh Siap Sebenar",
+      "delayDuration": "Hari Kelewatan",
+      "deductionUnit": "Unit",
+      "deductionValue": "LAD % / Jumlah",
+      "dailyAmount": "LAD Sehari",
+      "potentialAmount": "Jumlah LAD Berpotensi"
+    },
+    "cdp_ProcurementRegister": {
+      "packageOrItemCode": "Kod Pakej / Item",
+      "itemName": "Nama Item",
+      "supplier_name": "Pembekal",
+      "needByDate": "Tarikh Diperlukan",
+      "poDate": "Tarikh PO",
+      "actualDelivery": "Penghantaran Sebenar",
+      "status": "Status",
+      "leadTime": "Tempoh Penghantaran (Hari)",
+      "varianceDays": "Varians (Hari)",
+      "budgetCost": "Kos Belanjawan",
+      "poValue": "Nilai PO",
+      "cost": "Varians Kos"
+    },
+    "cdp_QaQcRegister": {
+      "qaQcReportNo": "No. Laporan",
+      "inspectionDate": "Tarikh Pemeriksaan Dirancang",
+      "inspectionType": "Jenis Pemeriksaan",
+      "result": "Keputusan",
+      "ncrStatus": "Status NCR",
+      "approvedBy": "Diluluskan Oleh",
+      "testConducted": "Ujian Dijalankan",
+      "remarks": "Catatan"
+    },
+    "cdp_QsheQualityStandardAudit": {
+      "inspectionDate": "Tarikh Pemeriksaan",
+      "inspectedBy": "Diperiksa Oleh",
+      "qlassicScore": "Skor QLASSIC (%)",
+      "qsScore": "Skor QS (%)",
+      "actualScore": "Skor Sebenar (%)"
+    },
+    "cdp_RiskRegister": {
+      "riskCategory": "Kategori Risiko",
+      "riskOwner": "Pemilik Risiko",
+      "status": "Status",
+      "responseStrategy": "Strategi Tindak Balas",
+      "riskRating": "Penarafan Risiko",
+      "likelihood": "Kebarangkalian (1–5)",
+      "consequence": "Akibat (1–5)",
+      "riskLevel": "Tahap Risiko",
+      "finalRisk": "Skor Risiko Akhir",
+      "dateIdentified": "Tarikh Dikenal Pasti",
+      "nextReviewDate": "Tarikh Semakan Seterusnya"
+    },
+    "cdp_QsheSafetyHealthHousekeepingAudit": {
+      "inspectionDate": "Tarikh Pemeriksaan",
+      "inspectedBy": "Diperiksa Oleh",
+      "shhScore": "Skor SHH (%)",
+      "actualScore": "Skor Sebenar (%)"
+    }
   }
 }

@@ -61,6 +61,8 @@ import { getProjectSummary } from "@/queries/projectQueries";
 import { useReportStore } from "@/stores/report";
 import { MAX_REPORT_PROJECTS } from "@/constants/constants";
 import { countProjectUsage } from "@/utils/projectFields";
+import { chartFieldLists } from "@/utils/chart/chartFields";
+import i18n from "@/i18n";
 import { applyGeometry } from "./basic";
 import { color, defined, has, readColor, textHeightFor } from "./common";
 import { SpecError, type ElementKind, type ElementSpec, type JsonSchema, type KindContext } from "./types";
@@ -662,21 +664,42 @@ export const dataTableKind: ElementKind = {
 // Chart
 // ---------------------------------------------------------------------------
 
+// A chart's column: for an entity with a CDP dashboard only the fields its
+// chart builder offers for that use (with the CDP names), else any column
+type ChartUse = "groupable" | "measurable" | "filterable";
+const CHART_USE_WORDS: Record<ChartUse, string> = { groupable: "group the chart by", measurable: "add up", filterable: "filter on" };
+function chartColumnOf(schema: DataSourceSchema, key: string, use: ChartUse, field: string): DataColumn {
+  const lists = chartFieldLists(schema, (k, fallback) => (i18n.global.te(k) ? String(i18n.global.t(k)) : fallback));
+  if (!lists) return column(schema, key, field);
+  const found = lists[use].find((c) => c.key === key);
+  if (!found) {
+    throw new SpecError(
+      `${field}: a chart of ${schema.name} can only ${CHART_USE_WORDS[use]} ${lists[use].map((c) => c.key).join(", ") || "nothing"} (as the CDP app's dashboard)`,
+    );
+  }
+  return found;
+}
+
 function dimensionOf(schema: DataSourceSchema, raw: { column: string; granularity?: string } | undefined, field: string): ChartDimension | undefined {
   if (!raw) return undefined;
-  const c = column(schema, raw.column, `${field}.column`);
+  const c = chartColumnOf(schema, raw.column, "groupable", `${field}.column`);
+  if (c.linked) {
+    throw new SpecError(`${field}.column: ${c.key} links to another record and can't be grouped by; use a choice, yes / no, date or text column`);
+  }
   return {
     column: c.key,
     label: c.label,
     type: c.type,
     ...(c.type === "date" ? { granularity: (raw.granularity as ChartDimension["granularity"]) ?? DEFAULT_GRANULARITY } : {}),
+    ...(c.choices?.length ? { choices: c.choices } : {}),
+    ...(c.yesNo ? { yesNo: true } : {}),
   };
 }
 
 function measureOf(schema: DataSourceSchema, raw: { aggregation: string; column?: string }, field: string): ChartMeasure {
   if (raw.aggregation === "count") return { aggregation: "count" };
   if (!raw.column) throw new SpecError(`${field}.column: "${raw.aggregation}" needs a number column`);
-  const c = column(schema, raw.column, `${field}.column`);
+  const c = chartColumnOf(schema, raw.column, "measurable", `${field}.column`);
   if (c.type !== "number" && c.type !== "currency") throw new SpecError(`${field}.column: ${c.key} is ${c.type}; use a number or amount column, or aggregation "count"`);
   return { aggregation: raw.aggregation as ChartMeasure["aggregation"], column: c.key, columnLabel: c.label };
 }
@@ -688,6 +711,17 @@ async function applyChart(element: ChartElement, spec: ElementSpec, ctx: KindCon
   if (has(spec, "title")) binding.title = String(spec.title);
   if (has(spec, "showLegend")) binding.showLegend = !!spec.showLegend;
   if (has(spec, "palette")) binding.palette = spec.palette;
+  if (has(spec, "note")) binding.note = String(spec.note ?? "");
+  if (has(spec, "colors")) {
+    const colors = (spec.colors ?? {}) as Record<string, unknown>;
+    for (const [key, color] of Object.entries(colors)) {
+      if (typeof color !== "string" || !/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(color)) {
+        throw new SpecError(`colors.${key}: "${String(color)}" is not a colour; use #rrggbb`);
+      }
+    }
+    // An empty object puts every value back to the colour set
+    binding.colors = Object.keys(colors).length ? (colors as Record<string, string>) : undefined;
+  }
 
   const data = spec.data as Record<string, any> | undefined;
   if (data) {
@@ -718,9 +752,16 @@ async function applyChart(element: ChartElement, spec: ElementSpec, ctx: KindCon
     }
     if (data.level2) binding.level2 = dimensionOf(schema, { column: data.level2 }, "data.level2");
     if (has(data, "stacked")) binding.stacked = !!data.stacked || undefined;
+    // Split bars are stacked unless asked otherwise, as the CDP app's
+    else if (data.splitBy && (binding.chartType === "bar" || binding.chartType === "barH")) binding.stacked = true;
     if (has(data, "limit")) binding.limit = data.limit;
     if (has(data, "gaugeMax")) binding.gaugeMax = data.gaugeMax || undefined;
-    if (has(data, "filters")) binding.filters = await readFilters(projectId, sourceId, schema, data.filters, "data.filters");
+    if (has(data, "filters")) {
+      (Array.isArray(data.filters) ? data.filters : []).forEach((f: { column?: string }, i: number) =>
+        chartColumnOf(schema, String(f?.column ?? ""), "filterable", `data.filters[${i}].column`),
+      );
+      binding.filters = await readFilters(projectId, sourceId, schema, data.filters, "data.filters");
+    }
     useProject(projectId, name);
   }
   element.binding = normalizeChartBinding(binding);
@@ -752,6 +793,13 @@ export const chartKind: ElementKind = {
     title: { type: "string", description: "Printed above the chart (empty for none)" },
     showLegend: { type: "boolean" },
     palette: { type: "string", enum: CHART_PALETTES.map((p) => p.id), description: "Colour set (default vivid)" },
+    colors: {
+      type: "object",
+      additionalProperties: { type: "string" },
+      description:
+        "A colour of its own (#rrggbb) for some values, over the colour set, e.g. { \"DELAYED\": \"#dc2626\", \"COMPLETED\": \"#16a34a\" }. Keys: a category or split-by value as stored (as get_report_data lists it; dates as their bucket's first day, yyyy-MM-dd); \"__other__\" for Other, \"__blank__\" for empty values, \"__single\" for a KPI's number; with several lines / sets of bars \"series2\" or \"series2:VALUE\". {} puts all back to the colour set. Not for gauges",
+    },
+    note: { type: "string", description: "A short note printed under the chart, e.g. where the numbers come from (at most 200 letters; empty for none)" },
     data: {
       type: "object",
       description: "What it shows",
@@ -774,7 +822,7 @@ export const chartKind: ElementKind = {
         },
         splitBy: { type: "string", description: "Line / area / bar: one line or bar set per value of this text column" },
         level2: { type: "string", description: "Tree map: text column for the items inside each group" },
-        stacked: { type: "boolean", description: "Bars / areas on top of each other" },
+        stacked: { type: "boolean", description: "Bars / areas on top of each other (split bars are stacked unless false)" },
         limit: { type: "integer", enum: CATEGORY_LIMITS, description: "Largest N text categories, the rest as \"Other\" (0: all)" },
         gaugeMax: { type: "number", minimum: 0, description: "Gauge: end of the scale" },
         filters: FILTERS_PROP,
@@ -799,6 +847,8 @@ export const chartKind: ElementKind = {
       title: b.title,
       showLegend: b.showLegend,
       palette: b.palette,
+      colors: b.colors,
+      note: b.note,
       data: b.projectId
         ? defined({
             projectId: b.projectId,

@@ -11,9 +11,9 @@ export const API_ROUTES = {
   reportServer: "/v2",
   analytics: "/v2/analytics/aggregate",
   table: "/v2/table",
-  projectList: "/rest/entities/cdp_Project",
+  projectList: "/v2/table/cdp_Project",
   entities: "/v2/entities",
-  propertiesConfig: "/rest/entities/cdp_PropertiesConfig",
+  propertiesConfig: "/v2/table/cdp_PropertiesConfig",
 } as const;
 
 export const apiUrl = (route: string) => `${API_BASE_URL}${route}`;

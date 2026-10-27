@@ -59,6 +59,7 @@ export type SettingId =
   | "chartData"
   | "chartTitle"
   | "chartColors"
+  | "chartOwnColors"
   | "barcodeType"
   | "barcodeValue"
   | "tableData"
@@ -236,7 +237,7 @@ export const DOC_PAGES: DocPage[] = [
     id: "chart",
     group: "basic",
     tile: "chart",
-    settings: ["positionSize", "chartType", "chartData", "chartTitle", "chartColors"],
+    settings: ["positionSize", "chartType", "chartData", "chartTitle", "chartColors", "chartOwnColors"],
     guides: ["chart"],
     sample: () => [{ ...buildChartElement(), uuid: crypto.randomUUID() } as DesignElement],
   },
