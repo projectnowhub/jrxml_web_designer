@@ -34,3 +34,17 @@ export const Entity = {
 } as const;
 
 export type Entity = (typeof Entity)[keyof typeof Entity];
+
+// Entities whose records belong to a contract, not straight to a project: their
+// project is reached through the contract, as the CDP app's payment, variation
+// order, final account and LAD lists filter them ('contract.project.id')
+const CONTRACT_ENTITIES: readonly string[] = [
+  Entity.PAYMENT,
+  Entity.VARIATION_ORDER,
+  Entity.FINAL_ACCOUNT,
+  Entity.LAD_REPORT,
+];
+
+// The property that holds an entity's project id in a Jmix filter
+export const projectPropertyOf = (entityName: string): string =>
+  CONTRACT_ENTITIES.includes(entityName) ? "contract.project.id" : "project.id";

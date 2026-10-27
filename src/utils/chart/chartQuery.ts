@@ -21,6 +21,7 @@ import type {
 import { isActiveFilter, resolveFilterDates } from "../table/dataBinding";
 import type { ChartData, ChartTreeNode } from "./chartData";
 import { DEFAULT_CATEGORY_LIMIT, DEFAULT_GRANULARITY, chartTypeInfo, isChartComplete } from "./chartTypes";
+import { projectPropertyOf } from "../../types/entity";
 
 // Values of a split column shown as their own line or bars; the rest are "Other"
 const MAX_SPLIT_VALUES = 6;
@@ -46,9 +47,6 @@ const GRANULARITIES: Record<DateGranularity, AggregateGranularity> = {
   quarter: "QUARTER",
   year: "YEAR",
 };
-
-// The report-wide filter: the chart's project, as the CDP app sends it
-export const PROJECT_PROPERTY = "project.id";
 
 // The chart's filters as a Jmix filter (moving date ranges as today's dates),
 // like the CDP app's buildJmixFilter: ticked values = "in", typed words =
@@ -89,12 +87,14 @@ const toDimension = (d: ChartDimension) => ({
 // type needs
 export function chartRequests(binding: ChartBinding, today = new Date()): AggregateRequest[] {
   if (!isChartComplete(binding)) return [];
+  const entityName = binding.entityName ?? binding.sourceId!;
   const base = {
-    entityName: binding.entityName ?? binding.sourceId!,
+    entityName,
     ...(binding.filters?.length ? { filter: toJmixFilter(binding.filters, today) } : {}),
     globalFilter: {
       group: "AND" as const,
-      conditions: [{ property: PROJECT_PROPERTY, operator: "=" as const, value: binding.projectId }],
+      // The chart's project, as the CDP app sends it ("contract.project.id" for contract records)
+      conditions: [{ property: projectPropertyOf(entityName), operator: "=" as const, value: binding.projectId }],
     },
   };
   if (!base.filter) delete base.filter;

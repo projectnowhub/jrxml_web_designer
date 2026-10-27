@@ -35,7 +35,7 @@ import apiClient, { unwrap } from "./apiClient";
 import { jmixList, type JmixListParams } from "./jmixService";
 import { API_ROUTES } from "@/config/apiConfig";
 import i18n from "@/i18n";
-import { Entity } from "@/types/entity";
+import { Entity, projectPropertyOf } from "@/types/entity";
 import { resolveFilterDates } from "@/utils/table/dataBinding";
 import type {
   AggregateRequest,
@@ -67,13 +67,21 @@ const ALL_ROWS = 1000;
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// The project's records only (its UUID; its own reference while projects
-// come without one, see projectKey in projectService.ts)
-const projectCondition = (projectId: string): JmixCondition => ({
-  property: UUID_PATTERN.test(projectId) ? "project.id" : "project.projectId",
-  operator: "in",
-  value: [projectId],
-});
+// The project's records only: by its UUID, through the contract for contract
+// records (payments, variation orders, final accounts, LAD), as the CDP app
+// filters them; a code-keyed project falls back to its own reference
+function projectCondition(entityName: string, projectId: string): JmixCondition {
+  const isUuid = UUID_PATTERN.test(projectId);
+  const property = projectPropertyOf(entityName);
+  const condition: JmixCondition = {
+    property: isUuid ? property : property.replace(/\.id$/, ".projectId"),
+    operator: "in",
+    value: [projectId],
+  };
+  // TEMP: check the project filter sent for table rows
+  console.log("[rows] project filter", entityName, condition, isUuid ? "" : "(not a UUID: project code sent)");
+  return condition;
+}
 
 // The table's filters as Jmix conditions (moving date ranges already turned into dates)
 function filterConditions(filters: TableFilter[]): JmixCondition[] {
@@ -124,7 +132,7 @@ async function queryRows(
   const params: JmixListParams = {
     limit: query.limit ?? ALL_ROWS,
     offset: 0,
-    filter: { group: "AND", conditions: [projectCondition(projectId), ...filterConditions(resolveFilterDates(query.filters))] },
+    filter: { group: "AND", conditions: [projectCondition(sourceId, projectId), ...filterConditions(resolveFilterDates(query.filters))] },
     sort: query.sort.length
       ? query.sort.map((s) => ({ id: s.column, desc: s.direction === "desc" }))
       : [{ id: "createdDate", desc: true }],
