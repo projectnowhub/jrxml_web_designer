@@ -418,7 +418,7 @@ import { useI18n } from "vue-i18n";
 import { exchangeCode, fetchUser, loginErrorQuery } from "../services/authService";
 import { closeTab } from "../utils/closeTab";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
-import { useColumnOrderStore } from "../stores/columnOrder";
+import { useUserSettingsStore } from "../stores/userSettings";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -485,8 +485,8 @@ onMounted(async () => {
     localStorage.setItem(AUTH_TOKEN_KEY, token);
     const user = await fetchUser();
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user ?? {}));
-    // The user's CDP table settings (column order), as the CDP app reads them at login
-    await useColumnOrderStore().syncFromServer();
+    // The user's default settings (Default Settings, Snap & grid)
+    await useUserSettingsStore().syncFromServer();
 
     window.history.replaceState({}, "", "/");
     await router.replace("/");

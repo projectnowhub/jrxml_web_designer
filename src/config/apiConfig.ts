@@ -13,7 +13,9 @@ export const API_ROUTES = {
   table: "/v2/table",
   projectList: "/v2/table/cdp_Project",
   entities: "/v2/entities",
+  // The user's saved settings (this app's default settings): read them, save one
   propertiesConfig: "/v2/table/cdp_PropertiesConfig",
+  propertiesConfigSave: "/v2/properties-config",
 } as const;
 
 export const apiUrl = (route: string) => `${API_BASE_URL}${route}`;

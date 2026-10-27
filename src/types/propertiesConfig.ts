@@ -1,56 +1,49 @@
-// The CDP app's saved settings (GET /rest/entities/cdp_PropertiesConfig): one
-// row per key, its value a text. A table's row (key "procurement-table-v2"…)
-// holds its grid state as JSON, written by the CDP app's grid (reaktiform
-// 1.2.17, PersistedGridState); copied field for field.
+// The user's saved settings (GET /v2/table/cdp_PropertiesConfig, PUT
+// /v2/properties-config): one row per app and key, its value a text. The CDP
+// app keeps its own there; this app's default settings are one row, appName
+// CDP_REPORT_STUDIO, key "user default settings" (constants/userSettingsConstants.ts),
+// its value the JSON below.
 
-// A row as cdp-fe-app's PropertiesConfigRow (packages/core/api/src/propertieconfig/types.ts)
+import type { ReportDefaults } from "@/utils/reportDefaults";
+
+// A row as cdp-fe-app's PropertiesConfigRow (packages/core/api/src/propertieconfig/types.ts),
+// plus the app it belongs to
 export interface PropertiesConfigRow {
   id: string;
   key: string;
   value: string;
+  appName?: string;
 }
 
-// ---- A table's grid state (reaktiform's PersistedGridState) ---------------------
+// What PUT /v2/properties-config takes
+export interface PropertiesConfigSave {
+  appName: string;
+  key: string;
+  value: string;
+}
 
-export type GridTextFilterValue = { type: "text"; value: string };
-export type GridNumberFilterValue = { type: "number"; min?: number; max?: number };
-export type GridDateFilterValue = { type: "date"; from?: string; to?: string };
-export type GridTimeFilterValue = { type: "time"; from?: string; to?: string };
-export type GridSelectFilterValue = { type: "select"; values: string[] };
-export type GridCheckboxFilterValue = { type: "checkbox"; value: boolean | null };
-export type GridFilterValue =
-  | GridTextFilterValue
-  | GridNumberFilterValue
-  | GridDateFilterValue
-  | GridTimeFilterValue
-  | GridSelectFilterValue
-  | GridCheckboxFilterValue;
-export type GridActiveFilters = Record<string, GridFilterValue>;
+// A section's height limits (Default Settings → Section Heights)
+export interface SectionHeightSetting {
+  min: number;
+  max: number;
+  defaultHeight?: number;
+}
 
-export type GridCFConditionOperator = "eq" | "neq" | "gt" | "lt" | "gte" | "lte" | "contains" | "in";
-export type GridCFCondition = { field: string; op: GridCFConditionOperator; value: string };
-export type GridCFRule = {
-  id: string;
-  label: string;
-  conditions: GridCFCondition[];
-  logic: "AND" | "OR";
-  backgroundColor: string;
-  textColor: string;
-  enabled: boolean;
-};
+// The header's Snap & grid switches
+export interface SnapAndGridSetting {
+  snapToGrid: boolean;
+  snapToAlignment: boolean;
+  showGrid: boolean;
+}
 
-export type GridPanelMode = "drawer" | "modal" | "page";
-
-export type PersistedGridState = {
+// The value of "user default settings": what the user set as their own;
+// a part left out means the app's original settings
+export interface UserDefaultSettings {
   version: number;
-  columnWidths: Record<string, number>;
-  hiddenColumns: string[];
-  pinnedColumns: string[];
-  // Column keys (fieldName; user-defined ones "+code"), left to right
-  columnOrder: string[];
-  activeFilters: GridActiveFilters;
-  aggregations: Record<string, string>;
-  cfRules: GridCFRule[];
-  editLocked: boolean;
-  panelMode?: GridPanelMode;
-};
+  // Default Settings (bottom panel): paper, margins, font, page sections
+  reportDefaults?: ReportDefaults;
+  // Default Settings (bottom panel): Section Heights
+  sectionHeights?: Record<string, SectionHeightSetting>;
+  // Header: Snap & grid
+  snapAndGrid?: SnapAndGridSetting;
+}

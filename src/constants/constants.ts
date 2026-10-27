@@ -249,6 +249,11 @@ export const DEFAULT_BAND_LIMITS: Record<string, { min: number; max: number }> =
 
 // Storage key and loader for user-configured global default band config
 export const GLOBAL_BAND_LIMITS_STORAGE_KEY = "jrxml_global_band_limits";
+// Default Settings (paper, margins, font, page sections) and the header's
+// Snap & grid switches, kept in this browser and saved with the user's account
+// (stores/userSettings.ts)
+export const REPORT_DEFAULTS_STORAGE_KEY = "designer.reportDefaults";
+export const SNAP_SETTINGS_STORAGE_KEY = "designerSnapSettings";
 
 export function getEffectiveDefaultBandConfig(): Record<
   string,

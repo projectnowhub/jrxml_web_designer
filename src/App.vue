@@ -18,10 +18,10 @@ import { onMounted, onUnmounted } from "vue";
 import { useRouter, RouterView } from "vue-router";
 import { NConfigProvider, type GlobalThemeOverrides } from "naive-ui";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
-import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "./services/apiClient";
+import { AUTH_TOKEN_KEY, AUTH_USER_KEY, getAccessToken } from "./services/apiClient";
+import { useUserSettingsStore } from "./stores/userSettings";
 import { fetchUser, loginErrorQuery } from "./services/authService";
 import { isDesktopApp } from "./utils/desktopApp";
-import { useColumnOrderStore } from "./stores/columnOrder";
 import GuidedTour from "./components/help/GuidedTour.vue";
 import HelpModal from "./components/modals/HelpModal.vue";
 import HintLayer from "./components/help/HintLayer.vue";
@@ -81,8 +81,8 @@ async function handleDeepLink(urls: string[]) {
         await router.replace({ path: "/login", query: loginErrorQuery(error) });
         return;
       }
-      // The user's CDP table settings (column order), as the CDP app reads them at login
-      await useColumnOrderStore().syncFromServer();
+      // The user's default settings (Default Settings, Snap & grid)
+      await useUserSettingsStore().syncFromServer();
 
       await router.replace("/");
       return;
@@ -105,6 +105,10 @@ if (import.meta.env.DEV) {
 }
 
 onMounted(async () => {
+  // Already signed in: the user's default settings, which may have changed on
+  // another computer (a new login reads them itself)
+  if (getAccessToken()) void useUserSettingsStore().syncFromServer();
+
   if (!isDesktopApp()) {
     return;
   }

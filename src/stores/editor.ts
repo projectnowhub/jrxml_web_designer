@@ -3,7 +3,8 @@
 import { defineStore } from "pinia";
 import { computed, ref, watch, type Ref } from "vue";
 import { useZoom } from "@/composables/useZoom";
-import { useSnapAlignment } from "@/composables/useSnapAlignment";
+import { loadSnapSettings, useSnapAlignment } from "@/composables/useSnapAlignment";
+import { useUserSettingsStore } from "./userSettings";
 import { PANEL_CONSTANTS, ZOOM_CONSTANTS } from "@/constants/constants";
 import { useReportStore } from "./report";
 
@@ -17,6 +18,17 @@ export const useEditorStore = defineStore("editor", () => {
 
   // Snap to grid / to other elements, show the grid; the guides being drawn
   const snap = useSnapAlignment();
+  // The user's saved settings arrived from the server (their account): follow them
+  const userSettings = useUserSettingsStore();
+  watch(
+    () => userSettings.version,
+    () => {
+      const saved = loadSnapSettings();
+      snap.enableSnapToGrid.value = saved.snapToGrid;
+      snap.enableSnapToAlignment.value = saved.snapToAlignment;
+      snap.showGrid.value = saved.showGrid;
+    },
+  );
 
   // An element or band is being dragged or resized (the model changes on
   // every mouse move; JRXML, history and auto-save wait for the end)

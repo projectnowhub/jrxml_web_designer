@@ -1,4 +1,6 @@
 import { ref, watch } from 'vue';
+import { SNAP_SETTINGS_STORAGE_KEY as STORAGE_KEY } from '@/constants/constants';
+import { useUserSettingsStore } from '@/stores/userSettings';
 
 // Guide lines shown while an element snaps, in the coordinates of one band on
 // one page sheet: x values are vertical lines, y values horizontal ones
@@ -9,8 +11,6 @@ export interface AlignmentGuideLines {
   y: number[];
 }
 
-const STORAGE_KEY = 'designerSnapSettings';
-
 interface SnapSettings {
   snapToGrid: boolean;
   snapToAlignment: boolean;
@@ -19,7 +19,8 @@ interface SnapSettings {
 
 const DEFAULTS: SnapSettings = { snapToGrid: true, snapToAlignment: true, showGrid: true };
 
-function loadSettings(): SnapSettings {
+// The switches as kept in this browser (also after the user's saved settings arrive)
+export function loadSnapSettings(): SnapSettings {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     return { ...DEFAULTS, ...(saved && typeof saved === 'object' ? saved : {}) };
@@ -28,9 +29,9 @@ function loadSettings(): SnapSettings {
   }
 }
 
-// Snap and grid toggles (remembered per browser) and the guides being shown
+// Snap and grid toggles (saved with the user's settings) and the guides being shown
 export function useSnapAlignment() {
-  const saved = loadSettings();
+  const saved = loadSnapSettings();
   const enableSnapToGrid = ref(saved.snapToGrid);
   const enableSnapToAlignment = ref(saved.snapToAlignment);
   const showGrid = ref(saved.showGrid);
@@ -44,6 +45,7 @@ export function useSnapAlignment() {
     } catch {
       // Storage unavailable: the toggles still work for this session
     }
+    useUserSettingsStore().saveLater();
   });
 
   const alignmentLines = ref<AlignmentGuideLines | null>(null);

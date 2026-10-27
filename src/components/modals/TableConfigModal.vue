@@ -262,7 +262,6 @@ import { TABLE_PAGE_SIZES, TABLE_ROWS_LIMIT } from "@/constants/reportDataConsta
 import { useTableTotals } from "@/composables/useTableRows";
 import { createBinding, evenColumnWidths, toColumnBinding, totalsFor } from "@/utils/table/dataTable";
 import { resolveLook } from "@/utils/table/tableThemes";
-import { useColumnOrderStore } from "@/stores/columnOrder";
 import type { TableElement } from "@/types";
 import type {
   DataColumnType,
@@ -326,10 +325,6 @@ const projectName = computed(
   () => projectOptions.value.find((p) => p.id === projectId.value)?.name ?? projectId.value,
 );
 const schema = ref<DataSourceSchema | null>(null);
-// The columns were reordered by a drag: kept in this browser on Apply (the
-// source's columns then come in that order; never sent back to the CDP app)
-const columnOrder = useColumnOrderStore();
-const reordered = ref(false);
 const loadError = ref(false);
 
 // The draft setup; nothing changes on the table until Apply
@@ -452,7 +447,6 @@ watch(
     if (!open) return;
     const current = props.table?.binding;
     schema.value = null;
-    reordered.value = false;
     if (current) {
       loadDraft(current);
     } else {
@@ -547,7 +541,6 @@ function onColumnDrop(event: DragEvent) {
   if (to !== from) {
     const [col] = columns.value.splice(from, 1);
     if (col) columns.value.splice(to, 0, col);
-    reordered.value = true;
   }
   endColumnDrag();
 }
@@ -691,13 +684,6 @@ const applyBlockedReason = computed(() => {
 
 function apply() {
   if (!draftBinding.value || applyBlockedReason.value) return;
-  if (reordered.value && schema.value) {
-    columnOrder.rememberTableOrder(
-      schema.value.id,
-      schema.value.columns.map((c) => c.key),
-      columns.value.map((c) => c.key),
-    );
-  }
   emit("apply", draftBinding.value, printedRowCount.value);
   emit("update:visible", false);
 }

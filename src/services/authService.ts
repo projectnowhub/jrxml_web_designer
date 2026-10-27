@@ -13,6 +13,7 @@ import type { AccessTokenClaims, AuthUser, LoginErrorQuery, LoginOptions, TokenR
 import { isDesktopApp } from "@/utils/desktopApp";
 import { queryClient } from "../queries/queryClient";
 import { forgetLastProject } from "../utils/lastProject";
+import { useUserSettingsStore } from "../stores/userSettings";
 
 export const login = async (options: LoginOptions = {}): Promise<void> => {
   const clientId = getClientId(AUTH_CONFIG.clientId);
@@ -128,6 +129,7 @@ export const logout = async (redirectTo = "/login"): Promise<void> => {
   // The next person to sign in never sees this one's projects or data
   queryClient.clear();
   forgetLastProject();
+  useUserSettingsStore().forgetSettings();
 
   const isTauri = isDesktopApp();
 

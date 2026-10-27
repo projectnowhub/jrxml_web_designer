@@ -405,6 +405,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { useReportStore } from "@/stores/report";
+import { useUserSettingsStore } from "@/stores/userSettings";
 import {
   ChevronDown,
   ChevronUp,
@@ -780,6 +781,7 @@ const autoSaveGlobalBandConfig = () => {
   } catch (e) {
     console.error("Failed to save default band config to localStorage:", e);
   }
+  userSettings.saveLater();
 };
 
 const resetBandLimitsToDefault = (notify: boolean | Event = true) => {
@@ -791,6 +793,7 @@ const resetBandLimitsToDefault = (notify: boolean | Event = true) => {
   } catch (e) {
     console.error("Failed to remove saved band limits from localStorage:", e);
   }
+  userSettings.saveLater();
   if (notify !== false) notification.success(t("defaultSettings.originalDone"));
 };
 
@@ -837,6 +840,16 @@ const applyGlobalDefaultsToCurrentTemplate = () => {
 // every change. "Apply to this report" copies one part into the open report
 // (one undo step; paper and margins refit the page).
 const defaults = ref<ReportDefaults>(loadReportDefaults());
+
+// The user's saved settings arrived from the server (their account): show them
+const userSettings = useUserSettingsStore();
+watch(
+  () => userSettings.version,
+  () => {
+    defaults.value = loadReportDefaults();
+    globalDefaultBandConfig.value = getEffectiveDefaultBandConfig();
+  },
+);
 const DEFAULT_CARDS = [
   { section: "paper", title: "templateSettings.paper" },
   { section: "margins", title: "bottomPanel.pageMargins" },

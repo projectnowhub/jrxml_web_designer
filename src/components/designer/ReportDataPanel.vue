@@ -272,7 +272,6 @@ import {
 import { useQueries, useQuery } from "@tanstack/vue-query";
 import { entitiesQuery, refreshReportData } from "@/queries/dataSourceQueries";
 import { toSourceSchema, toSourceSummary } from "@/services/helpers/entityMappers";
-import { useColumnOrderStore } from "@/stores/columnOrder";
 import { projectQuery } from "@/queries/projectQueries";
 import { toProjectDetails } from "@/services/helpers/projectMappers";
 import { endDataSourceDrag, startDataSourceDrag } from "@/utils/table/dataDrag";
@@ -363,14 +362,12 @@ const openSources = computed(() =>
     .filter((key) => expanded[key])
     .map((key) => key.split("/") as [string, string]),
 );
-// (they come with the table list, so they are there as soon as a table is),
-// in the user's column order from the CDP app
-const columnOrder = useColumnOrderStore();
+// (they come with the table list, so they are there as soon as a table is)
 const schemas = computed(() => {
   const byKey: Record<string, DataSourceSchema | undefined> = {};
   openSources.value.forEach(([projectId, sourceId]) => {
     const entity = entities.data.value?.find((e) => e.entityName === sourceId);
-    byKey[sourceKey(projectId, sourceId)] = entity ? toSourceSchema(entity, columnOrder.orderOf(sourceId)) : undefined;
+    byKey[sourceKey(projectId, sourceId)] = entity ? toSourceSchema(entity) : undefined;
   });
   return byKey;
 });
