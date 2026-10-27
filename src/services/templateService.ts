@@ -12,32 +12,10 @@
 
 import { readStoredFiles } from "@/composables/useDesignerFiles";
 import type { DesignerFile } from "@/types/designerFile";
+import type { TemplatePage, TemplateQuery, TemplateSummary } from "@/types/template";
 
-export type TemplateSort = "lastModified" | "createdAt" | "name";
-export type SortDirection = "asc" | "desc";
-
-export interface TemplateSummary {
-  id: string;
-  name: string;
-  createdAt: string;
-  lastModified: string;
-}
-
-export interface TemplatePage {
-  items: TemplateSummary[];
-  total: number;
-}
-
-export interface TemplateQuery {
-  page?: number;
-  size?: number;
-  q?: string;
-  sort?: TemplateSort;
-  dir?: SortDirection;
-}
-
-const iso = (value: unknown) => {
-  const time = new Date(value as string).getTime();
+const toIsoDate = (value: Date | string | undefined) => {
+  const time = new Date(value ?? 0).getTime();
   return new Date(Number.isNaN(time) ? 0 : time).toISOString();
 };
 
@@ -53,8 +31,8 @@ export async function listTemplates({
     .map((file) => ({
       id: file.id,
       name: file.name,
-      createdAt: iso(file.createdAt ?? file.lastModified),
-      lastModified: iso(file.lastModified ?? file.createdAt),
+      createdAt: toIsoDate(file.createdAt ?? file.lastModified),
+      lastModified: toIsoDate(file.lastModified ?? file.createdAt),
     }))
     .filter((item) => words.every((word) => item.name.toLowerCase().includes(word)));
 

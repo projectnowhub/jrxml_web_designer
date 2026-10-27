@@ -38,7 +38,7 @@ import { useI18n } from "vue-i18n";
 import { ArrowRight, Inbox } from "@lucide/vue";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
 import { useQuery } from "@tanstack/vue-query";
-import { templateListQuery } from "@/queries/templates";
+import { templateListQuery } from "@/queries/templateQueries";
 import TemplateGrid from "@/components/templates/TemplateGrid.vue";
 import { useHelpStore } from "../stores/help";
 

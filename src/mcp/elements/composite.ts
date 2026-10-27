@@ -96,7 +96,7 @@ import {
   type LocationSetup,
 } from "@/utils/location/locationElement";
 import { MAX_MAP_ZOOM, MIN_MAP_ZOOM } from "@/utils/location/locationMap";
-import { getProject } from "@/queries/projects";
+import { getProject } from "@/queries/projectQueries";
 
 const uuid = () => crypto.randomUUID();
 

@@ -38,9 +38,9 @@ import {
   nextTableName,
   createDatasetName,
   toDataQuery,
-  PREVIEW_ROW_LIMIT,
   RELATIVE_PERIODS,
 } from "@/utils/table/dataBinding";
+import { TABLE_ROWS_LIMIT } from "@/constants/reportDataConstants";
 import { tableHeight, TABLE_HEADER_HEIGHT, TABLE_ROW_HEIGHT } from "@/utils/table/dataTable";
 import { usedDatasetNames, usedTableNames } from "@/utils/table/tableDocument";
 import { buildChartElement } from "@/utils/chart/chartElement";
@@ -56,8 +56,8 @@ import {
   isChartComplete,
   normalizeChartBinding,
 } from "@/utils/chart/chartTypes";
-import { fetchFacets, fetchRows, fetchSchema } from "@/queries/dataSources";
-import { getProjectSummary } from "@/queries/projects";
+import { fetchFacets, fetchRows, fetchSchema } from "@/queries/dataSourceQueries";
+import { getProjectSummary } from "@/queries/projectQueries";
 import { useReportStore } from "@/stores/report";
 import { MAX_REPORT_PROJECTS } from "@/constants/constants";
 import { countProjectUsage } from "@/utils/projectFields";
@@ -547,7 +547,7 @@ async function applyDataTable(element: TableElement, spec: ElementSpec, ctx: Kin
   // As tall as the canvas shows it (header, up to 5 sample rows, totals)
   let rowCount = 1;
   try {
-    rowCount = (await fetchRows(projectId, sourceId, toDataQuery(binding, PREVIEW_ROW_LIMIT))).totalCount;
+    rowCount = (await fetchRows(projectId, sourceId, toDataQuery(binding, TABLE_ROWS_LIMIT))).totalCount;
   } catch {
     ctx.notes.push("rows could not be fetched now; they are fetched again on the page and in the PDF");
   }

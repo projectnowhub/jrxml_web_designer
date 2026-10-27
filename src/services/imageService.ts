@@ -1,12 +1,12 @@
 import apiClient, { ApiError } from "./apiClient";
 import { IMAGE_UPLOAD_API } from "@/config/apiConfig";
+import type { ApiResponse } from "@/types/api";
+import type { FileUploadResponse, ImageUploadErrorCode } from "@/types/fileUpload";
 
 export const MAX_IMAGE_SIZE_BYTES = 4 * 1024 * 1024;
 
 const ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/jpg"];
 const ALLOWED_EXTENSIONS = [".png", ".jpg", ".jpeg"];
-
-export type ImageUploadErrorCode = "INVALID_FORMAT" | "TOO_LARGE" | "UPLOAD_FAILED";
 
 // Translation keys (under "imageUpload") for each error; the UI shows t(messageKey, params)
 const ERROR_MESSAGE_KEYS: Record<ImageUploadErrorCode, string> = {
@@ -84,22 +84,11 @@ const readAsDataUrl = (file: File): Promise<string> =>
     reader.readAsDataURL(file);
   });
 
-// The files API answers { fileRef: "hetzner-s3://...", name, size }; plain URL shapes are also accepted
-const extractUrl = (body: unknown): string | null => {
+// The stored image's link from the upload answer (bare or wrapped in { data })
+const uploadedImageUrl = (body: ApiResponse<FileUploadResponse> | undefined): string | null => {
   if (!body || typeof body !== "object") return null;
-  const record = body as Record<string, unknown>;
-  const nested =
-    record.data && typeof record.data === "object"
-      ? (record.data as Record<string, unknown>)
-      : {};
-  const url =
-    record.fileRef ??
-    record.url ??
-    record.imageUrl ??
-    record.location ??
-    nested.fileRef ??
-    nested.url ??
-    nested.imageUrl;
+  const answer = "data" in body ? body.data : body;
+  const url = answer?.fileRef ?? answer?.url ?? answer?.imageUrl ?? answer?.location;
   return typeof url === "string" && url ? url : null;
 };
 
@@ -142,9 +131,9 @@ export async function uploadImage(file: File, signal?: AbortSignal): Promise<str
   const form = new FormData();
   form.append("file", file, file.name);
 
-  let body: unknown;
+  let body: ApiResponse<FileUploadResponse> | undefined;
   try {
-    body = await apiClient.post<unknown>(IMAGE_UPLOAD_API, form, { signal });
+    body = await apiClient.post<ApiResponse<FileUploadResponse>>(IMAGE_UPLOAD_API, form, { signal });
   } catch (error) {
     if (error instanceof ApiError && error.status === 413) {
       throw new ImageUploadError("TOO_LARGE", "Image is too large. Maximum size is 4 MB.");
@@ -155,7 +144,7 @@ export async function uploadImage(file: File, signal?: AbortSignal): Promise<str
     );
   }
 
-  const url = extractUrl(body);
+  const url = uploadedImageUrl(body);
   if (!url) {
     throw new ImageUploadError(
       "UPLOAD_FAILED",

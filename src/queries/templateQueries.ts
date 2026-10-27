@@ -4,9 +4,10 @@
 // invalidateTemplates, so every list on screen fetches again.
 
 import { infiniteQueryOptions, queryOptions } from "@tanstack/vue-query";
-import { getTemplate, listTemplates, type TemplateQuery } from "@/services/templateService";
+import { getTemplate, listTemplates } from "@/services/templateService";
+import type { TemplateQuery } from "@/types/template";
 import { queryClient } from "./queryClient";
-import { templateKeys } from "./keys";
+import { templateKeys } from "./queryKeys";
 
 // One page (the List view's pages, the home page's latest, the Open window)
 export const templateListQuery = (query: TemplateQuery) =>

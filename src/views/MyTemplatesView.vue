@@ -159,7 +159,7 @@
 // scroll) or as a table (List: pages of 25 / 50 / 100). The view, order, page
 // and the top bar's search are in the address (?view=list&sort=name&dir=asc
 // &page=2&q=…), so Back and reload keep the place. Pages come from
-// TanStack Query (queries/templates.ts): List = one page, Grid = an infinite
+// TanStack Query (queries/templateQueries.ts): List = one page, Grid = an infinite
 // list; saving a template invalidates them, so they fetch again.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/vue-query";
@@ -181,8 +181,8 @@ import {
 import { useTemplates } from "@/composables/useTemplates";
 import { useHelpStore } from "@/stores/help";
 import { AUTH_USER_KEY } from "@/services/apiClient";
-import type { SortDirection, TemplateSort, TemplateSummary } from "@/services/templateService";
-import { templateGridQuery, templateListQuery } from "@/queries/templates";
+import type { TemplateSortDirection, TemplateSort, TemplateSummary } from "@/types/template";
+import { templateGridQuery, templateListQuery } from "@/queries/templateQueries";
 import TemplateGrid from "@/components/templates/TemplateGrid.vue";
 import TemplateList from "@/components/templates/TemplateList.vue";
 
@@ -229,7 +229,7 @@ const sort = computed<TemplateSort>(() => {
   const asked = text(route.query.sort);
   return asked === "name" || asked === "createdAt" ? asked : "lastModified";
 });
-const dir = computed<SortDirection>(() => {
+const dir = computed<TemplateSortDirection>(() => {
   const asked = text(route.query.dir);
   if (asked === "asc" || asked === "desc") return asked;
   return sort.value === "name" ? "asc" : "desc";
@@ -267,7 +267,7 @@ function chooseSort(choice: string) {
 // A heading click sorts by it; a second click turns the order round. Names
 // start A–Z, dates newest first
 function sortByColumn(column: TemplateSort) {
-  const nextDir: SortDirection =
+  const nextDir: TemplateSortDirection =
     sort.value === column ? (dir.value === "asc" ? "desc" : "asc") : column === "name" ? "asc" : "desc";
   setQuery({ sort: column, dir: nextDir, page: undefined });
 }

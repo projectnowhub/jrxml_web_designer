@@ -202,8 +202,6 @@ export const useReportStore = defineStore("report", () => {
   // Bumped each time updateJrxml() writes a different JRXML: the designer
   // auto-saves on it (loading a file sets jrxmlContent without bumping it)
   const jrxmlVersion = ref(0);
-  // Goes up each time a report is opened (loadReport)
-  const loadedVersion = ref(0);
   let writing = false;
   const isWritingJrxml = () => writing;
 
@@ -295,7 +293,6 @@ export const useReportStore = defineStore("report", () => {
   // are repaired, and nothing is selected. The history starts empty, unless
   // keepHistory (applying edited JRXML is one undo step, recorded before).
   function loadReport(data: ReportData, options: { keepHistory?: boolean } = {}) {
-    loadedVersion.value++;
     const props = data.reportProperties ?? {};
     reportProperties.value = {
       ...newReportProperties(),
@@ -364,7 +361,6 @@ export const useReportStore = defineStore("report", () => {
     undo: history.undo,
     redo: history.redo,
     jrxmlVersion,
-    loadedVersion,
     bandTypes,
     setBandTypes,
     loadReport,

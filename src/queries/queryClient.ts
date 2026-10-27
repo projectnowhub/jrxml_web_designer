@@ -4,13 +4,14 @@
 // Components read through useQuery / useInfiniteQuery; code outside
 // components (the AI assistant, printing, the JRXML writer) through
 // queryClient.fetchQuery with the same query options, so both share one cache.
-// Keys come from queries/keys.ts only.
+// Keys come from queries/queryKeys.ts only.
 
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/vue-query";
 import { ApiError } from "@/services/apiClient";
+import type { ApiStatusDetail } from "@/types/api";
 
 // Not worth retrying: the request itself is wrong (4xx), or it was cancelled
-const isClientError = (error: unknown) =>
+const isClientError = (error: Error) =>
   error instanceof ApiError && error.status !== undefined && error.status >= 400 && error.status < 500;
 
 export const queryClient = new QueryClient({
@@ -44,7 +45,7 @@ export const queryClient = new QueryClient({
 // The session ended (the API client's 401, sent as the "api:status" event):
 // the cached data was that session's, so the next sign-in starts empty
 window.addEventListener("api:status", (event) => {
-  if ((event as CustomEvent<{ status: number }>).detail?.status === 401) queryClient.clear();
+  if ((event as CustomEvent<ApiStatusDetail>).detail?.status === 401) queryClient.clear();
 });
 
 // How long fetched data counts as fresh (the CDP app's project list: 5 minutes);

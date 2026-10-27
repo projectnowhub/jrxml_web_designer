@@ -7,32 +7,12 @@ import {
 } from "../utils/pkce";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import apiClient, { ApiError, AUTH_TOKEN_KEY, AUTH_USER_KEY, getAccessToken, getTenantId } from "./apiClient";
-import { AUTH_CONFIG, type AuthClientConfig } from "../config/auth.config";
+import { AUTH_CONFIG } from "../config/auth.config";
+import type { ApiErrorBody } from "@/types/api";
+import type { AccessTokenClaims, AuthUser, LoginErrorQuery, LoginOptions, TokenResponse } from "@/types/auth";
+import { isDesktopApp } from "@/utils/desktopApp";
 import { queryClient } from "../queries/queryClient";
 import { forgetLastProject } from "../utils/lastProject";
-
-export type AuthConfig = AuthClientConfig;
-
-export interface AuthUser {
-  id?: string;
-  email?: string;
-  name?: string;
-  username?: string;
-  [key: string]: unknown;
-}
-
-export interface TokenResponse {
-  access_token: string;
-  token_type?: string;
-  expires_in?: number;
-  refresh_token?: string;
-  scope?: string;
-  [key: string]: unknown;
-}
-
-export interface LoginOptions {
-  state?: string;
-}
 
 export const login = async (options: LoginOptions = {}): Promise<void> => {
   const clientId = getClientId(AUTH_CONFIG.clientId);
@@ -109,18 +89,18 @@ export class TenantSessionError extends Error {
 
 // What the login page is told about a failed sign-in (it shows the tenant
 // popup for a session in another tenant)
-export const loginErrorQuery = (error: unknown): Record<string, string> =>
+export const loginErrorQuery = (error: unknown): LoginErrorQuery =>
   error instanceof TenantSessionError
     ? { error: "tenantSession", sessionTenant: error.sessionTenant, appTenant: error.appTenant }
     : { error: "callback" };
 
 // The token's claims (its middle part), or null
-const tokenClaims = (token: string | null): Record<string, unknown> | null => {
+const tokenClaims = (token: string | null): AccessTokenClaims | null => {
   const payload = token?.split(".")[1];
   if (!payload) return null;
   try {
     const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-    return JSON.parse(atob(base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=")));
+    return JSON.parse(atob(base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "="))) as AccessTokenClaims;
   } catch {
     return null;
   }
@@ -131,7 +111,7 @@ const tokenClaims = (token: string | null): Record<string, unknown> | null => {
 const sessionTenantOf = async (error: unknown, token: string | null): Promise<string> => {
   if (error instanceof ApiError && error.response) {
     try {
-      const body = JSON.parse(await error.response.clone().text()) as Record<string, unknown>;
+      const body = JSON.parse(await error.response.clone().text()) as ApiErrorBody;
       const named = body.tenantId ?? body.tenant ?? body.sessionTenant;
       if (typeof named === "string" && named) return named;
     } catch {
@@ -149,13 +129,7 @@ export const logout = async (redirectTo = "/login"): Promise<void> => {
   queryClient.clear();
   forgetLastProject();
 
-  const isTauri = Boolean(
-    (
-      window as Window & {
-        __TAURI_INTERNALS__?: unknown;
-      }
-    ).__TAURI_INTERNALS__,
-  );
+  const isTauri = isDesktopApp();
 
   const target = isTauri
     ? "cdp-report-app://"

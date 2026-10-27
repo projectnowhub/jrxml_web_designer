@@ -268,10 +268,10 @@ import {
   Type,
 } from "@lucide/vue";
 import { useQueries, useQuery } from "@tanstack/vue-query";
-import { entitiesQuery, refreshReportData } from "@/queries/dataSources";
-import { toSourceSchema, toSourceSummary } from "@/services/entityService";
-import { projectQuery } from "@/queries/projects";
-import { toProjectDetails } from "@/services/projectService";
+import { entitiesQuery, refreshReportData } from "@/queries/dataSourceQueries";
+import { toSourceSchema, toSourceSummary } from "@/services/helpers/entityMappers";
+import { projectQuery } from "@/queries/projectQueries";
+import { toProjectDetails } from "@/services/helpers/projectMappers";
 import { endDataSourceDrag, startDataSourceDrag } from "@/utils/table/dataDrag";
 import { PLACE_FIELDS, toPlace } from "@/utils/location/locationElement";
 import { collectBoundTables } from "@/utils/table/tableDocument";

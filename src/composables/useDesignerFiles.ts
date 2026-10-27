@@ -1,7 +1,7 @@
 import { storeToRefs } from 'pinia';
 import type { DesignerFile } from '@/types/designerFile';
 import { useFilesStore } from '@/stores/files';
-import { invalidateTemplates } from '@/queries/templates';
+import { invalidateTemplates } from '@/queries/templateQueries';
 
 const STORAGE_KEYS = {
   FILES: 'pdfDesignerFiles',

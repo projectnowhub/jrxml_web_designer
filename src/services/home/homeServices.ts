@@ -1,5 +1,6 @@
 import apiClient from "../apiClient";
+import type { ReportVerifyResponse } from "@/types/template";
 
 export const getTemplates = async () => {
-  return await apiClient.get<{ isVerified?: boolean }>('rest/reports/report');
+  return await apiClient.get<ReportVerifyResponse>('rest/reports/report');
 };

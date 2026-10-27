@@ -109,7 +109,7 @@ import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useQueries } from "@tanstack/vue-query";
 import { Plus, Check, ChevronDown, FolderKanban, LoaderCircle, Search } from "@lucide/vue";
-import { matchesSearch, projectQuery, useProjectList } from "@/queries/projects";
+import { matchesSearch, projectQuery, useProjectList } from "@/queries/projectQueries";
 import { useVirtualList } from "@/composables/useVirtualList";
 import type { ProjectSummary, ReportProject } from "@/types/dataSource";
 import { MAX_REPORT_PROJECTS } from "@/constants/constants";
@@ -156,10 +156,8 @@ const chosen = useQueries({ queries: computed(() => props.projects.map((p) => pr
 
 // The template's chosen projects not on the loaded pages yet come first, so
 // the list shows them at once (after a refresh) while the rest loads
-// (a template saved while projects came without their UUID keeps the project's
-// code as its key: a loaded project with that code is the same one)
 const chosenFirst = computed<ProjectSummary[]>(() => {
-  const loaded = new Set(list.projects.value.flatMap((p) => [p.id, p.code]));
+  const loaded = new Set(list.projects.value.map((p) => p.id));
   return props.projects
     .map((p, i) => ({ id: p.id, name: p.name, code: chosen.value[i]?.data?.projectId ?? "" }))
     .filter((p) => !loaded.has(p.id) && matchesSearch(p, query.value));
@@ -252,9 +250,8 @@ function onKeydown(event: KeyboardEvent) {
   }
 }
 
-// Chosen: the template keeps its key, or (saved before projects had their UUID) its code
 const isChosen = (project: ProjectSummary | undefined) =>
-  !!project && props.projects.some((p) => p.id === project.id || (!!project.code && p.id === project.code));
+  !!project && props.projects.some((p) => p.id === project.id);
 
 // A project's code (e.g. KL-MRT3), or its name until the code is known
 const shortName = (project: ReportProject) =>
@@ -278,7 +275,7 @@ function choose(project: ProjectSummary | undefined) {
   }
   emit(
     "update-projects",
-    isChosen(project) ? props.projects.filter((p) => p.id !== project.id && p.id !== project.code) : [...props.projects, picked],
+    isChosen(project) ? props.projects.filter((p) => p.id !== project.id) : [...props.projects, picked],
   );
 }
 </script>

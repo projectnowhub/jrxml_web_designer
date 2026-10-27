@@ -89,8 +89,8 @@ import { useTemplates } from "@/composables/useTemplates";
 import { useFilesStore } from "@/stores/files";
 import type { DesignerFile } from "@/types/designerFile";
 import { useQuery } from "@tanstack/vue-query";
-import type { TemplateSummary } from "@/services/templateService";
-import { fetchTemplate, templateListQuery } from "@/queries/templates";
+import type { TemplateSummary } from "@/types/template";
+import { fetchTemplate, templateListQuery } from "@/queries/templateQueries";
 
 const props = defineProps<{ visible: boolean }>();
 const emit = defineEmits<{

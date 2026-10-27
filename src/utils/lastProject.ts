@@ -1,8 +1,7 @@
 // The project last chosen in the header's picker, remembered per browser
 // (`designer.lastProject`), so a new template starts with it. Each template
 // still keeps its own project (com.cdp.projects); this is only the starting
-// choice. Stored as the project's key (its UUID, or its code while the list
-// sends no id; utils/projectKeys.ts upgrades it like a template's) and name.
+// choice. Stored as the project's id (its UUID) and name.
 
 import type { ReportProject } from "@/types/dataSource";
 

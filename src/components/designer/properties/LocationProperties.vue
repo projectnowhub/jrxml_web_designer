@@ -195,7 +195,7 @@ import LocationMapPicker from "./LocationMapPicker.vue";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useReportStore } from "@/stores/report";
-import { getProject } from "@/queries/projects";
+import { getProject } from "@/queries/projectQueries";
 import { reverseGeocode } from "@/services/geocodeService";
 import { AlignCenter, AlignLeft, AlignRight, Bold, Loader2, MapPinned } from "@lucide/vue";
 import ColorSwatchPicker from "../../common/ColorSwatchPicker.vue";

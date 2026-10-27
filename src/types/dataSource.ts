@@ -2,6 +2,13 @@
 // introduction…) and their table sources, and how a table uses one.
 // Rows and values are never stored in the design; they are fetched each time.
 
+import type { Project } from "./entities";
+import type { JmixDynamicAttributes, JmixFilter } from "./jmix";
+
+// A CDP project as the projects list answers it: the Project entity with its
+// own fields (dynamic attributes)
+export type ProjectRecord = Project & JmixDynamicAttributes;
+
 // A project the user can pick for a report. A report can use several.
 export interface ProjectSummary {
   id: string;
@@ -365,31 +372,6 @@ export interface ChartBinding {
 
 export type AggregationType = "COUNT" | "SUM" | "AVG" | "MIN" | "MAX";
 export type AggregateGranularity = "DAY" | "WEEK" | "MONTH" | "QUARTER" | "YEAR";
-
-export type JmixOperator =
-  | "="
-  | "!="
-  | ">"
-  | "<"
-  | ">="
-  | "<="
-  | "<>"
-  | "in"
-  | "notIn"
-  | "contains"
-  | "startsWith"
-  | "endsWith";
-
-export interface JmixCondition {
-  property: string;
-  operator: JmixOperator;
-  value: unknown;
-}
-
-export interface JmixFilter {
-  group?: "AND" | "OR";
-  conditions: (JmixCondition | JmixFilter)[];
-}
 
 export interface AggregateMeasure {
   aggregation: AggregationType;

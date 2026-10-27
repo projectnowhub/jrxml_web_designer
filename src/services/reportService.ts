@@ -1,18 +1,13 @@
 import apiClient, { ApiError } from "./apiClient";
 import { PDF_PREVIEW_API } from "@/config/apiConfig";
 import i18n from "@/i18n";
+import type { ApiErrorBody } from "@/types/api";
+import type { GeneratePdfPayload, PdfJsonFieldName, PdfJsonResponse } from "@/types/reportServer";
 
 // Messages here are shown to the user, so they are translated
 const t = i18n.global.t;
 
 const GENERATE_PDF_PATH = "api/reporter/pdf/generateForm";
-
-// Only the JRXML is sent. The report server gets every table's rows and
-// every chart's numbers itself, from the setups in the JRXML
-// (com.cdp.table.binding, com.cdp.chart.binding; see docs/REPORT_ENGINE.md)
-export interface GeneratePdfPayload {
-  jrxml: string;
-}
 
 export class ReportGenerationError extends Error {
   readonly status?: number;
@@ -41,11 +36,13 @@ const base64ToBytes = (base64: string): Uint8Array<ArrayBuffer> => {
 };
 
 
-const extractPdfFromJson = (json: unknown): Uint8Array<ArrayBuffer> | null => {
+const PDF_JSON_FIELDS: PdfJsonFieldName[] = ["data", "pdf", "content", "file", "bytes"];
+
+// The PDF inside a JSON answer (base64 text or a list of bytes), or null
+const pdfFromJsonResponse = (json: PdfJsonResponse | null): Uint8Array<ArrayBuffer> | null => {
   if (!json || typeof json !== "object") return null;
-  const record = json as Record<string, unknown>;
-  for (const key of ["data", "pdf", "content", "file", "bytes"]) {
-    const value = record[key];
+  for (const key of PDF_JSON_FIELDS) {
+    const value = json[key];
     if (typeof value === "string" && value.length > 0) {
       try {
         const bytes = base64ToBytes(value);
@@ -55,7 +52,7 @@ const extractPdfFromJson = (json: unknown): Uint8Array<ArrayBuffer> | null => {
       }
     }
     if (Array.isArray(value) && value.length > 0) {
-      const bytes = Uint8Array.from(value as number[], (n) => n & 0xff);
+      const bytes = Uint8Array.from(value, (n) => n & 0xff);
       if (isPdfBytes(bytes)) return bytes;
     }
   }
@@ -71,7 +68,7 @@ const readErrorMessage = async (error: ApiError): Promise<{ message: string; cod
   try {
     const text = await response.text();
     try {
-      const body = JSON.parse(text) as Record<string, unknown>;
+      const body = JSON.parse(text) as ApiErrorBody;
       const message = body.detail ?? body.message ?? body.error ?? body.title;
       return {
         message: typeof message === "string" && message ? message : fallback,
@@ -119,17 +116,16 @@ export async function generatePdf(
   }
 
   if (blob.type.includes("json")) {
-    let json: unknown;
+    let json: PdfJsonResponse | null;
     try {
-      json = JSON.parse(new TextDecoder().decode(bytes));
+      json = JSON.parse(new TextDecoder().decode(bytes)) as PdfJsonResponse | null;
     } catch {
       throw new ReportGenerationError(t("pdfPreview.errors.invalidJson"));
     }
-    const pdf = extractPdfFromJson(json);
+    const pdf = pdfFromJsonResponse(json);
     if (pdf) return new Blob([pdf], { type: "application/pdf" });
 
-    const body = json as Record<string, unknown>;
-    const message = body?.detail ?? body?.message ?? body?.error;
+    const message = json?.detail ?? json?.message ?? json?.error;
     throw new ReportGenerationError(
       typeof message === "string" ? message : t("pdfPreview.errors.noPdf"),
     );

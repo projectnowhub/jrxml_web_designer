@@ -127,7 +127,7 @@ import type { TableDataBinding } from "@/types/dataSource";
 import type { DataRow } from "@/types/dataSource";
 import { generatePdf, ReportGenerationError } from "../../services/reportService";
 import { fetchTableRows } from "@/composables/useTableRows";
-import { PREVIEW_ROW_LIMIT } from "@/utils/table/dataBinding";
+import { TABLE_ROWS_LIMIT } from "@/constants/reportDataConstants";
 import { collectBoundTables } from "@/utils/table/tableDocument";
 import { activeFilters, describeFilter, describeSorts } from "@/utils/table/summary";
 import { resolveLook } from "@/utils/table/tableThemes";
@@ -217,7 +217,7 @@ async function loadAllRows(): Promise<void> {
       const state: TableRowsState = { rows: [], totalCount: 0, loading: true, failed: false };
       tableRows[binding.datasetName] = state;
       try {
-        const result = await fetchTableRows(binding, PREVIEW_ROW_LIMIT);
+        const result = await fetchTableRows(binding, TABLE_ROWS_LIMIT);
         tableRows[binding.datasetName] = { ...state, rows: result.rows, totalCount: result.totalCount, loading: false };
       } catch {
         tableRows[binding.datasetName] = { ...state, loading: false, failed: true };

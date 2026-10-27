@@ -6,15 +6,16 @@
 
 import { computed, toValue, watchEffect, type MaybeRefOrGetter } from "vue";
 import { infiniteQueryOptions, queryOptions, useInfiniteQuery } from "@tanstack/vue-query";
-import { projectApi, projectKey, toProjectDetails, toProjectSummary } from "@/services/projectService";
-import type { JmixListResponse } from "@/services/jmixService";
-import type { Project } from "@/types/entities";
-import type { ProjectDetails, ProjectSummary } from "@/types/dataSource";
+import { reportDataApi } from "@/services/reportDataService";
+import { projectKey, toProjectDetails, toProjectSummary } from "@/services/helpers/projectMappers";
+import type { JmixListResponse } from "@/types/jmix";
+import type { ProjectDetails, ProjectSummary, ProjectRecord } from "@/types/dataSource";
 import { DATA_STALE_TIME, queryClient } from "./queryClient";
-import { projectKeys } from "./keys";
+import { projectKeys } from "./queryKeys";
 
-// A list page also answers for each project on it (opening one fetches nothing)
-function seedProjects(rows: Project[]) {
+// A list page holds whole projects: it also answers for each project on it
+// (choosing one fetches nothing)
+function seedProjects(rows: ProjectRecord[]) {
   for (const project of rows) queryClient.setQueryData(projectKeys.detail(projectKey(project)), project);
 }
 
@@ -31,7 +32,7 @@ export const projectListQuery = () =>
   infiniteQueryOptions({
     queryKey: projectKeys.list(),
     queryFn: async ({ pageParam, signal }) => {
-      const page = await projectApi.list({ offset: pageParam }, signal);
+      const page = await reportDataApi.getProjectsPage({ offset: pageParam }, signal);
       seedProjects(page.rows);
       return page;
     },
@@ -41,17 +42,19 @@ export const projectListQuery = () =>
     staleTime: DATA_STALE_TIME,
   });
 
-// One project by its key (null: no such project). The list's pages (loaded
-// when the designer opens) usually hold it already: it is taken from there
-// (waiting for that request when it is still on its way), and asked for on
-// its own only when it isn't on them
-export const projectQuery = (key: string) =>
+// One project by its id (null: no such project), taken from the list's pages:
+// the picker's loaded pages (waiting for that request when it is on its way),
+// else every page. No request of its own
+export const projectQuery = (id: string) =>
   queryOptions({
-    queryKey: projectKeys.detail(key),
-    queryFn: async ({ signal }) => {
-      const list = await queryClient.fetchInfiniteQuery(projectListQuery()).catch(() => null);
-      const found = list?.pages.flatMap((page) => page.rows).find((project) => projectKey(project) === key);
-      return found ?? projectApi.getByKey(key, signal);
+    queryKey: projectKeys.detail(id),
+    queryFn: async (): Promise<ProjectRecord | null> => {
+      const list = await queryClient.fetchInfiniteQuery(projectListQuery());
+      const loaded = list.pages.flatMap((page) => page.rows).find((project) => projectKey(project) === id);
+      if (loaded) return loaded;
+      // Every page already loaded: no such project
+      if (!list.pages[list.pages.length - 1]?.hasMore) return null;
+      return (await fetchAllProjects()).find((project) => projectKey(project) === id) ?? null;
     },
     staleTime: DATA_STALE_TIME,
   });
@@ -91,7 +94,7 @@ export function useProjectList(search: MaybeRefOrGetter<string>, enabled: MaybeR
 
 // ---- Outside components (same cache) ---------------------------------------
 
-export const fetchProject = (key: string): Promise<Project | null> => queryClient.fetchQuery(projectQuery(key));
+export const fetchProject = (key: string): Promise<ProjectRecord | null> => queryClient.fetchQuery(projectQuery(key));
 
 // A project's details for Report Data (throws for an unknown project)
 export async function getProject(key: string): Promise<ProjectDetails> {
@@ -106,14 +109,15 @@ export async function getProjectSummary(key: string): Promise<ProjectSummary | n
   return project ? { ...toProjectSummary(project), id: key } : null;
 }
 
-// Every project, all pages (the AI assistant's search)
-const fetchAllProjects = () =>
-  queryClient.fetchQuery({
+// Every project, all pages (the AI assistant's search; a chosen project not
+// on the picker's loaded pages)
+function fetchAllProjects(): Promise<ProjectRecord[]> {
+  return queryClient.fetchQuery({
     queryKey: projectKeys.everything(),
     queryFn: async ({ signal }) => {
-      const rows: Project[] = [];
+      const rows: ProjectRecord[] = [];
       for (let more = true; more; ) {
-        const page = await projectApi.list({ offset: rows.length }, signal);
+        const page = await reportDataApi.getProjectsPage({ offset: rows.length }, signal);
         seedProjects(page.rows);
         rows.push(...page.rows);
         more = page.hasMore && page.rows.length > 0;
@@ -122,6 +126,7 @@ const fetchAllProjects = () =>
     },
     staleTime: DATA_STALE_TIME,
   });
+}
 
 // Projects for the AI assistant: the first page, or every project matching a
 // search (searched here, like the picker)
@@ -133,23 +138,4 @@ export async function listProjects({ search = "" }: { search?: string } = {}): P
   }
   const rows = (await fetchAllProjects()).map(toProjectSummary).filter((p) => matchesSearch(p, search));
   return { rows, total: rows.length, hasMore: false };
-}
-
-// The projects in the picker's list as far as it is loaded: code -> UUID.
-// Read from the cache only: never a request
-export function cachedProjectIds(): Map<string, string> {
-  const ids = new Map<string, string>();
-  const data = queryClient.getQueryData<{ pages: JmixListResponse<Project>[] }>(projectKeys.list());
-  for (const project of data?.pages.flatMap((page) => page.rows) ?? []) {
-    if (project.id && project.projectId) ids.set(project.projectId, project.id);
-  }
-  return ids;
-}
-
-// Runs `listener` whenever the picker's list in the cache changes
-export function onProjectListChange(listener: () => void): () => void {
-  const key = JSON.stringify(projectKeys.list());
-  return queryClient.getQueryCache().subscribe((event) => {
-    if (event.type === "updated" && JSON.stringify(event.query.queryKey) === key) listener();
-  });
 }

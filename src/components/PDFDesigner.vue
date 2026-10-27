@@ -763,9 +763,8 @@ import {
   projectFieldSize,
 } from "@/utils/projectFields";
 import { buildProjectTable } from "@/utils/projectTables";
-import { cachedProjectIds, fetchProject, onProjectListChange, prefetchProjects } from "@/queries/projects";
+import { fetchProject, prefetchProjects } from "@/queries/projectQueries";
 import { forgetLastProject, lastProject, rememberLastProject } from "@/utils/lastProject";
-import { upgradeBindings, upgradedProjects } from "@/utils/projectKeys";
 import {
   endDataSourceDrag,
   isDataSourceDrag,
@@ -2027,27 +2026,6 @@ const checkRememberedProject = async () => {
 };
 onMounted(checkRememberedProject);
 
-// A template saved while projects came without their UUID keeps a project's
-// code ("project1"): once the loaded project list knows that code's UUID it
-// takes its place in the report and in its tables' and charts' setup, so
-// their requests use project.id as the CDP app does. From the cached list
-// only (no request); a repair like loadReport's, so no undo step of its own
-const upgradeProjectKeys = () => {
-  const ids = cachedProjectIds();
-  if (!ids.size || !reportProperties.value) return;
-  // The remembered project too
-  const remembered = lastProject();
-  const rememberedId = remembered ? ids.get(remembered.id) : undefined;
-  if (remembered && rememberedId) rememberLastProject({ ...remembered, id: rememberedId });
-  const projects = upgradedProjects(reportProperties.value.projects ?? [], ids);
-  const bindingsChanged = upgradeBindings(bands.value, ids);
-  if (projects) reportProperties.value = { ...reportProperties.value, projects };
-  if (projects || bindingsChanged) updateJRXML();
-};
-const stopProjectKeyUpgrade = onProjectListChange(upgradeProjectKeys);
-onUnmounted(stopProjectKeyUpgrade);
-// A template opened while the list is already loaded
-watch(() => reportStore.loadedVersion, upgradeProjectKeys);
 
 
 

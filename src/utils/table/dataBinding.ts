@@ -11,9 +11,6 @@ export const TABLE_BINDING_PROPERTY = "com.cdp.table.binding";
 // Narrowest a column may get; limits how many columns fit in a table
 export const MIN_TABLE_COLUMN_WIDTH = 60;
 
-// Preview fetches at most this many rows per table; real reports have no limit
-export const PREVIEW_ROW_LIMIT = 500;
-
 const isBlank = (value: unknown) =>
   value === null || value === undefined || String(value).trim() === "";
 

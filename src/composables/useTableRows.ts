@@ -1,10 +1,10 @@
 // Rows for a data table, fetched with its own columns/filters/sort through
-// TanStack Query (queries/dataSources.ts), so redrawing a table, or several
+// TanStack Query (queries/dataSourceQueries.ts), so redrawing a table, or several
 // tables asking for the same rows, doesn't call the backend again.
 
 import { computed, type Ref } from "vue";
 import { keepPreviousData, useQuery } from "@tanstack/vue-query";
-import { fetchRows, rowsQuery } from "@/queries/dataSources";
+import { fetchRows, rowsQuery } from "@/queries/dataSourceQueries";
 import { toDataQuery } from "@/utils/table/dataBinding";
 import type { DataQuery, DataQueryResult, DataRow, TableDataBinding } from "@/types/dataSource";
 

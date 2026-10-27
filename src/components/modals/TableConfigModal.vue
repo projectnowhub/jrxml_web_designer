@@ -267,14 +267,14 @@ import BaseModal from "./BaseModal.vue";
 import DataGrid from "../common/DataGrid.vue";
 import TableFilterPanel from "../designer/TableFilterPanel.vue";
 import TableHighlights from "../designer/properties/TableHighlights.vue";
-import { fetchFacets, fetchSchema, fetchSources, rowsQuery } from "@/queries/dataSources";
+import { fetchFacets, fetchSchema, fetchSources, rowsQuery } from "@/queries/dataSourceQueries";
 import {
-  PREVIEW_ROW_LIMIT,
   createDatasetName,
   maxColumnsForWidth,
   nextTableName,
   toDataQuery,
 } from "@/utils/table/dataBinding";
+import { TABLE_ROWS_LIMIT } from "@/constants/reportDataConstants";
 import { createBinding, evenColumnWidths, toColumnBinding, totalsFor } from "@/utils/table/dataTable";
 import { resolveLook } from "@/utils/table/tableThemes";
 import type { TableElement } from "@/types";
@@ -640,7 +640,7 @@ let previewTimer: ReturnType<typeof setTimeout> | undefined;
 watch(
   () =>
     draftBinding.value && props.visible
-      ? JSON.stringify([projectId.value, sourceId.value, toDataQuery(draftBinding.value, PREVIEW_ROW_LIMIT)])
+      ? JSON.stringify([projectId.value, sourceId.value, toDataQuery(draftBinding.value, TABLE_ROWS_LIMIT)])
       : "",
   (key) => {
     clearTimeout(previewTimer);
@@ -675,7 +675,7 @@ const printedRowCount = computed(() =>
 );
 
 const previewSummary = computed(() =>
-  previewTotal.value > previewRows.value.length && previewRows.value.length >= PREVIEW_ROW_LIMIT
+  previewTotal.value > previewRows.value.length && previewRows.value.length >= TABLE_ROWS_LIMIT
     ? t("dataTable.config.previewCapped", { shown: previewRows.value.length, count: printedRowCount.value })
     : t("dataTable.config.rowCount", printedRowCount.value),
 );

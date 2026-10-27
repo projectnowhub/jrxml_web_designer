@@ -20,6 +20,7 @@ import { NConfigProvider, type GlobalThemeOverrides } from "naive-ui";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "./services/apiClient";
 import { fetchUser, loginErrorQuery } from "./services/authService";
+import { isDesktopApp } from "./utils/desktopApp";
 import GuidedTour from "./components/help/GuidedTour.vue";
 import HelpModal from "./components/modals/HelpModal.vue";
 import HintLayer from "./components/help/HintLayer.vue";
@@ -52,15 +53,6 @@ const themeOverrides: GlobalThemeOverrides = {
 
 let unlisten: (() => void) | undefined;
 let lastHandledUrl: string | undefined;
-
-const isTauri = () =>
-  Boolean(
-    (
-      window as Window & {
-        __TAURI_INTERNALS__?: unknown;
-      }
-    ).__TAURI_INTERNALS__,
-  );
 
 async function handleDeepLink(urls: string[]) {
   const urlString = urls[0];
@@ -110,7 +102,7 @@ if (import.meta.env.DEV) {
 }
 
 onMounted(async () => {
-  if (!isTauri()) {
+  if (!isDesktopApp()) {
     return;
   }
 

@@ -244,7 +244,7 @@ import { ChartColumn, ChevronDown, FolderKanban, Plus, Replace, Sigma, SlidersHo
 import BaseModal from "./BaseModal.vue";
 import ChartCanvas from "../common/ChartCanvas.vue";
 import TableFilterPanel from "../designer/TableFilterPanel.vue";
-import { fetchFacets, fetchSchema, fetchSources } from "@/queries/dataSources";
+import { fetchFacets, fetchSchema, fetchSources } from "@/queries/dataSourceQueries";
 import {
   CATEGORY_LIMITS,
   CHART_AGGREGATIONS,

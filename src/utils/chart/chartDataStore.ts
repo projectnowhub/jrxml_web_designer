@@ -1,5 +1,5 @@
 // Chart numbers fetched from the backend, kept in the TanStack Query cache by
-// request (queries/keys.ts chartKeys), so the canvas, the Configure popup and
+// request (queries/queryKeys.ts chartKeys), so the canvas, the Configure popup and
 // the JRXML image share them. Charts on the canvas and in the popup watch
 // their numbers with useChartData (refetched once stale); printing and the
 // JRXML writer read the same cache. Nothing here is saved with the report.
@@ -8,9 +8,9 @@ import { computed, ref, toValue, type MaybeRefOrGetter } from "vue";
 import { queryOptions, useQuery } from "@tanstack/vue-query";
 import type { AggregateResult, ChartBinding } from "@/types/dataSource";
 import type { DesignElement } from "@/types";
-import { dataSourceApi } from "@/services/dataSourceService";
+import { reportDataApi } from "@/services/reportDataService";
 import { DATA_STALE_TIME, queryClient } from "@/queries/queryClient";
-import { chartKeys } from "@/queries/keys";
+import { chartKeys } from "@/queries/queryKeys";
 import { chartRequests } from "./chartQuery";
 import { isChartComplete, normalizeChartBinding } from "./chartTypes";
 
@@ -33,7 +33,7 @@ export const chartDataQuery = (binding: ChartBinding) => {
   const requests = chartRequests(binding);
   return queryOptions({
     queryKey: chartKeys.data(requests),
-    queryFn: ({ signal }) => Promise.all(requests.map((request) => dataSourceApi.aggregate(request, signal))),
+    queryFn: ({ signal }) => Promise.all(requests.map((request) => reportDataApi.postChartAggregate(request, signal))),
     staleTime: DATA_STALE_TIME,
   });
 };

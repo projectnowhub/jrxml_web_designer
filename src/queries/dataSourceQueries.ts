@@ -2,22 +2,22 @@
 // through TanStack Query. Components use the options with useQuery /
 // useQueries; the setup popups, the AI assistant and printing use the fetch
 // functions, which read the same cache. The tables and their columns are the
-// CDP entities (GET /v2/entities, services/entityService.ts): one list, fetched
+// CDP entities (GET /v2/entities, services/reportDataService.ts): one list, fetched
 // once and shared by every project and every table.
 
 import { queryOptions } from "@tanstack/vue-query";
-import { dataSourceApi } from "@/services/dataSourceService";
-import { entityApi, toSourceFacets, toSourceSchema, toSourceSummary } from "@/services/entityService";
+import { reportDataApi } from "@/services/reportDataService";
+import { toSourceFacets, toSourceSchema, toSourceSummary } from "@/services/helpers/entityMappers";
 import type { DataQuery, DataQueryResult, DataSourceSchema, SourceFacets } from "@/types/dataSource";
 import type { EntityMetadata } from "@/types/entityMetadata";
 import { DATA_STALE_TIME, queryClient } from "./queryClient";
-import { chartKeys, dataSourceKeys, projectKeys } from "./keys";
+import { chartKeys, dataSourceKeys, projectKeys } from "./queryKeys";
 
 // Every entity with its fields
 export const entitiesQuery = () =>
   queryOptions({
     queryKey: dataSourceKeys.entities(),
-    queryFn: ({ signal }) => entityApi.list(signal),
+    queryFn: ({ signal }) => reportDataApi.getEntities(signal),
     staleTime: DATA_STALE_TIME,
   });
 
@@ -26,34 +26,53 @@ const schemaFrom = (entities: EntityMetadata[], sourceId: string): DataSourceSch
   return entity ? toSourceSchema(entity) : undefined;
 };
 
-// Rows for one request (columns, filters, sort, limit); tables asking the
-// same share the answer
-// The same request with more rows (or all of them) already answered: its first
-// rows are this one's answer, so asking for fewer never calls the backend
-// again (the setup popup's preview asks for 500, the canvas then for 5)
-function cachedLargerAnswer(projectId: string, sourceId: string, query: DataQuery) {
+// The same request (columns, filters, sort) with more rows, or all of them,
+// answered or on its way: its first rows are this one's answer, so asking for
+// fewer never calls the backend again (the setup popup's preview asks for
+// 500, the canvas then for 5)
+const coversLimit = (other: number | undefined, limit: number | undefined) =>
+  limit !== undefined && (other === undefined || other > limit);
+
+function largerRowsRequest(projectId: string, sourceId: string, query: DataQuery, answeredOnly: boolean) {
   const { limit, ...rest } = query;
   const wanted = JSON.stringify(rest);
-  for (const [key, data] of queryClient.getQueriesData<DataQueryResult>({ queryKey: dataSourceKeys.rowsOf(projectId, sourceId) })) {
-    const other = key[key.length - 1] as DataQuery | undefined;
-    if (!data || !other) continue;
-    const { limit: otherLimit, ...otherRest } = other;
-    const covers = otherLimit === undefined || (limit !== undefined && otherLimit >= limit);
-    if (!covers || JSON.stringify(otherRest) !== wanted) continue;
-    const state = queryClient.getQueryState(key);
-    return { data: { ...data, rows: limit === undefined ? data.rows : data.rows.slice(0, limit) }, updatedAt: state?.dataUpdatedAt };
+  for (const cached of queryClient.getQueryCache().findAll({ queryKey: dataSourceKeys.rowsOf(projectId, sourceId) })) {
+    const other = cached.queryKey[cached.queryKey.length - 1] as DataQuery | undefined;
+    if (!other || !coversLimit(other.limit, limit)) continue;
+    const { limit: _otherLimit, ...otherRest } = other;
+    if (JSON.stringify(otherRest) !== wanted) continue;
+    const data = cached.state.data as DataQueryResult | undefined;
+    if (data || (!answeredOnly && cached.state.fetchStatus === "fetching")) {
+      return { query: other, data, updatedAt: cached.state.dataUpdatedAt };
+    }
   }
   return undefined;
 }
 
-export const rowsQuery = (projectId: string, sourceId: string, query: DataQuery) =>
-  queryOptions({
+const firstRows = (data: DataQueryResult, limit: number | undefined): DataQueryResult =>
+  limit === undefined ? data : { ...data, rows: data.rows.slice(0, limit) };
+
+// Rows for one request; tables asking the same share the answer
+export function rowsQuery(projectId: string, sourceId: string, query: DataQuery) {
+  const answered = () => largerRowsRequest(projectId, sourceId, query, true);
+  return queryOptions({
     queryKey: dataSourceKeys.rows(projectId, sourceId, query),
-    queryFn: ({ signal }) => dataSourceApi.queryRows(projectId, sourceId, query, signal),
+    queryFn: async ({ signal }): Promise<DataQueryResult> => {
+      const larger = largerRowsRequest(projectId, sourceId, query, false);
+      if (larger) {
+        const data = await queryClient.fetchQuery(rowsQuery(projectId, sourceId, larger.query));
+        return firstRows(data, query.limit);
+      }
+      return reportDataApi.getTableRows(projectId, sourceId, query, signal);
+    },
     staleTime: DATA_STALE_TIME,
-    initialData: () => cachedLargerAnswer(projectId, sourceId, query)?.data,
-    initialDataUpdatedAt: () => cachedLargerAnswer(projectId, sourceId, query)?.updatedAt,
+    initialData: () => {
+      const found = answered();
+      return found?.data ? firstRows(found.data, query.limit) : undefined;
+    },
+    initialDataUpdatedAt: () => answered()?.updatedAt,
   });
+}
 
 // ---- Outside components (same cache) ---------------------------------------
 

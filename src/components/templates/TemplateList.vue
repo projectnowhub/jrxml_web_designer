@@ -77,7 +77,7 @@ import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ArrowDown, ArrowUp, ArrowUpDown, Copy, ExternalLink, FileText, Pencil, Trash2 } from "@lucide/vue";
 import { useTemplates } from "@/composables/useTemplates";
-import type { SortDirection, TemplateSort, TemplateSummary } from "@/services/templateService";
+import type { TemplateSortDirection, TemplateSort, TemplateSummary } from "@/types/template";
 import TemplateMenu from "./TemplateMenu.vue";
 
 const props = withDefaults(
@@ -85,7 +85,7 @@ const props = withDefaults(
     templates: TemplateSummary[];
     owner: string;
     sort: TemplateSort;
-    dir: SortDirection;
+    dir: TemplateSortDirection;
     skeletons?: number;
   }>(),
   { skeletons: 0 },

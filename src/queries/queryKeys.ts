@@ -4,7 +4,7 @@
 // invalidating projectKeys.all marks every project query stale.
 
 import type { AggregateRequest, DataQuery } from "@/types/dataSource";
-import type { TemplateQuery } from "@/services/templateService";
+import type { TemplateQuery } from "@/types/template";
 
 export const projectKeys = {
   all: ["projects"] as const,
@@ -12,7 +12,7 @@ export const projectKeys = {
   list: () => [...projectKeys.all, "list"] as const,
   // Every page at once (the AI assistant's search)
   everything: () => [...projectKeys.all, "everything"] as const,
-  // One project by its key (projectKey in services/projectService.ts)
+  // One project by its key (projectKey in services/helpers/projectMappers.ts)
   detail: (key: string) => [...projectKeys.all, "detail", key] as const,
 };
 

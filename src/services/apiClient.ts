@@ -1,23 +1,13 @@
 import router from "@/router";
 import { API_BASE_URL } from "@/config/apiConfig";
+import type { ApiEnvelope, ApiRequestOptions, ApiResponse, ApiResponseType, ApiStatusDetail } from "@/types/api";
+import { isDesktopApp } from "@/utils/desktopApp";
 
 export const AUTH_TOKEN_KEY = "jrxml_auth_token";
 export const AUTH_USER_KEY = "jrxml_auth_user";
 export const TENANT_URL_KEY = "cdp_tenant_url";
 
 const baseURL = API_BASE_URL;
-
-export type ApiResponseType = "json" | "text" | "blob" | "arrayBuffer";
-
-export interface ApiRequestOptions extends Omit<
-  RequestInit,
-  "body" | "headers"
-> {
-  body?: BodyInit | null;
-  headers?: HeadersInit;
-  responseType?: ApiResponseType;
-  baseURL?: string;
-}
 
 export class ApiError extends Error {
   readonly status?: number;
@@ -50,15 +40,7 @@ export const getAccessToken = (): string | null => {
 };
 
 export const getTenantId = (): string => {
-  const isTauri = Boolean(
-    (
-      window as Window & {
-        __TAURI_INTERNALS__?: unknown;
-      }
-    ).__TAURI_INTERNALS__,
-  );
-
-  if (isTauri) {
+  if (isDesktopApp()) {
     try {
       const tenantUrl = localStorage.getItem(TENANT_URL_KEY);
 
@@ -93,7 +75,7 @@ const resolveUrl = (path: string, requestBaseURL?: string): string => {
 
 const notifyStatus = (status: number): void => {
   window.dispatchEvent(
-    new CustomEvent("api:status", {
+    new CustomEvent<ApiStatusDetail>("api:status", {
       detail: { status },
     }),
   );
@@ -248,13 +230,17 @@ const requestWithHeaders = async <T>(
 };
 
 // The CDP backend answers either with the data itself or wrapped as
-// { data, message, status }; this returns the data either way (cdp-fe-app's unwrap)
-export function unwrap<T>(body: unknown): T {
-  if (body && typeof body === "object" && !Array.isArray(body) && "data" in body) {
-    const envelope = body as { data: T; message?: unknown; status?: unknown };
-    if ("message" in envelope || "status" in envelope) return envelope.data;
-  }
-  return body as T;
+// { data, message, status } (ApiEnvelope); this returns the data either way
+// (cdp-fe-app's unwrap)
+const isEnvelope = <T>(body: ApiResponse<T>): body is ApiEnvelope<T> =>
+  !!body &&
+  typeof body === "object" &&
+  !Array.isArray(body) &&
+  "data" in body &&
+  ("message" in body || "status" in body);
+
+export function unwrap<T>(body: ApiResponse<T>): T {
+  return isEnvelope(body) ? body.data : body;
 }
 
 export const apiClient = {

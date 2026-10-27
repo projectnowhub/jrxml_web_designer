@@ -14,14 +14,13 @@ import type {
   ChartDimension,
   ChartMeasure,
   DateGranularity,
-  JmixCondition,
-  JmixFilter,
   TableFilter,
 } from "@/types/dataSource";
+import type { JmixFilter } from "@/types/jmix";
 import { isActiveFilter, resolveFilterDates } from "../table/dataBinding";
 import type { ChartData, ChartTreeNode } from "./chartData";
 import { DEFAULT_CATEGORY_LIMIT, DEFAULT_GRANULARITY, chartTypeInfo, isChartComplete } from "./chartTypes";
-import { projectPropertyOf } from "../../types/entity";
+import { projectCondition, tableFilterConditions } from "../../services/helpers/jmixFilterHelpers";
 
 // Values of a split column shown as their own line or bars; the rest are "Other"
 const MAX_SPLIT_VALUES = 6;
@@ -49,27 +48,9 @@ const GRANULARITIES: Record<DateGranularity, AggregateGranularity> = {
 };
 
 // The chart's filters as a Jmix filter (moving date ranges as today's dates),
-// like the CDP app's buildJmixFilter: ticked values = "in", typed words =
-// "contains", Yes / No = "=" true / false, a range = >= and <=
+// the same conditions as a table's rows request
 export function toJmixFilter(filters: TableFilter[], today = new Date()): JmixFilter | undefined {
-  const conditions: JmixCondition[] = [];
-  for (const f of resolveFilterDates(filters.filter(isActiveFilter), today)) {
-    if (f.operator === "in") {
-      conditions.push({ property: f.column, operator: "in", value: f.values ?? [] });
-      continue;
-    }
-    if (f.operator === "contains") {
-      conditions.push({ property: f.column, operator: "contains", value: (f.value ?? "").trim() });
-      continue;
-    }
-    if (f.operator === "equals") {
-      conditions.push({ property: f.column, operator: "=", value: f.value === "true" });
-      continue;
-    }
-    const bound = (v: string) => (f.type === "date" ? v : Number(v));
-    if (f.value) conditions.push({ property: f.column, operator: ">=", value: bound(f.value) });
-    if (f.value2) conditions.push({ property: f.column, operator: "<=", value: bound(f.value2) });
-  }
+  const conditions = tableFilterConditions(resolveFilterDates(filters.filter(isActiveFilter), today));
   return conditions.length ? { group: "AND", conditions } : undefined;
 }
 
@@ -94,7 +75,7 @@ export function chartRequests(binding: ChartBinding, today = new Date()): Aggreg
     globalFilter: {
       group: "AND" as const,
       // The chart's project, as the CDP app sends it ("contract.project.id" for contract records)
-      conditions: [{ property: projectPropertyOf(entityName), operator: "=" as const, value: binding.projectId }],
+      conditions: [projectCondition(entityName, binding.projectId!, "=")],
     },
   };
   if (!base.filter) delete base.filter;
