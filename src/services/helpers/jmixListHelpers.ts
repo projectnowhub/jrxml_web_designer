@@ -17,7 +17,6 @@ const toJmixSortParam = (sort: JmixSort[]): string =>
   sort.map((s) => `${s.desc ? "-" : ""}${s.id.replace("+", "")}`).join(",");
 
 // The query string of a list request. /v2/table names the fetch plan
-// fetchPlanName; Jmix's /rest/entities names it fetchPlan
 export function buildJmixListQuery(params: JmixListParams, fetchPlanParam = "fetchPlanName"): URLSearchParams {
   const { limit = JMIX_PAGE_SIZE, offset = 0, filter, sort, fetchPlan, dynamicAttributes } = params;
   const query = new URLSearchParams({ limit: String(limit), offset: String(offset), returnCount: "true" });

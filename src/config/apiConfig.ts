@@ -11,8 +11,8 @@ export const API_ROUTES = {
   reportServer: "/v2",
   analytics: "/v2/analytics/aggregate",
   table: "/v2/table",
-  // Jmix entities REST (the CDP app reads projects here: their answers carry each record's id)
-  restEntities: "/rest/entities",
+  // The project list (Report Data, the header's project picker)
+  projectList: "/v2/table/cdp_Project",
   // Every CDP entity a report can list (Report Data → tables) with its fields
   entities: "/v2/entities",
 } as const;

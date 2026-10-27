@@ -3,7 +3,7 @@
 // handling and errors); caching is TanStack Query's (queries/projectQueries.ts,
 // queries/dataSourceQueries.ts, utils/chart/chartDataStore.ts).
 //
-//   1. Projects       GET  /rest/entities/cdp_Project   getProjectsPage
+//   1. Projects       GET  /v2/table/cdp_Project        getProjectsPage
 //   2. Tables         GET  /v2/entities                 getEntities
 //   3. Table rows     GET  /v2/table/{entityName}       getTableRows
 //   4. Chart numbers  POST /v2/analytics/aggregate      postChartAggregate
@@ -64,11 +64,8 @@ async function getJmixListPage<TRow>(
 }
 
 // ---- 1. Projects --------------------------------------------------------------
-// Jmix /rest/entities (the CDP app's projectApi reads projects there; its rows
-// carry each project's id, which /v2/table leaves out), with the whole project
-// (project-details-fp + dynamic attributes): a list page is all Report Data needs
-
-const PROJECTS_PATH = `${API_ROUTES.restEntities}/${Entity.PROJECT}`;
+// The whole project (project-details-fp + dynamic attributes): a list page is
+// all Report Data needs
 
 // One page of the projects, A to Z by name
 export async function getProjectsPage(
@@ -83,7 +80,7 @@ export async function getProjectsPage(
     dynamicAttributes: true,
   };
   const { data, headers } = await apiClient.requestWithHeaders<ApiResponse<ProjectRecord[]>>(
-    `${PROJECTS_PATH}?${buildJmixListQuery(params, "fetchPlan")}`,
+    `${API_ROUTES.projectList}?${buildJmixListQuery(params)}`,
     { method: "GET", signal },
   );
   const page = readJmixListResponse<ProjectRecord>(Entity.PROJECT, data, headers, params);
