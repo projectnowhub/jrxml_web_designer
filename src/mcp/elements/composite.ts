@@ -570,10 +570,11 @@ export const PRESETS = [...BOX_PRESETS, ...PART_PRESETS, ...TABLE_PRESET_TYPES] 
 
 // The texts of a preset in reading order (top to bottom, left to right)
 function presetTexts(element: DesignElement): TextFieldElement[] {
-  if (element.type === "textField") return isPagination(element) ? [] : [element];
+  // Page numbers and dates fill themselves in: not texts to replace
+  if (element.type === "textField") return isPagination(element) || isDateElement(element) ? [] : [element];
   if (element.type !== "frame") return [];
   return ((element as FrameElement).elements ?? [])
-    .filter((c): c is TextFieldElement => c.type === "textField" && !isPagination(c))
+    .filter((c): c is TextFieldElement => c.type === "textField" && !isPagination(c) && !isDateElement(c))
     .sort((a, b) => a.y - b.y || a.x - b.x);
 }
 
@@ -597,7 +598,7 @@ export const presetKind: ElementKind = {
   kind: "preset",
   tool: "create_preset",
   description:
-    "Add one of the library's ready-made pieces: frameKpiCard (label / big number / caption card), frameAlertBox (title + text on red tint), frameTitledSection (bordered block with dark title strip, full width), framePhotoCard (photo + caption + meta), partReportHeader (dark banner, 3 title lines; page header), partPageFooter (rule, \"Page X of N\", logo spot; page footer), partNote (small italic note), partRiskLegend (green / amber / red legend), partStatusDot, partSignOff (signature spot, name, role, date), and typed tables tableKeyValue, tableFinancial, tableProgress, tableComparison, tableActionPlan, tableRiskRegister. Use texts to replace its placeholder words.",
+    "Add one of the library's ready-made pieces: frameKpiCard (label / big number / caption card), frameAlertBox (title + text on red tint), frameTitledSection (bordered block with dark title strip, full width), framePhotoCard (photo + caption + meta), partReportHeader (dark banner, 2 title lines and the report's month, a date that fills itself in; page header), partPageFooter (rule, \"Page X of N\", logo spot; page footer), partNote (small italic note), partRiskLegend (green / amber / red legend), partStatusDot, partSignOff (signature spot, name, role, and the date, which fills itself in), and typed tables tableKeyValue, tableFinancial, tableProgress, tableComparison, tableActionPlan, tableRiskRegister. Use texts to replace its placeholder words.",
   properties: {
     preset: { type: "string", enum: PRESETS },
     texts: {

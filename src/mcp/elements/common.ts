@@ -23,6 +23,7 @@ import {
   type CornerRadii,
 } from "@/utils/elementUtils";
 import { TEXT_LINE_HEIGHT } from "@/utils/customTable";
+import { dateText, getDateSetup, isDateElement } from "@/utils/dateElement";
 import { SpecError, type ElementSpec, type JsonSchema, type KindContext } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -167,6 +168,8 @@ export function textLiteral(text: string): string {
 // The text of a text element, line breaks kept (formatted text keeps its tags)
 export function plainText(element: DesignElement): string {
   if (element.type !== "textField") return "";
+  // A Date: what it shows now, not its expression
+  if (isDateElement(element)) return dateText(getDateSetup(element));
   const expr = (element.expression ?? "").trim();
   if (!(expr.startsWith('"') && expr.endsWith('"') && expr.length >= 2)) return expr;
   return expr.slice(1, -1).replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\");

@@ -278,6 +278,13 @@ export function dateToPlainText(element: TextFieldElement, now: Date = new Date(
   element.markup = "none";
 }
 
+// Make a design's or preset's text a Date that fills itself in, keeping its
+// look and place (the cover's month, the Report Header's, the Sign-off's day)
+export function makeDateElement<T extends DesignElement>(element: T, setup: Partial<DateSetup>): T {
+  applyDateSetup(element as unknown as TextFieldElement, { zone: browserTimeZone(), ...setup });
+  return element;
+}
+
 export const DATE_ELEMENT_SIZE = { width: 160, height: 20 };
 
 export interface DateFont {

@@ -10,6 +10,7 @@ import { frame, isBoxPart, photo, releaseBoxPart, text, type FrameTemplateContex
 import { buildContentsList, SECTION_HEADING_PROPERTY } from "./contentsList";
 import { FIT_LIST_PROPERTY } from "./headingSync";
 import { LOCATION_PROPERTY } from "./location/locationElement";
+import { makeDateElement } from "./dateElement";
 
 export const DESIGN_COLORS = {
   navy: "#14284B",
@@ -77,23 +78,23 @@ function block(x: number, y: number, width: number, height: number, color: strin
   } as Partial<DesignElement>);
 }
 
+// The report's month ("October 2026"): a Date showing the month the report is printed in
+const PERIOD_DATE = { when: "thisMonth", format: "monthYear" } as const;
+const asPeriod = (el: DesignElement, key: string) => (key === "period" ? makeDateElement(el, PERIOD_DATE) : el);
+
 // Text parts are at least 1.45 x the font size tall: JasperReports leaves out
-// text whose first line doesn't fit (Noto Sans SC)
+// text whose first line doesn't fit (Noto Sans SC). The period is a Date.
 function label(ctx: FrameTemplateContext, key: string, o: Omit<TextOptions, "text" | "height"> & { height?: number }): DesignElement {
-  const isPeriod = key === "period";
-  const defaultText = isPeriod
-    ? new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" }).format(new Date())
-    : ph(ctx, key);
   const el = text({
     ...o,
     x: Math.round(o.x),
     y: Math.round(o.y),
     width: Math.round(o.width),
     height: Math.max(o.height ?? 0, Math.ceil(o.fontSize * 1.45) + 2),
-    text: defaultText,
+    text: ph(ctx, key),
   });
   releaseBoxPart(el);
-  return el;
+  return asPeriod(el, key);
 }
 
 // An outline without fill (frame lines on formal covers)
@@ -567,7 +568,7 @@ const title = (ctx: FrameTemplateContext, W: number, y: number, fontSize: number
 
 // A small centred line of text (project name, document number)
 const caption = (ctx: FrameTemplateContext, W: number, y: number, key: string, color: string, fontSize = 9, italic = false) =>
-  heading(ctx, key, { x: W * 0.1, y, width: W * 0.8, fontSize, forecolor: color, textAlignment: "Center", isItalic: italic });
+  asPeriod(heading(ctx, key, { x: W * 0.1, y, width: W * 0.8, fontSize, forecolor: color, textAlignment: "Center", isItalic: italic }), key);
 
 // Centred rules: a thick one with a thin one under it
 const doubleRule = (W: number, y: number, width: number, thick: string, thin: string) => [

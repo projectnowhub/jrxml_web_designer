@@ -1431,7 +1431,7 @@
           "addTitle": "Tambah pengesahan",
           "addText": "Klik Pengesahan di bawah Preset Elemen.",
           "typeTitle": "Isi nama",
-          "typeText": "Klik pengesahan, klik nama, kemudian klik dua kali dan taip. Lakukan yang sama untuk jawatan dan tarikh.",
+          "typeText": "Klik pengesahan, klik nama, kemudian klik dua kali dan taip. Lakukan yang sama untuk jawatan. Tarikh diisi dengan sendirinya; klik padanya untuk memilih yang lain.",
           "previewTitle": "Semak",
           "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
         }
@@ -1770,7 +1770,7 @@
     "noBand": "Templat ini tiada {band}\nHidupkannya di Tetapan Templat → Bahagian Halaman, kemudian tambah semula.",
     "statusColor": "Warna status",
     "description": {
-      "partReportHeader": "Jalur gelap di bahagian atas setiap halaman dengan tiga baris tajuk (pelanggan dan projek, nombor laporan, bulan). Diletakkan di Kepala Halaman.",
+      "partReportHeader": "Jalur gelap di bahagian atas setiap halaman dengan tiga baris tajuk (pelanggan dan projek, nombor laporan, dan bulan yang diisi dengan sendirinya). Diletakkan di Kepala Halaman.",
       "partPageFooter": "Garis nipis, nombor halaman (Halaman 1 daripada 12) dan ruang untuk logo anda, di bahagian bawah setiap halaman. Diletakkan di Kaki Halaman.",
       "partSectionHeading": "Tajuk besar bercetak tebal dengan nombornya, contohnya: 1.  BUTIRAN PROJEK.",
       "partSubHeading": "Tajuk lebih kecil, tebal dan bergaris bawah, contohnya: MENARA A: AKTIVITI UTAMA.",
@@ -3542,7 +3542,8 @@
         "add": "Klik Pengesahan di bawah Preset Elemen, atau seretnya.",
         "work": [
           "Lepaskan gambar tandatangan ke atas tempat gambarnya.",
-          "Klik dua kali pada teks untuk menaip nama, jawatan dan tarikh."
+          "Klik dua kali pada teks untuk menaip nama dan jawatan.",
+          "Tarikh diisi dengan sendirinya dengan hari laporan dicetak. Klik padanya untuk memilih tarikh atau rupa lain."
         ]
       },
       "presetTables": {

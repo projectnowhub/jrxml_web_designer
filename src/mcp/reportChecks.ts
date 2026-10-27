@@ -87,8 +87,8 @@ function backgroundOf(loc: Location): string {
 // Words that are only ever placeholders (not "Date", "Low Risk", "Table of Contents"…)
 const PLACEHOLDER_KEYS: Array<[string, string[]]> = [
   ["framePresets.placeholder", ["kpiLabel", "kpiValue", "kpiCaption", "alertTitle", "alertBody", "sectionTitle", "photoCaption", "photoMeta"]],
-  ["reportParts.placeholder", ["headerLine1", "headerLine2", "headerLine3", "sectionTitle", "subHeading", "note", "signOffName", "signOffRole", "signOffDate"]],
-  ["pageDesigns.placeholder", ["projectName", "reportNumber", "period", "reportTitle", "preparedFor", "preparedBy", "client", "location", "contractSum"]],
+  ["reportParts.placeholder", ["headerLine1", "headerLine2", "sectionTitle", "subHeading", "note", "signOffName", "signOffRole"]],
+  ["pageDesigns.placeholder", ["projectName", "reportNumber", "reportTitle", "preparedFor", "preparedBy", "client", "location", "contractSum"]],
 ];
 
 let placeholderWords: Set<string> | null = null;

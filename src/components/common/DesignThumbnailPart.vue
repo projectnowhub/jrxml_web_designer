@@ -35,6 +35,7 @@ import { computed } from "vue";
 import { Image as ImageIcon } from "@lucide/vue";
 import { LEADER_DOTS, listNumbers, SIDE_PAD } from "@/utils/contentsList";
 import { resolveLegacyDateSample } from "@/utils/autoDate";
+import { dateText, getDateSetup, isDateElement } from "@/utils/dateElement";
 import type { ContentsListElement, DesignElement, FrameElement } from "@/types";
 
 defineOptions({ name: "DesignThumbnailPart" });
@@ -72,6 +73,7 @@ const boxStyle = computed(() => {
 // What a text shows
 const textValue = computed(() => {
   const e = el.value;
+  if (isDateElement(e)) return dateText(getDateSetup(e));
   const expr = String(e.expression ?? "").trim();
   if (expr.includes("SimpleDateFormat") && expr.includes("java.util.Date")) {
     return resolveLegacyDateSample(expr);

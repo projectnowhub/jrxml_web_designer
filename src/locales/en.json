@@ -1431,7 +1431,7 @@
           "addTitle": "Add a sign-off",
           "addText": "Click Sign-off under Element Presets.",
           "typeTitle": "Fill in the name",
-          "typeText": "Click the sign-off, click the name, then double-click it and type. Do the same for the role and date.",
+          "typeText": "Click the sign-off, click the name, then double-click it and type. Do the same for the role. The date fills itself in; click it to choose another.",
           "previewTitle": "Check it",
           "previewText": "Click Preview PDF at the top to see exactly what will print."
         }
@@ -1770,7 +1770,7 @@
     "noBand": "This template has no {band}\nTurn it on in Template Settings → Page Sections, then add it again.",
     "statusColor": "Status colour",
     "description": {
-      "partReportHeader": "A dark banner across the top of every page with three lines of title (client and project, report number, month). Goes in the Page Header.",
+      "partReportHeader": "A dark banner across the top of every page with three lines of title (client and project, report number, and the month, which fills itself in). Goes in the Page Header.",
       "partPageFooter": "A thin line, the page number (Page 1 of 12) and a spot for your logo, at the bottom of every page. Goes in the Page Footer.",
       "partSectionHeading": "A large bold heading with its number, for example: 1.  PROJECT DETAILS.",
       "partSubHeading": "A smaller bold, underlined heading, for example: TOWER A: KEY ACTIVITIES.",
@@ -3542,7 +3542,8 @@
         "add": "Click Sign-off under Element Presets, or drag it.",
         "work": [
           "Drop a picture of the signature onto its picture spot.",
-          "Double-click the texts to type the name, job title and date."
+          "Double-click the texts to type the name and job title.",
+          "The date fills itself in with the day the report is printed. Click it to choose another date or look."
         ]
       },
       "presetTables": {
