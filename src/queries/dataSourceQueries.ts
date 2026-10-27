@@ -19,6 +19,7 @@ import type {
   TableTotals,
 } from "@/types/dataSource";
 import type { EntityMetadata } from "@/types/entityMetadata";
+import { useColumnOrderStore } from "@/stores/columnOrder";
 import { DATA_STALE_TIME, queryClient } from "./queryClient";
 import { chartKeys, dataSourceKeys, projectKeys } from "./queryKeys";
 
@@ -32,7 +33,7 @@ export const entitiesQuery = () =>
 
 const schemaFrom = (entities: EntityMetadata[], sourceId: string): DataSourceSchema | undefined => {
   const entity = entities.find((e) => e.entityName === sourceId);
-  return entity ? toSourceSchema(entity) : undefined;
+  return entity ? toSourceSchema(entity, useColumnOrderStore().orderOf(sourceId)) : undefined;
 };
 
 // The same request (columns, filters, sort) with more rows, or all of them,

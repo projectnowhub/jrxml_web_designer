@@ -46,3 +46,34 @@ export const CONTRACT_ENTITIES: readonly string[] = [
 // The property holding a record's project id
 export const PROJECT_ID_PROPERTY = "project.id";
 export const CONTRACT_PROJECT_ID_PROPERTY = "contract.project.id";
+
+// ---- The CDP app's saved table settings (properties config) ----------------
+
+// Settings the login reads in one request (the CDP app's limit)
+export const PROPERTIES_CONFIG_LIMIT = 500;
+
+// The CDP app's own record of when it last read them (propertiesConfigSync.ts)
+export const PROPERTIES_CONFIG_META_KEY = "cdp_properties_config_meta";
+
+// The grid state version the CDP app's grid reads (reaktiform STORAGE_VERSION);
+// a saved state of another version is ignored there, so here too
+export const CDP_GRID_STATE_VERSION = 3;
+
+// Each entity's table in the CDP app: the key its grid state is saved under
+// (the storageKey of its ModuleTable, e.g. ProcurementTableV2.tsx)
+export const CDP_TABLE_STORAGE_KEYS: Readonly<Record<string, string>> = {
+  [Entity.PROCUREMENT_REGISTER]: "procurement-table-v2",
+  [Entity.RISK_REGISTER]: "risk-table-v2",
+  [Entity.QAQC_REGISTER]: "qaqc-table-v2",
+  [Entity.ISSUE_REGISTER]: "issue-table-v2",
+  [Entity.COMPLIANCE_REGISTER]: "compliance-table-v2",
+  [Entity.INCIDENT_REGISTER]: "incident-table-v2",
+  [Entity.EOT_ENTRY]: "eot-table-v2",
+  [Entity.LAD_REPORT]: "lad-table-v2",
+  [Entity.PROJECT_AUDIT]: "project-audit-table-v2",
+  [Entity.QUALITY_STANDARD_AUDIT]: "quality-standard-table-v2",
+  [Entity.SAFETY_HEALTH_AUDIT]: "safety-health-table-v2",
+  [Entity.PAYMENT]: "contractor-payment-table-v2",
+  [Entity.VARIATION_ORDER]: "contractor-vo-table-v2",
+  [Entity.FINAL_ACCOUNT]: "contractor-final-account-table-v2",
+};

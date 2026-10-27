@@ -1,5 +1,6 @@
 // Entity mappers: a CDP entity (from GET /v2/entities) as a project-data
-// table: its name, its columns (base fields, then user-defined ones) and how
+// table: its name, its columns (base fields, then user-defined ones, or the
+// user's order from the CDP app, stores/columnOrder.ts) and how
 // each column is filtered. No API calls here: the request is in
 // services/reportDataService.ts.
 
@@ -59,11 +60,22 @@ export const toSourceSummary = (entity: EntityMetadata): DataSourceSummary => ({
   columnCount: entityColumns(entity).length,
 });
 
-export const toSourceSchema = (entity: EntityMetadata): DataSourceSchema => ({
+// The columns in a saved order (the CDP app's grid's columnOrder), as its grid
+// applies it: the named ones first in that order, then the rest as they were
+function orderColumns(columns: DataColumn[], order: readonly string[]): DataColumn[] {
+  if (!order.length) return columns;
+  const byKey = new Map(columns.map((c) => [c.key, c]));
+  const ordered = order.map((key) => byKey.get(key)).filter((c): c is DataColumn => !!c);
+  const named = new Set(order);
+  return [...ordered, ...columns.filter((c) => !named.has(c.key))];
+}
+
+// columnOrder: the user's column order for this entity ([] = the backend's)
+export const toSourceSchema = (entity: EntityMetadata, columnOrder: readonly string[] = []): DataSourceSchema => ({
   id: entity.entityName,
   name: entity.name || entity.entityName,
   entityName: entity.entityName,
-  columns: entityColumns(entity),
+  columns: orderColumns(entityColumns(entity), columnOrder),
 });
 
 const BOOLEAN_TYPES = new Set(["boolean", "bool"]);

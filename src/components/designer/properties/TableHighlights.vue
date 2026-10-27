@@ -50,12 +50,18 @@
         <label class="th-field">
           <span class="th-label">{{ t("dataTable.highlight.when") }}</span>
           <select class="th-select" :value="rule.column" @change="setColumn(rule, ($event.target as HTMLSelectElement).value)">
-            <option v-for="c in columns" :key="c.key" :value="c.key">{{ c.label }}</option>
+            <option v-for="c in columns" :key="c.key" :value="c.key" :disabled="!usable(c.key)">
+              {{ usable(c.key) ? c.label : t("dataTable.highlight.columnNoValues", { name: c.label }) }}
+            </option>
           </select>
         </label>
+        <p v-if="!usable(rule.column)" class="th-warning" role="alert">
+          <Ban :size="14" :stroke-width="2" />
+          <span>{{ t("dataTable.highlight.unusableColumn") }}</span>
+        </p>
 
         <!-- Text: the values to tick -->
-        <template v-if="kindOf(rule) === 'text'">
+        <template v-if="kindOf(rule) === 'text' && usable(rule.column)">
           <span class="th-label">{{ t("dataTable.highlight.isOneOf") }}</span>
           <div class="th-values">
             <label v-for="v in valuesOf(rule)" :key="v.value" class="th-value">
@@ -158,7 +164,7 @@
 import ColorSwatchPicker from "../../common/ColorSwatchPicker.vue";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { ArrowUp, Bold, Plus, RotateCcw, Trash2 } from "@lucide/vue";
+import { ArrowUp, Ban, Bold, Plus, RotateCcw, Trash2 } from "@lucide/vue";
 import { highlightDefaultLook, looksLikeDefault, newHighlightId } from "@/utils/table/columnLook";
 import type { SourceFacets, TableColumnBinding, TableHighlight, TableLook } from "@/types/dataSource";
 
@@ -190,6 +196,13 @@ const kindOf = (rule: TableHighlight): "text" | "number" | "date" => {
 const valuesOf = (rule: TableHighlight) => {
   const facet = props.facets[rule.column];
   return facet?.kind === "values" ? facet.values.slice(0, 60) : [];
+};
+// A text column can only be used with values to tick: one without any can't
+const usable = (key: string) => {
+  const type = props.columns.find((c) => c.key === key)?.type;
+  if (type === "date" || type === "number" || type === "currency") return true;
+  const facet = props.facets[key];
+  return facet?.kind === "values" && facet.values.length > 0;
 };
 const rangeOf = (rule: TableHighlight) => {
   const facet = props.facets[rule.column];
@@ -257,7 +270,8 @@ function toggleValue(rule: TableHighlight, value: string) {
 }
 
 function add() {
-  const col = props.columns[0];
+  // The first column a rule can use
+  const col = props.columns.find((c) => usable(c.key)) ?? props.columns[0];
   const rule: TableHighlight = {
     id: newHighlightId(),
     column: col?.key ?? "",
@@ -298,6 +312,24 @@ function move(i: number, delta: number) {
   font-size: 11.5px;
   line-height: 1.4;
   color: var(--prop-text-secondary, #6b7280);
+}
+
+.th-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 6px 8px;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  background: #fffbeb;
+  font-size: 11px;
+  color: #b45309;
+}
+
+.th-warning svg {
+  flex: none;
+  margin-top: 1px;
 }
 
 .th-hint {

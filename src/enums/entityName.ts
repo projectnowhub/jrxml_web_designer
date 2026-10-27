@@ -31,6 +31,7 @@ export const Entity = {
   VARIATION_ORDER: "cdp_VariationOrder",
   FINAL_ACCOUNT: "cdp_FinalAccount",
   USER_MODULES_DASHBOARD_LAYOUT: "cdp_UserModulesDashboardLayout",
+  PROPERTIES_CONFIG: "cdp_PropertiesConfig",
 } as const;
 
 export type Entity = (typeof Entity)[keyof typeof Entity];

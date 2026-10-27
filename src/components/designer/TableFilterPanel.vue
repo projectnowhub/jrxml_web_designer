@@ -211,7 +211,7 @@ const kindOf = (col: DataColumn): FieldKind => {
 };
 
 // ── Fields shown ──
-// The user's choice; until then: the filtered fields, then the suggested ones
+// Which fields: the user's choice; until then the filtered fields and the suggested ones
 const chosenKeys = ref<string[] | null>(null);
 const shownKeys = computed(() => {
   if (chosenKeys.value) return chosenKeys.value;
@@ -220,9 +220,11 @@ const shownKeys = computed(() => {
   const keys = [...new Set(start)];
   return keys.length ? keys : filterableColumns.value.slice(0, FIRST_FIELDS).map((c) => c.key);
 });
-const shownColumns = computed(() =>
-  shownKeys.value.map((k) => filterableColumns.value.find((c) => c.key === k)).filter((c): c is DataColumn => !!c),
-);
+// Always in the columns' order, so a field never moves when it gets a filter
+const shownColumns = computed(() => {
+  const shown = new Set(shownKeys.value);
+  return filterableColumns.value.filter((c) => shown.has(c.key));
+});
 
 // Another source: its own fields
 watch(

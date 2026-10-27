@@ -12,9 +12,11 @@ export const API_ROUTES = {
   analytics: "/v2/analytics/aggregate",
   table: "/v2/table",
   // The project list (Report Data, the header's project picker)
-  projectList: "/v2/table/cdp_Project",
+  projectList: "/rest/entities/cdp_Project",
   // Every CDP entity a report can list (Report Data → tables) with its fields
   entities: "/v2/entities",
+  // The user's saved CDP settings (each table's column order…), read at login
+  propertiesConfig: "/rest/entities/cdp_PropertiesConfig",
 } as const;
 
 export const apiUrl = (route: string) => `${API_BASE_URL}${route}`;

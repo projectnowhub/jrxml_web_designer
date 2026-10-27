@@ -21,6 +21,7 @@ import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "./services/apiClient";
 import { fetchUser, loginErrorQuery } from "./services/authService";
 import { isDesktopApp } from "./utils/desktopApp";
+import { useColumnOrderStore } from "./stores/columnOrder";
 import GuidedTour from "./components/help/GuidedTour.vue";
 import HelpModal from "./components/modals/HelpModal.vue";
 import HintLayer from "./components/help/HintLayer.vue";
@@ -80,6 +81,8 @@ async function handleDeepLink(urls: string[]) {
         await router.replace({ path: "/login", query: loginErrorQuery(error) });
         return;
       }
+      // The user's CDP table settings (column order), as the CDP app reads them at login
+      await useColumnOrderStore().syncFromServer();
 
       await router.replace("/");
       return;

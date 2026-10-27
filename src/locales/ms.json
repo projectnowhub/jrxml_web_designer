@@ -2512,6 +2512,8 @@
       "when": "Apabila",
       "isOneOf": "Ialah salah satu daripada",
       "blank": "(kosong)",
+      "columnNoValues": "{name} (tiada nilai)",
+      "unusableColumn": "Lajur ini tiada nilai untuk dipilih, jadi ia tidak boleh digunakan untuk peraturan. Pilih lajur lain.",
       "noValues": "Tiada nilai ditemui untuk lajur ini.",
       "from": "Dari",
       "to": "Hingga",
