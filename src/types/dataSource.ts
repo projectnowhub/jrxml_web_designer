@@ -99,6 +99,15 @@ export interface DataColumn {
   // cell shows that record's name (_instanceName); it can't be filtered or
   // sorted on (Jmix would compare the record's id)
   linked?: boolean;
+  // A choice field (ENUM): each stored value with the words it prints as
+  // ("PENDING" → "Pending"), as the CDP app shows it
+  choices?: ColumnChoice[];
+}
+
+// One value of a choice field: as stored, and as printed
+export interface ColumnChoice {
+  value: string;
+  label: string;
 }
 
 export interface DataSourceSchema {
@@ -161,6 +170,8 @@ export interface TableColumnBinding {
   key: string;
   // A link to another record: printed as its name, never sorted on (DataColumn.linked)
   linked?: boolean;
+  // A choice field: its stored values print as these words (DataColumn.choices)
+  choices?: ColumnChoice[];
   // Header text (the user can rename it)
   label: string;
   type: DataColumnType;

@@ -422,6 +422,13 @@ async function useSchema(id: string, freshColumns: boolean) {
       filters.value = [];
       sort.value = [];
       highlights.value = [];
+    } else {
+      // The table's own columns: each choice field with the words it prints as now
+      columns.value = columns.value.map((col) => {
+        const { choices: _old, ...rest } = col;
+        const choices = loaded.columns.find((c) => c.key === col.key)?.choices;
+        return choices?.length ? { ...rest, choices } : rest;
+      });
     }
   } catch {
     if (stillCurrent()) loadError.value = true;

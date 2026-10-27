@@ -506,6 +506,8 @@ async function applyDataTable(element: TableElement, spec: ElementSpec, ctx: Kin
         label: w.header ?? c.label,
         type: c.type,
         width: widths[i] ?? MIN_COLUMN_WIDTH,
+        ...(c.linked ? { linked: true } : {}),
+        ...(c.choices?.length ? { choices: c.choices } : {}),
         ...(w.total ? { total: w.total as TotalFunction } : {}),
         ...(w.look ? { look: columnLookOf(w.look, `columns[${i}].look`) } : before?.look ? { look: before.look } : {}),
         ...(before?.barcode ? { barcode: before.barcode } : {}),

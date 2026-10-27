@@ -83,7 +83,7 @@ export function typedTableFromData(
     cells: binding.columns.map((col): CustomTableCell => {
       const align = cellAlignmentFor(col.type);
       return {
-        text: formatCellValue(row[col.key], col.type, options.locale),
+        text: formatCellValue(row[col.key], col.type, options.locale, col.choices),
         ...(align !== "Left" ? { align } : {}),
         vAlign: "Middle",
         // The column's look and the highlight rules this row matches

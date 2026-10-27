@@ -44,7 +44,7 @@
               <div v-if="tableColumnBarcode(col)" class="dg-barcode">
                 <BarcodeCell :type="tableColumnBarcode(col)!" :value="row.original[col.key]" :height="BARCODE_CELL_HEIGHT" />
               </div>
-              <template v-else>{{ formatCellValue(row.original[col.key], col.type, locale) }}</template>
+              <template v-else>{{ formatCellValue(row.original[col.key], col.type, locale, col.choices) }}</template>
             </td>
           </tr>
         </tbody>

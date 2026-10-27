@@ -44,6 +44,9 @@ const toDataColumn = (field: EntityFieldMetadata, userDefined: boolean): DataCol
   type: isLinkField(field) ? "text" : toColumnType(field.dataType),
   ...(userDefined ? { userDefined } : {}),
   ...(isLinkField(field) ? { linked: true } : {}),
+  ...(field.enumValues?.length && !isLinkField(field)
+    ? { choices: field.enumValues.map((value) => ({ value: storedEnumValue(value), label: enumLabel(value) })) }
+    : {}),
 });
 
 // Base fields first, then the tenant's own (user-defined) ones, each in the backend's order

@@ -70,6 +70,11 @@ row limit: a table prints every matching row. A column with `"linked": true` is
 a link to another record (an `ENTITY` field, e.g. a row's `contract`): the row
 holds that record as an object, and its cell must print the record's
 `_instanceName` (the designer shows the same), never the object itself.
+Text cells need nothing from the server beyond the raw values: their
+expressions print a yes / no field (a `Boolean`) as Yes / No, a choice field
+(`"choices"` on the column) as its words ("PENDING" → "Pending"), and other text
+without HTML tags (a line per paragraph). Dates print `dd MMM yyyy` in English;
+a Count total counts every row.
 A table with no data set up is written as an empty `<frame>` with an empty
 property value: skip it.
 
@@ -80,7 +85,7 @@ Filters are part of both setups and are never resolved in the JRXML:
 | Filter | Stored as | Meaning |
 |---|---|---|
 | Ticked values | `{ "column", "operator": "in", "values": ["Approved", "Pending"] }` | cell equals one of them (case-insensitive) |
-| Range | `{ "column", "operator": "between", "value": "2026-01-01", "value2": "2026-03-31" }` | value ≤ cell ≤ value2, either end optional |
+| Range | `{ "column", "operator": "between", "value": "2026-01-01", "value2": "2026-03-31" }` | value ≤ cell ≤ value2, either end optional; for a date column the end is "before the next day" (`< 2026-04-01`), so a date-and-time on the last day counts too (`chartRequests` already sends it that way) |
 | Typed words (version 2) | `{ "column", "operator": "contains", "value": "permit" }` | the text cell contains the words (any case); a Jmix `contains` condition, as the CDP app's text filters |
 | Yes / No (version 2) | `{ "column", "operator": "equals", "value": "true" }` | a yes / no field is true (`"false"`: false); a Jmix `=` condition with a boolean, as the CDP app's checkbox |
 | Moving date range | `{ "column", "operator": "between", "period": "thisMonth" }` | `thisMonth`, `lastMonth`, `thisQuarter`, `thisYear`, `last30Days`, worked out **on the day the report runs** |
@@ -103,7 +108,7 @@ whenever the chart or table code changes. It defines one global,
 
 | Function | Arguments | Returns |
 |---|---|---|
-| `ENGINE_VERSION` | – | number (now `3`: no row limit, columns may be `linked`; `2`: filters may be `contains` or `equals`), bumped when a function's arguments or results change |
+| `ENGINE_VERSION` | – | number (now `4`: a date range's end is sent as `<` the next day; `3`: no row limit, columns may be `linked`; `2`: filters may be `contains` or `equals`), bumped when a function's arguments or results change |
 | `LOCALES` | – | languages charts can print in: `["en", "ms"]` |
 | `chartRequests(bindingJson, todayIso)` | chart setup JSON; run date `"2026-11-15"` | JSON array of `AggregateRequest`s; `"[]"` when the chart isn't set up (it prints nothing) |
 | `chartSvg(bindingJson, resultsJson, width, height, locale, fontName?)` | setup; JSON array of the `AggregateResult`s, **in the same order as the requests**; the image's width and height from `<reportElement>`; `"en"` / `"ms"`; font (default Noto Sans SC) | SVG text; `""` when the chart isn't set up |

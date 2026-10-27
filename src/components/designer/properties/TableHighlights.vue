@@ -66,7 +66,7 @@
           <div class="th-values">
             <label v-for="v in valuesOf(rule)" :key="v.value" class="th-value">
               <input type="checkbox" :checked="(rule.values ?? []).includes(v.value)" @change="toggleValue(rule, v.value)" />
-              <span>{{ v.value || t("dataTable.highlight.blank") }}</span>
+              <span>{{ v.label || v.value || t("dataTable.highlight.blank") }}</span>
               <small>{{ v.count }}</small>
             </label>
             <p v-if="!valuesOf(rule).length" class="th-hint">{{ t("dataTable.highlight.noValues") }}</p>

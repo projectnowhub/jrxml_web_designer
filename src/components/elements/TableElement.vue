@@ -75,7 +75,7 @@
                 :value="slot.row[col.key]"
                 :height="rowHeight"
               />
-              <template v-else>{{ formatCellValue(slot.row[col.key], col.type, locale) }}</template>
+              <template v-else>{{ formatCellValue(slot.row[col.key], col.type, locale, col.choices) }}</template>
             </div>
           </template>
         </div>

@@ -25,9 +25,18 @@ export function projectCondition(entityName: string, projectId: string, operator
   };
 }
 
+// The day after a "YYYY-MM-DD" day (null for anything else)
+function nextDay(day: string): string | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+  if (!match) return null;
+  const next = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + 1));
+  return next.toISOString().slice(0, 10);
+}
+
 // Filters as Jmix conditions (moving date ranges already turned into dates):
 // ticked values = "in", typed words = "contains", Yes / No = "=" true / false,
-// a range = >= and <=; unfinished filters give none
+// a range = >= and <=, a date's "to" as "before the next day" (so a date with
+// a time on that day counts too); unfinished filters give none
 export function tableFilterConditions(filters: TableFilter[]): JmixCondition[] {
   const bound = (filter: TableFilter, value: string) => (filter.type === "date" ? value : Number(value));
   return filters.flatMap((filter): JmixCondition[] => {
@@ -45,7 +54,9 @@ export function tableFilterConditions(filters: TableFilter[]): JmixCondition[] {
     }
     const range: JmixCondition[] = [];
     if (filter.value) range.push({ property: filter.column, operator: ">=", value: bound(filter, filter.value) });
-    if (filter.value2) range.push({ property: filter.column, operator: "<=", value: bound(filter, filter.value2) });
+    const dayAfter = filter.type === "date" && filter.value2 ? nextDay(filter.value2) : null;
+    if (dayAfter) range.push({ property: filter.column, operator: "<", value: dayAfter });
+    else if (filter.value2) range.push({ property: filter.column, operator: "<=", value: bound(filter, filter.value2) });
     return range;
   });
 }
