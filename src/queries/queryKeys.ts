@@ -24,6 +24,9 @@ export const dataSourceKeys = {
   rowsOf: (projectId: string, sourceId: string) => [...dataSourceKeys.all, projectId, "source", sourceId, "rows"] as const,
   rows: (projectId: string, sourceId: string, query: DataQuery) =>
     [...dataSourceKeys.rowsOf(projectId, sourceId), query] as const,
+  // One total of a table's totals row (one analytics request per total column)
+  total: (projectId: string, sourceId: string, request: AggregateRequest) =>
+    [...dataSourceKeys.all, projectId, "source", sourceId, "total", request] as const,
 };
 
 export const chartKeys = {

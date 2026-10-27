@@ -3632,7 +3632,7 @@ const convertTableToTyped = async (loc: TableLocation) => {
   } else {
     let rows: DataRow[];
     try {
-      rows = (await fetchTableRows(table.binding, table.binding.rowLimit)).rows;
+      rows = (await fetchTableRows(table.binding)).rows;
     } catch {
       notification.error(t("customTable.convertFailed"));
       return;

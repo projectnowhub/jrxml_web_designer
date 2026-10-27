@@ -95,14 +95,11 @@ export function createDatasetName(existingNames: string[]): string {
 
 // The request for a table's rows; `limit` lets the preview cap large tables
 export function toDataQuery(binding: TableDataBinding, limit?: number): DataQuery {
-  const caps = [binding.rowLimit, limit].filter(
-    (n): n is number => typeof n === "number" && n > 0,
-  );
   return {
     columns: binding.columns.map((c) => c.key),
     filters: binding.filters.filter(isActiveFilter),
     sort: binding.sort.slice(0, 1),
-    limit: caps.length ? Math.min(...caps) : undefined,
+    limit: typeof limit === "number" && limit > 0 ? limit : undefined,
   };
 }
 
@@ -156,7 +153,6 @@ export function parseBinding(json: string | null | undefined): TableDataBinding 
       columns: b.columns,
       filters: readFilters(b.filters),
       sort: Array.isArray(b.sort) ? b.sort.slice(0, 1) : [],
-      rowLimit: typeof b.rowLimit === "number" ? b.rowLimit : undefined,
       showTotals: b.showTotals === true,
       theme: typeof b.theme === "string" && b.theme ? b.theme : "corporateBlue",
       look: b.look && typeof b.look === "object" ? normalizeLook(b.look) : undefined,

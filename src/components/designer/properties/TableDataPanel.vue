@@ -44,12 +44,6 @@
         </div>
       </div>
 
-      <div v-if="binding.rowLimit" class="tdp-row">
-        <ListOrdered :size="13" class="tdp-row-icon" aria-hidden="true" />
-        <div class="tdp-chips">
-          <span class="tdp-chip is-applied">{{ t("dataTable.panel.firstRows", binding.rowLimit) }}</span>
-        </div>
-      </div>
 
       <button type="button" class="tdp-btn" @click="emit('configure')">
         <SlidersHorizontal :size="14" aria-hidden="true" />
@@ -432,7 +426,6 @@ import {
   Database,
   DatabaseZap,
   Funnel,
-  ListOrdered,
   Lock,
   MousePointerClick,
   Paintbrush,

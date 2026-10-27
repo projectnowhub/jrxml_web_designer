@@ -65,7 +65,11 @@ The chart setup (`ChartBinding`, `src/types/dataSource.ts`), for example:
 ```
 
 The table setup (`TableDataBinding`): project, source, columns, filters, one
-sort, row limit, `datasetName` (also the `<subDataset name>` its cells read).
+sort, `datasetName` (also the `<subDataset name>` its cells read). There is no
+row limit: a table prints every matching row. A column with `"linked": true` is
+a link to another record (an `ENTITY` field, e.g. a row's `contract`): the row
+holds that record as an object, and its cell must print the record's
+`_instanceName` (the designer shows the same), never the object itself.
 A table with no data set up is written as an empty `<frame>` with an empty
 property value: skip it.
 
@@ -99,7 +103,7 @@ whenever the chart or table code changes. It defines one global,
 
 | Function | Arguments | Returns |
 |---|---|---|
-| `ENGINE_VERSION` | – | number (now `2`: filters may be `contains` or `equals`), bumped when a function's arguments or results change |
+| `ENGINE_VERSION` | – | number (now `3`: no row limit, columns may be `linked`; `2`: filters may be `contains` or `equals`), bumped when a function's arguments or results change |
 | `LOCALES` | – | languages charts can print in: `["en", "ms"]` |
 | `chartRequests(bindingJson, todayIso)` | chart setup JSON; run date `"2026-11-15"` | JSON array of `AggregateRequest`s; `"[]"` when the chart isn't set up (it prints nothing) |
 | `chartSvg(bindingJson, resultsJson, width, height, locale, fontName?)` | setup; JSON array of the `AggregateResult`s, **in the same order as the requests**; the image's width and height from `<reportElement>`; `"en"` / `"ms"`; font (default Noto Sans SC) | SVG text; `""` when the chart isn't set up |

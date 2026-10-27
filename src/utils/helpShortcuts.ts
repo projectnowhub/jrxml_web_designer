@@ -100,6 +100,7 @@ export const SHORTCUT_GROUPS: { id: ShortcutGroupId; rows: ShortcutRow[] }[] = [
       { id: "tableLineMenu", combos: [["mouse:rightClickHandle"]] },
       { id: "tableChooseColumn", combos: [["mouse:clickTwice"]] },
       { id: "tableResizeLine", combos: [["mouse:dragTableLine"]] },
+      { id: "tableSortColumn", combos: [["mouse:clickColumnHeading"]] },
       { id: "tableClose", combos: [["Esc"]] },
     ],
   },

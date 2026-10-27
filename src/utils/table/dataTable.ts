@@ -126,7 +126,7 @@ export function totalsFor(type: DataColumnType): TotalFunction[] {
 // ---------------------------------------------------------------------------
 
 export function toColumnBinding(column: DataColumn, width: number): TableColumnBinding {
-  return { key: column.key, label: column.label, type: column.type, width };
+  return { key: column.key, label: column.label, type: column.type, width, ...(column.linked ? { linked: true } : {}) };
 }
 
 // A first setup for a source dropped on a table: as many of its columns as fit

@@ -129,8 +129,20 @@
           >
             <Bold :size="14" aria-hidden="true" />
           </button>
+          <!-- Back to the cells' own colours (what a new rule starts with) -->
+          <button
+            v-if="!looksLikeDefault(rule, defaultsFor(rule))"
+            type="button"
+            class="th-reset"
+            :title="t('dataTable.highlight.resetLookHint')"
+            @click="set(rule, defaultsFor(rule))"
+          >
+            <RotateCcw :size="12" aria-hidden="true" />
+            {{ t("dataTable.highlight.resetLook") }}
+          </button>
         </div>
         <p v-if="!isComplete(rule)" class="th-warning">{{ t("dataTable.highlight.incomplete") }}</p>
+        <p v-else-if="looksLikeDefault(rule, defaultsFor(rule))" class="th-hint">{{ t("dataTable.highlight.sameAsTable") }}</p>
       </div>
     </div>
 
@@ -146,14 +158,16 @@
 import ColorSwatchPicker from "../../common/ColorSwatchPicker.vue";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { ArrowUp, Bold, Plus, Trash2 } from "@lucide/vue";
-import { newHighlightId } from "@/utils/table/columnLook";
-import type { SourceFacets, TableColumnBinding, TableHighlight } from "@/types/dataSource";
+import { ArrowUp, Bold, Plus, RotateCcw, Trash2 } from "@lucide/vue";
+import { highlightDefaultLook, looksLikeDefault, newHighlightId } from "@/utils/table/columnLook";
+import type { SourceFacets, TableColumnBinding, TableHighlight, TableLook } from "@/types/dataSource";
 
 const props = defineProps<{
   columns: TableColumnBinding[];
   facets: SourceFacets;
   highlights: TableHighlight[];
+  // The table's look: a new rule starts with the cells' own colours
+  look: TableLook;
 }>();
 
 const emit = defineEmits<{
@@ -181,6 +195,8 @@ const rangeOf = (rule: TableHighlight) => {
   const facet = props.facets[rule.column];
   return facet?.kind === "range" ? { min: String(facet.min ?? ""), max: String(facet.max ?? "") } : { min: "", max: "" };
 };
+
+const defaultsFor = (rule: TableHighlight) => highlightDefaultLook(props.look, columnOf(rule));
 
 const isComplete = (rule: TableHighlight) =>
   (rule.fill || rule.color || rule.bold) &&
@@ -247,9 +263,7 @@ function add() {
     column: col?.key ?? "",
     operator: col?.type === "date" ? "past" : col?.type === "number" || col?.type === "currency" ? "between" : "in",
     scope: "row",
-    fill: "#ece8fd",
-    color: "#6440f4",
-    bold: true,
+    ...highlightDefaultLook(props.look, col),
   };
   openId.value = rule.id;
   emit("update:highlights", [...props.highlights, rule]);
@@ -508,6 +522,25 @@ function move(i: number, delta: number) {
   display: flex;
   align-items: flex-end;
   gap: 8px;
+}
+
+.th-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 4px 8px;
+  border: 1px solid #e6e5ee;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #45425a;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.th-reset:hover {
+  border-color: #6440f4;
+  color: #6440f4;
 }
 
 .th-color {

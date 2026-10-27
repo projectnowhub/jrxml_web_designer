@@ -69,7 +69,7 @@ export function typedTableFromData(
   const headerHeight = Math.max(MIN_ROW_HEIGHT, source.headerHeight ?? TABLE_HEADER_HEIGHT);
   const rowHeight = Math.max(MIN_ROW_HEIGHT, source.rowHeight ?? TABLE_ROW_HEIGHT);
   const totals = hasTotalsRow(binding);
-  const printed = binding.rowLimit !== undefined ? rows.slice(0, binding.rowLimit) : rows;
+  const printed = rows;
 
   const room = options.maxHeight - headerHeight - (totals ? rowHeight : 0);
   const fits = Math.max(0, Math.min(printed.length, CONVERTED_ROW_LIMIT, Math.floor(room / rowHeight)));

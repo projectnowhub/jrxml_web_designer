@@ -60,9 +60,6 @@
               <span v-for="(s, i) in describeSorts(entry.binding, t)" :key="`s${i}`" class="chip is-applied">
                 <ArrowDownUp :size="10" aria-hidden="true" />{{ s }}
               </span>
-              <span v-if="entry.binding.rowLimit" class="chip is-applied">
-                <ListOrdered :size="10" aria-hidden="true" />{{ t("dataTable.panel.firstRows", entry.binding.rowLimit) }}
-              </span>
             </div>
             <div class="card-grid">
               <DataGrid
@@ -71,6 +68,7 @@
                 :look="resolveLook(entry.binding)"
                 :highlights="entry.binding.highlights"
                 :show-totals="entry.binding.showTotals"
+                :totals="tableRows[entry.binding.datasetName]?.totals"
                 :loading="tableRows[entry.binding.datasetName]?.loading"
                 :failed="tableRows[entry.binding.datasetName]?.failed"
               />
@@ -106,7 +104,6 @@
 <script setup lang="ts">
 import {
   ArrowDownUp,
-  ListOrdered,
   ChevronLeft,
   ChevronRight,
   Database,
@@ -124,7 +121,8 @@ import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
 import type { Band, ChartElement, DesignElement, FrameElement } from "../../types";
 import type { TableDataBinding } from "@/types/dataSource";
-import type { DataRow } from "@/types/dataSource";
+import type { DataRow, TableTotals } from "@/types/dataSource";
+import { fetchTableTotals } from "@/queries/dataSourceQueries";
 import { generatePdf, ReportGenerationError } from "../../services/reportService";
 import { fetchTableRows } from "@/composables/useTableRows";
 import { TABLE_ROWS_LIMIT } from "@/constants/reportDataConstants";
@@ -194,6 +192,7 @@ const dataItems = computed<DataItem[]>(() => {
 interface TableRowsState {
   rows: DataRow[];
   totalCount: number;
+  totals: TableTotals;
   loading: boolean;
   failed: boolean;
 }
@@ -214,11 +213,11 @@ async function loadAllRows(): Promise<void> {
   Object.keys(tableRows).forEach((k) => delete tableRows[k]);
   await Promise.all(
     tables.value.map(async ({ binding }) => {
-      const state: TableRowsState = { rows: [], totalCount: 0, loading: true, failed: false };
+      const state: TableRowsState = { rows: [], totalCount: 0, totals: {}, loading: true, failed: false };
       tableRows[binding.datasetName] = state;
       try {
-        const result = await fetchTableRows(binding, TABLE_ROWS_LIMIT);
-        tableRows[binding.datasetName] = { ...state, rows: result.rows, totalCount: result.totalCount, loading: false };
+        const [result, totals] = await Promise.all([fetchTableRows(binding, TABLE_ROWS_LIMIT), fetchTableTotals(binding)]);
+        tableRows[binding.datasetName] = { ...state, rows: result.rows, totalCount: result.totalCount, totals, loading: false };
       } catch {
         tableRows[binding.datasetName] = { ...state, loading: false, failed: true };
       }

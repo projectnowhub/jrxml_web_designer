@@ -16,7 +16,7 @@ import { chartTextsFor, setChartTextSource, CHART_TEXTS } from "@/utils/chart/ch
 import { parseBinding, resolveFilterDates, toDataQuery } from "@/utils/table/dataBinding";
 
 // Bumped whenever a function's arguments or results change
-export const ENGINE_VERSION = 2;
+export const ENGINE_VERSION = 3;
 
 // Languages charts can print in ("en", "ms")
 export const LOCALES = Object.keys(CHART_TEXTS);

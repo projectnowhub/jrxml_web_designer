@@ -25,6 +25,7 @@
     "@lucide/vue": "^1.41.0",
     "@tanstack/virtual-core": "3.17.3",
     "@tanstack/vue-query": "5.101.2",
+    "@tanstack/vue-table": "8.21.3",
     "@tauri-apps/plugin-deep-link": "^2.4.10",
     "@tauri-apps/plugin-opener": "^2.5.5",
     "@vueform/multiselect": "^2.6.11",

@@ -227,6 +227,7 @@
                     @dragend="endDataSourceDrag"
                   >
                     <component :is="COLUMN_ICONS[col.type]" :size="12" class="rdp-type" aria-hidden="true" />
+                    <Zap v-if="col.userDefined" :size="11" class="rdp-bolt" :title="t('reportData.userDefinedField')" />
                     <span class="rdp-name">{{ col.label }}</span>
                     <span class="rdp-meta">{{ t(`dataTable.types.${col.type}`) }}</span>
                   </li>
@@ -266,6 +267,7 @@ import {
   Search,
   Table2,
   Type,
+  Zap,
 } from "@lucide/vue";
 import { useQueries, useQuery } from "@tanstack/vue-query";
 import { entitiesQuery, refreshReportData } from "@/queries/dataSourceQueries";
@@ -462,15 +464,15 @@ const locationRows = (projectId: string): LocationRow[] => {
 };
 
 // A table's columns in two groups: the standard fields every tenant has and the
-// ones this tenant added; titled only when there are both
+// ones this tenant added; always titled, so base columns
+// read as base columns even when the tenant added none
 function columnGroups(schema: DataSourceSchema | undefined) {
   const columns = schema?.columns ?? [];
   const standard = columns.filter((c) => !c.userDefined);
   const custom = columns.filter((c) => c.userDefined);
-  const both = standard.length > 0 && custom.length > 0;
   return [
-    { key: "standard", title: both ? t("reportData.standardFields") : "", columns: standard },
-    { key: "custom", title: both ? t("reportData.customFields") : "", columns: custom },
+    { key: "standard", title: t("reportData.standardFields"), columns: standard },
+    { key: "custom", title: t("reportData.customFields"), columns: custom },
   ].filter((group) => group.columns.length);
 }
 
@@ -593,6 +595,12 @@ function dragColumn(
 </script>
 
 <style scoped>
+/* User-defined fields: a bolt, as the CDP app's ⚡ */
+.rdp-bolt {
+  flex: none;
+  color: #f59e0b;
+}
+
 .rdp-chevron {
   transition: transform 0.15s ease;
 }

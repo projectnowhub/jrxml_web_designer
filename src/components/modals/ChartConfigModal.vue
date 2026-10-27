@@ -192,7 +192,6 @@
               :columns="schema.columns"
               :facets="facets"
               :filters="draft.filters ?? []"
-              :show-sort="false"
               :match-count="matchCount"
               @update:filters="draft.filters = $event"
             />

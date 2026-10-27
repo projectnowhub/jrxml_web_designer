@@ -6,7 +6,15 @@
 // No browser or Vue here (like dataBinding / tableThemes).
 
 import type { ReportStyle } from "@/types";
-import type { DataRow, TableColumnBinding, TableColumnLook, TableColumnPartLook, TableDataBinding, TableHighlight } from "@/types/dataSource";
+import type {
+  DataRow,
+  TableColumnBinding,
+  TableColumnLook,
+  TableColumnPartLook,
+  TableDataBinding,
+  TableHighlight,
+  TableLook,
+} from "@/types/dataSource";
 import { buildLookStyles, resolveLook, tableStylePrefix } from "./tableThemes";
 import { javaString } from "@/utils/jrxml/javaString";
 
@@ -204,6 +212,25 @@ export function columnCellStyle(binding: TableDataBinding, index: number): Repor
   if (rules.length) style.conditionalStyles = [...rules, ...(style.conditionalStyles ?? [])];
   return style;
 }
+
+// The look a highlight rule starts from (and "Reset to default" goes back to):
+// the cells' own colours, so the user sees what the rule will change. The
+// rule's column's own look, else the table style's first row colour and text
+export type HighlightLook = Pick<TableHighlight, "fill" | "color" | "bold">;
+
+export function highlightDefaultLook(look: TableLook, col: TableColumnBinding | undefined): HighlightLook {
+  return {
+    fill: col?.look?.fill ?? look.rowColors[0],
+    color: col?.look?.color ?? look.rowText,
+    bold: col?.look?.bold ? true : undefined,
+  };
+}
+
+// Whether a rule looks exactly like the cells it colours (so it changes nothing)
+export const looksLikeDefault = (rule: HighlightLook, defaults: HighlightLook): boolean =>
+  (rule.fill ?? "").toLowerCase() === (defaults.fill ?? "").toLowerCase() &&
+  (rule.color ?? "").toLowerCase() === (defaults.color ?? "").toLowerCase() &&
+  !!rule.bold === !!defaults.bold;
 
 export function newHighlightId(): string {
   return `h${Math.random().toString(36).slice(2, 10)}`;

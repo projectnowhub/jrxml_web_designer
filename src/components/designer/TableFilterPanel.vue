@@ -1,287 +1,201 @@
 <template>
-  <!-- Filter & sort, laid out like a shop's filter panel: categories on the
-       left (Sort, then each column), that category's choices on the right -->
+  <!-- Filters, laid out like the CDP app's Filters panel (ModuleFilters /
+       FilterField / FieldsListPopover): the fields shown, chosen with the
+       "3/34" button (user-defined fields marked with a bolt), each with its own
+       control: tick values, type words, Min / Max, From / To, All / Yes / No.
+       Applied as they change (the popup's own Apply keeps the table as it was
+       until then). -->
   <div class="tfp">
-    <div v-if="appliedChips.length" class="tfp-applied" :aria-label="t('dataTable.filter.applied')">
-      <button
-        v-for="chip in appliedChips"
-        :key="chip.key"
-        type="button"
-        class="tfp-chip"
-        :title="t('dataTable.filter.remove')"
-        @click="chip.remove()"
-      >
-        <component :is="chip.icon" :size="11" aria-hidden="true" />
-        <span>{{ chip.text }}</span>
-        <X :size="11" aria-hidden="true" />
+    <div class="tfp-bar">
+      <span class="tfp-match">
+        {{ matchCount === null ? t("dataTable.loading") : t("dataTable.filter.matchCount", matchCount) }}
+      </span>
+      <button v-if="filters.length" type="button" class="tfp-action" :title="t('dataTable.filter.clearAllHint')" @click="emit('update:filters', [])">
+        <X :size="12" aria-hidden="true" />{{ t("dataTable.filter.clearAll") }}
       </button>
-    </div>
-
-    <div class="tfp-box">
-      <!-- Categories -->
-      <ul class="tfp-rail" role="tablist" :aria-label="t('dataTable.filter.title')">
-        <li v-if="showSort">
-          <button
-            type="button"
-            role="tab"
-            class="tfp-cat"
-            :class="{ active: active === SORT }"
-            :aria-selected="active === SORT"
-            @click="active = SORT"
-          >
-            <span class="tfp-cat-name">{{ t("dataTable.filter.sortBy") }}</span>
-            <span v-if="sort.length" class="tfp-dot" aria-hidden="true"></span>
-          </button>
-        </li>
-        <li v-for="col in filterableColumns" :key="col.key">
-          <button
-            type="button"
-            role="tab"
-            class="tfp-cat"
-            :class="{ active: active === col.key }"
-            :aria-selected="active === col.key"
-            @click="openColumn(col.key)"
-          >
-            <span class="tfp-cat-name">{{ col.label }}</span>
-            <span v-if="selectedCount(col.key)" class="tfp-badge">{{ selectedCount(col.key) }}</span>
-          </button>
-        </li>
-      </ul>
-
-      <!-- Choices -->
-      <div class="tfp-pane" role="tabpanel">
-        <!-- Sort: one column at a time, then its order -->
-        <template v-if="active === SORT">
-          <div v-if="sortColumn" class="tfp-order">
-            <span class="tfp-order-label">{{ t("dataTable.filter.order") }}</span>
-            <div class="tfp-segment" role="radiogroup" :aria-label="t('dataTable.filter.order')">
-              <button
-                v-for="dir in (['asc', 'desc'] as const)"
-                :key="dir"
-                type="button"
-                role="radio"
-                class="tfp-segment-btn"
-                :class="{ active: sort[0]?.direction === dir }"
-                :aria-checked="sort[0]?.direction === dir"
-                @click="setSortColumn(sortColumn, dir)"
-              >
-                {{ sortDirectionLabel(sortColumn.type, dir, t) }}
-              </button>
-            </div>
+      <!-- Which fields are shown here -->
+      <div ref="pickerRoot" class="tfp-picker">
+        <button
+          type="button"
+          class="tfp-picker-btn"
+          :class="{ 'is-open': pickerOpen }"
+          :title="t('dataTable.filter.fieldsShown')"
+          :aria-expanded="pickerOpen"
+          @click="pickerOpen = !pickerOpen"
+        >
+          <ListChecks :size="12" aria-hidden="true" />
+          {{ shownKeys.length }}/{{ filterableColumns.length }}
+        </button>
+        <div v-if="pickerOpen" class="tfp-picker-menu" role="dialog" :aria-label="t('dataTable.filter.fieldsShown')">
+          <div class="tfp-search">
+            <Search :size="12" aria-hidden="true" />
+            <input v-model="fieldSearch" :placeholder="t('dataTable.filter.searchFields')" />
           </div>
-          <div class="tfp-options" role="radiogroup" :aria-label="t('dataTable.filter.sortBy')">
-            <label class="tfp-option">
-              <input type="radio" :name="sortGroup" :checked="!sortColumn" @change="setSort(null)" />
-              <span class="tfp-option-text">{{ t("dataTable.filter.defaultOrder") }}</span>
-            </label>
-            <label v-for="col in columns" :key="col.key" class="tfp-option">
-              <input
-                type="radio"
-                :name="sortGroup"
-                :checked="sortColumn?.key === col.key"
-                @change="setSortColumn(col, sort[0]?.direction ?? 'asc')"
-              />
-              <span class="tfp-option-text">{{ col.label }}</span>
-            </label>
-          </div>
-        </template>
-
-        <template v-else-if="activeColumn">
-          <div v-if="!facets" class="tfp-message">{{ t("dataTable.loading") }}</div>
-
-          <!-- Text: tick the values to keep -->
-          <template v-else-if="activeFacet?.kind === 'values'">
-            <label v-if="activeFacet.values.length > SEARCH_FROM" class="tfp-search">
-              <Search :size="13" aria-hidden="true" />
-              <input
-                v-model="search"
-                type="text"
-                :placeholder="t('dataTable.filter.search', { column: activeColumn.label })"
-              />
-            </label>
-            <div class="tfp-links">
-              <button type="button" class="tfp-link" @click="selectAllShown">{{ t("dataTable.filter.selectAll") }}</button>
-              <button type="button" class="tfp-link" :disabled="!selectedCount(activeColumn.key)" @click="clearColumn(activeColumn.key)">
-                {{ t("dataTable.filter.clear") }}
-              </button>
-            </div>
-            <div class="tfp-options">
-              <label v-for="item in shownValues" :key="item.value" class="tfp-option">
-                <input
-                  type="checkbox"
-                  :checked="isTicked(activeColumn.key, item.value)"
-                  @change="toggleValue(activeColumn, item.value, ($event.target as HTMLInputElement).checked)"
-                />
-                <span class="tfp-option-text">{{ item.label ?? item.value }}</span>
-                <span v-if="item.count !== undefined" class="tfp-count">{{ item.count }}</span>
-              </label>
-              <div v-if="!shownValues.length" class="tfp-message">
-                {{ t(activeFacet.values.length ? "dataTable.filter.noMatchingValues" : "dataTable.filter.noValues") }}
-              </div>
-            </div>
-          </template>
-
-          <!-- Yes / no: one of them (the CDP app's checkbox); click it again for both -->
-          <template v-else-if="activeFacet?.kind === 'boolean'">
-            <div class="tfp-options">
-              <label v-for="choice in BOOLEAN_CHOICES" :key="choice" class="tfp-option">
-                <input
-                  type="checkbox"
-                  :checked="equalsOf(activeColumn.key) === choice"
-                  @change="setEquals(activeColumn, ($event.target as HTMLInputElement).checked ? choice : null)"
-                />
-                <span class="tfp-option-text">{{ t(choice === "true" ? "dataTable.yes" : "dataTable.no") }}</span>
-              </label>
-            </div>
-            <p class="tfp-hint">{{ t("dataTable.filter.booleanHint") }}</p>
-          </template>
-
-          <!-- Text: the words the cells must contain (any case) -->
-          <template v-else-if="activeFacet?.kind === 'text'">
-            <label class="tfp-search tfp-contains">
-              <Search :size="13" aria-hidden="true" />
-              <input
-                type="text"
-                :value="containsOf(activeColumn.key)"
-                :placeholder="t('dataTable.filter.containsPlaceholder', { column: activeColumn.label })"
-                :aria-label="t('dataTable.filter.containsPlaceholder', { column: activeColumn.label })"
-                @input="setContains(activeColumn, ($event.target as HTMLInputElement).value)"
-              />
-            </label>
-            <p class="tfp-hint">{{ t("dataTable.filter.containsHint") }}</p>
-          </template>
-
-          <!-- Number, amount, date: a range -->
-          <template v-else-if="activeFacet?.kind === 'range'">
-            <p v-if="activeFacet.min !== null" class="tfp-hint">
-              {{ t("dataTable.filter.rangeHint", { from: show(activeFacet.min), to: show(activeFacet.max) }) }}
-            </p>
-            <!-- Dates: ranges that move with today's date (a report reused next month) -->
-            <template v-if="activeColumn.type === 'date'">
-              <span class="tfp-group-label">{{ t("dataTable.filter.movingRange") }}</span>
-              <div class="tfp-quick" role="group" :aria-label="t('dataTable.filter.movingRange')">
-                <button
-                  v-for="period in RELATIVE_PERIODS"
-                  :key="period"
-                  type="button"
-                  class="tfp-pill"
-                  :class="{ active: periodOf(activeColumn.key) === period }"
-                  :aria-pressed="periodOf(activeColumn.key) === period"
-                  @click="periodOf(activeColumn.key) === period ? clearColumn(activeColumn.key) : setPeriod(activeColumn, period)"
-                >
-                  {{ t(`dataTable.filter.periods.${period}`) }}
-                </button>
-              </div>
-              <p v-if="periodOf(activeColumn.key)" class="tfp-hint">
-                {{ t("dataTable.filter.movingRangeHint", periodDates(periodOf(activeColumn.key)!)) }}
-              </p>
-              <span v-if="quickPicks.length" class="tfp-group-label">{{ t("dataTable.filter.fixedRange") }}</span>
-            </template>
-            <div v-if="quickPicks.length" class="tfp-quick" role="group" :aria-label="t('dataTable.filter.quickPicks')">
-              <button
-                v-for="pick in quickPicks"
-                :key="pick.label"
-                type="button"
-                class="tfp-pill"
-                :class="{ active: isPicked(pick) }"
-                :aria-pressed="isPicked(pick)"
-                @click="isPicked(pick) ? clearColumn(activeColumn.key) : setRange(activeColumn, pick.from, pick.to)"
-              >
-                {{ pick.label }}
-              </button>
-            </div>
-            <!-- Dates stack: two date pickers don't fit side by side -->
-            <div class="tfp-range" :class="{ 'is-stacked': activeColumn.type === 'date' }">
-              <label class="tfp-field">
-                <span>{{ t(activeColumn.type === "date" ? "dataTable.filter.from" : "dataTable.filter.min") }}</span>
-                <input
-                  :type="activeColumn.type === 'date' ? 'date' : 'number'"
-                  :value="rangeOf(activeColumn.key).from"
-                  :placeholder="activeFacet.min !== null ? String(activeFacet.min) : ''"
-                  @change="setRange(activeColumn, ($event.target as HTMLInputElement).value, rangeOf(activeColumn.key).to)"
-                />
-              </label>
-              <span class="tfp-dash" aria-hidden="true">–</span>
-              <label class="tfp-field">
-                <span>{{ t(activeColumn.type === "date" ? "dataTable.filter.to" : "dataTable.filter.max") }}</span>
-                <input
-                  :type="activeColumn.type === 'date' ? 'date' : 'number'"
-                  :value="rangeOf(activeColumn.key).to"
-                  :placeholder="activeFacet.max !== null ? String(activeFacet.max) : ''"
-                  @change="setRange(activeColumn, rangeOf(activeColumn.key).from, ($event.target as HTMLInputElement).value)"
-                />
-              </label>
-            </div>
-            <button
-              type="button"
-              class="tfp-link"
-              :disabled="!selectedCount(activeColumn.key)"
-              @click="clearColumn(activeColumn.key)"
-            >
-              {{ t("dataTable.filter.clear") }}
+          <div class="tfp-picker-actions">
+            <button type="button" class="tfp-link" @click="showFields(filterableColumns.map((c) => c.key))">
+              {{ t("dataTable.filter.selectAll") }}
             </button>
-          </template>
-        </template>
+            <button type="button" class="tfp-link" @click="showFields([])">{{ t("dataTable.filter.clearAll") }}</button>
+          </div>
+          <div class="tfp-picker-list">
+            <label v-for="col in pickerColumns" :key="col.key" class="tfp-picker-row">
+              <input type="checkbox" :checked="shownKeys.includes(col.key)" @change="toggleField(col.key)" />
+              <Zap v-if="col.userDefined" :size="11" class="tfp-bolt" aria-hidden="true" />
+              <span>{{ col.label }}</span>
+            </label>
+            <p v-if="!pickerColumns.length" class="tfp-empty">{{ t("dataTable.filter.noFieldsMatch", { words: fieldSearch }) }}</p>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="tfp-foot">
-      <button type="button" class="tfp-link" :disabled="!appliedChips.length" @click="clearAll">
-        {{ t("dataTable.filter.clearAll") }}
-      </button>
-      <span v-if="matchCount !== null" class="tfp-muted">
-        {{ t("dataTable.filter.matchCount", matchCount) }}
-      </span>
+    <p v-if="!shownColumns.length" class="tfp-empty">{{ t("dataTable.filter.noFields") }}</p>
+
+    <!-- One block per field shown -->
+    <div v-for="col in shownColumns" :key="col.key" class="tfp-field">
+      <div class="tfp-field-head">
+        <span class="tfp-label">
+          <Zap v-if="col.userDefined" :size="11" class="tfp-bolt" aria-hidden="true" />{{ col.label }}
+        </span>
+        <button v-if="filterOf(col.key)" type="button" class="tfp-clear" @click="putFilter(col.key, null)">
+          {{ t("dataTable.filter.clear") }}
+        </button>
+      </div>
+
+      <!-- Values to tick: search, chips of the ticked ones, the list -->
+      <template v-if="kindOf(col) === 'values'">
+        <div class="tfp-search">
+          <Search :size="13" aria-hidden="true" />
+          <input
+            :value="valueSearch[col.key] ?? ''"
+            :placeholder="t('dataTable.filter.typeToSearch', { column: col.label.toLowerCase() })"
+            @input="valueSearch[col.key] = ($event.target as HTMLInputElement).value"
+          />
+        </div>
+        <div v-if="tickedOf(col.key).length" class="tfp-chips">
+          <span v-for="value in tickedOf(col.key)" :key="value" class="tfp-chip">
+            {{ labelOf(col, value) }}
+            <button type="button" :aria-label="t('dataTable.filter.remove')" @click="toggleValue(col, value)">
+              <X :size="10" aria-hidden="true" />
+            </button>
+          </span>
+        </div>
+        <div class="tfp-options">
+          <button
+            v-for="option in visibleOptions(col)"
+            :key="option.value"
+            type="button"
+            class="tfp-option"
+            :class="{ 'is-on': tickedOf(col.key).includes(option.value) }"
+            @click="toggleValue(col, option.value)"
+          >
+            <span>{{ option.label ?? option.value }}</span>
+            <small v-if="option.count !== undefined">{{ option.count }}</small>
+            <Check v-if="tickedOf(col.key).includes(option.value)" :size="13" aria-hidden="true" />
+          </button>
+          <p v-if="!visibleOptions(col).length" class="tfp-empty">{{ t("dataTable.filter.noMatchingValues") }}</p>
+        </div>
+      </template>
+
+      <!-- Words in the cell -->
+      <input
+        v-else-if="kindOf(col) === 'text'"
+        class="tfp-input"
+        :value="containsOf(col.key)"
+        :placeholder="t('dataTable.filter.search', { column: col.label.toLowerCase() })"
+        @input="setContains(col, ($event.target as HTMLInputElement).value)"
+      />
+
+      <!-- All / Yes / No -->
+      <div v-else-if="kindOf(col) === 'boolean'" class="tfp-seg" role="radiogroup" :aria-label="col.label">
+        <button
+          v-for="choice in BOOLEAN_CHOICES"
+          :key="choice ?? 'all'"
+          type="button"
+          role="radio"
+          class="tfp-seg-btn"
+          :class="{ 'is-on': equalsOf(col.key) === choice }"
+          :aria-checked="equalsOf(col.key) === choice"
+          @click="setEquals(col, choice)"
+        >
+          {{ choice === null ? t("dataTable.filter.all") : t(choice === "true" ? "dataTable.yes" : "dataTable.no") }}
+        </button>
+      </div>
+
+      <!-- Min / Max, From / To (dates also move with today's date) -->
+      <template v-else>
+        <div class="tfp-range">
+          <input
+            class="tfp-input"
+            :type="col.type === 'date' ? 'date' : 'number'"
+            :value="rangeOf(col.key).from"
+            :placeholder="t('dataTable.filter.min')"
+            @input="setRange(col, ($event.target as HTMLInputElement).value, rangeOf(col.key).to)"
+          />
+          <input
+            class="tfp-input"
+            :type="col.type === 'date' ? 'date' : 'number'"
+            :value="rangeOf(col.key).to"
+            :placeholder="t('dataTable.filter.max')"
+            @input="setRange(col, rangeOf(col.key).from, ($event.target as HTMLInputElement).value)"
+          />
+        </div>
+        <div class="tfp-range-labels">
+          <span>{{ t(col.type === "date" ? "dataTable.filter.from" : "dataTable.filter.min") }}</span>
+          <span>{{ t(col.type === "date" ? "dataTable.filter.to" : "dataTable.filter.max") }}</span>
+        </div>
+        <div v-if="col.type === 'date'" class="tfp-periods">
+          <button
+            v-for="period in RELATIVE_PERIODS"
+            :key="period"
+            type="button"
+            class="tfp-period"
+            :class="{ 'is-on': periodOf(col.key) === period }"
+            :title="t('dataTable.filter.movingRangeHint', periodDates(period))"
+            @click="periodOf(col.key) === period ? putFilter(col.key, null) : setPeriod(col, period)"
+          >
+            {{ t(`dataTable.filter.periods.${period}`) }}
+          </button>
+        </div>
+      </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useId, watch, type Component } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { ArrowDownUp, Funnel, Search, X } from "@lucide/vue";
-import type {
-  ColumnFacet,
-  DataColumn,
-  RelativePeriod,
-  SourceFacets,
-  TableFilter,
-  TableSort,
-} from "@/types/dataSource";
+import { Check, ListChecks, Search, X, Zap } from "@lucide/vue";
+import type { DataColumn, RelativePeriod, SourceFacets, TableFilter } from "@/types/dataSource";
 import { RELATIVE_PERIODS, periodRange } from "@/utils/table/dataBinding";
 import { formatCellValue } from "@/utils/table/dataTable";
-import { describeFilter, describeSort, sortDirectionLabel } from "@/utils/table/summary";
 
-const props = withDefaults(
-  defineProps<{
-    // Every column of the source (filters may use columns the table doesn't show)
-    columns: DataColumn[];
-    facets: SourceFacets | null;
-    filters: TableFilter[];
-    sort?: TableSort[];
-    // Rows the current choices keep; null while unknown
-    matchCount: number | null;
-    // Charts have no row order: no Sort category
-    showSort?: boolean;
-  }>(),
-  { sort: () => [], showSort: true },
-);
+const props = defineProps<{
+  // Every column of the source (filters may use columns the table doesn't show)
+  columns: DataColumn[];
+  facets: SourceFacets | null;
+  filters: TableFilter[];
+  // Rows the current choices keep; null while unknown
+  matchCount: number | null;
+  // Fields shown at first besides the filtered ones (the table's columns)
+  suggestedFields?: string[];
+}>();
 
 const emit = defineEmits<{
   "update:filters": [filters: TableFilter[]];
-  "update:sort": [sort: TableSort[]];
 }>();
 
 const { t, locale } = useI18n();
 
-const SORT = "__sort";
-// A search box appears for columns with more values than this
-const SEARCH_FROM = 8;
+// Only this many values are listed at once; typing narrows the list (as the CDP app)
+const MAX_VISIBLE_OPTIONS = 20;
+// Fields shown when nothing suggests any
+const FIRST_FIELDS = 3;
+const BOOLEAN_CHOICES = [null, "true", "false"] as const;
 
-const search = ref("");
+type FieldKind = "values" | "text" | "boolean" | "range";
 
-// Columns that can be filtered: a list of values to tick, words to type, or a
-// range (its ends typed when the smallest / largest values aren't known)
+// Columns that can be filtered: a list of values to tick, words to type, yes / no, or a range
 const filterableColumns = computed(() =>
   props.columns.filter((c) => {
     const facet = props.facets?.[c.key];
@@ -290,37 +204,63 @@ const filterableColumns = computed(() =>
   }),
 );
 
-// The category opened first: Sort, or the first column when there is no Sort
-const firstCategory = () => (props.showSort ? SORT : (filterableColumns.value[0]?.key ?? ""));
-const active = ref<string>(firstCategory());
+const kindOf = (col: DataColumn): FieldKind => {
+  const facet = props.facets?.[col.key];
+  if (facet) return facet.kind;
+  return col.type === "text" ? "text" : "range";
+};
 
-const activeColumn = computed(() => props.columns.find((c) => c.key === active.value));
-const activeFacet = computed<ColumnFacet | undefined>(() =>
-  activeColumn.value ? props.facets?.[activeColumn.value.key] : undefined,
+// ── Fields shown ──
+// The user's choice; until then: the filtered fields, then the suggested ones
+const chosenKeys = ref<string[] | null>(null);
+const shownKeys = computed(() => {
+  if (chosenKeys.value) return chosenKeys.value;
+  const known = new Set(filterableColumns.value.map((c) => c.key));
+  const start = [...props.filters.map((f) => f.column), ...(props.suggestedFields ?? [])].filter((k) => known.has(k));
+  const keys = [...new Set(start)];
+  return keys.length ? keys : filterableColumns.value.slice(0, FIRST_FIELDS).map((c) => c.key);
+});
+const shownColumns = computed(() =>
+  shownKeys.value.map((k) => filterableColumns.value.find((c) => c.key === k)).filter((c): c is DataColumn => !!c),
 );
 
-// A new source: back to Sort
+// Another source: its own fields
 watch(
   () => props.columns.map((c) => c.key).join(","),
   () => {
-    active.value = firstCategory();
-    search.value = "";
+    chosenKeys.value = null;
+    Object.keys(valueSearch).forEach((k) => delete valueSearch[k]);
   },
 );
 
-function openColumn(key: string) {
-  active.value = key;
-  search.value = "";
+// A field taken away loses its filter (as the CDP app)
+function showFields(keys: string[]) {
+  const dropped = props.filters.filter((f) => !keys.includes(f.column));
+  chosenKeys.value = keys;
+  if (dropped.length) emit("update:filters", props.filters.filter((f) => keys.includes(f.column)));
 }
 
+function toggleField(key: string) {
+  showFields(shownKeys.value.includes(key) ? shownKeys.value.filter((k) => k !== key) : [...shownKeys.value, key]);
+}
+
+const pickerOpen = ref(false);
+const fieldSearch = ref("");
+const pickerRoot = ref<HTMLElement | null>(null);
+const pickerColumns = computed(() => {
+  const q = fieldSearch.value.trim().toLowerCase();
+  return q ? filterableColumns.value.filter((c) => c.label.toLowerCase().includes(q)) : filterableColumns.value;
+});
+
+// The list closes on a click elsewhere
+function closePicker(event: PointerEvent) {
+  if (pickerOpen.value && !pickerRoot.value?.contains(event.target as Node)) pickerOpen.value = false;
+}
+onMounted(() => document.addEventListener("pointerdown", closePicker, true));
+onBeforeUnmount(() => document.removeEventListener("pointerdown", closePicker, true));
+
+// ── Filters ──
 const filterOf = (key: string) => props.filters.find((f) => f.column === key);
-
-function selectedCount(key: string): number {
-  const f = filterOf(key);
-  if (!f) return 0;
-  if (f.operator === "in") return f.values?.length ?? 0;
-  return f.period || f.value || f.value2 ? 1 : 0;
-}
 
 // Replace (or drop) one column's filter
 function putFilter(key: string, filter: TableFilter | null) {
@@ -328,570 +268,424 @@ function putFilter(key: string, filter: TableFilter | null) {
   emit("update:filters", filter ? [...others, filter] : others);
 }
 
-function clearColumn(key: string) {
-  putFilter(key, null);
-}
+const base = (col: DataColumn) => ({ column: col.key, label: col.label, type: col.type });
 
-function clearAll() {
-  emit("update:filters", []);
-  emit("update:sort", []);
-}
+// Values to tick
+const valueSearch = reactive<Record<string, string>>({});
+const tickedOf = (key: string) => filterOf(key)?.values ?? [];
 
-function setSort(sort: TableSort | null) {
-  emit("update:sort", sort ? [sort] : []);
-}
-
-// Radio group name of this panel's sort choices, unique on the page
-const sortGroup = `tfp-sort-${useId()}`;
-
-// The column sorted on (a sort on a column the source no longer has counts as none)
-const sortColumn = computed(() => props.columns.find((c) => c.key === props.sort[0]?.column));
-
-function setSortColumn(col: DataColumn, direction: "asc" | "desc") {
-  setSort({ column: col.key, label: col.label, type: col.type, direction });
-}
-
-// ── Text values ──
-const shownValues = computed(() => {
-  const facet = activeFacet.value;
+function visibleOptions(col: DataColumn) {
+  const facet = props.facets?.[col.key];
   if (facet?.kind !== "values") return [];
-  const q = search.value.trim().toLowerCase();
-  return q ? facet.values.filter((v) => (v.label ?? v.value).toLowerCase().includes(q)) : facet.values;
-});
+  const q = (valueSearch[col.key] ?? "").trim().toLowerCase();
+  const matching = q ? facet.values.filter((v) => (v.label ?? v.value).toLowerCase().includes(q)) : facet.values;
+  return matching.slice(0, MAX_VISIBLE_OPTIONS);
+}
 
-const isTicked = (key: string, value: string) => filterOf(key)?.values?.includes(value) ?? false;
+const labelOf = (col: DataColumn, value: string) => {
+  const facet = props.facets?.[col.key];
+  const known = facet?.kind === "values" ? facet.values.find((v) => v.value === value)?.label : undefined;
+  return known ?? filterOf(col.key)?.labels?.[value] ?? value;
+};
 
 // The ticked values with their names as shown (the chips show the names,
 // the stored values are what is filtered on)
-function inFilter(col: DataColumn, values: string[]): TableFilter | null {
-  if (!values.length) return null;
-  const facet = props.facets?.[col.key];
-  const labels: Record<string, string> = {};
-  if (facet?.kind === "values") {
-    for (const v of facet.values) if (v.label && values.includes(v.value)) labels[v.value] = v.label;
-  }
-  return { column: col.key, label: col.label, type: col.type, operator: "in", values, ...(Object.keys(labels).length ? { labels } : {}) };
+function toggleValue(col: DataColumn, value: string) {
+  const current = tickedOf(col.key);
+  const values = current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
+  if (!values.length) return putFilter(col.key, null);
+  const labels = Object.fromEntries(values.map((v) => [v, labelOf(col, v)]).filter(([v, l]) => v !== l));
+  putFilter(col.key, { ...base(col), operator: "in", values, ...(Object.keys(labels).length ? { labels } : {}) });
 }
 
-function toggleValue(col: DataColumn, value: string, on: boolean) {
-  const current = filterOf(col.key)?.values ?? [];
-  putFilter(col.key, inFilter(col, on ? [...current, value] : current.filter((v) => v !== value)));
-}
-
-function selectAllShown() {
-  const col = activeColumn.value;
-  if (!col) return;
-  const current = filterOf(col.key)?.values ?? [];
-  putFilter(col.key, inFilter(col, [...new Set([...current, ...shownValues.value.map((v) => v.value)])]));
-}
-
-// ── Yes / no ──
-const BOOLEAN_CHOICES = ["true", "false"] as const;
-
-const equalsOf = (key: string) => {
+// Yes / no
+const equalsOf = (key: string): "true" | "false" | null => {
   const f = filterOf(key);
-  return f?.operator === "equals" ? f.value : undefined;
+  return f?.operator === "equals" && (f.value === "true" || f.value === "false") ? f.value : null;
 };
 
 function setEquals(col: DataColumn, value: "true" | "false" | null) {
-  putFilter(col.key, value ? { column: col.key, label: col.label, type: col.type, operator: "equals", value } : null);
+  putFilter(col.key, value ? { ...base(col), operator: "equals", value } : null);
 }
 
-// ── Typed words ──
+// Typed words
 const containsOf = (key: string) => {
   const f = filterOf(key);
   return f?.operator === "contains" ? (f.value ?? "") : "";
 };
 
 function setContains(col: DataColumn, words: string) {
-  putFilter(col.key, words.trim() ? { column: col.key, label: col.label, type: col.type, operator: "contains", value: words } : null);
+  putFilter(col.key, words.trim() ? { ...base(col), operator: "contains", value: words } : null);
 }
 
-// ── Ranges ──
+// Ranges (a typed date ends a moving range)
 const rangeOf = (key: string) => {
   const f = filterOf(key);
-  return { from: f?.operator === "between" ? (f.value ?? "") : "", to: f?.operator === "between" ? (f.value2 ?? "") : "" };
+  const typed = f?.operator === "between" && !f.period;
+  return { from: typed ? (f.value ?? "") : "", to: typed ? (f.value2 ?? "") : "" };
 };
 
 function setRange(col: DataColumn, from: string, to: string) {
-  const empty = !from && !to;
   putFilter(
     col.key,
-    empty ? null : { column: col.key, label: col.label, type: col.type, operator: "between", value: from || undefined, value2: to || undefined },
+    !from && !to ? null : { ...base(col), operator: "between", value: from || undefined, value2: to || undefined },
   );
 }
 
-// ── Moving date ranges ──
+// Moving date ranges
 const periodOf = (key: string): RelativePeriod | undefined => {
   const f = filterOf(key);
   return f?.operator === "between" ? f.period : undefined;
 };
 
 function setPeriod(col: DataColumn, period: RelativePeriod) {
-  putFilter(col.key, { column: col.key, label: col.label, type: col.type, operator: "between", period });
+  putFilter(col.key, { ...base(col), operator: "between", period });
 }
 
-// Today's dates for a moving range, for the hint under the choices
+// Today's dates for a moving range, for its tooltip
 const periodDates = (period: RelativePeriod) => {
   const { from, to } = periodRange(period);
-  return { from: show(from), to: show(to) };
+  return { from: formatCellValue(from, "date", locale.value), to: formatCellValue(to, "date", locale.value) };
 };
-
-// Numbers in labels without trailing ".00"
-function show(value: string | number | null | undefined): string {
-  if (value === null || value === undefined || value === "") return "";
-  const type = activeColumn.value?.type ?? "text";
-  if (type === "date") return formatCellValue(value, "date", locale.value);
-  const n = Number(value);
-  return n.toLocaleString(locale.value, { maximumFractionDigits: Number.isInteger(n) ? 0 : 2 });
-}
-
-interface QuickPick {
-  label: string;
-  from: string;
-  to: string;
-}
-
-// A round step that splits the range into about four parts: 1, 2, 2.5 or 5 × 10^n
-function niceStep(span: number): number {
-  const rough = span / 4;
-  if (rough <= 0) return 0;
-  const power = 10 ** Math.floor(Math.log10(rough));
-  const unit = [1, 2, 2.5, 5, 10].find((m) => m * power >= rough) ?? 10;
-  return unit * power;
-}
-
-const MAX_MONTH_PICKS = 12;
-
-const quickPicks = computed<QuickPick[]>(() => {
-  const col = activeColumn.value;
-  const facet = activeFacet.value;
-  if (!col || facet?.kind !== "range" || facet.min === null || facet.max === null) return [];
-
-  if (col.type === "date") {
-    // One pick per month in the data
-    const picks: QuickPick[] = [];
-    const start = new Date(String(facet.min).slice(0, 7) + "-01T00:00:00");
-    const end = new Date(String(facet.max).slice(0, 7) + "-01T00:00:00");
-    const iso = (d: Date) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    for (let d = start; d <= end && picks.length < MAX_MONTH_PICKS; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
-      const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-      picks.push({
-        label: d.toLocaleDateString(locale.value, { month: "short", year: "numeric" }),
-        from: iso(d),
-        to: iso(last),
-      });
-    }
-    return picks.length > 1 ? picks : [];
-  }
-
-  const min = Number(facet.min);
-  const max = Number(facet.max);
-  const step = niceStep(max - min);
-  if (!step) return [];
-  const cuts: number[] = [];
-  for (let c = Math.ceil(min / step) * step; c < max; c += step) if (c > min) cuts.push(c);
-  if (!cuts.length) return [];
-  const picks: QuickPick[] = [{ label: t("dataTable.filter.under", { value: show(cuts[0]) }), from: "", to: String(cuts[0]) }];
-  for (let i = 1; i < cuts.length; i++) {
-    picks.push({
-      label: t("dataTable.filter.range", { from: show(cuts[i - 1]), to: show(cuts[i]) }),
-      from: String(cuts[i - 1]),
-      to: String(cuts[i]),
-    });
-  }
-  const top = cuts[cuts.length - 1]!;
-  picks.push({ label: t("dataTable.filter.andAbove", { value: show(top) }), from: String(top), to: "" });
-  return picks;
-});
-
-const isPicked = (pick: QuickPick) => {
-  const key = activeColumn.value?.key;
-  if (!key) return false;
-  const r = rangeOf(key);
-  return r.from === pick.from && r.to === pick.to;
-};
-
-// ── What's applied ──
-const appliedChips = computed<{ key: string; text: string; icon: Component; remove: () => void }[]>(() => {
-  const chips = props.filters
-    .filter((f) => selectedCount(f.column) > 0)
-    .map((f) => ({
-      key: `f-${f.column}`,
-      text: describeFilter(undefined, f, t, locale.value),
-      icon: Funnel as Component,
-      remove: () => clearColumn(f.column),
-    }));
-  const s = props.sort[0];
-  if (s) {
-    chips.push({ key: "sort", text: describeSort(undefined, s, t), icon: ArrowDownUp as Component, remove: () => setSort(null) });
-  }
-  return chips;
-});
 </script>
 
 <style scoped>
 .tfp {
   display: flex;
   flex-direction: column;
+  gap: 14px;
+}
+
+.tfp-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tfp-match {
+  margin-right: auto;
+  color: #6f6a7e;
+  font-size: 11.5px;
+}
+
+.tfp-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid #e6e5ee;
+  border-radius: 6px;
+  background: #f6f5fa;
+  color: #45425a;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.tfp-action:hover {
+  border-color: #c9bdfb;
+  color: #6440f4;
+}
+
+.tfp-link,
+.tfp-clear {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #6f6a7e;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.tfp-link:hover,
+.tfp-clear:hover {
+  color: #1c1b26;
+}
+
+.tfp-picker {
+  position: relative;
+}
+
+.tfp-picker-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid #e6e5ee;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #6f6a7e;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tfp-picker-btn:hover,
+.tfp-picker-btn.is-open {
+  border-color: #c9bdfb;
+  background: #f4f1ff;
+  color: #6440f4;
+}
+
+.tfp-picker-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 256px;
+  padding: 10px;
+  border: 1px solid #e6e5ee;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(28, 27, 38, 0.14);
+}
+
+.tfp-picker-actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 2px;
+}
+
+.tfp-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 256px;
+  overflow-y: auto;
+}
+
+.tfp-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  color: #45425a;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tfp-picker-row:hover {
+  background: #f6f5fa;
+}
+
+.tfp-picker-row input {
+  flex: none;
+  accent-color: #6440f4;
+}
+
+.tfp-picker-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tfp-bolt {
+  flex: none;
+  margin-right: 3px;
+  color: #f59e0b;
+}
+
+.tfp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tfp-field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
 }
 
-.tfp-applied {
+.tfp-label {
+  display: inline-flex;
+  align-items: center;
+  color: #6f6a7e;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tfp-clear {
+  font-size: 10px;
+  color: #8a84a3;
+}
+
+.tfp-input,
+.tfp-search input {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #e6e5ee;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1c1b26;
+  font-size: 12.5px;
+}
+
+.tfp-input:focus,
+.tfp-search input:focus {
+  outline: none;
+  border-color: #6440f4;
+  box-shadow: 0 0 0 1px #6440f4;
+}
+
+.tfp-search {
+  position: relative;
+}
+
+.tfp-search svg {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  color: #8a84a3;
+  pointer-events: none;
+}
+
+.tfp-search input {
+  padding-left: 30px;
+}
+
+.tfp-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
 }
 
 .tfp-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  max-width: 100%;
-  padding: 3px 8px;
-  border: 1px solid #ddd6fe;
+  padding: 3px 4px 3px 10px;
   border-radius: 999px;
-  background: #f4f1ff;
-  color: #5b3ee0;
-  font-size: 11px;
-  cursor: pointer;
+  background: #6440f4;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 500;
 }
 
-.tfp-chip span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tfp-chip:hover {
-  border-color: #c4b5fd;
-  background: #ede9fe;
-}
-
-.tfp-box {
-  display: grid;
-  grid-template-columns: 132px minmax(0, 1fr);
-  height: 300px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #fff;
-}
-
-.tfp-rail {
-  margin: 0;
-  padding: 4px 0;
-  list-style: none;
-  overflow-y: auto;
-  background: #f6f7f9;
-  border-right: 1px solid #e5e7eb;
-}
-
-.tfp-cat {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 9px 10px;
+.tfp-chip button {
+  display: inline-flex;
+  padding: 2px;
   border: none;
-  background: transparent;
-  color: #4b5563;
-  font-size: 12px;
-  text-align: left;
+  border-radius: 999px;
+  background: none;
+  color: inherit;
   cursor: pointer;
 }
 
-.tfp-cat:hover {
-  color: #111827;
-}
-
-.tfp-cat.active {
-  background: #fff;
-  color: #111827;
-  font-weight: 600;
-}
-
-.tfp-cat.active::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 6px;
-  bottom: 6px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: #6440f4;
-}
-
-.tfp-cat-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tfp-badge {
-  flex-shrink: 0;
-  min-width: 18px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: #6440f4;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 18px;
-  text-align: center;
-}
-
-.tfp-dot {
-  flex-shrink: 0;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #6440f4;
-}
-
-.tfp-pane {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 0;
-  padding: 10px;
-  overflow-y: auto;
+.tfp-chip button:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .tfp-options {
   display: flex;
   flex-direction: column;
-}
-
-.tfp-order {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #eef0f4;
-}
-
-.tfp-order-label {
-  flex-shrink: 0;
-  font-size: 11px;
-  color: #6b7280;
-}
-
-.tfp-segment {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  padding: 2px;
+  max-height: 192px;
+  overflow-y: auto;
+  border: 1px solid #e6e5ee;
   border-radius: 6px;
-  background: #f3f4f6;
-}
-
-.tfp-segment-btn {
-  flex: 1;
-  min-width: 0;
-  padding: 4px 6px;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: #4b5563;
-  font-size: 11px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-}
-
-.tfp-segment-btn:hover {
-  color: #111827;
-}
-
-.tfp-segment-btn.active {
-  background: #fff;
-  color: #5b3ee0;
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  background: #fbfbfd;
 }
 
 .tfp-option {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 4px;
-  border-radius: 6px;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  color: #45425a;
   font-size: 12px;
-  color: #1f2937;
+  text-align: left;
   cursor: pointer;
 }
 
-.tfp-option:hover {
-  background: #f3f4f6;
-}
-
-.tfp-option input {
-  flex-shrink: 0;
-  margin: 0;
-  accent-color: #6440f4;
-}
-
-.tfp-option-text {
+.tfp-option span {
   flex: 1;
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.tfp-count {
-  flex-shrink: 0;
-  font-size: 11px;
-  color: #9ca3af;
+.tfp-option small {
+  color: #8a84a3;
 }
 
-.tfp-search {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 8px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  color: #9ca3af;
+.tfp-option:hover {
+  background: #f1eff7;
 }
 
-.tfp-search input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 12px;
-  color: #1f2937;
-}
-
-.tfp-links {
-  display: flex;
-  gap: 12px;
-}
-
-.tfp-link {
-  align-self: flex-start;
-  padding: 0;
-  border: none;
-  background: none;
+.tfp-option.is-on {
   color: #6440f4;
+  font-weight: 600;
+}
+
+.tfp-range {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tfp-range-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -2px;
+  padding: 0 2px;
+  color: #8a84a3;
+  font-size: 10px;
+}
+
+.tfp-seg {
+  display: flex;
+  gap: 6px;
+}
+
+.tfp-seg-btn,
+.tfp-period {
+  flex: 1;
+  padding: 6px 0;
+  border: 1px solid #e6e5ee;
+  border-radius: 6px;
+  background: #f6f5fa;
+  color: #6f6a7e;
   font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
 }
 
-.tfp-link:disabled {
-  color: #9ca3af;
-  cursor: default;
+.tfp-seg-btn.is-on,
+.tfp-period.is-on {
+  border-color: #6440f4;
+  background: #6440f4;
+  color: #ffffff;
 }
 
-.tfp-hint {
-  margin: 0;
-  font-size: 11px;
-  color: #6b7280;
-}
-
-.tfp-group-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #9ca3af;
-}
-
-.tfp-quick {
+.tfp-periods {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.tfp-pill {
+.tfp-period {
+  flex: none;
   padding: 4px 10px;
-  border: 1px solid #d1d5db;
   border-radius: 999px;
-  background: #fff;
-  color: #374151;
   font-size: 11px;
-  cursor: pointer;
 }
 
-.tfp-pill:hover {
-  border-color: #c4b5fd;
-}
-
-.tfp-pill.active {
-  border-color: #6440f4;
-  background: #f4f1ff;
-  color: #5b3ee0;
-  font-weight: 600;
-}
-
-.tfp-range {
-  display: flex;
-  align-items: flex-end;
-  gap: 6px;
-}
-
-.tfp-field {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-  font-size: 11px;
-  color: #6b7280;
-}
-
-.tfp-field input {
-  height: 30px;
-  min-width: 0;
-  padding: 0 8px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 12px;
-  color: #1f2937;
-}
-
-.tfp-range.is-stacked {
-  flex-direction: column;
-  align-items: stretch;
-}
-
-.tfp-range.is-stacked .tfp-dash {
-  display: none;
-}
-
-.tfp-field input {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.tfp-dash {
-  padding-bottom: 7px;
-  color: #9ca3af;
-}
-
-.tfp-message {
-  padding: 12px 4px;
-  font-size: 12px;
-  color: #9ca3af;
-}
-
-.tfp-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.tfp-muted {
-  font-size: 11px;
-  color: #9ca3af;
+.tfp-empty {
+  margin: 0;
+  padding: 8px 12px;
+  color: #8a84a3;
+  font-size: 11.5px;
 }
 </style>

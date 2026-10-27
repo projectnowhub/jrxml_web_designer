@@ -8,7 +8,16 @@
 import { queryOptions } from "@tanstack/vue-query";
 import { reportDataApi } from "@/services/reportDataService";
 import { toSourceFacets, toSourceSchema, toSourceSummary } from "@/services/helpers/entityMappers";
-import type { DataQuery, DataQueryResult, DataSourceSchema, SourceFacets } from "@/types/dataSource";
+import { buildTableTotalRequests, totalColumns } from "@/services/helpers/tableTotalHelpers";
+import type {
+  AggregateRequest,
+  DataQuery,
+  DataQueryResult,
+  DataSourceSchema,
+  SourceFacets,
+  TableDataBinding,
+  TableTotals,
+} from "@/types/dataSource";
 import type { EntityMetadata } from "@/types/entityMetadata";
 import { DATA_STALE_TIME, queryClient } from "./queryClient";
 import { chartKeys, dataSourceKeys, projectKeys } from "./queryKeys";
@@ -74,6 +83,25 @@ export function rowsQuery(projectId: string, sourceId: string, query: DataQuery)
   });
 }
 
+// One total of a data table's totals row, over every matching row, by the
+// backend (as the PDF adds up every row). The analytics endpoint takes one
+// measure per request (as the CDP app's AggregateRequest), so each total
+// column is its own request, cached on its own: changing one column's total
+// asks only for that one
+export const tableTotalQuery = (projectId: string, sourceId: string, request: AggregateRequest) =>
+  queryOptions({
+    queryKey: dataSourceKeys.total(projectId, sourceId, request),
+    queryFn: async ({ signal }): Promise<number | null> =>
+      (await reportDataApi.postChartAggregate(request, signal)).totalValue ?? null,
+    staleTime: DATA_STALE_TIME,
+  });
+
+// A table's total columns, each with its request
+export function tableTotalRequests(binding: TableDataBinding) {
+  const requests = buildTableTotalRequests(binding);
+  return totalColumns(binding).map((column, i) => ({ column, request: requests[i]! }));
+}
+
 // ---- Outside components (same cache) ---------------------------------------
 
 // A project's tables (every project has the same ones; the project only
@@ -92,6 +120,16 @@ export async function fetchFacets(_projectId: string, sourceId: string): Promise
 }
 export const fetchRows = (projectId: string, sourceId: string, query: DataQuery) =>
   queryClient.fetchQuery(rowsQuery(projectId, sourceId, query));
+// A table's totals row ({} when it has none)
+export async function fetchTableTotals(binding: TableDataBinding): Promise<TableTotals> {
+  const totals = await Promise.all(
+    tableTotalRequests(binding).map(async ({ column, request }) => [
+      column.key,
+      await queryClient.fetchQuery(tableTotalQuery(binding.projectId, binding.sourceId, request)),
+    ]),
+  );
+  return Object.fromEntries(totals);
+}
 
 // Report Data's refresh button: projects, sources, columns, rows and chart
 // numbers all count as stale; what is on screen is fetched again now, the

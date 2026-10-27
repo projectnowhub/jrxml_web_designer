@@ -36,6 +36,7 @@ import {
   JMIX_PAGE_SIZE,
   LIST_FETCH_PLANS,
   PROJECT_DETAILS_FETCH_PLAN,
+  TABLE_MAX_PAGE_SIZE,
   TABLE_ROWS_LIMIT,
 } from "@/constants/reportDataConstants";
 import { Entity } from "@/enums/entityName";
@@ -99,8 +100,8 @@ export async function getEntities(signal?: AbortSignal): Promise<EntityMetadata[
 
 // ---- 3. Table rows ------------------------------------------------------------
 
-// The project's rows of an entity: only the asked columns, newest first unless
-// sorted, at most TABLE_ROWS_LIMIT (25) in one request
+// One page of the project's rows of an entity: only the asked columns, newest
+// first unless sorted, at most TABLE_MAX_PAGE_SIZE (100) in one request
 export async function getTableRows(
   projectId: string,
   sourceId: string,
@@ -110,8 +111,8 @@ export async function getTableRows(
   const page = await getJmixListPage<JmixRecord>(
     sourceId,
     {
-      limit: Math.min(query.limit ?? TABLE_ROWS_LIMIT, TABLE_ROWS_LIMIT),
-      offset: 0,
+      limit: Math.min(query.limit ?? TABLE_ROWS_LIMIT, TABLE_MAX_PAGE_SIZE),
+      offset: query.offset ?? 0,
       filter: {
         group: "AND",
         conditions: [projectCondition(sourceId, projectId), ...tableFilterConditions(resolveFilterDates(query.filters))],

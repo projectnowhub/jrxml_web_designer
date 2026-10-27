@@ -6,9 +6,15 @@ import { Entity } from "@/enums/entityName";
 // The page size the CDP app's lists use (every project request asks for this)
 export const JMIX_PAGE_SIZE = 30;
 
-// The most rows the designer ever asks for a table (one request: the canvas,
-// the setup popup's preview, the preview window); the PDF reads every row itself
+// Rows the designer asks for a table by default (one request: the canvas, the
+// preview window, the setup popup's first page); the PDF reads every row itself
 export const TABLE_ROWS_LIMIT = 25;
+
+// Rows per page in the setup popup's grid (as the CDP app's tables page)
+export const TABLE_PAGE_SIZES: readonly number[] = [25, 50, 100];
+
+// The most rows one request asks for (the largest page)
+export const TABLE_MAX_PAGE_SIZE = 100;
 
 // The project fetch plan: the whole project (what the CDP app's project page
 // reads), so the list's rows already hold everything Report Data shows

@@ -531,7 +531,6 @@ async function applyDataTable(element: TableElement, spec: ElementSpec, ctx: Kin
     columns,
     filters: has(spec, "filters") ? await readFilters(projectId, sourceId, schema, spec.filters, "filters") : same?.filters ?? [],
     sort,
-    ...(has(spec, "rowLimit") ? (spec.rowLimit ? { rowLimit: spec.rowLimit } : {}) : current?.rowLimit ? { rowLimit: current.rowLimit } : {}),
     showTotals: columns.some((c) => c.total),
     theme: spec.theme ?? current?.theme ?? "corporateBlue",
     ...(!has(spec, "theme") && current?.look ? { look: current.look, customized: current.customized } : {}),
@@ -590,7 +589,6 @@ export const dataTableKind: ElementKind = {
       additionalProperties: false,
     },
     filters: FILTERS_PROP,
-    rowLimit: { type: "integer", minimum: 0, description: "Show at most this many rows (0: all)" },
     theme: { type: "string", enum: TABLE_THEMES, description: "Table style: corporateBlue (default), minimal, emerald, slate, burgundy, teal, gold, violet, none" },
     tableName: { type: "string" },
     highlights: {
@@ -651,7 +649,6 @@ export const dataTableKind: ElementKind = {
       columns: b.columns.map((c) => defined({ column: c.key, header: c.label, total: c.total, look: c.look })),
       highlights: b.highlights?.map(({ id: _id, ...rule }) => rule),
       sort: b.sort[0] ? { column: b.sort[0].column, direction: b.sort[0].direction } : undefined,
-      rowLimit: b.rowLimit,
       theme: b.theme,
       tableName: b.tableName,
       filters: describeFilters(b.filters),

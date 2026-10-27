@@ -95,6 +95,10 @@ export interface DataColumn {
   // A field the tenant added to the entity (its user-defined fields), not one
   // every tenant has (its base fields)
   userDefined?: boolean;
+  // A link to another record (an ENTITY field, e.g. a row's Contract): the
+  // cell shows that record's name (_instanceName); it can't be filtered or
+  // sorted on (Jmix would compare the record's id)
+  linked?: boolean;
 }
 
 export interface DataSourceSchema {
@@ -155,6 +159,8 @@ export type TotalFunction = "sum" | "count" | "avg";
 // One column shown in a table
 export interface TableColumnBinding {
   key: string;
+  // A link to another record: printed as its name, never sorted on (DataColumn.linked)
+  linked?: boolean;
   // Header text (the user can rename it)
   label: string;
   type: DataColumnType;
@@ -248,7 +254,6 @@ export interface TableDataBinding {
   filters: TableFilter[];
   // At most one sort (the source's own order when empty)
   sort: TableSort[];
-  rowLimit?: number;
   showTotals: boolean;
   // The style the table started from: a built-in style or a saved style's id
   theme: string;
@@ -266,7 +271,13 @@ export interface DataQuery {
   filters: TableFilter[];
   sort: TableSort[];
   limit?: number;
+  // Rows skipped first (a page of the setup popup's grid)
+  offset?: number;
 }
+
+// A table's totals row: each total column's value over every matching row
+// (null: nothing to add up), by column key
+export type TableTotals = Record<string, number | null>;
 
 export interface DataQueryResult {
   rows: DataRow[];

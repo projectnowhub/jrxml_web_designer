@@ -27,7 +27,7 @@
         <!-- List: how many rows a page shows (always here, so it can be
              changed back even when everything fits on one page) -->
         <label v-else class="page-size" data-help="template-order">
-          <span>{{ t("myTemplates.perPage") }}</span>
+          <span>{{ t("pageNavigation.perPage") }}</span>
           <select :value="pageSize" @change="choosePageSize(Number(($event.target as HTMLSelectElement).value))">
             <option v-for="size in PAGE_SIZES" :key="size" :value="size">{{ size }}</option>
           </select>
@@ -86,54 +86,14 @@
         :skeletons="loading && !items.length ? 6 : 0"
         @sort="sortByColumn"
       />
-      <nav v-if="total > pageSize" class="pagination" :aria-label="t('myTemplates.pages')">
-        <span class="page-range">
-          {{ t("myTemplates.range", { from: (page - 1) * pageSize + 1, to: Math.min(page * pageSize, total), total }) }}
-        </span>
-        <div class="page-buttons">
-          <button
-            type="button"
-            class="page-step"
-            :disabled="page <= 1"
-            :title="t('myTemplates.first')"
-            :aria-label="t('myTemplates.first')"
-            @click="goToPage(1)"
-          >
-            <ChevronsLeft :size="15" :stroke-width="2.25" aria-hidden="true" />
-          </button>
-          <button type="button" class="page-step" :disabled="page <= 1" @click="goToPage(page - 1)">
-            <ChevronLeft :size="15" :stroke-width="2.25" aria-hidden="true" />
-            {{ t("myTemplates.previous") }}
-          </button>
-          <template v-for="(number, index) in pageNumbers" :key="index">
-            <span v-if="number === 0" class="page-gap">…</span>
-            <button
-              v-else
-              type="button"
-              class="page-number"
-              :class="{ active: number === page }"
-              :aria-current="number === page ? 'page' : undefined"
-              @click="goToPage(number)"
-            >
-              {{ number }}
-            </button>
-          </template>
-          <button type="button" class="page-step" :disabled="page >= pageCount" @click="goToPage(page + 1)">
-            {{ t("myTemplates.next") }}
-            <ChevronRight :size="15" :stroke-width="2.25" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            class="page-step"
-            :disabled="page >= pageCount"
-            :title="t('myTemplates.last')"
-            :aria-label="t('myTemplates.last')"
-            @click="goToPage(pageCount)"
-          >
-            <ChevronsRight :size="15" :stroke-width="2.25" aria-hidden="true" />
-          </button>
-        </div>
-      </nav>
+      <PageNavigation
+        v-if="total > pageSize"
+        class="pagination"
+        :page="page"
+        :page-size="pageSize"
+        :total="total"
+        @update:page="goToPage"
+      />
     </div>
 
     <div v-if="!failed && !loading && !items.length" class="no-match">
@@ -167,10 +127,6 @@ import { useRoute, useRouter, type LocationQueryRaw } from "vue-router";
 import { useI18n } from "vue-i18n";
 import {
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   FileText,
   LayoutGrid,
   List,
@@ -185,6 +141,7 @@ import type { TemplateSortDirection, TemplateSort, TemplateSummary } from "@/typ
 import { templateGridQuery, templateListQuery } from "@/queries/templateQueries";
 import TemplateGrid from "@/components/templates/TemplateGrid.vue";
 import TemplateList from "@/components/templates/TemplateList.vue";
+import PageNavigation from "@/components/common/PageNavigation.vue";
 
 type View = "grid" | "list";
 
@@ -283,20 +240,6 @@ function choosePageSize(size: number) {
   setQuery({ page: undefined });
 }
 
-const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)));
-// 1 … 4 5 6 … 12 (0 = the gap)
-const pageNumbers = computed(() => {
-  const last = pageCount.value;
-  const current = page.value;
-  const shown = new Set([1, last, current - 1, current, current + 1].filter((n) => n >= 1 && n <= last));
-  const sorted = [...shown].sort((a, b) => a - b);
-  const result: number[] = [];
-  sorted.forEach((n, i) => {
-    if (i > 0 && n - (sorted[i - 1] ?? n) > 1) result.push(0);
-    result.push(n);
-  });
-  return result;
-});
 
 // What is shown
 const baseQuery = computed(() => ({ q: query.value, sort: sort.value, dir: dir.value }));
@@ -563,63 +506,7 @@ p {
 }
 
 .pagination {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   margin-top: 16px;
-}
-
-.page-range {
-  color: #6f6a7e;
-  font-size: 11.5px;
-}
-
-.page-buttons {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.page-step,
-.page-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-width: 32px;
-  height: 32px;
-  padding: 0 9px;
-  border: 1px solid #e6e5ee;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #45425a;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.page-step:hover:not(:disabled),
-.page-number:hover {
-  border-color: #6440f4;
-  color: #6440f4;
-}
-
-.page-step:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.page-number.active {
-  border-color: #6440f4;
-  background: #6440f4;
-  color: #ffffff;
-}
-
-.page-gap {
-  padding: 0 4px;
-  color: #8a84a3;
 }
 
 .load-failed {
@@ -683,9 +570,4 @@ p {
   margin-top: 8px;
 }
 
-@media (max-width: 620px) {
-  .page-number:not(.active) {
-    display: none;
-  }
-}
 </style>

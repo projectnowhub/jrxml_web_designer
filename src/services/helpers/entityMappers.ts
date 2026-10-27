@@ -28,16 +28,21 @@ function toColumnType(dataType: string): DataColumnType {
   return "text";
 }
 
-// A field a table column can show: one value per row (links to other records
-// and lists of them are left out for now)
-const isColumnField = (field: EntityFieldMetadata) =>
-  !field.collection && field.dataType.toUpperCase() !== "ENTITY";
+const isLinkField = (field: EntityFieldMetadata) => field.dataType.toUpperCase() === "ENTITY";
+
+// A field a table column can show: one value per row (a link to another
+// record shows its name; lists of records are left out)
+const isColumnField = (field: EntityFieldMetadata) => !field.collection;
+
+// A field the table can be filtered on (not a link: Jmix compares a link's id)
+const isFilterField = (field: EntityFieldMetadata) => isColumnField(field) && !isLinkField(field);
 
 const toDataColumn = (field: EntityFieldMetadata, userDefined: boolean): DataColumn => ({
   key: field.fieldName,
   label: field.name || field.fieldName,
-  type: toColumnType(field.dataType),
+  type: isLinkField(field) ? "text" : toColumnType(field.dataType),
   ...(userDefined ? { userDefined } : {}),
+  ...(isLinkField(field) ? { linked: true } : {}),
 });
 
 // Base fields first, then the tenant's own (user-defined) ones, each in the backend's order
@@ -83,7 +88,7 @@ export const enumLabel = (metadataValue: string) =>
 export function toSourceFacets(entity: EntityMetadata): SourceFacets {
   const facets: SourceFacets = {};
   for (const field of [...(entity.baseFields ?? []), ...(entity.userDefinedFields ?? [])]) {
-    if (!isColumnField(field)) continue;
+    if (!isFilterField(field)) continue;
     const type = toColumnType(field.dataType);
     let facet: ColumnFacet;
     if (BOOLEAN_TYPES.has(field.dataType.toLowerCase())) facet = { kind: "boolean" };

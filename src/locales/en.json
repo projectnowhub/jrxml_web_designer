@@ -1071,7 +1071,8 @@
       "tableSelectAll": "Choose every cell (while the table is open)",
       "tableLineMenu": "Insert or delete rows and columns",
       "tableChooseColumn": "Project data table: choose a column to style it (Style Settings → Cells)",
-      "tableResizeLine": "Change a column's width or a row's height (a typed table: the lines in the bars above and beside it, while it is open; a project data table: the lines on it, while it is selected)"
+      "tableResizeLine": "Change a column's width or a row's height (a typed table: the lines in the bars above and beside it, while it is open; a project data table: the lines on it, while it is selected)",
+      "tableSortColumn": "Sort a project data table's rows by a column, in its data setup window (click again: the other way round, then no sort). The report prints in this order."
     },
     "panelTips": {
       "hide": "Hide this tip",
@@ -1494,7 +1495,8 @@
       "clickHandle": "Click a row / column handle",
       "rightClickHandle": "Right-click a row / column handle",
       "clickPlus": "Click the + between two handles",
-      "dragTableLine": "Drag a line between columns or rows"
+      "dragTableLine": "Drag a line between columns or rows",
+      "clickColumnHeading": "Click a column heading"
     }
   },
   "imageUpload": {
@@ -2312,7 +2314,6 @@
     "dropHint": "Drag table data here, or double-click to set it up",
     "placeholderColumn": "Column {n}",
     "moreRows": "+1 more row | +{count} more rows",
-    "moreRowsLimited": "+1 more row (limited to {limit}) | +{count} more rows (limited to {limit})",
     "loading": "Loading data…",
     "loadFailed": "Couldn't load the data",
     "noRows": "No records found",
@@ -2346,7 +2347,6 @@
       "data": "Data",
       "tableName": "Table name",
       "columnCount": "1 column | {count} columns",
-      "firstRows": "First row only | First {count} rows",
       "editData": "Edit data",
       "emptyHint": "Drag a source from Table Data onto this table, or choose one here.",
       "chooseData": "Choose data",
@@ -2374,47 +2374,29 @@
       "addColumn": "Add a column…",
       "tableFull": "Table is full: remove a column to add another",
       "columnLimitHint": "No more columns fit. Remove one, or widen the table (landscape pages fit more).",
-      "rows": "Rows and totals",
+      "rows": "Totals",
       "rowsNote": "These apply to the table on the page and in the printed report, not just this preview.",
-      "limitRows": "Show only the first",
-      "rowLimit": "Number of rows",
       "showTotals": "Add a totals row",
       "preview": "Preview",
       "pickSourceFirst": "Choose a source to see its data",
-      "previewCapped": "Showing the first {shown} of {count} rows",
       "rowCount": "1 row | {count} rows",
       "needColumn": "Choose at least one column",
       "tooManyColumns": "Too many columns: at most {max} fit",
       "apply": "Apply",
-      "showAs": "Show as",
-      "showAsText": "Text",
-      "barcodeHint": "Barcode columns print each value as a barcode; empty values print nothing. Rows become at least 36 px tall so the codes can be scanned."
+      "tableRows": "Table rows"
     },
     "filter": {
-      "booleanHint": "Only rows where it is Yes, or only rows where it is No. Untick to keep both.",
-      "containsPlaceholder": "Words in {column}",
-      "containsHint": "Only rows whose cell contains these words (capitals don't matter).",
       "containsChip": "contains “{words}”",
-      "title": "Filter & sort",
-      "applied": "Applied filters",
       "remove": "Remove",
-      "sortBy": "Sort by",
-      "defaultOrder": "Default order",
-      "order": "Order",
       "search": "Search {column}",
       "selectAll": "Select all",
       "clear": "Clear",
       "clearAll": "Clear all",
-      "noValues": "Nothing to choose",
       "noMatchingValues": "No value matches your search",
-      "rangeHint": "In this data: {from} to {to}",
-      "quickPicks": "Quick picks",
       "min": "Min",
       "max": "Max",
       "from": "From",
       "to": "To",
-      "under": "Under {value}",
-      "andAbove": "{value} and above",
       "range": "{from} – {to}",
       "atLeast": "{value} or more",
       "atMost": "Up to {value}",
@@ -2422,16 +2404,22 @@
       "onOrBefore": "Until {value}",
       "moreValues": "{values} +{count}",
       "matchCount": "1 row matches | {count} rows match",
-      "movingRange": "Moves with today's date",
       "movingRangeHint": "Today that is {from} to {to}.",
-      "fixedRange": "Fixed months",
       "periods": {
         "thisMonth": "This month",
         "lastMonth": "Last month",
         "thisQuarter": "This quarter",
         "thisYear": "This year",
         "last30Days": "Last 30 days"
-      }
+      },
+      "filtersTitle": "Filters",
+      "fieldsShown": "Fields shown in this filter",
+      "searchFields": "Search fields…",
+      "noFieldsMatch": "No fields match “{words}”.",
+      "noFields": "No fields shown. Choose the fields to filter by with the button above.",
+      "typeToSearch": "Type to search {column}…",
+      "all": "All",
+      "clearAllHint": "Remove every filter"
     },
     "sort": {
       "text": {
@@ -2542,7 +2530,16 @@
       "summaryBetween": "from {from} to {to}",
       "summaryFrom": "from {from}",
       "summaryTo": "up to {to}",
-      "summaryNothing": "(not set yet)"
+      "summaryNothing": "(not set yet)",
+      "resetLook": "Reset to default",
+      "resetLookHint": "Back to this table's own cell colours",
+      "sameAsTable": "This rule looks like the table's own cells. Change a colour so the rows stand out."
+    },
+    "grid": {
+      "sortHint": "Click a column heading to sort: the report prints in this order too.",
+      "sortBy": "Click to sort: {order}",
+      "sortedThen": "Sorted: {now}. Click for {next}",
+      "sortedOff": "Sorted: {now}. Click to go back to the default order"
     }
   },
   "reportData": {
@@ -2635,7 +2632,8 @@
     "locationWhole": "Map and address",
     "dragLocation": "Drag onto the page for a map with the address, or onto a Location to change its place",
     "dropNotOnLocation": "A Location only takes a place\nDrop the project's Location (or a field like City), or drop this on empty space.",
-    "projectSwitchInUse": "Can't change to {other}\n{project} is still used by {count} table(s) or chart(s). Delete them, or switch their data first."
+    "projectSwitchInUse": "Can't change to {other}\n{project} is still used by {count} table(s) or chart(s). Delete them, or switch their data first.",
+    "userDefinedField": "User-defined field"
   },
   "barcode": {
     "chooseType": "Choose a barcode type",
@@ -3445,9 +3443,9 @@
         "add": "Click Table in the Element Library and choose Type my own or Use project data. Or drag a list (Project Team, Companies, Contracts) or the Project Manager's details from Report Data: it arrives as a typed table filled with them.",
         "work": [
           "A typed table: double-click it to type in the cells; Tab moves to the next cell. Handles above the columns and beside the rows choose a whole column or row; then Insert above / below / left / right, Delete, Merge and Split are in Basic Settings and on right-click. The chosen cells' colours, bold, alignment and text size are in Style Settings.",
-        "Sizes: drag the lines between columns to change their widths, and the lines under rows to change their heights. A typed table: open it (double-click) and use the short lines between the letters above it and the numbers beside it. A project data table: select it, then drag the purple lines on it (the heading row and the rows have one height each).",
-          "A project data table: double-click it (or Edit data) to choose the project, the data, the columns, filters, sort and totals. The rows fill in by themselves every time the report runs.",
-          "Style Settings: Customize sets the whole table's look; click a column of a project data table on the page to style its Header, Data and Total cells on their own. Highlight rules, which colour rows or cells by their values (Status is Delayed, Stock up to 100, a date before today), are set in the data setup, next to Filter & sort.",
+          "Sizes: drag the lines between columns to change their widths, and the lines under rows to change their heights. A typed table: open it (double-click) and use the short lines between the letters above it and the numbers beside it. A project data table: select it, then drag the purple lines on it (the heading row and the rows have one height each).",
+          "A project data table: double-click it (or Edit data) to choose the project, the data, the columns, filters, totals and highlight rules on the left. On the right are the table's rows themselves: click a column heading to sort them (the report prints in this order), and page through them with 25, 50 or 100 rows a page. Totals are worked out by the server over every matching row, as in the PDF. The rows fill in by themselves every time the report runs.",
+          "Style Settings: Customize sets the whole table's look; click a column of a project data table on the page to style its Header, Data and Total cells on their own. Highlight rules, which colour rows or cells by their values (Status is Delayed, Stock up to 100, a date before today), are set in the data setup, next to Filters. A new rule starts with the table's own cell colours; Reset to default puts them back.",
           "Look sets the table style; Customize changes this table's colours only, and Save as table style keeps them for other tables.",
           "Table content switches a table between typed and project data."
         ],
@@ -3905,15 +3903,8 @@
     "loadFailed": "Your templates couldn't be loaded.",
     "tryAgain": "Try again",
     "empty": "You have no templates yet.",
-    "pages": "Pages",
-    "range": "{from}–{to} of {total}",
-    "previous": "Previous",
-    "next": "Next",
-    "perPage": "Per page",
     "showing": "Showing {shown} of {total}",
-    "loadMore": "Load more",
-    "first": "First page",
-    "last": "Last page"
+    "loadMore": "Load more"
   },
   "openTemplate": {
     "title": "Open a template",
@@ -4014,5 +4005,15 @@
   },
   "colorPicker": {
     "mixed": "Mixed colours"
+  },
+  "pageNavigation": {
+    "pages": "Pages",
+    "range": "{from}–{to} of {total}",
+    "first": "First page",
+    "previous": "Previous",
+    "next": "Next",
+    "last": "Last page",
+    "perPage": "Per page",
+    "noRows": "No rows"
   }
 }

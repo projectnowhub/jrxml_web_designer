@@ -1071,7 +1071,8 @@
       "tableSelectAll": "Pilih semua sel (semasa jadual dibuka)",
       "tableLineMenu": "Sisip atau padam baris dan lajur",
       "tableChooseColumn": "Jadual data projek: pilih lajur untuk menggayakannya (Tetapan Gaya → Sel)",
-      "tableResizeLine": "Tukar lebar lajur atau ketinggian baris (jadual yang ditaip: garisan dalam bar di atas dan di sebelahnya, semasa ia dibuka; jadual data projek: garisan padanya, semasa ia dipilih)"
+      "tableResizeLine": "Tukar lebar lajur atau ketinggian baris (jadual yang ditaip: garisan dalam bar di atas dan di sebelahnya, semasa ia dibuka; jadual data projek: garisan padanya, semasa ia dipilih)",
+      "tableSortColumn": "Isih baris jadual data projek mengikut lajur, dalam tetingkap persediaan data (klik lagi: tertib terbalik, kemudian tiada isihan). Laporan dicetak mengikut tertib ini."
     },
     "panelTips": {
       "hide": "Sembunyikan petua ini",
@@ -1494,7 +1495,8 @@
       "clickHandle": "Klik pemegang baris / lajur",
       "rightClickHandle": "Klik kanan pemegang baris / lajur",
       "clickPlus": "Klik + di antara dua pemegang",
-      "dragTableLine": "Seret garisan antara lajur atau baris"
+      "dragTableLine": "Seret garisan antara lajur atau baris",
+      "clickColumnHeading": "Klik tajuk lajur"
     }
   },
   "imageUpload": {
@@ -2312,7 +2314,6 @@
     "dropHint": "Seret data jadual ke sini, atau klik dua kali untuk menyediakannya",
     "placeholderColumn": "Lajur {n}",
     "moreRows": "+1 baris lagi | +{count} baris lagi",
-    "moreRowsLimited": "+1 baris lagi (dihadkan kepada {limit}) | +{count} baris lagi (dihadkan kepada {limit})",
     "loading": "Memuatkan data…",
     "loadFailed": "Data tidak dapat dimuatkan",
     "noRows": "Tiada rekod ditemui",
@@ -2346,7 +2347,6 @@
       "data": "Data",
       "tableName": "Nama jadual",
       "columnCount": "1 lajur | {count} lajur",
-      "firstRows": "Baris pertama sahaja | {count} baris pertama",
       "editData": "Edit data",
       "emptyHint": "Seret sumber dari Data Jadual ke jadual ini, atau pilih satu di sini.",
       "chooseData": "Pilih data",
@@ -2374,47 +2374,29 @@
       "addColumn": "Tambah lajur…",
       "tableFull": "Jadual penuh: buang satu lajur untuk menambah yang lain",
       "columnLimitHint": "Tiada lagi lajur yang muat. Buang satu, atau lebarkan jadual (halaman landskap memuatkan lebih banyak).",
-      "rows": "Baris dan jumlah",
+      "rows": "Jumlah",
       "rowsNote": "Tetapan ini digunakan pada jadual di halaman dan dalam laporan yang dicetak, bukan hanya pratonton ini.",
-      "limitRows": "Tunjukkan hanya",
-      "rowLimit": "Bilangan baris",
       "showTotals": "Tambah baris jumlah",
       "preview": "Pratonton",
       "pickSourceFirst": "Pilih sumber untuk melihat datanya",
-      "previewCapped": "Menunjukkan {shown} baris pertama daripada {count}",
       "rowCount": "1 baris | {count} baris",
       "needColumn": "Pilih sekurang-kurangnya satu lajur",
       "tooManyColumns": "Terlalu banyak lajur: paling banyak {max} muat",
       "apply": "Guna",
-      "showAs": "Papar sebagai",
-      "showAsText": "Teks",
-      "barcodeHint": "Lajur kod bar mencetak setiap nilai sebagai kod bar; nilai kosong tidak dicetak. Baris menjadi sekurang-kurangnya 36 px tinggi supaya kod boleh diimbas."
+      "tableRows": "Baris jadual"
     },
     "filter": {
-      "booleanHint": "Hanya baris yang Ya, atau hanya baris yang Tidak. Nyahtanda untuk mengekalkan kedua-duanya.",
-      "containsPlaceholder": "Perkataan dalam {column}",
-      "containsHint": "Hanya baris yang selnya mengandungi perkataan ini (huruf besar atau kecil tidak penting).",
       "containsChip": "mengandungi “{words}”",
-      "title": "Tapis & isih",
-      "applied": "Penapis digunakan",
       "remove": "Buang",
-      "sortBy": "Isih mengikut",
-      "defaultOrder": "Susunan asal",
-      "order": "Susunan",
       "search": "Cari {column}",
       "selectAll": "Pilih semua",
       "clear": "Kosongkan",
       "clearAll": "Kosongkan semua",
-      "noValues": "Tiada pilihan",
       "noMatchingValues": "Tiada nilai sepadan dengan carian anda",
-      "rangeHint": "Dalam data ini: {from} hingga {to}",
-      "quickPicks": "Pilihan pantas",
       "min": "Min",
       "max": "Maks",
       "from": "Dari",
       "to": "Hingga",
-      "under": "Bawah {value}",
-      "andAbove": "{value} dan ke atas",
       "range": "{from} – {to}",
       "atLeast": "{value} atau lebih",
       "atMost": "Sehingga {value}",
@@ -2422,16 +2404,22 @@
       "onOrBefore": "Sehingga {value}",
       "moreValues": "{values} +{count}",
       "matchCount": "1 baris sepadan | {count} baris sepadan",
-      "movingRange": "Bergerak mengikut tarikh hari ini",
       "movingRangeHint": "Hari ini iaitu {from} hingga {to}.",
-      "fixedRange": "Bulan tetap",
       "periods": {
         "thisMonth": "Bulan ini",
         "lastMonth": "Bulan lepas",
         "thisQuarter": "Suku tahun ini",
         "thisYear": "Tahun ini",
         "last30Days": "30 hari lepas"
-      }
+      },
+      "filtersTitle": "Tapis",
+      "fieldsShown": "Medan yang ditunjukkan dalam penapis ini",
+      "searchFields": "Cari medan…",
+      "noFieldsMatch": "Tiada medan sepadan dengan “{words}”.",
+      "noFields": "Tiada medan ditunjukkan. Pilih medan untuk ditapis dengan butang di atas.",
+      "typeToSearch": "Taip untuk mencari {column}…",
+      "all": "Semua",
+      "clearAllHint": "Buang semua penapis"
     },
     "sort": {
       "text": {
@@ -2542,7 +2530,16 @@
       "summaryBetween": "dari {from} hingga {to}",
       "summaryFrom": "dari {from}",
       "summaryTo": "hingga {to}",
-      "summaryNothing": "(belum ditetapkan)"
+      "summaryNothing": "(belum ditetapkan)",
+      "resetLook": "Set semula ke lalai",
+      "resetLookHint": "Kembali kepada warna sel jadual ini",
+      "sameAsTable": "Peraturan ini kelihatan sama seperti sel jadual. Tukar warna supaya baris itu menonjol."
+    },
+    "grid": {
+      "sortHint": "Klik tajuk lajur untuk mengisih: susunan ini juga yang dicetak dalam laporan.",
+      "sortBy": "Klik untuk mengisih: {order}",
+      "sortedThen": "Diisih: {now}. Klik untuk {next}",
+      "sortedOff": "Diisih: {now}. Klik untuk kembali ke susunan asal"
     }
   },
   "reportData": {
@@ -2635,7 +2632,8 @@
     "locationWhole": "Peta dan alamat",
     "dragLocation": "Seret ke halaman untuk peta beserta alamat, atau ke atas Lokasi untuk menukar tempatnya",
     "dropNotOnLocation": "Lokasi hanya menerima tempat\nLepaskan Lokasi projek (atau medan seperti Bandar), atau lepaskan ini di ruang kosong.",
-    "projectSwitchInUse": "Tidak boleh ditukar kepada {other}\n{project} masih digunakan oleh {count} jadual atau carta. Padamkannya, atau tukar datanya dahulu."
+    "projectSwitchInUse": "Tidak boleh ditukar kepada {other}\n{project} masih digunakan oleh {count} jadual atau carta. Padamkannya, atau tukar datanya dahulu.",
+    "userDefinedField": "Medan ditentukan pengguna"
   },
   "barcode": {
     "chooseType": "Pilih jenis kod bar",
@@ -3445,9 +3443,9 @@
         "add": "Klik Jadual dalam Pustaka Elemen dan pilih Taip sendiri atau Guna data projek. Atau seret senarai (Pasukan Projek, Syarikat, Kontrak) atau butiran Pengurus Projek dari Data Laporan: ia muncul sebagai jadual yang ditaip dan diisi dengannya.",
         "work": [
           "Jadual yang ditaip: klik dua kali untuk menaip dalam sel; Tab bergerak ke sel seterusnya. Pemegang di atas lajur dan di sebelah baris memilih seluruh lajur atau baris; kemudian Sisip di atas / di bawah / di kiri / di kanan, Padam, Gabung dan Pisah ada dalam Tetapan Asas dan pada klik kanan. Warna, huruf tebal, penjajaran dan saiz teks sel yang dipilih ada dalam Tetapan Gaya.",
-        "Saiz: seret garisan antara lajur untuk menukar lebarnya, dan garisan di bawah baris untuk menukar ketinggiannya. Jadual yang ditaip: buka (klik dua kali) dan gunakan garisan pendek antara huruf di atasnya dan nombor di sebelahnya. Jadual data projek: pilih jadual, kemudian seret garisan ungu padanya (baris tajuk dan baris masing-masing mempunyai satu ketinggian).",
-          "Jadual data projek: klik dua kali padanya (atau Edit data) untuk memilih projek, data, lajur, penapis, susunan dan jumlah. Baris diisi dengan sendiri setiap kali laporan dijalankan.",
-          "Tetapan Gaya: Sesuaikan menetapkan rupa seluruh jadual; klik lajur jadual data projek pada halaman untuk menggayakan sel Pengepala, Data dan Jumlahnya secara berasingan. Peraturan penyerlahan, yang mewarnakan baris atau sel mengikut nilainya (Status ialah Lewat, Stok hingga 100, tarikh sebelum hari ini), ditetapkan dalam persediaan data, di sebelah Tapis & isih.",
+          "Saiz: seret garisan antara lajur untuk menukar lebarnya, dan garisan di bawah baris untuk menukar ketinggiannya. Jadual yang ditaip: buka (klik dua kali) dan gunakan garisan pendek antara huruf di atasnya dan nombor di sebelahnya. Jadual data projek: pilih jadual, kemudian seret garisan ungu padanya (baris tajuk dan baris masing-masing mempunyai satu ketinggian).",
+          "Jadual data projek: klik dua kali padanya (atau Edit data) untuk memilih projek, data, lajur, penapis, jumlah dan peraturan penyerlahan di sebelah kiri. Di sebelah kanan ialah baris jadual itu sendiri: klik tajuk lajur untuk mengisih (laporan dicetak mengikut tertib ini), dan beralih halaman dengan 25, 50 atau 100 baris setiap halaman. Jumlah dikira oleh pelayan daripada semua baris yang sepadan, sama seperti dalam PDF. Baris diisi sendiri setiap kali laporan dijalankan.",
+          "Tetapan Gaya: Sesuaikan menetapkan rupa seluruh jadual; klik lajur jadual data projek pada halaman untuk menggayakan sel Pengepala, Data dan Jumlahnya secara berasingan. Peraturan penyerlahan, yang mewarnakan baris atau sel mengikut nilainya (Status ialah Lewat, Stok hingga 100, tarikh sebelum hari ini), ditetapkan dalam persediaan data, di sebelah Tapis. Peraturan baharu bermula dengan warna sel jadual itu sendiri; Set semula ke lalai mengembalikannya.",
           "Rupa menetapkan gaya jadual; Sesuaikan mengubah warna jadual ini sahaja, dan Simpan sebagai gaya jadual menyimpannya untuk jadual lain.",
           "Kandungan jadual menukar jadual antara ditaip dan data projek."
         ],
@@ -3905,15 +3903,8 @@
     "loadFailed": "Templat anda tidak dapat dimuatkan.",
     "tryAgain": "Cuba lagi",
     "empty": "Anda belum mempunyai templat.",
-    "pages": "Halaman",
-    "range": "{from}–{to} daripada {total}",
-    "previous": "Sebelumnya",
-    "next": "Seterusnya",
-    "perPage": "Setiap halaman",
     "showing": "Menunjukkan {shown} daripada {total}",
-    "loadMore": "Muat lagi",
-    "first": "Halaman pertama",
-    "last": "Halaman terakhir"
+    "loadMore": "Muat lagi"
   },
   "openTemplate": {
     "title": "Buka templat",
@@ -4014,5 +4005,15 @@
   },
   "colorPicker": {
     "mixed": "Warna bercampur"
+  },
+  "pageNavigation": {
+    "pages": "Halaman",
+    "range": "{from}–{to} daripada {total}",
+    "first": "Halaman pertama",
+    "previous": "Sebelumnya",
+    "next": "Seterusnya",
+    "last": "Halaman terakhir",
+    "perPage": "Setiap halaman",
+    "noRows": "Tiada baris"
   }
 }

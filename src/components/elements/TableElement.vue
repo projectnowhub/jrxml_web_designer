@@ -52,11 +52,7 @@
             class="dt-cell dt-more"
             :style="cellStyle('row', undefined, 0, r)"
           >
-            {{
-              slot.limit
-                ? t("dataTable.moreRowsLimited", { count: slot.count, limit: slot.limit }, slot.count)
-                : t("dataTable.moreRows", slot.count)
-            }}
+            {{ t("dataTable.moreRows", slot.count) }}
           </div>
           <div
             v-else-if="slot.kind === 'message'"
@@ -84,7 +80,7 @@
           </template>
         </div>
 
-        <!-- Totals: worked out by the report; named here -->
+        <!-- Totals: the backend's, over every matching row (the function's name until known) -->
         <div v-if="showTotals" class="dt-row" :style="{ height: `${rowHeight}px` }">
           <div
             v-for="(col, i) in binding.columns"
@@ -93,7 +89,7 @@
             :style="cellStyle('totals', col, i)"
             @click="chooseColumn(col.key, 'total')"
           >
-            {{ col.total ? t(`dataTable.totals.${col.total}`) : i === 0 ? t("dataTable.totals.label") : "" }}
+            {{ col.total ? totalText(col) : i === 0 ? t("dataTable.totals.label") : "" }}
           </div>
         </div>
       </template>
@@ -156,7 +152,7 @@ import { DatabaseZap } from "@lucide/vue";
 import BaseElement from "./BaseElement.vue";
 import BarcodeCell from "@/components/common/BarcodeCell.vue";
 import { tableColumnBarcode } from "@/utils/barcode/barcodeTypes";
-import { useTableRows } from "@/composables/useTableRows";
+import { useTableRows, useTableTotals } from "@/composables/useTableRows";
 import {
   CANVAS_SAMPLE_ROWS,
   PLACEHOLDER_COLUMN_COUNT,
@@ -208,6 +204,14 @@ const { rows, totalCount, loading, failed } = useTableRows(
   CANVAS_SAMPLE_ROWS,
 );
 
+const { totals } = useTableTotals(toRef(() => binding.value));
+
+function totalText(col: TableColumnBinding): string {
+  const value = totals.value[col.key];
+  if (value === undefined || value === null) return t(`dataTable.totals.${col.total}`);
+  return formatCellValue(value, col.total === "count" ? "number" : col.type, locale.value);
+}
+
 type PreviewColumn = Pick<TableColumnBinding, "key" | "label" | "width" | "type">;
 
 const displayColumns = computed<PreviewColumn[]>(() => {
@@ -223,7 +227,7 @@ const displayColumns = computed<PreviewColumn[]>(() => {
 
 type Slot =
   | { kind: "row"; row: DataRow }
-  | { kind: "more"; count: number; limit?: number }
+  | { kind: "more"; count: number }
   | { kind: "message"; text: string };
 
 // Fill the table's height with sample rows; the last slot says how many more
@@ -232,13 +236,10 @@ const rowSlotsShown = computed<Slot[]>(() => {
   if (loading.value && !rows.value.length) return [{ kind: "message", text: t("dataTable.loading") }];
   if (failed.value) return [{ kind: "message", text: t("dataTable.loadFailed") }];
   if (!rows.value.length) return [{ kind: "message", text: t("dataTable.noRows") }];
-  // The report prints only the first rowLimit rows when there is a limit
-  const limit = binding.value?.rowLimit;
-  const limited = limit !== undefined && limit < totalCount.value;
-  const printed = limited ? limit : totalCount.value;
+  const printed = totalCount.value;
   const fits = printed <= slots ? printed : slots - 1;
   const shown: Slot[] = rows.value.slice(0, fits).map((row) => ({ kind: "row", row }));
-  if (printed > fits) shown.push({ kind: "more", count: printed - fits, limit: limited ? limit : undefined });
+  if (printed > fits) shown.push({ kind: "more", count: printed - fits });
   return shown;
 });
 

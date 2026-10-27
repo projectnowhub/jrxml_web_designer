@@ -3,10 +3,11 @@
 // tables asking for the same rows, doesn't call the backend again.
 
 import { computed, type Ref } from "vue";
-import { keepPreviousData, useQuery } from "@tanstack/vue-query";
-import { fetchRows, rowsQuery } from "@/queries/dataSourceQueries";
+import { keepPreviousData, useQueries, useQuery } from "@tanstack/vue-query";
+import { fetchRows, rowsQuery, tableTotalQuery, tableTotalRequests } from "@/queries/dataSourceQueries";
 import { toDataQuery } from "@/utils/table/dataBinding";
-import type { DataQuery, DataQueryResult, DataRow, TableDataBinding } from "@/types/dataSource";
+import { hasTotalsRow } from "@/utils/table/dataTable";
+import type { DataQuery, DataQueryResult, DataRow, TableDataBinding, TableTotals } from "@/types/dataSource";
 
 export function fetchTableRows(binding: TableDataBinding, limit?: number): Promise<DataQueryResult> {
   return fetchRows(binding.projectId, binding.sourceId, toDataQuery(binding, limit));
@@ -34,4 +35,25 @@ export function useTableRows(binding: Ref<TableDataBinding | undefined>, limit?:
   const failed = computed(() => !!binding.value && query.isError.value);
 
   return { rows, totalCount, loading, failed, reload: () => query.refetch() };
+}
+
+// A table's totals row (backend totals over every matching row); empty until known
+// (one request per total column, each cached on its own)
+export function useTableTotals(binding: Ref<TableDataBinding | null | undefined>) {
+  const wanted = computed(() => {
+    const current = binding.value;
+    return current && hasTotalsRow(current) ? { binding: current, totals: tableTotalRequests(current) } : null;
+  });
+  const queries = useQueries({
+    queries: computed(() =>
+      (wanted.value?.totals ?? []).map(({ request }) =>
+        tableTotalQuery(wanted.value!.binding.projectId, wanted.value!.binding.sourceId, request),
+      ),
+    ),
+  });
+  const totals = computed<TableTotals>(() =>
+    Object.fromEntries((wanted.value?.totals ?? []).map(({ column }, i) => [column.key, queries.value[i]?.data ?? null])),
+  );
+  const loading = computed(() => queries.value.some((q) => q.isFetching));
+  return { totals, loading };
 }
