@@ -655,6 +655,9 @@ export function findPaginationTargetBand(
   );
 }
 
+// Space kept between a right-hand page number and the page's edge
+const PAGE_NUMBER_EDGE_GAP = 12;
+
 // x / y of a position inside a band of the given printable width and height
 export function placePaginationInBand(
   element: { width: number; height: number },
@@ -662,10 +665,12 @@ export function placePaginationInBand(
   bandWidth: number,
   bandHeight: number,
 ): { x: number; y: number } {
+  // On the right it keeps clear of the page's edge (and a page border's line,
+  // which the report checks flag within 8 px), as printed page numbers do
   const x =
     positionOf(position).align === "Center"
       ? (bandWidth - element.width) / 2
-      : bandWidth - element.width;
+      : bandWidth - element.width - PAGE_NUMBER_EDGE_GAP;
   const y = (bandHeight - element.height) / 2;
   return { x: Math.max(0, Math.round(x)), y: Math.max(0, Math.round(y)) };
 }
