@@ -5,10 +5,11 @@
 import type { CustomTableCell, CustomTableElement, CustomTableRow, TableElement } from "@/types";
 import type { DataRow, TableColumnPartLook } from "@/types/dataSource";
 import { cellLook } from "./columnLook";
+import { resolveLook } from "./tableThemes";
 import { buildCustomTable, MIN_ROW_HEIGHT, syncTableSize } from "@/utils/customTable";
 import {
-  cellAlignmentFor,
   computeTotal,
+  lookAlignFor,
   formatCellValue,
   hasTotalsRow,
   TABLE_HEADER_HEIGHT,
@@ -66,6 +67,7 @@ export function typedTableFromData(
   options: { maxHeight: number; totalLabel: string; locale?: string },
 ): { element: CustomTableElement; leftOut: number } {
   const binding = source.binding!;
+  const look = resolveLook(binding);
   const headerHeight = Math.max(MIN_ROW_HEIGHT, source.headerHeight ?? TABLE_HEADER_HEIGHT);
   const rowHeight = Math.max(MIN_ROW_HEIGHT, source.rowHeight ?? TABLE_ROW_HEIGHT);
   const totals = hasTotalsRow(binding);
@@ -81,10 +83,11 @@ export function typedTableFromData(
   const body: CustomTableRow[] = printed.slice(0, fits).map((row) => ({
     height: rowHeight,
     cells: binding.columns.map((col): CustomTableCell => {
-      const align = cellAlignmentFor(col.type);
+      // The cell keeps the data table's alignment where the typed table's style would differ
+      const align = lookAlignFor(look, "row", col);
       return {
         text: formatCellValue(row[col.key], col.type, options.locale, col.choices),
-        ...(align !== "Left" ? { align } : {}),
+        ...(align !== (look.rowAlign ?? "Left") ? { align } : {}),
         vAlign: "Middle",
         // The column's look and the highlight rules this row matches
         ...cellSettings(cellLook(binding, col, row)),
@@ -104,8 +107,8 @@ export function typedTableFromData(
                 : i === 0
                   ? options.totalLabel
                   : "";
-            const align = value !== null ? cellAlignmentFor(col.type) : "Left";
-            return { text, ...(align !== "Left" ? { align } : {}), ...cellSettings(col.look?.total) };
+            const align = value !== null ? lookAlignFor(look, "row", col) : (look.totalsAlign ?? "Left");
+            return { text, ...(align !== (look.totalsAlign ?? "Left") ? { align } : {}), ...cellSettings(col.look?.total) };
           }),
         },
       ]

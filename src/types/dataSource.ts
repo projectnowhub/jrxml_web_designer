@@ -3,11 +3,11 @@
 // Rows and values are never stored in the design; they are fetched each time.
 
 import type { Project } from "./entities";
-import type { JmixDynamicAttributes, JmixFilter } from "./jmix";
+import type { JmixDynamicAttributeEntry, JmixDynamicAttributes, JmixFilter } from "./jmix";
 
 // A CDP project as the projects list answers it: the Project entity with its
-// own fields (dynamic attributes)
-export type ProjectRecord = Project & JmixDynamicAttributes;
+// own fields (dynamic attributes), as "+code" keys and with their names (dynamicAttr)
+export type ProjectRecord = Project & JmixDynamicAttributes & { dynamicAttr?: JmixDynamicAttributeEntry[] };
 
 // A project the user can pick for a report. A report can use several.
 export interface ProjectSummary {
@@ -110,6 +110,8 @@ export interface DataColumn {
 export interface ColumnChoice {
   value: string;
   label: string;
+  // The colour the CDP app's dashboards give this value (a chart's starting colour)
+  color?: string;
 }
 
 // One field of a CDP dashboard's field list (constants/chartFieldConstants.ts,
@@ -256,7 +258,22 @@ export interface TableLook {
   // The stronger line under the header and above the totals
   ruleColor: string;
   fontSize: number;
+  // The whole table's text style and alignment per part (a column's own look
+  // and a typed cell's own settings come over them; unset: plain, and Left
+  // for the heading, by the column's type for rows, Right under a total)
+  headerItalic?: boolean;
+  headerUnderline?: boolean;
+  headerAlign?: TableTextAlign;
+  rowBold?: boolean;
+  rowItalic?: boolean;
+  rowUnderline?: boolean;
+  rowAlign?: TableTextAlign;
+  totalsItalic?: boolean;
+  totalsUnderline?: boolean;
+  totalsAlign?: TableTextAlign;
 }
+
+export type TableTextAlign = "Left" | "Center" | "Right";
 
 // A look the user saved to reuse on other tables in the report
 export interface SavedTableStyle {
@@ -407,8 +424,6 @@ export interface ChartBinding {
   series?: ChartSeriesBinding[];
   // Bars and areas on top of each other instead of side by side
   stacked?: boolean;
-  // Text categories: the largest N, the rest added up as "Other"
-  limit?: number;
   // Gauge: the end of the scale; empty = a round number above the value
   gaugeMax?: number;
   filters?: TableFilter[];

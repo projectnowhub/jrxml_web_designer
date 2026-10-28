@@ -12,7 +12,7 @@ import { TABLE_BINDING_PROPERTY, serializeBinding } from "@/utils/table/dataBind
 import {
   TABLE_HEADER_HEIGHT,
   TABLE_ROW_HEIGHT,
-  cellAlignmentFor,
+  lookAlignFor,
   cellExpression,
   cellPatternFor,
   fieldClassFor,
@@ -186,7 +186,9 @@ function columnXML(
   const headerStyle = needsColumnPartStyle(binding, col, "header") ? columnPartStyleName(binding, index, "header") : style("header");
   const bodyStyle = needsColumnStyle(binding, col) ? columnStyleName(binding, index) : style("row");
   const totalsStyle = needsColumnPartStyle(binding, col, "totals") ? columnPartStyleName(binding, index, "totals") : style("totals");
-  const alignment = col.look?.align ?? cellAlignmentFor(col.type);
+  // The column's own look, else the whole table's (lookAlignFor)
+  const look = resolveLook(binding);
+  const alignment = col.look?.align ?? lookAlignFor(look, "row", col);
   let xml = `<jr:column width="${width}" uuid="${xmlAttr(uuid())}">`;
 
   xml += `<jr:columnHeader height="${headerHeight}" rowSpan="1">`;
@@ -196,7 +198,7 @@ function columnXML(
     height: headerHeight,
     style: headerStyle,
     expression: javaString(col.label),
-    alignment: col.look?.header?.align ?? "Left",
+    alignment: col.look?.header?.align ?? lookAlignFor(look, "header", col),
     stretch: true,
   });
   xml += `</jr:columnHeader>`;
@@ -210,7 +212,7 @@ function columnXML(
       height: rowHeight,
       style: totalsStyle,
       expression: total ? `$V{${total.name}}` : index === 0 ? javaString(t("dataTable.totals.label")) : '""',
-      alignment: col.look?.total?.align ?? (total ? "Right" : "Left"),
+      alignment: col.look?.total?.align ?? lookAlignFor(look, "totals", col),
       pattern: total ? (col.total === "count" ? "#,##0" : cellPatternFor(col.type) ?? "#,##0.##") : undefined,
     });
     xml += `</jr:columnFooter>`;

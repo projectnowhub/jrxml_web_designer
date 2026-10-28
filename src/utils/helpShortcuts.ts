@@ -18,6 +18,7 @@ export type ShortcutGroupId =
   | "table"
   | "picture"
   | "location"
+  | "dataSetup"
   | "view"
   | "file"
   | "ai";
@@ -121,6 +122,11 @@ export const SHORTCUT_GROUPS: { id: ShortcutGroupId; rows: ShortcutRow[] }[] = [
       { id: "locationMoveMap", combos: [["mouse:drag"]] },
       { id: "locationZoomMap", combos: [["mouse:wheel"]] },
     ],
+  },
+  {
+    // The table setup popup
+    id: "dataSetup",
+    rows: [{ id: "closeColumnPicker", combos: [["Esc"]] }],
   },
   {
     id: "view",

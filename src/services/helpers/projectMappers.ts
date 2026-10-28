@@ -154,22 +154,26 @@ function toProjectLists(project: ProjectRecord): ProjectTable[] {
 
 const isDynamicAttribute = (key: string): key is `+${string}` => key.startsWith("+");
 
-// The project's own fields (dynamic attributes: "+<tenant>_<id>" keys). Their
-// names aren't sent yet, so each is offered by its value only
+// The project's user-defined fields (dynamic attributes): each by its name and
+// value from dynamicAttr ({ name, code, value }); a project without it gives
+// its "+<tenant>_<id>" keys, then named by their value only
 function toMoreDetails(project: ProjectRecord): { fields: ProjectField[]; values: Record<string, string> } {
   const fields: ProjectField[] = [];
   const values: Record<string, string> = {};
-  Object.keys(project)
-    .filter(isDynamicAttribute)
-    .map((key) => project[key])
-    .filter((value): value is string | number => typeof value === "string" || typeof value === "number")
-    .forEach((value, i) => {
-      const text = toPlainText(value);
-      if (!text) return;
-      const key = `more.${i}`;
-      fields.push({ key, label: text, type: "text" });
-      values[key] = text;
-    });
+  const add = (key: string, label: string, value: unknown) => {
+    if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean") return;
+    const text = typeof value === "boolean" ? t(value ? "dataTable.yes" : "dataTable.no") : toPlainText(value);
+    if (!text) return;
+    fields.push({ key, label: label || text, type: "text" });
+    values[key] = text;
+  };
+  if (Array.isArray(project.dynamicAttr)) {
+    project.dynamicAttr.forEach((attr, i) => add(`more.${attr?.code ?? i}`, attr?.name?.trim() ?? "", attr?.value));
+  } else {
+    Object.keys(project)
+      .filter(isDynamicAttribute)
+      .forEach((key) => add(`more.${key}`, "", project[key]));
+  }
   return { fields, values };
 }
 

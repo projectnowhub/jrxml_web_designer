@@ -56,8 +56,6 @@ export const CHART_AGGREGATIONS: ChartAggregation[] = ["count", "sum", "avg", "m
 export const DATE_GRANULARITIES: DateGranularity[] = ["day", "week", "month", "quarter", "year"];
 export const DEFAULT_GRANULARITY: DateGranularity = "month";
 // Choices for "show the largest N categories"; 0 = all of them
-export const CATEGORY_LIMITS = [5, 8, 10, 20, 0];
-export const DEFAULT_CATEGORY_LIMIT = 10;
 
 // How well a column groups a chart: choice fields, yes / no fields and dates
 // group well (the CDP app's groupable fields); free text often has a different
@@ -218,7 +216,11 @@ function readDimension(value: unknown): ChartDimension | undefined {
     const choices = (d.choices as unknown[])
       .map(asObject)
       .filter((c): c is Record<string, unknown> => !!c && typeof c.value === "string" && typeof c.label === "string")
-      .map((c) => ({ value: c.value as string, label: c.label as string }));
+      .map((c) => ({
+        value: c.value as string,
+        label: c.label as string,
+        ...(typeof c.color === "string" && /^#[0-9a-f]{6}$/i.test(c.color) ? { color: c.color } : {}),
+      }));
     if (choices.length) dimension.choices = choices;
   }
   if (d.yesNo === true) dimension.yesNo = true;
@@ -288,7 +290,6 @@ export function normalizeChartBinding(value: unknown): ChartBinding {
     level2: readDimension(b.level2),
     series: readSeries(b.series),
     stacked: b.stacked === true || undefined,
-    limit: CATEGORY_LIMITS.includes(b.limit as number) ? (b.limit as number) : undefined,
     gaugeMax: typeof b.gaugeMax === "number" && b.gaugeMax > 0 ? b.gaugeMax : undefined,
     filters: readFilters(b.filters),
   };

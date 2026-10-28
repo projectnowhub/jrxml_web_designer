@@ -33,7 +33,8 @@
           </div>
           <template v-if="projectId">
             <span class="ccm-label">{{ t("dataTable.config.source") }}</span>
-            <div class="ccm-select-wrap">
+            <SkeletonBlock v-if="sourcesLoading" height="34px" radius="8px" />
+            <div v-else class="ccm-select-wrap">
               <select class="ccm-select" :value="sourceId" @change="changeSource(($event.target as HTMLSelectElement).value)">
                 <option value="" disabled>{{ t("dataTable.config.chooseSource") }}</option>
                 <option v-for="s in sources" :key="s.id" :value="s.id">
@@ -50,6 +51,11 @@
           </p>
         </section>
 
+        <!-- The chosen table's fields on their way -->
+        <section v-if="schemaLoading" class="ccm-section ccm-skeleton">
+          <SkeletonBlock width="40%" height="14px" />
+          <SkeletonBlock v-for="i in 3" :key="i" height="30px" radius="8px" />
+        </section>
         <template v-if="schema">
           <!-- What the chart shows -->
           <section class="ccm-section">
@@ -172,17 +178,6 @@
               {{ t(draft.chartType === "area" ? "chart.config.stackAreas" : "chart.config.stackBars") }}
             </label>
 
-            <label v-if="hasCategoryLimit" class="ccm-inline">
-              <span class="ccm-label">{{ t("chart.config.show") }}</span>
-              <div class="ccm-select-wrap is-small">
-                <select class="ccm-select" :value="draft.limit ?? DEFAULT_CATEGORY_LIMIT" @change="draft.limit = Number(($event.target as HTMLSelectElement).value)">
-                  <option v-for="n in CATEGORY_LIMITS" :key="n" :value="n">
-                    {{ n ? t("chart.config.largest", { count: n }) : t("chart.config.all") }}
-                  </option>
-                </select>
-                <ChevronDown class="ccm-chevron" :size="12" aria-hidden="true" />
-              </div>
-            </label>
           </section>
 
           <!-- Which rows count -->
@@ -208,6 +203,11 @@
             {{ t("chart.config.basedOn", matchCount) }}
           </span>
         </div>
+        <!-- Every category prints (as the CDP app): many make a crowded chart on paper -->
+        <p v-if="categoryCount > MANY_CATEGORIES" class="ccm-note">
+          <Info :size="13" aria-hidden="true" />
+          {{ t("chart.config.manyCategories", { count: categoryCount }) }}
+        </p>
         <div class="ccm-stage">
           <div
             v-if="shownPreview"
@@ -216,6 +216,13 @@
           >
             <div :style="{ transform: `scale(${previewScale})`, transformOrigin: 'top left' }">
               <ChartCanvas :option="shownPreview" :width="chartSize.width" :height="chartSize.height" />
+            </div>
+          </div>
+          <!-- Numbers on their way: a chart-shaped skeleton -->
+          <div v-else-if="schemaLoading || previewView.state === 'loading'" class="ccm-chart-skeleton" role="status" :aria-label="t('dataTable.loading')">
+            <SkeletonBlock width="45%" height="14px" />
+            <div class="ccm-chart-skeleton-bars">
+              <SkeletonBlock v-for="(h, i) in SKELETON_BARS" :key="i" width="9%" :height="`${h}%`" radius="4px 4px 0 0" />
             </div>
           </div>
           <div v-else class="ccm-stage-note">
@@ -243,17 +250,16 @@ import { NButton } from "naive-ui";
 import { ChartColumn, ChevronDown, FolderKanban, Plus, Replace, Sigma, SlidersHorizontal, X } from "@lucide/vue";
 import BaseModal from "./BaseModal.vue";
 import ChartCanvas from "../common/ChartCanvas.vue";
+import SkeletonBlock from "../common/SkeletonBlock.vue";
 import TableFilterPanel from "../designer/TableFilterPanel.vue";
 import ChartColumnOptions from "../designer/ChartColumnOptions.vue";
 import { chartFieldLists } from "@/utils/chart/chartFields";
 import { suggestChartTitle } from "@/utils/chart/chartQuery";
 import { fetchFacets, fetchSchema, fetchSources } from "@/queries/dataSourceQueries";
 import {
-  CATEGORY_LIMITS,
   CHART_AGGREGATIONS,
   CHART_GROUPS,
   DATE_GRANULARITIES,
-  DEFAULT_CATEGORY_LIMIT,
   DEFAULT_GRANULARITY,
   MAX_CHART_SERIES,
   changeChartType,
@@ -316,6 +322,11 @@ const sourceId = ref("");
 const schema = ref<DataSourceSchema | null>(null);
 const facets = ref<SourceFacets | null>(null);
 const loadError = ref(false);
+// Waiting for the project's tables, or for the chosen table's fields
+const sourcesLoading = computed(() => !!projectId.value && !sources.value.length && !loadError.value);
+const schemaLoading = computed(() => !!sourceId.value && !schema.value && !loadError.value);
+// The chart skeleton's bars (% of its height)
+const SKELETON_BARS = [45, 70, 55, 85, 40, 65, 75];
 
 // The report's projects, plus the chart's own if it was removed from the list
 const projectOptions = computed<ReportProject[]>(() => {
@@ -527,11 +538,6 @@ const canStack = computed(() => {
   const series = draft.value.series ?? [];
   return ["bar", "barH", "area"].includes(draft.value.chartType) && (series.length > 1 || series.some((s) => s.splitBy));
 });
-const hasCategoryLimit = computed(
-  () =>
-    (info.value.shape === "parts" || info.value.shape === "series" || info.value.shape === "tree") &&
-    draft.value.dimension?.type === "text",
-);
 
 // ── Loading the project's sources and the chosen source ──
 function loadSources(project: string) {
@@ -656,6 +662,15 @@ watch(
 );
 useChartData(previewBinding);
 
+// More than this many categories is hard to read on paper
+const MANY_CATEGORIES = 15;
+const categoryCount = computed(() => {
+  const view = previewView.value;
+  if (view.state !== "ready") return 0;
+  const data = view.data;
+  return data.kind === "parts" || data.kind === "series" ? data.categories.length : data.kind === "tree" ? data.nodes.length : 0;
+});
+
 const previewView = computed(() => {
   void locale.value;
   return chartView(draftBinding.value);
@@ -716,6 +731,32 @@ function apply() {
 </script>
 
 <style scoped>
+.ccm-skeleton {
+  display: grid;
+  gap: 8px;
+}
+
+.ccm-chart-skeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(480px, 90%);
+  height: 280px;
+  padding: 16px;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.ccm-chart-skeleton-bars {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  justify-content: space-between;
+  width: 100%;
+  border-bottom: 1px solid #e6e5ee;
+}
+
 .ccm {
   display: grid;
   grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);

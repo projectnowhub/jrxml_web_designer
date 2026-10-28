@@ -16,11 +16,15 @@ import type {
   TableDataBinding,
   TableFilter,
   TableHighlight,
+  TableLook,
+  TableTextAlign,
   TotalFunction,
 } from "@/types/dataSource";
 import { hasLook, hasPartLook, newHighlightId } from "@/utils/table/columnLook";
 import { createElement } from "@/components/elements/ElementRegistry";
 import {
+  clearPartCells,
+  type CustomRowPart,
   fitTableToBox,
   MAX_HEADER_ROWS,
   mergeCells,
@@ -34,7 +38,8 @@ import {
 import { resolveLook, TABLE_THEMES } from "@/utils/table/tableThemes";
 import {
   distributeColumnWidths,
-  maxColumnsForWidth,
+  startingColumnCount,
+  tableWidthFor,
   nextTableName,
   createDatasetName,
   toDataQuery,
@@ -45,7 +50,6 @@ import { tableHeight, TABLE_HEADER_HEIGHT, TABLE_ROW_HEIGHT } from "@/utils/tabl
 import { usedDatasetNames, usedTableNames } from "@/utils/table/tableDocument";
 import { buildChartElement } from "@/utils/chart/chartElement";
 import {
-  CATEGORY_LIMITS,
   CHART_AGGREGATIONS,
   CHART_PALETTES,
   CHART_TYPES,
@@ -62,6 +66,7 @@ import { useReportStore } from "@/stores/report";
 import { MAX_REPORT_PROJECTS } from "@/constants/constants";
 import { countProjectUsage } from "@/utils/projectFields";
 import { chartFieldLists } from "@/utils/chart/chartFields";
+import { suggestChartTitle } from "@/utils/chart/chartQuery";
 import i18n from "@/i18n";
 import { applyGeometry } from "./basic";
 import { color, defined, has, readColor, textHeightFor } from "./common";
@@ -138,6 +143,62 @@ export function fitRowsToText(table: CustomTableData): void {
   }
 }
 
+// ---- The whole table's text style and alignment per part (Customize's B / I /
+// U and alignment buttons), for typed and project-data tables alike ----------
+
+const PART_STYLE_SCHEMA: JsonSchema = {
+  type: "object",
+  properties: {
+    bold: { type: "boolean" },
+    italic: { type: "boolean" },
+    underline: { type: "boolean" },
+    align: { type: "string", enum: ["Left", "Center", "Right"] },
+  },
+};
+const TEXT_STYLE_PROP: JsonSchema = {
+  type: "object",
+  description:
+    "The whole table's text style and alignment per part (a column's own look / a typed cell's own settings come over it): header, rows, totals, each { bold, italic, underline, align }. Rows of a project-data table without align line up by column type",
+  properties: { header: PART_STYLE_SCHEMA, rows: PART_STYLE_SCHEMA, totals: PART_STYLE_SCHEMA },
+};
+type StylePart = "header" | "rows" | "totals";
+const STYLE_FIELDS: Record<StylePart, { bold: keyof TableLook; italic: keyof TableLook; underline: keyof TableLook; align: keyof TableLook; rowPart: CustomRowPart }> = {
+  header: { bold: "headerBold", italic: "headerItalic", underline: "headerUnderline", align: "headerAlign", rowPart: "header" },
+  rows: { bold: "rowBold", italic: "rowItalic", underline: "rowUnderline", align: "rowAlign", rowPart: "row" },
+  totals: { bold: "totalsBold", italic: "totalsItalic", underline: "totalsUnderline", align: "totalsAlign", rowPart: "totals" },
+};
+
+// Sets the given parts' style on the table's own look; a typed table's cells
+// drop their own value for what is set
+function applyTextStyle(holder: { theme?: string; look?: TableLook; customized?: boolean }, raw: unknown, typed?: CustomTableData): void {
+  const spec = (raw ?? {}) as Partial<Record<StylePart, { bold?: boolean; italic?: boolean; underline?: boolean; align?: TableTextAlign }>>;
+  const look: TableLook = { ...resolveLook(holder) };
+  for (const part of Object.keys(STYLE_FIELDS) as StylePart[]) {
+    const wanted = spec[part];
+    if (!wanted) continue;
+    const fields = STYLE_FIELDS[part];
+    for (const key of ["bold", "italic", "underline", "align"] as const) {
+      if (wanted[key] === undefined) continue;
+      Object.assign(look, { [fields[key]]: wanted[key] });
+      if (typed) clearPartCells(typed, fields.rowPart, key);
+    }
+  }
+  holder.look = look;
+  holder.customized = true;
+}
+
+// The table's text style per part, as textStyle takes it (only what is set)
+function describeTextStyle(holder: { theme?: string; look?: TableLook }) {
+  const look = resolveLook(holder);
+  const style: Record<string, Record<string, unknown>> = {};
+  for (const part of Object.keys(STYLE_FIELDS) as StylePart[]) {
+    const f = STYLE_FIELDS[part];
+    const value = defined({ bold: look[f.bold] || undefined, italic: look[f.italic] || undefined, underline: look[f.underline] || undefined, align: look[f.align] });
+    if (Object.keys(value).length) style[part] = value;
+  }
+  return Object.keys(style).length ? style : undefined;
+}
+
 function applyTypedTable(element: CustomTableElement, spec: ElementSpec, ctx: KindContext): void {
   if (has(spec, "rows")) {
     const width = spec.width ?? (element.width || ctx.availableWidth);
@@ -149,6 +210,7 @@ function applyTypedTable(element: CustomTableElement, spec: ElementSpec, ctx: Ki
     delete table.look;
     delete table.customized;
   }
+  if (has(spec, "textStyle")) applyTextStyle(table, spec.textStyle, table);
   if (has(spec, "headerRows")) table.headerRows = Math.min(spec.headerRows, MAX_HEADER_ROWS, table.rows.length);
   if (has(spec, "totalRow")) table.totalRow = !!spec.totalRow;
   if (has(spec, "padding")) table.padding = Math.round(spec.padding);
@@ -202,6 +264,7 @@ export const typedTableKind: ElementKind = {
     headerRows: { type: "integer", minimum: 0, maximum: MAX_HEADER_ROWS, description: "Heading rows at the top (default 1)" },
     totalRow: { type: "boolean", description: "Last row drawn as a total" },
     theme: { type: "string", enum: TABLE_THEMES, description: "Table style: corporateBlue (default), minimal, emerald, slate, burgundy, teal, gold, violet, none" },
+    textStyle: TEXT_STYLE_PROP,
     rowHeight: { type: "number", minimum: 12, maximum: 200, description: "Row height in px (default 20)" },
     padding: { type: "number", minimum: 0, maximum: 20, description: "Space inside cells in px (default 3)" },
     merges: {
@@ -259,6 +322,7 @@ export const typedTableKind: ElementKind = {
       headerRows: table.headerRows,
       totalRow: table.totalRow,
       theme: table.theme,
+      textStyle: describeTextStyle(table),
       merges: shown.filter((v) => v.rowSpan > 1 || v.colSpan > 1).map((v) => ({ row: v.row, col: v.col, rowSpan: v.rowSpan, colSpan: v.colSpan })),
     });
   },
@@ -485,16 +549,17 @@ async function applyDataTable(element: TableElement, spec: ElementSpec, ctx: Kin
   if (!projectId || !sourceId) throw new SpecError("projectId and sourceId are required (see get_report_data)");
   const schema = await sourceSchema(projectId, sourceId);
   const name = current && current.projectId === projectId ? current.projectName : await projectName(projectId);
-  const width = element.width;
-  const max = maxColumnsForWidth(width);
+  let width = element.width;
 
   // The table's setup for the same source, kept where the AI changes nothing
   const same = current && current.sourceId === sourceId ? current : undefined;
   let columns = same?.columns ?? [];
   if (has(spec, "columns") || !columns.length) {
     const wanted: Array<{ column: string; header?: string; total?: string; look?: Record<string, any> }> =
-      spec.columns ?? schema.columns.slice(0, max).map((c) => ({ column: c.key }));
-    if (wanted.length > max) throw new SpecError(`columns: at most ${max} fit in ${width} px (60 px each); make the table wider or show fewer`);
+      spec.columns ?? schema.columns.slice(0, startingColumnCount(width)).map((c) => ({ column: c.key }));
+    // No limit: columns narrower than the smallest width make the table wider
+    width = tableWidthFor(wanted.length, width);
+    element.width = width;
     const widths = distributeColumnWidths(wanted.length, width);
     columns = wanted.map((w, i) => {
       const c = column(schema, w.column, `columns[${i}].column`);
@@ -544,6 +609,7 @@ async function applyDataTable(element: TableElement, spec: ElementSpec, ctx: Kin
     ? readHighlightRules(spec.highlights, columns, "highlights")
     : (same?.highlights ?? []).filter((r) => columns.some((c) => c.key === r.column));
   if (rules.length) binding.highlights = rules;
+  if (has(spec, "textStyle")) applyTextStyle(binding, spec.textStyle);
   element.binding = binding;
   useProject(projectId, name);
 
@@ -562,7 +628,7 @@ export const dataTableKind: ElementKind = {
   kind: "dataTable",
   tool: "create_data_table",
   description:
-    "Add a table showing the rows of a project's data source (Procurement, Materials…), fetched each time the report runs; it grows onto more pages. Call get_report_data first for the project, source and column ids. Only in the detail band of a normal page, never in a box. Width: at least 60 px per column.",
+    "Add a table showing the rows of a project's data source (Procurement, Materials…), fetched each time the report runs; it grows onto more pages. Call get_report_data first for the project, source and column ids. Only in the detail band of a normal page, never in a box. Any number of columns: each column is at least 10 px, and the table widens past the page when they don't fit, so show only the columns that matter.",
   properties: {
     projectId: { type: "string" },
     sourceId: { type: "string" },
@@ -594,6 +660,7 @@ export const dataTableKind: ElementKind = {
     },
     filters: FILTERS_PROP,
     theme: { type: "string", enum: TABLE_THEMES, description: "Table style: corporateBlue (default), minimal, emerald, slate, burgundy, teal, gold, violet, none" },
+    textStyle: TEXT_STYLE_PROP,
     tableName: { type: "string" },
     highlights: {
       type: "array",
@@ -654,6 +721,7 @@ export const dataTableKind: ElementKind = {
       highlights: b.highlights?.map(({ id: _id, ...rule }) => rule),
       sort: b.sort[0] ? { column: b.sort[0].column, direction: b.sort[0].direction } : undefined,
       theme: b.theme,
+      textStyle: describeTextStyle(b),
       tableName: b.tableName,
       filters: describeFilters(b.filters),
     });
@@ -754,7 +822,6 @@ async function applyChart(element: ChartElement, spec: ElementSpec, ctx: KindCon
     if (has(data, "stacked")) binding.stacked = !!data.stacked || undefined;
     // Split bars are stacked unless asked otherwise, as the CDP app's
     else if (data.splitBy && (binding.chartType === "bar" || binding.chartType === "barH")) binding.stacked = true;
-    if (has(data, "limit")) binding.limit = data.limit;
     if (has(data, "gaugeMax")) binding.gaugeMax = data.gaugeMax || undefined;
     if (has(data, "filters")) {
       (Array.isArray(data.filters) ? data.filters : []).forEach((f: { column?: string }, i: number) =>
@@ -765,6 +832,10 @@ async function applyChart(element: ChartElement, spec: ElementSpec, ctx: KindCon
     useProject(projectId, name);
   }
   element.binding = normalizeChartBinding(binding);
+  // No title given: the CDP app's suggested one, as the setup popup gives a new chart
+  if (!has(spec, "title") && !element.binding.title && isChartComplete(element.binding)) {
+    element.binding.title = suggestChartTitle(element.binding);
+  }
   if (element.binding.projectId && !isChartComplete(element.binding)) {
     ctx.notes.push(`the ${element.binding.chartType} chart is linked but not complete (it needs ${chartNeeds(element.binding.chartType)}); it shows sample numbers and prints nothing until then`);
   } else if (!element.binding.projectId) {
@@ -823,7 +894,6 @@ export const chartKind: ElementKind = {
         splitBy: { type: "string", description: "Line / area / bar: one line or bar set per value of this text column" },
         level2: { type: "string", description: "Tree map: text column for the items inside each group" },
         stacked: { type: "boolean", description: "Bars / areas on top of each other (split bars are stacked unless false)" },
-        limit: { type: "integer", enum: CATEGORY_LIMITS, description: "Largest N text categories, the rest as \"Other\" (0: all)" },
         gaugeMax: { type: "number", minimum: 0, description: "Gauge: end of the scale" },
         filters: FILTERS_PROP,
       },
@@ -858,7 +928,6 @@ export const chartKind: ElementKind = {
             splitBy: b.series?.[0]?.splitBy?.column,
             level2: b.level2?.column,
             stacked: b.stacked,
-            limit: b.limit,
             filters: describeFilters(b.filters),
             complete: isChartComplete(b),
           })

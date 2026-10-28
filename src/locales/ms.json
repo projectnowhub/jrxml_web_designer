@@ -1011,6 +1011,7 @@
     "shortcutsIntro": "Semua yang boleh anda lakukan dengan papan kekunci dan tetikus dalam pereka.",
     "shortcuts": {
       "undo": "Buat asal perubahan terakhir (semasa menaip dalam kotak: buat asal taipan)",
+      "closeColumnPicker": "Tutup senarai Pilih lajur (lajur kekal seperti yang ditanda)",
       "redo": "Buat semula apa yang anda buat asal (semasa menaip dalam kotak: buat semula taipan)",
       "select": "Pilih item",
       "selectMore": "Tambah item ke pilihan, atau keluarkannya",
@@ -1473,6 +1474,7 @@
       "table": "Dalam jadual taip",
       "picture": "Gambar",
       "location": "Peta lokasi (dalam sifatnya)",
+      "dataSetup": "Persediaan data jadual",
       "view": "Paparan",
       "file": "Simpan",
       "ai": "Pembantu AI"
@@ -2250,7 +2252,6 @@
     "yes": "Ya",
     "no": "Tidak",
     "titles": {"by": "{measure} mengikut {field}", "byPair": "{first} mengikut {second}", "splitBy": "{measure}, dipisahkan mengikut {field}", "and": "&", "andNMore": "{first} & {count} lagi", "totalRecords": "Jumlah Rekod", "records": "Rekod", "treemap": "Peta Pokok", "aggregations": {"sum": "Jumlah", "avg": "Purata", "min": "Min", "max": "Maks"}},
-    "quarterLabel": "S{quarter} {year}",
     "measures": {
       "countOf": "Bilangan",
       "sumOf": "Jumlah {column}",
@@ -2308,12 +2309,10 @@
       "automatic": "Automatik",
       "stackBars": "Tindankan bar",
       "stackAreas": "Tindankan kawasan",
-      "show": "Tunjukkan",
-      "largest": "{count} terbesar",
-      "all": "Semua",
       "filters": "Baris yang dikira",
       "basedOn": "Berdasarkan 1 baris | Berdasarkan {count} baris",
-      "incomplete": "Pilih apa yang ditunjukkan oleh carta."
+      "incomplete": "Pilih apa yang ditunjukkan oleh carta.",
+      "manyCategories": "{count} kategori: setiap satu dicetak, jadi carta mungkin sesak di atas kertas. Penapis, kumpulan tarikh yang lebih besar (mengikut bulan atau tahun) atau carta yang lebih lebar membantu."
     }
   },
   "dataTable": {
@@ -2330,7 +2329,6 @@
     "noRows": "Tiada rekod ditemui",
     "onlyInDetail": "Jadual hanya boleh diletakkan dalam bahagian Butiran.",
     "columnAlreadyShown": "\"{column}\" sudah ada dalam jadual ini.",
-    "columnLimitReached": "Jadual ini sudah penuh\nIa memuatkan {max} lajur. Lebarkan atau buang satu lajur dahulu.",
     "totals": {
       "label": "Jumlah",
       "sum": "Hasil tambah",
@@ -2376,15 +2374,15 @@
       "replacesData": "Guna akan menggantikan data semasa jadual ini ({source}).",
       "sourceOption": "{name} ({count} baris)",
       "columns": "Lajur",
-      "columnCounter": "{count} dipaparkan · muat {max}",
+      "columnCounter": "1 lajur | {count} lajur",
       "dragToReorder": "Seret untuk menyusun semula",
       "headerText": "Teks pengepala",
       "total": "Jumlah",
       "noTotal": "Tiada jumlah",
       "removeColumn": "Buang lajur",
-      "addColumn": "Tambah lajur…",
-      "tableFull": "Jadual penuh: buang satu lajur untuk menambah yang lain",
-      "columnLimitHint": "Tiada lagi lajur yang muat. Buang satu, atau lebarkan jadual (halaman landskap memuatkan lebih banyak).",
+      "chooseColumns": "Pilih lajur",
+      "columnsChosen": "{shown} daripada {total}",
+      "widerThanPage": "Lebih lebar daripada jadual: ia kini melepasi tepi halaman, jadi sempitkan beberapa lajur atau buang sebahagiannya.",
       "rows": "Jumlah",
       "rowsNote": "Tetapan ini digunakan pada jadual di halaman dan dalam laporan yang dicetak, bukan hanya pratonton ini.",
       "showTotals": "Tambah baris jumlah",
@@ -2392,7 +2390,6 @@
       "pickSourceFirst": "Pilih sumber untuk melihat datanya",
       "rowCount": "1 baris | {count} baris",
       "needColumn": "Pilih sekurang-kurangnya satu lajur",
-      "tooManyColumns": "Terlalu banyak lajur: paling banyak {max} muat",
       "apply": "Guna",
       "tableRows": "Baris jadual"
     },
@@ -2469,6 +2466,7 @@
         "ruleColor": "Garisan pengepala"
       },
       "bold": "Tebal",
+      "alignByType": "Tidak ditetapkan: setiap lajur dijajarkan mengikut jenisnya (nombor ke kanan, tarikh di tengah). Klik pilihan itu sekali lagi untuk kembali kepadanya.",
       "lines": {
         "grid": "Grid",
         "rows": "Baris sahaja",
@@ -2566,7 +2564,7 @@
     "projectsLoadFailed": "Projek tidak dapat dimuatkan.",
     "noProjectsAvailable": "Belum ada projek",
     "lists": "Senarai",
-    "moreDetails": "Butiran lain",
+    "moreDetails": "Medan takrif pengguna",
     "managerCard": "Semua butiran (jadual)",
     "dragTable": "Seret ke halaman untuk menambah senarai ini sebagai jadual",
     "dragCard": "Seret ke halaman untuk menambah butiran ini sebagai jadual",
@@ -2615,8 +2613,8 @@
     "noProjects": "Gunakan “Pilih projek…” di bahagian atas halaman untuk memilih projek yang digunakan oleh templat ini. Buat masa ini, templat menggunakan satu projek.",
     "search": "Cari butiran, jadual dan lajur",
     "hint": "Seret butiran (nama, tarikh, pengenalan…) ke elemen teks, atau logo ke elemen imej, untuk mengisinya; lepaskan di ruang kosong untuk yang baharu. Ia menjadi teks atau imej biasa. Seret jadual ke bahagian Butiran atau ke jadual; seret lajur untuk menambah lajur itu sahaja.",
-    "details": "Butiran",
     "tables": "Jadual",
+    "details": "Butiran",
     "dragDetail": "Seret ke halaman untuk menambahnya sebagai teks",
     "dragImage": "Seret ke halaman untuk menambah imej ini",
     "dragSource": "Seret ke jadual atau bahagian Butiran",
@@ -3787,7 +3785,7 @@
       },
       "tableCustomize": {
         "title": "Sesuaikan",
-        "text": "Rupa seluruh jadual: tajuk, warna baris (hingga 4, bergilir), jumlah, garisan, saiz teks dan, dalam jadual yang ditaip, ruang di dalam setiap sel. Simpan sebagai gaya jadual menyimpannya untuk digunakan pada jadual lain. Sesetengah sel atau satu lajur boleh mempunyai rupa sendiri, dalam kad di atas kad ini."
+        "text": "Rupa seluruh jadual: tajuk, warna baris (hingga 4, bergilir), jumlah, garisan, saiz teks dan, dalam jadual yang ditaip, ruang di dalam setiap sel. Simpan sebagai gaya jadual menyimpannya untuk digunakan pada jadual lain. Sesetengah sel atau satu lajur boleh mempunyai rupa sendiri, dalam kad di atas kad ini. Setiap bahagian (tajuk, baris, jumlah) juga mempunyai tebal, condong dan garis bawah, serta penjajarannya untuk seluruh jadual; tetapan lajur sendiri dan tetapan sel ditaip sendiri mengatasinya."
       },
       "typedGrid": {
         "title": "Baris dan lajur",
@@ -4035,7 +4033,7 @@
     "previous": "Sebelumnya",
     "next": "Seterusnya",
     "last": "Halaman terakhir",
-    "perPage": "Setiap halaman",
+    "perPage": "Tunjuk",
     "noRows": "Tiada baris"
   },
   "chartFields": {

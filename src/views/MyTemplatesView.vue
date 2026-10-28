@@ -24,15 +24,8 @@
           </select>
           <ChevronDown :size="14" :stroke-width="2.25" aria-hidden="true" />
         </label>
-        <!-- List: how many rows a page shows (always here, so it can be
-             changed back even when everything fits on one page) -->
-        <label v-else class="page-size" data-help="template-order">
-          <span>{{ t("pageNavigation.perPage") }}</span>
-          <select :value="pageSize" @change="choosePageSize(Number(($event.target as HTMLSelectElement).value))">
-            <option v-for="size in PAGE_SIZES" :key="size" :value="size">{{ size }}</option>
-          </select>
-          <ChevronDown :size="14" :stroke-width="2.25" aria-hidden="true" />
-        </label>
+        <!-- List: how many rows a page shows, above the list -->
+        <PageSizeChoice v-else data-help="template-order" :model-value="pageSize" :sizes="PAGE_SIZES" @update:model-value="choosePageSize" />
         <div class="view-toggle" data-help="template-view" role="radiogroup" :aria-label="t('myTemplates.view')">
           <button
             v-for="option in VIEWS"
@@ -86,8 +79,11 @@
         :skeletons="loading && !items.length ? 6 : 0"
         @sort="sortByColumn"
       />
+      <!-- The app's one page bar (as the table setup popup and the CDP app's
+           tables): rows shown, pages, and how many rows a page shows; always
+           there, so the page size can be changed back -->
       <PageNavigation
-        v-if="total > pageSize"
+        v-if="items.length"
         class="pagination"
         :page="page"
         :page-size="pageSize"
@@ -141,6 +137,7 @@ import type { TemplateSortDirection, TemplateSort, TemplateSummary } from "@/typ
 import { templateGridQuery, templateListQuery } from "@/queries/templateQueries";
 import TemplateGrid from "@/components/templates/TemplateGrid.vue";
 import TemplateList from "@/components/templates/TemplateList.vue";
+import PageSizeChoice from "../components/common/PageSizeChoice.vue";
 import PageNavigation from "@/components/common/PageNavigation.vue";
 
 type View = "grid" | "list";
@@ -406,42 +403,13 @@ p {
 }
 
 .sort-select,
-.page-size {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #6f6a7e;
-  font-size: 11.5px;
-}
 
 .sort-select select,
-.page-size select {
-  appearance: none;
-  padding: 6px 28px 6px 10px;
-  border: 1px solid #e6e5ee;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #1c1b26;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
 
 
 .sort-select select:focus-visible,
-.page-size select:focus-visible {
-  border-color: #6440f4;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(100, 64, 244, 0.12);
-}
 
 .sort-select svg,
-.page-size svg {
-  position: absolute;
-  right: 9px;
-  pointer-events: none;
-}
 
 .view-toggle {
   display: inline-flex;
@@ -506,7 +474,7 @@ p {
 }
 
 .pagination {
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .load-failed {

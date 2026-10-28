@@ -19,7 +19,7 @@ import type {
 import type { JmixFilter } from "@/types/jmix";
 import { isActiveFilter, resolveFilterDates } from "../table/dataBinding";
 import type { ChartData, ChartTreeNode } from "./chartData";
-import { DEFAULT_CATEGORY_LIMIT, DEFAULT_GRANULARITY, chartTypeInfo, isChartComplete } from "./chartTypes";
+import { DEFAULT_GRANULARITY, chartTypeInfo, isChartComplete } from "./chartTypes";
 import { projectCondition, tableFilterConditions } from "../../services/helpers/jmixFilterHelpers";
 
 // Values of a split column shown as their own line or bars; the rest are "Other"
@@ -182,7 +182,7 @@ function fillDateGaps(keys: string[], granularity: DateGranularity): string[] {
   return merged.slice(-MAX_DATE_BUCKETS);
 }
 
-// "Jan 2026", "Q1 2026", "7 Jan"…; a choice field's words ("Pending"), Yes /
+// "Apr 1, 2024" (each date bucket by its first day, as the CDP app); a choice field's words ("Pending"), Yes /
 // No; other values as the backend labels them
 export function categoryLabel(key: string | null, dimension: ChartDimension, label?: string | null): string {
   if (key === null || key === "") return t("chart.blank");
@@ -192,17 +192,8 @@ export function categoryLabel(key: string | null, dimension: ChartDimension, lab
   if (dimension.type !== "date") return label || key;
   const d = parseDay(key);
   if (Number.isNaN(d.getTime())) return key;
-  switch (dimension.granularity ?? DEFAULT_GRANULARITY) {
-    case "day":
-    case "week":
-      return d.toLocaleDateString(localeTag(), { day: "numeric", month: "short" });
-    case "month":
-      return d.toLocaleDateString(localeTag(), { month: "short", year: "numeric" });
-    case "quarter":
-      return t("chart.quarterLabel", { quarter: Math.floor(d.getMonth() / 3) + 1, year: d.getFullYear() });
-    case "year":
-      return String(d.getFullYear());
-  }
+  // Every bucket as its first day, the way the CDP app's charts write it ("Apr 1, 2024")
+  return d.toLocaleDateString(localeTag(), { month: "short", day: "numeric", year: "numeric" });
 }
 
 type ValueMap = Map<string | null, number | null>;
@@ -288,7 +279,8 @@ function arrangeCategories(
   return { labels, values, keys: colorKeys };
 }
 
-const limitOf = (binding: ChartBinding) => binding.limit ?? DEFAULT_CATEGORY_LIMIT;
+// Every category is shown, as the CDP app's charts (no "largest N" with the rest as "Other")
+const limitOf = (_binding: ChartBinding) => 0;
 
 // The answers to chartRequests() as the numbers the chart draws
 export function mergeChartData(binding: ChartBinding, results: AggregateResult[]): ChartData {

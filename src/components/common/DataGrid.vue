@@ -30,9 +30,14 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-if="loading && !rows.length">
-            <td :colspan="columns.length" class="dg-message">{{ t("dataTable.loading") }}</td>
-          </tr>
+          <!-- First rows on their way: skeleton rows (CDP DataTableSkeleton) -->
+          <template v-if="loading && !rows.length">
+            <tr v-for="i in SKELETON_ROWS" :key="`skeleton-${i}`" :style="{ opacity: Math.max(0.25, 1 - (i - 1) * 0.1) }">
+              <td v-for="(col, j) in columns" :key="col.key" class="dg-skeleton-cell">
+                <SkeletonBlock :width="`${SKELETON_WIDTHS[j % SKELETON_WIDTHS.length]}%`" height="10px" radius="4px" />
+              </td>
+            </tr>
+          </template>
           <tr v-else-if="failed">
             <td :colspan="columns.length" class="dg-message is-error">{{ t("dataTable.loadFailed") }}</td>
           </tr>
@@ -62,11 +67,9 @@
     <PageNavigation
       v-if="paged && columns.length && rowCount! > 0"
       class="dg-pages"
-      compact
       :page="pageIndex! + 1"
       :page-size="pageSize!"
       :total="rowCount!"
-      :page-sizes="pageSizes"
       @update:page="table.setPageIndex($event - 1)"
       @update:page-size="table.setPageSize($event)"
     />
@@ -75,6 +78,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import SkeletonBlock from "./SkeletonBlock.vue";
 import { useI18n } from "vue-i18n";
 import { ArrowDown, ArrowUp, ArrowUpDown, Zap } from "@lucide/vue";
 import {
@@ -94,13 +98,17 @@ import type {
   TableSort,
   TableTotals,
 } from "@/types/dataSource";
-import { cellAlignmentFor, formatCellValue } from "@/utils/table/dataTable";
+import { formatCellValue, lookAlignFor } from "@/utils/table/dataTable";
 import { lookPartStyles, rowColorAt, tableCellCss, type TableStylePart } from "@/utils/table/tableThemes";
 import { columnPartLook, partLookCss } from "@/utils/table/columnLook";
 import { sortDirectionLabel } from "@/utils/table/summary";
 import { tableColumnBarcode } from "@/utils/barcode/barcodeTypes";
 import BarcodeCell from "./BarcodeCell.vue";
 import PageNavigation from "./PageNavigation.vue";
+
+// Skeleton rows while the first rows load, and their bars' widths (% of a cell)
+const SKELETON_ROWS = 8;
+const SKELETON_WIDTHS = [70, 90, 55, 80, 65, 45];
 
 // Barcode columns in the preview: a row this tall (points)
 const BARCODE_CELL_HEIGHT = 30;
@@ -220,7 +228,7 @@ function cellStyle(part: TableStylePart, col: TableColumnBinding, index: number,
     part === "row" ? (props.rows[rowIndex] ?? null) : null,
   );
   Object.assign(css, partLookCss(own));
-  css.textAlign = (own?.align ?? (part === "header" ? "Left" : part === "totals" && col.total ? "Right" : cellAlignmentFor(col.type))).toLowerCase();
+  css.textAlign = (own?.align ?? lookAlignFor(props.look, part, col)).toLowerCase();
   if (index > 0) css.borderLeft = "none";
   return css;
 }
@@ -257,10 +265,16 @@ function totalText(col: TableColumnBinding): string {
   width: max-content;
 }
 
+/* The same card as My Templates' list (the app's one table frame); the page
+   bar sits under it. Cells keep the table's own colours: they preview the report */
 .dg-scroll {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
+  border: 1px solid rgba(28, 27, 38, 0.09);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.05);
 }
 
 table {
@@ -271,8 +285,8 @@ table {
 
 th,
 td {
-  height: 26px;
-  padding: 0 6px;
+  height: 32px;
+  padding: 0 10px;
   white-space: nowrap;
   max-width: 240px;
   overflow: hidden;
@@ -330,6 +344,10 @@ tfoot td {
   opacity: 0.55;
 }
 
+.dg-skeleton-cell {
+  padding: 10px 8px;
+}
+
 .dg-message {
   padding: 16px;
   text-align: center;
@@ -348,6 +366,6 @@ tfoot td {
 
 .dg-pages {
   flex: none;
-  padding: 8px 4px 2px;
+  padding-top: 12px;
 }
 </style>

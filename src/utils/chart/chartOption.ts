@@ -108,13 +108,24 @@ function chartColorKeys(binding: ChartBinding, data: ChartData): (string | undef
   }
 }
 
-// The colours drawn: the colour set's, with the user's own over them
+// The colour the CDP app gives a value ("PASS" green), from the chart's
+// groupings; a split's key may carry its series ("series2:PASS")
+function valueColor(binding: ChartBinding, key: string): string | undefined {
+  const value = (key.includes(":") ? key.slice(key.indexOf(":") + 1) : key).toUpperCase();
+  for (const grouping of [binding.dimension, binding.level2, ...(binding.series ?? []).map((s) => s.splitBy)]) {
+    const color = grouping?.choices?.find((c) => c.value.toUpperCase() === value)?.color;
+    if (color) return color;
+  }
+  return undefined;
+}
+
+// The colours drawn: the colour set's, the CDP values' own over them, the user's own over those
 function chartPaint(binding: ChartBinding, data: ChartData): string[] {
   const keys = chartColorKeys(binding, data);
   const base = chartColors(binding.palette, Math.max(1, colorCount(binding, data)));
   return base.map((color, i) => {
     const key = keys[i];
-    return (key !== undefined && binding.colors?.[key]) || color;
+    return (key !== undefined && (binding.colors?.[key] || valueColor(binding, key))) || color;
   });
 }
 

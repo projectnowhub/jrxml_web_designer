@@ -3,7 +3,7 @@
 // fields, in its order and with its names; for any other entity, null (the
 // chart then offers the source's columns). No browser code.
 
-import { CHART_FIELDS } from "@/constants/chartFieldConstants";
+import { CHART_FIELDS, CHART_VALUE_COLORS } from "@/constants/chartFieldConstants";
 import type { ChartFieldRule, DataColumn, DataSourceSchema } from "@/types/dataSource";
 
 export interface ChartFieldLists {
@@ -21,11 +21,14 @@ export const chartFieldLabelKey = (entityName: string, key: string) =>
 
 // A CDP field as a column: the source's own column (its type, choices, yes / no),
 // or, for a path into a linked record ("supplier.name"), that record's text
-function toChartColumn(rule: ChartFieldRule, columns: DataColumn[], label: string): DataColumn | null {
+function toChartColumn(rule: ChartFieldRule, columns: DataColumn[], label: string, entityName: string): DataColumn | null {
   const own = columns.find((c) => c.key === rule.key);
   if (own) {
     if (own.linked) return null;
-    return { ...own, label, ...(rule.type === "date" ? { type: "date" as const } : {}) };
+    // Choice values carry the CDP dashboards' colours
+    const colors = CHART_VALUE_COLORS[entityName]?.[rule.key];
+    const choices = colors && own.choices ? own.choices.map((c) => (colors[c.value] ? { ...c, color: colors[c.value] } : c)) : own.choices;
+    return { ...own, label, ...(choices ? { choices } : {}), ...(rule.type === "date" ? { type: "date" as const } : {}) };
   }
   const base = rule.key.split(".")[0]!;
   if (rule.key.includes(".") && columns.some((c) => c.key === base && c.linked)) {
@@ -44,7 +47,8 @@ export function chartFieldLists(
   const fields = rules
     .map((rule) => {
       const fallback = schema.columns.find((c) => c.key === rule.key)?.label ?? rule.key;
-      const column = toChartColumn(rule, schema.columns, label(chartFieldLabelKey(schema.entityName ?? schema.id, rule.key), fallback));
+      const entityName = schema.entityName ?? schema.id;
+      const column = toChartColumn(rule, schema.columns, label(chartFieldLabelKey(entityName, rule.key), fallback), entityName);
       return column ? { rule, column } : null;
     })
     .filter((f): f is { rule: ChartFieldRule; column: DataColumn } => f !== null);

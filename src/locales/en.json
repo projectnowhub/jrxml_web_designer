@@ -1011,6 +1011,7 @@
     "shortcutsIntro": "Everything you can do with the keyboard and mouse in the designer.",
     "shortcuts": {
       "undo": "Undo the last change (while typing in a box: undo the typing)",
+      "closeColumnPicker": "Close the Choose columns list (the columns stay as ticked)",
       "redo": "Redo what you undid (while typing in a box: redo the typing)",
       "select": "Select an item",
       "selectMore": "Add an item to the selection, or take it out",
@@ -1473,6 +1474,7 @@
       "table": "In a typed table",
       "picture": "Pictures",
       "location": "Location map (in its properties)",
+      "dataSetup": "Table data setup",
       "view": "View",
       "file": "Save",
       "ai": "AI Assistant"
@@ -2250,7 +2252,6 @@
     "yes": "Yes",
     "no": "No",
     "titles": {"by": "{measure} by {field}", "byPair": "{first} by {second}", "splitBy": "{measure}, split by {field}", "and": "&", "andNMore": "{first} & {count} more", "totalRecords": "Total Records", "records": "Records", "treemap": "Tree Map", "aggregations": {"sum": "Sum", "avg": "Avg", "min": "Min", "max": "Max"}},
-    "quarterLabel": "Q{quarter} {year}",
     "measures": {
       "countOf": "Count",
       "sumOf": "Total {column}",
@@ -2308,12 +2309,10 @@
       "automatic": "Automatic",
       "stackBars": "Stack the bars",
       "stackAreas": "Stack the areas",
-      "show": "Show",
-      "largest": "Largest {count}",
-      "all": "All",
       "filters": "Which rows count",
       "basedOn": "Based on 1 row | Based on {count} rows",
-      "incomplete": "Choose what the chart shows."
+      "incomplete": "Choose what the chart shows.",
+      "manyCategories": "{count} categories: every one prints, so the chart may be crowded on paper. A filter, a coarser date grouping (by month or year) or a wider chart helps."
     }
   },
   "dataTable": {
@@ -2330,7 +2329,6 @@
     "noRows": "No records found",
     "onlyInDetail": "Tables can only be placed in the Detail section.",
     "columnAlreadyShown": "\"{column}\" is already in this table.",
-    "columnLimitReached": "This table is full\nIt fits {max} columns. Widen it or remove a column first.",
     "totals": {
       "label": "Total",
       "sum": "Sum",
@@ -2376,15 +2374,15 @@
       "replacesData": "Apply replaces this table's current data ({source}).",
       "sourceOption": "{name} ({count} rows)",
       "columns": "Columns",
-      "columnCounter": "{count} shown · {max} fit",
+      "columnCounter": "1 column | {count} columns",
       "dragToReorder": "Drag to reorder",
       "headerText": "Header text",
       "total": "Total",
       "noTotal": "No total",
       "removeColumn": "Remove column",
-      "addColumn": "Add a column…",
-      "tableFull": "Table is full: remove a column to add another",
-      "columnLimitHint": "No more columns fit. Remove one, or widen the table (landscape pages fit more).",
+      "chooseColumns": "Choose columns",
+      "columnsChosen": "{shown} of {total}",
+      "widerThanPage": "Wider than the table: it now reaches past the page's edge, so narrow some columns or remove a few.",
       "rows": "Totals",
       "rowsNote": "These apply to the table on the page and in the printed report, not just this preview.",
       "showTotals": "Add a totals row",
@@ -2392,7 +2390,6 @@
       "pickSourceFirst": "Choose a source to see its data",
       "rowCount": "1 row | {count} rows",
       "needColumn": "Choose at least one column",
-      "tooManyColumns": "Too many columns: at most {max} fit",
       "apply": "Apply",
       "tableRows": "Table rows"
     },
@@ -2469,6 +2466,7 @@
         "ruleColor": "Header line"
       },
       "bold": "Bold",
+      "alignByType": "Unset: each column lines up by its kind (numbers right, dates centred). Click the chosen one again to go back to that.",
       "lines": {
         "grid": "Grid",
         "rows": "Rows only",
@@ -2566,7 +2564,7 @@
     "projectsLoadFailed": "Couldn't load the projects.",
     "noProjectsAvailable": "No projects yet",
     "lists": "Lists",
-    "moreDetails": "More details",
+    "moreDetails": "User-defined fields",
     "managerCard": "All details (table)",
     "dragTable": "Drag onto the page to add this list as a table",
     "dragCard": "Drag onto the page to add these details as a table",
@@ -2615,8 +2613,8 @@
     "noProjects": "Use “Choose a project…” at the top of the page to pick the project this template uses. A template uses one project for now.",
     "search": "Search details, tables and columns",
     "hint": "Drag a detail (name, date, introduction…) onto a text element, or the logo onto an image element, to fill it; drop it on empty space for a new one. It becomes normal text or a normal image. Drag a table onto the Detail section or onto a table; drag a column to add just that column.",
-    "details": "Details",
     "tables": "Tables",
+    "details": "Details",
     "dragDetail": "Drag onto the page to add this as text",
     "dragImage": "Drag onto the page to add this image",
     "dragSource": "Drag onto a table or the Detail section",
@@ -3787,7 +3785,7 @@
       },
       "tableCustomize": {
         "title": "Customize",
-        "text": "The look of the whole table: the heading, row colours (up to 4, taken in turn), totals, lines, text size and, in a typed table, the space inside every cell. Save as table style keeps them to use on other tables. Some cells or one column can have their own look, in the card above this one."
+        "text": "The look of the whole table: the heading, row colours (up to 4, taken in turn), totals, lines, text size and, in a typed table, the space inside every cell. Save as table style keeps them to use on other tables. Some cells or one column can have their own look, in the card above this one. Each part (heading, rows, totals) also has bold, italic and underline, and its alignment for the whole table; a column's own settings and a typed cell's own settings come over them."
       },
       "typedGrid": {
         "title": "Rows and columns",
@@ -4035,7 +4033,7 @@
     "previous": "Previous",
     "next": "Next",
     "last": "Last page",
-    "perPage": "Per page",
+    "perPage": "Show",
     "noRows": "No rows"
   },
   "chartFields": {

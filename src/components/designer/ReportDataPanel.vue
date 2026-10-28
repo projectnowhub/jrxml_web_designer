@@ -155,7 +155,7 @@
             </ul>
           </template>
 
-          <!-- The project's own fields: their values only (names aren't sent yet) -->
+          <!-- The project's user-defined fields: name and value -->
           <template v-if="moreDetailFields(project.id).length">
             <div class="rdp-group">{{ t("reportData.moreDetails") }}</div>
             <ul class="rdp-list">
@@ -170,6 +170,9 @@
               >
                 <Type :size="12" class="rdp-type" aria-hidden="true" />
                 <span class="rdp-name">{{ field.label }}</span>
+                <span v-if="field.label !== valueOf(project.id, field.key)" class="rdp-value" :title="valueOf(project.id, field.key) ?? ''">
+                  {{ valueOf(project.id, field.key) }}
+                </span>
                 <GripVertical :size="12" class="rdp-grip" aria-hidden="true" />
               </li>
             </ul>
@@ -433,8 +436,13 @@ const logoOf = (projectId: string) => {
 // Search matches a detail, a source or one of its (loaded) columns
 const matches = (text: string) => text.toLowerCase().includes(query.value.trim().toLowerCase());
 
+// A detail with nothing in it isn't listed (there is nothing to drag)
+const hasValue = (value: string | null | undefined) => !!value && value.trim() !== "";
+
 const visibleFields = (projectId: string): ProjectField[] =>
-  (details.value[projectId]?.fields ?? []).filter((f) => !query.value.trim() || matches(f.label));
+  (details.value[projectId]?.fields ?? []).filter(
+    (f) => hasValue(valueOf(projectId, f.key)) && (!query.value.trim() || matches(f.label)),
+  );
 
 // The project's location: the whole place (a Location element: map and
 // address) and each of its fields (text), in the order of the CDP project form
@@ -454,13 +462,17 @@ const locationRows = (projectId: string): LocationRow[] => {
       value: JSON.stringify(place),
       shown: [place.city, place.country].filter(Boolean).join(", "),
     },
-    ...PLACE_FIELDS.map((f) => ({
-      field: { key: `location.${f}`, label: t(`location.fields.${f}`), type: "text" as const },
-      value: place[f] || null,
-      shown: place[f],
-    })),
+    ...PLACE_FIELDS.map((f) => {
+      // A coordinate of 0 means "not set" (no project sits on that line)
+      const unset = (f === "latitude" || f === "longitude") && Number(place[f]) === 0;
+      return {
+        field: { key: `location.${f}`, label: t(`location.fields.${f}`), type: "text" as const },
+        value: unset ? null : place[f] || null,
+        shown: place[f],
+      };
+    }),
   ];
-  return rows.filter((row) => !query.value.trim() || matches(row.field.label));
+  return rows.filter((row) => hasValue(row.value) && (!query.value.trim() || matches(row.field.label)));
 };
 
 // A table's columns in two groups: the standard fields every tenant has and the
@@ -496,7 +508,7 @@ const managerRows = (projectId: string): ManagerRow[] => {
       field: { key: `manager.${i}`, label, type: "text" as const },
     })),
   ];
-  return rows.filter((row) => !query.value.trim() || matches(row.label) || matches(row.shown));
+  return rows.filter((row) => hasValue(row.shown) && (!query.value.trim() || matches(row.label) || matches(row.shown)));
 };
 
 // The project's lists (team, companies, contracts), empty ones too (a drop says so)
@@ -504,7 +516,9 @@ const listTables = (projectId: string): ProjectTable[] =>
   (details.value[projectId]?.tables ?? []).filter((table) => !table.card && (!query.value.trim() || matches(table.label)));
 
 const moreDetailFields = (projectId: string): ProjectField[] =>
-  (details.value[projectId]?.moreDetails ?? []).filter((field) => !query.value.trim() || matches(field.label));
+  (details.value[projectId]?.moreDetails ?? []).filter(
+    (field) => hasValue(valueOf(projectId, field.key)) && (!query.value.trim() || matches(field.label)),
+  );
 
 const visibleSources = (projectId: string): DataSourceSummary[] =>
   (sources.value[projectId] ?? []).filter(

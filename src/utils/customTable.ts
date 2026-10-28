@@ -90,6 +90,19 @@ export function rowPart(table: CustomTableData, row: number): { part: CustomRowP
   return { part: "row", bodyIndex: row - table.headerRows };
 }
 
+// A whole-table text style or alignment was set: the cells of that part drop
+// their own value for it, so the table's shows
+export function clearPartCells(
+  table: CustomTableData,
+  part: CustomRowPart,
+  key: "bold" | "italic" | "underline" | "align",
+): void {
+  table.rows.forEach((row, r) => {
+    if (rowPart(table, r).part !== part) return;
+    row.cells.forEach((cell) => delete cell[key]);
+  });
+}
+
 export interface ResolvedCell {
   fill: string;
   color: string;
@@ -103,19 +116,44 @@ export interface ResolvedCell {
 
 export function resolveCell(table: CustomTableData, look: TableLook, row: number, cell: CustomTableCell): ResolvedCell {
   const { part, bodyIndex } = rowPart(table, row);
+  // The whole table's style for this row's part; the cell's own settings come over it
   const base =
     part === "header"
-      ? { fill: look.headerBackground, color: look.headerText, bold: look.headerBold, vAlign: "Middle" as const }
+      ? {
+          fill: look.headerBackground,
+          color: look.headerText,
+          bold: look.headerBold,
+          italic: !!look.headerItalic,
+          underline: !!look.headerUnderline,
+          align: look.headerAlign ?? "Left",
+          vAlign: "Middle" as const,
+        }
       : part === "totals"
-        ? { fill: look.totalsBackground, color: look.totalsText, bold: look.totalsBold, vAlign: "Middle" as const }
-        : { fill: rowColorAt(look, bodyIndex), color: look.rowText, bold: false, vAlign: "Top" as const };
+        ? {
+            fill: look.totalsBackground,
+            color: look.totalsText,
+            bold: look.totalsBold,
+            italic: !!look.totalsItalic,
+            underline: !!look.totalsUnderline,
+            align: look.totalsAlign ?? "Left",
+            vAlign: "Middle" as const,
+          }
+        : {
+            fill: rowColorAt(look, bodyIndex),
+            color: look.rowText,
+            bold: !!look.rowBold,
+            italic: !!look.rowItalic,
+            underline: !!look.rowUnderline,
+            align: look.rowAlign ?? "Left",
+            vAlign: "Top" as const,
+          };
   return {
     fill: cell.fill ?? base.fill,
     color: cell.color ?? base.color,
     bold: cell.bold ?? base.bold,
-    italic: cell.italic ?? false,
-    underline: cell.underline ?? false,
-    align: cell.align ?? "Left",
+    italic: cell.italic ?? base.italic,
+    underline: cell.underline ?? base.underline,
+    align: cell.align ?? base.align,
     vAlign: cell.vAlign ?? base.vAlign,
     fontSize: cell.fontSize ?? look.fontSize,
   };

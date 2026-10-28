@@ -146,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, toRef } from "vue";
+import { computed, onBeforeUnmount, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { DatabaseZap } from "@lucide/vue";
 import BaseElement from "./BaseElement.vue";
@@ -158,7 +158,7 @@ import {
   PLACEHOLDER_COLUMN_COUNT,
   TABLE_HEADER_HEIGHT,
   TABLE_ROW_HEIGHT,
-  cellAlignmentFor,
+  lookAlignFor,
   formatCellValue,
   hasTotalsRow,
   rowSlots,
@@ -169,6 +169,7 @@ import { isDataSourceDrag } from "@/utils/table/dataDrag";
 import { columnPartLook, partLookCss } from "@/utils/table/columnLook";
 import { useSelectionStore } from "@/stores/selection";
 import { useReportStore } from "@/stores/report";
+import { useEditorStore } from "@/stores/editor";
 import { storeToRefs } from "pinia";
 import type { SelectedElementInfo, TableElement } from "@/types";
 import type { DataRow, TableColumnBinding } from "@/types/dataSource";
@@ -243,6 +244,27 @@ const rowSlotsShown = computed<Slot[]>(() => {
   return shown;
 });
 
+// A project-data table is only as tall as its rows (up to the sample rows the
+// page shows): its rows come from the project and the PDF prints them all, so
+// height beyond them would be empty space that never prints. Dragging it
+// taller springs back when the drag ends; shorter (fewer sample rows) stays.
+const editor = useEditorStore();
+const contentHeight = computed(() => {
+  const shownRows = Math.min(Math.max(totalCount.value, 1), CANVAS_SAMPLE_ROWS);
+  return headerHeight.value + shownRows * rowHeight.value + (showTotals.value ? rowHeight.value : 0);
+});
+watch(
+  [contentHeight, () => props.element.height, () => editor.isDraggingOrResizing, loading, failed],
+  () => {
+    if (!binding.value || loading.value || failed.value || editor.isDraggingOrResizing) return;
+    if (props.element.height > contentHeight.value + 0.5) {
+      props.element.height = contentHeight.value;
+      useReportStore().updateJrxml();
+    }
+  },
+  { immediate: true },
+);
+
 const look = computed(() => resolveLook(binding.value));
 const partStyles = computed(() => lookPartStyles(look.value));
 
@@ -252,15 +274,12 @@ function cellStyle(part: TableStylePart, col: PreviewColumn | undefined, index: 
   // The column's own look (body cells: with the highlight rules on this row)
   const own = bCol && binding.value ? columnPartLook(binding.value, bCol, part, row ?? null) : undefined;
   Object.assign(css, partLookCss(own));
-  const ownAlign = own?.align ?? (part === "row" && col ? cellAlignmentFor(col.type) : undefined);
-  if (ownAlign) css.justifyContent = { Left: "flex-start", Center: "center", Right: "flex-end" }[ownAlign];
+  // The column's own alignment, else the whole table's (lookAlignFor)
+  const align = own?.align ?? (col ? lookAlignFor(look.value, part, col as TableColumnBinding) : undefined);
+  if (align) css.justifyContent = { Left: "flex-start", Center: "center", Right: "flex-end" }[align];
 
   if (col) {
     css.width = `${col.width}px`;
-    if (!css.justifyContent) {
-      css.justifyContent =
-        part === "header" ? "flex-start" : { Left: "flex-start", Center: "center", Right: "flex-end" }[cellAlignmentFor(col.type)];
-    }
   } else {
     css.flex = "1";
   }

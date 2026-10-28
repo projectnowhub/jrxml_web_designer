@@ -10,9 +10,11 @@ import type {
   DataSourceSchema,
   TableColumnBinding,
   TableDataBinding,
+  TableLook,
+  TableTextAlign,
   TotalFunction,
 } from "@/types/dataSource";
-import { distributeColumnWidths, maxColumnsForWidth } from "./dataBinding";
+import { distributeColumnWidths, startingColumnCount } from "./dataBinding";
 import { javaString } from "../jrxml/javaString";
 
 export const TABLE_HEADER_HEIGHT = 24;
@@ -107,6 +109,19 @@ export function cellAlignmentFor(type: DataColumnType): "Left" | "Center" | "Rig
   if (type === "number" || type === "currency") return "Right";
   if (type === "date") return "Center";
   return "Left";
+}
+
+// A data table cell's alignment from the whole table's look (a column's own
+// look comes over it): the heading Left, rows by the column's type, a total
+// Right, unless the table sets its own
+export function lookAlignFor(
+  look: Pick<TableLook, "headerAlign" | "rowAlign" | "totalsAlign">,
+  part: "header" | "row" | "totals",
+  column: Pick<TableColumnBinding, "type" | "total">,
+): TableTextAlign {
+  if (part === "header") return look.headerAlign ?? "Left";
+  if (part === "totals") return look.totalsAlign ?? (column.total ? "Right" : "Left");
+  return look.rowAlign ?? cellAlignmentFor(column.type);
 }
 
 const fieldRef = (key: string) => `$F{${key}}`;
@@ -208,7 +223,7 @@ export function createBinding(options: {
   tableWidth: number;
 }): TableDataBinding {
   const { project, schema, tableName, datasetName, tableWidth } = options;
-  const columns = schema.columns.slice(0, maxColumnsForWidth(tableWidth));
+  const columns = schema.columns.slice(0, startingColumnCount(tableWidth));
   const widths = distributeColumnWidths(columns.length, tableWidth);
   return {
     tableName,

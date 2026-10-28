@@ -265,15 +265,41 @@
             />
             <span>{{ t(`dataTable.style.fields.${field}`) }}</span>
           </label>
-          <label v-if="group.bold" class="tdp-check">
-            <input
-              type="checkbox"
-              :checked="look[group.bold]"
-              @change="setLook(group.bold, ($event.target as HTMLInputElement).checked, true)"
-            />
-            {{ t("dataTable.style.bold") }}
-          </label>
         </div>
+        <!-- The part's text style and alignment, for the whole table -->
+        <div class="tdp-editor-row tdp-text-row">
+          <div class="tdp-seg" role="group" :aria-label="t('customTable.textStyle')">
+            <button
+              v-for="toggle in TEXT_TOGGLES"
+              :key="toggle.key"
+              type="button"
+              class="tdp-seg-btn"
+              :class="{ active: !!look[group.text[toggle.key]] }"
+              :aria-pressed="!!look[group.text[toggle.key]]"
+              :title="t(toggle.label)"
+              :aria-label="t(toggle.label)"
+              @click="setPartText(group, toggle.key)"
+            >
+              <component :is="toggle.icon" :size="13" aria-hidden="true" />
+            </button>
+          </div>
+          <div class="tdp-seg" role="group" :aria-label="t('customTable.alignment')">
+            <button
+              v-for="option in ALIGN_OPTIONS"
+              :key="option.value"
+              type="button"
+              class="tdp-seg-btn"
+              :class="{ active: look[group.align] === option.value }"
+              :aria-pressed="look[group.align] === option.value"
+              :title="t(option.label)"
+              :aria-label="t(option.label)"
+              @click="setPartAlign(group, option.value)"
+            >
+              <component :is="option.icon" :size="13" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+        <p v-if="!isTyped && group.part === 'rows' && !look.rowAlign" class="tdp-hint">{{ t("dataTable.style.alignByType") }}</p>
         <!-- Body rows take these colours in turn (1 to 4) -->
         <div v-if="group.part === 'rows'" class="tdp-row-colors">
           <span class="tdp-label">{{ t("dataTable.style.rowColors") }}</span>
@@ -417,15 +443,17 @@ import SettingHelpText from "../../help/SettingHelpText.vue";
 import { useReportStore } from "@/stores/report";
 import { useSelectionStore } from "@/stores/selection";
 import { storeToRefs } from "pinia";
-import { computed, nextTick, ref } from "vue";
+import { computed, nextTick, ref, type Component } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   ArrowDownUp,
+  Bold,
   BookmarkPlus,
   ChevronRight,
   Database,
   DatabaseZap,
   Funnel,
+  Italic,
   Lock,
   MousePointerClick,
   Paintbrush,
@@ -433,11 +461,16 @@ import {
   Plus,
   RefreshCw,
   SlidersHorizontal,
+  TextAlignCenter,
+  TextAlignEnd,
+  TextAlignStart,
   Trash2,
+  Underline,
 } from "@lucide/vue";
 import ColorSwatchPicker from "@/components/common/ColorSwatchPicker.vue";
 import type { CustomTableElement, TableElement } from "@/types";
-import type { SavedTableStyle, TableLook } from "@/types/dataSource";
+import type { SavedTableStyle, TableLook, TableTextAlign } from "@/types/dataSource";
+import { clearPartCells, type CustomRowPart } from "@/utils/customTable";
 import {
   TABLE_HEADER_HEIGHT,
   TABLE_ROW_HEIGHT,
@@ -599,15 +632,70 @@ function deleteSavedStyle() {
 // ── Changing the look for this table only ──
 
 type LookField = keyof TableLook;
-const LOOK_GROUPS: {
+type TextKey = "bold" | "italic" | "underline";
+interface LookGroup {
   part: "header" | "rows" | "totals";
+  // The typed table's part with the same rows
+  rowPart: CustomRowPart;
   colors: ("headerBackground" | "headerText" | "rowText" | "totalsBackground" | "totalsText")[];
-  bold?: "headerBold" | "totalsBold";
-}[] = [
-  { part: "header", colors: ["headerBackground", "headerText"], bold: "headerBold" },
-  { part: "rows", colors: ["rowText"] },
-  { part: "totals", colors: ["totalsBackground", "totalsText"], bold: "totalsBold" },
+  text: Record<TextKey, "headerBold" | "headerItalic" | "headerUnderline" | "rowBold" | "rowItalic" | "rowUnderline" | "totalsBold" | "totalsItalic" | "totalsUnderline">;
+  align: "headerAlign" | "rowAlign" | "totalsAlign";
+}
+const LOOK_GROUPS: LookGroup[] = [
+  {
+    part: "header",
+    rowPart: "header",
+    colors: ["headerBackground", "headerText"],
+    text: { bold: "headerBold", italic: "headerItalic", underline: "headerUnderline" },
+    align: "headerAlign",
+  },
+  {
+    part: "rows",
+    rowPart: "row",
+    colors: ["rowText"],
+    text: { bold: "rowBold", italic: "rowItalic", underline: "rowUnderline" },
+    align: "rowAlign",
+  },
+  {
+    part: "totals",
+    rowPart: "totals",
+    colors: ["totalsBackground", "totalsText"],
+    text: { bold: "totalsBold", italic: "totalsItalic", underline: "totalsUnderline" },
+    align: "totalsAlign",
+  },
 ];
+const TEXT_TOGGLES: { key: TextKey; label: string; icon: Component }[] = [
+  { key: "bold", label: "properties.bold", icon: Bold },
+  { key: "italic", label: "properties.italic", icon: Italic },
+  { key: "underline", label: "properties.underline", icon: Underline },
+];
+const ALIGN_OPTIONS: { value: TableTextAlign; label: string; icon: Component }[] = [
+  { value: "Left", label: "properties.left", icon: TextAlignStart },
+  { value: "Center", label: "properties.center", icon: TextAlignCenter },
+  { value: "Right", label: "properties.right", icon: TextAlignEnd },
+];
+
+// A part's bold / italic / underline for the whole table (one undo step); on a
+// typed table its cells drop their own value, so the table's shows
+function setPartText(group: LookGroup, key: TextKey) {
+  const field = group.text[key];
+  setLook(field, !look.value[field], true);
+  if (typedTable.value) {
+    clearPartCells(typedTable.value, group.rowPart, key);
+    report.updateJrxml();
+  }
+}
+
+// A part's alignment for the whole table; the chosen one again goes back to
+// the usual (data rows: by the column's type)
+function setPartAlign(group: LookGroup, value: TableTextAlign) {
+  const next = look.value[group.align] === value ? undefined : value;
+  setLook(group.align, next, true);
+  if (typedTable.value) {
+    clearPartCells(typedTable.value, group.rowPart, "align");
+    report.updateJrxml();
+  }
+}
 
 // One undo step per change: a colour dragged in the picker is one change
 let editing: LookField | null = null;
@@ -699,6 +787,49 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
 </script>
 
 <style scoped>
+.tdp-text-row {
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.tdp-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid #e6e5ee;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.tdp-seg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: #45425a;
+  cursor: pointer;
+}
+
+.tdp-seg-btn:hover {
+  background: #f4f1ff;
+}
+
+.tdp-seg-btn.active {
+  background: #6440f4;
+  color: #ffffff;
+}
+
+.tdp-hint {
+  margin: 4px 0 0;
+  color: #8a8799;
+  font-size: 11px;
+}
+
 .tdp-row-colors {
   margin-top: 8px;
 }

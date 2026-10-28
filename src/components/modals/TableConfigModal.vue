@@ -24,7 +24,8 @@
 
         <section v-if="projectId" class="tcm-section">
           <h4><Database :size="14" aria-hidden="true" />{{ t("dataTable.config.source") }}</h4>
-          <div class="tcm-select-wrap">
+          <SkeletonBlock v-if="sourcesLoading" height="34px" radius="8px" />
+          <div v-else class="tcm-select-wrap">
             <select class="tcm-select" :value="sourceId" @change="changeSource(($event.target as HTMLSelectElement).value)">
               <option value="" disabled>{{ t("dataTable.config.chooseSource") }}</option>
               <option v-for="s in sources" :key="s.id" :value="s.id">
@@ -40,15 +41,26 @@
           </p>
         </section>
 
+        <!-- The chosen table's columns on their way -->
+        <section v-if="schemaLoading" class="tcm-section tcm-skeleton">
+          <SkeletonBlock width="40%" height="14px" />
+          <SkeletonBlock v-for="i in 4" :key="i" height="30px" radius="8px" />
+        </section>
         <template v-if="schema">
           <!-- Columns -->
           <section class="tcm-section">
             <h4>
               <Columns3 :size="14" aria-hidden="true" />{{ t("dataTable.config.columns") }}
-              <span class="tcm-counter" :class="{ 'is-full': columns.length >= maxColumns }">
-                {{ t("dataTable.config.columnCounter", { count: columns.length, max: maxColumns }) }}
-              </span>
+              <span class="tcm-counter">{{ t("dataTable.config.columnCounter", columns.length) }}</span>
             </h4>
+            <!-- Every column of the source, ticked when shown; stays open while choosing;
+                 at the top, so it never moves as columns are added -->
+            <TableColumnPicker
+              :columns="schema.columns"
+              :chosen="columns.map((c) => c.key)"
+              @toggle="toggleColumn"
+              @set="showColumns"
+            />
             <!-- Drag a row by its grip to change the column order -->
             <ul
               class="tcm-list"
@@ -102,36 +114,8 @@
                 </button>
               </li>
             </ul>
-            <div v-if="unusedColumns.length" class="tcm-select-wrap">
-              <!-- Every unused column is listed, even when the table is full, so
-                   the user can see what else there is -->
-              <select
-                class="tcm-select"
-                value=""
-                @change="addColumn(($event.target as HTMLSelectElement))"
-              >
-                <option value="" disabled hidden>
-                  {{ t(columns.length >= maxColumns ? "dataTable.config.tableFull" : "dataTable.config.addColumn") }}
-                </option>
-                <!-- Standard fields, then the ones the tenant added -->
-                <template v-for="group in unusedColumnGroups" :key="group.key">
-                  <optgroup v-if="group.title" :label="group.title">
-                    <option v-for="c in group.columns" :key="c.key" :value="c.key" :disabled="columns.length >= maxColumns">
-                      {{ c.label }}
-                    </option>
-                  </optgroup>
-                  <template v-else>
-                    <option v-for="c in group.columns" :key="c.key" :value="c.key" :disabled="columns.length >= maxColumns">
-                      {{ c.label }}
-                    </option>
-                  </template>
-                </template>
-              </select>
-              <ChevronDown class="tcm-chevron" :size="14" aria-hidden="true" />
-            </div>
-            <p v-if="columns.length >= maxColumns && unusedColumns.length" class="tcm-hint">
-              {{ t("dataTable.config.columnLimitHint") }}
-            </p>
+            <!-- No limit: past what fits, the table gets wider than the page -->
+            <p v-if="tooWide" class="tcm-hint">{{ t("dataTable.config.widerThanPage") }}</p>
           </section>
 
           <!-- Filters, like a shop's filter panel (sorting is on the grid's headings) -->
@@ -179,9 +163,11 @@
           <span v-if="schema && !previewLoading" class="tcm-muted">
             {{ previewSummary }}
           </span>
+          <PageSizeChoice v-if="schema && columns.length" class="tcm-page-size" :model-value="pageSize" :sizes="TABLE_PAGE_SIZES" @update:model-value="setPageSize" />
         </div>
         <p v-if="schema && columns.length" class="tcm-hint is-top">{{ t("dataTable.grid.sortHint") }}</p>
-        <div v-if="!schema" class="tcm-empty">
+        <DataGridSkeleton v-if="schemaLoading" />
+        <div v-else-if="!schema" class="tcm-empty">
           <DatabaseZap :size="28" :stroke-width="1.5" aria-hidden="true" />
           <span>{{ t("dataTable.config.pickSourceFirst") }}</span>
         </div>
@@ -249,12 +235,16 @@ import {
 } from "@lucide/vue";
 import BaseModal from "./BaseModal.vue";
 import DataGrid from "../common/DataGrid.vue";
+import PageSizeChoice from "../common/PageSizeChoice.vue";
+import DataGridSkeleton from "../common/DataGridSkeleton.vue";
+import SkeletonBlock from "../common/SkeletonBlock.vue";
 import TableFilterPanel from "../designer/TableFilterPanel.vue";
+import TableColumnPicker from "../designer/TableColumnPicker.vue";
 import TableHighlights from "../designer/properties/TableHighlights.vue";
 import { fetchFacets, fetchSchema, fetchSources, rowsQuery } from "@/queries/dataSourceQueries";
 import {
   createDatasetName,
-  maxColumnsForWidth,
+  MIN_TABLE_COLUMN_WIDTH,
   nextTableName,
   toDataQuery,
 } from "@/utils/table/dataBinding";
@@ -326,6 +316,9 @@ const projectName = computed(
 );
 const schema = ref<DataSourceSchema | null>(null);
 const loadError = ref(false);
+// Waiting for the project's tables, or for the chosen table's columns
+const sourcesLoading = computed(() => !!projectId.value && !sources.value.length && !loadError.value);
+const schemaLoading = computed(() => !!sourceId.value && !schema.value && !loadError.value);
 
 // The draft setup; nothing changes on the table until Apply
 const draftName = ref("");
@@ -339,7 +332,8 @@ const highlights = ref<TableHighlight[]>([]);
 // The source's user-defined fields (marked with a bolt, as the CDP app)
 const userDefinedKeys = computed(() => new Set((schema.value?.columns ?? []).filter((c) => c.userDefined).map((c) => c.key)));
 
-const maxColumns = computed(() => maxColumnsForWidth(props.tableWidth));
+// Every column shown at the smallest width would be wider than the table
+const tooWide = computed(() => columns.value.length * MIN_TABLE_COLUMN_WIDTH > props.tableWidth);
 // Another source than the table shows: Apply replaces its data, like a new image
 const replacedSource = computed(() => {
   const current = props.table?.binding;
@@ -349,21 +343,6 @@ const replacedSource = computed(() => {
     ? current.sourceName
     : "";
 });
-const unusedColumns = computed(() =>
-  (schema.value?.columns ?? []).filter((c) => !columns.value.some((col) => col.key === c.key)),
-);
-// The add-column list in two groups: standard fields, then the ones the
-// tenant added (always titled, so base columns read as base
-// columns even when the tenant added none)
-const unusedColumnGroups = computed(() => {
-  const standard = unusedColumns.value.filter((c) => !c.userDefined);
-  const custom = unusedColumns.value.filter((c) => c.userDefined);
-  return [
-    { key: "standard", title: t("reportData.standardFields"), columns: standard },
-    { key: "custom", title: t("reportData.customFields"), columns: custom },
-  ].filter((group) => group.columns.length);
-});
-
 // The table's setup is reactive (structuredClone can't copy it) and plain JSON
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
@@ -554,11 +533,26 @@ function removeColumn(index: number) {
   columns.value.splice(index, 1);
 }
 
-function addColumn(select: HTMLSelectElement) {
-  const column = schema.value?.columns.find((c) => c.key === select.value);
-  select.value = "";
-  if (!column || columns.value.length >= maxColumns.value) return;
-  columns.value.push(toColumnBinding(column, 0));
+// Show or hide one column (a new one goes at the end)
+function toggleColumn(key: string) {
+  const at = columns.value.findIndex((c) => c.key === key);
+  if (at >= 0) {
+    columns.value.splice(at, 1);
+    return;
+  }
+  const column = schema.value?.columns.find((c) => c.key === key);
+  if (column) columns.value.push(toColumnBinding(column, 0));
+}
+
+// Show exactly these: the ones already shown keep their place and settings,
+// the others follow in the source's order
+function showColumns(keys: string[]) {
+  const wanted = new Set(keys);
+  const kept = columns.value.filter((c) => wanted.has(c.key));
+  const added = (schema.value?.columns ?? [])
+    .filter((c) => wanted.has(c.key) && !kept.some((k) => k.key === c.key))
+    .map((c) => toColumnBinding(c, 0));
+  columns.value = [...kept, ...added];
 }
 
 function setTotal(col: TableColumnBinding, value: string) {
@@ -610,6 +604,11 @@ const draftBinding = computed<TableDataBinding | null>(() => {
 // The grid's page (from 0) and rows per page
 const pageIndex = ref(0);
 const pageSize = ref(TABLE_ROWS_LIMIT);
+// Rows a page shows (above the grid); back to the first page
+function setPageSize(size: number) {
+  pageSize.value = size;
+  pageIndex.value = 0;
+}
 
 // Other rows (filters, sort, columns, source) start again at the first page
 watch(
@@ -678,7 +677,6 @@ const previewSummary = computed(() => t("dataTable.config.rowCount", printedRowC
 const applyBlockedReason = computed(() => {
   if (!schema.value) return t("dataTable.config.pickSourceFirst");
   if (!columns.value.length) return t("dataTable.config.needColumn");
-  if (columns.value.length > maxColumns.value) return t("dataTable.config.tooManyColumns", { max: maxColumns.value });
   return "";
 });
 
@@ -690,6 +688,15 @@ function apply() {
 </script>
 
 <style scoped>
+.tcm-page-size {
+  margin-left: auto;
+}
+
+.tcm-skeleton {
+  display: grid;
+  gap: 8px;
+}
+
 .tcm-bolt {
   flex: none;
   margin-left: -4px;
@@ -963,8 +970,6 @@ function apply() {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #eef0f4;
-  border-radius: 8px;
 }
 
 /* The grid scrolls inside; its page bar stays under it */

@@ -121,3 +121,39 @@ export const CHART_FIELDS: Readonly<Record<string, readonly ChartFieldRule[]>> =
     { key: "actualScore", type: "number", groupBy: false, measurable: true, filterable: true },
   ],
 };
+
+// The colour the CDP app gives each value of a choice field in its dashboards
+// (the option lists' colour, resolveSemanticColor: success #10b981, warning
+// #f59e0b, danger #ef4444, info #3b82f6, default #9ca3af): a chart's starting
+// colours for those values; the user's own colours come over them
+export const CHART_VALUE_COLORS: Readonly<Record<string, Readonly<Record<string, Readonly<Record<string, string>>>>>> = {
+  [Entity.COMPLIANCE_REGISTER]: {
+    category: { REGULATORY: "#3b82f6", CONSTRUCTION_PERMIT: "#f59e0b", INSURANCE: "#8b5cf6", STATUTORY: "#ef4444" },
+    issuingAuthority: { LOCAL_AUTHORITY: "#3b82f6", TOWN_PLANNING_DEPARTMENT: "#8b5cf6", IRRIGATION_DEPT_JPS: "#06b6d4", DOSH: "#f59e0b", INSURANCE_PROVIDER: "#ec4899", CIDB: "#10b981", KWSP: "#6366f1", IMMIGRATION_DEPT: "#f97316" },
+    status: { OPEN: "#3b82f6", IN_PROGRESS: "#f59e0b", ON_HOLD: "#9ca3af", CLOSED: "#10b981" },
+  },
+  [Entity.INCIDENT_REGISTER]: {
+    status: { OPEN: "#3b82f6", IN_PROGRESS: "#f59e0b", ON_HOLD: "#9ca3af", CLOSED: "#10b981" },
+    severityLevel: { VERY_LOW: "#9ca3af", LOW: "#3b82f6", MODERATE: "#f59e0b", HIGH: "#f97316", VERY_HIGH: "#ef4444" },
+    injuryType: { YES: "#10b981", NO: "#9ca3af" },
+    lostTimeInjury: { YES: "#10b981", NO: "#9ca3af" },
+  },
+  [Entity.EOT_ENTRY]: {
+    status: { APPROVED: "#16a34a", REJECTED: "#dc2626", PENDING: "#f59e0b", UNDER_REVIEW: "#2563eb" },
+  },
+  [Entity.RISK_REGISTER]: {
+    status: { OPEN: "#3b82f6", IN_PROGRESS: "#f59e0b", ON_HOLD: "#9ca3af", CLOSED: "#10b981" },
+    responseStrategy: { MITIGATE: "#10b981", ACCEPT: "#9ca3af", TRANSFER: "#3b82f6", AVOID: "#f59e0b" },
+  },
+  [Entity.LAD_REPORT]: {
+    deductionUnit: { PERCENTAGE: "#4caf50", AMOUNT: "#2196f3" },
+  },
+  [Entity.QAQC_REGISTER]: {
+    result: { PASS: "#10b981", FAIL: "#ef4444", PENDING: "#f59e0b", DELAY: "#9ca3af" },
+    ncrStatus: { NONE: "#9ca3af", OPEN: "#f59e0b", CLOSED: "#10b981" },
+  },
+  [Entity.ISSUE_REGISTER]: {
+    status: { OPEN: "#2196f3", IN_PROGRESS: "#ff9800", PENDING_APPROVAL: "#9c27b0", ON_HOLD: "#9e9e9e", CLOSED: "#4caf50" },
+    priority: { LOW: "#4caf50", MEDIUM: "#2196f3", HIGH: "#ff9800", CRITICAL: "#f44336" },
+  },
+};

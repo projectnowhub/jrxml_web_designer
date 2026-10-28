@@ -322,7 +322,7 @@ const getReportDataHandler: MCPToolHandler = {
           name: table.label,
           ...(table.card ? { labelValueRows: table.rows } : { columns: table.columns, rows: table.rows })
         }));
-        const moreDetails = (project?.moreDetails ?? []).map((f) => f.label);
+        const moreDetails = (project?.moreDetails ?? []).map((f) => ({ name: f.label, value: project?.values[f.key] ?? null }));
         return {
           success: true,
           data: { sources: sources.map((s) => ({ sourceId: s.id, name: s.name, columns: s.columnCount })), location, details, lists, moreDetails }

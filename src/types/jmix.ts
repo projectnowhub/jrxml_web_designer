@@ -68,3 +68,11 @@ export type JmixRecord = Record<string, JmixValue | undefined>;
 // An entity's own fields (dynamic attributes, asked for with
 // dynamicAttributes=true): "+<tenant>_<id>" keys, plain values
 export type JmixDynamicAttributes = { [attribute: `+${string}`]: JmixScalar | undefined };
+
+// The same fields with their names (dynamicAttr in a row read with
+// dynamicAttributes=true): the field's name, its "+<tenant>_<id>" code, its value
+export interface JmixDynamicAttributeEntry {
+  name?: string;
+  code?: string;
+  value?: JmixScalar;
+}

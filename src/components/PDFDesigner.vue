@@ -771,7 +771,7 @@ import {
   readDataSourceDrag,
   type DataSourceDragPayload,
 } from "@/utils/table/dataDrag";
-import { MIN_TABLE_COLUMN_WIDTH, maxColumnsForWidth } from "@/utils/table/dataBinding";
+import { MIN_TABLE_COLUMN_WIDTH, tableWidthFor } from "@/utils/table/dataBinding";
 import {
   PLACEHOLDER_COLUMN_COUNT,
   TABLE_BARCODE_ROW_HEIGHT,
@@ -3759,6 +3759,13 @@ const applyTableConfig = (binding: TableDataBinding, rowCount: number) => {
   }
   if (!table || !location) return;
 
+  // Columns narrower than the smallest column width: the table gets wider
+  // (it may then reach past the page; the user decides what to show)
+  const fitted = tableWidthFor(binding.columns.length, table.width);
+  if (fitted > table.width) {
+    table.width = fitted;
+    binding.columns = evenColumnWidths(binding.columns, fitted);
+  }
   table.binding = binding;
   // Barcodes need taller rows than text
   if (binding.columns.some((c) => tableColumnBarcode(c)) && (table.rowHeight ?? TABLE_ROW_HEIGHT) < TABLE_BARCODE_ROW_HEIGHT) {
@@ -3896,12 +3903,11 @@ const addColumnToTable = (table: TableElement, column: DataColumn) => {
     notification.info(t("dataTable.columnAlreadyShown", { column: column.label }));
     return;
   }
-  if (binding.columns.length >= maxColumnsForWidth(table.width)) {
-    notification.warning(t("dataTable.columnLimitReached", { max: maxColumnsForWidth(table.width) }));
-    return;
-  }
   saveStateToHistory();
-  binding.columns = evenColumnWidths([...binding.columns, toColumnBinding(column, 0)], table.width);
+  // No limit: a column narrower than the smallest width makes the table wider
+  const columns = [...binding.columns, toColumnBinding(column, 0)];
+  table.width = tableWidthFor(columns.length, table.width);
+  binding.columns = evenColumnWidths(columns, table.width);
   updateJRXML();
 };
 

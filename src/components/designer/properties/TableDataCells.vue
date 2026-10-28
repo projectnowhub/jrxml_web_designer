@@ -128,7 +128,7 @@ import {
 } from "@lucide/vue";
 import { useReportStore } from "@/stores/report";
 import { useSelectionStore } from "@/stores/selection";
-import { cellAlignmentFor, hasTotalsRow } from "@/utils/table/dataTable";
+import { hasTotalsRow, lookAlignFor } from "@/utils/table/dataTable";
 import { hasPartLook } from "@/utils/table/columnLook";
 import { resolveLook } from "@/utils/table/tableThemes";
 import type { TableElement } from "@/types";
@@ -204,10 +204,10 @@ const style = computed(() => {
   const lk = look.value;
   const col = chosenColumn.value;
   if (currentPart.value === "header")
-    return { fill: lk.headerBackground, color: lk.headerText, bold: lk.headerBold, align: "Left" as Align };
+    return { fill: lk.headerBackground, color: lk.headerText, bold: lk.headerBold, align: col ? lookAlignFor(lk, "header", col) : (lk.headerAlign ?? "Left") };
   if (currentPart.value === "total")
-    return { fill: lk.totalsBackground, color: lk.totalsText, bold: lk.totalsBold, align: (col?.total ? "Right" : "Left") as Align };
-  return { fill: lk.rowColors[0]!, color: lk.rowText, bold: false, align: col ? cellAlignmentFor(col.type) : ("Left" as Align) };
+    return { fill: lk.totalsBackground, color: lk.totalsText, bold: lk.totalsBold, align: col ? lookAlignFor(lk, "totals", col) : (lk.totalsAlign ?? "Left") };
+  return { fill: lk.rowColors[0]!, color: lk.rowText, bold: !!lk.rowBold, align: col ? lookAlignFor(lk, "row", col) : (lk.rowAlign ?? "Left") };
 });
 
 const shownFill = computed(() => ownLook.value.fill ?? style.value.fill);

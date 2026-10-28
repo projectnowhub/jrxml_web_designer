@@ -6,7 +6,7 @@
 // which the user never edits directly.
 
 import type { ReportStyle } from "@/types";
-import type { SavedTableStyle, TableDataBinding, TableLook, TableTheme } from "@/types/dataSource";
+import type { SavedTableStyle, TableDataBinding, TableLook, TableTextAlign, TableTheme } from "@/types/dataSource";
 
 export type TableStylePart = "header" | "row" | "totals";
 
@@ -199,7 +199,31 @@ export function normalizeLook(raw: Partial<TableLook>): TableLook {
       typeof raw.fontSize === "number" && raw.fontSize >= 6 && raw.fontSize <= 24
         ? Math.round(raw.fontSize)
         : base.fontSize,
+    ...textStyleOf(raw),
   };
+}
+
+const ALIGNS: TableTextAlign[] = ["Left", "Center", "Right"];
+const TEXT_FLAGS = [
+  "headerItalic",
+  "headerUnderline",
+  "rowBold",
+  "rowItalic",
+  "rowUnderline",
+  "totalsItalic",
+  "totalsUnderline",
+] as const;
+const ALIGN_FIELDS = ["headerAlign", "rowAlign", "totalsAlign"] as const;
+
+// The look's own text style and alignment, only what is set
+function textStyleOf(raw: Partial<TableLook>): Partial<TableLook> {
+  const style: Partial<TableLook> = {};
+  for (const flag of TEXT_FLAGS) if (raw[flag] === true) style[flag] = true;
+  for (const field of ALIGN_FIELDS) {
+    const align = raw[field];
+    if (align && ALIGNS.includes(align)) style[field] = align;
+  }
+  return style;
 }
 
 // What a table looks like now (a data table's binding or a typed table's setup)
@@ -263,6 +287,8 @@ export function buildLookStyles(prefix: string, look: TableLook): ReportStyle[] 
     backcolor: look.headerBackground,
     forecolor: look.headerText,
     isBold: look.headerBold,
+    isItalic: look.headerItalic || undefined,
+    isUnderline: look.headerUnderline || undefined,
     ...font,
     box: partBox(look, "header"),
   };
@@ -271,6 +297,9 @@ export function buildLookStyles(prefix: string, look: TableLook): ReportStyle[] 
     mode: "Opaque",
     backcolor: look.rowColors[0],
     forecolor: look.rowText,
+    isBold: look.rowBold || undefined,
+    isItalic: look.rowItalic || undefined,
+    isUnderline: look.rowUnderline || undefined,
     ...font,
     box: partBox(look, "row"),
   };
@@ -287,6 +316,8 @@ export function buildLookStyles(prefix: string, look: TableLook): ReportStyle[] 
     backcolor: look.totalsBackground,
     forecolor: look.totalsText,
     isBold: look.totalsBold,
+    isItalic: look.totalsItalic || undefined,
+    isUnderline: look.totalsUnderline || undefined,
     ...font,
     box: partBox(look, "totals"),
   };
@@ -352,6 +383,7 @@ export function tableCellCss(style: ReportStyle, rowColor?: string): Record<stri
   if (style.fontSize) css.fontSize = `${style.fontSize}px`;
   if (style.isBold) css.fontWeight = "700";
   if (style.isItalic) css.fontStyle = "italic";
+  if (style.isUnderline) css.textDecoration = "underline";
   const box = style.box;
   if (box) {
     const all = penCss(box.pen);

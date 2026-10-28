@@ -8,8 +8,12 @@ import { normalizeLook } from "./tableThemes";
 // JRXML property on the table's <reportElement> holding its TableDataBinding
 export const TABLE_BINDING_PROPERTY = "com.cdp.table.binding";
 
-// Narrowest a column may get; limits how many columns fit in a table
-export const MIN_TABLE_COLUMN_WIDTH = 60;
+// A new table starts with as many of its source's columns as fit at this width
+// (more can be added: there is no limit)
+const STARTING_COLUMN_WIDTH = 60;
+
+// The narrowest a project-data table's column may get
+export const MIN_TABLE_COLUMN_WIDTH = 10;
 
 const isBlank = (value: unknown) =>
   value === null || value === undefined || String(value).trim() === "";
@@ -61,9 +65,16 @@ export function resolveFilterDates(filters: TableFilter[], today = new Date()): 
   });
 }
 
-export function maxColumnsForWidth(tableWidth: number): number {
-  return Math.max(1, Math.floor(tableWidth / MIN_TABLE_COLUMN_WIDTH));
+// How many of a source's columns a new table of this width starts with
+export function startingColumnCount(tableWidth: number): number {
+  return Math.max(1, Math.floor(tableWidth / STARTING_COLUMN_WIDTH));
 }
+
+// The table's width for this many columns: its own, or wider when the columns
+// wouldn't each get the smallest width (the table may then reach past the
+// page: the user decides what to show)
+export const tableWidthFor = (count: number, tableWidth: number): number =>
+  Math.max(Math.round(tableWidth), count * MIN_TABLE_COLUMN_WIDTH);
 
 // Whole-number widths that add up exactly to the table width
 export function distributeColumnWidths(count: number, tableWidth: number): number[] {

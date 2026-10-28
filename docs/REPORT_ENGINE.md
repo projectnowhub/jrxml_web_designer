@@ -46,7 +46,7 @@ The chart setup (`ChartBinding`, `src/types/dataSource.ts`), for example:
   "dimension": { "column": "order_date", "label": "Order Date", "type": "date", "granularity": "month" },
   "series": [ { "measure": { "aggregation": "sum", "column": "amount", "columnLabel": "Amount" } } ],
   "filters": [ { "column": "order_date", "operator": "between", "period": "thisYear" } ],
-  "limit": 10, "palette": "vivid", "showLegend": true
+  "palette": "vivid", "showLegend": true
 }
 ```
 
@@ -108,7 +108,7 @@ whenever the chart or table code changes. It defines one global,
 
 | Function | Arguments | Returns |
 |---|---|---|
-| `ENGINE_VERSION` | – | number (now `8`: every date on the axis is labelled (slanted when needed) and split lines / bars keep the backend's order, as the CDP app; `7`: charts are drawn like the CDP app's: one colour per series, smooth lines, the description (`note`) under the title; `6`: a chart may carry `colors` (a colour of its own per value) and a `note` printed under it; `5`: a chart grouping may carry `choices` and `yesNo`, so its categories print "Pending" / "Yes" and choice fields keep their own order on bar, line and area charts; `4`: a date range's end was briefly sent as `<` the next day, back to `<=` in 5; `3`: no row limit, columns may be `linked`; `2`: filters may be `contains` or `equals`), bumped when a function's arguments or results change |
+| `ENGINE_VERSION` | – | number (now `10`: choice values get the CDP dashboards' colours (`choices[].color`) and date buckets read "Apr 1, 2024", as the CDP app; `9`: every category is shown (no "largest N" / "Other", as the CDP app); `8`: every date on the axis is labelled (slanted when needed) and split lines / bars keep the backend's order, as the CDP app; `7`: charts are drawn like the CDP app's: one colour per series, smooth lines, the description (`note`) under the title; `6`: a chart may carry `colors` (a colour of its own per value) and a `note` printed under it; `5`: a chart grouping may carry `choices` and `yesNo`, so its categories print "Pending" / "Yes" and choice fields keep their own order on bar, line and area charts; `4`: a date range's end was briefly sent as `<` the next day, back to `<=` in 5; `3`: no row limit, columns may be `linked`; `2`: filters may be `contains` or `equals`), bumped when a function's arguments or results change |
 | `LOCALES` | – | languages charts can print in: `["en", "ms"]` |
 | `chartRequests(bindingJson, todayIso)` | chart setup JSON; run date `"2026-11-15"` | JSON array of `AggregateRequest`s; `"[]"` when the chart isn't set up (it prints nothing) |
 | `chartSvg(bindingJson, resultsJson, width, height, locale, fontName?)` | setup; JSON array of the `AggregateResult`s, **in the same order as the requests**; the image's width and height from `<reportElement>`; `"en"` / `"ms"`; font (default Noto Sans SC) | SVG text; `""` when the chart isn't set up |
