@@ -1024,7 +1024,7 @@
       "square": "Resize to a perfect square",
       "noSnap": "Move or resize without snapping",
       "straightLine": "Keep a line straight, across or up and down",
-      "fitText": "Make a text exactly as tall as its words",
+      "fitText": "Make a text exactly as tall as its words (wider first when it wouldn't fit the page)",
       "rotate": "Rotate 90° (text, pictures and barcodes)",
       "partHeight": "Make a part of the page (Page Header…) taller or shorter",
       "copy": "Copy the selected item",
@@ -1668,7 +1668,7 @@
       "noSpace": "No room to make {band} taller\nDetail is already at its smallest ({height}px).",
       "maxReached": "{band} is full\nRaise its maximum in Template Settings → Section Heights.",
       "minReached": "Smallest height reached\nIf you don't need {band}, untick it in Page Sections.",
-      "textOverflow": "The text doesn't fit\n{band} is at its maximum ({height}px). Make the item wider, or put long text in Detail.",
+      "textOverflow": "The text doesn't fit\nEven at full width it is taller than {band} allows ({height}px). Use a smaller text size, or move part of it into a second text on the next page.",
       "grewToFit": "{band} grew to {height}px to fit the element.",
       "tooTallForBand": "Too tall for {band}\nIt is {height}px; {band} allows {max}px. Make it smaller, or raise the maximum in Section Heights."
     },
@@ -1723,7 +1723,8 @@
     "topAutoFit": "Resize top (double-click to auto-fit)",
     "bottomAutoFit": "Resize bottom (double-click to auto-fit)",
     "left": "Resize left",
-    "right": "Resize right"
+    "right": "Resize right",
+    "rotate": "Turn 90° clockwise"
   },
   "frame": {
     "title": "Box Style"
@@ -3681,7 +3682,7 @@
       },
       "textContent": {
         "title": "Text Content",
-        "text": "The words shown. You can also double-click the text on the page to type. Fit to Text makes the box exactly as tall as the words."
+        "text": "The words shown. You can also double-click the text on the page to type. Fit to Text makes the box exactly as tall as the words; when they wouldn't fit in the room left on the page, it first makes the box wider (up to the page edge)."
       },
       "outline": {
         "title": "Outline",

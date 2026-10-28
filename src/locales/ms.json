@@ -1024,7 +1024,7 @@
       "square": "Ubah saiz kepada segi empat sama",
       "noSnap": "Alih atau ubah saiz tanpa jajaran",
       "straightLine": "Kekalkan garisan lurus, melintang atau menegak",
-      "fitText": "Jadikan teks setinggi perkataannya",
+      "fitText": "Jadikan teks setinggi perkataannya (dilebarkan dahulu jika tidak muat di halaman)",
       "rotate": "Putar 90° (teks, gambar dan kod bar)",
       "partHeight": "Tinggikan atau rendahkan bahagian halaman (Pengepala Halaman…)",
       "copy": "Salin item yang dipilih",
@@ -1668,7 +1668,7 @@
       "noSpace": "Tiada ruang untuk meninggikan {band}\nButiran sudah pada saiz terkecilnya ({height}px).",
       "maxReached": "{band} sudah penuh\nNaikkan maksimumnya di Tetapan Templat → Ketinggian Bahagian.",
       "minReached": "Ketinggian terkecil dicapai\nJika tidak memerlukan {band}, nyahtandanya di Bahagian Halaman.",
-      "textOverflow": "Teks tidak muat\n{band} pada ketinggian maksimumnya ({height}px). Lebarkan item, atau letakkan teks panjang dalam Butiran.",
+      "textOverflow": "Teks tidak muat\nWalaupun pada lebar penuh ia lebih tinggi daripada yang dibenarkan {band} ({height}px). Gunakan saiz teks yang lebih kecil, atau pindahkan sebahagiannya ke teks kedua di halaman seterusnya.",
       "grewToFit": "{band} telah dibesarkan kepada {height}px supaya elemen muat.",
       "tooTallForBand": "Terlalu tinggi untuk {band}\nIa {height}px; {band} membenarkan {max}px. Kecilkan, atau naikkan maksimum di Ketinggian Bahagian."
     },
@@ -1723,7 +1723,8 @@
     "topAutoFit": "Ubah saiz atas (klik dua kali untuk muat automatik)",
     "bottomAutoFit": "Ubah saiz bawah (klik dua kali untuk muat automatik)",
     "left": "Ubah saiz kiri",
-    "right": "Ubah saiz kanan"
+    "right": "Ubah saiz kanan",
+    "rotate": "Putar 90° ikut arah jam"
   },
   "frame": {
     "title": "Gaya Kotak"
@@ -3681,7 +3682,7 @@
       },
       "textContent": {
         "title": "Kandungan Teks",
-        "text": "Perkataan yang dipaparkan. Anda juga boleh klik dua kali pada teks di halaman untuk menaip. Muat ke Teks menjadikan kotak setinggi perkataannya."
+        "text": "Perkataan yang dipaparkan. Anda juga boleh klik dua kali pada teks di halaman untuk menaip. Muat ke Teks menjadikan kotak setinggi perkataannya. Jika tidak muat dalam ruang yang tinggal di halaman, kotak dilebarkan dahulu (sehingga tepi halaman)."
       },
       "outline": {
         "title": "Garis luar",

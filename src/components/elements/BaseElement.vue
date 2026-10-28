@@ -81,7 +81,7 @@
         <button
           type="button"
           class="element-rotate-btn"
-          :title="`Rotate 90° Clockwise (Current: ${(element as any).rotation || '0° / None'})`"
+          :title="$t('resize.rotate')"
           @click.stop="handleQuickRotate"
           @mousedown.stop
         >
@@ -714,9 +714,13 @@ const handleProjectDragLeave = (event: DragEvent) => {
 }
 
 /* Rotatable element 90° quick rotate widget */
+/* Above the selection frame: its stem reaches down to the top handle (the
+   handle's top is 14.5 px out, the stem 10 px, the button 20 px; on-screen
+   pixels, kept at any zoom like the handles) */
 .element-rotate-widget {
+  --hs: var(--handle-scale, 1);
   position: absolute;
-  top: calc(-34px * var(--handle-scale, 1));
+  top: calc(-44.5px * var(--hs));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -727,14 +731,14 @@ const handleProjectDragLeave = (event: DragEvent) => {
 }
 
 .element-rotate-stem {
-  width: 1px;
-  height: 6px;
+  width: calc(1px * var(--hs));
+  height: calc(10px * var(--hs));
   background-color: #6440f4;
 }
 
 .element-rotate-btn {
-  width: 18px;
-  height: 18px;
+  width: calc(20px * var(--hs));
+  height: calc(20px * var(--hs));
   border-radius: 50%;
   background: #ffffff;
   border: 1px solid #6440f4;
@@ -746,6 +750,18 @@ const handleProjectDragLeave = (event: DragEvent) => {
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   transition: all 0.15s ease;
+}
+
+/* The arrow keeps its share of the circle at any zoom, exactly centred */
+.element-rotate-btn {
+  box-sizing: border-box;
+  line-height: 0;
+}
+.element-rotate-btn svg {
+  flex: none;
+  display: block;
+  width: calc(12px * var(--hs));
+  height: calc(12px * var(--hs));
 }
 
 .element-rotate-btn:hover {

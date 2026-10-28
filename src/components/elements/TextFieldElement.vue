@@ -485,8 +485,10 @@ const showOverflowBadge = computed(() => {
 // only the icon so it doesn't stick out far past it
 const overflowBadgeStyle = computed(() => {
   const zoom = props.zoomLevel || 1;
+  // Below the selection frame and its corner handle (10 px + the handle, on screen)
   return {
-    top: `calc(100% + ${3 / zoom}px)`,
+    top: `calc(100% + ${20 / zoom}px)`,
+    right: `${-10 / zoom}px`,
     transform: `scale(${1 / zoom})`,
   };
 });

@@ -7541,12 +7541,49 @@ const autoFitElementHeight = (
     measureTextElementWidth(element as any, font) + 1,
     box ? box.width : printableWidth.value,
   );
-  const height = calculateTextElementHeight({ ...(element as any), width }, font);
-  if (x === element.x && width === element.width && height === element.height) return;
+  let fitX = x;
+  let fitWidth = width;
+  let height = calculateTextElementHeight({ ...(element as any), width }, font);
+
+  // Too tall for the room left (section, page or box): wider first, keeping the
+  // alignment edge, up to the container's edge; the narrowest width that fits
+  const onSpecialArea = !box && band.type === BAND_TYPE_CONSTANTS.DETAIL && isSpecialPage(reportProperties.value, element.pageIndex);
+  const roomBottom = box
+    ? box.height
+    : onSpecialArea || band.type === BAND_TYPE_CONSTANTS.DETAIL || band.type === BAND_TYPE_CONSTANTS.BACKGROUND
+      ? bandAreaHeight(bandIndex, element.pageIndex)
+      : getBandMaxHeight(bandIndex);
+  const room = roomBottom - element.y;
+  const sideways = (element as any).rotation === "Left" || (element as any).rotation === "Right";
+  if (height > room && room > 0 && !sideways) {
+    const containerWidth = box ? box.width : printableWidth.value;
+    const align = (element as any).textAlignment;
+    const right = fitX + fitWidth;
+    const centre = fitX + fitWidth / 2;
+    const maxWidth = Math.floor(
+      align === "Right" ? right : align === "Center" ? 2 * Math.min(centre, containerWidth - centre) : containerWidth - fitX,
+    );
+    const heightAt = (w: number) => calculateTextElementHeight({ ...(element as any), width: w }, font);
+    if (maxWidth > fitWidth) {
+      let low = fitWidth;
+      let high = maxWidth;
+      if (heightAt(high) <= room) {
+        while (high - low > 2) {
+          const mid = Math.floor((low + high) / 2);
+          if (heightAt(mid) <= room) high = mid;
+          else low = mid;
+        }
+      }
+      fitWidth = high;
+      fitX = align === "Right" ? right - fitWidth : align === "Center" ? Math.round(centre - fitWidth / 2) : fitX;
+      height = heightAt(fitWidth);
+    }
+  }
+  if (fitX === element.x && fitWidth === element.width && height === element.height) return;
 
   saveStateToHistory();
-  element.x = x;
-  element.width = width;
+  element.x = fitX;
+  element.width = fitWidth;
   element.height = height;
 
   // A band grows to fit the text, up to its maximum; past that, warn (a cover
