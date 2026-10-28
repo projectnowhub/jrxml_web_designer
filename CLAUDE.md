@@ -6,6 +6,10 @@ A browser-based visual designer for JasperReports JRXML templates, built with Vu
 
 The CDP app (`/home/vimzone-user6/Documents/Projects/cdp-fe-app`, React + pnpm monorepo; shared UI in `packages/ui/components`, versions in `pnpm-workspace.yaml`'s catalog) is the product this designer belongs to. **Before adding a feature, a package or an API call, look there first** for how it already does it (library, version, API endpoint and request shape, env variable names, UI behaviour, wording) and **do the same here**, so both apps behave alike: the same library and version (its plain JS core when the CDP app uses a React wrapper, e.g. `leaflet` for `react-leaflet`), the same endpoints and env names. When the CDP app has nothing for it, choose what suits this project best and say why. Either way, tell the user what was found there. Read it only: never change files in it.
 
+## Report server backend: check it for anything the server does
+
+The report server is `/home/vimzone-user6/IdeaProjects/cdp-report-studio/cdp-report-addon/cdp-report-addon` (Java 21, Jmix 3 addon + JasperReports, packaged as `cdp-report-addon-starter` for the CDP backend; `cdp-reporter` next to it is only a sample host app). The designer's Preview PDF posts to it (`services/reportService.ts`, `{VITE_API_BASE_URL}/v2/api/reporter/pdf/generateForm`, form fields `jrxml`, `parameters`, `dataSource`, `subDataSources`). Main code: `controller/PdfGenerationController.java` (load → `convertBase64Images` → `applySubDataSources` → compile → fill → PDF) and `controller/ExportController.java` + `service/ExportService.java` (`/export`, `/pdf`, `/html`, `/excel`, `/word`, `/csv`, `/validate`). **Before planning or changing anything the server has to do** (data fetching, the report engine in `docs/REPORT_ENGINE.md`, parameters, report generation), read how it does it there and tell the user what was found. Change files there only when the user asks for that.
+
 ## Core Architecture
 
 This is a **bidirectional JRXML designer**. The entire application revolves around three critical data transformations:
