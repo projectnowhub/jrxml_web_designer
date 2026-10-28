@@ -35,6 +35,8 @@
         :style="typographyStyle"
         contenteditable="true"
         spellcheck="false"
+        @paste="onPaste"
+        @drop="onDrop"
         :placeholder="t('textField.placeholder')"
         @mousedown.stop="handleEditorMouseDown"
         @mouseup="handleEditorMouseUp"
@@ -194,9 +196,12 @@ import {
   getElementBoxInsets,
   hasHtmlTags,
   isRichTextElement,
+  pasteTextOnly,
+  refuseFileDrop,
   rgbToHex,
   textExpressionToHtml,
 } from '../../utils/elementUtils';
+import notification from '@/utils/notification';
 import {
   formatPageNumber,
   getPaginationSettings,
@@ -208,6 +213,14 @@ import { dateText, getDateSetup, isDateElement } from '../../utils/dateElement';
 import { isLocationAddress } from '../../utils/location/locationElement';
 
 const { t } = useI18n();
+
+// Only text goes into a text: pasted or dropped pictures are left out
+function onPaste(event: ClipboardEvent) {
+  if (!pasteTextOnly(event)) notification.info(t("textField.textOnly"));
+}
+function onDrop(event: DragEvent) {
+  if (!refuseFileDrop(event)) notification.info(t("textField.textOnly"));
+}
 
 // Props
 const props = defineProps<{

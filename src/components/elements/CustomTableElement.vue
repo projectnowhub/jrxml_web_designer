@@ -46,6 +46,8 @@
           :style="{ ...textStyle(v), padding: `${table.padding}px` }"
           :aria-label="t('customTable.cellText')"
           @keydown.stop="onEditorKeyDown"
+          @paste="onCellPaste"
+          @drop="onCellDrop"
           @mousedown.stop="onEditorMouseDown"
           @mouseup="updateToolbar"
           @keyup="updateToolbar"
@@ -204,7 +206,7 @@ import {
 } from '@lucide/vue';
 import BaseElement from './BaseElement.vue';
 import TextFormatToolbar from './TextFormatToolbar.vue';
-import { cleanEditorHtml, escapeHtml, hasFormatting, rgbToHex, sanitizeHtml } from '../../utils/elementUtils';
+import { cleanEditorHtml, escapeHtml, hasFormatting, pasteTextOnly, refuseFileDrop, rgbToHex, sanitizeHtml } from '../../utils/elementUtils';
 import { useReportStore } from '@/stores/report';
 import { useSelectionStore } from '@/stores/selection';
 import notification from '@/utils/notification';
@@ -242,6 +244,14 @@ import type {
 } from '../../types';
 
 const { t } = useI18n();
+
+// Only text goes into a cell: pasted or dropped pictures are left out
+function onCellPaste(event: ClipboardEvent) {
+  if (!pasteTextOnly(event)) notification.info(t("textField.textOnly"));
+}
+function onCellDrop(event: DragEvent) {
+  if (!refuseFileDrop(event)) notification.info(t("textField.textOnly"));
+}
 const report = useReportStore();
 const { tableCells } = storeToRefs(useSelectionStore());
 

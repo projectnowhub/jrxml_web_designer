@@ -2136,6 +2136,7 @@
     "placeholder": "Enter text...",
     "overflowTitle": "The text doesn't fit the box. Click to fit the box to the text",
     "fit": "Fit",
+    "textOnly": "Only text can go here\nTo add a picture, use an Image element from the Element Library.",
     "openLink": "Open link",
     "copied": "Copied!",
     "copyLink": "Copy link",

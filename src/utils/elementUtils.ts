@@ -495,6 +495,42 @@ export function cleanEditorHtml(html: string): string {
   return clean;
 }
 
+// Pasting into a text or a typed-table cell: only text goes in (with its
+// formatting). Pictures, video, frames and embedded objects are left out; a
+// clipboard holding nothing but a picture pastes nothing. Returns false when
+// nothing was pasted because only a picture was there.
+const NON_TEXT_TAGS = /<(img|picture|video|audio|svg|canvas|iframe|object|embed|source)\b[^>]*>(?:[\s\S]*?<\/\1>)?/gi;
+export function pasteTextOnly(event: ClipboardEvent): boolean {
+  const data = event.clipboardData;
+  if (!data) return true;
+  event.preventDefault();
+  const html = data.getData("text/html");
+  const text = data.getData("text/plain");
+  if (html) {
+    const cleaned = html
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<(style|script|meta|link|head)\b[\s\S]*?<\/\1>|<(meta|link)\b[^>]*>/gi, "")
+      .replace(NON_TEXT_TAGS, "");
+    if (cleaned.replace(/<[^>]*>/g, "").trim()) {
+      document.execCommand("insertHTML", false, cleaned);
+      return true;
+    }
+  }
+  if (text.trim()) {
+    document.execCommand("insertText", false, text);
+    return true;
+  }
+  // Only a picture (or nothing that is text)
+  return !Array.from(data.items).some((item) => item.type.startsWith("image/"));
+}
+
+// Something dragged into a text: files (pictures) are refused, text still drops in
+export function refuseFileDrop(event: DragEvent): boolean {
+  if (!event.dataTransfer?.types.includes("Files")) return true;
+  event.preventDefault();
+  return false;
+}
+
 // Strip inline text color overrides so a cell or element style can take effect
 export function stripInlineColors(html: string): string {
   return html
