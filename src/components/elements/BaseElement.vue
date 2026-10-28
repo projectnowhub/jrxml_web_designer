@@ -24,6 +24,9 @@
 
     <!-- 8 Resize handles (box UI used for all elements) -->
     <!-- A Location's map and address are placed by its layout: no handles -->
+    <!-- The selection frame: 10 px (on screen) outside the element, so its own
+         border and a text cursor at its edge stay in view; the handles sit on it -->
+    <div v-if="isSelected" class="selection-frame" aria-hidden="true"></div>
     <template v-if="isSelected && !isLocationPart(element)">
       <!-- 4 Corners -->
       <div 
@@ -93,6 +96,7 @@
 <script setup lang="ts">
 import { useReportStore } from "@/stores/report";
 import { useSelectionStore } from "@/stores/selection";
+import { useEditorStore } from "@/stores/editor";
 import { RotateCw } from '@lucide/vue';
 import { resolveReportFont } from '../../config/fonts.config';
 import { computed, ref } from 'vue';
@@ -200,6 +204,11 @@ const isSelected = computed(() => {
 });
 
 // Element style - use a more suitable type assertion approach
+// The page is zoomed with CSS: the handles are counter-scaled so they stay
+// the same size on screen (and easy to grab) when zoomed out or in
+const editorStore = useEditorStore();
+const handleScale = computed(() => Math.min(2, Math.max(0.5, 1 / (editorStore.zoomLevel || 1))));
+
 const elementStyle = computed(() => {
   // Compute values for complex expressions separately and add type assertions
   // Fix the vertical alignment value mapping
@@ -244,6 +253,8 @@ const elementStyle = computed(() => {
 
   // Assert the entire object as CSSProperties
   return {
+    // Handles keep their size on screen at any zoom
+    '--handle-scale': String(handleScale.value),
     position: 'absolute' as 'absolute',
     left: `${props.element.x}px`,
     top: `${props.element.y}px`,
@@ -555,9 +566,15 @@ const handleProjectDragLeave = (event: DragEvent) => {
   z-index: 40;
 }
 
-.design-element.selected {
-  outline: 2px solid #6440f4;
-  outline-offset: -1px;
+/* Selected: the outline is the selection frame outside the element (below) */
+.selection-frame {
+  --hs: var(--handle-scale, 1);
+  position: absolute;
+  inset: calc(-10px * var(--hs));
+  border: calc(1.5px * var(--hs)) solid #6440f4;
+  border-radius: calc(2px * var(--hs));
+  pointer-events: none;
+  z-index: 55;
 }
 
 .design-element.is-typing {
@@ -605,6 +622,7 @@ const handleProjectDragLeave = (event: DragEvent) => {
 }
 
 .resize-handle {
+  --hs: var(--handle-scale, 1);
   position: absolute;
   background-color: #6440f4;
   z-index: 60;
@@ -614,90 +632,91 @@ const handleProjectDragLeave = (event: DragEvent) => {
   transition: background-color 0.1s ease;
 }
 
+/* A larger invisible area around each handle catches the mouse */
+.resize-handle::before {
+  content: "";
+  position: absolute;
+  inset: calc(-5px * var(--hs));
+}
+
 .resize-handle:hover {
   background-color: #7c5cf7;
 }
 
-.resize-handle-nw {
-  top: -4px;
-  left: -4px;
-  width: 8px;
-  height: 8px;
-  cursor: nw-resize;
-  border-radius: 1px;
+/* The handles sit on the selection frame, 10 px (on screen) outside the
+   element: --o is that offset, sizes are on-screen pixels times --hs */
+.resize-handle {
+  --o: calc(-10px * var(--hs));
 }
 
-.resize-handle-ne {
-  top: -4px;
-  right: -4px;
-  width: 8px;
-  height: 8px;
-  cursor: ne-resize;
-  border-radius: 1px;
-}
-
-.resize-handle-sw {
-  bottom: -4px;
-  left: -4px;
-  width: 8px;
-  height: 8px;
-  cursor: sw-resize;
-  border-radius: 1px;
-}
-
+/* Corners: 12 px squares */
+.resize-handle-nw,
+.resize-handle-ne,
+.resize-handle-sw,
 .resize-handle-se {
-  bottom: -4px;
-  right: -4px;
-  width: 8px;
-  height: 8px;
+  width: calc(12px * var(--hs));
+  height: calc(12px * var(--hs));
+  border-radius: calc(3px * var(--hs));
+}
+.resize-handle-nw {
+  top: calc(var(--o) - 6px * var(--hs));
+  left: calc(var(--o) - 6px * var(--hs));
+  cursor: nw-resize;
+}
+.resize-handle-ne {
+  top: calc(var(--o) - 6px * var(--hs));
+  right: calc(var(--o) - 6px * var(--hs));
+  cursor: ne-resize;
+}
+.resize-handle-sw {
+  bottom: calc(var(--o) - 6px * var(--hs));
+  left: calc(var(--o) - 6px * var(--hs));
+  cursor: sw-resize;
+}
+.resize-handle-se {
+  bottom: calc(var(--o) - 6px * var(--hs));
+  right: calc(var(--o) - 6px * var(--hs));
   cursor: se-resize;
-  border-radius: 1px;
 }
 
-.resize-handle-n {
-  top: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 14px;
-  height: 6px;
-  cursor: n-resize;
-  border-radius: 2px;
-}
-
+/* Edges: 28 x 9 px bars, centred on the frame's edge */
+.resize-handle-n,
 .resize-handle-s {
-  bottom: -4px;
   left: 50%;
+  width: calc(28px * var(--hs));
+  height: calc(9px * var(--hs));
   transform: translateX(-50%);
-  width: 14px;
-  height: 6px;
+  border-radius: calc(4px * var(--hs));
+}
+.resize-handle-n {
+  top: calc(var(--o) - 4.5px * var(--hs));
+  cursor: n-resize;
+}
+.resize-handle-s {
+  bottom: calc(var(--o) - 4.5px * var(--hs));
   cursor: s-resize;
-  border-radius: 2px;
 }
-
-.resize-handle-w {
-  left: -4px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 6px;
-  height: 14px;
-  cursor: w-resize;
-  border-radius: 2px;
-}
-
+.resize-handle-w,
 .resize-handle-e {
-  right: -4px;
   top: 50%;
+  width: calc(9px * var(--hs));
+  height: calc(28px * var(--hs));
   transform: translateY(-50%);
-  width: 6px;
-  height: 14px;
+  border-radius: calc(4px * var(--hs));
+}
+.resize-handle-w {
+  left: calc(var(--o) - 4.5px * var(--hs));
+  cursor: w-resize;
+}
+.resize-handle-e {
+  right: calc(var(--o) - 4.5px * var(--hs));
   cursor: e-resize;
-  border-radius: 2px;
 }
 
 /* Rotatable element 90° quick rotate widget */
 .element-rotate-widget {
   position: absolute;
-  top: -24px;
+  top: calc(-34px * var(--handle-scale, 1));
   left: 50%;
   transform: translateX(-50%);
   display: flex;

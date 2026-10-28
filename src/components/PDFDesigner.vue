@@ -7154,6 +7154,12 @@ const startResizingElement = (
           if (special) {
             containerWidth = special.width;
             containerHeight = special.height;
+          } else if (
+            currentBand.type !== BAND_TYPE_CONSTANTS.DETAIL &&
+            currentBand.type !== BAND_TYPE_CONSTANTS.BACKGROUND
+          ) {
+            // A header / footer section grows with the element, up to its maximum
+            containerHeight = Math.max(currentBand.height, getBandMaxHeight(resizingInfo.value.bandIndex));
           } else {
             containerHeight = bandAreaHeight(resizingInfo.value.bandIndex, element.pageIndex);
           }
@@ -7455,6 +7461,16 @@ const startResizingElement = (
         element.height = tempHeight;
       }
       keepInParentBox(element);
+
+      // The header / footer section grows to hold what was made taller (same undo step)
+      if (
+        resizingInfo.value.parentFrameIndex === undefined &&
+        currentBand.type !== BAND_TYPE_CONSTANTS.DETAIL &&
+        currentBand.type !== BAND_TYPE_CONSTANTS.BACKGROUND &&
+        element.y + element.height > currentBand.height
+      ) {
+        currentBand.height = Math.ceil(element.y + element.height);
+      }
 
       // Keep a frame's content in step with the frame (stretch wide items, pin edge items)
       if (frameChildrenStart && element.type === "frame") {
