@@ -1855,6 +1855,15 @@
       "moderate": "Sederhana"
     }
   },
+  "sectionFit": {
+    "tableContinued": "Jadual bersambung di halaman {page}\nBaris yang tidak muat dipindahkan ke halaman baharu, bersama salinan baris tajuk.",
+    "movedToPage": "Dipindahkan ke halaman {page}\nIa tidak muat di bahagian bawah halaman, jadi ia dipindahkan ke halaman baharu. | {n} item dipindahkan ke halaman {page}\nIa tidak muat di bahagian bawah halaman, jadi ia dipindahkan ke halaman baharu.",
+    "movedUp": "Dinaikkan supaya muat\nIa melepasi bahagian bawah {band}.",
+    "madeShorter": "Dipendekkan supaya muat\nIa lebih tinggi daripada yang dibenarkan oleh {band}.",
+    "tooTall": "Terlalu tinggi untuk {band}\nKecilkannya, atau pisahkannya kepada dua bahagian.",
+    "movedIn": "Dikekalkan di dalam halaman\nIa melepasi tepi halaman.",
+    "keptInside": "Dikekalkan di dalam {band}\nNilai itu akan melepasi tepinya, jadi ia ditetapkan kepada {value}."
+  },
   "customTable": {
     "placeholderHeader": "Tajuk {n}",
     "cellText": "Teks sel",
@@ -1863,7 +1872,6 @@
     "grid": "Baris dan lajur",
     "rows": "Baris",
     "columns": "Lajur",
-    "columnList": "Lajur",
     "columnName": "Nama lajur (selnya dalam baris tajuk pertama)",
     "columnNameOf": "Nama lajur {name}",
     "columnNamePlaceholder": "Nama lajur",
@@ -1873,7 +1881,7 @@
     "addRow": "Tambah baris",
     "removeRow": "Padam baris",
     "addColumn": "Tambah lajur",
-    "removeColumn": "Padam lajur",
+    "addColumnHint": "Tambah lajur di hujung. Untuk menambah lajur di antara lajur lain, pilih lajur dalam jadual dan gunakan Sisip lajur di kiri / di kanan.",
     "editCells": "Taip dalam jadual",
     "editHint": "Klik dua kali pada jadual untuk menaip. Klik kanan pada sel untuk menambah baris, menggabungkan sel dan lain-lain.",
     "editingHint": "Klik sel untuk menaip. Seret merentasi sel (atau Shift+klik) untuk memilih beberapa sel. Tekan Esc apabila selesai.",
@@ -3657,7 +3665,7 @@
       },
       "positionSize": {
         "title": "Kedudukan & saiz",
-        "text": "Tempat item terletak (X dari kiri, Y dari atas bahagian halamannya) dan lebar serta tingginya, dalam piksel.",
+        "text": "Tempat item terletak (X dari kiri, Y dari atas bahagian halamannya) dan lebar serta tingginya, dalam piksel. Ia sentiasa kekal di dalam bahagian halamannya: nilai yang akan melepasi tepi ditukar kepada nilai terbesar yang muat (pengepala atau pengaki halaman membesar hingga had maksimumnya). Jadual yang ditaip boleh dijadikan lebih tinggi daripada halaman: baris yang tidak muat bersambung ke halaman seterusnya.",
         "example": "X 0 meletakkannya rapat ke jidar kiri."
       },
       "picture": {
@@ -3791,11 +3799,7 @@
       },
       "typedGrid": {
         "title": "Baris dan lajur",
-        "text": "Berapa baris dan lajur jadual, baris tajuk, dan sama ada baris terakhir ialah jumlah. Menanda Baris terakhir ialah jumlah menambah baris di bawah dengan Jumlah dan hasil tambah setiap lajur nombor, dikemas kini semasa anda menaip (taip dalam sel jumlah untuk menulis sendiri). Butang + dan − menambah atau membuang baris atau lajur di hujung. Untuk menambah di tempat lain, buka jadual, pilih baris atau lajur (klik pemegangnya) dan gunakan Sisip di atas / di bawah / di kiri / di kanan di sini atau pada klik kanan; Padam, Gabung sel dan Pisah sel juga ada di sini. Pisahkan jadual di sini memindahkan baris yang dipilih dan baris di bawahnya ke jadual baharu di halaman baharu, bersama salinan baris tajuk."
-      },
-      "typedColumns": {
-        "title": "Lajur",
-        "text": "Setiap lajur jadual, mengikut susunan. Taip nama baharu untuk menukar tajuk lajur (selnya dalam baris tajuk pertama), atau gunakan tong sampah untuk memadam lajur bersama semua isinya. Tajuk yang digabungkan merentasi lajur ditukar namanya pada lajur pertamanya.",
+        "text": "Baris jadual, baris tajuk, lajur, dan sama ada baris terakhir ialah jumlah. Menanda Baris terakhir ialah jumlah menambah baris di bawah dengan Jumlah dan hasil tambah setiap lajur nombor, dikemas kini semasa anda menaip (taip dalam sel jumlah untuk menulis sendiri). Butang + dan − menambah atau membuang baris di hujung, dan Tambah lajur menambah lajur di hujung. Setiap lajur disenaraikan mengikut hurufnya: taip nama baharu untuk menukar tajuknya (selnya dalam baris tajuk pertama; tajuk yang digabungkan merentasi lajur ditukar namanya pada lajur pertamanya), atau gunakan tong sampah untuk memadam lajur bersama semua isinya. Untuk menambah baris atau lajur di tempat lain, buka jadual, pilih baris atau lajur (klik pemegangnya) dan gunakan Sisip di atas / di bawah / di kiri / di kanan di sini atau pada klik kanan; lajur yang dipilih ditandakan dalam senarai, dan Padam, Gabung sel dan Pisah sel juga ada di sini. Pisahkan jadual di sini memindahkan baris yang dipilih dan baris di bawahnya ke jadual baharu di halaman baharu, bersama salinan baris tajuk. Jadual yang membesar melepasi bahagian bawah halaman (baris ditambah, baris lebih tinggi, teks lebih panjang) melakukan perkara yang sama dengan sendirinya: baris yang tidak muat bersambung ke halaman baharu.",
         "example": "Tukar \"Telefon\" kepada \"Mudah alih\", atau padam lajur Laman Web."
       },
       "typedCells": {

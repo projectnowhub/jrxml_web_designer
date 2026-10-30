@@ -69,7 +69,6 @@ export type SettingId =
   | "tableCells"
   | "tableHighlights"
   | "typedGrid"
-  | "typedColumns"
   | "typedCells"
   | "tocDesign"
   | "tocRowsFrom"
@@ -217,7 +216,6 @@ export const DOC_PAGES: DocPage[] = [
       "tableRowSizes",
       "tableCustomize",
       "typedGrid",
-      "typedColumns",
       "typedCells",
     ],
     guides: ["typedTable", "dataTable"],
@@ -299,7 +297,7 @@ export const DOC_PAGES: DocPage[] = [
     id: "presetTables",
     group: "presets",
     tile: "tableKeyValue",
-    settings: ["typedGrid", "typedColumns", "typedCells", "tableLook", "tableCustomize"],
+    settings: ["typedGrid", "typedCells", "tableLook", "tableCustomize"],
     guides: ["presetTables"],
     sample: (ctx) => [buildTablePreset("tableKeyValue", ctx)],
   },

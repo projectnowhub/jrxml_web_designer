@@ -875,6 +875,7 @@ import {
   fitChildrenToFrame,
   isFrameTemplateType,
   PAGE_BORDER_TYPE,
+  PRESET_SIDE_INSET,
   type FrameTemplateContext,
 } from "../utils/framePresets";
 import { emptyDataTable, emptyTypedTable, typedTableFromData } from "../utils/table/tableConversion";
@@ -2435,38 +2436,9 @@ const getSnapOptions = (
   };
 };
 
-// The most a band may grow to when something is dropped in it: its maximum
-// height setting, and the room left on the page (Detail keeps its minimum).
-// Detail fills whatever space remains, so it can't grow on its own.
-const getBandMaxHeight = (bandIndex: number): number => {
-  const band = bands.value[bandIndex];
-  if (!band) return 0;
-  if (
-    band.type === BAND_TYPE_CONSTANTS.DETAIL ||
-    band.type === BAND_TYPE_CONSTANTS.BACKGROUND
-  ) {
-    return band.height;
-  }
-  const limits = reportProperties.value?.bandLimits?.[band.type] ||
-    getEffectiveDefaultBandLimits()[band.type] || { min: 20, max: 70 };
-  const maxSetting = typeof limits.max === "number" ? limits.max : 70;
-  const printableHeight =
-    paperHeight.value -
-    (reportProperties.value?.topMargin || 0) -
-    (reportProperties.value?.bottomMargin || 0);
-  let otherBands = 0;
-  bands.value.forEach((b, i) => {
-    if (
-      i !== bandIndex &&
-      b.type !== BAND_TYPE_CONSTANTS.DETAIL &&
-      b.type !== BAND_TYPE_CONSTANTS.BACKGROUND
-    ) {
-      otherBands += b.height || 0;
-    }
-  });
-  const pageRoom = printableHeight - otherBands - (BAND_CONSTANTS.MIN_HEIGHT || 20);
-  return Math.max(band.height, Math.min(maxSetting, pageRoom));
-};
+// The most a band may grow to when something is dropped in it (its maximum
+// setting and the room left on the page); Detail fills what is left
+const getBandMaxHeight = (bandIndex: number): number => reportStore.bandMaxHeight(bandIndex);
 
 // Height of a band's area on a page: a cover or contents page is the whole
 // printable page; anything else is the band's own height
@@ -2677,13 +2649,29 @@ const getFrameTemplateContext = (): FrameTemplateContext => ({
   t,
 });
 
+// Element Presets are made a little narrower than the page and placed inside
+// it, so their selection handles stay on the page (the Page Border is the
+// whole printable area)
+const isLibraryPreset = (type: string) =>
+  (isFrameTemplateType(type) && type !== PAGE_BORDER_TYPE) || isReportPartType(type);
+const getPresetContext = (): FrameTemplateContext => {
+  const ctx = getFrameTemplateContext();
+  return { ...ctx, availableWidth: Math.max(100, ctx.availableWidth - 2 * PRESET_SIDE_INSET) };
+};
+// A preset's x kept at least the inset from both edges, when it is narrow enough
+const keepPresetInset = (x: number, width: number): number => {
+  const available = getFrameTemplateContext().availableWidth;
+  if (width > available - 2 * PRESET_SIDE_INSET) return Math.max(0, Math.min(x, available - width));
+  return Math.min(Math.max(PRESET_SIDE_INSET, x), available - PRESET_SIDE_INSET - width);
+};
+
 // Base element for a library item: frame templates are built with their content,
 // everything else comes from the registry defaults
 const createLibraryElement = (type: string): DesignElement =>
   isFrameTemplateType(type)
-    ? buildFrameTemplate(type, getFrameTemplateContext())
+    ? buildFrameTemplate(type, isLibraryPreset(type) ? getPresetContext() : getFrameTemplateContext())
     : isReportPartType(type)
-    ? buildReportPart(type, getFrameTemplateContext())
+    ? buildReportPart(type, getPresetContext())
     : type === PAGE_NUMBER_TYPE
     ? buildPaginationElement(undefined, {
         fontFamily: reportProperties.value?.defaultFont?.name,
@@ -2844,10 +2832,10 @@ const addReportPart = (type: ReportPartType) => {
   }
 
   const element: DesignElement = {
-    ...buildReportPart(type, getFrameTemplateContext()),
+    ...buildReportPart(type, getPresetContext()),
     uuid: crypto.randomUUID(),
   };
-  element.x = isFullWidthPart(type) ? 0 : 50;
+  element.x = isFullWidthPart(type) ? PRESET_SIDE_INSET : 50;
   element.y = wantedBand ? 0 : 20;
   // A Table of Contents is centred across the page
   if (element.type === "contentsList") element.x = Math.round((getFrameTemplateContext().availableWidth - element.width) / 2);
@@ -3039,6 +3027,8 @@ const handleElementDoubleClick = (element: any) => {
     x: 50, // Default position
     y: 20, // Default position
   } as DesignElement;
+  // A preset keeps its space from the page's left and right edges
+  if (isLibraryPreset(element.type)) newElement.x = keepPresetInset(newElement.x, newElement.width);
 
   // A table is horizontally centered with equal space on left and right sides
   if (element.type === "table") {
@@ -3284,6 +3274,8 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
         const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
         newElement.x = Math.round((availableWidth - newElement.width) / 2);
       }
+      // A preset keeps its space from the page's left and right edges
+      if (isLibraryPreset(elementData.type)) newElement.x = keepPresetInset(newElement.x, newElement.width);
 
       // Detect whether it is being dropped on a Frame
       let targetFrameIndex = -1;

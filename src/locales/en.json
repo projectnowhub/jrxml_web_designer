@@ -1855,6 +1855,15 @@
       "moderate": "Moderate"
     }
   },
+  "sectionFit": {
+    "tableContinued": "Table continued on page {page}\nThe rows that didn't fit moved to a new page, with the heading rows copied.",
+    "movedToPage": "Moved to page {page}\nIt didn't fit at the bottom of the page, so it went to a new page. | {n} items moved to page {page}\nThey didn't fit at the bottom of the page, so they went to a new page.",
+    "movedUp": "Moved up to fit\nIt went past the bottom of {band}.",
+    "madeShorter": "Made shorter to fit\nIt was taller than {band} can be.",
+    "tooTall": "Too tall for {band}\nMake it smaller, or split it into two parts.",
+    "movedIn": "Kept inside the page\nIt went past the edge of the page.",
+    "keptInside": "Kept inside {band}\nThat value would go past its edge, so it was set to {value}."
+  },
   "customTable": {
     "placeholderHeader": "Heading {n}",
     "cellText": "Cell text",
@@ -1863,7 +1872,6 @@
     "grid": "Rows and columns",
     "rows": "Rows",
     "columns": "Columns",
-    "columnList": "Columns",
     "columnName": "Column name (its cell in the first heading row)",
     "columnNameOf": "Name of column {name}",
     "columnNamePlaceholder": "Column name",
@@ -1873,7 +1881,7 @@
     "addRow": "Add row",
     "removeRow": "Remove row",
     "addColumn": "Add column",
-    "removeColumn": "Remove column",
+    "addColumnHint": "Add a column at the end. To add one between others, choose a column in the table and use Insert column left / right.",
     "editCells": "Type in the table",
     "editHint": "Double-click the table to type in it. Right-click a cell to add rows, merge cells and more.",
     "editingHint": "Click a cell to type. Drag across cells (or Shift+click) to choose several. Press Esc when you are done.",
@@ -3657,7 +3665,7 @@
       },
       "positionSize": {
         "title": "Position & size",
-        "text": "Where the item sits (X from the left, Y from the top of its part of the page) and how wide and tall it is, in pixels.",
+        "text": "Where the item sits (X from the left, Y from the top of its part of the page) and how wide and tall it is, in pixels. It always stays inside its part of the page: a value that would go past the edge is changed to the largest that fits (a page header or footer grows up to its maximum). A typed table may be made taller than the page: the rows that don't fit carry on onto the next page.",
         "example": "X 0 puts it against the left margin."
       },
       "picture": {
@@ -3791,11 +3799,7 @@
       },
       "typedGrid": {
         "title": "Rows and columns",
-        "text": "How many rows and columns the table has, heading rows, and whether the last row is a total. Ticking Last row is a total adds a row at the bottom with Total and the sum of every number column, kept up to date as you type (type in a total cell to write your own). The + and − add or remove a row or column at the end. To add one anywhere else, open the table, choose a row or column (click its handle) and use Insert above / below / left / right here or on right-click; Delete, Merge cells and Split cells are here too. Split table here moves the chosen row and the rows below it to a new table on a new page, with the heading rows copied."
-      },
-      "typedColumns": {
-        "title": "Columns",
-        "text": "Every column of the table, in order. Type a new name to change the column's heading (its cell in the first heading row), or use the bin to delete the column with everything in it. A heading merged across columns is renamed at its first column.",
+        "text": "The table's rows, heading rows, columns, and whether the last row is a total. Ticking Last row is a total adds a row at the bottom with Total and the sum of every number column, kept up to date as you type (type in a total cell to write your own). The + and − add or remove a row at the end, and Add column adds a column at the end. Every column is listed by its letter: type a new name to change its heading (its cell in the first heading row; a heading merged across columns is renamed at its first column), or use the bin to delete the column with everything in it. To add a row or column anywhere else, open the table, choose a row or column (click its handle) and use Insert above / below / left / right here or on right-click; the chosen columns are marked in the list, and Delete, Merge cells and Split cells are here too. Split table here moves the chosen row and the rows below it to a new table on a new page, with the heading rows copied. A table that grows past the bottom of a page (rows added, taller rows, longer text) does the same by itself: the rows that don't fit carry on onto a new page.",
         "example": "Rename \"Phone\" to \"Mobile\", or delete the Website column."
       },
       "typedCells": {

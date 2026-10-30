@@ -26,8 +26,6 @@ export const DEFAULT_ROW_HEIGHT = 20;
 // JasperReports leaves out text whose first line doesn't fit its box
 export const TEXT_LINE_HEIGHT = 1.45;
 
-export const MAX_HEADER_ROWS = 3;
-
 export interface CellPos {
   row: number;
   col: number;
@@ -380,6 +378,11 @@ export const hasMergedCells = (table: CustomTableData, rect: CellRect) =>
 // Insert a row at `index`, as tall as the row it is added next to; its colours
 // come from the table style (a row added among the header rows is a header row)
 // A column's name, as spreadsheets name them: A, B… Z, AA, AB…
+// As many heading rows as the table has rows, the total row aside (it would
+// turn into a heading)
+export const maxHeaderRows = (table: CustomTableData): number =>
+  Math.max(0, table.rows.length - (table.totalRow ? 1 : 0));
+
 export function columnName(index: number): string {
   let n = index + 1;
   let name = "";
@@ -398,7 +401,7 @@ export function insertRow(table: CustomTableData, index: number, likeRow: number
     height: like.height,
     cells: like.cells.map(() => emptyCell()),
   });
-  if (index < table.headerRows) table.headerRows = Math.min(MAX_HEADER_ROWS, table.headerRows + 1);
+  if (index < table.headerRows) table.headerRows += 1;
   // A merged block that runs across the new row grows over it
   if (index > 0 && index < map.length) {
     const seen = new Set<string>();
@@ -540,7 +543,7 @@ export function normalizeCustomTable(raw: any): CustomTableData | null {
     columns,
     rows,
     theme: typeof raw.theme === "string" && /^[A-Za-z0-9_]+$/.test(raw.theme) ? raw.theme : "corporateBlue",
-    headerRows: Math.round(num(raw.headerRows, 1, 0, Math.min(MAX_HEADER_ROWS, rows.length))),
+    headerRows: Math.round(num(raw.headerRows, 1, 0, Math.max(0, rows.length - (raw.totalRow === true ? 1 : 0)))),
     totalRow: raw.totalRow === true,
     padding: num(raw.padding, 3, 0, 40),
   };
@@ -677,4 +680,41 @@ export function splitCustomTable(table: CustomTableData, at: number): { head: Cu
   rest.rows = [...rest.rows.slice(0, table.headerRows), ...rest.rows.slice(at)];
   if (rest.totalRow) for (const cell of rest.rows[rest.rows.length - 1]!.cells) delete cell.sum;
   return { head: normalizeCustomTable(head) ?? head, rest: normalizeCustomTable(rest) ?? rest };
+}
+
+// The element keeps the rows above `at`; the rows from `at` on become a new
+// table element at the same x (placed by the caller: page and y)
+export function splitTableElement(element: CustomTableElement, at: number): CustomTableElement {
+  const { head, rest } = splitCustomTable(element.table, at);
+  element.table = head;
+  syncTableSize(element);
+  const moved: CustomTableElement = {
+    type: "customTable",
+    uuid: crypto.randomUUID(),
+    pageIndex: element.pageIndex,
+    x: element.x,
+    y: 0,
+    width: element.width,
+    height: 0,
+    table: rest,
+  };
+  syncTableSize(moved);
+  return moved;
+}
+
+// Where a table at `top` must be cut so its rows end above `bottom`: the
+// lowest row it can be split at (canSplitAt), or null when none fits
+export function splitRowFor(table: CustomTableData, top: number, bottom: number): number | null {
+  let y = top;
+  let first = table.rows.length;
+  for (let r = 0; r < table.rows.length; r++) {
+    y += table.rows[r]!.height;
+    if (y > bottom + 0.5) {
+      first = r;
+      break;
+    }
+  }
+  if (first === table.rows.length) return null;
+  for (let r = first; r > 0; r--) if (canSplitAt(table, r)) return r;
+  return null;
 }

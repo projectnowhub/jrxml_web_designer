@@ -26,7 +26,7 @@ import {
   clearPartCells,
   type CustomRowPart,
   fitTableToBox,
-  MAX_HEADER_ROWS,
+  maxHeaderRows,
   mergeCells,
   MIN_COLUMN_WIDTH,
   scaleSizes,
@@ -211,8 +211,8 @@ function applyTypedTable(element: CustomTableElement, spec: ElementSpec, ctx: Ki
     delete table.customized;
   }
   if (has(spec, "textStyle")) applyTextStyle(table, spec.textStyle, table);
-  if (has(spec, "headerRows")) table.headerRows = Math.min(spec.headerRows, MAX_HEADER_ROWS, table.rows.length);
   if (has(spec, "totalRow")) table.totalRow = !!spec.totalRow;
+  if (has(spec, "headerRows")) table.headerRows = Math.min(spec.headerRows, maxHeaderRows(table));
   if (has(spec, "padding")) table.padding = Math.round(spec.padding);
   if (has(spec, "rowHeight") && !has(spec, "rows")) table.rows.forEach((r) => (r.height = Math.round(spec.rowHeight)));
   for (const [i, m] of ((spec.merges as Array<Record<string, number>> | undefined) ?? []).entries()) {
@@ -261,7 +261,7 @@ export const typedTableKind: ElementKind = {
       description: "Cell texts row by row, headings first; \\n for a new line in a cell",
     },
     columnWidths: { type: "array", items: { type: "number", minimum: 0.1 }, description: "Relative column widths, e.g. [1, 3, 1] (default equal)" },
-    headerRows: { type: "integer", minimum: 0, maximum: MAX_HEADER_ROWS, description: "Heading rows at the top (default 1)" },
+    headerRows: { type: "integer", minimum: 0, description: "Heading rows at the top (default 1; at most every row but the total row)" },
     totalRow: { type: "boolean", description: "Last row drawn as a total" },
     theme: { type: "string", enum: TABLE_THEMES, description: "Table style: corporateBlue (default), minimal, emerald, slate, burgundy, teal, gold, violet, none" },
     textStyle: TEXT_STYLE_PROP,

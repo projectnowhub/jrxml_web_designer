@@ -261,6 +261,11 @@ export function fitChildrenToFrame(
 
 export const PAGE_BORDER_TYPE = "framePageBorder";
 
+// Space a ready-made item (the Element Presets) keeps from the left and right
+// edges of the printable page when added from the library, so its selection
+// handles (10px outside it) stay on the page
+export const PRESET_SIDE_INSET = 16;
+
 // The page border: a frame in the Background band. Only one is allowed, since the
 // band repeats on every page and a second border would lie on top of the first.
 export function findPageBorder(

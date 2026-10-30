@@ -10,7 +10,7 @@
 // updateJrxml() after it.
 import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
-import type { Band, BandType, ReportField, ReportParameter, ReportProperties, TableDataset } from "@/types";
+import type { Band, BandType, DesignElement, ReportField, ReportParameter, ReportProperties, TableDataset } from "@/types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { useUndoRedo } from "@/composables/useUndoRedo";
 import { generateJRXMLContent } from "@/utils/jrxmlGenerator";
@@ -18,7 +18,8 @@ import { ensureUniqueUuids } from "@/utils/elementUtils";
 import { resetBoxPhotos } from "@/utils/framePresets";
 import { cleanLegacyAutoDate } from "@/utils/autoDate";
 import { ensureUniqueTableDatasets } from "@/utils/table/tableDocument";
-import { specialPages } from "@/utils/specialPages";
+import { shiftPages, specialPageArea, specialPages } from "@/utils/specialPages";
+import { announceSectionFit, keepElementsInSections } from "@/utils/sectionFit";
 import { fitContentsPages, fitListDecorations, NEW_REPORT_HEADING_NUMBERING, syncHeadings } from "@/utils/headingSync";
 import { unwrapLegacyCoverFrames } from "@/utils/pageDesigns";
 import { syncLocations } from "@/utils/location/locationElement";
@@ -184,6 +185,70 @@ export const useReportStore = defineStore("report", () => {
     detail.height = Math.max(BAND_CONSTANTS.MIN_HEIGHT, available - others);
   }
 
+  // The most a band may grow to (its maximum setting and the room left on the
+  // page), as when an element is dropped in it; Detail fills what is left
+  function bandMaxHeight(bandIndex: number): number {
+    const band = bands.value[bandIndex];
+    if (!band) return 0;
+    if (band.type === BAND_TYPE_CONSTANTS.DETAIL || band.type === BAND_TYPE_CONSTANTS.BACKGROUND) return band.height;
+    const limits = reportProperties.value?.bandLimits?.[band.type] ??
+      getEffectiveDefaultBandLimits()[band.type] ?? { min: 20, max: 70 };
+    const others = bands.value
+      .filter((b, i) => i !== bandIndex && b.type !== BAND_TYPE_CONSTANTS.DETAIL && b.type !== BAND_TYPE_CONSTANTS.BACKGROUND)
+      .reduce((sum, b) => sum + (b.height || 0), 0);
+    const room = printableHeight.value - others - (BAND_CONSTANTS.MIN_HEIGHT || 20);
+    return Math.max(band.height, Math.min(typeof limits.max === "number" ? limits.max : 70, room));
+  }
+
+  // The area an element is placed in: a cover / contents page is the whole
+  // (printable or sheet) page; otherwise the band, which may grow to maxHeight
+  function sectionArea(bandIndex: number, pageIndex?: number) {
+    const band = bands.value[bandIndex];
+    const special = band?.type === BAND_TYPE_CONSTANTS.DETAIL ? specialPageArea(reportProperties.value, pageIndex) : null;
+    if (special) {
+      const width = Math.round(special.width);
+      const height = Math.round(special.height);
+      return { width, height, maxHeight: height };
+    }
+    const p = reportProperties.value;
+    return {
+      width: Math.round(paperWidth.value - (p?.leftMargin || 0) - (p?.rightMargin || 0)),
+      height: band?.height ?? 0,
+      maxHeight: bandMaxHeight(bandIndex),
+    };
+  }
+
+  // The element being typed in is left where it is until the typing ends
+  function editedElement(): DesignElement | null {
+    const editing = useSelectionStore().editingElement;
+    if (!editing) return null;
+    const band = bands.value[editing.bandIndex];
+    const top = band?.elements[editing.parentFrameIndex ?? editing.elementIndex];
+    return (editing.parentFrameIndex === undefined ? top : null) ?? null;
+  }
+
+  // Every element kept inside its page section (utils/sectionFit.ts)
+  function keepInSections() {
+    const editing = editedElement();
+    const notices = keepElementsInSections({
+      bands: bands.value,
+      props: reportProperties.value,
+      area: sectionArea,
+      totalPages: () => totalPages.value,
+      addPageAfter: (pageIndex) => {
+        const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+        const total = totalPages.value;
+        if (detail) shiftPages(detail.elements, pageIndex + 1, 1);
+        pageCount.value = total + 1;
+        return pageIndex + 1;
+      },
+      fitBandsToPage,
+      skip: (element) => element === editing,
+    });
+    if (notices.length) announceSectionFit(notices);
+    return notices.length > 0;
+  }
+
   // Page size, margins or the other bands' heights changed: Detail follows
   watch(
     [
@@ -223,6 +288,13 @@ export const useReportStore = defineStore("report", () => {
       // Typed tables: the sums in their total row follow the numbers above
       for (const band of bands.value) {
         for (const element of band.elements) if (element.type === "customTable") syncTotals(element.table);
+      }
+      // Everything inside its section: what doesn't fit at the bottom of a
+      // page carries on onto the next (not while dragging or resizing: the
+      // canvas keeps that in bounds itself)
+      if (!useEditorStore().isDraggingOrResizing && keepInSections()) {
+        // Pages added: the headings' pages follow
+        syncHeadings(bands.value, reportProperties.value);
       }
       // A Table of Contents on contents pages gets the contents pages it needs
       const before = totalPages.value;
@@ -365,6 +437,8 @@ export const useReportStore = defineStore("report", () => {
     setBandTypes,
     loadReport,
     fitBandsToPage,
+    bandMaxHeight,
+    sectionArea,
     updateJrxml,
     isWritingJrxml,
     reset,

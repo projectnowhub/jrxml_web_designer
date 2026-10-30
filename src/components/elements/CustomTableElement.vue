@@ -10,6 +10,7 @@
     :is-out-of-bounds="isOutOfBounds"
     :parent-frame-index="parentFrameIndex"
     :zoom-level="zoomLevel"
+    :frame-outset="isEditing ? HANDLE_BARS_OUTSET : undefined"
     @select="(b, e, m, p) => emit('select', b, e, m, p)"
     @drag-start="(ev, b, e, p) => emit('dragStart', ev, b, e, p)"
     @resize-start="(ev, b, e, p, d) => emit('resizeStart', ev, b, e, p, d)"
@@ -43,7 +44,7 @@
           contenteditable="true"
           role="textbox"
           aria-multiline="true"
-          :style="{ ...textStyle(v), padding: `${table.padding}px` }"
+          :style="editorStyle(v)"
           :aria-label="t('customTable.cellText')"
           @keydown.stop="onEditorKeyDown"
           @paste="onCellPaste"
@@ -243,6 +244,10 @@ import type {
   SelectedElementInfo,
 } from '../../types';
 
+// While the table is open, its selection frame sits outside the letter and
+// number bars (14px out, 11px wide) so the frame and handles don't cover them
+const HANDLE_BARS_OUTSET = { top: 16, left: 16 };
+
 const { t } = useI18n();
 
 // Only text goes into a cell: pasted or dropped pictures are left out
@@ -340,6 +345,13 @@ function textStyle(v: VisibleCell) {
   };
 }
 
+// The cell being typed in keeps its own colours (white text on a dark heading
+// stays readable); white when the cell has no fill
+function editorStyle(v: VisibleCell) {
+  const resolved = resolveCell(table.value, look.value, v.row, v.cell);
+  return { ...textStyle(v), padding: `${table.value.padding}px`, background: resolved.fill || '#ffffff' };
+}
+
 const sumTo = (sizes: number[], count: number) => sizes.slice(0, count).reduce((a, b) => a + b, 0);
 const columnEdges = computed(() => {
   const total = sumTo(table.value.columns, table.value.columns.length) || 1;
@@ -353,17 +365,10 @@ const rowEdges = computed(() => {
 
 // ---- Changes ---------------------------------------------------------------
 
-// The section the table is in grows when the table gets taller than it
-function growBandToFit() {
-  const band = report.bands[props.bandIndex];
-  if (!band || props.parentFrameIndex !== undefined) return;
-  const bottom = Math.ceil(props.element.y + props.element.height);
-  if (bottom > band.height) band.height = bottom;
-}
-
+// The section grows with the table, or its rows carry on onto the next page,
+// when the JRXML is written (utils/sectionFit.ts)
 function afterChange() {
   syncTableSize(props.element);
-  growBandToFit();
   report.updateJrxml();
   nextTick(fitRowsToText);
 }
@@ -399,7 +404,6 @@ function fitRowsToText() {
   }
   if (changed) {
     syncTableSize(props.element);
-    growBandToFit();
     report.updateJrxml();
   }
 }
@@ -865,14 +869,10 @@ watch(isEditing, (editing) => {
     closeMenu();
     document.removeEventListener('mousedown', onOutsideMouseDown, true);
     if (selection.value) tableCells.value = null;
+    // Rows that grew past the page while typing carry on onto the next page now
+    report.updateJrxml();
   }
 });
-
-// Rows or columns added from the panel: the section grows with the table
-watch(
-  () => props.element.y + props.element.height,
-  () => growBandToFit(),
-);
 
 watch(isSelected, (selected) => {
   if (!selected && isEditing.value) emit('finishEditing');
@@ -1121,7 +1121,6 @@ function runMenu(id: MenuId) {
   border: none;
   outline: 2px solid #6440f4;
   outline-offset: -2px;
-  background: rgba(255, 255, 255, 0.95);
   font-family: inherit;
   white-space: pre-wrap;
   overflow-wrap: anywhere;

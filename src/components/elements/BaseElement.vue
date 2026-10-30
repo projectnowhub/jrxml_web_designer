@@ -14,7 +14,7 @@
     @dragleave="handleProjectDragLeave"
     @drop="projectDrop = null"
     @click.stop="handleSelect"
-    :style="elementStyle"
+    :style="[elementStyle, frameOutsetStyle]"
     @mousedown.stop="handleMouseDown"
     @contextmenu.stop="handleContextMenu"
     @dblclick.stop="handleDoubleClick"
@@ -122,6 +122,10 @@ const props = defineProps<{
   reportIsItalic?: boolean;
   reportIsUnderline?: boolean;
   isOutOfBounds?: boolean;
+  // Extra room (design px) between the element and its selection frame on the
+  // top / left, for things drawn just outside it (an open typed table's
+  // letter and number bars), so the frame and handles don't cover them
+  frameOutset?: { top?: number; left?: number };
 }>();
 
 // Emits
@@ -208,6 +212,12 @@ const isSelected = computed(() => {
 // the same size on screen (and easy to grab) when zoomed out or in
 const editorStore = useEditorStore();
 const handleScale = computed(() => Math.min(2, Math.max(0.5, 1 / (editorStore.zoomLevel || 1))));
+
+const frameOutsetStyle = computed(() =>
+  props.frameOutset
+    ? { "--frame-top": `${props.frameOutset.top ?? 0}px`, "--frame-left": `${props.frameOutset.left ?? 0}px` }
+    : {},
+);
 
 const elementStyle = computed(() => {
   // Compute values for complex expressions separately and add type assertions
@@ -571,6 +581,8 @@ const handleProjectDragLeave = (event: DragEvent) => {
   --hs: var(--handle-scale, 1);
   position: absolute;
   inset: calc(-10px * var(--hs));
+  top: calc(-10px * var(--hs) - var(--frame-top, 0px));
+  left: calc(-10px * var(--hs) - var(--frame-left, 0px));
   border: calc(1.5px * var(--hs)) solid #6440f4;
   border-radius: calc(2px * var(--hs));
   pointer-events: none;
@@ -647,6 +659,9 @@ const handleProjectDragLeave = (event: DragEvent) => {
    element: --o is that offset, sizes are on-screen pixels times --hs */
 .resize-handle {
   --o: calc(-10px * var(--hs));
+  /* The top / left sides moved further out by frameOutset */
+  --ot: calc(var(--o) - var(--frame-top, 0px));
+  --ol: calc(var(--o) - var(--frame-left, 0px));
 }
 
 /* Corners: 12 px squares */
@@ -659,18 +674,18 @@ const handleProjectDragLeave = (event: DragEvent) => {
   border-radius: calc(3px * var(--hs));
 }
 .resize-handle-nw {
-  top: calc(var(--o) - 6px * var(--hs));
-  left: calc(var(--o) - 6px * var(--hs));
+  top: calc(var(--ot) - 6px * var(--hs));
+  left: calc(var(--ol) - 6px * var(--hs));
   cursor: nw-resize;
 }
 .resize-handle-ne {
-  top: calc(var(--o) - 6px * var(--hs));
+  top: calc(var(--ot) - 6px * var(--hs));
   right: calc(var(--o) - 6px * var(--hs));
   cursor: ne-resize;
 }
 .resize-handle-sw {
   bottom: calc(var(--o) - 6px * var(--hs));
-  left: calc(var(--o) - 6px * var(--hs));
+  left: calc(var(--ol) - 6px * var(--hs));
   cursor: sw-resize;
 }
 .resize-handle-se {
@@ -682,14 +697,15 @@ const handleProjectDragLeave = (event: DragEvent) => {
 /* Edges: 28 x 9 px bars, centred on the frame's edge */
 .resize-handle-n,
 .resize-handle-s {
-  left: 50%;
+  /* Centred on the frame's edge (the frame may reach further out on the left) */
+  left: calc(50% - var(--frame-left, 0px) / 2);
   width: calc(28px * var(--hs));
   height: calc(9px * var(--hs));
   transform: translateX(-50%);
   border-radius: calc(4px * var(--hs));
 }
 .resize-handle-n {
-  top: calc(var(--o) - 4.5px * var(--hs));
+  top: calc(var(--ot) - 4.5px * var(--hs));
   cursor: n-resize;
 }
 .resize-handle-s {
@@ -698,14 +714,14 @@ const handleProjectDragLeave = (event: DragEvent) => {
 }
 .resize-handle-w,
 .resize-handle-e {
-  top: 50%;
+  top: calc(50% - var(--frame-top, 0px) / 2);
   width: calc(9px * var(--hs));
   height: calc(28px * var(--hs));
   transform: translateY(-50%);
   border-radius: calc(4px * var(--hs));
 }
 .resize-handle-w {
-  left: calc(var(--o) - 4.5px * var(--hs));
+  left: calc(var(--ol) - 4.5px * var(--hs));
   cursor: w-resize;
 }
 .resize-handle-e {

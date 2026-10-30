@@ -6,7 +6,7 @@
 import type { CustomTableElement } from "@/types";
 import { useReportStore } from "@/stores/report";
 import { BAND_TYPE_CONSTANTS } from "@/constants/constants";
-import { canSplitAt, splitCustomTable, syncTableSize } from "@/utils/customTable";
+import { canSplitAt, splitTableElement } from "@/utils/customTable";
 import { pageKind, shiftPages } from "@/utils/specialPages";
 
 // Where a typed table can be split: on a normal page's Detail section
@@ -29,25 +29,13 @@ export function splitTypedTable(element: CustomTableElement, at: number): Custom
   const report = useReportStore();
   const detail = report.bands.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL)!;
   report.saveStateToHistory();
-  const { head, rest } = splitCustomTable(element.table, at);
-  element.table = head;
-  syncTableSize(element);
+  const moved = splitTableElement(element, at);
   // A new page right after this one: later pages move down one
   const total = report.totalPages;
   const newPage = place.pageIndex + 1;
   shiftPages(detail.elements, newPage, 1);
   report.pageCount = total + 1;
-  const moved: CustomTableElement = {
-    type: "customTable",
-    uuid: crypto.randomUUID(),
-    pageIndex: newPage,
-    x: element.x,
-    y: 0,
-    width: element.width,
-    height: 0,
-    table: rest,
-  };
-  syncTableSize(moved);
+  moved.pageIndex = newPage;
   detail.elements.push(moved);
   report.updateJrxml();
   return moved;

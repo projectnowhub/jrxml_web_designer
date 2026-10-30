@@ -1003,7 +1003,8 @@ import { computed, ref, onMounted, onUpdated, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
 import notification from "@/utils/notification";
-import type { Band, BarcodeElement, ChartElement, ContentsListElement, CustomTableElement, FrameElement, SelectedElementInfo } from "../../../types";
+import { pageKind } from "@/utils/specialPages";
+import type { Band, BarcodeElement, ChartElement, ContentsListElement, CustomTableElement, DesignElement, FrameElement, SelectedElementInfo } from "../../../types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
@@ -1417,9 +1418,34 @@ function setIntegerValue(target: any, property: string, event: Event): boolean {
     const box = bands.value[selectedElement.value!.bandIndex]?.elements[parentIndex];
     if (box?.type === "frame") Object.assign(target, clampRectInBox(target, box));
   }
+  if (parentIndex === undefined && target === currentElement.value) keepTypedRectInSection(target, property);
   input.value = String(target[property]);
   report.updateJrxml();
   return true;
+}
+
+// A position or size typed for an element in a section stays inside it (a
+// header / footer may grow to its maximum, utils/sectionFit.ts). A typed table
+// on a normal page may be made taller: its rows carry on onto the next page.
+// A project-data table may be wider than the page.
+function keepTypedRectInSection(target: DesignElement, property: string) {
+  const selected = selectedElement.value;
+  const band = selected ? bands.value[selected.bandIndex] : undefined;
+  if (!selected || !band || band.type === "background" || !["x", "y", "width", "height"].includes(property)) return;
+  const area = report.sectionArea(selected.bandIndex, target.pageIndex);
+  const continues =
+    target.type === "customTable" && band.type === "detail" && pageKind(report.reportProperties, target.pageIndex) === "normal";
+  const typed = (target as any)[property] as number;
+  const next = { x: target.x, y: target.y, width: target.width, height: target.height };
+  if (property === "x") next.x = Math.min(Math.max(0, next.x), Math.max(0, area.width - next.width));
+  if (property === "width" && target.type !== "table") next.width = Math.max(1, Math.min(next.width, area.width - next.x));
+  if (property === "y") next.y = Math.min(Math.max(0, next.y), Math.max(0, area.maxHeight - next.height));
+  if (property === "height" && !continues) next.height = Math.max(1, Math.min(next.height, area.maxHeight - next.y));
+  if ((next as any)[property] === typed) return;
+  Object.assign(target, next);
+  notification.info(
+    t("sectionFit.keptInside", { band: getBandDisplayName(band.type), value: Math.round((next as any)[property]) }),
+  );
 }
 
 // Set horizontal alignment

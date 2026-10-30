@@ -5,9 +5,9 @@
 
 import type { Band, BandType, DesignElement, FrameElement } from "@/types";
 import { useReportStore } from "@/stores/report";
-import { BAND_CONSTANTS, BAND_TYPE_CONSTANTS, getEffectiveDefaultBandLimits } from "@/constants/constants";
+import { BAND_TYPE_CONSTANTS } from "@/constants/constants";
 import { resolveReportFont } from "@/config/fonts.config";
-import { pageKind, specialPageArea, specialPageProblem, specialPages } from "@/utils/specialPages";
+import { pageKind, specialPageProblem, specialPages } from "@/utils/specialPages";
 import { findPageBorder, frame, markBoxPart } from "@/utils/framePresets";
 import { DESIGN_BOX_PROPERTY } from "@/utils/pageDesigns";
 import { listChain } from "@/utils/headingSync";
@@ -76,30 +76,9 @@ export function printableSize() {
   };
 }
 
-// The most a band may grow to (its maximum setting and the room left on the
-// page), as when an element is dropped in it; Detail fills what is left
-function bandMaxHeight(bandIndex: number): number {
-  const r = useReportStore();
-  const band = r.bands[bandIndex];
-  if (!band) return 0;
-  if (band.type === BAND_TYPE_CONSTANTS.DETAIL || band.type === BAND_TYPE_CONSTANTS.BACKGROUND) return band.height;
-  const limits = r.reportProperties.bandLimits?.[band.type] ?? getEffectiveDefaultBandLimits()[band.type] ?? { min: 20, max: 70 };
-  const others = r.bands
-    .filter((b, i) => i !== bandIndex && b.type !== BAND_TYPE_CONSTANTS.DETAIL && b.type !== BAND_TYPE_CONSTANTS.BACKGROUND)
-    .reduce((sum, b) => sum + (b.height || 0), 0);
-  const room = printableSize().height - others - (BAND_CONSTANTS.MIN_HEIGHT || 20);
-  return Math.max(band.height, Math.min(limits.max ?? 70, room));
-}
-
 // The area an element is placed in: a cover / contents page is the whole
 // (printable or sheet) page; otherwise the band, which may grow to maxHeight
-export function areaOf(bandIndex: number, pageIndex?: number) {
-  const r = useReportStore();
-  const band = r.bands[bandIndex]!;
-  const special = band.type === BAND_TYPE_CONSTANTS.DETAIL ? specialPageArea(r.reportProperties, pageIndex) : null;
-  if (special) return { width: Math.round(special.width), height: Math.round(special.height), maxHeight: Math.round(special.height) };
-  return { width: printableSize().width, height: band.height, maxHeight: bandMaxHeight(bandIndex) };
-}
+export const areaOf = (bandIndex: number, pageIndex?: number) => useReportStore().sectionArea(bandIndex, pageIndex);
 
 export function kindContext(width: number, height: number, notes: string[] = []): KindContext {
   const font = useReportStore().reportProperties.defaultFont;
@@ -654,7 +633,7 @@ export function designStateText(selectedUuid?: string): string {
   lines.push(
     `Bands on a normal page, top to bottom: ${r.bands
       .filter((b) => b.type !== "background")
-      .map((b) => `${b.type} ${b.height} px${b.type === "detail" ? " (page body)" : ` (may grow to ${bandMaxHeight(r.bands.indexOf(b))})`}`)
+      .map((b) => `${b.type} ${b.height} px${b.type === "detail" ? " (page body)" : ` (may grow to ${r.bandMaxHeight(r.bands.indexOf(b))})`}`)
       .join(", ")}.`,
   );
   const projects = p.projects ?? [];

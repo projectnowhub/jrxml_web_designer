@@ -1,6 +1,7 @@
 <template>
   <div class="custom-table-properties">
-    <!-- Basic Properties: size of the grid, then the look of the chosen cells -->
+    <!-- Basic Properties: one card for the grid (rows, headings, total, the
+         chosen cells' actions, then every column by name) -->
     <template v-if="part === 'basic'">
       <div class="card">
         <h5>{{ t("customTable.grid") }}<SettingHelpButton id="typedGrid" /></h5>
@@ -29,29 +30,6 @@
           </div>
         </div>
         <div class="counter-row">
-          <span class="field-label">{{ t("customTable.columns") }}</span>
-          <div class="counter">
-            <button
-              type="button"
-              :disabled="table.columns.length <= 1"
-              :aria-label="t('customTable.removeColumn')"
-              :title="t('customTable.removeColumn')"
-              @click="change(() => deleteColumns(table, table.columns.length - 1, table.columns.length - 1))"
-            >
-              <Minus :size="13" aria-hidden="true" />
-            </button>
-            <span>{{ table.columns.length }}</span>
-            <button
-              type="button"
-              :aria-label="t('customTable.addColumn')"
-              :title="t('customTable.addColumn')"
-              @click="change(() => insertColumn(table, table.columns.length, table.columns.length - 1))"
-            >
-              <Plus :size="13" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-        <div class="counter-row">
           <span class="field-label">{{ t("customTable.headerRows") }}</span>
           <div class="counter">
             <button
@@ -66,7 +44,7 @@
             <span>{{ table.headerRows }}</span>
             <button
               type="button"
-              :disabled="table.headerRows >= Math.min(MAX_HEADER_ROWS, table.rows.length)"
+              :disabled="table.headerRows >= maxHeaderRows(table)"
               :aria-label="t('customTable.moreHeaderRows')"
               :title="t('customTable.moreHeaderRows')"
               @click="change(() => (table.headerRows += 1))"
@@ -121,38 +99,57 @@
             {{ t("customTable.menu.splitTable") }}
           </button>
         </template>
-      </div>
 
-      <!-- The columns: each one's name (its cell in the first heading row), and delete -->
-      <div class="card">
-        <h5>{{ t("customTable.columnList") }}<SettingHelpButton id="typedColumns" /></h5>
-        <SettingHelpText id="typedColumns" />
-        <p v-if="!table.headerRows" class="form-hint column-hint">{{ t("customTable.columnsNoHeader") }}</p>
-        <ul class="column-list">
-          <li v-for="col in columnRows" :key="col.index" class="column-row">
-            <span class="column-letter" aria-hidden="true">{{ columnName(col.index) }}</span>
-            <input v-live-change
-              class="column-input"
-              type="text"
-              :value="col.name"
-              :disabled="!col.editable"
-              :placeholder="table.headerRows ? t('customTable.columnNamePlaceholder') : ''"
-              :title="col.mergedWith !== undefined ? t('customTable.columnMerged', { name: columnName(col.mergedWith) }) : t('customTable.columnName')"
-              :aria-label="t('customTable.columnNameOf', { name: columnName(col.index) })"
-              @change="renameColumn(col.index, $event)"
-            />
+        <!-- The columns: how many (add one at the end), each one's name (its
+             cell in the first heading row) and delete -->
+        <div class="column-section">
+          <div class="counter-row">
+            <span class="field-label">
+              {{ t("customTable.columns") }}
+              <span class="column-count">{{ table.columns.length }}</span>
+            </span>
             <button
               type="button"
-              class="column-delete"
-              :disabled="table.columns.length <= 1"
-              :title="t('customTable.deleteColumnNamed', { name: col.name || columnName(col.index) })"
-              :aria-label="t('customTable.deleteColumnNamed', { name: col.name || columnName(col.index) })"
-              @click="removeColumn(col.index)"
+              class="add-column-btn"
+              :title="t('customTable.addColumnHint')"
+              @click="change(() => insertColumn(table, table.columns.length, table.columns.length - 1))"
             >
-              <Trash2 :size="13" aria-hidden="true" />
+              <Plus :size="13" aria-hidden="true" />
+              {{ t("customTable.addColumn") }}
             </button>
-          </li>
-        </ul>
+          </div>
+          <p v-if="!table.headerRows" class="form-hint column-hint">{{ t("customTable.columnsNoHeader") }}</p>
+          <ul class="column-list">
+            <li
+              v-for="col in columnRows"
+              :key="col.index"
+              class="column-row"
+              :class="{ 'is-chosen': rect && col.index >= rect.left && col.index <= rect.right }"
+            >
+              <span class="column-letter" aria-hidden="true">{{ columnName(col.index) }}</span>
+              <input v-live-change
+                class="column-input"
+                type="text"
+                :value="col.name"
+                :disabled="!col.editable"
+                :placeholder="table.headerRows ? t('customTable.columnNamePlaceholder') : ''"
+                :title="col.mergedWith !== undefined ? t('customTable.columnMerged', { name: columnName(col.mergedWith) }) : t('customTable.columnName')"
+                :aria-label="t('customTable.columnNameOf', { name: columnName(col.index) })"
+                @change="renameColumn(col.index, $event)"
+              />
+              <button
+                type="button"
+                class="column-delete"
+                :disabled="table.columns.length <= 1"
+                :title="t('customTable.deleteColumnNamed', { name: col.name || columnName(col.index) })"
+                :aria-label="t('customTable.deleteColumnNamed', { name: col.name || columnName(col.index) })"
+                @click="removeColumn(col.index)"
+              >
+                <Trash2 :size="13" aria-hidden="true" />
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
     </template>
 
@@ -297,7 +294,6 @@ import {
   anchorMap,
   columnName,
   customTableLook,
-  MAX_HEADER_ROWS,
   resolveCell,
   type ResolvedCell,
   deleteColumns,
@@ -305,6 +301,7 @@ import {
   hasMergedCells,
   insertColumn,
   insertRow,
+  maxHeaderRows,
   mergeCells,
   canMergeRect,
   selectionRect,
@@ -658,8 +655,58 @@ function split() {
   box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
 }
 
+.column-section {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--prop-border-color);
+}
+
+.column-count {
+  display: inline-block;
+  min-width: 18px;
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #f1edff;
+  color: var(--prop-primary-color, #6440f4);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+}
+
+.add-column-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--prop-border-color);
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  color: var(--prop-text-primary);
+  cursor: pointer;
+}
+
+.add-column-btn:hover {
+  border-color: var(--prop-primary-color, #6440f4);
+  color: var(--prop-primary-color, #6440f4);
+}
+
 .column-hint {
   margin: 0 0 8px;
+}
+
+.column-row.is-chosen .column-letter {
+  border-radius: 4px;
+  background: #f1edff;
+  color: var(--prop-primary-color, #6440f4);
+}
+
+.column-row.is-chosen .column-input {
+  border-color: #c4b5fd;
 }
 
 .column-list {
