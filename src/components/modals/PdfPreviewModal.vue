@@ -163,7 +163,7 @@ import type { TableDataBinding } from "@/types/dataSource";
 import type { DataRow, TableTotals } from "@/types/dataSource";
 import { fetchTableTotals } from "@/queries/dataSourceQueries";
 import { generatePdf, ReportGenerationError } from "../../services/reportService";
-import { templateDetails } from "../../utils/reportRun";
+import { previewSubDataSources, templateDetails } from "../../utils/reportRun";
 import { useReportStore } from "@/stores/report";
 import { fetchTableRows } from "@/composables/useTableRows";
 import { TABLE_ROWS_LIMIT } from "@/constants/reportDataConstants";
@@ -301,7 +301,10 @@ async function generatePreview() {
     const jrxml = await props.prepare();
     if (controller.signal.aborted) return;
     const details = templateDetails(props.bands, report.reportProperties.projects?.[0]);
-    const pdf = await generatePdf({ jrxml, details }, controller.signal);
+    // TEMPORARY: each data table's first rows, so the PDF shows real data until the server reads details.json
+    const subDataSources = await previewSubDataSources(props.bands);
+    if (controller.signal.aborted) return;
+    const pdf = await generatePdf({ jrxml, details, subDataSources }, controller.signal);
     if (controller.signal.aborted) return;
     setPreviewUrl(URL.createObjectURL(pdf));
     pdfState.value = "ready";

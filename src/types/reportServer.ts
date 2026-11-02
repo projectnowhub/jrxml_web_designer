@@ -1,6 +1,7 @@
 // Report server types (Preview PDF / Download, services/reportService.ts).
 
 import type { ApiErrorBody } from "./api";
+import type { DataRow } from "./dataSource";
 import type { ReportDetails } from "./reportDetails";
 
 // What Preview PDF sends: the JRXML (the layout) and details.json (where its
@@ -9,7 +10,14 @@ import type { ReportDetails } from "./reportDetails";
 export interface GeneratePdfPayload {
   jrxml: string;
   details: ReportDetails;
+  // TEMPORARY, until the report server reads details.json: each data table's
+  // first rows by its dataset name (the server's subDataSources), values left
+  // out when empty (a JSON null would print "null")
+  subDataSources?: PreviewSubDataSources;
 }
+
+// A data table's rows by its dataset name (PdfGenerationController.applySubDataSources)
+export type PreviewSubDataSources = Record<string, DataRow[]>;
 
 // The PDF as a field of a JSON answer: base64 text or a list of bytes
 export type PdfJsonField = string | number[];

@@ -93,7 +93,8 @@ export async function generatePdf(
   // its form still has them
   form.append("parameters", JSON.stringify({}));
   form.append("dataSource", JSON.stringify([]));
-  form.append("subDataSources", JSON.stringify([{}]));
+  // TEMPORARY: the tables' first rows (Preview PDF), until the server reads details.json
+  form.append("subDataSources", JSON.stringify(payload.subDataSources ?? {}));
 
   let blob: Blob;
   try {

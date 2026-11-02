@@ -55,3 +55,7 @@ export const PROJECT_LIST_KEYS: readonly string[] = ["manager", "team", "compani
 
 // The most rows one table prints (details.json's maxRows)
 export const REPORT_ROWS_LIMIT = 5000;
+
+// TEMPORARY, until the report server reads details.json: the rows each data
+// table sends with Preview PDF (subDataSources), so the PDF shows real data
+export const PREVIEW_PDF_ROWS = 10;
