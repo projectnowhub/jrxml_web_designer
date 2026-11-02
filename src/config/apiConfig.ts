@@ -11,7 +11,7 @@ export const API_ROUTES = {
   reportServer: "/v2",
   analytics: "/v2/analytics/aggregate",
   table: "/v2/table",
-  projectList: "/v2/table/cdp_Project",
+  projectList: "/rest/entities/cdp_Project",
   entities: "/v2/entities",
   // The user's saved settings (this app's default settings): read them, save one
   propertiesConfig: "/v2/table/cdp_PropertiesConfig",
@@ -29,5 +29,4 @@ export const IMAGE_UPLOAD_API = apiUrl(API_ROUTES.files);
 
 // Address of a point on the map (Location → "Fill the address from the pin"):
 // the reverse geocoder the CDP app's location picker uses, same setting name
-export const REVERSE_GEOCODE_API: string =
-  import.meta.env.VITE_LAT_AND_LANG_API || "https://nominatim.openstreetmap.org/reverse";
+export const REVERSE_GEOCODE_API: string = "https://nominatim.openstreetmap.org/reverse";
