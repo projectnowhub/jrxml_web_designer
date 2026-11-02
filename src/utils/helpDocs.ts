@@ -50,6 +50,8 @@ export type SettingId =
   | "pnYourPages"
   | "dateWhich"
   | "projectValue"
+  | "projectDateLook"
+  | "projectDateBefore"
   | "dateLook"
   | "dateBefore"
   | "locationPlace"
@@ -143,7 +145,7 @@ export const DOC_PAGES: DocPage[] = [
     id: "text",
     group: "basic",
     tile: "textField",
-    settings: ["positionSize", "textContent", "projectValue", "rotation", "textSettings", "outline", "sideBorders", "innerSpace", "background"],
+    settings: ["positionSize", "textContent", "projectValue", "projectDateLook", "projectDateBefore", "rotation", "textSettings", "outline", "sideBorders", "innerSpace", "background"],
     guides: ["text"],
     sample: (ctx) => [sampleText(ctx.t("helpDocs.samples.text"))],
   },

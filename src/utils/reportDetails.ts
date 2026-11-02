@@ -24,7 +24,8 @@ import { projectCondition, tableFilterConditions } from "@/services/helpers/jmix
 import { chartRequests } from "./chart/chartQuery";
 import { normalizeChartBinding } from "./chart/chartTypes";
 import { getLocationSetup, isLocationAddress, isLocationMap, locationBoxes } from "./location/locationElement";
-import { getProjectValueLink, projectParamName, projectValueElements } from "./projectValue";
+import { getProjectValueLink, isProjectDateKey, linkParamName, PROJECT_DATE_FORMAT, projectValueElements } from "./projectValue";
+import { dayFormatPattern } from "./dateElement";
 import { collectBoundTables } from "./table/tableDocument";
 
 const PROJECT = "{{projectId}}";
@@ -124,15 +125,19 @@ function linkedValues(bands: Band[]) {
   for (const element of projectValueElements(bands)) {
     const link = getProjectValueLink(element);
     if (!link) continue;
-    const param = projectParamName(link.key);
+    const param = linkParamName(link);
     if (seen.has(param)) continue;
     seen.add(param);
     if (link.key.startsWith("more.")) {
       groups.userDefined.push({ param, code: link.key.slice(5), label: link.label });
       continue;
     }
-    const source = valueSource(link.key);
-    if (!source) continue;
+    const found = valueSource(link.key);
+    if (!found) continue;
+    // A date is written in the look its text uses, like the Date element
+    const source = isProjectDateKey(link.key)
+      ? { ...found, pattern: dayFormatPattern(link.format ?? PROJECT_DATE_FORMAT) }
+      : found;
     const group = link.key.startsWith("location.") ? groups.location : groups.details;
     group.push({ param, ...source });
   }

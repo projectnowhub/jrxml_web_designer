@@ -199,7 +199,8 @@
     "contentsPlain": "Klasik",
     "coverClassic": "Klasik",
     "location": "Lokasi",
-    "projectValue": "Butiran projek"
+    "projectValue": "Butiran projek",
+    "projectDate": "Tarikh projek"
   },
   "properties": {
     "title": "Tetapan",
@@ -1109,7 +1110,8 @@
       "sectionHeading": "Tajuk yang memulakan bahagian. Nombornya dikira sendiri, dan ia dipaparkan dalam isi kandungan.",
       "subHeading": "Tajuk yang lebih kecil dalam satu bahagian. Ia dipaparkan, berinden, dalam isi kandungan.",
       "location": "Peta dengan pin dan alamat. Taip tempat di bawah, salin daripada projek, atau klik peta kecil untuk meletakkan pin di situ.",
-      "projectValue": "Butiran projek templat. Ia menunjukkan nilai projek itu dan berubah bersamanya. Gayakan seperti teks lain."
+      "projectValue": "Butiran projek templat. Ia menunjukkan nilai projek itu dan berubah bersamanya. Gayakan seperti teks lain.",
+      "projectDate": "Tarikh projek templat. Ia menunjukkan tarikh projek itu dan berubah bersamanya. Pilih rupanya dan perkataan sebelumnya di bawah."
     },
     "firstTips": {
       "gotIt": "Faham",
@@ -2685,7 +2687,18 @@
     "userDefinedField": "Medan ditentukan pengguna",
     "projectSwitched": "Templat kini menggunakan {project}\nButiran, senarai, jadual, carta dan petanya mengikut projek baharu.",
     "projectMissing": "{project} tiada dalam senarai projek anda. Ia mungkin telah dipadam, atau akaun anda tidak dapat melihatnya. Pilih projek lain di atas.",
-    "tablesLoadFailed": "Senarai jadual tidak dapat dimuatkan."
+    "tablesLoadFailed": "Senarai jadual tidak dapat dimuatkan.",
+    "dropChoice": {
+      "title": "Paparkan “{source}” sebagai",
+      "table": "Jadual",
+      "tableDesc": "Setiap baris yang sepadan, dicetak sepenuhnya setiap kali laporan dijalankan.",
+      "chart": "Carta",
+      "chartDesc": "Kiraan atau jumlah barisnya sebagai carta bar, garis, pai atau lain-lain.",
+      "tableOnlyInDetail": "Jadual diletakkan dalam bahagian Butiran. Lepaskan di sana untuk jadual.",
+      "tableNotOnSpecialPage": "Jadual tidak boleh diletakkan pada halaman kulit atau kandungan."
+    },
+    "dragDate": "Seret ke halaman: menunjukkan tarikh projek ini dalam rupa yang anda pilih, dan mengikut projek templat",
+    "chartFromSource": "Carta daripada jadual ini: seret ikon ini ke halaman, atau klik untuk menambahnya"
   },
   "barcode": {
     "chooseType": "Pilih jenis kod bar",
@@ -3492,7 +3505,7 @@
         "title": "Jadual",
         "what": "Baris dan lajur, sama ada ditaip oleh anda atau diisi daripada data projek anda.",
         "when": "Taip sendiri untuk angka utama, ringkasan dan daftar. Guna data projek untuk senarai yang datang daripada projek anda, seperti perolehan atau bahan.",
-        "add": "Klik Jadual dalam Pustaka Elemen dan pilih Taip sendiri atau Guna data projek. Atau seret senarai (Pengurus Projek, Pasukan Projek, Syarikat, Kontrak) dari Data Laporan ke bahagian Butiran: ia menjadi jadual baris projek yang mengikut projek templat.",
+        "add": "Klik Jadual dalam Pustaka Elemen dan pilih Taip sendiri atau Guna data projek. Atau seret senarai (Pengurus Projek, Pasukan Projek, Syarikat, Kontrak) dari Data Laporan ke bahagian Butiran: ia menjadi jadual baris projek yang mengikut projek templat. Seret salah satu jadual projek (Perolehan, Risiko…) ke bahagian Butiran untuk jadual barisnya.",
         "work": [
           "Jadual yang ditaip: klik dua kali untuk menaip dalam sel; Tab bergerak ke sel seterusnya. Pemegang di atas lajur dan di sebelah baris memilih seluruh lajur atau baris; kemudian Sisip di atas / di bawah / di kiri / di kanan, Padam, Gabung dan Pisah ada dalam Tetapan Asas dan pada klik kanan. Warna, huruf tebal, penjajaran dan saiz teks sel yang dipilih ada dalam Tetapan Gaya.",
           "Saiz: seret garisan antara lajur untuk menukar lebarnya, dan garisan di bawah baris untuk menukar ketinggiannya. Jadual yang ditaip: buka (klik dua kali) dan gunakan garisan pendek antara huruf di atasnya dan nombor di sebelahnya. Jadual data projek: pilih jadual, kemudian seret garisan ungu padanya (baris tajuk dan baris masing-masing mempunyai satu ketinggian), atau seret pemegang atas atau bawahnya untuk meninggikan atau merendahkan tajuk dan setiap baris bersama-sama.",
@@ -3512,7 +3525,7 @@
         "title": "Carta",
         "what": "Carta yang dilukis daripada angka projek anda: bar, garis, pai, donut, tolok dan banyak lagi.",
         "when": "Untuk menunjukkan aliran mengikut masa, membandingkan kategori, atau menunjukkan bahagian daripada keseluruhan.",
-        "add": "Klik Carta dalam Pustaka Elemen dan pilih jenis, atau seretnya untuk mendapatkan carta bar.",
+        "add": "Klik Carta dalam Pustaka Elemen dan pilih jenis, atau seretnya untuk mendapatkan carta bar. Atau gunakan ikon carta di sebelah salah satu jadual projek dalam Data Laporan: seretnya ke halaman (atau klik) dan persediaan carta dibuka dengan jadual itu.",
         "work": [
           "Klik dua kali pada carta (atau Sediakan data) untuk memilih projek, data dan apa yang hendak ditunjukkan, dengan pratonton langsung.",
           "Sehingga datanya disediakan, carta menunjukkan angka contoh dengan lencana.",
@@ -3911,6 +3924,14 @@
         "title": "Butiran projek",
         "text": "Butiran projek yang ditunjukkan oleh teks ini. Ia sentiasa menunjukkan nilai projek templat, jadi templat yang sama mencetak nama, status atau tarikh yang betul untuk mana-mana projek. Pilih projek lain di atas untuk melihatnya berubah.",
         "example": "Seret Status dari Data Laporan: ia menunjukkan “Aktif” untuk satu projek dan “Ditangguhkan” untuk projek lain."
+      },
+      "projectDateLook": {
+        "title": "Rupanya",
+        "text": "Gaya tarikh, contohnya 22 May 2026 atau 22/05/2026. Tarikh itu sendiri sentiasa datang daripada projek."
+      },
+      "projectDateBefore": {
+        "title": "Perkataan sebelum tarikh",
+        "text": "Teks yang dicetak di hadapan tarikh, contohnya “Tarikh mula:”. Tiada apa yang dicetak apabila projek tiada tarikh."
       }
     }
   },
@@ -4203,7 +4224,11 @@
       "noValue": "Projek ini tiada nilai untuknya, jadi tiada apa yang dicetak.",
       "follows": "Pilih projek lain di atas dan ia menunjukkan nilai projek itu. Laporan mencetak nilai projek yang ia dibuat untuknya.",
       "toText": "Taip teks saya sendiri",
-      "toTextHint": "Mengekalkan apa yang ditunjukkan sekarang sebagai teks biasa yang tidak lagi mengikut projek."
+      "toTextHint": "Mengekalkan apa yang ditunjukkan sekarang sebagai teks biasa yang tidak lagi mengikut projek.",
+      "lookTitle": "Rupanya",
+      "beforeTitle": "Perkataan sebelum tarikh",
+      "beforePlaceholder": "Contohnya: Tarikh mula:",
+      "noWords": "Tiada perkataan"
     }
   },
   "projectList": {

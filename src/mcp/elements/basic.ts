@@ -10,8 +10,18 @@ import { getImageName, getImageShape, IMAGE_SHAPES, setImageName, setImageShape 
 import { hasProperty, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY, sectionHeadingParts } from "@/utils/contentsList";
 import { headingNumberPart, isAutoNumbered, setAutoNumbered } from "@/utils/headingSync";
 import { isPagination } from "@/utils/paginationPresets";
-import { isDateElement } from "@/utils/dateElement";
-import { getProjectValueLink, isLinkableField, isProjectValue, linkProjectValue, projectValueOf, unlinkProjectValue } from "@/utils/projectValue";
+import { DAY_FORMATS, isDateElement } from "@/utils/dateElement";
+import {
+  getProjectValueLink,
+  isLinkableField,
+  isProjectDateKey,
+  isProjectValue,
+  linkProjectValue,
+  PROJECT_DATE_FORMAT,
+  projectValueOf,
+  setProjectValueLink,
+  unlinkProjectValue,
+} from "@/utils/projectValue";
 import { cachedProjectDetails } from "@/queries/projectQueries";
 import { useReportStore } from "@/stores/report";
 import type { ProjectField } from "@/types/dataSource";
@@ -72,6 +82,16 @@ const TEXT_PROPS = {
     description:
       "Link the text to a detail of the template's project: a key from get_report_data with projectId (details[].key or moreDetails[].key, e.g. \"name\", \"status\", \"location.city\", \"more.BANK_NAME\"). The text then shows that project's value and follows the template's project (text is not needed); \"\" turns it back into plain text",
   },
+  dateLook: {
+    type: "string" as const,
+    enum: DAY_FORMATS.map((f) => f.id),
+    description:
+      "For projectValue \"startDate\" / \"finishDate\": how the date is written (dayMonthYear 22 May 2026, dayShortMonthYear 22 May 2026 short month (default), numeric 22/05/2026, weekday Friday, 22 May 2026, iso 2026-05-22, monthYear May 2026)",
+  },
+  dateWords: {
+    type: "string" as const,
+    description: "For projectValue \"startDate\" / \"finishDate\": words printed before the date, e.g. \"Start date:\" (\"\" for none)",
+  },
   ...TEXT_STYLE_PROPS,
   grow: { type: "boolean" as const, description: "Grows downward in the PDF when the text is longer than the box (for paragraphs)" },
   rotation: { type: "string" as const, enum: ["None", "Left", "Right", "UpsideDown"], description: "Turned text" },
@@ -92,6 +112,26 @@ function applyProjectLink(element: TextFieldElement, key: string): void {
   linkProjectValue(element, field, projectValueOf(cachedProjectDetails(useReportStore().reportProperties.projects?.[0]?.id), key));
 }
 
+// A linked start / finish date's look and words before it, as its panel sets them
+function applyProjectDate(element: TextFieldElement, spec: ElementSpec): void {
+  const link = isProjectValue(element) ? getProjectValueLink(element) : null;
+  if (!link || !isProjectDateKey(link.key)) {
+    throw new SpecError('dateLook / dateWords: only for a text linked to projectValue "startDate" or "finishDate"');
+  }
+  const format = has(spec, "dateLook") ? String(spec.dateLook) : link.format;
+  if (format && !DAY_FORMATS.some((f) => f.id === format)) {
+    throw new SpecError(`dateLook: "${format}" is not one of ${DAY_FORMATS.map((f) => f.id).join(", ")}`);
+  }
+  const before = has(spec, "dateWords") ? String(spec.dateWords ?? "") : link.before;
+  const { format: _f, before: _b, ...rest } = link;
+  setProjectValueLink(element, {
+    ...rest,
+    value: projectValueOf(cachedProjectDetails(useReportStore().reportProperties.projects?.[0]?.id), link.key, format) ?? link.value,
+    ...(format && format !== PROJECT_DATE_FORMAT ? { format } : {}),
+    ...(before?.trim() ? { before } : {}),
+  });
+}
+
 // The detail behind a key, named as Report Data names it
 function linkableField(key: string): ProjectField | null {
   const details = cachedProjectDetails(useReportStore().reportProperties.projects?.[0]?.id);
@@ -103,6 +143,7 @@ function linkableField(key: string): ProjectField | null {
 function applyTextSettings(element: TextFieldElement, spec: ElementSpec, ctx: KindContext): void {
   applyGeometry(element, spec);
   if (has(spec, "projectValue")) applyProjectLink(element, String(spec.projectValue ?? ""));
+  if (has(spec, "dateLook") || has(spec, "dateWords")) applyProjectDate(element, spec);
   // New words for a linked detail: it becomes plain text first
   else if (has(spec, "text") && isProjectValue(element)) unlinkProjectValue(element);
   if (!isProjectValue(element) && (has(spec, "text") || has(spec, "rich"))) {
@@ -145,6 +186,8 @@ const describeText = (e: DesignElement) =>
   defined({
     text: plainText(e),
     projectValue: isProjectValue(e) ? getProjectValueLink(e)?.key : undefined,
+    dateLook: isProjectValue(e) && isProjectDateKey(getProjectValueLink(e)?.key ?? "") ? getProjectValueLink(e)?.format ?? PROJECT_DATE_FORMAT : undefined,
+    dateWords: isProjectValue(e) ? getProjectValueLink(e)?.before : undefined,
     rich: isRich(e),
     ...describeTextStyle(e),
     grow: e.textAdjust === "StretchHeight",

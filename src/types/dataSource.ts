@@ -34,6 +34,9 @@ export interface ProjectField {
 export interface ProjectDetails extends ProjectSummary {
   fields: ProjectField[];
   values: Record<string, string | null>;
+  // The start / finish dates as yyyy-MM-dd, for a linked date shown in the
+  // look the user chose (values holds them as Report Data shows them)
+  dates?: Record<string, string | null>;
   // Where the project is, as in the CDP project form (Location step)
   location?: ProjectLocation | null;
   // The project's lists (manager, team, companies, contracts),
@@ -498,4 +501,12 @@ export interface AggregateResult {
   totalValue: number | null;
   totalCount: number;
   truncated: boolean;
+}
+
+// A project's table named by Report Data (its chart icon clicked)
+export interface ReportSourceRef {
+  projectId: string;
+  projectName: string;
+  sourceId: string;
+  sourceName: string;
 }
