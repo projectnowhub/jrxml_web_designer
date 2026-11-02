@@ -6,9 +6,10 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
-  // Configure the base path, for compatibility with GitHub Pages
-  // If your repository name is not pdf_template_designer, change this to your actual repository name
-  base: '',
+  // Files load from the site's root ("/assets/…"), so a page opened deeper in
+  // the app (/designer/<id>, refreshed or linked) still finds them; a relative
+  // base made the browser look in /designer/assets/… and the page stayed blank
+  base: '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')

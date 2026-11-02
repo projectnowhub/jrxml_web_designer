@@ -21,7 +21,8 @@ export async function loadXsdSchema(): Promise<string> {
   }
 
   try {
-    const response = await fetch('./jasperreport.xsd');
+    // From the site's root: on /designer/<id> a relative path would miss it
+    const response = await fetch(`${import.meta.env.BASE_URL}jasperreport.xsd`);
     if (!response.ok) {
       throw new Error(`Failed to load XSD file: ${response.status}`);
     }
