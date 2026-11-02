@@ -334,6 +334,7 @@
           :drop-target-blocked="dropTargetBlocked"
           :background-drop-target="backgroundDropTarget"
           :is-dragging-or-resizing="isDraggingOrResizing"
+          :drag-source-page="draggingInfo?.sourcePageIndex ?? null"
           :horizontal-ruler-ticks="horizontalRulerTicks"
           :horizontal-ruler-labels="horizontalRulerLabels"
           :vertical-ruler-ticks="verticalRulerTicks"
@@ -965,6 +966,7 @@ import {
 } from "../utils/location/locationElement";
 import { ensureLocationMaps, refreshLocationMaps } from "../utils/location/locationMaps";
 import { buildChartElement } from "../utils/chart/chartElement";
+import { startDragScrolling, type DragScrollSession } from "../utils/dragAutoScroll";
 import {
   createElement,
   getAllElements as getAllElementConfigs,
@@ -4151,6 +4153,8 @@ watch(
 // Cache the event handler functions to avoid recreating them
 let cachedMouseMoveHandler: ((e: MouseEvent) => void) | null = null;
 let cachedMouseUpHandler: ((e: MouseEvent) => void) | null = null;
+// The pages scrolling under the element being moved (wheel or edge auto-scroll)
+let elementDragScroll: DragScrollSession | null = null;
 
 // Detect target band and sheet under coordinates (combines elementFromPoint with geometric fallback)
 // The page sheet and band at a screen point, found from their positions on screen.
@@ -4221,12 +4225,17 @@ const startDraggingInsideBox = (
   saveStateToHistory();
   isDraggingOrResizing.value = true;
 
+  let lastMove: MouseEvent = event;
+  // The pages may scroll under the item (wheel, or the pointer at an edge)
+  const scroll = startDragScrolling({ onScroll: () => frameMove(lastMove) });
+
   const onMove = (e: MouseEvent) => {
     const options = getSnapOptions(e, snapContext.offset);
+    const scrolled = scroll.offset();
     const snapped = snapMove(
       {
-        x: origX + (e.clientX - startX) / zoom,
-        y: origY + (e.clientY - startY) / zoom,
+        x: origX + (e.clientX - startX + scrolled.x) / zoom,
+        y: origY + (e.clientY - startY + scrolled.y) / zoom,
         width: element.width,
         height: element.height,
       },
@@ -4239,11 +4248,17 @@ const startDraggingInsideBox = (
     showSnapGuides(snapContext, snapped.guides, options);
   };
   const frameMove = throttleToAnimationFrame(onMove);
+  const onMouseMove = (e: MouseEvent) => {
+    lastMove = e;
+    scroll.pointer(e.clientX, e.clientY);
+    frameMove(e);
+  };
 
   const onUp = () => {
     frameMove.flush();
+    scroll.stop();
     clearAlignmentLines();
-    document.removeEventListener("mousemove", frameMove);
+    document.removeEventListener("mousemove", onMouseMove);
     document.removeEventListener("mouseup", onUp);
     isDraggingOrResizing.value = false;
     isJustDraggedOrResized.value = true;
@@ -4253,7 +4268,7 @@ const startDraggingInsideBox = (
     updateJRXML();
   };
 
-  document.addEventListener("mousemove", frameMove);
+  document.addEventListener("mousemove", onMouseMove);
   document.addEventListener("mouseup", onUp);
 };
 
@@ -4360,6 +4375,7 @@ const startDragging = (
       document.removeEventListener("mouseup", cachedMouseUpHandler);
       cachedMouseUpHandler = null;
     }
+    elementDragScroll?.stop();
 
     // What the element can snap to; the other elements stay put during the drag
     const snapContext = buildSnapContext(
@@ -4401,11 +4417,13 @@ const startDragging = (
           if (currentBand && currentElement) {
             const currentZoom = zoomLevel.value;
 
-            // Direct delta from starting mouse position (1:1 cursor following, zero jitter)
+            // Direct delta from starting mouse position (1:1 cursor following,
+            // zero jitter), plus how far the pages scrolled under it meanwhile
+            const scrolled = elementDragScroll?.offset() ?? { x: 0, y: 0 };
             const deltaX =
-              (e.clientX - draggingInfo.value.startX) / currentZoom;
+              (e.clientX - draggingInfo.value.startX + scrolled.x) / currentZoom;
             const deltaY =
-              (e.clientY - draggingInfo.value.startY) / currentZoom;
+              (e.clientY - draggingInfo.value.startY + scrolled.y) / currentZoom;
 
             // Snap: line up with other elements first, else the grid
             const snapOptions = getSnapOptions(e, snapContext.offset);
@@ -4536,11 +4554,22 @@ const startDragging = (
         }
       };
       const frameMove = throttleToAnimationFrame(applyDragMove);
-      cachedMouseMoveHandler = frameMove;
+      // The wheel or the pointer at an edge scrolls the pages; the element
+      // follows the pointer over the pages that come into view
+      let lastMove: MouseEvent = event;
+      const dragScroll = startDragScrolling({ onScroll: () => frameMove(lastMove) });
+      elementDragScroll = dragScroll;
+      cachedMouseMoveHandler = (e: MouseEvent) => {
+        lastMove = e;
+        dragScroll.pointer(e.clientX, e.clientY);
+        frameMove(e);
+      };
 
       cachedMouseUpHandler = (e: MouseEvent) => {
         // Apply the last mouse move before reading the final position
         frameMove.flush();
+        dragScroll.stop();
+        if (elementDragScroll === dragScroll) elementDragScroll = null;
         if (draggingInfo.value) {
           const currentBand = bands.value[draggingInfo.value.bandIndex];
           let currentElement: DesignElement | undefined;
@@ -7517,11 +7546,21 @@ const startResizingElement = (
 
       showSnapGuides(snapContext, snapGuides, snapOptions);
     };
-    const handleMouseMove = throttleToAnimationFrame(applyResizeMove);
+    const frameResize = throttleToAnimationFrame(applyResizeMove);
+    // The wheel or the pointer at an edge scrolls the pages; the moving edge
+    // follows the pointer (applyResizeMove reads the page's place every time)
+    let lastMove: MouseEvent = event;
+    const resizeScroll = startDragScrolling({ onScroll: () => frameResize(lastMove) });
+    const handleMouseMove = (e: MouseEvent) => {
+      lastMove = e;
+      resizeScroll.pointer(e.clientX, e.clientY);
+      frameResize(e);
+    };
 
     const handleMouseUp = () => {
       // Apply the last mouse move, then clear the alignment lines
-      handleMouseMove.flush();
+      frameResize.flush();
+      resizeScroll.stop();
       clearAlignmentLines();
 
       resizingInfo.value = null;

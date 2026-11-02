@@ -110,6 +110,7 @@
             v-for="pIndex in totalPages"
             :key="'page-sheet-wrapper-' + pIndex"
             class="page-sheet-wrapper"
+            :class="{ 'is-drag-source': dragSourcePage === pIndex - 1 }"
             :style="{
               width: paperWidth * zoomLevel + 'px',
               height: paperHeight * zoomLevel + 'px',
@@ -547,6 +548,7 @@ import DragFeedbackLayer from "./DragFeedbackLayer.vue";
 import { BAND_CONSTANTS } from "@/constants/constants";
 import { getBandDisplayName } from "@/utils/bandUtils";
 import { buildGridPath } from "@/utils/rulerUtils";
+import { startDragScrolling, type DragScrollSession } from "@/utils/dragAutoScroll";
 import type { Band } from "@/types";
 import type { DragFeedback } from "@/composables/useDragFeedback";
 import type { AlignmentGuideLines } from "@/composables/useSnapAlignment";
@@ -559,6 +561,8 @@ const { t } = useI18n();
 interface Props {
   highlightedBandIndex: number | null;
   isDraggingOrResizing: boolean;
+  // The page an element is being dragged from (null when nothing is dragged)
+  dragSourcePage?: number | null;
   // The highlighted band can't take the element being dragged (too tall)
   dropTargetBlocked?: boolean;
   // The Page Border tile is being dragged over the page: highlight the Background band
@@ -579,6 +583,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   highlightedBandIndex: null,
   isDraggingOrResizing: false,
+  dragSourcePage: null,
   horizontalRulerTicks: () => [],
   horizontalRulerLabels: () => [],
   verticalRulerTicks: () => [],
@@ -1080,6 +1085,36 @@ const notePageClicked = (event: MouseEvent) => {
   if (sheetPage !== undefined) selectionStore.lastClickedPageIndex = parseInt(sheetPage, 10);
 };
 
+// Drags the browser runs itself (library tiles, Report Data, picture files):
+// the pages scroll while the pointer is held near an edge of the page area
+let nativeDragScroll: DragScrollSession | null = null;
+const handleNativeDragOver = (event: DragEvent) => {
+  // Only over the canvas (pages and rulers): a drag in a popup or a side panel
+  // never scrolls the pages behind it
+  const over = event.target instanceof Node && designerCanvasRef.value?.contains(event.target);
+  if (!over) {
+    endNativeDragScroll();
+    return;
+  }
+  nativeDragScroll ??= startDragScrolling({ native: true });
+  nativeDragScroll.pointer(event.clientX, event.clientY);
+};
+const endNativeDragScroll = () => {
+  nativeDragScroll?.stop();
+  nativeDragScroll = null;
+};
+onMounted(() => {
+  document.addEventListener("dragover", handleNativeDragOver, true);
+  document.addEventListener("drop", endNativeDragScroll, true);
+  document.addEventListener("dragend", endNativeDragScroll, true);
+});
+onBeforeUnmount(() => {
+  endNativeDragScroll();
+  document.removeEventListener("dragover", handleNativeDragOver, true);
+  document.removeEventListener("drop", endNativeDragScroll, true);
+  document.removeEventListener("dragend", endNativeDragScroll, true);
+});
+
 // Lifecycle hooks
 onMounted(() => {
   // Add mouse wheel event listener
@@ -1281,6 +1316,22 @@ onBeforeUnmount(() => {
 .page-sheet-wrapper {
   flex-shrink: 0;
   box-sizing: border-box;
+}
+
+/* The page an element is dragged from: drawn over the other pages and not
+   clipped, so the element stays in view when it is dragged onto another page */
+.page-sheet-wrapper.is-drag-source {
+  z-index: 3;
+}
+
+.page-sheet-wrapper.is-drag-source > .paper {
+  overflow: visible;
+}
+
+/* The dragged element (selected) over the other elements of its page, which
+   all share the dragging z-index */
+.page-sheet-wrapper.is-drag-source :deep(.design-element.selected.is-dragging) {
+  z-index: 101;
 }
 
 .paper {

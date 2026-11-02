@@ -56,6 +56,7 @@ export const SHORTCUT_GROUPS: { id: ShortcutGroupId; rows: ShortcutRow[] }[] = [
       { id: "keepRatio", combos: [["Shift", "mouse:dragHandle"]] },
       { id: "square", combos: [["Alt", "mouse:dragHandle"]] },
       { id: "noSnap", combos: [["Mod", "mouse:drag"]] },
+      { id: "dragScroll", combos: [["mouse:drag", "mouse:wheel"], ["mouse:dragToEdge"]] },
       { id: "straightLine", combos: [["Shift", "mouse:dragLineEnd"]] },
       { id: "fitText", combos: [["mouse:doubleClickEdge"]] },
       { id: "rotate", combos: [["mouse:rotateButton"]] },
