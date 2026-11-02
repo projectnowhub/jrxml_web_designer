@@ -61,6 +61,19 @@
                 <ArrowDownUp :size="10" aria-hidden="true" />{{ s }}
               </span>
             </div>
+            <div v-if="tableRows[entry.binding.datasetName]?.failed" class="table-error" role="alert">
+              <CircleAlert :size="14" aria-hidden="true" />
+              <div>
+                <strong>{{ t("pdfPreview.tables.loadFailed") }}</strong>
+                <span v-if="tableRows[entry.binding.datasetName]?.error" class="table-error-details" :title="tableRows[entry.binding.datasetName]?.error">
+                  {{ tableRows[entry.binding.datasetName]?.error }}
+                </span>
+              </div>
+              <n-button size="tiny" secondary @click="loadRows(entry.binding)">
+                <template #icon><RefreshCw :size="12" /></template>
+                {{ t("pdfPreview.tryAgain") }}
+              </n-button>
+            </div>
             <div class="card-grid">
               <DataGrid
                 :columns="entry.binding.columns"
@@ -95,7 +108,31 @@
             {{ t("pdfPreview.generateBtn") }}
           </n-button>
         </div>
-        <iframe ref="iframeRef" class="pdf-iframe" :src="previewUrl"></iframe>
+        <div class="pdf-stage">
+          <iframe v-show="pdfState === 'ready'" ref="iframeRef" class="pdf-iframe" :src="previewUrl"></iframe>
+          <!-- Being made: a page drawn as skeletons -->
+          <div v-if="pdfState === 'building'" class="pdf-status" role="status">
+            <div class="pdf-skeleton-page" aria-hidden="true">
+              <SkeletonBlock width="55%" height="16px" />
+              <SkeletonBlock width="35%" height="10px" />
+              <SkeletonBlock width="100%" height="90px" radius="8px" />
+              <SkeletonBlock v-for="w in SKELETON_LINES" :key="w" :width="`${w}%`" height="9px" radius="4px" />
+            </div>
+            <strong>{{ t("pdfPreview.building") }}</strong>
+            <span>{{ t("pdfPreview.buildingHint") }}</span>
+          </div>
+          <!-- Couldn't be made: what the server said, and Try again -->
+          <div v-else-if="pdfState === 'failed'" class="pdf-status is-error" role="alert">
+            <span class="status-icon"><CircleAlert :size="22" aria-hidden="true" /></span>
+            <strong>{{ t("pdfPreview.failedTitle") }}</strong>
+            <span>{{ pdfError ? t("pdfPreview.failedServerSaid") : t("pdfPreview.failedHint") }}</span>
+            <code v-if="pdfError" class="error-details">{{ pdfError }}</code>
+            <n-button type="primary" size="small" @click="generatePreview">
+              <template #icon><RefreshCw :size="13" /></template>
+              {{ t("pdfPreview.tryAgain") }}
+            </n-button>
+          </div>
+        </div>
       </div>
     </div>
   </BaseModal>
@@ -106,6 +143,7 @@ import {
   ArrowDownUp,
   ChevronLeft,
   ChevronRight,
+  CircleAlert,
   Database,
   Funnel,
   Info,
@@ -116,6 +154,7 @@ import {
 import BaseModal from "./BaseModal.vue";
 import DataGrid from "../common/DataGrid.vue";
 import PreviewChartCard from "./PreviewChartCard.vue";
+import SkeletonBlock from "../common/SkeletonBlock.vue";
 import { ref, computed, watch, onUnmounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
@@ -131,13 +170,13 @@ import { TABLE_ROWS_LIMIT } from "@/constants/reportDataConstants";
 import { collectBoundTables } from "@/utils/table/tableDocument";
 import { activeFilters, describeFilter, describeSorts } from "@/utils/table/summary";
 import { resolveLook } from "@/utils/table/tableThemes";
-import notification from "../../utils/notification";
 
 const { t, locale } = useI18n();
 
 const props = defineProps<{
   visible: boolean;
-  jrxmlContent: string;
+  // Gets the report ready (charts, barcodes, maps, project) and gives its JRXML
+  prepare: () => Promise<string>;
   bands: Band[];
 }>();
 const report = useReportStore();
@@ -154,6 +193,11 @@ const showTables = ref(true);
 const isGenerating = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 const previewUrl = ref<string>("about:blank");
+// The PDF: being made, shown, or couldn't be made (with what went wrong)
+const pdfState = ref<"building" | "ready" | "failed">("building");
+const pdfError = ref("");
+// The skeleton page's text lines (their widths, in %)
+const SKELETON_LINES = [92, 86, 95, 70, 88, 60];
 let previewController: AbortController | null = null;
 
 const tables = computed(() =>
@@ -198,6 +242,8 @@ interface TableRowsState {
   totals: TableTotals;
   loading: boolean;
   failed: boolean;
+  // What went wrong, as the server said it
+  error?: string;
 }
 const tableRows = reactive<Record<string, TableRowsState>>({});
 
@@ -211,21 +257,27 @@ function rowCountText(datasetName: string): string {
   return t("dataTable.config.rowCount", state.rows.length);
 }
 
+// The message to show for a failure: the server's own words when it sent some
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message.trim() : "";
+}
+
+// One table's rows and totals (also its Try again)
+async function loadRows(binding: TableDataBinding): Promise<void> {
+  const state: TableRowsState = { rows: [], totalCount: 0, totals: {}, loading: true, failed: false };
+  tableRows[binding.datasetName] = state;
+  try {
+    const [result, totals] = await Promise.all([fetchTableRows(binding, TABLE_ROWS_LIMIT), fetchTableTotals(binding)]);
+    tableRows[binding.datasetName] = { ...state, rows: result.rows, totalCount: result.totalCount, totals, loading: false };
+  } catch (error) {
+    tableRows[binding.datasetName] = { ...state, loading: false, failed: true, error: errorText(error) };
+  }
+}
+
 // Every table's rows, fetched side by side; one failing doesn't stop the others
 async function loadAllRows(): Promise<void> {
   Object.keys(tableRows).forEach((k) => delete tableRows[k]);
-  await Promise.all(
-    tables.value.map(async ({ binding }) => {
-      const state: TableRowsState = { rows: [], totalCount: 0, totals: {}, loading: true, failed: false };
-      tableRows[binding.datasetName] = state;
-      try {
-        const [result, totals] = await Promise.all([fetchTableRows(binding, TABLE_ROWS_LIMIT), fetchTableTotals(binding)]);
-        tableRows[binding.datasetName] = { ...state, rows: result.rows, totalCount: result.totalCount, totals, loading: false };
-      } catch {
-        tableRows[binding.datasetName] = { ...state, loading: false, failed: true };
-      }
-    }),
-  );
+  await Promise.all(tables.value.map(({ binding }) => loadRows(binding)));
 }
 
 function setPreviewUrl(url: string) {
@@ -241,19 +293,26 @@ async function generatePreview() {
   const controller = new AbortController();
   previewController = controller;
   isGenerating.value = true;
+  pdfState.value = "building";
+  pdfError.value = "";
 
   try {
-    // The JRXML and details.json: the report server fetches the data itself
+    // The report made ready, then the JRXML and details.json: the report server fetches the data itself
+    const jrxml = await props.prepare();
+    if (controller.signal.aborted) return;
     const details = templateDetails(props.bands, report.reportProperties.projects?.[0]);
-    const pdf = await generatePdf({ jrxml: props.jrxmlContent, details }, controller.signal);
+    const pdf = await generatePdf({ jrxml, details }, controller.signal);
     if (controller.signal.aborted) return;
     setPreviewUrl(URL.createObjectURL(pdf));
+    pdfState.value = "ready";
   } catch (error) {
-    if ((error as Error).name === "AbortError") return;
+    if ((error as Error).name === "AbortError" || controller.signal.aborted) return;
     // 401 is already handled by apiClient (redirect to login)
     if (error instanceof ReportGenerationError && error.status === 401) return;
-    // Server messages are shown as sent; the fallback is translated
-    notification.error((error as Error).message || t("pdfPreview.generationFailed"));
+    // Shown in the PDF area, with the server's own words when it sent some
+    console.error("Failed to preview PDF:", error);
+    pdfError.value = errorText(error);
+    pdfState.value = "failed";
   } finally {
     if (previewController === controller) {
       previewController = null;
@@ -467,9 +526,118 @@ watch(
   justify-content: flex-end;
 }
 
+.pdf-stage {
+  position: relative;
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  background: #f6f5fa;
+}
+
 .pdf-iframe {
   flex: 1;
   width: 100%;
   border: none;
+  background: #fff;
+}
+
+.pdf-status {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px;
+  text-align: center;
+  color: #6e6a80;
+  font-size: 12.5px;
+}
+
+.pdf-status strong {
+  color: #1c1b26;
+  font-size: 15px;
+}
+
+.pdf-skeleton-page {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(300px, 70%);
+  aspect-ratio: 1 / 1.414;
+  margin-bottom: 14px;
+  padding: 26px 24px;
+  border: 1px solid rgba(28, 27, 38, 0.09);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(23, 20, 44, 0.06);
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.status-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: rgba(229, 72, 77, 0.1);
+  color: #e5484d;
+}
+
+.error-details {
+  max-width: min(560px, 90%);
+  max-height: 140px;
+  margin: 6px 0 10px;
+  padding: 8px 12px;
+  overflow: auto;
+  border: 1px solid rgba(229, 72, 77, 0.25);
+  border-radius: 8px;
+  background: #fff;
+  color: #b4232a;
+  font-size: 11.5px;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.table-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(229, 72, 77, 0.25);
+  border-radius: 8px;
+  background: rgba(229, 72, 77, 0.06);
+  color: #e5484d;
+  font-size: 12px;
+}
+
+.table-error > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.table-error > div {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.table-error strong {
+  color: #b4232a;
+}
+
+.table-error-details {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #77718a;
+  font-size: 11px;
+  word-break: break-word;
 }
 </style>

@@ -638,7 +638,12 @@
       "showPanel": "Tunjukkan jadual",
       "hidePanel": "Sembunyikan jadual"
     },
-    "generationFailed": "Pratonton tidak dapat dibuat\nSila cuba lagi sebentar lagi.",
+    "building": "Sedang membuat PDF anda…",
+    "buildingHint": "Pelayan laporan sedang membinanya. Ini mungkin mengambil masa beberapa saat.",
+    "failedTitle": "PDF tidak dapat dibuat",
+    "failedServerSaid": "Pelayan laporan memberitahu:",
+    "failedHint": "Sila cuba lagi sebentar lagi.",
+    "tryAgain": "Cuba lagi",
     "errors": {
       "httpFailure": "Penjanaan PDF gagal (HTTP {status})",
       "invalidJson": "Pelayan mengembalikan JSON yang tidak sah dan bukannya PDF",
@@ -648,7 +653,8 @@
     "tables": {
       "readOnly": "Baca sahaja — edit dalam pereka",
       "edit": "Edit dalam pereka",
-      "rowsCapped": "{shown} baris pertama daripada {count}"
+      "rowsCapped": "{shown} baris pertama daripada {count}",
+      "loadFailed": "Baris jadual ini tidak dapat dimuatkan"
     },
     "data": {
       "title": "Data dalam laporan ini",
@@ -1670,7 +1676,6 @@
     "pageAdded": "Halaman {page} ditambah",
     "pageDeleted": "Halaman {page} dipadam",
     "jrxmlRegenerated": "JRXML telah dijana semula",
-    "previewFailed": "Pratonton tidak dapat dibuat\nSila cuba lagi sebentar lagi.",
     "bandLimits": {
       "noSpace": "Tiada ruang untuk meninggikan {band}\nButiran sudah pada saiz terkecilnya ({height}px).",
       "maxReached": "{band} sudah penuh\nNaikkan maksimumnya di Tetapan Templat → Ketinggian Bahagian.",

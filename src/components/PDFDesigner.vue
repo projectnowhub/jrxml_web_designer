@@ -548,7 +548,7 @@
     <!-- PDF preview modal -->
     <PdfPreviewModal
       :visible="showPdfPreview"
-      :jrxml-content="jrxmlContent"
+      :prepare="prepareReportForPreview"
       :bands="bands"
       @update:visible="showPdfPreview = $event"
       @edit-table="openTableConfigByUuid"
@@ -6064,37 +6064,37 @@ const regenerateJRXML = (): void => {
   notification.info(t("editor.jrxmlRegenerated"));
 };
 
-// Open the PDF preview (charts drawn with their numbers, barcodes sized, first)
-const openPdfPreview = async (): Promise<void> => {
+// Open the PDF preview at once; the popup waits for the report (prepareReportForPreview)
+// while it shows that the PDF is being made
+const openPdfPreview = (): void => {
   helpStore.noteGuideAction("preview");
   flushAutoSave();
-  try {
-    await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureTemplateProject(reportProjects.value[0]?.id)]);
-    updateJRXML();
-    if (!jrxmlContent.value) {
-      // Generate the JRXML content directly, without downloading it
-      const content = generateJRXMLContent(
-        reportStore.propertiesForJrxml(),
-        bands.value,
-        reportFields.value,
-        reportParameters.value,
-        subDatasets.value,
-        tableStyles.value,
-        reportVariables.value,
-        [],
-        reportGroups.value,
-        totalPages.value,
-      );
-      jrxmlContent.value = content;
-    }
-    showPdfPreview.value = false;
-    nextTick(() => {
-      showPdfPreview.value = true;
-    });
-  } catch (error) {
-    console.error("Failed to preview PDF:", error);
-    notification.error(t("editor.previewFailed"));
+  showPdfPreview.value = false;
+  nextTick(() => {
+    showPdfPreview.value = true;
+  });
+};
+
+// The JRXML the preview sends: charts drawn with their numbers, barcodes sized,
+// maps drawn and the template's project read first (a failure is shown in the popup)
+const prepareReportForPreview = async (): Promise<string> => {
+  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureTemplateProject(reportProjects.value[0]?.id)]);
+  updateJRXML();
+  if (!jrxmlContent.value) {
+    jrxmlContent.value = generateJRXMLContent(
+      reportStore.propertiesForJrxml(),
+      bands.value,
+      reportFields.value,
+      reportParameters.value,
+      subDatasets.value,
+      tableStyles.value,
+      reportVariables.value,
+      [],
+      reportGroups.value,
+      totalPages.value,
+    );
   }
+  return jrxmlContent.value;
 };
 
 // Save the edited JRXML content

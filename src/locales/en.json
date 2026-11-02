@@ -638,7 +638,12 @@
       "showPanel": "Show tables",
       "hidePanel": "Hide tables"
     },
-    "generationFailed": "Preview couldn't be made\nPlease try again in a moment.",
+    "building": "Making your PDF…",
+    "buildingHint": "The report server is building it. This can take a few seconds.",
+    "failedTitle": "The PDF couldn't be made",
+    "failedServerSaid": "The report server said:",
+    "failedHint": "Please try again in a moment.",
+    "tryAgain": "Try again",
     "errors": {
       "httpFailure": "PDF generation failed (HTTP {status})",
       "invalidJson": "The server returned invalid JSON instead of a PDF",
@@ -648,7 +653,8 @@
     "tables": {
       "readOnly": "Read-only — edit in the designer",
       "edit": "Edit in designer",
-      "rowsCapped": "first {shown} of {count} rows"
+      "rowsCapped": "first {shown} of {count} rows",
+      "loadFailed": "This table's rows couldn't be loaded"
     },
     "data": {
       "title": "Data in this report",
@@ -1670,7 +1676,6 @@
     "pageAdded": "Page {page} added",
     "pageDeleted": "Page {page} deleted",
     "jrxmlRegenerated": "JRXML has been regenerated",
-    "previewFailed": "Preview couldn't be made\nPlease try again in a moment.",
     "bandLimits": {
       "noSpace": "No room to make {band} taller\nDetail is already at its smallest ({height}px).",
       "maxReached": "{band} is full\nRaise its maximum in Template Settings → Section Heights.",
