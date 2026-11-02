@@ -276,6 +276,7 @@
           @add-element="handleElementDoubleClick"
           @insert-page-number="addPageNumber"
           @insert-chart="addChart"
+          @add-chart-from-source="addChartFromSource"
           @insert-barcode="addBarcode"
           @insert-table="addTable"
           @add-field="handleAddField"
@@ -764,6 +765,7 @@ import type {
   DataRow,
   ProjectField,
   ReportProject,
+  ReportSourceRef,
   SavedTableStyle,
   TableDataBinding,
   TableLook,
@@ -2925,6 +2927,17 @@ const addChart = (chartType: ChartType) => {
   updateJRXML();
 };
 
+// A Report Data table's chart icon clicked: a bar chart added like the Chart
+// tile's, its setup popup opened on that table
+const addChartFromSource = (source: ReportSourceRef) => {
+  const before = selectedElement.value;
+  addChart("bar");
+  const placed = selectedElement.value;
+  if (!placed || placed === before) return;
+  const location = { bandIndex: placed.bandIndex, elementIndex: placed.elementIndex, parentFrameIndex: placed.parentFrameIndex };
+  if (chartAt(location)) openChartConfig(location, { projectId: source.projectId, sourceId: source.sourceId });
+};
+
 // Table tile, kind picked. "Type my own": a typed table in the last clicked band,
 // centred, open for typing. "Use project data": the setup popup, which makes the
 // table in Detail on Apply (nothing is added when it is closed). Dragging the
@@ -3912,6 +3925,12 @@ const handleDataSourceDrop = (
     return;
   }
 
+  // Dragged by its chart icon: a chart where it is dropped
+  if (drag.kind === "source" && drag.asChart) {
+    placeChartFromSource(event, pageIndex, drag);
+    return;
+  }
+
   const tableEl = (event.target as HTMLElement)?.closest?.("[data-table-uuid]") as HTMLElement | null;
   const location = tableEl ? findTableByUuid(tableEl.dataset.tableUuid || "") : null;
   const table = tableAt(location);
@@ -3944,6 +3963,12 @@ const handleDataSourceDrop = (
         ? t("reportData.dropChoice.tableNotOnSpecialPage")
         : null;
   const y = bandEl ? Math.max(0, Math.round((event.clientY - bandEl.getBoundingClientRect().top) / zoomLevel.value)) : 0;
+  // A table is what a dropped source usually becomes: no question when it can go here
+  if (!tableProblem) {
+    openTableConfig(null, { newAt: { bandIndex, y, pageIndex: sheetPage ?? pageIndex }, projectId: drag.projectId, sourceId: drag.sourceId, columnKey });
+    return;
+  }
+  // Where a table can't go: the choice says why, and offers a chart instead
   dataDropChoice.value = {
     x: event.clientX,
     y: event.clientY,
@@ -3978,10 +4003,19 @@ const chooseDataDropKind = (kind: DataDropKind) => {
     openTableConfig(null, { newAt: choice.tableAt, projectId: drag.projectId, sourceId: drag.sourceId, columnKey });
     return;
   }
-  // A chart placed where the source was dropped (as the Chart tile would be),
-  // then its setup popup opens with that source
+  placeChartFromSource(choice.event, choice.pageIndex, drag);
+};
+
+// A chart placed where a source was dropped (as the Chart tile would be),
+// then its setup popup opens with that source
+const placeChartFromSource = (
+  event: DragEvent,
+  pageIndex: number | undefined,
+  drag: Exclude<DataSourceDragPayload, { kind: "projectField" | "projectTable" }>,
+) => {
+  const columnKey = drag.kind === "column" ? drag.column.key : undefined;
   const before = selectedElement.value;
-  handleDrop(choice.event, choice.pageIndex, { type: "chart" });
+  handleDrop(event, pageIndex, { type: "chart" });
   const placed = selectedElement.value;
   if (!placed || placed === before) return;
   const location = { bandIndex: placed.bandIndex, elementIndex: placed.elementIndex, parentFrameIndex: placed.parentFrameIndex };

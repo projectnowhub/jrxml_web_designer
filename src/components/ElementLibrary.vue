@@ -75,6 +75,7 @@
       <ReportDataPanel
         :bands="bands as Band[]"
         :projects="projects ?? []"
+        @add-chart="(source) => emit('add-chart-from-source', source)"
       />
     </div>
 
@@ -230,7 +231,7 @@ import type {
   ReportParameter,
   ReportVariable,
 } from "../types";
-import type { ChartType, ReportProject } from "../types/dataSource";
+import type { ChartType, ReportProject, ReportSourceRef } from "../types/dataSource";
 import { CHART_GROUPS, chartTypesInGroup } from "../utils/chart/chartTypes";
 import { BARCODE_GROUPS, BARCODE_TYPES, barcodeTypesInGroup, type BarcodeType } from "../utils/barcode/barcodeTypes";
 import { barcodeSamplePicture, type BarcodePicture } from "../utils/barcode/barcodeImage";
@@ -253,6 +254,8 @@ interface Emits {
   (e: "add-element", element: any): void;
   (e: "insert-page-number", position: PaginationPosition): void;
   (e: "insert-chart", chartType: ChartType): void;
+  // A Report Data table's chart icon clicked: a chart set up from it
+  (e: "add-chart-from-source", source: ReportSourceRef): void;
   (e: "insert-barcode", barcodeType: BarcodeType): void;
   (e: "insert-table", kind: "typed" | "data"): void;
 }

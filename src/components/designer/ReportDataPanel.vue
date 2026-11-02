@@ -184,6 +184,18 @@
                 <Database :size="13" class="rdp-accent" aria-hidden="true" />
                 <span class="rdp-name">{{ source.name }}</span>
                 <span class="rdp-meta">{{ source.rowCount !== undefined ? t("reportData.rows", source.rowCount) : t("reportData.columnCount", source.columnCount ?? 0) }}</span>
+                <!-- As a chart instead of a table: drag it onto the page, or click to add one -->
+                <button
+                  type="button"
+                  class="rdp-icon-btn rdp-chart-btn"
+                  draggable="true"
+                  :title="t('reportData.chartFromSource')"
+                  @dragstart.stop="dragSource($event, project, source, true)"
+                  @dragend="endDataSourceDrag"
+                  @click.stop="emit('add-chart', { projectId: project.id, projectName: project.name, sourceId: source.id, sourceName: source.name })"
+                >
+                  <ChartColumn :size="13" aria-hidden="true" />
+                </button>
                 <GripVertical :size="12" class="rdp-grip" aria-hidden="true" />
               </div>
 
@@ -238,6 +250,7 @@ import { useI18n } from "vue-i18n";
 import {
   Calendar,
   CalendarClock,
+  ChartColumn,
   ChevronDown,
   Database,
   DollarSign,
@@ -273,10 +286,13 @@ import type {
   ProjectFieldType,
   ProjectTable,
   ReportProject,
+  ReportSourceRef,
 } from "@/types/dataSource";
 
 // The projects are chosen in the designer's header
 const props = defineProps<{ bands: Band[]; projects: ReportProject[] }>();
+// A table's chart icon clicked: add a chart set up from that table
+const emit = defineEmits<{ "add-chart": [source: ReportSourceRef] }>();
 
 const { t } = useI18n();
 
@@ -552,13 +568,15 @@ function dragTable(event: DragEvent, project: ReportProject, table: ProjectTable
   });
 }
 
-function dragSource(event: DragEvent, project: ReportProject, source: DataSourceSummary) {
+// `asChart`: dragged by the row's chart icon (a chart instead of a table)
+function dragSource(event: DragEvent, project: ReportProject, source: DataSourceSummary, asChart = false) {
   startDataSourceDrag(event, {
     kind: "source",
     projectId: project.id,
     projectName: project.name,
     sourceId: source.id,
     sourceName: source.name,
+    ...(asChart ? { asChart: true } : {}),
   });
 }
 
@@ -857,6 +875,19 @@ function dragColumn(
 
 .rdp-icon-btn:hover {
   background: #eef0f4;
+}
+
+/* A table's chart icon: drag it (or click it) for a chart */
+.rdp-chart-btn {
+  margin-left: 4px;
+  cursor: grab;
+}
+
+.rdp-chart-btn:hover,
+.rdp-chart-btn:focus-visible {
+  outline: none;
+  background: #f1edff;
+  color: #6440f4;
 }
 
 .rdp-message {

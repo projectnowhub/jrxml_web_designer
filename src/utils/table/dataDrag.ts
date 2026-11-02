@@ -15,7 +15,8 @@ interface ProjectRef {
 }
 
 export type DataSourceDragPayload =
-  | (ProjectRef & { kind: "source"; sourceId: string; sourceName: string })
+  // `asChart`: dragged by its chart icon, so it becomes a chart, not a table
+  | (ProjectRef & { kind: "source"; sourceId: string; sourceName: string; asChart?: boolean })
   | (ProjectRef & { kind: "column"; sourceId: string; sourceName: string; column: DataColumn })
   // A detail and its value (copied into the element on drop)
   | (ProjectRef & { kind: "projectField"; field: ProjectField; value: string | null })

@@ -502,3 +502,11 @@ export interface AggregateResult {
   totalCount: number;
   truncated: boolean;
 }
+
+// A project's table named by Report Data (its chart icon clicked)
+export interface ReportSourceRef {
+  projectId: string;
+  projectName: string;
+  sourceId: string;
+  sourceName: string;
+}
