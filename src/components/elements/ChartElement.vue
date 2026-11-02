@@ -47,8 +47,7 @@ import type { EChartsCoreOption } from 'echarts/core';
 import BaseElement from './BaseElement.vue';
 import ChartCanvas from '../common/ChartCanvas.vue';
 import { chartElementOption, chartView } from '../../utils/chart/chartImage';
-import { chartDataKey, loadChartData } from '../../utils/chart/chartDataStore';
-import { isChartComplete } from '../../utils/chart/chartTypes';
+import { useChartData } from '../../utils/chart/chartDataStore';
 import { isDataSourceDrag } from '../../utils/table/dataDrag';
 import type { ChartElement, SelectedElementInfo, EditingElementInfo } from '../../types';
 
@@ -86,14 +85,9 @@ const view = computed(() => {
   return chartView(props.element.binding);
 });
 
-// Fetch the numbers whenever what the chart asks for changes
-watch(
-  () => (isChartComplete(view.value.binding) ? chartDataKey(view.value.binding) : ''),
-  (key) => {
-    if (key) loadChartData(view.value.binding);
-  },
-  { immediate: true },
-);
+// The numbers stay loaded while the chart is shown, and are fetched again
+// whenever what the chart asks for changes (or they go stale)
+useChartData(() => props.element.binding);
 
 // While new numbers load, the chart keeps showing the last real ones
 const shownOption = shallowRef<EChartsCoreOption>(chartElementOption(props.element, view.value));

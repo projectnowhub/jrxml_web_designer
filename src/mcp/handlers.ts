@@ -14,9 +14,13 @@ import { findPageBorder, markBoxPart } from '@/utils/framePresets';
 import { specialPages } from '@/utils/specialPages';
 import { formatXml } from '@/utils/jrxml/formatXml';
 import { generatePdf } from '@/services/reportService';
+import { ensureTemplateProject, templateDetails } from '@/utils/reportRun';
+import { projectValueOf } from '@/utils/projectValue';
 import { fillPage } from './flow';
 import { attachmentImageSource, type ChatAttachment } from './attachments';
-import { getFacets, getSchema, listProjects, listSources } from '@/services/dataSourceService';
+import { fetchFacets, fetchSchema, fetchSources } from '@/queries/dataSourceQueries';
+import { getProject, listProjects } from '@/queries/projectQueries';
+import { PLACE_FIELDS, toPlace } from '@/utils/location/locationElement';
 import { ELEMENT_KINDS, createSchema, findKind, updateSchema } from './elements/registry';
 import { validateValue } from './elements/validate';
 import { SpecError, type ElementKind, type ElementSpec } from './elements/types';
@@ -288,34 +292,60 @@ const checkReportHandler: MCPToolHandler = {
 
 const getReportDataHandler: MCPToolHandler = {
   execute: async (params) => {
-    const { projectId, sourceId } = params;
+    const { projectId, sourceId, search } = params;
     try {
       if (projectId && sourceId) {
-        const schema = await getSchema(projectId, sourceId);
-        const facets = await getFacets(projectId, sourceId).catch(() => ({} as Record<string, never>));
+        const schema = await fetchSchema(projectId, sourceId);
+        const facets = await fetchFacets(projectId, sourceId).catch(() => ({} as Record<string, never>));
         // What each column holds, for filters: its values (text) or its range
         const holds = (key: string) => {
           const facet = (facets as Record<string, any>)[key];
           if (facet?.kind === 'values') return { values: facet.values.slice(0, 20).map((v: { value: string }) => v.value), ...(facet.values.length > 20 ? { moreValues: facet.values.length - 20 } : {}) };
           if (facet?.kind === 'range') return { min: facet.min, max: facet.max };
+          if (facet?.kind === 'text') return { filter: 'contains' };
+          if (facet?.kind === 'boolean') return { filter: 'is' };
           return {};
         };
         return {
           success: true,
-          data: { source: schema.name, columns: schema.columns.map((c) => ({ key: c.key, name: c.label, type: c.type, ...holds(c.key) })) }
+          data: { source: schema.name, columns: schema.columns.map((c) => ({ key: c.key, name: c.label, type: c.type, ...(c.userDefined ? { userDefined: true } : {}), ...holds(c.key) })) }
         };
       }
       if (projectId) {
-        const sources = await listSources(projectId);
-        return { success: true, data: { sources: sources.map((s) => ({ sourceId: s.id, name: s.name, rows: s.rowCount })) } };
+        const sources = await fetchSources(projectId);
+        const project = await getProject(projectId).catch(() => null);
+        // Where the project is (create_location with projectId copies it)
+        const place = toPlace(project?.location);
+        const location = PLACE_FIELDS.some((f) => place[f]) ? place : null;
+        // Its details (each with the key a linked text takes: projectValue), the
+        // place's details, its own fields, and its lists (a
+        // list table takes the list key)
+        const detail = (key: string, name: string) => ({ key, name, value: projectValueOf(project, key) });
+        const details = [
+          ...(project?.fields ?? []).map((f) => detail(f.key, f.label)),
+          ...PLACE_FIELDS.filter((f) => f !== 'postcode').map((f) => detail(`location.${f}`, `Location ${f}`)),
+        ].filter((d) => d.value !== null);
+        const lists = (project?.tables ?? []).map((table) => ({
+          list: table.key,
+          name: table.label,
+          columns: table.columns,
+          rows: table.rows
+        }));
+        const moreDetails = (project?.moreDetails ?? []).map((f) => detail(f.key, f.label));
+        return {
+          success: true,
+          data: { sources: sources.map((s) => ({ sourceId: s.id, name: s.name, columns: s.columnCount })), location, details, lists, moreDetails }
+        };
       }
       const chosen = useReportStore().reportProperties.projects ?? [];
-      const all = await listProjects();
+      // The first projects A to Z; `search` finds the others by name or code
+      const page = await listProjects({ search: typeof search === 'string' ? search : '' });
       return {
         success: true,
         data: {
           inThisReport: chosen.map((p) => ({ projectId: p.id, name: p.name })),
-          available: all.map((p) => ({ projectId: p.id, name: p.name, code: p.code }))
+          available: page.rows.map((p) => ({ projectId: p.id, name: p.name, code: p.code })),
+          ...(page.hasMore ? { moreProjects: `${page.total - page.rows.length} more; call again with search (name or code) to find one` } : {})
         }
       };
     } catch (error) {
@@ -931,9 +961,12 @@ function pdfPageCount(bytes: Uint8Array): number {
 const checkPdfHandler: MCPToolHandler = {
   execute: async () => {
     const r = useReportStore();
+    await ensureTemplateProject(r.reportProperties.projects?.[0]?.id);
     r.updateJrxml();
     try {
-      const blob = await generatePdf({ jrxml: formatXml(r.jrxmlContent) });
+      // As Preview PDF sends it: the JRXML and details.json
+      const details = templateDetails(r.bands, r.reportProperties.projects?.[0]);
+      const blob = await generatePdf({ jrxml: formatXml(r.jrxmlContent), details });
       const pages = pdfPageCount(new Uint8Array(await blob.arrayBuffer()));
       const expected = r.totalPages;
       const tables = r.bands.some((b) => b.elements.some((e) => e.type === 'table'));

@@ -87,6 +87,7 @@ export function resetElementStyle(element: DesignElement, options: ResetOptions 
       if (el.binding) {
         el.binding.palette = DEFAULT_CHART_PALETTE;
         el.binding.showLegend = true;
+        delete el.binding.colors;
       }
       break;
     case "table":
@@ -95,6 +96,9 @@ export function resetElementStyle(element: DesignElement, options: ResetOptions 
         el.binding.theme = "none";
         delete el.binding.look;
         delete el.binding.customized;
+        // Columns' own colours go; highlight rules stay (they are what the
+        // user decided to show, not a look)
+        for (const col of el.binding.columns) delete col.look;
       }
       break;
     case "contentsList":

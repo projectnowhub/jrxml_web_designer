@@ -452,7 +452,7 @@ const imageUrl = computed(() => {
 });
 
 function showUploadError(message: string) {
-  notification.error(message, 5000);
+  notification.error(message);
 }
 
 async function processImageFile(file: File) {

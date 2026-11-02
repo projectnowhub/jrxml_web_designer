@@ -33,11 +33,12 @@
           </div>
           <template v-if="projectId">
             <span class="ccm-label">{{ t("dataTable.config.source") }}</span>
-            <div class="ccm-select-wrap">
+            <SkeletonBlock v-if="sourcesLoading" height="34px" radius="8px" />
+            <div v-else class="ccm-select-wrap">
               <select class="ccm-select" :value="sourceId" @change="changeSource(($event.target as HTMLSelectElement).value)">
                 <option value="" disabled>{{ t("dataTable.config.chooseSource") }}</option>
                 <option v-for="s in sources" :key="s.id" :value="s.id">
-                  {{ t("dataTable.config.sourceOption", { name: s.name, count: s.rowCount }) }}
+                  {{ s.rowCount !== undefined ? t("dataTable.config.sourceOption", { name: s.name, count: s.rowCount }) : s.name }}
                 </option>
               </select>
               <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
@@ -50,6 +51,11 @@
           </p>
         </section>
 
+        <!-- The chosen table's fields on their way -->
+        <section v-if="schemaLoading" class="ccm-section ccm-skeleton">
+          <SkeletonBlock width="40%" height="14px" />
+          <SkeletonBlock v-for="i in 3" :key="i" height="30px" radius="8px" />
+        </section>
         <template v-if="schema">
           <!-- What the chart shows -->
           <section class="ccm-section">
@@ -62,7 +68,7 @@
                 <div class="ccm-select-wrap">
                   <select class="ccm-select" :value="draft.dimension?.column ?? ''" @change="setDimension('dimension', ($event.target as HTMLSelectElement).value)">
                     <option value="" disabled>{{ t("chart.config.chooseColumn") }}</option>
-                    <option v-for="c in dimensionColumns" :key="c.key" :value="c.key">{{ c.label }}</option>
+                    <ChartColumnOptions :columns="dimensionColumns" :as-listed="!!cdpFields" />
                   </select>
                   <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
                 </div>
@@ -89,7 +95,7 @@
               <div class="ccm-select-wrap">
                 <select class="ccm-select" :value="draft.level2?.column ?? ''" @change="setDimension('level2', ($event.target as HTMLSelectElement).value)">
                   <option value="" disabled>{{ t("chart.config.chooseColumn") }}</option>
-                  <option v-for="c in textColumns" :key="c.key" :value="c.key" :disabled="c.key === draft.dimension?.column">{{ c.label }}</option>
+                  <ChartColumnOptions :columns="textColumns" :disabled-key="draft.dimension?.column" :as-listed="!!cdpFields" />
                 </select>
                 <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
               </div>
@@ -139,7 +145,7 @@
                 <div class="ccm-select-wrap">
                   <select class="ccm-select" :value="row.splitBy?.column ?? ''" @change="setSplit(row.index, ($event.target as HTMLSelectElement).value)">
                     <option value="">{{ t("chart.config.noSplit") }}</option>
-                    <option v-for="c in textColumns" :key="c.key" :value="c.key" :disabled="c.key === draft.dimension?.column">{{ c.label }}</option>
+                    <ChartColumnOptions :columns="textColumns" :disabled-key="draft.dimension?.column" :as-listed="!!cdpFields" />
                   </select>
                   <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
                 </div>
@@ -172,27 +178,16 @@
               {{ t(draft.chartType === "area" ? "chart.config.stackAreas" : "chart.config.stackBars") }}
             </label>
 
-            <label v-if="hasCategoryLimit" class="ccm-inline">
-              <span class="ccm-label">{{ t("chart.config.show") }}</span>
-              <div class="ccm-select-wrap is-small">
-                <select class="ccm-select" :value="draft.limit ?? DEFAULT_CATEGORY_LIMIT" @change="draft.limit = Number(($event.target as HTMLSelectElement).value)">
-                  <option v-for="n in CATEGORY_LIMITS" :key="n" :value="n">
-                    {{ n ? t("chart.config.largest", { count: n }) : t("chart.config.all") }}
-                  </option>
-                </select>
-                <ChevronDown class="ccm-chevron" :size="12" aria-hidden="true" />
-              </div>
-            </label>
           </section>
 
           <!-- Which rows count -->
           <section class="ccm-section">
             <h4><SlidersHorizontal :size="14" aria-hidden="true" />{{ t("chart.config.filters") }}</h4>
             <TableFilterPanel
-              :columns="schema.columns"
-              :facets="facets"
+              :columns="filterColumns"
+              :facets="filterFacets"
               :filters="draft.filters ?? []"
-              :show-sort="false"
+              :suggested-fields="filterSuggestions"
               :match-count="matchCount"
               @update:filters="draft.filters = $event"
             />
@@ -208,6 +203,11 @@
             {{ t("chart.config.basedOn", matchCount) }}
           </span>
         </div>
+        <!-- Every category prints (as the CDP app): many make a crowded chart on paper -->
+        <p v-if="categoryCount > MANY_CATEGORIES" class="ccm-note">
+          <Info :size="13" aria-hidden="true" />
+          {{ t("chart.config.manyCategories", { count: categoryCount }) }}
+        </p>
         <div class="ccm-stage">
           <div
             v-if="shownPreview"
@@ -216,6 +216,13 @@
           >
             <div :style="{ transform: `scale(${previewScale})`, transformOrigin: 'top left' }">
               <ChartCanvas :option="shownPreview" :width="chartSize.width" :height="chartSize.height" />
+            </div>
+          </div>
+          <!-- Numbers on their way: a chart-shaped skeleton -->
+          <div v-else-if="schemaLoading || previewView.state === 'loading'" class="ccm-chart-skeleton" role="status" :aria-label="t('dataTable.loading')">
+            <SkeletonBlock width="45%" height="14px" />
+            <div class="ccm-chart-skeleton-bars">
+              <SkeletonBlock v-for="(h, i) in SKELETON_BARS" :key="i" width="9%" :height="`${h}%`" radius="4px 4px 0 0" />
             </div>
           </div>
           <div v-else class="ccm-stage-note">
@@ -240,28 +247,31 @@ import { computed, ref, shallowRef, watch } from "vue";
 import type { EChartsCoreOption } from "echarts/core";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
-import { ChartColumn, ChevronDown, FolderKanban, Plus, Replace, Sigma, SlidersHorizontal, X } from "@lucide/vue";
+import { ChartColumn, ChevronDown, FolderKanban, Info, Plus, Replace, Sigma, SlidersHorizontal, X } from "@lucide/vue";
 import BaseModal from "./BaseModal.vue";
 import ChartCanvas from "../common/ChartCanvas.vue";
+import SkeletonBlock from "../common/SkeletonBlock.vue";
 import TableFilterPanel from "../designer/TableFilterPanel.vue";
-import { getFacets, getSchema, listSources } from "@/services/dataSourceService";
+import ChartColumnOptions from "../designer/ChartColumnOptions.vue";
+import { chartFieldLists } from "@/utils/chart/chartFields";
+import { suggestChartTitle } from "@/utils/chart/chartQuery";
+import { fetchFacets, fetchSchema, fetchSources } from "@/queries/dataSourceQueries";
 import {
-  CATEGORY_LIMITS,
   CHART_AGGREGATIONS,
   CHART_GROUPS,
   DATE_GRANULARITIES,
-  DEFAULT_CATEGORY_LIMIT,
   DEFAULT_GRANULARITY,
   MAX_CHART_SERIES,
   changeChartType,
   chartTypeInfo,
   chartTypesInGroup,
+  groupingColumns,
   isChartComplete,
   normalizeChartBinding,
 } from "@/utils/chart/chartTypes";
 import { chartView } from "@/utils/chart/chartImage";
 import { buildChartOption, chartFontFamily } from "@/utils/chart/chartOption";
-import { chartDataEntry, loadChartData } from "@/utils/chart/chartDataStore";
+import { chartDataEntry, useChartData } from "@/utils/chart/chartDataStore";
 import type {
   ChartAggregation,
   ChartBinding,
@@ -295,7 +305,7 @@ const emit = defineEmits<{
   apply: [binding: ChartBinding];
 }>();
 
-const { t, locale } = useI18n();
+const { t, te, locale } = useI18n();
 
 // The chart's setup is reactive and plain JSON
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value));
@@ -312,6 +322,11 @@ const sourceId = ref("");
 const schema = ref<DataSourceSchema | null>(null);
 const facets = ref<SourceFacets | null>(null);
 const loadError = ref(false);
+// Waiting for the project's tables, or for the chosen table's fields
+const sourcesLoading = computed(() => !!projectId.value && !sources.value.length && !loadError.value);
+const schemaLoading = computed(() => !!sourceId.value && !schema.value && !loadError.value);
+// The chart skeleton's bars (% of its height)
+const SKELETON_BARS = [45, 70, 55, 85, 40, 65, 75];
 
 // The report's projects, plus the chart's own if it was removed from the list
 const projectOptions = computed<ReportProject[]>(() => {
@@ -337,25 +352,51 @@ const replacedSource = computed(() => {
 });
 
 // ── Columns by what they can be used for ──
-const columns = computed(() => schema.value?.columns ?? []);
-const numberColumns = computed(() => columns.value.filter((c) => c.type === "number" || c.type === "currency"));
-const textColumns = computed(() => columns.value.filter((c) => c.type === "text"));
-const dimensionColumns = computed(() => columns.value.filter((c) => info.value.dimensionTypes.includes(c.type)));
+// An entity with a CDP dashboard: only the fields the CDP app's chart builder
+// offers for it, in its order and with its names (chartFieldLists); any other
+// entity: the source's columns
+const cdpFields = computed(() =>
+  schema.value ? chartFieldLists(schema.value, (key, fallback) => (te(key) ? t(key) : fallback)) : null,
+);
+const columns = computed<DataColumn[]>(() => {
+  const lists = cdpFields.value;
+  if (!lists) return schema.value?.columns ?? [];
+  const all = [...lists.groupable, ...lists.measurable, ...lists.filterable];
+  return all.filter((c, i) => all.findIndex((o) => o.key === c.key) === i);
+});
+const numberColumns = computed(() =>
+  cdpFields.value ? cdpFields.value.measurable : columns.value.filter((c) => c.type === "number" || c.type === "currency"),
+);
+const groupColumns = computed(() => cdpFields.value?.groupable ?? columns.value);
+const textColumns = computed(() => groupColumns.value.filter((c) => c.type === "text"));
+const dimensionColumns = computed(() => groupColumns.value.filter((c) => info.value.dimensionTypes.includes(c.type)));
+// The chart's filters: the CDP list's fields (a path into a linked record is typed words)
+const filterColumns = computed(() => cdpFields.value?.filterable ?? columns.value);
+const filterFacets = computed<SourceFacets | null>(() => {
+  if (!facets.value) return null;
+  const extra = filterColumns.value.filter((c) => c.key.includes(".") && !facets.value![c.key]);
+  return extra.length ? { ...facets.value, ...Object.fromEntries(extra.map((c) => [c.key, { kind: "text" as const }])) } : facets.value;
+});
 
 // Good columns to group by come first: dates for charts over time, then text
 // columns with the fewest different values (a column like an order number,
-// different on every row, comes last)
+// different on every row, comes last); links to other records never
 function byGroupingFit(list: DataColumn[], preferred?: DataColumn["type"]): DataColumn[] {
+  // The CDP app takes the first field of its list
+  if (cdpFields.value) return list;
+  const { good, free } = groupingColumns(list);
   const spread = (c: DataColumn) => {
     const facet = facets.value?.[c.key];
-    const n = facet?.kind === "values" ? facet.values.length : Number.MAX_SAFE_INTEGER;
+    const n = facet?.kind === "values" ? facet.values.length : facet?.kind === "boolean" ? 2 : Number.MAX_SAFE_INTEGER;
     const unique = facet?.kind === "values" && facet.values.every((v) => v.count === 1);
     return unique || n < 2 ? Number.MAX_SAFE_INTEGER : n;
   };
-  return [...list].sort((a, b) => {
-    if (preferred && (a.type === preferred) !== (b.type === preferred)) return a.type === preferred ? -1 : 1;
-    return spread(a) - spread(b);
-  });
+  const sorted = (cols: DataColumn[]) =>
+    [...cols].sort((a, b) => {
+      if (preferred && (a.type === preferred) !== (b.type === preferred)) return a.type === preferred ? -1 : 1;
+      return spread(a) - spread(b);
+    });
+  return [...sorted(good), ...sorted(free)];
 }
 
 const toDimension = (c: DataColumn): ChartDimension => ({
@@ -363,7 +404,17 @@ const toDimension = (c: DataColumn): ChartDimension => ({
   label: c.label,
   type: c.type,
   ...(c.type === "date" ? { granularity: DEFAULT_GRANULARITY } : {}),
+  ...(c.choices?.length ? { choices: c.choices } : {}),
+  ...(c.yesNo ? { yesNo: true } : {}),
 });
+
+// A grouping of the chart with its column's choice words and yes / no as the source has them now
+function withColumnWords(dimension: ChartDimension | undefined): ChartDimension | undefined {
+  const c = dimension && columns.value.find((col) => col.key === dimension.column);
+  if (!dimension || !c) return dimension;
+  const { choices: _choices, yesNo: _yesNo, ...rest } = dimension;
+  return { ...rest, ...(c.choices?.length ? { choices: c.choices } : {}), ...(c.yesNo ? { yesNo: true } : {}) };
+}
 const toMeasure = (aggregation: ChartAggregation, c?: DataColumn): ChartMeasure =>
   aggregation === "count" || !c ? { aggregation: "count" } : { aggregation, column: c.key, columnLabel: c.label };
 
@@ -380,7 +431,20 @@ function fillMissing() {
       byGroupingFit(allowed, info.value.dimensionTypes[0])[0];
     d.dimension = pick ? toDimension(pick) : undefined;
   }
-  const measure = d.measure ?? d.series?.[0]?.measure ?? toMeasure(isNumber(dropped) ? "sum" : "count", dropped);
+  // Only what this chart may use: a number that can't be added up becomes a
+  // count, a split by a column it can't group by goes, filters on fields it
+  // doesn't offer go
+  const usable = (m?: ChartMeasure) =>
+    !m || m.aggregation === "count" || numberColumns.value.some((c) => c.key === m.column) ? m : toMeasure("count");
+  d.measure = usable(d.measure);
+  d.series = d.series?.map((s) => ({
+    ...s,
+    measure: usable(s.measure)!,
+    ...(s.splitBy && !textColumns.value.some((c) => c.key === s.splitBy!.column) ? { splitBy: undefined } : {}),
+  }));
+  d.filters = (d.filters ?? []).filter((f) => filterColumns.value.some((c) => c.key === f.column));
+  const usableDropped = dropped && isNumber(dropped) && numberColumns.value.includes(dropped) ? dropped : undefined;
+  const measure = d.measure ?? d.series?.[0]?.measure ?? toMeasure(usableDropped ? "sum" : "count", usableDropped);
   if (info.value.shape === "series") {
     if (!d.series?.length) d.series = [{ measure }];
   } else if (!d.measure) {
@@ -447,6 +511,9 @@ function setSplit(index: number, key: string) {
   const c = columns.value.find((col) => col.key === key);
   const next: ChartSeriesBinding = { measure: series.measure };
   if (c) next.splitBy = toDimension(c);
+  // Split bars are stacked at first, as the CDP app's (Stacked can be unticked)
+  const isBars = draft.value.chartType === "bar" || draft.value.chartType === "barH";
+  if (c && !series.splitBy && isBars && !draft.value.series!.some((s) => s.splitBy)) draft.value.stacked = true;
   draft.value.series![index] = next;
 }
 
@@ -471,17 +538,12 @@ const canStack = computed(() => {
   const series = draft.value.series ?? [];
   return ["bar", "barH", "area"].includes(draft.value.chartType) && (series.length > 1 || series.some((s) => s.splitBy));
 });
-const hasCategoryLimit = computed(
-  () =>
-    (info.value.shape === "parts" || info.value.shape === "series" || info.value.shape === "tree") &&
-    draft.value.dimension?.type === "text",
-);
 
 // ── Loading the project's sources and the chosen source ──
 function loadSources(project: string) {
   sources.value = [];
   if (!project) return;
-  listSources(project)
+  fetchSources(project)
     .then((list) => {
       if (projectId.value === project) sources.value = list;
     })
@@ -494,7 +556,7 @@ async function useSource(id: string, fresh: boolean) {
   const project = projectId.value;
   const stillCurrent = () => projectId.value === project && sourceId.value === id;
   try {
-    const loaded = await getSchema(project, id);
+    const loaded = await fetchSchema(project, id);
     if (!stillCurrent()) return;
     schema.value = loaded;
     if (fresh) {
@@ -505,10 +567,19 @@ async function useSource(id: string, fresh: boolean) {
       d.level2 = undefined;
       d.series = undefined;
       d.filters = [];
+      // Own colours were for the other source's values
+      d.colors = undefined;
+    }
+    if (!fresh) {
+      // The chart's own groupings: their columns' words as the source has them now
+      const d = draft.value;
+      d.dimension = withColumnWords(d.dimension);
+      d.level2 = withColumnWords(d.level2);
+      d.series = d.series?.map((s) => (s.splitBy ? { ...s, splitBy: withColumnWords(s.splitBy) } : s));
     }
     // The filter choices also tell which columns group well
     try {
-      const loadedFacets = await getFacets(project, id);
+      const loadedFacets = await fetchFacets(project, id);
       if (!stillCurrent()) return;
       facets.value = loadedFacets;
     } catch {
@@ -559,27 +630,46 @@ watch(
 );
 
 // ── The setup as it would be applied, and its preview ──
-const draftBinding = computed<ChartBinding>(() =>
-  normalizeChartBinding({
+const draftBinding = computed<ChartBinding>(() => {
+  const binding = normalizeChartBinding({
     ...copy(draft.value),
     projectId: projectId.value || undefined,
     projectName: projectName.value || undefined,
     sourceId: schema.value ? sourceId.value : undefined,
     sourceName: schema.value?.name,
     entityName: schema.value?.entityName,
-  }),
-);
+  });
+  // A chart set up for the first time without a title gets the CDP app's
+  // suggested one ("Records by Planned Inspection Date"), changed in Basic Settings
+  if (!props.binding?.sourceId && !binding.title && isChartComplete(binding)) {
+    binding.title = suggestChartTitle(binding);
+  }
+  return binding;
+});
 
-// Fetch the preview's numbers shortly after the setup stops changing
+// The preview's numbers, asked for shortly after the setup stops changing (a
+// copy, so editing the draft doesn't skip the pause)
+const previewBinding = shallowRef<ChartBinding | undefined>();
 let previewTimer: ReturnType<typeof setTimeout> | undefined;
 watch(
   () => (props.visible && isChartComplete(draftBinding.value) ? JSON.stringify(draftBinding.value) : ""),
   (key) => {
     clearTimeout(previewTimer);
-    if (key) previewTimer = setTimeout(() => loadChartData(draftBinding.value), 250);
+    if (!key) previewBinding.value = undefined;
+    else previewTimer = setTimeout(() => (previewBinding.value = JSON.parse(key) as ChartBinding), 250);
   },
   { immediate: true },
 );
+useChartData(previewBinding);
+
+// More than this many categories is hard to read on paper
+const MANY_CATEGORIES = 15;
+const categoryCount = computed(() => {
+  const view = previewView.value;
+  if (view.state !== "ready") return 0;
+  const data = view.data;
+  return data.kind === "parts" || data.kind === "series" ? data.categories.length : data.kind === "tree" ? data.nodes.length : 0;
+});
 
 const previewView = computed(() => {
   void locale.value;
@@ -608,6 +698,19 @@ const previewScale = computed(() =>
   Math.min(MAX_PREVIEW_SCALE, STAGE.width / chartSize.value.width, STAGE.height / chartSize.value.height),
 );
 
+// Fields the filters open with (more are added with the fields button)
+const MAX_SUGGESTED_FILTERS = 4;
+// Filters shown at first: the columns the chart groups and splits by, then its
+// date columns (the panel keeps the source's column order)
+const filterSuggestions = computed(() => {
+  const d = draft.value;
+  const own = [d.dimension, d.level2, ...(d.series ?? []).map((s) => s.splitBy)]
+    .filter((g): g is ChartDimension => !!g)
+    .map((g) => g.column);
+  const dates = filterColumns.value.filter((c) => c.type === "date").map((c) => c.key);
+  return [...new Set([...own, ...dates])].slice(0, Math.max(own.length, MAX_SUGGESTED_FILTERS));
+});
+
 // Rows the filters keep, from the chart's numbers
 const matchCount = computed(() => {
   const entry = chartDataEntry(draftBinding.value);
@@ -628,6 +731,32 @@ function apply() {
 </script>
 
 <style scoped>
+.ccm-skeleton {
+  display: grid;
+  gap: 8px;
+}
+
+.ccm-chart-skeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(480px, 90%);
+  height: 280px;
+  padding: 16px;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.ccm-chart-skeleton-bars {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  justify-content: space-between;
+  width: 100%;
+  border-bottom: 1px solid #e6e5ee;
+}
+
 .ccm {
   display: grid;
   grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);

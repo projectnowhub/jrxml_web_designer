@@ -89,10 +89,11 @@ No other URL secrets are read (the old `VITE_OAUTH_BASE_URL`, `_AUTH_URL`, `_TOK
 > All `VITE_*` values are build-time: they are compiled into the JS bundle shipped to
 > browsers, so none of them is truly secret (they are stored as secrets for convenience).
 
-**Not passed yet:** `VITE_DATA_SOURCE_API` (table data backend) and the `VITE_AI_*`
-settings are not build args in `deploy.yml`/`deploy/Dockerfile`, so deployed builds use
-the dummy table data and no AI endpoint. Add them as build args when those backends
-exist; the AI key must go through a backend proxy rather than a `VITE_` value.
+**Not passed yet:** the `VITE_AI_*` settings are not build args in
+`deploy.yml`/`deploy/Dockerfile`, so deployed builds have no AI endpoint. Add them as
+build args when that backend exists; the AI key must go through a backend proxy rather
+than a `VITE_` value. (Projects, tables, rows and filter choices all come from
+`VITE_API_BASE_URL`; there is no separate table-data setting any more.)
 
 ### Environments — create `dev`, `staging`, `production`
 Needed only for the **production reviewer gate** and per-environment deploy history —

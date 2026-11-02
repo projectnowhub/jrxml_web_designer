@@ -51,16 +51,21 @@
 
         <!-- 2. File Name (Inline Editable Google Docs Style) & Auto-save Status -->
         <div class="document-title-wrap">
-          <input
-            v-model="headerFileName"
-            class="document-title-input"
-            data-hint="reportName"
-            @focus="isTitleEditing = true"
-            @blur="handleHeaderTitleCommit"
-            @keydown.enter.prevent="onTitleEnter"
-            :placeholder="t('editorHeader.untitledReport')"
-            :title="t('editorHeader.renameReport')"
-          />
+          <!-- As wide as the name (Google Docs style): a hidden copy of it
+               sizes the field, which gives way first when the header is full -->
+          <div class="document-title-field" :data-value="headerFileName || t('editorHeader.untitledReport')">
+            <input
+              v-model="headerFileName"
+              class="document-title-input"
+              data-hint="reportName"
+              size="1"
+              @focus="isTitleEditing = true"
+              @blur="handleHeaderTitleCommit"
+              @keydown.enter.prevent="onTitleEnter"
+              :placeholder="t('editorHeader.untitledReport')"
+              :title="t('editorHeader.renameReport')"
+            />
+          </div>
           <!-- Narrow screens: the icon only (the words are in its tooltip) -->
           <div class="auto-save-badge" :title="saveStatusTitle">
             <span v-if="saveStatus === 'saving'" class="save-status-text saving">
@@ -221,7 +226,7 @@
           <span v-if="headerTier < 5">{{ t("actions.previewPDF") }}</span>
         </button>
 
-        <!-- 12. Account menu (language, profile, sign out) -->
+        <!-- 12. Account menu (language, sign out; the profile is edited in the CDP app) -->
         <AccountMenu />
       </div>
     </div>
@@ -329,6 +334,7 @@
           :drop-target-blocked="dropTargetBlocked"
           :background-drop-target="backgroundDropTarget"
           :is-dragging-or-resizing="isDraggingOrResizing"
+          :drag-source-page="draggingInfo?.sourcePageIndex ?? null"
           :horizontal-ruler-ticks="horizontalRulerTicks"
           :horizontal-ruler-labels="horizontalRulerLabels"
           :vertical-ruler-ticks="verticalRulerTicks"
@@ -543,7 +549,7 @@
     <!-- PDF preview modal -->
     <PdfPreviewModal
       :visible="showPdfPreview"
-      :jrxml-content="jrxmlContent"
+      :prepare="prepareReportForPreview"
       :bands="bands"
       @update:visible="showPdfPreview = $event"
       @edit-table="openTableConfigByUuid"
@@ -588,21 +594,24 @@
         :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
       >
         <div v-if="contextMenu.type === 'element'" class="context-menu-items">
-          <div
-            class="context-menu-item"
-            @click="handleContextMenuAction('copy')"
-          >
-            <Copy class="menu-icon" :size="16" />
-            {{ t("actions.copy") }}
-          </div>
-          <div
-            class="context-menu-item"
-            @click="handleContextMenuAction('paste')"
-          >
-            <ClipboardPaste class="menu-icon" :size="16" />
-            {{ t("actions.paste") }}
-          </div>
-          <div class="context-menu-divider"></div>
+          <!-- Copy and paste take one item: not offered for several -->
+          <template v-if="!severalSelected">
+            <div
+              class="context-menu-item"
+              @click="handleContextMenuAction('copy')"
+            >
+              <Copy class="menu-icon" :size="16" />
+              {{ t("actions.copy") }}
+            </div>
+            <div
+              class="context-menu-item"
+              @click="handleContextMenuAction('paste')"
+            >
+              <ClipboardPaste class="menu-icon" :size="16" />
+              {{ t("actions.paste") }}
+            </div>
+            <div class="context-menu-divider"></div>
+          </template>
           <div
             class="context-menu-item"
             @click="handleContextMenuAction('delete')"
@@ -752,15 +761,21 @@ import {
   canTakeProjectField,
   projectValueProblem,
   countProjectUsage,
+  moveReportToProject,
   projectFieldSize,
 } from "@/utils/projectFields";
+import { buildProjectListTable } from "@/utils/projectTables";
+import { fetchProject, prefetchProjects, projectQuery } from "@/queries/projectQueries";
+import { isProjectListSource } from "@/queries/dataSourceQueries";
+import { useQueries } from "@tanstack/vue-query";
+import { forgetLastProject, lastProject, rememberLastProject } from "@/utils/lastProject";
 import {
   endDataSourceDrag,
   isDataSourceDrag,
   readDataSourceDrag,
   type DataSourceDragPayload,
 } from "@/utils/table/dataDrag";
-import { MIN_TABLE_COLUMN_WIDTH, maxColumnsForWidth } from "@/utils/table/dataBinding";
+import { MIN_TABLE_COLUMN_WIDTH, tableWidthFor } from "@/utils/table/dataBinding";
 import {
   PLACEHOLDER_COLUMN_COUNT,
   TABLE_BARCODE_ROW_HEIGHT,
@@ -848,6 +863,7 @@ import {
 import { getOutOfBoundsElements } from "../utils/elementBoundsValidator";
 import {
   calculateTextElementHeight,
+  getImageShape,
   measureTextElementWidth,
   refreshUuids,
 } from "../utils/elementUtils";
@@ -863,6 +879,7 @@ import {
   fitChildrenToFrame,
   isFrameTemplateType,
   PAGE_BORDER_TYPE,
+  PRESET_SIDE_INSET,
   type FrameTemplateContext,
 } from "../utils/framePresets";
 import { emptyDataTable, emptyTypedTable, typedTableFromData } from "../utils/table/tableConversion";
@@ -933,7 +950,23 @@ import {
   type PaginationPosition,
 } from "../utils/paginationPresets";
 import { buildDateElement, DATE_ELEMENT_TYPE, isDateElement } from "../utils/dateElement";
+import { isProjectValue } from "../utils/projectValue";
+import { ensureTemplateProject } from "../utils/reportRun";
+import {
+  buildLocationElement,
+  getLocationSetup,
+  setLocationSetup,
+  isLocationElement,
+  isLocationPart,
+  LOCATION_ELEMENT_TYPE,
+  toPlace,
+  updateLocation,
+  type Place,
+  type PlaceField,
+} from "../utils/location/locationElement";
+import { ensureLocationMaps, refreshLocationMaps } from "../utils/location/locationMaps";
 import { buildChartElement } from "../utils/chart/chartElement";
+import { startDragScrolling, type DragScrollSession } from "../utils/dragAutoScroll";
 import {
   createElement,
   getAllElements as getAllElementConfigs,
@@ -1930,7 +1963,7 @@ const allBandTypes = ALL_CONFIGURABLE_BANDS;
 // Preview as icons ·
 // 6: logo and "Saved" hidden). Works down to a 300px wide window. The widths
 // are a first guess; if the header still overflows (longer Malay labels, a
-// long project code…), the next step is taken until it fits.
+// long project code, a long report name…), the next step is taken until it fits.
 const HEADER_TIER_WIDTHS = [1500, 1320, 1140, 900, 680, 440];
 const MAX_HEADER_TIER = HEADER_TIER_WIDTHS.length;
 const headerRef = ref<HTMLElement | null>(null);
@@ -1963,23 +1996,48 @@ window.addEventListener("resize", fitHeader);
 onUnmounted(() => window.removeEventListener("resize", fitHeader));
 onMounted(fitHeader);
 watch(locale, () => nextTick(fitHeader));
+// A longer name can need a more compact header (a shorter one, a roomier one)
+watch(headerFileName, () => nextTick(fitHeader));
 
 // Projects chosen in the header (kept with the report properties,
 // so undo and saving cover them)
 const reportProjects = computed<ReportProject[]>(() => reportProperties.value?.projects ?? []);
 
-// A project still shown on the report can't be removed from the list
+// The template's project. A new one is the whole template's: its tables,
+// lists and charts read it from now on, and its linked details and places
+// follow it (one undo step). One project per template for now.
 const setReportProjects = (projects: ReportProject[]) => {
-  const removed = reportProjects.value.find((p) => !projects.some((n) => n.id === p.id));
-  const usage = removed ? countProjectUsage(bands.value, removed.id) : 0;
-  if (removed && usage > 0) {
-    notification.warning(t("reportData.projectInUse", { project: removed.name, count: usage }));
-    return;
+  // Cleared while tables or charts read it: they would have nothing to show
+  const current = reportProjects.value[0];
+  if (!projects.length && current) {
+    const usage = countProjectUsage(bands.value, current.id);
+    if (usage > 0) {
+      notification.warning(t("reportData.projectInUse", { project: current.name, count: usage }));
+      return;
+    }
   }
   saveStateToHistory();
   reportProperties.value = { ...reportProperties.value, projects };
+  const project = projects[0];
+  if (project && moveReportToProject(bands.value, project) > 0) {
+    notification.info(t("reportData.projectSwitched", { project: project.name }));
+  }
   updateJRXML();
+  // New templates start with the project chosen last (utils/lastProject.ts)
+  if (projects.length) rememberLastProject(projects[projects.length - 1]);
 };
+
+// The remembered project no longer exists (deleted, or another tenant's): it
+// is forgotten, so the next new template starts without it. A template's own
+// projects are never changed here (Report Data says when one can't be read)
+const checkRememberedProject = async () => {
+  const remembered = lastProject();
+  if (!remembered) return;
+  const found = await fetchProject(remembered.id).catch(() => undefined);
+  if (found === null && lastProject()?.id === remembered.id) forgetLastProject();
+};
+onMounted(checkRememberedProject);
+
 
 
 
@@ -2188,12 +2246,27 @@ function handleMultiResize(type: "sameWidth" | "sameHeight" | "sameSize") {
 }
 
 // Undo/redo restore the model; the JRXML is rewritten after each
-const undo = () => {
-  if (reportStore.undo()) updateJRXML();
-};
-const redo = () => {
-  if (reportStore.redo()) updateJRXML();
-};
+const undo = () => restoreKeepingSelection(reportStore.undo);
+const redo = () => restoreKeepingSelection(reportStore.redo);
+
+// The selection is kept by place (band, index), and a restored report can
+// have other elements there (Bring to front undone): it follows the selected
+// elements by uuid, and drops those that are gone, so the panel and Delete
+// never act on another element
+function restoreKeepingSelection(restore: () => boolean) {
+  const editingUuid = editingElement.value ? elementAtLocation(editingElement.value)?.uuid : undefined;
+  if (!restore()) return;
+  const follow = (sel: { uuid?: string }) => {
+    const loc = sel.uuid ? findElementByUuid(sel.uuid) : null;
+    return loc ? { ...loc, uuid: sel.uuid } : null;
+  };
+  const many = selectedElements.value.map(follow).filter((s) => s !== null);
+  const one = selectedElement.value ? follow(selectedElement.value) : null;
+  selectedElements.value = many;
+  selectedElement.value = one ?? many[many.length - 1] ?? null;
+  editingElement.value = editingUuid ? findElementByUuid(editingUuid) : null;
+  updateJRXML();
+}
 
 // A drag or resize is in progress (editor store)
 const { isDraggingOrResizing } = storeToRefs(editorStore);
@@ -2374,38 +2447,9 @@ const getSnapOptions = (
   };
 };
 
-// The most a band may grow to when something is dropped in it: its maximum
-// height setting, and the room left on the page (Detail keeps its minimum).
-// Detail fills whatever space remains, so it can't grow on its own.
-const getBandMaxHeight = (bandIndex: number): number => {
-  const band = bands.value[bandIndex];
-  if (!band) return 0;
-  if (
-    band.type === BAND_TYPE_CONSTANTS.DETAIL ||
-    band.type === BAND_TYPE_CONSTANTS.BACKGROUND
-  ) {
-    return band.height;
-  }
-  const limits = reportProperties.value?.bandLimits?.[band.type] ||
-    getEffectiveDefaultBandLimits()[band.type] || { min: 20, max: 70 };
-  const maxSetting = typeof limits.max === "number" ? limits.max : 70;
-  const printableHeight =
-    paperHeight.value -
-    (reportProperties.value?.topMargin || 0) -
-    (reportProperties.value?.bottomMargin || 0);
-  let otherBands = 0;
-  bands.value.forEach((b, i) => {
-    if (
-      i !== bandIndex &&
-      b.type !== BAND_TYPE_CONSTANTS.DETAIL &&
-      b.type !== BAND_TYPE_CONSTANTS.BACKGROUND
-    ) {
-      otherBands += b.height || 0;
-    }
-  });
-  const pageRoom = printableHeight - otherBands - (BAND_CONSTANTS.MIN_HEIGHT || 20);
-  return Math.max(band.height, Math.min(maxSetting, pageRoom));
-};
+// The most a band may grow to when something is dropped in it (its maximum
+// setting and the room left on the page); Detail fills what is left
+const getBandMaxHeight = (bandIndex: number): number => reportStore.bandMaxHeight(bandIndex);
 
 // Height of a band's area on a page: a cover or contents page is the whole
 // printable page; anything else is the band's own height
@@ -2498,6 +2542,8 @@ const isOverBox = (
   return (band?.elements ?? []).some(
     (el) =>
       el.type === "frame" &&
+      // A Location holds only its map and address
+      !isLocationElement(el) &&
       (band?.type !== BAND_TYPE_CONSTANTS.DETAIL || pageIndex === undefined || (el.pageIndex ?? 0) === pageIndex) &&
       cx >= el.x &&
       cx <= el.x + el.width &&
@@ -2600,6 +2646,10 @@ const handleDragStart = (event: DragEvent, element: any) => {
 };
 
 // Printable page area (inside the margins) and translator, used to size frame templates
+// A data table's (and a project list's) width: the printable width less 50px
+// on each side, centred
+const dataTableWidth = () => Math.max(100, Math.round(getFrameTemplateContext().availableWidth) - 100);
+
 const getFrameTemplateContext = (): FrameTemplateContext => ({
   availableWidth: Math.round(
     paperWidth.value -
@@ -2614,13 +2664,29 @@ const getFrameTemplateContext = (): FrameTemplateContext => ({
   t,
 });
 
+// Element Presets are made a little narrower than the page and placed inside
+// it, so their selection handles stay on the page (the Page Border is the
+// whole printable area)
+const isLibraryPreset = (type: string) =>
+  (isFrameTemplateType(type) && type !== PAGE_BORDER_TYPE) || isReportPartType(type);
+const getPresetContext = (): FrameTemplateContext => {
+  const ctx = getFrameTemplateContext();
+  return { ...ctx, availableWidth: Math.max(100, ctx.availableWidth - 2 * PRESET_SIDE_INSET) };
+};
+// A preset's x kept at least the inset from both edges, when it is narrow enough
+const keepPresetInset = (x: number, width: number): number => {
+  const available = getFrameTemplateContext().availableWidth;
+  if (width > available - 2 * PRESET_SIDE_INSET) return Math.max(0, Math.min(x, available - width));
+  return Math.min(Math.max(PRESET_SIDE_INSET, x), available - PRESET_SIDE_INSET - width);
+};
+
 // Base element for a library item: frame templates are built with their content,
 // everything else comes from the registry defaults
 const createLibraryElement = (type: string): DesignElement =>
   isFrameTemplateType(type)
-    ? buildFrameTemplate(type, getFrameTemplateContext())
+    ? buildFrameTemplate(type, isLibraryPreset(type) ? getPresetContext() : getFrameTemplateContext())
     : isReportPartType(type)
-    ? buildReportPart(type, getFrameTemplateContext())
+    ? buildReportPart(type, getPresetContext())
     : type === PAGE_NUMBER_TYPE
     ? buildPaginationElement(undefined, {
         fontFamily: reportProperties.value?.defaultFont?.name,
@@ -2631,6 +2697,8 @@ const createLibraryElement = (type: string): DesignElement =>
         fontFamily: reportProperties.value?.defaultFont?.name,
         fontSize: reportProperties.value?.defaultFont?.size,
       })
+    : type === LOCATION_ELEMENT_TYPE
+    ? buildLocation()
     : type === "chart"
     ? buildChartElement()
     : type === "customTable"
@@ -2639,6 +2707,17 @@ const createLibraryElement = (type: string): DesignElement =>
         ...createElement(type),
         ...getDefaultElementProperties(type),
       } as DesignElement);
+
+// A new Location (map and address), empty or with a project's place
+// A new Location; from Report Data, its place is the project's and follows it
+const buildLocation = (place?: Partial<Place>, fromProject = false): DesignElement => {
+  const box = buildLocationElement(place, {
+    font: { fontFamily: reportProperties.value?.defaultFont?.name, fontSize: reportProperties.value?.defaultFont?.size },
+    maxWidth: getFrameTemplateContext().availableWidth,
+  });
+  if (fromProject) setLocationSetup(box, { ...getLocationSetup(box), fromProject: true });
+  return box;
+};
 
 // A new custom table: a dark header row and two empty rows, across most of the page
 const buildNewCustomTable = (): DesignElement => {
@@ -2772,10 +2851,10 @@ const addReportPart = (type: ReportPartType) => {
   }
 
   const element: DesignElement = {
-    ...buildReportPart(type, getFrameTemplateContext()),
+    ...buildReportPart(type, getPresetContext()),
     uuid: crypto.randomUUID(),
   };
-  element.x = isFullWidthPart(type) ? 0 : 50;
+  element.x = isFullWidthPart(type) ? PRESET_SIDE_INSET : 50;
   element.y = wantedBand ? 0 : 20;
   // A Table of Contents is centred across the page
   if (element.type === "contentsList") element.x = Math.round((getFrameTemplateContext().availableWidth - element.width) / 2);
@@ -2967,6 +3046,8 @@ const handleElementDoubleClick = (element: any) => {
     x: 50, // Default position
     y: 20, // Default position
   } as DesignElement;
+  // A preset keeps its space from the page's left and right edges
+  if (isLibraryPreset(element.type)) newElement.x = keepPresetInset(newElement.x, newElement.width);
 
   // A table is horizontally centered with equal space on left and right sides
   if (element.type === "table") {
@@ -3025,9 +3106,9 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
     }
     // Onto an existing text or image element: its content becomes the value
     if (fillDroppedProjectValue(event, dataDrag)) return;
-    // Elsewhere: a new Text element (or an Image for the logo) placed like a
-    // library element, holding the value
-    elementData = {
+    // Elsewhere: a new Text element (or an Image for the logo, a Location for
+    // the location) placed like a library element, holding the value
+    elementData = dataDrag.field.type === "location" ? { type: LOCATION_ELEMENT_TYPE, place: readPlace(dataDrag.value), fromProject: true } : {
       type: dataDrag.field.type === "image" ? "image" : "textField",
       projectValue: {
         project: { id: dataDrag.projectId, name: dataDrag.projectName },
@@ -3035,6 +3116,15 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
         value: dataDrag.value,
       },
     };
+  } else if (dataDrag?.kind === "projectTable") {
+    endDataSourceDrag();
+    highlightedBandIndex.value = null;
+    dropTargetBlocked.value = false;
+    // A list (manager, team, companies, contracts): a table of the project's
+    // rows (Detail only, like a data table) that follows the template's
+    // project; a list without rows here may have some for another
+    const project = { id: dataDrag.projectId, name: dataDrag.projectName };
+    elementData = { type: "table", projectTable: dataDrag.table, project };
   } else if (dataDrag) {
     endDataSourceDrag();
     highlightedBandIndex.value = null;
@@ -3115,11 +3205,18 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
 
     // Create the new element
     // Center it on the cursor using its own compact default size
-    const baseElement = createLibraryElement(elementData.type);
+    const baseElement = elementData.place
+      ? buildLocation(elementData.place, elementData.fromProject)
+      : elementData.projectTable
+      ? buildProjectListTable(elementData.projectTable, dataTableWidth(), elementData.project, {
+          datasets: usedDatasetNames(bands.value),
+          names: usedTableNames(bands.value),
+        })
+      : createLibraryElement(elementData.type);
     const droppedSize =
       isFrameTemplateType(elementData.type) ||
       isReportPartType(elementData.type) ||
-      [PAGE_NUMBER_TYPE, DATE_ELEMENT_TYPE, "table", "chart", "customTable"].includes(elementData.type)
+      [PAGE_NUMBER_TYPE, DATE_ELEMENT_TYPE, LOCATION_ELEMENT_TYPE, "table", "chart", "customTable"].includes(elementData.type)
       ? { width: baseElement.width, height: baseElement.height }
       : getDefaultElementSize(elementData.type);
     let newElement: DesignElement = {
@@ -3150,8 +3247,7 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
         return;
       }
       const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
-      const sideMargin = 50;
-      newElement.width = Math.max(100, availableWidth - sideMargin * 2);
+      newElement.width = dataTableWidth();
       newElement.x = Math.round((availableWidth - newElement.width) / 2);
     }
 
@@ -3197,6 +3293,8 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
         const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
         newElement.x = Math.round((availableWidth - newElement.width) / 2);
       }
+      // A preset keeps its space from the page's left and right edges
+      if (isLibraryPreset(elementData.type)) newElement.x = keepPresetInset(newElement.x, newElement.width);
 
       // Detect whether it is being dropped on a Frame
       let targetFrameIndex = -1;
@@ -3209,7 +3307,8 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
         if (!el) continue;
         // Only the boxes on the page it is dropped on
         if (targetBand.type === BAND_TYPE_CONSTANTS.DETAIL && (el.pageIndex ?? 0) !== (newElement.pageIndex ?? 0)) continue;
-        if (el.type === "frame") {
+        // (not a Location: it holds only its map and address)
+        if (el.type === "frame" && !isLocationElement(el)) {
           // Check whether the new element's center point is inside the Frame
           const centerX = newElement.x + newElement.width / 2;
           const centerY = newElement.y + newElement.height / 2;
@@ -3396,6 +3495,44 @@ const elementAtLocation = (location: TableLocation): DesignElement | undefined =
     : band?.elements[location.elementIndex];
 };
 
+// The place a dragged location carries (a ProjectLocation as JSON)
+const readPlace = (value: string | null): Place => {
+  try {
+    return toPlace(value ? JSON.parse(value) : null);
+  } catch {
+    return toPlace(null);
+  }
+};
+
+// A project's location (or one of its fields) dropped onto a Location (its
+// box or a part): its place changes, its look, layout and zoom stay. Other
+// details are refused with a message. One undo step.
+const fillDroppedLocation = (
+  location: TableLocation,
+  drag: Extract<DataSourceDragPayload, { kind: "projectField" }>,
+) => {
+  const boxLocation =
+    location.parentFrameIndex !== undefined
+      ? { bandIndex: location.bandIndex, elementIndex: location.parentFrameIndex }
+      : location;
+  const box = elementAtLocation(boxLocation);
+  if (!box || !isLocationElement(box)) return;
+  const field = drag.field;
+  if (field.type !== "location" && !field.key.startsWith("location.")) {
+    notification.warning(t("reportData.dropNotOnLocation"));
+    return;
+  }
+  saveStateToHistory();
+  // The whole place follows the project from now on; one field is typed in
+  const patch =
+    field.type === "location"
+      ? { ...readPlace(drag.value), fromProject: true }
+      : { [field.key.slice("location.".length) as PlaceField]: drag.value ?? "", fromProject: false };
+  updateLocation(box as FrameElement, patch, { fontFamily: reportProperties.value?.defaultFont?.name, fontSize: reportProperties.value?.defaultFont?.size });
+  selectElement(boxLocation.bandIndex, boxLocation.elementIndex);
+  updateJRXML();
+};
+
 // A project detail dropped onto a text, image or barcode element: its content
 // becomes the value, keeping its place, size and look (one undo step). Text
 // details go in text elements and barcodes (when the type can hold the value),
@@ -3407,6 +3544,12 @@ const fillDroppedProjectValue = (
   const target = (event.target as HTMLElement)?.closest?.("[data-element-uuid]") as HTMLElement | null;
   const location = target?.dataset.elementUuid ? findElementByUuid(target.dataset.elementUuid) : null;
   const element = location ? elementAtLocation(location) : undefined;
+  if (location && element && (isLocationElement(element) || isLocationPart(element))) {
+    fillDroppedLocation(location, drag);
+    return true;
+  }
+  // The whole location dropped elsewhere: a new Location there
+  if (drag.field.type === "location") return false;
   if (!location || !element || !["textField", "image", "barcode"].includes(element.type)) return false;
 
   // A barcode takes a text detail whose value its type can hold
@@ -3501,7 +3644,7 @@ const convertTableToTyped = async (loc: TableLocation) => {
   } else {
     let rows: DataRow[];
     try {
-      rows = (await fetchTableRows(table.binding, table.binding.rowLimit)).rows;
+      rows = (await fetchTableRows(table.binding)).rows;
     } catch {
       notification.error(t("customTable.convertFailed"));
       return;
@@ -3576,6 +3719,13 @@ const openTableConfig = (
     columnKey?: string;
   } = {},
 ) => {
+  // A project list's rows come from the project: nothing to set up (a source
+  // dropped on it still replaces its data)
+  const list = tableAt(target)?.binding?.list;
+  if (list && !options.sourceId) {
+    notification.info(t("projectList.noSetup", { list: t(`reportData.projectTables.${list}`) }));
+    return;
+  }
   tableConfig.value = {
     visible: true,
     target,
@@ -3607,6 +3757,8 @@ const applyTableConfig = (binding: TableDataBinding, rowCount: number) => {
   let table = tableAt(target);
   let location = target;
   if (!table && !newAt) return;
+  // A project list given a backend source is an ordinary data table from now on
+  if (binding.list && !isProjectListSource(binding.sourceId)) delete binding.list;
 
   saveStateToHistory();
 
@@ -3628,6 +3780,13 @@ const applyTableConfig = (binding: TableDataBinding, rowCount: number) => {
   }
   if (!table || !location) return;
 
+  // Columns narrower than the smallest column width: the table gets wider
+  // (it may then reach past the page; the user decides what to show)
+  const fitted = tableWidthFor(binding.columns.length, table.width);
+  if (fitted > table.width) {
+    table.width = fitted;
+    binding.columns = evenColumnWidths(binding.columns, fitted);
+  }
   table.binding = binding;
   // Barcodes need taller rows than text
   if (binding.columns.some((c) => tableColumnBarcode(c)) && (table.rowHeight ?? TABLE_ROW_HEIGHT) < TABLE_BARCODE_ROW_HEIGHT) {
@@ -3697,13 +3856,19 @@ const applyChartConfig = (binding: ChartBinding) => {
 
 // A chart's numbers arrived: its picture in the JRXML is redrawn
 watch(chartDataVersion, () => updateJRXML());
+// The template's project arrived (or changed): its linked details, lists and
+// place show its values (written with the JRXML, no undo step of its own)
+const templateProjectQueries = useQueries({
+  queries: computed(() => reportProjects.value.slice(0, 1).map((p) => projectQuery(p.id))),
+});
+watch(() => templateProjectQueries.value[0]?.data, () => updateJRXML());
 // Barcodes are sized once their drawing library is in
 watch(barcodeLibraryLoaded, () => updateJRXML());
 
 // A source or column dropped from the "Report Data" list
 const handleDataSourceDrop = (
   event: DragEvent,
-  drag: Exclude<DataSourceDragPayload, { kind: "projectField" }>,
+  drag: Exclude<DataSourceDragPayload, { kind: "projectField" | "projectTable" }>,
   pageIndex?: number,
 ) => {
   const columnKey = drag.kind === "column" ? drag.column.key : undefined;
@@ -3765,12 +3930,11 @@ const addColumnToTable = (table: TableElement, column: DataColumn) => {
     notification.info(t("dataTable.columnAlreadyShown", { column: column.label }));
     return;
   }
-  if (binding.columns.length >= maxColumnsForWidth(table.width)) {
-    notification.warning(t("dataTable.columnLimitReached", { max: maxColumnsForWidth(table.width) }));
-    return;
-  }
   saveStateToHistory();
-  binding.columns = evenColumnWidths([...binding.columns, toColumnBinding(column, 0)], table.width);
+  // No limit: a column narrower than the smallest width makes the table wider
+  const columns = [...binding.columns, toColumnBinding(column, 0)];
+  table.width = tableWidthFor(columns.length, table.width);
+  binding.columns = evenColumnWidths(columns, table.width);
   updateJRXML();
 };
 
@@ -3869,6 +4033,13 @@ const selectElement = (
   isMultiSelect = false,
   parentFrameIndex?: number,
 ) => {
+  // A Location's map or address: the whole Location is selected (it is one
+  // element; its panel styles the map and the address)
+  if (parentFrameIndex !== undefined && isLocationElement(bands.value[bandIndex]?.elements[parentFrameIndex])) {
+    elementIndex = parentFrameIndex;
+    parentFrameIndex = undefined;
+  }
+
   // Get the element reference in order to obtain its UUID
   const band = bands.value[bandIndex];
   let element;
@@ -3982,6 +4153,8 @@ watch(
 // Cache the event handler functions to avoid recreating them
 let cachedMouseMoveHandler: ((e: MouseEvent) => void) | null = null;
 let cachedMouseUpHandler: ((e: MouseEvent) => void) | null = null;
+// The pages scrolling under the element being moved (wheel or edge auto-scroll)
+let elementDragScroll: DragScrollSession | null = null;
 
 // Detect target band and sheet under coordinates (combines elementFromPoint with geometric fallback)
 // The page sheet and band at a screen point, found from their positions on screen.
@@ -4052,12 +4225,17 @@ const startDraggingInsideBox = (
   saveStateToHistory();
   isDraggingOrResizing.value = true;
 
+  let lastMove: MouseEvent = event;
+  // The pages may scroll under the item (wheel, or the pointer at an edge)
+  const scroll = startDragScrolling({ onScroll: () => frameMove(lastMove) });
+
   const onMove = (e: MouseEvent) => {
     const options = getSnapOptions(e, snapContext.offset);
+    const scrolled = scroll.offset();
     const snapped = snapMove(
       {
-        x: origX + (e.clientX - startX) / zoom,
-        y: origY + (e.clientY - startY) / zoom,
+        x: origX + (e.clientX - startX + scrolled.x) / zoom,
+        y: origY + (e.clientY - startY + scrolled.y) / zoom,
         width: element.width,
         height: element.height,
       },
@@ -4070,11 +4248,17 @@ const startDraggingInsideBox = (
     showSnapGuides(snapContext, snapped.guides, options);
   };
   const frameMove = throttleToAnimationFrame(onMove);
+  const onMouseMove = (e: MouseEvent) => {
+    lastMove = e;
+    scroll.pointer(e.clientX, e.clientY);
+    frameMove(e);
+  };
 
   const onUp = () => {
     frameMove.flush();
+    scroll.stop();
     clearAlignmentLines();
-    document.removeEventListener("mousemove", frameMove);
+    document.removeEventListener("mousemove", onMouseMove);
     document.removeEventListener("mouseup", onUp);
     isDraggingOrResizing.value = false;
     isJustDraggedOrResized.value = true;
@@ -4084,7 +4268,7 @@ const startDraggingInsideBox = (
     updateJRXML();
   };
 
-  document.addEventListener("mousemove", frameMove);
+  document.addEventListener("mousemove", onMouseMove);
   document.addEventListener("mouseup", onUp);
 };
 
@@ -4191,6 +4375,7 @@ const startDragging = (
       document.removeEventListener("mouseup", cachedMouseUpHandler);
       cachedMouseUpHandler = null;
     }
+    elementDragScroll?.stop();
 
     // What the element can snap to; the other elements stay put during the drag
     const snapContext = buildSnapContext(
@@ -4232,11 +4417,13 @@ const startDragging = (
           if (currentBand && currentElement) {
             const currentZoom = zoomLevel.value;
 
-            // Direct delta from starting mouse position (1:1 cursor following, zero jitter)
+            // Direct delta from starting mouse position (1:1 cursor following,
+            // zero jitter), plus how far the pages scrolled under it meanwhile
+            const scrolled = elementDragScroll?.offset() ?? { x: 0, y: 0 };
             const deltaX =
-              (e.clientX - draggingInfo.value.startX) / currentZoom;
+              (e.clientX - draggingInfo.value.startX + scrolled.x) / currentZoom;
             const deltaY =
-              (e.clientY - draggingInfo.value.startY) / currentZoom;
+              (e.clientY - draggingInfo.value.startY + scrolled.y) / currentZoom;
 
             // Snap: line up with other elements first, else the grid
             const snapOptions = getSnapOptions(e, snapContext.offset);
@@ -4367,11 +4554,22 @@ const startDragging = (
         }
       };
       const frameMove = throttleToAnimationFrame(applyDragMove);
-      cachedMouseMoveHandler = frameMove;
+      // The wheel or the pointer at an edge scrolls the pages; the element
+      // follows the pointer over the pages that come into view
+      let lastMove: MouseEvent = event;
+      const dragScroll = startDragScrolling({ onScroll: () => frameMove(lastMove) });
+      elementDragScroll = dragScroll;
+      cachedMouseMoveHandler = (e: MouseEvent) => {
+        lastMove = e;
+        dragScroll.pointer(e.clientX, e.clientY);
+        frameMove(e);
+      };
 
       cachedMouseUpHandler = (e: MouseEvent) => {
         // Apply the last mouse move before reading the final position
         frameMove.flush();
+        dragScroll.stop();
+        if (elementDragScroll === dragScroll) elementDragScroll = null;
         if (draggingInfo.value) {
           const currentBand = bands.value[draggingInfo.value.bandIndex];
           let currentElement: DesignElement | undefined;
@@ -4519,7 +4717,8 @@ const startDragging = (
                 // Only the boxes on the page it is dropped on (a cover's design
                 // box must not catch what is dropped on another page)
                 if (targetBand.type === BAND_TYPE_CONSTANTS.DETAIL && (el.pageIndex ?? 0) !== targetSheetPageIndex) continue;
-                if (el.type === "frame") {
+                // (not a Location: it holds only its map and address)
+                if (el.type === "frame" && !isLocationElement(el)) {
                   const centerX =
                     elementRelTargetBandX + currentElement.width / 2;
                   const centerY =
@@ -4734,11 +4933,15 @@ const deleteElement = () => {
     // Delete multiple selected elements
     saveStateToHistory();
 
-    // Delete from last to first to avoid index-shift issues
+    // Delete from last to first to avoid index-shift issues; items inside
+    // boxes first, since removing an item of the band moves the boxes after it
     const sortedElements = [...selectedElements.value].sort((a, b) => {
       if (a.bandIndex !== b.bandIndex) {
         return b.bandIndex - a.bandIndex; // Descending by band index
       }
+      const inBox = (s: typeof a) => (s.parentFrameIndex !== undefined ? 1 : 0);
+      if (inBox(a) !== inBox(b)) return inBox(b) - inBox(a);
+      if (a.parentFrameIndex !== b.parentFrameIndex) return (b.parentFrameIndex ?? 0) - (a.parentFrameIndex ?? 0);
       return b.elementIndex - a.elementIndex; // Descending by element index
     });
 
@@ -4816,10 +5019,22 @@ const startEditing = (
     notification.warning(t("pagination.cannotEdit"));
     return;
   }
+  // A Location's map and address come from its place, changed in its properties
+  if (isLocationElement(target) || isLocationPart(target)) {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    notification.info(t("location.cannotType"));
+    return;
+  }
   // A date fills itself in: it is changed in its properties (which can turn it into plain text)
   if (isDateElement(target)) {
     selectElement(bandIndex, elementIndex, false, parentFrameIndex);
     notification.info(t("dateElement.cannotType"));
+    return;
+  }
+  // A linked project detail shows the project's value (its properties can turn it into plain text)
+  if (isProjectValue(target)) {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    notification.info(t("projectValue.cannotType"));
     return;
   }
   cleanLegacyAutoDateElement(target);
@@ -4886,7 +5101,7 @@ const initBox = (element: DesignElement) => {
 
 // Download the JRXML file (charts drawn with their numbers, barcodes sized, first)
 const downloadJRXML = async () => {
-  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value)]);
+  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureTemplateProject(reportProjects.value[0]?.id)]);
   const content = generateJRXMLContent(
     reportStore.propertiesForJrxml(),
     bands.value,
@@ -4998,6 +5213,12 @@ const updateJRXML = () => reportStore.updateJrxml();
 
 // Auto-save each JRXML the store writes, right away
 watch(() => reportStore.jrxmlVersion, () => saveToLocalStorageWrapper(), { flush: "sync" });
+
+// Location maps: a picture drawn when a Location's place, zoom or map size
+// changed; it goes into the same undo step as that change
+const drawMaps = () => refreshLocationMaps(() => bands.value, updateJRXML);
+watch(() => reportStore.jrxmlVersion, drawMaps);
+const ensureMaps = () => ensureLocationMaps(() => bands.value, updateJRXML);
 
 // Copy an element to the clipboard
 const copyElement = async () => {
@@ -5435,15 +5656,20 @@ const handleKeyDown = (event: KeyboardEvent) => {
     return;
   }
 
-  // CTRL/CMD+Z undoes an action
-  if (isCtrlOrMetaPressed && event.key === "z") {
+  // CTRL/CMD+Z undoes an action. While typing in a box (AI chat, a panel
+  // field, a popup's search) the browser undoes the typing instead
+  const isTypingText =
+    activeEl?.tagName === "TEXTAREA" ||
+    (activeEl as HTMLElement | null)?.isContentEditable ||
+    (activeEl instanceof HTMLInputElement && ["text", "search", "email", "url", "tel", "password"].includes(activeEl.type));
+  if (isCtrlOrMetaPressed && event.key === "z" && !isTypingText) {
     event.preventDefault();
     undo();
     return;
   }
 
   // CTRL/CMD+Y redoes an action
-  if (isCtrlOrMetaPressed && event.key === "y") {
+  if (isCtrlOrMetaPressed && event.key === "y" && !isTypingText) {
     event.preventDefault();
     redo();
     return;
@@ -5630,12 +5856,14 @@ const navigateElements = (direction: string) => {
 const moveElementByKeyboard = (direction: string, repeat = false) => {
   if (!selectedElement.value) return;
 
-  const {
-    bandIndex: currentBandIndex,
-    elementIndex: currentElementIndex,
-    parentFrameIndex,
-  } = selectedElement.value;
+  const { bandIndex: currentBandIndex } = selectedElement.value;
+  let { elementIndex: currentElementIndex, parentFrameIndex } = selectedElement.value;
   const currentBand = bands.value[currentBandIndex];
+  // A Location's map or address: the whole Location moves (its layout places them)
+  if (parentFrameIndex !== undefined && isLocationElement(currentBand?.elements[parentFrameIndex])) {
+    currentElementIndex = parentFrameIndex;
+    parentFrameIndex = undefined;
+  }
   // An item in a box is found inside the box, and moves only within it
   const parentBox =
     parentFrameIndex !== undefined
@@ -5731,6 +5959,8 @@ watch(
 
 // Load data when the component mounts
 onMounted(() => {
+  // The project list, so the header's picker has it before it is opened
+  prefetchProjects();
   isLoadingFile.value = true;
   console.log("Component mount started...");
   loadFromLocalStorageWrapper();
@@ -5863,37 +6093,37 @@ const regenerateJRXML = (): void => {
   notification.info(t("editor.jrxmlRegenerated"));
 };
 
-// Open the PDF preview (charts drawn with their numbers, barcodes sized, first)
-const openPdfPreview = async (): Promise<void> => {
+// Open the PDF preview at once; the popup waits for the report (prepareReportForPreview)
+// while it shows that the PDF is being made
+const openPdfPreview = (): void => {
   helpStore.noteGuideAction("preview");
   flushAutoSave();
-  try {
-    await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value)]);
-    updateJRXML();
-    if (!jrxmlContent.value) {
-      // Generate the JRXML content directly, without downloading it
-      const content = generateJRXMLContent(
-        reportStore.propertiesForJrxml(),
-        bands.value,
-        reportFields.value,
-        reportParameters.value,
-        subDatasets.value,
-        tableStyles.value,
-        reportVariables.value,
-        [],
-        reportGroups.value,
-        totalPages.value,
-      );
-      jrxmlContent.value = content;
-    }
-    showPdfPreview.value = false;
-    nextTick(() => {
-      showPdfPreview.value = true;
-    });
-  } catch (error) {
-    console.error("Failed to preview PDF:", error);
-    notification.error(t("editor.previewFailed"));
+  showPdfPreview.value = false;
+  nextTick(() => {
+    showPdfPreview.value = true;
+  });
+};
+
+// The JRXML the preview sends: charts drawn with their numbers, barcodes sized,
+// maps drawn and the template's project read first (a failure is shown in the popup)
+const prepareReportForPreview = async (): Promise<string> => {
+  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureTemplateProject(reportProjects.value[0]?.id)]);
+  updateJRXML();
+  if (!jrxmlContent.value) {
+    jrxmlContent.value = generateJRXMLContent(
+      reportStore.propertiesForJrxml(),
+      bands.value,
+      reportFields.value,
+      reportParameters.value,
+      subDatasets.value,
+      tableStyles.value,
+      reportVariables.value,
+      [],
+      reportGroups.value,
+      totalPages.value,
+    );
   }
+  return jrxmlContent.value;
 };
 
 // Save the edited JRXML content
@@ -6750,8 +6980,15 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
     }
   };
 
+  // Undo step before the first move (taken on mouse-up it held the new height,
+  // so undo didn't bring the old one back); a click that moves nothing adds none
+  let historySaved = false;
   const handleMouseMove = (e: MouseEvent): void => {
     if (!bands.value || !bands.value[bandIndex]) return;
+    if (!historySaved) {
+      saveStateToHistory();
+      historySaved = true;
+    }
     const deltaY = (e.clientY - startY) / currentZoom;
 
     // For bottom bands (handle at top edge): dragging UP (-deltaY) expands
@@ -6819,7 +7056,6 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
     document.removeEventListener("mouseup", handleMouseUp);
     ensureBandsFitPage();
     updateOutOfBoundsElements();
-    saveStateToHistory();
     updateJRXML();
   };
 
@@ -6871,6 +7107,8 @@ const startResizingElement = (
   if (element) {
     // Get the current zoom scale
     const currentZoom = zoomLevel.value;
+    // A picture shaped as a Circle stays square while resized (as with Alt)
+    const keepsSquare = element.type === "image" && getImageShape(element) === "circle";
 
     // Get the page sheet element's position info, for more accurate coordinate calculations
     const targetSheet =
@@ -6976,6 +7214,12 @@ const startResizingElement = (
           if (special) {
             containerWidth = special.width;
             containerHeight = special.height;
+          } else if (
+            currentBand.type !== BAND_TYPE_CONSTANTS.DETAIL &&
+            currentBand.type !== BAND_TYPE_CONSTANTS.BACKGROUND
+          ) {
+            // A header / footer section grows with the element, up to its maximum
+            containerHeight = Math.max(currentBand.height, getBandMaxHeight(resizingInfo.value.bandIndex));
           } else {
             containerHeight = bandAreaHeight(resizingInfo.value.bandIndex, element.pageIndex);
           }
@@ -7189,8 +7433,8 @@ const startResizingElement = (
             }
           }
         }
-      } else if (e.altKey) {
-        // If ALT key is held, lock aspect ratio to 1:1
+      } else if (e.altKey || keepsSquare) {
+        // If ALT key is held (or the picture is a Circle), lock aspect ratio to 1:1
         const widthChange = Math.abs(newWidth - startWidth);
         const heightChange = Math.abs(newHeight - startHeight);
 
@@ -7278,6 +7522,16 @@ const startResizingElement = (
       }
       keepInParentBox(element);
 
+      // The header / footer section grows to hold what was made taller (same undo step)
+      if (
+        resizingInfo.value.parentFrameIndex === undefined &&
+        currentBand.type !== BAND_TYPE_CONSTANTS.DETAIL &&
+        currentBand.type !== BAND_TYPE_CONSTANTS.BACKGROUND &&
+        element.y + element.height > currentBand.height
+      ) {
+        currentBand.height = Math.ceil(element.y + element.height);
+      }
+
       // Keep a frame's content in step with the frame (stretch wide items, pin edge items)
       if (frameChildrenStart && element.type === "frame") {
         const fitted = fitChildrenToFrame(frameChildrenStart, frameStartSize, {
@@ -7292,11 +7546,21 @@ const startResizingElement = (
 
       showSnapGuides(snapContext, snapGuides, snapOptions);
     };
-    const handleMouseMove = throttleToAnimationFrame(applyResizeMove);
+    const frameResize = throttleToAnimationFrame(applyResizeMove);
+    // The wheel or the pointer at an edge scrolls the pages; the moving edge
+    // follows the pointer (applyResizeMove reads the page's place every time)
+    let lastMove: MouseEvent = event;
+    const resizeScroll = startDragScrolling({ onScroll: () => frameResize(lastMove) });
+    const handleMouseMove = (e: MouseEvent) => {
+      lastMove = e;
+      resizeScroll.pointer(e.clientX, e.clientY);
+      frameResize(e);
+    };
 
     const handleMouseUp = () => {
       // Apply the last mouse move, then clear the alignment lines
-      handleMouseMove.flush();
+      frameResize.flush();
+      resizeScroll.stop();
       clearAlignmentLines();
 
       resizingInfo.value = null;
@@ -7347,12 +7611,49 @@ const autoFitElementHeight = (
     measureTextElementWidth(element as any, font) + 1,
     box ? box.width : printableWidth.value,
   );
-  const height = calculateTextElementHeight({ ...(element as any), width }, font);
-  if (x === element.x && width === element.width && height === element.height) return;
+  let fitX = x;
+  let fitWidth = width;
+  let height = calculateTextElementHeight({ ...(element as any), width }, font);
+
+  // Too tall for the room left (section, page or box): wider first, keeping the
+  // alignment edge, up to the container's edge; the narrowest width that fits
+  const onSpecialArea = !box && band.type === BAND_TYPE_CONSTANTS.DETAIL && isSpecialPage(reportProperties.value, element.pageIndex);
+  const roomBottom = box
+    ? box.height
+    : onSpecialArea || band.type === BAND_TYPE_CONSTANTS.DETAIL || band.type === BAND_TYPE_CONSTANTS.BACKGROUND
+      ? bandAreaHeight(bandIndex, element.pageIndex)
+      : getBandMaxHeight(bandIndex);
+  const room = roomBottom - element.y;
+  const sideways = (element as any).rotation === "Left" || (element as any).rotation === "Right";
+  if (height > room && room > 0 && !sideways) {
+    const containerWidth = box ? box.width : printableWidth.value;
+    const align = (element as any).textAlignment;
+    const right = fitX + fitWidth;
+    const centre = fitX + fitWidth / 2;
+    const maxWidth = Math.floor(
+      align === "Right" ? right : align === "Center" ? 2 * Math.min(centre, containerWidth - centre) : containerWidth - fitX,
+    );
+    const heightAt = (w: number) => calculateTextElementHeight({ ...(element as any), width: w }, font);
+    if (maxWidth > fitWidth) {
+      let low = fitWidth;
+      let high = maxWidth;
+      if (heightAt(high) <= room) {
+        while (high - low > 2) {
+          const mid = Math.floor((low + high) / 2);
+          if (heightAt(mid) <= room) high = mid;
+          else low = mid;
+        }
+      }
+      fitWidth = high;
+      fitX = align === "Right" ? right - fitWidth : align === "Center" ? Math.round(centre - fitWidth / 2) : fitX;
+      height = heightAt(fitWidth);
+    }
+  }
+  if (fitX === element.x && fitWidth === element.width && height === element.height) return;
 
   saveStateToHistory();
-  element.x = x;
-  element.width = width;
+  element.x = fitX;
+  element.width = fitWidth;
   element.height = height;
 
   // A band grows to fit the text, up to its maximum; past that, warn (a cover
@@ -7744,9 +8045,8 @@ const handleCheckFields = (fields: string[]): void => {
   });
 
   if (fieldsAdded) {
-    // Save state to history
-    saveStateToHistory();
-    // Update JRXML
+    // Part of the text edit that named them (its undo step is already taken;
+    // one taken here held the added fields, an undo step that did nothing)
     updateJRXML();
   }
 };
@@ -7760,7 +8060,13 @@ const handleElementContextMenu = (
 ): void => {
   event.preventDefault();
   event.stopPropagation();
-  selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+  // Right-clicking one of several selected items keeps them all selected, so
+  // the menu's Delete, Bring to Front, Send to Back and Reset style act on all
+  const inSelection = selectedElements.value.some(
+    (sel) =>
+      sel.bandIndex === bandIndex && sel.elementIndex === elementIndex && sel.parentFrameIndex === parentFrameIndex,
+  );
+  if (!(severalSelected.value && inSelection)) selectElement(bandIndex, elementIndex, false, parentFrameIndex);
   contextMenu.value = {
     visible: true,
     x: event.clientX,
@@ -7768,6 +8074,8 @@ const handleElementContextMenu = (
     type: "element",
   };
 };
+
+const severalSelected = computed(() => selectedElements.value.length > 1);
 
 // Handle the canvas context menu
 const handleCanvasContextMenu = (event: MouseEvent): void => {
@@ -7838,12 +8146,13 @@ const resetSelectedStyles = () => {
 // of the box's parts (kept inside) or an item that was dropped in (moves freely)
 const selectedBoxItem = computed(() => {
   const selection = selectedElement.value;
-  if (!selection || selection.parentFrameIndex === undefined) return null;
+  if (!selection || selection.parentFrameIndex === undefined || severalSelected.value) return null;
   const box = bands.value[selection.bandIndex]?.elements[selection.parentFrameIndex] as
     | FrameElement
     | undefined;
   const item = box?.elements?.[selection.elementIndex];
-  if (!box || !item) return null;
+  // A Location's map and address belong to it
+  if (!box || !item || isLocationPart(item)) return null;
   return { box, item, isPart: isBoxPart(item) };
 });
 
@@ -7881,23 +8190,54 @@ const moveElementOutOfBox = () => {
   updateJRXML();
 };
 
-// Move an element's Z-order
+// Bring to Front / Send to Back: the selected items go on top of (or under)
+// everything else in their section or box, keeping their own order. The order
+// is the drawing order in the PDF (later items print over earlier ones). One
+// undo step, none when nothing would change (already at the front / back of
+// their page)
 const moveElementZOrder = (direction: "front" | "back") => {
-  if (!selectedElement.value) return;
+  const picked = selectedElements.value.length
+    ? selectedElements.value
+    : selectedElement.value
+      ? [selectedElement.value]
+      : [];
+  const moving = new Set(picked.map((sel) => elementAtLocation(sel)).filter((el) => el !== undefined));
+  if (!moving.size) return;
+
+  // Each list holding a selected item (a section, or a box's items), reordered
+  const containers = new Set<DesignElement[]>();
+  for (const sel of picked) {
+    const band = bands.value[sel.bandIndex];
+    const list =
+      sel.parentFrameIndex !== undefined
+        ? (band?.elements[sel.parentFrameIndex] as FrameElement | undefined)?.elements
+        : band?.elements;
+    if (list) containers.add(list);
+  }
+  const page = (el: DesignElement) => el.pageIndex ?? 0;
+  const pageOrder = (list: DesignElement[]) => list.map((el) => `${page(el)}:${el.uuid}`).join("|");
+  const changes = [...containers]
+    .map((list) => {
+      const mine = list.filter((el) => moving.has(el));
+      const rest = list.filter((el) => !moving.has(el));
+      const next = direction === "front" ? [...rest, ...mine] : [...mine, ...rest];
+      // Detail pages share one list: what counts is the order on each page
+      const byPage = (items: DesignElement[]) =>
+        [...new Set(items.map(page))].map((p) => pageOrder(items.filter((el) => page(el) === p))).join("#");
+      return byPage(next) === byPage(list) ? null : { list, next };
+    })
+    .filter((change) => change !== null);
+  if (!changes.length) return;
+
   saveStateToHistory();
-  const { bandIndex, elementIndex, parentFrameIndex } = selectedElement.value;
-  const band = bands.value[bandIndex];
-  if (!band) return;
-  const elements =
-    parentFrameIndex !== undefined
-      ? (band.elements[parentFrameIndex] as any).elements
-      : band.elements;
-  if (!elements) return;
-  const [element] = elements.splice(elementIndex, 1);
-  if (direction === "front") elements.push(element);
-  else elements.unshift(element);
-  const newIndex = direction === "front" ? elements.length - 1 : 0;
-  selectElement(bandIndex, newIndex, false, parentFrameIndex);
+  for (const { list, next } of changes) list.splice(0, list.length, ...next);
+  // The selection follows the items to their new places
+  const follow = (sel: { uuid?: string }) => {
+    const loc = sel.uuid ? findElementByUuid(sel.uuid) : null;
+    return loc ? { ...loc, uuid: sel.uuid } : null;
+  };
+  selectedElements.value = picked.map(follow).filter((sel) => sel !== null);
+  selectedElement.value = selectedElement.value ? follow(selectedElement.value) : null;
   updateJRXML();
 };
 
@@ -8158,31 +8498,78 @@ const moveElementZOrder = (direction: "front" | "back") => {
   flex-wrap: nowrap;
 }
 
-/* Google Docs style editable document title */
+/* Google Docs style editable document title: the field is as wide as the
+   name. It may shrink to --title-keep (or the name, if shorter; then "…");
+   needing more than the header has, it makes the header take its next, more
+   compact step (fitHeader), so the name gets room as tools turn into icons */
 .document-title-wrap {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-shrink: 0;
-  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.document-title-field {
+  --title-floor: 64px;
+  --title-keep: 360px;
+  --title-pad: 8px;
+  display: grid;
+  grid-template-columns: 1fr;
+  flex: 0 1 auto;
+}
+
+/* The input and two hidden copies of the name share one cell and one font.
+   ::before gives the field its wanted width (the whole name, at least
+   --title-floor) and can wrap, so it never stops the field shrinking;
+   ::after can't wrap and is at most --title-keep wide: the field's least width */
+.document-title-field::before,
+.document-title-field::after,
+.document-title-input {
+  grid-area: 1 / 1;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  padding: 5px var(--title-pad);
+  border: 1px solid transparent;
+}
+
+.document-title-field::before,
+.document-title-field::after {
+  content: attr(data-value);
+  /* Room for the caret at the end */
+  padding-right: calc(var(--title-pad) + 2px);
+  padding-block: 0;
+  border-block-width: 0;
+  height: 0;
+  /* clip, not hidden: a scroll container's least width counts as 0 */
+  overflow: clip;
+  visibility: hidden;
+}
+
+.document-title-field::before {
+  min-width: var(--title-floor);
+  white-space: break-spaces;
+  word-break: break-all;
+}
+
+.document-title-field::after {
+  max-width: var(--title-keep);
+  white-space: pre;
 }
 
 .document-title-input {
-  font-size: 14px;
-  font-weight: 650;
+  width: 100%;
+  min-width: 0;
   color: #1c1b26;
-  padding: 5px 8px;
-  border: 1px solid rgba(28, 27, 38, 0.09);
+  border-color: rgba(28, 27, 38, 0.09);
   border-radius: 7px;
   background-color: #fafafc;
   outline: none;
-  min-width: 80px;
-  max-width: 170px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   transition: all 0.16s ease;
-  font-family: inherit;
 }
 
 .document-title-input:hover {
@@ -8198,6 +8585,7 @@ const moveElementZOrder = (direction: "front" | "back") => {
 
 .auto-save-badge {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   margin-left: 4px;
   font-size: 11px;
@@ -8339,30 +8727,24 @@ const moveElementZOrder = (direction: "front" | "back") => {
 
 /* Narrow headers (headerTier): the report name takes the room that is left,
    spacing tightens, and nothing is allowed to push the header wider */
-.designer-header .header-left,
-.designer-header .document-title-wrap {
+.designer-header .header-left {
   min-width: 0;
 }
 
-/* The report name keeps its usual width while there is room and gives way
-   first when there isn't (down to 120px, 56px on the narrowest screens) */
-.designer-header.tier-3 .document-title-wrap,
-.designer-header.tier-4 .document-title-wrap,
-.designer-header.tier-5 .document-title-wrap,
-.designer-header.tier-6 .document-title-wrap {
-  flex-shrink: 0;
+/* The room a long report name keeps on narrower headers */
+.designer-header.tier-3 .document-title-field,
+.designer-header.tier-4 .document-title-field {
+  --title-keep: 200px;
 }
 
-.designer-header.tier-3 .document-title-input,
-.designer-header.tier-4 .document-title-input {
-  max-width: 130px;
-  min-width: 70px;
+.designer-header.tier-5 .document-title-field {
+  --title-floor: 48px;
+  --title-keep: 140px;
 }
 
-.designer-header.tier-5 .document-title-input,
-.designer-header.tier-6 .document-title-input {
-  max-width: 90px;
-  min-width: 50px;
+.designer-header.tier-6 .document-title-field {
+  --title-floor: 48px;
+  --title-keep: 80px;
 }
 
 .designer-header.tier-3 .header-left.header-workflow,
@@ -8412,9 +8794,12 @@ const moveElementZOrder = (direction: "front" | "back") => {
   gap: 4px;
 }
 
+.designer-header.tier-6 .document-title-field {
+  --title-pad: 6px;
+}
+
 .designer-header.tier-6 .document-title-input {
-  padding: 4px 6px;
-  font-size: 14px;
+  padding-block: 4px;
 }
 
 .designer-header.tier-6 .auto-save-badge {
@@ -8450,8 +8835,12 @@ const moveElementZOrder = (direction: "front" | "back") => {
 .coordinates-display,
 .band-height-display {
   position: absolute;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
+  background-color: #ffffff;
+  color: #1c1b26;
+  font-weight: 600;
+  box-shadow:
+    0 0 0 1px rgba(28, 27, 38, 0.08),
+    0 8px 24px rgba(23, 20, 44, 0.14);
   padding: v-bind('UI_CONSTANTS.SMALL_MARGIN + "px"')
     v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
   border-radius: v-bind('UI_CONSTANTS.BORDER_RADIUS_SMALL + "px"');

@@ -16,7 +16,7 @@ import { chartTextsFor, setChartTextSource, CHART_TEXTS } from "@/utils/chart/ch
 import { parseBinding, resolveFilterDates, toDataQuery } from "@/utils/table/dataBinding";
 
 // Bumped whenever a function's arguments or results change
-export const ENGINE_VERSION = 1;
+export const ENGINE_VERSION = 11;
 
 // Languages charts can print in ("en", "ms")
 export const LOCALES = Object.keys(CHART_TEXTS);
@@ -69,10 +69,11 @@ export function chartSvg(
 // POST query to {DATA_SOURCE_API}/projects/{projectId}/sources/{sourceId}/query
 // and pass the rows to the report as the table's dataset (datasetName).
 // Moving date ranges are already turned into dates. "null" when the table
-// has no data set up.
+// has no data set up, or shows one of the project's own lists (binding.list:
+// its rows are the project record's projectTeams / companies / contracts).
 export function tableQuery(bindingJson: string, todayIso?: string): string {
   const binding = parseBinding(bindingJson);
-  if (!binding || !binding.projectId || binding.columns.length === 0) return "null";
+  if (!binding || binding.list || !binding.projectId || binding.columns.length === 0) return "null";
   const query = toDataQuery(binding);
   return JSON.stringify({
     projectId: binding.projectId,

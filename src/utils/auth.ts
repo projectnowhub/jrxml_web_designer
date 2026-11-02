@@ -1,5 +1,5 @@
 import apiClient from "../services/apiClient";
-import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
+import { AUTH_TOKEN_KEY } from "../services/apiClient";
 
 export const isAuthenticated = (): boolean => {
   if (typeof window === "undefined") {
@@ -37,23 +37,4 @@ export const verifyTenantSession = async (): Promise<boolean> => {
   const tenantId = getClientId();
 
   return verifyTenant(tenantId);
-};
-
-export const getStoredUser = (): {
-  firstName?: string;
-  name?: string;
-  username?: string;
-  email?: string;
-} => {
-  const storedUser = localStorage.getItem(AUTH_USER_KEY);
-
-  if (!storedUser) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(storedUser);
-  } catch {
-    return {};
-  }
 };

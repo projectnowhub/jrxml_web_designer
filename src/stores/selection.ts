@@ -3,7 +3,7 @@
 // whose text is being edited in place. Positions are band / element indexes,
 // with parentFrameIndex for an item inside a box.
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import type { EditingElementInfo, SelectedElementInfo } from "@/types";
 import type { CellPos } from "@/utils/customTable";
 
@@ -21,6 +21,16 @@ export const useSelectionStore = defineStore("selection", () => {
   const selectedElements = ref<SelectedElementInfo[]>([]);
   const editingElement = ref<EditingElementInfo | null>(null);
   const tableCells = ref<TableCellSelection | null>(null);
+  // The column chosen in a project-data table (its look in the panel): the
+  // table's uuid, the column's key, and optional part (header / data / total)
+  const tableColumn = ref<{ uuid: string; key: string; part?: "header" | "data" | "total" } | null>(null);
+  // Selecting anything else lets go of the chosen column
+  watch(
+    () => selectedElement.value?.uuid,
+    (uuid) => {
+      if (tableColumn.value && tableColumn.value.uuid !== uuid) tableColumn.value = null;
+    },
+  );
   // The band last clicked: elements added from the library go there (none
   // yet: Detail)
   const lastClickedBandIndex = ref<number | null>(null);
@@ -38,6 +48,7 @@ export const useSelectionStore = defineStore("selection", () => {
     selectedElements.value = [];
     editingElement.value = null;
     tableCells.value = null;
+    tableColumn.value = null;
     lastClickedBandIndex.value = null;
     lastClickedPageIndex.value = null;
     revealUuid.value = null;
@@ -50,6 +61,7 @@ export const useSelectionStore = defineStore("selection", () => {
     selectedElements,
     editingElement,
     tableCells,
+    tableColumn,
     lastClickedBandIndex,
     lastClickedPageIndex,
     reset,

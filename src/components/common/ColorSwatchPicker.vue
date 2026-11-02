@@ -5,6 +5,7 @@
   <NColorPicker
     class="color-swatch-picker"
     :value="pickerValue"
+    :title="mixed ? t('colorPicker.mixed') : undefined"
     :modes="['hex']"
     :show-alpha="false"
     :disabled="disabled"
@@ -19,11 +20,17 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { NColorPicker } from 'naive-ui';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps<{
   modelValue?: string | null;
   disabled?: boolean;
+  // The chosen things have different colours: the swatch shows the
+  // see-through pattern instead of a colour
+  mixed?: boolean;
 }>();
+
+const { t } = useI18n();
 
 // update:modelValue fires while the colour is being dragged (like a native
 // "input" event); change fires once the pick is finished
@@ -33,7 +40,7 @@ const emit = defineEmits<{
 }>();
 
 const pickerValue = computed(() =>
-  props.modelValue && /^#[0-9a-f]{3,8}$/i.test(props.modelValue) ? props.modelValue : '#000000',
+  props.mixed ? null : props.modelValue && /^#[0-9a-f]{3,8}$/i.test(props.modelValue) ? props.modelValue : '#000000',
 );
 
 // Only the swatch, no hex text, so it fits compact rows

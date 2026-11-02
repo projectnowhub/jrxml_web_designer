@@ -57,8 +57,8 @@
 
       <div v-for="project in [activeProject]" :key="project.id" class="rdp-project-body">
         <div v-if="failed[project.id]" class="rdp-message is-error">
-          {{ t("reportData.loadFailed") }}
-          <button type="button" class="rdp-link" @click="loadProject(project.id)">{{ t("reportData.retry") }}</button>
+          {{ failureText(project, failed[project.id]!) }}
+          <button type="button" class="rdp-link" @click="retryProject(project.id)">{{ t("reportData.retry") }}</button>
         </div>
         <div v-else-if="!details[project.id]" class="rdp-message">{{ t("dataTable.loading") }}</div>
 
@@ -90,6 +90,72 @@
             </li>
           </ul>
 
+          <!-- Location: the whole place (map and address) or one of its fields -->
+          <template v-if="locationRows(project.id).length">
+            <div class="rdp-group">{{ t("reportData.location") }}</div>
+            <ul class="rdp-list">
+              <li
+                v-for="row in locationRows(project.id)"
+                :key="row.field.key"
+                class="rdp-item"
+                :class="{ 'is-location': row.field.type === 'location' }"
+                draggable="true"
+                :title="t(row.field.type === 'location' ? 'reportData.dragLocation' : 'reportData.dragDetail')"
+                @dragstart="dragField($event, project, row.field, row.value)"
+                @dragend="endDataSourceDrag"
+              >
+                <component :is="FIELD_ICONS[row.field.type]" :size="12" class="rdp-type" aria-hidden="true" />
+                <span class="rdp-name">{{ row.field.label }}</span>
+                <span class="rdp-value" :title="row.shown">{{ row.shown }}</span>
+                <GripVertical :size="12" class="rdp-grip" aria-hidden="true" />
+              </li>
+            </ul>
+          </template>
+
+          <!-- The project's lists (manager, team, companies, contracts): each a table of its rows -->
+          <template v-if="listTables(project.id).length">
+            <div class="rdp-group">{{ t("reportData.lists") }}</div>
+            <ul class="rdp-list">
+              <li
+                v-for="table in listTables(project.id)"
+                :key="table.key"
+                class="rdp-item"
+                draggable="true"
+                :title="t('reportData.dragTable')"
+                @dragstart="dragTable($event, project, table)"
+                @dragend="endDataSourceDrag"
+              >
+                <Table2 :size="12" class="rdp-type" aria-hidden="true" />
+                <span class="rdp-name">{{ table.label }}</span>
+                <span class="rdp-value">{{ t("reportData.listRows", table.rows.length) }}</span>
+                <GripVertical :size="12" class="rdp-grip" aria-hidden="true" />
+              </li>
+            </ul>
+          </template>
+
+          <!-- The project's user-defined fields: name and value -->
+          <template v-if="moreDetailFields(project.id).length">
+            <div class="rdp-group">{{ t("reportData.moreDetails") }}</div>
+            <ul class="rdp-list">
+              <li
+                v-for="field in moreDetailFields(project.id)"
+                :key="field.key"
+                class="rdp-item"
+                draggable="true"
+                :title="t('reportData.dragDetail')"
+                @dragstart="dragField($event, project, field)"
+                @dragend="endDataSourceDrag"
+              >
+                <Type :size="12" class="rdp-type" aria-hidden="true" />
+                <span class="rdp-name">{{ field.label }}</span>
+                <span v-if="field.label !== valueOf(project.id, field.key)" class="rdp-value" :title="valueOf(project.id, field.key) ?? ''">
+                  {{ valueOf(project.id, field.key) }}
+                </span>
+                <GripVertical :size="12" class="rdp-grip" aria-hidden="true" />
+              </li>
+            </ul>
+          </template>
+
           <!-- Tables: drag onto a table or the Detail section -->
           <div v-if="visibleSources(project.id).length" class="rdp-group">{{ t("reportData.tables") }}</div>
           <ul class="rdp-list">
@@ -116,7 +182,7 @@
                 </button>
                 <Database :size="13" class="rdp-accent" aria-hidden="true" />
                 <span class="rdp-name">{{ source.name }}</span>
-                <span class="rdp-meta">{{ t("reportData.rows", source.rowCount) }}</span>
+                <span class="rdp-meta">{{ source.rowCount !== undefined ? t("reportData.rows", source.rowCount) : t("reportData.columnCount", source.columnCount ?? 0) }}</span>
                 <GripVertical :size="12" class="rdp-grip" aria-hidden="true" />
               </div>
 
@@ -129,26 +195,31 @@
                 <li v-if="!schemas[sourceKey(project.id, source.id)]" class="rdp-message">
                   {{ t("dataTable.loading") }}
                 </li>
-                <li
-                  v-for="col in schemas[sourceKey(project.id, source.id)]?.columns ?? []"
-                  :key="col.key"
-                  class="rdp-item"
-                  draggable="true"
-                  :title="t('reportData.dragColumn')"
-                  @dragstart="dragColumn($event, project, source, col)"
-                  @dragend="endDataSourceDrag"
-                >
-                  <component :is="COLUMN_ICONS[col.type]" :size="12" class="rdp-type" aria-hidden="true" />
-                  <span class="rdp-name">{{ col.label }}</span>
-                  <span class="rdp-meta">{{ t(`dataTable.types.${col.type}`) }}</span>
-                </li>
+                <!-- Standard fields, then the ones the tenant added (headed when both are there) -->
+                <template v-for="group in columnGroups(schemas[sourceKey(project.id, source.id)])" :key="group.key">
+                  <li v-if="group.title" class="rdp-subgroup" role="presentation">{{ group.title }}</li>
+                  <li
+                    v-for="col in group.columns"
+                    :key="col.key"
+                    class="rdp-item"
+                    draggable="true"
+                    :title="t('reportData.dragColumn')"
+                    @dragstart="dragColumn($event, project, source, col)"
+                    @dragend="endDataSourceDrag"
+                  >
+                    <component :is="COLUMN_ICONS[col.type]" :size="12" class="rdp-type" aria-hidden="true" />
+                    <Zap v-if="col.userDefined" :size="11" class="rdp-bolt" :title="t('reportData.userDefinedField')" />
+                    <span class="rdp-name">{{ col.label }}</span>
+                    <span class="rdp-meta">{{ t(`dataTable.types.${col.type}`) }}</span>
+                  </li>
+                </template>
               </ul>
               </Collapse>
             </li>
           </ul>
 
           <div
-            v-if="query.trim() && !visibleFields(project.id).length && !visibleSources(project.id).length"
+            v-if="query.trim() && !visibleFields(project.id).length && !locationRows(project.id).length && !listTables(project.id).length && !moreDetailFields(project.id).length && !visibleSources(project.id).length"
             class="rdp-message"
           >
             {{ t("reportData.noMatch") }}
@@ -172,20 +243,21 @@ import {
   GripVertical,
   Hash,
   Image as ImageIcon,
+  MapPin,
   RefreshCw,
   Search,
+  Table2,
   Type,
+  Zap,
 } from "@lucide/vue";
-import {
-  clearSchemaCache,
-  getProject,
-  getSchema,
-  listSources,
-} from "@/services/dataSourceService";
-import { clearTableRowsCache } from "@/composables/useTableRows";
+import { useQueries, useQuery } from "@tanstack/vue-query";
+import { entitiesQuery, refreshReportData } from "@/queries/dataSourceQueries";
+import { toSourceSchema, toSourceSummary } from "@/services/helpers/entityMappers";
+import { projectQuery } from "@/queries/projectQueries";
+import { toProjectDetails } from "@/services/helpers/projectMappers";
 import { endDataSourceDrag, startDataSourceDrag } from "@/utils/table/dataDrag";
+import { PLACE_FIELDS, toPlace } from "@/utils/location/locationElement";
 import { collectBoundTables } from "@/utils/table/tableDocument";
-import { clearChartDataCache } from "@/utils/chart/chartDataStore";
 import { isChartBound, normalizeChartBinding } from "@/utils/chart/chartTypes";
 import type { Band } from "@/types";
 import type {
@@ -196,6 +268,7 @@ import type {
   ProjectDetails,
   ProjectField,
   ProjectFieldType,
+  ProjectTable,
   ReportProject,
 } from "@/types/dataSource";
 
@@ -209,6 +282,7 @@ const FIELD_ICONS: Record<ProjectFieldType, Component> = {
   text: Type,
   longText: Type,
   image: ImageIcon,
+  location: MapPin,
 };
 
 const COLUMN_ICONS: Record<DataColumnType, Component> = {
@@ -220,41 +294,88 @@ const COLUMN_ICONS: Record<DataColumnType, Component> = {
 
 // ---- Each project's details and sources -----------------------------------
 
-const details = reactive<Record<string, ProjectDetails | undefined>>({});
-const sources = reactive<Record<string, DataSourceSummary[]>>({});
-const failed = reactive<Record<string, boolean>>({});
-const schemas = reactive<Record<string, DataSourceSchema | undefined>>({});
 const expanded = reactive<Record<string, boolean>>({});
 const query = ref("");
 const reloading = ref(false);
 
 const sourceKey = (projectId: string, sourceId: string) => `${projectId}/${sourceId}`;
 
-async function loadProject(id: string) {
-  failed[id] = false;
-  try {
-    const [loadedDetails, loadedSources] = await Promise.all([getProject(id), listSources(id)]);
-    details[id] = loadedDetails;
-    sources[id] = loadedSources;
-  } catch {
-    failed[id] = true;
+// Every chosen project's details and sources (TanStack Query: fetched once,
+// shared with the picker, the Location panel and the AI assistant)
+const projectResults = useQueries({ queries: computed(() => props.projects.map((p) => projectQuery(p.id))) });
+// The tables (CDP entities and their columns): the same for every project
+const entities = useQuery(entitiesQuery());
+
+const details = computed(() => {
+  const byId: Record<string, ProjectDetails | undefined> = {};
+  props.projects.forEach((p, i) => {
+    const project = projectResults.value[i]?.data;
+    byId[p.id] = project ? toProjectDetails(project, p.id) : undefined;
+  });
+  return byId;
+});
+const sources = computed(() => {
+  const byId: Record<string, DataSourceSummary[]> = {};
+  const tables = (entities.data.value ?? []).map(toSourceSummary);
+  props.projects.forEach((p) => (byId[p.id] = tables));
+  return byId;
+});
+// Why a project's data can't be shown: the project isn't in the list the
+// backend gives (deleted, or this login can't see it), its request failed, or
+// the tables (entities) couldn't be read
+type ProjectFailure = "missing" | "project" | "tables";
+const failed = computed(() => {
+  const byId: Record<string, ProjectFailure | undefined> = {};
+  props.projects.forEach((p, i) => {
+    const result = projectResults.value[i];
+    byId[p.id] = result?.isError
+      ? "project"
+      : result?.isSuccess && result.data === null
+        ? "missing"
+        : entities.isError.value
+          ? "tables"
+          : undefined;
+  });
+  return byId;
+});
+const failureText = (project: ReportProject, failure: ProjectFailure) =>
+  failure === "missing"
+    ? t("reportData.projectMissing", { project: project.name })
+    : failure === "tables"
+      ? t("reportData.tablesLoadFailed")
+      : t("reportData.loadFailed");
+// A project the list doesn't have: its id in the console, to compare with the list's answer
+watch(failed, (now) => {
+  for (const p of props.projects) {
+    if (now[p.id] === "missing") console.warn(`[Report Data] Project ${p.id} (${p.name}) is not in the projects list (cdp_Project)`);
   }
+});
+
+function retryProject(id: string) {
+  const i = props.projects.findIndex((p) => p.id === id);
+  projectResults.value[i]?.refetch();
+  if (entities.isError.value) entities.refetch();
 }
 
-async function loadSchema(projectId: string, sourceId: string) {
-  const key = sourceKey(projectId, sourceId);
-  if (schemas[key]) return;
-  try {
-    schemas[key] = await getSchema(projectId, sourceId);
-  } catch {
-    expanded[key] = false;
-  }
-}
+// The columns of each opened source
+const openSources = computed(() =>
+  Object.keys(expanded)
+    .filter((key) => expanded[key])
+    .map((key) => key.split("/") as [string, string]),
+);
+// (they come with the table list, so they are there as soon as a table is)
+const schemas = computed(() => {
+  const byKey: Record<string, DataSourceSchema | undefined> = {};
+  openSources.value.forEach(([projectId, sourceId]) => {
+    const entity = entities.data.value?.find((e) => e.entityName === sourceId);
+    byKey[sourceKey(projectId, sourceId)] = entity ? toSourceSchema(entity) : undefined;
+  });
+  return byKey;
+});
 
 function toggleSource(projectId: string, sourceId: string) {
   const key = sourceKey(projectId, sourceId);
   expanded[key] = !expanded[key];
-  if (expanded[key]) loadSchema(projectId, sourceId);
 }
 
 // ---- Tabs: one project shown at a time ------------------------------------
@@ -268,9 +389,6 @@ const tabRefs: Record<string, HTMLElement | null> = {};
 watch(
   () => props.projects.map((p) => p.id),
   (ids, before) => {
-    ids.forEach((id) => {
-      if (!details[id] && !failed[id]) loadProject(id);
-    });
     const added = before ? ids.filter((id) => !before.includes(id)) : [];
     if (added.length) activeId.value = added[added.length - 1]!;
     else if (!ids.includes(activeId.value)) activeId.value = ids[0] ?? "";
@@ -296,45 +414,93 @@ function onTabKeydown(event: KeyboardEvent) {
   });
 }
 
-// Fetch everything again (e.g. after the backend changed a project)
+// Fetch everything again (e.g. after the backend changed a project): every
+// project, source, column, table row and chart number is marked stale
 async function reload() {
   reloading.value = true;
-  clearSchemaCache();
-  clearTableRowsCache();
-  clearChartDataCache();
-  Object.keys(details).forEach((k) => delete details[k]);
-  Object.keys(schemas).forEach((k) => delete schemas[k]);
   try {
-    await Promise.all([
-      ...props.projects.map((p) => loadProject(p.id)),
-    ]);
-    Object.keys(expanded).forEach((key) => {
-      const [projectId, sourceId] = key.split("/");
-      if (expanded[key] && projectId && sourceId) loadSchema(projectId, sourceId);
-    });
+    await refreshReportData();
   } finally {
     reloading.value = false;
   }
 }
 
-const valueOf = (projectId: string, key: string) => details[projectId]?.values[key] ?? null;
+const valueOf = (projectId: string, key: string) => details.value[projectId]?.values[key] ?? null;
 const logoOf = (projectId: string) => {
-  const logo = details[projectId]?.fields.find((f) => f.type === "image");
+  const logo = details.value[projectId]?.fields.find((f) => f.type === "image");
   return logo ? valueOf(projectId, logo.key) : null;
 };
 
 // Search matches a detail, a source or one of its (loaded) columns
 const matches = (text: string) => text.toLowerCase().includes(query.value.trim().toLowerCase());
 
+// A detail with nothing in it isn't listed (there is nothing to drag)
+const hasValue = (value: string | null | undefined) => !!value && value.trim() !== "";
+
 const visibleFields = (projectId: string): ProjectField[] =>
-  (details[projectId]?.fields ?? []).filter((f) => !query.value.trim() || matches(f.label));
+  (details.value[projectId]?.fields ?? []).filter(
+    (f) => hasValue(valueOf(projectId, f.key)) && (!query.value.trim() || matches(f.label)),
+  );
+
+// The project's location: the whole place (a Location element: map and
+// address) and each of its fields (text), in the order of the CDP project form
+interface LocationRow {
+  field: ProjectField;
+  value: string | null;
+  shown: string;
+}
+const locationRows = (projectId: string): LocationRow[] => {
+  const location = details.value[projectId]?.location;
+  if (!location) return [];
+  const place = toPlace(location);
+  if (PLACE_FIELDS.every((f) => !place[f])) return [];
+  const rows: LocationRow[] = [
+    {
+      field: { key: "location", label: t("reportData.locationWhole"), type: "location" },
+      value: JSON.stringify(place),
+      shown: [place.city, place.country].filter(Boolean).join(", "),
+    },
+    ...PLACE_FIELDS.map((f) => {
+      // A coordinate of 0 means "not set" (no project sits on that line)
+      const unset = (f === "latitude" || f === "longitude") && Number(place[f]) === 0;
+      return {
+        field: { key: `location.${f}`, label: t(`location.fields.${f}`), type: "text" as const },
+        value: unset ? null : place[f] || null,
+        shown: place[f],
+      };
+    }),
+  ];
+  return rows.filter((row) => hasValue(row.value) && (!query.value.trim() || matches(row.field.label)));
+};
+
+// A table's columns in two groups: the standard fields every tenant has and the
+// ones this tenant added; always titled, so base columns
+// read as base columns even when the tenant added none
+function columnGroups(schema: DataSourceSchema | undefined) {
+  const columns = schema?.columns ?? [];
+  const standard = columns.filter((c) => !c.userDefined);
+  const custom = columns.filter((c) => c.userDefined);
+  return [
+    { key: "standard", title: t("reportData.standardFields"), columns: standard },
+    { key: "custom", title: t("reportData.customFields"), columns: custom },
+  ].filter((group) => group.columns.length);
+}
+
+// The project's lists (manager, team, companies, contracts), empty ones too
+const listTables = (projectId: string): ProjectTable[] =>
+  (details.value[projectId]?.tables ?? []).filter((table) => !query.value.trim() || matches(table.label));
+
+const moreDetailFields = (projectId: string): ProjectField[] =>
+  (details.value[projectId]?.moreDetails ?? []).filter(
+    (field) => hasValue(valueOf(projectId, field.key)) && (!query.value.trim() || matches(field.label)),
+  );
 
 const visibleSources = (projectId: string): DataSourceSummary[] =>
-  (sources[projectId] ?? []).filter(
+  (sources.value[projectId] ?? []).filter(
     (s) =>
       !query.value.trim() ||
       matches(s.name) ||
-      !!schemas[sourceKey(projectId, s.id)]?.columns.some((c) => matches(c.label)),
+      !!schemas.value[sourceKey(projectId, s.id)]?.columns.some((c) => matches(c.label)),
   );
 
 // Tables and charts on the report that show each source (a chart by its
@@ -363,13 +529,23 @@ const usedBy = (projectId: string, sourceId: string) =>
 
 // ---- Dragging ---------------------------------------------------------------
 
-function dragField(event: DragEvent, project: ReportProject, field: ProjectField) {
+function dragField(event: DragEvent, project: ReportProject, field: ProjectField, value = valueOf(project.id, field.key)) {
   startDataSourceDrag(event, {
     kind: "projectField",
     projectId: project.id,
     projectName: project.name,
     field: { ...field },
-    value: valueOf(project.id, field.key),
+    value,
+  });
+}
+
+// A list becomes a table of the project's rows
+function dragTable(event: DragEvent, project: ReportProject, table: ProjectTable) {
+  startDataSourceDrag(event, {
+    kind: "projectTable",
+    projectId: project.id,
+    projectName: project.name,
+    table: JSON.parse(JSON.stringify(table)) as ProjectTable,
   });
 }
 
@@ -403,6 +579,12 @@ function dragColumn(
 </script>
 
 <style scoped>
+/* User-defined fields: a bolt, as the CDP app's ⚡ */
+.rdp-bolt {
+  flex: none;
+  color: #f59e0b;
+}
+
 .rdp-chevron {
   transition: transform 0.15s ease;
 }
@@ -589,8 +771,22 @@ function dragColumn(
   padding-left: 2px;
 }
 
+/* The whole place: the row that adds a Location element */
+.rdp-item.is-location .rdp-name {
+  font-weight: 600;
+}
+
 .rdp-columns .rdp-item {
   margin-left: 22px;
+}
+
+.rdp-subgroup {
+  margin: 6px 0 2px 30px;
+  color: #8a8799;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .rdp-name {

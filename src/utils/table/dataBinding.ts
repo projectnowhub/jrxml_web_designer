@@ -2,17 +2,19 @@
 // generator/parser and the preview. Each table on a report has its own
 // TableDataBinding, so several tables can use the same source independently.
 
-import type { DataQuery, RelativePeriod, TableDataBinding, TableFilter } from "@/types/dataSource";
+import type { DataQuery, ProjectListKey, RelativePeriod, TableDataBinding, TableFilter, TableHighlight } from "@/types/dataSource";
+import { PROJECT_LIST_KEYS } from "@/constants/reportDataConstants";
 import { normalizeLook } from "./tableThemes";
 
 // JRXML property on the table's <reportElement> holding its TableDataBinding
 export const TABLE_BINDING_PROPERTY = "com.cdp.table.binding";
 
-// Narrowest a column may get; limits how many columns fit in a table
-export const MIN_TABLE_COLUMN_WIDTH = 60;
+// A new table starts with as many of its source's columns as fit at this width
+// (more can be added: there is no limit)
+const STARTING_COLUMN_WIDTH = 60;
 
-// Preview fetches at most this many rows per table; real reports have no limit
-export const PREVIEW_ROW_LIMIT = 500;
+// The narrowest a project-data table's column may get
+export const MIN_TABLE_COLUMN_WIDTH = 10;
 
 const isBlank = (value: unknown) =>
   value === null || value === undefined || String(value).trim() === "";
@@ -24,6 +26,8 @@ export function isActiveFilter(filter: TableFilter): boolean {
   if (filter.operator === "between") {
     return !!filter.period || !isBlank(filter.value) || !isBlank(filter.value2);
   }
+  if (filter.operator === "contains") return !isBlank(filter.value);
+  if (filter.operator === "equals") return filter.value === "true" || filter.value === "false";
   return false;
 }
 
@@ -62,9 +66,16 @@ export function resolveFilterDates(filters: TableFilter[], today = new Date()): 
   });
 }
 
-export function maxColumnsForWidth(tableWidth: number): number {
-  return Math.max(1, Math.floor(tableWidth / MIN_TABLE_COLUMN_WIDTH));
+// How many of a source's columns a new table of this width starts with
+export function startingColumnCount(tableWidth: number): number {
+  return Math.max(1, Math.floor(tableWidth / STARTING_COLUMN_WIDTH));
 }
+
+// The table's width for this many columns: its own, or wider when the columns
+// wouldn't each get the smallest width (the table may then reach past the
+// page: the user decides what to show)
+export const tableWidthFor = (count: number, tableWidth: number): number =>
+  Math.max(Math.round(tableWidth), count * MIN_TABLE_COLUMN_WIDTH);
 
 // Whole-number widths that add up exactly to the table width
 export function distributeColumnWidths(count: number, tableWidth: number): number[] {
@@ -96,14 +107,11 @@ export function createDatasetName(existingNames: string[]): string {
 
 // The request for a table's rows; `limit` lets the preview cap large tables
 export function toDataQuery(binding: TableDataBinding, limit?: number): DataQuery {
-  const caps = [binding.rowLimit, limit].filter(
-    (n): n is number => typeof n === "number" && n > 0,
-  );
   return {
     columns: binding.columns.map((c) => c.key),
     filters: binding.filters.filter(isActiveFilter),
     sort: binding.sort.slice(0, 1),
-    limit: caps.length ? Math.min(...caps) : undefined,
+    limit: typeof limit === "number" && limit > 0 ? limit : undefined,
   };
 }
 
@@ -111,12 +119,25 @@ export function toDataQuery(binding: TableDataBinding, limit?: number): DataQuer
 export function readFilters(value: unknown): TableFilter[] {
   if (!Array.isArray(value)) return [];
   return value
-    .filter((f: TableFilter) => f && typeof f.column === "string" && (f.operator === "in" || f.operator === "between"))
+    .filter((f: TableFilter) => f && typeof f.column === "string" && ["in", "between", "contains", "equals"].includes(f.operator))
     .map((f: TableFilter) => (f.period && !RELATIVE_PERIODS.includes(f.period) ? { ...f, period: undefined } : f));
 }
 
 export function serializeBinding(binding: TableDataBinding): string {
   return JSON.stringify(binding);
+}
+
+// Highlight rules as saved; unreadable ones are left out
+function readHighlights(value: unknown): TableHighlight[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const rules = value.filter(
+    (r): r is TableHighlight =>
+      !!r &&
+      typeof r.column === "string" &&
+      ["in", "between", "past", "future"].includes(r.operator) &&
+      (r.scope === "row" || r.scope === "cell"),
+  );
+  return rules.length ? rules : undefined;
 }
 
 // Reads a saved binding back; anything unreadable gives null (an unlinked table)
@@ -139,16 +160,17 @@ export function parseBinding(json: string | null | undefined): TableDataBinding 
       // setup and get a project when the user edits their data
       projectId: typeof b.projectId === "string" ? b.projectId : "",
       projectName: typeof b.projectName === "string" ? b.projectName : "",
+      ...(PROJECT_LIST_KEYS.includes(b.list) && b.list === b.sourceId ? { list: b.list as ProjectListKey } : {}),
       sourceId: b.sourceId,
       sourceName: typeof b.sourceName === "string" ? b.sourceName : b.sourceId,
       columns: b.columns,
       filters: readFilters(b.filters),
       sort: Array.isArray(b.sort) ? b.sort.slice(0, 1) : [],
-      rowLimit: typeof b.rowLimit === "number" ? b.rowLimit : undefined,
       showTotals: b.showTotals === true,
       theme: typeof b.theme === "string" && b.theme ? b.theme : "corporateBlue",
       look: b.look && typeof b.look === "object" ? normalizeLook(b.look) : undefined,
-      customized: b.customized === true,
+      customized: b.customized === true || undefined,
+      highlights: readHighlights(b.highlights),
     };
   } catch {
     return null;

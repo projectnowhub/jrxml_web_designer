@@ -1,3 +1,73 @@
+<template>
+  <div v-if="inline" class="snap-inline">
+    <div v-for="option in options" :key="option.key" class="snap-option">
+      <n-checkbox
+        class="snap-check"
+        :checked="option.checked"
+        @update:checked="option.set"
+      >
+        {{ option.label }}
+      </n-checkbox>
+      <n-tooltip :placement="inline ? 'left' : 'right'" :style="{ maxWidth: '240px' }">
+        <template #trigger>
+          <button
+            type="button"
+            class="snap-info"
+            :aria-label="option.info"
+            @click.stop
+          >
+            <Info :size="14" :stroke-width="2" aria-hidden="true" />
+          </button>
+        </template>
+        {{ option.info }}
+      </n-tooltip>
+    </div>
+    <p class="snap-hint">{{ t("actions.snapBypassHint") }}</p>
+  </div>
+  <div v-else ref="menuRef" class="snap-menu">
+    <button
+      class="snap-button"
+      :class="{ open: isOpen }"
+      type="button"
+      aria-haspopup="menu"
+      :aria-expanded="isOpen"
+      :aria-label="t('actions.snapMenu')"
+      :title="compact ? t('actions.snapMenu') : undefined"
+      @click="isOpen = !isOpen"
+    >
+      <Magnet :size="16" :stroke-width="2" aria-hidden="true" />
+      <span v-if="!compact">{{ t("actions.snapMenu") }}</span>
+      <ChevronDown class="snap-caret" :size="14" aria-hidden="true" />
+    </button>
+    <Transition name="menu-pop"><div v-if="isOpen" class="snap-popover" role="menu">
+      <div v-for="option in options" :key="option.key" class="snap-option">
+        <n-checkbox
+          class="snap-check"
+          :checked="option.checked"
+          @update:checked="option.set"
+        >
+          {{ option.label }}
+        </n-checkbox>
+        <n-tooltip :placement="inline ? 'left' : 'right'" :style="{ maxWidth: '240px' }">
+          <template #trigger>
+            <button
+              type="button"
+              class="snap-info"
+              :aria-label="option.info"
+              @click.stop
+            >
+              <Info :size="14" :stroke-width="2" aria-hidden="true" />
+            </button>
+          </template>
+          {{ option.info }}
+        </n-tooltip>
+      </div>
+      <div class="snap-divider" />
+      <p class="snap-hint">{{ t("actions.snapBypassHint") }}</p>
+    </div></Transition>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
@@ -68,76 +138,6 @@ onBeforeUnmount(() => {
   document.removeEventListener("keydown", handleKeydown);
 });
 </script>
-
-<template>
-  <div v-if="inline" class="snap-inline">
-    <div v-for="option in options" :key="option.key" class="snap-option">
-      <n-checkbox
-        class="snap-check"
-        :checked="option.checked"
-        @update:checked="option.set"
-      >
-        {{ option.label }}
-      </n-checkbox>
-      <n-tooltip :placement="inline ? 'left' : 'right'" :style="{ maxWidth: '240px' }">
-        <template #trigger>
-          <button
-            type="button"
-            class="snap-info"
-            :aria-label="option.info"
-            @click.stop
-          >
-            <Info :size="14" :stroke-width="2" aria-hidden="true" />
-          </button>
-        </template>
-        {{ option.info }}
-      </n-tooltip>
-    </div>
-    <p class="snap-hint">{{ t("actions.snapBypassHint") }}</p>
-  </div>
-  <div v-else ref="menuRef" class="snap-menu">
-    <button
-      class="snap-button"
-      :class="{ open: isOpen }"
-      type="button"
-      aria-haspopup="menu"
-      :aria-expanded="isOpen"
-      :aria-label="t('actions.snapMenu')"
-      :title="compact ? t('actions.snapMenu') : undefined"
-      @click="isOpen = !isOpen"
-    >
-      <Magnet :size="16" :stroke-width="2" aria-hidden="true" />
-      <span v-if="!compact">{{ t("actions.snapMenu") }}</span>
-      <ChevronDown class="snap-caret" :size="14" aria-hidden="true" />
-    </button>
-    <Transition name="menu-pop"><div v-if="isOpen" class="snap-popover" role="menu">
-      <div v-for="option in options" :key="option.key" class="snap-option">
-        <n-checkbox
-          class="snap-check"
-          :checked="option.checked"
-          @update:checked="option.set"
-        >
-          {{ option.label }}
-        </n-checkbox>
-        <n-tooltip :placement="inline ? 'left' : 'right'" :style="{ maxWidth: '240px' }">
-          <template #trigger>
-            <button
-              type="button"
-              class="snap-info"
-              :aria-label="option.info"
-              @click.stop
-            >
-              <Info :size="14" :stroke-width="2" aria-hidden="true" />
-            </button>
-          </template>
-          {{ option.info }}
-        </n-tooltip>
-      </div>
-      <div class="snap-divider" />
-      <p class="snap-hint">{{ t("actions.snapBypassHint") }}</p>
-    </div></Transition>
-  </div>
-</template>
 
 <style scoped>
 .snap-menu {

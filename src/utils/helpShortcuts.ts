@@ -17,6 +17,8 @@ export type ShortcutGroupId =
   | "text"
   | "table"
   | "picture"
+  | "location"
+  | "dataSetup"
   | "view"
   | "file"
   | "ai";
@@ -54,6 +56,7 @@ export const SHORTCUT_GROUPS: { id: ShortcutGroupId; rows: ShortcutRow[] }[] = [
       { id: "keepRatio", combos: [["Shift", "mouse:dragHandle"]] },
       { id: "square", combos: [["Alt", "mouse:dragHandle"]] },
       { id: "noSnap", combos: [["Mod", "mouse:drag"]] },
+      { id: "dragScroll", combos: [["mouse:drag", "mouse:wheel"], ["mouse:dragToEdge"]] },
       { id: "straightLine", combos: [["Shift", "mouse:dragLineEnd"]] },
       { id: "fitText", combos: [["mouse:doubleClickEdge"]] },
       { id: "rotate", combos: [["mouse:rotateButton"]] },
@@ -94,6 +97,12 @@ export const SHORTCUT_GROUPS: { id: ShortcutGroupId; rows: ShortcutRow[] }[] = [
       { id: "cellNext", combos: [["Tab"]] },
       { id: "cellPrevious", combos: [["Shift", "Tab"]] },
       { id: "cellClear", combos: [["Delete"]] },
+      { id: "tableChooseLine", combos: [["mouse:clickHandle"], ["Shift", "mouse:clickHandle"]] },
+      { id: "tableSelectAll", combos: [["Mod", "A"]] },
+      { id: "tableLineMenu", combos: [["mouse:rightClickHandle"]] },
+      { id: "tableChooseColumn", combos: [["mouse:clickTwice"]] },
+      { id: "tableResizeLine", combos: [["mouse:dragTableLine"]] },
+      { id: "tableSortColumn", combos: [["mouse:clickColumnHeading"]] },
       { id: "tableClose", combos: [["Esc"]] },
     ],
   },
@@ -104,6 +113,21 @@ export const SHORTCUT_GROUPS: { id: ShortcutGroupId; rows: ShortcutRow[] }[] = [
       { id: "cropApply", combos: [["Enter"]] },
       { id: "cropCancel", combos: [["Esc"]] },
     ],
+  },
+  {
+    // The small map in a Location's properties
+    id: "location",
+    rows: [
+      { id: "locationPlacePin", combos: [["mouse:click"]] },
+      { id: "locationDragPin", combos: [["mouse:dragPin"]] },
+      { id: "locationMoveMap", combos: [["mouse:drag"]] },
+      { id: "locationZoomMap", combos: [["mouse:wheel"]] },
+    ],
+  },
+  {
+    // The table setup popup
+    id: "dataSetup",
+    rows: [{ id: "closeColumnPicker", combos: [["Esc"]] }],
   },
   {
     id: "view",

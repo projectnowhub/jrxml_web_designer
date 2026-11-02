@@ -3,6 +3,7 @@ import {
   TableOfContents,
   Banknote,
   CalendarClock,
+  MapPin,
   Barcode,
   ChartColumn,
   ChartNoAxesColumnIncreasing,
@@ -397,6 +398,17 @@ export class ElementRegistry {
       iconComponent: CalendarClock,
       category: "composite",
       defaultProps: { type: "textField", x: 0, y: 0, width: 160, height: 20 },
+    });
+
+    // Location: a box with a map of the place and its address, built by
+    // buildLocationElement() in utils/location/locationElement.ts
+    this.registerElement({
+      type: "location",
+      name: "elementNames.location",
+      icon: "L",
+      iconComponent: MapPin,
+      category: "composite",
+      defaultProps: { type: "frame", x: 0, y: 0, width: 300, height: 240, elements: [] },
     });
   }
 

@@ -71,7 +71,7 @@ import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { MoreHorizontal, Plus } from "@lucide/vue";
 import { useTemplates } from "@/composables/useTemplates";
-import type { TemplateSummary } from "@/services/templateService";
+import type { TemplateSummary } from "@/types/template";
 import TemplateMenu from "./TemplateMenu.vue";
 
 withDefaults(

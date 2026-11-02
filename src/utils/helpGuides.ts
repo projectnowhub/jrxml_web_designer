@@ -10,6 +10,7 @@ import { isChartComplete, normalizeChartBinding } from "@/utils/chart/chartTypes
 import { SUB_HEADING_PROPERTY } from "@/utils/contentsList";
 import { DATE_PROPERTY } from "@/utils/dateElement";
 import { findPageBorder, isBoxPart } from "@/utils/framePresets";
+import { getLocationSetup, isLocationElement, placePoint } from "@/utils/location/locationElement";
 
 export type GuideId =
   // Whole jobs
@@ -33,6 +34,7 @@ export type GuideId =
   | "pageBorder"
   | "pageNumbers"
   | "date"
+  | "location"
   // Element Presets
   | "presetBoxes"
   | "presetHeaderFooter"
@@ -236,6 +238,14 @@ const ELEMENT_GUIDES: Guide[] = [
     ],
   },
   elementGuide("date", isDate, "dateTime", [settingsStep(isDate)]),
+  // Location: done once one has its place (latitude and longitude)
+  elementGuide("location", isLocationElement, "location", [
+    {
+      key: "place",
+      done: (ctx) => [...allElements(ctx.bands)].some(({ el }) => isLocationElement(el) && !!placePoint(getLocationSetup(el))),
+      target: (ctx) => onPage(findIn(ctx, isLocationElement)?.uuid),
+    },
+  ]),
   // Element Presets
   elementGuide("presetBoxes", isPresetBox, "frameKpiCard", [typeStep((el) => isBoxPart(el))]),
   elementGuide("presetHeaderFooter", (el, band) => el.type === "frame" && inHeaderFooter(band), "partReportHeader", [
@@ -371,7 +381,7 @@ export const GUIDE_SECTIONS: { id: GuideSectionId; guides: GuideId[] }[] = [
       "barcode",
     ],
   },
-  { id: "composite", guides: ["pageBorder", "pageNumbers", "date"] },
+  { id: "composite", guides: ["pageBorder", "pageNumbers", "date", "location"] },
   { id: "presets", guides: ["presetBoxes", "presetHeaderFooter", "presetStatus", "presetSignOff", "presetTables"] },
 ];
 

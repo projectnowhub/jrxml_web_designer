@@ -3,7 +3,7 @@
     <div class="content-heading">
       <div>
         <span class="eyebrow">{{ t("home.eyebrow") }}</span>
-        <h1>{{ t("home.greeting", { name: displayName }) }}</h1>
+        <h1>{{ greeting }}</h1>
         <p>{{ t("home.subtitle") }}</p>
       </div>
     </div>
@@ -14,9 +14,10 @@
           {{ t("home.viewAll") }} <ArrowRight :size="15" :stroke-width="2.25" />
         </button>
       </div>
-      <TemplateGrid :templates="recent" :owner="displayName" show-new />
+      <TemplateGrid :templates="recent" :owner="ownerName" show-new />
     </section>
-    <section class="section-block shared-section">
+    <!-- Hidden until templates can be shared -->
+    <section v-if="SHOW_SHARED" class="section-block shared-section">
       <div class="section-heading">
         <h2>{{ t("home.sharedWithYou") }}</h2>
         <span class="muted-label">{{ t("home.recentlyAccessed") }}</span>
@@ -31,41 +32,35 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { ArrowRight, Inbox } from "@lucide/vue";
-import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
-import { listTemplates, type TemplateSummary } from "@/services/templateService";
-import { useFilesStore } from "@/stores/files";
+import { useQuery } from "@tanstack/vue-query";
+import { templateListQuery } from "@/queries/templateQueries";
 import TemplateGrid from "@/components/templates/TemplateGrid.vue";
 import { useHelpStore } from "../stores/help";
+import { useAuthStore } from "../stores/auth";
+
+const SHOW_SHARED = false;
 
 const { t } = useI18n();
 const router = useRouter();
-const storedUser = JSON.parse(
-  localStorage.getItem(AUTH_USER_KEY) ?? "{}",
-) as {
-  firstName?: string;
-  name?: string;
-  username?: string;
-  email?: string;
-};
-const displayName = computed(
-  () => storedUser.firstName ?? t("home.defaultUserName"),
+const auth = useAuthStore();
+// "Good morning / afternoon / evening, Name" by the time of day, as the CDP
+// app's welcome header; set when the page opens
+const hour = new Date().getHours();
+const greetingKey = hour < 12 ? "home.greetingMorning" : hour < 17 ? "home.greetingAfternoon" : "home.greetingEvening";
+const greeting = computed(() =>
+  auth.firstName ? t(greetingKey, { name: auth.firstName }) : t(`${greetingKey}Plain`),
 );
+const ownerName = computed(() => auth.fullName || t("home.defaultUserName"));
 // The 7 last edited templates; View all goes to My Templates
 const RECENT_COUNT = 7;
-const recent = ref<TemplateSummary[]>([]);
-const total = ref(0);
-const filesStore = useFilesStore();
-const loadRecent = async () => {
-  const page = await listTemplates({ size: RECENT_COUNT, sort: "lastModified", dir: "desc" });
-  recent.value = page.items;
-  total.value = page.total;
-};
-// A template renamed, copied or deleted here shows at once
-watch(() => filesStore.templatesVersion, loadRecent);
+// (a template renamed, copied or deleted here shows at once: saving invalidates the list)
+const recentQuery = useQuery(templateListQuery({ size: RECENT_COUNT, sort: "lastModified", dir: "desc" }));
+const recent = computed(() => recentQuery.data.value?.items ?? []);
+const total = computed(() => recentQuery.data.value?.total ?? 0);
 
 // First visit: a short tour of the home page (once per browser)
 const help = useHelpStore();
@@ -73,7 +68,6 @@ let tourTimer: ReturnType<typeof setTimeout> | undefined;
 
 onMounted(() => {
   tourTimer = setTimeout(() => help.startTourOnce("home"), 600);
-  loadRecent();
 });
 
 onBeforeUnmount(() => {

@@ -21,6 +21,8 @@ import ChartElement from './ChartElement.vue';
 import BarcodeElement from './BarcodeElement.vue';
 import CustomTableElement from './CustomTableElement.vue';
 import ContentsListElement from './ContentsListElement.vue';
+import LocationMapElement from './LocationMapElement.vue';
+import { isLocationMap } from '../../utils/location/locationElement';
 import type { 
   DesignElement,
   SelectedElementInfo,
@@ -102,6 +104,8 @@ const emit = defineEmits<{
 // Get the corresponding component based on the element type
 const getElementComponent = computed(() => {
   const type = props.element.type;
+  // A Location's map: a picture drawn from the place, not an uploaded one
+  if (isLocationMap(props.element)) return LocationMapElement;
 
   // Get the component from the cache
   if (componentCache[type]) {

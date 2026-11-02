@@ -1,3 +1,84 @@
+<template>
+  <div
+    :class="['chat-input-container', { 'is-focused': isFocused, 'is-disabled': disabled, 'is-dragging': dragging, 'is-enlarged': enlarged }]"
+    @dragover="handleDragOver"
+    @dragleave="dragging = false"
+    @drop.prevent="handleDrop"
+  >
+    <!-- Attached pictures and files -->
+    <div v-if="attachments.length || reading" class="attachments">
+      <div v-for="a in attachments" :key="a.id" class="attachment" :title="a.name">
+        <img v-if="a.previewUrl" :src="a.previewUrl" :alt="a.name" class="attachment-thumb" />
+        <component :is="a.kind === 'pdf' ? FileIcon : FileText" v-else class="attachment-icon" :size="18" />
+        <span class="attachment-name">{{ a.name }}</span>
+        <span class="attachment-size">{{ sizeText(a.size) }}</span>
+        <button type="button" class="attachment-remove" :title="t('ai.attach.remove')" @click="removeAttachment(a.id)">
+          <X :size="12" />
+        </button>
+      </div>
+      <span v-if="reading" class="attachment-reading">{{ t('ai.attach.reading') }}</span>
+    </div>
+
+    <div class="input-row">
+      <textarea
+        ref="textarea"
+        :value="inputValue"
+        :disabled="disabled"
+        :placeholder="placeholder || t('ai.input.placeholder')"
+        class="chat-input"
+        @input="handleInput"
+        @keydown="handleKeydown"
+        @paste="handlePaste"
+        @focus="isFocused = true"
+        @blur="isFocused = false"
+        rows="2"
+      ></textarea>
+
+      <div class="input-actions">
+        <button
+          type="button"
+          class="icon-btn"
+          :title="enlarged ? t('ai.input.shrink') : t('ai.input.enlarge')"
+          @click="toggleEnlarged"
+        >
+          <component :is="enlarged ? Minimize2 : Maximize2" :size="16" />
+        </button>
+        <button
+          type="button"
+          class="icon-btn"
+          :disabled="disabled"
+          :title="t('ai.attach.add')"
+          @click="fileInput?.click()"
+        >
+          <Paperclip :size="16" />
+        </button>
+        <button
+          class="submit-btn"
+          :disabled="!canSubmit"
+          @click="handleSubmit"
+          :title="t('ai.input.send')"
+        >
+          <SendHorizontal :size="16" />
+        </button>
+      </div>
+    </div>
+
+    <div v-if="characterCount || dragging" class="input-hint">
+      <span v-if="dragging">{{ t('ai.attach.drop') }}</span>
+      <span v-else>{{ t('ai.input.characters', { count: characterCount }) }}</span>
+    </div>
+
+    <input
+      ref="fileInput"
+      type="file"
+      multiple
+      :accept="ATTACHMENT_ACCEPT"
+      class="file-input"
+      @change="handleFileChoice"
+    />
+  </div>
+</template>
+
 <script setup lang="ts">
 import { File as FileIcon, FileText, Maximize2, Minimize2, Paperclip, SendHorizontal, X } from '@lucide/vue';
 import { ref, computed, nextTick, onBeforeUnmount, watch } from 'vue';
@@ -169,87 +250,6 @@ onBeforeUnmount(() => {
   for (const a of attachments.value) if (a.previewUrl) URL.revokeObjectURL(a.previewUrl);
 });
 </script>
-
-<template>
-  <div
-    :class="['chat-input-container', { 'is-focused': isFocused, 'is-disabled': disabled, 'is-dragging': dragging, 'is-enlarged': enlarged }]"
-    @dragover="handleDragOver"
-    @dragleave="dragging = false"
-    @drop.prevent="handleDrop"
-  >
-    <!-- Attached pictures and files -->
-    <div v-if="attachments.length || reading" class="attachments">
-      <div v-for="a in attachments" :key="a.id" class="attachment" :title="a.name">
-        <img v-if="a.previewUrl" :src="a.previewUrl" :alt="a.name" class="attachment-thumb" />
-        <component :is="a.kind === 'pdf' ? FileIcon : FileText" v-else class="attachment-icon" :size="18" />
-        <span class="attachment-name">{{ a.name }}</span>
-        <span class="attachment-size">{{ sizeText(a.size) }}</span>
-        <button type="button" class="attachment-remove" :title="t('ai.attach.remove')" @click="removeAttachment(a.id)">
-          <X :size="12" />
-        </button>
-      </div>
-      <span v-if="reading" class="attachment-reading">{{ t('ai.attach.reading') }}</span>
-    </div>
-
-    <div class="input-row">
-      <textarea
-        ref="textarea"
-        :value="inputValue"
-        :disabled="disabled"
-        :placeholder="placeholder || t('ai.input.placeholder')"
-        class="chat-input"
-        @input="handleInput"
-        @keydown="handleKeydown"
-        @paste="handlePaste"
-        @focus="isFocused = true"
-        @blur="isFocused = false"
-        rows="2"
-      ></textarea>
-
-      <div class="input-actions">
-        <button
-          type="button"
-          class="icon-btn"
-          :title="enlarged ? t('ai.input.shrink') : t('ai.input.enlarge')"
-          @click="toggleEnlarged"
-        >
-          <component :is="enlarged ? Minimize2 : Maximize2" :size="16" />
-        </button>
-        <button
-          type="button"
-          class="icon-btn"
-          :disabled="disabled"
-          :title="t('ai.attach.add')"
-          @click="fileInput?.click()"
-        >
-          <Paperclip :size="16" />
-        </button>
-        <button
-          class="submit-btn"
-          :disabled="!canSubmit"
-          @click="handleSubmit"
-          :title="t('ai.input.send')"
-        >
-          <SendHorizontal :size="16" />
-        </button>
-      </div>
-    </div>
-
-    <div v-if="characterCount || dragging" class="input-hint">
-      <span v-if="dragging">{{ t('ai.attach.drop') }}</span>
-      <span v-else>{{ t('ai.input.characters', { count: characterCount }) }}</span>
-    </div>
-
-    <input
-      ref="fileInput"
-      type="file"
-      multiple
-      :accept="ATTACHMENT_ACCEPT"
-      class="file-input"
-      @change="handleFileChoice"
-    />
-  </div>
-</template>
 
 <style scoped>
 .chat-input-container {

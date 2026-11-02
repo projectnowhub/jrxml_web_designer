@@ -22,10 +22,19 @@ export function useUndoRedo<State>(options: {
     redoStack.value = [];
   }
 
+  // Steps recorded for an action that then changed nothing (a click on a
+  // handle without moving, the report's first state) are skipped, so every
+  // undo / redo changes something
+  function dropUnchanged(stack: State[], current: string) {
+    while (stack.length && JSON.stringify(stack[stack.length - 1]) === current) stack.pop();
+  }
+
   // Whether there was a step to undo
   function undo(): boolean {
+    const current = JSON.stringify(options.getState());
+    dropUnchanged(historyStack.value, current);
     if (historyStack.value.length === 0) return false;
-    redoStack.value.push(deepClone(options.getState()));
+    redoStack.value.push(JSON.parse(current) as State);
     const previousState = historyStack.value.pop() as State;
     options.applyState(previousState);
     options.onAfterRestore?.();
@@ -34,8 +43,10 @@ export function useUndoRedo<State>(options: {
 
   // Whether there was a step to redo
   function redo(): boolean {
+    const current = JSON.stringify(options.getState());
+    dropUnchanged(redoStack.value, current);
     if (redoStack.value.length === 0) return false;
-    historyStack.value.push(deepClone(options.getState()));
+    historyStack.value.push(JSON.parse(current) as State);
     const nextState = redoStack.value.pop() as State;
     options.applyState(nextState);
     options.onAfterRestore?.();

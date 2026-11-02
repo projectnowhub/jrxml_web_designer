@@ -1,28 +1,71 @@
+<template>
+  <div ref="menuRef" class="account-menu">
+    <button
+      class="account-button"
+      type="button"
+      :aria-label="t('layout.accountMenu')"
+      aria-haspopup="menu"
+      :aria-expanded="isOpen"
+      @click="isOpen = !isOpen"
+    >
+      <span class="avatar">
+        <img v-if="avatarUrl" :src="avatarUrl" :alt="auth.firstName" />
+        <template v-else>{{ userInitial }}</template>
+      </span>
+    </button>
+    <Transition name="menu-pop"><div v-if="isOpen" class="account-popover" role="menu">
+      <div class="account-popover-header">
+        <span class="avatar avatar-large">
+          <img v-if="avatarUrl" :src="avatarUrl" :alt="auth.firstName" />
+          <template v-else>{{ userInitial }}</template>
+          <i class="online-dot" aria-hidden="true" />
+        </span>
+        <div>
+          <strong :title="userName">{{ userName || t("home.defaultUserName") }}</strong>
+          <span :title="auth.email">{{ auth.email || t("layout.defaultWorkspace") }}</span>
+          <span v-if="auth.roleLine" class="account-role" :title="auth.roleLine">{{ auth.roleLine }}</span>
+        </div>
+      </div>
+      <div class="account-popover-divider" />
+      <div class="account-language">
+        <Languages :size="17" :stroke-width="2.25" aria-hidden="true" />
+        <span>{{ t("language.label") }}</span>
+        <LanguageSwitcher :show-icon="false" />
+      </div>
+      <div class="account-popover-divider" />
+      <button
+        class="account-action sign-out"
+        type="button"
+        role="menuitem"
+        @click="signOut"
+      >
+        <LogOut :size="17" :stroke-width="2.25" aria-hidden="true" />
+        <span>{{ t("layout.signOut") }}</span>
+      </button>
+    </div></Transition>
+  </div>
+</template>
+
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { Languages, LogOut, UserRound } from "@lucide/vue";
-import { getStoredUser } from "../../utils/auth";
+import { Languages, LogOut } from "@lucide/vue";
+import { useAuthStore } from "../../stores/auth";
+import { useFileUrl } from "../../queries/fileQueries";
 import { logout } from "../../services/authService";
 import LanguageSwitcher from "./LanguageSwitcher.vue";
 
 const { t } = useI18n();
-const router = useRouter();
 
 const isOpen = ref(false);
 const menuRef = ref<HTMLElement | null>(null);
 
-const storedUser = getStoredUser();
-const userName =
-  storedUser.firstName || storedUser.name || storedUser.username || "";
-const userEmail = storedUser.email || "";
-const userInitial = (userName || t("home.defaultUserName")).charAt(0).toUpperCase();
-
-function goToMyProfile() {
-  isOpen.value = false;
-  router.push("/myprofile");
-}
+// The signed-in user's name, email and job title · company
+const auth = useAuthStore();
+const userName = computed(() => auth.fullName);
+// The picture, as the CDP app's header; the letters while there is none
+const avatarUrl = useFileUrl(() => auth.avatar);
+const userInitial = computed(() => auth.initials || t("home.defaultUserName").charAt(0).toUpperCase());
 
 function signOut() {
   isOpen.value = false;
@@ -51,55 +94,6 @@ onBeforeUnmount(() => {
   document.removeEventListener("keydown", handleKeydown);
 });
 </script>
-
-<template>
-  <div ref="menuRef" class="account-menu">
-    <button
-      class="account-button"
-      type="button"
-      :aria-label="t('layout.accountMenu')"
-      aria-haspopup="menu"
-      :aria-expanded="isOpen"
-      @click="isOpen = !isOpen"
-    >
-      <span class="avatar">{{ userInitial }}</span>
-    </button>
-    <Transition name="menu-pop"><div v-if="isOpen" class="account-popover" role="menu">
-      <div class="account-popover-header">
-        <span class="avatar">{{ userInitial }}</span>
-        <div>
-          <strong>{{ userName || t("home.defaultUserName") }}</strong>
-          <span>{{ userEmail || t("layout.defaultWorkspace") }}</span>
-        </div>
-      </div>
-      <div class="account-popover-divider" />
-      <button
-        class="account-action"
-        type="button"
-        role="menuitem"
-        @click="goToMyProfile"
-      >
-        <UserRound :size="17" :stroke-width="2.25" aria-hidden="true" />
-        <span>{{ t("layout.myProfile") }}</span>
-      </button>
-      <div class="account-language">
-        <Languages :size="17" :stroke-width="2.25" aria-hidden="true" />
-        <span>{{ t("language.label") }}</span>
-        <LanguageSwitcher :show-icon="false" />
-      </div>
-      <div class="account-popover-divider" />
-      <button
-        class="account-action sign-out"
-        type="button"
-        role="menuitem"
-        @click="signOut"
-      >
-        <LogOut :size="17" :stroke-width="2.25" aria-hidden="true" />
-        <span>{{ t("layout.signOut") }}</span>
-      </button>
-    </div></Transition>
-  </div>
-</template>
 
 <style scoped>
 .account-menu {
@@ -135,6 +129,33 @@ onBeforeUnmount(() => {
   font-weight: 800;
   line-height: 1;
   box-shadow: 0 3px 12px rgba(100, 64, 244, 0.32);
+  box-sizing: border-box;
+}
+.avatar {
+  position: relative;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #ffffff;
+}
+.avatar-large {
+  width: 40px;
+  height: 40px;
+  font-size: 15px;
+}
+/* Signed in: the green dot on the menu's picture, as in the CDP app */
+.online-dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #22c55e;
   box-sizing: border-box;
 }
 .account-popover {
@@ -188,6 +209,10 @@ onBeforeUnmount(() => {
 }
 .account-popover-header span:not(.avatar) {
   color: #77718a;
+}
+.account-popover-header .account-role {
+  color: #9a95ab;
+  font-size: 10.5px;
 }
 .account-popover-divider {
   height: 1px;

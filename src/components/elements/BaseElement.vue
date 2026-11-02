@@ -5,8 +5,7 @@
       'selected': isSelected,
       'out-of-bounds': isOutOfBounds,
       'is-dragging': isDragging,
-      'is-in-box': parentFrameIndex !== undefined,
-      'keeps-order': KEEPS_ORDER.has(element.type),
+      'is-typing': isBeingTyped,
       'is-project-drop': projectDrop === 'ok',
       'is-project-drop-blocked': projectDrop === 'blocked'
     }"
@@ -15,7 +14,7 @@
     @dragleave="handleProjectDragLeave"
     @drop="projectDrop = null"
     @click.stop="handleSelect"
-    :style="elementStyle"
+    :style="[elementStyle, frameOutsetStyle]"
     @mousedown.stop="handleMouseDown"
     @contextmenu.stop="handleContextMenu"
     @dblclick.stop="handleDoubleClick"
@@ -24,7 +23,11 @@
     <slot></slot>
 
     <!-- 8 Resize handles (box UI used for all elements) -->
-    <template v-if="isSelected">
+    <!-- A Location's map and address are placed by its layout: no handles -->
+    <!-- The selection frame: 10 px (on screen) outside the element, so its own
+         border and a text cursor at its edge stay in view; the handles sit on it -->
+    <div v-if="isSelected" class="selection-frame" aria-hidden="true"></div>
+    <template v-if="isSelected && !isLocationPart(element)">
       <!-- 4 Corners -->
       <div 
         class="resize-handle resize-handle-nw"
@@ -78,7 +81,7 @@
         <button
           type="button"
           class="element-rotate-btn"
-          :title="`Rotate 90° Clockwise (Current: ${(element as any).rotation || '0° / None'})`"
+          :title="$t('resize.rotate')"
           @click.stop="handleQuickRotate"
           @mousedown.stop
         >
@@ -92,13 +95,13 @@
 
 <script setup lang="ts">
 import { useReportStore } from "@/stores/report";
-
-// Shapes and boxes stay in their place in the stacking order when selected
-const KEEPS_ORDER = new Set(["rectangle", "ellipse", "frame"]);
+import { useSelectionStore } from "@/stores/selection";
+import { useEditorStore } from "@/stores/editor";
 import { RotateCw } from '@lucide/vue';
 import { resolveReportFont } from '../../config/fonts.config';
 import { computed, ref } from 'vue';
 import { canTakeProjectField } from '../../utils/projectFields';
+import { isLocationElement, isLocationPart } from '../../utils/location/locationElement';
 import { readDataSourceDrag } from '../../utils/table/dataDrag';
 import type { DesignElement, SelectedElementInfo } from '../../types';
 import { getElementBoxPadding, propertyCornerRadiusCss } from '../../utils/elementUtils';
@@ -119,6 +122,10 @@ const props = defineProps<{
   reportIsItalic?: boolean;
   reportIsUnderline?: boolean;
   isOutOfBounds?: boolean;
+  // Extra room (design px) between the element and its selection frame on the
+  // top / left, for things drawn just outside it (an open typed table's
+  // letter and number bars), so the frame and handles don't cover them
+  frameOutset?: { top?: number; left?: number };
 }>();
 
 // Emits
@@ -135,8 +142,8 @@ const emit = defineEmits<{
   rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
-const isRotatableElement = computed(() => 
-  ['textField', 'image', 'barcode'].includes(props.element.type)
+const isRotatableElement = computed(() =>
+  ['textField', 'image', 'barcode'].includes(props.element.type) && !isLocationPart(props.element)
 );
 
 // Quick 90-degree step rotation
@@ -153,6 +160,18 @@ const handleQuickRotate = () => {
   (props.element as any).rotation = next;
   emit('rotate', props.bandIndex, props.elementIndex, props.parentFrameIndex);
 };
+
+// Being typed in: drawn above everything, so the typing is never covered
+const selection = useSelectionStore();
+const isBeingTyped = computed(() => {
+  const editing = selection.editingElement;
+  return (
+    !!editing &&
+    editing.bandIndex === props.bandIndex &&
+    editing.elementIndex === props.elementIndex &&
+    editing.parentFrameIndex === props.parentFrameIndex
+  );
+});
 
 // Whether selected
 const isSelected = computed(() => {
@@ -189,6 +208,17 @@ const isSelected = computed(() => {
 });
 
 // Element style - use a more suitable type assertion approach
+// The page is zoomed with CSS: the handles are counter-scaled so they stay
+// the same size on screen (and easy to grab) when zoomed out or in
+const editorStore = useEditorStore();
+const handleScale = computed(() => Math.min(2, Math.max(0.5, 1 / (editorStore.zoomLevel || 1))));
+
+const frameOutsetStyle = computed(() =>
+  props.frameOutset
+    ? { "--frame-top": `${props.frameOutset.top ?? 0}px`, "--frame-left": `${props.frameOutset.left ?? 0}px` }
+    : {},
+);
+
 const elementStyle = computed(() => {
   // Compute values for complex expressions separately and add type assertions
   // Fix the vertical alignment value mapping
@@ -233,6 +263,8 @@ const elementStyle = computed(() => {
 
   // Assert the entire object as CSSProperties
   return {
+    // Handles keep their size on screen at any zoom
+    '--handle-scale': String(handleScale.value),
     position: 'absolute' as 'absolute',
     left: `${props.element.x}px`,
     top: `${props.element.y}px`,
@@ -494,9 +526,12 @@ const handleDoubleClick = () => {
 const projectDrop = ref<'ok' | 'blocked' | null>(null);
 
 const handleProjectDragOver = (event: DragEvent) => {
-  if (!['textField', 'image', 'barcode'].includes(props.element.type)) return;
+  const isLocation = isLocationElement(props.element) || isLocationPart(props.element);
+  if (!isLocation && !['textField', 'image', 'barcode'].includes(props.element.type)) return;
   const drag = readDataSourceDrag(event);
   if (drag?.kind !== 'projectField') return;
+  // A whole location dropped elsewhere becomes a new Location there
+  if (drag.field.type === 'location' && !isLocation) return;
   // The innermost item under the pointer decides (an item inside a box)
   event.stopPropagation();
   event.preventDefault();
@@ -528,8 +563,9 @@ const handleProjectDragLeave = (event: DragEvent) => {
   white-space: pre-wrap;
 }
 
-/* Hovering keeps the stacking order: raising an item hid what lies on top of
-   it (e.g. a cover's title over its colour panel) */
+/* Hovering and selecting keep the stacking order, so the page shows what
+   prints: raising an item hid what lies on top of it (a cover's title over its
+   colour panel), and an item just sent to back still showed in front. */
 
 .design-element.out-of-bounds {
   /* Highlight style for out-of-bounds elements */
@@ -540,23 +576,25 @@ const handleProjectDragLeave = (event: DragEvent) => {
   z-index: 40;
 }
 
-.design-element.selected {
-  outline: 2px solid #6440f4;
-  outline-offset: -1px;
-  /* Raise the z-index of the selected element to ensure correct interaction */
+/* Selected: the outline is the selection frame outside the element (below) */
+.selection-frame {
+  --hs: var(--handle-scale, 1);
+  position: absolute;
+  inset: calc(-10px * var(--hs));
+  top: calc(-10px * var(--hs) - var(--frame-top, 0px));
+  left: calc(-10px * var(--hs) - var(--frame-left, 0px));
+  border: calc(1.5px * var(--hs)) solid #6440f4;
+  border-radius: calc(2px * var(--hs));
+  pointer-events: none;
+  z-index: 55;
+}
+
+.design-element.is-typing {
   z-index: 50;
 }
 
 .design-element.is-dragging {
   z-index: 100;
-}
-
-/* Inside a box the parts keep their order even when selected: a selected
-   colour panel must not cover the texts on it. Shapes and boxes keep theirs
-   too (a background or panel must not cover what lies on it) */
-.design-element.is-in-box.selected,
-.design-element.keeps-order.selected {
-  z-index: 10;
 }
 
 /* While dragged, an element is always on top so it stays in view (after the
@@ -596,6 +634,7 @@ const handleProjectDragLeave = (event: DragEvent) => {
 }
 
 .resize-handle {
+  --hs: var(--handle-scale, 1);
   position: absolute;
   background-color: #6440f4;
   z-index: 60;
@@ -605,90 +644,99 @@ const handleProjectDragLeave = (event: DragEvent) => {
   transition: background-color 0.1s ease;
 }
 
+/* A larger invisible area around each handle catches the mouse */
+.resize-handle::before {
+  content: "";
+  position: absolute;
+  inset: calc(-5px * var(--hs));
+}
+
 .resize-handle:hover {
   background-color: #7c5cf7;
 }
 
-.resize-handle-nw {
-  top: -4px;
-  left: -4px;
-  width: 8px;
-  height: 8px;
-  cursor: nw-resize;
-  border-radius: 1px;
+/* The handles sit on the selection frame, 10 px (on screen) outside the
+   element: --o is that offset, sizes are on-screen pixels times --hs */
+.resize-handle {
+  --o: calc(-10px * var(--hs));
+  /* The top / left sides moved further out by frameOutset */
+  --ot: calc(var(--o) - var(--frame-top, 0px));
+  --ol: calc(var(--o) - var(--frame-left, 0px));
 }
 
-.resize-handle-ne {
-  top: -4px;
-  right: -4px;
-  width: 8px;
-  height: 8px;
-  cursor: ne-resize;
-  border-radius: 1px;
-}
-
-.resize-handle-sw {
-  bottom: -4px;
-  left: -4px;
-  width: 8px;
-  height: 8px;
-  cursor: sw-resize;
-  border-radius: 1px;
-}
-
+/* Corners: 12 px squares */
+.resize-handle-nw,
+.resize-handle-ne,
+.resize-handle-sw,
 .resize-handle-se {
-  bottom: -4px;
-  right: -4px;
-  width: 8px;
-  height: 8px;
+  width: calc(12px * var(--hs));
+  height: calc(12px * var(--hs));
+  border-radius: calc(3px * var(--hs));
+}
+.resize-handle-nw {
+  top: calc(var(--ot) - 6px * var(--hs));
+  left: calc(var(--ol) - 6px * var(--hs));
+  cursor: nw-resize;
+}
+.resize-handle-ne {
+  top: calc(var(--ot) - 6px * var(--hs));
+  right: calc(var(--o) - 6px * var(--hs));
+  cursor: ne-resize;
+}
+.resize-handle-sw {
+  bottom: calc(var(--o) - 6px * var(--hs));
+  left: calc(var(--ol) - 6px * var(--hs));
+  cursor: sw-resize;
+}
+.resize-handle-se {
+  bottom: calc(var(--o) - 6px * var(--hs));
+  right: calc(var(--o) - 6px * var(--hs));
   cursor: se-resize;
-  border-radius: 1px;
 }
 
-.resize-handle-n {
-  top: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 14px;
-  height: 6px;
-  cursor: n-resize;
-  border-radius: 2px;
-}
-
+/* Edges: 28 x 9 px bars, centred on the frame's edge */
+.resize-handle-n,
 .resize-handle-s {
-  bottom: -4px;
-  left: 50%;
+  /* Centred on the frame's edge (the frame may reach further out on the left) */
+  left: calc(50% - var(--frame-left, 0px) / 2);
+  width: calc(28px * var(--hs));
+  height: calc(9px * var(--hs));
   transform: translateX(-50%);
-  width: 14px;
-  height: 6px;
+  border-radius: calc(4px * var(--hs));
+}
+.resize-handle-n {
+  top: calc(var(--ot) - 4.5px * var(--hs));
+  cursor: n-resize;
+}
+.resize-handle-s {
+  bottom: calc(var(--o) - 4.5px * var(--hs));
   cursor: s-resize;
-  border-radius: 2px;
 }
-
-.resize-handle-w {
-  left: -4px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 6px;
-  height: 14px;
-  cursor: w-resize;
-  border-radius: 2px;
-}
-
+.resize-handle-w,
 .resize-handle-e {
-  right: -4px;
-  top: 50%;
+  top: calc(50% - var(--frame-top, 0px) / 2);
+  width: calc(9px * var(--hs));
+  height: calc(28px * var(--hs));
   transform: translateY(-50%);
-  width: 6px;
-  height: 14px;
+  border-radius: calc(4px * var(--hs));
+}
+.resize-handle-w {
+  left: calc(var(--ol) - 4.5px * var(--hs));
+  cursor: w-resize;
+}
+.resize-handle-e {
+  right: calc(var(--o) - 4.5px * var(--hs));
   cursor: e-resize;
-  border-radius: 2px;
 }
 
 /* Rotatable element 90° quick rotate widget */
+/* Above the selection frame: its stem reaches down to the top handle (the
+   handle's top is 14.5 px out, the stem 10 px, the button 20 px; on-screen
+   pixels, kept at any zoom like the handles) */
 .element-rotate-widget {
+  --hs: var(--handle-scale, 1);
   position: absolute;
-  top: -24px;
+  top: calc(-44.5px * var(--hs));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -699,14 +747,14 @@ const handleProjectDragLeave = (event: DragEvent) => {
 }
 
 .element-rotate-stem {
-  width: 1px;
-  height: 6px;
+  width: calc(1px * var(--hs));
+  height: calc(10px * var(--hs));
   background-color: #6440f4;
 }
 
 .element-rotate-btn {
-  width: 18px;
-  height: 18px;
+  width: calc(20px * var(--hs));
+  height: calc(20px * var(--hs));
   border-radius: 50%;
   background: #ffffff;
   border: 1px solid #6440f4;
@@ -718,6 +766,18 @@ const handleProjectDragLeave = (event: DragEvent) => {
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   transition: all 0.15s ease;
+}
+
+/* The arrow keeps its share of the circle at any zoom, exactly centred */
+.element-rotate-btn {
+  box-sizing: border-box;
+  line-height: 0;
+}
+.element-rotate-btn svg {
+  flex: none;
+  display: block;
+  width: calc(12px * var(--hs));
+  height: calc(12px * var(--hs));
 }
 
 .element-rotate-btn:hover {

@@ -10,6 +10,7 @@ import type {
   ChartPaletteId,
   ChartSeriesBinding,
   ChartType,
+  DataColumn,
   DataColumnType,
   DateGranularity,
 } from "@/types/dataSource";
@@ -55,8 +56,17 @@ export const CHART_AGGREGATIONS: ChartAggregation[] = ["count", "sum", "avg", "m
 export const DATE_GRANULARITIES: DateGranularity[] = ["day", "week", "month", "quarter", "year"];
 export const DEFAULT_GRANULARITY: DateGranularity = "month";
 // Choices for "show the largest N categories"; 0 = all of them
-export const CATEGORY_LIMITS = [5, 8, 10, 20, 0];
-export const DEFAULT_CATEGORY_LIMIT = 10;
+
+// How well a column groups a chart: choice fields, yes / no fields and dates
+// group well (the CDP app's groupable fields); free text often has a different
+// value on every row; a link to another record can't be grouped by (the
+// backend would group by the record's hidden id)
+export function groupingColumns(columns: DataColumn[]): { good: DataColumn[]; free: DataColumn[]; linked: DataColumn[] } {
+  const linked = columns.filter((c) => c.linked);
+  const usable = columns.filter((c) => !c.linked);
+  const groupsWell = (c: DataColumn) => c.type !== "text" || !!c.choices?.length || !!c.yesNo;
+  return { good: usable.filter(groupsWell), free: usable.filter((c) => !groupsWell(c)), linked };
+}
 // Lines or sets of bars a chart may have
 export const MAX_CHART_SERIES = 4;
 
@@ -201,6 +211,19 @@ function readDimension(value: unknown): ChartDimension | undefined {
       ? (d.granularity as DateGranularity)
       : DEFAULT_GRANULARITY;
   }
+  // A choice field's words, kept only when readable
+  if (Array.isArray(d.choices)) {
+    const choices = (d.choices as unknown[])
+      .map(asObject)
+      .filter((c): c is Record<string, unknown> => !!c && typeof c.value === "string" && typeof c.label === "string")
+      .map((c) => ({
+        value: c.value as string,
+        label: c.label as string,
+        ...(typeof c.color === "string" && /^#[0-9a-f]{6}$/i.test(c.color) ? { color: c.color } : {}),
+      }));
+    if (choices.length) dimension.choices = choices;
+  }
+  if (d.yesNo === true) dimension.yesNo = true;
   return dimension;
 }
 
@@ -217,6 +240,24 @@ function readSeries(value: unknown): ChartSeriesBinding[] | undefined {
   return series.length ? series : undefined;
 }
 
+// The longest note under a chart, and the most own colours kept
+export const MAX_CHART_NOTE = 200;
+const MAX_OWN_COLORS = 100;
+
+// Own colours as "#rrggbb" by colour key ("#abc" is written out; anything else is left out)
+function readColors(value: unknown): Record<string, string> | undefined {
+  const c = asObject(value);
+  if (!c) return undefined;
+  const colors: Record<string, string> = {};
+  for (const [key, raw] of Object.entries(c).slice(0, MAX_OWN_COLORS)) {
+    if (typeof raw !== "string") continue;
+    const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(raw);
+    const hex = short ? `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}` : raw;
+    if (/^#[0-9a-f]{6}$/i.test(hex)) colors[key] = hex.toLowerCase();
+  }
+  return Object.keys(colors).length ? colors : undefined;
+}
+
 // Any stored value as a complete binding (unknown values fall back to the
 // defaults, and data settings that don't make sense are left out)
 export function normalizeChartBinding(value: unknown): ChartBinding {
@@ -228,6 +269,10 @@ export function normalizeChartBinding(value: unknown): ChartBinding {
     showLegend: typeof b.showLegend === "boolean" ? b.showLegend : defaults.showLegend,
     palette: CHART_PALETTES.some((p) => p.id === b.palette) ? b.palette! : defaults.palette,
   };
+  const colors = readColors(b.colors);
+  if (colors) binding.colors = colors;
+  const note = typeof b.note === "string" ? b.note.replace(/\s+/g, " ").trim().slice(0, MAX_CHART_NOTE) : "";
+  if (note) binding.note = note;
   const projectId = text(b.projectId);
   const sourceId = text(b.sourceId);
   if (!projectId || !sourceId) return binding;
@@ -245,7 +290,6 @@ export function normalizeChartBinding(value: unknown): ChartBinding {
     level2: readDimension(b.level2),
     series: readSeries(b.series),
     stacked: b.stacked === true || undefined,
-    limit: CATEGORY_LIMITS.includes(b.limit as number) ? (b.limit as number) : undefined,
     gaugeMax: typeof b.gaugeMax === "number" && b.gaugeMax > 0 ? b.gaugeMax : undefined,
     filters: readFilters(b.filters),
   };

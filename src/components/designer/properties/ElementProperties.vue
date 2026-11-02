@@ -93,7 +93,7 @@
                   class="input-unit-wrapper"
                   :class="{ 'is-disabled': band.type === 'detail' }"
                 >
-                  <input
+                  <input v-live-change
                     :value="band.height"
                     type="number"
                     :min="
@@ -124,7 +124,7 @@
                 <div class="band-limit-input-group">
                   <label>{{ t("properties.minHeight") }}</label>
                   <div class="input-unit-wrapper">
-                    <input
+                    <input v-live-change
                       :value="getBandLimit(band.type).min"
                       type="number"
                       min="10"
@@ -140,7 +140,7 @@
                 <div class="band-limit-input-group">
                   <label>{{ t("properties.maxHeight") }}</label>
                   <div class="input-unit-wrapper">
-                    <input
+                    <input v-live-change
                       :value="getBandLimit(band.type).max"
                       type="number"
                       :min="getBandLimit(band.type).min || 10"
@@ -218,14 +218,15 @@
             <small class="card-hint">{{ t(tableContentKind === "typed" ? "customTable.typedHint" : "customTable.fromDataHint") }}</small>
           </div>
 
-          <div class="box-section compact">
+          <!-- A Location's map and address are placed by its layout -->
+          <div v-if="!isLocationPart(currentElement)" class="box-section compact">
             <h5>{{ t("properties.positionSize") }}<SettingHelpButton id="positionSize" /></h5>
             <SettingHelpText id="positionSize" />
             <div class="geometry-grid">
               <label v-for="dim in GEOMETRY_FIELDS" :key="dim" class="field">
                 <span class="field-label">{{ t(`properties.${dim}`) }}</span>
                 <span class="unit-input">
-                  <input
+                  <input v-live-change
                     :value="currentElement[dim]"
                     type="number"
                     @change="setIntegerValue(currentElement, dim, $event)"
@@ -247,6 +248,9 @@
 
           <!-- Section Heading (or one of its parts): its number -->
           <HeadingNumberProperties v-if="sectionHeading" :heading="sectionHeading" />
+
+          <!-- Location (or its map / address): the place, map, layout and lines -->
+          <LocationProperties v-if="locationBox" :key="locationBox.uuid" :box="locationBox" />
 
           <CustomTableProperties
             v-if="currentElement.type === 'customTable'"
@@ -274,12 +278,14 @@
             v-if="currentElement && currentElement.type === 'frame'"
             :element="currentElement"
             :is-page-border="isPageBorder"
+            :title-key="locationBox ? 'location.panel.frameTitle' : undefined"
             @update:element="replaceCurrentElement"
           />
 
           <!-- Image properties -->
           <template v-if="currentElement && currentElement.type === 'image'">
-            <div class="box-section compact">
+            <!-- A Location's map is drawn from its place: no picture to upload -->
+            <div v-if="!isLocationPart(currentElement)" class="box-section compact">
               <h5>{{ t("properties.imageName") }}<SettingHelpButton id="picture" /></h5>
               <SettingHelpText id="picture" />
               <div class="image-name-row">
@@ -467,7 +473,13 @@
               v-else-if="isDateElement(currentElement)"
               :element="currentElement"
             />
-            <div v-else class="box-section compact">
+            <!-- A linked project detail: shows the project's value -->
+            <ProjectValueProperties
+              v-else-if="isProjectValue(currentElement)"
+              :element="currentElement"
+            />
+            <!-- A Location's address is written from its place -->
+            <div v-else-if="!isLocationPart(currentElement)" class="box-section compact">
               <div class="card-head">
                 <h5>{{ t("properties.textContent") }}<SettingHelpButton id="textContent" /></h5>
                 <button
@@ -484,6 +496,7 @@
               <textarea
                 class="card-textarea"
                 :value="getTextFieldDisplay(currentElement)"
+                @focus="textRecorded = false"
                 @input="updateTextFieldDisplay(($event.target as HTMLTextAreaElement).value)"
                 :placeholder="t('properties.textFieldPlaceholder', { example: '$F{field_name}' })"
                 rows="3"
@@ -539,8 +552,8 @@
           class="prop-tab-pane"
           role="tabpanel"
         >
-          <TableDataPanel part="style" v-bind="tablePanelProps" v-on="tablePanelEvents" />
           <CustomTableProperties part="style" :element="currentElement as CustomTableElement" />
+          <TableDataPanel part="style" v-bind="tablePanelProps" v-on="tablePanelEvents" />
         </div>
 
         <!-- Table: Style Settings is where its look is changed -->
@@ -596,7 +609,7 @@
                     <label class="field">
                       <span class="field-label">{{ t("properties.width") }}</span>
                       <span class="unit-input">
-                        <input
+                        <input v-live-change
                           :value="getRectangleBorderWidth()"
                           @change="setRectangleBorderWidth(($event.target as HTMLInputElement).value)"
                           type="number"
@@ -618,7 +631,7 @@
                     <label v-if="currentElement.type === 'rectangle'" class="field">
                       <span class="field-label">{{ t("properties.cornerRadius") }}</span>
                       <span class="unit-input">
-                        <input
+                        <input v-live-change
                           :value="currentElement.radius ?? 0"
                           @change="setTextProperty('radius', Math.max(0, Math.round(parseFloat(($event.target as HTMLInputElement).value) || 0)))"
                           type="number"
@@ -695,13 +708,15 @@
                   </div>
 
                   <!-- Images, boxes and text: corner radius for all corners at once, or each corner -->
-                  <div v-if="cornerRadii" class="corner-designer">
+                  <!-- (not a Location: its square map would stick out of round corners;
+                       the map's own shape is in its panel) -->
+                  <div v-if="cornerRadii && !locationBox" class="corner-designer">
                     <div class="pad-head">
                       <span class="pad-title">{{ t("properties.cornerRadius") }}</span>
                       <label class="pad-all">
                         <span class="field-label">{{ t("properties.cornerAll") }}</span>
                         <span class="unit-input">
-                          <input
+                          <input v-live-change
                             :value="sharedCornerRadius"
                             @change="setCornerRadius(null, ($event.target as HTMLInputElement).value)"
                             type="number"
@@ -722,7 +737,7 @@
                       >
                         <span class="field-label">{{ t(`properties.corner.${corner}`) }}</span>
                         <span class="unit-input">
-                          <input
+                          <input v-live-change
                             :value="cornerRadii?.[corner] ?? 0"
                             @change="setCornerRadius(corner, ($event.target as HTMLInputElement).value)"
                             type="number"
@@ -813,7 +828,7 @@
                 <label class="field">
                   <span class="field-label">{{ t("properties.lineThickness") }}</span>
                   <span class="unit-input">
-                    <input
+                    <input v-live-change
                       :value="currentElement.lineWidth ?? 1"
                       @change="setTextProperty('lineWidth', Math.max(0.25, parseFloat(($event.target as HTMLInputElement).value) || 1))"
                       type="number"
@@ -853,7 +868,7 @@
                 <label class="field font-size-field">
                   <span class="field-label">{{ t("properties.fontSize") }}</span>
                   <span class="unit-input">
-                    <input
+                    <input v-live-change
                       :value="currentElement.fontSize ?? ''"
                       @change="setFontSize(($event.target as HTMLInputElement).value)"
                       type="number"
@@ -993,7 +1008,8 @@ import { computed, ref, onMounted, onUpdated, watch, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
 import notification from "@/utils/notification";
-import type { Band, BarcodeElement, ChartElement, ContentsListElement, CustomTableElement, FrameElement, SelectedElementInfo } from "../../../types";
+import { pageKind } from "@/utils/specialPages";
+import type { Band, BarcodeElement, ChartElement, ContentsListElement, CustomTableElement, DesignElement, FrameElement, SelectedElementInfo } from "../../../types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
@@ -1005,6 +1021,7 @@ import {
   IMAGE_SHAPES,
   type ImageShapeId,
   setImageShape,
+  shapeSize,
   setPropertyCornerRadii,
   type CornerName,
   type CornerRadii,
@@ -1023,10 +1040,13 @@ import {
 import ColorPickerWithOpacity from "./ColorPickerWithOpacity.vue";
 import PaginationProperties from "./PaginationProperties.vue";
 import DateProperties from "./DateProperties.vue";
+import ProjectValueProperties from "./ProjectValueProperties.vue";
 import ChartProperties from "./ChartProperties.vue";
 import CustomTableProperties from "./CustomTableProperties.vue";
 import ContentsListProperties from "./ContentsListProperties.vue";
 import HeadingNumberProperties from "./HeadingNumberProperties.vue";
+import LocationProperties from "./LocationProperties.vue";
+import { isLocationElement, isLocationPart } from "../../../utils/location/locationElement";
 import PanelTip from "../../help/PanelTip.vue";
 import SettingHelpButton from "../../help/SettingHelpButton.vue";
 import SettingHelpText from "../../help/SettingHelpText.vue";
@@ -1039,6 +1059,7 @@ import { resetElementStyle } from "../../../utils/resetStyle";
 import BarcodeProperties from "./BarcodeProperties.vue";
 import { isPagination } from "../../../utils/paginationPresets";
 import { isDateElement } from "../../../utils/dateElement";
+import { isProjectValue } from "../../../utils/projectValue";
 import FrameProperties from "./FrameProperties.vue";
 import {
   getBoxCornerRadii,
@@ -1082,7 +1103,7 @@ const report = useReportStore();
 
 // Report, selection and editor state come from the stores
 const selectionStore = useSelectionStore();
-const { selectedBandIndex, selectedElement } = storeToRefs(selectionStore);
+const { selectedBandIndex, selectedElement, tableColumn } = storeToRefs(selectionStore);
 const reportStore = useReportStore();
 const { bands, reportProperties, tableStyles, reportFields, reportParameters, reportVariables } = storeToRefs(reportStore);
 
@@ -1256,6 +1277,14 @@ const sectionHeading = computed<FrameElement | null>(() => {
   return box?.type === "frame" && hasProperty(box, SECTION_HEADING_PROPERTY) ? (box as FrameElement) : null;
 });
 
+// The Location shown when it, its map or its address is selected
+const locationBox = computed<FrameElement | null>(() => {
+  const sel = selectedElement.value;
+  if (!sel) return null;
+  const box = sel.parentFrameIndex !== undefined ? bands.value?.[sel.bandIndex]?.elements[sel.parentFrameIndex] : currentElement.value;
+  return isLocationElement(box) ? (box as FrameElement) : null;
+});
+
 const isPageBorder = computed(
   () =>
     currentElement.value?.type === "frame" &&
@@ -1396,9 +1425,34 @@ function setIntegerValue(target: any, property: string, event: Event): boolean {
     const box = bands.value[selectedElement.value!.bandIndex]?.elements[parentIndex];
     if (box?.type === "frame") Object.assign(target, clampRectInBox(target, box));
   }
+  if (parentIndex === undefined && target === currentElement.value) keepTypedRectInSection(target, property);
   input.value = String(target[property]);
   report.updateJrxml();
   return true;
+}
+
+// A position or size typed for an element in a section stays inside it (a
+// header / footer may grow to its maximum, utils/sectionFit.ts). A typed table
+// on a normal page may be made taller: its rows carry on onto the next page.
+// A project-data table may be wider than the page.
+function keepTypedRectInSection(target: DesignElement, property: string) {
+  const selected = selectedElement.value;
+  const band = selected ? bands.value[selected.bandIndex] : undefined;
+  if (!selected || !band || band.type === "background" || !["x", "y", "width", "height"].includes(property)) return;
+  const area = report.sectionArea(selected.bandIndex, target.pageIndex);
+  const continues =
+    target.type === "customTable" && band.type === "detail" && pageKind(report.reportProperties, target.pageIndex) === "normal";
+  const typed = (target as any)[property] as number;
+  const next = { x: target.x, y: target.y, width: target.width, height: target.height };
+  if (property === "x") next.x = Math.min(Math.max(0, next.x), Math.max(0, area.width - next.width));
+  if (property === "width" && target.type !== "table") next.width = Math.max(1, Math.min(next.width, area.width - next.x));
+  if (property === "y") next.y = Math.min(Math.max(0, next.y), Math.max(0, area.maxHeight - next.height));
+  if (property === "height" && !continues) next.height = Math.max(1, Math.min(next.height, area.maxHeight - next.y));
+  if ((next as any)[property] === typed) return;
+  Object.assign(target, next);
+  notification.info(
+    t("sectionFit.keptInside", { band: getBandDisplayName(band.type), value: Math.round((next as any)[property]) }),
+  );
 }
 
 // Set horizontal alignment
@@ -1455,10 +1509,15 @@ function getTextFieldDisplay(element: any) {
 }
 
 // Update text field content (wraps static text in quotes, preserves $F{...} / $V{...} expressions)
+// Typing in the Text box is one undo step per visit to it, not one per key
+const textRecorded = ref(false);
 function updateTextFieldDisplay(val: string) {
   if (!currentElement.value || currentElement.value.type !== "textField") return;
+  if (!textRecorded.value) {
+    report.saveStateToHistory();
+    textRecorded.value = true;
+  }
   cleanLegacyAutoDateElement(currentElement.value);
-  report.saveStateToHistory();
   const elem = currentElement.value as any;
   if (!elem.markup) {
     elem.markup = "html";
@@ -1506,6 +1565,22 @@ function applyImageShape(id: ImageShapeId) {
   if (!element || element.type !== "image") return;
   if (currentImageShape.value === id) return;
   report.saveStateToHistory();
+  // Circle makes the picture square, Pill wide (shapeSize), in the same undo
+  // step; a square that would not fit below the picture in its section or box
+  // is made smaller instead
+  const next = shapeSize(id, element.width, element.height);
+  if (next.height > element.height) {
+    const sel = selectedElement.value;
+    const band = sel ? bands.value[sel.bandIndex] : undefined;
+    const box = sel?.parentFrameIndex !== undefined ? band?.elements[sel.parentFrameIndex] : undefined;
+    const room = (box ? box.height : (band?.height ?? next.height)) - element.y;
+    if (room > 0 && next.height > room) {
+      next.width = Math.max(1, Math.round(room));
+      next.height = next.width;
+    }
+  }
+  element.width = next.width;
+  element.height = next.height;
   setImageShape(element, id);
   report.updateJrxml();
 }
@@ -1712,6 +1787,8 @@ const panelTitle = computed(() => {
   if (!selectedElement.value || !el) return t("properties.reportProperties");
   if (isPagination(el)) return t("elementNames.pageNumber");
   if (isDateElement(el)) return t("elementNames.dateTime");
+  if (isProjectValue(el)) return t("elementNames.projectValue");
+  if (isLocationElement(el)) return t("elementNames.location");
   if (isPageBorder.value) return t("elementNames.framePageBorder");
   // Headings are shown by their own name, not as the box / text they are built of
   if (hasProperty(el, SECTION_HEADING_PROPERTY)) return t("elementNames.partSectionHeading");
@@ -1813,6 +1890,8 @@ const panelKind = computed(() => {
   if (!selectedElement.value || !el) return "report";
   if (isPagination(el)) return "pageNumber";
   if (isDateElement(el)) return "dateTime";
+  if (isProjectValue(el)) return "projectValue";
+  if (isLocationElement(el) || isLocationPart(el)) return "location";
   if (isPageBorder.value) return "pageBorder";
   if (hasProperty(el, SECTION_HEADING_PROPERTY)) return "sectionHeading";
   if (hasProperty(el, SUB_HEADING_PROPERTY)) return "subHeading";
@@ -1862,6 +1941,11 @@ const tablePanelEvents = {
 };
 watch(availableTabs, (tabs) => {
   if (!tabs.includes(activeTab.value)) activeTab.value = "basic";
+});
+watch(tableColumn, (col) => {
+  if (col && currentElement.value?.uuid === col.uuid) {
+    activeTab.value = "style";
+  }
 });
 
 // Basic tab

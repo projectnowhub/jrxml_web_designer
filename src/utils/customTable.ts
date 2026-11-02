@@ -26,8 +26,6 @@ export const DEFAULT_ROW_HEIGHT = 20;
 // JasperReports leaves out text whose first line doesn't fit its box
 export const TEXT_LINE_HEIGHT = 1.45;
 
-export const MAX_HEADER_ROWS = 3;
-
 export interface CellPos {
   row: number;
   col: number;
@@ -50,7 +48,7 @@ export const emptyCell = (style: Partial<CustomTableCell> = {}): CustomTableCell
 
 // A cell's look without its text and merge
 export function cellStyle(cell: Partial<CustomTableCell>): Partial<CustomTableCell> {
-  const { text: _text, rich: _rich, colSpan: _colSpan, rowSpan: _rowSpan, ...style } = cell;
+  const { text: _text, rich: _rich, sum: _sum, colSpan: _colSpan, rowSpan: _rowSpan, ...style } = cell;
   return { ...style };
 }
 
@@ -90,6 +88,19 @@ export function rowPart(table: CustomTableData, row: number): { part: CustomRowP
   return { part: "row", bodyIndex: row - table.headerRows };
 }
 
+// A whole-table text style or alignment was set: the cells of that part drop
+// their own value for it, so the table's shows
+export function clearPartCells(
+  table: CustomTableData,
+  part: CustomRowPart,
+  key: "bold" | "italic" | "underline" | "align",
+): void {
+  table.rows.forEach((row, r) => {
+    if (rowPart(table, r).part !== part) return;
+    row.cells.forEach((cell) => delete cell[key]);
+  });
+}
+
 export interface ResolvedCell {
   fill: string;
   color: string;
@@ -103,19 +114,44 @@ export interface ResolvedCell {
 
 export function resolveCell(table: CustomTableData, look: TableLook, row: number, cell: CustomTableCell): ResolvedCell {
   const { part, bodyIndex } = rowPart(table, row);
+  // The whole table's style for this row's part; the cell's own settings come over it
   const base =
     part === "header"
-      ? { fill: look.headerBackground, color: look.headerText, bold: look.headerBold, vAlign: "Middle" as const }
+      ? {
+          fill: look.headerBackground,
+          color: look.headerText,
+          bold: look.headerBold,
+          italic: !!look.headerItalic,
+          underline: !!look.headerUnderline,
+          align: look.headerAlign ?? "Left",
+          vAlign: "Middle" as const,
+        }
       : part === "totals"
-        ? { fill: look.totalsBackground, color: look.totalsText, bold: look.totalsBold, vAlign: "Middle" as const }
-        : { fill: rowColorAt(look, bodyIndex), color: look.rowText, bold: false, vAlign: "Top" as const };
+        ? {
+            fill: look.totalsBackground,
+            color: look.totalsText,
+            bold: look.totalsBold,
+            italic: !!look.totalsItalic,
+            underline: !!look.totalsUnderline,
+            align: look.totalsAlign ?? "Left",
+            vAlign: "Middle" as const,
+          }
+        : {
+            fill: rowColorAt(look, bodyIndex),
+            color: look.rowText,
+            bold: !!look.rowBold,
+            italic: !!look.rowItalic,
+            underline: !!look.rowUnderline,
+            align: look.rowAlign ?? "Left",
+            vAlign: "Top" as const,
+          };
   return {
     fill: cell.fill ?? base.fill,
     color: cell.color ?? base.color,
     bold: cell.bold ?? base.bold,
-    italic: cell.italic ?? false,
-    underline: cell.underline ?? false,
-    align: cell.align ?? "Left",
+    italic: cell.italic ?? base.italic,
+    underline: cell.underline ?? base.underline,
+    align: cell.align ?? base.align,
     vAlign: cell.vAlign ?? base.vAlign,
     fontSize: cell.fontSize ?? look.fontSize,
   };
@@ -235,7 +271,9 @@ export function visibleCells(table: CustomTableData): VisibleCell[] {
   return cells;
 }
 
-// The rectangle between two cells, grown until no merged cell sticks out of it
+// The rectangle between two cells, grown until no merged cell sticks out of
+// it. Whole columns / rows (from a handle) stay as chosen: a merged cell
+// across them doesn't pull in the columns / rows next to them
 export function selectionRect(table: CustomTableData, a: CellPos, b: CellPos): CellRect {
   const rect: CellRect = {
     top: Math.min(a.row, b.row),
@@ -243,6 +281,9 @@ export function selectionRect(table: CustomTableData, a: CellPos, b: CellPos): C
     left: Math.min(a.col, b.col),
     right: Math.max(a.col, b.col),
   };
+  const wholeColumns = rect.top === 0 && rect.bottom === table.rows.length - 1;
+  const wholeRows = rect.left === 0 && rect.right === table.columns.length - 1;
+  if (wholeColumns || wholeRows) return rect;
   const blocks = visibleCells(table);
   let grown = true;
   while (grown) {
@@ -273,10 +314,24 @@ export function cellsInRect(table: CustomTableData, rect: CellRect): VisibleCell
 
 export const rectCellCount = (table: CustomTableData, rect: CellRect) => cellsInRect(table, rect).length;
 
+// Whether a merged cell is partly inside the rectangle (a chosen column
+// crossing a merged cell): such a rectangle can't be merged
+export const cutsMergedCell = (table: CustomTableData, rect: CellRect) =>
+  visibleCells(table).some((v) => {
+    const bottom = v.row + v.rowSpan - 1;
+    const right = v.col + v.colSpan - 1;
+    const overlaps = v.row <= rect.bottom && bottom >= rect.top && v.col <= rect.right && right >= rect.left;
+    return overlaps && (v.row < rect.top || bottom > rect.bottom || v.col < rect.left || right > rect.right);
+  });
+
+// Whether the rectangle can become one cell
+export const canMergeRect = (table: CustomTableData, rect: CellRect) =>
+  rectCellCount(table, rect) > 1 && !cutsMergedCell(table, rect);
+
 // Merge a rectangle into one cell; the texts of the cells are kept, one per line
 export function mergeCells(table: CustomTableData, rect: CellRect): void {
+  if (!canMergeRect(table, rect)) return;
   const cells = cellsInRect(table, rect);
-  if (cells.length < 2) return;
   const anchor = table.rows[rect.top]!.cells[rect.left]!;
   const filled = cells.filter((v) => v.cell.text.trim() !== "");
   // Formatted text stays formatted: plain texts join it as HTML lines
@@ -322,6 +377,23 @@ export const hasMergedCells = (table: CustomTableData, rect: CellRect) =>
 
 // Insert a row at `index`, as tall as the row it is added next to; its colours
 // come from the table style (a row added among the header rows is a header row)
+// A column's name, as spreadsheets name them: A, B… Z, AA, AB…
+// As many heading rows as the table has rows, the total row aside (it would
+// turn into a heading)
+export const maxHeaderRows = (table: CustomTableData): number =>
+  Math.max(0, table.rows.length - (table.totalRow ? 1 : 0));
+
+export function columnName(index: number): string {
+  let n = index + 1;
+  let name = "";
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    name = String.fromCharCode(65 + r) + name;
+    n = Math.floor((n - 1) / 26);
+  }
+  return name;
+}
+
 export function insertRow(table: CustomTableData, index: number, likeRow: number): void {
   const like = table.rows[likeRow] ?? table.rows[0]!;
   const map = anchorMap(table);
@@ -329,7 +401,7 @@ export function insertRow(table: CustomTableData, index: number, likeRow: number
     height: like.height,
     cells: like.cells.map(() => emptyCell()),
   });
-  if (index < table.headerRows) table.headerRows = Math.min(MAX_HEADER_ROWS, table.headerRows + 1);
+  if (index < table.headerRows) table.headerRows += 1;
   // A merged block that runs across the new row grows over it
   if (index > 0 && index < map.length) {
     const seen = new Set<string>();
@@ -436,6 +508,7 @@ const num = (value: unknown, fallback: number, min: number, max: number) => {
 function readCell(raw: any): CustomTableCell {
   const cell: CustomTableCell = { text: typeof raw?.text === "string" ? raw.text : "" };
   if (raw?.rich === true) cell.rich = true;
+  if (raw?.sum === true) cell.sum = true;
   if (raw?.colSpan > 1) cell.colSpan = Math.floor(raw.colSpan);
   if (raw?.rowSpan > 1) cell.rowSpan = Math.floor(raw.rowSpan);
   if (COLOR.test(raw?.fill)) cell.fill = raw.fill;
@@ -470,7 +543,7 @@ export function normalizeCustomTable(raw: any): CustomTableData | null {
     columns,
     rows,
     theme: typeof raw.theme === "string" && /^[A-Za-z0-9_]+$/.test(raw.theme) ? raw.theme : "corporateBlue",
-    headerRows: Math.round(num(raw.headerRows, 1, 0, Math.min(MAX_HEADER_ROWS, rows.length))),
+    headerRows: Math.round(num(raw.headerRows, 1, 0, Math.max(0, rows.length - (raw.totalRow === true ? 1 : 0)))),
     totalRow: raw.totalRow === true,
     padding: num(raw.padding, 3, 0, 40),
   };
@@ -495,3 +568,153 @@ export const serializeCustomTable = (table: CustomTableData) =>
 // A copy that shares nothing with the original (Vue's reactive objects can't be structuredClone'd)
 export const cloneCustomTable = (table: CustomTableData): CustomTableData =>
   JSON.parse(JSON.stringify(table));
+
+// ---------------------------------------------------------------------------
+// The total row: column sums that keep up with the typed numbers
+// ---------------------------------------------------------------------------
+
+// A typed number, with the words around it ("RM 1,200.50", "85%"); null when
+// the cell holds something else
+const NUMBER_TEXT = /^([^\d+\-.]*?)\s*([+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s*([^\d]*)$/;
+function readNumber(text: string): { value: number; before: string; after: string; decimals: number; grouped: boolean } | null {
+  const match = text.trim().match(NUMBER_TEXT);
+  if (!match) return null;
+  const digits = match[2]!;
+  return {
+    value: Number(digits.replace(/,/g, "")),
+    before: match[1]!,
+    after: match[3]!,
+    decimals: digits.includes(".") ? digits.split(".")[1]!.length : 0,
+    grouped: digits.includes(","),
+  };
+}
+
+const plainText = (cell: CustomTableCell) =>
+  (cell.rich ? cell.text.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&") : cell.text).trim();
+
+// A column's sum over the body rows, written like its numbers; null when the
+// column holds words (every filled cell must be a number; "-" counts as empty)
+export function columnSum(table: CustomTableData, col: number): string | null {
+  const map = anchorMap(table);
+  const last = table.totalRow ? table.rows.length - 1 : table.rows.length;
+  const found: NonNullable<ReturnType<typeof readNumber>>[] = [];
+  for (let r = table.headerRows; r < last; r++) {
+    if (!isAnchor(map, r, col)) continue;
+    const text = plainText(table.rows[r]!.cells[col]!);
+    if (!text || /^[-–—]$/.test(text)) continue;
+    const n = readNumber(text);
+    if (!n) return null;
+    found.push(n);
+  }
+  if (!found.length) return null;
+  const total = found.reduce((a, n) => a + n.value, 0);
+  const decimals = Math.max(...found.map((n) => n.decimals));
+  const grouped = found.some((n) => n.grouped);
+  const same = (key: "before" | "after") => (found.every((n) => n[key] === found[0]![key]) ? found[0]![key] : "");
+  const [whole, fraction] = Math.abs(total).toFixed(decimals).split(".");
+  const wholeText = grouped ? whole!.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : whole!;
+  const before = same("before");
+  return `${before}${before && !/\s$/.test(before) && /[A-Za-z]$/.test(before) ? " " : ""}${total < 0 ? "-" : ""}${wholeText}${fraction ? "." + fraction : ""}${same("after")}`;
+}
+
+// "Last row is a total" ticked: a new row at the bottom with the label in the
+// first column and the sums under the number columns (kept up to date);
+// unticked: that row goes again while it is still as it was made
+export function setTotalRow(table: CustomTableData, on: boolean, label: string): void {
+  if (on === table.totalRow) return;
+  if (on) {
+    insertRow(table, table.rows.length, table.rows.length - 1);
+    table.totalRow = true;
+    const row = table.rows[table.rows.length - 1]!;
+    row.cells.forEach((cell, c) => {
+      if (columnSum(table, c) !== null) cell.sum = true;
+    });
+    if (!row.cells[0]!.sum) row.cells[0]!.text = label;
+    syncTotals(table);
+    return;
+  }
+  const row = table.rows[table.rows.length - 1]!;
+  const made = row.cells.every((cell, c) => cell.sum || cell.text === "" || (c === 0 && cell.text === label));
+  table.totalRow = false;
+  if (made && table.rows.length > 1 && !row.cells.some((cell) => cell.rowSpan && cell.rowSpan > 1)) {
+    deleteRows(table, table.rows.length - 1, table.rows.length - 1);
+  }
+}
+
+// The sum cells of one table's total row, written from the rows above
+export function syncTotals(table: CustomTableData): boolean {
+  if (!table.totalRow) return false;
+  let changed = false;
+  table.rows[table.rows.length - 1]!.cells.forEach((cell, c) => {
+    if (!cell.sum) return;
+    const text = columnSum(table, c) ?? "";
+    if (cell.text !== text || cell.rich) {
+      cell.text = text;
+      delete cell.rich;
+      changed = true;
+    }
+  });
+  return changed;
+}
+
+// ---------------------------------------------------------------------------
+// Splitting a table over two pages
+// ---------------------------------------------------------------------------
+
+// Whether the table can be split above row `at`: at least one body row stays
+// and one moves, and no merged cell runs across the cut
+export function canSplitAt(table: CustomTableData, at: number): boolean {
+  const lastBody = table.totalRow ? table.rows.length - 2 : table.rows.length - 1;
+  if (at <= table.headerRows || at > lastBody) return false;
+  return !visibleCells(table).some((v) => v.row < at && v.row + v.rowSpan > at);
+}
+
+// The rows above `at` stay; the rows from `at` on (the total row with them)
+// become a second table that starts with a copy of the heading rows. Sums in
+// the total row keep the whole table's numbers, written out as they are now
+export function splitCustomTable(table: CustomTableData, at: number): { head: CustomTableData; rest: CustomTableData } {
+  const head = cloneCustomTable(table);
+  head.rows = head.rows.slice(0, at);
+  head.totalRow = false;
+  const rest = cloneCustomTable(table);
+  rest.rows = [...rest.rows.slice(0, table.headerRows), ...rest.rows.slice(at)];
+  if (rest.totalRow) for (const cell of rest.rows[rest.rows.length - 1]!.cells) delete cell.sum;
+  return { head: normalizeCustomTable(head) ?? head, rest: normalizeCustomTable(rest) ?? rest };
+}
+
+// The element keeps the rows above `at`; the rows from `at` on become a new
+// table element at the same x (placed by the caller: page and y)
+export function splitTableElement(element: CustomTableElement, at: number): CustomTableElement {
+  const { head, rest } = splitCustomTable(element.table, at);
+  element.table = head;
+  syncTableSize(element);
+  const moved: CustomTableElement = {
+    type: "customTable",
+    uuid: crypto.randomUUID(),
+    pageIndex: element.pageIndex,
+    x: element.x,
+    y: 0,
+    width: element.width,
+    height: 0,
+    table: rest,
+  };
+  syncTableSize(moved);
+  return moved;
+}
+
+// Where a table at `top` must be cut so its rows end above `bottom`: the
+// lowest row it can be split at (canSplitAt), or null when none fits
+export function splitRowFor(table: CustomTableData, top: number, bottom: number): number | null {
+  let y = top;
+  let first = table.rows.length;
+  for (let r = 0; r < table.rows.length; r++) {
+    y += table.rows[r]!.height;
+    if (y > bottom + 0.5) {
+      first = r;
+      break;
+    }
+  }
+  if (first === table.rows.length) return null;
+  for (let r = first; r > 0; r--) if (canSplitAt(table, r)) return r;
+  return null;
+}

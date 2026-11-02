@@ -110,6 +110,7 @@
             v-for="pIndex in totalPages"
             :key="'page-sheet-wrapper-' + pIndex"
             class="page-sheet-wrapper"
+            :class="{ 'is-drag-source': dragSourcePage === pIndex - 1 }"
             :style="{
               width: paperWidth * zoomLevel + 'px',
               height: paperHeight * zoomLevel + 'px',
@@ -417,36 +418,7 @@
                         @rotate="(b, e, p) => emit('rotate', b, e, p)"
                       />
                     </template>
-                    <!-- Handles of a selected shape, box or box part, drawn above
-                         everything: the element keeps its place in the stacking
-                         order, so something on top could cover its own handles -->
-                    <div
-                      v-if="topHandles && topHandles.bandIndex === bItem.bandIndex && topHandles.pageIndex === (bItem.isDetail ? pIndex - 1 : topHandles.pageIndex)"
-                      class="top-handles"
-                      :style="{
-                        left: topHandles.x + 'px',
-                        top: topHandles.y + 'px',
-                        width: topHandles.width + 'px',
-                        height: topHandles.height + 'px',
-                      }"
-                    >
-                      <div
-                        v-for="dir in HANDLE_DIRS"
-                        :key="dir"
-                        class="top-handle"
-                        :class="`is-${dir}`"
-                        @mousedown.stop="
-                          $event.button === 0 &&
-                            startResizingElement(
-                              $event,
-                              topHandles.bandIndex,
-                              topHandles.elementIndex,
-                              topHandles.parentFrameIndex,
-                              dir,
-                            )
-                        "
-                      ></div>
-                    </div>
+
                   </div>
 
                   <!-- Band resize handle for non-detail bands -->
@@ -576,6 +548,7 @@ import DragFeedbackLayer from "./DragFeedbackLayer.vue";
 import { BAND_CONSTANTS } from "@/constants/constants";
 import { getBandDisplayName } from "@/utils/bandUtils";
 import { buildGridPath } from "@/utils/rulerUtils";
+import { startDragScrolling, type DragScrollSession } from "@/utils/dragAutoScroll";
 import type { Band } from "@/types";
 import type { DragFeedback } from "@/composables/useDragFeedback";
 import type { AlignmentGuideLines } from "@/composables/useSnapAlignment";
@@ -588,6 +561,8 @@ const { t } = useI18n();
 interface Props {
   highlightedBandIndex: number | null;
   isDraggingOrResizing: boolean;
+  // The page an element is being dragged from (null when nothing is dragged)
+  dragSourcePage?: number | null;
   // The highlighted band can't take the element being dragged (too tall)
   dropTargetBlocked?: boolean;
   // The Page Border tile is being dragged over the page: highlight the Background band
@@ -608,6 +583,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   highlightedBandIndex: null,
   isDraggingOrResizing: false,
+  dragSourcePage: null,
   horizontalRulerTicks: () => [],
   horizontalRulerLabels: () => [],
   verticalRulerTicks: () => [],
@@ -862,38 +838,6 @@ function getBandDisplayLabel(bandType: string, pIndex: number): string {
   return name;
 }
 
-// The selected element's handles drawn on top (see the template): for shapes
-// and boxes, and for parts inside a box, which keep their stacking order when
-// selected. Not for one being typed in, nor when several are selected
-const HANDLE_DIRS = ["nw", "n", "ne", "e", "se", "s", "sw", "w"] as const;
-const topHandles = computed(() => {
-  const sel = selectedElement.value;
-  if (!sel || (selectedElements.value?.length ?? 0) > 1) return null;
-  const band = bands.value[sel.bandIndex];
-  if (!band || band.type === "background") return null;
-  const box = sel.parentFrameIndex !== undefined ? (band.elements[sel.parentFrameIndex] as any) : null;
-  const el = box ? box.elements?.[sel.elementIndex] : band.elements[sel.elementIndex];
-  if (!el) return null;
-  if (!box && !["rectangle", "ellipse", "frame"].includes(el.type)) return null;
-  const editing = editingElement.value;
-  if (
-    editing &&
-    editing.bandIndex === sel.bandIndex &&
-    editing.elementIndex === sel.elementIndex &&
-    editing.parentFrameIndex === sel.parentFrameIndex
-  )
-    return null;
-  return {
-    bandIndex: sel.bandIndex,
-    elementIndex: sel.elementIndex,
-    parentFrameIndex: sel.parentFrameIndex,
-    pageIndex: (box ?? el).pageIndex ?? 0,
-    x: (box?.x ?? 0) + el.x,
-    y: (box?.y ?? 0) + el.y,
-    width: el.width,
-    height: el.height,
-  };
-});
 
 // The first contents page with nothing of a Table of Contents on any contents
 // page (one Table of Contents carries on over them by itself)
@@ -1141,6 +1085,36 @@ const notePageClicked = (event: MouseEvent) => {
   if (sheetPage !== undefined) selectionStore.lastClickedPageIndex = parseInt(sheetPage, 10);
 };
 
+// Drags the browser runs itself (library tiles, Report Data, picture files):
+// the pages scroll while the pointer is held near an edge of the page area
+let nativeDragScroll: DragScrollSession | null = null;
+const handleNativeDragOver = (event: DragEvent) => {
+  // Only over the canvas (pages and rulers): a drag in a popup or a side panel
+  // never scrolls the pages behind it
+  const over = event.target instanceof Node && designerCanvasRef.value?.contains(event.target);
+  if (!over) {
+    endNativeDragScroll();
+    return;
+  }
+  nativeDragScroll ??= startDragScrolling({ native: true });
+  nativeDragScroll.pointer(event.clientX, event.clientY);
+};
+const endNativeDragScroll = () => {
+  nativeDragScroll?.stop();
+  nativeDragScroll = null;
+};
+onMounted(() => {
+  document.addEventListener("dragover", handleNativeDragOver, true);
+  document.addEventListener("drop", endNativeDragScroll, true);
+  document.addEventListener("dragend", endNativeDragScroll, true);
+});
+onBeforeUnmount(() => {
+  endNativeDragScroll();
+  document.removeEventListener("dragover", handleNativeDragOver, true);
+  document.removeEventListener("drop", endNativeDragScroll, true);
+  document.removeEventListener("dragend", endNativeDragScroll, true);
+});
+
 // Lifecycle hooks
 onMounted(() => {
   // Add mouse wheel event listener
@@ -1342,6 +1316,22 @@ onBeforeUnmount(() => {
 .page-sheet-wrapper {
   flex-shrink: 0;
   box-sizing: border-box;
+}
+
+/* The page an element is dragged from: drawn over the other pages and not
+   clipped, so the element stays in view when it is dragged onto another page */
+.page-sheet-wrapper.is-drag-source {
+  z-index: 3;
+}
+
+.page-sheet-wrapper.is-drag-source > .paper {
+  overflow: visible;
+}
+
+/* The dragged element (selected) over the other elements of its page, which
+   all share the dragging z-index */
+.page-sheet-wrapper.is-drag-source :deep(.design-element.selected.is-dragging) {
+  z-index: 101;
 }
 
 .paper {
@@ -1938,30 +1928,4 @@ onBeforeUnmount(() => {
   color: #fff;
 }
 
-.top-handles {
-  position: absolute;
-  z-index: 70;
-  pointer-events: none;
-}
-
-.top-handle {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border: 1px solid #ffffff;
-  border-radius: 1px;
-  background: #6440f4;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-  box-sizing: border-box;
-  pointer-events: auto;
-}
-
-.top-handle.is-nw { top: -4px; left: -4px; cursor: nw-resize; }
-.top-handle.is-ne { top: -4px; right: -4px; cursor: ne-resize; }
-.top-handle.is-sw { bottom: -4px; left: -4px; cursor: sw-resize; }
-.top-handle.is-se { bottom: -4px; right: -4px; cursor: se-resize; }
-.top-handle.is-n { top: -3px; left: 50%; width: 14px; height: 6px; transform: translateX(-50%); cursor: n-resize; }
-.top-handle.is-s { bottom: -3px; left: 50%; width: 14px; height: 6px; transform: translateX(-50%); cursor: s-resize; }
-.top-handle.is-w { left: -3px; top: 50%; width: 6px; height: 14px; transform: translateY(-50%); cursor: w-resize; }
-.top-handle.is-e { right: -3px; top: 50%; width: 6px; height: 14px; transform: translateY(-50%); cursor: e-resize; }
 </style>

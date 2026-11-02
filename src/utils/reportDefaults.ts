@@ -2,10 +2,15 @@
 // paper, margins, font and the parts every page has. The part heights are kept
 // with the band defaults (getEffectiveDefaultBandConfig in constants.ts).
 //
-// Kept in this browser for now. Every read and write goes through
-// loadReportDefaults / saveReportDefaults, so storing them with the user's
-// account later (an API) changes only this file.
-import { BAND_TYPE_CONSTANTS, FONT_CONSTANTS, REPORT_CONSTANTS } from "@/constants/constants";
+// Kept in this browser and saved with the user's account (stores/userSettings.ts):
+// every write here asks for that save.
+import {
+  BAND_TYPE_CONSTANTS,
+  FONT_CONSTANTS,
+  REPORT_CONSTANTS,
+  REPORT_DEFAULTS_STORAGE_KEY as STORAGE_KEY,
+} from "@/constants/constants";
+import { useUserSettingsStore } from "@/stores/userSettings";
 import type { BandType } from "@/types";
 
 export interface ReportDefaults {
@@ -19,8 +24,6 @@ export interface ReportDefaults {
   // The parts every page has (Detail always)
   bandTypes: BandType[];
 }
-
-const STORAGE_KEY = "designer.reportDefaults";
 
 // The parts a new report can start with, in page order (Background is the
 // page border's layer, off unless chosen)
@@ -103,6 +106,7 @@ export function saveReportDefaults(defaults: ReportDefaults): void {
   } catch {
     // Storage blocked: new reports use the built-in defaults
   }
+  useUserSettingsStore().saveLater();
 }
 
 export function resetReportDefaults(): ReportDefaults {
@@ -111,5 +115,6 @@ export function resetReportDefaults(): ReportDefaults {
   } catch {
     // Nothing saved to remove
   }
+  useUserSettingsStore().saveLater();
   return builtInReportDefaults();
 }

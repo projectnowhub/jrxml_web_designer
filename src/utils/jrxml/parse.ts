@@ -17,6 +17,7 @@ import {
 } from "../framePresets";
 import { detectPagination } from "../paginationPresets";
 import { restoreDateElement } from "../dateElement";
+import { PROJECT_PARAM_PREFIX, restoreProjectValue } from "../projectValue";
 import {
   CONTENTS_PAGE_PROPERTY,
   parseSpecialPages,
@@ -27,6 +28,7 @@ import { CHART_BINDING_PROPERTY, parseChartBinding } from "../chart/chartTypes";
 import { SAVED_TABLE_STYLES_PROPERTY, parseSavedTableStyles } from "../table/tableThemes";
 import { REPORT_PROJECTS_PROPERTY, parseReportProjects } from "../projectFields";
 import { BARCODE_TYPE_IDS, BARCODE_VALUES_PROPERTY, parseBarcodeValues } from "../barcode/barcodeTypes";
+import { joinSplitReferences } from "./javaString";
 import type { SavedTableStyle } from "@/types/dataSource";
 import type {
   ReportProperties,
@@ -175,7 +177,8 @@ export function parseJRXMLContent(jrxmlContent: string): {
     if (child.tagName === "parameter" || child.localName === "parameter") {
       const name = child.getAttribute("name");
       const className = child.getAttribute("class") || "java.lang.String";
-      if (name) {
+      // The project details' parameters are written again from the linked texts
+      if (name && !name.startsWith(PROJECT_PARAM_PREFIX)) {
         const param: Parameter = { name, class: className };
         // Extract the UUID (if present)
         const uuid = child.getAttribute("uuid");
@@ -1219,7 +1222,8 @@ function parseElement(element: Element, type: string): any {
       parseTextFieldElement(element, result);
       // A page number written by another tool becomes a page number here too
       // A date's expression is rebuilt from its setup
-      if (!restoreDateElement(result as any)) detectPagination(result as any);
+      // A linked project detail's expression is rebuilt from its link
+      if (!restoreDateElement(result as any) && !restoreProjectValue(result as any)) detectPagination(result as any);
       break;
     case "image":
       // A chart is written as an image carrying its setup
@@ -1552,8 +1556,11 @@ function parseTextFieldElement(element: Element, result: any): void {
 
   const expressionElem = findChildElement(element, "textFieldExpression");
   if (expressionElem) {
-    result.expression = expressionElem.textContent || "";
-    const fieldMatch = result.expression.match(/\$F\{([^}]+)\}/);
+    // Text the generator split so "$F{…}" stays text is one literal again
+    result.expression = joinSplitReferences(expressionElem.textContent || "");
+    // A field it shows (never "$F{…}" typed inside one quoted text)
+    const isOneLiteral = /^"(?:[^"\\]|\\.)*"$/.test(result.expression.trim());
+    const fieldMatch = isOneLiteral ? null : result.expression.match(/\$F\{([^}]+)\}/);
     if (fieldMatch) {
       result.fieldName = fieldMatch[1];
     }

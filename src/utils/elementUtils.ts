@@ -207,12 +207,16 @@ export type ImageShapeId =
   | "pill"
   | "leaf"
   | "tab"
-  | "drop";
+  | "drop"
+  | "cornerTopLeft"
+  | "cornerTopRight"
+  | "cornerBottomRight"
+  | "cornerBottomLeft";
 
 // Each corner as a share of the image's short side (0.5 = fully round),
 // in CSS order: top-left, top-right, bottom-right, bottom-left.
-// Choosing a shape never changes the image's size: Circle and Pill both
-// round it fully (a circle on a square image, a pill on a wide one).
+// Circle and Pill set the proportions they need (shapeSize); the others never
+// change the image's size. The four corner shapes round one corner only.
 export const IMAGE_SHAPES: { id: ImageShapeId; corners: [number, number, number, number] }[] = [
   { id: "square", corners: [0, 0, 0, 0] },
   { id: "rounded", corners: [0.08, 0.08, 0.08, 0.08] },
@@ -222,6 +226,10 @@ export const IMAGE_SHAPES: { id: ImageShapeId; corners: [number, number, number,
   { id: "leaf", corners: [0.4, 0, 0.4, 0] },
   { id: "tab", corners: [0.16, 0.16, 0, 0] },
   { id: "drop", corners: [0.5, 0.5, 0, 0.5] },
+  { id: "cornerTopLeft", corners: [0.4, 0, 0, 0] },
+  { id: "cornerTopRight", corners: [0, 0.4, 0, 0] },
+  { id: "cornerBottomRight", corners: [0, 0, 0.4, 0] },
+  { id: "cornerBottomLeft", corners: [0, 0, 0, 0.4] },
 ];
 
 const findImageShape = (id: string) => IMAGE_SHAPES.find((s) => s.id === id);
@@ -243,6 +251,15 @@ function shapeRadii(id: ImageShapeId, element: DesignElement): CornerRadii {
 }
 
 // Gives the image a preset shape. "square" removes the corners.
+// The size a shape needs to look like itself: a Circle is square (its width
+// kept), a Pill at least twice as wide as tall (a square or tall picture
+// keeps its width and gets half as tall). Other shapes keep any size
+export function shapeSize(id: ImageShapeId | null | undefined, width: number, height: number): { width: number; height: number } {
+  if (id === "circle") return { width, height: width };
+  if (id === "pill" && height > width / 2) return { width, height: Math.max(1, Math.round(width / 2)) };
+  return { width, height };
+}
+
 export function setImageShape(element: DesignElement, id: ImageShapeId): void {
   if (element?.type !== "image" || !findImageShape(id)) return;
   setPropertyCornerRadii(element, shapeRadii(id, element));
@@ -476,6 +493,52 @@ export function cleanEditorHtml(html: string): string {
   clean = clean.replace(/(<a\s+[^>]*?)\s+style="color:\s*[^";]+;?"/gi, '$1');
   clean = clean.replace(/<span>([\s\S]*?)<\/span>/gi, '$1');
   return clean;
+}
+
+// Pasting into a text or a typed-table cell: only text goes in (with its
+// formatting). Pictures, video, frames and embedded objects are left out; a
+// clipboard holding nothing but a picture pastes nothing. Returns false when
+// nothing was pasted because only a picture was there.
+const NON_TEXT_TAGS = /<(img|picture|video|audio|svg|canvas|iframe|object|embed|source)\b[^>]*>(?:[\s\S]*?<\/\1>)?/gi;
+export function pasteTextOnly(event: ClipboardEvent): boolean {
+  const data = event.clipboardData;
+  if (!data) return true;
+  event.preventDefault();
+  const html = data.getData("text/html");
+  const text = data.getData("text/plain");
+  if (html) {
+    const cleaned = html
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<(style|script|meta|link|head)\b[\s\S]*?<\/\1>|<(meta|link)\b[^>]*>/gi, "")
+      .replace(NON_TEXT_TAGS, "");
+    if (cleaned.replace(/<[^>]*>/g, "").trim()) {
+      document.execCommand("insertHTML", false, cleaned);
+      return true;
+    }
+  }
+  if (text.trim()) {
+    document.execCommand("insertText", false, text);
+    return true;
+  }
+  // Only a picture (or nothing that is text)
+  return !Array.from(data.items).some((item) => item.type.startsWith("image/"));
+}
+
+// Something dragged into a text: files (pictures) are refused, text still drops in
+export function refuseFileDrop(event: DragEvent): boolean {
+  if (!event.dataTransfer?.types.includes("Files")) return true;
+  event.preventDefault();
+  return false;
+}
+
+// Strip inline text color overrides so a cell or element style can take effect
+export function stripInlineColors(html: string): string {
+  return html
+    .replace(/<font\s+color="[^"]*">([\s\S]*?)<\/font>/gi, '$1')
+    .replace(/<span\s+style="color:\s*[^";]+;?">([\s\S]*?)<\/span>/gi, '$1')
+    .replace(/<span\s+style="([^"]*?)color:\s*[^";]+;?([^"]*)">([\s\S]*?)<\/span>/gi, '<span style="$1$2">$3</span>')
+    .replace(/<span\s*>\s*<\/span>/gi, '')
+    .replace(/<span>([\s\S]*?)<\/span>/gi, '$1');
 }
 
 // Formatting beyond line breaks (bold, colour, lists, superscript...)

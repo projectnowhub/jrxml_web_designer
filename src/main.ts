@@ -1,5 +1,6 @@
 import { createApp } from "vue";
 import { createPinia } from "pinia";
+import { VueQueryPlugin } from "@tanstack/vue-query";
 import "./style.css";
 import "./styles/fonts.css";
 import "./styles/properties-panel.css";
@@ -8,6 +9,8 @@ import i18n, { LOCALE_TAGS, type AppLocale } from "./i18n";
 import { setChartTextSource } from "./utils/chart/chartText";
 import router from "./router";
 import { initializeAllPlugins } from "./plugins/PluginRegistry";
+import { vLiveChange } from "./directives/liveChange";
+import { queryClient } from "./queries/queryClient";
 
 // Initialize the plugin system
 initializeAllPlugins();
@@ -20,6 +23,10 @@ setChartTextSource({
 
 const app = createApp(App);
 app.use(createPinia());
+// API reads are cached and shared through TanStack Query (queries/)
+app.use(VueQueryPlugin, { queryClient });
 app.use(i18n);
 app.use(router);
+// Settings fields apply their value once the user stops typing
+app.directive("live-change", vLiveChange);
 app.mount("#app");

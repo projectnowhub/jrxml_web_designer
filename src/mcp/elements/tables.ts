@@ -9,15 +9,25 @@ import type {
   ChartMeasure,
   DataColumn,
   DataSourceSchema,
+  ProjectListKey,
   RelativePeriod,
+  TableColumnBinding,
+  TableColumnLook,
+  TableColumnPartLook,
   TableDataBinding,
   TableFilter,
+  TableHighlight,
+  TableLook,
+  TableTextAlign,
   TotalFunction,
 } from "@/types/dataSource";
+import { hasLook, hasPartLook, newHighlightId } from "@/utils/table/columnLook";
 import { createElement } from "@/components/elements/ElementRegistry";
 import {
+  clearPartCells,
+  type CustomRowPart,
   fitTableToBox,
-  MAX_HEADER_ROWS,
+  maxHeaderRows,
   mergeCells,
   MIN_COLUMN_WIDTH,
   scaleSizes,
@@ -29,18 +39,18 @@ import {
 import { resolveLook, TABLE_THEMES } from "@/utils/table/tableThemes";
 import {
   distributeColumnWidths,
-  maxColumnsForWidth,
+  startingColumnCount,
+  tableWidthFor,
   nextTableName,
   createDatasetName,
   toDataQuery,
-  PREVIEW_ROW_LIMIT,
   RELATIVE_PERIODS,
 } from "@/utils/table/dataBinding";
+import { TABLE_ROWS_LIMIT } from "@/constants/reportDataConstants";
 import { tableHeight, TABLE_HEADER_HEIGHT, TABLE_ROW_HEIGHT } from "@/utils/table/dataTable";
 import { usedDatasetNames, usedTableNames } from "@/utils/table/tableDocument";
 import { buildChartElement } from "@/utils/chart/chartElement";
 import {
-  CATEGORY_LIMITS,
   CHART_AGGREGATIONS,
   CHART_PALETTES,
   CHART_TYPES,
@@ -51,8 +61,14 @@ import {
   isChartComplete,
   normalizeChartBinding,
 } from "@/utils/chart/chartTypes";
-import { getFacets, getSchema, listProjects, queryRows } from "@/services/dataSourceService";
+import { fetchFacets, fetchRows, fetchSchema, isProjectListSource } from "@/queries/dataSourceQueries";
+import { getProject, getProjectSummary } from "@/queries/projectQueries";
 import { useReportStore } from "@/stores/report";
+import { MAX_REPORT_PROJECTS } from "@/constants/constants";
+import { countProjectUsage } from "@/utils/projectFields";
+import { chartFieldLists } from "@/utils/chart/chartFields";
+import { suggestChartTitle } from "@/utils/chart/chartQuery";
+import i18n from "@/i18n";
 import { applyGeometry } from "./basic";
 import { color, defined, has, readColor, textHeightFor } from "./common";
 import { SpecError, type ElementKind, type ElementSpec, type JsonSchema, type KindContext } from "./types";
@@ -128,6 +144,62 @@ export function fitRowsToText(table: CustomTableData): void {
   }
 }
 
+// ---- The whole table's text style and alignment per part (Customize's B / I /
+// U and alignment buttons), for typed and project-data tables alike ----------
+
+const PART_STYLE_SCHEMA: JsonSchema = {
+  type: "object",
+  properties: {
+    bold: { type: "boolean" },
+    italic: { type: "boolean" },
+    underline: { type: "boolean" },
+    align: { type: "string", enum: ["Left", "Center", "Right"] },
+  },
+};
+const TEXT_STYLE_PROP: JsonSchema = {
+  type: "object",
+  description:
+    "The whole table's text style and alignment per part (a column's own look / a typed cell's own settings come over it): header, rows, totals, each { bold, italic, underline, align }. Rows of a project-data table without align line up by column type",
+  properties: { header: PART_STYLE_SCHEMA, rows: PART_STYLE_SCHEMA, totals: PART_STYLE_SCHEMA },
+};
+type StylePart = "header" | "rows" | "totals";
+const STYLE_FIELDS: Record<StylePart, { bold: keyof TableLook; italic: keyof TableLook; underline: keyof TableLook; align: keyof TableLook; rowPart: CustomRowPart }> = {
+  header: { bold: "headerBold", italic: "headerItalic", underline: "headerUnderline", align: "headerAlign", rowPart: "header" },
+  rows: { bold: "rowBold", italic: "rowItalic", underline: "rowUnderline", align: "rowAlign", rowPart: "row" },
+  totals: { bold: "totalsBold", italic: "totalsItalic", underline: "totalsUnderline", align: "totalsAlign", rowPart: "totals" },
+};
+
+// Sets the given parts' style on the table's own look; a typed table's cells
+// drop their own value for what is set
+function applyTextStyle(holder: { theme?: string; look?: TableLook; customized?: boolean }, raw: unknown, typed?: CustomTableData): void {
+  const spec = (raw ?? {}) as Partial<Record<StylePart, { bold?: boolean; italic?: boolean; underline?: boolean; align?: TableTextAlign }>>;
+  const look: TableLook = { ...resolveLook(holder) };
+  for (const part of Object.keys(STYLE_FIELDS) as StylePart[]) {
+    const wanted = spec[part];
+    if (!wanted) continue;
+    const fields = STYLE_FIELDS[part];
+    for (const key of ["bold", "italic", "underline", "align"] as const) {
+      if (wanted[key] === undefined) continue;
+      Object.assign(look, { [fields[key]]: wanted[key] });
+      if (typed) clearPartCells(typed, fields.rowPart, key);
+    }
+  }
+  holder.look = look;
+  holder.customized = true;
+}
+
+// The table's text style per part, as textStyle takes it (only what is set)
+function describeTextStyle(holder: { theme?: string; look?: TableLook }) {
+  const look = resolveLook(holder);
+  const style: Record<string, Record<string, unknown>> = {};
+  for (const part of Object.keys(STYLE_FIELDS) as StylePart[]) {
+    const f = STYLE_FIELDS[part];
+    const value = defined({ bold: look[f.bold] || undefined, italic: look[f.italic] || undefined, underline: look[f.underline] || undefined, align: look[f.align] });
+    if (Object.keys(value).length) style[part] = value;
+  }
+  return Object.keys(style).length ? style : undefined;
+}
+
 function applyTypedTable(element: CustomTableElement, spec: ElementSpec, ctx: KindContext): void {
   if (has(spec, "rows")) {
     const width = spec.width ?? (element.width || ctx.availableWidth);
@@ -139,8 +211,9 @@ function applyTypedTable(element: CustomTableElement, spec: ElementSpec, ctx: Ki
     delete table.look;
     delete table.customized;
   }
-  if (has(spec, "headerRows")) table.headerRows = Math.min(spec.headerRows, MAX_HEADER_ROWS, table.rows.length);
+  if (has(spec, "textStyle")) applyTextStyle(table, spec.textStyle, table);
   if (has(spec, "totalRow")) table.totalRow = !!spec.totalRow;
+  if (has(spec, "headerRows")) table.headerRows = Math.min(spec.headerRows, maxHeaderRows(table));
   if (has(spec, "padding")) table.padding = Math.round(spec.padding);
   if (has(spec, "rowHeight") && !has(spec, "rows")) table.rows.forEach((r) => (r.height = Math.round(spec.rowHeight)));
   for (const [i, m] of ((spec.merges as Array<Record<string, number>> | undefined) ?? []).entries()) {
@@ -189,9 +262,10 @@ export const typedTableKind: ElementKind = {
       description: "Cell texts row by row, headings first; \\n for a new line in a cell",
     },
     columnWidths: { type: "array", items: { type: "number", minimum: 0.1 }, description: "Relative column widths, e.g. [1, 3, 1] (default equal)" },
-    headerRows: { type: "integer", minimum: 0, maximum: MAX_HEADER_ROWS, description: "Heading rows at the top (default 1)" },
+    headerRows: { type: "integer", minimum: 0, description: "Heading rows at the top (default 1; at most every row but the total row)" },
     totalRow: { type: "boolean", description: "Last row drawn as a total" },
-    theme: { type: "string", enum: TABLE_THEMES, description: "Table style: corporateBlue (default), minimal, emerald, none" },
+    theme: { type: "string", enum: TABLE_THEMES, description: "Table style: corporateBlue (default), minimal, emerald, slate, burgundy, teal, gold, violet, none" },
+    textStyle: TEXT_STYLE_PROP,
     rowHeight: { type: "number", minimum: 12, maximum: 200, description: "Row height in px (default 20)" },
     padding: { type: "number", minimum: 0, maximum: 20, description: "Space inside cells in px (default 3)" },
     merges: {
@@ -249,6 +323,7 @@ export const typedTableKind: ElementKind = {
       headerRows: table.headerRows,
       totalRow: table.totalRow,
       theme: table.theme,
+      textStyle: describeTextStyle(table),
       merges: shown.filter((v) => v.rowSpan > 1 || v.colSpan > 1).map((v) => ({ row: v.row, col: v.col, rowSpan: v.rowSpan, colSpan: v.colSpan })),
     });
   },
@@ -262,21 +337,43 @@ async function projectName(projectId: string): Promise<string> {
   const report = useReportStore();
   const chosen = report.reportProperties.projects?.find((p) => p.id === projectId);
   if (chosen) return chosen.name;
-  const all = await listProjects();
-  const found = all.find((p) => p.id === projectId);
+  const found = await getProjectSummary(projectId);
   if (!found) throw new SpecError(`projectId: no project "${projectId}"; call get_report_data to see the projects`);
   return found.name;
 }
 
-// The report uses the project from now on (the header's project list)
+// The report uses the project from now on (the header's project list). One
+// project per template for now (MAX_REPORT_PROJECTS): another one replaces
+// the report's project, unless that one already feeds tables or charts:
+// switching moves the whole template (in the header), which the user decides
 function useProject(projectId: string, name: string): void {
-  const props = useReportStore().reportProperties;
-  if (!props.projects?.some((p) => p.id === projectId)) props.projects = [...(props.projects ?? []), { id: projectId, name }];
+  const report = useReportStore();
+  const props = report.reportProperties;
+  const chosen = props.projects ?? [];
+  if (chosen.some((p) => p.id === projectId)) return;
+  if (chosen.length >= MAX_REPORT_PROJECTS) {
+    const inUse = chosen.find((p) => countProjectUsage(report.bands, p.id) > 0);
+    if (inUse) {
+      throw new SpecError(
+        `projectId: this template uses ${inUse.name} (${inUse.id}), and a template uses one project; use that project. Changing it moves every table, chart and linked detail to the new project: only the user does that, with the project picker at the top`,
+      );
+    }
+    props.projects = [{ id: projectId, name }];
+    return;
+  }
+  props.projects = [...chosen, { id: projectId, name }];
+}
+
+// A project list as a source: its columns as Report Data shows them (text)
+async function listSchema(projectId: string, list: ProjectListKey): Promise<DataSourceSchema> {
+  const table = (await getProject(projectId).catch(() => null))?.tables?.find((t) => t.key === list);
+  if (!table) throw new SpecError(`sourceId: project "${projectId}" has no list "${list}"; call get_report_data with the projectId`);
+  return { id: list, name: table.label, columns: (table.keys ?? []).map((key, i) => ({ key, label: table.columns[i] ?? key, type: "text" })) };
 }
 
 async function sourceSchema(projectId: string, sourceId: string): Promise<DataSourceSchema> {
   try {
-    return await getSchema(projectId, sourceId);
+    return await fetchSchema(projectId, sourceId);
   } catch {
     throw new SpecError(`sourceId: project "${projectId}" has no source "${sourceId}"; call get_report_data with the projectId to see its sources`);
   }
@@ -292,17 +389,19 @@ function column(schema: DataSourceSchema, key: string, field: string): DataColum
 // Filters: which rows a data table or chart uses (as the Filter panel sets them)
 // ---------------------------------------------------------------------------
 
-type FilterSpec = { column: string; values?: string[]; from?: string | number; to?: string | number; period?: RelativePeriod };
+type FilterSpec = { column: string; values?: string[]; contains?: string; is?: boolean; from?: string | number; to?: string | number; period?: RelativePeriod };
 
 export const FILTERS_PROP: JsonSchema = {
   type: "array",
   description:
-    "Which rows are used (all filters apply together; [] for none). Per column: values (rows with any of these texts; see get_report_data for the values), from / to (numbers, amounts, or dates yyyy-MM-dd; either may be left out), or period for dates (moves with the run date, so next month's report shows next month's rows)",
+    "Which rows are used (all filters apply together; [] for none). Per column: values (a column with a list of values: rows with any of them; see get_report_data for the values), contains (a text column: rows whose cell contains these words, any case), is (a yes / no column: true or false), from / to (numbers, amounts, or dates yyyy-MM-dd; either may be left out), or period for dates (moves with the run date, so next month's report shows next month's rows)",
   items: {
     type: "object",
     properties: {
       column: { type: "string", description: "Column key" },
       values: { type: "array", items: { type: "string" }, minItems: 1 },
+      contains: { type: "string" },
+      is: { type: "boolean" },
       from: { type: ["string", "number"] },
       to: { type: ["string", "number"] },
       period: { type: "string", enum: RELATIVE_PERIODS },
@@ -315,25 +414,34 @@ export const FILTERS_PROP: JsonSchema = {
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 async function readFilters(projectId: string, sourceId: string, schema: DataSourceSchema, raw: FilterSpec[], field: string): Promise<TableFilter[]> {
-  let facets: Awaited<ReturnType<typeof getFacets>> | null = null;
+  let facets: Awaited<ReturnType<typeof fetchFacets>> | null = null;
   const out: TableFilter[] = [];
   for (const [i, f] of raw.entries()) {
     const at = `${field}[${i}]`;
     const c = column(schema, f.column, `${at}.column`);
     const base = { column: c.key, label: c.label, type: c.type };
     const ranged = f.from !== undefined || f.to !== undefined;
-    if ([f.values?.length, ranged, f.period].filter(Boolean).length !== 1) {
-      throw new SpecError(`${at}: give exactly one of values, from / to, or period`);
+    if ([f.values?.length, f.contains !== undefined, f.is !== undefined, ranged, f.period].filter(Boolean).length !== 1) {
+      throw new SpecError(`${at}: give exactly one of values, contains, is, from / to, or period`);
     }
-    if (f.values) {
-      facets ??= await getFacets(projectId, sourceId).catch(() => ({}));
+    if (f.is !== undefined) {
+      facets ??= await fetchFacets(projectId, sourceId).catch(() => ({}));
+      if (facets?.[c.key]?.kind !== "boolean") throw new SpecError(`${at}.is: only for yes / no columns; ${c.key} is not one`);
+      out.push({ ...base, operator: "equals", value: f.is ? "true" : "false" });
+    } else if (f.contains !== undefined) {
+      if (!f.contains.trim()) throw new SpecError(`${at}.contains: the words to look for`);
+      if (c.type !== "text") throw new SpecError(`${at}.contains: only for text columns; ${c.key} is ${c.type}`);
+      out.push({ ...base, operator: "contains", value: f.contains.trim() });
+    } else if (f.values) {
+      facets ??= await fetchFacets(projectId, sourceId).catch(() => ({}));
       const facet = facets?.[c.key];
       const known = facet?.kind === "values" ? facet.values.map((v) => v.value) : null;
       const unknown = known ? f.values.filter((v) => !known.includes(v)) : [];
       if (unknown.length) {
         throw new SpecError(`${at}.values: ${unknown.map((v) => `"${v}"`).join(", ")} not found in ${c.key} (its values: ${known!.slice(0, 25).map((v) => `"${v}"`).join(", ")})`);
       }
-      out.push({ ...base, operator: "in", values: [...f.values] });
+      const labels = facet?.kind === "values" ? Object.fromEntries(facet.values.filter((v) => v.label && f.values!.includes(v.value)).map((v) => [v.value, v.label!])) : {};
+      out.push({ ...base, operator: "in", values: [...f.values], ...(Object.keys(labels).length ? { labels } : {}) });
     } else if (f.period) {
       if (c.type !== "date") throw new SpecError(`${at}.period: only for date columns; ${c.key} is ${c.type}`);
       out.push({ ...base, operator: "between", period: f.period });
@@ -360,6 +468,8 @@ export const describeFilters = (filters: TableFilter[] | undefined) =>
         defined({
           column: f.column,
           values: f.operator === "in" ? f.values : undefined,
+          contains: f.operator === "contains" ? f.value : undefined,
+          is: f.operator === "equals" ? f.value === "true" : undefined,
           period: f.period,
           from: f.operator === "between" && !f.period ? f.value : undefined,
           to: f.operator === "between" && !f.period ? f.value2 : undefined,
@@ -371,31 +481,124 @@ export const describeFilters = (filters: TableFilter[] | undefined) =>
 // Data table (the Table tile's "Use project data")
 // ---------------------------------------------------------------------------
 
+// A data table column's own look (its data cells, header and total cell)
+const PART_LOOK_PROPS = {
+  fill: color("Fill"),
+  color: color("Text colour"),
+  bold: { type: "boolean" as const },
+  italic: { type: "boolean" as const },
+  underline: { type: "boolean" as const },
+  align: { type: "string" as const, enum: ["Left", "Center", "Right"] },
+  fontSize: { type: "number" as const, minimum: 4, maximum: 72 },
+};
+const PART_LOOK: JsonSchema = { type: "object", properties: PART_LOOK_PROPS, additionalProperties: false };
+
+function partLook(raw: Record<string, any> | undefined, field: string): TableColumnPartLook | undefined {
+  if (!raw) return undefined;
+  const look: TableColumnPartLook = {};
+  const fill = has(raw, "fill") ? readColor(raw.fill, `${field}.fill`) : null;
+  const text = has(raw, "color") ? readColor(raw.color, `${field}.color`) : null;
+  if (fill) look.fill = fill;
+  if (text) look.color = text;
+  for (const k of ["bold", "italic", "underline"] as const) if (has(raw, k)) look[k] = !!raw[k];
+  if (has(raw, "align")) look.align = raw.align;
+  if (has(raw, "fontSize")) look.fontSize = Math.round(raw.fontSize);
+  return hasPartLook(look) ? look : undefined;
+}
+
+function columnLookOf(raw: Record<string, any> | undefined, field: string): TableColumnLook | undefined {
+  if (!raw) return undefined;
+  const look: TableColumnLook = { ...partLook(raw, field) };
+  const header = partLook(raw.header, `${field}.header`);
+  const total = partLook(raw.total, `${field}.total`);
+  if (header) look.header = header;
+  if (total) look.total = total;
+  return hasLook(look) ? look : undefined;
+}
+
+function readHighlightRules(raw: any[], columns: TableColumnBinding[], field: string): TableHighlight[] {
+  return raw.map((r, i) => {
+    const at = `${field}[${i}]`;
+    const col = columns.find((c) => c.key === r.column);
+    if (!col) throw new SpecError(`${at}.column: "${r.column}" is not a column the table shows (${columns.map((c) => c.key).join(", ")})`);
+    const rule: TableHighlight = { id: newHighlightId(), column: col.key, operator: r.operator, scope: r.scope === "cell" ? "cell" : "row" };
+    if (r.operator === "in") {
+      const values = (r.values ?? []).map((v: unknown) => String(v).trim()).filter(Boolean);
+      if (!values.length) throw new SpecError(`${at}.values: "in" needs at least one value`);
+      rule.values = values;
+    } else if (r.operator === "between") {
+      if (!r.from && !r.to) throw new SpecError(`${at}: "between" needs from or to`);
+      const isDate = col.type === "date";
+      for (const k of ["from", "to"] as const) {
+        if (!r[k]) continue;
+        const v = String(r[k]).trim();
+        if (isDate ? !ISO_DAY.test(v) : !Number.isFinite(Number(v))) {
+          throw new SpecError(`${at}.${k}: "${v}" must be ${isDate ? "a date as yyyy-mm-dd" : "a number"} for ${col.key}`);
+        }
+        rule[k] = v;
+      }
+    } else if (col.type !== "date") {
+      throw new SpecError(`${at}.operator: "${r.operator}" only works on a date column; ${col.key} is ${col.type}`);
+    }
+    const fill = readColor(r.fill, `${at}.fill`);
+    const text = readColor(r.color, `${at}.color`);
+    if (fill) rule.fill = fill;
+    if (text) rule.color = text;
+    if (r.bold) rule.bold = true;
+    if (!rule.fill && !rule.color && !rule.bold) throw new SpecError(`${at}: give a fill, color or bold`);
+    return rule;
+  });
+}
+
 async function applyDataTable(element: TableElement, spec: ElementSpec, ctx: KindContext): Promise<void> {
   applyGeometry(element, spec);
   const current = element.binding;
   const projectId = spec.projectId ?? current?.projectId;
   const sourceId = spec.sourceId ?? current?.sourceId;
   if (!projectId || !sourceId) throw new SpecError("projectId and sourceId are required (see get_report_data)");
-  const schema = await sourceSchema(projectId, sourceId);
+  // One of the project's own lists (sourceId team / companies / contracts):
+  // its rows come from the project, with no filters, sort, totals or rules
+  const list = isProjectListSource(sourceId) ? (sourceId as ProjectListKey) : undefined;
+  if (list) {
+    for (const key of ["filters", "sort", "highlights"]) {
+      if (has(spec, key) && (Array.isArray(spec[key]) ? spec[key].length : spec[key])) {
+        throw new SpecError(`${key}: a project list (${list}) shows every item of the project; it has no ${key}`);
+      }
+    }
+    if ((spec.columns ?? []).some((c: { total?: string }) => c.total)) throw new SpecError("columns[].total: a project list has no totals");
+  }
+  const schema = list ? await listSchema(projectId, list) : await sourceSchema(projectId, sourceId);
   const name = current && current.projectId === projectId ? current.projectName : await projectName(projectId);
-  const width = element.width;
-  const max = maxColumnsForWidth(width);
+  let width = element.width;
 
   // The table's setup for the same source, kept where the AI changes nothing
   const same = current && current.sourceId === sourceId ? current : undefined;
   let columns = same?.columns ?? [];
   if (has(spec, "columns") || !columns.length) {
-    const wanted: Array<{ column: string; header?: string; total?: string }> =
-      spec.columns ?? schema.columns.slice(0, max).map((c) => ({ column: c.key }));
-    if (wanted.length > max) throw new SpecError(`columns: at most ${max} fit in ${width} px (60 px each); make the table wider or show fewer`);
+    const wanted: Array<{ column: string; header?: string; total?: string; look?: Record<string, any> }> =
+      spec.columns ?? schema.columns.slice(0, startingColumnCount(width)).map((c) => ({ column: c.key }));
+    // No limit: columns narrower than the smallest width make the table wider
+    width = tableWidthFor(wanted.length, width);
+    element.width = width;
     const widths = distributeColumnWidths(wanted.length, width);
     columns = wanted.map((w, i) => {
       const c = column(schema, w.column, `columns[${i}].column`);
       if (w.total && w.total !== "count" && c.type !== "number" && c.type !== "currency") {
         throw new SpecError(`columns[${i}].total: "${w.total}" needs a number or amount column; ${c.key} is ${c.type}`);
       }
-      return { key: c.key, label: w.header ?? c.label, type: c.type, width: widths[i] ?? MIN_COLUMN_WIDTH, ...(w.total ? { total: w.total as TotalFunction } : {}) };
+      // A column the table already showed keeps its own look (and barcode)
+      const before = same?.columns.find((old) => old.key === c.key);
+      return {
+        key: c.key,
+        label: w.header ?? c.label,
+        type: c.type,
+        width: widths[i] ?? MIN_COLUMN_WIDTH,
+        ...(c.linked ? { linked: true } : {}),
+        ...(c.choices?.length ? { choices: c.choices } : {}),
+        ...(w.total ? { total: w.total as TotalFunction } : {}),
+        ...(w.look ? { look: columnLookOf(w.look, `columns[${i}].look`) } : before?.look ? { look: before.look } : {}),
+        ...(before?.barcode ? { barcode: before.barcode } : {}),
+      };
     });
   }
   const sortSpec = spec.sort as { column: string; direction?: "asc" | "desc" } | undefined;
@@ -412,23 +615,29 @@ async function applyDataTable(element: TableElement, spec: ElementSpec, ctx: Kin
     datasetName: current?.datasetName ?? createDatasetName(usedDatasetNames(bands)),
     projectId,
     projectName: name,
+    ...(list ? { list } : {}),
     sourceId,
     sourceName: schema.name,
     columns,
     filters: has(spec, "filters") ? await readFilters(projectId, sourceId, schema, spec.filters, "filters") : same?.filters ?? [],
     sort,
-    ...(has(spec, "rowLimit") ? (spec.rowLimit ? { rowLimit: spec.rowLimit } : {}) : current?.rowLimit ? { rowLimit: current.rowLimit } : {}),
     showTotals: columns.some((c) => c.total),
     theme: spec.theme ?? current?.theme ?? "corporateBlue",
     ...(!has(spec, "theme") && current?.look ? { look: current.look, customized: current.customized } : {}),
   };
+  // Highlight rules: the given ones, else the table's own while their column is shown
+  const rules = has(spec, "highlights")
+    ? readHighlightRules(spec.highlights, columns, "highlights")
+    : (same?.highlights ?? []).filter((r) => columns.some((c) => c.key === r.column));
+  if (rules.length) binding.highlights = rules;
+  if (has(spec, "textStyle")) applyTextStyle(binding, spec.textStyle);
   element.binding = binding;
   useProject(projectId, name);
 
   // As tall as the canvas shows it (header, up to 5 sample rows, totals)
   let rowCount = 1;
   try {
-    rowCount = (await queryRows(projectId, sourceId, toDataQuery(binding, PREVIEW_ROW_LIMIT))).totalCount;
+    rowCount = (await fetchRows(projectId, sourceId, toDataQuery(binding, TABLE_ROWS_LIMIT))).totalCount;
   } catch {
     ctx.notes.push("rows could not be fetched now; they are fetched again on the page and in the PDF");
   }
@@ -440,7 +649,7 @@ export const dataTableKind: ElementKind = {
   kind: "dataTable",
   tool: "create_data_table",
   description:
-    "Add a table showing the rows of a project's data source (Procurement, Materials…), fetched each time the report runs; it grows onto more pages. Call get_report_data first for the project, source and column ids. Only in the detail band of a normal page, never in a box. Width: at least 60 px per column.",
+    "Add a table showing the rows of a project's data source (Procurement, Materials…), fetched each time the report runs; it grows onto more pages. Call get_report_data first for the project, source and column ids. A project's own list (lists[].list: manager, team, companies, contracts) is a table too: sourceId = that key, its columns the list's keys; it follows the template's project. Only in the detail band of a normal page, never in a box. Any number of columns: each column is at least 10 px, and the table widens past the page when they don't fit, so show only the columns that matter.",
   properties: {
     projectId: { type: "string" },
     sourceId: { type: "string" },
@@ -453,6 +662,12 @@ export const dataTableKind: ElementKind = {
           column: { type: "string", description: "Column key" },
           header: { type: "string", description: "Heading text (default the column's name)" },
           total: { type: "string", enum: ["sum", "avg", "count"], description: "Total under the column" },
+          look: {
+            type: "object",
+            description: "This column's own look over the table style: its data cells, plus header / total for its heading and total cell",
+            properties: { ...PART_LOOK_PROPS, header: PART_LOOK, total: PART_LOOK },
+            additionalProperties: false,
+          },
         },
         required: ["column"],
         additionalProperties: false,
@@ -465,9 +680,30 @@ export const dataTableKind: ElementKind = {
       additionalProperties: false,
     },
     filters: FILTERS_PROP,
-    rowLimit: { type: "integer", minimum: 0, description: "Show at most this many rows (0: all)" },
-    theme: { type: "string", enum: TABLE_THEMES, description: "Table style (default corporateBlue)" },
+    theme: { type: "string", enum: TABLE_THEMES, description: "Table style: corporateBlue (default), minimal, emerald, slate, burgundy, teal, gold, violet, none" },
+    textStyle: TEXT_STYLE_PROP,
     tableName: { type: "string" },
+    highlights: {
+      type: "array",
+      description:
+        "Colour rows (scope row) or one cell (scope cell) by their values each time the report runs; the first matching rule wins. in: the column is one of values (text, any case); between: from / to (numbers, or dates yyyy-mm-dd), either may be left out; past / future: a date before / after the print day. Replaces the table's rules; [] removes them.",
+      items: {
+        type: "object",
+        properties: {
+          column: { type: "string", description: "Column key (a column the table shows)" },
+          operator: { type: "string", enum: ["in", "between", "past", "future"] },
+          values: { type: "array", items: { type: "string" } },
+          from: { type: "string" },
+          to: { type: "string" },
+          scope: { type: "string", enum: ["row", "cell"], description: "Whole row (default) or only this column's cell" },
+          fill: color("Fill"),
+          color: color("Text colour"),
+          bold: { type: "boolean" },
+        },
+        required: ["column", "operator"],
+        additionalProperties: false,
+      },
+    },
   },
   required: ["projectId", "sourceId"],
   inBox: false,
@@ -501,11 +737,13 @@ export const dataTableKind: ElementKind = {
     return defined({
       projectId: b.projectId,
       sourceId: b.sourceId,
+      list: b.list ? true : undefined,
       source: b.sourceName,
-      columns: b.columns.map((c) => defined({ column: c.key, header: c.label, total: c.total })),
+      columns: b.columns.map((c) => defined({ column: c.key, header: c.label, total: c.total, look: c.look })),
+      highlights: b.highlights?.map(({ id: _id, ...rule }) => rule),
       sort: b.sort[0] ? { column: b.sort[0].column, direction: b.sort[0].direction } : undefined,
-      rowLimit: b.rowLimit,
       theme: b.theme,
+      textStyle: describeTextStyle(b),
       tableName: b.tableName,
       filters: describeFilters(b.filters),
     });
@@ -516,21 +754,42 @@ export const dataTableKind: ElementKind = {
 // Chart
 // ---------------------------------------------------------------------------
 
+// A chart's column: for an entity with a CDP dashboard only the fields its
+// chart builder offers for that use (with the CDP names), else any column
+type ChartUse = "groupable" | "measurable" | "filterable";
+const CHART_USE_WORDS: Record<ChartUse, string> = { groupable: "group the chart by", measurable: "add up", filterable: "filter on" };
+function chartColumnOf(schema: DataSourceSchema, key: string, use: ChartUse, field: string): DataColumn {
+  const lists = chartFieldLists(schema, (k, fallback) => (i18n.global.te(k) ? String(i18n.global.t(k)) : fallback));
+  if (!lists) return column(schema, key, field);
+  const found = lists[use].find((c) => c.key === key);
+  if (!found) {
+    throw new SpecError(
+      `${field}: a chart of ${schema.name} can only ${CHART_USE_WORDS[use]} ${lists[use].map((c) => c.key).join(", ") || "nothing"} (as the CDP app's dashboard)`,
+    );
+  }
+  return found;
+}
+
 function dimensionOf(schema: DataSourceSchema, raw: { column: string; granularity?: string } | undefined, field: string): ChartDimension | undefined {
   if (!raw) return undefined;
-  const c = column(schema, raw.column, `${field}.column`);
+  const c = chartColumnOf(schema, raw.column, "groupable", `${field}.column`);
+  if (c.linked) {
+    throw new SpecError(`${field}.column: ${c.key} links to another record and can't be grouped by; use a choice, yes / no, date or text column`);
+  }
   return {
     column: c.key,
     label: c.label,
     type: c.type,
     ...(c.type === "date" ? { granularity: (raw.granularity as ChartDimension["granularity"]) ?? DEFAULT_GRANULARITY } : {}),
+    ...(c.choices?.length ? { choices: c.choices } : {}),
+    ...(c.yesNo ? { yesNo: true } : {}),
   };
 }
 
 function measureOf(schema: DataSourceSchema, raw: { aggregation: string; column?: string }, field: string): ChartMeasure {
   if (raw.aggregation === "count") return { aggregation: "count" };
   if (!raw.column) throw new SpecError(`${field}.column: "${raw.aggregation}" needs a number column`);
-  const c = column(schema, raw.column, `${field}.column`);
+  const c = chartColumnOf(schema, raw.column, "measurable", `${field}.column`);
   if (c.type !== "number" && c.type !== "currency") throw new SpecError(`${field}.column: ${c.key} is ${c.type}; use a number or amount column, or aggregation "count"`);
   return { aggregation: raw.aggregation as ChartMeasure["aggregation"], column: c.key, columnLabel: c.label };
 }
@@ -542,6 +801,17 @@ async function applyChart(element: ChartElement, spec: ElementSpec, ctx: KindCon
   if (has(spec, "title")) binding.title = String(spec.title);
   if (has(spec, "showLegend")) binding.showLegend = !!spec.showLegend;
   if (has(spec, "palette")) binding.palette = spec.palette;
+  if (has(spec, "note")) binding.note = String(spec.note ?? "");
+  if (has(spec, "colors")) {
+    const colors = (spec.colors ?? {}) as Record<string, unknown>;
+    for (const [key, color] of Object.entries(colors)) {
+      if (typeof color !== "string" || !/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(color)) {
+        throw new SpecError(`colors.${key}: "${String(color)}" is not a colour; use #rrggbb`);
+      }
+    }
+    // An empty object puts every value back to the colour set
+    binding.colors = Object.keys(colors).length ? (colors as Record<string, string>) : undefined;
+  }
 
   const data = spec.data as Record<string, any> | undefined;
   if (data) {
@@ -572,12 +842,22 @@ async function applyChart(element: ChartElement, spec: ElementSpec, ctx: KindCon
     }
     if (data.level2) binding.level2 = dimensionOf(schema, { column: data.level2 }, "data.level2");
     if (has(data, "stacked")) binding.stacked = !!data.stacked || undefined;
-    if (has(data, "limit")) binding.limit = data.limit;
+    // Split bars are stacked unless asked otherwise, as the CDP app's
+    else if (data.splitBy && (binding.chartType === "bar" || binding.chartType === "barH")) binding.stacked = true;
     if (has(data, "gaugeMax")) binding.gaugeMax = data.gaugeMax || undefined;
-    if (has(data, "filters")) binding.filters = await readFilters(projectId, sourceId, schema, data.filters, "data.filters");
+    if (has(data, "filters")) {
+      (Array.isArray(data.filters) ? data.filters : []).forEach((f: { column?: string }, i: number) =>
+        chartColumnOf(schema, String(f?.column ?? ""), "filterable", `data.filters[${i}].column`),
+      );
+      binding.filters = await readFilters(projectId, sourceId, schema, data.filters, "data.filters");
+    }
     useProject(projectId, name);
   }
   element.binding = normalizeChartBinding(binding);
+  // No title given: the CDP app's suggested one, as the setup popup gives a new chart
+  if (!has(spec, "title") && !element.binding.title && isChartComplete(element.binding)) {
+    element.binding.title = suggestChartTitle(element.binding);
+  }
   if (element.binding.projectId && !isChartComplete(element.binding)) {
     ctx.notes.push(`the ${element.binding.chartType} chart is linked but not complete (it needs ${chartNeeds(element.binding.chartType)}); it shows sample numbers and prints nothing until then`);
   } else if (!element.binding.projectId) {
@@ -606,6 +886,13 @@ export const chartKind: ElementKind = {
     title: { type: "string", description: "Printed above the chart (empty for none)" },
     showLegend: { type: "boolean" },
     palette: { type: "string", enum: CHART_PALETTES.map((p) => p.id), description: "Colour set (default vivid)" },
+    colors: {
+      type: "object",
+      additionalProperties: { type: "string" },
+      description:
+        "A colour of its own (#rrggbb) for some values, over the colour set, e.g. { \"DELAYED\": \"#dc2626\", \"COMPLETED\": \"#16a34a\" }. Keys: a category or split-by value as stored (as get_report_data lists it; dates as their bucket's first day, yyyy-MM-dd); \"__other__\" for Other, \"__blank__\" for empty values, \"__single\" for a KPI's number; with several lines / sets of bars \"series2\" or \"series2:VALUE\". {} puts all back to the colour set. Not for gauges",
+    },
+    note: { type: "string", description: "A short note printed under the chart, e.g. where the numbers come from (at most 200 letters; empty for none)" },
     data: {
       type: "object",
       description: "What it shows",
@@ -628,8 +915,7 @@ export const chartKind: ElementKind = {
         },
         splitBy: { type: "string", description: "Line / area / bar: one line or bar set per value of this text column" },
         level2: { type: "string", description: "Tree map: text column for the items inside each group" },
-        stacked: { type: "boolean", description: "Bars / areas on top of each other" },
-        limit: { type: "integer", enum: CATEGORY_LIMITS, description: "Largest N text categories, the rest as \"Other\" (0: all)" },
+        stacked: { type: "boolean", description: "Bars / areas on top of each other (split bars are stacked unless false)" },
         gaugeMax: { type: "number", minimum: 0, description: "Gauge: end of the scale" },
         filters: FILTERS_PROP,
       },
@@ -653,6 +939,8 @@ export const chartKind: ElementKind = {
       title: b.title,
       showLegend: b.showLegend,
       palette: b.palette,
+      colors: b.colors,
+      note: b.note,
       data: b.projectId
         ? defined({
             projectId: b.projectId,
@@ -662,7 +950,6 @@ export const chartKind: ElementKind = {
             splitBy: b.series?.[0]?.splitBy?.column,
             level2: b.level2?.column,
             stacked: b.stacked,
-            limit: b.limit,
             filters: describeFilters(b.filters),
             complete: isChartComplete(b),
           })

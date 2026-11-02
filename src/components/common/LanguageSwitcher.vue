@@ -1,19 +1,3 @@
-<script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { Languages } from '@lucide/vue'
-import { setAppLocale, type AppLocale } from '../../i18n'
-
-withDefaults(defineProps<{ showIcon?: boolean }>(), { showIcon: true })
-
-const { locale, t } = useI18n()
-
-// Short labels shown on the buttons; the full names come from the locale files
-const languages: { code: AppLocale; short: string; nameKey: string }[] = [
-  { code: 'en', short: 'EN', nameKey: 'language.english' },
-  { code: 'ms', short: 'BM', nameKey: 'language.malay' },
-]
-</script>
-
 <template>
   <div
     class="language-switcher"
@@ -42,6 +26,22 @@ const languages: { code: AppLocale; short: string; nameKey: string }[] = [
     </button>
   </div>
 </template>
+
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { Languages } from '@lucide/vue'
+import { setAppLocale, type AppLocale } from '../../i18n'
+
+withDefaults(defineProps<{ showIcon?: boolean }>(), { showIcon: true })
+
+const { locale, t } = useI18n()
+
+// Short labels shown on the buttons; the full names come from the locale files
+const languages: { code: AppLocale; short: string; nameKey: string }[] = [
+  { code: 'en', short: 'EN', nameKey: 'language.english' },
+  { code: 'ms', short: 'BM', nameKey: 'language.malay' },
+]
+</script>
 
 <style scoped>
 .language-switcher {

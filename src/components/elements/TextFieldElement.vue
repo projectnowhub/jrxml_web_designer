@@ -35,6 +35,8 @@
         :style="typographyStyle"
         contenteditable="true"
         spellcheck="false"
+        @paste="onPaste"
+        @drop="onDrop"
         :placeholder="t('textField.placeholder')"
         @mousedown.stop="handleEditorMouseDown"
         @mouseup="handleEditorMouseUp"
@@ -64,9 +66,16 @@
           class="page-number-text"
           :title="isDate ? t('dateElement.lockedHint') : pageNumberTitle"
         >{{ displayText }}</span>
+        <!-- A linked project detail: the project's value, or the detail's name (faded) when it has none -->
+        <span
+          v-else-if="projectLink"
+          class="page-number-text"
+          :class="{ 'is-unset': !projectLink.value }"
+          :title="t('projectValue.lockedHint', { detail: projectLink.label })"
+        >{{ projectLink.value ?? projectLink.label }}</span>
         <span v-else-if="hasRichMarkup" class="rich-html-span" v-html="renderedHtmlContent"></span>
         <template v-else>
-          {{ hasContent ? displayText : (t('properties.defaultTextFieldExpression')) }}
+          {{ hasContent ? displayText : isAddress ? t('location.addressPlaceholder') : t('properties.defaultTextFieldExpression') }}
         </template>
       </div>
     </div>
@@ -194,9 +203,12 @@ import {
   getElementBoxInsets,
   hasHtmlTags,
   isRichTextElement,
+  pasteTextOnly,
+  refuseFileDrop,
   rgbToHex,
   textExpressionToHtml,
 } from '../../utils/elementUtils';
+import notification from '@/utils/notification';
 import {
   formatPageNumber,
   getPaginationSettings,
@@ -205,8 +217,18 @@ import {
   showsTotalPages,
 } from '../../utils/paginationPresets';
 import { dateText, getDateSetup, isDateElement } from '../../utils/dateElement';
+import { getProjectValueLink, isProjectValue } from '../../utils/projectValue';
+import { isLocationAddress } from '../../utils/location/locationElement';
 
 const { t } = useI18n();
+
+// Only text goes into a text: pasted or dropped pictures are left out
+function onPaste(event: ClipboardEvent) {
+  if (!pasteTextOnly(event)) notification.info(t("textField.textOnly"));
+}
+function onDrop(event: DragEvent) {
+  if (!refuseFileDrop(event)) notification.info(t("textField.textOnly"));
+}
 
 // Props
 const props = defineProps<{
@@ -311,6 +333,8 @@ const pageNumberTitle = computed(() => {
 
 // A date shows today's date in its look (the PDF shows the day it is made)
 const isDate = computed(() => isDateElement(props.element));
+// A linked project detail shows the template's project's value
+const projectLink = computed(() => (isProjectValue(props.element) ? getProjectValueLink(props.element) : null));
 
 // Rendered HTML content for canvas view (shared with the height measurement)
 const renderedHtmlContent = computed(() => textExpressionToHtml(props.element.expression || ''));
@@ -323,6 +347,7 @@ const displayText = computed(() => {
     );
   }
   if (isDate.value) return dateText(getDateSetup(props.element));
+  if (projectLink.value) return projectLink.value.value ?? projectLink.value.label;
   if (props.element.expression) {
     const expr = props.element.expression;
     if (expr.includes("SimpleDateFormat") && expr.includes("java.util.Date")) {
@@ -357,6 +382,10 @@ const displayText = computed(() => {
 
     // Strip surrounding quotes for plain literal strings so user sees clean text
     const trimmed = expr.trim();
+    // A Location's address is a full Java string (quotes and backslashes escaped)
+    if (isAddress.value && trimmed.startsWith('"') && trimmed.endsWith('"')) {
+      return trimmed.slice(1, -1).replace(/\\([\\"n])/g, (_, c: string) => (c === 'n' ? '\n' : c));
+    }
     if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
       return trimmed.slice(1, -1).replace(/\\n/g, '\n');
     }
@@ -366,8 +395,10 @@ const displayText = computed(() => {
   return '';
 });
 
+// A Location's address is always plain ("<b>" in it shows as typed)
+const isAddress = computed(() => isLocationAddress(props.element));
 const hasRichMarkup = computed(
-  () => !isPageNumber.value && !isDate.value && isRichTextElement(props.element),
+  () => !isPageNumber.value && !isDate.value && !projectLink.value && !isAddress.value && isRichTextElement(props.element),
 );
 
 const hasContent = computed(() => {
@@ -478,8 +509,10 @@ const showOverflowBadge = computed(() => {
 // only the icon so it doesn't stick out far past it
 const overflowBadgeStyle = computed(() => {
   const zoom = props.zoomLevel || 1;
+  // Below the selection frame and its corner handle (10 px + the handle, on screen)
   return {
-    top: `calc(100% + ${3 / zoom}px)`,
+    top: `calc(100% + ${20 / zoom}px)`,
+    right: `${-10 / zoom}px`,
     transform: `scale(${1 / zoom})`,
   };
 });
@@ -890,7 +923,9 @@ const typographyStyle = computed(() => {
         : 'none',
     color: props.element.forecolor || 'inherit',
     textAlign: textAlign as any,
-    lineHeight: '1.3',
+    // A Location's address: the line spacing the PDF prints with this font
+    // (its box is sized for it), so the canvas shows its real height
+    lineHeight: isAddress.value ? '1.45' : '1.3',
   };
 });
 
@@ -1582,6 +1617,12 @@ const handleStartEditing = () => {
 /* The element can still be dragged; only its text says it can't be typed in */
 .page-number-text {
   cursor: not-allowed;
+}
+
+/* A linked detail the project has no value for: its name, faded (canvas only) */
+.page-number-text.is-unset {
+  opacity: 0.45;
+  font-style: italic;
 }
 
 

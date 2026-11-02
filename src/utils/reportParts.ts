@@ -15,6 +15,7 @@ import {
   type FrameTemplateContext,
 } from "@/utils/framePresets";
 import { applyPaginationSettings, buildPaginationElement } from "@/utils/paginationPresets";
+import { makeDateElement } from "@/utils/dateElement";
 import { buildTablePreset, isTablePresetType, TABLE_PRESET_TYPES, type TablePresetType } from "@/utils/tablePresets";
 import { buildContentsList, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/utils/contentsList";
 import { setAutoNumbered } from "@/utils/headingSync";
@@ -107,7 +108,8 @@ export function rule(x: number, y: number, width: number, lineWidth: number, col
   } as Partial<DesignElement>);
 }
 
-// Dark banner across the page: three grey bars, then three lines of white title
+// Dark banner across the page: three grey bars, then three lines of white
+// title, the last the report's month (a Date: the month it is printed in)
 function reportHeader(ctx: FrameTemplateContext): FrameElement {
   const w = ctx.availableWidth;
   const h = 56;
@@ -121,7 +123,7 @@ function reportHeader(ctx: FrameTemplateContext): FrameElement {
     shape("rectangle", 0, 39, 36, 5, REPORT_PART_COLORS.bannerBars),
     line(7, "headerLine1"),
     line(21, "headerLine2"),
-    line(35, "headerLine3"),
+    makeDateElement(line(35, "headerLine3"), { when: "thisMonth", format: "monthYear" }),
   ]);
 }
 
@@ -218,7 +220,8 @@ function statusDot(): DesignElement {
   return element;
 }
 
-// Signature picture over a thick line, name and role under it, the date on the right
+// Signature picture over a thick line, name and role under it, the date on the
+// right (a Date: the day the report is printed, which the user can change)
 function signOff(ctx: FrameTemplateContext): FrameElement {
   const w = 340;
   const dateX = 210;
@@ -228,7 +231,7 @@ function signOff(ctx: FrameTemplateContext): FrameElement {
       ...style, text: placeholder(ctx, key) });
   return frame(w, 68, { box: undefined, mode: "Transparent", backcolor: "#FFFFFF" }, [
     photo(0, 0, 130, 34),
-    label(dateX, 20, dateW, "signOffDate"),
+    makeDateElement(label(dateX, 20, dateW, "signOffDate"), { when: "printed", format: "dayMonthYear" }),
     rule(0, 36, w, 1.5, REPORT_PART_COLORS.ink),
     label(0, 39, 200, "signOffName", { isBold: true }),
     label(0, 53, 200, "signOffRole", { isItalic: true }),

@@ -1,7 +1,422 @@
+<template>
+  <Collapse>
+  <ResizablePanel
+    v-show="visible"
+    position="bottom"
+    :initial-size="bottomPanelHeight"
+    :min-size="150"
+    :max-size="currentMaxSize"
+    :snap-fractions="[1 / 3, 1 / 2, 1]"
+    :collapsible="false"
+    @size-change="handleBottomPanelSizeChange"
+    @handle-dblclick="toggleFullscreen"
+  >
+    <div class="tab-navigation">
+      <div class="tabs-list">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          class="tab-button"
+          :class="{ active: activeTab === tab.id }"
+          @click="activeTab = tab.id"
+        >
+          <component :is="tab.icon" :size="14" class="tab-icon" />
+          <span>{{ tab.name }}</span>
+        </button>
+      </div>
+      <!-- Full height / back, then close: together on the right -->
+      <div class="panel-actions">
+      <button
+        type="button"
+        class="panel-close-button"
+        :title="t(isFullscreen ? 'bottomPanel.restore' : 'bottomPanel.maximize')"
+        :aria-label="t(isFullscreen ? 'bottomPanel.restore' : 'bottomPanel.maximize')"
+        @click="toggleFullscreen"
+      >
+        <component :is="isFullscreen ? Minimize2 : Maximize2" :size="14" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        class="panel-close-button"
+        :title="t('actions.hideBottomPanel')"
+        :aria-label="t('actions.hideBottomPanel')"
+        @click="emit('update:visible', false)"
+      >
+        <X :size="15" aria-hidden="true" />
+      </button>
+      </div>
+    </div>
+
+    <!-- Page settings tab -->
+    <div
+      class="tab-content page-settings-tab"
+      v-show="activeTab === 'pageSettings'"
+    >
+      <!-- Default Settings: what new reports start with (kept in this browser,
+           utils/reportDefaults.ts). This report's own settings are Template
+           Settings, in the right panel when nothing is selected. -->
+      <div class="defaults-intro">
+        <Info :size="15" :stroke-width="2" aria-hidden="true" />
+        <span>{{ t("defaultSettings.intro") }}</span>
+        <button type="button" class="defaults-reset" @click="resetAllToOriginal">
+          <RotateCcw :size="12" :stroke-width="2.2" aria-hidden="true" />
+          {{ t("defaultSettings.resetAll") }}
+        </button>
+      </div>
+      <div class="settings-grid">
+        <PageSetupSection
+          v-for="card in DEFAULT_CARDS"
+          :key="card.section"
+          :section="card.section"
+          :title="t(card.title)"
+          :value="defaults"
+          :bands-hint="t('defaultSettings.bandsHint')"
+          @change="changeDefaults"
+        >
+          <template #actions>
+            <span class="defaults-actions">
+              <button type="button" class="defaults-reset" @click="useOriginal(card.section)">
+                <RotateCcw :size="11" :stroke-width="2.2" aria-hidden="true" />
+                {{ t("defaultSettings.original") }}
+              </button>
+              <button type="button" class="defaults-apply" @click="applyToThisReport(card.section)">
+                {{ t("defaultSettings.apply") }}
+              </button>
+            </span>
+          </template>
+        </PageSetupSection>
+
+        <!-- Band height limits constraints -->
+        <div class="settings-section band-limits-section">
+          <div class="band-limits-header">
+            <div class="band-limits-title-area">
+              <h5>{{ t("bottomPanel.defaultBandSettings") }}</h5>
+            </div>
+            <span class="defaults-actions">
+              <button type="button" class="defaults-reset" @click="resetBandLimitsToDefault">
+                <RotateCcw :size="11" :stroke-width="2.2" aria-hidden="true" />
+                {{ t("defaultSettings.original") }}
+              </button>
+              <button type="button" class="defaults-apply" @click="applyGlobalDefaultsToCurrentTemplate">
+                {{ t("defaultSettings.apply") }}
+              </button>
+            </span>
+          </div>
+          <div class="band-limits-grid">
+            <div
+              v-for="bType in resizableBandTypes"
+              :key="bType.type"
+              class="band-limit-card"
+              :style="{ order: pageOrder(bType.type) }"
+            >
+              <div class="band-limit-title">
+                {{ getBandDisplayName(bType.type) }}
+              </div>
+              <div class="band-limit-inputs">
+                <div class="band-limit-input-group">
+                  <label :title="t('bottomPanel.defaultHeight')">{{ t("bottomPanel.defaultShort") }}</label>
+                  <div class="input-unit-wrapper">
+                    <input v-live-change
+                      v-model.number="
+                        getGlobalBandConfig(bType.type).defaultHeight
+                      "
+                      type="number"
+                      min="10"
+                      step="1"
+                      @change="onDefaultHeightChange(bType.type)"
+                      @blur="onDefaultHeightChange(bType.type)"
+                    />
+                    <span class="unit">px</span>
+                  </div>
+                </div>
+                <div class="band-limit-input-group">
+                  <label :title="t('bottomPanel.minHeight')">{{ t("bottomPanel.minShort") }}</label>
+                  <div class="input-unit-wrapper">
+                    <input v-live-change
+                      v-model.number="getGlobalBandConfig(bType.type).min"
+                      type="number"
+                      min="10"
+                      step="1"
+                      @change="onGlobalMinChange(bType.type)"
+                      @blur="onGlobalMinChange(bType.type)"
+                    />
+                    <span class="unit">px</span>
+                  </div>
+                </div>
+                <div class="band-limit-input-group">
+                  <label :title="t('bottomPanel.maxHeight')">{{ t("bottomPanel.maxShort") }}</label>
+                  <div class="input-unit-wrapper">
+                    <input v-live-change
+                      v-model.number="getGlobalBandConfig(bType.type).max"
+                      type="number"
+                      :min="getGlobalBandConfig(bType.type).min || 10"
+                      :max="getMaxAllowedGlobalLimit(bType.type)"
+                      step="1"
+                      @change="onGlobalMaxChange(bType.type)"
+                      @blur="onGlobalMaxChange(bType.type)"
+                    />
+                    <span class="unit">px</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Detail Band (Auto-Calculated Remaining A4 Space) -->
+            <div class="band-limit-card band-limit-card-detail" :style="{ order: pageOrder('detail') }">
+              <div class="band-limit-title">
+                <span>{{ t("bandNames.detail") }}</span>
+                <span class="band-badge-auto">{{
+                  t("properties.detailAutoCalculated")
+                }}</span>
+              </div>
+              <div class="band-limit-inputs">
+                <div class="band-limit-input-group">
+                  <label :title="t('bottomPanel.defaultHeight')">{{ t("bottomPanel.defaultShort") }}</label>
+                  <div
+                    class="input-unit-wrapper is-disabled"
+                    :title="t('properties.detailAutoCalculatedHint')"
+                  >
+                    <input
+                      :value="defaultDetailCalculatedHeight"
+                      type="number"
+                      disabled
+                    />
+                    <span class="unit">px</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JRXML content tab -->
+    <div v-if="SHOW_JRXML_TAB" class="tab-content jrxml-tab" v-show="activeTab === 'jrxml'">
+      <div class="jrxml-container">
+        <div class="jrxml-header">
+          <div class="jrxml-actions">
+            <n-button @click="copyJRXML" type="default" size="small">{{
+              t("bottomPanel.copy")
+            }}</n-button>
+            <n-button @click="saveJRXML" type="primary" size="small">{{
+              t("bottomPanel.apply")
+            }}</n-button>
+            <n-button @click="regenerateJRXML" type="default" size="small">{{
+              t("bottomPanel.regenerate")
+            }}</n-button>
+            <n-button @click="formatJRXML" type="default" size="small">{{
+              t("bottomPanel.format")
+            }}</n-button>
+            <n-button @click="downloadJRXML" type="primary" size="small">{{
+              t("bottomPanel.downloadJRXML")
+            }}</n-button>
+            <n-button @click="openPdfPreview" type="info" size="small">{{
+              t("bottomPanel.previewPDF")
+            }}</n-button>
+            <n-button
+              @click="runValidation"
+              :loading="isValidating"
+              type="warning"
+              size="small"
+              class="validation-btn"
+            >
+              {{ t("bottomPanel.validate") }}
+            </n-button>
+            <n-button
+              @click="runAutoFix"
+              :loading="isAutoFixing"
+              type="warning"
+              size="small"
+              class="autofix-btn"
+            >
+              {{ t("bottomPanel.autoFix") }}
+            </n-button>
+            <template v-if="showSearch">
+              <div class="action-separator"></div>
+              <input
+                ref="searchInputRef"
+                v-model="searchQuery"
+                class="inline-search-input"
+                :placeholder="t('bottomPanel.search')"
+                @input="performSearch"
+                @keydown.enter="findNext"
+                @keydown.shift.enter="findPrevious"
+                @keydown.escape="closeSearch"
+              />
+              <n-button
+                @click="findPrevious"
+                type="default"
+                size="small"
+                :title="t('bottomPanel.searchPrevious')"
+                ><ChevronUp :size="14" /></n-button
+              >
+              <n-button
+                @click="findNext"
+                type="default"
+                size="small"
+                :title="t('bottomPanel.searchNext')"
+                ><ChevronDown :size="14" /></n-button
+              >
+              <n-button
+                @click="closeSearch"
+                type="default"
+                size="small"
+                :title="t('properties.close')"
+                ><X :size="14" /></n-button
+              >
+              <span v-if="searchResultsCount > 0" class="search-status">
+                {{ currentSearchResult }} / {{ searchResultsCount }}
+              </span>
+            </template>
+          </div>
+        </div>
+
+        <n-alert
+          v-if="validationResult"
+          :type="validationResult.valid ? 'success' : 'error'"
+          :title="
+            validationResult.valid
+              ? t('bottomPanel.validationSuccess')
+              : t('bottomPanel.validationFailed')
+          "
+          closable
+          @close="clearValidation"
+          class="validation-result"
+        >
+          <div v-if="validationResult.valid">
+            <p>{{ t("bottomPanel.validationNoErrors") }}</p>
+          </div>
+          <div v-else>
+            <p>
+              {{
+                t("bottomPanel.validationErrorCount", {
+                  count: validationResult.errors.length,
+                })
+              }}
+            </p>
+            <ul class="validation-error-list">
+              <li
+                v-for="(error, index) in validationResult.errors"
+                :key="index"
+                :class="[error.severity, { clickable: error.line > 0 }]"
+                @click="error.line > 0 && jumpToLine(error.line, error.column)"
+              >
+                <span class="error-location">
+                  {{
+                    error.line > 0 ? `[${error.line}:${error.column}]` : "[?]"
+                  }}
+                </span>
+                <span class="error-message">{{ error.message }}</span>
+              </li>
+            </ul>
+          </div>
+        </n-alert>
+
+        <n-alert
+          v-if="autoFixResult"
+          :type="
+            autoFixResult.fixed
+              ? 'success'
+              : autoFixResult.warnings.length > 0
+                ? 'warning'
+                : 'info'
+          "
+          :title="
+            autoFixResult.fixed
+              ? t('bottomPanel.autoFixSuccess')
+              : t('bottomPanel.autoFixNoChanges')
+          "
+          closable
+          @close="clearAutoFixResult"
+          class="autofix-result"
+        >
+          <div v-if="autoFixResult.fixed">
+            <p>
+              {{
+                t("bottomPanel.autoFixFixedCount", {
+                  count: autoFixResult.fixes.length,
+                })
+              }}
+            </p>
+            <ul class="autofix-list">
+              <li
+                v-for="(fix, index) in autoFixResult.fixes"
+                :key="index"
+                class="clickable"
+                @click="jumpToLine(fix.lineNumber, 0)"
+              >
+                <span class="fix-location">
+                  {{ fix.lineNumber > 0 ? `[${fix.lineNumber}]` : "[?]" }}
+                </span>
+                <span class="fix-message">
+                  {{
+                    t("bottomPanel.autoFixRemovedAttribute", {
+                      element: fix.elementName,
+                      attribute: fix.attributeName,
+                    })
+                  }}
+                </span>
+              </li>
+            </ul>
+          </div>
+          <div
+            v-if="autoFixResult.warnings.length > 0"
+            class="autofix-warnings"
+          >
+            <p>{{ t("bottomPanel.autoFixWarnings") }}</p>
+            <ul class="autofix-list warning-list">
+              <li
+                v-for="(warning, index) in autoFixResult.warnings"
+                :key="index"
+              >
+                <span class="warning-message">
+                  <strong>&lt;{{ warning.elementName }}&gt;</strong>:
+                  {{ warning.message }}
+                </span>
+              </li>
+            </ul>
+          </div>
+          <div
+            v-if="!autoFixResult.fixed && autoFixResult.warnings.length === 0"
+          >
+            <p>{{ t("bottomPanel.autoFixNoIssuesFound") }}</p>
+          </div>
+        </n-alert>
+
+        <div class="jrxml-content">
+          <CodeMirrorEditor
+            ref="codeMirrorEditorRef"
+            v-model="localJrxmlContent"
+            :placeholder="
+              localJrxmlContent ? '' : t('bottomPanel.clickToGenerate')
+            "
+            @update:modelValue="localJrxmlContent = $event"
+            @scroll="syncScroll"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- details.json (developers): where the template's data comes from, for the report server -->
+    <div v-if="SHOW_JRXML_TAB" class="tab-content jrxml-tab" v-show="activeTab === 'details'">
+      <div class="details-header">
+        <span class="details-note">{{ t("bottomPanel.detailsNote") }}</span>
+        <n-button type="default" size="small" @click="copyDetails">{{ t("bottomPanel.copy") }}</n-button>
+      </div>
+      <pre class="details-json">{{ detailsJson }}</pre>
+    </div>
+  </ResizablePanel>
+  </Collapse>
+
+</template>
+
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { useReportStore } from "@/stores/report";
+import { useUserSettingsStore } from "@/stores/userSettings";
 import {
+  Braces,
   ChevronDown,
   ChevronUp,
   FileCode2,
@@ -35,6 +450,7 @@ import {
   type AutoFixResult,
 } from "../../utils/jrxml/xsdValidator";
 import { formatXml } from "../../utils/jrxml/formatXml";
+import { buildReportDetails } from "../../utils/reportDetails";
 
 import type { Band, ReportProperties } from "../../types";
 import {
@@ -108,13 +524,33 @@ const activeTab = ref("pageSettings");
 // dev), never in a production build, where anything asking for it gets Page settings
 const SHOW_JRXML_TAB = import.meta.env.DEV;
 watch(activeTab, (tab) => {
-  if (tab === "jrxml" && !SHOW_JRXML_TAB) activeTab.value = "pageSettings";
+  if ((tab === "jrxml" || tab === "details") && !SHOW_JRXML_TAB) activeTab.value = "pageSettings";
 });
 // Computed so the labels follow a language switch
 const tabs = computed(() => [
   { id: "pageSettings", name: t("bottomPanel.jrxmlTabs.pageSettings"), icon: SlidersHorizontal },
-  ...(SHOW_JRXML_TAB ? [{ id: "jrxml", name: t("bottomPanel.jrxmlContent"), icon: FileCode2 }] : []),
+  ...(SHOW_JRXML_TAB
+    ? [
+        { id: "jrxml", name: t("bottomPanel.jrxmlContent"), icon: FileCode2 },
+        { id: "details", name: t("bottomPanel.detailsJson"), icon: Braces },
+      ]
+    : []),
 ]);
+
+// details.json, rebuilt with the JRXML (shown only while its tab is open)
+const detailsJson = computed(() => {
+  if (activeTab.value !== "details") return "";
+  void reportStore.jrxmlVersion;
+  return JSON.stringify(buildReportDetails(bands.value, reportProperties.value?.projects?.[0]), null, 2);
+});
+const copyDetails = async () => {
+  try {
+    await navigator.clipboard.writeText(detailsJson.value);
+    notification.success(t("bottomPanel.detailsCopied"));
+  } catch {
+    notification.error(t("bottomPanel.copyFailed"));
+  }
+};
 
 // Bottom panel height
 const HEADER_HEIGHT = 56;
@@ -376,6 +812,7 @@ const autoSaveGlobalBandConfig = () => {
   } catch (e) {
     console.error("Failed to save default band config to localStorage:", e);
   }
+  userSettings.saveLater();
 };
 
 const resetBandLimitsToDefault = (notify: boolean | Event = true) => {
@@ -387,11 +824,15 @@ const resetBandLimitsToDefault = (notify: boolean | Event = true) => {
   } catch (e) {
     console.error("Failed to remove saved band limits from localStorage:", e);
   }
+  userSettings.saveLater();
   if (notify !== false) notification.success(t("defaultSettings.originalDone"));
 };
 
+// One undo step; the JRXML is written from the changed report (re-reading the
+// JRXML text, which still held the old heights, put them back)
 const applyGlobalDefaultsToCurrentTemplate = () => {
   if (!localReportProperties.value) return;
+  report.saveStateToHistory();
   const config = globalDefaultBandConfig.value;
   const limits: Record<string, { min: number; max: number }> = {};
   for (const key of Object.keys(config)) {
@@ -420,8 +861,8 @@ const applyGlobalDefaultsToCurrentTemplate = () => {
       const bottomM = localReportProperties.value?.bottomMargin || 20;
       detailBand.height = Math.max(20, pageH - topM - bottomM - otherBandsH);
     }
-    emit("save-jrxml");
   }
+  report.updateJrxml();
 
   notification.success(t("bottomPanel.appliedToTemplateSuccess"));
 };
@@ -430,6 +871,16 @@ const applyGlobalDefaultsToCurrentTemplate = () => {
 // every change. "Apply to this report" copies one part into the open report
 // (one undo step; paper and margins refit the page).
 const defaults = ref<ReportDefaults>(loadReportDefaults());
+
+// The user's saved settings arrived from the server (their account): show them
+const userSettings = useUserSettingsStore();
+watch(
+  () => userSettings.version,
+  () => {
+    defaults.value = loadReportDefaults();
+    globalDefaultBandConfig.value = getEffectiveDefaultBandConfig();
+  },
+);
 const DEFAULT_CARDS = [
   { section: "paper", title: "templateSettings.paper" },
   { section: "margins", title: "bottomPanel.pageMargins" },
@@ -691,410 +1142,6 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<template>
-  <Collapse>
-  <ResizablePanel
-    v-show="visible"
-    position="bottom"
-    :initial-size="bottomPanelHeight"
-    :min-size="150"
-    :max-size="currentMaxSize"
-    :snap-fractions="[1 / 3, 1 / 2, 1]"
-    :collapsible="false"
-    @size-change="handleBottomPanelSizeChange"
-    @handle-dblclick="toggleFullscreen"
-  >
-    <div class="tab-navigation">
-      <div class="tabs-list">
-        <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          class="tab-button"
-          :class="{ active: activeTab === tab.id }"
-          @click="activeTab = tab.id"
-        >
-          <component :is="tab.icon" :size="14" class="tab-icon" />
-          <span>{{ tab.name }}</span>
-        </button>
-      </div>
-      <!-- Full height / back, then close: together on the right -->
-      <div class="panel-actions">
-      <button
-        type="button"
-        class="panel-close-button"
-        :title="t(isFullscreen ? 'bottomPanel.restore' : 'bottomPanel.maximize')"
-        :aria-label="t(isFullscreen ? 'bottomPanel.restore' : 'bottomPanel.maximize')"
-        @click="toggleFullscreen"
-      >
-        <component :is="isFullscreen ? Minimize2 : Maximize2" :size="14" aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        class="panel-close-button"
-        :title="t('actions.hideBottomPanel')"
-        :aria-label="t('actions.hideBottomPanel')"
-        @click="emit('update:visible', false)"
-      >
-        <X :size="15" aria-hidden="true" />
-      </button>
-      </div>
-    </div>
-
-    <!-- Page settings tab -->
-    <div
-      class="tab-content page-settings-tab"
-      v-show="activeTab === 'pageSettings'"
-    >
-      <!-- Default Settings: what new reports start with (kept in this browser,
-           utils/reportDefaults.ts). This report's own settings are Template
-           Settings, in the right panel when nothing is selected. -->
-      <div class="defaults-intro">
-        <Info :size="15" :stroke-width="2" aria-hidden="true" />
-        <span>{{ t("defaultSettings.intro") }}</span>
-        <button type="button" class="defaults-reset" @click="resetAllToOriginal">
-          <RotateCcw :size="12" :stroke-width="2.2" aria-hidden="true" />
-          {{ t("defaultSettings.resetAll") }}
-        </button>
-      </div>
-      <div class="settings-grid">
-        <PageSetupSection
-          v-for="card in DEFAULT_CARDS"
-          :key="card.section"
-          :section="card.section"
-          :title="t(card.title)"
-          :value="defaults"
-          :bands-hint="t('defaultSettings.bandsHint')"
-          @change="changeDefaults"
-        >
-          <template #actions>
-            <span class="defaults-actions">
-              <button type="button" class="defaults-reset" @click="useOriginal(card.section)">
-                <RotateCcw :size="11" :stroke-width="2.2" aria-hidden="true" />
-                {{ t("defaultSettings.original") }}
-              </button>
-              <button type="button" class="defaults-apply" @click="applyToThisReport(card.section)">
-                {{ t("defaultSettings.apply") }}
-              </button>
-            </span>
-          </template>
-        </PageSetupSection>
-
-        <!-- Band height limits constraints -->
-        <div class="settings-section band-limits-section">
-          <div class="band-limits-header">
-            <div class="band-limits-title-area">
-              <h5>{{ t("bottomPanel.defaultBandSettings") }}</h5>
-            </div>
-            <span class="defaults-actions">
-              <button type="button" class="defaults-reset" @click="resetBandLimitsToDefault">
-                <RotateCcw :size="11" :stroke-width="2.2" aria-hidden="true" />
-                {{ t("defaultSettings.original") }}
-              </button>
-              <button type="button" class="defaults-apply" @click="applyGlobalDefaultsToCurrentTemplate">
-                {{ t("defaultSettings.apply") }}
-              </button>
-            </span>
-          </div>
-          <div class="band-limits-grid">
-            <div
-              v-for="bType in resizableBandTypes"
-              :key="bType.type"
-              class="band-limit-card"
-              :style="{ order: pageOrder(bType.type) }"
-            >
-              <div class="band-limit-title">
-                {{ getBandDisplayName(bType.type) }}
-              </div>
-              <div class="band-limit-inputs">
-                <div class="band-limit-input-group">
-                  <label :title="t('bottomPanel.defaultHeight')">{{ t("bottomPanel.defaultShort") }}</label>
-                  <div class="input-unit-wrapper">
-                    <input
-                      v-model.number="
-                        getGlobalBandConfig(bType.type).defaultHeight
-                      "
-                      type="number"
-                      min="10"
-                      step="1"
-                      @change="onDefaultHeightChange(bType.type)"
-                      @blur="onDefaultHeightChange(bType.type)"
-                    />
-                    <span class="unit">px</span>
-                  </div>
-                </div>
-                <div class="band-limit-input-group">
-                  <label :title="t('bottomPanel.minHeight')">{{ t("bottomPanel.minShort") }}</label>
-                  <div class="input-unit-wrapper">
-                    <input
-                      v-model.number="getGlobalBandConfig(bType.type).min"
-                      type="number"
-                      min="10"
-                      step="1"
-                      @change="onGlobalMinChange(bType.type)"
-                      @blur="onGlobalMinChange(bType.type)"
-                    />
-                    <span class="unit">px</span>
-                  </div>
-                </div>
-                <div class="band-limit-input-group">
-                  <label :title="t('bottomPanel.maxHeight')">{{ t("bottomPanel.maxShort") }}</label>
-                  <div class="input-unit-wrapper">
-                    <input
-                      v-model.number="getGlobalBandConfig(bType.type).max"
-                      type="number"
-                      :min="getGlobalBandConfig(bType.type).min || 10"
-                      :max="getMaxAllowedGlobalLimit(bType.type)"
-                      step="1"
-                      @change="onGlobalMaxChange(bType.type)"
-                      @blur="onGlobalMaxChange(bType.type)"
-                    />
-                    <span class="unit">px</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Detail Band (Auto-Calculated Remaining A4 Space) -->
-            <div class="band-limit-card band-limit-card-detail" :style="{ order: pageOrder('detail') }">
-              <div class="band-limit-title">
-                <span>{{ t("bandNames.detail") }}</span>
-                <span class="band-badge-auto">{{
-                  t("properties.detailAutoCalculated")
-                }}</span>
-              </div>
-              <div class="band-limit-inputs">
-                <div class="band-limit-input-group">
-                  <label :title="t('bottomPanel.defaultHeight')">{{ t("bottomPanel.defaultShort") }}</label>
-                  <div
-                    class="input-unit-wrapper is-disabled"
-                    :title="t('properties.detailAutoCalculatedHint')"
-                  >
-                    <input
-                      :value="defaultDetailCalculatedHeight"
-                      type="number"
-                      disabled
-                    />
-                    <span class="unit">px</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- JRXML content tab -->
-    <div v-if="SHOW_JRXML_TAB" class="tab-content jrxml-tab" v-show="activeTab === 'jrxml'">
-      <div class="jrxml-container">
-        <div class="jrxml-header">
-          <div class="jrxml-actions">
-            <n-button @click="copyJRXML" type="default" size="small">{{
-              t("bottomPanel.copy")
-            }}</n-button>
-            <n-button @click="saveJRXML" type="primary" size="small">{{
-              t("bottomPanel.apply")
-            }}</n-button>
-            <n-button @click="regenerateJRXML" type="default" size="small">{{
-              t("bottomPanel.regenerate")
-            }}</n-button>
-            <n-button @click="formatJRXML" type="default" size="small">{{
-              t("bottomPanel.format")
-            }}</n-button>
-            <n-button @click="downloadJRXML" type="primary" size="small">{{
-              t("bottomPanel.downloadJRXML")
-            }}</n-button>
-            <n-button @click="openPdfPreview" type="info" size="small">{{
-              t("bottomPanel.previewPDF")
-            }}</n-button>
-            <n-button
-              @click="runValidation"
-              :loading="isValidating"
-              type="warning"
-              size="small"
-              class="validation-btn"
-            >
-              {{ t("bottomPanel.validate") }}
-            </n-button>
-            <n-button
-              @click="runAutoFix"
-              :loading="isAutoFixing"
-              type="warning"
-              size="small"
-              class="autofix-btn"
-            >
-              {{ t("bottomPanel.autoFix") }}
-            </n-button>
-            <template v-if="showSearch">
-              <div class="action-separator"></div>
-              <input
-                ref="searchInputRef"
-                v-model="searchQuery"
-                class="inline-search-input"
-                :placeholder="t('bottomPanel.search')"
-                @input="performSearch"
-                @keydown.enter="findNext"
-                @keydown.shift.enter="findPrevious"
-                @keydown.escape="closeSearch"
-              />
-              <n-button
-                @click="findPrevious"
-                type="default"
-                size="small"
-                :title="t('bottomPanel.searchPrevious')"
-                ><ChevronUp :size="14" /></n-button
-              >
-              <n-button
-                @click="findNext"
-                type="default"
-                size="small"
-                :title="t('bottomPanel.searchNext')"
-                ><ChevronDown :size="14" /></n-button
-              >
-              <n-button
-                @click="closeSearch"
-                type="default"
-                size="small"
-                :title="t('properties.close')"
-                ><X :size="14" /></n-button
-              >
-              <span v-if="searchResultsCount > 0" class="search-status">
-                {{ currentSearchResult }} / {{ searchResultsCount }}
-              </span>
-            </template>
-          </div>
-        </div>
-
-        <n-alert
-          v-if="validationResult"
-          :type="validationResult.valid ? 'success' : 'error'"
-          :title="
-            validationResult.valid
-              ? t('bottomPanel.validationSuccess')
-              : t('bottomPanel.validationFailed')
-          "
-          closable
-          @close="clearValidation"
-          class="validation-result"
-        >
-          <div v-if="validationResult.valid">
-            <p>{{ t("bottomPanel.validationNoErrors") }}</p>
-          </div>
-          <div v-else>
-            <p>
-              {{
-                t("bottomPanel.validationErrorCount", {
-                  count: validationResult.errors.length,
-                })
-              }}
-            </p>
-            <ul class="validation-error-list">
-              <li
-                v-for="(error, index) in validationResult.errors"
-                :key="index"
-                :class="[error.severity, { clickable: error.line > 0 }]"
-                @click="error.line > 0 && jumpToLine(error.line, error.column)"
-              >
-                <span class="error-location">
-                  {{
-                    error.line > 0 ? `[${error.line}:${error.column}]` : "[?]"
-                  }}
-                </span>
-                <span class="error-message">{{ error.message }}</span>
-              </li>
-            </ul>
-          </div>
-        </n-alert>
-
-        <n-alert
-          v-if="autoFixResult"
-          :type="
-            autoFixResult.fixed
-              ? 'success'
-              : autoFixResult.warnings.length > 0
-                ? 'warning'
-                : 'info'
-          "
-          :title="
-            autoFixResult.fixed
-              ? t('bottomPanel.autoFixSuccess')
-              : t('bottomPanel.autoFixNoChanges')
-          "
-          closable
-          @close="clearAutoFixResult"
-          class="autofix-result"
-        >
-          <div v-if="autoFixResult.fixed">
-            <p>
-              {{
-                t("bottomPanel.autoFixFixedCount", {
-                  count: autoFixResult.fixes.length,
-                })
-              }}
-            </p>
-            <ul class="autofix-list">
-              <li
-                v-for="(fix, index) in autoFixResult.fixes"
-                :key="index"
-                class="clickable"
-                @click="jumpToLine(fix.lineNumber, 0)"
-              >
-                <span class="fix-location">
-                  {{ fix.lineNumber > 0 ? `[${fix.lineNumber}]` : "[?]" }}
-                </span>
-                <span class="fix-message">
-                  {{
-                    t("bottomPanel.autoFixRemovedAttribute", {
-                      element: fix.elementName,
-                      attribute: fix.attributeName,
-                    })
-                  }}
-                </span>
-              </li>
-            </ul>
-          </div>
-          <div
-            v-if="autoFixResult.warnings.length > 0"
-            class="autofix-warnings"
-          >
-            <p>{{ t("bottomPanel.autoFixWarnings") }}</p>
-            <ul class="autofix-list warning-list">
-              <li
-                v-for="(warning, index) in autoFixResult.warnings"
-                :key="index"
-              >
-                <span class="warning-message">
-                  <strong>&lt;{{ warning.elementName }}&gt;</strong>:
-                  {{ warning.message }}
-                </span>
-              </li>
-            </ul>
-          </div>
-          <div
-            v-if="!autoFixResult.fixed && autoFixResult.warnings.length === 0"
-          >
-            <p>{{ t("bottomPanel.autoFixNoIssuesFound") }}</p>
-          </div>
-        </n-alert>
-
-        <div class="jrxml-content">
-          <CodeMirrorEditor
-            ref="codeMirrorEditorRef"
-            v-model="localJrxmlContent"
-            :placeholder="
-              localJrxmlContent ? '' : t('bottomPanel.clickToGenerate')
-            "
-            @update:modelValue="localJrxmlContent = $event"
-            @scroll="syncScroll"
-          />
-        </div>
-      </div>
-    </div>
-  </ResizablePanel>
-  </Collapse>
-
-</template>
-
 <style scoped>
 .tabs-container {
   background-color: #ffffff;
@@ -1196,6 +1243,30 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.details-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e6e5ee;
+}
+
+.details-note {
+  flex: 1;
+  font-size: 12px;
+  color: #5b5a6b;
+}
+
+.details-json {
+  flex: 1;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #1c1b26;
 }
 
 .page-settings-tab {

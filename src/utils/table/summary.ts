@@ -31,12 +31,14 @@ export function describeFilterValue(
   today?: Date,
 ): string {
   if (filter.operator === "in") {
-    const values = filter.values ?? [];
+    const values = (filter.values ?? []).map((v) => filter.labels?.[v] ?? v);
     const listed = values.slice(0, LISTED_VALUES).join(", ");
     return values.length > LISTED_VALUES
       ? t("dataTable.filter.moreValues", { values: listed, count: values.length - LISTED_VALUES })
       : listed;
   }
+  if (filter.operator === "contains") return t("dataTable.filter.containsChip", { words: filter.value ?? "" });
+  if (filter.operator === "equals") return t(filter.value === "true" ? "dataTable.yes" : "dataTable.no");
   const show = (v?: string) => formatCellValue(type === "date" ? v : Number(v), type, locale);
   if (filter.period) {
     const name = t(`dataTable.filter.periods.${filter.period}`);

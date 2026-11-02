@@ -11,6 +11,10 @@ import { hasProperty, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY, sectionHea
 import { headingNumberPart, isAutoNumbered, setAutoNumbered } from "@/utils/headingSync";
 import { isPagination } from "@/utils/paginationPresets";
 import { isDateElement } from "@/utils/dateElement";
+import { getProjectValueLink, isLinkableField, isProjectValue, linkProjectValue, projectValueOf, unlinkProjectValue } from "@/utils/projectValue";
+import { cachedProjectDetails } from "@/queries/projectQueries";
+import { useReportStore } from "@/stores/report";
+import type { ProjectField } from "@/types/dataSource";
 import { ELEMENT_DEFAULT_SIZES } from "@/constants/constants";
 import {
   applyBoxLines,
@@ -63,6 +67,11 @@ const TEXT_PROPS = {
     description: "The words shown. Use \\n for a new line. With rich: true, simple HTML is allowed (<b> <i> <u> <s> <sup> <sub> <br> <ul><li> <ol><li> <font color=\"#RRGGBB\">)",
   },
   rich: { type: "boolean" as const, description: "The text holds simple HTML formatting" },
+  projectValue: {
+    type: "string" as const,
+    description:
+      "Link the text to a detail of the template's project: a key from get_report_data with projectId (details[].key or moreDetails[].key, e.g. \"name\", \"status\", \"location.city\", \"more.BANK_NAME\"). The text then shows that project's value and follows the template's project (text is not needed); \"\" turns it back into plain text",
+  },
   ...TEXT_STYLE_PROPS,
   grow: { type: "boolean" as const, description: "Grows downward in the PDF when the text is longer than the box (for paragraphs)" },
   rotation: { type: "string" as const, enum: ["None", "Left", "Right", "UpsideDown"], description: "Turned text" },
@@ -70,9 +79,33 @@ const TEXT_PROPS = {
   ...CORNER_PROPS,
 };
 
+// A linked project detail (projectValue): its key checked against the template's project
+function applyProjectLink(element: TextFieldElement, key: string): void {
+  if (!key) {
+    if (isProjectValue(element)) unlinkProjectValue(element);
+    return;
+  }
+  const field = linkableField(key);
+  if (!field) {
+    throw new SpecError(`projectValue: "${key}" is not a project detail; use a details[].key or moreDetails[].key from get_report_data with projectId`);
+  }
+  linkProjectValue(element, field, projectValueOf(cachedProjectDetails(useReportStore().reportProperties.projects?.[0]?.id), key));
+}
+
+// The detail behind a key, named as Report Data names it
+function linkableField(key: string): ProjectField | null {
+  const details = cachedProjectDetails(useReportStore().reportProperties.projects?.[0]?.id);
+  const known = [...(details?.fields ?? []), ...(details?.moreDetails ?? [])].find((f) => f.key === key);
+  const field: ProjectField = known ?? { key, label: key.replace(/^(more|location)\./, ""), type: "text" };
+  return isLinkableField(field) ? field : null;
+}
+
 function applyTextSettings(element: TextFieldElement, spec: ElementSpec, ctx: KindContext): void {
   applyGeometry(element, spec);
-  if (has(spec, "text") || has(spec, "rich")) {
+  if (has(spec, "projectValue")) applyProjectLink(element, String(spec.projectValue ?? ""));
+  // New words for a linked detail: it becomes plain text first
+  else if (has(spec, "text") && isProjectValue(element)) unlinkProjectValue(element);
+  if (!isProjectValue(element) && (has(spec, "text") || has(spec, "rich"))) {
     const rich = has(spec, "rich") ? !!spec.rich : isRich(element);
     writeText(element, has(spec, "text") ? String(spec.text) : plainText(element), rich);
   }
@@ -111,6 +144,7 @@ function newText(ctx: KindContext, overrides: Partial<TextFieldElement> = {}): T
 const describeText = (e: DesignElement) =>
   defined({
     text: plainText(e),
+    projectValue: isProjectValue(e) ? getProjectValueLink(e)?.key : undefined,
     rich: isRich(e),
     ...describeTextStyle(e),
     grow: e.textAdjust === "StretchHeight",
@@ -123,13 +157,13 @@ export const textKind: ElementKind = {
   kind: "text",
   tool: "create_text",
   description:
-    "Add a text: a title, label, paragraph, caption, number on a card… Plain typed words (not linked to data). Height must be at least 1.45 × fontSize per line.",
+    "Add a text: a title, label, paragraph, caption, number on a card… Typed words, or (projectValue) a detail of the template's project that follows it. Height must be at least 1.45 × fontSize per line.",
   properties: TEXT_PROPS,
-  required: ["text"],
   inBox: true,
   matches: (e) =>
     e.type === "textField" && !isPagination(e) && !isDateElement(e) && !hasProperty(e, SUB_HEADING_PROPERTY),
   create(spec, ctx) {
+    if (!has(spec, "text") && !spec.projectValue) throw new SpecError("text: is required (or projectValue for a project detail)");
     const element = newText(ctx);
     applyTextSettings(element, spec, ctx);
     return element;
@@ -281,7 +315,7 @@ export const imageKind: ElementKind = {
     shape: {
       type: "string",
       enum: IMAGE_SHAPES.map((s) => s.id),
-      description: "Corner shape: square, rounded, soft, circle (on a square image), pill (on a wide one), leaf, tab, drop",
+      description: "Corner shape: square, rounded, soft, circle (makes the image square), pill (makes a square image wide), leaf, tab, drop, or one rounded corner: cornerTopLeft, cornerTopRight, cornerBottomRight, cornerBottomLeft",
     },
     ...BORDER_PROPS,
     ...CORNER_PROPS,

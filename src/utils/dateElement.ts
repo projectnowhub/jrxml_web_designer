@@ -14,6 +14,7 @@
 import type { DesignElement, TextFieldElement } from "@/types";
 import { createElement } from "@/components/elements/ElementRegistry";
 import { DEFAULT_REPORT_FONT } from "@/config/fonts.config";
+import { javaString } from "@/utils/jrxml/javaString";
 
 export const DATE_PROPERTY = "com.cdp.date";
 export const DATE_ELEMENT_TYPE = "dateTime";
@@ -233,10 +234,6 @@ export function formatSample(setup: DateSetup, format: string, now: Date = new D
 
 // ── JRXML ──
 
-// A Java string literal (same escaping as table labels)
-const javaString = (text: string) =>
-  `"${text.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r?\n/g, "\\n")}"`;
-
 // The text field's expression. A chosen date is plain text; the others are
 // worked out by the report server when the report is made.
 export function dateExpression(setup: DateSetup): string {
@@ -279,6 +276,13 @@ export function dateToPlainText(element: TextFieldElement, now: Date = new Date(
   if (element.properties.length === 0) delete element.properties;
   element.expression = `"${text}"`;
   element.markup = "none";
+}
+
+// Make a design's or preset's text a Date that fills itself in, keeping its
+// look and place (the cover's month, the Report Header's, the Sign-off's day)
+export function makeDateElement<T extends DesignElement>(element: T, setup: Partial<DateSetup>): T {
+  applyDateSetup(element as unknown as TextFieldElement, { zone: browserTimeZone(), ...setup });
+  return element;
 }
 
 export const DATE_ELEMENT_SIZE = { width: 160, height: 20 };

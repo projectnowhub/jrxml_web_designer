@@ -1,180 +1,3 @@
-<script setup lang="ts">
-import {
-  Bot,
-  Check,
-  MessageSquare,
-  Settings,
-  Trash2,
-  TriangleAlert,
-  X,
-} from '@lucide/vue';
-import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { useAIChat } from '@/composables/useAIChat';
-import { useAIConfigManager, type AIConfiguration } from '@/composables/useAIConfigManager';
-import { checkWebMCPSupport, type BrowserSupportResult } from '@/utils/browserCompatibility';
-import type { MCPContext } from '@/mcp';
-import { DEFAULT_CLAUDE_MODEL, DEFAULT_MAX_TOKENS, MODEL_OPTIONS } from '@/config/aiConfig';
-import type { ChatAttachment } from '@/mcp/attachments';
-import ChatMessage from './ChatMessage.vue';
-import ChatInput from './ChatInput.vue';
-
-const { t } = useI18n();
-
-// Props
-const props = withDefaults(defineProps<{
-  visible?: boolean;
-  initialHeight?: number;
-  mcpContext?: MCPContext;
-  onUpdate?: () => void;
-  embedded?: boolean; // Whether in embedded mode (hides the header)
-  showSettings?: boolean; // Externally controls whether the settings panel is shown
-}>(), {
-  visible: false,
-  initialHeight: 300,
-  mcpContext: undefined,
-  onUpdate: undefined,
-  embedded: false,
-  showSettings: false
-});
-
-// Emits
-const emit = defineEmits<{
-  (e: 'update:visible', value: boolean): void;
-  (e: 'update:showSettings', value: boolean): void;
-}>();
-
-// AI conversation
-const {
-  messages,
-  isLoading,
-  sendMessage,
-  clearHistory
-} = useAIChat(() => props.mcpContext, props.onUpdate);
-
-// AI configuration management
-const {
-  config,
-  updateConfig,
-  resetConfig,
-  getConfigFromStorage
-} = useAIConfigManager();
-
-// State
-const panelHeight = ref(props.initialHeight);
-const isExpanded = ref(true);
-const messagesContainer = ref<HTMLDivElement | null>(null);
-
-// Configuration form (requestTimeout is shown in seconds in the UI, converted to milliseconds on save)
-const configForm = ref<AIConfiguration & { requestTimeoutSeconds: number }>({
-  ...config,
-  requestTimeoutSeconds: Math.round(config.requestTimeout / 1000)
-} as AIConfiguration & { requestTimeoutSeconds: number });
-
-// Computed properties
-const panelStyle = computed(() => ({
-  height: props.embedded ? '100%' : (isExpanded.value ? `${panelHeight.value}px` : '40px')
-}));
-
-// Compute showSettings (supports external control)
-const showSettings = computed({
-  get: () => props.showSettings,
-  set: (value: boolean) => emit('update:showSettings', value)
-});
-
-// Toggle expand/collapse
-function toggleExpand() {
-  isExpanded.value = !isExpanded.value;
-}
-
-// Close the panel
-function close() {
-  emit('update:visible', false);
-}
-
-// Toggle the settings panel
-function toggleSettings() {
-  showSettings.value = !showSettings.value;
-  if (showSettings.value) {
-    configForm.value = {
-      ...config,
-      requestTimeoutSeconds: Math.round(config.requestTimeout / 1000)
-    };
-  }
-}
-
-// Save configuration
-function saveConfig() {
-  // Convert seconds to milliseconds
-  const configToSave = {
-    ...configForm.value,
-    requestTimeout: (configForm.value as any).requestTimeoutSeconds * 1000
-  };
-  updateConfig(configToSave);
-  showSettings.value = false;
-}
-
-// Reset configuration
-function handleResetConfig() {
-  resetConfig();
-  const freshConfig = getConfigFromStorage();
-  configForm.value = {
-    ...freshConfig,
-    requestTimeoutSeconds: Math.round(freshConfig.requestTimeout / 1000)
-  } as AIConfiguration & { requestTimeoutSeconds: number };
-  showSettings.value = false;
-}
-
-// Send message
-async function handleSendMessage({ text, attachments }: { text: string; attachments: ChatAttachment[] }) {
-  await sendMessage(text, attachments);
-}
-
-// Scroll to bottom
-async function scrollToBottom() {
-  await nextTick();
-  if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
-  }
-}
-
-// Watch for message changes and auto-scroll
-watch(
-  () => messages.length,
-  () => {
-    scrollToBottom();
-  }
-);
-
-// Initialization
-onMounted(() => {
-  configForm.value = {
-    ...config,
-    requestTimeoutSeconds: Math.round(config.requestTimeout / 1000)
-  } as AIConfiguration & { requestTimeoutSeconds: number };
-  browserSupport.value = checkWebMCPSupport();
-
-  // Add a keyboard shortcut listener
-  document.addEventListener('keydown', handleKeyDown);
-});
-
-onBeforeUnmount(() => document.removeEventListener('keydown', handleKeyDown));
-
-// Ctrl+K / Cmd+K clears the conversation, only while the AI Assistant tab is
-// open and on screen (not when the right panel is hidden or collapsed)
-const panelRef = ref<HTMLElement | null>(null);
-function handleKeyDown(event: KeyboardEvent) {
-  if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return;
-  if (!props.visible || !panelRef.value?.offsetParent) return;
-  event.preventDefault();
-  clearHistory();
-}
-
-// Browser compatibility check
-const browserSupport = ref<BrowserSupportResult | null>(null);
-const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
-</script>
-
 <template>
   <div ref="panelRef" class="ai-chat-panel" :class="{ 'ai-chat-panel--embedded': embedded }" :style="panelStyle" v-show="visible">
     <!-- Header (shown when not in embedded mode) -->
@@ -360,6 +183,183 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
     />
   </div>
 </template>
+
+<script setup lang="ts">
+import {
+  Bot,
+  Check,
+  MessageSquare,
+  Settings,
+  Trash2,
+  TriangleAlert,
+  X,
+} from '@lucide/vue';
+import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useAIChat } from '@/composables/useAIChat';
+import { useAIConfigManager, type AIConfiguration } from '@/composables/useAIConfigManager';
+import { checkWebMCPSupport, type BrowserSupportResult } from '@/utils/browserCompatibility';
+import type { MCPContext } from '@/mcp';
+import { DEFAULT_CLAUDE_MODEL, DEFAULT_MAX_TOKENS, MODEL_OPTIONS } from '@/config/aiConfig';
+import type { ChatAttachment } from '@/mcp/attachments';
+import ChatMessage from './ChatMessage.vue';
+import ChatInput from './ChatInput.vue';
+
+const { t } = useI18n();
+
+// Props
+const props = withDefaults(defineProps<{
+  visible?: boolean;
+  initialHeight?: number;
+  mcpContext?: MCPContext;
+  onUpdate?: () => void;
+  embedded?: boolean; // Whether in embedded mode (hides the header)
+  showSettings?: boolean; // Externally controls whether the settings panel is shown
+}>(), {
+  visible: false,
+  initialHeight: 300,
+  mcpContext: undefined,
+  onUpdate: undefined,
+  embedded: false,
+  showSettings: false
+});
+
+// Emits
+const emit = defineEmits<{
+  (e: 'update:visible', value: boolean): void;
+  (e: 'update:showSettings', value: boolean): void;
+}>();
+
+// AI conversation
+const {
+  messages,
+  isLoading,
+  sendMessage,
+  clearHistory
+} = useAIChat(() => props.mcpContext, props.onUpdate);
+
+// AI configuration management
+const {
+  config,
+  updateConfig,
+  resetConfig,
+  getConfigFromStorage
+} = useAIConfigManager();
+
+// State
+const panelHeight = ref(props.initialHeight);
+const isExpanded = ref(true);
+const messagesContainer = ref<HTMLDivElement | null>(null);
+
+// Configuration form (requestTimeout is shown in seconds in the UI, converted to milliseconds on save)
+const configForm = ref<AIConfiguration & { requestTimeoutSeconds: number }>({
+  ...config,
+  requestTimeoutSeconds: Math.round(config.requestTimeout / 1000)
+} as AIConfiguration & { requestTimeoutSeconds: number });
+
+// Computed properties
+const panelStyle = computed(() => ({
+  height: props.embedded ? '100%' : (isExpanded.value ? `${panelHeight.value}px` : '40px')
+}));
+
+// Compute showSettings (supports external control)
+const showSettings = computed({
+  get: () => props.showSettings,
+  set: (value: boolean) => emit('update:showSettings', value)
+});
+
+// Toggle expand/collapse
+function toggleExpand() {
+  isExpanded.value = !isExpanded.value;
+}
+
+// Close the panel
+function close() {
+  emit('update:visible', false);
+}
+
+// Toggle the settings panel
+function toggleSettings() {
+  showSettings.value = !showSettings.value;
+  if (showSettings.value) {
+    configForm.value = {
+      ...config,
+      requestTimeoutSeconds: Math.round(config.requestTimeout / 1000)
+    };
+  }
+}
+
+// Save configuration
+function saveConfig() {
+  // Convert seconds to milliseconds
+  const configToSave = {
+    ...configForm.value,
+    requestTimeout: (configForm.value as any).requestTimeoutSeconds * 1000
+  };
+  updateConfig(configToSave);
+  showSettings.value = false;
+}
+
+// Reset configuration
+function handleResetConfig() {
+  resetConfig();
+  const freshConfig = getConfigFromStorage();
+  configForm.value = {
+    ...freshConfig,
+    requestTimeoutSeconds: Math.round(freshConfig.requestTimeout / 1000)
+  } as AIConfiguration & { requestTimeoutSeconds: number };
+  showSettings.value = false;
+}
+
+// Send message
+async function handleSendMessage({ text, attachments }: { text: string; attachments: ChatAttachment[] }) {
+  await sendMessage(text, attachments);
+}
+
+// Scroll to bottom
+async function scrollToBottom() {
+  await nextTick();
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+  }
+}
+
+// Watch for message changes and auto-scroll
+watch(
+  () => messages.length,
+  () => {
+    scrollToBottom();
+  }
+);
+
+// Initialization
+onMounted(() => {
+  configForm.value = {
+    ...config,
+    requestTimeoutSeconds: Math.round(config.requestTimeout / 1000)
+  } as AIConfiguration & { requestTimeoutSeconds: number };
+  browserSupport.value = checkWebMCPSupport();
+
+  // Add a keyboard shortcut listener
+  document.addEventListener('keydown', handleKeyDown);
+});
+
+onBeforeUnmount(() => document.removeEventListener('keydown', handleKeyDown));
+
+// Ctrl+K / Cmd+K clears the conversation, only while the AI Assistant tab is
+// open and on screen (not when the right panel is hidden or collapsed)
+const panelRef = ref<HTMLElement | null>(null);
+function handleKeyDown(event: KeyboardEvent) {
+  if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return;
+  if (!props.visible || !panelRef.value?.offsetParent) return;
+  event.preventDefault();
+  clearHistory();
+}
+
+// Browser compatibility check
+const browserSupport = ref<BrowserSupportResult | null>(null);
+const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
+</script>
 
 <style scoped>
 .ai-chat-panel {

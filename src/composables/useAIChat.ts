@@ -1,10 +1,3 @@
-// What the model is told when it wants to finish with problems left
-const verificationNote = (issues: string[]) =>
-  `[Automatic check of the result, not written by the user] The work is not done: ${issues.length} problem(s) remain.\n${issues
-    .slice(0, 25)
-    .map((i) => `- ${i}`)
-    .join('\n')}\nFix them now with the smallest changes (fill_page for missing content, move / resize / stack_elements / put_in_box for layout, delete what is duplicated or typed by hand). Don't re-create what already exists. Then answer the user, naming anything you could not fix.`;
-
 /**
  * useAIChat - AI conversation composable
  *
@@ -31,6 +24,13 @@ import { findingKey, reportChecks, verificationIssues } from '@/mcp/reportChecks
 import type { ChatAttachment } from '@/mcp/attachments';
 import { useAIConfigManager } from '@/composables/useAIConfigManager';
 import type { MCPToolCall, MCPToolResult } from '@/mcp';
+
+// What the model is told when it wants to finish with problems left
+const verificationNote = (issues: string[]) =>
+  `[Automatic check of the result, not written by the user] The work is not done: ${issues.length} problem(s) remain.\n${issues
+    .slice(0, 25)
+    .map((i) => `- ${i}`)
+    .join('\n')}\nFix them now with the smallest changes (fill_page for missing content, move / resize / stack_elements / put_in_box for layout, delete what is duplicated or typed by hand). Don't re-create what already exists. Then answer the user, naming anything you could not fix.`;
 
 // ============================================
 // Type definitions

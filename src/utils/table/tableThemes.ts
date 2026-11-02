@@ -6,11 +6,11 @@
 // which the user never edits directly.
 
 import type { ReportStyle } from "@/types";
-import type { SavedTableStyle, TableDataBinding, TableLook, TableTheme } from "@/types/dataSource";
+import type { SavedTableStyle, TableDataBinding, TableLook, TableTextAlign, TableTheme } from "@/types/dataSource";
 
 export type TableStylePart = "header" | "row" | "totals";
 
-export const TABLE_THEMES: TableTheme[] = ["none", "corporateBlue", "minimal", "emerald"];
+export const TABLE_THEMES: TableTheme[] = ["none", "corporateBlue", "minimal", "emerald", "slate", "burgundy", "teal", "gold", "violet"];
 
 export const BUILTIN_LOOKS: Record<TableTheme, TableLook> = {
   // No colours, nothing bold: only thin black lines
@@ -70,6 +70,81 @@ export const BUILTIN_LOOKS: Record<TableTheme, TableLook> = {
     ruleColor: "#047857",
     fontSize: 9,
   },
+  // Charcoal heading, a line under each row
+  slate: {
+    headerBackground: "#334155",
+    headerText: "#FFFFFF",
+    headerBold: true,
+    rowColors: ["#FFFFFF"],
+    rowText: "#1E293B",
+    totalsBackground: "#F1F5F9",
+    totalsText: "#0F172A",
+    totalsBold: true,
+    lines: "rows",
+    lineColor: "#CBD5E1",
+    ruleColor: "#334155",
+    fontSize: 9,
+  },
+  // Deep red heading, soft rose stripes
+  burgundy: {
+    headerBackground: "#7F1D1D",
+    headerText: "#FFFFFF",
+    headerBold: true,
+    rowColors: ["#FFFFFF", "#FEF2F2"],
+    rowText: "#1F2937",
+    totalsBackground: "#FEE2E2",
+    totalsText: "#7F1D1D",
+    totalsBold: true,
+    lines: "grid",
+    lineColor: "#FECACA",
+    ruleColor: "#7F1D1D",
+    fontSize: 9,
+  },
+  // Teal heading, light aqua stripes
+  teal: {
+    headerBackground: "#0F766E",
+    headerText: "#FFFFFF",
+    headerBold: true,
+    rowColors: ["#FFFFFF", "#F0FDFA"],
+    rowText: "#1F2937",
+    totalsBackground: "#CCFBF1",
+    totalsText: "#115E59",
+    totalsBold: true,
+    lines: "grid",
+    lineColor: "#99F6E4",
+    ruleColor: "#0F766E",
+    fontSize: 9,
+  },
+  // Warm gold heading, cream stripes
+  gold: {
+    headerBackground: "#B45309",
+    headerText: "#FFFFFF",
+    headerBold: true,
+    rowColors: ["#FFFFFF", "#FFFBEB"],
+    rowText: "#292524",
+    totalsBackground: "#FEF3C7",
+    totalsText: "#78350F",
+    totalsBold: true,
+    lines: "grid",
+    lineColor: "#FDE68A",
+    ruleColor: "#B45309",
+    fontSize: 9,
+  },
+  // The app's purple, lavender stripes, lines under rows
+  violet: {
+    headerBackground: "#6440F4",
+    headerText: "#FFFFFF",
+    headerBold: true,
+    rowColors: ["#FFFFFF", "#F5F3FF"],
+    rowText: "#1F2937",
+    totalsBackground: "#EDE9FE",
+    totalsText: "#4C1D95",
+    totalsBold: true,
+    lines: "rows",
+    lineColor: "#DDD6FE",
+    ruleColor: "#6440F4",
+    fontSize: 9,
+  },
 };
 
 const BUILTIN_PREFIX: Record<TableTheme, string> = {
@@ -77,6 +152,11 @@ const BUILTIN_PREFIX: Record<TableTheme, string> = {
   corporateBlue: "Table_CorporateBlue",
   minimal: "Table_Minimal",
   emerald: "Table_Emerald",
+  slate: "Table_Slate",
+  burgundy: "Table_Burgundy",
+  teal: "Table_Teal",
+  gold: "Table_Gold",
+  violet: "Table_Violet",
 };
 
 export const isBuiltinTheme = (id: string): id is TableTheme =>
@@ -119,7 +199,31 @@ export function normalizeLook(raw: Partial<TableLook>): TableLook {
       typeof raw.fontSize === "number" && raw.fontSize >= 6 && raw.fontSize <= 24
         ? Math.round(raw.fontSize)
         : base.fontSize,
+    ...textStyleOf(raw),
   };
+}
+
+const ALIGNS: TableTextAlign[] = ["Left", "Center", "Right"];
+const TEXT_FLAGS = [
+  "headerItalic",
+  "headerUnderline",
+  "rowBold",
+  "rowItalic",
+  "rowUnderline",
+  "totalsItalic",
+  "totalsUnderline",
+] as const;
+const ALIGN_FIELDS = ["headerAlign", "rowAlign", "totalsAlign"] as const;
+
+// The look's own text style and alignment, only what is set
+function textStyleOf(raw: Partial<TableLook>): Partial<TableLook> {
+  const style: Partial<TableLook> = {};
+  for (const flag of TEXT_FLAGS) if (raw[flag] === true) style[flag] = true;
+  for (const field of ALIGN_FIELDS) {
+    const align = raw[field];
+    if (align && ALIGNS.includes(align)) style[field] = align;
+  }
+  return style;
 }
 
 // What a table looks like now (a data table's binding or a typed table's setup)
@@ -183,6 +287,8 @@ export function buildLookStyles(prefix: string, look: TableLook): ReportStyle[] 
     backcolor: look.headerBackground,
     forecolor: look.headerText,
     isBold: look.headerBold,
+    isItalic: look.headerItalic || undefined,
+    isUnderline: look.headerUnderline || undefined,
     ...font,
     box: partBox(look, "header"),
   };
@@ -191,6 +297,9 @@ export function buildLookStyles(prefix: string, look: TableLook): ReportStyle[] 
     mode: "Opaque",
     backcolor: look.rowColors[0],
     forecolor: look.rowText,
+    isBold: look.rowBold || undefined,
+    isItalic: look.rowItalic || undefined,
+    isUnderline: look.rowUnderline || undefined,
     ...font,
     box: partBox(look, "row"),
   };
@@ -207,6 +316,8 @@ export function buildLookStyles(prefix: string, look: TableLook): ReportStyle[] 
     backcolor: look.totalsBackground,
     forecolor: look.totalsText,
     isBold: look.totalsBold,
+    isItalic: look.totalsItalic || undefined,
+    isUnderline: look.totalsUnderline || undefined,
     ...font,
     box: partBox(look, "totals"),
   };
@@ -272,6 +383,7 @@ export function tableCellCss(style: ReportStyle, rowColor?: string): Record<stri
   if (style.fontSize) css.fontSize = `${style.fontSize}px`;
   if (style.isBold) css.fontWeight = "700";
   if (style.isItalic) css.fontStyle = "italic";
+  if (style.isUnderline) css.textDecoration = "underline";
   const box = style.box;
   if (box) {
     const all = penCss(box.pen);

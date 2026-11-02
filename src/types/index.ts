@@ -345,6 +345,9 @@ export interface TextFieldElement extends DesignElementBase {
 export interface ImageElement extends DesignElementBase {
   type: "image";
   imageExpression?: string;
+  // A Location's map: the place it shows, worked out from the Location's setup
+  // with every change (never written to the JRXML)
+  locationView?: { latitude: number; longitude: number; zoom: number } | null;
   scaleType?: "Clip" | "FillFrame" | "RealHeight" | "RealSize" | "RetainShape";
   hAlign?: "Left" | "Center" | "Right";
   vAlign?: "Top" | "Middle" | "Bottom";
@@ -491,6 +494,9 @@ export interface CustomTableCell {
   // bullet points, superscript...: what JasperReports' html markup reads)
   text: string;
   rich?: boolean;
+  // A total-row cell showing its column's sum, kept up to date (syncTableTotals)
+  // until the user types their own text in it
+  sum?: boolean;
   colSpan?: number;
   rowSpan?: number;
   fill?: string;

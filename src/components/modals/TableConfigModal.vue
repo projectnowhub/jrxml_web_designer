@@ -24,11 +24,12 @@
 
         <section v-if="projectId" class="tcm-section">
           <h4><Database :size="14" aria-hidden="true" />{{ t("dataTable.config.source") }}</h4>
-          <div class="tcm-select-wrap">
+          <SkeletonBlock v-if="sourcesLoading" height="34px" radius="8px" />
+          <div v-else class="tcm-select-wrap">
             <select class="tcm-select" :value="sourceId" @change="changeSource(($event.target as HTMLSelectElement).value)">
               <option value="" disabled>{{ t("dataTable.config.chooseSource") }}</option>
               <option v-for="s in sources" :key="s.id" :value="s.id">
-                {{ t("dataTable.config.sourceOption", { name: s.name, count: s.rowCount }) }}
+                {{ s.rowCount !== undefined ? t("dataTable.config.sourceOption", { name: s.name, count: s.rowCount }) : s.name }}
               </option>
             </select>
             <ChevronDown class="tcm-chevron" :size="14" aria-hidden="true" />
@@ -40,15 +41,26 @@
           </p>
         </section>
 
+        <!-- The chosen table's columns on their way -->
+        <section v-if="schemaLoading" class="tcm-section tcm-skeleton">
+          <SkeletonBlock width="40%" height="14px" />
+          <SkeletonBlock v-for="i in 4" :key="i" height="30px" radius="8px" />
+        </section>
         <template v-if="schema">
           <!-- Columns -->
           <section class="tcm-section">
             <h4>
               <Columns3 :size="14" aria-hidden="true" />{{ t("dataTable.config.columns") }}
-              <span class="tcm-counter" :class="{ 'is-full': columns.length >= maxColumns }">
-                {{ t("dataTable.config.columnCounter", { count: columns.length, max: maxColumns }) }}
-              </span>
+              <span class="tcm-counter">{{ t("dataTable.config.columnCounter", columns.length) }}</span>
             </h4>
+            <!-- Every column of the source, ticked when shown; stays open while choosing;
+                 at the top, so it never moves as columns are added -->
+            <TableColumnPicker
+              :columns="schema.columns"
+              :chosen="columns.map((c) => c.key)"
+              @toggle="toggleColumn"
+              @set="showColumns"
+            />
             <!-- Drag a row by its grip to change the column order -->
             <ul
               class="tcm-list"
@@ -77,6 +89,7 @@
                   <GripVertical :size="14" aria-hidden="true" />
                 </span>
                 <component :is="TYPE_ICONS[col.type]" :size="13" class="tcm-type" :title="t(`dataTable.types.${col.type}`)" />
+                <Zap v-if="userDefinedKeys.has(col.key)" :size="11" class="tcm-bolt" :title="t('reportData.userDefinedField')" />
                 <input
                   class="tcm-input"
                   :value="col.label"
@@ -84,20 +97,6 @@
                   :aria-label="t('dataTable.config.headerText')"
                   @input="col.label = ($event.target as HTMLInputElement).value"
                 />
-                <!-- Text values can print as a barcode -->
-                <div v-if="col.type === 'text'" class="tcm-select-wrap is-small">
-                  <select
-                    class="tcm-select"
-                    :value="col.barcode ?? ''"
-                    :title="t('dataTable.config.showAs')"
-                    :aria-label="t('dataTable.config.showAs')"
-                    @change="setBarcode(col, ($event.target as HTMLSelectElement).value)"
-                  >
-                    <option value="">{{ t("dataTable.config.showAsText") }}</option>
-                    <option v-for="code in TABLE_BARCODE_TYPES" :key="code" :value="code">{{ t(`barcode.types.${code}`) }}</option>
-                  </select>
-                  <ChevronDown class="tcm-chevron" :size="12" aria-hidden="true" />
-                </div>
                 <div v-if="showTotals" class="tcm-select-wrap is-small">
                   <select
                     class="tcm-select"
@@ -115,62 +114,39 @@
                 </button>
               </li>
             </ul>
-            <div v-if="unusedColumns.length" class="tcm-select-wrap">
-              <!-- Every unused column is listed, even when the table is full, so
-                   the user can see what else there is -->
-              <select
-                class="tcm-select"
-                value=""
-                @change="addColumn(($event.target as HTMLSelectElement))"
-              >
-                <option value="" disabled hidden>
-                  {{ t(columns.length >= maxColumns ? "dataTable.config.tableFull" : "dataTable.config.addColumn") }}
-                </option>
-                <option v-for="c in unusedColumns" :key="c.key" :value="c.key" :disabled="columns.length >= maxColumns">
-                  {{ c.label }}
-                </option>
-              </select>
-              <ChevronDown class="tcm-chevron" :size="14" aria-hidden="true" />
-            </div>
-            <p v-if="columns.some((c) => tableColumnBarcode(c))" class="tcm-hint">
-              {{ t("dataTable.config.barcodeHint") }}
-            </p>
-            <p v-if="columns.length >= maxColumns && unusedColumns.length" class="tcm-hint">
-              {{ t("dataTable.config.columnLimitHint") }}
-            </p>
+            <!-- No limit: past what fits, the table gets wider than the page -->
+            <p v-if="tooWide" class="tcm-hint">{{ t("dataTable.config.widerThanPage") }}</p>
           </section>
 
-          <!-- Filter & sort, like a shop's filter panel -->
+          <!-- Filters, like a shop's filter panel (sorting is on the grid's headings) -->
           <section class="tcm-section">
-            <h4><SlidersHorizontal :size="14" aria-hidden="true" />{{ t("dataTable.filter.title") }}</h4>
+            <h4><SlidersHorizontal :size="14" aria-hidden="true" />{{ t("dataTable.filter.filtersTitle") }}</h4>
             <TableFilterPanel
               :columns="schema.columns"
               :facets="facets"
               :filters="filters"
-              :sort="sort"
+              :suggested-fields="columns.map((c) => c.key)"
               :match-count="previewLoading ? null : previewTotal"
               @update:filters="filters = $event"
-              @update:sort="sort = $event"
             />
           </section>
 
-          <!-- Rows, totals -->
+          <!-- Highlight rules, next to Filter & sort -->
+          <section class="tcm-section">
+            <h4><Highlighter :size="14" aria-hidden="true" />{{ t("dataTable.highlight.title") }}</h4>
+            <TableHighlights
+              :columns="columns"
+              :facets="facets ?? {}"
+              :highlights="highlights"
+              :look="look"
+              @update:highlights="highlights = $event"
+            />
+          </section>
+
+          <!-- Totals -->
           <section class="tcm-section">
             <h4><ListOrdered :size="14" aria-hidden="true" />{{ t("dataTable.config.rows") }}</h4>
             <p class="tcm-hint is-top">{{ t("dataTable.config.rowsNote") }}</p>
-            <label class="tcm-check">
-              <input type="checkbox" :checked="rowLimit !== undefined" @change="toggleRowLimit(($event.target as HTMLInputElement).checked)" />
-              {{ t("dataTable.config.limitRows") }}
-              <input
-                v-if="rowLimit !== undefined"
-                class="tcm-input is-narrow"
-                type="number"
-                min="1"
-                :value="rowLimit"
-                :aria-label="t('dataTable.config.rowLimit')"
-                @input="setRowLimit(($event.target as HTMLInputElement).value)"
-              />
-            </label>
             <label class="tcm-check">
               <input type="checkbox" :checked="showTotals" @change="toggleTotals(($event.target as HTMLInputElement).checked)" />
               {{ t("dataTable.config.showTotals") }}
@@ -180,26 +156,42 @@
         </template>
       </div>
 
-      <!-- Live preview -->
+      <!-- The table's rows: sorted by a click on a heading, a page at a time -->
       <div class="tcm-preview">
         <div class="tcm-preview-head">
-          <h4>{{ t("dataTable.config.preview") }}</h4>
+          <h4>{{ t("dataTable.config.tableRows") }}</h4>
           <span v-if="schema && !previewLoading" class="tcm-muted">
             {{ previewSummary }}
           </span>
+          <PageSizeChoice v-if="schema && columns.length" class="tcm-page-size" :model-value="pageSize" :sizes="TABLE_PAGE_SIZES" @update:model-value="setPageSize" />
         </div>
-        <div v-if="!schema" class="tcm-empty">
+        <p v-if="schema && columns.length" class="tcm-hint is-top">{{ t("dataTable.grid.sortHint") }}</p>
+        <DataGridSkeleton v-if="schemaLoading" />
+        <div v-else-if="!schema" class="tcm-empty">
           <DatabaseZap :size="28" :stroke-width="1.5" aria-hidden="true" />
           <span>{{ t("dataTable.config.pickSourceFirst") }}</span>
         </div>
         <div v-else class="tcm-grid-wrap">
           <DataGrid
             :columns="columns"
+            :user-defined-keys="userDefinedKeys"
             :rows="previewRows"
             :look="look"
+            :highlights="highlights"
             :show-totals="showTotals"
+            :totals="previewTotals"
+            :totals-loading="totalsLoading"
             :loading="previewLoading"
             :failed="previewFailed"
+            sortable
+            :sort="sort"
+            :page-index="pageIndex"
+            :page-size="pageSize"
+            :row-count="printedRowCount"
+            :page-sizes="TABLE_PAGE_SIZES"
+            @update:sort="sort = $event"
+            @update:page-index="pageIndex = $event"
+            @update:page-size="pageSize = $event"
           />
         </div>
       </div>
@@ -216,8 +208,8 @@
 </template>
 
 <script setup lang="ts">
-import { TABLE_BARCODE_TYPES, isTableBarcodeType, tableColumnBarcode } from "@/utils/barcode/barcodeTypes";
-import { computed, ref, watch, type Component } from "vue";
+import { computed, ref, shallowRef, watch, type Component } from "vue";
+import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
 import {
@@ -228,6 +220,7 @@ import {
   Database,
   FolderKanban,
   GripVertical,
+  Highlighter,
   DatabaseZap,
   DollarSign,
   Funnel,
@@ -238,23 +231,31 @@ import {
   Replace,
   Type,
   X,
+  Zap,
 } from "@lucide/vue";
 import BaseModal from "./BaseModal.vue";
 import DataGrid from "../common/DataGrid.vue";
+import PageSizeChoice from "../common/PageSizeChoice.vue";
+import DataGridSkeleton from "../common/DataGridSkeleton.vue";
+import SkeletonBlock from "../common/SkeletonBlock.vue";
 import TableFilterPanel from "../designer/TableFilterPanel.vue";
-import { getFacets, getSchema, listSources, queryRows } from "@/services/dataSourceService";
+import TableColumnPicker from "../designer/TableColumnPicker.vue";
+import TableHighlights from "../designer/properties/TableHighlights.vue";
+import { fetchFacets, fetchSchema, fetchSources, rowsQuery } from "@/queries/dataSourceQueries";
 import {
-  PREVIEW_ROW_LIMIT,
   createDatasetName,
-  maxColumnsForWidth,
+  MIN_TABLE_COLUMN_WIDTH,
   nextTableName,
   toDataQuery,
 } from "@/utils/table/dataBinding";
+import { TABLE_PAGE_SIZES, TABLE_ROWS_LIMIT } from "@/constants/reportDataConstants";
+import { useTableTotals } from "@/composables/useTableRows";
 import { createBinding, evenColumnWidths, toColumnBinding, totalsFor } from "@/utils/table/dataTable";
 import { resolveLook } from "@/utils/table/tableThemes";
 import type { TableElement } from "@/types";
 import type {
   DataColumnType,
+  DataQuery,
   DataRow,
   DataSourceSchema,
   DataSourceSummary,
@@ -262,6 +263,7 @@ import type {
   TableColumnBinding,
   TableDataBinding,
   TableFilter,
+  TableHighlight,
   TableSort,
   SourceFacets,
   TotalFunction,
@@ -314,6 +316,9 @@ const projectName = computed(
 );
 const schema = ref<DataSourceSchema | null>(null);
 const loadError = ref(false);
+// Waiting for the project's tables, or for the chosen table's columns
+const sourcesLoading = computed(() => !!projectId.value && !sources.value.length && !loadError.value);
+const schemaLoading = computed(() => !!sourceId.value && !schema.value && !loadError.value);
 
 // The draft setup; nothing changes on the table until Apply
 const draftName = ref("");
@@ -321,10 +326,14 @@ const datasetName = ref("");
 const columns = ref<TableColumnBinding[]>([]);
 const filters = ref<TableFilter[]>([]);
 const sort = ref<TableSort[]>([]);
-const rowLimit = ref<number | undefined>(undefined);
 const showTotals = ref(false);
+const highlights = ref<TableHighlight[]>([]);
 
-const maxColumns = computed(() => maxColumnsForWidth(props.tableWidth));
+// The source's user-defined fields (marked with a bolt, as the CDP app)
+const userDefinedKeys = computed(() => new Set((schema.value?.columns ?? []).filter((c) => c.userDefined).map((c) => c.key)));
+
+// Every column shown at the smallest width would be wider than the table
+const tooWide = computed(() => columns.value.length * MIN_TABLE_COLUMN_WIDTH > props.tableWidth);
 // Another source than the table shows: Apply replaces its data, like a new image
 const replacedSource = computed(() => {
   const current = props.table?.binding;
@@ -334,10 +343,6 @@ const replacedSource = computed(() => {
     ? current.sourceName
     : "";
 });
-const unusedColumns = computed(() =>
-  (schema.value?.columns ?? []).filter((c) => !columns.value.some((col) => col.key === c.key)),
-);
-
 // The table's setup is reactive (structuredClone can't copy it) and plain JSON
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
@@ -347,8 +352,8 @@ function loadDraft(binding: TableDataBinding) {
   columns.value = copy(binding.columns);
   filters.value = copy(binding.filters);
   sort.value = copy(binding.sort);
-  rowLimit.value = binding.rowLimit;
   showTotals.value = binding.showTotals;
+  highlights.value = copy(binding.highlights ?? []);
 }
 
 // Filter choices of the source (values with counts, ranges)
@@ -358,7 +363,7 @@ async function loadFacets(project: string, id: string) {
   facets.value = null;
   const stillCurrent = () => projectId.value === project && sourceId.value === id;
   try {
-    const loaded = await getFacets(project, id);
+    const loaded = await fetchFacets(project, id);
     if (stillCurrent()) facets.value = loaded;
   } catch {
     if (stillCurrent()) facets.value = {};
@@ -373,7 +378,7 @@ async function useSchema(id: string, freshColumns: boolean) {
   const project = projectId.value;
   const stillCurrent = () => projectId.value === project && sourceId.value === id;
   try {
-    const loaded = await getSchema(project, id);
+    const loaded = await fetchSchema(project, id);
     if (!stillCurrent()) return;
     schema.value = loaded;
     loadFacets(project, id);
@@ -390,6 +395,14 @@ async function useSchema(id: string, freshColumns: boolean) {
       columns.value = only ? [toColumnBinding(only, props.tableWidth)] : start.columns;
       filters.value = [];
       sort.value = [];
+      highlights.value = [];
+    } else {
+      // The table's own columns: each choice field with the words it prints as now
+      columns.value = columns.value.map((col) => {
+        const { choices: _old, ...rest } = col;
+        const choices = loaded.columns.find((c) => c.key === col.key)?.choices;
+        return choices?.length ? { ...rest, choices } : rest;
+      });
     }
   } catch {
     if (stillCurrent()) loadError.value = true;
@@ -399,7 +412,7 @@ async function useSchema(id: string, freshColumns: boolean) {
 function loadSources(project: string) {
   sources.value = [];
   if (!project) return;
-  listSources(project)
+  fetchSources(project)
     .then((list) => {
       if (projectId.value === project) sources.value = list;
     })
@@ -421,8 +434,8 @@ watch(
       columns.value = [];
       filters.value = [];
       sort.value = [];
-      rowLimit.value = undefined;
       showTotals.value = false;
+      highlights.value = [];
     }
     // A dropped source, the table's own, or the only project there is
     const project =
@@ -520,29 +533,30 @@ function removeColumn(index: number) {
   columns.value.splice(index, 1);
 }
 
-function addColumn(select: HTMLSelectElement) {
-  const column = schema.value?.columns.find((c) => c.key === select.value);
-  select.value = "";
-  if (!column || columns.value.length >= maxColumns.value) return;
-  columns.value.push(toColumnBinding(column, 0));
+// Show or hide one column (a new one goes at the end)
+function toggleColumn(key: string) {
+  const at = columns.value.findIndex((c) => c.key === key);
+  if (at >= 0) {
+    columns.value.splice(at, 1);
+    return;
+  }
+  const column = schema.value?.columns.find((c) => c.key === key);
+  if (column) columns.value.push(toColumnBinding(column, 0));
 }
 
-// A text column printed as a barcode (rows get taller when applied)
-function setBarcode(col: TableColumnBinding, value: string) {
-  col.barcode = isTableBarcodeType(value) ? value : undefined;
+// Show exactly these: the ones already shown keep their place and settings,
+// the others follow in the source's order
+function showColumns(keys: string[]) {
+  const wanted = new Set(keys);
+  const kept = columns.value.filter((c) => wanted.has(c.key));
+  const added = (schema.value?.columns ?? [])
+    .filter((c) => wanted.has(c.key) && !kept.some((k) => k.key === c.key))
+    .map((c) => toColumnBinding(c, 0));
+  columns.value = [...kept, ...added];
 }
 
 function setTotal(col: TableColumnBinding, value: string) {
   col.total = (value || undefined) as TotalFunction | undefined;
-}
-
-function toggleRowLimit(on: boolean) {
-  rowLimit.value = on ? 10 : undefined;
-}
-
-function setRowLimit(value: string) {
-  const n = Math.round(Number(value));
-  rowLimit.value = n > 0 ? n : 1;
 }
 
 function toggleTotals(on: boolean) {
@@ -573,78 +587,96 @@ const draftBinding = computed<TableDataBinding | null>(() => {
     ),
     filters: copy(filters.value),
     sort: copy(sort.value.slice(0, 1)),
-    rowLimit: rowLimit.value,
     showTotals: showTotals.value && columns.value.some((c) => c.total),
     // The look is set in the properties panel; the popup keeps it
     theme: current.value?.theme ?? "corporateBlue",
     look: current.value?.look ? copy(current.value.look) : undefined,
     customized: current.value?.customized || undefined,
+    // Highlight rules: kept while their column is shown
+    highlights: (() => {
+      const shown = new Set(columns.value.map((c) => c.key));
+      const kept = highlights.value.filter((r) => shown.has(r.column));
+      return kept.length ? copy(kept) : undefined;
+    })(),
   };
 });
 
-// Preview rows: refetched (shortly after typing stops) when the request changes
-const previewRows = ref<DataRow[]>([]);
-const previewTotal = ref(0);
-const previewLoading = ref(false);
-const previewFailed = ref(false);
+// The grid's page (from 0) and rows per page
+const pageIndex = ref(0);
+const pageSize = ref(TABLE_ROWS_LIMIT);
+// Rows a page shows (above the grid); back to the first page
+function setPageSize(size: number) {
+  pageSize.value = size;
+  pageIndex.value = 0;
+}
+
+// Other rows (filters, sort, columns, source) start again at the first page
+watch(
+  () => (draftBinding.value ? JSON.stringify([projectId.value, sourceId.value, toDataQuery(draftBinding.value)]) : ""),
+  () => (pageIndex.value = 0),
+);
+
+// The page's request
+const pageQuery = (binding: TableDataBinding): DataQuery => ({
+  ...toDataQuery(binding),
+  offset: pageIndex.value * pageSize.value,
+  limit: pageSize.value,
+});
+
+// The grid's rows and totals: asked for shortly after typing stops, whenever
+// the request changes (the last rows stay while the next ones load)
+type PreviewRequest = [projectId: string, sourceId: string, query: DataQuery];
+const previewRequest = shallowRef<PreviewRequest | null>(null);
+const previewBinding = shallowRef<TableDataBinding | null>(null);
+const previewWaiting = ref(false);
 let previewTimer: ReturnType<typeof setTimeout> | undefined;
-let previewController: AbortController | null = null;
 
 watch(
   () =>
-    draftBinding.value
-      ? JSON.stringify([projectId.value, sourceId.value, toDataQuery(draftBinding.value, PREVIEW_ROW_LIMIT)])
+    draftBinding.value && props.visible
+      ? JSON.stringify([[projectId.value, sourceId.value, pageQuery(draftBinding.value)], draftBinding.value])
       : "",
   (key) => {
     clearTimeout(previewTimer);
-    previewController?.abort();
-    if (!key || !draftBinding.value || !props.visible) {
-      previewRows.value = [];
-      previewTotal.value = 0;
-      previewLoading.value = false;
+    if (!key) {
+      previewRequest.value = null;
+      previewBinding.value = null;
+      previewWaiting.value = false;
       return;
     }
-    previewLoading.value = true;
-    const binding = draftBinding.value;
-    previewTimer = setTimeout(async () => {
-      const controller = new AbortController();
-      previewController = controller;
-      try {
-        const result = await queryRows(
-          binding.projectId,
-          binding.sourceId,
-          toDataQuery(binding, PREVIEW_ROW_LIMIT),
-          controller.signal,
-        );
-        if (controller.signal.aborted) return;
-        previewRows.value = result.rows;
-        previewTotal.value = result.totalCount;
-        previewFailed.value = false;
-      } catch {
-        if (!controller.signal.aborted) previewFailed.value = true;
-      } finally {
-        if (!controller.signal.aborted) previewLoading.value = false;
-      }
+    previewWaiting.value = true;
+    previewTimer = setTimeout(() => {
+      const [request, binding] = JSON.parse(key) as [PreviewRequest, TableDataBinding];
+      previewRequest.value = request;
+      previewBinding.value = binding;
+      previewWaiting.value = false;
     }, 250);
   },
   { immediate: true },
 );
 
-// Rows the report will print, as far as the preview can tell
-const printedRowCount = computed(() =>
-  rowLimit.value ? Math.min(rowLimit.value, previewTotal.value) : previewTotal.value,
-);
+// The totals row: the backend's totals over every matching row, like the PDF's
+const { totals: previewTotals, loading: totalsLoading } = useTableTotals(previewBinding);
 
-const previewSummary = computed(() =>
-  previewTotal.value > previewRows.value.length && previewRows.value.length >= PREVIEW_ROW_LIMIT
-    ? t("dataTable.config.previewCapped", { shown: previewRows.value.length, count: printedRowCount.value })
-    : t("dataTable.config.rowCount", printedRowCount.value),
+const previewQuery = useQuery(
+  computed(() => {
+    const [project = "", source = "", query = {} as DataQuery] = previewRequest.value ?? [];
+    return { ...rowsQuery(project, source, query), enabled: !!previewRequest.value, placeholderData: keepPreviousData };
+  }),
 );
+const previewRows = computed<DataRow[]>(() => (previewRequest.value ? (previewQuery.data.value?.rows ?? []) : []));
+const previewTotal = computed(() => (previewRequest.value ? (previewQuery.data.value?.totalCount ?? 0) : 0));
+const previewLoading = computed(() => previewWaiting.value || (!!previewRequest.value && previewQuery.isFetching.value));
+const previewFailed = computed(() => !!previewRequest.value && previewQuery.isError.value);
+
+// Rows the report will print, as far as the preview can tell
+const printedRowCount = computed(() => previewTotal.value);
+
+const previewSummary = computed(() => t("dataTable.config.rowCount", printedRowCount.value));
 
 const applyBlockedReason = computed(() => {
   if (!schema.value) return t("dataTable.config.pickSourceFirst");
   if (!columns.value.length) return t("dataTable.config.needColumn");
-  if (columns.value.length > maxColumns.value) return t("dataTable.config.tooManyColumns", { max: maxColumns.value });
   return "";
 });
 
@@ -656,6 +688,21 @@ function apply() {
 </script>
 
 <style scoped>
+.tcm-page-size {
+  margin-left: auto;
+}
+
+.tcm-skeleton {
+  display: grid;
+  gap: 8px;
+}
+
+.tcm-bolt {
+  flex: none;
+  margin-left: -4px;
+  color: #f59e0b;
+}
+
 .tcm {
   display: grid;
   grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
@@ -920,9 +967,15 @@ function apply() {
 .tcm-grid-wrap {
   flex: 1;
   min-height: 0;
-  overflow: auto;
-  border: 1px solid #eef0f4;
-  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* The grid scrolls inside; its page bar stays under it */
+.tcm-grid-wrap > .data-grid {
+  flex: 1;
+  min-height: 0;
 }
 
 .tcm-empty {

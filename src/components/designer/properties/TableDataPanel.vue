@@ -9,7 +9,7 @@
     <template v-if="binding">
       <label class="tdp-field">
         <span class="tdp-label">{{ t("dataTable.panel.tableName") }}</span>
-        <input
+        <input v-live-change
           class="tdp-input"
           :value="binding.tableName"
           @change="renameTable(($event.target as HTMLInputElement).value)"
@@ -19,7 +19,9 @@
       <div class="tdp-source">
         <Database :size="14" aria-hidden="true" />
         <span class="tdp-source-name">{{
-          t("reportData.projectSource", { project: binding.projectName, source: binding.sourceName })
+          binding.list
+            ? t("projectList.rowsFrom", { project: binding.projectName, list: binding.sourceName })
+            : t("reportData.projectSource", { project: binding.projectName, source: binding.sourceName })
         }}</span>
         <span class="tdp-muted">{{ t("dataTable.panel.columnCount", binding.columns.length) }}</span>
       </div>
@@ -44,14 +46,14 @@
         </div>
       </div>
 
-      <div v-if="binding.rowLimit" class="tdp-row">
-        <ListOrdered :size="13" class="tdp-row-icon" aria-hidden="true" />
-        <div class="tdp-chips">
-          <span class="tdp-chip is-applied">{{ t("dataTable.panel.firstRows", binding.rowLimit) }}</span>
-        </div>
-      </div>
 
-      <button type="button" class="tdp-btn" @click="emit('configure')">
+      <!-- More matching rows than Preview PDF sends -->
+      <p v-if="!binding.list && rowTotal > REPORT_ROWS_LIMIT" class="tdp-hint is-warning">
+        {{ t("dataTable.panel.rowCap", { limit: REPORT_ROWS_LIMIT.toLocaleString(locale), total: rowTotal.toLocaleString(locale) }) }}
+      </p>
+
+      <p v-if="binding.list" class="tdp-hint">{{ t("projectList.hint") }}</p>
+      <button v-else type="button" class="tdp-btn" @click="emit('configure')">
         <SlidersHorizontal :size="14" aria-hidden="true" />
         {{ t("dataTable.panel.editData") }}
       </button>
@@ -73,7 +75,7 @@
     <span class="tdp-label">{{ t("dataTable.style.label") }}</span>
     <div class="tdp-themes" role="radiogroup" :aria-label="t('dataTable.style.label')">
       <button
-        v-for="option in styleOptions"
+        v-for="option in builtinOptions"
         :key="option.id"
         type="button"
         role="radio"
@@ -90,39 +92,82 @@
           <span :style="{ background: lookSwatch(option.look).stripe }"></span>
         </span>
         <span class="tdp-theme-name">{{ option.name }}</span>
-        <Lock v-if="option.builtin" :size="10" class="tdp-lock" :aria-label="t('dataTable.style.preset')" />
+        <Lock :size="10" class="tdp-lock" :aria-label="t('dataTable.style.preset')" />
       </button>
     </div>
 
-    <!-- The saved style this table uses: rename or delete it here -->
-    <div v-if="baseSavedStyle" class="tdp-saved-bar">
-      <template v-if="savedMode === 'confirm'">
-        <span class="tdp-saved-text is-danger">{{ t("dataTable.style.deleteConfirm", { name: baseSavedStyle.name }) }}</span>
-        <button type="button" class="tdp-link is-danger" @click="deleteSavedStyle">{{ t("common.delete") }}</button>
-        <button type="button" class="tdp-link is-muted" @click="savedMode = 'view'">{{ t("common.cancel") }}</button>
-      </template>
-      <template v-else-if="savedMode === 'rename'">
-        <input
-          ref="renameInput"
-          v-model="renameValue"
-          class="tdp-input"
-          :aria-label="t('dataTable.style.name')"
-          @keydown.enter.prevent="finishRename"
-          @keydown.esc.prevent="savedMode = 'view'"
-          @blur="finishRename"
-        />
-      </template>
-      <template v-else>
-        <Bookmark :size="13" aria-hidden="true" />
-        <span class="tdp-saved-text">{{ t("dataTable.style.savedStyle", { name: baseSavedStyle.name }) }}</span>
-        <button type="button" class="tdp-icon-btn" :title="t('dataTable.style.rename')" :aria-label="t('dataTable.style.rename')" @click="startRename">
-          <Pencil :size="12" />
-        </button>
-        <button type="button" class="tdp-icon-btn is-danger" :title="t('dataTable.style.delete')" :aria-label="t('dataTable.style.delete')" @click="savedMode = 'confirm'">
-          <Trash2 :size="12" />
-        </button>
-      </template>
-    </div>
+    <!-- Styles saved in this template: rename or delete each on its own tile -->
+    <template v-if="savedOptions.length">
+      <span class="tdp-label tdp-label-gap">{{ t("dataTable.style.myStyles") }}</span>
+      <div class="tdp-themes" role="radiogroup" :aria-label="t('dataTable.style.myStyles')">
+        <div
+          v-for="option in savedOptions"
+          :key="option.id"
+          class="tdp-theme-wrap"
+          :class="{ active: isActiveStyle(option.id) && tileMode(option.id) === 'view' }"
+        >
+          <!-- Renaming: the name is typed in the tile -->
+          <div v-if="tileMode(option.id) === 'rename'" class="tdp-theme is-editing">
+            <input
+              ref="renameInput"
+              v-model="renameValue"
+              class="tdp-input tdp-tile-input"
+              :aria-label="t('dataTable.style.name')"
+              @keydown.enter.prevent="finishRename"
+              @keydown.esc.prevent="cancelTile"
+              @blur="finishRename"
+            />
+          </div>
+          <!-- Deleting: asked in the tile -->
+          <div v-else-if="tileMode(option.id) === 'confirm'" class="tdp-theme is-editing">
+            <span class="tdp-tile-question">{{ t("dataTable.style.deleteConfirm", { name: option.name }) }}</span>
+            <span class="tdp-tile-answers">
+              <button type="button" class="tdp-link is-danger" @click="deleteSavedStyle">{{ t("common.delete") }}</button>
+              <button type="button" class="tdp-link is-muted" @click="cancelTile">{{ t("common.cancel") }}</button>
+            </span>
+          </div>
+          <template v-else>
+            <button
+              type="button"
+              role="radio"
+              class="tdp-theme"
+              :class="{ active: isActiveStyle(option.id) }"
+              :aria-checked="isActiveStyle(option.id)"
+              :disabled="!holder"
+              :title="option.name"
+              @click="applyStyle(option.id)"
+            >
+              <span class="tdp-swatch" aria-hidden="true">
+                <span :style="{ background: lookSwatch(option.look).header }"></span>
+                <span :style="{ background: lookSwatch(option.look).row }"></span>
+                <span :style="{ background: lookSwatch(option.look).stripe }"></span>
+              </span>
+              <span class="tdp-theme-name">{{ option.name }}</span>
+            </button>
+            <span class="tdp-tile-actions">
+              <button
+                type="button"
+                class="tdp-tile-btn"
+                :title="t('dataTable.style.renameStyle', { name: option.name })"
+                :aria-label="t('dataTable.style.renameStyle', { name: option.name })"
+                @click="startRename(option.id)"
+              >
+                <Pencil :size="10" />
+              </button>
+              <button
+                type="button"
+                class="tdp-tile-btn is-danger"
+                :title="t('dataTable.style.deleteStyle', { name: option.name })"
+                :aria-label="t('dataTable.style.deleteStyle', { name: option.name })"
+                @click="askDelete(option.id)"
+              >
+                <Trash2 :size="10" />
+              </button>
+            </span>
+          </template>
+        </div>
+      </div>
+    </template>
 
     <!-- This table's own changes -->
     <div v-if="holder && holder.customized" class="tdp-custom-note">
@@ -138,6 +183,13 @@
       <span>{{ t("dataTable.style.customize") }}</span>
       <ChevronRight :size="13" aria-hidden="true" />
     </button>
+    <div v-if="binding && dataTable && !binding.list" class="tdp-highlight-summary-bar">
+      <span class="tdp-highlight-summary-text">{{ highlightSummaryText }}</span>
+      <span class="tdp-bullet" aria-hidden="true">·</span>
+      <button type="button" class="tdp-link" @click="emit('configure')">
+        {{ t("dataTable.highlight.editInSetup") }}
+      </button>
+    </div>
   </div>
 
   <!-- Row sizes -->
@@ -148,7 +200,7 @@
       <label class="tdp-field">
         <span class="tdp-label">{{ t("dataTable.panel.headerHeight") }}</span>
         <span class="tdp-unit">
-          <input
+          <input v-live-change
             type="number"
             min="12"
             max="80"
@@ -161,7 +213,7 @@
       <label class="tdp-field">
         <span class="tdp-label">{{ t("dataTable.panel.rowHeight") }}</span>
         <span class="tdp-unit">
-          <input
+          <input v-live-change
             type="number"
             min="12"
             max="80"
@@ -177,12 +229,20 @@
 
   <!-- Style settings: change the look of this table -->
   <template v-else>
+  <!-- The Cells card for project-data tables -->
+  <TableDataCells v-if="binding && dataTable" :element="dataTable" :binding="binding" />
+
   <div class="tdp-section">
     <h5>{{ t("dataTable.style.customize") }}<SettingHelpButton id="tableCustomize" /></h5>
     <SettingHelpText id="tableCustomize" />
     <p v-if="!holder" class="tdp-hint">{{ t("dataTable.style.needData") }}</p>
     <template v-else>
       <p class="tdp-hint">{{ t("dataTable.style.customizeHint") }}</p>
+      <!-- Some cells / one column get their own look in the card above it -->
+      <p v-if="!cellsChosen" class="tdp-hint tdp-cells-hint">
+        <MousePointerClick :size="13" aria-hidden="true" />
+        <span>{{ t(isTyped ? "dataTable.style.cellsHintTyped" : "dataTable.style.cellsHintData") }}</span>
+      </p>
       <div class="tdp-based-on" :class="{ 'is-custom': holder.customized }">
         <span class="tdp-swatch" aria-hidden="true">
           <span :style="{ background: lookSwatch(look).header }"></span>
@@ -213,15 +273,41 @@
             />
             <span>{{ t(`dataTable.style.fields.${field}`) }}</span>
           </label>
-          <label v-if="group.bold" class="tdp-check">
-            <input
-              type="checkbox"
-              :checked="look[group.bold]"
-              @change="setLook(group.bold, ($event.target as HTMLInputElement).checked, true)"
-            />
-            {{ t("dataTable.style.bold") }}
-          </label>
         </div>
+        <!-- The part's text style and alignment, for the whole table -->
+        <div class="tdp-editor-row tdp-text-row">
+          <div class="tdp-seg" role="group" :aria-label="t('customTable.textStyle')">
+            <button
+              v-for="toggle in TEXT_TOGGLES"
+              :key="toggle.key"
+              type="button"
+              class="tdp-seg-btn"
+              :class="{ active: !!look[group.text[toggle.key]] }"
+              :aria-pressed="!!look[group.text[toggle.key]]"
+              :title="t(toggle.label)"
+              :aria-label="t(toggle.label)"
+              @click="setPartText(group, toggle.key)"
+            >
+              <component :is="toggle.icon" :size="13" aria-hidden="true" />
+            </button>
+          </div>
+          <div class="tdp-seg" role="group" :aria-label="t('customTable.alignment')">
+            <button
+              v-for="option in ALIGN_OPTIONS"
+              :key="option.value"
+              type="button"
+              class="tdp-seg-btn"
+              :class="{ active: look[group.align] === option.value }"
+              :aria-pressed="look[group.align] === option.value"
+              :title="t(option.label)"
+              :aria-label="t(option.label)"
+              @click="setPartAlign(group, option.value)"
+            >
+              <component :is="option.icon" :size="13" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+        <p v-if="!isTyped && group.part === 'rows' && !look.rowAlign" class="tdp-hint">{{ t("dataTable.style.alignByType") }}</p>
         <!-- Body rows take these colours in turn (1 to 4) -->
         <div v-if="group.part === 'rows'" class="tdp-row-colors">
           <span class="tdp-label">{{ t("dataTable.style.rowColors") }}</span>
@@ -294,7 +380,7 @@
       <label class="tdp-field">
         <span class="tdp-label">{{ t("dataTable.style.fontSize") }}</span>
         <span class="tdp-unit">
-          <input
+          <input v-live-change
             type="number"
             min="6"
             max="24"
@@ -302,6 +388,21 @@
             @change="setFontSize(($event.target as HTMLInputElement).value)"
           />
           <span>pt</span>
+        </span>
+      </label>
+
+      <!-- Typed tables: the space between a cell's text and its lines -->
+      <label v-if="typedTable" class="tdp-field">
+        <span class="tdp-label">{{ t("customTable.padding") }}</span>
+        <span class="tdp-unit">
+          <input v-live-change
+            type="number"
+            min="0"
+            max="40"
+            :value="typedTable.padding"
+            @change="setPadding(($event.target as HTMLInputElement).value)"
+          />
+          <span>px</span>
         </span>
       </label>
 
@@ -344,31 +445,42 @@
 </template>
 
 <script setup lang="ts">
+import TableDataCells from "./TableDataCells.vue";
 import SettingHelpButton from "../../help/SettingHelpButton.vue";
 import SettingHelpText from "../../help/SettingHelpText.vue";
 import { useReportStore } from "@/stores/report";
-import { computed, nextTick, ref } from "vue";
+import { useSelectionStore } from "@/stores/selection";
+import { storeToRefs } from "pinia";
+import { computed, nextTick, ref, toRef, type Component } from "vue";
+import { useTableRows } from "@/composables/useTableRows";
+import { REPORT_ROWS_LIMIT } from "@/constants/reportDataConstants";
 import { useI18n } from "vue-i18n";
 import {
   ArrowDownUp,
-  Bookmark,
+  Bold,
   BookmarkPlus,
   ChevronRight,
   Database,
   DatabaseZap,
   Funnel,
-  ListOrdered,
+  Italic,
   Lock,
+  MousePointerClick,
   Paintbrush,
   Pencil,
   Plus,
   RefreshCw,
   SlidersHorizontal,
+  TextAlignCenter,
+  TextAlignEnd,
+  TextAlignStart,
   Trash2,
+  Underline,
 } from "@lucide/vue";
 import ColorSwatchPicker from "@/components/common/ColorSwatchPicker.vue";
 import type { CustomTableElement, TableElement } from "@/types";
-import type { SavedTableStyle, TableLook } from "@/types/dataSource";
+import type { SavedTableStyle, TableLook, TableTextAlign } from "@/types/dataSource";
+import { clearPartCells, type CustomRowPart } from "@/utils/customTable";
 import {
   TABLE_HEADER_HEIGHT,
   TABLE_ROW_HEIGHT,
@@ -420,8 +532,26 @@ const holder = computed(() =>
   props.element.type === "customTable" ? props.element.table : props.element.binding,
 );
 const filters = computed(() => (binding.value ? activeFilters(binding.value) : []));
+// How many rows match (the canvas's request answers it; the report prints at most REPORT_ROWS_LIMIT)
+const { totalCount: rowTotal } = useTableRows(toRef(() => binding.value ?? undefined), 1);
 const sorts = computed(() => (binding.value ? describeSorts(binding.value, t) : []));
 const dataTable = computed(() => (props.element.type === "table" ? props.element : null));
+const typedTable = computed(() => (props.element.type === "customTable" ? props.element.table : null));
+// Whether the card above Customize is showing: a typed table's chosen cells
+// (while it is open), or a project-data table's chosen column
+const { tableCells, tableColumn, editingElement } = storeToRefs(useSelectionStore());
+const cellsChosen = computed(() =>
+  isTyped.value
+    ? !!editingElement.value && tableCells.value?.uuid === props.element.uuid
+    : !!binding.value && tableColumn.value?.uuid === props.element.uuid,
+);
+const highlightCount = computed(() => (binding.value?.highlights ?? []).length);
+const highlightSummaryText = computed(() => {
+  const n = highlightCount.value;
+  return n === 0
+    ? t("dataTable.highlight.noRules")
+    : t("dataTable.highlight.rulesCount", n);
+});
 const headerHeight = computed(() => dataTable.value?.headerHeight ?? TABLE_HEADER_HEIGHT);
 const rowHeight = computed(() => dataTable.value?.rowHeight ?? TABLE_ROW_HEIGHT);
 const look = computed(() => resolveLook(holder.value));
@@ -447,6 +577,8 @@ const styleOptions = computed<StyleOption[]>(() => [
   ...props.tableStyles.map((s) => ({ id: s.id, name: s.name, look: s.look, builtin: false })),
 ]);
 
+const builtinOptions = computed(() => styleOptions.value.filter((o) => o.builtin));
+const savedOptions = computed(() => styleOptions.value.filter((o) => !o.builtin));
 const baseSavedStyle = computed(() => props.tableStyles.find((s) => s.id === holder.value?.theme));
 const baseStyleName = computed(
   () => styleOptions.value.find((o) => o.id === holder.value?.theme)?.name ?? t("dataTable.theme.corporateBlue"),
@@ -468,44 +600,114 @@ function applyStyle(id: string) {
   report.updateJrxml();
 }
 
-// ── Renaming or deleting the saved style the table uses ──
-const savedMode = ref<"view" | "rename" | "confirm">("view");
+// ── Renaming or deleting a saved style (on its own tile) ──
+const tileEdit = ref<{ id: string; mode: "rename" | "confirm" } | null>(null);
+const tileMode = (id: string) => (tileEdit.value?.id === id ? tileEdit.value.mode : "view");
 const renameValue = ref("");
-const renameInput = ref<HTMLInputElement | null>(null);
+const renameInput = ref<HTMLInputElement[] | HTMLInputElement | null>(null);
 
-function startRename() {
-  if (!baseSavedStyle.value) return;
-  renameValue.value = baseSavedStyle.value.name;
-  savedMode.value = "rename";
-  nextTick(() => renameInput.value?.select());
+function startRename(id: string) {
+  const style = props.tableStyles.find((s) => s.id === id);
+  if (!style) return;
+  renameValue.value = style.name;
+  tileEdit.value = { id, mode: "rename" };
+  nextTick(() => {
+    const input = Array.isArray(renameInput.value) ? renameInput.value[0] : renameInput.value;
+    input?.select();
+  });
 }
 
 function finishRename() {
-  if (savedMode.value !== "rename") return;
-  savedMode.value = "view";
-  const style = baseSavedStyle.value;
+  const edit = tileEdit.value;
+  if (edit?.mode !== "rename") return;
+  tileEdit.value = null;
+  const style = props.tableStyles.find((s) => s.id === edit.id);
   const name = renameValue.value.trim();
   if (style && name && name !== style.name) emit("rename-table-style", style.id, name);
 }
 
-// The table (and any other table using the style) keeps its look
+function askDelete(id: string) {
+  tileEdit.value = { id, mode: "confirm" };
+}
+
+function cancelTile() {
+  tileEdit.value = null;
+}
+
+// Tables using the style keep its look as their own changes
 function deleteSavedStyle() {
-  savedMode.value = "view";
-  if (baseSavedStyle.value) emit("delete-table-style", baseSavedStyle.value.id);
+  const edit = tileEdit.value;
+  tileEdit.value = null;
+  if (edit) emit("delete-table-style", edit.id);
 }
 
 // ── Changing the look for this table only ──
 
 type LookField = keyof TableLook;
-const LOOK_GROUPS: {
+type TextKey = "bold" | "italic" | "underline";
+interface LookGroup {
   part: "header" | "rows" | "totals";
+  // The typed table's part with the same rows
+  rowPart: CustomRowPart;
   colors: ("headerBackground" | "headerText" | "rowText" | "totalsBackground" | "totalsText")[];
-  bold?: "headerBold" | "totalsBold";
-}[] = [
-  { part: "header", colors: ["headerBackground", "headerText"], bold: "headerBold" },
-  { part: "rows", colors: ["rowText"] },
-  { part: "totals", colors: ["totalsBackground", "totalsText"], bold: "totalsBold" },
+  text: Record<TextKey, "headerBold" | "headerItalic" | "headerUnderline" | "rowBold" | "rowItalic" | "rowUnderline" | "totalsBold" | "totalsItalic" | "totalsUnderline">;
+  align: "headerAlign" | "rowAlign" | "totalsAlign";
+}
+const LOOK_GROUPS: LookGroup[] = [
+  {
+    part: "header",
+    rowPart: "header",
+    colors: ["headerBackground", "headerText"],
+    text: { bold: "headerBold", italic: "headerItalic", underline: "headerUnderline" },
+    align: "headerAlign",
+  },
+  {
+    part: "rows",
+    rowPart: "row",
+    colors: ["rowText"],
+    text: { bold: "rowBold", italic: "rowItalic", underline: "rowUnderline" },
+    align: "rowAlign",
+  },
+  {
+    part: "totals",
+    rowPart: "totals",
+    colors: ["totalsBackground", "totalsText"],
+    text: { bold: "totalsBold", italic: "totalsItalic", underline: "totalsUnderline" },
+    align: "totalsAlign",
+  },
 ];
+const TEXT_TOGGLES: { key: TextKey; label: string; icon: Component }[] = [
+  { key: "bold", label: "properties.bold", icon: Bold },
+  { key: "italic", label: "properties.italic", icon: Italic },
+  { key: "underline", label: "properties.underline", icon: Underline },
+];
+const ALIGN_OPTIONS: { value: TableTextAlign; label: string; icon: Component }[] = [
+  { value: "Left", label: "properties.left", icon: TextAlignStart },
+  { value: "Center", label: "properties.center", icon: TextAlignCenter },
+  { value: "Right", label: "properties.right", icon: TextAlignEnd },
+];
+
+// A part's bold / italic / underline for the whole table (one undo step); on a
+// typed table its cells drop their own value, so the table's shows
+function setPartText(group: LookGroup, key: TextKey) {
+  const field = group.text[key];
+  setLook(field, !look.value[field], true);
+  if (typedTable.value) {
+    clearPartCells(typedTable.value, group.rowPart, key);
+    report.updateJrxml();
+  }
+}
+
+// A part's alignment for the whole table; the chosen one again goes back to
+// the usual (data rows: by the column's type)
+function setPartAlign(group: LookGroup, value: TableTextAlign) {
+  const next = look.value[group.align] === value ? undefined : value;
+  setLook(group.align, next, true);
+  if (typedTable.value) {
+    clearPartCells(typedTable.value, group.rowPart, "align");
+    report.updateJrxml();
+  }
+}
 
 // One undo step per change: a colour dragged in the picker is one change
 let editing: LookField | null = null;
@@ -550,6 +752,15 @@ function setFontSize(value: string) {
   if (Number.isFinite(n) && n >= 6 && n <= 24) setLook("fontSize", n, true);
 }
 
+function setPadding(value: string) {
+  const table = typedTable.value;
+  const n = Math.min(40, Math.max(0, Math.round(Number(value))));
+  if (!table || !Number.isFinite(n) || n === table.padding) return;
+  report.saveStateToHistory();
+  table.padding = n;
+  report.updateJrxml();
+}
+
 // ── Saving the changes as a reusable style ──
 const naming = ref(false);
 const newStyleName = ref("");
@@ -588,6 +799,53 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
 </script>
 
 <style scoped>
+.tdp-text-row {
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.tdp-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid #e6e5ee;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.tdp-seg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: #45425a;
+  cursor: pointer;
+}
+
+.tdp-seg-btn:hover {
+  background: #f4f1ff;
+}
+
+.tdp-seg-btn.active {
+  background: #6440f4;
+  color: #ffffff;
+}
+
+.tdp-hint {
+  margin: 4px 0 0;
+  color: #8a8799;
+  font-size: 11px;
+}
+
+.tdp-hint.is-warning {
+  color: #b45309;
+}
+
 .tdp-row-colors {
   margin-top: 8px;
 }
@@ -629,6 +887,37 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
 
 .tdp-row-preview span {
   height: 5px;
+}
+
+.tdp-cells-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.tdp-cells-hint svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--prop-primary-color, #6440f4);
+}
+
+.tdp-highlight-summary-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -4px 0 12px;
+  padding: 4px 6px;
+  font-size: 11.5px;
+  color: var(--prop-text-secondary, #6b7280);
+}
+
+.tdp-highlight-summary-text {
+  color: var(--prop-text-primary, #1f2937);
+  font-weight: 500;
+}
+
+.tdp-bullet {
+  color: var(--prop-text-secondary, #9ca3af);
 }
 
 .tdp-section {
@@ -852,6 +1141,81 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
   white-space: nowrap;
 }
 
+.tdp-label-gap {
+  display: block;
+  margin-top: 10px;
+}
+
+/* A saved style's tile: the style button, with rename / delete in its corner */
+.tdp-theme-wrap {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.tdp-theme-wrap > .tdp-theme {
+  flex: 1;
+  min-width: 0;
+}
+
+.tdp-theme.is-editing {
+  justify-content: center;
+  min-height: 46px;
+  cursor: default;
+  border-color: var(--prop-primary-color, #6440f4);
+}
+
+.tdp-tile-input {
+  width: 100%;
+  height: 24px;
+  font-size: 11px;
+}
+
+.tdp-tile-question {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #dc2626;
+}
+
+.tdp-tile-answers {
+  display: flex;
+  gap: 8px;
+}
+
+.tdp-tile-actions {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: flex;
+  gap: 2px;
+}
+
+.tdp-tile-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--prop-text-tertiary, #9ca3af);
+  cursor: pointer;
+}
+
+.tdp-tile-btn:hover {
+  background: #f1edff;
+  color: var(--prop-primary-color, #6440f4);
+}
+
+.tdp-tile-btn.is-danger:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
 .tdp-lock {
   position: absolute;
   top: 4px;
@@ -1033,32 +1397,6 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
   cursor: not-allowed;
 }
 
-.tdp-saved-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 10px;
-  padding: 6px 8px;
-  border: 1px solid var(--prop-border-color, #e5e7eb);
-  border-radius: 6px;
-  background: #fff;
-  font-size: 11px;
-  color: var(--prop-text-secondary, #6b7280);
-}
-
-.tdp-saved-bar .tdp-input {
-  height: 26px;
-}
-
-.tdp-saved-text {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tdp-saved-text.is-danger,
 .tdp-link.is-danger {
   color: #dc2626;
 }

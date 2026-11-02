@@ -24,15 +24,8 @@
           </select>
           <ChevronDown :size="14" :stroke-width="2.25" aria-hidden="true" />
         </label>
-        <!-- List: how many rows a page shows (always here, so it can be
-             changed back even when everything fits on one page) -->
-        <label v-else class="page-size" data-help="template-order">
-          <span>{{ t("myTemplates.perPage") }}</span>
-          <select :value="pageSize" @change="choosePageSize(Number(($event.target as HTMLSelectElement).value))">
-            <option v-for="size in PAGE_SIZES" :key="size" :value="size">{{ size }}</option>
-          </select>
-          <ChevronDown :size="14" :stroke-width="2.25" aria-hidden="true" />
-        </label>
+        <!-- List: how many rows a page shows, above the list -->
+        <PageSizeChoice v-else data-help="template-order" :model-value="pageSize" :sizes="PAGE_SIZES" @update:model-value="choosePageSize" />
         <div class="view-toggle" data-help="template-view" role="radiogroup" :aria-label="t('myTemplates.view')">
           <button
             v-for="option in VIEWS"
@@ -69,7 +62,7 @@
            the window is big enough to show it); the button is there too -->
       <div v-if="items.length < total && !loading" class="load-more">
         <span>{{ t("myTemplates.showing", { shown: items.length, total }) }}</span>
-        <button type="button" @click="loadGrid('more')">
+        <button type="button" @click="loadMore">
           <ChevronDown :size="15" :stroke-width="2.25" aria-hidden="true" />
           {{ t("myTemplates.loadMore") }}
         </button>
@@ -86,54 +79,17 @@
         :skeletons="loading && !items.length ? 6 : 0"
         @sort="sortByColumn"
       />
-      <nav v-if="total > pageSize" class="pagination" :aria-label="t('myTemplates.pages')">
-        <span class="page-range">
-          {{ t("myTemplates.range", { from: (page - 1) * pageSize + 1, to: Math.min(page * pageSize, total), total }) }}
-        </span>
-        <div class="page-buttons">
-          <button
-            type="button"
-            class="page-step"
-            :disabled="page <= 1"
-            :title="t('myTemplates.first')"
-            :aria-label="t('myTemplates.first')"
-            @click="goToPage(1)"
-          >
-            <ChevronsLeft :size="15" :stroke-width="2.25" aria-hidden="true" />
-          </button>
-          <button type="button" class="page-step" :disabled="page <= 1" @click="goToPage(page - 1)">
-            <ChevronLeft :size="15" :stroke-width="2.25" aria-hidden="true" />
-            {{ t("myTemplates.previous") }}
-          </button>
-          <template v-for="(number, index) in pageNumbers" :key="index">
-            <span v-if="number === 0" class="page-gap">…</span>
-            <button
-              v-else
-              type="button"
-              class="page-number"
-              :class="{ active: number === page }"
-              :aria-current="number === page ? 'page' : undefined"
-              @click="goToPage(number)"
-            >
-              {{ number }}
-            </button>
-          </template>
-          <button type="button" class="page-step" :disabled="page >= pageCount" @click="goToPage(page + 1)">
-            {{ t("myTemplates.next") }}
-            <ChevronRight :size="15" :stroke-width="2.25" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            class="page-step"
-            :disabled="page >= pageCount"
-            :title="t('myTemplates.last')"
-            :aria-label="t('myTemplates.last')"
-            @click="goToPage(pageCount)"
-          >
-            <ChevronsRight :size="15" :stroke-width="2.25" aria-hidden="true" />
-          </button>
-        </div>
-      </nav>
+      <!-- The app's one page bar (as the table setup popup and the CDP app's
+           tables): rows shown, pages, and how many rows a page shows; always
+           there, so the page size can be changed back -->
+      <PageNavigation
+        v-if="items.length"
+        class="pagination"
+        :page="page"
+        :page-size="pageSize"
+        :total="total"
+        @update:page="goToPage"
+      />
     </div>
 
     <div v-if="!failed && !loading && !items.length" class="no-match">
@@ -159,16 +115,14 @@
 // scroll) or as a table (List: pages of 25 / 50 / 100). The view, order, page
 // and the top bar's search are in the address (?view=list&sort=name&dir=asc
 // &page=2&q=…), so Back and reload keep the place. Pages come from
-// listTemplates (services/templateService.ts).
+// TanStack Query (queries/templateQueries.ts): List = one page, Grid = an infinite
+// list; saving a template invalidates them, so they fetch again.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/vue-query";
 import { useRoute, useRouter, type LocationQueryRaw } from "vue-router";
 import { useI18n } from "vue-i18n";
 import {
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   FileText,
   LayoutGrid,
   List,
@@ -177,17 +131,14 @@ import {
   X,
 } from "@lucide/vue";
 import { useTemplates } from "@/composables/useTemplates";
-import { useFilesStore } from "@/stores/files";
 import { useHelpStore } from "@/stores/help";
-import { AUTH_USER_KEY } from "@/services/apiClient";
-import {
-  listTemplates,
-  type SortDirection,
-  type TemplateSort,
-  type TemplateSummary,
-} from "@/services/templateService";
+import { useAuthStore } from "@/stores/auth";
+import type { TemplateSortDirection, TemplateSort, TemplateSummary } from "@/types/template";
+import { templateGridQuery, templateListQuery } from "@/queries/templateQueries";
 import TemplateGrid from "@/components/templates/TemplateGrid.vue";
 import TemplateList from "@/components/templates/TemplateList.vue";
+import PageSizeChoice from "../components/common/PageSizeChoice.vue";
+import PageNavigation from "@/components/common/PageNavigation.vue";
 
 type View = "grid" | "list";
 
@@ -201,11 +152,10 @@ const PAGE_SIZE_KEY = "templates.pageSize";
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const filesStore = useFilesStore();
 const { newTemplate } = useTemplates();
 
-const storedUser = JSON.parse(localStorage.getItem(AUTH_USER_KEY) ?? "{}") as { firstName?: string };
-const displayName = computed(() => storedUser.firstName ?? t("home.defaultUserName"));
+const auth = useAuthStore();
+const displayName = computed(() => auth.fullName || t("home.defaultUserName"));
 
 const remembered = (key: string) => {
   try {
@@ -233,7 +183,7 @@ const sort = computed<TemplateSort>(() => {
   const asked = text(route.query.sort);
   return asked === "name" || asked === "createdAt" ? asked : "lastModified";
 });
-const dir = computed<SortDirection>(() => {
+const dir = computed<TemplateSortDirection>(() => {
   const asked = text(route.query.dir);
   if (asked === "asc" || asked === "desc") return asked;
   return sort.value === "name" ? "asc" : "desc";
@@ -271,7 +221,7 @@ function chooseSort(choice: string) {
 // A heading click sorts by it; a second click turns the order round. Names
 // start A–Z, dates newest first
 function sortByColumn(column: TemplateSort) {
-  const nextDir: SortDirection =
+  const nextDir: TemplateSortDirection =
     sort.value === column ? (dir.value === "asc" ? "desc" : "asc") : column === "name" ? "asc" : "desc";
   setQuery({ sort: column, dir: nextDir, page: undefined });
 }
@@ -285,100 +235,58 @@ function choosePageSize(size: number) {
   pageSize.value = size;
   remember(PAGE_SIZE_KEY, String(size));
   setQuery({ page: undefined });
-  loadList();
 }
 
-const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)));
-// 1 … 4 5 6 … 12 (0 = the gap)
-const pageNumbers = computed(() => {
-  const last = pageCount.value;
-  const current = page.value;
-  const shown = new Set([1, last, current - 1, current, current + 1].filter((n) => n >= 1 && n <= last));
-  const sorted = [...shown].sort((a, b) => a - b);
-  const result: number[] = [];
-  sorted.forEach((n, i) => {
-    if (i > 0 && n - (sorted[i - 1] ?? n) > 1) result.push(0);
-    result.push(n);
-  });
-  return result;
-});
 
 // What is shown
-const items = ref<TemplateSummary[]>([]);
-const total = ref(0);
-const loading = ref(false);
-const failed = ref(false);
-let request = 0;
+const baseQuery = computed(() => ({ q: query.value, sort: sort.value, dir: dir.value }));
 
-const baseQuery = () => ({ q: query.value, sort: sort.value, dir: dir.value });
-
-// List: exactly the page in the address (a page past the end goes back to the last)
-async function loadList() {
-  const id = ++request;
-  loading.value = true;
-  failed.value = false;
-  try {
-    const result = await listTemplates({ ...baseQuery(), page: page.value, size: pageSize.value });
-    if (id !== request) return;
-    if (!result.items.length && page.value > 1 && result.total) {
-      setQuery({ page: Math.ceil(result.total / pageSize.value) });
-      return;
-    }
-    items.value = result.items;
-    total.value = result.total;
-  } catch {
-    if (id === request) failed.value = true;
-  } finally {
-    if (id === request) loading.value = false;
-  }
-}
-
-// Grid: from the start, or the next 25 after what is shown. `keep` reloads
-// as many as are shown (after a rename or delete) without jumping back
-async function loadGrid(mode: "start" | "more" | "keep") {
-  if (mode === "more" && (loading.value || items.value.length >= total.value)) return;
-  const id = ++request;
-  loading.value = true;
-  failed.value = false;
-  try {
-    const size = mode === "keep" ? Math.max(PAGE_SIZE, items.value.length) : PAGE_SIZE;
-    const nextPage = mode === "more" ? Math.floor(items.value.length / PAGE_SIZE) + 1 : 1;
-    const result = await listTemplates({ ...baseQuery(), page: nextPage, size });
-    if (id !== request) return;
-    if (mode === "more") {
-      // After a delete the pages shift by one: skip cards already shown
-      const shown = new Set(items.value.map((item) => item.id));
-      items.value = [...items.value, ...result.items.filter((item) => !shown.has(item.id))];
-    } else {
-      items.value = result.items;
-    }
-    total.value = result.total;
-  } catch {
-    if (id === request) failed.value = true;
-  } finally {
-    if (id === request) loading.value = false;
-  }
-  // A tall window may show the end already: keep filling it
-  await nextTick();
-  observeSentinel();
-}
-
-const reload = () => (view.value === "grid" ? loadGrid("start") : loadList());
-
-// Search, order or view changed: start again
-watch([query, sort, dir, view], () => {
-  items.value = [];
-  total.value = 0;
-  reload();
-});
-watch(page, () => view.value === "list" && loadList());
-// A template renamed, copied or deleted here
-watch(
-  () => filesStore.templatesVersion,
-  () => (view.value === "grid" ? loadGrid("keep") : loadList()),
+// List: exactly the page in the address (the last page stays while the next loads)
+const listQuery = useQuery(
+  computed(() => ({
+    ...templateListQuery({ ...baseQuery.value, page: page.value, size: pageSize.value }),
+    enabled: view.value === "list",
+    placeholderData: keepPreviousData,
+  })),
+);
+// Grid: from the start, the next 25 added near the end
+const gridQuery = useInfiniteQuery(
+  computed(() => ({ ...templateGridQuery(baseQuery.value, PAGE_SIZE), enabled: view.value === "grid" })),
 );
 
-// Load more when the end of the grid comes near
+const items = computed<TemplateSummary[]>(() => {
+  if (view.value === "list") return listQuery.data.value?.items ?? [];
+  // After a delete the pages shift by one: a card is shown once
+  const seen = new Set<string>();
+  return (gridQuery.data.value?.pages ?? [])
+    .flatMap((p) => p.items)
+    .filter((item) => !seen.has(item.id) && !!seen.add(item.id));
+});
+const total = computed(() =>
+  view.value === "list" ? (listQuery.data.value?.total ?? 0) : (gridQuery.data.value?.pages[0]?.total ?? 0),
+);
+const loading = computed(() => (view.value === "list" ? listQuery.isFetching.value : gridQuery.isFetching.value));
+const failed = computed(() => (view.value === "list" ? listQuery.isError.value : gridQuery.isError.value));
+const settled = computed(() => (view.value === "list" ? !listQuery.isPending.value : !gridQuery.isPending.value));
+
+const reload = () => (view.value === "grid" ? gridQuery.refetch() : listQuery.refetch());
+
+// A page past the end (after deleting) goes back to the last one
+watch(
+  () => listQuery.data.value,
+  (result) => {
+    if (view.value === "list" && result && !result.items.length && page.value > 1 && result.total) {
+      setQuery({ page: Math.ceil(result.total / pageSize.value) });
+    }
+  },
+);
+
+function loadMore() {
+  if (gridQuery.hasNextPage.value && !gridQuery.isFetching.value) gridQuery.fetchNextPage();
+}
+
+// Load more when the end of the grid comes near (a tall window may show the
+// end already: it keeps filling as each page arrives)
 const sentinelRef = ref<HTMLElement | null>(null);
 let observer: IntersectionObserver | null = null;
 function observeSentinel() {
@@ -386,19 +294,30 @@ function observeSentinel() {
   if (!sentinelRef.value) return;
   observer = new IntersectionObserver(
     (entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) loadGrid("more");
+      if (entries.some((entry) => entry.isIntersecting)) loadMore();
     },
     { rootMargin: "400px 0px" },
   );
   observer.observe(sentinelRef.value);
 }
+watch(
+  () => [items.value.length, loading.value, view.value],
+  () => nextTick(observeSentinel),
+);
 
 // First visit: a short tour of this page, once the templates are on screen
 const help = useHelpStore();
 let tourTimer: ReturnType<typeof setTimeout> | undefined;
-onMounted(async () => {
-  await reload();
-  tourTimer = setTimeout(() => help.startTourOnce("templates"), 600);
+onMounted(() => {
+  const stop = watch(
+    settled,
+    (ready) => {
+      if (!ready) return;
+      stop();
+      tourTimer = setTimeout(() => help.startTourOnce("templates"), 600);
+    },
+    { immediate: true },
+  );
 });
 onBeforeUnmount(() => {
   observer?.disconnect();
@@ -484,42 +403,13 @@ p {
 }
 
 .sort-select,
-.page-size {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #6f6a7e;
-  font-size: 11.5px;
-}
 
 .sort-select select,
-.page-size select {
-  appearance: none;
-  padding: 6px 28px 6px 10px;
-  border: 1px solid #e6e5ee;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #1c1b26;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
 
 
 .sort-select select:focus-visible,
-.page-size select:focus-visible {
-  border-color: #6440f4;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(100, 64, 244, 0.12);
-}
 
 .sort-select svg,
-.page-size svg {
-  position: absolute;
-  right: 9px;
-  pointer-events: none;
-}
 
 .view-toggle {
   display: inline-flex;
@@ -584,63 +474,7 @@ p {
 }
 
 .pagination {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.page-range {
-  color: #6f6a7e;
-  font-size: 11.5px;
-}
-
-.page-buttons {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.page-step,
-.page-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-width: 32px;
-  height: 32px;
-  padding: 0 9px;
-  border: 1px solid #e6e5ee;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #45425a;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.page-step:hover:not(:disabled),
-.page-number:hover {
-  border-color: #6440f4;
-  color: #6440f4;
-}
-
-.page-step:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.page-number.active {
-  border-color: #6440f4;
-  background: #6440f4;
-  color: #ffffff;
-}
-
-.page-gap {
-  padding: 0 4px;
-  color: #8a84a3;
+  margin-top: 12px;
 }
 
 .load-failed {
@@ -704,9 +538,4 @@ p {
   margin-top: 8px;
 }
 
-@media (max-width: 620px) {
-  .page-number:not(.active) {
-    display: none;
-  }
-}
 </style>

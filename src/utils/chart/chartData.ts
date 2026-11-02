@@ -4,8 +4,11 @@
 import { chartLocaleTag, chartT } from "./chartText";
 import type { ChartType } from "@/types/dataSource";
 
+// Each coloured thing of real numbers carries a colour key (binding.colors):
+// the value as stored, so a custom colour follows the value, never its place
 export interface ChartSeries {
   name: string;
+  key?: string;
   values: (number | null)[];
   // 1 = drawn against a second scale, for a number of another kind than the
   // first series (e.g. a count next to amounts)
@@ -14,6 +17,7 @@ export interface ChartSeries {
 
 export interface ChartTreeNode {
   name: string;
+  key?: string;
   value: number;
   children?: ChartTreeNode[];
 }
@@ -22,7 +26,7 @@ export type ChartData =
   // KPI and gauge: one number
   | { kind: "value"; value: number | null; label: string }
   // Pie and donut: one number per category
-  | { kind: "parts"; categories: string[]; values: (number | null)[] }
+  | { kind: "parts"; categories: string[]; values: (number | null)[]; keys?: string[] }
   // Line, area and bars: one or more series over the categories
   | { kind: "series"; categories: string[]; series: ChartSeries[] }
   // Tree map: groups and the items in them

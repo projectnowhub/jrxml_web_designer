@@ -416,8 +416,10 @@ import {
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { exchangeCode, fetchUser, loginErrorQuery } from "../services/authService";
+import { useAuthStore } from "../stores/auth";
 import { closeTab } from "../utils/closeTab";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../services/apiClient";
+import { useUserSettingsStore } from "../stores/userSettings";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -483,7 +485,9 @@ onMounted(async () => {
     status.value = "Loading your workspace";
     localStorage.setItem(AUTH_TOKEN_KEY, token);
     const user = await fetchUser();
-    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user ?? {}));
+    useAuthStore().setUser(user);
+    // The user's default settings (Default Settings, Snap & grid)
+    await useUserSettingsStore().syncFromServer();
 
     window.history.replaceState({}, "", "/");
     await router.replace("/");

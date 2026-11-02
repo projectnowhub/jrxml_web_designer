@@ -1,3 +1,84 @@
+<template>
+  <div :class="messageClass">
+    <!-- Loading indicator -->
+    <div v-if="message.isLoading" class="loading-indicator">
+      <div class="spinner"></div>
+      <span>{{ message.content }}</span>
+    </div>
+
+    <!-- Message content -->
+    <div v-else class="message-content">
+      <!-- Header -->
+      <div class="message-header">
+        <component :is="roleIcon" class="role-icon" :size="16" />
+        <span class="role-name">{{ message.role === 'user' ? t('ai.message.you') : t('ai.title') }}</span>
+        <span class="timestamp">{{ formattedTime }}</span>
+        <button
+          v-if="isLong"
+          class="copy-btn"
+          @click="reader = { kind: 'text' }"
+          :title="t('ai.message.openLarge')"
+        >
+          <Maximize2 :size="14" />
+        </button>
+        <button
+          v-if="(message.role === 'assistant' || message.role === 'user') && message.content"
+          class="copy-btn"
+          @click="copyMessage"
+          :title="copied ? t('ai.message.copied') : t('ai.message.copy')"
+        >
+          <Copy v-if="!copied" :size="14" />
+          <Check v-else :size="14" />
+        </button>
+      </div>
+
+      <!-- Attached pictures and files -->
+      <div v-if="message.attachments?.length" class="message-attachments">
+        <button
+          v-for="a in pictures"
+          :key="a.id"
+          type="button"
+          class="message-picture"
+          :title="t('ai.message.openPicture', { name: a.name })"
+          @click="reader = { kind: 'image', attachment: a }"
+        >
+          <img :src="a.previewUrl" :alt="a.name" />
+        </button>
+        <span v-for="a in files" :key="a.id" class="message-file" :title="a.name">
+          <component :is="a.kind === 'pdf' ? FileIcon : FileText" :size="14" />
+          {{ a.name }}
+        </span>
+      </div>
+
+      <!-- Message body: a long one scrolls in place until "Show all" -->
+      <div v-if="message.content" :class="['message-body', { 'is-long': isLong && !showAll }]">{{ message.content }}</div>
+      <button v-if="isLong" type="button" class="show-all" @click="showAll = !showAll">
+        {{ showAll ? t('ai.message.showLess') : t('ai.message.showAll') }}
+      </button>
+
+      <!-- Tool call display -->
+      <ToolCallDisplay
+        v-if="message.toolCall"
+        :tool-call="message.toolCall"
+        :tool-result="message.toolResult"
+      />
+    </div>
+
+    <!-- The large reader -->
+    <BaseModal
+      :visible="!!reader"
+      :title="reader?.kind === 'image' ? reader.attachment.name : t('ai.message.readerTitle')"
+      :show-footer="false"
+      :content-style="{ width: 'min(960px, 94vw)', maxWidth: '94vw' }"
+      :body-style="{ maxHeight: '78vh', overflow: 'auto' }"
+      @update:visible="(open: boolean) => { if (!open) reader = null; }"
+    >
+      <img v-if="reader?.kind === 'image'" :src="reader.attachment.previewUrl" :alt="reader.attachment.name" class="reader-picture" />
+      <div v-else class="reader-text">{{ message.content }}</div>
+    </BaseModal>
+  </div>
+</template>
+
 <script setup lang="ts">
 import {
   Bot,
@@ -83,87 +164,6 @@ async function copyMessage() {
   }
 }
 </script>
-
-<template>
-  <div :class="messageClass">
-    <!-- Loading indicator -->
-    <div v-if="message.isLoading" class="loading-indicator">
-      <div class="spinner"></div>
-      <span>{{ message.content }}</span>
-    </div>
-
-    <!-- Message content -->
-    <div v-else class="message-content">
-      <!-- Header -->
-      <div class="message-header">
-        <component :is="roleIcon" class="role-icon" :size="16" />
-        <span class="role-name">{{ message.role === 'user' ? t('ai.message.you') : t('ai.title') }}</span>
-        <span class="timestamp">{{ formattedTime }}</span>
-        <button
-          v-if="isLong"
-          class="copy-btn"
-          @click="reader = { kind: 'text' }"
-          :title="t('ai.message.openLarge')"
-        >
-          <Maximize2 :size="14" />
-        </button>
-        <button
-          v-if="(message.role === 'assistant' || message.role === 'user') && message.content"
-          class="copy-btn"
-          @click="copyMessage"
-          :title="copied ? t('ai.message.copied') : t('ai.message.copy')"
-        >
-          <Copy v-if="!copied" :size="14" />
-          <Check v-else :size="14" />
-        </button>
-      </div>
-
-      <!-- Attached pictures and files -->
-      <div v-if="message.attachments?.length" class="message-attachments">
-        <button
-          v-for="a in pictures"
-          :key="a.id"
-          type="button"
-          class="message-picture"
-          :title="t('ai.message.openPicture', { name: a.name })"
-          @click="reader = { kind: 'image', attachment: a }"
-        >
-          <img :src="a.previewUrl" :alt="a.name" />
-        </button>
-        <span v-for="a in files" :key="a.id" class="message-file" :title="a.name">
-          <component :is="a.kind === 'pdf' ? FileIcon : FileText" :size="14" />
-          {{ a.name }}
-        </span>
-      </div>
-
-      <!-- Message body: a long one scrolls in place until "Show all" -->
-      <div v-if="message.content" :class="['message-body', { 'is-long': isLong && !showAll }]">{{ message.content }}</div>
-      <button v-if="isLong" type="button" class="show-all" @click="showAll = !showAll">
-        {{ showAll ? t('ai.message.showLess') : t('ai.message.showAll') }}
-      </button>
-
-      <!-- Tool call display -->
-      <ToolCallDisplay
-        v-if="message.toolCall"
-        :tool-call="message.toolCall"
-        :tool-result="message.toolResult"
-      />
-    </div>
-
-    <!-- The large reader -->
-    <BaseModal
-      :visible="!!reader"
-      :title="reader?.kind === 'image' ? reader.attachment.name : t('ai.message.readerTitle')"
-      :show-footer="false"
-      :content-style="{ width: 'min(960px, 94vw)', maxWidth: '94vw' }"
-      :body-style="{ maxHeight: '78vh', overflow: 'auto' }"
-      @update:visible="(open: boolean) => { if (!open) reader = null; }"
-    >
-      <img v-if="reader?.kind === 'image'" :src="reader.attachment.previewUrl" :alt="reader.attachment.name" class="reader-picture" />
-      <div v-else class="reader-text">{{ message.content }}</div>
-    </BaseModal>
-  </div>
-</template>
 
 <style scoped>
 .chat-message {

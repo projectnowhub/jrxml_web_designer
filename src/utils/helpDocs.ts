@@ -15,6 +15,7 @@ import { buildReportPart } from "@/utils/reportParts";
 import { buildTablePreset } from "@/utils/tablePresets";
 import { buildPaginationElement, isPagination } from "@/utils/paginationPresets";
 import { buildDateElement, isDateElement } from "@/utils/dateElement";
+import { buildLocationElement, isLocationElement, isLocationPart } from "@/utils/location/locationElement";
 import { buildBarcodeElement } from "@/utils/barcode/barcodeTypes";
 import { buildChartElement } from "@/utils/chart/chartElement";
 import { buildCustomTable } from "@/utils/customTable";
@@ -48,21 +49,28 @@ export type SettingId =
   | "pnPages"
   | "pnYourPages"
   | "dateWhich"
+  | "projectValue"
   | "dateLook"
   | "dateBefore"
+  | "locationPlace"
+  | "locationMap"
+  | "locationLayout"
+  | "locationLines"
   | "chartType"
   | "chartData"
   | "chartTitle"
   | "chartColors"
+  | "chartOwnColors"
   | "barcodeType"
   | "barcodeValue"
   | "tableData"
   | "tableLook"
   | "tableRowSizes"
   | "tableCustomize"
+  | "tableCells"
+  | "tableHighlights"
   | "typedGrid"
   | "typedCells"
-  | "typedText"
   | "tocDesign"
   | "tocRowsFrom"
   | "tocRows"
@@ -95,7 +103,8 @@ export type DocPageId =
   | "presetTables"
   | "pageBorder"
   | "pageNumber"
-  | "date";
+  | "date"
+  | "location";
 
 export interface DocPage {
   id: DocPageId;
@@ -134,7 +143,7 @@ export const DOC_PAGES: DocPage[] = [
     id: "text",
     group: "basic",
     tile: "textField",
-    settings: ["positionSize", "textContent", "rotation", "textSettings", "outline", "sideBorders", "innerSpace", "background"],
+    settings: ["positionSize", "textContent", "projectValue", "rotation", "textSettings", "outline", "sideBorders", "innerSpace", "background"],
     guides: ["text"],
     sample: (ctx) => [sampleText(ctx.t("helpDocs.samples.text"))],
   },
@@ -203,11 +212,12 @@ export const DOC_PAGES: DocPage[] = [
       "positionSize",
       "tableData",
       "tableLook",
+      "tableCells",
+      "tableHighlights",
       "tableRowSizes",
       "tableCustomize",
       "typedGrid",
       "typedCells",
-      "typedText",
     ],
     guides: ["typedTable", "dataTable"],
     sample: (ctx) => [
@@ -226,7 +236,7 @@ export const DOC_PAGES: DocPage[] = [
     id: "chart",
     group: "basic",
     tile: "chart",
-    settings: ["positionSize", "chartType", "chartData", "chartTitle", "chartColors"],
+    settings: ["positionSize", "chartType", "chartData", "chartTitle", "chartColors", "chartOwnColors"],
     guides: ["chart"],
     sample: () => [{ ...buildChartElement(), uuid: crypto.randomUUID() } as DesignElement],
   },
@@ -288,7 +298,7 @@ export const DOC_PAGES: DocPage[] = [
     id: "presetTables",
     group: "presets",
     tile: "tableKeyValue",
-    settings: ["typedGrid", "typedCells", "typedText", "tableLook"],
+    settings: ["typedGrid", "typedCells", "tableLook", "tableCustomize"],
     guides: ["presetTables"],
     sample: (ctx) => [buildTablePreset("tableKeyValue", ctx)],
   },
@@ -316,6 +326,27 @@ export const DOC_PAGES: DocPage[] = [
     guides: ["date"],
     sample: () => [buildDateElement()],
   },
+  {
+    id: "location",
+    group: "composite",
+    tile: "location",
+    settings: ["locationPlace", "locationMap", "locationLayout", "locationLines", "boxStyle"],
+    guides: ["location"],
+    sample: () => [
+      buildLocationElement(
+        {
+          country: "Malaysia",
+          state: "Wilayah Persekutuan Kuala Lumpur",
+          city: "Kuala Lumpur",
+          postcode: "50470",
+          address: "Jalan Stesen Sentral 5, KL Sentral",
+          latitude: "3.134",
+          longitude: "101.6865",
+        },
+        { layout: "mapBeside" },
+      ),
+    ],
+  },
 ];
 
 export const docPageById = (id: DocPageId) => DOC_PAGES.find((page) => page.id === id)!;
@@ -324,6 +355,7 @@ export const docPageById = (id: DocPageId) => DOC_PAGES.find((page) => page.id =
 export function docPageFor(element: DesignElement, bandType: string | undefined, inBox: boolean): DocPageId {
   if (isPagination(element)) return "pageNumber";
   if (isDateElement(element)) return "date";
+  if (isLocationElement(element) || isLocationPart(element)) return "location";
   if (element.type === "frame" && bandType === "background" && !inBox) return "pageBorder";
   if (hasProperty(element, SECTION_HEADING_PROPERTY)) return "sectionHeading";
   if (hasProperty(element, SUB_HEADING_PROPERTY)) return "subHeading";

@@ -13,23 +13,6 @@ import { generateCustomTableXML } from "./jrxml/customTableXml";
 import { generateContentsListXML } from "./jrxml/contentsListXml";
 import { CONTENTS_STYLES_PROPERTY, headingItems, matchHeadings, numberStarts, serializeContentsStyles, type HeadingItem, type NumberStart } from "./contentsList";
 
-// Where each contents list's automatic numbers start (lists carrying one list
-// on keep counting); set for the report being written
-let contentsNumberStarts = new Map<string, NumberStart>();
-// The frame holding contents page n and the break before Detail page `page`:
-// the same id every time they are written (the parser keeps neither), so an
-// unchanged report gives the same JRXML
-const pageBreakUuid = (page: number) => `b0b0b0b0-0000-4000-8000-${page.toString(16).padStart(12, "0")}`;
-const contentsPageUuid = (n: number) => `c0c0c0c0-0000-4000-8000-${n.toString(16).padStart(12, "0")}`;
-// Headings' titles written as PDF bookmarks (utils/headingSync.ts), by uuid
-let bookmarks = new Map<string, { level: number; label: string }>();
-// Every heading with a bookmark, for the contents rows that jump to them
-let headingLinks: HeadingItem[] = [];
-
-// Per contents row: the bookmark of the heading with the same title and level
-// (the nth row with a title goes to the nth heading with it)
-const contentsLinks = (element: ContentsListElement): (string | undefined)[] =>
-  matchHeadings(element.list.entries, headingLinks).map((h) => h?.label);
 import {
   afterSpecialPages,
   CONTENTS_PAGE_PROPERTY,
@@ -44,6 +27,7 @@ import {
 import { reportElementProperties } from "./elementUtils";
 import { CHART_BINDING_PROPERTY, normalizeChartBinding } from "./chart/chartTypes";
 import { chartImageDataUri } from "./chart/chartImage";
+import { isLocationAddress } from "./location/locationElement";
 import { BARCODE_VALUES_PROPERTY, printedBarcodeText, serializeBarcodeValues } from "./barcode/barcodeTypes";
 import { barcodeSizing } from "./barcode/barcodeImage";
 import {
@@ -68,8 +52,28 @@ import {
   javaString,
   tableReportStyles,
 } from "./jrxml/tableXml";
+import { splitReferences } from "./jrxml/javaString";
+import { projectParameters } from "./projectValue";
 
 export type { ReportProperties, Field, Parameter } from "./jrxml/types";
+
+// Where each contents list's automatic numbers start (lists carrying one list
+// on keep counting); set for the report being written
+let contentsNumberStarts = new Map<string, NumberStart>();
+// The frame holding contents page n and the break before Detail page `page`:
+// the same id every time they are written (the parser keeps neither), so an
+// unchanged report gives the same JRXML
+const pageBreakUuid = (page: number) => `b0b0b0b0-0000-4000-8000-${page.toString(16).padStart(12, "0")}`;
+const contentsPageUuid = (n: number) => `c0c0c0c0-0000-4000-8000-${n.toString(16).padStart(12, "0")}`;
+// Headings' titles written as PDF bookmarks (utils/headingSync.ts), by uuid
+let bookmarks = new Map<string, { level: number; label: string }>();
+// Every heading with a bookmark, for the contents rows that jump to them
+let headingLinks: HeadingItem[] = [];
+
+// Per contents row: the bookmark of the heading with the same title and level
+// (the nth row with a title goes to the nth heading with it)
+const contentsLinks = (element: ContentsListElement): (string | undefined)[] =>
+  matchHeadings(element.list.entries, headingLinks).map((h) => h?.label);
 
 // Default font name
 const DEFAULT_FONT = DEFAULT_REPORT_FONT;
@@ -327,6 +331,14 @@ export function generateJRXMLContent(
         jrxml += "</parameter>";
       }
     });
+  }
+  // The template's project's details its linked texts show: one String
+  // parameter each, its default the value last read (utils/projectValue.ts)
+  for (const param of projectParameters(bands)) {
+    if (parameters.some((p) => p.name === param.name)) continue;
+    jrxml += `<parameter name="${xmlAttr(param.name)}" class="java.lang.String">`;
+    jrxml += `<defaultValueExpression>${cdata(param.value === null ? "null" : javaString(param.value))}</defaultValueExpression>`;
+    jrxml += "</parameter>";
   }
 
   // Add the main report's query statement
@@ -1097,7 +1109,8 @@ function generateTextFieldXML(element: any): string {
         ? "styled"
         : "none"
       : undefined);
-  if (!markup || markup === "none") {
+  // (Not a Location's address: it is always plain, "<b>" in it prints as typed)
+  if ((!markup || markup === "none") && !isLocationAddress(element)) {
     if (element.expression && /<(b|strong|i|em|u|s|strike|del|font|a|span|ul|ol|li|sup|sub)\b[^>]*>/i.test(element.expression)) {
       markup = "html";
     }
@@ -1147,7 +1160,8 @@ function generateTextFieldXML(element: any): string {
         .replace(/\\"/g, '"')
         .replace(/"/g, '\\"')
         .replace(/\r\n|\r|\n/g, '\\n');
-      cleanExpression = `"${escapedInner}"`;
+      // Typed "$F{…}" stays text (split, see jrxml/javaString.ts)
+      cleanExpression = `"${splitReferences(escapedInner)}"`;
     }
     xml += `<textFieldExpression>${cdata(cleanExpression)}</textFieldExpression>`;
   }

@@ -1,5 +1,15 @@
 # Report engine: generating reports from the JRXML alone
 
+> **What the designer sends now**: `generateForm` gets the `jrxml` and
+> `details` (details.json, `src/utils/reportDetails.ts`; also shown in the
+> dev-only "Details JSON" tab), with `parameters` `{}`, `dataSource` `[]` and
+> `subDataSources` `[{}]` sent empty. The report server is to read
+> details.json, fetch the project's values (linked details: String
+> parameters `cdp_project_*`, `cdp_location_*`, `cdp_udf_*`), every table's and
+> list's rows (by `datasetName`) and every chart's numbers itself, as planned
+> below. Until it does, data tables print "no rows" and linked details their
+> parameters' defaults.
+
 The designer sends the report server **only the JRXML**. Table rows and chart
 numbers are never sent: the server fetches them itself, using the setups the
 designer writes into the JRXML. To build exactly the same requests and the
@@ -46,7 +56,7 @@ The chart setup (`ChartBinding`, `src/types/dataSource.ts`), for example:
   "dimension": { "column": "order_date", "label": "Order Date", "type": "date", "granularity": "month" },
   "series": [ { "measure": { "aggregation": "sum", "column": "amount", "columnLabel": "Amount" } } ],
   "filters": [ { "column": "order_date", "operator": "between", "period": "thisYear" } ],
-  "limit": 10, "palette": "vivid", "showLegend": true
+  "palette": "vivid", "showLegend": true
 }
 ```
 
@@ -65,7 +75,16 @@ The chart setup (`ChartBinding`, `src/types/dataSource.ts`), for example:
 ```
 
 The table setup (`TableDataBinding`): project, source, columns, filters, one
-sort, row limit, `datasetName` (also the `<subDataset name>` its cells read).
+sort, `datasetName` (also the `<subDataset name>` its cells read). There is no
+row limit: a table prints every matching row. A column with `"linked": true` is
+a link to another record (an `ENTITY` field, e.g. a row's `contract`): the row
+holds that record as an object, and its cell must print the record's
+`_instanceName` (the designer shows the same), never the object itself.
+Text cells need nothing from the server beyond the raw values: their
+expressions print a yes / no field (a `Boolean`) as Yes / No, a choice field
+(`"choices"` on the column) as its words ("PENDING" → "Pending"), and other text
+without HTML tags (a line per paragraph). Dates print `dd MMM yyyy` in English;
+a Count total counts every row.
 A table with no data set up is written as an empty `<frame>` with an empty
 property value: skip it.
 
@@ -76,7 +95,9 @@ Filters are part of both setups and are never resolved in the JRXML:
 | Filter | Stored as | Meaning |
 |---|---|---|
 | Ticked values | `{ "column", "operator": "in", "values": ["Approved", "Pending"] }` | cell equals one of them (case-insensitive) |
-| Range | `{ "column", "operator": "between", "value": "2026-01-01", "value2": "2026-03-31" }` | value ≤ cell ≤ value2, either end optional |
+| Range | `{ "column", "operator": "between", "value": "2026-01-01", "value2": "2026-03-31" }` | value ≤ cell ≤ value2, either end optional (`>=` / `<=`, dates too, as the CDP app's `buildJmixFilter`) |
+| Typed words (version 2) | `{ "column", "operator": "contains", "value": "permit" }` | the text cell contains the words (any case); a Jmix `contains` condition, as the CDP app's text filters |
+| Yes / No (version 2) | `{ "column", "operator": "equals", "value": "true" }` | a yes / no field is true (`"false"`: false); a Jmix `=` condition with a boolean, as the CDP app's checkbox |
 | Moving date range | `{ "column", "operator": "between", "period": "thisMonth" }` | `thisMonth`, `lastMonth`, `thisQuarter`, `thisYear`, `last30Days`, worked out **on the day the report runs** |
 
 Don't interpret filters in Java: pass the setup and the run date to the
@@ -97,7 +118,7 @@ whenever the chart or table code changes. It defines one global,
 
 | Function | Arguments | Returns |
 |---|---|---|
-| `ENGINE_VERSION` | – | number (now `1`), bumped when a function's arguments or results change |
+| `ENGINE_VERSION` | – | number (now `11`: `tableQuery` returns `"null"` for a project list table (`"list"`: manager, team, companies or contracts; its rows are the project record's own list, not a backend table); `10`: choice values get the CDP dashboards' colours (`choices[].color`) and date buckets read "Apr 1, 2024", as the CDP app; `9`: every category is shown (no "largest N" / "Other", as the CDP app); `8`: every date on the axis is labelled (slanted when needed) and split lines / bars keep the backend's order, as the CDP app; `7`: charts are drawn like the CDP app's: one colour per series, smooth lines, the description (`note`) under the title; `6`: a chart may carry `colors` (a colour of its own per value) and a `note` printed under it; `5`: a chart grouping may carry `choices` and `yesNo`, so its categories print "Pending" / "Yes" and choice fields keep their own order on bar, line and area charts; `4`: a date range's end was briefly sent as `<` the next day, back to `<=` in 5; `3`: no row limit, columns may be `linked`; `2`: filters may be `contains` or `equals`), bumped when a function's arguments or results change |
 | `LOCALES` | – | languages charts can print in: `["en", "ms"]` |
 | `chartRequests(bindingJson, todayIso)` | chart setup JSON; run date `"2026-11-15"` | JSON array of `AggregateRequest`s; `"[]"` when the chart isn't set up (it prints nothing) |
 | `chartSvg(bindingJson, resultsJson, width, height, locale, fontName?)` | setup; JSON array of the `AggregateResult`s, **in the same order as the requests**; the image's width and height from `<reportElement>`; `"en"` / `"ms"`; font (default Noto Sans SC) | SVG text; `""` when the chart isn't set up |
