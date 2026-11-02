@@ -19,6 +19,9 @@ import { javaString } from "../jrxml/javaString";
 
 export const TABLE_HEADER_HEIGHT = 24;
 export const TABLE_ROW_HEIGHT = 20;
+// The heading's and the rows' height, as the Row sizes card allows
+export const MIN_TABLE_ROW_SIZE = 12;
+export const MAX_TABLE_ROW_SIZE = 80;
 // Rows of a table with a barcode column are at least this tall
 export const TABLE_BARCODE_ROW_HEIGHT = 36;
 // Rows drawn on the canvas; the report itself prints every row
@@ -295,6 +298,29 @@ export function computeTotal(
   if (!numbers.length) return null;
   const sum = numbers.reduce((a, b) => a + b, 0);
   return column.total === "sum" ? sum : sum / numbers.length;
+}
+
+export interface TableRowSizes {
+  headerHeight: number;
+  rowHeight: number;
+  height: number;
+}
+
+// A project-data table dragged taller or shorter: the heading and the rows
+// grow or shrink together in proportion (within the row sizes allowed), the
+// table keeping its number of sample rows. `start` is the table as the drag
+// began; the height returned is what those rows add up to.
+export function scaleTableRows(start: TableElement, height: number): TableRowSizes {
+  const header = start.headerHeight ?? TABLE_HEADER_HEIGHT;
+  const row = start.rowHeight ?? TABLE_ROW_HEIGHT;
+  const slots = rowSlots(start);
+  const totals = hasTotalsRow(start.binding) ? 1 : 0;
+  const factor = height / Math.max(1, start.height);
+  const clamp = (value: number) =>
+    Math.round(Math.min(MAX_TABLE_ROW_SIZE, Math.max(MIN_TABLE_ROW_SIZE, value)));
+  const headerHeight = clamp(header * factor);
+  const rowHeight = clamp(row * factor);
+  return { headerHeight, rowHeight, height: headerHeight + (slots + totals) * rowHeight };
 }
 
 // Height after a resize: whole sample rows (1 to CANVAS_SAMPLE_ROWS)

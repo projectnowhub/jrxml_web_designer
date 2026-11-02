@@ -155,6 +155,8 @@ import { tableColumnBarcode } from "@/utils/barcode/barcodeTypes";
 import { useTableRows, useTableTotals } from "@/composables/useTableRows";
 import {
   CANVAS_SAMPLE_ROWS,
+  MAX_TABLE_ROW_SIZE,
+  MIN_TABLE_ROW_SIZE,
   PLACEHOLDER_COLUMN_COUNT,
   TABLE_HEADER_HEIGHT,
   TABLE_ROW_HEIGHT,
@@ -312,9 +314,6 @@ function chooseColumn(key: string, part: "header" | "data" | "total" = "data") {
 // ---- Dragging column and row lines ---------------------------------------------
 
 const report = useReportStore();
-// The same limits as the heading / row height fields in Basic Settings
-const MIN_ROW_SIZE = 12;
-const MAX_ROW_SIZE = 80;
 
 // Where the lines between columns are (px from the table's left)
 const columnEdges = computed(() => {
@@ -385,7 +384,7 @@ function startRowDrag(event: MouseEvent, index: number) {
   const startRow = rowHeight.value;
   track((e) => {
     const delta = (e.clientY - startY) / zoom;
-    const clamp = (value: number) => Math.round(Math.min(MAX_ROW_SIZE, Math.max(MIN_ROW_SIZE, value)));
+    const clamp = (value: number) => Math.round(Math.min(MAX_TABLE_ROW_SIZE, Math.max(MIN_TABLE_ROW_SIZE, value)));
     if (index < 0) table.headerHeight = clamp(startHeader + delta);
     else table.rowHeight = clamp(startRow + delta / (index + 1));
     const header = table.headerHeight ?? TABLE_HEADER_HEIGHT;

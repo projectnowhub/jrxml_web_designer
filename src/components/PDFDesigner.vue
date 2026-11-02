@@ -744,6 +744,7 @@ import type {
   ReportParameter,
   ReportVariable,
   TableElement,
+  TextFieldElement,
 } from "../types";
 import type {
   ChartBinding,
@@ -782,6 +783,7 @@ import {
   TABLE_ROW_HEIGHT,
   evenColumnWidths,
   scaleColumnWidths,
+  scaleTableRows,
   snapTableHeight,
   tableHeight,
   toColumnBinding,
@@ -951,11 +953,13 @@ import {
 } from "../utils/paginationPresets";
 import { buildDateElement, DATE_ELEMENT_TYPE, isDateElement } from "../utils/dateElement";
 import { isProjectValue } from "../utils/projectValue";
+import { canvasShowsHtml, formatCanvasText } from "../utils/canvasText";
 import { ensureTemplateProject } from "../utils/reportRun";
 import {
   buildLocationElement,
   getLocationSetup,
   setLocationSetup,
+  isLocationAddress,
   isLocationElement,
   isLocationPart,
   LOCATION_ELEMENT_TYPE,
@@ -7149,6 +7153,11 @@ const startResizingElement = (
         : null;
     const frameStartSize = { width: element.width, height: element.height };
     // A custom table's columns and rows keep their shares while it is resized
+    // A project-data table's heading and rows grow from their start sizes
+    const dataTableStart =
+      element.type === "table" && (element as TableElement).binding
+        ? ({ ...(element as TableElement) } as TableElement)
+        : null;
     const customTableStart =
       element.type === "customTable"
         ? {
@@ -7479,7 +7488,14 @@ const startResizingElement = (
         const table = element as TableElement;
         const minWidth = (table.binding?.columns.length ?? PLACEHOLDER_COLUMN_COUNT) * MIN_TABLE_COLUMN_WIDTH;
         const width = Math.max(tempWidth, minWidth);
-        const height = snapTableHeight(table, tempHeight);
+        // Taller or shorter makes the heading and every row taller or shorter
+        // (a project-data table is always exactly as tall as its rows)
+        const sizes = dataTableStart && dir !== "e" && dir !== "w" ? scaleTableRows(dataTableStart, tempHeight) : null;
+        if (sizes) {
+          table.headerHeight = sizes.headerHeight;
+          table.rowHeight = sizes.rowHeight;
+        }
+        const height = sizes ? sizes.height : snapTableHeight(table, tempHeight);
         if (table.binding) table.binding.columns = scaleColumnWidths(table.binding.columns, width);
         element.width = width;
         element.x = dir.includes("w") ? startElementX + startWidth - width : tempX;
@@ -7603,17 +7619,49 @@ const autoFitElementHeight = (
       ? box?.elements?.[elementIndex]
       : band.elements[elementIndex];
   if (!element || element.type !== "textField") return;
+  // A Location's address is sized by its layout (to its words already)
+  if (isLocationAddress(element)) return;
 
   const font = reportProperties.value?.defaultFont;
+  // Measure the words the canvas shows (a linked value, a date, a page number
+  // on the last page), not the expression; formatted text as its HTML
+  const numberPageCount = Math.max(
+    1,
+    totalPages.value - (reportStore.special.countPages ? 0 : reportStore.special.count),
+  );
+  const measured = {
+    ...(element as any),
+    ...(canvasShowsHtml(element as TextFieldElement)
+      ? {}
+      : {
+          shownText: formatCanvasText(element as TextFieldElement, {
+            numberPage: numberPageCount,
+            numberPageCount,
+          }),
+        }),
+  };
+  const sideways = (element as any).rotation === "Left" || (element as any).rotation === "Right";
+  if (sideways) {
+    // Sideways text runs along the height: the lines stack across the width
+    const across = calculateTextElementHeight({ ...measured, width: element.height }, font);
+    const containerWidth = box ? box.width : printableWidth.value;
+    const fitWidthSideways = Math.min(across, Math.max(10, containerWidth - element.x));
+    if (fitWidthSideways === element.width) return;
+    saveStateToHistory();
+    element.width = fitWidthSideways;
+    updateJRXML();
+    updateOutOfBoundsElements();
+    return;
+  }
   const { x, width } = planTextFit(
     element as TextFitElement,
     // 1px spare so rounding in the browser never wraps the last word
-    measureTextElementWidth(element as any, font) + 1,
+    measureTextElementWidth(measured, font) + 1,
     box ? box.width : printableWidth.value,
   );
   let fitX = x;
   let fitWidth = width;
-  let height = calculateTextElementHeight({ ...(element as any), width }, font);
+  let height = calculateTextElementHeight({ ...measured, width }, font);
 
   // Too tall for the room left (section, page or box): wider first, keeping the
   // alignment edge, up to the container's edge; the narrowest width that fits
@@ -7624,8 +7672,7 @@ const autoFitElementHeight = (
       ? bandAreaHeight(bandIndex, element.pageIndex)
       : getBandMaxHeight(bandIndex);
   const room = roomBottom - element.y;
-  const sideways = (element as any).rotation === "Left" || (element as any).rotation === "Right";
-  if (height > room && room > 0 && !sideways) {
+  if (height > room && room > 0) {
     const containerWidth = box ? box.width : printableWidth.value;
     const align = (element as any).textAlignment;
     const right = fitX + fitWidth;
@@ -7633,7 +7680,7 @@ const autoFitElementHeight = (
     const maxWidth = Math.floor(
       align === "Right" ? right : align === "Center" ? 2 * Math.min(centre, containerWidth - centre) : containerWidth - fitX,
     );
-    const heightAt = (w: number) => calculateTextElementHeight({ ...(element as any), width: w }, font);
+    const heightAt = (w: number) => calculateTextElementHeight({ ...measured, width: w }, font);
     if (maxWidth > fitWidth) {
       let low = fitWidth;
       let high = maxWidth;
