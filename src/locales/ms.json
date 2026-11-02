@@ -827,7 +827,6 @@
     "collapseSidebar": "Kuncupkan bar sisi",
     "searchTemplates": "Cari templat",
     "notifications": "Pemberitahuan",
-    "myProfile": "Profil saya",
     "signOut": "Log keluar",
     "templates": "Templat",
     "myTemplates": "Templat saya",
@@ -879,10 +878,7 @@
     "duplicateMessage": "Buat salinan \"{name}\"? Salinan itu ditambah ke templat anda."
   },
   "pages": {
-    "account": "Akaun",
     "workspace": "Ruang Kerja",
-    "myProfile": "Profil Saya",
-    "myProfileDescription": "Urus maklumat profil dan identiti ruang kerja anda.",
     "myTemplates": "Templat Saya",
     "myTemplatesDescription": "Lihat dan urus templat yang telah anda cipta atau simpan.",
     "activity": "Aktiviti",

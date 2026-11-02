@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from "vue-router";
 import {
   HomeView,
   LoginView,
-  MyProfileView,
   CallbackView,
   DesktopLoginView,
   MyTemplatesView,
@@ -24,11 +23,6 @@ const router = createRouter({
           path: "",
           name: "home",
           component: HomeView,
-        },
-        {
-          path: "myprofile",
-          name: "myprofile",
-          component: MyProfileView,
         },
         {
           path: "mytemplates",

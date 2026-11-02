@@ -226,7 +226,7 @@
           <span v-if="headerTier < 5">{{ t("actions.previewPDF") }}</span>
         </button>
 
-        <!-- 12. Account menu (language, profile, sign out) -->
+        <!-- 12. Account menu (language, sign out; the profile is edited in the CDP app) -->
         <AccountMenu />
       </div>
     </div>

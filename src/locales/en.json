@@ -827,7 +827,6 @@
     "collapseSidebar": "Collapse sidebar",
     "searchTemplates": "Search templates",
     "notifications": "Notifications",
-    "myProfile": "My profile",
     "signOut": "Sign out",
     "templates": "Templates",
     "myTemplates": "My templates",
@@ -879,10 +878,7 @@
     "duplicateMessage": "Make a copy of \"{name}\"? The copy is added to your templates."
   },
   "pages": {
-    "account": "Account",
     "workspace": "Workspace",
-    "myProfile": "My Profile",
-    "myProfileDescription": "Manage your profile information and workspace identity.",
     "myTemplates": "My Templates",
     "myTemplatesDescription": "View and manage the templates you have created or saved.",
     "activity": "Activity",

@@ -30,7 +30,7 @@ A browser-based visual designer for JasperReports JRXML templates. Users build a
 | `/callback` | `CallbackView` | Exchanges the code for a token; stored in localStorage (`AUTH_TOKEN_KEY`) |
 | `/desktop-login` | `DesktopLoginView` | Desktop (Tauri) sign-in: the browser hands the result back through a deep link (`App.vue`, `@tauri-apps/plugin-deep-link`) |
 | `/` | `AppLayout` → `HomeView` | Home: recent templates (sample data for now), create a template |
-| `/mytemplates`, `/activity`, `/myprofile` | placeholder views | Being built |
+| `/mytemplates`, `/activity` | placeholder views | Being built |
 | `/designer` | `PDFDesigner` | The editor |
 
 Every route except login, callback and desktop login needs a signed-in user (`router` guard, `utils/auth.ts`). `services/apiClient.ts` adds the token to requests and sends the user to login on a 401.

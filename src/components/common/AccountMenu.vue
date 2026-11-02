@@ -27,15 +27,6 @@
         </div>
       </div>
       <div class="account-popover-divider" />
-      <button
-        class="account-action"
-        type="button"
-        role="menuitem"
-        @click="goToMyProfile"
-      >
-        <UserRound :size="17" :stroke-width="2.25" aria-hidden="true" />
-        <span>{{ t("layout.myProfile") }}</span>
-      </button>
       <div class="account-language">
         <Languages :size="17" :stroke-width="2.25" aria-hidden="true" />
         <span>{{ t("language.label") }}</span>
@@ -57,16 +48,14 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { Languages, LogOut, UserRound } from "@lucide/vue";
+import { Languages, LogOut } from "@lucide/vue";
 import { useAuthStore } from "../../stores/auth";
 import { useFileUrl } from "../../queries/fileQueries";
 import { logout } from "../../services/authService";
 import LanguageSwitcher from "./LanguageSwitcher.vue";
 
 const { t } = useI18n();
-const router = useRouter();
 
 const isOpen = ref(false);
 const menuRef = ref<HTMLElement | null>(null);
@@ -77,11 +66,6 @@ const userName = computed(() => auth.fullName);
 // The picture, as the CDP app's header; the letters while there is none
 const avatarUrl = useFileUrl(() => auth.avatar);
 const userInitial = computed(() => auth.initials || t("home.defaultUserName").charAt(0).toUpperCase());
-
-function goToMyProfile() {
-  isOpen.value = false;
-  router.push("/myprofile");
-}
 
 function signOut() {
   isOpen.value = false;
