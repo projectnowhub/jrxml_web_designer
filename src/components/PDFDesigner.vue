@@ -3295,6 +3295,19 @@ const handleDrop = (event: DragEvent, pageIndex?: number, place?: { type: string
         const size = projectFieldSize(field);
         newElement.width = Math.min(size.width, Math.round(printableWidth.value));
         newElement.height = size.height;
+        // Already fitted to the words it shows (as Fit to text would), so it
+        // arrives with no Fit badge: a short value gets the width of its words,
+        // a long text keeps its width and gets the height it needs
+        if (newElement.type === "textField") {
+          const font = reportProperties.value?.defaultFont;
+          const measured = { ...(newElement as any), shownText: formatCanvasText(newElement as TextFieldElement) };
+          if (field.type !== "longText") {
+            // 1px spare so rounding in the browser never wraps the last word
+            const natural = measureTextElementWidth(measured, font) + 1;
+            newElement.width = Math.round(Math.min(Math.max(natural, 40), printableWidth.value));
+          }
+          newElement.height = calculateTextElementHeight({ ...measured, width: newElement.width }, font);
+        }
         newElement.x = Math.round(Math.max(0, scaledX - newElement.width / 2));
         newElement.y = Math.round(Math.max(0, scaledY - newElement.height / 2));
       }
