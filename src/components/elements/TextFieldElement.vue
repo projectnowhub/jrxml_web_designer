@@ -87,7 +87,7 @@
       :style="overflowBadgeStyle"
       :title="t('textField.overflowTitle')"
       @click.stop="handleAutoFit"
-      @mousedown.stop
+      @mousedown.stop.prevent
     >
       <TriangleAlert class="overflow-badge-icon" :size="11" :stroke-width="2.5" />
       <span v-if="!compactOverflowBadge" class="overflow-badge-text">{{ t("textField.fit") }}</span>
@@ -224,6 +224,8 @@ const { t } = useI18n();
 // Only text goes into a text: pasted or dropped pictures are left out
 function onPaste(event: ClipboardEvent) {
   if (!pasteTextOnly(event)) notification.info(t("textField.textOnly"));
+  // A long paste may no longer fit: the Fit badge shows
+  nextTick(() => checkOverflow());
 }
 function onDrop(event: DragEvent) {
   if (!refuseFileDrop(event)) notification.info(t("textField.textOnly"));
@@ -451,9 +453,10 @@ const isSelected = computed(() => {
 });
 
 // Show overflow badge only when element is selected and content is clipped
-// (not on a Location's address: its layout sizes it to its words)
+// (also while typing, e.g. after pasting a long text; not on a Location's
+// address: its layout sizes it to its words)
 const showOverflowBadge = computed(() => {
-  return isSelected.value && isOverflowing.value && !isEditing.value && !isAddress.value;
+  return isSelected.value && isOverflowing.value && !isAddress.value;
 });
 
 // The badge keeps the same small size on screen at any zoom (the canvas is
@@ -474,7 +477,14 @@ const compactOverflowBadge = computed(
 
 // Check if content overflows current element height (taking margins & borders into account)
 const checkOverflow = () => {
-  if (contentContainer.value && !isEditing.value) {
+  // While typing: the edit box scrolls instead of growing, so its words don't fit
+  // when they are taller than the box
+  if (isEditing.value) {
+    const box = editInput.value;
+    isOverflowing.value = !!box && box.scrollHeight > box.clientHeight + 1;
+    return;
+  }
+  if (contentContainer.value) {
     const insets = getElementBoxInsets(props.element.box);
     const contentHeight = Math.ceil(contentContainer.value.scrollHeight);
     // Sideways text runs along the height: its lines stack across the width
@@ -923,6 +933,7 @@ watch(
       nextTick(() => {
         if (editInput.value) {
           editInput.value.innerHTML = initialHtml;
+          checkOverflow();
 
           if (pendingEditLink.value) {
             const { url: pUrl, label: pLabel, center: pCenter, top: pTop } = pendingEditLink.value;
@@ -1532,6 +1543,12 @@ const handleBlur = (e: FocusEvent) => {
 // Fit the box to the text: the designer sizes it (it knows the band or box
 // around it, and records the undo step)
 const handleAutoFit = () => {
+  // While typing: keep what was typed first, then fit to it
+  if (isEditing.value) {
+    handleFinishEditing();
+    nextTick(() => emit('autoFitHeight', props.bandIndex, props.elementIndex, props.parentFrameIndex));
+    return;
+  }
   emit('autoFitHeight', props.bandIndex, props.elementIndex, props.parentFrameIndex);
   nextTick(() => {
     checkOverflow();
