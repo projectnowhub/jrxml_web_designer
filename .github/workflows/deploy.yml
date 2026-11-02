@@ -83,6 +83,7 @@ jobs:
             ${{ needs.setup.outputs.registry }}/projectnowcdp-report-studio:${{ needs.setup.outputs.overlay }}-latest
           build-args: |
             VITE_APP_VERSION=${{ needs.setup.outputs.image_tag }}
+            VITE_APP_ENV=${{ needs.setup.outputs.environment }}
             VITE_OAUTH_CLIENT_ID=${{ needs.setup.outputs.environment == 'dev' && secrets.VITE_OAUTH_CLIENT_ID_DEV || needs.setup.outputs.environment == 'staging' && secrets.VITE_OAUTH_CLIENT_ID_STAGING || secrets.VITE_OAUTH_CLIENT_ID }}
             VITE_API_BASE_URL=${{ needs.setup.outputs.environment == 'dev' && secrets.VITE_API_BASE_URL_DEV || needs.setup.outputs.environment == 'staging' && secrets.VITE_API_BASE_URL_STAGING || secrets.VITE_API_BASE_URL }}
           cache-from: type=gha
