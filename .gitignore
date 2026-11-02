@@ -42,3 +42,5 @@ QUICKSTART.md
 README-AI-CHAT.md
 docs/ai-configuration.md
 docs/mcp-interface.md
+# Claude Code personal settings
+.claude/settings.local.json
