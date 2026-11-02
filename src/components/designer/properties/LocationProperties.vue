@@ -6,7 +6,15 @@
     <section class="card">
       <h5 class="step"><span class="step-no" aria-hidden="true">1</span>{{ t("location.panel.placeTitle") }}<SettingHelpButton id="locationPlace" /></h5>
       <SettingHelpText id="locationPlace" />
-      <label v-if="projectPlaces.length" class="copy-row">
+      <!-- The template's project's place, following it (Report Data's "Map and address") -->
+      <label v-if="templateProject" class="follow-row">
+        <input type="checkbox" :checked="!!setup.fromProject" @change="setFollow(($event.target as HTMLInputElement).checked)" />
+        <span>
+          <strong>{{ t("location.panel.followProject", { project: templateProject.name }) }}</strong>
+          <span class="follow-hint">{{ t(setup.fromProject ? "location.panel.followOn" : "location.panel.followOff") }}</span>
+        </span>
+      </label>
+      <label v-if="projectPlaces.length && !setup.fromProject" class="copy-row">
         <span class="field-label is-first">{{ t("location.panel.copyFrom") }}</span>
         <!-- Shows where the place came from: the project it matches, or the
              user's own place once it was typed in or the pin moved -->
@@ -261,7 +269,8 @@ function typeField(field: PlaceField, value: string) {
     report.saveStateToHistory();
     typing.value = field;
   }
-  updateLocation(props.box, { [field]: value }, font());
+  // A typed place is the user's own: it no longer follows the project
+  updateLocation(props.box, { [field]: value, fromProject: false }, font());
   report.updateJrxml();
 }
 
@@ -273,7 +282,7 @@ function typePoint(field: "latitude" | "longitude", value: string) {
     report.saveStateToHistory();
     typing.value = field;
   }
-  updateLocation(props.box, both, font());
+  updateLocation(props.box, { ...both, fromProject: false }, font());
   report.updateJrxml();
 }
 
@@ -288,7 +297,7 @@ async function fillAddress() {
   fillFailed.value = false;
   try {
     const found = await reverseGeocode(at.latitude, at.longitude);
-    update(Object.fromEntries(Object.entries(found).filter(([, v]) => v)));
+    update({ ...Object.fromEntries(Object.entries(found).filter(([, v]) => v)), fromProject: false });
   } catch (error) {
     console.error("Reverse geocoding failed:", error);
     fillFailed.value = true;
@@ -298,7 +307,7 @@ async function fillAddress() {
 }
 
 const movePin = (p: { latitude: number; longitude: number }, zoom?: number) =>
-  update({ latitude: formatCoordinate(p.latitude), longitude: formatCoordinate(p.longitude), ...(zoom ? { zoom } : {}) });
+  update({ latitude: formatCoordinate(p.latitude), longitude: formatCoordinate(p.longitude), ...(zoom ? { zoom } : {}), fromProject: false });
 const setZoom = (zoom: number) => update({ zoom });
 
 // The map part's proportions, so the panel's map shows what prints
@@ -412,9 +421,19 @@ const placeSource = computed(() => {
   return projectPlaces.value.find((p) => samePlace(p.place, current))?.id ?? OWN_PLACE;
 });
 
+// The template's project (its place can be followed)
+const templateProject = computed(() => report.reportProperties.projects?.[0] ?? null);
+
+// Follow the template's project's place (its place now), or keep it as typed (one undo step)
+function setFollow(on: boolean) {
+  const own = projectPlaces.value.find((p) => p.id === templateProject.value?.id);
+  update(on ? { ...(own?.place ?? {}), fromProject: true } : { fromProject: false });
+}
+
 function copyFrom(select: HTMLSelectElement) {
   const project = projectPlaces.value.find((p) => p.id === select.value);
-  if (project) update(project.place);
+  // The template's own project: followed from now on; another one: a copy
+  if (project) update({ ...project.place, fromProject: project.id === templateProject.value?.id });
   // The list shows the place's source again (the copied project)
   select.value = placeSource.value;
 }
@@ -468,6 +487,29 @@ function copyFrom(select: HTMLSelectElement) {
 
 .field-label.is-first {
   margin-top: 0;
+}
+
+.follow-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f5f3ff;
+  cursor: pointer;
+}
+
+.follow-row input {
+  margin-top: 2px;
+  accent-color: var(--prop-primary-color, #6440f4);
+}
+
+.follow-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--prop-text-secondary);
 }
 
 .copy-row {

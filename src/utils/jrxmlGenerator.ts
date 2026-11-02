@@ -53,6 +53,7 @@ import {
   tableReportStyles,
 } from "./jrxml/tableXml";
 import { splitReferences } from "./jrxml/javaString";
+import { projectParameters } from "./projectValue";
 
 export type { ReportProperties, Field, Parameter } from "./jrxml/types";
 
@@ -330,6 +331,14 @@ export function generateJRXMLContent(
         jrxml += "</parameter>";
       }
     });
+  }
+  // The template's project's details its linked texts show: one String
+  // parameter each, its default the value last read (utils/projectValue.ts)
+  for (const param of projectParameters(bands)) {
+    if (parameters.some((p) => p.name === param.name)) continue;
+    jrxml += `<parameter name="${xmlAttr(param.name)}" class="java.lang.String">`;
+    jrxml += `<defaultValueExpression>${cdata(param.value === null ? "null" : javaString(param.value))}</defaultValueExpression>`;
+    jrxml += "</parameter>";
   }
 
   // Add the main report's query statement

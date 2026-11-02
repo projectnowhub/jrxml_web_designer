@@ -57,7 +57,7 @@
 
       <div v-for="project in [activeProject]" :key="project.id" class="rdp-project-body">
         <div v-if="failed[project.id]" class="rdp-message is-error">
-          {{ t("reportData.loadFailed") }}
+          {{ failureText(project, failed[project.id]!) }}
           <button type="button" class="rdp-link" @click="retryProject(project.id)">{{ t("reportData.retry") }}</button>
         </div>
         <div v-else-if="!details[project.id]" class="rdp-message">{{ t("dataTable.loading") }}</div>
@@ -112,29 +112,7 @@
             </ul>
           </template>
 
-          <!-- Project manager: all details as one table, or one of them as text -->
-          <template v-if="managerRows(project.id).length">
-            <div class="rdp-group">{{ t("reportData.projectTables.manager") }}</div>
-            <ul class="rdp-list">
-              <li
-                v-for="row in managerRows(project.id)"
-                :key="row.key"
-                class="rdp-item"
-                :class="{ 'is-location': !!row.table }"
-                draggable="true"
-                :title="t(row.table ? 'reportData.dragCard' : 'reportData.dragDetail')"
-                @dragstart="dragManagerRow($event, project, row)"
-                @dragend="endDataSourceDrag"
-              >
-                <component :is="row.table ? Table2 : Type" :size="12" class="rdp-type" aria-hidden="true" />
-                <span class="rdp-name">{{ row.label }}</span>
-                <span class="rdp-value" :title="row.shown">{{ row.shown }}</span>
-                <GripVertical :size="12" class="rdp-grip" aria-hidden="true" />
-              </li>
-            </ul>
-          </template>
-
-          <!-- The project's lists (team, companies, contracts): each a typed table -->
+          <!-- The project's lists (manager, team, companies, contracts): each a table of its rows -->
           <template v-if="listTables(project.id).length">
             <div class="rdp-group">{{ t("reportData.lists") }}</div>
             <ul class="rdp-list">
@@ -241,7 +219,7 @@
           </ul>
 
           <div
-            v-if="query.trim() && !visibleFields(project.id).length && !locationRows(project.id).length && !managerRows(project.id).length && !listTables(project.id).length && !moreDetailFields(project.id).length && !visibleSources(project.id).length"
+            v-if="query.trim() && !visibleFields(project.id).length && !locationRows(project.id).length && !listTables(project.id).length && !moreDetailFields(project.id).length && !visibleSources(project.id).length"
             class="rdp-message"
           >
             {{ t("reportData.noMatch") }}
@@ -342,15 +320,35 @@ const sources = computed(() => {
   props.projects.forEach((p) => (byId[p.id] = tables));
   return byId;
 });
-// A project that couldn't be read (or no longer exists)
+// Why a project's data can't be shown: the project isn't in the list the
+// backend gives (deleted, or this login can't see it), its request failed, or
+// the tables (entities) couldn't be read
+type ProjectFailure = "missing" | "project" | "tables";
 const failed = computed(() => {
-  const byId: Record<string, boolean> = {};
+  const byId: Record<string, ProjectFailure | undefined> = {};
   props.projects.forEach((p, i) => {
     const result = projectResults.value[i];
-    byId[p.id] =
-      !!result?.isError || entities.isError.value || (!!result?.isSuccess && result.data === null);
+    byId[p.id] = result?.isError
+      ? "project"
+      : result?.isSuccess && result.data === null
+        ? "missing"
+        : entities.isError.value
+          ? "tables"
+          : undefined;
   });
   return byId;
+});
+const failureText = (project: ReportProject, failure: ProjectFailure) =>
+  failure === "missing"
+    ? t("reportData.projectMissing", { project: project.name })
+    : failure === "tables"
+      ? t("reportData.tablesLoadFailed")
+      : t("reportData.loadFailed");
+// A project the list doesn't have: its id in the console, to compare with the list's answer
+watch(failed, (now) => {
+  for (const p of props.projects) {
+    if (now[p.id] === "missing") console.warn(`[Report Data] Project ${p.id} (${p.name}) is not in the projects list (cdp_Project)`);
+  }
 });
 
 function retryProject(id: string) {
@@ -488,32 +486,9 @@ function columnGroups(schema: DataSourceSchema | undefined) {
   ].filter((group) => group.columns.length);
 }
 
-// The project manager: all details (a card table) and each of them (text)
-interface ManagerRow {
-  key: string;
-  label: string;
-  shown: string;
-  table?: ProjectTable;
-  field?: ProjectField;
-}
-const managerRows = (projectId: string): ManagerRow[] => {
-  const card = details.value[projectId]?.tables?.find((table) => table.card);
-  if (!card?.rows.length) return [];
-  const rows: ManagerRow[] = [
-    { key: "manager", label: t("reportData.managerCard"), shown: card.rows[0]?.[1] ?? "", table: card },
-    ...card.rows.map(([label = "", value = ""], i) => ({
-      key: `manager.${i}`,
-      label,
-      shown: value,
-      field: { key: `manager.${i}`, label, type: "text" as const },
-    })),
-  ];
-  return rows.filter((row) => hasValue(row.shown) && (!query.value.trim() || matches(row.label) || matches(row.shown)));
-};
-
-// The project's lists (team, companies, contracts), empty ones too (a drop says so)
+// The project's lists (manager, team, companies, contracts), empty ones too
 const listTables = (projectId: string): ProjectTable[] =>
-  (details.value[projectId]?.tables ?? []).filter((table) => !table.card && (!query.value.trim() || matches(table.label)));
+  (details.value[projectId]?.tables ?? []).filter((table) => !query.value.trim() || matches(table.label));
 
 const moreDetailFields = (projectId: string): ProjectField[] =>
   (details.value[projectId]?.moreDetails ?? []).filter(
@@ -564,7 +539,7 @@ function dragField(event: DragEvent, project: ReportProject, field: ProjectField
   });
 }
 
-// A list (or the manager's card) becomes a typed table holding its rows
+// A list becomes a table of the project's rows
 function dragTable(event: DragEvent, project: ReportProject, table: ProjectTable) {
   startDataSourceDrag(event, {
     kind: "projectTable",
@@ -572,11 +547,6 @@ function dragTable(event: DragEvent, project: ReportProject, table: ProjectTable
     projectName: project.name,
     table: JSON.parse(JSON.stringify(table)) as ProjectTable,
   });
-}
-
-function dragManagerRow(event: DragEvent, project: ReportProject, row: ManagerRow) {
-  if (row.table) dragTable(event, project, row.table);
-  else if (row.field) dragField(event, project, row.field, row.shown);
 }
 
 function dragSource(event: DragEvent, project: ReportProject, source: DataSourceSummary) {

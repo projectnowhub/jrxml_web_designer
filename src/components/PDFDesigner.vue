@@ -760,10 +760,13 @@ import {
   canTakeProjectField,
   projectValueProblem,
   countProjectUsage,
+  moveReportToProject,
   projectFieldSize,
 } from "@/utils/projectFields";
-import { buildProjectTable } from "@/utils/projectTables";
-import { fetchProject, prefetchProjects } from "@/queries/projectQueries";
+import { buildProjectListTable } from "@/utils/projectTables";
+import { fetchProject, prefetchProjects, projectQuery } from "@/queries/projectQueries";
+import { isProjectListSource } from "@/queries/dataSourceQueries";
+import { useQueries } from "@tanstack/vue-query";
 import { forgetLastProject, lastProject, rememberLastProject } from "@/utils/lastProject";
 import {
   endDataSourceDrag,
@@ -946,8 +949,12 @@ import {
   type PaginationPosition,
 } from "../utils/paginationPresets";
 import { buildDateElement, DATE_ELEMENT_TYPE, isDateElement } from "../utils/dateElement";
+import { isProjectValue } from "../utils/projectValue";
+import { ensureTemplateProject } from "../utils/reportRun";
 import {
   buildLocationElement,
+  getLocationSetup,
+  setLocationSetup,
   isLocationElement,
   isLocationPart,
   LOCATION_ELEMENT_TYPE,
@@ -1994,23 +2001,25 @@ watch(headerFileName, () => nextTick(fitHeader));
 // so undo and saving cover them)
 const reportProjects = computed<ReportProject[]>(() => reportProperties.value?.projects ?? []);
 
-// A project still shown on the report can't be removed from the list (nor
-// replaced by another one: one project per template for now)
+// The template's project. A new one is the whole template's: its tables,
+// lists and charts read it from now on, and its linked details and places
+// follow it (one undo step). One project per template for now.
 const setReportProjects = (projects: ReportProject[]) => {
-  for (const removed of reportProjects.value.filter((p) => !projects.some((n) => n.id === p.id))) {
-    const usage = countProjectUsage(bands.value, removed.id);
+  // Cleared while tables or charts read it: they would have nothing to show
+  const current = reportProjects.value[0];
+  if (!projects.length && current) {
+    const usage = countProjectUsage(bands.value, current.id);
     if (usage > 0) {
-      const added = projects.find((n) => !reportProjects.value.some((p) => p.id === n.id));
-      notification.warning(
-        added
-          ? t("reportData.projectSwitchInUse", { project: removed.name, other: added.name, count: usage })
-          : t("reportData.projectInUse", { project: removed.name, count: usage }),
-      );
+      notification.warning(t("reportData.projectInUse", { project: current.name, count: usage }));
       return;
     }
   }
   saveStateToHistory();
   reportProperties.value = { ...reportProperties.value, projects };
+  const project = projects[0];
+  if (project && moveReportToProject(bands.value, project) > 0) {
+    notification.info(t("reportData.projectSwitched", { project: project.name }));
+  }
   updateJRXML();
   // New templates start with the project chosen last (utils/lastProject.ts)
   if (projects.length) rememberLastProject(projects[projects.length - 1]);
@@ -2635,6 +2644,10 @@ const handleDragStart = (event: DragEvent, element: any) => {
 };
 
 // Printable page area (inside the margins) and translator, used to size frame templates
+// A data table's (and a project list's) width: the printable width less 50px
+// on each side, centred
+const dataTableWidth = () => Math.max(100, Math.round(getFrameTemplateContext().availableWidth) - 100);
+
 const getFrameTemplateContext = (): FrameTemplateContext => ({
   availableWidth: Math.round(
     paperWidth.value -
@@ -2694,11 +2707,15 @@ const createLibraryElement = (type: string): DesignElement =>
       } as DesignElement);
 
 // A new Location (map and address), empty or with a project's place
-const buildLocation = (place?: Partial<Place>): DesignElement =>
-  buildLocationElement(place, {
+// A new Location; from Report Data, its place is the project's and follows it
+const buildLocation = (place?: Partial<Place>, fromProject = false): DesignElement => {
+  const box = buildLocationElement(place, {
     font: { fontFamily: reportProperties.value?.defaultFont?.name, fontSize: reportProperties.value?.defaultFont?.size },
     maxWidth: getFrameTemplateContext().availableWidth,
   });
+  if (fromProject) setLocationSetup(box, { ...getLocationSetup(box), fromProject: true });
+  return box;
+};
 
 // A new custom table: a dark header row and two empty rows, across most of the page
 const buildNewCustomTable = (): DesignElement => {
@@ -3089,7 +3106,7 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
     if (fillDroppedProjectValue(event, dataDrag)) return;
     // Elsewhere: a new Text element (or an Image for the logo, a Location for
     // the location) placed like a library element, holding the value
-    elementData = dataDrag.field.type === "location" ? { type: LOCATION_ELEMENT_TYPE, place: readPlace(dataDrag.value) } : {
+    elementData = dataDrag.field.type === "location" ? { type: LOCATION_ELEMENT_TYPE, place: readPlace(dataDrag.value), fromProject: true } : {
       type: dataDrag.field.type === "image" ? "image" : "textField",
       projectValue: {
         project: { id: dataDrag.projectId, name: dataDrag.projectName },
@@ -3101,13 +3118,11 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
     endDataSourceDrag();
     highlightedBandIndex.value = null;
     dropTargetBlocked.value = false;
-    // A list without rows has nothing to copy
-    if (!dataDrag.table.rows.length) {
-      notification.info(t("reportData.noValue", { project: dataDrag.projectName, label: dataDrag.table.label }));
-      return;
-    }
-    // A typed table holding the list, placed like a library table
-    elementData = { type: "customTable", projectTable: dataDrag.table };
+    // A list (manager, team, companies, contracts): a table of the project's
+    // rows (Detail only, like a data table) that follows the template's
+    // project; a list without rows here may have some for another
+    const project = { id: dataDrag.projectId, name: dataDrag.projectName };
+    elementData = { type: "table", projectTable: dataDrag.table, project };
   } else if (dataDrag) {
     endDataSourceDrag();
     highlightedBandIndex.value = null;
@@ -3189,9 +3204,12 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
     // Create the new element
     // Center it on the cursor using its own compact default size
     const baseElement = elementData.place
-      ? buildLocation(elementData.place)
+      ? buildLocation(elementData.place, elementData.fromProject)
       : elementData.projectTable
-      ? buildProjectTable(elementData.projectTable, getFrameTemplateContext().availableWidth)
+      ? buildProjectListTable(elementData.projectTable, dataTableWidth(), elementData.project, {
+          datasets: usedDatasetNames(bands.value),
+          names: usedTableNames(bands.value),
+        })
       : createLibraryElement(elementData.type);
     const droppedSize =
       isFrameTemplateType(elementData.type) ||
@@ -3227,8 +3245,7 @@ const handleDrop = (event: DragEvent, pageIndex?: number) => {
         return;
       }
       const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
-      const sideMargin = 50;
-      newElement.width = Math.max(100, availableWidth - sideMargin * 2);
+      newElement.width = dataTableWidth();
       newElement.x = Math.round((availableWidth - newElement.width) / 2);
     }
 
@@ -3504,10 +3521,11 @@ const fillDroppedLocation = (
     return;
   }
   saveStateToHistory();
+  // The whole place follows the project from now on; one field is typed in
   const patch =
     field.type === "location"
-      ? readPlace(drag.value)
-      : { [field.key.slice("location.".length) as PlaceField]: drag.value ?? "" };
+      ? { ...readPlace(drag.value), fromProject: true }
+      : { [field.key.slice("location.".length) as PlaceField]: drag.value ?? "", fromProject: false };
   updateLocation(box as FrameElement, patch, { fontFamily: reportProperties.value?.defaultFont?.name, fontSize: reportProperties.value?.defaultFont?.size });
   selectElement(boxLocation.bandIndex, boxLocation.elementIndex);
   updateJRXML();
@@ -3699,6 +3717,13 @@ const openTableConfig = (
     columnKey?: string;
   } = {},
 ) => {
+  // A project list's rows come from the project: nothing to set up (a source
+  // dropped on it still replaces its data)
+  const list = tableAt(target)?.binding?.list;
+  if (list && !options.sourceId) {
+    notification.info(t("projectList.noSetup", { list: t(`reportData.projectTables.${list}`) }));
+    return;
+  }
   tableConfig.value = {
     visible: true,
     target,
@@ -3730,6 +3755,8 @@ const applyTableConfig = (binding: TableDataBinding, rowCount: number) => {
   let table = tableAt(target);
   let location = target;
   if (!table && !newAt) return;
+  // A project list given a backend source is an ordinary data table from now on
+  if (binding.list && !isProjectListSource(binding.sourceId)) delete binding.list;
 
   saveStateToHistory();
 
@@ -3827,6 +3854,12 @@ const applyChartConfig = (binding: ChartBinding) => {
 
 // A chart's numbers arrived: its picture in the JRXML is redrawn
 watch(chartDataVersion, () => updateJRXML());
+// The template's project arrived (or changed): its linked details, lists and
+// place show its values (written with the JRXML, no undo step of its own)
+const templateProjectQueries = useQueries({
+  queries: computed(() => reportProjects.value.slice(0, 1).map((p) => projectQuery(p.id))),
+});
+watch(() => templateProjectQueries.value[0]?.data, () => updateJRXML());
 // Barcodes are sized once their drawing library is in
 watch(barcodeLibraryLoaded, () => updateJRXML());
 
@@ -4969,6 +5002,12 @@ const startEditing = (
     notification.info(t("dateElement.cannotType"));
     return;
   }
+  // A linked project detail shows the project's value (its properties can turn it into plain text)
+  if (isProjectValue(target)) {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    notification.info(t("projectValue.cannotType"));
+    return;
+  }
   cleanLegacyAutoDateElement(target);
 
   editingElement.value = { bandIndex, elementIndex, parentFrameIndex };
@@ -5033,7 +5072,7 @@ const initBox = (element: DesignElement) => {
 
 // Download the JRXML file (charts drawn with their numbers, barcodes sized, first)
 const downloadJRXML = async () => {
-  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps()]);
+  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureTemplateProject(reportProjects.value[0]?.id)]);
   const content = generateJRXMLContent(
     reportStore.propertiesForJrxml(),
     bands.value,
@@ -6030,7 +6069,7 @@ const openPdfPreview = async (): Promise<void> => {
   helpStore.noteGuideAction("preview");
   flushAutoSave();
   try {
-    await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps()]);
+    await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureTemplateProject(reportProjects.value[0]?.id)]);
     updateJRXML();
     if (!jrxmlContent.value) {
       // Generate the JRXML content directly, without downloading it

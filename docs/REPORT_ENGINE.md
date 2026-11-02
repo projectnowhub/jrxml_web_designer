@@ -1,5 +1,15 @@
 # Report engine: generating reports from the JRXML alone
 
+> **What the designer sends now**: `generateForm` gets the `jrxml` and
+> `details` (details.json, `src/utils/reportDetails.ts`; also shown in the
+> dev-only "Details JSON" tab), with `parameters` `{}`, `dataSource` `[]` and
+> `subDataSources` `[{}]` sent empty. The report server is to read
+> details.json, fetch the project's values (linked details: String
+> parameters `cdp_project_*`, `cdp_location_*`, `cdp_udf_*`), every table's and
+> list's rows (by `datasetName`) and every chart's numbers itself, as planned
+> below. Until it does, data tables print "no rows" and linked details their
+> parameters' defaults.
+
 The designer sends the report server **only the JRXML**. Table rows and chart
 numbers are never sent: the server fetches them itself, using the setups the
 designer writes into the JRXML. To build exactly the same requests and the
@@ -108,7 +118,7 @@ whenever the chart or table code changes. It defines one global,
 
 | Function | Arguments | Returns |
 |---|---|---|
-| `ENGINE_VERSION` | – | number (now `10`: choice values get the CDP dashboards' colours (`choices[].color`) and date buckets read "Apr 1, 2024", as the CDP app; `9`: every category is shown (no "largest N" / "Other", as the CDP app); `8`: every date on the axis is labelled (slanted when needed) and split lines / bars keep the backend's order, as the CDP app; `7`: charts are drawn like the CDP app's: one colour per series, smooth lines, the description (`note`) under the title; `6`: a chart may carry `colors` (a colour of its own per value) and a `note` printed under it; `5`: a chart grouping may carry `choices` and `yesNo`, so its categories print "Pending" / "Yes" and choice fields keep their own order on bar, line and area charts; `4`: a date range's end was briefly sent as `<` the next day, back to `<=` in 5; `3`: no row limit, columns may be `linked`; `2`: filters may be `contains` or `equals`), bumped when a function's arguments or results change |
+| `ENGINE_VERSION` | – | number (now `11`: `tableQuery` returns `"null"` for a project list table (`"list"`: manager, team, companies or contracts; its rows are the project record's own list, not a backend table); `10`: choice values get the CDP dashboards' colours (`choices[].color`) and date buckets read "Apr 1, 2024", as the CDP app; `9`: every category is shown (no "largest N" / "Other", as the CDP app); `8`: every date on the axis is labelled (slanted when needed) and split lines / bars keep the backend's order, as the CDP app; `7`: charts are drawn like the CDP app's: one colour per series, smooth lines, the description (`note`) under the title; `6`: a chart may carry `colors` (a colour of its own per value) and a `note` printed under it; `5`: a chart grouping may carry `choices` and `yesNo`, so its categories print "Pending" / "Yes" and choice fields keep their own order on bar, line and area charts; `4`: a date range's end was briefly sent as `<` the next day, back to `<=` in 5; `3`: no row limit, columns may be `linked`; `2`: filters may be `contains` or `equals`), bumped when a function's arguments or results change |
 | `LOCALES` | – | languages charts can print in: `["en", "ms"]` |
 | `chartRequests(bindingJson, todayIso)` | chart setup JSON; run date `"2026-11-15"` | JSON array of `AggregateRequest`s; `"[]"` when the chart isn't set up (it prints nothing) |
 | `chartSvg(bindingJson, resultsJson, width, height, locale, fontName?)` | setup; JSON array of the `AggregateResult`s, **in the same order as the requests**; the image's width and height from `<reportElement>`; `"en"` / `"ms"`; font (default Noto Sans SC) | SVG text; `""` when the chart isn't set up |

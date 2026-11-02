@@ -22,8 +22,10 @@ import { shiftPages, specialPageArea, specialPages } from "@/utils/specialPages"
 import { announceSectionFit, keepElementsInSections } from "@/utils/sectionFit";
 import { fitContentsPages, fitListDecorations, NEW_REPORT_HEADING_NUMBERING, syncHeadings } from "@/utils/headingSync";
 import { unwrapLegacyCoverFrames } from "@/utils/pageDesigns";
-import { syncLocations } from "@/utils/location/locationElement";
+import { syncLocations, syncProjectPlaces } from "@/utils/location/locationElement";
 import { syncTotals } from "@/utils/customTable";
+import { syncProjectValues } from "@/utils/projectValue";
+import { cachedProjectDetails } from "@/queries/projectQueries";
 import { loadReportDefaults } from "@/utils/reportDefaults";
 import { useEditorStore } from "./editor";
 import { useSelectionStore } from "./selection";
@@ -280,6 +282,10 @@ export const useReportStore = defineStore("report", () => {
       // Headings renumbered, contents lists that follow them rebuilt (part of
       // the change being written, so the same undo step)
       syncHeadings(bands.value, reportProperties.value);
+      // Linked details and places show the template's project's (as far as it is loaded)
+      const project = cachedProjectDetails(reportProperties.value.projects?.[0]?.id);
+      syncProjectValues(bands.value, project);
+      syncProjectPlaces(bands.value, project?.location, !!project);
       // Locations: their parts laid out, their address written from the setup
       syncLocations(bands.value, {
         fontFamily: reportProperties.value.defaultFont?.name,

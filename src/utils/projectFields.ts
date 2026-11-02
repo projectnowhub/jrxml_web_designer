@@ -1,8 +1,8 @@
-// Project details (Report Data) on the page. A detail dragged onto the page
-// becomes ordinary content: its value as plain text in a Text element (or as
-// a barcode's value when dropped on a barcode), or the logo as a fixed
-// picture in an Image element. Nothing stays linked to the
-// project; to show a newer value, the user drags the detail again.
+// Project details (Report Data) on the page. A text detail dragged onto the
+// page is a Text element linked to the template's project (utils/projectValue.ts):
+// it shows that project's value and follows it when the template's project
+// changes. Dropped on a barcode, the value is copied (a barcode holds a fixed
+// code its type must accept); the logo is copied as a fixed picture.
 //
 // The report's chosen projects are the `com.cdp.projects` report property.
 
@@ -12,6 +12,7 @@ import { setImageCrop, setImageName } from "./elementUtils";
 import { isPagination } from "./paginationPresets";
 import { isDateElement } from "./dateElement";
 import { isLocationElement, isLocationPart } from "./location/locationElement";
+import { isLinkableField, linkProjectValue } from "./projectValue";
 import type { ChartBinding, ProjectField, ReportProject, TableDataBinding } from "@/types/dataSource";
 
 export const REPORT_PROJECTS_PROPERTY = "com.cdp.projects";
@@ -53,6 +54,11 @@ export function applyProjectValue(
     // the generator reads this module and must not load the API client
     element.imageExpression = `"${value.replace(/"/g, "%22")}"`;
   } else if (element.type === "textField") {
+    if (isLinkableField(field)) {
+      // Linked: shows the project's value, follows the template's project
+      linkProjectValue(element, field, value);
+      return;
+    }
     // Stored like typed text (the generator escapes it), as plain text: not
     // HTML, so "<" and "&" print as written and line breaks are kept
     element.markup = "none";
@@ -91,6 +97,22 @@ export function countProjectUsage(bands: Band[], projectId: string): number {
     if ((element.type === "table" || element.type === "chart") && binding?.projectId === projectId) count++;
   }
   return count;
+}
+
+// The template moves to another project: every data table, project list and
+// chart reads that project from now on (linked texts and places follow it
+// through the sync). Returns how many were moved.
+export function moveReportToProject(bands: Band[], project: ReportProject): number {
+  let moved = 0;
+  for (const element of allElements(bands)) {
+    if (element.type !== "table" && element.type !== "chart") continue;
+    const binding = (element as { binding?: TableDataBinding | ChartBinding }).binding;
+    if (!binding?.projectId || binding.projectId === project.id) continue;
+    binding.projectId = project.id;
+    binding.projectName = project.name;
+    moved++;
+  }
+  return moved;
 }
 
 export function parseReportProjects(json: string | null | undefined): ReportProject[] {

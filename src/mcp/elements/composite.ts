@@ -80,6 +80,7 @@ import {
   TEXT_STYLE_PROPS,
   writeText,
 } from "./common";
+import { useReportStore } from "@/stores/report";
 import { SpecError, type ElementKind, type ElementSpec, type KindContext } from "./types";
 import i18n from "@/i18n";
 import {
@@ -305,9 +306,15 @@ async function applyLocation(box: FrameElement, spec: ElementSpec, ctx: KindCont
     const place = toPlace(details.location);
     if (!PLACE_FIELDS.some((f) => place[f])) throw new SpecError(`projectId: ${details.name} has no location`);
     Object.assign(patch, place);
+    // The template's own project: its place is followed from now on
+    patch.fromProject = String(spec.projectId) === useReportStore().reportProperties.projects?.[0]?.id;
   }
   for (const field of PLACE_FIELDS) {
-    if (has(spec, field)) patch[field] = String(spec[field]).trim();
+    if (has(spec, field)) {
+      patch[field] = String(spec[field]).trim();
+      // A place typed in is the Location's own
+      patch.fromProject = false;
+    }
   }
   for (const field of ["latitude", "longitude"] as const) {
     const problem = patch[field] !== undefined ? coordinateProblem(field, patch[field]!) : null;
@@ -330,7 +337,7 @@ export const locationKind: ElementKind = {
   kind: "location",
   tool: "create_location",
   description:
-    "Add a Location: a map of a place with a pin on it (OpenStreetMap, drawn by the designer) and the place's address. Give projectId to copy a project's location (get_report_data with projectId shows it), or the fields yourself; the map needs latitude and longitude. The box's height follows the layout and the address.",
+    "Add a Location: a map of a place with a pin on it (OpenStreetMap, drawn by the designer) and the place's address. Give projectId for a project's location (get_report_data with projectId shows it): the template's own project's place is followed (it changes with the template's project), another project's is copied. Or give the fields yourself; the map needs latitude and longitude. The box's height follows the layout and the address.",
   properties: {
     projectId: { type: "string", description: "Copy this project's location (country, state, city, postcode, address, latitude, longitude)" },
     country: { type: "string" },
@@ -371,6 +378,8 @@ export const locationKind: ElementKind = {
       zoom: s.zoom,
       layout: s.layout,
       addressShows: addressLines(s).join(" / ") || undefined,
+      // Its place is the template's project's, and changes with it
+      followsProject: s.fromProject || undefined,
       ...describeBoxLines(e),
     });
   },

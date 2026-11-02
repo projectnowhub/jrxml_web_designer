@@ -36,7 +36,7 @@ export interface ProjectDetails extends ProjectSummary {
   values: Record<string, string | null>;
   // Where the project is, as in the CDP project form (Location step)
   location?: ProjectLocation | null;
-  // The project's lists (team, companies, contracts) and its manager's card,
+  // The project's lists (manager, team, companies, contracts),
   // each dragged onto the page as a typed table holding the values
   tables?: ProjectTable[];
   // The values of the project's own fields (dynamic attributes), each dragged
@@ -44,16 +44,19 @@ export interface ProjectDetails extends ProjectSummary {
   moreDetails?: ProjectField[];
 }
 
-// A project list as a typed table: heading row + one row per item, or (a card)
-// a label and its value per row with no heading row
+// The project's lists Report Data offers (the record's projectManager as one
+// row, projectTeams, companies, contracts)
+export type ProjectListKey = "manager" | "team" | "companies" | "contracts";
+// A project list as a table: heading row + one row per item
 export interface ProjectTable {
-  key: "team" | "companies" | "contracts" | "manager";
+  key: ProjectListKey;
   label: string;
   columns: string[];
+  // A list's column keys, in the columns' order (what a list table's rows are keyed by)
+  keys?: string[];
   // Each column's share of the table's width
   shares: number[];
   rows: string[][];
-  card?: boolean;
 }
 
 // A project's place. Latitude and longitude may come as numbers or text
@@ -291,6 +294,10 @@ export interface TableDataBinding {
   datasetName: string;
   // The project the rows come from; each table can use a different project
   projectId: string;
+  // One of the project's own lists (team, companies, contracts): its rows come
+  // from the project record, not a backend table (sourceId is the same key);
+  // no filters, sort, totals or highlights
+  list?: ProjectListKey;
   projectName: string;
   sourceId: string;
   sourceName: string;

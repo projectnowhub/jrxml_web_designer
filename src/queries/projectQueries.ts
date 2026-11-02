@@ -10,6 +10,7 @@ import { reportDataApi } from "@/services/reportDataService";
 import { projectKey, toProjectDetails, toProjectSummary } from "@/services/helpers/projectMappers";
 import type { JmixListResponse } from "@/types/jmix";
 import type { ProjectDetails, ProjectSummary, ProjectRecord } from "@/types/dataSource";
+import i18n from "@/i18n";
 import { DATA_STALE_TIME, queryClient } from "./queryClient";
 import { projectKeys } from "./queryKeys";
 
@@ -101,6 +102,22 @@ export async function getProject(key: string): Promise<ProjectDetails> {
   const project = await fetchProject(key);
   if (!project) throw new Error(`Unknown project: ${key}`);
   return toProjectDetails(project, key);
+}
+
+// A project's details from the cache, without waiting (null: not loaded yet,
+// or no such project): what the JRXML writer and the canvas show for a
+// template's linked details, lists and place. The details are built once per
+// answer and language.
+let lastDetails: { project: ProjectRecord; locale: string; details: ProjectDetails } | null = null;
+export function cachedProjectDetails(key: string | undefined): ProjectDetails | null {
+  if (!key) return null;
+  const project = queryClient.getQueryData<ProjectRecord | null>(projectKeys.detail(key));
+  if (!project) return null;
+  const locale = String(i18n.global.locale.value);
+  if (lastDetails?.project !== project || lastDetails.locale !== locale) {
+    lastDetails = { project, locale, details: toProjectDetails(project, key) };
+  }
+  return lastDetails.details;
 }
 
 // A project's name and code (a chosen project may not be on the pages loaded so far)

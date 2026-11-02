@@ -473,6 +473,11 @@
               v-else-if="isDateElement(currentElement)"
               :element="currentElement"
             />
+            <!-- A linked project detail: shows the project's value -->
+            <ProjectValueProperties
+              v-else-if="isProjectValue(currentElement)"
+              :element="currentElement"
+            />
             <!-- A Location's address is written from its place -->
             <div v-else-if="!isLocationPart(currentElement)" class="box-section compact">
               <div class="card-head">
@@ -1035,6 +1040,7 @@ import {
 import ColorPickerWithOpacity from "./ColorPickerWithOpacity.vue";
 import PaginationProperties from "./PaginationProperties.vue";
 import DateProperties from "./DateProperties.vue";
+import ProjectValueProperties from "./ProjectValueProperties.vue";
 import ChartProperties from "./ChartProperties.vue";
 import CustomTableProperties from "./CustomTableProperties.vue";
 import ContentsListProperties from "./ContentsListProperties.vue";
@@ -1053,6 +1059,7 @@ import { resetElementStyle } from "../../../utils/resetStyle";
 import BarcodeProperties from "./BarcodeProperties.vue";
 import { isPagination } from "../../../utils/paginationPresets";
 import { isDateElement } from "../../../utils/dateElement";
+import { isProjectValue } from "../../../utils/projectValue";
 import FrameProperties from "./FrameProperties.vue";
 import {
   getBoxCornerRadii,
@@ -1780,6 +1787,7 @@ const panelTitle = computed(() => {
   if (!selectedElement.value || !el) return t("properties.reportProperties");
   if (isPagination(el)) return t("elementNames.pageNumber");
   if (isDateElement(el)) return t("elementNames.dateTime");
+  if (isProjectValue(el)) return t("elementNames.projectValue");
   if (isLocationElement(el)) return t("elementNames.location");
   if (isPageBorder.value) return t("elementNames.framePageBorder");
   // Headings are shown by their own name, not as the box / text they are built of
@@ -1882,6 +1890,7 @@ const panelKind = computed(() => {
   if (!selectedElement.value || !el) return "report";
   if (isPagination(el)) return "pageNumber";
   if (isDateElement(el)) return "dateTime";
+  if (isProjectValue(el)) return "projectValue";
   if (isLocationElement(el) || isLocationPart(el)) return "location";
   if (isPageBorder.value) return "pageBorder";
   if (hasProperty(el, SECTION_HEADING_PROPERTY)) return "sectionHeading";

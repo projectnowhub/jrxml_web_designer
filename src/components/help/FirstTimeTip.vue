@@ -26,6 +26,7 @@ import { useReportStore } from "@/stores/report";
 import { useSelectionStore } from "@/stores/selection";
 import { isPagination } from "@/utils/paginationPresets";
 import { isDateElement } from "@/utils/dateElement";
+import { isProjectValue } from "@/utils/projectValue";
 import { isLocationElement, isLocationPart } from "@/utils/location/locationElement";
 import type { FirstTipId } from "@/utils/helpTours";
 import type { DesignElement } from "@/types";
@@ -41,7 +42,7 @@ const SHOW_FOR_MS = 15000;
 // The tips for what is selected, the kind's own first, then the general one
 // (the page border is the box in the Background band)
 function tipsFor(element: DesignElement, bandType: string | undefined): FirstTipId[] {
-  if (bandType === "background" || isPagination(element) || isDateElement(element)) return ["select"];
+  if (bandType === "background" || isPagination(element) || isDateElement(element) || isProjectValue(element)) return ["select"];
   if (isLocationElement(element) || isLocationPart(element)) return ["location", "select"];
   switch (element.type) {
     case "textField":

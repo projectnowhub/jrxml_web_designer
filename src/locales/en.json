@@ -198,7 +198,8 @@
     "contentsBurgundy": "Burgundy",
     "contentsPlain": "Classic",
     "coverClassic": "Classic",
-    "location": "Location"
+    "location": "Location",
+    "projectValue": "Project detail"
   },
   "properties": {
     "title": "Settings",
@@ -552,7 +553,11 @@
     "searchNext": "Next",
     "customPaperSize": "Custom",
     "maximize": "Full height (up to the header). Tip: double-click the panel's top edge.",
-    "restore": "Back to the height before"
+    "restore": "Back to the height before",
+    "detailsJson": "Details JSON",
+    "detailsNote": "details.json: where this template's data comes from, for the report server (developers only).",
+    "detailsCopied": "details.json copied",
+    "copyFailed": "Couldn't copy\nSelect the text and copy it yourself."
   },
   "zoom": {
     "zoomIn": "Zoom In",
@@ -1032,7 +1037,7 @@
       "pasteHere": "Paste where you clicked",
       "delete": "Delete the selected item",
       "moreOptions": "More options for an item (Delete, Bring to Front, Send to Back…); with several selected, for all of them",
-      "editItem": "Type in a text, set up a table or chart, change a picture",
+      "editItem": "Type in a text, set up a table or chart, change a picture (a date, a project detail or a project list says where to change it instead)",
       "finishTyping": "Finish typing and keep it",
       "cancelTyping": "Stop typing and throw away what you just typed",
       "bold": "Bold",
@@ -1094,7 +1099,8 @@
       "pageBorder": "A border around every page. Change its line, colour and corners here.",
       "sectionHeading": "A heading that starts a section. Its number counts itself, and it shows in the table of contents.",
       "subHeading": "A smaller heading inside a section. It shows, indented, in the table of contents.",
-      "location": "A map with a pin and the address. Type the place below, copy it from a project, or click the small map to put the pin there."
+      "location": "A map with a pin and the address. Type the place below, copy it from a project, or click the small map to put the pin there.",
+      "projectValue": "A detail of the template's project. It shows that project's value and changes with it. Style it like any text."
     },
     "firstTips": {
       "gotIt": "Got it",
@@ -2261,7 +2267,22 @@
     "other": "Other",
     "yes": "Yes",
     "no": "No",
-    "titles": {"by": "{measure} by {field}", "byPair": "{first} by {second}", "splitBy": "{measure}, split by {field}", "and": "&", "andNMore": "{first} & {count} more", "totalRecords": "Total Records", "records": "Records", "treemap": "Tree Map", "aggregations": {"sum": "Sum", "avg": "Avg", "min": "Min", "max": "Max"}},
+    "titles": {
+      "by": "{measure} by {field}",
+      "byPair": "{first} by {second}",
+      "splitBy": "{measure}, split by {field}",
+      "and": "&",
+      "andNMore": "{first} & {count} more",
+      "totalRecords": "Total Records",
+      "records": "Records",
+      "treemap": "Tree Map",
+      "aggregations": {
+        "sum": "Sum",
+        "avg": "Avg",
+        "min": "Min",
+        "max": "Max"
+      }
+    },
     "measures": {
       "countOf": "Count",
       "sumOf": "Total {column}",
@@ -2372,7 +2393,8 @@
       "look": "Look",
       "headerHeight": "Header height",
       "rowHeight": "Row height",
-      "rowSizes": "Row sizes"
+      "rowSizes": "Row sizes",
+      "rowCap": "The report prints the first {limit} of {total} rows. Add a filter to print fewer."
     },
     "config": {
       "title": "Set up {name}",
@@ -2575,9 +2597,7 @@
     "noProjectsAvailable": "No projects yet",
     "lists": "Lists",
     "moreDetails": "User-defined fields",
-    "managerCard": "All details (table)",
-    "dragTable": "Drag onto the page to add this list as a table",
-    "dragCard": "Drag onto the page to add these details as a table",
+    "dragTable": "Drag onto the Detail section for a table of this list's rows (it follows the template's project)",
     "listRows": "No rows | 1 row | {count} rows",
     "projectTables": {
       "manager": "Project Manager",
@@ -2622,10 +2642,10 @@
     },
     "noProjects": "Use “Choose a project…” at the top of the page to pick the project this template uses. A template uses one project for now.",
     "search": "Search details, tables and columns",
-    "hint": "Drag a detail (name, date, introduction…) onto a text element, or the logo onto an image element, to fill it; drop it on empty space for a new one. It becomes normal text or a normal image. Drag a table onto the Detail section or onto a table; drag a column to add just that column.",
+    "hint": "Drag a detail (name, status, date…) onto the page, or onto a text, and it shows this project's value; it follows the template's project when you pick another one. Drag a list onto the Detail section for a table of its rows, and Map and address for a map. Drag a table onto the Detail section or onto a table; drag a column to add just that column.",
     "tables": "Tables",
     "details": "Details",
-    "dragDetail": "Drag onto the page to add this as text",
+    "dragDetail": "Drag onto the page: shows this project's value and follows the template's project",
     "dragImage": "Drag onto the page to add this image",
     "dragSource": "Drag onto a table or the Detail section",
     "dragColumn": "Drag onto a table to add this column",
@@ -2643,7 +2663,7 @@
     "dropImageOnImage": "Drop the logo on an image element, or on empty space.",
     "dropNotOnPageNumber": "A page number can't show project data\nDrop it on another text element.",
     "dropNotOnDate": "A date can't show project data\nDrop it on another text element.",
-    "projectInUse": "Can't remove {project}\nIt is still used by {count} table(s) or chart(s). Delete them, or choose another project in their data.",
+    "projectInUse": "Can't remove {project}\nIt is used by {count} table(s) or chart(s). Delete them, or pick another project instead.",
     "projectSource": "{project} · {source}",
     "noValue": "{project} has no {label} to add.",
     "projectTabs": "Report projects",
@@ -2651,10 +2671,12 @@
     "projectsSelected": "{count} project selected | {count} projects selected",
     "location": "Location",
     "locationWhole": "Map and address",
-    "dragLocation": "Drag onto the page for a map with the address, or onto a Location to change its place",
+    "dragLocation": "Drag onto the page for a map with the address (it follows the template's project), or onto a Location to change its place",
     "dropNotOnLocation": "A Location only takes a place\nDrop the project's Location (or a field like City), or drop this on empty space.",
-    "projectSwitchInUse": "Can't change to {other}\n{project} is still used by {count} table(s) or chart(s). Delete them, or switch their data first.",
-    "userDefinedField": "User-defined field"
+    "userDefinedField": "User-defined field",
+    "projectSwitched": "Template now uses {project}\nIts details, lists, tables, charts and map follow the new project.",
+    "projectMissing": "{project} isn't in your project list. It may have been deleted, or your account can't see it. Pick another project at the top.",
+    "tablesLoadFailed": "Couldn't load the list of tables."
   },
   "barcode": {
     "chooseType": "Choose a barcode type",
@@ -3251,7 +3273,7 @@
     "tools": {
       "projects": {
         "title": "Projects",
-        "text": "Choose the project this template is about (one project per template for now). Its details, lists (team, companies, contracts), tables and charts then appear under Report Data on the left."
+        "text": "Choose the project this template is about (one project per template for now). Its details, lists (team, companies, contracts), tables and charts then appear under Report Data on the left. Picking another project switches the whole template: its details, lists, tables, charts and map show the new project's data."
       },
       "reportName": {
         "title": "Template name",
@@ -3355,7 +3377,7 @@
           "Select some words while typing to see the formatting bar: bold, italic, underline, colours, bullet points, links and more.",
           "Drag it to move it; drag the small squares around it to resize it.",
           "Fit to Text (in Text Content) makes the box exactly as tall as its words.",
-          "Drag a project detail (name, client…) from Report Data onto it to fill it with that value."
+          "Drag a project detail (name, status, a date…) from Report Data onto it: it shows the template's project's value and changes when you pick another project. Type my own text instead (on the right) makes it plain text again."
         ],
         "good": [
           "Text that doesn't fit its box is cut off in the PDF: make the box taller, or use Fit to Text.",
@@ -3461,7 +3483,7 @@
         "title": "Table",
         "what": "Rows and columns, either typed by you or filled from your project's data.",
         "when": "Type my own for key figures, summaries and registers. Use project data for lists that come from your project, such as procurement or materials.",
-        "add": "Click Table in the Element Library and choose Type my own or Use project data. Or drag a list (Project Team, Companies, Contracts) or the Project Manager's details from Report Data: it arrives as a typed table filled with them.",
+        "add": "Click Table in the Element Library and choose Type my own or Use project data. Or drag a list (Project Manager, Project Team, Companies, Contracts) from Report Data onto the Detail section: it becomes a table of the project's rows that follows the template's project.",
         "work": [
           "A typed table: double-click it to type in the cells; Tab moves to the next cell. Handles above the columns and beside the rows choose a whole column or row; then Insert above / below / left / right, Delete, Merge and Split are in Basic Settings and on right-click. The chosen cells' colours, bold, alignment and text size are in Style Settings.",
           "Sizes: drag the lines between columns to change their widths, and the lines under rows to change their heights. A typed table: open it (double-click) and use the short lines between the letters above it and the numbers beside it. A project data table: select it, then drag the purple lines on it (the heading row and the rows have one height each).",
@@ -3649,7 +3671,7 @@
         "good": [
           "The map is a picture of OpenStreetMap, the map the CDP app shows. It is drawn when the place changes, so it needs the internet then; the PDF prints the saved picture.",
           "Dropping a project's Location (or one field, such as City) on a Location changes its place and keeps its look.",
-          "Nothing stays linked to the project: drag the Location again to show a newer place.",
+          "Dropped from Report Data, its place follows the template's project; typing a place makes it your own.",
           "It is one element: other items can't be dropped into it, they go on top of it on the page."
         ]
       }
@@ -3875,6 +3897,11 @@
         "title": "Highlight rows or cells",
         "text": "Colours rows, or only one column's cells, by their values each time the report runs: a text column when it is one of the ticked values, a number in a range, a date before or after the day the report is printed, or between two dates. Each rule sets a fill, a text colour and bold. When several rules match a row, the one higher up wins.",
         "example": "Whole row red when Status is Delayed; the Stock cell amber when it is up to 100."
+      },
+      "projectValue": {
+        "title": "Project detail",
+        "text": "Which detail of the project this text shows. It always shows the value of the template's project, so the same template prints the right name, status or date for any project. Pick another project at the top to see it change.",
+        "example": "Drag Status from Report Data: it shows “Active” for one project and “On Hold” for another."
       }
     }
   },
@@ -4025,7 +4052,10 @@
       "mapShape": "Map shape",
       "addressLook": "How the address looks",
       "textColour": "Text colour",
-      "frameTitle": "Frame around it"
+      "frameTitle": "Frame around it",
+      "followProject": "Use {project}'s place",
+      "followOn": "The map and address follow the template's project.",
+      "followOff": "Tick it to show the project's place, and follow it."
     },
     "addressPlaceholder": "Address"
   },
@@ -4152,5 +4182,24 @@
       "shhScore": "SHH Score (%)",
       "actualScore": "Actual Score (%)"
     }
+  },
+  "projectValue": {
+    "lockedHint": "{detail} from the template's project. It follows the project; change it on the right.",
+    "cannotType": "This text shows the project's value\nIt follows the template's project. To type your own words, choose “Type my own text instead” on the right.",
+    "panel": {
+      "title": "Project detail",
+      "shows": "Shows the project's {detail}.",
+      "forProject": "For {project}",
+      "noProject": "This template has no project yet",
+      "noValue": "This project has no value for it, so nothing prints.",
+      "follows": "Pick another project at the top and it shows that project's value. The report prints the value of the project it is made for.",
+      "toText": "Type my own text instead",
+      "toTextHint": "Keeps what it shows now as ordinary text that no longer follows the project."
+    }
+  },
+  "projectList": {
+    "noSetup": "Rows from the project's {list}\nThis table lists every item the template's project has. Change its look and headings in its properties.",
+    "rowsFrom": "{project} · {list} (from the project)",
+    "hint": "Every item of this list in the template's project. Pick another project at the top and it shows that one's."
   }
 }

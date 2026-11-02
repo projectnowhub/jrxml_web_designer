@@ -41,6 +41,9 @@ export interface LocationSetup extends Place {
   zoom: number;
   layout: LocationLayout;
   show: Record<AddressLine, boolean>;
+  // The place is the template's project's (Report Data's "Map and address"):
+  // it follows the project (syncProjectPlaces); typing a place turns it off
+  fromProject?: boolean;
   // A part's look while its layout leaves it out, so it comes back the same
   spare?: { map?: Partial<ImageElement>; address?: Partial<TextFieldElement> };
 }
@@ -89,6 +92,7 @@ export function normalizeLocationSetup(value: Partial<LocationSetup> | null | un
     ),
   } as LocationSetup;
   if (v.spare && typeof v.spare === "object") setup.spare = v.spare;
+  if (v.fromProject === true) setup.fromProject = true;
   return setup;
 }
 
@@ -432,6 +436,22 @@ export function syncLocations(bands: Band[], font: LocationFont = {}): boolean {
     for (const element of band.elements ?? []) {
       if (isLocationElement(element) && layoutLocation(element as FrameElement, font)) changed = true;
     }
+  }
+  return changed;
+}
+
+// Locations whose place is the project's take the template's project's place
+// (its map and address follow through syncLocations and the map pictures).
+// Returns whether any changed; nothing changes while the project isn't loaded.
+export function syncProjectPlaces(bands: Band[], location: Partial<Record<PlaceField, unknown>> | null | undefined, loaded: boolean): boolean {
+  if (!loaded) return false;
+  const place = toPlace(location);
+  let changed = false;
+  for (const box of locationBoxes(bands)) {
+    const setup = getLocationSetup(box);
+    if (!setup.fromProject || PLACE_FIELDS.every((f) => setup[f] === place[f])) continue;
+    setLocationSetup(box, { ...setup, ...place });
+    changed = true;
   }
   return changed;
 }

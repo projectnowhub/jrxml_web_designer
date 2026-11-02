@@ -9,6 +9,7 @@ import type {
   ChartMeasure,
   DataColumn,
   DataSourceSchema,
+  ProjectListKey,
   RelativePeriod,
   TableColumnBinding,
   TableColumnLook,
@@ -60,8 +61,8 @@ import {
   isChartComplete,
   normalizeChartBinding,
 } from "@/utils/chart/chartTypes";
-import { fetchFacets, fetchRows, fetchSchema } from "@/queries/dataSourceQueries";
-import { getProjectSummary } from "@/queries/projectQueries";
+import { fetchFacets, fetchRows, fetchSchema, isProjectListSource } from "@/queries/dataSourceQueries";
+import { getProject, getProjectSummary } from "@/queries/projectQueries";
 import { useReportStore } from "@/stores/report";
 import { MAX_REPORT_PROJECTS } from "@/constants/constants";
 import { countProjectUsage } from "@/utils/projectFields";
@@ -343,7 +344,8 @@ async function projectName(projectId: string): Promise<string> {
 
 // The report uses the project from now on (the header's project list). One
 // project per template for now (MAX_REPORT_PROJECTS): another one replaces
-// the report's project, unless that one still feeds tables or charts
+// the report's project, unless that one already feeds tables or charts:
+// switching moves the whole template (in the header), which the user decides
 function useProject(projectId: string, name: string): void {
   const report = useReportStore();
   const props = report.reportProperties;
@@ -353,13 +355,20 @@ function useProject(projectId: string, name: string): void {
     const inUse = chosen.find((p) => countProjectUsage(report.bands, p.id) > 0);
     if (inUse) {
       throw new SpecError(
-        `projectId: this template uses ${inUse.name} (${inUse.id}), and a template uses one project for now; use that project, or ask the user before changing the template's project`,
+        `projectId: this template uses ${inUse.name} (${inUse.id}), and a template uses one project; use that project. Changing it moves every table, chart and linked detail to the new project: only the user does that, with the project picker at the top`,
       );
     }
     props.projects = [{ id: projectId, name }];
     return;
   }
   props.projects = [...chosen, { id: projectId, name }];
+}
+
+// A project list as a source: its columns as Report Data shows them (text)
+async function listSchema(projectId: string, list: ProjectListKey): Promise<DataSourceSchema> {
+  const table = (await getProject(projectId).catch(() => null))?.tables?.find((t) => t.key === list);
+  if (!table) throw new SpecError(`sourceId: project "${projectId}" has no list "${list}"; call get_report_data with the projectId`);
+  return { id: list, name: table.label, columns: (table.keys ?? []).map((key, i) => ({ key, label: table.columns[i] ?? key, type: "text" })) };
 }
 
 async function sourceSchema(projectId: string, sourceId: string): Promise<DataSourceSchema> {
@@ -547,7 +556,18 @@ async function applyDataTable(element: TableElement, spec: ElementSpec, ctx: Kin
   const projectId = spec.projectId ?? current?.projectId;
   const sourceId = spec.sourceId ?? current?.sourceId;
   if (!projectId || !sourceId) throw new SpecError("projectId and sourceId are required (see get_report_data)");
-  const schema = await sourceSchema(projectId, sourceId);
+  // One of the project's own lists (sourceId team / companies / contracts):
+  // its rows come from the project, with no filters, sort, totals or rules
+  const list = isProjectListSource(sourceId) ? (sourceId as ProjectListKey) : undefined;
+  if (list) {
+    for (const key of ["filters", "sort", "highlights"]) {
+      if (has(spec, key) && (Array.isArray(spec[key]) ? spec[key].length : spec[key])) {
+        throw new SpecError(`${key}: a project list (${list}) shows every item of the project; it has no ${key}`);
+      }
+    }
+    if ((spec.columns ?? []).some((c: { total?: string }) => c.total)) throw new SpecError("columns[].total: a project list has no totals");
+  }
+  const schema = list ? await listSchema(projectId, list) : await sourceSchema(projectId, sourceId);
   const name = current && current.projectId === projectId ? current.projectName : await projectName(projectId);
   let width = element.width;
 
@@ -595,6 +615,7 @@ async function applyDataTable(element: TableElement, spec: ElementSpec, ctx: Kin
     datasetName: current?.datasetName ?? createDatasetName(usedDatasetNames(bands)),
     projectId,
     projectName: name,
+    ...(list ? { list } : {}),
     sourceId,
     sourceName: schema.name,
     columns,
@@ -628,7 +649,7 @@ export const dataTableKind: ElementKind = {
   kind: "dataTable",
   tool: "create_data_table",
   description:
-    "Add a table showing the rows of a project's data source (Procurement, Materials…), fetched each time the report runs; it grows onto more pages. Call get_report_data first for the project, source and column ids. Only in the detail band of a normal page, never in a box. Any number of columns: each column is at least 10 px, and the table widens past the page when they don't fit, so show only the columns that matter.",
+    "Add a table showing the rows of a project's data source (Procurement, Materials…), fetched each time the report runs; it grows onto more pages. Call get_report_data first for the project, source and column ids. A project's own list (lists[].list: manager, team, companies, contracts) is a table too: sourceId = that key, its columns the list's keys; it follows the template's project. Only in the detail band of a normal page, never in a box. Any number of columns: each column is at least 10 px, and the table widens past the page when they don't fit, so show only the columns that matter.",
   properties: {
     projectId: { type: "string" },
     sourceId: { type: "string" },
@@ -716,6 +737,7 @@ export const dataTableKind: ElementKind = {
     return defined({
       projectId: b.projectId,
       sourceId: b.sourceId,
+      list: b.list ? true : undefined,
       source: b.sourceName,
       columns: b.columns.map((c) => defined({ column: c.key, header: c.label, total: c.total, look: c.look })),
       highlights: b.highlights?.map(({ id: _id, ...rule }) => rule),

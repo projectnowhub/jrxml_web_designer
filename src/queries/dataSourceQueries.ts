@@ -13,12 +13,15 @@ import type {
   AggregateRequest,
   DataQuery,
   DataQueryResult,
+  DataRow,
   DataSourceSchema,
   SourceFacets,
   TableDataBinding,
   TableTotals,
 } from "@/types/dataSource";
 import type { EntityMetadata } from "@/types/entityMetadata";
+import { PROJECT_LIST_KEYS } from "@/constants/reportDataConstants";
+import { getProject } from "./projectQueries";
 import { DATA_STALE_TIME, queryClient } from "./queryClient";
 import { chartKeys, dataSourceKeys, projectKeys } from "./queryKeys";
 
@@ -61,6 +64,21 @@ function largerRowsRequest(projectId: string, sourceId: string, query: DataQuery
 const firstRows = (data: DataQueryResult, limit: number | undefined): DataQueryResult =>
   limit === undefined ? data : { ...data, rows: data.rows.slice(0, limit) };
 
+// A project list (team, companies, contracts) instead of a backend table
+export const isProjectListSource = (sourceId: string) => PROJECT_LIST_KEYS.includes(sourceId);
+
+// A project list's rows, from the project record (no request of their own),
+// keyed by the asked columns; empty cells are null
+async function projectListRows(projectId: string, sourceId: string, query: DataQuery): Promise<DataQueryResult> {
+  const table = (await getProject(projectId)).tables?.find((t) => t.key === sourceId);
+  const keys = table?.keys ?? [];
+  const all: DataRow[] = (table?.rows ?? []).map((row) =>
+    Object.fromEntries(query.columns.map((column) => [column, row[keys.indexOf(column)] || null])),
+  );
+  const offset = query.offset ?? 0;
+  return { rows: all.slice(offset, query.limit === undefined ? undefined : offset + query.limit), totalCount: all.length };
+}
+
 // Rows for one request; tables asking the same share the answer
 export function rowsQuery(projectId: string, sourceId: string, query: DataQuery) {
   const answered = () => largerRowsRequest(projectId, sourceId, query, true);
@@ -72,6 +90,7 @@ export function rowsQuery(projectId: string, sourceId: string, query: DataQuery)
         const data = await queryClient.fetchQuery(rowsQuery(projectId, sourceId, larger.query));
         return firstRows(data, query.limit);
       }
+      if (isProjectListSource(sourceId)) return projectListRows(projectId, sourceId, query);
       return reportDataApi.getTableRows(projectId, sourceId, query, signal);
     },
     staleTime: DATA_STALE_TIME,

@@ -19,7 +19,9 @@
       <div class="tdp-source">
         <Database :size="14" aria-hidden="true" />
         <span class="tdp-source-name">{{
-          t("reportData.projectSource", { project: binding.projectName, source: binding.sourceName })
+          binding.list
+            ? t("projectList.rowsFrom", { project: binding.projectName, list: binding.sourceName })
+            : t("reportData.projectSource", { project: binding.projectName, source: binding.sourceName })
         }}</span>
         <span class="tdp-muted">{{ t("dataTable.panel.columnCount", binding.columns.length) }}</span>
       </div>
@@ -45,7 +47,13 @@
       </div>
 
 
-      <button type="button" class="tdp-btn" @click="emit('configure')">
+      <!-- More matching rows than Preview PDF sends -->
+      <p v-if="!binding.list && rowTotal > REPORT_ROWS_LIMIT" class="tdp-hint is-warning">
+        {{ t("dataTable.panel.rowCap", { limit: REPORT_ROWS_LIMIT.toLocaleString(locale), total: rowTotal.toLocaleString(locale) }) }}
+      </p>
+
+      <p v-if="binding.list" class="tdp-hint">{{ t("projectList.hint") }}</p>
+      <button v-else type="button" class="tdp-btn" @click="emit('configure')">
         <SlidersHorizontal :size="14" aria-hidden="true" />
         {{ t("dataTable.panel.editData") }}
       </button>
@@ -175,7 +183,7 @@
       <span>{{ t("dataTable.style.customize") }}</span>
       <ChevronRight :size="13" aria-hidden="true" />
     </button>
-    <div v-if="binding && dataTable" class="tdp-highlight-summary-bar">
+    <div v-if="binding && dataTable && !binding.list" class="tdp-highlight-summary-bar">
       <span class="tdp-highlight-summary-text">{{ highlightSummaryText }}</span>
       <span class="tdp-bullet" aria-hidden="true">·</span>
       <button type="button" class="tdp-link" @click="emit('configure')">
@@ -443,7 +451,9 @@ import SettingHelpText from "../../help/SettingHelpText.vue";
 import { useReportStore } from "@/stores/report";
 import { useSelectionStore } from "@/stores/selection";
 import { storeToRefs } from "pinia";
-import { computed, nextTick, ref, type Component } from "vue";
+import { computed, nextTick, ref, toRef, type Component } from "vue";
+import { useTableRows } from "@/composables/useTableRows";
+import { REPORT_ROWS_LIMIT } from "@/constants/reportDataConstants";
 import { useI18n } from "vue-i18n";
 import {
   ArrowDownUp,
@@ -522,6 +532,8 @@ const holder = computed(() =>
   props.element.type === "customTable" ? props.element.table : props.element.binding,
 );
 const filters = computed(() => (binding.value ? activeFilters(binding.value) : []));
+// How many rows match (the canvas's request answers it; the report prints at most REPORT_ROWS_LIMIT)
+const { totalCount: rowTotal } = useTableRows(toRef(() => binding.value ?? undefined), 1);
 const sorts = computed(() => (binding.value ? describeSorts(binding.value, t) : []));
 const dataTable = computed(() => (props.element.type === "table" ? props.element : null));
 const typedTable = computed(() => (props.element.type === "customTable" ? props.element.table : null));
@@ -828,6 +840,10 @@ function setRowSize(key: "headerHeight" | "rowHeight", event: Event) {
   margin: 4px 0 0;
   color: #8a8799;
   font-size: 11px;
+}
+
+.tdp-hint.is-warning {
+  color: #b45309;
 }
 
 .tdp-row-colors {

@@ -14,6 +14,8 @@ import { findPageBorder, markBoxPart } from '@/utils/framePresets';
 import { specialPages } from '@/utils/specialPages';
 import { formatXml } from '@/utils/jrxml/formatXml';
 import { generatePdf } from '@/services/reportService';
+import { ensureTemplateProject, templateDetails } from '@/utils/reportRun';
+import { projectValueOf } from '@/utils/projectValue';
 import { fillPage } from './flow';
 import { attachmentImageSource, type ChatAttachment } from './attachments';
 import { fetchFacets, fetchSchema, fetchSources } from '@/queries/dataSourceQueries';
@@ -315,14 +317,21 @@ const getReportDataHandler: MCPToolHandler = {
         // Where the project is (create_location with projectId copies it)
         const place = toPlace(project?.location);
         const location = PLACE_FIELDS.some((f) => place[f]) ? place : null;
-        // Its details, lists (team, companies, contracts, the manager's card) and
-        // its own fields' values, to copy into text and typed tables
-        const details = Object.fromEntries((project?.fields ?? []).map((f) => [f.label, project?.values[f.key] ?? null]));
+        // Its details (each with the key a linked text takes: projectValue), the
+        // place's details, its own fields, and its lists (a
+        // list table takes the list key)
+        const detail = (key: string, name: string) => ({ key, name, value: projectValueOf(project, key) });
+        const details = [
+          ...(project?.fields ?? []).map((f) => detail(f.key, f.label)),
+          ...PLACE_FIELDS.filter((f) => f !== 'postcode').map((f) => detail(`location.${f}`, `Location ${f}`)),
+        ].filter((d) => d.value !== null);
         const lists = (project?.tables ?? []).map((table) => ({
+          list: table.key,
           name: table.label,
-          ...(table.card ? { labelValueRows: table.rows } : { columns: table.columns, rows: table.rows })
+          columns: table.columns,
+          rows: table.rows
         }));
-        const moreDetails = (project?.moreDetails ?? []).map((f) => ({ name: f.label, value: project?.values[f.key] ?? null }));
+        const moreDetails = (project?.moreDetails ?? []).map((f) => detail(f.key, f.label));
         return {
           success: true,
           data: { sources: sources.map((s) => ({ sourceId: s.id, name: s.name, columns: s.columnCount })), location, details, lists, moreDetails }
@@ -952,9 +961,12 @@ function pdfPageCount(bytes: Uint8Array): number {
 const checkPdfHandler: MCPToolHandler = {
   execute: async () => {
     const r = useReportStore();
+    await ensureTemplateProject(r.reportProperties.projects?.[0]?.id);
     r.updateJrxml();
     try {
-      const blob = await generatePdf({ jrxml: formatXml(r.jrxmlContent) });
+      // As Preview PDF sends it: the JRXML and details.json
+      const details = templateDetails(r.bands, r.reportProperties.projects?.[0]);
+      const blob = await generatePdf({ jrxml: formatXml(r.jrxmlContent), details });
       const pages = pdfPageCount(new Uint8Array(await blob.arrayBuffer()));
       const expected = r.totalPages;
       const tables = r.bands.some((b) => b.elements.some((e) => e.type === 'table'));

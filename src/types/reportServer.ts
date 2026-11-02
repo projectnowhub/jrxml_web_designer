@@ -1,12 +1,14 @@
 // Report server types (Preview PDF / Download, services/reportService.ts).
 
 import type { ApiErrorBody } from "./api";
+import type { ReportDetails } from "./reportDetails";
 
-// Only the JRXML is sent. The report server gets every table's rows and
-// every chart's numbers itself, from the setups in the JRXML
-// (com.cdp.table.binding, com.cdp.chart.binding; see docs/REPORT_ENGINE.md)
+// What Preview PDF sends: the JRXML (the layout) and details.json (where its
+// data comes from, utils/reportDetails.ts); the report server fetches the
+// project's values, the tables' rows and the charts' numbers itself
 export interface GeneratePdfPayload {
   jrxml: string;
+  details: ReportDetails;
 }
 
 // The PDF as a field of a JSON answer: base64 text or a list of bytes

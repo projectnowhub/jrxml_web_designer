@@ -247,7 +247,7 @@ import { computed, ref, shallowRef, watch } from "vue";
 import type { EChartsCoreOption } from "echarts/core";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
-import { ChartColumn, ChevronDown, FolderKanban, Plus, Replace, Sigma, SlidersHorizontal, X } from "@lucide/vue";
+import { ChartColumn, ChevronDown, FolderKanban, Info, Plus, Replace, Sigma, SlidersHorizontal, X } from "@lucide/vue";
 import BaseModal from "./BaseModal.vue";
 import ChartCanvas from "../common/ChartCanvas.vue";
 import SkeletonBlock from "../common/SkeletonBlock.vue";

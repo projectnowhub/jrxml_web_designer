@@ -124,6 +124,8 @@ import type { TableDataBinding } from "@/types/dataSource";
 import type { DataRow, TableTotals } from "@/types/dataSource";
 import { fetchTableTotals } from "@/queries/dataSourceQueries";
 import { generatePdf, ReportGenerationError } from "../../services/reportService";
+import { templateDetails } from "../../utils/reportRun";
+import { useReportStore } from "@/stores/report";
 import { fetchTableRows } from "@/composables/useTableRows";
 import { TABLE_ROWS_LIMIT } from "@/constants/reportDataConstants";
 import { collectBoundTables } from "@/utils/table/tableDocument";
@@ -138,6 +140,7 @@ const props = defineProps<{
   jrxmlContent: string;
   bands: Band[];
 }>();
+const report = useReportStore();
 
 const emit = defineEmits<{
   "update:visible": [visible: boolean];
@@ -240,9 +243,9 @@ async function generatePreview() {
   isGenerating.value = true;
 
   try {
-    // Only the JRXML: the report server fetches the tables' rows and the
-    // charts' numbers from the setups inside it
-    const pdf = await generatePdf({ jrxml: props.jrxmlContent }, controller.signal);
+    // The JRXML and details.json: the report server fetches the data itself
+    const details = templateDetails(props.bands, report.reportProperties.projects?.[0]);
+    const pdf = await generatePdf({ jrxml: props.jrxmlContent, details }, controller.signal);
     if (controller.signal.aborted) return;
     setPreviewUrl(URL.createObjectURL(pdf));
   } catch (error) {

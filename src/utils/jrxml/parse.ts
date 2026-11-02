@@ -17,6 +17,7 @@ import {
 } from "../framePresets";
 import { detectPagination } from "../paginationPresets";
 import { restoreDateElement } from "../dateElement";
+import { PROJECT_PARAM_PREFIX, restoreProjectValue } from "../projectValue";
 import {
   CONTENTS_PAGE_PROPERTY,
   parseSpecialPages,
@@ -176,7 +177,8 @@ export function parseJRXMLContent(jrxmlContent: string): {
     if (child.tagName === "parameter" || child.localName === "parameter") {
       const name = child.getAttribute("name");
       const className = child.getAttribute("class") || "java.lang.String";
-      if (name) {
+      // The project details' parameters are written again from the linked texts
+      if (name && !name.startsWith(PROJECT_PARAM_PREFIX)) {
         const param: Parameter = { name, class: className };
         // Extract the UUID (if present)
         const uuid = child.getAttribute("uuid");
@@ -1220,7 +1222,8 @@ function parseElement(element: Element, type: string): any {
       parseTextFieldElement(element, result);
       // A page number written by another tool becomes a page number here too
       // A date's expression is rebuilt from its setup
-      if (!restoreDateElement(result as any)) detectPagination(result as any);
+      // A linked project detail's expression is rebuilt from its link
+      if (!restoreDateElement(result as any) && !restoreProjectValue(result as any)) detectPagination(result as any);
       break;
     case "image":
       // A chart is written as an image carrying its setup

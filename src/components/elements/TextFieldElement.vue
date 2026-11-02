@@ -66,6 +66,13 @@
           class="page-number-text"
           :title="isDate ? t('dateElement.lockedHint') : pageNumberTitle"
         >{{ displayText }}</span>
+        <!-- A linked project detail: the project's value, or the detail's name (faded) when it has none -->
+        <span
+          v-else-if="projectLink"
+          class="page-number-text"
+          :class="{ 'is-unset': !projectLink.value }"
+          :title="t('projectValue.lockedHint', { detail: projectLink.label })"
+        >{{ projectLink.value ?? projectLink.label }}</span>
         <span v-else-if="hasRichMarkup" class="rich-html-span" v-html="renderedHtmlContent"></span>
         <template v-else>
           {{ hasContent ? displayText : isAddress ? t('location.addressPlaceholder') : t('properties.defaultTextFieldExpression') }}
@@ -210,6 +217,7 @@ import {
   showsTotalPages,
 } from '../../utils/paginationPresets';
 import { dateText, getDateSetup, isDateElement } from '../../utils/dateElement';
+import { getProjectValueLink, isProjectValue } from '../../utils/projectValue';
 import { isLocationAddress } from '../../utils/location/locationElement';
 
 const { t } = useI18n();
@@ -325,6 +333,8 @@ const pageNumberTitle = computed(() => {
 
 // A date shows today's date in its look (the PDF shows the day it is made)
 const isDate = computed(() => isDateElement(props.element));
+// A linked project detail shows the template's project's value
+const projectLink = computed(() => (isProjectValue(props.element) ? getProjectValueLink(props.element) : null));
 
 // Rendered HTML content for canvas view (shared with the height measurement)
 const renderedHtmlContent = computed(() => textExpressionToHtml(props.element.expression || ''));
@@ -337,6 +347,7 @@ const displayText = computed(() => {
     );
   }
   if (isDate.value) return dateText(getDateSetup(props.element));
+  if (projectLink.value) return projectLink.value.value ?? projectLink.value.label;
   if (props.element.expression) {
     const expr = props.element.expression;
     if (expr.includes("SimpleDateFormat") && expr.includes("java.util.Date")) {
@@ -387,7 +398,7 @@ const displayText = computed(() => {
 // A Location's address is always plain ("<b>" in it shows as typed)
 const isAddress = computed(() => isLocationAddress(props.element));
 const hasRichMarkup = computed(
-  () => !isPageNumber.value && !isDate.value && !isAddress.value && isRichTextElement(props.element),
+  () => !isPageNumber.value && !isDate.value && !projectLink.value && !isAddress.value && isRichTextElement(props.element),
 );
 
 const hasContent = computed(() => {
@@ -1606,6 +1617,12 @@ const handleStartEditing = () => {
 /* The element can still be dragged; only its text says it can't be typed in */
 .page-number-text {
   cursor: not-allowed;
+}
+
+/* A linked detail the project has no value for: its name, faded (canvas only) */
+.page-number-text.is-unset {
+  opacity: 0.45;
+  font-style: italic;
 }
 
 

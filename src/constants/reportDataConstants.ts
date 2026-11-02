@@ -46,3 +46,12 @@ export const CONTRACT_ENTITIES: readonly string[] = [
 // The property holding a record's project id
 export const PROJECT_ID_PROPERTY = "project.id";
 export const CONTRACT_PROJECT_ID_PROPERTY = "contract.project.id";
+
+// The project manager's columns (the Project Manager list, one row)
+export const MANAGER_FIELDS = ["name", "designation", "email", "phone", "country"] as const;
+
+// The project's own lists a list table can show (rows from the project record)
+export const PROJECT_LIST_KEYS: readonly string[] = ["manager", "team", "companies", "contracts"];
+
+// The most rows one table prints (details.json's maxRows)
+export const REPORT_ROWS_LIMIT = 5000;

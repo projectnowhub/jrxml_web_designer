@@ -1,43 +1,47 @@
-// A project's list (team, companies, contracts) or its manager's card, from
-// Report Data, as a typed table: an ordinary custom table in the Corporate
-// Blue style holding the values (copied, never linked), as wide as the page.
-// A list gets a heading row; a card has none, its labels in bold.
+// A project's list (manager, team, companies, contracts) from Report Data, on
+// the page: a data table filled with the project's rows (binding.list), in the
+// Corporate Blue style, as wide as a data table. It follows the template's project.
 
-import type { CustomTableElement, CustomTableRow } from "@/types";
-import type { ProjectTable } from "@/types/dataSource";
-import { MIN_COLUMN_WIDTH, scaleSizes, syncTableSize } from "./customTable";
+import type { TableElement } from "@/types";
+import type { ProjectListKey, ProjectTable, ReportProject } from "@/types/dataSource";
+import { MIN_COLUMN_WIDTH, scaleSizes } from "./customTable";
+import { createDatasetName, nextTableName } from "./table/dataBinding";
+import { TABLE_HEADER_HEIGHT, TABLE_ROW_HEIGHT } from "./table/dataTable";
 
-const ROW_HEIGHT = 18;
-const HEADER_HEIGHT = 20;
+// Rows the canvas shows of a list table at most (as a data table)
+const SHOWN_ROWS = 5;
 
-export function buildProjectTable(source: ProjectTable, width: number): CustomTableElement {
-  const rows: CustomTableRow[] = source.card
-    ? source.rows.map(([label = "", value = ""]) => ({
-        height: ROW_HEIGHT,
-        cells: [{ text: label, bold: true }, { text: value }],
-      }))
-    : [
-        { height: HEADER_HEIGHT, cells: source.columns.map((text) => ({ text })) },
-        ...source.rows.map((row) => ({
-          height: ROW_HEIGHT,
-          cells: source.columns.map((_, i) => ({ text: row[i] ?? "" })),
-        })),
-      ];
-  const element: CustomTableElement = {
-    type: "customTable",
+// A list as a table of the project's rows: its columns and headings as Report
+// Data shows them, a dataset and name of its own in the report
+export function buildProjectListTable(
+  source: ProjectTable,
+  width: number,
+  project: ReportProject,
+  taken: { datasets: string[]; names: string[] },
+): TableElement {
+  const keys = source.keys ?? [];
+  const widths = scaleSizes(source.shares, Math.round(width), MIN_COLUMN_WIDTH);
+  return {
+    type: "table",
     x: 0,
     y: 0,
-    width: 0,
-    height: 0,
-    table: {
-      columns: scaleSizes(source.shares, Math.round(width), MIN_COLUMN_WIDTH),
-      rows,
+    width: Math.round(width),
+    height: TABLE_HEADER_HEIGHT + Math.max(1, Math.min(source.rows.length, SHOWN_ROWS)) * TABLE_ROW_HEIGHT,
+    headerHeight: TABLE_HEADER_HEIGHT,
+    rowHeight: TABLE_ROW_HEIGHT,
+    binding: {
+      tableName: nextTableName(taken.names, source.label),
+      datasetName: createDatasetName(taken.datasets),
+      projectId: project.id,
+      projectName: project.name,
+      list: source.key as ProjectListKey,
+      sourceId: source.key,
+      sourceName: source.label,
+      columns: keys.map((key, i) => ({ key, label: source.columns[i] ?? key, type: "text", width: widths[i] ?? MIN_COLUMN_WIDTH })),
+      filters: [],
+      sort: [],
+      showTotals: false,
       theme: "corporateBlue",
-      headerRows: source.card ? 0 : 1,
-      totalRow: false,
-      padding: 3,
     },
   };
-  syncTableSize(element);
-  return element;
 }

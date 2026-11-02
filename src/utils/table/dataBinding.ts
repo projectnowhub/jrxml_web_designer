@@ -2,7 +2,8 @@
 // generator/parser and the preview. Each table on a report has its own
 // TableDataBinding, so several tables can use the same source independently.
 
-import type { DataQuery, RelativePeriod, TableDataBinding, TableFilter, TableHighlight } from "@/types/dataSource";
+import type { DataQuery, ProjectListKey, RelativePeriod, TableDataBinding, TableFilter, TableHighlight } from "@/types/dataSource";
+import { PROJECT_LIST_KEYS } from "@/constants/reportDataConstants";
 import { normalizeLook } from "./tableThemes";
 
 // JRXML property on the table's <reportElement> holding its TableDataBinding
@@ -159,6 +160,7 @@ export function parseBinding(json: string | null | undefined): TableDataBinding 
       // setup and get a project when the user edits their data
       projectId: typeof b.projectId === "string" ? b.projectId : "",
       projectName: typeof b.projectName === "string" ? b.projectName : "",
+      ...(PROJECT_LIST_KEYS.includes(b.list) && b.list === b.sourceId ? { list: b.list as ProjectListKey } : {}),
       sourceId: b.sourceId,
       sourceName: typeof b.sourceName === "string" ? b.sourceName : b.sourceId,
       columns: b.columns,

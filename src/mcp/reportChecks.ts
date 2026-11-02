@@ -18,6 +18,7 @@ import i18n from "@/i18n";
 import { neededTextHeight, plainText, printedText } from "./elements/common";
 import { allLocations, areaOf, boxAround, kindAt, label, neighbours, overlapsOf, pageOf, shapeUnder, type Location } from "./design";
 import { getLocationSetup, isLocationElement, isLocationMap, placePoint } from "@/utils/location/locationElement";
+import { getProjectValueLink, isProjectValue } from "@/utils/projectValue";
 
 export interface ReportCheck {
   level: "fix" | "check";
@@ -213,6 +214,11 @@ export function elementChecks(loc: Location): ReportCheck[] {
   }
 
   // Things that print nothing, or the wrong thing
+  // A linked project detail the template's project has no value for
+  const link = isProjectValue(e) ? getProjectValueLink(e) : null;
+  if (link && !link.value) {
+    check(`shows the project's ${link.label}, which this project has no value for: it prints nothing (another project may have one); leave it, or remove it if it should always show something`);
+  }
   // A Location without coordinates: its map prints nothing (its picture is
   // drawn by the designer once they are set)
   if (isLocationElement(e) && !placePoint(getLocationSetup(e)) && getLocationSetup(e).layout !== "addressOnly") {

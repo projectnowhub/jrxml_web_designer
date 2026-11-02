@@ -3,6 +3,7 @@
 // the requests are in services/reportDataService.ts.
 
 import i18n, { LOCALE_TAGS, type AppLocale } from "@/i18n";
+import { MANAGER_FIELDS } from "@/constants/reportDataConstants";
 import type { ProjectDetails, ProjectField, ProjectLocation, ProjectSummary, ProjectTable, ProjectRecord } from "@/types/dataSource";
 
 const t = i18n.global.t;
@@ -84,33 +85,33 @@ function formatAmount(value: number | null | undefined): string {
   return value.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// The project's lists as typed tables (headings in the app's language), and
-// its manager as a card: a label and its value per row
+// The project's lists as tables (headings in the app's language): its manager
+// (one row), team, companies and contracts
 function toProjectLists(project: ProjectRecord): ProjectTable[] {
   const col = (key: string) => t(`reportData.columns.${key}`);
   const manager = project.projectManager;
-  const managerRows = manager
-    ? [
-        [col("name"), toPlainText(manager.name)],
-        [col("designation"), toPlainText(manager.designation)],
-        [col("email"), toPlainText(manager.email)],
-        [col("phone"), formatPhone(manager.dialCode, manager.mobileNo)],
-        [col("country"), toPlainText(manager.country)],
-      ].filter(([, value]) => value)
-    : [];
   return [
     {
       key: "manager",
       label: t("reportData.projectTables.manager"),
-      columns: [],
-      shares: [35, 65],
-      rows: managerRows,
-      card: true,
+      columns: MANAGER_FIELDS.map(col),
+      keys: [...MANAGER_FIELDS],
+      shares: [22, 20, 26, 18, 14],
+      rows: manager
+        ? [[
+            toPlainText(manager.name),
+            toPlainText(manager.designation),
+            toPlainText(manager.email),
+            formatPhone(manager.dialCode, manager.mobileNo),
+            toPlainText(manager.country),
+          ]].filter((row) => row.some(Boolean))
+        : [],
     },
     {
       key: "team",
       label: t("reportData.projectTables.team"),
       columns: ["name", "designation", "email", "phone", "country"].map(col),
+      keys: ["name", "designation", "email", "phone", "country"],
       shares: [22, 20, 26, 18, 14],
       rows: (project.projectTeams ?? []).map((m) => [
         toPlainText(m.name),
@@ -124,6 +125,7 @@ function toProjectLists(project: ProjectRecord): ProjectTable[] {
       key: "companies",
       label: t("reportData.projectTables.companies"),
       columns: ["name", "businessTypes", "email", "phone", "country", "website"].map(col),
+      keys: ["name", "businessTypes", "email", "phone", "country", "website"],
       shares: [20, 18, 20, 15, 12, 15],
       rows: (project.companies ?? []).map((c) => [
         toPlainText(c.name),
@@ -138,6 +140,7 @@ function toProjectLists(project: ProjectRecord): ProjectTable[] {
       key: "contracts",
       label: t("reportData.projectTables.contracts"),
       columns: ["contract", "contractNumber", "contractType", "originalSum", "adjustedSum", "startDate", "finishDate"].map(col),
+      keys: ["contract", "contractNumber", "contractType", "originalSum", "adjustedSum", "startDate", "finishDate"],
       shares: [20, 9, 8, 17, 17, 14, 15],
       rows: (project.contracts ?? []).map((c) => [
         toPlainText(c.contractName),

@@ -24,6 +24,7 @@ import {
 } from "@/utils/elementUtils";
 import { TEXT_LINE_HEIGHT } from "@/utils/customTable";
 import { dateText, getDateSetup, isDateElement } from "@/utils/dateElement";
+import { getProjectValueLink, isProjectValue } from "@/utils/projectValue";
 import { SpecError, type ElementSpec, type JsonSchema, type KindContext } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -170,6 +171,8 @@ export function plainText(element: DesignElement): string {
   if (element.type !== "textField") return "";
   // A Date: what it shows now, not its expression
   if (isDateElement(element)) return dateText(getDateSetup(element));
+  // A linked project detail: the value it shows for the template's project
+  if (isProjectValue(element)) return getProjectValueLink(element)?.value ?? "";
   const expr = (element.expression ?? "").trim();
   if (!(expr.startsWith('"') && expr.endsWith('"') && expr.length >= 2)) return expr;
   return expr.slice(1, -1).replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
