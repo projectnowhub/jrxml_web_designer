@@ -23,7 +23,6 @@ import { PROJECT_STATUS } from "@/types/entities";
 import { projectCondition, tableFilterConditions } from "@/services/helpers/jmixFilterHelpers";
 import { chartRequests } from "./chart/chartQuery";
 import { normalizeChartBinding } from "./chart/chartTypes";
-import { browserTimeZone } from "./dateElement";
 import { getLocationSetup, isLocationAddress, isLocationMap, locationBoxes } from "./location/locationElement";
 import { getProjectValueLink, projectParamName, projectValueElements } from "./projectValue";
 import { collectBoundTables } from "./table/tableDocument";
@@ -206,8 +205,6 @@ export function buildReportDetails(bands: Band[], project: ReportProject | undef
     defaults: {
       projectId: project?.id ?? "",
       projectName: project?.name ?? "",
-      timezone: browserTimeZone(),
-      locale: String(i18n.global.locale.value),
     },
     projectData: {
       ...linkedValues(bands),

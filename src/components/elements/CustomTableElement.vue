@@ -260,6 +260,11 @@ function onCellDrop(event: DragEvent) {
 const report = useReportStore();
 const { tableCells } = storeToRefs(useSelectionStore());
 
+// Several root nodes (the table, its format toolbar, the menu): the props and
+// listeners ElementFactory gives every element that a typed table doesn't use
+// (report font, page number, autoFitHeight…) are dropped, not passed on
+defineOptions({ inheritAttrs: false });
+
 const props = defineProps<{
   element: CustomTableElement;
   bandIndex: number;

@@ -53,7 +53,7 @@ import {
   tableReportStyles,
 } from "./jrxml/tableXml";
 import { splitReferences } from "./jrxml/javaString";
-import { projectParameters } from "./projectValue";
+import { linkForJrxml, projectParameters } from "./projectValue";
 
 export type { ReportProperties, Field, Parameter } from "./jrxml/types";
 
@@ -107,8 +107,9 @@ function generateReportElementAttrs(element: any): string {
 function generateReportElementChildren(element: any): string {
   let xml = "";
   // Generate property elements
-  // (an image with a preset shape gets the corner radii for its current size)
-  const properties = reportElementProperties(element);
+  // (an image with a preset shape gets the corner radii for its current size;
+  // a linked project detail's value is left out: it is its parameter's default)
+  const properties = linkForJrxml(reportElementProperties(element));
   if (properties.length > 0) {
     properties.forEach((prop: any) => {
       if (prop.name) {
