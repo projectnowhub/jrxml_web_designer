@@ -783,6 +783,7 @@ import {
   TABLE_ROW_HEIGHT,
   evenColumnWidths,
   scaleColumnWidths,
+  scaleTableRows,
   snapTableHeight,
   tableHeight,
   toColumnBinding,
@@ -7152,6 +7153,11 @@ const startResizingElement = (
         : null;
     const frameStartSize = { width: element.width, height: element.height };
     // A custom table's columns and rows keep their shares while it is resized
+    // A project-data table's heading and rows grow from their start sizes
+    const dataTableStart =
+      element.type === "table" && (element as TableElement).binding
+        ? ({ ...(element as TableElement) } as TableElement)
+        : null;
     const customTableStart =
       element.type === "customTable"
         ? {
@@ -7482,7 +7488,14 @@ const startResizingElement = (
         const table = element as TableElement;
         const minWidth = (table.binding?.columns.length ?? PLACEHOLDER_COLUMN_COUNT) * MIN_TABLE_COLUMN_WIDTH;
         const width = Math.max(tempWidth, minWidth);
-        const height = snapTableHeight(table, tempHeight);
+        // Taller or shorter makes the heading and every row taller or shorter
+        // (a project-data table is always exactly as tall as its rows)
+        const sizes = dataTableStart && dir !== "e" && dir !== "w" ? scaleTableRows(dataTableStart, tempHeight) : null;
+        if (sizes) {
+          table.headerHeight = sizes.headerHeight;
+          table.rowHeight = sizes.rowHeight;
+        }
+        const height = sizes ? sizes.height : snapTableHeight(table, tempHeight);
         if (table.binding) table.binding.columns = scaleColumnWidths(table.binding.columns, width);
         element.width = width;
         element.x = dir.includes("w") ? startElementX + startWidth - width : tempX;
