@@ -412,6 +412,7 @@
 </template>
 
 <script setup lang="ts">
+import { SHOW_DEVELOPER_TOOLS } from "@/config/appEnvironment";
 import { storeToRefs } from "pinia";
 import { useReportStore } from "@/stores/report";
 import { useUserSettingsStore } from "@/stores/userSettings";
@@ -520,9 +521,10 @@ const emit = defineEmits<Emits>();
 
 // Tab-related state
 const activeTab = ref("pageSettings");
-// JRXML Content is for developers: shown when running the app locally (npm run
-// dev), never in a production build, where anything asking for it gets Page settings
-const SHOW_JRXML_TAB = import.meta.env.DEV;
+// JRXML Content and Details JSON are for developers: shown locally and on the
+// dev server, never on staging or production (config/appEnvironment.ts), where
+// anything asking for them gets Page settings
+const SHOW_JRXML_TAB = SHOW_DEVELOPER_TOOLS;
 watch(activeTab, (tab) => {
   if ((tab === "jrxml" || tab === "details") && !SHOW_JRXML_TAB) activeTab.value = "pageSettings";
 });

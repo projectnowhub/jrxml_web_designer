@@ -24,12 +24,17 @@ COPY . .
 #   VITE_API_BASE_URL    : CDP server; sign-in, images, charts and the PDF
 #                          report server (<base>/v2) are its routes.
 #   VITE_APP_VERSION     : short git SHA, for display / cache-busting.
+#   VITE_APP_ENV         : dev / staging / production (as the CDP app); the
+#                          developer tabs (JRXML Content, Details JSON) show
+#                          only on dev. Empty = hidden.
 ARG VITE_APP_VERSION="dev"
+ARG VITE_APP_ENV=""
 
 ARG VITE_OAUTH_CLIENT_ID=""
 ARG VITE_API_BASE_URL=""
 
 ENV VITE_APP_VERSION=${VITE_APP_VERSION} \
+    VITE_APP_ENV=${VITE_APP_ENV} \
     VITE_OAUTH_CLIENT_ID=${VITE_OAUTH_CLIENT_ID} \
     VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
