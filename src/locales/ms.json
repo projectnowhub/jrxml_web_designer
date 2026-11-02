@@ -2673,7 +2673,7 @@
     "dropTextOnText": "Lepaskan pada teks\nButiran teks (nama, tarikh, bajet…) pada elemen teks atau ruang kosong.",
     "dropImageOnImage": "Lepaskan logo pada elemen imej, atau di ruang kosong.",
     "dropNotOnPageNumber": "Nombor halaman tidak boleh memaparkan data projek\nLepaskannya pada elemen teks lain.",
-    "dropNotOnDate": "Tarikh tidak boleh menunjukkan data projek\nLepaskannya pada elemen teks lain.",
+    "dropNotOnDate": "Tarikh hanya menerima tarikh projek\nLepaskan Tarikh Mula atau Tarikh Siap padanya, atau lepaskan butiran ini pada elemen teks.",
     "projectInUse": "Tidak boleh buang {project}\nIa digunakan oleh {count} jadual atau carta. Padamkannya, atau pilih projek lain.",
     "projectSource": "{project} · {source}",
     "noValue": "{project} tiada {label} untuk ditambah.",
