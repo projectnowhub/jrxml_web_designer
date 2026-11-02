@@ -27,7 +27,7 @@
         <div v-if="section.group" class="element-group-title">
           {{ t(`elementLibrary.presetGroups.${section.group}`) }}
         </div>
-        <div class="element-list">
+        <div class="element-list" :class="{ 'has-previews': categoryKey === 'frames' }">
           <div
             v-for="element in section.elements"
             :key="element.type"
@@ -36,6 +36,7 @@
             :class="{
               'is-disabled': isUnavailable(element.type),
               'is-open': tileMenu?.type === element.type,
+              'has-preview': !!presetPreviews[element.type],
             }"
             :draggable="!isUnavailable(element.type)"
             :aria-haspopup="hasTileMenu(element.type) ? 'dialog' : undefined"
@@ -44,7 +45,16 @@
             @mouseenter="showTileCard($event, element)"
             @mouseleave="hideTileCard"
           >
-            <span class="element-icon">
+            <!-- Element Presets: the preset itself, drawn small -->
+            <ElementPreview
+              v-if="presetPreviews[element.type]"
+              class="element-preview-thumb"
+              :elements="presetPreviews[element.type]!"
+              :id-prefix="`tile-${element.type}`"
+              :pad="6"
+              fit-height
+            />
+            <span v-else class="element-icon">
               <component
                 :is="getElementIconComponent(element.type)"
                 v-if="getElementIconComponent(element.type)"
@@ -203,9 +213,10 @@ import {
   PencilLine,
 } from "@lucide/vue";
 import ReportDataPanel from "./designer/ReportDataPanel.vue";
+import ElementPreview from "./common/ElementPreview.vue";
 import { ElementRegistry } from "./elements/ElementRegistry";
-import { findPageBorder, isFrameTemplateType, PAGE_BORDER_TYPE } from "../utils/framePresets";
-import { isReportPartType } from "../utils/reportParts";
+import { buildFrameTemplate, findPageBorder, isFrameTemplateType, PAGE_BORDER_TYPE } from "../utils/framePresets";
+import { buildReportPart, isReportPartType } from "../utils/reportParts";
 import { isContentsDesignType, isCoverDesignType } from "../utils/pageDesigns";
 import {
   PAGE_NUMBER_TYPE,
@@ -300,6 +311,21 @@ const sectionsOf = (elements: any[]): { group: string; elements: any[] }[] => {
   }
   return sections;
 };
+
+// Element Presets tiles show the preset itself, built by the library's own
+// builders (as the help pages' pictures) at about an A4 page's width; built again
+// when the language changes
+const PREVIEW_BUILD_WIDTH = 480;
+const presetPreviews = computed<Record<string, DesignElement[] | undefined>>(() => {
+  const ctx = { availableWidth: PREVIEW_BUILD_WIDTH, availableHeight: 500, t };
+  const previews: Record<string, DesignElement[] | undefined> = {};
+  for (const element of groupedElements.value.frames ?? []) {
+    const type: string = element.type;
+    if (isFrameTemplateType(type)) previews[type] = [buildFrameTemplate(type, ctx)];
+    else if (isReportPartType(type)) previews[type] = [buildReportPart(type, ctx)];
+  }
+  return previews;
+});
 
 // List of allowed field types
 const allowedFieldTypes = computed(() => [
@@ -648,6 +674,31 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
   gap: 8px;
+}
+
+/* Preset tiles carry a picture: wider, fewer per row */
+.element-list.has-previews {
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+}
+
+.element-item.has-preview {
+  gap: 6px;
+  padding: 6px 6px 8px;
+}
+
+/* The preset on a small white page */
+.element-preview-thumb {
+  width: 100%;
+  height: 62px;
+  box-sizing: border-box;
+  border-radius: 7px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(28, 27, 38, 0.06);
+  transition: box-shadow 0.18s ease;
+}
+
+.element-item:hover .element-preview-thumb {
+  box-shadow: inset 0 0 0 1px rgba(124, 92, 247, 0.28);
 }
 
 .element-item.is-disabled,
