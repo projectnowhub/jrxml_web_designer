@@ -44,3 +44,9 @@ export const templateKeys = {
   infinite: (query: Omit<TemplateQuery, "page">) => [...templateKeys.all, "infinite", query] as const,
   detail: (id: string) => [...templateKeys.all, "detail", id] as const,
 };
+
+export const fileKeys = {
+  all: ["fileBlob"] as const,
+  // A stored file (e.g. the user's avatar), by its fileRef text
+  blob: (fileRef: string) => [...fileKeys.all, fileRef] as const,
+};

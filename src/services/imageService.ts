@@ -126,6 +126,12 @@ export function resolveFileRefDisplayUrl(fileRef: string): Promise<string> {
   return pending;
 }
 
+// A stored file's bytes (GET /rest/files?fileRef=, with the login), e.g. the
+// user's avatar; the CDP app's fetchFileBlobUrl. Cached in queries/fileQueries.ts
+export function getFileBlob(fileRef: string): Promise<Blob> {
+  return apiClient.get<Blob>(`${IMAGE_UPLOAD_API}?fileRef=${encodeURIComponent(fileRef)}`, { responseType: "blob" });
+}
+
 // Sends the image as binary (multipart/form-data) and returns the stored image reference
 export async function uploadImage(file: File, signal?: AbortSignal): Promise<string> {
   const form = new FormData();

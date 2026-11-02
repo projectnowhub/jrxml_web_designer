@@ -132,7 +132,7 @@ import {
 } from "@lucide/vue";
 import { useTemplates } from "@/composables/useTemplates";
 import { useHelpStore } from "@/stores/help";
-import { AUTH_USER_KEY } from "@/services/apiClient";
+import { useAuthStore } from "@/stores/auth";
 import type { TemplateSortDirection, TemplateSort, TemplateSummary } from "@/types/template";
 import { templateGridQuery, templateListQuery } from "@/queries/templateQueries";
 import TemplateGrid from "@/components/templates/TemplateGrid.vue";
@@ -154,8 +154,8 @@ const route = useRoute();
 const router = useRouter();
 const { newTemplate } = useTemplates();
 
-const storedUser = JSON.parse(localStorage.getItem(AUTH_USER_KEY) ?? "{}") as { firstName?: string };
-const displayName = computed(() => storedUser.firstName ?? t("home.defaultUserName"));
+const auth = useAuthStore();
+const displayName = computed(() => auth.fullName || t("home.defaultUserName"));
 
 const remembered = (key: string) => {
   try {

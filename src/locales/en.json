@@ -839,7 +839,12 @@
   },
   "home": {
     "eyebrow": "Template workspace",
-    "greeting": "Good morning, {name}",
+    "greetingMorning": "Good morning, {name}",
+    "greetingAfternoon": "Good afternoon, {name}",
+    "greetingEvening": "Good evening, {name}",
+    "greetingMorningPlain": "Good morning",
+    "greetingAfternoonPlain": "Good afternoon",
+    "greetingEveningPlain": "Good evening",
     "defaultUserName": "Designer",
     "subtitle": "Create, organize, and manage your report templates.",
     "recentTemplates": "Recent templates",

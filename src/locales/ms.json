@@ -839,7 +839,12 @@
   },
   "home": {
     "eyebrow": "Ruang kerja templat",
-    "greeting": "Selamat pagi, {name}",
+    "greetingMorning": "Selamat pagi, {name}",
+    "greetingAfternoon": "Selamat tengah hari, {name}",
+    "greetingEvening": "Selamat petang, {name}",
+    "greetingMorningPlain": "Selamat pagi",
+    "greetingAfternoonPlain": "Selamat tengah hari",
+    "greetingEveningPlain": "Selamat petang",
     "defaultUserName": "Pereka",
     "subtitle": "Cipta, susun dan urus templat laporan anda.",
     "recentTemplates": "Templat terkini",

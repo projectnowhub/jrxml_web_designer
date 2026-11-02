@@ -20,6 +20,7 @@ import { NConfigProvider, type GlobalThemeOverrides } from "naive-ui";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY, getAccessToken } from "./services/apiClient";
 import { useUserSettingsStore } from "./stores/userSettings";
+import { useAuthStore } from "./stores/auth";
 import { fetchUser, loginErrorQuery } from "./services/authService";
 import { isDesktopApp } from "./utils/desktopApp";
 import GuidedTour from "./components/help/GuidedTour.vue";
@@ -73,7 +74,7 @@ async function handleDeepLink(urls: string[]) {
       localStorage.setItem(AUTH_TOKEN_KEY, token);
       try {
         const user = await fetchUser();
-        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user ?? {}));
+        useAuthStore().setUser(user);
       } catch (error) {
         // Signed in to another tenant: the login page says which
         localStorage.removeItem(AUTH_TOKEN_KEY);
@@ -107,7 +108,11 @@ if (import.meta.env.DEV) {
 onMounted(async () => {
   // Already signed in: the user's default settings, which may have changed on
   // another computer (a new login reads them itself)
-  if (getAccessToken()) void useUserSettingsStore().syncFromServer();
+  // and the user's name (shown in the greeting and the account menu)
+  if (getAccessToken()) {
+    void useUserSettingsStore().syncFromServer();
+    void useAuthStore().refresh();
+  }
 
   if (!isDesktopApp()) {
     return;

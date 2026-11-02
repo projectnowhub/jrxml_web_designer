@@ -1,4 +1,4 @@
-// Sign-in types: the signed-in user (GET /v2/user/me) and the token answer
+// Sign-in types: the signed-in user (GET /v1/user/me) and the token answer
 // (POST /oauth2/token), as cdp-fe-app's platform-shell auth/types.ts.
 
 import type { AuthClientConfig } from "@/config/auth.config";

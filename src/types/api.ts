@@ -28,7 +28,7 @@ export interface ApiErrorBody {
   error?: string;
   title?: string;
   code?: string;
-  // The tenant a session belongs to (GET /v2/user/me from another tenant)
+  // The tenant a session belongs to (GET /v1/user/me from another tenant)
   tenantId?: string;
   tenant?: string;
   sessionTenant?: string;

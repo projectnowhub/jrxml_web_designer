@@ -6,9 +6,9 @@ import {
   saveVerifier,
 } from "../utils/pkce";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import apiClient, { ApiError, AUTH_TOKEN_KEY, AUTH_USER_KEY, getAccessToken, getTenantId } from "./apiClient";
+import apiClient, { ApiError, AUTH_TOKEN_KEY, AUTH_USER_KEY, getAccessToken, getTenantId, unwrap } from "./apiClient";
 import { AUTH_CONFIG } from "../config/auth.config";
-import type { ApiErrorBody } from "@/types/api";
+import type { ApiErrorBody, ApiResponse } from "@/types/api";
 import type { AccessTokenClaims, AuthUser, LoginErrorQuery, LoginOptions, TokenResponse } from "@/types/auth";
 import { isDesktopApp } from "@/utils/desktopApp";
 import { queryClient } from "../queries/queryClient";
@@ -68,7 +68,12 @@ export const fetchUser = async (): Promise<AuthUser> => {
   // Taken before the call: a 401 removes the stored token on its way to the login page
   const token = getAccessToken();
   try {
-    return await apiClient.get<AuthUser>(AUTH_CONFIG.userUrl);
+    const user = unwrap(await apiClient.get<ApiResponse<AuthUser>>(AUTH_CONFIG.userUrl));
+    // A wrong route can answer a web page (text) instead of the user: never keep that
+    if (!user || typeof user !== "object" || !user.id) {
+      throw new Error(`${AUTH_CONFIG.userUrl} did not answer a user`);
+    }
+    return user;
   } catch (error) {
     throw new TenantSessionError(await sessionTenantOf(error, token), getTenantId(), error);
   }
