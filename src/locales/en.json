@@ -1010,6 +1010,7 @@
         "rightClick": "Right-click anything on the page to see more options.",
         "resize": "Drag the small squares around a selected item to make it bigger or smaller.",
         "nudge": "Hold Shift and press the arrow keys to move a selected item a little.",
+        "dragScroll": "To move an item to another page, drag it and roll the mouse wheel, or hold it near the top or bottom edge: the pages scroll and the item comes with you.",
         "undo": "Made a mistake? Press Ctrl+Z (⌘+Z on a Mac) to undo it.",
         "saved": "Your work is saved by itself in this browser as you go.",
         "open": "Your templates are on the home page and in My templates: click one to open it. In the designer, File → Open (Ctrl+O) opens another one or a .jrxml file from your computer.",

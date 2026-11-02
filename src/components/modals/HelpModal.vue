@@ -96,6 +96,7 @@
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
 import {
+  ArrowDownUp,
   Compass,
   Eye,
   FilePlus,
@@ -145,6 +146,7 @@ const TIPS = [
   { id: "rightClick", icon: MousePointerClick },
   { id: "resize", icon: Scaling },
   { id: "nudge", icon: Move },
+  { id: "dragScroll", icon: ArrowDownUp },
   { id: "undo", icon: Undo2 },
   { id: "saved", icon: Save },
   { id: "open", icon: FolderOpen },

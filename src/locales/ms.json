@@ -1010,6 +1010,7 @@
         "rightClick": "Klik kanan apa-apa sahaja pada halaman untuk melihat lebih banyak pilihan.",
         "resize": "Seret petak kecil di sekeliling item yang dipilih untuk membesarkan atau mengecilkannya.",
         "nudge": "Tahan Shift dan tekan kekunci anak panah untuk mengalihkan item yang dipilih sedikit.",
+        "dragScroll": "Untuk mengalihkan item ke halaman lain, seret item itu dan putar roda tetikus, atau tahan dekat tepi atas atau bawah: halaman akan menatal dan item itu ikut bersama.",
         "undo": "Tersilap? Tekan Ctrl+Z (⌘+Z pada Mac) untuk membuat asal.",
         "saved": "Kerja anda disimpan sendiri dalam pelayar ini semasa anda bekerja.",
         "open": "Templat anda ada di halaman utama dan dalam Templat saya: klik satu untuk membukanya. Dalam pereka, Fail → Buka (Ctrl+O) membuka templat lain atau fail .jrxml dari komputer anda.",
