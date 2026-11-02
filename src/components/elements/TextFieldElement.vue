@@ -72,7 +72,7 @@
           class="page-number-text"
           :class="{ 'is-unset': !projectLink.value }"
           :title="t('projectValue.lockedHint', { detail: projectLink.label })"
-        >{{ projectLink.value ?? projectLink.label }}</span>
+        >{{ displayText }}</span>
         <span v-else-if="hasRichMarkup" class="rich-html-span" v-html="renderedHtmlContent"></span>
         <template v-else>
           {{ hasContent ? displayText : isAddress ? t('location.addressPlaceholder') : t('properties.defaultTextFieldExpression') }}

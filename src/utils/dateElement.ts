@@ -232,6 +232,15 @@ export function formatSample(setup: DateSetup, format: string, now: Date = new D
   return formatPattern(datePattern({ ...setup, format }), dateParts({ ...setup, format }, now));
 }
 
+// A day (yyyy-MM-dd, e.g. a project's start date) in one of the day looks;
+// unknown looks fall back to the first one
+export function dayFormatPattern(formatId: string | undefined): string {
+  return (DAY_FORMATS.find((f) => f.id === formatId) ?? DAY_FORMATS[0]).pattern;
+}
+export function formatIsoDay(iso: string, formatId: string | undefined): string {
+  return formatPattern(dayFormatPattern(formatId), partsOfIso(iso));
+}
+
 // ── JRXML ──
 
 // The text field's expression. A chosen date is plain text; the others are

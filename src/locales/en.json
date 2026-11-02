@@ -199,7 +199,8 @@
     "contentsPlain": "Classic",
     "coverClassic": "Classic",
     "location": "Location",
-    "projectValue": "Project detail"
+    "projectValue": "Project detail",
+    "projectDate": "Project date"
   },
   "properties": {
     "title": "Settings",
@@ -1109,7 +1110,8 @@
       "sectionHeading": "A heading that starts a section. Its number counts itself, and it shows in the table of contents.",
       "subHeading": "A smaller heading inside a section. It shows, indented, in the table of contents.",
       "location": "A map with a pin and the address. Type the place below, copy it from a project, or click the small map to put the pin there.",
-      "projectValue": "A detail of the template's project. It shows that project's value and changes with it. Style it like any text."
+      "projectValue": "A detail of the template's project. It shows that project's value and changes with it. Style it like any text.",
+      "projectDate": "A date of the template's project. It shows that project's date and changes with it. Choose how it looks and words before it below."
     },
     "firstTips": {
       "gotIt": "Got it",
@@ -2694,7 +2696,8 @@
       "chartDesc": "Counts or totals of its rows as a bar, line, pie or other chart.",
       "tableOnlyInDetail": "Tables go in the Detail section. Drop it there for a table.",
       "tableNotOnSpecialPage": "Tables can't go on a cover or contents page."
-    }
+    },
+    "dragDate": "Drag onto the page: shows this project's date in the look you pick, and follows the template's project"
   },
   "barcode": {
     "chooseType": "Choose a barcode type",
@@ -3920,6 +3923,14 @@
         "title": "Project detail",
         "text": "Which detail of the project this text shows. It always shows the value of the template's project, so the same template prints the right name, status or date for any project. Pick another project at the top to see it change.",
         "example": "Drag Status from Report Data: it shows “Active” for one project and “On Hold” for another."
+      },
+      "projectDateLook": {
+        "title": "How it looks",
+        "text": "The date style, for example 22 May 2026 or 22/05/2026. The date itself always comes from the project."
+      },
+      "projectDateBefore": {
+        "title": "Words before the date",
+        "text": "Text printed in front of the date, for example “Start date:”. Nothing prints when the project has no date."
       }
     }
   },
@@ -4212,7 +4223,11 @@
       "noValue": "This project has no value for it, so nothing prints.",
       "follows": "Pick another project at the top and it shows that project's value. The report prints the value of the project it is made for.",
       "toText": "Type my own text instead",
-      "toTextHint": "Keeps what it shows now as ordinary text that no longer follows the project."
+      "toTextHint": "Keeps what it shows now as ordinary text that no longer follows the project.",
+      "lookTitle": "How it looks",
+      "beforeTitle": "Words before the date",
+      "beforePlaceholder": "For example: Start date:",
+      "noWords": "No words"
     }
   },
   "projectList": {

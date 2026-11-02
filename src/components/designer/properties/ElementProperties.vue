@@ -1059,7 +1059,10 @@ import { resetElementStyle } from "../../../utils/resetStyle";
 import BarcodeProperties from "./BarcodeProperties.vue";
 import { isPagination } from "../../../utils/paginationPresets";
 import { isDateElement } from "../../../utils/dateElement";
-import { isProjectValue } from "../../../utils/projectValue";
+import { getProjectValueLink, isProjectDateKey, isProjectValue } from "../../../utils/projectValue";
+
+// A start / finish date linked to the project: shown as a date, like the Date element
+const isProjectDate = (el: any) => isProjectDateKey(getProjectValueLink(el)?.key ?? "");
 import FrameProperties from "./FrameProperties.vue";
 import {
   getBoxCornerRadii,
@@ -1787,7 +1790,7 @@ const panelTitle = computed(() => {
   if (!selectedElement.value || !el) return t("properties.reportProperties");
   if (isPagination(el)) return t("elementNames.pageNumber");
   if (isDateElement(el)) return t("elementNames.dateTime");
-  if (isProjectValue(el)) return t("elementNames.projectValue");
+  if (isProjectValue(el)) return t(isProjectDate(el) ? "elementNames.projectDate" : "elementNames.projectValue");
   if (isLocationElement(el)) return t("elementNames.location");
   if (isPageBorder.value) return t("elementNames.framePageBorder");
   // Headings are shown by their own name, not as the box / text they are built of
@@ -1890,7 +1893,7 @@ const panelKind = computed(() => {
   if (!selectedElement.value || !el) return "report";
   if (isPagination(el)) return "pageNumber";
   if (isDateElement(el)) return "dateTime";
-  if (isProjectValue(el)) return "projectValue";
+  if (isProjectValue(el)) return isProjectDate(el) ? "projectDate" : "projectValue";
   if (isLocationElement(el) || isLocationPart(el)) return "location";
   if (isPageBorder.value) return "pageBorder";
   if (hasProperty(el, SECTION_HEADING_PROPERTY)) return "sectionHeading";

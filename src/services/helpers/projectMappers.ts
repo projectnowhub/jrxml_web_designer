@@ -52,6 +52,13 @@ const textOrNull = (value: string | null | undefined) => (value?.trim() ? value.
 
 const richTextOrNull = (html: string | null | undefined) => (html ? textOrNull(htmlToText(html)) : null);
 
+// The day of a date as yyyy-MM-dd (what a linked date is written from in the
+// look the user chose); null when there is none
+function isoDayOrNull(value: string | null | undefined): string | null {
+  const day = /^(\d{4}-\d{2}-\d{2})/.exec(value ?? "")?.[1];
+  return day ?? null;
+}
+
 // A date as people write it ("15 Jan 2025"), in the app's language
 function formatProjectDate(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -200,6 +207,7 @@ export function toProjectDetails(project: ProjectRecord, key = projectKey(projec
     id: key,
     fields: DETAIL_FIELDS.map(({ key: field, type }) => ({ key: field, type, label: t(`reportData.fields.${field}`) })),
     values: { ...values, ...more.values },
+    dates: { startDate: isoDayOrNull(project.startDate), finishDate: isoDayOrNull(project.finishDate) },
     location: toProjectLocation(project),
     tables: toProjectLists(project),
     moreDetails: more.fields,

@@ -71,11 +71,12 @@
               :key="field.key"
               class="rdp-item"
               draggable="true"
-              :title="t(field.type === 'image' ? 'reportData.dragImage' : 'reportData.dragDetail')"
+              :title="t(field.type === 'image' ? 'reportData.dragImage' : isProjectDateKey(field.key) ? 'reportData.dragDate' : 'reportData.dragDetail')"
               @dragstart="dragField($event, project, field)"
               @dragend="endDataSourceDrag"
             >
-              <component :is="FIELD_ICONS[field.type]" :size="12" class="rdp-type" aria-hidden="true" />
+              <!-- Start / finish dates: the Date element's icon (they work like it) -->
+              <component :is="isProjectDateKey(field.key) ? CalendarClock : FIELD_ICONS[field.type]" :size="12" class="rdp-type" aria-hidden="true" />
               <span class="rdp-name">{{ field.label }}</span>
               <img
                 v-if="field.type === 'image' && valueOf(project.id, field.key)"
@@ -236,6 +237,7 @@ import { computed, nextTick, reactive, ref, watch, type Component } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   Calendar,
+  CalendarClock,
   ChevronDown,
   Database,
   DollarSign,
@@ -259,6 +261,7 @@ import { endDataSourceDrag, startDataSourceDrag } from "@/utils/table/dataDrag";
 import { PLACE_FIELDS, toPlace } from "@/utils/location/locationElement";
 import { collectBoundTables } from "@/utils/table/tableDocument";
 import { isChartBound, normalizeChartBinding } from "@/utils/chart/chartTypes";
+import { isProjectDateKey } from "@/utils/projectValue";
 import type { Band } from "@/types";
 import type {
   DataColumn,

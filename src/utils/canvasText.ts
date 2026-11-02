@@ -9,7 +9,7 @@ import { isRichTextElement } from "./elementUtils";
 import { dateText, getDateSetup, isDateElement } from "./dateElement";
 import { isLocationAddress } from "./location/locationElement";
 import { formatPageNumber, getPaginationSettings, isPagination } from "./paginationPresets";
-import { getProjectValueLink, isProjectValue } from "./projectValue";
+import { getProjectValueLink, isProjectValue, linkShownText } from "./projectValue";
 import type { TextFieldElement } from "@/types";
 
 export interface CanvasTextPages {
@@ -65,7 +65,7 @@ export function formatCanvasText(element: TextFieldElement, pages: CanvasTextPag
   if (isDateElement(element)) return dateText(getDateSetup(element));
   if (isProjectValue(element)) {
     const link = getProjectValueLink(element);
-    if (link) return link.value ?? link.label;
+    if (link) return linkShownText(link) ?? link.label;
   }
   const expr = element.expression;
   if (!expr) return "";

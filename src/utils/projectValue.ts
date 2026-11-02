@@ -15,7 +15,8 @@
 
 import type { Band, DesignElement, FrameElement, TextFieldElement } from "@/types";
 import type { ProjectDetails, ProjectField } from "@/types/dataSource";
-import { readJavaString } from "./jrxml/javaString";
+import { javaString, readJavaString } from "./jrxml/javaString";
+import { formatIsoDay } from "./dateElement";
 
 export const PROJECT_VALUE_PROPERTY = "com.cdp.projectValue";
 
@@ -29,6 +30,10 @@ export interface ProjectValueLink {
   value: string | null;
   // Long texts (introductions, scope) grow downwards
   long?: boolean;
+  // A date (start / finish), like the Date element: its look (a DAY_FORMATS
+  // id; none = PROJECT_DATE_FORMAT) and words printed before it
+  format?: string;
+  before?: string;
 }
 
 type WithProperties = { type?: string; properties?: Array<{ name?: string; value?: string }> };
@@ -37,6 +42,12 @@ type WithProperties = { type?: string; properties?: Array<{ name?: string; value
 export const PROJECT_PARAM_PREFIX = "cdp_";
 
 const PROJECT_KEYS = ["name", "code", "status", "manager", "startDate", "finishDate", "description", "scope", "milestones"];
+
+// The project's dates: shown in a look the user picks, like the Date element
+const PROJECT_DATE_KEYS = ["startDate", "finishDate"];
+export const isProjectDateKey = (key: string) => PROJECT_DATE_KEYS.includes(key);
+// The look a linked date starts with ("22 May 2026")
+export const PROJECT_DATE_FORMAT = "dayShortMonthYear";
 
 // The JRXML parameter holding a detail ("cdp_project_status", "cdp_udf_BANK_NAME",
 // "cdp_location_city"); only letters, digits and "_"
@@ -47,15 +58,41 @@ export function projectParamName(key: string): string {
   return `${PROJECT_PARAM_PREFIX}project_${safe(key)}`;
 }
 
+// The parameter of one linked text: a date in another look than the first one
+// gets its own ("cdp_project_startDate_numeric"), since the value is the
+// date written in that look
+export function linkParamName(link: Pick<ProjectValueLink, "key" | "format">): string {
+  const base = projectParamName(link.key);
+  return isProjectDateKey(link.key) && link.format && link.format !== PROJECT_DATE_FORMAT ? `${base}_${link.format}` : base;
+}
+
+// The expression of a linked text: its parameter, with the words before it
+// (nothing at all when the project has no value)
+function linkExpression(link: ProjectValueLink): string {
+  const param = `$P{${linkParamName(link)}}`;
+  const before = link.before?.trim();
+  return before ? `(${param} == null ? null : ${javaString(`${before} `)} + ${param})` : param;
+}
+
+// What a linked text shows: the words before it and the value (null when none)
+export function linkShownText(link: ProjectValueLink): string | null {
+  if (!link.value) return null;
+  const before = link.before?.trim();
+  return before ? `${before} ${link.value}` : link.value;
+}
+
 // Whether a detail can be linked (a text detail; not the logo, nor the whole place)
 export const isLinkableField = (field: ProjectField) =>
   field.type === "text" || field.type === "longText"
     ? PROJECT_KEYS.includes(field.key) || /^(more|location)\.[^.]+$/.test(field.key)
     : false;
 
-// A detail's value in a project's details (null when it has none)
-export function projectValueOf(details: ProjectDetails | null | undefined, key: string): string | null {
+// A detail's value in a project's details (null when it has none); a date in
+// the given look (`format`, a DAY_FORMATS id)
+export function projectValueOf(details: ProjectDetails | null | undefined, key: string, format?: string): string | null {
   if (!details) return null;
+  const day = isProjectDateKey(key) ? details.dates?.[key] : null;
+  if (day) return formatIsoDay(day, format ?? PROJECT_DATE_FORMAT);
   let value: string | number | null | undefined;
   if (key.startsWith("location.")) value = details.location?.[key.slice(9) as keyof NonNullable<ProjectDetails["location"]>];
   else value = details.values[key];
@@ -82,6 +119,8 @@ export function getProjectValueLink(element: WithProperties): ProjectValueLink |
       label: typeof v.label === "string" ? v.label : v.key,
       value: typeof v.value === "string" ? v.value : null,
       ...(v.long ? { long: true } : {}),
+      ...(typeof v.format === "string" && v.format ? { format: v.format } : {}),
+      ...(typeof v.before === "string" && v.before.trim() ? { before: v.before } : {}),
     };
   } catch {
     return null;
@@ -93,7 +132,7 @@ export function getProjectValueLink(element: WithProperties): ProjectValueLink |
 export function setProjectValueLink(element: TextFieldElement, link: ProjectValueLink): void {
   const others = (element.properties ?? []).filter((p) => p?.name !== PROJECT_VALUE_PROPERTY);
   element.properties = [...others, { name: PROJECT_VALUE_PROPERTY, value: JSON.stringify(link) }];
-  element.expression = `$P{${projectParamName(link.key)}}`;
+  element.expression = linkExpression(link);
   // Plain text: a "<" or "&" in a project's value prints as written
   element.markup = "none";
   element.isBlankWhenNull = true;
@@ -127,7 +166,7 @@ export function linkForJrxml<T extends { name?: string; value?: string }>(proper
 export function restoreProjectValueDefaults(bands: Band[], defaults: Map<string, string>): void {
   for (const element of projectValueElements(bands)) {
     const link = getProjectValueLink(element);
-    const expression = link ? defaults.get(projectParamName(link.key)) : undefined;
+    const expression = link ? defaults.get(linkParamName(link)) : undefined;
     if (!link || expression === undefined) continue;
     const value = readJavaString(expression);
     setProjectValueLink(element, { ...link, value: value?.trim() ? value : null });
@@ -147,7 +186,7 @@ export function unlinkProjectValue(element: TextFieldElement): void {
   const link = getProjectValueLink(element);
   element.properties = (element.properties ?? []).filter((p) => p?.name !== PROJECT_VALUE_PROPERTY);
   if (element.properties.length === 0) delete element.properties;
-  element.expression = `"${(link?.value ?? "").replace(/\r\n|\r|\n/g, "\\n")}"`;
+  element.expression = `"${((link && linkShownText(link)) ?? "").replace(/\r\n|\r|\n/g, "\\n")}"`;
   element.markup = "none";
 }
 
@@ -173,8 +212,8 @@ export function syncProjectValues(bands: Band[], details: ProjectDetails | null 
   for (const element of projectValueElements(bands)) {
     const link = getProjectValueLink(element);
     if (!link) continue;
-    const value = projectValueOf(details, link.key);
-    if (value !== link.value || element.expression !== `$P{${projectParamName(link.key)}}`) {
+    const value = projectValueOf(details, link.key, link.format);
+    if (value !== link.value || element.expression !== linkExpression(link)) {
       setProjectValueLink(element, { ...link, value });
       changed = true;
     }
@@ -189,7 +228,7 @@ export function projectParameters(bands: Band[]): { name: string; value: string 
   for (const element of projectValueElements(bands)) {
     const link = getProjectValueLink(element);
     if (!link) continue;
-    const name = projectParamName(link.key);
+    const name = linkParamName(link);
     if (!seen.has(name)) seen.set(name, link.value);
   }
   return [...seen].map(([name, value]) => ({ name, value }));

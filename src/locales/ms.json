@@ -199,7 +199,8 @@
     "contentsPlain": "Klasik",
     "coverClassic": "Klasik",
     "location": "Lokasi",
-    "projectValue": "Butiran projek"
+    "projectValue": "Butiran projek",
+    "projectDate": "Tarikh projek"
   },
   "properties": {
     "title": "Tetapan",
@@ -1109,7 +1110,8 @@
       "sectionHeading": "Tajuk yang memulakan bahagian. Nombornya dikira sendiri, dan ia dipaparkan dalam isi kandungan.",
       "subHeading": "Tajuk yang lebih kecil dalam satu bahagian. Ia dipaparkan, berinden, dalam isi kandungan.",
       "location": "Peta dengan pin dan alamat. Taip tempat di bawah, salin daripada projek, atau klik peta kecil untuk meletakkan pin di situ.",
-      "projectValue": "Butiran projek templat. Ia menunjukkan nilai projek itu dan berubah bersamanya. Gayakan seperti teks lain."
+      "projectValue": "Butiran projek templat. Ia menunjukkan nilai projek itu dan berubah bersamanya. Gayakan seperti teks lain.",
+      "projectDate": "Tarikh projek templat. Ia menunjukkan tarikh projek itu dan berubah bersamanya. Pilih rupanya dan perkataan sebelumnya di bawah."
     },
     "firstTips": {
       "gotIt": "Faham",
@@ -2694,7 +2696,8 @@
       "chartDesc": "Kiraan atau jumlah barisnya sebagai carta bar, garis, pai atau lain-lain.",
       "tableOnlyInDetail": "Jadual diletakkan dalam bahagian Butiran. Lepaskan di sana untuk jadual.",
       "tableNotOnSpecialPage": "Jadual tidak boleh diletakkan pada halaman kulit atau kandungan."
-    }
+    },
+    "dragDate": "Seret ke halaman: menunjukkan tarikh projek ini dalam rupa yang anda pilih, dan mengikut projek templat"
   },
   "barcode": {
     "chooseType": "Pilih jenis kod bar",
@@ -3920,6 +3923,14 @@
         "title": "Butiran projek",
         "text": "Butiran projek yang ditunjukkan oleh teks ini. Ia sentiasa menunjukkan nilai projek templat, jadi templat yang sama mencetak nama, status atau tarikh yang betul untuk mana-mana projek. Pilih projek lain di atas untuk melihatnya berubah.",
         "example": "Seret Status dari Data Laporan: ia menunjukkan “Aktif” untuk satu projek dan “Ditangguhkan” untuk projek lain."
+      },
+      "projectDateLook": {
+        "title": "Rupanya",
+        "text": "Gaya tarikh, contohnya 22 May 2026 atau 22/05/2026. Tarikh itu sendiri sentiasa datang daripada projek."
+      },
+      "projectDateBefore": {
+        "title": "Perkataan sebelum tarikh",
+        "text": "Teks yang dicetak di hadapan tarikh, contohnya “Tarikh mula:”. Tiada apa yang dicetak apabila projek tiada tarikh."
       }
     }
   },
@@ -4212,7 +4223,11 @@
       "noValue": "Projek ini tiada nilai untuknya, jadi tiada apa yang dicetak.",
       "follows": "Pilih projek lain di atas dan ia menunjukkan nilai projek itu. Laporan mencetak nilai projek yang ia dibuat untuknya.",
       "toText": "Taip teks saya sendiri",
-      "toTextHint": "Mengekalkan apa yang ditunjukkan sekarang sebagai teks biasa yang tidak lagi mengikut projek."
+      "toTextHint": "Mengekalkan apa yang ditunjukkan sekarang sebagai teks biasa yang tidak lagi mengikut projek.",
+      "lookTitle": "Rupanya",
+      "beforeTitle": "Perkataan sebelum tarikh",
+      "beforePlaceholder": "Contohnya: Tarikh mula:",
+      "noWords": "Tiada perkataan"
     }
   },
   "projectList": {
