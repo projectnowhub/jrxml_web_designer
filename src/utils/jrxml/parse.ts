@@ -17,7 +17,7 @@ import {
 } from "../framePresets";
 import { detectPagination } from "../paginationPresets";
 import { restoreDateElement } from "../dateElement";
-import { PROJECT_PARAM_PREFIX, restoreProjectValue } from "../projectValue";
+import { PROJECT_PARAM_PREFIX, restoreProjectValue, restoreProjectValueDefaults } from "../projectValue";
 import {
   CONTENTS_PAGE_PROPERTY,
   parseSpecialPages,
@@ -172,12 +172,18 @@ export function parseJRXMLContent(jrxmlContent: string): {
   });
 
   const parameters: Parameter[] = [];
+  // The project details' parameters' defaults: the linked texts' values
+  const projectValueDefaults = new Map<string, string>();
   // Only collect parameter elements that are direct children of the root element, excluding parameters inside datasets
   Array.from(jasperReportElem.children).forEach((child) => {
     if (child.tagName === "parameter" || child.localName === "parameter") {
       const name = child.getAttribute("name");
       const className = child.getAttribute("class") || "java.lang.String";
       // The project details' parameters are written again from the linked texts
+      if (name?.startsWith(PROJECT_PARAM_PREFIX)) {
+        const defaultValue = child.querySelector("defaultValueExpression")?.textContent;
+        if (defaultValue) projectValueDefaults.set(name, defaultValue);
+      }
       if (name && !name.startsWith(PROJECT_PARAM_PREFIX)) {
         const param: Parameter = { name, class: className };
         // Extract the UUID (if present)
@@ -610,6 +616,9 @@ export function parseJRXMLContent(jrxmlContent: string): {
     reportProperties.find((p) => p.name === REPORT_PROJECTS_PROPERTY)?.value,
   );
   if (projects.length) properties.projects = projects;
+
+  // Linked project details take their values from their parameters' defaults
+  restoreProjectValueDefaults(bands, projectValueDefaults);
 
   return {
     properties,

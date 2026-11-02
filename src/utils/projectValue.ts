@@ -2,16 +2,20 @@
 // shows the project's value (name, status, a user-defined field…) and follows
 // it, so the same template prints the right value for another project. The
 // link is kept as JSON in the `com.cdp.projectValue` property: which detail
-// (its Report Data key), its label, and the value last read from the project
-// (so the canvas, the JRXML and undo agree; syncProjectValues refreshes it).
+// (its Report Data key), its label, and in the designer the value last read
+// from the project (so the canvas and undo agree; syncProjectValues refreshes it).
 //
 // In the JRXML the text is `$P{cdp_project_status}`, a String parameter whose
-// default is that value. Preview PDF passes the current value as a parameter;
-// a backend running the template for another project passes that project's.
+// default is that value, so the file prints on its own; a backend running the
+// template passes the project's value for the parameter, which replaces the
+// default. The value is written once, as that default: the property in the
+// JRXML holds only key, label and long (linkForJrxml), and the parser reads
+// the value back from the default (restoreProjectValueDefaults).
 // "Type my own text instead" turns it into plain text (unlinkProjectValue).
 
 import type { Band, DesignElement, FrameElement, TextFieldElement } from "@/types";
 import type { ProjectDetails, ProjectField } from "@/types/dataSource";
+import { readJavaString } from "./jrxml/javaString";
 
 export const PROJECT_VALUE_PROPERTY = "com.cdp.projectValue";
 
@@ -104,6 +108,30 @@ export function linkProjectValue(element: TextFieldElement, field: ProjectField,
     value: value?.trim() ? value.trim() : null,
     ...(field.type === "longText" ? { long: true } : {}),
   });
+}
+
+// The element's properties as written to the JRXML: a link without its value
+// (the value is the parameter's default, written once)
+export function linkForJrxml<T extends { name?: string; value?: string }>(properties: T[]): T[] {
+  return properties.map((p) => {
+    if (p?.name !== PROJECT_VALUE_PROPERTY || !p.value) return p;
+    const link = getProjectValueLink({ properties: [p] });
+    if (!link) return p;
+    const { value: _value, ...written } = link;
+    return { ...p, value: JSON.stringify(written) };
+  });
+}
+
+// On import: each linked text's value from its parameter's default (`defaults`
+// = parameter name → default expression)
+export function restoreProjectValueDefaults(bands: Band[], defaults: Map<string, string>): void {
+  for (const element of projectValueElements(bands)) {
+    const link = getProjectValueLink(element);
+    const expression = link ? defaults.get(projectParamName(link.key)) : undefined;
+    if (!link || expression === undefined) continue;
+    const value = readJavaString(expression);
+    setProjectValueLink(element, { ...link, value: value?.trim() ? value : null });
+  }
 }
 
 // On import: rebuild the expression from the stored link

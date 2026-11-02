@@ -95,7 +95,7 @@ export interface ReportChartEntry {
 }
 
 export interface ReportDetails {
-  defaults: { projectId: string; projectName: string; timezone: string; locale: string };
+  defaults: { projectId: string; projectName: string };
   projectData: {
     details: ReportValueEntry[];
     location: ReportValueEntry[];
