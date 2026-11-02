@@ -2685,7 +2685,16 @@
     "userDefinedField": "Medan ditentukan pengguna",
     "projectSwitched": "Templat kini menggunakan {project}\nButiran, senarai, jadual, carta dan petanya mengikut projek baharu.",
     "projectMissing": "{project} tiada dalam senarai projek anda. Ia mungkin telah dipadam, atau akaun anda tidak dapat melihatnya. Pilih projek lain di atas.",
-    "tablesLoadFailed": "Senarai jadual tidak dapat dimuatkan."
+    "tablesLoadFailed": "Senarai jadual tidak dapat dimuatkan.",
+    "dropChoice": {
+      "title": "Paparkan “{source}” sebagai",
+      "table": "Jadual",
+      "tableDesc": "Setiap baris yang sepadan, dicetak sepenuhnya setiap kali laporan dijalankan.",
+      "chart": "Carta",
+      "chartDesc": "Kiraan atau jumlah barisnya sebagai carta bar, garis, pai atau lain-lain.",
+      "tableOnlyInDetail": "Jadual diletakkan dalam bahagian Butiran. Lepaskan di sana untuk jadual.",
+      "tableNotOnSpecialPage": "Jadual tidak boleh diletakkan pada halaman kulit atau kandungan."
+    }
   },
   "barcode": {
     "chooseType": "Pilih jenis kod bar",
@@ -3492,7 +3501,7 @@
         "title": "Jadual",
         "what": "Baris dan lajur, sama ada ditaip oleh anda atau diisi daripada data projek anda.",
         "when": "Taip sendiri untuk angka utama, ringkasan dan daftar. Guna data projek untuk senarai yang datang daripada projek anda, seperti perolehan atau bahan.",
-        "add": "Klik Jadual dalam Pustaka Elemen dan pilih Taip sendiri atau Guna data projek. Atau seret senarai (Pengurus Projek, Pasukan Projek, Syarikat, Kontrak) dari Data Laporan ke bahagian Butiran: ia menjadi jadual baris projek yang mengikut projek templat.",
+        "add": "Klik Jadual dalam Pustaka Elemen dan pilih Taip sendiri atau Guna data projek. Atau seret senarai (Pengurus Projek, Pasukan Projek, Syarikat, Kontrak) dari Data Laporan ke bahagian Butiran: ia menjadi jadual baris projek yang mengikut projek templat. Seret salah satu jadual projek (Perolehan, Risiko…) ke ruang kosong dan pilih Jadual.",
         "work": [
           "Jadual yang ditaip: klik dua kali untuk menaip dalam sel; Tab bergerak ke sel seterusnya. Pemegang di atas lajur dan di sebelah baris memilih seluruh lajur atau baris; kemudian Sisip di atas / di bawah / di kiri / di kanan, Padam, Gabung dan Pisah ada dalam Tetapan Asas dan pada klik kanan. Warna, huruf tebal, penjajaran dan saiz teks sel yang dipilih ada dalam Tetapan Gaya.",
           "Saiz: seret garisan antara lajur untuk menukar lebarnya, dan garisan di bawah baris untuk menukar ketinggiannya. Jadual yang ditaip: buka (klik dua kali) dan gunakan garisan pendek antara huruf di atasnya dan nombor di sebelahnya. Jadual data projek: pilih jadual, kemudian seret garisan ungu padanya (baris tajuk dan baris masing-masing mempunyai satu ketinggian), atau seret pemegang atas atau bawahnya untuk meninggikan atau merendahkan tajuk dan setiap baris bersama-sama.",
@@ -3512,7 +3521,7 @@
         "title": "Carta",
         "what": "Carta yang dilukis daripada angka projek anda: bar, garis, pai, donut, tolok dan banyak lagi.",
         "when": "Untuk menunjukkan aliran mengikut masa, membandingkan kategori, atau menunjukkan bahagian daripada keseluruhan.",
-        "add": "Klik Carta dalam Pustaka Elemen dan pilih jenis, atau seretnya untuk mendapatkan carta bar.",
+        "add": "Klik Carta dalam Pustaka Elemen dan pilih jenis, atau seretnya untuk mendapatkan carta bar. Atau seret salah satu jadual projek dari Data Laporan ke ruang kosong pada halaman dan pilih Carta: persediaannya dibuka dengan jadual itu.",
         "work": [
           "Klik dua kali pada carta (atau Sediakan data) untuk memilih projek, data dan apa yang hendak ditunjukkan, dengan pratonton langsung.",
           "Sehingga datanya disediakan, carta menunjukkan angka contoh dengan lencana.",

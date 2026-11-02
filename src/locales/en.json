@@ -2685,7 +2685,16 @@
     "userDefinedField": "User-defined field",
     "projectSwitched": "Template now uses {project}\nIts details, lists, tables, charts and map follow the new project.",
     "projectMissing": "{project} isn't in your project list. It may have been deleted, or your account can't see it. Pick another project at the top.",
-    "tablesLoadFailed": "Couldn't load the list of tables."
+    "tablesLoadFailed": "Couldn't load the list of tables.",
+    "dropChoice": {
+      "title": "Show “{source}” as",
+      "table": "Table",
+      "tableDesc": "Every matching row, printed in full each time the report runs.",
+      "chart": "Chart",
+      "chartDesc": "Counts or totals of its rows as a bar, line, pie or other chart.",
+      "tableOnlyInDetail": "Tables go in the Detail section. Drop it there for a table.",
+      "tableNotOnSpecialPage": "Tables can't go on a cover or contents page."
+    }
   },
   "barcode": {
     "chooseType": "Choose a barcode type",
@@ -3492,7 +3501,7 @@
         "title": "Table",
         "what": "Rows and columns, either typed by you or filled from your project's data.",
         "when": "Type my own for key figures, summaries and registers. Use project data for lists that come from your project, such as procurement or materials.",
-        "add": "Click Table in the Element Library and choose Type my own or Use project data. Or drag a list (Project Manager, Project Team, Companies, Contracts) from Report Data onto the Detail section: it becomes a table of the project's rows that follows the template's project.",
+        "add": "Click Table in the Element Library and choose Type my own or Use project data. Or drag a list (Project Manager, Project Team, Companies, Contracts) from Report Data onto the Detail section: it becomes a table of the project's rows that follows the template's project. Drag one of the project's tables (Procurement, Risk…) onto empty space and choose Table.",
         "work": [
           "A typed table: double-click it to type in the cells; Tab moves to the next cell. Handles above the columns and beside the rows choose a whole column or row; then Insert above / below / left / right, Delete, Merge and Split are in Basic Settings and on right-click. The chosen cells' colours, bold, alignment and text size are in Style Settings.",
           "Sizes: drag the lines between columns to change their widths, and the lines under rows to change their heights. A typed table: open it (double-click) and use the short lines between the letters above it and the numbers beside it. A project data table: select it, then drag the purple lines on it (the heading row and the rows have one height each), or drag its top or bottom handle to make the heading and every row taller or shorter together.",
@@ -3512,7 +3521,7 @@
         "title": "Chart",
         "what": "A chart drawn from your project's numbers: bars, lines, pie, donut, gauge and more.",
         "when": "To show a trend over time, compare categories, or show the parts of a whole.",
-        "add": "Click Chart in the Element Library and choose a type, or drag it to get a bar chart.",
+        "add": "Click Chart in the Element Library and choose a type, or drag it to get a bar chart. Or drag one of the project's tables from Report Data onto empty space on the page and choose Chart: its setup opens with that table.",
         "work": [
           "Double-click the chart (or Set up data) to choose the project, the data and what to show, with a live preview.",
           "Until its data is set up, the chart shows sample numbers with a badge.",
