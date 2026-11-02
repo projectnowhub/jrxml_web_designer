@@ -10,9 +10,9 @@ import type { Band, BarcodeElement, DesignElement, FrameElement } from "@/types"
 import { checkBarcodeValue, toBarcodeExpression } from "./barcode/barcodeTypes";
 import { setImageCrop, setImageName } from "./elementUtils";
 import { isPagination } from "./paginationPresets";
-import { isDateElement } from "./dateElement";
+import { DATE_PROPERTY, DAY_FORMATS, getDateSetup, isDateElement } from "./dateElement";
 import { isLocationElement, isLocationPart } from "./location/locationElement";
-import { isLinkableField, linkProjectValue } from "./projectValue";
+import { getProjectValueLink, isLinkableField, isProjectDateKey, linkProjectValue, setProjectValueLink } from "./projectValue";
 import type { ChartBinding, ProjectField, ReportProject, TableDataBinding } from "@/types/dataSource";
 
 export const REPORT_PROJECTS_PROPERTY = "com.cdp.projects";
@@ -21,14 +21,17 @@ export const REPORT_PROJECTS_PROPERTY = "com.cdp.projects";
 export const isLocationField = (field: ProjectField) => field.type === "location" || field.key.startsWith("location.");
 
 // Whether a project detail can be dropped onto an existing item: text details
-// onto a text item (not a page number or a date) or onto a barcode whose type can hold
+// onto a text item (not a page number; a Date only takes the project's start or
+// finish date, which it then shows in its look) or onto a barcode whose type can hold
 // the value, an image (the logo) onto an image item, the location or one of
 // its fields onto a Location (it changes the place)
 export function canTakeProjectField(element: DesignElement, field: ProjectField, value?: string | null): boolean {
   if (isLocationElement(element) || isLocationPart(element)) return isLocationField(field);
   if (field.type === "location") return false;
   if (element.type === "image") return field.type === "image";
-  if (element.type === "textField") return field.type !== "image" && !isPagination(element) && !isDateElement(element);
+  // A Date (e.g. a design's date) takes the project's start / finish date
+  if (element.type === "textField" && isDateElement(element)) return isProjectDateKey(field.key);
+  if (element.type === "textField") return field.type !== "image" && !isPagination(element);
   if (element.type === "barcode") return field.type !== "image" && (value == null || !projectValueProblem(element, value));
   return false;
 }
@@ -54,6 +57,21 @@ export function applyProjectValue(
     // the generator reads this module and must not load the API client
     element.imageExpression = `"${value.replace(/"/g, "%22")}"`;
   } else if (element.type === "textField") {
+    // A Date becomes the project's date, keeping its day look and words before
+    if (isDateElement(element) && isProjectDateKey(field.key)) {
+      const setup = getDateSetup(element);
+      element.properties = (element.properties ?? []).filter((p) => p?.name !== DATE_PROPERTY);
+      linkProjectValue(element, field, value);
+      const link = getProjectValueLink(element);
+      if (link) {
+        setProjectValueLink(element, {
+          ...link,
+          ...(DAY_FORMATS.some((f) => f.id === setup.format) ? { format: setup.format } : {}),
+          ...(setup.before.trim() ? { before: setup.before } : {}),
+        });
+      }
+      return;
+    }
     if (isLinkableField(field)) {
       // Linked: shows the project's value, follows the template's project
       linkProjectValue(element, field, value);

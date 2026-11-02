@@ -2673,7 +2673,7 @@
     "dropTextOnText": "Drop it on a text\nText details (name, dates, budget…) go on a text element or empty space.",
     "dropImageOnImage": "Drop the logo on an image element, or on empty space.",
     "dropNotOnPageNumber": "A page number can't show project data\nDrop it on another text element.",
-    "dropNotOnDate": "A date can't show project data\nDrop it on another text element.",
+    "dropNotOnDate": "A date only takes a project date\nDrop Start Date or Finish Date on it, or drop this detail on a text element.",
     "projectInUse": "Can't remove {project}\nIt is used by {count} table(s) or chart(s). Delete them, or pick another project instead.",
     "projectSource": "{project} · {source}",
     "noValue": "{project} has no {label} to add.",
