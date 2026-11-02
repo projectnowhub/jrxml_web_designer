@@ -202,7 +202,6 @@ import {
   cleanEditorHtml,
   getElementBoxInsets,
   hasHtmlTags,
-  isRichTextElement,
   pasteTextOnly,
   refuseFileDrop,
   rgbToHex,
@@ -210,15 +209,15 @@ import {
 } from '../../utils/elementUtils';
 import notification from '@/utils/notification';
 import {
-  formatPageNumber,
   getPaginationSettings,
   isPageInRange,
   isPagination,
   showsTotalPages,
 } from '../../utils/paginationPresets';
-import { dateText, getDateSetup, isDateElement } from '../../utils/dateElement';
+import { isDateElement } from '../../utils/dateElement';
 import { getProjectValueLink, isProjectValue } from '../../utils/projectValue';
 import { isLocationAddress } from '../../utils/location/locationElement';
+import { canvasShowsHtml, formatCanvasText } from '../../utils/canvasText';
 
 const { t } = useI18n();
 
@@ -339,67 +338,19 @@ const projectLink = computed(() => (isProjectValue(props.element) ? getProjectVa
 // Rendered HTML content for canvas view (shared with the height measurement)
 const renderedHtmlContent = computed(() => textExpressionToHtml(props.element.expression || ''));
 
-// Clean display text for plain expressions (preserves linebreaks, strips literal quotes)
-const displayText = computed(() => {
-  if (isPageNumber.value) {
-    return (
-      formatPageNumber(paginationSettings.value, canvasPage.value, canvasPageCount.value) ?? ""
-    );
-  }
-  if (isDate.value) return dateText(getDateSetup(props.element));
-  if (projectLink.value) return projectLink.value.value ?? projectLink.value.label;
-  if (props.element.expression) {
-    const expr = props.element.expression;
-    if (expr.includes("SimpleDateFormat") && expr.includes("java.util.Date")) {
-      return resolveLegacyDateSample(expr);
-    }
-    if (props.pageNumber !== undefined && expr.includes('$V{PAGE_NUMBER}')) {
-      const pNum = String(props.pageNumber);
-      const totalP = String(props.totalPages || props.pageNumber);
-
-      if (expr.trim() === '$V{PAGE_NUMBER}') {
-        return pNum;
-      }
-
-      let evaluated = expr;
-      if (evaluated.includes('" of "') || evaluated.includes('" / "') || evaluated.includes('"/"')) {
-        let count = 0;
-        evaluated = evaluated.replace(/\$V\{PAGE_NUMBER\}/g, () => {
-          count++;
-          return count === 1 ? pNum : totalP;
-        });
-      } else {
-        evaluated = evaluated.replace(/\$V\{PAGE_NUMBER\}/g, pNum);
-      }
-
-      evaluated = evaluated
-        .replace(/"\s*\+\s*/g, '')
-        .replace(/\s*\+\s*"/g, '')
-        .replace(/\s*\+\s*/g, ' ')
-        .replace(/^"|"$/g, '');
-      return evaluated.replace(/\\n/g, '\n');
-    }
-
-    // Strip surrounding quotes for plain literal strings so user sees clean text
-    const trimmed = expr.trim();
-    // A Location's address is a full Java string (quotes and backslashes escaped)
-    if (isAddress.value && trimmed.startsWith('"') && trimmed.endsWith('"')) {
-      return trimmed.slice(1, -1).replace(/\\([\\"n])/g, (_, c: string) => (c === 'n' ? '\n' : c));
-    }
-    if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
-      return trimmed.slice(1, -1).replace(/\\n/g, '\n');
-    }
-
-    return expr.replace(/\\n/g, '\n');
-  }
-  return '';
-});
+// What the canvas shows (utils/canvasText.ts; "Fit to text" measures the same)
+const displayText = computed(() =>
+  formatCanvasText(props.element, {
+    numberPage: canvasPage.value,
+    numberPageCount: canvasPageCount.value,
+    designPage: props.pageNumber,
+    designPageCount: props.totalPages,
+  }),
+);
 
 // A Location's address is always plain ("<b>" in it shows as typed)
 const isAddress = computed(() => isLocationAddress(props.element));
-const hasRichMarkup = computed(
-  () => !isPageNumber.value && !isDate.value && !projectLink.value && !isAddress.value && isRichTextElement(props.element),
-);
+const hasRichMarkup = computed(() => canvasShowsHtml(props.element));
 
 const hasContent = computed(() => {
   if (hasRichMarkup.value) {
@@ -500,8 +451,9 @@ const isSelected = computed(() => {
 });
 
 // Show overflow badge only when element is selected and content is clipped
+// (not on a Location's address: its layout sizes it to its words)
 const showOverflowBadge = computed(() => {
-  return isSelected.value && isOverflowing.value && !isEditing.value;
+  return isSelected.value && isOverflowing.value && !isEditing.value && !isAddress.value;
 });
 
 // The badge keeps the same small size on screen at any zoom (the canvas is
@@ -525,7 +477,11 @@ const checkOverflow = () => {
   if (contentContainer.value && !isEditing.value) {
     const insets = getElementBoxInsets(props.element.box);
     const contentHeight = Math.ceil(contentContainer.value.scrollHeight);
-    const availableHeight = Math.max(0, props.element.height - insets.vertical);
+    // Sideways text runs along the height: its lines stack across the width
+    const sideways = props.element.rotation === 'Left' || props.element.rotation === 'Right';
+    const availableHeight = sideways
+      ? Math.max(0, props.element.width - insets.horizontal)
+      : Math.max(0, props.element.height - insets.vertical);
     isOverflowing.value = contentHeight > availableHeight + 1;
   } else {
     isOverflowing.value = false;
@@ -534,6 +490,15 @@ const checkOverflow = () => {
 
 watch(
   [
+    // What is shown and how: a linked value, a date or a page number can
+    // change while the expression stays the same
+    displayText,
+    renderedHtmlContent,
+    () => props.reportFontFamily,
+    () => props.reportFontSize,
+    () => props.reportIsBold,
+    () => props.reportIsItalic,
+    () => props.element.rotation,
     () => props.element.expression,
     () => props.element.width,
     () => props.element.height,
@@ -857,18 +822,26 @@ watch(
 
 let resizeObserver: ResizeObserver | null = null;
 
+// The text box is drawn again after typing (and missing while typing): the
+// size watcher follows whichever one is on screen, so the badge stays right
+watch(
+  contentContainer,
+  (box) => {
+    resizeObserver?.disconnect();
+    if (!box || typeof ResizeObserver === 'undefined') return;
+    resizeObserver ??= new ResizeObserver(() => checkOverflow());
+    resizeObserver.observe(box);
+    if (box.parentElement) resizeObserver.observe(box.parentElement);
+    nextTick(checkOverflow);
+  },
+  { flush: 'post' },
+);
+
 onMounted(() => {
   nextTick(() => {
     checkOverflow();
-    if (typeof ResizeObserver !== 'undefined' && contentContainer.value) {
-      resizeObserver = new ResizeObserver(() => {
-        checkOverflow();
-      });
-      resizeObserver.observe(contentContainer.value);
-      if (contentContainer.value.parentElement) {
-        resizeObserver.observe(contentContainer.value.parentElement);
-      }
-    }
+    // The fonts arriving re-wrap the text
+    document.fonts?.ready.then(() => checkOverflow());
   });
   document.addEventListener('selectionchange', handleDocumentSelectionChange);
   document.addEventListener('mousedown', handleOutsideMouseDown, true);

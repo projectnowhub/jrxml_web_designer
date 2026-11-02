@@ -2,6 +2,7 @@
 
 import type { Component } from "vue";
 import type { DesignElement } from "@/types";
+import { resolveReportFont } from "@/config/fonts.config";
 import {
   getElementConfig,
   createElement,
@@ -569,6 +570,9 @@ export interface MeasurableTextElement {
   isBold?: boolean;
   isItalic?: boolean;
   box?: any;
+  // The words the canvas shows (formatCanvasText in utils/canvasText.ts): a
+  // linked value, a date or a page number, measured instead of the expression
+  shownText?: string;
 }
 
 // An off-screen box holding the element's text, styled the way the canvas
@@ -586,7 +590,8 @@ function createTextMeasureBox(
   div.style.top = '-9999px';
   // Same font as the canvas draws (TextFieldElement typographyStyle)
   div.style.fontSize = `${element.fontSize || reportFont.size || 10}px`;
-  div.style.fontFamily = element.fontFamily || reportFont.name || 'SansSerif';
+  // (the font the canvas really uses: only the report server's fonts)
+  div.style.fontFamily = resolveReportFont(element.fontFamily || reportFont.name);
   div.style.fontWeight =
     element.isBold === true || (element.isBold === undefined && reportFont.isBold) ? 'bold' : 'normal';
   div.style.fontStyle =
@@ -608,11 +613,20 @@ function createTextMeasureBox(
   if (insets.borders.right > 0) div.style.borderRight = `${insets.borders.right}px solid transparent`;
 
   let raw = element.expression || (element.fieldName ? `$F{${element.fieldName}}` : '');
-  const displayText = stripExpressionQuotes(raw).replace(/\\n/g, '\n');
+  const displayText = element.shownText ?? stripExpressionQuotes(raw).replace(/\\n/g, '\n');
   // Formatted text is measured as the canvas shows it (tags as formatting,
   // not as characters), otherwise it measures too long and too tall
-  if (isRichTextElement(element)) {
+  if (element.shownText === undefined && isRichTextElement(element)) {
     div.innerHTML = textExpressionToHtml(raw) || ' ';
+    // Lists as the canvas draws them (TextFieldElement.vue): no margins, each
+    // level indented 50px like JasperReports, not the browser's own spacing
+    div.querySelectorAll<HTMLElement>('ul, ol').forEach((list) => {
+      list.style.margin = '0';
+      list.style.paddingLeft = '50px';
+    });
+    div.querySelectorAll<HTMLElement>('li').forEach((item) => {
+      item.style.margin = '0';
+    });
   } else {
     div.textContent = displayText || ' ';
   }
