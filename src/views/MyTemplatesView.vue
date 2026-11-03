@@ -54,7 +54,7 @@
         :templates="items"
         :owner="displayName"
         :show-new="!query"
-        :skeletons="loading ? Math.min(PAGE_SIZE, Math.max(4, total - items.length)) : 0"
+        :skeletons="!loading ? 0 : items.length ? Math.min(PAGE_SIZE, Math.max(0, total - items.length)) : 4"
       />
       <!-- Reaching this loads the next 25 -->
       <div v-if="items.length < total" ref="sentinelRef" class="scroll-sentinel" />
@@ -402,14 +402,40 @@ p {
   white-space: nowrap;
 }
 
-.sort-select,
+.sort-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #6f6a7e;
+  font-size: 11.5px;
+}
 
-.sort-select select,
+.sort-select select {
+  height: 28px;
+  padding: 0 26px 0 10px;
+  border: 1px solid #e6e5ee;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1c1b26;
+  font-size: 12px;
+  font-weight: 600;
+  appearance: none;
+  cursor: pointer;
+}
 
+.sort-select select:focus-visible {
+  border-color: #6440f4;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(100, 64, 244, 0.12);
+}
 
-.sort-select select:focus-visible,
-
-.sort-select svg,
+.sort-select svg {
+  position: absolute;
+  right: 8px;
+  pointer-events: none;
+  color: #6f6a7e;
+}
 
 .view-toggle {
   display: inline-flex;
