@@ -555,9 +555,7 @@
     "customPaperSize": "Custom",
     "maximize": "Full height (up to the header). Tip: double-click the panel's top edge.",
     "restore": "Back to the height before",
-    "detailsJson": "Details JSON",
-    "detailsNote": "details.json: where this template's data comes from, for the report server (developers only).",
-    "detailsCopied": "details.json copied",
+    "reportBands": "Report Bands",
     "copyFailed": "Couldn't copy\nSelect the text and copy it yourself."
   },
   "zoom": {
@@ -2594,6 +2592,78 @@
       "sortBy": "Click to sort: {order}",
       "sortedThen": "Sorted: {now}. Click for {next}",
       "sortedOff": "Sorted: {now}. Click to go back to the default order"
+    }
+  },
+  "reportBands": {
+    "draft": "Draft",
+    "draftNote": "Built here from the design. The report server will store it as the template's Jmix report once templates are saved there (not yet).",
+    "views": {
+      "tree": "Bands",
+      "sent": "Sent",
+      "stored": "Stored"
+    },
+    "viewHints": {
+      "tree": "Each band loads one part of the template's data when the report runs.",
+      "sent": "Sent as \"bands\" with the template's name and JRXML when it is saved (PUT /v2/api/reporter/templates/{id}).",
+      "stored": "The report the server stores in REPORT_REPORT.xml (the server gives its own ids)."
+    },
+    "copied": "Copied",
+    "parametersTitle": "Run parameters",
+    "templateTitle": "Template",
+    "templateLine": "{code} · PDF · {className} (custom class)",
+    "empty": "No project data yet\nDrag a table, chart or project detail from Report Data: its band shows here.",
+    "today": "today",
+    "noProject": "no project chosen",
+    "groovy": "Groovy",
+    "dataSet": "Data set (Groovy)",
+    "request": "Request (jsonSourceText)",
+    "kinds": {
+      "projectValues": "Project details",
+      "entityRows": "Table rows",
+      "projectList": "Project list",
+      "aggregate": "Chart numbers",
+      "map": "Map and address"
+    },
+    "fills": {
+      "parameters": "fills {count} parameter | fills {count} parameters",
+      "table": "fills its table",
+      "chart": "fills its picture",
+      "map": "fills its map and address"
+    },
+    "fields": {
+      "name": "Band name",
+      "kind": "Kind",
+      "source": "Source",
+      "projectProperty": "Project through",
+      "fetchPlan": "Fetch plan",
+      "columns": "Fields",
+      "filters": "Filters",
+      "noFilters": "None (every row of the project)",
+      "sort": "Sort",
+      "sortAsc": "{property}, low to high",
+      "sortDesc": "{property}, high to low",
+      "maxRows": "Up to",
+      "maxRowsValue": "{count} rows",
+      "list": "List on the project",
+      "single": "one record",
+      "chartType": "Chart type",
+      "requests": "Requests",
+      "picture": "Picture",
+      "pictureSize": "{width} × {height} px",
+      "coordinates": "Coordinates",
+      "addressLines": "Address lines",
+      "zoom": "Zoom",
+      "linked": "linked record",
+      "userDefined": "user-defined field {code}"
+    },
+    "labels": {
+      "project": "Project details",
+      "chart": "Chart",
+      "map": "Location"
+    },
+    "parameters": {
+      "project": "Project",
+      "reportDate": "Report date"
     }
   },
   "reportData": {

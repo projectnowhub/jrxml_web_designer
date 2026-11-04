@@ -398,13 +398,9 @@
       </div>
     </div>
 
-    <!-- details.json (developers): where the template's data comes from, for the report server -->
-    <div v-if="SHOW_JRXML_TAB" class="tab-content jrxml-tab" v-show="activeTab === 'details'">
-      <div class="details-header">
-        <span class="details-note">{{ t("bottomPanel.detailsNote") }}</span>
-        <n-button type="default" size="small" @click="copyDetails">{{ t("bottomPanel.copy") }}</n-button>
-      </div>
-      <pre class="details-json">{{ detailsJson }}</pre>
+    <!-- Report bands (developers): where the template's data comes from, as the report server stores it -->
+    <div v-if="SHOW_JRXML_TAB" class="tab-content jrxml-tab" v-show="activeTab === 'bands'">
+      <ReportBandsView :active="activeTab === 'bands'" />
     </div>
   </ResizablePanel>
   </Collapse>
@@ -417,11 +413,11 @@ import { storeToRefs } from "pinia";
 import { useReportStore } from "@/stores/report";
 import { useUserSettingsStore } from "@/stores/userSettings";
 import {
-  Braces,
   ChevronDown,
   ChevronUp,
   FileCode2,
   Info,
+  Layers,
   SlidersHorizontal,
   Maximize2,
   Minimize2,
@@ -442,6 +438,7 @@ import notification from "@/utils/notification";
 import ResizablePanel from "./ResizablePanel.vue";
 import Collapse from "../common/Collapse.vue";
 import CodeMirrorEditor from "../editor/CodeMirrorEditor.vue";
+import ReportBandsView from "./ReportBandsView.vue";
 
 import {
   validateJRXML,
@@ -451,7 +448,6 @@ import {
   type AutoFixResult,
 } from "../../utils/jrxml/xsdValidator";
 import { formatXml } from "../../utils/jrxml/formatXml";
-import { buildReportDetails } from "../../utils/reportDetails";
 
 import type { Band, ReportProperties } from "../../types";
 import {
@@ -521,12 +517,12 @@ const emit = defineEmits<Emits>();
 
 // Tab-related state
 const activeTab = ref("pageSettings");
-// JRXML Content and Details JSON are for developers: shown locally and on the
+// JRXML Content and Report Bands are for developers: shown locally and on the
 // dev server, never on staging or production (config/appEnvironment.ts), where
 // anything asking for them gets Page settings
 const SHOW_JRXML_TAB = SHOW_DEVELOPER_TOOLS;
 watch(activeTab, (tab) => {
-  if ((tab === "jrxml" || tab === "details") && !SHOW_JRXML_TAB) activeTab.value = "pageSettings";
+  if ((tab === "jrxml" || tab === "bands") && !SHOW_JRXML_TAB) activeTab.value = "pageSettings";
 });
 // Computed so the labels follow a language switch
 const tabs = computed(() => [
@@ -534,25 +530,10 @@ const tabs = computed(() => [
   ...(SHOW_JRXML_TAB
     ? [
         { id: "jrxml", name: t("bottomPanel.jrxmlContent"), icon: FileCode2 },
-        { id: "details", name: t("bottomPanel.detailsJson"), icon: Braces },
+        { id: "bands", name: t("bottomPanel.reportBands"), icon: Layers },
       ]
     : []),
 ]);
-
-// details.json, rebuilt with the JRXML (shown only while its tab is open)
-const detailsJson = computed(() => {
-  if (activeTab.value !== "details") return "";
-  void reportStore.jrxmlVersion;
-  return JSON.stringify(buildReportDetails(bands.value, reportProperties.value?.projects?.[0]), null, 2);
-});
-const copyDetails = async () => {
-  try {
-    await navigator.clipboard.writeText(detailsJson.value);
-    notification.success(t("bottomPanel.detailsCopied"));
-  } catch {
-    notification.error(t("bottomPanel.copyFailed"));
-  }
-};
 
 // Bottom panel height
 const HEADER_HEIGHT = 56;
@@ -1245,30 +1226,6 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.details-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border-bottom: 1px solid #e6e5ee;
-}
-
-.details-note {
-  flex: 1;
-  font-size: 12px;
-  color: #5b5a6b;
-}
-
-.details-json {
-  flex: 1;
-  margin: 0;
-  padding: 12px;
-  overflow: auto;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #1c1b26;
 }
 
 .page-settings-tab {

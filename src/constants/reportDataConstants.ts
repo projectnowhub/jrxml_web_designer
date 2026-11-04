@@ -53,9 +53,9 @@ export const MANAGER_FIELDS = ["name", "designation", "email", "phone", "country
 // The project's own lists a list table can show (rows from the project record)
 export const PROJECT_LIST_KEYS: readonly string[] = ["manager", "team", "companies", "contracts"];
 
-// The most rows one table prints (details.json's maxRows)
+// The most rows one table prints (its report band's maxRows)
 export const REPORT_ROWS_LIMIT = 5000;
 
-// TEMPORARY, until the report server reads details.json: the rows each data
-// table sends with Preview PDF (subDataSources), so the PDF shows real data
+// TEMPORARY, until the report server loads the report bands itself: the rows
+// each data table sends with Preview PDF (subDataSources), so the PDF shows real data
 export const PREVIEW_PDF_ROWS = 10;

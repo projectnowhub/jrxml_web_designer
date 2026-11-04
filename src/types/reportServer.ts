@@ -2,17 +2,15 @@
 
 import type { ApiErrorBody } from "./api";
 import type { DataRow } from "./dataSource";
-import type { ReportDetails } from "./reportDetails";
 
-// What Preview PDF sends: the JRXML (the layout) and details.json (where its
-// data comes from, utils/reportDetails.ts); the report server fetches the
-// project's values, the tables' rows and the charts' numbers itself
+// What Preview PDF sends: the JRXML. The report server will load the data
+// itself from the template's report bands (utils/reportBands.ts), saved with
+// the template, and run it as a Jmix report (docs/REPORT_ENGINE.md)
 export interface GeneratePdfPayload {
   jrxml: string;
-  details: ReportDetails;
-  // TEMPORARY, until the report server reads details.json: each data table's
-  // first rows by its dataset name (the server's subDataSources), values left
-  // out when empty (a JSON null would print "null")
+  // TEMPORARY, until the report server loads the report bands: each data
+  // table's first rows by its dataset name (the server's subDataSources),
+  // values left out when empty (a JSON null would print "null")
   subDataSources?: PreviewSubDataSources;
 }
 

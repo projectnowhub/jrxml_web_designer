@@ -88,12 +88,11 @@ export async function generatePdf(
 ): Promise<Blob> {
   const form = new FormData();
   form.append("jrxml", payload.jrxml);
-  form.append("details", JSON.stringify(payload.details));
-  // No longer used (the report server reads details.json); sent empty while
-  // its form still has them
+  // No longer used (the report server will load the report bands); sent
+  // empty while its form still requires them
   form.append("parameters", JSON.stringify({}));
   form.append("dataSource", JSON.stringify([]));
-  // TEMPORARY: the tables' first rows (Preview PDF), until the server reads details.json
+  // TEMPORARY: the tables' first rows (Preview PDF), until the server loads the report bands
   form.append("subDataSources", JSON.stringify(payload.subDataSources ?? {}));
 
   let blob: Blob;

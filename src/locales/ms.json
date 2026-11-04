@@ -555,9 +555,7 @@
     "customPaperSize": "Tersuai",
     "maximize": "Ketinggian penuh (hingga ke pengepala). Petua: klik dua kali pada tepi atas panel.",
     "restore": "Kembali ke ketinggian sebelumnya",
-    "detailsJson": "JSON Butiran",
-    "detailsNote": "details.json: dari mana data templat ini datang, untuk pelayan laporan (pembangun sahaja).",
-    "detailsCopied": "details.json disalin",
+    "reportBands": "Jalur Laporan",
     "copyFailed": "Tidak dapat menyalin\nPilih teks dan salin sendiri."
   },
   "zoom": {
@@ -2594,6 +2592,78 @@
       "sortBy": "Klik untuk mengisih: {order}",
       "sortedThen": "Diisih: {now}. Klik untuk {next}",
       "sortedOff": "Diisih: {now}. Klik untuk kembali ke susunan asal"
+    }
+  },
+  "reportBands": {
+    "draft": "Draf",
+    "draftNote": "Dibina di sini daripada reka bentuk. Pelayan laporan akan menyimpannya sebagai laporan Jmix templat apabila templat disimpan di sana (belum lagi).",
+    "views": {
+      "tree": "Jalur",
+      "sent": "Dihantar",
+      "stored": "Disimpan"
+    },
+    "viewHints": {
+      "tree": "Setiap jalur memuatkan satu bahagian data templat apabila laporan dijalankan.",
+      "sent": "Dihantar sebagai \"bands\" bersama nama dan JRXML templat apabila ia disimpan (PUT /v2/api/reporter/templates/{id}).",
+      "stored": "Laporan yang disimpan oleh pelayan dalam REPORT_REPORT.xml (pelayan memberikan ID sendiri)."
+    },
+    "copied": "Disalin",
+    "parametersTitle": "Parameter jalanan",
+    "templateTitle": "Templat",
+    "templateLine": "{code} · PDF · {className} (kelas tersuai)",
+    "empty": "Belum ada data projek\nSeret jadual, carta atau butiran projek dari Data Laporan: jalurnya ditunjukkan di sini.",
+    "today": "hari ini",
+    "noProject": "tiada projek dipilih",
+    "groovy": "Groovy",
+    "dataSet": "Set data (Groovy)",
+    "request": "Permintaan (jsonSourceText)",
+    "kinds": {
+      "projectValues": "Butiran projek",
+      "entityRows": "Baris jadual",
+      "projectList": "Senarai projek",
+      "aggregate": "Nombor carta",
+      "map": "Peta dan alamat"
+    },
+    "fills": {
+      "parameters": "mengisi {count} parameter | mengisi {count} parameter",
+      "table": "mengisi jadualnya",
+      "chart": "mengisi gambarnya",
+      "map": "mengisi peta dan alamatnya"
+    },
+    "fields": {
+      "name": "Nama jalur",
+      "kind": "Jenis",
+      "source": "Sumber",
+      "projectProperty": "Projek melalui",
+      "fetchPlan": "Pelan ambil",
+      "columns": "Medan",
+      "filters": "Penapis",
+      "noFilters": "Tiada (setiap baris projek)",
+      "sort": "Isih",
+      "sortAsc": "{property}, rendah ke tinggi",
+      "sortDesc": "{property}, tinggi ke rendah",
+      "maxRows": "Sehingga",
+      "maxRowsValue": "{count} baris",
+      "list": "Senarai pada projek",
+      "single": "satu rekod",
+      "chartType": "Jenis carta",
+      "requests": "Permintaan",
+      "picture": "Gambar",
+      "pictureSize": "{width} × {height} px",
+      "coordinates": "Koordinat",
+      "addressLines": "Baris alamat",
+      "zoom": "Zum",
+      "linked": "rekod terpaut",
+      "userDefined": "medan takrifan pengguna {code}"
+    },
+    "labels": {
+      "project": "Butiran projek",
+      "chart": "Carta",
+      "map": "Lokasi"
+    },
+    "parameters": {
+      "project": "Projek",
+      "reportDate": "Tarikh laporan"
     }
   },
   "reportData": {

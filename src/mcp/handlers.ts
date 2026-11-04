@@ -14,7 +14,7 @@ import { findPageBorder, markBoxPart } from '@/utils/framePresets';
 import { specialPages } from '@/utils/specialPages';
 import { formatXml } from '@/utils/jrxml/formatXml';
 import { generatePdf } from '@/services/reportService';
-import { ensureTemplateProject, templateDetails } from '@/utils/reportRun';
+import { ensureTemplateProject } from '@/utils/reportRun';
 import { projectValueOf } from '@/utils/projectValue';
 import { fillPage } from './flow';
 import { attachmentImageSource, type ChatAttachment } from './attachments';
@@ -964,9 +964,8 @@ const checkPdfHandler: MCPToolHandler = {
     await ensureTemplateProject(r.reportProperties.projects?.[0]?.id);
     r.updateJrxml();
     try {
-      // As Preview PDF sends it: the JRXML and details.json
-      const details = templateDetails(r.bands, r.reportProperties.projects?.[0]);
-      const blob = await generatePdf({ jrxml: formatXml(r.jrxmlContent), details });
+      // As Preview PDF sends it: the JRXML
+      const blob = await generatePdf({ jrxml: formatXml(r.jrxmlContent) });
       const pages = pdfPageCount(new Uint8Array(await blob.arrayBuffer()));
       const expected = r.totalPages;
       const tables = r.bands.some((b) => b.elements.some((e) => e.type === 'table'));

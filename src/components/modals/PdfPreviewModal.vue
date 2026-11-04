@@ -163,8 +163,7 @@ import type { TableDataBinding } from "@/types/dataSource";
 import type { DataRow, TableTotals } from "@/types/dataSource";
 import { fetchTableTotals } from "@/queries/dataSourceQueries";
 import { generatePdf, ReportGenerationError } from "../../services/reportService";
-import { previewSubDataSources, templateDetails } from "../../utils/reportRun";
-import { useReportStore } from "@/stores/report";
+import { previewSubDataSources } from "../../utils/reportRun";
 import { fetchTableRows } from "@/composables/useTableRows";
 import { TABLE_ROWS_LIMIT } from "@/constants/reportDataConstants";
 import { collectBoundTables } from "@/utils/table/tableDocument";
@@ -179,7 +178,6 @@ const props = defineProps<{
   prepare: () => Promise<string>;
   bands: Band[];
 }>();
-const report = useReportStore();
 
 const emit = defineEmits<{
   "update:visible": [visible: boolean];
@@ -297,14 +295,13 @@ async function generatePreview() {
   pdfError.value = "";
 
   try {
-    // The report made ready, then the JRXML and details.json: the report server fetches the data itself
+    // The report made ready, then its JRXML
     const jrxml = await props.prepare();
     if (controller.signal.aborted) return;
-    const details = templateDetails(props.bands, report.reportProperties.projects?.[0]);
-    // TEMPORARY: each data table's first rows, so the PDF shows real data until the server reads details.json
+    // TEMPORARY: each data table's first rows, so the PDF shows real data until the server loads the report bands
     const subDataSources = await previewSubDataSources(props.bands);
     if (controller.signal.aborted) return;
-    const pdf = await generatePdf({ jrxml, details, subDataSources }, controller.signal);
+    const pdf = await generatePdf({ jrxml, subDataSources }, controller.signal);
     if (controller.signal.aborted) return;
     setPreviewUrl(URL.createObjectURL(pdf));
     pdfState.value = "ready";

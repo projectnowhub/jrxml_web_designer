@@ -4,7 +4,7 @@
 
 export const APP_ENVIRONMENT: string = import.meta.env.VITE_APP_ENV ?? "local";
 
-// Developer tools (the bottom panel's JRXML Content and Details JSON tabs):
+// Developer tools (the bottom panel's JRXML Content and Report Bands tabs):
 // on a developer's computer (npm run dev or a local build) and on the dev
 // server, never on staging or production
 export const SHOW_DEVELOPER_TOOLS: boolean =
