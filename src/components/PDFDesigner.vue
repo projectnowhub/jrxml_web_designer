@@ -279,6 +279,7 @@
           @add-chart-from-source="addChartFromSource"
           @insert-barcode="addBarcode"
           @insert-table="addTable"
+          @insert-image="openImageTileChooser"
           @add-field="handleAddField"
           @edit-field="handleEditField"
           @delete-field="handleDeleteField"
@@ -685,6 +686,13 @@
         </div>
       </div>
     </div>
+
+    <!-- The Image tile's picture chooser: the picture comes first, then the image is added -->
+    <PictureChooserModal
+      v-model:visible="tilePicture.open"
+      :initial-tab="tilePicture.tab"
+      @choose="addImageWithPicture"
+    />
   </div>
 </template>
 
@@ -881,7 +889,10 @@ import {
   getImageShape,
   measureTextElementWidth,
   refreshUuids,
+  setImagePicture,
 } from "../utils/elementUtils";
+import { toImageExpression } from "../services/imageService";
+import type { ChosenPicture } from "../types/projectPhoto";
 import {
   applyBorderPreset,
   buildFrameTemplate,
@@ -919,6 +930,7 @@ import {
   type ContentsDesignType,
 } from "../utils/pageDesigns";
 import DesignChooserModal from "./modals/DesignChooserModal.vue";
+import PictureChooserModal from "./modals/PictureChooserModal.vue";
 import {
   isSpecialPage,
   pageKind,
@@ -2942,6 +2954,20 @@ const addChartFromSource = (source: ReportSourceRef) => {
 // centred, open for typing. "Use project data": the setup popup, which makes the
 // table in Detail on Apply (nothing is added when it is closed). Dragging the
 // tile drops an empty project-data table.
+// Image tile: the project's photos or a file from the computer first; the
+// picture spot is added only once a picture is chosen (like a project-data table)
+const tilePicture = ref<{ open: boolean; tab: "photos" | "computer" }>({ open: false, tab: "photos" });
+const openImageTileChooser = (from: "photos" | "computer") => {
+  tilePicture.value = { open: true, tab: from };
+};
+// Added like a click on the tile, with the picture in it: one undo step
+const addImageWithPicture = (picture: ChosenPicture) => {
+  const image = handleElementDoubleClick({ type: "image" });
+  if (image?.type !== "image") return;
+  setImagePicture(image, toImageExpression(picture.source), picture.name);
+  updateJRXML();
+};
+
 const addTable = (kind: "typed" | "data") => {
   if (kind === "data") {
     const detailIndex = bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
@@ -3031,7 +3057,8 @@ const handlePageSetupChange = () => {
 };
 
 // A library tile clicked: add its item (where it goes depends on the kind)
-const handleElementDoubleClick = (element: any) => {
+// Returns the element added (none: refused or not added here)
+const handleElementDoubleClick = (element: any): DesignElement | undefined => {
   if (element.type === PAGE_BORDER_TYPE) {
     addPageBorder();
     return;
@@ -3113,8 +3140,7 @@ const handleElementDoubleClick = (element: any) => {
 
   // Update JRXML
   updateJRXML();
-
-  console.log("Element added to band:", newElement);
+  return newElement;
 };
 
 // `place`: an element to put where the drop happened (a chart chosen for a

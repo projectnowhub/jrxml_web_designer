@@ -1,7 +1,7 @@
 // Element-related utility functions
 
 import type { Component } from "vue";
-import type { DesignElement } from "@/types";
+import type { DesignElement, ImageElement } from "@/types";
 import { resolveReportFont } from "@/config/fonts.config";
 import {
   getElementConfig,
@@ -337,6 +337,16 @@ export function setImageCrop(element: DesignElement, crop: ImageCrop | null): vo
     IMAGE_CROP_PROPERTY,
     isEmpty ? "" : values.map((n) => Math.max(0, n).toFixed(4)).join(","),
   );
+}
+
+// A new picture in an image element (uploaded, or chosen from the project's
+// photos): its expression and file name; a crop belonged to the old picture.
+// The caller records the undo step and rewrites the JRXML.
+export function setImagePicture(element: DesignElement, expression: string, name: string): void {
+  if (!element || element.type !== "image") return;
+  (element as ImageElement).imageExpression = expression;
+  setImageName(element, name);
+  setImageCrop(element, null);
 }
 
 // Helper to parse box padding or border dimension safely

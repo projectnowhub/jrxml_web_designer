@@ -300,21 +300,14 @@
                 <button
                   type="button"
                   class="chip-btn chip-btn-solid"
-                  :disabled="isPropertiesImageUploading"
-                  @click="triggerPropertiesImageUpload"
+                  @click="pictureChooserOpen = true"
                 >
-                  <Upload :size="13" aria-hidden="true" />
-                  {{ isPropertiesImageUploading ? t("properties.uploadingImage") : t("properties.uploadImageButton") }}
+                  <ImagePlus :size="13" aria-hidden="true" />
+                  {{ t("properties.choosePictureButton") }}
                 </button>
               </div>
               <small class="card-hint">{{ t("properties.imageNameHint") }}</small>
-              <input
-                ref="propImageFileInputRef"
-                type="file"
-                accept=".png,.jpg,.jpeg,image/png,image/jpeg"
-                style="display: none"
-                @change="handlePropertiesImageUpload"
-              />
+              <PictureChooserModal v-model:visible="pictureChooserOpen" @choose="applyChosenPicture" />
             </div>
             <!-- Shape: preset corner looks, cards like the box border presets
                  (custom corners are in Style Settings) -->
@@ -999,7 +992,7 @@ import {
   TextAlignStart,
   Trash2,
   Info,
-  Upload,
+  ImagePlus,
   X,
 } from "@lucide/vue";
 import { DEFAULT_REPORT_FONT, resolveReportFont } from "../../../config/fonts.config";
@@ -1025,14 +1018,11 @@ import {
   setPropertyCornerRadii,
   type CornerName,
   type CornerRadii,
-  setImageCrop,
-  setImageName,
+  setImagePicture,
 } from "../../../utils/elementUtils";
-import {
-  ImageUploadError,
-  resolveImageSource,
-  toImageExpression,
-} from "../../../services/imageService";
+import { toImageExpression } from "../../../services/imageService";
+import PictureChooserModal from "../../modals/PictureChooserModal.vue";
+import type { ChosenPicture } from "@/types/projectPhoto";
 import {
   getEffectiveDefaultBandLimits,
   getEffectiveDefaultBandConfig,
@@ -1671,48 +1661,22 @@ function addCrossingLine() {
   report.updateJrxml();
 }
 
-// Image upload handling for Image elements in Properties panel
-const propImageFileInputRef = ref<HTMLInputElement | null>(null);
-const isPropertiesImageUploading = ref(false);
+// The picture of the selected Image element: the chooser (project photos or a
+// file from the computer). The name shown is read-only, taken from the file.
+const pictureChooserOpen = ref(false);
+// The upload may take a while: the picture goes to the image that opened the
+// chooser, even if the selection changed meanwhile
+let pictureTarget: DesignElement | null = null;
+watch(pictureChooserOpen, (open) => {
+  if (open) pictureTarget = currentElement.value ?? null;
+});
 
-function triggerPropertiesImageUpload() {
-  if (propImageFileInputRef.value) {
-    propImageFileInputRef.value.value = "";
-    propImageFileInputRef.value.click();
-  }
-}
-
-// Image name handling for Image elements in the Properties panel.
-// The name is read-only: it is filled in automatically when an image is uploaded
-// and is never edited manually, so the image expression is never modified.
-async function handlePropertiesImageUpload(event: Event) {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  const element = currentElement.value;
-  if (!file || !element || isPropertiesImageUploading.value) return;
-
-  isPropertiesImageUploading.value = true;
-  try {
-    const source = await resolveImageSource(file);
-    // The upload is async: apply it to the element that started it, even if selection changed
-    if (element.type !== "image") return;
-    report.saveStateToHistory();
-    (element as any).imageExpression = toImageExpression(source);
-    // Use the uploaded file name as the image name shown in the panels
-    setImageName(element, file.name || "");
-    // A crop belongs to the previous picture
-    setImageCrop(element, null);
-    report.updateJrxml();
-  } catch (error) {
-    console.error("Image upload failed:", error);
-    notification.error(
-      error instanceof ImageUploadError
-        ? t(error.messageKey, error.params)
-        : t("imageUpload.uploadFailed"),
-    );
-  } finally {
-    isPropertiesImageUploading.value = false;
-  }
+function applyChosenPicture(picture: ChosenPicture) {
+  const element = pictureTarget;
+  if (!element || element.type !== "image") return;
+  report.saveStateToHistory();
+  setImagePicture(element, toImageExpression(picture.source), picture.name);
+  report.updateJrxml();
 }
 
 // Border editors write into element.box; create it for elements that have none yet

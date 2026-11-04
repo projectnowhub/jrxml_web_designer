@@ -30,7 +30,7 @@
         v-if="!imageUrl && storedFileRef"
         class="image-upload-zone is-stored"
         @click.stop
-        @dblclick.stop="triggerFileInput"
+        @dblclick.stop="openChooser"
         @dragover="handleDragOver"
         @dragenter="handleDragOver"
         @dragleave="handleDragLeave"
@@ -49,7 +49,7 @@
         class="image-upload-zone"
         :class="{ 'is-drag-over': isDraggingOver, 'is-uploading': isUploading }"
         @click.stop
-        @dblclick.stop="triggerFileInput"
+        @dblclick.stop="openChooser"
         @dragover="handleDragOver"
         @dragenter="handleDragOver"
         @dragleave="handleDragLeave"
@@ -93,23 +93,17 @@
             type="button"
             class="change-image-btn"
             :class="{ 'icon-only': !showChangeImageText }"
-            @click.stop="triggerFileInput"
+            @click.stop="openChooser"
             :title="t('properties.changeImage')"
           >
-            <Upload :size="12" />
+            <ImagePlus :size="12" />
             <span v-if="showChangeImageText">{{ t("properties.changeImage") }}</span>
           </button>
         </div>
       </div>
 
-      <!-- Hidden file input for uploading images -->
-      <input
-        ref="fileInputRef"
-        type="file"
-        accept=".png,.jpg,.jpeg,image/png,image/jpeg"
-        style="display: none"
-        @change="handleFileInputChange"
-      />
+      <!-- The project's photos or a file from the computer -->
+      <PictureChooserModal v-model:visible="chooserOpen" @choose="applyPicture" />
     </div>
 
     <!-- Crop mode (Google Docs style): the whole original image is shown faded around the
@@ -188,18 +182,20 @@
 
 <script setup lang="ts">
 import { useReportStore } from "@/stores/report";
-import { Check, RotateCcw, Upload, X } from "@lucide/vue";
+import { Check, ImagePlus, RotateCcw, Upload, X } from "@lucide/vue";
 import { computed, inject, onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import notification from "@/utils/notification";
 import BaseElement from "./BaseElement.vue";
+import PictureChooserModal from "../modals/PictureChooserModal.vue";
 import type { ImageElement, SelectedElementInfo } from "../../types";
+import type { ChosenPicture } from "../../types/projectPhoto";
 import {
   imageCornerRadiusCss,
   getImageCrop,
   getImageName,
   setImageCrop,
-  setImageName,
+  setImagePicture,
 } from "../../utils/elementUtils";
 import {
   ImageUploadError,
@@ -308,7 +304,6 @@ const rotationStyle = computed(() => {
 // UI state
 const isHovered = ref(false);
 const isDraggingOver = ref(false);
-const fileInputRef = ref<HTMLInputElement | null>(null);
 const imageError = ref(false);
 const isUploading = ref(false);
 
@@ -455,20 +450,21 @@ function showUploadError(message: string) {
   notification.error(message);
 }
 
+// A new picture (dropped, or from the chooser): one undo step; the file name
+// is kept so the panels can show it
+function applyPicture(picture: ChosenPicture) {
+  report.saveStateToHistory();
+  setImagePicture(props.element, toImageExpression(picture.source), picture.name);
+  imageError.value = false;
+  report.updateJrxml();
+}
+
 async function processImageFile(file: File) {
   if (isUploading.value) return;
   isUploading.value = true;
   try {
     const source = await resolveImageSource(file);
-    // Undo snapshot before the element changes
-    report.saveStateToHistory();
-    props.element.imageExpression = toImageExpression(source);
-    // Remember the uploaded file name so the panels can show it
-    setImageName(props.element, file.name || "");
-    // A crop belongs to the previous picture
-    setImageCrop(props.element, null);
-    imageError.value = false;
-    report.updateJrxml();
+    applyPicture({ source, name: file.name || "" });
   } catch (error) {
     console.error("Image upload failed:", error);
     showUploadError(
@@ -481,20 +477,11 @@ async function processImageFile(file: File) {
   }
 }
 
-function triggerFileInput() {
+// Double-click or Change image: the project's photos, or a file from the computer
+const chooserOpen = ref(false);
+function openChooser() {
   if (isUploading.value) return;
-  if (fileInputRef.value) {
-    fileInputRef.value.value = "";
-    fileInputRef.value.click();
-  }
-}
-
-function handleFileInputChange(event: Event) {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (file) {
-    processImageFile(file);
-  }
+  chooserOpen.value = true;
 }
 
 // Drags from the Report Data list are for the designer (link this image to a

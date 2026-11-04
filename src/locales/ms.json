@@ -117,7 +117,7 @@
     "tileHowChoose": "Klik untuk memilih, atau seret ke halaman.",
     "tileHints": {
       "textField": "Perkataan pada halaman: tajuk, perenggan dan label.",
-      "image": "Gambar atau logo dari komputer anda.",
+      "image": "Gambar atau logo: salah satu foto projek, atau fail dari komputer anda.",
       "line": "Garis lurus untuk memisahkan bahagian halaman.",
       "rectangle": "Bentuk untuk jalur, garisan dan latar berwarna.",
       "ellipse": "Bulatan atau bujur, contohnya titik status berwarna.",
@@ -241,7 +241,7 @@
     "downloadJRXML": "Muat Turun JRXML",
     "saveJRXML": "Simpan JRXML",
     "changeImage": "Tukar Imej",
-    "dropOrDoubleClickToUpload": "Lepaskan imej atau klik dua kali untuk memuat naik",
+    "dropOrDoubleClickToUpload": "Lepaskan gambar, atau klik dua kali untuk memilih",
     "uploadingImage": "Memuat naik...",
     "loadingImage": "Memuatkan...",
     "storedImagePreviewUnavailable": "Pratonton tidak tersedia",
@@ -292,7 +292,7 @@
     "imageExpression": "Ungkapan Imej",
     "imageExpressionHint": "cth., \"logo.png\" atau {imageFileHolder}",
     "imageName": "Nama Imej",
-    "imageNameHint": "Baca sahaja: diambil daripada fail imej yang dimuat naik",
+    "imageNameHint": "Baca sahaja: nama gambar yang dipilih",
     "radius": "Jejari",
     "columnBreak": "Pemisah Lajur",
     "breakNoBorder": "Elemen pemisah tidak menyokong tetapan sempadan.",
@@ -408,7 +408,6 @@
     "storedImage": "Imej tersimpan",
     "imageUploadHint": "PNG, JPG, JPEG · maks 4 MB",
     "imagePreview": "Pratonton imej",
-    "uploadImageButton": "Muat Naik Imej (PNG, JPG · maks 4 MB)",
     "rotation": "Putaran",
     "rotationNone": "0° - Tiada putaran",
     "rotationRight": "90° ikut arah jam",
@@ -488,7 +487,8 @@
     "positionSize": "Kedudukan & saiz",
     "insertFieldLabel": "Masukkan medan data",
     "outline": "Garis luar",
-    "lineSettings": "Garisan"
+    "lineSettings": "Garisan",
+    "choosePictureButton": "Pilih gambar"
   },
   "bottomPanel": {
     "pageSettings": "Tetapan Lalai",
@@ -1062,9 +1062,11 @@
       "cellPrevious": "Sel sebelumnya",
       "cellClear": "Kosongkan sel yang dipilih",
       "tableClose": "Tutup sel; tekan lagi untuk menutup jadual",
-      "crop": "Pilih gambar, atau pangkasnya",
+      "crop": "Pilih gambar (daripada foto projek atau komputer anda), atau pangkasnya",
       "cropApply": "Simpan pangkasan",
       "cropCancel": "Batalkan pangkasan",
+      "pictureUsePhoto": "Pilih gambar: terus gunakan foto projek (klik dua kali padanya)",
+      "pictureChooserClose": "Tutup tetingkap Pilih gambar",
       "zoomIn": "Zum masuk",
       "zoomOut": "Zum keluar",
       "zoomWheel": "Zum masuk atau keluar",
@@ -1092,7 +1094,7 @@
       "hide": "Sembunyikan petua ini",
       "report": "Tiada apa-apa dipilih, jadi inilah Tetapan Templat bagi templat ini: kertas, jidar, fon dan bahagian halaman. Klik sesuatu pada halaman untuk mengubahnya.",
       "textField": "Teks pada halaman. Klik dua kali padanya di halaman untuk menaip. Ubah fon, saiz dan warnanya di sini.",
-      "image": "Gambar. Lepaskan fail gambar dari komputer anda ke atasnya, atau pilih satu di sini. Pilih bentuk, seperti Bulatan atau Bulat sedikit, dalam Tetapan Asas.",
+      "image": "Gambar. Klik dua kali padanya, atau gunakan Pilih gambar di sini, untuk memilih salah satu foto projek atau fail dari komputer anda. Pilih bentuk, seperti Bulatan atau Bulat sedikit, dalam Tetapan Asas.",
       "line": "Garis untuk memisahkan bahagian halaman. Ubah warna dan ketebalannya di sini.",
       "rectangle": "Bentuk untuk jalur, garisan dan latar. Untuk menyimpan teks atau gambar bersama pada panel berwarna, gunakan Kotak.",
       "ellipse": "Bulatan atau bujur. Untuk status, pilih hijau, kuning jingga atau merah dalam Tetapan Asas.",
@@ -1285,9 +1287,9 @@
         "aiPrompt": "Tambah ruang gambar untuk foto projek.",
         "steps": {
           "addTitle": "Tambah ruang gambar",
-          "addText": "Klik Imej dalam Pustaka Elemen.",
+          "addText": "Klik Imej dalam Pustaka Elemen dan pilih Foto projek atau Dari komputer saya.",
           "pictureTitle": "Letakkan gambar",
-          "pictureText": "Lepaskan fail gambar dari komputer anda ke atas ruang itu, atau klik dan pilih satu di sebelah kanan.",
+          "pictureText": "Klik dua kali pada ruang itu dan pilih salah satu foto projek, atau gambar dari komputer anda. Anda juga boleh melepaskan fail gambar ke atasnya.",
           "settingsTitle": "Pilih bentuknya",
           "settingsText": "Klik gambar itu. Di sebelah kanan anda boleh membulatkan bucunya atau menjadikannya bulatan.",
           "previewTitle": "Semak",
@@ -3509,10 +3511,10 @@
         "title": "Imej",
         "what": "Gambar atau logo.",
         "when": "Untuk foto, logo, pelan dan tandatangan.",
-        "add": "Klik Imej dalam Pustaka Elemen, atau seret ke tempat yang anda mahu.",
+        "add": "Klik Imej dalam Pustaka Elemen dan pilih dari mana gambar itu (foto projek atau komputer anda), atau seret jubin ke tempat yang anda mahu untuk ruang gambar kosong.",
         "work": [
-          "Lepaskan fail gambar dari komputer anda ke atasnya, klik dua kali padanya, atau gunakan Muat Naik Imej dalam sifatnya (PNG atau JPG, sehingga 4 MB).",
-          "Klik dua kali pada gambar untuk memangkasnya.",
+          "Klik dua kali padanya, atau gunakan Pilih gambar dalam sifatnya, untuk memilih salah satu foto projek (ditapis mengikut tarikh dan tag) atau fail dari komputer anda (PNG atau JPG, sehingga 4 MB). Anda juga boleh melepaskan fail gambar ke atasnya.",
+          "Klik dua kali pada gambar untuk memangkasnya; untuk menukarnya, gunakan Tukar Imej padanya atau Pilih gambar dalam sifatnya.",
           "Bentuk membulatkannya: Bulat sedikit, Lembut, Bulatan, Pil dan banyak lagi. Bentuk mengikut gambar apabila anda mengubah saiznya.",
           "Seret logo projek anda dari Data Laporan ke atasnya untuk menggunakan logo itu."
         ],
@@ -3784,7 +3786,7 @@
       },
       "picture": {
         "title": "Nama Imej",
-        "text": "Gambar yang dipaparkan. Muat naik satu dari komputer anda (PNG atau JPG, sehingga 4 MB); namanya dipaparkan di sini."
+        "text": "Gambar yang dipaparkan. Pilih gambar membuka foto projek (tapis mengikut tarikh dan tag) atau membolehkan anda menggunakan fail dari komputer anda (PNG atau JPG, sehingga 4 MB); namanya dipaparkan di sini."
       },
       "imageShape": {
         "title": "Bentuk",
@@ -4072,6 +4074,55 @@
     "addedNote": "Ia dibuka sebagai templat baharu dan ditambah ke Templat saya.",
     "seeAll": "Lihat semua dalam Templat Saya",
     "notFound": "Templat tidak ditemui\nIa mungkin telah dipadam."
+  },
+  "pictureChooser": {
+    "title": "Pilih gambar",
+    "tabs": {
+      "photos": "Foto projek",
+      "computer": "Dari komputer saya"
+    },
+    "project": "Projek",
+    "filterBy": "Tapis mengikut",
+    "dateKinds": {
+      "uploadedAt": "Tarikh dimuat naik",
+      "photoTakenAt": "Tarikh diambil"
+    },
+    "period": "Tempoh",
+    "periods": {
+      "all": "Semua masa",
+      "today": "Hari ini",
+      "7d": "7 hari lepas",
+      "15d": "15 hari lepas",
+      "1m": "Sebulan lepas",
+      "3m": "3 bulan lepas",
+      "6m": "6 bulan lepas",
+      "custom": "Pilih tarikh"
+    },
+    "from": "Dari",
+    "to": "Hingga",
+    "clearFilters": "Kosongkan penapis",
+    "tags": "Tag",
+    "count": "Tiada foto | 1 foto | {count} foto",
+    "none": "Projek ini belum mempunyai foto",
+    "noneHint": "Foto yang ditambah ke halaman Foto projek dalam CDP dipaparkan di sini. Anda juga boleh menggunakan gambar dari komputer anda.",
+    "noMatch": "Tiada foto sepadan dengan penapis ini",
+    "noMatchHint": "Cuba tempoh lain, atau kurangkan tag.",
+    "loadFailed": "Foto tidak dapat dimuatkan",
+    "retry": "Cuba lagi",
+    "noProject": "Belum ada projek dipilih",
+    "noProjectHint": "Pilih projek templat ini di bahagian atas, di sebelah namanya, untuk memilih daripada fotonya. Atau gunakan gambar dari komputer anda.",
+    "chooseHint": "Klik foto untuk memilihnya, atau klik dua kali untuk terus menggunakannya.",
+    "usePhoto": "Guna foto ini",
+    "dropTitle": "Lepaskan gambar di sini, atau klik untuk memilih",
+    "cantUse": "Foto ini tidak boleh digunakan\nFailnya tidak ditemui. Sila pilih yang lain.",
+    "tile": {
+      "chooseKind": "Dari mana gambar ini?",
+      "photos": "Foto projek",
+      "photosDesc": "Salah satu foto projek templat ini, ditapis mengikut tarikh dan tag.",
+      "computer": "Dari komputer saya",
+      "computerDesc": "Fail PNG atau JPG, sehingga 4 MB.",
+      "dragHint": "Atau seret jubin ke halaman untuk ruang gambar kosong, kemudian klik dua kali padanya."
+    }
   },
   "location": {
     "fields": {

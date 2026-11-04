@@ -5,9 +5,11 @@
     :visible="visible"
     :title="t('openTemplate.title')"
     :show-footer="false"
-    :content-style="{ width: 'min(560px, calc(100vw - 32px))' }"
+    :content-style="{ width: 'min(1120px, 96vw)', maxWidth: '96vw' }"
     @update:visible="emit('update:visible', $event)"
   >
+    <!-- The table setup popup's size -->
+    <div class="open-modal">
     <div class="open-tabs" role="tablist">
       <button
         v-for="item in TABS"
@@ -73,6 +75,7 @@
         <span>{{ t("openTemplate.dropHint") }}</span>
       </div>
       <p class="note">{{ t("openTemplate.addedNote") }}</p>
+    </div>
     </div>
   </BaseModal>
 </template>
@@ -172,9 +175,16 @@ function onDrop(event: DragEvent) {
 </script>
 
 <style scoped>
+.open-modal {
+  display: flex;
+  flex-direction: column;
+  height: min(68vh, 640px);
+}
 .open-tabs {
   display: flex;
+  flex-shrink: 0;
   gap: 4px;
+  max-width: 520px;
   padding: 4px;
   margin-bottom: 14px;
   border-radius: 10px;
@@ -201,9 +211,13 @@ function onDrop(event: DragEvent) {
   box-shadow: 0 1px 3px rgba(23, 20, 44, 0.1);
 }
 .tab-body {
-  min-height: 300px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 .open-search {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -226,10 +240,16 @@ function onDrop(event: DragEvent) {
   color: #1c1b26;
   font-size: 13px;
 }
+/* Cards in columns: the popup is wide */
 .template-rows {
-  max-height: 300px;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  align-content: start;
+  gap: 8px;
   margin: 0;
-  padding: 0;
+  padding: 2px;
   overflow-y: auto;
   list-style: none;
 }
@@ -238,16 +258,17 @@ function onDrop(event: DragEvent) {
   align-items: center;
   gap: 11px;
   width: 100%;
-  padding: 10px;
-  border: 0;
-  border-radius: 8px;
-  background: none;
+  padding: 12px;
+  border: 1px solid #e6e5ee;
+  border-radius: 10px;
+  background: #ffffff;
   text-align: left;
   cursor: pointer;
 }
 .template-row:hover:not(:disabled),
 .template-row:focus-visible {
-  background: rgba(124, 92, 247, 0.08);
+  border-color: #6440f4;
+  background: rgba(124, 92, 247, 0.06);
   outline: none;
 }
 .template-row.current {
@@ -286,6 +307,7 @@ function onDrop(event: DragEvent) {
   font-weight: 600;
 }
 .see-all {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -306,6 +328,7 @@ function onDrop(event: DragEvent) {
   background: rgba(124, 92, 247, 0.06);
 }
 .empty {
+  flex: 1;
   padding: 40px 0;
   color: #8a84a3;
   font-size: 12.5px;
@@ -317,6 +340,7 @@ function onDrop(event: DragEvent) {
   align-items: center;
   justify-content: center;
   gap: 7px;
+  flex: 1;
   min-height: 220px;
   padding: 20px;
   border: 1.5px dashed #cfc8f5;

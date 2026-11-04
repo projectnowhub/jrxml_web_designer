@@ -5,6 +5,7 @@
 
 import type { AggregateRequest, DataQuery } from "@/types/dataSource";
 import type { TemplateQuery } from "@/types/template";
+import type { ProjectPhotoQuery } from "@/types/projectPhoto";
 
 export const projectKeys = {
   all: ["projects"] as const,
@@ -43,6 +44,14 @@ export const templateKeys = {
   // Grid: pages added while scrolling
   infinite: (query: Omit<TemplateQuery, "page">) => [...templateKeys.all, "infinite", query] as const,
   detail: (id: string) => [...templateKeys.all, "detail", id] as const,
+};
+
+export const photoKeys = {
+  all: ["projectPhotos"] as const,
+  // One page of a project's photos, with its filters
+  page: (query: ProjectPhotoQuery) => [...photoKeys.all, query.projectId, query] as const,
+  // Every photo tag (the same for every project)
+  tags: () => [...photoKeys.all, "tags"] as const,
 };
 
 export const fileKeys = {

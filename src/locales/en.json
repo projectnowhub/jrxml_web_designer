@@ -117,7 +117,7 @@
     "tileHowChoose": "Click to choose, or drag it onto the page.",
     "tileHints": {
       "textField": "Words on the page: titles, paragraphs and labels.",
-      "image": "A picture or logo from your computer.",
+      "image": "A picture or logo: one of the project's photos, or a file from your computer.",
       "line": "A straight line to separate parts of the page.",
       "rectangle": "A shape for bars, rules and coloured backgrounds.",
       "ellipse": "A circle or oval, for example a coloured status dot.",
@@ -241,7 +241,7 @@
     "downloadJRXML": "Download JRXML",
     "saveJRXML": "Save JRXML",
     "changeImage": "Change Image",
-    "dropOrDoubleClickToUpload": "Drop image or double-click to upload",
+    "dropOrDoubleClickToUpload": "Drop a picture, or double-click to choose one",
     "uploadingImage": "Uploading...",
     "loadingImage": "Loading...",
     "storedImagePreviewUnavailable": "Preview unavailable",
@@ -292,7 +292,7 @@
     "imageExpression": "Image Expression",
     "imageExpressionHint": "e.g., \"logo.png\" or {imageFileHolder}",
     "imageName": "Image Name",
-    "imageNameHint": "Read-only: taken from the uploaded image file",
+    "imageNameHint": "Read-only: the name of the chosen picture",
     "radius": "Radius",
     "columnBreak": "Column Break",
     "breakNoBorder": "Break element does not support border settings.",
@@ -408,7 +408,6 @@
     "storedImage": "Stored image",
     "imageUploadHint": "PNG, JPG, JPEG · max 4 MB",
     "imagePreview": "Image preview",
-    "uploadImageButton": "Upload Image (PNG, JPG · max 4 MB)",
     "rotation": "Rotation",
     "rotationNone": "0° - No rotation",
     "rotationRight": "90° clockwise",
@@ -488,7 +487,8 @@
     "positionSize": "Position & size",
     "insertFieldLabel": "Insert a data field",
     "outline": "Outline",
-    "lineSettings": "Line"
+    "lineSettings": "Line",
+    "choosePictureButton": "Choose picture"
   },
   "bottomPanel": {
     "pageSettings": "Default Settings",
@@ -1062,9 +1062,11 @@
       "cellPrevious": "Previous cell",
       "cellClear": "Clear the chosen cells",
       "tableClose": "Close the cell; press again to close the table",
-      "crop": "Choose a picture, or crop it",
+      "crop": "Choose a picture (from the project's photos or your computer), or crop it",
       "cropApply": "Keep the crop",
       "cropCancel": "Cancel the crop",
+      "pictureUsePhoto": "Choose a picture: use a project photo straight away (double-click it)",
+      "pictureChooserClose": "Close the Choose a picture window",
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
       "zoomWheel": "Zoom in or out",
@@ -1092,7 +1094,7 @@
       "hide": "Hide this tip",
       "report": "Nothing is selected, so these are this template's Template Settings: paper, margins, font and page sections. Click something on the page to change it instead.",
       "textField": "Text on the page. Double-click it on the page to type. Change its font, size and colours here.",
-      "image": "A picture. Drop a picture file from your computer onto it, or choose one here. Pick a shape, such as Circle or Rounded, in Basic Settings.",
+      "image": "A picture. Double-click it, or use Choose picture here, to pick one of the project's photos or a file from your computer. Pick a shape, such as Circle or Rounded, in Basic Settings.",
       "line": "A line to separate parts of the page. Change its colour and thickness here.",
       "rectangle": "A shape for bars, rules and backgrounds. To keep text or pictures together on a coloured panel, use a Box instead.",
       "ellipse": "A circle or oval. For a status, pick green, amber or red in Basic Settings.",
@@ -1285,9 +1287,9 @@
         "aiPrompt": "Add a picture spot for the project photo.",
         "steps": {
           "addTitle": "Add a picture spot",
-          "addText": "Click Image in the Element Library.",
+          "addText": "Click Image in the Element Library and choose Project photos or From my computer.",
           "pictureTitle": "Put a picture in it",
-          "pictureText": "Drop a picture file from your computer onto the spot, or click it and choose one on the right.",
+          "pictureText": "Double-click the spot and choose one of the project's photos, or a picture from your computer. You can also drop a picture file onto it.",
           "settingsTitle": "Choose its shape",
           "settingsText": "Click the picture. On the right you can round its corners or make it a circle.",
           "previewTitle": "Check it",
@@ -3509,10 +3511,10 @@
         "title": "Image",
         "what": "A picture or logo.",
         "when": "For photos, logos, plans and signatures.",
-        "add": "Click Image in the Element Library, or drag it to the spot you want.",
+        "add": "Click Image in the Element Library and choose where the picture is from (the project's photos or your computer), or drag the tile to the spot you want for an empty picture spot.",
         "work": [
-          "Drop a picture file from your computer onto it, double-click it, or use Upload Image in its properties (PNG or JPG, up to 4 MB).",
-          "Double-click a picture to crop it.",
+          "Double-click it, or use Choose picture in its properties, to pick one of the project's photos (filtered by date and tags) or a file from your computer (PNG or JPG, up to 4 MB). You can also drop a picture file onto it.",
+          "Double-click a picture to crop it; to change it, use Change image on it or Choose picture in its properties.",
           "Shape rounds it: Rounded, Soft, Circle, Pill and more. The shape follows the picture when you resize it.",
           "Drag your project's logo from Report Data onto it to use that logo."
         ],
@@ -3784,7 +3786,7 @@
       },
       "picture": {
         "title": "Image Name",
-        "text": "The picture shown. Upload one from your computer (PNG or JPG, up to 4 MB); its name is shown here."
+        "text": "The picture shown. Choose picture opens the project's photos (filter them by date and tags) or lets you use a file from your computer (PNG or JPG, up to 4 MB); its name is shown here."
       },
       "imageShape": {
         "title": "Shape",
@@ -4072,6 +4074,55 @@
     "addedNote": "It opens as a new template and is added to My templates.",
     "seeAll": "See all in My Templates",
     "notFound": "Template not found\nIt may have been deleted."
+  },
+  "pictureChooser": {
+    "title": "Choose a picture",
+    "tabs": {
+      "photos": "Project photos",
+      "computer": "From my computer"
+    },
+    "project": "Project",
+    "filterBy": "Filter by",
+    "dateKinds": {
+      "uploadedAt": "Upload date",
+      "photoTakenAt": "Date taken"
+    },
+    "period": "Period",
+    "periods": {
+      "all": "All time",
+      "today": "Today",
+      "7d": "Last 7 days",
+      "15d": "Last 15 days",
+      "1m": "Last month",
+      "3m": "Last 3 months",
+      "6m": "Last 6 months",
+      "custom": "Choose dates"
+    },
+    "from": "From",
+    "to": "To",
+    "clearFilters": "Clear filters",
+    "tags": "Tags",
+    "count": "No photos | 1 photo | {count} photos",
+    "none": "This project has no photos yet",
+    "noneHint": "Photos added to the project's Photos page in CDP show here. You can also use a picture from your computer.",
+    "noMatch": "No photos match these filters",
+    "noMatchHint": "Try another period, or fewer tags.",
+    "loadFailed": "The photos couldn't be loaded",
+    "retry": "Try again",
+    "noProject": "No project chosen yet",
+    "noProjectHint": "Choose this template's project at the top, next to its name, to pick from its photos. Or use a picture from your computer.",
+    "chooseHint": "Click a photo to choose it, or double-click to use it straight away.",
+    "usePhoto": "Use this photo",
+    "dropTitle": "Drop a picture here, or click to choose one",
+    "cantUse": "Can't use this photo\nIts file can't be found. Please choose another one.",
+    "tile": {
+      "chooseKind": "Where is the picture from?",
+      "photos": "Project photos",
+      "photosDesc": "One of the photos of this template's project, filtered by date and tags.",
+      "computer": "From my computer",
+      "computerDesc": "A PNG or JPG file, up to 4 MB.",
+      "dragHint": "Or drag the tile onto the page for an empty picture spot, then double-click it."
+    }
   },
   "location": {
     "fields": {

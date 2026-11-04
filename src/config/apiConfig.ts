@@ -16,6 +16,10 @@ export const API_ROUTES = {
   entities: "/v2/entities",
   propertiesConfig: "/v2/table/cdp_PropertiesConfig",
   propertiesConfigSave: "/v2/properties-config",
+  // A project's photos (the CDP app's Photos page, project.api.ts getProjectImages)
+  projectPhotos: "/v1/image/project/filter",
+  // Every photo tag (getAllTags)
+  photoTags: "/rest/entities/cdp_Tag",
 } as const;
 
 export const apiUrl = (route: string) => `${API_BASE_URL}${route}`;

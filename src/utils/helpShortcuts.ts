@@ -112,6 +112,9 @@ export const SHORTCUT_GROUPS: { id: ShortcutGroupId; rows: ShortcutRow[] }[] = [
       { id: "crop", combos: [["mouse:doubleClick"]] },
       { id: "cropApply", combos: [["Enter"]] },
       { id: "cropCancel", combos: [["Esc"]] },
+      // The picture chooser (modals/PictureChooserModal.vue)
+      { id: "pictureUsePhoto", combos: [["mouse:doubleClick"]] },
+      { id: "pictureChooserClose", combos: [["Esc"]] },
     ],
   },
   {
