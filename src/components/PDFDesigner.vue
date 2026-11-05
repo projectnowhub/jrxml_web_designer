@@ -903,7 +903,9 @@ import {
   isBoxPart,
   markBoxPart,
   releaseBoxPart,
-  fitChildrenToFrame,
+  fitFrameContent,
+  frameFitReference,
+  frameMinimumSize,
   isFrameTemplateType,
   PAGE_BORDER_TYPE,
   PRESET_SIDE_INSET,
@@ -915,8 +917,11 @@ import {
   collectHeadings,
   entriesFor,
   hasProperty,
+  minContentsListWidth,
+  minContentsRowHeight,
   rowsThatFit,
   SECTION_HEADING_PROPERTY,
+  shownCount,
   SUB_HEADING_PROPERTY,
   syncContentsListSize,
 } from "../utils/contentsList";
@@ -7333,20 +7338,27 @@ const startResizingElement = (
       startLineDirection: (element as any).lineDirection || "TopDown",
     };
 
-    // A frame's children are re-laid out from these start positions while resizing
-    const frameChildrenStart =
-      element.type === "frame"
-        ? ((element as FrameElement).elements ?? []).map(
-            ({ x, y, width, height }) => ({ x, y, width, height }),
-          )
-        : null;
-    const frameStartSize = { width: element.width, height: element.height };
+    // A frame's children are re-laid out from these start positions while
+    // resizing (kept from the resizes before, so they never get squeezed for
+    // good), and the frame can't get smaller than its items need
+    const frameFitStart = element.type === "frame" ? frameFitReference(element as FrameElement) : null;
+    const frameMinSize = frameFitStart
+      ? (() => {
+          const min = frameMinimumSize(frameFitStart.children, frameFitStart.from);
+          // Never above the size it has now (a tight box doesn't jump)
+          return { width: Math.min(min.width, element.width), height: Math.min(min.height, element.height) };
+        })()
+      : null;
     // A custom table's columns and rows keep their shares while it is resized
     // A project-data table's heading and rows grow from their start sizes
     const dataTableStart =
       element.type === "table" && (element as TableElement).binding
         ? ({ ...(element as TableElement) } as TableElement)
         : null;
+    // Its columns as the drag began (copied: the binding object is shared)
+    const dataColumnsStart = dataTableStart?.binding
+      ? dataTableStart.binding.columns.map((c) => ({ ...c }))
+      : null;
     const customTableStart =
       element.type === "customTable"
         ? {
@@ -7555,6 +7567,16 @@ const startResizingElement = (
       }
 
       const minSize = element.type === "line" ? 1 : 5;
+      // Smallest width / height: a box what its items need, a contents list
+      // its number and page columns (narrower, its titles vanish)
+      const minWidth = Math.max(
+        minSize,
+        frameMinSize?.width ?? 0,
+        element.type === "contentsList"
+          ? Math.min(startWidth, minContentsListWidth((element as ContentsListElement).list))
+          : 0,
+      );
+      const minHeight = Math.max(minSize, frameMinSize?.height ?? 0);
 
       let newX = startElementX;
       let newY = startElementY;
@@ -7566,14 +7588,14 @@ const startResizingElement = (
         // Dragging right edge: left edge (newX) is fixed at startElementX
         const maxRight = containerWidth;
         const candidateRight = snapResizeEdge(startElementX + startWidth + deltaX, "x");
-        const clampedRight = Math.min(maxRight, Math.max(startElementX + minSize, candidateRight));
+        const clampedRight = Math.min(maxRight, Math.max(startElementX + minWidth, candidateRight));
         newWidth = clampedRight - startElementX;
         newX = startElementX;
       } else if (dir.includes("w")) {
         // Dragging left edge: right edge is fixed at (startElementX + startWidth)
         const rightEdge = startElementX + startWidth;
         const candidateLeft = snapResizeEdge(startElementX + deltaX, "x");
-        const clampedLeft = Math.max(0, Math.min(rightEdge - minSize, candidateLeft));
+        const clampedLeft = Math.max(0, Math.min(rightEdge - minWidth, candidateLeft));
         newX = clampedLeft;
         newWidth = rightEdge - clampedLeft;
       }
@@ -7583,14 +7605,14 @@ const startResizingElement = (
         // Dragging bottom edge: top edge (newY) is fixed at startElementY
         const maxBottom = containerHeight;
         const candidateBottom = snapResizeEdge(startElementY + startHeight + deltaY, "y");
-        const clampedBottom = Math.min(maxBottom, Math.max(startElementY + minSize, candidateBottom));
+        const clampedBottom = Math.min(maxBottom, Math.max(startElementY + minHeight, candidateBottom));
         newHeight = clampedBottom - startElementY;
         newY = startElementY;
       } else if (dir.includes("n")) {
         // Dragging top edge: bottom edge is fixed at (startElementY + startHeight)
         const bottomEdge = startElementY + startHeight;
         const candidateTop = snapResizeEdge(startElementY + deltaY, "y");
-        const clampedTop = Math.max(0, Math.min(bottomEdge - minSize, candidateTop));
+        const clampedTop = Math.max(0, Math.min(bottomEdge - minHeight, candidateTop));
         newY = clampedTop;
         newHeight = bottomEdge - clampedTop;
       }
@@ -7665,6 +7687,16 @@ const startResizingElement = (
         }
       }
 
+      // Shift / Alt may have made it smaller than its content allows
+      if (newWidth < minWidth) {
+        if (dir.includes("w")) newX = startElementX + startWidth - minWidth;
+        newWidth = minWidth;
+      }
+      if (newHeight < minHeight) {
+        if (dir.includes("n")) newY = startElementY + startHeight - minHeight;
+        newHeight = minHeight;
+      }
+
       // First, store the temporary size and position
       const tempWidth = Math.round(newWidth);
       const tempHeight = Math.round(newHeight);
@@ -7685,7 +7717,10 @@ const startResizingElement = (
           table.rowHeight = sizes.rowHeight;
         }
         const height = sizes ? sizes.height : snapTableHeight(table, tempHeight);
-        if (table.binding) table.binding.columns = scaleColumnWidths(table.binding.columns, width);
+        // Always from the columns as the drag began, so their shares stay exact
+        if (table.binding && dataColumnsStart) {
+          table.binding.columns = scaleColumnWidths(dataColumnsStart, width);
+        }
         element.width = width;
         element.x = dir.includes("w") ? startElementX + startWidth - width : tempX;
         element.y = dir.includes("n") ? startElementY + startHeight - height : tempY;
@@ -7705,8 +7740,12 @@ const startResizingElement = (
           element.height = Math.round(Math.max(list.rowHeight, Math.min(pageBottom, bottom) - top));
           syncFollowingLists(bands.value, reportProperties.value);
         } else {
-          // Elsewhere taller or shorter spreads or tightens the rows
-          list.rowHeight = Math.min(80, Math.max(12, Math.round(tempHeight / Math.max(1, list.entries.length))));
+          // Elsewhere taller or shorter spreads or tightens the rows shown (a
+          // row never shorter than one line of its text)
+          list.rowHeight = Math.min(
+            80,
+            Math.max(12, minContentsRowHeight(list), Math.round(tempHeight / Math.max(1, shownCount(list)))),
+          );
           syncContentsListSize(element as ContentsListElement);
           element.y = dir.includes("n") ? startElementY + startHeight - element.height : tempY;
         }
@@ -7738,15 +7777,8 @@ const startResizingElement = (
       }
 
       // Keep a frame's content in step with the frame (stretch wide items, pin edge items)
-      if (frameChildrenStart && element.type === "frame") {
-        const fitted = fitChildrenToFrame(frameChildrenStart, frameStartSize, {
-          width: element.width,
-          height: element.height,
-        });
-        (element as FrameElement).elements?.forEach((child, i) => {
-          const rect = fitted[i];
-          if (rect) Object.assign(child, rect);
-        });
+      if (frameFitStart && element.type === "frame") {
+        fitFrameContent(element as FrameElement, frameFitStart);
       }
 
       showSnapGuides(snapContext, snapGuides, snapOptions);

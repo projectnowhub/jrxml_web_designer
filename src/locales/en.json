@@ -1898,7 +1898,8 @@
     "madeShorter": "Made shorter to fit\nIt was taller than {band} can be.",
     "tooTall": "Too tall for {band}\nMake it smaller, or split it into two parts.",
     "movedIn": "Kept inside the page\nIt went past the edge of the page.",
-    "keptInside": "Kept inside {band}\nThat value would go past its edge, so it was set to {value}."
+    "keptInside": "Kept inside {band}\nThat value would go past its edge, so it was set to {value}.",
+    "keptMinimum": "Kept at {value} px\nIts content needs at least this much room, so it was set to {value}."
   },
   "customTable": {
     "placeholderHeader": "Heading {n}",

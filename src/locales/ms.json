@@ -1898,7 +1898,8 @@
     "madeShorter": "Dipendekkan supaya muat\nIa lebih tinggi daripada yang dibenarkan oleh {band}.",
     "tooTall": "Terlalu tinggi untuk {band}\nKecilkannya, atau pisahkannya kepada dua bahagian.",
     "movedIn": "Dikekalkan di dalam halaman\nIa melepasi tepi halaman.",
-    "keptInside": "Dikekalkan di dalam {band}\nNilai itu akan melepasi tepinya, jadi ia ditetapkan kepada {value}."
+    "keptInside": "Dikekalkan di dalam {band}\nNilai itu akan melepasi tepinya, jadi ia ditetapkan kepada {value}.",
+    "keptMinimum": "Dikekalkan pada {value} px\nKandungannya memerlukan sekurang-kurangnya ruang ini, jadi ia ditetapkan kepada {value}."
   },
   "customTable": {
     "placeholderHeader": "Tajuk {n}",

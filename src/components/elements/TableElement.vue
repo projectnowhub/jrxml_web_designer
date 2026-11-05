@@ -528,6 +528,9 @@ function onDragLeave(event: DragEvent) {
   display: flex;
   align-items: center;
   box-sizing: border-box;
+  /* Exactly its column's width in every row (shrinking would give the
+     heading and the rows different column lines) */
+  flex: 0 0 auto;
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;

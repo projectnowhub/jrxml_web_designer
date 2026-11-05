@@ -1010,7 +1010,7 @@ import { useI18n } from "vue-i18n";
 import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
 import notification from "@/utils/notification";
 import { pageKind } from "@/utils/specialPages";
-import type { Band, BarcodeElement, ChartElement, ContentsListElement, CustomTableElement, DesignElement, FrameElement, ImageElement, SelectedElementInfo } from "../../../types";
+import type { Band, BarcodeElement, ChartElement, ContentsListElement, CustomTableElement, DesignElement, FrameElement, ImageElement, SelectedElementInfo, TableElement } from "../../../types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
@@ -1055,7 +1055,7 @@ import PageSetupSection, { type PageSetupValue } from "../PageSetupSection.vue";
 import { loadReportDefaults } from "@/utils/reportDefaults";
 import { cardsWithoutHelp } from "@/utils/helpCoverage";
 import { cleanLegacyAutoDateElement, resolveLegacyDateSample } from "@/utils/autoDate";
-import { hasProperty, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/utils/contentsList";
+import { hasProperty, minContentsListWidth, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/utils/contentsList";
 import { resetElementStyle } from "../../../utils/resetStyle";
 import BarcodeProperties from "./BarcodeProperties.vue";
 import { isPagination } from "../../../utils/paginationPresets";
@@ -1069,9 +1069,15 @@ import {
   getBoxCornerRadii,
   setBoxCornerRadii,
   clampRectInBox,
+  fitFrameContent,
+  frameFitReference,
+  frameMinimumSize,
   isBoxPart,
   isUniformBorder,
+  type FrameFitReference,
 } from "../../../utils/framePresets";
+import { scaleColumnWidths } from "../../../utils/table/dataTable";
+import { MIN_TABLE_COLUMN_WIDTH } from "../../../utils/table/dataBinding";
 import { STATUS_COLORS } from "../../../utils/reportParts";
 import TableDataPanel from "./TableDataPanel.vue";
 import { useLivePreview } from "@/composables/useLivePreview";
@@ -1426,7 +1432,16 @@ function setIntegerValue(target: any, property: string, event: Event): boolean {
     return false;
   }
   report.saveStateToHistory();
+  const sizing = property === "width" || property === "height";
+  // A box's items are fitted to a typed size as when it is resized on the page
+  const boxReference = sizing && target.type === "frame" ? frameFitReference(target as FrameElement) : null;
+  const sizeBefore = { width: target.width, height: target.height };
   target[property] = parsed;
+  const smallest = typedSizeMinimum(target, boxReference, sizeBefore);
+  if (sizing && smallest && target[property] < smallest[property as "width" | "height"]) {
+    target[property] = smallest[property as "width" | "height"];
+    notification.info(t("sectionFit.keptMinimum", { value: target[property] }));
+  }
   // A ready-made box's own part keeps inside the box when its position or size is typed
   const parentIndex = selectedElement.value?.parentFrameIndex;
   if (
@@ -1439,9 +1454,36 @@ function setIntegerValue(target: any, property: string, event: Event): boolean {
     if (box?.type === "frame") Object.assign(target, clampRectInBox(target, box));
   }
   if (parentIndex === undefined && target === currentElement.value) keepTypedRectInSection(target, property);
+  if (boxReference) fitFrameContent(target as FrameElement, boxReference);
+  // A project-data table's columns keep their shares of a typed width
+  if (property === "width" && target.type === "table" && (target as TableElement).binding) {
+    const binding = (target as TableElement).binding!;
+    binding.columns = scaleColumnWidths(binding.columns, target.width);
+  }
   input.value = String(target[property]);
   report.updateJrxml();
   return true;
+}
+
+// The smallest size a typed width / height may give: a box what its items
+// need, a project-data table its columns at their narrowest, a contents list
+// its number and page columns (never more than it is now)
+function typedSizeMinimum(
+  target: DesignElement,
+  boxReference: FrameFitReference | null,
+  before: { width: number; height: number },
+): { width: number; height: number } | null {
+  if (boxReference) {
+    const min = frameMinimumSize(boxReference.children, boxReference.from);
+    return { width: Math.min(min.width, before.width), height: Math.min(min.height, before.height) };
+  }
+  if (target.type === "table" && (target as TableElement).binding) {
+    return { width: (target as TableElement).binding!.columns.length * MIN_TABLE_COLUMN_WIDTH, height: 1 };
+  }
+  if (target.type === "contentsList") {
+    return { width: Math.min(before.width, minContentsListWidth((target as ContentsListElement).list)), height: 1 };
+  }
+  return null;
 }
 
 // A position or size typed for an element in a section stays inside it (a

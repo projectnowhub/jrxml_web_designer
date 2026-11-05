@@ -14,7 +14,7 @@ import type {
   TableTextAlign,
   TotalFunction,
 } from "@/types/dataSource";
-import { distributeColumnWidths, startingColumnCount } from "./dataBinding";
+import { distributeColumnWidths, MIN_TABLE_COLUMN_WIDTH, startingColumnCount } from "./dataBinding";
 import { javaString } from "../jrxml/javaString";
 
 export const TABLE_HEADER_HEIGHT = 24;
@@ -243,19 +243,31 @@ export function createBinding(options: {
   };
 }
 
-// New widths after the table is resized, keeping each column's share
+// New widths after the table is resized, keeping each column's share: whole
+// numbers adding up exactly to the width, each column at least
+// MIN_TABLE_COLUMN_WIDTH (the rounding goes to the widest columns, never
+// leaving the last one too narrow or below nothing)
 export function scaleColumnWidths(columns: TableColumnBinding[], tableWidth: number): TableColumnBinding[] {
-  const current = columns.reduce((sum, c) => sum + c.width, 0) || 1;
-  const target = Math.max(columns.length, Math.round(tableWidth));
-  let used = 0;
-  return columns.map((c, i) => {
-    const width =
-      i === columns.length - 1
-        ? target - used
-        : Math.max(1, Math.round((c.width / current) * target));
-    used += width;
-    return { ...c, width };
-  });
+  if (!columns.length) return [];
+  const current = columns.reduce((sum, c) => sum + Math.max(0, c.width), 0) || columns.length;
+  const target = Math.max(columns.length * MIN_TABLE_COLUMN_WIDTH, Math.round(tableWidth));
+  const widths = columns.map((c) =>
+    Math.max(MIN_TABLE_COLUMN_WIDTH, Math.round((Math.max(0, c.width) / current) * target)),
+  );
+  // Hand the difference out one pixel at a time, widest columns first
+  let diff = target - widths.reduce((a, b) => a + b, 0);
+  const order = widths.map((_, i) => i).sort((a, b) => widths[b]! - widths[a]!);
+  for (let k = 0; diff !== 0 && k < order.length * 1000; k++) {
+    const i = order[k % order.length]!;
+    if (diff > 0) {
+      widths[i] = widths[i]! + 1;
+      diff--;
+    } else if (widths[i]! > MIN_TABLE_COLUMN_WIDTH) {
+      widths[i] = widths[i]! - 1;
+      diff++;
+    }
+  }
+  return columns.map((c, i) => ({ ...c, width: widths[i]! }));
 }
 
 // Equal widths for the chosen columns (after adding/removing columns)

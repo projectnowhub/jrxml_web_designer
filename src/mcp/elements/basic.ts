@@ -4,7 +4,7 @@
 
 import type { DesignElement, FrameElement, LineElement, RectangleElement, TextFieldElement } from "@/types";
 import { createElement } from "@/components/elements/ElementRegistry";
-import { frame, fitChildrenToFrame, applyBorderPreset, getBoxCornerRadii, setBoxCornerRadii } from "@/utils/framePresets";
+import { frame, fitFrameContent, frameFitReference, frameMinimumSize, applyBorderPreset, getBoxCornerRadii, setBoxCornerRadii } from "@/utils/framePresets";
 import { buildReportPart } from "@/utils/reportParts";
 import { getImageName, getImageShape, IMAGE_SHAPES, setImageName, setImageShape } from "@/utils/elementUtils";
 import { hasProperty, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY, sectionHeadingParts } from "@/utils/contentsList";
@@ -534,11 +534,15 @@ export const ellipseKind: ElementKind = {
 
 function applyBoxSettings(box: FrameElement, spec: ElementSpec): void {
   const before = { width: box.width, height: box.height };
+  const reference = frameFitReference(box);
   applyGeometry(box, spec);
-  // Its items keep their place / stretch with it, as when resized on the page
+  // Its items keep their place / stretch with it, as when resized on the page;
+  // the box is never made smaller than its items need (as on the page)
   if ((box.width !== before.width || box.height !== before.height) && box.elements?.length) {
-    const fitted = fitChildrenToFrame(box.elements, before, box);
-    box.elements.forEach((child, i) => Object.assign(child, fitted[i]));
+    const min = frameMinimumSize(reference.children, reference.from);
+    box.width = Math.max(box.width, Math.min(min.width, before.width));
+    box.height = Math.max(box.height, Math.min(min.height, before.height));
+    fitFrameContent(box, reference);
   }
   if (has(spec, "backcolor")) applyFill(box, spec.backcolor);
   applyBoxLines(box, spec);
