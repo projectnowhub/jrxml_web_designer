@@ -1,4 +1,5 @@
 import { RULER_CONSTANTS, UI_CONSTANTS } from "@/constants/constants";
+import { fitGridStep, gridLine } from "@/utils/snapping";
 
 export interface RulerTick {
   position: number;
@@ -49,24 +50,38 @@ export function buildRulerMarks(
 }
 
 /**
- * SVG path for the canvas grid inside a band: one line every GRID_SIZE from the
- * band's top-left, the same origin snap-to-grid rounds to. `strokeWidth` is the
- * line width in band units (1 / zoom for one screen pixel); each line is shifted
- * half of it so it covers [n * GRID_SIZE, n * GRID_SIZE + strokeWidth].
+ * SVG path for the canvas grid inside a band: whole squares of about GRID_SIZE
+ * from the band's top-left, stretched so a line falls on the right and bottom
+ * edges too (`fitGridStep`), on whole pixels: the lines snap-to-grid uses.
+ * `strokeWidth` is the line width in band units (1 / zoom for one screen
+ * pixel); each line covers [line, line + strokeWidth], the one on the right
+ * edge [width - strokeWidth, width] so it stays inside the band. The bottom
+ * edge is left to the next band's top line (or the margin outline).
  */
 export function buildGridPath(
   width: number,
   height: number,
   strokeWidth: number,
 ): string {
-  const grid = UI_CONSTANTS.GRID_SIZE;
+  const { x: stepX, y: stepY } = sectionGridStep(width, height);
+  const columns = Math.round(width / stepX);
+  const rows = Math.round(height / stepY);
   const half = strokeWidth / 2;
   const parts: string[] = [];
-  for (let x = 0; x < width; x += grid) {
-    parts.push(`M${x + half} 0V${height}`);
+  for (let i = 0; i <= columns; i++) {
+    const x = i === columns ? width - half : gridLine(i, stepX) + half;
+    parts.push(`M${x} 0V${height}`);
   }
-  for (let y = 0; y < height; y += grid) {
-    parts.push(`M0 ${y + half}H${width}`);
+  for (let i = 0; i < rows; i++) {
+    parts.push(`M0 ${gridLine(i, stepY) + half}H${width}`);
   }
   return parts.join("");
+}
+
+/** The grid step of a section `width` × `height` (as `buildGridPath` draws it) */
+export function sectionGridStep(width: number, height: number): { x: number; y: number } {
+  return {
+    x: fitGridStep(width, UI_CONSTANTS.GRID_SIZE),
+    y: fitGridStep(height, UI_CONSTANTS.GRID_SIZE),
+  };
 }

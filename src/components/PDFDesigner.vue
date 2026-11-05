@@ -848,6 +848,7 @@ import {
   snapEdge,
   snapMove,
   snapToGrid,
+  type GridStep,
   type SnapGuides,
   type SnapOptions,
   type SnapRect,
@@ -873,6 +874,7 @@ import {
 import { getBandDisplayName } from "../utils/bandUtils";
 import {
   buildRulerMarks,
+  sectionGridStep,
   type RulerLabel,
   type RulerTick,
 } from "../utils/rulerUtils";
@@ -2415,7 +2417,17 @@ interface SnapContext {
   pageIndex: number;
   offset: { x: number; y: number };
   targets: SnapTargets;
+  // The grid of the band on that page, as the canvas draws it
+  grid: GridStep;
 }
+
+// The grid step of a band on a page: whole squares of about GRID_SIZE across
+// its width and height (the sheet or printable page on a cover / contents page)
+const gridStepFor = (bandIndex: number, pageIndex?: number): GridStep => {
+  const band = bands.value[bandIndex];
+  const area = band?.type === BAND_TYPE_CONSTANTS.DETAIL ? specialPageArea(reportProperties.value, pageIndex) : null;
+  return sectionGridStep(area ? area.width : printableWidth.value, bandAreaHeight(bandIndex, pageIndex));
+};
 
 const buildSnapContext = (
   bandIndex: number,
@@ -2460,6 +2472,7 @@ const buildSnapContext = (
     bandIndex,
     pageIndex,
     offset,
+    grid: gridStepFor(bandIndex, pageIndex),
     targets: {
       x: [...new Set(xs)].map((v) => v - offset.x),
       y: [...new Set(ys)].map((v) => v - offset.y),
@@ -2470,11 +2483,12 @@ const buildSnapContext = (
 // Snap settings for one mouse move or drop; holding Ctrl/Cmd skips snapping
 const getSnapOptions = (
   event: { ctrlKey?: boolean; metaKey?: boolean } | null,
-  offset = { x: 0, y: 0 },
+  context: Pick<SnapContext, "grid" | "offset">,
 ): SnapOptions => {
   const bypass = !!(event?.ctrlKey || event?.metaKey);
+  const offset = context.offset;
   return {
-    grid: enableSnapToGrid.value && !bypass ? UI_CONSTANTS.GRID_SIZE : null,
+    grid: enableSnapToGrid.value && !bypass ? context.grid : null,
     threshold:
       enableSnapToAlignment.value && !bypass
         ? ALIGN_SNAP_SCREEN_PX / zoomLevel.value
@@ -3417,7 +3431,7 @@ const handleDrop = (event: DragEvent, pageIndex?: number, place?: { type: string
 
       // Land on the grid, or in line with a nearby element, like a dragged one
       const dropSnap = buildSnapContext(bandIndex, targetPageIndex, undefined, newElement);
-      const snappedDrop = snapMove(newElement, dropSnap.targets, getSnapOptions(event));
+      const snappedDrop = snapMove(newElement, dropSnap.targets, getSnapOptions(event, dropSnap));
       newElement.x = Math.max(0, snappedDrop.x);
       newElement.y = Math.max(0, snappedDrop.y);
 
@@ -4421,7 +4435,7 @@ const startDraggingInsideBox = (
   const scroll = startDragScrolling({ onScroll: () => frameMove(lastMove) });
 
   const onMove = (e: MouseEvent) => {
-    const options = getSnapOptions(e, snapContext.offset);
+    const options = getSnapOptions(e, snapContext);
     const scrolled = scroll.offset();
     const snapped = snapMove(
       {
@@ -4617,7 +4631,7 @@ const startDragging = (
               (e.clientY - draggingInfo.value.startY + scrolled.y) / currentZoom;
 
             // Snap: line up with other elements first, else the grid
-            const snapOptions = getSnapOptions(e, snapContext.offset);
+            const snapOptions = getSnapOptions(e, snapContext);
             const snapped = snapMove(
               {
                 x: (draggingInfo.value.origElementX ?? 0) + deltaX,
@@ -4936,9 +4950,12 @@ const startDragging = (
 
             // Y was snapped in the source band; snap it again to the grid of the
             // band it lands in (bands start at different heights; X is shared)
-            const landingGrid = getSnapOptions(e).grid;
+            const landingGrid = getSnapOptions(e, {
+              grid: gridStepFor(targetBandIndex, targetSheetPageIndex),
+              offset: { x: 0, y: 0 },
+            }).grid;
             if (landingGrid && !isSameBand) {
-              elementRelTargetBandY = snapToGrid(elementRelTargetBandY, landingGrid);
+              elementRelTargetBandY = snapToGrid(elementRelTargetBandY, landingGrid.y);
             }
 
             // Landing in a band (not in a box): it must fit, growing the band up
@@ -6075,11 +6092,11 @@ const moveElementByKeyboard = (direction: string, repeat = false) => {
   if (isWatermark(currentElement)) return;
 
   // The grid is drawn per band, so an item in a box steps to band grid lines
-  const grid = enableSnapToGrid.value ? UI_CONSTANTS.GRID_SIZE : null;
+  const grid = enableSnapToGrid.value ? gridStepFor(currentBandIndex, currentElement.pageIndex) : null;
   const offsetX = parentBox?.x ?? 0;
   const offsetY = parentBox?.y ?? 0;
-  const step = (value: number, dir: 1 | -1, offset: number) =>
-    grid ? nextGridLine(value, grid, dir, offset) : value + dir;
+  const step = (value: number, dir: 1 | -1, offset: number, axis: "x" | "y") =>
+    grid ? nextGridLine(value, grid[axis], dir, offset) : value + dir;
 
   // Calculate the new position
   let newX = currentElement.x;
@@ -6087,10 +6104,10 @@ const moveElementByKeyboard = (direction: string, repeat = false) => {
 
   switch (direction) {
     case "ArrowUp":
-      newY = Math.max(0, step(currentElement.y, -1, offsetY));
+      newY = Math.max(0, step(currentElement.y, -1, offsetY, "y"));
       break;
     case "ArrowDown": {
-      const next = step(currentElement.y, 1, offsetY);
+      const next = step(currentElement.y, 1, offsetY, "y");
       // Elements in a band stay within it (box parts are kept in their box below)
       const maxDown = parentBox
         ? Infinity
@@ -6099,10 +6116,10 @@ const moveElementByKeyboard = (direction: string, repeat = false) => {
       break;
     }
     case "ArrowLeft":
-      newX = Math.max(0, step(currentElement.x, -1, offsetX));
+      newX = Math.max(0, step(currentElement.x, -1, offsetX, "x"));
       break;
     case "ArrowRight": {
-      const next = step(currentElement.x, 1, offsetX);
+      const next = step(currentElement.x, 1, offsetX, "x");
       newX = parentBox
         ? next
         : Math.min(Math.max(0, printableWidth.value - currentElement.width), next);
@@ -7470,7 +7487,7 @@ const startResizingElement = (
 
       // Moving edges snap to other elements, else the grid. Aspect-locked
       // resizes (Shift, Alt) follow the mouse instead.
-      const snapOptions = getSnapOptions(e, snapContext.offset);
+      const snapOptions = getSnapOptions(e, snapContext);
       const snapGuides: SnapGuides = { x: [], y: [] };
       const snapResizeEdge = (value: number, axis: "x" | "y") => {
         if (e.shiftKey || e.altKey) return value;
