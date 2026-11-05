@@ -279,8 +279,9 @@ type PagesInput = Parameters<typeof specialPages>[0] | null;
 export function watermarkSkippedPages(setup: WatermarkSetup, special: SpecialPages): number {
   if (setup.pages === "normal") return special.count;
   if (setup.pages === "notCover") return special.cover ? 1 : 0;
-  // Every page, but a whole-sheet cover has no background (like the page border)
-  return special.fullPageCover ? 1 : 0;
+  // Every page, a whole-sheet cover included (unlike the page border: a
+  // watermark looks right on an edge-to-edge cover; checked in a fill)
+  return 0;
 }
 
 // Its print-when in the JRXML (none: every page)

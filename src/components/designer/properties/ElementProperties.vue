@@ -966,7 +966,8 @@
 
       </Transition>
 
-      <div class="element-actions">
+      <!-- The watermark has its own Remove button in its panel -->
+      <div v-if="!watermarkElement" class="element-actions">
         <button type="button" class="delete-element-btn" @click="deleteElement">
           <Trash2 :size="14" aria-hidden="true" />
           {{ t("properties.deleteElement") }}

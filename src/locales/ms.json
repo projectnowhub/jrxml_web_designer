@@ -3741,7 +3741,7 @@
         "good": [
           "Ia dicetak di belakang semua: kotak berwarna dan baris jadual menutupinya, seperti di atas kertas.",
           "Perkataan yang tidak muat pada halaman pada sudutnya akan dikecilkan sendiri.",
-          "Kulit yang memenuhi seluruh helaian tidak pernah ada tera air.",
+          "Ia turut dicetak pada kulit dan halaman kandungan, malah kulit yang memenuhi seluruh helaian; pilih halaman dalam Halaman mana.",
           "Pratonton PDF menunjukkan dengan tepat apa yang dicetak."
         ]
       },
@@ -4277,8 +4277,6 @@
   "watermark": {
     "exists": "Templat ini sudah ada tera air\nIa telah dipilih: ubah di sebelah kanan.",
     "tileExists": "Templat ini sudah ada tera air. Ubah dalam Tetapan Templat: klik ruang kosong pada halaman.",
-    "notOnSheetCover": "Tiada pada kulit\nKulit memenuhi seluruh helaian, jadi tera air dicetak mulai halaman seterusnya.",
-    "notOnSheetCoverDropped": "Ditambah pada halaman lain\nKulit yang memenuhi seluruh helaian tiada tera air; ia dicetak pada setiap halaman lain.",
     "canvasTag": "Tera air",
     "canvasNoPicture": "Pilih gambar untuk tera air di sebelah kanan",
     "canvasPictureFailed": "Gambar tera air tidak dapat dimuatkan",
@@ -4359,8 +4357,8 @@
       "spot": "Kedudukan",
       "repeatedHint": "Diulang dalam baris di seluruh halaman.",
       "pagesTitle": "Halaman mana",
-      "sheetCoverNote": "Kulit memenuhi seluruh helaian, jadi ia tidak pernah ada tera air.",
-      "remove": "Buang tera air"
+      "remove": "Buang tera air",
+      "focusNote": "Semasa tetapan ini dibuka, halaman dipudarkan supaya tera air jelas kelihatan. Dalam PDF ia dicetak di belakang kandungan."
     },
     "card": {
       "title": "Tera Air",

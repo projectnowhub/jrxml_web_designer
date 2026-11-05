@@ -3741,7 +3741,7 @@
         "good": [
           "It prints behind everything: filled boxes and table rows cover it, as on paper.",
           "Words that wouldn't fit the page at their angle are made smaller by themselves.",
-          "A cover that fills the whole sheet never has a watermark.",
+          "It prints on the cover and contents pages too, even a cover that fills the whole sheet; choose which pages in Which pages.",
           "Preview PDF shows exactly what prints."
         ]
       },
@@ -4277,8 +4277,6 @@
   "watermark": {
     "exists": "This template has a watermark\nIt is selected: change it on the right.",
     "tileExists": "This template already has a watermark. Change it in Template Settings: click an empty spot of the page.",
-    "notOnSheetCover": "Not on the cover\nThe cover fills the whole sheet, so the watermark prints from the next page.",
-    "notOnSheetCoverDropped": "Added to the other pages\nA cover that fills the whole sheet has no watermark; it prints on every other page.",
     "canvasTag": "Watermark",
     "canvasNoPicture": "Choose a picture for the watermark on the right",
     "canvasPictureFailed": "The watermark picture couldn't be loaded",
@@ -4359,8 +4357,8 @@
       "spot": "Spot",
       "repeatedHint": "Repeated in rows across the whole page.",
       "pagesTitle": "Which pages",
-      "sheetCoverNote": "The cover fills the whole sheet, so it never has a watermark.",
-      "remove": "Remove the watermark"
+      "remove": "Remove the watermark",
+      "focusNote": "While these settings are open, the page is faded so you can see the watermark clearly. In the PDF it prints behind the content."
     },
     "card": {
       "title": "Watermark",

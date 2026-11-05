@@ -127,7 +127,11 @@
                 transform: `scale(${zoomLevel})`,
                 transformOrigin: 'top left',
               }"
-              :class="{ focused: isDesignAreaFocused, [`is-${kindOf(pIndex - 1)}-page`]: isSpecial(pIndex - 1) }"
+              :class="{
+                focused: isDesignAreaFocused,
+                [`is-${kindOf(pIndex - 1)}-page`]: isSpecial(pIndex - 1),
+                'is-watermark-focus': watermarkSelected && showsWatermark(pIndex - 1),
+              }"
               @drop="handleDrop($event, pIndex - 1)"
               @dragover="handleDragOver"
               @dragleave="handleDragLeave"
@@ -241,6 +245,7 @@
                   :left="reportProperties.leftMargin || 0"
                   :zoom="zoomLevel"
                   :selected="watermarkSelected"
+                  :raised="watermarkSelected"
                 />
                 <!-- A contents page without a Table of Contents: offer to add one
                      (designer only; never printed) -->
@@ -681,9 +686,10 @@ const watermark = computed(() => {
   const at = watermarkAt.value;
   return at ? (bands.value[at.bandIndex]!.elements[at.elementIndex] as ImageElement) : null;
 });
+// On a whole-sheet cover too: the layer sits at the printable area, as the
+// Background band prints there
 const showsWatermark = (pageIndex: number) =>
   !!watermark.value &&
-  !isSheetPage(pageIndex) &&
   watermarkOnPage(getWatermarkSetup(watermark.value), reportProperties.value, pageIndex);
 const watermarkSelected = computed(() => {
   const at = watermarkAt.value;
@@ -1571,6 +1577,14 @@ onBeforeUnmount(() => {
 .band-grid path {
   fill: none;
   stroke: #ececec;
+}
+
+/* While the watermark is selected: the page's content fades and the watermark
+   is drawn over it, so every change to it can be seen (it prints behind) */
+.paper.is-watermark-focus .band,
+.paper.is-watermark-focus .background-band-layer {
+  opacity: 0.25;
+  transition: opacity 0.15s ease;
 }
 
 /* Sits above the bands; multiply keeps white areas white and lets the content

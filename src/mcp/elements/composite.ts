@@ -467,7 +467,7 @@ export const watermarkKind: ElementKind = {
   kind: "watermark",
   tool: "create_watermark",
   description:
-    "Add a watermark: faint text (DRAFT, CONFIDENTIAL…) or a faded picture (a logo) printed behind the content of every page. One per report; change it with update_element. Filled boxes and table rows cover it, like on paper. A whole-sheet cover never shows it.",
+    "Add a watermark: faint text (DRAFT, CONFIDENTIAL…) or a faded picture (a logo) printed behind the content of every page. One per report; change it with update_element. Filled boxes and table rows cover it, like on paper. It prints on the cover too unless pages says otherwise.",
   properties: {
     text: { type: "string", description: 'Its words (a line per line; default "DRAFT"). Makes it a text watermark.' },
     source: {

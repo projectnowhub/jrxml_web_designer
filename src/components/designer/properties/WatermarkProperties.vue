@@ -2,6 +2,11 @@
   <!-- Watermark settings in plain steps: what it shows, how it looks, its
        angle, where on the page, which pages. The page shows every change. -->
   <div class="watermark-properties">
+    <!-- The page fades while this panel is open (the canvas does it) -->
+    <p class="focus-note">
+      <Eye :size="14" aria-hidden="true" />
+      <span>{{ t("watermark.panel.focusNote") }}</span>
+    </p>
     <!-- 1. What it shows -->
     <section class="card">
       <h5 class="step"><span class="step-no" aria-hidden="true">1</span>{{ t("watermark.panel.contentTitle") }}<SettingHelpButton id="watermarkContent" /></h5>
@@ -267,7 +272,6 @@
           {{ t(`watermark.pages.${pages}`) }}
         </button>
       </div>
-      <p v-if="special.fullPageCover" class="hint">{{ t("watermark.panel.sheetCoverNote") }}</p>
     </section>
 
     <!-- No watermark any more (the Delete key does the same) -->
@@ -287,7 +291,7 @@ import ColorSwatchPicker from "../../common/ColorSwatchPicker.vue";
 import PictureChooserModal from "../../modals/PictureChooserModal.vue";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { Bold, Grid3x3, ImagePlus, Image as ImageIcon, Square, Trash2, Type } from "@lucide/vue";
+import { Bold, Eye, Grid3x3, ImagePlus, Image as ImageIcon, Square, Trash2, Type } from "@lucide/vue";
 import { useReportStore } from "@/stores/report";
 import { useSelectionStore } from "@/stores/selection";
 import type { ImageElement } from "../../../types";
@@ -406,6 +410,24 @@ function removeWatermark() {
 /* Sized for easy reading, like the date and page-number panels */
 .watermark-properties {
   font-size: 13px;
+}
+
+.focus-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f5f3ff;
+  color: #4c3bb5;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.focus-note :deep(svg) {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .card {

@@ -344,7 +344,6 @@ async function placePageBorder(kind: ElementKind, spec: ElementSpec, notes: stri
   if (watermark) {
     // First in the band: it prints behind the page border
     band.elements.unshift(element);
-    if (specialPages(report.reportProperties).fullPageCover) notes.push(t("watermark.notOnSheetCover"));
     return { kind, location: { bandIndex, band, element, container: band.elements, index: 0 } };
   }
   band.elements.push(element);

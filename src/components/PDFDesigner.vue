@@ -2851,8 +2851,8 @@ const ensureBackgroundBand = (): number => {
 
 // Add a watermark behind the content of every page (the Background band).
 // One per template: a second click or drop selects the one there is.
-// `droppedOnPage`: the Detail page it was dropped on (a click adds it too)
-const addWatermark = (droppedOnPage?: number) => {
+// It prints on every page (the cover too), wherever it was dropped
+const addWatermark = () => {
   if (rejectSecondWatermark()) return;
   saveStateToHistory();
   const bandIndex = ensureBackgroundBand();
@@ -2864,14 +2864,6 @@ const addWatermark = (droppedOnPage?: number) => {
   // First in the band: it prints behind the page border
   const band = bands.value[bandIndex]!;
   band.elements.unshift(watermark);
-  const special = specialPages(reportProperties.value);
-  if (special.fullPageCover) {
-    notification.info(
-      droppedOnPage !== undefined && pageKind(reportProperties.value, droppedOnPage) === "cover"
-        ? t("watermark.notOnSheetCoverDropped")
-        : t("watermark.notOnSheetCover"),
-    );
-  }
   selectElement(bandIndex, 0);
   handleElementCreated(watermark, bandIndex, 0);
   updateJRXML();
@@ -3321,7 +3313,7 @@ const handleDrop = (event: DragEvent, pageIndex?: number, place?: { type: string
     }
     // So does a watermark (it prints behind every page)
     if (elementData.type === WATERMARK_TYPE) {
-      addWatermark(targetPageIndex);
+      addWatermark();
       highlightedBandIndex.value = null;
       return;
     }

@@ -4,7 +4,7 @@
        it is selected with the "Watermark" button above the page or its tile. -->
   <div
     class="watermark-layer"
-    :class="{ 'is-selected': selected }"
+    :class="{ 'is-selected': selected, 'is-raised': raised }"
     :style="{ top: `${top}px`, left: `${left}px`, width: `${element.width}px`, height: `${element.height}px` }"
     data-watermark
     aria-hidden="true"
@@ -39,6 +39,8 @@ const props = defineProps<{
   left: number;
   zoom: number;
   selected: boolean;
+  // Drawn over the page's content (while it is being edited)
+  raised?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -122,6 +124,12 @@ onBeforeUnmount(() => document.fonts?.removeEventListener?.("loadingdone", redra
 .watermark-layer {
   position: absolute;
   pointer-events: none;
+}
+
+/* Being edited: over the (faded) content, so it can be seen clearly; under
+   the page toolbar (z-index 20) */
+.watermark-layer.is-raised {
+  z-index: 15;
 }
 
 .watermark-canvas {
