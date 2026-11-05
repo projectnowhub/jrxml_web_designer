@@ -145,8 +145,18 @@ export function getOutOfBoundsElements(
 
   bands.forEach((band, bandIndex) => {
     band.elements.forEach((element, elementIndex) => {
-      // A cover or contents page: its items fit in the whole printable page
-      const area = band.type === 'detail' ? specialPageArea(reportProperties, element.pageIndex) : null;
+      // A cover or contents page: its items fit in the whole printable page.
+      // The Background band (page border, watermark) lies behind the whole
+      // printable area of every page, not stacked after the other sections
+      const area =
+        band.type === 'detail'
+          ? specialPageArea(reportProperties, element.pageIndex)
+          : band.type === 'background'
+            ? {
+                width: reportProperties.pageWidth - reportProperties.leftMargin - reportProperties.rightMargin,
+                height: reportProperties.pageHeight - reportProperties.topMargin - reportProperties.bottomMargin,
+              }
+            : null;
       if (area) {
         const exceedsLeft = element.x < 0;
         const exceedsRight = element.x + element.width > area.width;
