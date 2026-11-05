@@ -238,6 +238,7 @@ import ReportDataPanel from "./designer/ReportDataPanel.vue";
 import ElementPreview from "./common/ElementPreview.vue";
 import { ElementRegistry } from "./elements/ElementRegistry";
 import { buildFrameTemplate, findPageBorder, isFrameTemplateType, PAGE_BORDER_TYPE } from "../utils/framePresets";
+import { findWatermark, WATERMARK_TYPE } from "../utils/watermark/watermarkElement";
 import { buildReportPart, isReportPartType } from "../utils/reportParts";
 import { isContentsDesignType, isCoverDesignType } from "../utils/pageDesigns";
 import {
@@ -382,15 +383,18 @@ function getFieldTypeName(className: string): string {
 }
 
 // Handle drag start
-// Only one page border per report; the tile stays clickable so the designer can
-// explain why and select the existing border
+// Only one page border and one watermark per template: the tile is turned off
+// once there is one, but stays clickable so the designer can explain why and
+// select the existing one
 const hasPageBorder = computed(() => findPageBorder(bands.value) !== null);
-const isUnavailable = (type: string) => type === PAGE_BORDER_TYPE && hasPageBorder.value;
+const hasWatermark = computed(() => findWatermark(bands.value) !== null);
+const isUnavailable = (type: string) =>
+  (type === PAGE_BORDER_TYPE && hasPageBorder.value) || (type === WATERMARK_TYPE && hasWatermark.value);
 
 // Hover text: why a tile is disabled, or what the tile adds (its own line in
 // elementLibrary.tileHints, else the preset's description)
 const tileHint = (type: string): string | undefined => {
-  if (isUnavailable(type)) return t("framePresets.pageBorderExists");
+  if (isUnavailable(type)) return t(type === WATERMARK_TYPE ? "watermark.tileExists" : "framePresets.pageBorderExists");
   if (te(`elementLibrary.tileHints.${type}`)) return t(`elementLibrary.tileHints.${type}`);
   if (isFrameTemplateType(type)) return t(`framePresets.templateDescription.${type}`);
   if (isCoverDesignType(type) || isContentsDesignType(type)) return t(`pageDesigns.designs.${type}.tileHint`);

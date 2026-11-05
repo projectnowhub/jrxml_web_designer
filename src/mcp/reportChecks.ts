@@ -19,6 +19,7 @@ import { neededTextHeight, plainText, printedText } from "./elements/common";
 import { allLocations, areaOf, boxAround, kindAt, label, neighbours, overlapsOf, pageOf, shapeUnder, type Location } from "./design";
 import { getLocationSetup, isLocationElement, isLocationMap, placePoint } from "@/utils/location/locationElement";
 import { getProjectValueLink, isProjectValue } from "@/utils/projectValue";
+import { getWatermarkSetup, isWatermark } from "@/utils/watermark/watermarkElement";
 
 export interface ReportCheck {
   level: "fix" | "check";
@@ -142,6 +143,14 @@ export function elementChecks(loc: Location): ReportCheck[] {
   const name = label(e, loc.band.type);
   const fix = (message: string) => out.push({ level: "fix", where, uuid: e.uuid, message: `${name} ${message}` });
   const check = (message: string) => out.push({ level: "check", where, uuid: e.uuid, message: `${name} ${message}` });
+  // The watermark: something to print, faint enough to read the page over it
+  if (isWatermark(e)) {
+    const s = getWatermarkSetup(e);
+    if (s.kind === "picture" && !s.picture) fix("has no picture yet, so it prints nothing: give it a source (an attached picture) or text");
+    if (s.kind === "text" && !s.text.trim()) fix("has no words, so it prints nothing: give it text (e.g. DRAFT)");
+    if (s.opacity > 40) check(`is strong (${s.opacity}%): the content printed over it gets hard to read; 10-25% is usual`);
+    return out;
+  }
   if (loc.band.type === BAND_TYPE_CONSTANTS.BACKGROUND) return out;
 
   // Outside its band / page / box (it is cut off or pushed in the PDF)

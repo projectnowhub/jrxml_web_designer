@@ -20,7 +20,7 @@ export interface TourStep {
 }
 
 // First-time tips, by what was selected
-export type FirstTipId = "select" | "text" | "box" | "typedTable" | "dataTable" | "chart" | "location";
+export type FirstTipId = "select" | "text" | "box" | "typedTable" | "dataTable" | "chart" | "location" | "watermark";
 
 export const TOURS: Record<TourId, TourStep[]> = {
   home: [

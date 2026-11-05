@@ -64,6 +64,18 @@ import {
   type ListLook,
 } from "@/utils/contentsList";
 import { applyGeometry, boxKind, frameCtx } from "./basic";
+import { isAttachmentSource } from "../attachments";
+import {
+  buildWatermarkElement,
+  getWatermarkSetup,
+  isWatermark,
+  normalizeWatermarkSetup,
+  setWatermarkSetup,
+  WATERMARK_LIMITS,
+  WATERMARK_PAGES,
+  WATERMARK_PLACES,
+  type WatermarkSetup,
+} from "@/utils/watermark/watermarkElement";
 import {
   applyBoxLines,
   applyTextStyle,
@@ -415,6 +427,96 @@ export const pageBorderKind: ElementKind = {
   },
   update: (e, spec) => applyPageBorder(e as FrameElement, spec),
   describe: (e) => defined({ ...describeBoxLines(e), ...describeCorners(getBoxCornerRadii(e as FrameElement)) }),
+};
+
+// ---------------------------------------------------------------------------
+// Watermark: faint text or a faded picture behind every page (one only)
+// ---------------------------------------------------------------------------
+
+// The AI's settings as a watermark setup (only the given keys)
+function watermarkPatch(spec: ElementSpec, current: WatermarkSetup): Partial<WatermarkSetup> {
+  const patch: Partial<WatermarkSetup> = {};
+  if (has(spec, "text")) {
+    patch.text = String(spec.text);
+    patch.kind = "text";
+  }
+  if (has(spec, "source")) {
+    const source = String(spec.source).trim();
+    // As for pictures: no web addresses (a missing one stops the PDF)
+    if (source && !/^data:image\/(png|jpe?g);base64,/i.test(source) && !isAttachmentSource(source)) {
+      throw new SpecError('source: use a picture the user attached ("attachment:<id>") or an embedded PNG / JPEG (data:image/png|jpeg;base64,…)');
+    }
+    patch.picture = source;
+    patch.pictureName = has(spec, "pictureName") ? String(spec.pictureName) : source ? current.pictureName || "Picture" : "";
+    patch.kind = "picture";
+  }
+  if (has(spec, "kind")) patch.kind = spec.kind;
+  if (has(spec, "color")) patch.color = requireColor(spec.color, "color");
+  for (const key of ["bold", "grey", "repeat"] as const) if (has(spec, key)) patch[key] = !!spec[key];
+  for (const key of ["size", "angle", "pictureSize", "opacity"] as const) if (has(spec, key)) patch[key] = Number(spec[key]);
+  if (has(spec, "place")) patch.place = spec.place;
+  if (has(spec, "pages")) patch.pages = spec.pages;
+  const next = normalizeWatermarkSetup({ ...current, ...patch });
+  if (next.kind === "text" && !next.text.trim()) throw new SpecError("text: a text watermark needs words (e.g. DRAFT)");
+  return patch;
+}
+
+const L = WATERMARK_LIMITS;
+
+export const watermarkKind: ElementKind = {
+  kind: "watermark",
+  tool: "create_watermark",
+  description:
+    "Add a watermark: faint text (DRAFT, CONFIDENTIAL…) or a faded picture (a logo) printed behind the content of every page. One per report; change it with update_element. Filled boxes and table rows cover it, like on paper. A whole-sheet cover never shows it.",
+  properties: {
+    text: { type: "string", description: 'Its words (a line per line; default "DRAFT"). Makes it a text watermark.' },
+    source: {
+      type: "string",
+      description: 'A picture the user attached ("attachment:<id>") or an embedded PNG / JPEG; makes it a picture watermark',
+    },
+    pictureName: { type: "string", description: "The picture's file name, shown in the panel" },
+    kind: { type: "string", enum: ["text", "picture"], description: "Switch between its text and its picture (both are kept)" },
+    color: { type: "string", description: "Text colour, #RRGGBB (default grey #6B7280)" },
+    bold: { type: "boolean", description: "Bold text (default true)" },
+    size: { type: "number", minimum: L.size.min, maximum: L.size.max, description: "Text size in pt (default 96; made smaller when it wouldn't fit the page)" },
+    angle: { type: "number", minimum: L.angle.min, maximum: L.angle.max, description: "Turned counter-clockwise in degrees: 45 rising diagonal (default), 0 straight, -45 falling, 90 upwards" },
+    pictureSize: { type: "number", minimum: L.pictureSize.min, maximum: L.pictureSize.max, description: "Picture width, % of the printable width (default 60)" },
+    grey: { type: "boolean", description: "Wash the picture out to grey" },
+    opacity: { type: "number", minimum: L.opacity.min, maximum: L.opacity.max, description: "How strong it prints, % (default 15; above 40 the content gets hard to read)" },
+    place: { type: "string", enum: WATERMARK_PLACES, description: "Where it sits when not repeated (default center)" },
+    repeat: { type: "boolean", description: "Repeated across the whole page instead of once" },
+    pages: { type: "string", enum: WATERMARK_PAGES, description: "all (default), notCover (not on the cover), normal (not on the cover and contents pages)" },
+  },
+  fixedPlace: true,
+  inBox: false,
+  matches: (e) => isWatermark(e),
+  create(spec, ctx) {
+    const element = buildWatermarkElement({ width: ctx.availableWidth, height: ctx.availableHeight }, { text: ctx.t("watermark.words.DRAFT") });
+    setWatermarkSetup(element, watermarkPatch(spec, getWatermarkSetup(element)));
+    return element;
+  },
+  update(e, spec) {
+    setWatermarkSetup(e, watermarkPatch(spec, getWatermarkSetup(e)));
+  },
+  describe(e) {
+    const s = getWatermarkSetup(e);
+    return defined({
+      kind: s.kind,
+      text: s.kind === "text" ? s.text : undefined,
+      source: s.kind === "picture" ? (s.picture ? (s.picture.startsWith("data:") ? "(embedded picture)" : s.picture) : "(none yet)") : undefined,
+      pictureName: s.kind === "picture" ? s.pictureName || undefined : undefined,
+      color: s.kind === "text" ? s.color : undefined,
+      bold: s.kind === "text" ? s.bold : undefined,
+      size: s.kind === "text" ? s.size : undefined,
+      pictureSize: s.kind === "picture" ? s.pictureSize : undefined,
+      grey: s.kind === "picture" ? s.grey : undefined,
+      angle: s.angle,
+      opacity: s.opacity,
+      place: s.repeat ? undefined : s.place,
+      repeat: s.repeat || undefined,
+      pages: s.pages,
+    });
+  },
 };
 
 // ---------------------------------------------------------------------------

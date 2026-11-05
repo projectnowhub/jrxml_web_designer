@@ -24,6 +24,7 @@ import { fitContentsPages, fitListDecorations, NEW_REPORT_HEADING_NUMBERING, syn
 import { unwrapLegacyCoverFrames } from "@/utils/pageDesigns";
 import { syncLocations, syncProjectPlaces } from "@/utils/location/locationElement";
 import { syncTotals } from "@/utils/customTable";
+import { syncWatermarks } from "@/utils/watermark/watermarkElement";
 import { syncProjectValues } from "@/utils/projectValue";
 import { cachedProjectDetails } from "@/queries/projectQueries";
 import { loadReportDefaults } from "@/utils/reportDefaults";
@@ -144,6 +145,9 @@ export const useReportStore = defineStore("report", () => {
   // Height of the printable area (the whole page inside the margins)
   const printableHeight = computed(
     () => paperHeight.value - (reportProperties.value?.topMargin || 0) - (reportProperties.value?.bottomMargin || 0),
+  );
+  const printableWidth = computed(
+    () => paperWidth.value - (reportProperties.value?.leftMargin || 0) - (reportProperties.value?.rightMargin || 0),
   );
 
   // Undo/redo snapshots the whole model. Every change records a step BEFORE
@@ -291,6 +295,8 @@ export const useReportStore = defineStore("report", () => {
         fontFamily: reportProperties.value.defaultFont?.name,
         fontSize: reportProperties.value.defaultFont?.size,
       });
+      // The watermark covers the printable area of every page
+      syncWatermarks(bands.value, { width: printableWidth.value, height: printableHeight.value });
       // Typed tables: the sums in their total row follow the numbers above
       for (const band of bands.value) {
         for (const element of band.elements) if (element.type === "customTable") syncTotals(element.table);
@@ -431,6 +437,7 @@ export const useReportStore = defineStore("report", () => {
     paperWidth,
     paperHeight,
     printableHeight,
+    printableWidth,
     special,
     totalPages,
     historyStack: history.historyStack,

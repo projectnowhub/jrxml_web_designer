@@ -11,6 +11,7 @@ import { SUB_HEADING_PROPERTY } from "@/utils/contentsList";
 import { DATE_PROPERTY } from "@/utils/dateElement";
 import { findPageBorder, isBoxPart } from "@/utils/framePresets";
 import { getLocationSetup, isLocationElement, placePoint } from "@/utils/location/locationElement";
+import { getWatermark, isWatermark } from "@/utils/watermark/watermarkElement";
 
 export type GuideId =
   // Whole jobs
@@ -32,6 +33,7 @@ export type GuideId =
   | "barcode"
   // Composite Elements
   | "pageBorder"
+  | "watermark"
   | "pageNumbers"
   | "date"
   | "location"
@@ -161,6 +163,9 @@ const isPresetBox: Test = (el, band) =>
   (el.elements ?? []).some(isBoxPart);
 const isUserBox: Test = (el, band) => el.type === "frame" && band.type !== "background" && !isHeading(el);
 
+// A picture the user placed (not the watermark, which is an image too)
+const isPicture: Test = (el) => el.type === "image" && !isWatermark(el);
+
 const pageBorder = (ctx: GuideContext) => {
   const at = findPageBorder(ctx.bands);
   return at ? (ctx.bands[at.bandIndex]?.elements[at.elementIndex] ?? null) : null;
@@ -197,13 +202,13 @@ const ELEMENT_GUIDES: Guide[] = [
   elementGuide("text", isPlainText, "textField", [typeStep(isPlainText), settingsStep(isPlainText)]),
   elementGuide("sectionHeading", isHeading, "partSectionHeading", [settingsStep(isHeading)]),
   elementGuide("subHeading", isSubHeading, "partSubHeading", [typeStep(isSubHeading)]),
-  elementGuide("image", (el) => el.type === "image", "image", [
+  elementGuide("image", isPicture, "image", [
     {
       key: "picture",
-      done: (ctx) => !!findIn(ctx, (el) => el.type === "image" && !!el.imageExpression?.trim()),
-      target: (ctx) => onPage(findIn(ctx, (el) => el.type === "image")?.uuid),
+      done: (ctx) => !!findIn(ctx, (el, band) => isPicture(el, band) && !!(el as { imageExpression?: string }).imageExpression?.trim()),
+      target: (ctx) => onPage(findIn(ctx, isPicture)?.uuid),
     },
-    settingsStep((el) => el.type === "image"),
+    settingsStep(isPicture),
   ]),
   elementGuide("line", (el) => el.type === "line", "line", [settingsStep((el) => el.type === "line")]),
   elementGuide("rectangle", (el) => el.type === "rectangle", "rectangle", [
@@ -233,6 +238,20 @@ const ELEMENT_GUIDES: Guide[] = [
         sticky: true,
         done: (ctx) => !!ctx.selected && ctx.selected.uuid === pageBorder(ctx)?.uuid,
         target: (ctx) => onPage(pageBorder(ctx)?.uuid),
+      },
+      PREVIEW_STEP,
+    ],
+  },
+  // Watermark: selected from Template Settings' Watermark card (it can't be clicked on the page)
+  {
+    id: "watermark",
+    steps: [
+      { key: "add", done: (ctx) => !!getWatermark(ctx.bands), target: () => tile("watermark") },
+      {
+        key: "settings",
+        sticky: true,
+        done: (ctx) => !!ctx.selected && isWatermark(ctx.selected),
+        target: () => ['[data-help="watermark-card"]'],
       },
       PREVIEW_STEP,
     ],
@@ -381,7 +400,7 @@ export const GUIDE_SECTIONS: { id: GuideSectionId; guides: GuideId[] }[] = [
       "barcode",
     ],
   },
-  { id: "composite", guides: ["pageBorder", "pageNumbers", "date", "location"] },
+  { id: "composite", guides: ["pageBorder", "watermark", "pageNumbers", "date", "location"] },
   { id: "presets", guides: ["presetBoxes", "presetHeaderFooter", "presetStatus", "presetSignOff", "presetTables"] },
 ];
 

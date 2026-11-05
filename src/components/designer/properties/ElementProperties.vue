@@ -45,6 +45,8 @@
             </button>
           </template>
         </PageSetupSection>
+        <!-- The watermark prints on every page and can't be clicked there: it is reached from here -->
+        <WatermarkCard @add="emit('add-watermark')" />
       </div>
 
       <!-- Section Heights: one card, like the others -->
@@ -166,6 +168,7 @@
       <!-- Element properties tabs -->
       <!-- Tabs: the highlight slides to the open tab (positioned by index) -->
       <div
+        v-if="availableTabs.length > 1"
         class="prop-tab-bar"
         role="tablist"
         :style="{ '--tab-count': availableTabs.length, '--tab-index': availableTabs.indexOf(activeTab) }"
@@ -186,7 +189,7 @@
       </div>
 
       <!-- Style Settings: take every style off this element (content, place and size stay) -->
-      <div v-if="activeTab === 'style'" class="reset-style-row">
+      <div v-if="activeTab === 'style' && !watermarkElement" class="reset-style-row">
         <button type="button" class="chip-btn" :title="t('resetStyle.hint')" @click="resetStyle">
           <RotateCcw :size="13" aria-hidden="true" />
           {{ t("resetStyle.label") }}
@@ -194,8 +197,12 @@
       </div>
 
       <Transition name="prop-tab-fade" mode="out-in">
+        <!-- Watermark: its own settings, nothing of an ordinary picture -->
+        <div v-if="watermarkElement" key="watermark" class="prop-tab-pane" role="tabpanel">
+          <WatermarkProperties :key="watermarkElement.uuid" :element="watermarkElement" />
+        </div>
         <!-- Basic properties tab -->
-        <div v-if="activeTab === 'basic'" key="basic" class="prop-tab-pane" role="tabpanel">
+        <div v-else-if="activeTab === 'basic'" key="basic" class="prop-tab-pane" role="tabpanel">
           <!-- Table: where its content comes from (one Table element, two kinds) -->
           <div v-if="isTableElement" class="box-section compact">
             <h5>{{ t("customTable.content") }}<SettingHelpButton id="tableContent" /></h5>
@@ -1002,7 +1009,7 @@ import { useI18n } from "vue-i18n";
 import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
 import notification from "@/utils/notification";
 import { pageKind } from "@/utils/specialPages";
-import type { Band, BarcodeElement, ChartElement, ContentsListElement, CustomTableElement, DesignElement, FrameElement, SelectedElementInfo } from "../../../types";
+import type { Band, BarcodeElement, ChartElement, ContentsListElement, CustomTableElement, DesignElement, FrameElement, ImageElement, SelectedElementInfo } from "../../../types";
 import type { SavedTableStyle } from "@/types/dataSource";
 import { getAvailableFonts } from "../../../utils/fontUtils";
 import {
@@ -1036,6 +1043,9 @@ import CustomTableProperties from "./CustomTableProperties.vue";
 import ContentsListProperties from "./ContentsListProperties.vue";
 import HeadingNumberProperties from "./HeadingNumberProperties.vue";
 import LocationProperties from "./LocationProperties.vue";
+import WatermarkProperties from "./WatermarkProperties.vue";
+import WatermarkCard from "../WatermarkCard.vue";
+import { isWatermark } from "../../../utils/watermark/watermarkElement";
 import { isLocationElement, isLocationPart } from "../../../utils/location/locationElement";
 import PanelTip from "../../help/PanelTip.vue";
 import SettingHelpButton from "../../help/SettingHelpButton.vue";
@@ -1088,6 +1098,8 @@ interface Emits {
   (e: "configure-chart"): void;
   // Paper or margins changed: the designer fits the page's content to it
   (e: "page-setup-change"): void;
+  // Template Settings' Watermark card: add one
+  (e: "add-watermark"): void;
 }
 
 const props = defineProps<Props>();
@@ -1276,6 +1288,13 @@ const locationBox = computed<FrameElement | null>(() => {
   if (!sel) return null;
   const box = sel.parentFrameIndex !== undefined ? bands.value?.[sel.bandIndex]?.elements[sel.parentFrameIndex] : currentElement.value;
   return isLocationElement(box) ? (box as FrameElement) : null;
+});
+
+// The watermark (an image in the Background band) has a panel of its own
+const watermarkElement = computed<ImageElement | null>(() => {
+  const sel = selectedElement.value;
+  const el = currentElement.value;
+  return sel && sel.parentFrameIndex === undefined && isWatermark(el) ? (el as ImageElement) : null;
 });
 
 const isPageBorder = computed(
@@ -1757,6 +1776,7 @@ const panelTitle = computed(() => {
   if (isProjectValue(el)) return t(isProjectDate(el) ? "elementNames.projectDate" : "elementNames.projectValue");
   if (isLocationElement(el)) return t("elementNames.location");
   if (isPageBorder.value) return t("elementNames.framePageBorder");
+  if (isWatermark(el)) return t("elementNames.watermark");
   // Headings are shown by their own name, not as the box / text they are built of
   if (hasProperty(el, SECTION_HEADING_PROPERTY)) return t("elementNames.partSectionHeading");
   if (hasProperty(el, SUB_HEADING_PROPERTY)) return t("elementNames.partSubHeading");
@@ -1860,6 +1880,7 @@ const panelKind = computed(() => {
   if (isProjectValue(el)) return isProjectDate(el) ? "projectDate" : "projectValue";
   if (isLocationElement(el) || isLocationPart(el)) return "location";
   if (isPageBorder.value) return "pageBorder";
+  if (isWatermark(el)) return "watermark";
   if (hasProperty(el, SECTION_HEADING_PROPERTY)) return "sectionHeading";
   if (hasProperty(el, SUB_HEADING_PROPERTY)) return "subHeading";
   return el.type as string;
@@ -1873,7 +1894,8 @@ const TAB_LABELS: Record<string, string> = {
   basic: "properties.basicProperties",
   style: "properties.styleSettings",
 };
-const availableTabs = computed(() => ["basic", "style"]);
+// A watermark's settings are all in one place: no tabs to choose from
+const availableTabs = computed(() => (watermarkElement.value ? ["basic"] : ["basic", "style"]));
 
 // "Reset style": one undo step
 function resetStyle() {

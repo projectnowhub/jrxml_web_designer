@@ -21,6 +21,7 @@ import { buildChartElement } from "@/utils/chart/chartElement";
 import { buildCustomTable } from "@/utils/customTable";
 import { buildContentsList, hasProperty, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/utils/contentsList";
 import { sampleEntries } from "@/utils/pageDesigns";
+import { buildWatermarkElement, isWatermark } from "@/utils/watermark/watermarkElement";
 
 // Settings cards, by what they set (shared ones are written once)
 export type SettingId =
@@ -78,7 +79,13 @@ export type SettingId =
   | "tocRows"
   | "tocPlace"
   | "tocLook"
-  | "tocColours";
+  | "tocColours"
+  | "watermarkContent"
+  | "watermarkLook"
+  | "watermarkAngle"
+  | "watermarkPlace"
+  | "watermarkPages"
+  | "templateWatermark";
 
 export type DocGroup = "start" | "basic" | "presets" | "composite";
 
@@ -104,6 +111,7 @@ export type DocPageId =
   | "presetSignOff"
   | "presetTables"
   | "pageBorder"
+  | "watermark"
   | "pageNumber"
   | "date"
   | "location";
@@ -138,7 +146,7 @@ export const DOC_PAGES: DocPage[] = [
   {
     id: "templateSettings",
     group: "start",
-    settings: ["templatePaper", "templateMargins", "templateFont", "templateBands", "reportSections"],
+    settings: ["templatePaper", "templateMargins", "templateFont", "templateBands", "templateWatermark", "reportSections"],
   },
   { id: "pageSettings", group: "start", settings: [] },
   {
@@ -313,6 +321,16 @@ export const DOC_PAGES: DocPage[] = [
     sample: (ctx) => [buildFrameTemplate("framePageBorder", { ...ctx, availableHeight: 200 })],
   },
   {
+    id: "watermark",
+    group: "composite",
+    tile: "watermark",
+    settings: ["templateWatermark", "watermarkContent", "watermarkLook", "watermarkAngle", "watermarkPlace", "watermarkPages"],
+    guides: ["watermark"],
+    sample: (ctx) => [
+      buildWatermarkElement({ width: ctx.availableWidth, height: 200 }, { text: "DRAFT", size: 72, opacity: 25 }),
+    ],
+  },
+  {
     id: "pageNumber",
     group: "composite",
     tile: "pageNumber",
@@ -359,6 +377,7 @@ export function docPageFor(element: DesignElement, bandType: string | undefined,
   if (isDateElement(element)) return "date";
   if (isLocationElement(element) || isLocationPart(element)) return "location";
   if (element.type === "frame" && bandType === "background" && !inBox) return "pageBorder";
+  if (isWatermark(element)) return "watermark";
   if (hasProperty(element, SECTION_HEADING_PROPERTY)) return "sectionHeading";
   if (hasProperty(element, SUB_HEADING_PROPERTY)) return "subHeading";
   switch (element.type) {

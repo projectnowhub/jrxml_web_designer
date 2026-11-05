@@ -142,6 +142,7 @@ Entry: `parseJRXMLContent()` in `src/utils/jrxml/parse.ts`, using the browser `D
 | Boxes, presets, page border | `utils/framePresets.ts`, `utils/reportParts.ts`, `elements/FrameElement.vue` |
 | Custom (typed) tables | `utils/customTable.ts`, `utils/jrxml/customTableXml.ts`, `elements/CustomTableElement.vue`, `properties/CustomTableProperties.vue` |
 | Page Number | `utils/paginationPresets.ts`, `properties/PaginationProperties.vue` |
+| Watermark | `utils/watermark/` (setup, layout and pages; drawing; the printed picture), `designer/WatermarkLayer.vue` (behind each page), `elements/WatermarkElement.vue` (help pictures), `properties/WatermarkProperties.vue` |
 | Text editing | `elements/TextFieldElement.vue`, `TextFormatToolbar.vue`, `utils/textFit.ts` |
 | Images | `services/imageService.ts` (upload to `<VITE_API_BASE_URL>/rest/files`), crop and corner radius in `utils/elementUtils.ts` |
 | Data tables | `utils/table/`, `jrxml/tableXml.ts`, `modals/TableConfigModal.vue`, `designer/ReportDataPanel.vue` |

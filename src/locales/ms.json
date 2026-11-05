@@ -127,7 +127,8 @@
       "barcode": "Kod bar atau kod QR.",
       "pageNumber": "Nombor halaman yang diisi sendiri, seperti Halaman 1 daripada 12.",
       "dateTime": "Tarikh yang diisi sendiri: hari laporan dicetak, bulan ini atau bulan lepas.",
-      "location": "Peta sesuatu tempat dengan pin, dan alamatnya. Taip tempat itu, atau seret Lokasi dari Data Laporan."
+      "location": "Peta sesuatu tempat dengan pin, dan alamatnya. Taip tempat itu, atau seret Lokasi dari Data Laporan.",
+      "watermark": "Teks samar seperti DRAF atau SULIT, atau logo pudar, di belakang setiap halaman."
     }
   },
   "bandNames": {
@@ -152,6 +153,7 @@
     "frameTitledSection": "Kotak Seksyen",
     "framePhotoCard": "Kotak Foto",
     "framePageBorder": "Sempadan Halaman",
+    "watermark": "Tera Air",
     "table": "Jadual",
     "chart": "Carta",
     "barcode": "Kod Bar",
@@ -1107,6 +1109,7 @@
       "pageNumber": "Nombor halaman yang diisi sendiri. Pilih rupanya dan halaman mana yang mendapat nombor.",
       "dateTime": "Tarikh yang diisi sendiri, seperti hari laporan dicetak. Pilih tarikh yang mana dan rupanya.",
       "pageBorder": "Sempadan di sekeliling setiap halaman. Ubah garis, warna dan bucunya di sini.",
+      "watermark": "Teks samar atau gambar pudar di belakang setiap halaman. Pilih apa yang dipaparkan dan sekuat mana ia dicetak. Untuk kembali kepadanya kemudian, klik ruang kosong pada halaman: ia ada dalam Tetapan Templat.",
       "sectionHeading": "Tajuk yang memulakan bahagian. Nombornya dikira sendiri, dan ia dipaparkan dalam isi kandungan.",
       "subHeading": "Tajuk yang lebih kecil dalam satu bahagian. Ia dipaparkan, berinden, dalam isi kandungan.",
       "location": "Peta dengan pin dan alamat. Taip tempat di bawah, salin daripada projek, atau klik peta kecil untuk meletakkan pin di situ.",
@@ -1128,7 +1131,9 @@
       "chartTitle": "Menyediakan carta",
       "chartText": "Klik dua kali pada carta untuk memilih data yang ditunjukkannya.",
       "locationTitle": "Peta dan alamat",
-      "locationText": "Taip tempat di sebelah kanan, atau seret Lokasi dari Data Laporan ke atasnya. Atau klik peta kecil di sebelah kanan untuk meletakkan pin di situ."
+      "locationText": "Taip tempat di sebelah kanan, atau seret Lokasi dari Data Laporan ke atasnya. Atau klik peta kecil di sebelah kanan untuk meletakkan pin di situ.",
+      "watermarkTitle": "Di belakang setiap halaman",
+      "watermarkText": "Tera air tidak boleh diklik pada halaman, jadi ia tidak mengganggu. Untuk mengubahnya kemudian, klik ruang kosong pada halaman dan gunakan kad Tera Air dalam Tetapan Templat."
     },
     "guides": {
       "title": "Panduan langkah demi langkah",
@@ -1389,6 +1394,19 @@
           "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
         }
       },
+      "watermark": {
+        "title": "Tambah tera air",
+        "intro": "Perkataan samar seperti DRAF, atau logo pudar, di belakang setiap halaman.",
+        "aiPrompt": "Tambah tera air DRAF berwarna kelabu cerah pada setiap halaman.",
+        "steps": {
+          "addTitle": "Tambah tera air",
+          "addText": "Klik Tera Air dalam Pustaka Elemen. Ia diletakkan di belakang setiap halaman.",
+          "settingsTitle": "Pilih apa yang dipaparkan",
+          "settingsText": "Klik ruang kosong pada halaman. Dalam Tetapan Templat di sebelah kanan, klik Ubah dalam kad Tera Air, kemudian taip perkataannya atau pilih gambar dan tetapkan sekuat mana ia dicetak.",
+          "previewTitle": "Semak",
+          "previewText": "Klik Pratonton PDF di bahagian atas untuk melihat dengan tepat apa yang akan dicetak."
+        }
+      },
       "date": {
         "title": "Tambah tarikh",
         "intro": "Tarikh yang terisi sendiri, seperti hari laporan dicetak.",
@@ -1605,6 +1623,7 @@
       "create_date": "Tambah tarikh",
       "create_location": "Tambah lokasi",
       "create_page_border": "Tambah sempadan halaman",
+      "create_watermark": "Tambah tera air",
       "create_preset": "Tambah elemen siap",
       "update_element": "Ubah elemen",
       "move_element": "Alih elemen",
@@ -3706,6 +3725,26 @@
           "Ia dicetak pada setiap halaman, termasuk halaman kulit dan kandungan, kecuali kulit yang memenuhi seluruh helaian."
         ]
       },
+      "watermark": {
+        "title": "Tera Air",
+        "what": "Perkataan samar seperti DRAF atau SULIT, atau gambar pudar seperti logo, dicetak di belakang kandungan setiap halaman.",
+        "when": "Untuk menandakan laporan sebagai draf atau sulit, atau meletakkan logo organisasi anda secara samar di belakang setiap halaman.",
+        "add": "Klik Tera Air di bawah Elemen Komposit, atau seretnya ke halaman. Satu templat ada satu tera air; jubin dimatikan sebaik sahaja ada satu.",
+        "work": [
+          "Apa yang dipaparkan: taip perkataannya (atau pilih DRAF, SULIT…), atau pilih gambar.",
+          "Rupanya: warna, tebal dan saiz untuk perkataan; saiz dan kelabu untuk gambar; dan sekuat mana ia dicetak.",
+          "Sudut: menaik, mendatar, menurun atau tegak, atau apa-apa sudut dengan peluncur.",
+          "Di mana pada halaman: sekali (di tengah, di bucu atau di tepi) atau berulang di seluruh halaman.",
+          "Halaman mana: jika ada kulit atau halaman kandungan, pilih sama ada ia turut ada tera air.",
+          "Ia tidak boleh diklik pada halaman: klik ruang kosong pada halaman, kemudian Ubah dalam kad Tera Air di Tetapan Templat."
+        ],
+        "good": [
+          "Ia dicetak di belakang semua: kotak berwarna dan baris jadual menutupinya, seperti di atas kertas.",
+          "Perkataan yang tidak muat pada halaman pada sudutnya akan dikecilkan sendiri.",
+          "Kulit yang memenuhi seluruh helaian tidak pernah ada tera air.",
+          "Pratonton PDF menunjukkan dengan tepat apa yang dicetak."
+        ]
+      },
       "pageNumber": {
         "title": "Nombor Halaman",
         "what": "Nombor halaman yang diisi sendiri, seperti Halaman 1 daripada 12.",
@@ -4004,6 +4043,31 @@
       "projectDateBefore": {
         "title": "Perkataan sebelum tarikh",
         "text": "Teks yang dicetak di hadapan tarikh, contohnya “Tarikh mula:”. Tiada apa yang dicetak apabila projek tiada tarikh."
+      },
+      "watermarkContent": {
+        "title": "Apa yang dipaparkan",
+        "text": "Perkataan, seperti DRAF atau SULIT, atau gambar, seperti logo anda. Perkataan boleh lebih daripada satu baris.",
+        "example": "SULIT, atau dua baris: DRAF / Bukan untuk edaran"
+      },
+      "watermarkLook": {
+        "title": "Rupanya",
+        "text": "Warna, ketebalan dan saiz perkataan, atau saiz gambar dan sama ada ia dipudarkan ke kelabu. Kekuatan menetapkan sesamar mana ia dicetak: Cerah (15%) adalah biasa."
+      },
+      "watermarkAngle": {
+        "title": "Sudut",
+        "text": "Cara ia dipusingkan. Menaik bermula dari bawah kiri ke atas kanan, tera air yang biasa. Gunakan peluncur untuk apa-apa sudut."
+      },
+      "watermarkPlace": {
+        "title": "Di mana pada halaman",
+        "text": "Sekali, di kedudukan yang anda pilih (tengah, bucu atau tepi), atau berulang dalam baris di seluruh halaman."
+      },
+      "watermarkPages": {
+        "title": "Halaman mana",
+        "text": "Setiap halaman, setiap halaman kecuali kulit, atau hanya halaman biasa (bukan kulit dan halaman kandungan)."
+      },
+      "templateWatermark": {
+        "title": "Tera Air",
+        "text": "Teks samar atau logo pudar yang dicetak di belakang setiap halaman templat ini. Tambah di sini, atau klik Ubah untuk menyunting perkataan, gambar, kekuatan dan sudutnya. Ia tidak boleh diklik pada halaman, jadi kad ini cara untuk kembali kepadanya."
       }
     }
   },
@@ -4209,6 +4273,103 @@
       "followOff": "Tandakan untuk menunjukkan tempat projek, dan mengikutnya."
     },
     "addressPlaceholder": "Alamat"
+  },
+  "watermark": {
+    "exists": "Templat ini sudah ada tera air\nIa telah dipilih: ubah di sebelah kanan.",
+    "tileExists": "Templat ini sudah ada tera air. Ubah dalam Tetapan Templat: klik ruang kosong pada halaman.",
+    "notOnSheetCover": "Tiada pada kulit\nKulit memenuhi seluruh helaian, jadi tera air dicetak mulai halaman seterusnya.",
+    "notOnSheetCoverDropped": "Ditambah pada halaman lain\nKulit yang memenuhi seluruh helaian tiada tera air; ia dicetak pada setiap halaman lain.",
+    "canvasTag": "Tera air",
+    "canvasNoPicture": "Pilih gambar untuk tera air di sebelah kanan",
+    "canvasPictureFailed": "Gambar tera air tidak dapat dimuatkan",
+    "canvasNoText": "Taip perkataan tera air di sebelah kanan",
+    "words": {
+      "DRAFT": "DRAF",
+      "CONFIDENTIAL": "SULIT",
+      "COPY": "SALINAN",
+      "SAMPLE": "CONTOH",
+      "APPROVED": "DILULUSKAN"
+    },
+    "kinds": {
+      "text": "Teks",
+      "picture": "Gambar"
+    },
+    "sizes": {
+      "small": "Kecil",
+      "medium": "Sederhana",
+      "large": "Besar",
+      "huge": "Sangat besar"
+    },
+    "strengths": {
+      "veryLight": "Sangat cerah",
+      "light": "Cerah",
+      "medium": "Sederhana",
+      "strong": "Kuat"
+    },
+    "angles": {
+      "diagonalUp": "Menaik",
+      "straight": "Mendatar",
+      "diagonalDown": "Menurun",
+      "upwards": "Tegak"
+    },
+    "places": {
+      "topLeft": "Atas kiri",
+      "top": "Atas",
+      "topRight": "Atas kanan",
+      "left": "Kiri",
+      "center": "Tengah halaman",
+      "right": "Kanan",
+      "bottomLeft": "Bawah kiri",
+      "bottom": "Bawah",
+      "bottomRight": "Bawah kanan"
+    },
+    "pages": {
+      "all": "Setiap halaman",
+      "notCover": "Setiap halaman kecuali kulit",
+      "normal": "Hanya halaman biasa (bukan kulit dan halaman kandungan)"
+    },
+    "panel": {
+      "contentTitle": "Apa yang dipaparkan",
+      "words": "Perkataan",
+      "wordsPlaceholder": "cth. DRAF",
+      "wordsHint": "Tekan Enter untuk baris kedua. Perkataan yang terlalu panjang untuk halaman akan dikecilkan.",
+      "picture": "Gambar",
+      "choosePicture": "Pilih gambar",
+      "changePicture": "Tukar",
+      "noPicture": "Belum ada gambar",
+      "pictureNoName": "Gambar",
+      "pictureFailed": "Gambar tidak dapat dimuatkan. Semak sambungan anda.",
+      "retry": "Cuba lagi",
+      "grey": "Pudarkan ke kelabu",
+      "pictureHint": "Logo atau cop paling sesuai. Ia dipudarkan mengikut tetapan di bawah.",
+      "lookTitle": "Rupanya",
+      "colour": "Warna",
+      "bold": "Tebal",
+      "size": "Saiz",
+      "sizeOwn": "Atau saiz anda sendiri",
+      "sizeHint": "Dikecilkan sendiri jika tidak muat pada halaman.",
+      "pictureSize": "Saiz",
+      "pictureSizeValue": "{n}% lebar halaman",
+      "strength": "Kekuatan",
+      "tooStrong": "Sekuat ini, perkataan yang dicetak di atasnya sukar dibaca. Cerah (15%) adalah biasa.",
+      "angleTitle": "Sudut",
+      "placeTitle": "Di mana pada halaman",
+      "once": "Sekali",
+      "repeated": "Berulang",
+      "spot": "Kedudukan",
+      "repeatedHint": "Diulang dalam baris di seluruh halaman.",
+      "pagesTitle": "Halaman mana",
+      "sheetCoverNote": "Kulit memenuhi seluruh helaian, jadi ia tidak pernah ada tera air.",
+      "remove": "Buang tera air"
+    },
+    "card": {
+      "title": "Tera Air",
+      "none": "Teks samar seperti DRAF, atau logo pudar, di belakang setiap halaman.",
+      "add": "Tambah tera air",
+      "change": "Ubah",
+      "remove": "Buang",
+      "noWords": "Belum ada perkataan"
+    }
   },
   "colorPicker": {
     "mixed": "Warna bercampur"

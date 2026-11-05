@@ -157,6 +157,7 @@ const GUIDE_TILES: Partial<Record<GuideId, string>> = {
   chart: "chart",
   barcode: "barcode",
   pageBorder: "framePageBorder",
+  watermark: "watermark",
   pageNumbers: "pageNumber",
   date: "dateTime",
   presetBoxes: "frameKpiCard",

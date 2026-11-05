@@ -1,5 +1,6 @@
 import type { Band, DesignElement, FrameElement } from "@/types";
 import { findPageBorder, fitChildrenToFrame } from "@/utils/framePresets";
+import { isWatermark } from "@/utils/watermark/watermarkElement";
 
 export interface PageFitResult {
   // The page border was resized to the new printable area
@@ -58,6 +59,8 @@ export function fitContentToPage(
       band.height = border ? height : Math.min(band.height, height);
     }
     band.elements?.forEach((el, elementIndex) => {
+      // The watermark always covers the printable area (syncWatermarks sizes it)
+      if (isWatermark(el)) return;
       if (border?.bandIndex === bandIndex && border.elementIndex === elementIndex) {
         if (el.x !== 0 || el.y !== 0 || el.width !== width || el.height !== height) {
           el.x = 0;

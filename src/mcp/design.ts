@@ -9,6 +9,7 @@ import { BAND_TYPE_CONSTANTS } from "@/constants/constants";
 import { resolveReportFont } from "@/config/fonts.config";
 import { pageKind, specialPageProblem, specialPages } from "@/utils/specialPages";
 import { findPageBorder, frame, markBoxPart } from "@/utils/framePresets";
+import { findWatermark } from "@/utils/watermark/watermarkElement";
 import { DESIGN_BOX_PROPERTY } from "@/utils/pageDesigns";
 import { listChain } from "@/utils/headingSync";
 import i18n from "@/i18n";
@@ -321,13 +322,15 @@ function refuseDuplicate(element: DesignElement, others: DesignElement[], bandTy
   }
 }
 
-// The page border: a frame of the printable area in the Background band (one only)
+// The page border (a frame of the printable area) and the watermark (an image
+// of it): in the Background band, one of each
 async function placePageBorder(kind: ElementKind, spec: ElementSpec, notes: string[]): Promise<Placed> {
   const report = useReportStore();
-  const existing = findPageBorder(report.bands);
+  const watermark = kind.kind === "watermark";
+  const existing = watermark ? findWatermark(report.bands) : findPageBorder(report.bands);
   if (existing) {
     const uuid = report.bands[existing.bandIndex]!.elements[existing.elementIndex]!.uuid;
-    throw new SpecError(`the report already has a page border (${uuid}); change it with update_element`);
+    throw new SpecError(`the report already has a ${watermark ? "watermark" : "page border"} (${uuid}); change it with update_element`);
   }
   const size = printableSize();
   let bandIndex = report.bands.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.BACKGROUND);
@@ -338,6 +341,12 @@ async function placePageBorder(kind: ElementKind, spec: ElementSpec, notes: stri
   const band = report.bands[bandIndex]!;
   band.height = size.height;
   const element = await kind.create(spec, kindContext(size.width, size.height, notes));
+  if (watermark) {
+    // First in the band: it prints behind the page border
+    band.elements.unshift(element);
+    if (specialPages(report.reportProperties).fullPageCover) notes.push(t("watermark.notOnSheetCover"));
+    return { kind, location: { bandIndex, band, element, container: band.elements, index: 0 } };
+  }
   band.elements.push(element);
   if (specialPages(report.reportProperties).fullPageCover) notes.push(t("specialPages.borderNotOnCover"));
   return { kind, location: { bandIndex, band, element, container: band.elements, index: band.elements.length - 1 } };

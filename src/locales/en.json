@@ -127,7 +127,8 @@
       "barcode": "A barcode or QR code.",
       "pageNumber": "Page numbers that fill in by themselves, such as Page 1 of 12.",
       "dateTime": "A date that fills itself in: the day the report is printed, this month or last month.",
-      "location": "A map of a place with a pin, and its address. Type the place, or drag Location from Report Data."
+      "location": "A map of a place with a pin, and its address. Type the place, or drag Location from Report Data.",
+      "watermark": "Faint text such as DRAFT or CONFIDENTIAL, or a faded logo, behind every page."
     }
   },
   "bandNames": {
@@ -152,6 +153,7 @@
     "frameTitledSection": "Section Box",
     "framePhotoCard": "Photo Box",
     "framePageBorder": "Page Border",
+    "watermark": "Watermark",
     "table": "Table",
     "chart": "Chart",
     "barcode": "Barcode",
@@ -1107,6 +1109,7 @@
       "pageNumber": "Page numbers that fill in by themselves. Choose how they look and which pages get a number.",
       "dateTime": "A date that fills itself in, such as the day the report is printed. Choose which date and how it looks.",
       "pageBorder": "A border around every page. Change its line, colour and corners here.",
+      "watermark": "Faint text or a faded picture behind every page. Choose what it shows and how strong it prints. To come back to it later, click an empty spot of the page: it is in Template Settings.",
       "sectionHeading": "A heading that starts a section. Its number counts itself, and it shows in the table of contents.",
       "subHeading": "A smaller heading inside a section. It shows, indented, in the table of contents.",
       "location": "A map with a pin and the address. Type the place below, copy it from a project, or click the small map to put the pin there.",
@@ -1128,7 +1131,9 @@
       "chartTitle": "Setting up a chart",
       "chartText": "Double-click the chart to choose the data it shows.",
       "locationTitle": "A map and an address",
-      "locationText": "Type the place on the right, or drag Location from Report Data onto it. Or click the small map on the right to put the pin there."
+      "locationText": "Type the place on the right, or drag Location from Report Data onto it. Or click the small map on the right to put the pin there.",
+      "watermarkTitle": "Behind every page",
+      "watermarkText": "The watermark can't be clicked on the page, so it never gets in the way. To change it later, click an empty spot of the page and use the Watermark card in Template Settings."
     },
     "guides": {
       "title": "Step-by-step guides",
@@ -1389,6 +1394,19 @@
           "previewText": "Click Preview PDF at the top to see exactly what will print."
         }
       },
+      "watermark": {
+        "title": "Add a watermark",
+        "intro": "Faint words such as DRAFT, or a faded logo, behind every page.",
+        "aiPrompt": "Add a light grey DRAFT watermark across every page.",
+        "steps": {
+          "addTitle": "Add a watermark",
+          "addText": "Click Watermark in the Element Library. It goes behind every page.",
+          "settingsTitle": "Choose what it shows",
+          "settingsText": "Click an empty spot of the page. In Template Settings on the right, click Change in the Watermark card, then type its words or choose a picture and set how strong it prints.",
+          "previewTitle": "Check it",
+          "previewText": "Click Preview PDF at the top to see exactly what will print."
+        }
+      },
       "date": {
         "title": "Add a date",
         "intro": "A date that fills itself in, like the day the report is printed.",
@@ -1605,6 +1623,7 @@
       "create_date": "Add date",
       "create_location": "Add location",
       "create_page_border": "Add page border",
+      "create_watermark": "Add watermark",
       "create_preset": "Add ready-made piece",
       "update_element": "Change element",
       "move_element": "Move element",
@@ -3706,6 +3725,26 @@
           "It prints on every page, cover and contents pages included, except a cover that fills the whole sheet."
         ]
       },
+      "watermark": {
+        "title": "Watermark",
+        "what": "Faint words such as DRAFT or CONFIDENTIAL, or a faded picture such as a logo, printed behind the content of every page.",
+        "when": "To mark a report as a draft or confidential, or to put your organisation's logo faintly behind every page.",
+        "add": "Click Watermark under Composite Elements, or drag it onto a page. A template has one watermark; the tile is turned off once there is one.",
+        "work": [
+          "What it shows: type its words (or pick DRAFT, CONFIDENTIAL…), or choose a picture.",
+          "How it looks: colour, bold and size for words; size and grey for a picture; and how strong it prints.",
+          "Angle: rising, level, falling or upright, or any angle with the slider.",
+          "Where on the page: once (in the middle, a corner or a side) or repeated across the whole page.",
+          "Which pages: with a cover or contents pages, choose whether they get it too.",
+          "It can't be clicked on the page: click an empty spot of the page, then Change in the Watermark card of Template Settings."
+        ],
+        "good": [
+          "It prints behind everything: filled boxes and table rows cover it, as on paper.",
+          "Words that wouldn't fit the page at their angle are made smaller by themselves.",
+          "A cover that fills the whole sheet never has a watermark.",
+          "Preview PDF shows exactly what prints."
+        ]
+      },
       "pageNumber": {
         "title": "Page Number",
         "what": "Page numbers that fill in by themselves, such as Page 1 of 12.",
@@ -4004,6 +4043,31 @@
       "projectDateBefore": {
         "title": "Words before the date",
         "text": "Text printed in front of the date, for example “Start date:”. Nothing prints when the project has no date."
+      },
+      "watermarkContent": {
+        "title": "What it shows",
+        "text": "Words, such as DRAFT or CONFIDENTIAL, or a picture, such as your logo. Words can have more than one line.",
+        "example": "CONFIDENTIAL, or two lines: DRAFT / Not for release"
+      },
+      "watermarkLook": {
+        "title": "How it looks",
+        "text": "The colour, boldness and size of the words, or the size of the picture and whether it is washed out to grey. How strong sets how faint it prints: Light (15%) is usual."
+      },
+      "watermarkAngle": {
+        "title": "Angle",
+        "text": "How it is turned. Rising runs from bottom left to top right, the usual watermark. Use the slider for any angle."
+      },
+      "watermarkPlace": {
+        "title": "Where on the page",
+        "text": "Once, in the spot you choose (the middle, a corner or a side), or repeated in rows across the whole page."
+      },
+      "watermarkPages": {
+        "title": "Which pages",
+        "text": "Every page, every page except the cover, or only the normal pages (not the cover and contents pages)."
+      },
+      "templateWatermark": {
+        "title": "Watermark",
+        "text": "Faint text or a faded logo printed behind every page of this template. Add it here, or click Change to edit its words, picture, strength and angle. It can't be clicked on the page, so this card is the way back to it."
       }
     }
   },
@@ -4209,6 +4273,103 @@
       "followOff": "Tick it to show the project's place, and follow it."
     },
     "addressPlaceholder": "Address"
+  },
+  "watermark": {
+    "exists": "This template has a watermark\nIt is selected: change it on the right.",
+    "tileExists": "This template already has a watermark. Change it in Template Settings: click an empty spot of the page.",
+    "notOnSheetCover": "Not on the cover\nThe cover fills the whole sheet, so the watermark prints from the next page.",
+    "notOnSheetCoverDropped": "Added to the other pages\nA cover that fills the whole sheet has no watermark; it prints on every other page.",
+    "canvasTag": "Watermark",
+    "canvasNoPicture": "Choose a picture for the watermark on the right",
+    "canvasPictureFailed": "The watermark picture couldn't be loaded",
+    "canvasNoText": "Type the watermark's words on the right",
+    "words": {
+      "DRAFT": "DRAFT",
+      "CONFIDENTIAL": "CONFIDENTIAL",
+      "COPY": "COPY",
+      "SAMPLE": "SAMPLE",
+      "APPROVED": "APPROVED"
+    },
+    "kinds": {
+      "text": "Text",
+      "picture": "Picture"
+    },
+    "sizes": {
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large",
+      "huge": "Very large"
+    },
+    "strengths": {
+      "veryLight": "Very light",
+      "light": "Light",
+      "medium": "Medium",
+      "strong": "Strong"
+    },
+    "angles": {
+      "diagonalUp": "Rising",
+      "straight": "Level",
+      "diagonalDown": "Falling",
+      "upwards": "Upright"
+    },
+    "places": {
+      "topLeft": "Top left",
+      "top": "Top",
+      "topRight": "Top right",
+      "left": "Left",
+      "center": "Middle of the page",
+      "right": "Right",
+      "bottomLeft": "Bottom left",
+      "bottom": "Bottom",
+      "bottomRight": "Bottom right"
+    },
+    "pages": {
+      "all": "Every page",
+      "notCover": "Every page except the cover",
+      "normal": "Only the normal pages (not the cover and contents pages)"
+    },
+    "panel": {
+      "contentTitle": "What it shows",
+      "words": "Words",
+      "wordsPlaceholder": "e.g. DRAFT",
+      "wordsHint": "Press Enter for a second line. Words that are too long for the page are made smaller.",
+      "picture": "Picture",
+      "choosePicture": "Choose picture",
+      "changePicture": "Change",
+      "noPicture": "No picture yet",
+      "pictureNoName": "Picture",
+      "pictureFailed": "The picture couldn't be loaded. Check your connection.",
+      "retry": "Try again",
+      "grey": "Wash out to grey",
+      "pictureHint": "A logo or a stamp works best. It is faded as you set below.",
+      "lookTitle": "How it looks",
+      "colour": "Colour",
+      "bold": "Bold",
+      "size": "Size",
+      "sizeOwn": "Or your own size",
+      "sizeHint": "Made smaller by itself when it wouldn't fit the page.",
+      "pictureSize": "Size",
+      "pictureSizeValue": "{n}% of the page width",
+      "strength": "How strong",
+      "tooStrong": "This strong, the words printed over it get hard to read. Light (15%) is usual.",
+      "angleTitle": "Angle",
+      "placeTitle": "Where on the page",
+      "once": "Once",
+      "repeated": "Repeated",
+      "spot": "Spot",
+      "repeatedHint": "Repeated in rows across the whole page.",
+      "pagesTitle": "Which pages",
+      "sheetCoverNote": "The cover fills the whole sheet, so it never has a watermark.",
+      "remove": "Remove the watermark"
+    },
+    "card": {
+      "title": "Watermark",
+      "none": "Faint text such as DRAFT, or a faded logo, behind every page.",
+      "add": "Add watermark",
+      "change": "Change",
+      "remove": "Remove",
+      "noWords": "No words yet"
+    }
   },
   "colorPicker": {
     "mixed": "Mixed colours"

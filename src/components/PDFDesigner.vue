@@ -441,6 +441,7 @@
           <ElementProperties
             @update:bands="bands = $event"
             @page-setup-change="handlePageSetupChange"
+            @add-watermark="addWatermark()"
             @delete-element="deleteElement"
             @fit-to-text="
               selectedElement &&
@@ -994,6 +995,8 @@ import {
   type PlaceField,
 } from "../utils/location/locationElement";
 import { ensureLocationMaps, refreshLocationMaps } from "../utils/location/locationMaps";
+import { buildWatermarkElement, findWatermark, isWatermark, WATERMARK_TYPE } from "../utils/watermark/watermarkElement";
+import { ensureWatermarks, refreshWatermarks } from "../utils/watermark/watermarkPictures";
 import { buildChartElement } from "../utils/chart/chartElement";
 import { startDragScrolling, type DragScrollSession } from "../utils/dragAutoScroll";
 import {
@@ -1003,7 +1006,7 @@ import {
 
 // Import the default JRXML example file
 
-const { t, locale } = useI18n();
+const { t, te, locale } = useI18n();
 
 // Designer state lives in Pinia stores (src/stores): the report model and
 // undo/redo, what is selected, and how the designer is shown (zoom, snapping,
@@ -2537,11 +2540,14 @@ const warnTooTallForBand = (bandIndex: number, height: number, maxHeight: number
 // While dragging: the target band turns red when the element can't fit in it
 const dropTargetBlocked = ref(false);
 
-// While dragging the Page Border tile over the page: the Background band is the target
+// Tiles whose item goes to the Background band wherever it is dropped
+const isBackgroundTile = (type: string | undefined) => type === PAGE_BORDER_TYPE || type === WATERMARK_TYPE;
+
+// While dragging the Page Border or Watermark tile over the page: the Background band is the target
 const backgroundDropTarget = computed(
   () =>
     highlightedBandIndex.value !== null &&
-    draggedLibraryElement.value?.type === PAGE_BORDER_TYPE,
+    isBackgroundTile(draggedLibraryElement.value?.type),
 );
 
 // Whether an element at (x, y) in a band would land in one of its boxes
@@ -2820,6 +2826,57 @@ const addPageBorder = (droppedOnPage?: number) => {
   updateJRXML();
 };
 
+// Tell the user the template already has a watermark and select it
+const rejectSecondWatermark = (): boolean => {
+  const existing = findWatermark(bands.value);
+  if (!existing) return false;
+  notification.info(t("watermark.exists"));
+  selectElement(existing.bandIndex, existing.elementIndex);
+  return true;
+};
+
+// The Background band (made when missing), as tall as the printable area
+const ensureBackgroundBand = (): number => {
+  const ctx = getFrameTemplateContext();
+  let bandIndex = bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.BACKGROUND);
+  if (bandIndex === -1) {
+    bands.value.push({ type: BAND_TYPE_CONSTANTS.BACKGROUND as BandType, height: ctx.availableHeight, elements: [] });
+    bandIndex = bands.value.length - 1;
+  }
+  const band = bands.value[bandIndex]!;
+  band.height = Math.max(band.height, ctx.availableHeight);
+  if (!band.elements) band.elements = [];
+  return bandIndex;
+};
+
+// Add a watermark behind the content of every page (the Background band).
+// One per template: a second click or drop selects the one there is.
+// `droppedOnPage`: the Detail page it was dropped on (a click adds it too)
+const addWatermark = (droppedOnPage?: number) => {
+  if (rejectSecondWatermark()) return;
+  saveStateToHistory();
+  const bandIndex = ensureBackgroundBand();
+  const ctx = getFrameTemplateContext();
+  const watermark = buildWatermarkElement(
+    { width: ctx.availableWidth, height: ctx.availableHeight },
+    { text: te("watermark.words.DRAFT") ? t("watermark.words.DRAFT") : "DRAFT" },
+  );
+  // First in the band: it prints behind the page border
+  const band = bands.value[bandIndex]!;
+  band.elements.unshift(watermark);
+  const special = specialPages(reportProperties.value);
+  if (special.fullPageCover) {
+    notification.info(
+      droppedOnPage !== undefined && pageKind(reportProperties.value, droppedOnPage) === "cover"
+        ? t("watermark.notOnSheetCoverDropped")
+        : t("watermark.notOnSheetCover"),
+    );
+  }
+  selectElement(bandIndex, 0);
+  handleElementCreated(watermark, bandIndex, 0);
+  updateJRXML();
+};
+
 // Page Number tile, position picked: the page header (top) or footer (bottom),
 // aligned the way the position says. Dragging the tile drops it in any band.
 const addPageNumber = (position: PaginationPosition) => {
@@ -3063,6 +3120,10 @@ const handleElementDoubleClick = (element: any): DesignElement | undefined => {
     addPageBorder();
     return;
   }
+  if (element.type === WATERMARK_TYPE) {
+    addWatermark();
+    return;
+  }
   // A cover / contents design sets that page's design
   if (isCoverDesignType(element.type) || isContentsDesignType(element.type)) {
     applyDesignFromLibrary(element.type);
@@ -3255,6 +3316,12 @@ const handleDrop = (event: DragEvent, pageIndex?: number, place?: { type: string
     // A page border always goes to the Background band, wherever it is dropped
     if (elementData.type === PAGE_BORDER_TYPE) {
       addPageBorder(targetPageIndex);
+      highlightedBandIndex.value = null;
+      return;
+    }
+    // So does a watermark (it prints behind every page)
+    if (elementData.type === WATERMARK_TYPE) {
+      addWatermark(targetPageIndex);
       highlightedBandIndex.value = null;
       return;
     }
@@ -3487,7 +3554,7 @@ const handleDragOver = (event: DragEvent) => {
 
   // A page border goes to the Background band wherever it is dropped: the whole
   // printable area lights up instead of the band under the pointer
-  if (draggedLibraryElement.value?.type === PAGE_BORDER_TYPE && !isDataSourceDrag(event)) {
+  if (isBackgroundTile(draggedLibraryElement.value?.type) && !isDataSourceDrag(event)) {
     highlightedBandIndex.value = -1;
     dropTargetBlocked.value = false;
     return;
@@ -3513,7 +3580,7 @@ const handleDragOver = (event: DragEvent) => {
     (needsDetail && !!band && band.type !== BAND_TYPE_CONSTANTS.DETAIL) ||
     (!!type &&
       !!band &&
-      type !== PAGE_BORDER_TYPE &&
+      !isBackgroundTile(type) &&
       getLibraryDropHeight(type, band.height) > getBandMaxHeight(bandIndex));
 };
 
@@ -4179,6 +4246,8 @@ const selectElement = (
   }
 
   const uuid = element?.uuid;
+  // The watermark is edited only in its panel: show it (even from the AI tab)
+  if (isWatermark(element)) rightPanelTab.value = "properties";
   // Library tiles clicked next add to this element's page
   if (band?.type === BAND_TYPE_CONSTANTS.DETAIL) {
     const onPage = parentFrameIndex !== undefined ? band.elements[parentFrameIndex] : element;
@@ -4234,7 +4303,7 @@ const selectElement = (
 
   selectedBandIndex.value = null;
 
-  if (element && !element.box) {
+  if (element && !element.box && !isWatermark(element)) {
     initBox(element);
   }
 
@@ -5226,7 +5295,7 @@ const initBox = (element: DesignElement) => {
 
 // Download the JRXML file (charts drawn with their numbers, barcodes sized, first)
 const downloadJRXML = async () => {
-  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureTemplateProject(reportProjects.value[0]?.id)]);
+  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureWatermark(), ensureTemplateProject(reportProjects.value[0]?.id)]);
   const content = generateJRXMLContent(
     reportStore.propertiesForJrxml(),
     bands.value,
@@ -5344,6 +5413,10 @@ watch(() => reportStore.jrxmlVersion, () => saveToLocalStorageWrapper(), { flush
 const drawMaps = () => refreshLocationMaps(() => bands.value, updateJRXML);
 watch(() => reportStore.jrxmlVersion, drawMaps);
 const ensureMaps = () => ensureLocationMaps(() => bands.value, updateJRXML);
+// The watermark's printed picture: drawn again when its setup or the page size
+// changed, in the same undo step as that change
+watch(() => reportStore.jrxmlVersion, () => refreshWatermarks(() => bands.value, updateJRXML));
+const ensureWatermark = () => ensureWatermarks(() => bands.value, updateJRXML);
 
 // Copy an element to the clipboard
 const copyElement = async () => {
@@ -5579,17 +5652,18 @@ const processPastedElement = (
   if (newElement.width) newElement.width = Math.round(newElement.width);
   if (newElement.height) newElement.height = Math.round(newElement.height);
 
-  // A page border goes back to the Background band, where only one is allowed
+  // A page border or watermark goes back to the Background band, where only
+  // one of each is allowed
   if (clipboardData.sourceBandType === BAND_TYPE_CONSTANTS.BACKGROUND) {
-    if (rejectSecondPageBorder()) return;
-    const backgroundIndex = bands.value.findIndex(
-      (b) => b.type === BAND_TYPE_CONSTANTS.BACKGROUND,
-    );
-    const background = bands.value[backgroundIndex];
-    if (!background) return;
+    const watermark = isWatermark(newElement);
+    if (watermark ? rejectSecondWatermark() : rejectSecondPageBorder()) return;
     saveStateToHistory();
-    background.elements.push(newElement);
-    selectElement(backgroundIndex, background.elements.length - 1);
+    const backgroundIndex = ensureBackgroundBand();
+    const background = bands.value[backgroundIndex]!;
+    // The watermark first: it prints behind the page border
+    if (watermark) background.elements.unshift(newElement);
+    else background.elements.push(newElement);
+    selectElement(backgroundIndex, watermark ? 0 : background.elements.length - 1);
     updateJRXML();
     return;
   }
@@ -6000,6 +6074,8 @@ const moveElementByKeyboard = (direction: string, repeat = false) => {
       : currentBand?.elements[currentElementIndex];
 
   if (!currentBand || !currentElement) return;
+  // The watermark covers the printable area; its place is set in its panel
+  if (isWatermark(currentElement)) return;
 
   // The grid is drawn per band, so an item in a box steps to band grid lines
   const grid = enableSnapToGrid.value ? UI_CONSTANTS.GRID_SIZE : null;
@@ -6232,7 +6308,7 @@ const openPdfPreview = (): void => {
 // The JRXML the preview sends: charts drawn with their numbers, barcodes sized,
 // maps drawn and the template's project read first (a failure is shown in the popup)
 const prepareReportForPreview = async (): Promise<string> => {
-  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureTemplateProject(reportProjects.value[0]?.id)]);
+  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureWatermark(), ensureTemplateProject(reportProjects.value[0]?.id)]);
   updateJRXML();
   if (!jrxmlContent.value) {
     jrxmlContent.value = generateJRXMLContent(

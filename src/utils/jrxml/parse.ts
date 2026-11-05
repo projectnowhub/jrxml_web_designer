@@ -25,6 +25,7 @@ import {
   unguardPrintWhen,
 } from "../specialPages";
 import { CHART_BINDING_PROPERTY, parseChartBinding } from "../chart/chartTypes";
+import { isWatermark } from "../watermark/watermarkElement";
 import { SAVED_TABLE_STYLES_PROPERTY, parseSavedTableStyles } from "../table/tableThemes";
 import { REPORT_PROJECTS_PROPERTY, parseReportProjects } from "../projectFields";
 import { BARCODE_TYPE_IDS, BARCODE_VALUES_PROPERTY, parseBarcodeValues } from "../barcode/barcodeTypes";
@@ -326,6 +327,11 @@ export function parseJRXMLContent(jrxmlContent: string): {
       elements = elements
         .filter((el) => !el.properties?.some((p: any) => p.name === CONTENTS_PAGE_PROPERTY))
         .map((el) => {
+          // A watermark's pages come from its setup when it is written
+          if (isWatermark(el)) {
+            delete el.printWhenExpression;
+            return el;
+          }
           const own = unguardPrintWhen(el.printWhenExpression);
           if (own !== el.printWhenExpression) el.printWhenExpression = own;
           return el;

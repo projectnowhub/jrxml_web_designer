@@ -232,6 +232,16 @@
                   position: 'relative',
                 }"
               >
+                <!-- The watermark, behind this page's content (first, so the sections
+                     and what fills them are drawn over it, as in the PDF) -->
+                <WatermarkLayer
+                  v-if="watermark && showsWatermark(pIndex - 1)"
+                  :element="watermark"
+                  :top="reportProperties.topMargin || 0"
+                  :left="reportProperties.leftMargin || 0"
+                  :zoom="zoomLevel"
+                  :selected="watermarkSelected"
+                />
                 <!-- A contents page without a Table of Contents: offer to add one
                      (designer only; never printed) -->
                 <div v-if="contentsPageWithoutToc(pIndex - 1)" class="no-toc-prompt">
@@ -436,7 +446,7 @@
                      background while lines still show. Not interactive on the canvas; select
                      its elements from Report Elements. -->
                 <div
-                  v-if="backgroundElements.length > 0 && !isSheetPage(pIndex - 1)"
+                  v-if="backgroundItems.length > 0 && !isSheetPage(pIndex - 1)"
                   class="background-band-layer"
                   :style="{
                     top: (reportProperties.topMargin || 0) + 'px',
@@ -446,7 +456,7 @@
                   }"
                 >
                   <ElementFactory
-                    v-for="(item, index) in backgroundElements"
+                    v-for="{ item, index } in backgroundItems"
                     :key="`page-${pIndex}-background-${item.uuid || index}`"
                     :element="item"
                     :band-index="backgroundBandIndex"
@@ -468,7 +478,7 @@
                   <!-- Thin clickable strips along each edge, so a page border can be
                        selected on the canvas while its inside stays click-through -->
                   <template
-                    v-for="(item, index) in backgroundElements"
+                    v-for="{ item, index } in backgroundItems"
                     :key="`page-${pIndex}-background-hit-${item.uuid || index}`"
                   >
                     <div
@@ -545,11 +555,13 @@ import { pageKind, specialPageArea } from "@/utils/specialPages";
 import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import ElementFactory from "../elements/ElementFactory.vue";
 import DragFeedbackLayer from "./DragFeedbackLayer.vue";
+import WatermarkLayer from "./WatermarkLayer.vue";
+import { findWatermark, getWatermarkSetup, isWatermark, watermarkOnPage } from "@/utils/watermark/watermarkElement";
 import { BAND_CONSTANTS } from "@/constants/constants";
 import { getBandDisplayName } from "@/utils/bandUtils";
 import { buildGridPath } from "@/utils/rulerUtils";
 import { startDragScrolling, type DragScrollSession } from "@/utils/dragAutoScroll";
-import type { Band } from "@/types";
+import type { Band, ImageElement } from "@/types";
 import type { DragFeedback } from "@/composables/useDragFeedback";
 import type { AlignmentGuideLines } from "@/composables/useSnapAlignment";
 import { useI18n } from "vue-i18n";
@@ -655,6 +667,30 @@ const backgroundBandIndex = computed(() =>
 const backgroundElements = computed(
   () => bands.value[backgroundBandIndex.value]?.elements ?? [],
 );
+// What the background layer draws (the page border): every background item but
+// the watermark, which has its own layer behind the content; index = its place in the band
+const backgroundItems = computed(() =>
+  backgroundElements.value
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => !isWatermark(item)),
+);
+
+// The watermark: drawn behind the content of the pages it prints on
+const watermarkAt = computed(() => findWatermark(bands.value));
+const watermark = computed(() => {
+  const at = watermarkAt.value;
+  return at ? (bands.value[at.bandIndex]!.elements[at.elementIndex] as ImageElement) : null;
+});
+const showsWatermark = (pageIndex: number) =>
+  !!watermark.value &&
+  !isSheetPage(pageIndex) &&
+  watermarkOnPage(getWatermarkSetup(watermark.value), reportProperties.value, pageIndex);
+const watermarkSelected = computed(() => {
+  const at = watermarkAt.value;
+  const sel = selectedElement.value;
+  return !!at && !!sel && sel.parentFrameIndex === undefined && sel.bandIndex === at.bandIndex && sel.elementIndex === at.elementIndex;
+});
+
 
 // Click targets for background elements: a strip centred on each edge
 const EDGE_SIDES = ["top", "right", "bottom", "left"] as const;
@@ -1502,6 +1538,7 @@ onBeforeUnmount(() => {
   color: #5b3ee0;
 }
 
+
 .delete-page-btn {
   color: #6f6a7e;
 }
@@ -1573,7 +1610,8 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   margin-bottom: 0;
   position: relative;
-  background-color: rgba(255, 255, 255, 0.8);
+  /* See-through on the white page, so the watermark (drawn under the sections) shows */
+  background-color: transparent;
   transition:
     background-color 0.2s ease,
     box-shadow 0.2s ease;
