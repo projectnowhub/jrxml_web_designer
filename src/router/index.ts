@@ -5,6 +5,7 @@ import {
   CallbackView,
   DesktopLoginView,
   MyTemplatesView,
+  ReportsView,
   ActivityView,
 } from "../views";
 import { PDFDesigner, AppLayout } from "../components";
@@ -28,6 +29,11 @@ const router = createRouter({
           path: "mytemplates",
           name: "mytemplates",
           component: MyTemplatesView,
+        },
+        {
+          path: "reports",
+          name: "reports",
+          component: ReportsView,
         },
         {
           path: "activity",

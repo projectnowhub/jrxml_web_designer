@@ -841,7 +841,9 @@
     "allSystemsOperational": "Semua sistem beroperasi",
     "closeNavigation": "Tutup navigasi",
     "accountMenu": "Menu akaun",
-    "defaultWorkspace": "Ruang kerja CDP anda"
+    "defaultWorkspace": "Ruang kerja CDP anda",
+    "reports": "Laporan",
+    "searchReports": "Cari laporan"
   },
   "home": {
     "eyebrow": "Ruang kerja templat",
@@ -939,12 +941,12 @@
       "home": {
         "welcomeTitle": "Selamat datang ke Report Studio",
         "welcomeText": "Di sinilah anda membuat templat untuk laporan projek anda. Mahu lihat sekeliling selama seminit?",
-        "createTitle": "Mulakan templat baharu",
-        "createText": "Klik Cipta templat baharu untuk memulakannya. Anda mereka bentuknya pada halaman, seperti dokumen; setiap kali ia dijalankan ia menghasilkan laporan.",
+        "createTitle": "Cipta templat",
+        "createText": "Klik Cipta templat, pilih projek dan namakannya: ia dibuka dalam pereka, sedia untuk direka bentuk.",
         "navTitle": "Cari jalan anda",
-        "navText": "Templat menunjukkan templat yang boleh anda gunakan, Templat saya templat yang anda buat, dan Aktiviti perkara yang berubah baru-baru ini.",
+        "navText": "Templat menunjukkan templat pelayan laporan; Laporan menunjukkan laporan yang dibuat daripadanya, sedia untuk dipratonton.",
         "searchTitle": "Cari templat",
-        "searchText": "Taip sebahagian nama templat dan tekan Enter: Templat saya menunjukkan yang sepadan.",
+        "searchText": "Taip sebahagian nama: Templat (atau Laporan, di halaman itu) menunjukkan yang sepadan.",
         "accountTitle": "Akaun anda",
         "accountText": "Klik huruf awal nama anda untuk menukar bahasa (English atau Bahasa Melayu) atau untuk log keluar.",
         "helpTitle": "Bantuan sentiasa ada",
@@ -1014,7 +1016,7 @@
         "dragScroll": "Untuk mengalihkan item ke halaman lain, seret item itu dan putar roda tetikus, atau tahan dekat tepi atas atau bawah: halaman akan menatal dan item itu ikut bersama.",
         "undo": "Tersilap? Tekan Ctrl+Z (⌘+Z pada Mac) untuk membuat asal.",
         "saved": "Kerja anda disimpan sendiri dalam pelayar ini semasa anda bekerja.",
-        "open": "Templat anda ada di halaman utama dan dalam Templat saya: klik satu untuk membukanya. Dalam pereka, Fail → Buka (Ctrl+O) membuka templat lain atau fail .jrxml dari komputer anda.",
+        "open": "Templat dan Laporan ada dalam menu di sebelah kiri. Dalam pereka, Fail → Buka (Ctrl+O) membuka templat yang disimpan dalam pelayar ini atau fail .jrxml daripada komputer anda.",
         "keys": "Lebih banyak kekunci yang menjimatkan klik ada dalam tab Pintasan papan kekunci di atas."
       },
       "tourHint": "Baru di sini? Lawatan seminit menunjukkan di mana letaknya semua perkara.",
@@ -4125,6 +4127,102 @@
     "empty": "Anda belum mempunyai templat.",
     "showing": "Menunjukkan {shown} daripada {total}",
     "loadMore": "Muat lagi"
+  },
+  "reportCatalog": {
+    "errors": {
+      "server": "Pelayan laporan tidak memberi sebab.",
+      "status": "HTTP {status} · {reason}"
+    },
+    "templates": {
+      "subtitle": "Mulakan daripada templat lalai, buka templat anda, atau cipta yang baharu.",
+      "create": "Cipta templat",
+      "yours": "Templat"
+    },
+    "defaultTemplates": {
+      "title": "Templat lalai",
+      "hint": "Templat sedia ada daripada pelayan laporan. Buka satu untuk melihatnya, atau klon untuk membuat salinan anda sendiri untuk diubah dan digunakan. Templat lalai itu kekal seperti asal.",
+      "badge": "Lalai",
+      "loadFailed": "Templat lalai tidak dapat dimuatkan daripada pelayan laporan.",
+      "showMore": "Tunjuk lagi ({shown} daripada {total})",
+      "opening": "Membuka templat lalai…",
+      "opened": "Templat lalai dibuka\nKlon untuk menyimpan salinan anda sendiri. Sebarang perubahan juga menyimpan satu salinan; templat lalai kekal seperti asal.",
+      "openFailed": "Templat lalai tidak dapat dibuka\n{reason}",
+      "errors": {
+        "noFile": "Ia tiada fail laporan di pelayan.",
+        "notZip": "Fail laporannya bukan eksport laporan Jmix (zip).",
+        "damaged": "Fail laporannya rosak.",
+        "zipMethod": "Fail laporannya dimampatkan dengan cara yang tidak dapat dibaca oleh pereka.",
+        "noJrxml": "Fail laporannya tiada templat JRXML.",
+        "unknown": "Pelayan laporan tidak menyatakan sebabnya."
+      },
+      "openAction": "Buka",
+      "openHint": "Lihat templat ini dalam pereka",
+      "cloneAction": "Klon",
+      "cloneHint": "Buat salinan templat ini untuk anda ubah dan gunakan",
+      "barTitle": "Templat lalai: {name}.",
+      "barText": "Ia kekal seperti asal. Klon untuk membuat salinan anda sendiri; sebarang perubahan yang anda buat juga menyimpan satu salinan.",
+      "savedAsOwn": "Disimpan sebagai templat anda sendiri\n\"{name}\" kini dalam Templat anda. Templat lalai kekal seperti asal.",
+      "owner": "Pelayan laporan"
+    },
+    "create": {
+      "title": "Cipta templat",
+      "intro": "Pilih projek dan namakan templat. Ia dibuka dalam pereka, sedia untuk direka bentuk.",
+      "project": "Projek",
+      "templateName": "Nama templat",
+      "templateNamePlaceholder": "cth. Laporan kemajuan bulanan",
+      "templateCode": "Kod templat",
+      "templateCodeHint": "Huruf, nombor, - dan _ sahaja.",
+      "submit": "Cipta",
+      "creating": "Sedang mencipta…",
+      "failed": "Laporan tidak dapat dicipta\n{reason}"
+    },
+    "clone": {
+      "title": "Klon templat",
+      "intro": "Membuat salinan \"{name}\" untuk anda ubah dan gunakan. Pilih projek dan namanya; templat lalai kekal seperti asal.",
+      "defaultName": "{name} (salinan)",
+      "submit": "Klon",
+      "cloning": "Mengklon…",
+      "failed": "Templat tidak dapat diklon\n{reason}",
+      "done": "Templat diklon\n\"{name}\" kini milik anda: ubah sesuka hati."
+    },
+    "reports": {
+      "title": "Laporan",
+      "subtitle": "Laporan yang dicipta daripada templat anda (disimpan dalam pelayar ini buat masa ini). Pratonton membuka templatnya.",
+      "count": "Tiada laporan | 1 laporan | {count} laporan",
+      "resultsFor": "Laporan yang sepadan dengan \"{query}\"",
+      "refresh": "Muatkan senarai semula",
+      "columns": {
+        "name": "Nama",
+        "code": "Kod",
+        "actions": "Tindakan",
+        "project": "Projek"
+      },
+      "preview": "Pratonton",
+      "loadFailed": "Laporan tidak dapat dimuatkan daripada pelayan laporan.",
+      "empty": "Belum ada laporan.",
+      "emptyHint": "Cipta satu daripada templat di halaman Templat.",
+      "goToTemplates": "Pergi ke Templat",
+      "noMatch": "Tiada laporan bernama \"{query}\""
+    },
+    "run": {
+      "title": "Pratonton: {name}",
+      "template": "Templat",
+      "noParameters": "Laporan ini tidak memerlukan apa-apa lagi: tekan Jalankan.",
+      "yes": "Ya",
+      "no": "Tidak",
+      "idPlaceholder": "ID rekod",
+      "listPlaceholder": "ID, dipisahkan dengan koma",
+      "run": "Jalankan",
+      "running": "Sedang dijalankan…",
+      "change": "Ubah dan jalankan semula",
+      "download": "Muat turun",
+      "downloadAgain": "Muat turun semula",
+      "downloaded": "Laporan dimuat turun\n{name}",
+      "downloadedHere": "{name} telah dimuat turun.",
+      "failed": "Laporan tidak dapat dijalankan\n{reason}",
+      "loadFailed": "Laporan ini tidak dapat dibaca daripada pelayan laporan.",
+      "requiredMissing": "Isi {name}\nLaporan memerlukannya untuk dijalankan."
+    }
   },
   "openTemplate": {
     "title": "Buka templat",

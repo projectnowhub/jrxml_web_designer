@@ -29,14 +29,15 @@
           v-model="searchQuery"
           type="search"
           @keydown.enter="findTemplates"
-          :placeholder="t('layout.searchTemplates')"
-          :aria-label="t('layout.searchTemplates')"
+          :placeholder="searchLabel"
+          :aria-label="searchLabel"
         />
         <kbd>/</kbd>
       </label>
       <div class="topbar-actions">
         <HelpMenu :context="route.name === 'mytemplates' ? 'templates' : 'home'" class="help-icon" />
-        <button class="icon-button notification-icon" type="button" :aria-label="t('layout.notifications')">
+        <!-- Hidden until there are notifications to show -->
+        <button v-if="SHOW_NOTIFICATIONS" class="icon-button notification-icon" type="button" :aria-label="t('layout.notifications')">
           <Bell :size="20" :stroke-width="2.25" aria-hidden="true" />
         </button>
         <AccountMenu data-help="account" />
@@ -84,12 +85,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { RouterView, useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import {
   Activity,
   Bell,
+  FileChartColumn,
   Files,
   LayoutTemplate,
   Menu,
@@ -100,7 +102,12 @@ import HelpMenu from "./help/HelpMenu.vue";
 
 const { t } = useI18n();
 
-// Activity is hidden until it has something to show (its page and route stay)
+// The bell is hidden until there are notifications to show
+const SHOW_NOTIFICATIONS = false;
+
+// Activity is hidden until it has something to show, and My Templates (the
+// designs saved in this browser) while templates come from the report server;
+// their pages and routes stay
 const sidebarMenus = [
   {
     labelKey: "layout.templates",
@@ -109,10 +116,17 @@ const sidebarMenus = [
     icon: LayoutTemplate,
   },
   {
+    labelKey: "layout.reports",
+    route: "/reports",
+    routeName: "reports",
+    icon: FileChartColumn,
+  },
+  {
     labelKey: "layout.myTemplates",
     route: "/mytemplates",
     routeName: "mytemplates",
     icon: Files,
+    hidden: true,
   },
   {
     labelKey: "layout.activity",
@@ -128,14 +142,19 @@ const route = useRoute();
 const isSidebarCollapsed = ref(false);
 const searchQuery = ref("");
 
-// The search box lists matching templates in My Templates: typing there
-// filters as you type, Enter elsewhere goes there with the words
+// The search box filters the page it searches (Templates, Reports, My
+// Templates) as you type; Enter on any other page goes to Templates with the words
+const SEARCHED_PAGES = ["home", "reports", "mytemplates"];
+const searchLabel = computed(() => t(route.name === "reports" ? "layout.searchReports" : "layout.searchTemplates"));
+const searchedPage = () => SEARCHED_PAGES.includes(String(route.name));
 const findTemplates = () => {
   const q = searchQuery.value.trim();
-  router.push({ name: "mytemplates", query: q ? { q } : {} });
+  const { q: _q, page: _page, ...rest } = route.query;
+  if (searchedPage()) router.replace({ query: q ? { ...rest, q } : rest });
+  else router.push({ name: "home", query: q ? { q } : {} });
 };
 watch(searchQuery, (value) => {
-  if (route.name !== "mytemplates") return;
+  if (!searchedPage()) return;
   const q = value.trim();
   if (q === (route.query.q ?? "")) return;
   // Keep the view and order; a new search starts on the first page
@@ -145,7 +164,7 @@ watch(searchQuery, (value) => {
 watch(
   () => [route.name, route.query.q] as const,
   ([name, q]) => {
-    const text = name === "mytemplates" && typeof q === "string" ? q : "";
+    const text = SEARCHED_PAGES.includes(String(name)) && typeof q === "string" ? q : "";
     if (text.trim() !== searchQuery.value.trim()) searchQuery.value = text;
   },
   { immediate: true },

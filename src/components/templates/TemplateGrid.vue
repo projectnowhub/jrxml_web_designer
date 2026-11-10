@@ -1,6 +1,8 @@
 <template>
   <!-- Template cards (home page, My Templates grid): a click opens the
-       template in the designer; ⋯ opens its menu (TemplateMenu) -->
+       template in the designer; ⋯ opens its menu (TemplateMenu). kind
+       "default": the report server's default templates, a "Default" badge by
+       the name and Open / Clone in its ⋯ menu (Clone emitted as `clone`) -->
   <div class="template-grid">
     <article
       v-if="showNew"
@@ -21,8 +23,8 @@
       class="template-card"
       role="button"
       tabindex="0"
-      @click="openTemplate(template)"
-      @keydown.enter.self="openTemplate(template)"
+      @click="open(template)"
+      @keydown.enter.self="open(template)"
     >
       <div class="template-preview" :class="TONES[index % TONES.length]">
         <div class="preview-lines"><i /><i /><i /><i /></div>
@@ -31,6 +33,10 @@
       <div class="template-info">
         <div class="template-title">
           <strong>{{ template.name }}</strong>
+          <span v-if="isDefault" class="default-badge">
+            <Lock :size="11" :stroke-width="2.5" aria-hidden="true" />
+            {{ t("reportCatalog.defaultTemplates.badge") }}
+          </span>
           <button
             type="button"
             class="more-button"
@@ -47,8 +53,8 @@
         </div>
         <span>{{ editedText(template) }}</span>
         <div class="owner-row">
-          <i>{{ owner.charAt(0) }}</i>
-          {{ t("home.createdBy", { name: owner }) }}
+          <i>{{ ownerOf(template).charAt(0) }}</i>
+          {{ t("home.createdBy", { name: ownerOf(template) }) }}
         </div>
       </div>
     </article>
@@ -62,25 +68,37 @@
       </div>
     </div>
 
-    <TemplateMenu ref="menuRef" />
+    <TemplateMenu ref="menuRef" :kind="kind" @clone="(template) => emit('clone', template as TemplateCard)" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { MoreHorizontal, Plus } from "@lucide/vue";
+import { Lock, MoreHorizontal, Plus } from "@lucide/vue";
 import { useTemplates } from "@/composables/useTemplates";
-import type { TemplateSummary } from "@/types/template";
+import type { TemplateCard } from "@/types/template";
 import TemplateMenu from "./TemplateMenu.vue";
 
-withDefaults(
-  defineProps<{ templates: TemplateSummary[]; showNew?: boolean; owner: string; skeletons?: number }>(),
-  { skeletons: 0 },
+const props = withDefaults(
+  defineProps<{
+    templates: TemplateCard[];
+    showNew?: boolean;
+    // Shown when a template names no owner of its own
+    owner: string;
+    skeletons?: number;
+    kind?: "own" | "default";
+  }>(),
+  { skeletons: 0, kind: "own" },
 );
+const emit = defineEmits<{ clone: [template: TemplateCard] }>();
 
 const { t } = useI18n();
-const { editedText, openTemplate, newTemplate } = useTemplates();
+const { editedText, openTemplate, openDefaultTemplate, newTemplate } = useTemplates();
+
+const isDefault = computed(() => props.kind === "default");
+const ownerOf = (template: TemplateCard) => template.owner || props.owner;
+const open = (template: TemplateCard) => (isDefault.value ? openDefaultTemplate(template) : openTemplate(template));
 
 const TONES = ["violet", "blue", "green"];
 const menuRef = ref<InstanceType<typeof TemplateMenu> | null>(null);
@@ -228,6 +246,19 @@ const menuRef = ref<InstanceType<typeof TemplateMenu> | null>(null);
 .template-info > span {
   display: block;
   margin-top: 5px;
+}
+.default-badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #f4f3f8;
+  color: #6e6a80;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 .owner-row {
   display: flex;

@@ -3,6 +3,8 @@
        Delete (red, like Sign out), with its rename / delete questions.
        Opened with toggle(event, template); `openId` lights up its button;
        run(action, template) does an action without the menu (list view).
+       kind "default" (the report server's default templates): Open and
+       Clone only (Clone emitted as `clone`), no questions asked.
        On the body so a card's rounded edge doesn't cut it off. -->
     <Teleport to="body">
       <Transition name="menu-pop">
@@ -17,6 +19,17 @@
             <ExternalLink :size="16" :stroke-width="2.25" aria-hidden="true" />
             <span>{{ t("home.menu.open") }}</span>
           </button>
+          <button
+            v-if="kind === 'default'"
+            type="button"
+            role="menuitem"
+            class="card-menu-item is-duplicate"
+            @click="onMenu('clone')"
+          >
+            <Copy :size="16" :stroke-width="2.25" aria-hidden="true" />
+            <span>{{ t("reportCatalog.defaultTemplates.cloneAction") }}</span>
+          </button>
+          <template v-else>
           <button type="button" role="menuitem" class="card-menu-item is-rename" @click="onMenu('rename')">
             <Pencil :size="16" :stroke-width="2.25" aria-hidden="true" />
             <span>{{ t("home.menu.rename") }}</span>
@@ -30,6 +43,7 @@
             <Trash2 :size="16" :stroke-width="2.25" aria-hidden="true" />
             <span>{{ t("home.menu.delete") }}</span>
           </button>
+          </template>
         </div>
       </Transition>
     </Teleport>
@@ -76,7 +90,10 @@ import ConfirmModal from "@/components/modals/ConfirmModal.vue";
 type Named = { id: string; name: string };
 
 const { t } = useI18n();
-const { openTemplate, rename, duplicate, remove } = useTemplates();
+const props = withDefaults(defineProps<{ kind?: "own" | "default" }>(), { kind: "own" });
+const emit = defineEmits<{ clone: [template: Named] }>();
+
+const { openTemplate, openDefaultTemplate, rename, duplicate, remove } = useTemplates();
 
 const MENU_WIDTH = 200;
 
@@ -124,7 +141,7 @@ const showDelete = ref(false);
 const showOpen = ref(false);
 const showDuplicate = ref(false);
 
-export type TemplateAction = "open" | "rename" | "duplicate" | "delete";
+export type TemplateAction = "open" | "rename" | "duplicate" | "delete" | "clone";
 
 function onMenu(key: TemplateAction) {
   const template = menu.value?.file;
@@ -134,6 +151,11 @@ function onMenu(key: TemplateAction) {
 
 // An action for a template; the list view's icon buttons call it straight
 function run(key: TemplateAction, template: Named) {
+  if (props.kind === "default") {
+    if (key === "clone") emit("clone", template);
+    else openDefaultTemplate(template);
+    return;
+  }
   pending.value = template;
   // Each asks first (rename asks for the name)
   if (key === "open") showOpen.value = true;

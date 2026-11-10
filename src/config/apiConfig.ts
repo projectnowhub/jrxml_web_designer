@@ -20,6 +20,11 @@ export const API_ROUTES = {
   projectPhotos: "/v1/image/project/filter",
   // Every photo tag (getAllTags)
   photoTags: "/rest/entities/cdp_Tag",
+  // The report server's templates (Report Definitions) and the Jmix reports made from them
+  reportDefinitions: "/rest/entities/rptadn_ReportDefinition",
+  reportTemplates: "/v2/report-templates",
+  reports: "/rest/reports/report",
+  runReport: "/rest/reports/run",
 } as const;
 
 export const apiUrl = (route: string) => `${API_BASE_URL}${route}`;

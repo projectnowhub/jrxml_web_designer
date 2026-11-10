@@ -1,8 +1,10 @@
 <template>
   <section class="my-templates-view">
-    <span class="eyebrow">{{ t("pages.workspace") }}</span>
-    <h1>{{ t("pages.myTemplates") }}</h1>
-    <p>{{ t("pages.myTemplatesDescription") }}</p>
+    <template v-if="!embedded">
+      <span class="eyebrow">{{ t("pages.workspace") }}</span>
+      <h1>{{ t("pages.myTemplates") }}</h1>
+      <p>{{ t("pages.myTemplatesDescription") }}</p>
+    </template>
 
     <div class="list-bar">
       <span v-if="query" class="search-note">
@@ -26,7 +28,8 @@
         </label>
         <!-- List: how many rows a page shows, above the list -->
         <PageSizeChoice v-else data-help="template-order" :model-value="pageSize" :sizes="PAGE_SIZES" @update:model-value="choosePageSize" />
-        <div class="view-toggle" data-help="template-view" role="radiogroup" :aria-label="t('myTemplates.view')">
+        <!-- Embedded (Templates page): the page's own switch at the top -->
+        <div v-if="!embedded" class="view-toggle" data-help="template-view" role="radiogroup" :aria-label="t('myTemplates.view')">
           <button
             v-for="option in VIEWS"
             :key="option"
@@ -53,7 +56,7 @@
       <TemplateGrid
         :templates="items"
         :owner="displayName"
-        :show-new="!query"
+        :show-new="!query && !embedded"
         :skeletons="!loading ? 0 : items.length ? Math.min(PAGE_SIZE, Math.max(0, total - items.length)) : 4"
       />
       <!-- Reaching this loads the next 25 -->
@@ -130,7 +133,7 @@ import {
   SearchX,
   X,
 } from "@lucide/vue";
-import { useTemplates } from "@/composables/useTemplates";
+import { TEMPLATE_VIEW_KEY, chosenTemplateView, useTemplates } from "@/composables/useTemplates";
 import { useHelpStore } from "@/stores/help";
 import { useAuthStore } from "@/stores/auth";
 import type { TemplateSortDirection, TemplateSort, TemplateSummary } from "@/types/template";
@@ -142,11 +145,13 @@ import PageNavigation from "@/components/common/PageNavigation.vue";
 
 type View = "grid" | "list";
 
+// `embedded`: shown inside the Templates page (home), under its own heading
+const props = defineProps<{ embedded?: boolean }>();
+
 const PAGE_SIZE = 25;
 const PAGE_SIZES = [25, 50, 100];
 const VIEWS: View[] = ["grid", "list"];
 const SORT_CHOICES = ["lastModified", "createdAt", "nameAsc", "nameDesc"] as const;
-const VIEW_KEY = "templates.view";
 const PAGE_SIZE_KEY = "templates.pageSize";
 
 const { t } = useI18n();
@@ -175,10 +180,7 @@ const remember = (key: string, value: string) => {
 // Everything the list shows is read from the address
 const text = (value: unknown) => (typeof value === "string" ? value : "");
 const query = computed(() => text(route.query.q).trim());
-const view = computed<View>(() => {
-  const asked = text(route.query.view) || remembered(VIEW_KEY);
-  return asked === "list" ? "list" : "grid";
-});
+const view = computed<View>(() => chosenTemplateView(route.query.view));
 const sort = computed<TemplateSort>(() => {
   const asked = text(route.query.sort);
   return asked === "name" || asked === "createdAt" ? asked : "lastModified";
@@ -202,7 +204,7 @@ function setQuery(change: Record<string, string | number | undefined>) {
 }
 
 function setView(option: View) {
-  remember(VIEW_KEY, option);
+  remember(TEMPLATE_VIEW_KEY, option);
   setQuery({ view: option, page: undefined });
 }
 
@@ -309,15 +311,19 @@ watch(
 const help = useHelpStore();
 let tourTimer: ReturnType<typeof setTimeout> | undefined;
 onMounted(() => {
-  const stop = watch(
-    settled,
-    (ready) => {
-      if (!ready) return;
-      stop();
-      tourTimer = setTimeout(() => help.startTourOnce("templates"), 600);
-    },
-    { immediate: true },
-  );
+  // Embedded (Templates page) has no tour of its own
+  if (props.embedded) return;
+  const start = () => (tourTimer = setTimeout(() => help.startTourOnce("templates"), 600));
+  // Already settled: start now (an immediate watcher would run before `stop` exists)
+  if (settled.value) {
+    start();
+    return;
+  }
+  const stop = watch(settled, (ready) => {
+    if (!ready) return;
+    stop();
+    start();
+  });
 });
 onBeforeUnmount(() => {
   observer?.disconnect();

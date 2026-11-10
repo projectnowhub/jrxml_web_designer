@@ -14,6 +14,22 @@ type Named = { id: string; name: string };
 
 const time = (value: Date | string | undefined) => new Date(value ?? 0).getTime();
 
+// Grid or List: the address's ?view=, else the one chosen last in this
+// browser. One switch for the whole Templates page (at its top): the default
+// templates and the user's own follow it
+export const TEMPLATE_VIEW_KEY = "templates.view";
+export function chosenTemplateView(asked: unknown, storageKey = TEMPLATE_VIEW_KEY): "grid" | "list" {
+  let choice = typeof asked === "string" ? asked : "";
+  if (!choice) {
+    try {
+      choice = localStorage.getItem(storageKey) ?? "";
+    } catch {
+      // Remembering is only a convenience
+    }
+  }
+  return choice === "list" ? "list" : "grid";
+}
+
 export function useTemplates() {
   const router = useRouter();
   const { t, locale } = useI18n();
@@ -50,6 +66,11 @@ export function useTemplates() {
 
   const newTemplate = () => router.push({ name: "designer" });
 
+  // A default template (the report server's, read only): the designer opens
+  // it as the user's own copy, saved once something is changed
+  const openDefaultTemplate = (template: Named) =>
+    router.push({ name: "designer", query: { defaultTemplate: template.id } });
+
   const fresh = () => loadFilesFromStorage();
 
   const rename = (file: Named, name: string) => {
@@ -79,5 +100,5 @@ export function useTemplates() {
     deleteFile(file.id);
   };
 
-  return { editedText, dateText, openTemplate, newTemplate, rename, duplicate, remove };
+  return { editedText, dateText, openTemplate, openDefaultTemplate, newTemplate, rename, duplicate, remove };
 }

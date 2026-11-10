@@ -24,6 +24,8 @@ export type ApiResponse<T> = T | ApiEnvelope<T>;
 // A failed request's JSON body: the fields the designer reads from it
 export interface ApiErrorBody {
   detail?: string;
+  // Jmix Reports REST: { error, details }
+  details?: string;
   message?: string;
   error?: string;
   title?: string;

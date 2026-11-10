@@ -18,8 +18,8 @@
     <p v-if="!projects.length" class="rdp-hint">{{ t("reportData.noProjects") }}</p>
 
     <template v-else>
-      <!-- One tab per project (its logo and short code; the full name in the
-           tooltip and below): the same tables in each, with that project's data.
+      <!-- One tab per project (its logo and name; name and code in the
+           tooltip): the same tables in each, with that project's data.
            Tabs wrap onto more rows in the narrow panel. -->
       <div class="rdp-tabs" role="tablist" :aria-label="t('reportData.projectTabs')" @keydown="onTabKeydown">
         <button
@@ -32,12 +32,12 @@
           :class="{ active: project.id === activeId }"
           :aria-selected="project.id === activeId"
           :tabindex="project.id === activeId ? 0 : -1"
-          :title="project.name"
+          :title="[details[project.id]?.name || project.name, details[project.id]?.code].filter(Boolean).join(' · ')"
           @click="activeId = project.id"
         >
           <img v-if="logoOf(project.id)" :src="logoOf(project.id)!" class="rdp-tab-logo" alt="" />
           <FolderKanban v-else :size="13" aria-hidden="true" />
-          <span class="rdp-tab-name">{{ details[project.id]?.code || project.name }}</span>
+          <span class="rdp-tab-name">{{ details[project.id]?.name || project.name }}</span>
         </button>
       </div>
 
@@ -693,6 +693,7 @@ function dragColumn(
   justify-content: center;
   gap: 5px;
   min-width: 0;
+  max-width: 100%;
   padding: 5px 8px;
   border: 1px solid transparent;
   border-radius: 6px;

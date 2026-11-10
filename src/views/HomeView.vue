@@ -4,49 +4,65 @@
       <div>
         <span class="eyebrow">{{ t("home.eyebrow") }}</span>
         <h1>{{ greeting }}</h1>
-        <p>{{ t("home.subtitle") }}</p>
+        <p>{{ t("reportCatalog.templates.subtitle") }}</p>
       </div>
-    </div>
-    <section class="section-block">
-      <div class="section-heading">
-        <h2>{{ t("home.recentTemplates") }}</h2>
-        <button v-if="total > RECENT_COUNT" class="view-all" type="button" @click="router.push({ name: 'mytemplates' })">
-          {{ t("home.viewAll") }} <ArrowRight :size="15" :stroke-width="2.25" />
+      <div class="heading-tools">
+        <!-- Grid / List for every list on the page (default templates and the user's own) -->
+        <div class="view-toggle" data-help="template-view" role="radiogroup" :aria-label="t('myTemplates.view')">
+          <button
+            v-for="option in VIEWS"
+            :key="option"
+            type="button"
+            role="radio"
+            :aria-checked="view === option"
+            :class="{ active: view === option }"
+            :title="t(`myTemplates.views.${option}`)"
+            :aria-label="t(`myTemplates.views.${option}`)"
+            @click="setView(option)"
+          >
+            <component :is="option === 'grid' ? LayoutGrid : List" :size="16" :stroke-width="2.25" />
+          </button>
+        </div>
+        <button type="button" class="primary-button" data-help="create-report" @click="createOpen = true">
+          <Plus :size="16" :stroke-width="2.5" aria-hidden="true" />
+          {{ t("reportCatalog.templates.create") }}
         </button>
       </div>
-      <TemplateGrid :templates="recent" :owner="ownerName" show-new />
-    </section>
-    <!-- Hidden until templates can be shared -->
-    <section v-if="SHOW_SHARED" class="section-block shared-section">
-      <div class="section-heading">
-        <h2>{{ t("home.sharedWithYou") }}</h2>
-        <span class="muted-label">{{ t("home.recentlyAccessed") }}</span>
-      </div>
-      <div class="empty-state">
-        <div><Inbox :size="32" :stroke-width="2" /></div>
-        <strong>{{ t("home.noSharedTemplates") }}</strong
-        ><span>{{ t("home.noSharedTemplatesHint") }}</span>
-      </div>
-    </section>
+    </div>
+
+    <!-- The report server's default templates (read only): open = the
+         user's own copy -->
+    <DefaultTemplateSection />
+
+    <!-- Every template saved in this browser: Grid / List, open (edit),
+         rename, duplicate, delete (My Templates' list) -->
+    <h2 class="list-heading">{{ t("reportCatalog.templates.yours") }}</h2>
+    <MyTemplatesView embedded class="template-list" />
+
+    <CreateReportModal v-model:visible="createOpen" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted } from "vue";
-import { useRouter } from "vue-router";
+// Templates (home): a greeting, Create template (a popup asking project,
+// template name and code; it then opens the new template in the designer),
+// the report server's default templates (read only: opening one starts the
+// user's own copy) and every template saved in this browser, with My Templates' Grid / List,
+// order, paging and actions.
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { ArrowRight, Inbox } from "@lucide/vue";
-import { useQuery } from "@tanstack/vue-query";
-import { templateListQuery } from "@/queries/templateQueries";
-import TemplateGrid from "@/components/templates/TemplateGrid.vue";
-import { useHelpStore } from "../stores/help";
-import { useAuthStore } from "../stores/auth";
-
-const SHOW_SHARED = false;
+import { useRoute, useRouter } from "vue-router";
+import { LayoutGrid, List, Plus } from "@lucide/vue";
+import { TEMPLATE_VIEW_KEY, chosenTemplateView } from "@/composables/useTemplates";
+import { useHelpStore } from "@/stores/help";
+import { useAuthStore } from "@/stores/auth";
+import MyTemplatesView from "./MyTemplatesView.vue";
+import CreateReportModal from "@/components/reportCatalog/CreateReportModal.vue";
+import DefaultTemplateSection from "@/components/templates/DefaultTemplateSection.vue";
 
 const { t } = useI18n();
-const router = useRouter();
 const auth = useAuthStore();
+
 // "Good morning / afternoon / evening, Name" by the time of day, as the CDP
 // app's welcome header; set when the page opens
 const hour = new Date().getHours();
@@ -54,22 +70,30 @@ const greetingKey = hour < 12 ? "home.greetingMorning" : hour < 17 ? "home.greet
 const greeting = computed(() =>
   auth.firstName ? t(greetingKey, { name: auth.firstName }) : t(`${greetingKey}Plain`),
 );
-const ownerName = computed(() => auth.fullName || t("home.defaultUserName"));
-// The 7 last edited templates; View all goes to My Templates
-const RECENT_COUNT = 7;
-// (a template renamed, copied or deleted here shows at once: saving invalidates the list)
-const recentQuery = useQuery(templateListQuery({ size: RECENT_COUNT, sort: "lastModified", dir: "desc" }));
-const recent = computed(() => recentQuery.data.value?.items ?? []);
-const total = computed(() => recentQuery.data.value?.total ?? 0);
+
+const createOpen = ref(false);
+
+// The page's one Grid / List switch: in the address (?view=) and remembered
+const VIEWS = ["grid", "list"] as const;
+const route = useRoute();
+const router = useRouter();
+const view = computed(() => chosenTemplateView(route.query.view));
+function setView(option: (typeof VIEWS)[number]) {
+  try {
+    localStorage.setItem(TEMPLATE_VIEW_KEY, option);
+  } catch {
+    // Remembering is only a convenience
+  }
+  const { page: _page, defaultView: _old, ...rest } = route.query;
+  router.replace({ query: { ...rest, view: option } });
+}
 
 // First visit: a short tour of the home page (once per browser)
 const help = useHelpStore();
 let tourTimer: ReturnType<typeof setTimeout> | undefined;
-
 onMounted(() => {
   tourTimer = setTimeout(() => help.startTourOnce("home"), 600);
 });
-
 onBeforeUnmount(() => {
   clearTimeout(tourTimer);
   if (help.tourId === "home") help.endTour();
@@ -77,34 +101,19 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.eyebrow {
-  display: inline-block;
-  padding: 6px 10px;
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.18);
-  border-radius: 999px;
-  color: #6366f1;
-  font-size: 11px;
+.content-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: end;
+  gap: 20px 30px;
+}
+.content-heading .eyebrow {
+  color: #6440f4;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  margin-bottom: 18px;
-}
-
-.content-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  gap: 30px;
-}
-.content-heading .eyebrow {
-  display: inline;
-  padding: 0;
-  margin: 0;
-  border: 0;
-  background: none;
-  color: #6440f4;
-  font-size: 10px;
 }
 .content-heading h1 {
   margin: 10px 0 7px;
@@ -116,78 +125,58 @@ onBeforeUnmount(() => {
   color: #6e6a80;
   font-size: 13px;
 }
+.heading-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.view-toggle {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 9px;
+  background: #f1f0f6;
+}
+.view-toggle button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: #8a84a3;
+  cursor: pointer;
+}
+.view-toggle button:hover {
+  color: #6440f4;
+}
+.view-toggle button.active {
+  background: #ffffff;
+  color: #6440f4;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.12);
+}
 .primary-button {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 11px 16px;
+  gap: 7px;
+  padding: 10px 15px;
   border: 0;
   border-radius: 8px;
-  background: linear-gradient(135deg, #7c5cf7, #6366f1);
-  color: white;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 8px 22px rgba(99, 102, 241, 0.22);
-}
-.primary-button b {
-  font-size: 18px;
-  font-weight: 400;
-  line-height: 12px;
-}
-.section-block {
-  margin-top: 52px;
-}
-.section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-}
-.section-heading h2 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-}
-.view-all,
-.muted-label {
-  color: #6f6a7e;
-  font-size: 11.5px;
-}
-.view-all {
-  border: 0;
-  background: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-weight: 600;
-  transition: color 0.15s ease;
-}
-.view-all:hover {
-  color: #6440f4;
-}
-.shared-section {
-  margin-top: 54px;
-}
-.empty-state {
-  min-height: 145px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1px solid rgba(28, 27, 38, 0.08);
-  border-radius: 10px;
-  background: #fafafc;
-}
-.empty-state > div {
-  color: #8172d7;
-  font-size: 30px;
-  line-height: 25px;
-}
-.empty-state strong {
+  background: linear-gradient(135deg, #7c5cf7, #6440f4);
+  color: #ffffff;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(100, 64, 244, 0.22);
+}
+.list-heading {
+  margin: 28px 0 0;
+  color: #1c1b26;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.template-list {
+  margin-top: 6px;
 }
 </style>

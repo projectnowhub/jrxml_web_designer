@@ -18,9 +18,9 @@
     >
       <FolderKanban class="hpp-label-icon" :size="15" aria-hidden="true" />
       <template v-if="projects.length">
-        <!-- One project: its short code; more: how many (narrow: the count only) -->
+        <!-- One project: its name; more: how many (narrow: the count only) -->
         <span v-if="compact && !single" class="hpp-count">{{ projects.length }}</span>
-        <span v-else-if="!compact && projects.length === 1" class="hpp-label-name">{{ shortName(projects[0]!) }}</span>
+        <span v-else-if="!compact && projects.length === 1" class="hpp-label-name">{{ shownName(projects[0]!) }}</span>
         <span v-else-if="!compact" class="hpp-label-name">{{ t("reportData.projectsSelected", projects.length) }}</span>
       </template>
       <template v-else>
@@ -253,9 +253,10 @@ function onKeydown(event: KeyboardEvent) {
 const isChosen = (project: ProjectSummary | undefined) =>
   !!project && props.projects.some((p) => p.id === project.id);
 
-// A project's code (e.g. KL-MRT3), or its name until the code is known
-const shortName = (project: ReportProject) =>
-  chosen.value[props.projects.findIndex((p) => p.id === project.id)]?.data?.projectId || project.name;
+// The chosen project as the field shows it: its name (the list's rows show
+// the name and the code), the latest one read once the project is loaded
+const shownName = (project: ReportProject) =>
+  chosen.value[props.projects.findIndex((p) => p.id === project.id)]?.data?.projectTitle || project.name;
 
 const projectsTitle = computed(() =>
   props.projects.length

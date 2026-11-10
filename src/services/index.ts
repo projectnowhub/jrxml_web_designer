@@ -1,1 +1,0 @@
-export { getTemplates } from "./home/homeServices";

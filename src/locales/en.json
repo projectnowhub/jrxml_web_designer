@@ -841,7 +841,9 @@
     "allSystemsOperational": "All systems operational",
     "closeNavigation": "Close navigation",
     "accountMenu": "Account menu",
-    "defaultWorkspace": "Your CDP workspace"
+    "defaultWorkspace": "Your CDP workspace",
+    "reports": "Reports",
+    "searchReports": "Search reports"
   },
   "home": {
     "eyebrow": "Template workspace",
@@ -939,12 +941,12 @@
       "home": {
         "welcomeTitle": "Welcome to Report Studio",
         "welcomeText": "This is where you make templates for your project reports. Would you like a one-minute look around?",
-        "createTitle": "Start a new template",
-        "createText": "Click Create a new template to start one. You design it on a page, much like a document; each time it runs it makes a report.",
+        "createTitle": "Create a template",
+        "createText": "Click Create template, choose the project and name it: it opens in the designer, ready to design.",
         "navTitle": "Find your way",
-        "navText": "Templates shows the templates you can use, My templates the ones you made, and Activity what changed lately.",
+        "navText": "Templates shows the report server's templates; Reports the reports made from them, ready to preview.",
         "searchTitle": "Find a template",
-        "searchText": "Type part of a template's name and press Enter: My templates shows the ones that match.",
+        "searchText": "Type part of a name: Templates (or Reports, on that page) shows the ones that match.",
         "accountTitle": "Your account",
         "accountText": "Click your initial to change the language (English or Bahasa Melayu) or to sign out.",
         "helpTitle": "Help is always here",
@@ -1014,7 +1016,7 @@
         "dragScroll": "To move an item to another page, drag it and roll the mouse wheel, or hold it near the top or bottom edge: the pages scroll and the item comes with you.",
         "undo": "Made a mistake? Press Ctrl+Z (⌘+Z on a Mac) to undo it.",
         "saved": "Your work is saved by itself in this browser as you go.",
-        "open": "Your templates are on the home page and in My templates: click one to open it. In the designer, File → Open (Ctrl+O) opens another one or a .jrxml file from your computer.",
+        "open": "Templates and Reports are in the menu on the left. In the designer, File → Open (Ctrl+O) opens a template saved in this browser or a .jrxml file from your computer.",
         "keys": "More keys that save you clicks are in the Keyboard shortcuts tab above."
       },
       "tourHint": "New here? A one-minute tour shows you where everything is.",
@@ -4125,6 +4127,102 @@
     "empty": "You have no templates yet.",
     "showing": "Showing {shown} of {total}",
     "loadMore": "Load more"
+  },
+  "reportCatalog": {
+    "errors": {
+      "server": "The report server didn't say why.",
+      "status": "HTTP {status} · {reason}"
+    },
+    "templates": {
+      "subtitle": "Start from a default template, open one of yours, or create a new one.",
+      "create": "Create template",
+      "yours": "Templates"
+    },
+    "defaultTemplates": {
+      "title": "Default templates",
+      "hint": "Ready-made templates from the report server. Open one to look at it, or clone it to make your own copy to change and use. The default itself stays as it is.",
+      "badge": "Default",
+      "loadFailed": "The default templates couldn't be loaded from the report server.",
+      "showMore": "Show more ({shown} of {total})",
+      "opening": "Opening the default template…",
+      "opened": "Default template opened\nClone it to keep your own copy. Any change also saves one; the default stays as it is.",
+      "openFailed": "Couldn't open the default template\n{reason}",
+      "errors": {
+        "noFile": "It has no report file on the server.",
+        "notZip": "Its report file isn't a Jmix report export (zip).",
+        "damaged": "Its report file is damaged.",
+        "zipMethod": "Its report file is packed in a way the designer can't read.",
+        "noJrxml": "Its report file has no JRXML template.",
+        "unknown": "The report server didn't say why."
+      },
+      "openAction": "Open",
+      "openHint": "Look at this template in the designer",
+      "cloneAction": "Clone",
+      "cloneHint": "Make your own copy of this template to change and use",
+      "barTitle": "Default template: {name}.",
+      "barText": "It stays as it is. Clone it to make your own copy; any change you make also saves one.",
+      "savedAsOwn": "Saved as your own template\n\"{name}\" is now in Your templates. The default stays as it is.",
+      "owner": "Report server"
+    },
+    "create": {
+      "title": "Create template",
+      "intro": "Choose the project and name the template. It opens in the designer, ready to design.",
+      "project": "Project",
+      "templateName": "Template name",
+      "templateNamePlaceholder": "e.g. Monthly progress report",
+      "templateCode": "Template code",
+      "templateCodeHint": "Letters, numbers, - and _ only.",
+      "submit": "Create",
+      "creating": "Creating…",
+      "failed": "Couldn't create the report\n{reason}"
+    },
+    "clone": {
+      "title": "Clone template",
+      "intro": "Makes your own copy of \"{name}\" to change and use. Choose its project and name; the default stays as it is.",
+      "defaultName": "{name} (copy)",
+      "submit": "Clone",
+      "cloning": "Cloning…",
+      "failed": "Couldn't clone the template\n{reason}",
+      "done": "Template cloned\n\"{name}\" is your own now: change it as you like."
+    },
+    "reports": {
+      "title": "Reports",
+      "subtitle": "Reports created from your templates (kept in this browser for now). Preview opens its template.",
+      "count": "No reports | 1 report | {count} reports",
+      "resultsFor": "Reports matching \"{query}\"",
+      "refresh": "Load the list again",
+      "columns": {
+        "name": "Name",
+        "code": "Code",
+        "actions": "Actions",
+        "project": "Project"
+      },
+      "preview": "Preview",
+      "loadFailed": "The reports couldn't be loaded from the report server.",
+      "empty": "No reports yet.",
+      "emptyHint": "Create one from a template on the Templates page.",
+      "goToTemplates": "Go to Templates",
+      "noMatch": "No report is called \"{query}\""
+    },
+    "run": {
+      "title": "Preview: {name}",
+      "template": "Template",
+      "noParameters": "This report needs nothing more: press Run.",
+      "yes": "Yes",
+      "no": "No",
+      "idPlaceholder": "The record's id",
+      "listPlaceholder": "Ids, separated by commas",
+      "run": "Run",
+      "running": "Running…",
+      "change": "Change and run again",
+      "download": "Download",
+      "downloadAgain": "Download again",
+      "downloaded": "Report downloaded\n{name}",
+      "downloadedHere": "{name} was downloaded.",
+      "failed": "Couldn't run the report\n{reason}",
+      "loadFailed": "This report couldn't be read from the report server.",
+      "requiredMissing": "Fill in {name}\nThe report needs it to run."
+    }
   },
   "openTemplate": {
     "title": "Open a template",

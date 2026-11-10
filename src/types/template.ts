@@ -11,6 +11,12 @@ export interface TemplateSummary {
   lastModified: string;
 }
 
+// A template as the cards and the list show it: its own owner when it names
+// one (a default template's creator on the report server), else the user
+export interface TemplateCard extends TemplateSummary {
+  owner?: string;
+}
+
 export interface TemplatePage {
   items: TemplateSummary[];
   total: number;
@@ -22,9 +28,4 @@ export interface TemplateQuery {
   q?: string;
   sort?: TemplateSort;
   dir?: TemplateSortDirection;
-}
-
-// GET rest/reports/report (services/home/homeServices.ts)
-export interface ReportVerifyResponse {
-  isVerified?: boolean;
 }
