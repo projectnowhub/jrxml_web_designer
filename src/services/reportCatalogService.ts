@@ -12,7 +12,7 @@
 //   6. Run a report     POST /rest/reports/run/{reportId}  { template, attachment, parameters } → the file          postRunReport
 //
 //   2d. Create          POST /v2/reports/create  { name, code, entityName, templateFileType, reportTypeGenerate, outputFileType }  postCreateTemplate
-//   2c. Delete           DELETE /v2/table/rptadn_TenantReport/{id}  (the tenant's own only, isDefault false)            deleteTenantReport
+//   2c. Delete           DELETE /rest/entities/rptadn_TenantReport/{id}  (the tenant's own only, isDefault false)        deleteTenantReport
 //
 // isDefault true = the **default templates**, false = the tenant's own
 // templates on the server: both can be opened (the designer starts the
@@ -23,8 +23,9 @@
 // from the server; only the open template's changes are kept in this browser
 // (utils/activeTemplate.ts) until templates can be saved there.
 //
-// 1, 2 and 2c are the backend's /v2/table (faster than Jmix's /rest/entities;
-// the list takes its Jmix filter as the `filter` query parameter, no /search); 4–6 are Jmix Reports REST, which lists every report the user may
+// 1 and 2 are the backend's /v2/table (faster than Jmix's /rest/entities;
+// the list takes its Jmix filter as the `filter` query parameter, no /search);
+// 2c (delete) is Jmix's /rest/entities, the only one that deletes it; 4–6 are Jmix Reports REST, which lists every report the user may
 // run at once (no paging or search). 1–5 work on dev (2026-11-11); 6 (run /
 // preview) and creating a report of the user's own are still to come.
 // 3 (Clone of a default template) answers 204 with no body: it imports the
@@ -93,7 +94,7 @@ export async function postCopyTemplate(request: CopyTemplateRequest): Promise<Co
 
 // 2c. Delete one of the tenant's own templates (never a default one)
 export async function deleteTenantReport(id: string): Promise<void> {
-  await apiClient.delete<void>(`${API_ROUTES.tenantReports}/${encodeURIComponent(id)}`, { responseType: "text" });
+  await apiClient.delete<void>(`${API_ROUTES.deleteTenantReport}/${encodeURIComponent(id)}`, { responseType: "text" });
 }
 
 // 2d. Create a template: the server makes it (one of the tenant's own)
