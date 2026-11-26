@@ -3,8 +3,8 @@
 // entity, told apart by isDefault) and the Jmix reports made from them.
 // Caching is TanStack Query's (queries/reportCatalogQueries.ts).
 //
-//   1. Templates        GET  /rest/entities/rptadn_TenantReport/search?filter={isDefault = true|false}&limit&offset&returnCount&sort=<field>,id|-<field>,id   getReportDefinitionsFromServer
-//   2. One template     GET  /rest/entities/rptadn_TenantReport/{id}?fetchPlan=tenantReport-fetch-plan (report.templates[].content = the JRXML)                                                getReportDefinition
+//   1. Templates        GET  /v2/table/rptadn_TenantReport?filter={isDefault = true|false}&limit&offset&returnCount&sort=<field>,id|-<field>,id   getReportDefinitionsFromServer
+//   2. One template     GET  /v2/table/rptadn_TenantReport/{id}?fetchPlan=tenantReport-fetch-plan (report.templates[].content = the JRXML)                                                getReportDefinition
 //   2b. Duplicate       POST /v2/reports/copy  { id (the row's own id, never report.id) }  → the copy is one of the tenant's own (isDefault false)       postCopyTemplate
 //   3. Create a report  POST /v2/report-templates/{definitionId}/create-report-using-report-definition               postCreateReportFromDefinition
 //   4. Reports          GET  /rest/reports/report                                                                    getReports
@@ -12,7 +12,7 @@
 //   6. Run a report     POST /rest/reports/run/{reportId}  { template, attachment, parameters } → the file          postRunReport
 //
 //   2d. Create          POST /v2/reports/create  { name, code, entityName, templateFileType, reportTypeGenerate, outputFileType }  postCreateTemplate
-//   2c. Delete           DELETE /rest/entities/rptadn_TenantReport/{id}  (the tenant's own only, isDefault false)            deleteTenantReport
+//   2c. Delete           DELETE /v2/table/rptadn_TenantReport/{id}  (the tenant's own only, isDefault false)            deleteTenantReport
 //
 // isDefault true = the **default templates**, false = the tenant's own
 // templates on the server: both can be opened (the designer starts the
@@ -23,8 +23,8 @@
 // from the server; only the open template's changes are kept in this browser
 // (utils/activeTemplate.ts) until templates can be saved there.
 //
-// 1 and 2 are Jmix's generic REST (the list takes its Jmix filter as the
-// `filter` query parameter, on /search); 4–6 are Jmix Reports REST, which lists every report the user may
+// 1, 2 and 2c are the backend's /v2/table (faster than Jmix's /rest/entities;
+// the list takes its Jmix filter as the `filter` query parameter, no /search); 4–6 are Jmix Reports REST, which lists every report the user may
 // run at once (no paging or search). 1–5 work on dev (2026-11-11); 6 (run /
 // preview) and creating a report of the user's own are still to come.
 // 3 (Clone of a default template) answers 204 with no body: it imports the
@@ -62,7 +62,7 @@ export async function getReportDefinitionsFromServer(
 ): Promise<ReportDefinitionPage> {
   const params = toReportDefinitionListParams(query);
   // Sort as the CDP app sends it: "name,id", "-lastModifiedDate,id"
-  const path = `${API_ROUTES.tenantReportSearch}?${buildJmixListQuery(params)}`;
+  const path = `${API_ROUTES.tenantReports}?${buildJmixListQuery(params)}`;
   const { data, headers } = await apiClient.requestWithHeaders<ApiResponse<ReportDefinition[]>>(path, {
     method: "GET",
   });

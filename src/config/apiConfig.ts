@@ -19,10 +19,8 @@ export const API_ROUTES = {
   // Every photo tag (getAllTags)
   photoTags: "/v2/table/cdp_Tag",
   // The report server's templates (default and the tenant's own, told apart by
-  // isDefault) and the Jmix reports made from them
-  // Listing (default and own templates, a Jmix filter): /search
-  tenantReportSearch: "/v2/table/rptadn_TenantReport",
-  // One template: read (GET …/{id}) and delete (DELETE …/{id})
+  // isDefault): list = GET with the Jmix filter as the `filter` query
+  // parameter; one template = GET / DELETE …/{id}
   tenantReports: "/v2/table/rptadn_TenantReport",
   // Duplicate a template (default or own): the copy is one of the tenant's own (isDefault false)
   copyTemplate: "/v2/reports/copy",

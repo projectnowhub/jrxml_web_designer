@@ -6,7 +6,7 @@
        Duplicate; Duplicate asks first, then the server makes the copy
        (POST /v2/reports/copy with the template's id), which shows up in
        Templates. "server" (the tenant's own) also Delete, asked first
-       (DELETE /rest/entities/rptadn_TenantReport/{id}); defaults are read only.
+       (DELETE /v2/table/rptadn_TenantReport/{id}); defaults are read only.
        On the body so a card's rounded edge doesn't cut it off. -->
     <Teleport to="body">
       <Transition name="menu-pop">

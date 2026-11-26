@@ -4,7 +4,7 @@
 // uploaded picture (services/imageService.ts).
 //
 //   1. Photos  POST /v1/image/project/filter/{projectId}?offset&limit   postProjectPhotos
-//   2. Tags    GET  /rest/entities/cdp_Tag                             getPhotoTags
+//   2. Tags    GET  /v2/table/cdp_Tag                                  getPhotoTags
 
 import apiClient, { unwrap } from "./apiClient";
 import { API_ROUTES } from "@/config/apiConfig";

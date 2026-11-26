@@ -125,7 +125,7 @@ export function useCopyTemplate() {
 }
 
 // Delete one of the tenant's own server templates (DELETE
-// /rest/entities/rptadn_TenantReport/{id}); only the isDefault false lists fetch again
+// /v2/table/rptadn_TenantReport/{id}); only the isDefault false lists fetch again
 export function useDeleteServerTemplate() {
   return useMutation({
     mutationFn: (id: string) => deleteTenantReport(id),

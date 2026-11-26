@@ -37,7 +37,7 @@ export interface TenantReportJmixReport {
 }
 
 // A report server template: rptadn_TenantReport as
-// GET /rest/entities/rptadn_TenantReport answers it (default templates and
+// GET /v2/table/rptadn_TenantReport answers it (default templates and
 // the tenant's own in one entity, told apart by isDefault)
 export interface ReportDefinition {
   id: string;
