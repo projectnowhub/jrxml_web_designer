@@ -133,13 +133,13 @@ export function getFileBlob(fileRef: string): Promise<Blob> {
 }
 
 // Sends the image as binary (multipart/form-data) and returns the stored image reference
-export async function uploadImage(file: File, signal?: AbortSignal): Promise<string> {
+export async function uploadImage(file: File): Promise<string> {
   const form = new FormData();
   form.append("file", file, file.name);
 
   let body: ApiResponse<FileUploadResponse> | undefined;
   try {
-    body = await apiClient.post<ApiResponse<FileUploadResponse>>(IMAGE_UPLOAD_API, form, { signal });
+    body = await apiClient.post<ApiResponse<FileUploadResponse>>(IMAGE_UPLOAD_API, form);
   } catch (error) {
     if (error instanceof ApiError && error.status === 413) {
       throw new ImageUploadError("TOO_LARGE", "Image is too large. Maximum size is 4 MB.");
@@ -166,9 +166,9 @@ export async function uploadImage(file: File, signal?: AbortSignal): Promise<str
 
 // Validates the file and returns the image source to store in imageExpression:
 // the uploaded image link when an upload endpoint is configured, otherwise a base64 data URL.
-export async function resolveImageSource(file: File, signal?: AbortSignal): Promise<string> {
+export async function resolveImageSource(file: File): Promise<string> {
   await validateImageFile(file);
-  return IMAGE_UPLOAD_API ? uploadImage(file, signal) : readAsDataUrl(file);
+  return IMAGE_UPLOAD_API ? uploadImage(file) : readAsDataUrl(file);
 }
 
 // A quote would end the Java string literal; %22 keeps the URL valid for both the canvas and JasperReports

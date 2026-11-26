@@ -1,22 +1,9 @@
 <template>
-  <!-- Template cards (home page, My Templates grid): a click opens the
-       template in the designer; ⋯ opens its menu (TemplateMenu). kind
-       "default": the report server's default templates, a "Default" badge by
-       the name and Open / Clone in its ⋯ menu (Clone emitted as `clone`) -->
+  <!-- The report server's templates as cards (Templates page): a click opens
+       the template in the designer; ⋯ opens its menu (TemplateMenu). kind
+       "default": a "Default" badge by the name, Open / Duplicate; "server"
+       (the tenant's own): Open / Duplicate / Delete -->
   <div class="template-grid">
-    <article
-      v-if="showNew"
-      class="template-card new-card"
-      data-help="create-report"
-      role="button"
-      tabindex="0"
-      @click="newTemplate"
-      @keydown.enter="newTemplate"
-    >
-      <div class="new-icon"><Plus :size="22" /></div>
-      <strong>{{ t("home.createNewTemplate") }}</strong
-      ><span>{{ t("home.createNewTemplateHint") }}</span>
-    </article>
     <article
       v-for="(template, index) in templates"
       :key="template.id"
@@ -68,14 +55,14 @@
       </div>
     </div>
 
-    <TemplateMenu ref="menuRef" :kind="kind" @clone="(template) => emit('clone', template as TemplateCard)" />
+    <TemplateMenu ref="menuRef" :kind="kind" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { Lock, MoreHorizontal, Plus } from "@lucide/vue";
+import { Lock, MoreHorizontal } from "@lucide/vue";
 import { useTemplates } from "@/composables/useTemplates";
 import type { TemplateCard } from "@/types/template";
 import TemplateMenu from "./TemplateMenu.vue";
@@ -83,22 +70,20 @@ import TemplateMenu from "./TemplateMenu.vue";
 const props = withDefaults(
   defineProps<{
     templates: TemplateCard[];
-    showNew?: boolean;
     // Shown when a template names no owner of its own
     owner: string;
     skeletons?: number;
-    kind?: "own" | "default";
+    kind?: "default" | "server";
   }>(),
-  { skeletons: 0, kind: "own" },
+  { skeletons: 0, kind: "server" },
 );
-const emit = defineEmits<{ clone: [template: TemplateCard] }>();
 
 const { t } = useI18n();
-const { editedText, openTemplate, openDefaultTemplate, newTemplate } = useTemplates();
+const { editedText, openDefaultTemplate } = useTemplates();
 
 const isDefault = computed(() => props.kind === "default");
 const ownerOf = (template: TemplateCard) => template.owner || props.owner;
-const open = (template: TemplateCard) => (isDefault.value ? openDefaultTemplate(template) : openTemplate(template));
+const open = (template: TemplateCard) => openDefaultTemplate(template);
 
 const TONES = ["violet", "blue", "green"];
 const menuRef = ref<InstanceType<typeof TemplateMenu> | null>(null);
@@ -130,31 +115,9 @@ const menuRef = ref<InstanceType<typeof TemplateMenu> | null>(null);
   box-shadow: 0 10px 24px rgba(124, 92, 247, 0.12);
   outline: none;
 }
-.new-card {
-  min-height: 238px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  border-style: dashed;
-  background: rgba(124, 92, 247, 0.04);
-  color: #45425a;
-}
-.new-card span,
 .template-info > span {
   color: #8a84a3;
   font-size: 11px;
-}
-.new-icon {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  margin-bottom: 3px;
-  border-radius: 10px;
-  background: rgba(124, 92, 247, 0.1);
-  color: #6440f4;
 }
 .template-preview {
   height: 130px;
@@ -309,11 +272,6 @@ const menuRef = ref<InstanceType<typeof TemplateMenu> | null>(null);
   .skeleton-preview,
   .skeleton-line {
     animation: none;
-  }
-}
-@media (max-width: 620px) {
-  .new-card {
-    min-height: 180px;
   }
 }
 </style>

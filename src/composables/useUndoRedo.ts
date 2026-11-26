@@ -53,6 +53,16 @@ export function useUndoRedo<State>(options: {
     return true;
   }
 
+  // The state as a step would record it, and putting one back without a
+  // step (the report store's read-only safety net)
+  function snapshot(): State {
+    return deepClone(options.getState());
+  }
+  function restore(state: State) {
+    options.applyState(state);
+    options.onAfterRestore?.();
+  }
+
   // Forget every step (a fresh designer)
   function clear() {
     historyStack.value = [];
@@ -65,6 +75,8 @@ export function useUndoRedo<State>(options: {
     saveStateToHistory,
     undo,
     redo,
+    snapshot,
+    restore,
     clear
   };
 }

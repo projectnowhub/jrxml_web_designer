@@ -2,22 +2,22 @@
   <!-- The report server's default templates (Report Definitions): read only,
        never renamed or deleted here. Drawn by the same cards / table as the
        user's own templates (kind "default"), following the page's one Grid
-       / List switch (top of the Templates page): Open (or a click) shows one in the designer; Clone makes the
-       user's own copy (name + project asked in the Create template popup) -->
-  <section v-if="shown" class="default-templates" data-help="default-templates">
+       / List switch (top of the Templates page): Open (or a click) shows one in the designer; Duplicate (asked
+       first) has the server copy it into Templates (POST /v2/reports/copy) -->
+  <section v-if="shown" class="default-templates" :data-help="isDefault ? 'default-templates' : undefined">
     <div class="section-head">
       <div>
         <h2>
-          {{ t("reportCatalog.defaultTemplates.title") }}
+          {{ t(`${textsKey}.title`) }}
           <span v-if="total" class="count">{{ total }}</span>
         </h2>
-        <p class="hint">{{ t("reportCatalog.defaultTemplates.hint") }}</p>
+        <p class="hint">{{ t(`${textsKey}.hint`) }}</p>
       </div>
     </div>
 
     <div v-if="isError" class="load-failed" role="alert">
       <span>
-        {{ t("reportCatalog.defaultTemplates.loadFailed") }}
+        {{ t(`${textsKey}.loadFailed`) }}
         <small v-if="reason">{{ reason }}</small>
       </span>
       <button type="button" @click="refetch">{{ t("myTemplates.tryAgain") }}</button>
@@ -25,11 +25,10 @@
 
     <template v-else-if="view === 'grid'">
       <TemplateGrid
-        kind="default"
+        :kind="isDefault ? 'default' : 'server'"
         :templates="gridItems"
         :owner="t('reportCatalog.defaultTemplates.owner')"
         :skeletons="gridSkeletons"
-        @clone="startClone"
       />
       <div v-if="grid.hasNextPage.value && !grid.isFetching.value" class="show-more">
         <button type="button" @click="grid.fetchNextPage()">
@@ -41,14 +40,13 @@
 
     <template v-else>
       <TemplateList
-        kind="default"
+        :kind="isDefault ? 'default' : 'server'"
         :templates="listItems"
         :owner="t('reportCatalog.defaultTemplates.owner')"
         :sort="listSort"
         :dir="listDir"
         :skeletons="list.isPending.value ? 4 : 0"
         @sort="sortList"
-        @clone="startClone"
       />
       <PageNavigation
         v-if="total > DEFAULT_TEMPLATE_PAGE_SIZE"
@@ -60,22 +58,16 @@
       />
     </template>
 
-    <!-- Clone: the Create template popup, asking name and project for the copy -->
-    <CreateReportModal
-      :visible="!!cloneSource"
-      :source="cloneSource"
-      @update:visible="(open) => !open && (cloneSource = null)"
-    />
   </section>
 </template>
 
 <script setup lang="ts">
-// Default templates (Templates page, above the user's own): the report
-// server's Report Definitions, searched with the top bar's search (the
-// address's q). Grid: A to Z, a page at a time ("Show more"). List: pages,
+// The report server's templates on the Templates page (rptadn_TenantReport):
+// the default ones (isDefault, the first section) or the tenant's own
+// (isDefault false, "Templates"); only isDefault is sent as a filter. Grid: A to Z, a page at a time ("Show more"). List: pages,
 // the Name / Last edited / Created headings sort (the server sorts). Hidden
 // when there are none (and no failure to show).
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/vue-query";
@@ -89,7 +81,6 @@ import type { TemplateCard, TemplateSort, TemplateSortDirection } from "@/types/
 import TemplateGrid from "./TemplateGrid.vue";
 import TemplateList from "./TemplateList.vue";
 import PageNavigation from "@/components/common/PageNavigation.vue";
-import CreateReportModal from "@/components/reportCatalog/CreateReportModal.vue";
 
 // The list's columns as the server's sort fields
 const SERVER_SORT: Record<TemplateSort, ReportDefinitionSort> = {
@@ -98,12 +89,14 @@ const SERVER_SORT: Record<TemplateSort, ReportDefinitionSort> = {
   createdAt: "createdDate",
 };
 
+const props = withDefaults(defineProps<{ isDefault?: boolean }>(), { isDefault: true });
 const { t } = useI18n();
 const route = useRoute();
+// The section's title, hint and failure texts
+const textsKey = computed(() => (props.isDefault ? "reportCatalog.defaultTemplates" : "reportCatalog.serverTemplates"));
 
 // Grid / List: the page's one switch (the address's ?view=)
 const view = computed(() => chosenTemplateView(route.query.view));
-const search = computed(() => (typeof route.query.q === "string" ? route.query.q.trim() : ""));
 
 // A definition as the cards and the list show it: its creator on the server as the owner
 const toCard = (item: ReportDefinitionSummary): TemplateCard => ({ ...item, owner: item.createdBy || undefined });
@@ -111,7 +104,10 @@ const toCard = (item: ReportDefinitionSummary): TemplateCard => ({ ...item, owne
 // Grid: A to Z, pages added with "Show more"
 const grid = useInfiniteQuery(
   computed(() => ({
-    ...defaultTemplateGridQuery({ q: search.value, sort: "name", dir: "asc" }, DEFAULT_TEMPLATE_PAGE_SIZE),
+    ...defaultTemplateGridQuery(
+      { isDefault: props.isDefault, sort: "name", dir: "asc" },
+      DEFAULT_TEMPLATE_PAGE_SIZE,
+    ),
     enabled: view.value === "grid",
   })),
 );
@@ -135,7 +131,7 @@ const listPage = ref(1);
 const list = useQuery(
   computed(() => ({
     ...defaultTemplatePageQuery({
-      q: search.value,
+      isDefault: props.isDefault,
       sort: SERVER_SORT[listSort.value],
       dir: listDir.value,
       page: listPage.value,
@@ -146,7 +142,6 @@ const list = useQuery(
   })),
 );
 const listItems = computed(() => list.data.value?.items.map(toCard) ?? []);
-watch(search, () => (listPage.value = 1));
 
 function sortList(column: TemplateSort) {
   if (listSort.value === column) listDir.value = listDir.value === "asc" ? "desc" : "asc";
@@ -166,10 +161,6 @@ const refetch = () => void active.value.refetch();
 const shown = computed(
   () => active.value.isPending.value || isError.value || (view.value === "grid" ? gridItems.value : listItems.value).length > 0,
 );
-
-// The default template being cloned (its popup is open)
-const cloneSource = ref<{ id: string; name: string } | null>(null);
-const startClone = (template: TemplateCard) => (cloneSource.value = { id: template.id, name: template.name });
 </script>
 
 <style scoped>

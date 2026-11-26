@@ -29,7 +29,7 @@ import { chartKeys, dataSourceKeys, projectKeys } from "./queryKeys";
 export const entitiesQuery = () =>
   queryOptions({
     queryKey: dataSourceKeys.entities(),
-    queryFn: ({ signal }) => reportDataApi.getEntities(signal),
+    queryFn: () => reportDataApi.getEntities(),
     staleTime: DATA_STALE_TIME,
   });
 
@@ -84,14 +84,14 @@ export function rowsQuery(projectId: string, sourceId: string, query: DataQuery)
   const answered = () => largerRowsRequest(projectId, sourceId, query, true);
   return queryOptions({
     queryKey: dataSourceKeys.rows(projectId, sourceId, query),
-    queryFn: async ({ signal }): Promise<DataQueryResult> => {
+    queryFn: async (): Promise<DataQueryResult> => {
       const larger = largerRowsRequest(projectId, sourceId, query, false);
       if (larger) {
         const data = await queryClient.fetchQuery(rowsQuery(projectId, sourceId, larger.query));
         return firstRows(data, query.limit);
       }
       if (isProjectListSource(sourceId)) return projectListRows(projectId, sourceId, query);
-      return reportDataApi.getTableRows(projectId, sourceId, query, signal);
+      return reportDataApi.getTableRows(projectId, sourceId, query);
     },
     staleTime: DATA_STALE_TIME,
     initialData: () => {
@@ -110,8 +110,8 @@ export function rowsQuery(projectId: string, sourceId: string, query: DataQuery)
 export const tableTotalQuery = (projectId: string, sourceId: string, request: AggregateRequest) =>
   queryOptions({
     queryKey: dataSourceKeys.total(projectId, sourceId, request),
-    queryFn: async ({ signal }): Promise<number | null> =>
-      (await reportDataApi.postChartAggregate(request, signal)).totalValue ?? null,
+    queryFn: async (): Promise<number | null> =>
+      (await reportDataApi.postChartAggregate(request)).totalValue ?? null,
     staleTime: DATA_STALE_TIME,
   });
 

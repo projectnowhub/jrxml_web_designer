@@ -4,9 +4,9 @@ import {
   LoginView,
   CallbackView,
   DesktopLoginView,
-  MyTemplatesView,
   ReportsView,
   ActivityView,
+  DefaultSettingsView,
 } from "../views";
 import { PDFDesigner, AppLayout } from "../components";
 
@@ -26,11 +26,6 @@ const router = createRouter({
           component: HomeView,
         },
         {
-          path: "mytemplates",
-          name: "mytemplates",
-          component: MyTemplatesView,
-        },
-        {
           path: "reports",
           name: "reports",
           component: ReportsView,
@@ -39,6 +34,11 @@ const router = createRouter({
           path: "activity",
           name: "activity",
           component: ActivityView,
+        },
+        {
+          path: "default-settings",
+          name: "defaultSettings",
+          component: DefaultSettingsView,
         },
 
       ],

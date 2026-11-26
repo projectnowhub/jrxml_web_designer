@@ -106,7 +106,7 @@ export function saveReportDefaults(defaults: ReportDefaults): void {
   } catch {
     // Storage blocked: new reports use the built-in defaults
   }
-  useUserSettingsStore().saveLater();
+  useUserSettingsStore().noteChange();
 }
 
 export function resetReportDefaults(): ReportDefaults {
@@ -115,6 +115,6 @@ export function resetReportDefaults(): ReportDefaults {
   } catch {
     // Nothing saved to remove
   }
-  useUserSettingsStore().saveLater();
+  useUserSettingsStore().noteChange();
   return builtInReportDefaults();
 }

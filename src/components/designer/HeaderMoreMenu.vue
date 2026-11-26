@@ -70,7 +70,7 @@
           @update:zoomLevel="emit('update:zoomLevel', $event)"
         />
       </div>
-      <button type="button" class="more-item" role="menuitem" @click="run(() => emit('toggle-bottom-panel'))">
+      <button v-if="SHOW_DEVELOPER_TOOLS" type="button" class="more-item" role="menuitem" @click="run(() => emit('toggle-bottom-panel'))">
         <component :is="showBottomPanel ? PanelBottomClose : PanelBottom" :size="16" :stroke-width="2" aria-hidden="true" />
         <span>{{ showBottomPanel ? t("actions.hideBottomPanel") : t("actions.showBottomPanel") }}</span>
       </button>
@@ -93,6 +93,7 @@
 
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { SHOW_DEVELOPER_TOOLS } from "@/config/appEnvironment";
 import { useI18n } from "vue-i18n";
 import {
   BookImage,

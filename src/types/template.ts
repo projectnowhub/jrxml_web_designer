@@ -1,5 +1,6 @@
-// Template list types (home page, My Templates; services/templateService.ts):
-// the planned templates API's request and answer.
+// Template types: the report server's templates as the Templates page's cards
+// and list show them, and the open template's changes kept in this browser
+// (utils/activeTemplate.ts).
 
 export type TemplateSort = "lastModified" | "createdAt" | "name";
 export type TemplateSortDirection = "asc" | "desc";
@@ -11,21 +12,18 @@ export interface TemplateSummary {
   lastModified: string;
 }
 
-// A template as the cards and the list show it: its own owner when it names
-// one (a default template's creator on the report server), else the user
+// A template as the cards and the list show it: its owner when it names one
+// (its creator on the report server), else the list's own
 export interface TemplateCard extends TemplateSummary {
   owner?: string;
 }
 
-export interface TemplatePage {
-  items: TemplateSummary[];
-  total: number;
-}
-
-export interface TemplateQuery {
-  page?: number;
-  size?: number;
-  q?: string;
-  sort?: TemplateSort;
-  dir?: TemplateSortDirection;
+// The open template's changes kept in this browser until the server can save
+// templates: which server template (its row id), its name and its JRXML
+export interface ActiveTemplate {
+  id: string;
+  name: string;
+  jrxml: string;
+  // ISO time of the last change kept
+  savedAt: string;
 }

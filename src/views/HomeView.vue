@@ -23,7 +23,7 @@
             <component :is="option === 'grid' ? LayoutGrid : List" :size="16" :stroke-width="2.25" />
           </button>
         </div>
-        <button type="button" class="primary-button" data-help="create-report" @click="createOpen = true">
+        <button type="button" class="primary-button" data-help="create-report" @click="createTemplate">
           <Plus :size="16" :stroke-width="2.5" aria-hidden="true" />
           {{ t("reportCatalog.templates.create") }}
         </button>
@@ -34,30 +34,25 @@
          user's own copy -->
     <DefaultTemplateSection />
 
-    <!-- Every template saved in this browser: Grid / List, open (edit),
-         rename, duplicate, delete (My Templates' list) -->
-    <h2 class="list-heading">{{ t("reportCatalog.templates.yours") }}</h2>
-    <MyTemplatesView embedded class="template-list" />
+    <!-- The tenant's own templates on the report server (isDefault false):
+         open or clone, like the defaults -->
+    <DefaultTemplateSection :is-default="false" />
 
-    <CreateReportModal v-model:visible="createOpen" />
   </div>
 </template>
 
 <script setup lang="ts">
-// Templates (home): a greeting, Create template (a popup asking project,
-// template name and code; it then opens the new template in the designer),
-// the report server's default templates (read only: opening one starts the
-// user's own copy) and every template saved in this browser, with My Templates' Grid / List,
-// order, paging and actions.
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+// Templates (home): a greeting, Create template (makes a template on the
+// report server at once and opens it in the designer), the report server's
+// default templates (read only: look, preview, duplicate) and the tenant's own
+// templates, with one Grid / List switch.
+import { computed, onBeforeUnmount, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { LayoutGrid, List, Plus } from "@lucide/vue";
 import { TEMPLATE_VIEW_KEY, chosenTemplateView } from "@/composables/useTemplates";
 import { useHelpStore } from "@/stores/help";
 import { useAuthStore } from "@/stores/auth";
-import MyTemplatesView from "./MyTemplatesView.vue";
-import CreateReportModal from "@/components/reportCatalog/CreateReportModal.vue";
 import DefaultTemplateSection from "@/components/templates/DefaultTemplateSection.vue";
 
 const { t } = useI18n();
@@ -71,7 +66,9 @@ const greeting = computed(() =>
   auth.firstName ? t(greetingKey, { name: auth.firstName }) : t(`${greetingKey}Plain`),
 );
 
-const createOpen = ref(false);
+// Create template: the designer makes it on the server at once ("Untitled
+// Template N", a name no template has) and opens it at /designer/<id>
+const createTemplate = () => router.push({ name: "designer" });
 
 // The page's one Grid / List switch: in the address (?view=) and remembered
 const VIEWS = ["grid", "list"] as const;
@@ -168,15 +165,5 @@ onBeforeUnmount(() => {
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 8px 22px rgba(100, 64, 244, 0.22);
-}
-.list-heading {
-  margin: 28px 0 0;
-  color: #1c1b26;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-.template-list {
-  margin-top: 6px;
 }
 </style>

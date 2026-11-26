@@ -4,9 +4,9 @@
 
 import { ApiError } from "../apiClient";
 import type { ApiErrorBody } from "@/types/api";
-import type { JmixListParams } from "@/types/jmix";
-import type { ReportDefinition, ReportDefinitionQuery, ReportDefinitionSummary } from "@/types/reportCatalog";
-import { REPORT_DEFINITION_PAGE_SIZE } from "@/constants/reportCatalogConstants";
+import type { JmixCondition, JmixListParams } from "@/types/jmix";
+import type { ReportDefinition, ReportDefinitionQuery, ReportDefinitionSort, ReportDefinitionSummary } from "@/types/reportCatalog";
+import { REPORT_DEFINITION_PAGE_SIZE, TENANT_REPORT_LIST_FETCH_PLAN } from "@/constants/reportCatalogConstants";
 
 // A FileRef's own file name: "fs://2026/11/04/x.zip?name=Monthly%20report.zip" → "Monthly report.zip"
 export function reportFileName(fileRef: string | undefined): string {
@@ -15,30 +15,42 @@ export function reportFileName(fileRef: string | undefined): string {
   return name || fileRef.split("?")[0]!.split("/").pop() || "";
 }
 
-// The list request of a page: newest edits first unless asked; a search
-// matches every word in the name (Jmix `contains`, any case)
+// rptadn_TenantReport's fields for each sort. The name shown is its Jmix
+// report's name (report.name; names may repeat, the code is not shown)
+const TEMPLATE_SORT_FIELDS: Record<ReportDefinitionSort, string> = {
+  name: "report.name",
+  createdDate: "createdDate",
+  lastModifiedDate: "lastModifiedDate",
+};
+
+// The list request of a page: newest edits first unless asked; `isDefault`
+// (when given) picks default templates or the tenant's own, `nameContains`
+// those whose name contains the words
 export function toReportDefinitionListParams({
+  isDefault,
+  nameContains,
   page = 1,
   size = REPORT_DEFINITION_PAGE_SIZE,
-  q = "",
   sort = "lastModifiedDate",
   dir = "desc",
 }: ReportDefinitionQuery): JmixListParams {
-  const words = q.trim().split(/\s+/).filter(Boolean);
+  const conditions: JmixCondition[] = [];
+  if (isDefault !== undefined) conditions.push({ property: "isDefault", operator: "=", value: isDefault });
+  if (nameContains) conditions.push({ property: TEMPLATE_SORT_FIELDS.name, operator: "contains", value: nameContains });
   return {
+    fetchPlan: TENANT_REPORT_LIST_FETCH_PLAN,
     limit: size,
     offset: (Math.max(1, page) - 1) * size,
-    sort: [{ id: sort, desc: dir === "desc" }],
-    ...(words.length
-      ? { filter: { group: "AND", conditions: words.map((word) => ({ property: "name", operator: "contains", value: word })) } }
-      : {}),
+    sort: [{ id: TEMPLATE_SORT_FIELDS[sort], desc: dir === "desc" }],
+    ...(conditions.length ? { filter: { conditions } } : {}),
   };
 }
 
 export function toReportDefinitionSummary(definition: ReportDefinition): ReportDefinitionSummary {
   return {
     id: definition.id,
-    name: definition.name || definition._instanceName || reportFileName(definition.reportFile) || definition.id,
+    name: definition.report?.name || definition.name || definition.id,
+    isDefault: definition.isDefault !== false,
     fileName: reportFileName(definition.reportFile),
     createdBy: definition.createdBy ?? "",
     createdAt: definition.createdDate ?? definition.lastModifiedDate ?? "",

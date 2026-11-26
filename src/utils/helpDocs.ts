@@ -85,7 +85,7 @@ export type SettingId =
   | "watermarkAngle"
   | "watermarkPlace"
   | "watermarkPages"
-  | "templateWatermark";
+  | "watermarkPageMenu";
 
 export type DocGroup = "start" | "basic" | "presets" | "composite";
 
@@ -146,7 +146,7 @@ export const DOC_PAGES: DocPage[] = [
   {
     id: "templateSettings",
     group: "start",
-    settings: ["templatePaper", "templateMargins", "templateFont", "templateBands", "templateWatermark", "reportSections"],
+    settings: ["templatePaper", "templateMargins", "templateFont", "templateBands", "reportSections"],
   },
   { id: "pageSettings", group: "start", settings: [] },
   {
@@ -324,7 +324,7 @@ export const DOC_PAGES: DocPage[] = [
     id: "watermark",
     group: "composite",
     tile: "watermark",
-    settings: ["templateWatermark", "watermarkContent", "watermarkLook", "watermarkAngle", "watermarkPlace", "watermarkPages"],
+    settings: ["watermarkPageMenu", "watermarkContent", "watermarkLook", "watermarkAngle", "watermarkPlace", "watermarkPages"],
     guides: ["watermark"],
     sample: (ctx) => [
       buildWatermarkElement({ width: ctx.availableWidth, height: 200 }, { text: "DRAFT", size: 72, opacity: 25 }),

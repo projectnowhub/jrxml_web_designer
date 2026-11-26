@@ -23,7 +23,10 @@
           <span class="brand-badge">REPORT STUDIO</span>
         </div>
       </div>
-      <label class="search-box" data-help="search">
+      <!-- Templates: a search with a list of results; Reports and My
+           Templates: the box filters the page's list -->
+      <TemplateSearch v-if="!filtersPage" />
+      <label v-else class="search-box" data-help="search">
         <Search :size="20" :stroke-width="2.25" aria-hidden="true" />
         <input
           v-model="searchQuery"
@@ -35,7 +38,7 @@
         <kbd>/</kbd>
       </label>
       <div class="topbar-actions">
-        <HelpMenu :context="route.name === 'mytemplates' ? 'templates' : 'home'" class="help-icon" />
+        <HelpMenu context="home" class="help-icon" />
         <!-- Hidden until there are notifications to show -->
         <button v-if="SHOW_NOTIFICATIONS" class="icon-button notification-icon" type="button" :aria-label="t('layout.notifications')">
           <Bell :size="20" :stroke-width="2.25" aria-hidden="true" />
@@ -88,11 +91,11 @@
 import { computed, ref, watch } from "vue";
 import { RouterView, useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import TemplateSearch from "./templates/TemplateSearch.vue";
 import {
   Activity,
   Bell,
   FileChartColumn,
-  Files,
   LayoutTemplate,
   Menu,
   Search,
@@ -105,9 +108,7 @@ const { t } = useI18n();
 // The bell is hidden until there are notifications to show
 const SHOW_NOTIFICATIONS = false;
 
-// Activity is hidden until it has something to show, and My Templates (the
-// designs saved in this browser) while templates come from the report server;
-// their pages and routes stay
+// Activity is hidden until it has something to show (its page and route stay)
 const sidebarMenus = [
   {
     labelKey: "layout.templates",
@@ -120,13 +121,6 @@ const sidebarMenus = [
     route: "/reports",
     routeName: "reports",
     icon: FileChartColumn,
-  },
-  {
-    labelKey: "layout.myTemplates",
-    route: "/mytemplates",
-    routeName: "mytemplates",
-    icon: Files,
-    hidden: true,
   },
   {
     labelKey: "layout.activity",
@@ -142,9 +136,10 @@ const route = useRoute();
 const isSidebarCollapsed = ref(false);
 const searchQuery = ref("");
 
-// The search box filters the page it searches (Templates, Reports, My
-// Templates) as you type; Enter on any other page goes to Templates with the words
-const SEARCHED_PAGES = ["home", "reports", "mytemplates"];
+// On Reports the search box filters the page's list as you type; everywhere
+// else it is the template search (TemplateSearch.vue)
+const SEARCHED_PAGES = ["reports"];
+const filtersPage = computed(() => SEARCHED_PAGES.includes(String(route.name)));
 const searchLabel = computed(() => t(route.name === "reports" ? "layout.searchReports" : "layout.searchTemplates"));
 const searchedPage = () => SEARCHED_PAGES.includes(String(route.name));
 const findTemplates = () => {

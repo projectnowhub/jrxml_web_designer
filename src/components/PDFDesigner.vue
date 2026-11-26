@@ -1,5 +1,5 @@
 <template>
-  <div class="pdf-designer">
+  <div class="pdf-designer" :class="{ 'is-read-only': readOnlyTemplate }">
     <!-- Header: as the window narrows, labels turn into icons, then the less
          used tools move into the More menu (headerTier) -->
     <div ref="headerRef" class="designer-header" :class="`tier-${headerTier}`">
@@ -57,6 +57,8 @@
             <input
               v-model="headerFileName"
               class="document-title-input"
+              :readonly="readOnlyTemplate"
+              @input="limitHeaderTitle"
               data-hint="reportName"
               size="1"
               @focus="isTitleEditing = true"
@@ -85,6 +87,8 @@
 
         <!-- 3. The report's projects (their details and tables are in Report Data) -->
         <HeaderProjectPicker
+          class="header-project-picker"
+          :inert="readOnlyTemplate"
           :projects="reportProjects"
           :compact="headerTier >= 2"
           @update-projects="setReportProjects"
@@ -98,15 +102,13 @@
           data-hint="file"
           :compact="headerTier >= 3"
           @create-new-file="createNewFile"
-          @load-file="loadFile"
           @open-jrxml="openJrxmlFile"
-          @delete-all-files="deleteAllFiles"
         />
 
         <!-- 5. Undo / Redo -->
         <template v-if="headerTier < 5">
           <span class="toolbar-divider"></span>
-          <div class="header-undo-redo">
+          <div class="header-undo-redo" :inert="readOnlyTemplate">
             <n-button
               data-hint="undo"
               @click="undo"
@@ -133,7 +135,7 @@
         <!-- 6. Delete, Copy, Paste, Add Page -->
         <template v-if="headerTier < 4">
           <span class="toolbar-divider"></span>
-          <div class="header-toolbar-ops">
+          <div class="header-toolbar-ops" :inert="readOnlyTemplate">
             <AddPageMenu
               data-help="add-page"
               data-hint="addPage"
@@ -172,22 +174,23 @@
 
           <span class="toolbar-divider"></span>
 
-          <!-- 8. Show Bottom Panel -->
-          <!-- The report's Default Settings (paper, margins, page parts, font): an icon button -->
+          <!-- 8. The bottom panel (developers only: JRXML Content, Report Bands,
+               the settings JSONs). Default Settings have their own page (account menu) -->
           <button
+            v-if="SHOW_DEVELOPER_TOOLS"
             type="button"
-            class="toolbar-btn default-settings-btn"
+            class="toolbar-btn developer-panel-btn"
             :class="{ 'is-open': showBottomPanel }"
             data-hint="bottomPanel"
             :aria-pressed="showBottomPanel"
-            :aria-label="t('actions.defaultSettings')"
+            :aria-label="showBottomPanel ? t('actions.hideBottomPanel') : t('actions.showBottomPanel')"
             :title="showBottomPanel ? t('actions.hideBottomPanel') : t('actions.showBottomPanel')"
             @click="toggleBottomPanel"
           >
-            <SlidersHorizontal :size="16" :stroke-width="2" aria-hidden="true" />
+            <component :is="showBottomPanel ? PanelBottomClose : PanelBottom" :size="16" :stroke-width="2" aria-hidden="true" />
           </button>
 
-          <span class="toolbar-divider"></span>
+          <span v-if="SHOW_DEVELOPER_TOOLS" class="toolbar-divider"></span>
 
           <!-- 9. Snap & grid (dropdown) -->
           <SnapMenu data-hint="snap" :compact="headerTier >= 2" />
@@ -227,7 +230,7 @@
         </button>
 
         <!-- 12. Account menu (language, sign out; the profile is edited in the CDP app) -->
-        <AccountMenu />
+        <AccountMenu data-help="account" />
       </div>
     </div>
 
@@ -270,6 +273,8 @@
       >
         <template #default="{ toggleCollapse }">
         <ElementLibrary
+          class="read-only-lockable"
+          :inert="readOnlyTemplate"
           :elements="elements"
           :projects="reportProjects"
           @drag-start="handleDragStart"
@@ -304,8 +309,8 @@
         class="design-area-wrapper"
         style="position: relative; flex: 1; overflow: hidden; min-width: 0; display: flex; flex-direction: column;"
       >
-        <!-- A default template's file is being fetched (?defaultTemplate=<id>) -->
-        <div v-if="openingDefaultTemplate" class="opening-template" role="status" aria-live="polite">
+        <!-- A server template is being fetched (/designer/<id>) or made (Create template) -->
+        <div v-if="openingDefaultTemplate || creatingTemplate" class="opening-template" role="status" aria-live="polite">
           <div class="opening-template-page" aria-hidden="true">
             <SkeletonBlock width="55%" height="14px" />
             <SkeletonBlock width="35%" height="9px" />
@@ -313,30 +318,40 @@
             <SkeletonBlock width="80%" height="9px" />
             <SkeletonBlock width="65%" height="9px" />
           </div>
-          <span>{{ t("reportCatalog.defaultTemplates.opening") }}</span>
+          <span>{{ t(creatingTemplate ? "reportCatalog.create.creating" : "reportCatalog.defaultTemplates.opening") }}</span>
         </div>
-        <!-- A default template being looked at: it stays as it is; Clone makes
-             the user's own copy (any change makes one too) -->
+        <!-- A server template being looked at: it stays as it is; Duplicate
+             (asked first) has the server copy it into Templates -->
         <div v-if="viewingDefaultTemplate" class="default-template-bar" role="status">
           <Lock :size="15" :stroke-width="2.25" aria-hidden="true" />
           <span>
-            <strong>{{ t("reportCatalog.defaultTemplates.barTitle", { name: openedDefaultTemplate?.name }) }}</strong>
-            {{ t("reportCatalog.defaultTemplates.barText") }}
+            <strong>{{ t(`${openedTemplateTexts}.barTitle`, { name: openedDefaultTemplate?.name }) }}</strong>
+            {{ t(`${openedTemplateTexts}.barText`) }}
           </span>
-          <button type="button" :title="t('reportCatalog.defaultTemplates.cloneHint')" @click="cloneDialogOpen = true">
+          <button type="button" :title="t('reportCatalog.copy.hint')" @click="copyDialogOpen = true">
             <Copy :size="14" :stroke-width="2.25" aria-hidden="true" />
-            {{ t("reportCatalog.defaultTemplates.cloneAction") }}
+            {{ t("home.menu.duplicate") }}
           </button>
         </div>
         <!-- On the body (the canvas area moves with a transform); keys typed in
              it never reach the designer's shortcuts -->
         <Teleport to="body">
           <div @keydown.stop>
-            <CreateReportModal
-              v-model:visible="cloneDialogOpen"
-              :source="openedDefaultTemplate ? { id: String(route.query.defaultTemplate ?? ''), name: openedDefaultTemplate.name } : null"
-              :navigate="false"
-              @cloned="cloneOpenedDefault"
+            <ConfirmModal
+              v-model:visible="copyDialogOpen"
+              :title="t('reportCatalog.copy.title')"
+              :message="t('reportCatalog.copy.message', { name: openedDefaultTemplate?.name })"
+              :confirm-text="t('home.menu.duplicate')"
+              @confirm="duplicateOpenedTemplate"
+            />
+            <!-- The copy is made: open it now, or stay on the default -->
+            <ConfirmModal
+              v-model:visible="openCopyDialog"
+              :title="t('reportCatalog.copy.openTitle')"
+              :message="t('reportCatalog.copy.openMessage', { name: madeCopy?.name })"
+              :confirm-text="t('reportCatalog.copy.openConfirm')"
+              :cancel-text="t('reportCatalog.copy.openCancel')"
+              @confirm="madeCopy && router.push({ name: 'designer', params: { id: madeCopy.id } })"
             />
           </div>
         </Teleport>
@@ -474,10 +489,10 @@
         <!-- Element properties component -->
         <Transition name="right-panel-fade">
         <div v-show="rightPanelTab === 'properties'">
+          <!-- A default template: its settings shown, nothing can be changed -->
+          <fieldset class="read-only-fieldset" :disabled="readOnlyTemplate">
           <ElementProperties
             @update:bands="bands = $event"
-            @page-setup-change="handlePageSetupChange"
-            @add-watermark="addWatermark()"
             @delete-element="deleteElement"
             @fit-to-text="
               selectedElement &&
@@ -496,13 +511,14 @@
             @fill-contents-list="fillContentsList"
             @configure-chart="openChartConfigForSelection"
           />
+          </fieldset>
         </div>
 
         </Transition>
 
         <!-- AI Assistant panel -->
         <Transition name="right-panel-fade">
-        <div v-show="rightPanelTab === 'ai'" class="ai-panel-container">
+        <div v-show="rightPanelTab === 'ai'" class="ai-panel-container read-only-lockable" :inert="readOnlyTemplate">
           <AIChatPanel
             :visible="rightPanelTab === 'ai'"
             :initial-height="aiChatPanelHeight"
@@ -520,12 +536,11 @@
 
     <!-- Bottom tab area -->
     <BottomPanel
+      v-if="SHOW_DEVELOPER_TOOLS"
       :visible="showBottomPanel"
       :initial-height="bottomPanelHeight"
-      :all-band-types="allBandTypes"
       @update:visible="showBottomPanel = $event"
       @size-change="handleBottomPanelSizeChange"
-      @update:report-properties="reportProperties = $event"
       @page-setup-change="handlePageSetupChange"
       @update:jrxml-content="jrxmlContent = $event"
       @copy-jrxml="copyJRXML"
@@ -735,6 +750,7 @@
 
 <script setup lang="ts">
 import AddPageMenu from "./designer/AddPageMenu.vue";
+import { SHOW_DEVELOPER_TOOLS } from "@/config/appEnvironment";
 import ResizablePanel from "./panels/ResizablePanel.vue";
 import DesignerCanvas from "./designer/DesignerCanvas.vue";
 import HelpMenu from "./help/HelpMenu.vue";
@@ -783,6 +799,8 @@ import {
   RotateCcw,
   Settings,
   SlidersHorizontal,
+  PanelBottom,
+  PanelBottomClose,
   Sparkles,
   SquareArrowOutDownRight,
   SquarePlus,
@@ -826,12 +844,10 @@ import {
 } from "@/utils/projectFields";
 import { buildProjectListTable } from "@/utils/projectTables";
 import { fetchProject, prefetchProjects, projectQuery } from "@/queries/projectQueries";
-import { fetchDefaultTemplate } from "@/queries/reportCatalogQueries";
+import { fetchDefaultTemplate, fetchNewestCopyId, useCopyTemplate } from "@/queries/reportCatalogQueries";
 import { ApiError } from "@/services/apiClient";
 import { reportServerErrorText } from "@/services/helpers/reportCatalogMappers";
-import { REPORT_ARCHIVE_ERRORS } from "@/constants/reportCatalogConstants";
 import SkeletonBlock from "@/components/common/SkeletonBlock.vue";
-import CreateReportModal from "@/components/reportCatalog/CreateReportModal.vue";
 import { isProjectListSource } from "@/queries/dataSourceQueries";
 import { useQueries } from "@tanstack/vue-query";
 import { forgetLastProject, lastProject, rememberLastProject } from "@/utils/lastProject";
@@ -860,7 +876,6 @@ import {
   usedDatasetNames,
   usedTableNames,
 } from "@/utils/table/tableDocument";
-import type { DesignerFile } from "@/types/designerFile";
 import type { MCPContext, PageToolRequest } from "@/mcp";
 import { checkWebMCPSupport } from "@/utils/browserCompatibility";
 import {
@@ -874,7 +889,7 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { useDesignerFiles } from "@/composables/useDesignerFiles";
+import { readActiveTemplate, saveActiveTemplate } from "@/utils/activeTemplate";
 import { storeToRefs } from "pinia";
 import { useReportStore } from "@/stores/report";
 import { useSelectionStore } from "@/stores/selection";
@@ -911,6 +926,7 @@ import {
   prefersReducedMotion,
   REPORT_CONSTANTS,
   UI_CONSTANTS,
+  TEMPLATE_NAME_MAX_LENGTH,
 } from "../constants/constants";
 
 // Import newly created utility functions and constants
@@ -922,11 +938,6 @@ import {
   type RulerTick,
 } from "../utils/rulerUtils";
 
-import {
-  clearLocalStorage,
-  loadFromLocalStorage,
-  saveToLocalStorage,
-} from "../utils/fileUtils";
 
 // Import element bounds validation utility
 import { getOutOfBoundsElements } from "../utils/elementBoundsValidator";
@@ -1009,6 +1020,8 @@ import {
 import { useBoundaryDetection } from "@/composables/useBoundaryDetection";
 import { useAlignmentSystem } from "@/composables/useAlignmentSystem";
 import { useDragFeedback } from "@/composables/useDragFeedback";
+import { useServerTemplateCreate } from "@/composables/useServerTemplateCreate";
+import { isServerTemplateId, newLocalTemplateId } from "@/utils/templateIds";
 
 // Ensure DOMParser is available in the browser environment
 // Removed the unused getDOMParser function
@@ -1053,6 +1066,7 @@ import {
   createElement,
   getAllElements as getAllElementConfigs,
 } from "@/components/elements/ElementRegistry";
+import { TemplateContentProblem } from "@/enums/templateContentProblem";
 
 // Import the default JRXML example file
 
@@ -1124,19 +1138,9 @@ const {
 } = storeToRefs(reportStore);
 const { saveStateToHistory } = reportStore;
 
-// File management related state
-const {
-  currentFileName,
-  currentFileId,
-  loadFilesFromStorage,
-  findFileById,
-  saveCurrentFileContent,
-  setLastFile,
-  renameFile,
-  clearStoredFiles,
-} = useDesignerFiles({
-  defaultFileName: t("fileManager.untitledReport"),
-});
+// The open template: its name (the header's) and id (the server row's once
+// it is on the report server)
+const { currentFileName, currentFileId } = storeToRefs(filesStore);
 
 // Editable document title in header (Google Docs style)
 const headerFileName = ref(currentFileName.value);
@@ -1148,6 +1152,18 @@ watch(currentFileName, (newVal) => {
   }
 });
 
+// The header's name keeps at most TEMPLATE_NAME_MAX_LENGTH letters, typed or
+// pasted: the rest is cut off and a warning says so (once per few seconds,
+// not on every key held down)
+let titleLimitWarnedAt = 0;
+function limitHeaderTitle() {
+  if (headerFileName.value.length <= TEMPLATE_NAME_MAX_LENGTH) return;
+  headerFileName.value = headerFileName.value.slice(0, TEMPLATE_NAME_MAX_LENGTH);
+  if (Date.now() - titleLimitWarnedAt < 3000) return;
+  titleLimitWarnedAt = Date.now();
+  notification.warning(t("editorHeader.nameTooLong", { max: TEMPLATE_NAME_MAX_LENGTH }));
+}
+
 function handleHeaderTitleCommit() {
   isTitleEditing.value = false;
   if (!renameReport(headerFileName.value)) {
@@ -1158,10 +1174,9 @@ function handleHeaderTitleCommit() {
 // The report's one name (header, Template Settings, the saved file, the name
 // inside the report file); an empty name is refused
 function renameReport(name: string): boolean {
-  const trimmed = name.trim();
+  const trimmed = name.trim().slice(0, TEMPLATE_NAME_MAX_LENGTH).trim();
   if (!trimmed) return false;
   if (trimmed === currentFileName.value) return true;
-  if (currentFileId.value) renameFile(currentFileId.value, trimmed);
   currentFileName.value = trimmed;
   reportStore.updateJrxml();
   scheduleAutoSave(true);
@@ -1172,19 +1187,41 @@ function renameReport(name: string): boolean {
 // Whether the latest changes are saved (files store)
 const { saveStatus } = storeToRefs(filesStore);
 const isLoadingFile = ref(false);
-// A default template (the report server's, read only) opened as the user's
-// own copy: which file that copy is and the name it came with, so it isn't
-// saved until it is changed or renamed (isUntouchedNewTemplate)
-const openedDefaultTemplate = ref<{ fileId: string; name: string } | null>(null);
+// A default template (the report server's, read only) being looked at: the
+// browser id it is shown under, its name and its server id (sourceId)
+const openedDefaultTemplate = ref<{ fileId: string; name: string; isDefault: boolean; sourceId?: string } | null>(null);
 // Its file is still being fetched
 const openingDefaultTemplate = ref(false);
 // The open template is a default being looked at (not saved as the user's yet)
 const viewingDefaultTemplate = computed(() => {
-  void filesStore.templatesVersion;
   const opened = openedDefaultTemplate.value;
-  return !!opened && opened.fileId === currentFileId.value && !findFileById(opened.fileId);
+  return !!opened && opened.fileId === currentFileId.value;
 });
-const cloneDialogOpen = ref(false);
+// A default template can only be looked at, previewed and duplicated: every
+// editing tool is off (header tools, library, page, settings, AI, keys,
+// right-click, drops) and the report store puts back anything that slips through
+const readOnlyTemplate = computed(() => viewingDefaultTemplate.value);
+watch(readOnlyTemplate, (locked) => (reportStore.readOnly = locked), { immediate: true });
+let blockedToastAt = 0;
+watch(
+  () => reportStore.blockedChanges,
+  () => {
+    if (Date.now() - blockedToastAt < 3000) return;
+    blockedToastAt = Date.now();
+    notification.info(t("reportCatalog.defaultTemplates.readOnly"));
+  },
+);
+// The bar's texts: a default template's, or one of the tenant's own on the server
+const openedTemplateTexts = computed(() => "reportCatalog.defaultTemplates");
+const copyDialogOpen = ref(false);
+// A new template (Create template, File → New, /designer) is made on the
+// report server at once under a free "Untitled Template N" and opened from
+// there at /designer/<id> (useServerTemplateCreate)
+const creatingTemplate = ref(false);
+// Templates just made here: their server content is the create's own HTML
+// template, so opening them as an empty layout needs no warning
+const newServerTemplateIds = new Set<string>();
+const { createServerTemplate } = useServerTemplateCreate();
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 const saveStatusTitle = computed(() => {
@@ -1245,200 +1282,76 @@ watch(
   },
 );
 
-function createNewFile(saveOpenFile = true) {
-  if (saveOpenFile) flushAutoSave();
-  isLoadingFile.value = true;
-
-  // Logic for creating a new file
-  const timestamp = new Date().getTime();
-  currentFileName.value = filesStore.newReportName(t("fileManager.untitledReport"));
-  currentFileId.value = `file_${timestamp}`;
-
-  // A new, empty report (every part reset, no undo history, nothing selected)
-  reportStore.loadReport({});
-
-  nextTick(() => {
-    isLoadingFile.value = false;
-    updateJRXML();
-    saveCurrentFileToStorage(false);
-  });
+// File → New, Alt+N: a new template made on the report server and opened
+function createNewFile() {
+  flushAutoSave();
+  void createAndOpenServerTemplate(t("fileManager.untitledReport"));
 }
 
-// Delete every report saved in this browser and start a new, empty one. The
-// open report is not saved first, or it would come straight back
-function deleteAllFiles() {
-  if (autoSaveTimer) {
-    clearTimeout(autoSaveTimer);
-    autoSaveTimer = null;
+// Makes a template on the report server and opens it from there at
+// /designer/<id>: a new one under the first free "Untitled Template N" over
+// every template's name, or (`jrxml`) a .jrxml from the computer under its
+// file's name, its JRXML kept as the template's changes in this browser (the
+// server can't take a JRXML yet). When it fails, the open template stays with
+// a message
+async function createAndOpenServerTemplate(wanted: string, jrxml?: string): Promise<void> {
+  if (creatingTemplate.value) return;
+  creatingTemplate.value = true;
+  try {
+    const { name, id } = await createServerTemplate(wanted, { exactName: jrxml !== undefined });
+    if (!id) {
+      notification.error(t("reportCatalog.create.notFound", { name }));
+      return;
+    }
+    if (jrxml !== undefined) saveActiveTemplate({ id, name, jrxml, savedAt: new Date().toISOString() });
+    else newServerTemplateIds.add(id);
+    const go = typeof route.params.id === "string" && route.params.id ? router.push : router.replace;
+    await go({ name: "designer", params: { id } });
+  } catch (error) {
+    const reason = await reportServerErrorText(error, t("reportCatalog.errors.server"));
+    notification.error(t("reportCatalog.create.failed", { reason }));
+  } finally {
+    creatingTemplate.value = false;
   }
-  clearStoredFiles();
-  clearLocalStorage();
-  createNewFile(false);
-  notification.success(t("fileManager.deleteAllFilesDone"));
 }
 
-// A new template nobody has touched: nothing on its pages, still its
-// "Untitled Template" name, never saved. It isn't saved, so opening the
-// designer and leaving doesn't fill the template list with empty ones
-function isUntouchedNewTemplate(): boolean {
-  if (currentFileId.value && findFileById(currentFileId.value)) return false;
-  // A default template just opened: kept off the list until something is
-  // changed (an undo step past the first) or it is renamed
-  const opened = openedDefaultTemplate.value;
-  if (opened && opened.fileId === currentFileId.value) {
-    return currentFileName.value === opened.name && reportStore.historyStack.length <= 1;
-  }
-  if (!currentFileName.value.startsWith(t("fileManager.untitledReport"))) return false;
-  return bands.value.every((band) => !(band.elements?.length));
+// The template opened from the server: the name it came with, so a rename
+// counts as a change
+let openedTemplateName = "";
+
+// Changed since it opened: an undo step past the first, renamed, or already
+// kept (its changes stay kept, an undo back included)
+function changedSinceOpen(id: string): boolean {
+  return (
+    reportStore.historyStack.length > 1 ||
+    currentFileName.value !== openedTemplateName ||
+    readActiveTemplate()?.id === id
+  );
 }
 
+// Keeps the open template's changes in this browser (only this one template
+// is kept) until the report server can save templates: one of the tenant's own
+// on the server, once changed or renamed. A default template (read only), an
+// unchanged template or one not on the server is not kept
 function saveCurrentFileToStorage(showNotification = false): boolean {
-  if (isLoadingFile.value) {
-    return false;
-  }
-  if (isUntouchedNewTemplate()) {
+  if (isLoadingFile.value) return false;
+  const id = currentFileId.value;
+  if (!isServerTemplateId(id) || readOnlyTemplate.value || !changedSinceOpen(id)) {
     saveStatus.value = "saved";
     return true;
   }
-
-  try {
-    saveStatus.value = "saving";
-
-    if (!currentFileId.value) {
-      currentFileId.value = `file_${Date.now()}`;
-    }
-    // A default template looked at and now changed: saved as the user's own
-    const defaultBecomesOwn = viewingDefaultTemplate.value;
-
-    const fileData = saveCurrentFile();
-    const ok = saveCurrentFileContent(fileData);
-    saveToLocalStorageWrapper();
-
-    if (ok) {
-      saveStatus.value = "saved";
-      if (defaultBecomesOwn) {
-        openedDefaultTemplate.value = null;
-        notification.info(t("reportCatalog.defaultTemplates.savedAsOwn", { name: currentFileName.value }));
-      }
-      if (showNotification) {
-        notification.success(t("notifications.fileSavedSuccess"));
-      }
-    } else {
-      saveStatus.value = "error";
-      if (showNotification) {
-        notification.error(t("notifications.fileSaveFailed"));
-      }
-    }
-    return ok;
-  } catch (error) {
-    console.error("Auto-save error:", error);
-    saveStatus.value = "error";
-    if (showNotification) {
-      notification.error(t("notifications.fileSaveFailed"));
-    }
-    return false;
-  }
-}
-
-function loadFile(fileData: DesignerFile | any) {
-  try {
-    flushAutoSave();
-    isLoadingFile.value = true;
-
-    // Parse the file content
-    const fileContent =
-      typeof fileData.content === "string"
-        ? JSON.parse(fileData.content)
-        : fileData;
-
-    // Open it: every part of the report is set (what the file lacks gets its
-    // new-report value), the undo history starts empty, nothing is selected
-    reportStore.loadReport({
-      reportProperties: fileContent.reportProperties,
-      bands: fileContent.bands,
-      reportFields: fileContent.reportFields,
-      reportParameters: fileContent.reportParameters,
-      subDatasets: fileContent.subDatasets,
-      reportVariables: fileContent.reportVariables,
-      reportGroups: fileContent.reportGroups,
-      tableStyles: Array.isArray(fileContent.tableStyles)
-        ? parseSavedTableStyles(JSON.stringify(fileContent.tableStyles))
-        : [],
-      jrxmlContent: fileContent.jrxmlContent,
-    });
-
-    // Update the current file info
-    currentFileName.value = fileData.name || t("fileManager.untitledReport");
-    currentFileId.value = fileData.id || `file_${Date.now()}`;
-    if (fileData.id) {
-      setLastFile({ id: fileData.id, name: fileData.name });
-    }
-
-    nextTick(() => {
-      isLoadingFile.value = false;
-      updateJRXML();
-      updateOutOfBoundsElements();
-      saveStatus.value = "saved";
-    });
-  } catch (error) {
-    isLoadingFile.value = false;
-    console.error("Failed to load file:", error);
-    notification.error(t("fileManager.invalidFileFormat"));
-  }
-}
-
-function saveCurrentFile() {
-  if (!currentFileId.value) {
-    currentFileId.value = `file_${Date.now()}`;
-  }
-
-  // Create a deep clone of bands so border properties can be processed
-  const processedBands = JSON.parse(JSON.stringify(bands.value));
-
-  // Process elements in each band, filtering out border properties with a width of 0
-  processedBands.forEach((band: any) => {
-    if (band.elements && Array.isArray(band.elements)) {
-      band.elements.forEach((element: any) => {
-        if (element.box) {
-          // Handle the new border model
-          if (element.box.pen && element.box.pen.lineWidth <= 0) {
-            delete element.box.pen;
-          }
-
-          // Handle borders on each side
-          ["topPen", "leftPen", "bottomPen", "rightPen"].forEach((penType) => {
-            if (element.box[penType] && element.box[penType].lineWidth <= 0) {
-              delete element.box[penType];
-            }
-          });
-
-          // If the box object is empty, remove the entire box property
-          if (Object.keys(element.box).length === 0) {
-            delete element.box;
-          }
-        }
-      });
-    }
-  });
-
-  // Prepare the data to save
-  const fileData = {
-    id: currentFileId.value,
+  const ok = saveActiveTemplate({
+    id,
     name: currentFileName.value,
-    reportProperties: reportProperties.value,
-    bands: processedBands,
-    reportFields: reportFields.value,
-    reportParameters: reportParameters.value,
-    subDatasets: subDatasets.value,
-    reportVariables: reportVariables.value,
-    reportGroups: reportGroups.value,
-    tableStyles: tableStyles.value,
-    jrxmlContent: jrxmlContent.value,
-    lastModified: new Date().toISOString(),
-  };
-
-  // Return the file data
-  return fileData;
+    jrxml: reportStore.jrxmlContent,
+    savedAt: new Date().toISOString(),
+  });
+  saveStatus.value = ok ? "saved" : "error";
+  if (showNotification) {
+    if (ok) notification.success(t("notifications.fileSavedSuccess"));
+    else notification.error(t("notifications.fileSaveFailed"));
+  }
+  return ok;
 }
 
 // Available elements
@@ -1611,7 +1524,8 @@ type PageAction =
   | "chooseDesign"
   | "addToc"
   | "wholeSheet"
-  | "keepMargins";
+  | "keepMargins"
+  | "watermark";
 
 // ---- Designs for the cover / contents pages (utils/pageDesigns.ts) ----
 
@@ -1888,6 +1802,14 @@ const handlePageAction = (action: PageAction, pageIndex: number) => {
     if (normalPages <= 1) pageCount.value = totalPages.value + 1;
   };
   switch (action) {
+    // The template's watermark (any page's ⋯ menu): selected (its settings
+    // open), or added when there is none
+    case "watermark": {
+      const existing = findWatermark(bands.value);
+      if (existing) selectElement(existing.bandIndex, existing.elementIndex);
+      else addWatermark();
+      return;
+    }
     case "addCover":
       if (cover) return;
       openDesignChooser("cover", "add", 0);
@@ -3287,6 +3209,7 @@ const handleElementDoubleClick = (element: any): DesignElement | undefined => {
 // dropped project table), instead of what is being dragged
 const handleDrop = (event: DragEvent, pageIndex?: number, place?: { type: string }) => {
   event.preventDefault();
+  if (readOnlyTemplate.value) return;
 
   // A source, column or project detail from the "Report Data" list
   const dataDrag = place ? null : readDataSourceDrag(event);
@@ -5323,44 +5246,12 @@ const startEditing = (
 // Finish editing
 const finishEditing = () => {
   editingElement.value = null;
-  // Save the data
-  saveToLocalStorageWrapper();
   updateJRXML();
 };
 
 // Cancel editing
 const cancelEditing = () => {
   editingElement.value = null;
-};
-
-// Wrapper function for the fileUtils functions
-const saveToLocalStorageWrapper = () => {
-  // Safety check to ensure reportProperties.value exists
-  if (!reportProperties.value) {
-    console.error(
-      "reportProperties.value is undefined, cannot save to local storage",
-    );
-    return;
-  }
-
-  saveToLocalStorage(
-    {
-      reportProperties: reportProperties.value,
-      bands: bands.value,
-      reportFields: reportFields.value,
-      jrxmlContent: jrxmlContent.value,
-    },
-    currentFileName.value.trim() || "report",
-  );
-};
-
-const loadFromLocalStorageWrapper = () => {
-  const loadedData = loadFromLocalStorage();
-  if (loadedData && loadedData.reportData) {
-    reportStore.loadReport(loadedData.reportData);
-    return true;
-  }
-  return false;
 };
 
 // Initialize an element's Box property: padding only. Borders are pens, written
@@ -5463,8 +5354,6 @@ defineExpose({
   bands,
   reportProperties,
   createNewFile,
-  loadFile,
-  loadFromLocalStorageWrapper,
   lastClickedBandIndex,
   handleElementDoubleClick,
   selectElement,
@@ -5488,7 +5377,8 @@ const handleBottomPanelSizeChange = (newSize: number) => {
 const updateJRXML = () => reportStore.updateJrxml();
 
 // Auto-save each JRXML the store writes, right away
-watch(() => reportStore.jrxmlVersion, () => saveToLocalStorageWrapper(), { flush: "sync" });
+// Every new JRXML: the open template's changes are kept (saveCurrentFileToStorage)
+watch(() => reportStore.jrxmlVersion, () => scheduleAutoSave(false));
 
 // Location maps: a picture drawn when a Location's place, zoom or map size
 // changed; it goes into the same undo step as that change
@@ -5923,6 +5813,9 @@ const handleKeyDown = (event: KeyboardEvent) => {
     return;
   }
 
+  // A default template can only be looked at: no other shortcut acts on it
+  if (readOnlyTemplate.value) return;
+
   // CTRL/CMD+S saves the current file
   if (isCtrlOrMetaPressed && event.key === "s") {
     event.preventDefault();
@@ -5930,8 +5823,8 @@ const handleKeyDown = (event: KeyboardEvent) => {
     return;
   }
 
-  // CTRL/CMD+B toggles the bottom panel's visibility
-  if (isCtrlOrMetaPressed && event.key === "b") {
+  // CTRL/CMD+B toggles the bottom panel (developers only)
+  if (SHOW_DEVELOPER_TOOLS && isCtrlOrMetaPressed && event.key === "b") {
     event.preventDefault();
     toggleBottomPanel();
     return;
@@ -6213,7 +6106,6 @@ const moveElementByKeyboard = (direction: string, repeat = false) => {
 
   // Trigger an update
   updateJRXML();
-  saveToLocalStorageWrapper();
 
   // Check whether it's now out of bounds
   updateOutOfBoundsElements();
@@ -6223,52 +6115,94 @@ const moveElementByKeyboard = (direction: string, repeat = false) => {
 // opens it again; going back / forward to another template's address opens it
 const route = useRoute();
 const router = useRouter();
-// A template not saved yet (new and untouched) keeps /designer, so a reload
-// starts a new one instead of looking for it
-// A default template's unchanged copy keeps /designer?defaultTemplate=<id>,
-// so a reload opens the default again
-watch([currentFileId, () => filesStore.templatesVersion], ([id]) => {
-  const saved = !!id && !!findFileById(id);
-  const shown = typeof route.params.id === "string" ? route.params.id : "";
-  const defaultCopy = !saved && !!id && openedDefaultTemplate.value?.fileId === id;
-  if (saved && shown !== id) router.replace({ name: "designer", params: { id } });
-  else if (!saved && shown) router.replace({ name: "designer" });
-  else if (!saved && !defaultCopy && !openingDefaultTemplate.value && route.query.defaultTemplate) {
-    router.replace({ name: "designer" });
-  }
-});
+// One address shape: /designer/<server id> for every template on the report
+// server (default or the tenant's own), /designer for one not there yet (a
+// fresh template before its create, a .jrxml opened from the computer). A
+// browser-only id is never shown. A default template being looked at shows its
+// own id; a new template being made on the server keeps the address until its
+// id arrives
+watch(
+  [currentFileId, creatingTemplate, openedDefaultTemplate, openingDefaultTemplate],
+  ([id]) => {
+    if (creatingTemplate.value || openingDefaultTemplate.value) return;
+    const viewed = viewingDefaultTemplate.value ? openedDefaultTemplate.value?.sourceId : undefined;
+    const wanted = viewed ?? (isServerTemplateId(id) ? id : "");
+    const shown = typeof route.params.id === "string" ? route.params.id : "";
+    if (wanted && shown !== wanted) router.replace({ name: "designer", params: { id: wanted } });
+    else if (!wanted && (shown || Object.keys(route.query).length)) router.replace({ name: "designer" });
+  },
+  { deep: true },
+);
 
-// A clone, or a default template naming no project, takes this project: its
+// A server template naming no project takes this project: its
 // tables, lists and charts read it, its linked details follow it
 function giveTemplateProject(project: ReportProject): void {
   reportProperties.value = { ...reportProperties.value, projects: [project] };
   moveReportToProject(bands.value, project);
 }
 
-// Clone in the designer's bar: the default being looked at becomes the user's
-// own template now, with the name and project chosen in the popup
-function cloneOpenedDefault(clone: { name: string; project: ReportProject }): void {
-  openedDefaultTemplate.value = null;
-  currentFileName.value = clone.name;
-  giveTemplateProject(clone.project);
-  updateJRXML();
-  saveCurrentFileToStorage(false);
-  notification.success(t("reportCatalog.clone.done", { name: clone.name }));
+// Whether the designer's parser reads this JRXML without failing
+function canParseJrxml(text: string): boolean {
+  try {
+    parseJRXMLContent(text);
+    return true;
+  } catch (error) {
+    console.error("The server template's JRXML can't be read:", error);
+    return false;
+  }
 }
 
-// Opens a default template (the report server's Report Definition): its
-// report file's JRXML becomes a new template of the user's own; the default
-// itself is never changed. Looked at (`cloneName` empty): named after it and
-// saved only once changed. Cloned (?clone=<name>, the Clone popup): that name,
-// the project chosen in the popup (the last one), saved at once. Fails with a
-// message, leaving the new blank template
-async function openDefaultTemplate(id: string, cloneName = ""): Promise<void> {
+// The JRXML of an empty template with the user's default settings
+function emptyTemplateJrxml(): string {
+  reportStore.loadReport({});
+  reportStore.updateJrxml();
+  return reportStore.jrxmlContent;
+}
+
+// Duplicate in the designer's bar: the server copies the template being
+// looked at (POST /v2/reports/copy); the copy shows up in Templates
+const copyTemplate = useCopyTemplate();
+// The copy just made: asked whether to open it (OpenCopy popup)
+const madeCopy = ref<{ id: string; name: string } | null>(null);
+const openCopyDialog = ref(false);
+function duplicateOpenedTemplate(): void {
+  const opened = openedDefaultTemplate.value;
+  if (!opened?.sourceId) return;
+  copyTemplate.mutate(opened.sourceId, {
+    onSuccess: async (answer) => {
+      const id = answer?.id ?? (await fetchNewestCopyId(opened.name).catch(() => null));
+      if (!id) {
+        notification.success(t("reportCatalog.copy.done", { name: opened.name }));
+        return;
+      }
+      madeCopy.value = { id, name: answer?.report?.name || opened.name };
+      openCopyDialog.value = true;
+    },
+    onError: async (error) =>
+      notification.error(
+        t("reportCatalog.copy.failed", {
+          reason: await reportServerErrorText(error, t("reportCatalog.defaultTemplates.errors.unknown")),
+        }),
+      ),
+  });
+}
+
+// Opens a server template (default or the tenant's own) from the report
+// server, always (GET …/rptadn_TenantReport/{id}?fetchPlan=…): its content's
+// JRXML, else an empty layout with a warning. A default stays read only; one of
+// the tenant's own keeps the server's id. Fails with a message, leaving the
+// template that was open
+let openingTemplateId = "";
+async function openDefaultTemplate(id: string): Promise<void> {
+  // Asked twice for the same template (mount and address): opened once
+  if (openingDefaultTemplate.value && openingTemplateId === id) return;
+  openingTemplateId = id;
   openingDefaultTemplate.value = true;
   try {
     const template = await fetchDefaultTemplate(id);
     // The user went elsewhere meanwhile
-    if (route.query.defaultTemplate !== id) return;
-    // Opened only once the designer's own start is done (a clone is saved at once)
+    if (route.params.id !== id) return;
+    // Opened only once the designer's own start is done
     if (isLoadingFile.value) {
       await new Promise<void>((resolve) => {
         const stop = watch(isLoadingFile, (loading) => {
@@ -6278,24 +6212,47 @@ async function openDefaultTemplate(id: string, cloneName = ""): Promise<void> {
         });
       });
     }
-    applyJrxml(template.jrxml, cloneName || template.name, cloneName ? "clone" : "default");
+    // The template that was open keeps its last changes first
+    flushAutoSave();
+    // Its changes kept in this browser (the server can't save them yet)
+    // open instead of the server's content; never for a default (read only)
+    const kept = template.isDefault ? null : readActiveTemplate();
+    const keptChanges = kept?.id === id && canParseJrxml(kept.jrxml) ? kept : null;
+    openedTemplateName = template.name;
+    if (keptChanges) {
+      applyJrxml(keptChanges.jrxml, keptChanges.name || template.name, "server", id, {
+        type: "info",
+        text: t("reportCatalog.keptChanges", { name: keptChanges.name || template.name }),
+      });
+    } else {
+      // Content that isn't a JRXML the designer can open (none, an HTML
+      // template, a damaged JRXML): an empty layout, with a warning saying why
+      const problem = template.problem ?? (canParseJrxml(template.jrxml) ? undefined : TemplateContentProblem.badJrxml);
+      // A template just made here holds the create's own template, not a JRXML
+      const isNew = newServerTemplateIds.has(id) && problem !== TemplateContentProblem.badJrxml;
+      const warning = problem && !isNew
+        ? { type: "warning" as const, text: t(`reportCatalog.defaultTemplates.contentProblems.${problem}`, { name: template.name }) }
+        : undefined;
+      applyJrxml(
+        problem ? emptyTemplateJrxml() : template.jrxml,
+        template.name,
+        template.isDefault ? "default" : "server",
+        id,
+        warning,
+      );
+    }
     const project = lastProject();
-    if (project && (cloneName || !reportProjects.value.length)) {
+    if (project && !reportProjects.value.length) {
       giveTemplateProject(project);
       updateJRXML();
     }
   } catch (error) {
     console.error("Failed to open the default template:", error);
     const unknown = t("reportCatalog.defaultTemplates.errors.unknown");
-    const code = error instanceof Error ? error.message : "";
     const reason =
-      error instanceof ApiError
-        ? await reportServerErrorText(error, error.response?.statusText || unknown)
-        : Object.values(REPORT_ARCHIVE_ERRORS).includes(code as keyof typeof REPORT_ARCHIVE_ERRORS)
-          ? t(`reportCatalog.defaultTemplates.errors.${code}`)
-          : unknown;
+      error instanceof ApiError ? await reportServerErrorText(error, error.response?.statusText || unknown) : unknown;
+    // The address keeps the template's id, so a refresh tries again
     notification.error(t("reportCatalog.defaultTemplates.openFailed", { reason }));
-    if (route.query.defaultTemplate === id) router.replace({ name: "designer" });
   } finally {
     openingDefaultTemplate.value = false;
   }
@@ -6304,8 +6261,9 @@ watch(
   () => route.params.id,
   (id) => {
     if (typeof id !== "string" || !id || id === currentFileId.value) return;
-    const file = findFileById(id);
-    if (file) loadFile(file);
+    if (id === openedDefaultTemplate.value?.sourceId) return;
+    // Always read from the server, so its latest content is what opens
+    if (isServerTemplateId(id)) void openDefaultTemplate(id);
   },
 );
 
@@ -6314,28 +6272,18 @@ onMounted(() => {
   // The project list, so the header's picker has it before it is opened
   prefetchProjects();
   isLoadingFile.value = true;
-  console.log("Component mount started...");
-  loadFromLocalStorageWrapper();
-  console.log("Local data load complete");
-
-  // /designer/<id> opens that template; /designer starts a new one
-  loadFilesFromStorage();
+  // /designer/<id>: that template, always read from the report server
+  // (default or the tenant's own; its changes kept in this browser come back);
+  // /designer: a new template made on the server at once (Create template),
+  // then opened at /designer/<id>
   const routeId = typeof route.params.id === "string" ? route.params.id : "";
-  const requested = routeId ? findFileById(routeId) : undefined;
-  if (routeId && !requested) notification.warning(t("fileManager.templateNotFound"));
-  if (requested) {
-    loadFile(requested);
-  } else {
-    // A fresh template: a name no template saved in this browser has
-    currentFileId.value = `file_${Date.now()}`;
-    // Create template (Templates page) names it: /designer?name=…
-    const askedName = typeof route.query.name === "string" ? route.query.name.trim() : "";
-    currentFileName.value = askedName || filesStore.newReportName(t("fileManager.untitledReport"));
-    reportStore.loadReport({});
-    // A default template from the Templates page: /designer?defaultTemplate=<id>
-    const defaultTemplateId = typeof route.query.defaultTemplate === "string" ? route.query.defaultTemplate : "";
-    const cloneName = typeof route.query.clone === "string" ? route.query.clone.trim() : "";
-    if (defaultTemplateId) void openDefaultTemplate(defaultTemplateId, cloneName);
+  currentFileId.value = newLocalTemplateId();
+  currentFileName.value = t("fileManager.untitledReport");
+  reportStore.loadReport({});
+  if (isServerTemplateId(routeId)) void openDefaultTemplate(routeId);
+  else {
+    if (routeId) notification.warning(t("fileManager.templateNotFound"));
+    void createAndOpenServerTemplate(t("fileManager.untitledReport"));
   }
 
   // Update JRXML after the initial load; use setTimeout to ensure all data has finished loading
@@ -6485,28 +6433,59 @@ const prepareReportForPreview = async (): Promise<string> => {
 };
 
 // Save the edited JRXML content
-const saveJRXML = (): void => applyJrxml(jrxmlContent.value);
+// Edited JRXML applied (developer panel); never onto a default template
+const saveJRXML = (): void => {
+  if (readOnlyTemplate.value) {
+    notification.info(t("reportCatalog.defaultTemplates.readOnly"));
+    return;
+  }
+  applyJrxml(jrxmlContent.value);
+};
 
-// Open a .jrxml file from the computer as a new report (File → Open)
-const openJrxmlFile = (file: { name: string; content: string }): void =>
-  applyJrxml(file.content, file.name.replace(/\.jrxml$/i, ""));
+// File → Open, From my computer: the .jrxml becomes a template on the report
+// server under its file's name, its JRXML kept as that template's changes in
+// this browser (the server can't take a JRXML yet), and opens at /designer/<id>
+const openJrxmlFile = (file: { name: string; content: string }): void => {
+  if (!canParseJrxml(file.content)) {
+    notification.error(t("fileManager.invalidFileFormat"));
+    return;
+  }
+  const name = file.name.replace(/\.jrxml$/i, "").trim().slice(0, TEMPLATE_NAME_MAX_LENGTH).trim();
+  flushAutoSave();
+  void createAndOpenServerTemplate(name || t("fileManager.untitledReport"), file.content);
+};
 
 // Turn JRXML text into the report. Without a file name it is the edited JRXML
 // of this report (one undo step); with one it opens as a new report
 // `from`: a default template looked at (kept off the list until changed) or cloned (saved at once)
-const applyJrxml = (text: string, openedFileName?: string, from?: "default" | "clone"): void => {
+// from: "default" / "server" = a report server template (default or the tenant's own) looked at
+// `notice`: shown instead of the "opened" message (a server template opened
+// as an empty layout, or with its changes kept in this browser)
+const applyJrxml = (
+  text: string,
+  openedFileName?: string,
+  from?: "default" | "server",
+  serverId?: string,
+  notice?: { type: "warning" | "info"; text: string },
+): void => {
   try {
     // Use our parseJRXMLContent function to parse the JRXML content
     const parsedData = parseJRXMLContent(text);
 
     if (openedFileName !== undefined) {
       // Keep the report that was open, then start a new one: no undo history
+      // (an opened file or server template: never made on the server as new)
       flushAutoSave();
       currentFileName.value =
         openedFileName.trim() || t("fileManager.untitledReport");
-      currentFileId.value = `file_${Date.now()}`;
+      // One of the tenant's own server templates is the user's: it keeps the
+      // server's id (saved in this browser at its first change). A default
+      // template is only looked at under a browser id until it is changed
+      currentFileId.value = from === "server" && serverId ? serverId : newLocalTemplateId();
       openedDefaultTemplate.value =
-        from === "default" ? { fileId: currentFileId.value, name: currentFileName.value } : null;
+        from === "default"
+          ? { fileId: currentFileId.value, name: currentFileName.value, isDefault: true, sourceId: serverId }
+          : null;
     } else {
       // The edited JRXML replaces the whole report: one undo step. Every part
       // is set from it (what it lacks is emptied); the default font and band
@@ -6829,17 +6808,13 @@ const applyJrxml = (text: string, openedFileName?: string, from?: "default" | "c
     updateJRXML();
 
     if (openedFileName !== undefined) {
-      // Kept in the browser's file list like any other report (a default
-      // template only once it is changed: isUntouchedNewTemplate)
-      saveCurrentFileToStorage(false);
-      if (from === "default") notification.info(t("reportCatalog.defaultTemplates.opened"));
-      else if (from === "clone") notification.success(t("reportCatalog.clone.done", { name: currentFileName.value }));
+      // Nothing is kept until it is changed (saveCurrentFileToStorage)
+      saveStatus.value = "saved";
+      if (notice) notification[notice.type](notice.text);
+      else if (from === "default") notification.info(t("reportCatalog.defaultTemplates.opened"));
       else notification.success(t("fileManager.jrxmlOpened", { name: currentFileName.value }));
       return;
     }
-
-    // Save to local storage
-    saveToLocalStorageWrapper();
 
     // Show a success notification
     notification.success(t("notifications.jrxmlEditSaved"));
@@ -8492,6 +8467,7 @@ const handleElementContextMenu = (
 ): void => {
   event.preventDefault();
   event.stopPropagation();
+  if (readOnlyTemplate.value) return;
   // Right-clicking one of several selected items keeps them all selected, so
   // the menu's Delete, Bring to Front, Send to Back and Reset style act on all
   const inSelection = selectedElements.value.some(
@@ -9081,7 +9057,7 @@ const moveElementZOrder = (direction: "front" | "back") => {
 }
 
 /* Default Settings open: tinted purple */
-.default-settings-btn.is-open {
+.developer-panel-btn.is-open {
   background: rgba(124, 92, 247, 0.12);
   color: #6440f4;
 }
@@ -9288,6 +9264,32 @@ const moveElementZOrder = (direction: "front" | "back") => {
 
 /* Right-click context menu */
 /* A default template being looked at: a slim bar above the pages */
+/* A default template: only looked at. The page can't be clicked (the wheel
+   still scrolls it), editing tools are faded and off, settings are shown but
+   can't be changed (the fieldset turns its native fields off; the rest takes
+   no clicks), the panel still scrolls */
+.read-only-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.is-read-only :deep(.page-sheet-wrapper) {
+  pointer-events: none;
+}
+.is-read-only .read-only-lockable,
+.is-read-only .header-project-picker,
+.is-read-only .header-undo-redo,
+.is-read-only .header-toolbar-ops {
+  opacity: 0.45;
+}
+.is-read-only .read-only-fieldset :deep(:is(input, select, textarea, button, label, [role="button"], [role="switch"], [role="radio"], [role="checkbox"], .n-color-picker, .n-base-selection, .n-input, .n-slider, .n-switch, .n-button)) {
+  pointer-events: none;
+}
+.is-read-only .read-only-fieldset :deep(:is(input, select, textarea)) {
+  opacity: 0.7;
+}
+
 .default-template-bar {
   display: flex;
   flex: none;

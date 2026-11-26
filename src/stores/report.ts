@@ -178,6 +178,22 @@ export const useReportStore = defineStore("report", () => {
     },
   });
 
+  // A read-only template (a default template being looked at): nothing may
+  // change it. The designer turns every editing tool off; as a safety net, a
+  // change that still gets through (it records its step first) is put back at
+  // the next JRXML write, and `blockedChanges` goes up so the designer can say why
+  const readOnly = ref(false);
+  const blockedChanges = ref(0);
+  let lockedSnapshot: string | null = null;
+
+  function saveStateToHistory(): void {
+    if (readOnly.value) {
+      if (lockedSnapshot === null) lockedSnapshot = JSON.stringify(history.snapshot());
+      return;
+    }
+    history.saveStateToHistory();
+  }
+
   // Detail takes the page height the other bands leave (Background is drawn
   // under them and doesn't count)
   function fitBandsToPage() {
@@ -281,6 +297,12 @@ export const useReportStore = defineStore("report", () => {
     if (writing) return;
     writing = true;
     try {
+      // A change to a read-only template: put back
+      if (readOnly.value && lockedSnapshot !== null) {
+        history.restore(JSON.parse(lockedSnapshot) as ReportSnapshot);
+        lockedSnapshot = null;
+        blockedChanges.value++;
+      }
       if (!reportProperties.value || !bands.value || !reportFields.value || !reportParameters.value) return;
       fitBandsToPage();
       // Headings renumbered, contents lists that follow them rebuilt (part of
@@ -355,6 +377,10 @@ export const useReportStore = defineStore("report", () => {
     const toRemove = [...present].filter((type) => !wanted.has(type));
     const toAdd = [...wanted].filter((type) => !present.has(type));
     if (!toRemove.length && !toAdd.length) return;
+    if (readOnly.value) {
+      blockedChanges.value++;
+      return;
+    }
     if (options.record !== false) history.saveStateToHistory();
     const config = getEffectiveDefaultBandConfig();
     const order = (type: string) => ALL_CONFIGURABLE_BANDS.findIndex((b) => b.type === type);
@@ -377,6 +403,7 @@ export const useReportStore = defineStore("report", () => {
   // are repaired, and nothing is selected. The history starts empty, unless
   // keepHistory (applying edited JRXML is one undo step, recorded before).
   function loadReport(data: ReportData, options: { keepHistory?: boolean } = {}) {
+    lockedSnapshot = null;
     const props = data.reportProperties ?? {};
     reportProperties.value = {
       ...newReportProperties(),
@@ -419,7 +446,11 @@ export const useReportStore = defineStore("report", () => {
   // follows it, so the two can never differ (not even after an undo)
   function propertiesForJrxml(): ReportProperties & { pageCount: number } {
     const name = useFilesStore().currentFileName.trim();
-    return { ...reportProperties.value, name: name || reportProperties.value.name, pageCount: totalPages.value };
+    return {
+      ...reportProperties.value,
+      name: name || reportProperties.value.name,
+      pageCount: totalPages.value,
+    };
   }
 
   return {
@@ -442,7 +473,9 @@ export const useReportStore = defineStore("report", () => {
     totalPages,
     historyStack: history.historyStack,
     redoStack: history.redoStack,
-    saveStateToHistory: history.saveStateToHistory,
+    saveStateToHistory,
+    readOnly,
+    blockedChanges,
     undo: history.undo,
     redo: history.redo,
     jrxmlVersion,

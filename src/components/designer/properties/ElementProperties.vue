@@ -45,8 +45,6 @@
             </button>
           </template>
         </PageSetupSection>
-        <!-- The watermark prints on every page and can't be clicked there: it is reached from here -->
-        <WatermarkCard @add="emit('add-watermark')" />
       </div>
 
       <!-- Section Heights: one card, like the others -->
@@ -1045,7 +1043,6 @@ import ContentsListProperties from "./ContentsListProperties.vue";
 import HeadingNumberProperties from "./HeadingNumberProperties.vue";
 import LocationProperties from "./LocationProperties.vue";
 import WatermarkProperties from "./WatermarkProperties.vue";
-import WatermarkCard from "../WatermarkCard.vue";
 import { isWatermark } from "../../../utils/watermark/watermarkElement";
 import { isLocationElement, isLocationPart } from "../../../utils/location/locationElement";
 import PanelTip from "../../help/PanelTip.vue";
@@ -1106,7 +1103,6 @@ interface Emits {
   // Paper or margins changed: the designer fits the page's content to it
   (e: "page-setup-change"): void;
   // Template Settings' Watermark card: add one
-  (e: "add-watermark"): void;
 }
 
 const props = defineProps<Props>();

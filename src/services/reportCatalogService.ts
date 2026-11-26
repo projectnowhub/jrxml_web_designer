@@ -1,137 +1,104 @@
-// Report catalogue API: the report server's templates (Report Definitions,
-// cdp-reporter's rptadn_ReportDefinition: a name + a Jmix report file) and the
-// Jmix reports made from them. Caching is TanStack Query's
-// (queries/reportCatalogQueries.ts).
+// Report catalogue API: the report server's templates (rptadn_TenantReport: a
+// name + a Jmix report file; default templates and the tenant's own in one
+// entity, told apart by isDefault) and the Jmix reports made from them.
+// Caching is TanStack Query's (queries/reportCatalogQueries.ts).
 //
-//   1. Templates        GET  /rest/entities/rptadn_ReportDefinition[/search]?limit&offset&returnCount&sort[&filter]   getReportDefinitionsFromServer
-//   2. One template     GET  /rest/entities/rptadn_ReportDefinition/{id}                                              getReportDefinition
+//   1. Templates        GET  /rest/entities/rptadn_TenantReport/search?filter={isDefault = true|false}&limit&offset&returnCount&sort=<field>,id|-<field>,id   getReportDefinitionsFromServer
+//   2. One template     GET  /rest/entities/rptadn_TenantReport/{id}?fetchPlan=tenantReport-fetch-plan (report.templates[].content = the JRXML)                                                getReportDefinition
+//   2b. Duplicate       POST /v2/reports/copy  { id (the row's own id, never report.id) }  → the copy is one of the tenant's own (isDefault false)       postCopyTemplate
 //   3. Create a report  POST /v2/report-templates/{definitionId}/create-report-using-report-definition               postCreateReportFromDefinition
 //   4. Reports          GET  /rest/reports/report                                                                    getReports
 //   5. One report       GET  /rest/reports/report/{id}  (with its templates and parameters)                         getReport
 //   6. Run a report     POST /rest/reports/run/{reportId}  { template, attachment, parameters } → the file          postRunReport
 //
-// The Report Definitions are the **default templates**: they can be opened
-// (the Templates page's "Default templates"; the designer starts the user's
-// own copy) but never updated or deleted from here. A definition's
-// `reportFile` (a Jmix report export zip) is downloaded with
-// imageService's getFileBlob (GET /rest/files?fileRef=) and read by
-// helpers/reportArchiveHelpers.ts (queries/reportCatalogQueries.ts
-// defaultTemplateQuery). The user's own templates still come from this browser
-// (getReportDefinitions, templateService).
+//   2d. Create          POST /v2/reports/create  { name, code, entityName, templateFileType, reportTypeGenerate, outputFileType }  postCreateTemplate
+//   2c. Delete           DELETE /rest/entities/rptadn_TenantReport/{id}  (the tenant's own only, isDefault false)            deleteTenantReport
 //
-// 1 and 2 are Jmix's generic REST (a search is the /search form with a Jmix
-// filter); 4–6 are Jmix Reports REST, which lists every report the user may
-// run at once (no paging or search). 3 answers 204 and, for now, reads only
-// the definition id: the form's fields are sent for when it reads them.
+// isDefault true = the **default templates**, false = the tenant's own
+// templates on the server: both can be opened (the designer starts the
+// user's own copy) and cloned, but never updated or deleted from here (no
+// endpoint yet). A template's JRXML is its Jmix report's templates' content
+// (base64), read by helpers/templateContentHelpers.ts
+// (queries/reportCatalogQueries.ts defaultTemplateQuery). Every template comes
+// from the server; only the open template's changes are kept in this browser
+// (utils/activeTemplate.ts) until templates can be saved there.
+//
+// 1 and 2 are Jmix's generic REST (the list takes its Jmix filter as the
+// `filter` query parameter, on /search); 4–6 are Jmix Reports REST, which lists every report the user may
+// run at once (no paging or search). 1–5 work on dev (2026-11-11); 6 (run /
+// preview) and creating a report of the user's own are still to come.
+// 3 (Clone of a default template) answers 204 with no body: it imports the
+// definition's file as it is and reads only the id (the name, code and
+// project sent are for when it reads them).
 
 import apiClient, { unwrap } from "./apiClient";
-import { readStoredFiles } from "@/composables/useDesignerFiles";
 import { API_ROUTES } from "@/config/apiConfig";
 import type { ApiResponse } from "@/types/api";
 import type {
+  CopyTemplateRequest,
+  CopyTemplateResponse,
+  CreateTemplateRequest,
   CreateReportFromDefinitionRequest,
   JmixReportInfo,
   JmixReportRunRequest,
-  LocalReport,
   ReportDefinition,
   ReportDefinitionPage,
   ReportDefinitionQuery,
   ReportRunResult,
 } from "@/types/reportCatalog";
 import { buildJmixListQuery, readJmixListResponse } from "./helpers/jmixListHelpers";
+import { TENANT_REPORT_FETCH_PLAN } from "@/constants/reportCatalogConstants";
 import {
   contentDispositionFileName,
   toReportDefinitionListParams,
   toReportDefinitionSummary,
 } from "./helpers/reportCatalogMappers";
 
-const DEFINITION_ENTITY = "rptadn_ReportDefinition";
-
-// FOR NOW (the APIs above don't work yet): templates are the ones saved in
-// this browser, and created reports are kept in this browser
-// (`reportCatalog.reports`). Each call's API version is kept below it.
-const LOCAL_REPORTS_KEY = "reportCatalog.reports";
-const CREATED_TEMPLATES_KEY = "reportCatalog.createdTemplates";
-
-function readLocalReports(): LocalReport[] {
-  try {
-    const list = JSON.parse(localStorage.getItem(LOCAL_REPORTS_KEY) ?? "[]") as LocalReport[];
-    return Array.isArray(list) ? list : [];
-  } catch {
-    return [];
-  }
-}
-
-// 1. One page of the templates (from this browser)
-export async function getReportDefinitions(query: ReportDefinitionQuery): Promise<ReportDefinitionPage> {
-  const { page = 1, size = 25, q = "", sort = "lastModifiedDate", dir = "desc" } = query;
-  const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const sign = dir === "asc" ? 1 : -1;
-  const items = readStoredFiles()
-    .map((file) =>
-      toReportDefinitionSummary({
-        id: file.id,
-        name: file.name,
-        createdDate: new Date(file.createdAt ?? file.lastModified ?? 0).toISOString(),
-        lastModifiedDate: new Date(file.lastModified ?? file.createdAt ?? 0).toISOString(),
-      }),
-    )
-    .filter((item) => words.every((word) => item.name.toLowerCase().includes(word)))
-    .sort((x, y) =>
-      sort === "name"
-        ? sign * x.name.localeCompare(y.name, undefined, { numeric: true, sensitivity: "base" })
-        : sign * (Date.parse(sort === "createdDate" ? x.createdAt : x.lastModified) - Date.parse(sort === "createdDate" ? y.createdAt : y.lastModified)),
-    );
-  const start = (Math.max(1, page) - 1) * size;
-  return { items: items.slice(start, start + size), total: items.length };
-}
+const TEMPLATE_ENTITY = "rptadn_TenantReport";
 
 // 1. (API) One page of the templates
 export async function getReportDefinitionsFromServer(
   query: ReportDefinitionQuery,
-  signal?: AbortSignal,
 ): Promise<ReportDefinitionPage> {
   const params = toReportDefinitionListParams(query);
-  const path = `${API_ROUTES.reportDefinitions}${params.filter ? "/search" : ""}?${buildJmixListQuery(params)}`;
+  // Sort as the CDP app sends it: "name,id", "-lastModifiedDate,id"
+  const path = `${API_ROUTES.tenantReportSearch}?${buildJmixListQuery(params)}`;
   const { data, headers } = await apiClient.requestWithHeaders<ApiResponse<ReportDefinition[]>>(path, {
     method: "GET",
-    signal,
   });
-  const page = readJmixListResponse<ReportDefinition>(DEFINITION_ENTITY, data, headers, params);
+  const page = readJmixListResponse<ReportDefinition>(TEMPLATE_ENTITY, data, headers, params);
   return { items: page.rows.map(toReportDefinitionSummary), total: page.total };
 }
 
 // 2. One template
-export async function getReportDefinition(id: string, signal?: AbortSignal): Promise<ReportDefinition> {
+export async function getReportDefinition(id: string): Promise<ReportDefinition> {
   const body = await apiClient.get<ApiResponse<ReportDefinition>>(
-    `${API_ROUTES.reportDefinitions}/${encodeURIComponent(id)}`,
-    { signal },
+    `${API_ROUTES.tenantReports}/${encodeURIComponent(id)}?${new URLSearchParams({ fetchPlan: TENANT_REPORT_FETCH_PLAN })}`,
   );
   return unwrap(body);
 }
 
-// 3. Create template: the request (project, name, code, type HTML), kept in
-// this browser until the backend's create endpoint works; the designer then
-// starts the template itself
-export async function postCreateTemplate(request: CreateReportFromDefinitionRequest): Promise<void> {
-  const record = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...request };
-  let list: unknown[] = [];
+// 2b. Duplicate a template: the server makes the copy (one of the tenant's own templates)
+export async function postCopyTemplate(request: CopyTemplateRequest): Promise<CopyTemplateResponse | null> {
+  const text = await apiClient.post<string>(API_ROUTES.copyTemplate, JSON.stringify(request), { responseType: "text" });
   try {
-    const stored = JSON.parse(localStorage.getItem(CREATED_TEMPLATES_KEY) ?? "[]") as unknown[];
-    if (Array.isArray(stored)) list = stored;
+    const body = JSON.parse(text) as CopyTemplateResponse | { data?: CopyTemplateResponse };
+    const answer = "data" in body && body.data ? body.data : (body as CopyTemplateResponse);
+    return answer && typeof answer.id === "string" ? answer : null;
   } catch {
-    // Unreadable: start a new list
+    // No JSON answer: the copy is found by its name (fetchNewestCopyId)
+    return null;
   }
-  localStorage.setItem(CREATED_TEMPLATES_KEY, JSON.stringify([record, ...list]));
 }
 
-// 3. A report made from a template (kept in this browser)
-export async function postCreateReportFromDefinition(
-  definitionId: string,
-  request: CreateReportFromDefinitionRequest,
-): Promise<void> {
-  const report: LocalReport = { id: crypto.randomUUID(), definitionId, createdAt: new Date().toISOString(), ...request };
-  localStorage.setItem(LOCAL_REPORTS_KEY, JSON.stringify([report, ...readLocalReports()]));
+// 2c. Delete one of the tenant's own templates (never a default one)
+export async function deleteTenantReport(id: string): Promise<void> {
+  await apiClient.delete<void>(`${API_ROUTES.tenantReports}/${encodeURIComponent(id)}`, { responseType: "text" });
+}
+
+// 2d. Create a template: the server makes it (one of the tenant's own)
+export async function postCreateTemplate(request: CreateTemplateRequest): Promise<void> {
+  await apiClient.post<void>(API_ROUTES.createTemplate, JSON.stringify(request), { responseType: "text" });
 }
 
 // 3. (API) A Jmix report made from a template
@@ -146,22 +113,16 @@ export async function postCreateReportOnServer(
   );
 }
 
-// 4. Every report (kept in this browser)
-export async function getReports(): Promise<JmixReportInfo[]> {
-  return readLocalReports().map((r) => ({ id: r.id, name: r.name, code: r.code, templateId: r.definitionId, projectName: r.projectName }));
-}
-
 // 4. (API) Every report the user may run
-export async function getReportsFromServer(signal?: AbortSignal): Promise<JmixReportInfo[]> {
-  const body = await apiClient.get<ApiResponse<JmixReportInfo[]>>(API_ROUTES.reports, { signal });
+export async function getReportsFromServer(): Promise<JmixReportInfo[]> {
+  const body = await apiClient.get<ApiResponse<JmixReportInfo[]>>(API_ROUTES.reports);
   const reports = unwrap(body);
   return Array.isArray(reports) ? reports : [];
 }
 
 // 5. One report, with its templates and run parameters
-export async function getReport(id: string, signal?: AbortSignal): Promise<JmixReportInfo> {
+export async function getReport(id: string): Promise<JmixReportInfo> {
   const body = await apiClient.get<ApiResponse<JmixReportInfo>>(`${API_ROUTES.reports}/${encodeURIComponent(id)}`, {
-    signal,
   });
   return unwrap(body);
 }
@@ -171,11 +132,10 @@ export async function postRunReport(
   reportId: string,
   request: JmixReportRunRequest,
   fallbackName: string,
-  signal?: AbortSignal,
 ): Promise<ReportRunResult> {
   const { data, headers } = await apiClient.requestWithHeaders<Blob>(
     `${API_ROUTES.runReport}/${encodeURIComponent(reportId)}`,
-    { method: "POST", body: JSON.stringify(request), responseType: "blob", signal },
+    { method: "POST", body: JSON.stringify(request), responseType: "blob" },
   );
   const contentType = headers.get("content-type") || data.type || "application/octet-stream";
   return {
@@ -186,11 +146,10 @@ export async function postRunReport(
 }
 
 export const reportCatalogApi = {
+  postCopyTemplate,
+  deleteTenantReport,
   postCreateTemplate,
-  getReportDefinitions,
   getReportDefinition,
-  postCreateReportFromDefinition,
-  getReports,
   getReport,
   postRunReport,
   getReportDefinitionsFromServer,

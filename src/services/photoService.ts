@@ -18,16 +18,15 @@ export async function postProjectPhotos(
   filter: ProjectPhotoFilter,
   page: number,
   size: number,
-  signal?: AbortSignal,
 ): Promise<ProjectPhotoPage> {
   const path = `${API_ROUTES.projectPhotos}/${encodeURIComponent(projectId)}?offset=${page}&limit=${size}`;
-  const body = await apiClient.post<ApiResponse<ProjectPhotoPage>>(path, JSON.stringify(filter), { signal });
+  const body = await apiClient.post<ApiResponse<ProjectPhotoPage>>(path, JSON.stringify(filter));
   return unwrap(body);
 }
 
 // 2. Every photo tag
-export async function getPhotoTags(signal?: AbortSignal): Promise<Tag[]> {
-  const body = await apiClient.get<ApiResponse<Tag[]>>(API_ROUTES.photoTags, { signal });
+export async function getPhotoTags(): Promise<Tag[]> {
+  const body = await apiClient.get<ApiResponse<Tag[]>>(API_ROUTES.photoTags);
   return unwrap(body);
 }
 

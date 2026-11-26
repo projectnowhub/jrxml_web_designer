@@ -1,5 +1,5 @@
 import { ref, watch } from 'vue';
-import { SNAP_SETTINGS_STORAGE_KEY as STORAGE_KEY } from '@/constants/constants';
+import { DEFAULT_SNAP_SETTINGS, SNAP_SETTINGS_STORAGE_KEY as STORAGE_KEY } from '@/constants/constants';
 import { useUserSettingsStore } from '@/stores/userSettings';
 
 // Guide lines shown while an element snaps, in the coordinates of one band on
@@ -17,7 +17,7 @@ interface SnapSettings {
   showGrid: boolean;
 }
 
-const DEFAULTS: SnapSettings = { snapToGrid: true, snapToAlignment: true, showGrid: true };
+const DEFAULTS: SnapSettings = { ...DEFAULT_SNAP_SETTINGS };
 
 // The switches as kept in this browser (also after the user's saved settings arrive)
 export function loadSnapSettings(): SnapSettings {
@@ -45,7 +45,7 @@ export function useSnapAlignment() {
     } catch {
       // Storage unavailable: the toggles still work for this session
     }
-    useUserSettingsStore().saveLater();
+    useUserSettingsStore().noteChange();
   });
 
   const alignmentLines = ref<AlignmentGuideLines | null>(null);

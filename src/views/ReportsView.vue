@@ -200,8 +200,7 @@ watch(
 
 const runOpen = ref(false);
 const runReport = ref<JmixReportInfo | null>(null);
-// Reports kept in this browser open their template in the designer; server
-// reports (when the APIs work) are run in the popup
+// A report naming a designer template opens it; server reports are run in the popup
 function openRun(report: JmixReportInfo) {
   if (report.templateId) {
     router.push({ name: "designer", params: { id: report.templateId } });

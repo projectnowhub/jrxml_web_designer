@@ -11,7 +11,7 @@ const PHOTO_STALE_TIME = 60 * 1000;
 export const projectPhotosQuery = (query: ProjectPhotoQuery) =>
   queryOptions({
     queryKey: photoKeys.page(query),
-    queryFn: ({ signal }) => postProjectPhotos(query.projectId, query.filter, query.page, query.size, signal),
+    queryFn: () => postProjectPhotos(query.projectId, query.filter, query.page, query.size),
     staleTime: PHOTO_STALE_TIME,
     enabled: !!query.projectId,
   });
@@ -20,7 +20,7 @@ export const projectPhotosQuery = (query: ProjectPhotoQuery) =>
 export const photoTagsQuery = (enabled = true) =>
   queryOptions({
     queryKey: photoKeys.tags(),
-    queryFn: ({ signal }) => getPhotoTags(signal),
+    queryFn: () => getPhotoTags(),
     staleTime: PHOTO_STALE_TIME,
     enabled,
   });

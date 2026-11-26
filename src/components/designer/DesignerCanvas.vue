@@ -189,6 +189,7 @@
                   <button
                     type="button"
                     class="page-menu-btn"
+                    :data-help="pIndex === 1 ? 'page-menu' : undefined"
                     :class="{ 'is-open': openPageMenu === pIndex - 1 }"
                     :title="t('specialPages.pageOptions')"
                     :aria-label="t('specialPages.pageOptions')"
@@ -207,6 +208,7 @@
                       role="menuitem"
                       class="page-menu-item"
                       :class="{ 'is-danger': item.danger }"
+                      :data-help="item.action === 'watermark' ? 'page-menu-watermark' : undefined"
                       @click.stop="runPageAction(item.action, pIndex - 1)"
                     >
                       <component :is="item.icon" :size="14" aria-hidden="true" />
@@ -552,6 +554,7 @@ import {
   LayoutTemplate,
   MousePointerClick,
   Shrink,
+  Stamp,
   Plus,
   TableOfContents,
   Trash2,
@@ -789,6 +792,7 @@ type PageAction =
   | "addToc"
   | "wholeSheet"
   | "keepMargins"
+  | "watermark"
   | "delete";
 // Each page's toolbar keeps its size when zoomed in, shrinks with the page
 // when zoomed out (to 75% at most), and shows icons only on a narrow page
@@ -823,6 +827,15 @@ function pageMenuItems(pageIdx: number) {
     if (pageIdx === count - 1) items.push({ action: "contentsToNormal", labelKey: "specialPages.toNormal", icon: FileText });
     items.push({ action: "delete", labelKey: "specialPages.deleteContents", icon: Trash2, danger: true });
   }
+  // The template's watermark (behind every page; it can't be clicked on the
+  // page, so this is the way to it), on every page, before Delete
+  const watermark = {
+    action: "watermark" as const,
+    labelKey: watermarkAt.value ? "watermark.pageMenu.change" : "watermark.pageMenu.add",
+    icon: Stamp,
+  };
+  const danger = items.findIndex((item) => item.danger);
+  items.splice(danger === -1 ? items.length : danger, 0, watermark);
   return items;
 }
 

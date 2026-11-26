@@ -84,7 +84,6 @@ const readErrorMessage = async (error: ApiError): Promise<{ message: string; cod
 
 export async function generatePdf(
   payload: GeneratePdfPayload,
-  signal?: AbortSignal,
 ): Promise<Blob> {
   const form = new FormData();
   form.append("jrxml", payload.jrxml);
@@ -100,7 +99,6 @@ export async function generatePdf(
     blob = await apiClient.post<Blob>(GENERATE_PDF_PATH, form, {
       baseURL: PDF_PREVIEW_API,
       responseType: "blob",
-      signal,
     });
   } catch (error) {
     if (error instanceof ApiError) {

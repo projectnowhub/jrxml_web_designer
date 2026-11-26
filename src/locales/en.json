@@ -9,8 +9,8 @@
     "showLeftPanel": "Show Left Panel",
     "hideRightPanel": "Hide Right Panel",
     "showRightPanel": "Show Right Panel",
-    "hideBottomPanel": "Hide Default Settings",
-    "showBottomPanel": "Show Default Settings",
+    "hideBottomPanel": "Hide developer panel",
+    "showBottomPanel": "Show developer panel",
     "snapMenu": "Snap & grid",
     "showGrid": "Show Grid",
     "showGridInfo": "Shows the grid lines on the page while you design. They never print in the PDF.",
@@ -27,8 +27,7 @@
     "help": "Help",
     "delete": "Delete",
     "copy": "Copy",
-    "paste": "Paste",
-    "defaultSettings": "Default Settings"
+    "paste": "Paste"
   },
   "fileManager": {
     "title": "File",
@@ -39,12 +38,9 @@
     "loadingFileFailed": "Loading file failed",
     "jrxmlOpened": "Opened \"{name}\"",
     "onlyJrxml": "Only .jrxml files\nChoose a template file ending in .jrxml.",
-    "deleteAllFiles": "Delete All Templates",
-    "deleteAllFilesConfirm": "Delete every template saved in this browser? The open template is deleted too and a new, empty one is opened. This can't be undone. Download any template you want to keep first.",
-    "deleteAllFilesDone": "All saved templates were deleted",
     "invalidFileFormat": "This file can't be opened\nIt isn't a valid template file.",
     "untitledReport": "Untitled Template",
-    "templateNotFound": "Template not found\nIt isn't saved in this browser, so a new one was started."
+    "templateNotFound": "Template not found\nThat address doesn't name a template on the report server, so a new one was made."
   },
   "elementLibrary": {
     "title": "Element Library",
@@ -128,7 +124,7 @@
       "pageNumber": "Page numbers that fill in by themselves, such as Page 1 of 12.",
       "dateTime": "A date that fills itself in: the day the report is printed, this month or last month.",
       "location": "A map of a place with a pin, and its address. Type the place, or drag Location from Report Data.",
-      "watermark": "Faint text such as DRAFT or CONFIDENTIAL, or a faded logo, behind every page."
+      "watermark": "Faint text or a faded picture behind every page. Choose what it shows and how strong it prints. To come back to it later, open the ⋯ menu above any page and choose Change watermark."
     }
   },
   "bandNames": {
@@ -547,7 +543,6 @@
     "saveAsGlobalDefault": "Save as Global Defaults",
     "resetDefaults": "Reset to Defaults",
     "applyToCurrentTemplate": "Apply to this template",
-    "appliedToTemplateSuccess": "Applied to this template.",
     "savedAsGlobalDefault": "Current constraints saved as default for all new templates.",
     "resetToDefaultSuccess": "Reset band constraints to system defaults.",
     "resetToDeveloperDefaultsSuccess": "Back to the original.",
@@ -558,6 +553,9 @@
     "maximize": "Full height (up to the header). Tip: double-click the panel's top edge.",
     "restore": "Back to the height before",
     "reportBands": "Report Bands",
+    "templateSettingsJson": "Template Settings JSON",
+    "userDefaultsJson": "User Defaults JSON",
+    "developerDefaultsJson": "Developer Defaults JSON",
     "copyFailed": "Couldn't copy\nSelect the text and copy it yourself."
   },
   "zoom": {
@@ -836,14 +834,19 @@
     "notifications": "Notifications",
     "signOut": "Sign out",
     "templates": "Templates",
-    "myTemplates": "My templates",
     "activity": "Activity",
     "allSystemsOperational": "All systems operational",
     "closeNavigation": "Close navigation",
     "accountMenu": "Account menu",
     "defaultWorkspace": "Your CDP workspace",
     "reports": "Reports",
-    "searchReports": "Search reports"
+    "searchReports": "Search reports",
+    "templateSearch": {
+      "noMatch": "No template matches \"{words}\"",
+      "failed": "Couldn't search the templates. Try again in a moment.",
+      "more": "Showing the first {shown} of {total}. Type more of the name to narrow it down.",
+      "tooShort": "Type at least {n} letters to search."
+    }
   },
   "home": {
     "eyebrow": "Template workspace",
@@ -857,15 +860,12 @@
     "subtitle": "Create, organize, and manage your report templates.",
     "recentTemplates": "Recent templates",
     "viewAll": "View all",
-    "createNewTemplate": "Create a new template",
-    "createNewTemplateHint": "Start with a blank template",
     "moreOptions": "More options",
     "createdBy": "Created by {name}",
     "sharedWithYou": "Shared with you",
     "recentlyAccessed": "Recently accessed",
     "noSharedTemplates": "No shared templates yet",
     "noSharedTemplatesHint": "Templates shared with you will appear here.",
-    "copyName": "{name} (copy)",
     "edited": {
       "today": "Edited today at {time}",
       "yesterday": "Edited yesterday",
@@ -873,23 +873,14 @@
     },
     "menu": {
       "open": "Open",
-      "rename": "Rename",
       "duplicate": "Duplicate",
       "delete": "Delete"
     },
-    "renameTitle": "Rename template",
-    "renameMessage": "Type the new name for this template.",
     "deleteTitle": "Delete template",
-    "deleteMessage": "Delete \"{name}\"? This can't be undone.",
-    "openTitle": "Open template",
-    "openMessage": "Open \"{name}\" in the designer to edit it?",
-    "duplicateTitle": "Duplicate template",
-    "duplicateMessage": "Make a copy of \"{name}\"? The copy is added to your templates."
+    "deleteMessage": "Delete \"{name}\"? This can't be undone."
   },
   "pages": {
     "workspace": "Workspace",
-    "myTemplates": "My Templates",
-    "myTemplatesDescription": "View and manage the templates you have created or saved.",
     "activity": "Activity",
     "activityDescription": "View recent activity and changes across your workspace."
   },
@@ -906,7 +897,8 @@
     "bandHeight": "{bandName} Height: {height}px",
     "pageButton": "Page",
     "more": "More tools",
-    "zoom": "Zoom"
+    "zoom": "Zoom",
+    "nameTooLong": "Name too long\nA template name can have at most {max} characters; the rest was cut off."
   },
   "help": {
     "menu": {
@@ -942,27 +934,15 @@
         "welcomeTitle": "Welcome to Report Studio",
         "welcomeText": "This is where you make templates for your project reports. Would you like a one-minute look around?",
         "createTitle": "Create a template",
-        "createText": "Click Create template, choose the project and name it: it opens in the designer, ready to design.",
+        "createText": "Click Create template: a new template opens in the designer with a name of its own (Untitled Template, 2, 3…). Click its name at the top to rename it.",
         "navTitle": "Find your way",
         "navText": "Templates shows the report server's templates; Reports the reports made from them, ready to preview.",
         "searchTitle": "Find a template",
-        "searchText": "Type part of a name: Templates (or Reports, on that page) shows the ones that match.",
+        "searchText": "Type part of a template's name: the matching templates show in a list under the box. Click one to open it. On the Reports page, the box filters the reports.",
         "accountTitle": "Your account",
-        "accountText": "Click your initial to change the language (English or Bahasa Melayu) or to sign out.",
+        "accountText": "Your picture opens your account menu: change the language, open Default Settings (the paper, margins, font and sections every new template starts with) or sign out.",
         "helpTitle": "Help is always here",
         "helpText": "Click Help any time to take this tour again or to read the Quick guide."
-      },
-      "templates": {
-        "listTitle": "Your templates",
-        "listText": "Every template you have made. Click one to open it in the designer.",
-        "viewTitle": "Cards or a list",
-        "viewText": "Switch between cards with a picture and a list with the dates, like a file folder.",
-        "orderTitle": "Their order",
-        "orderText": "Choose the order of the cards here. In the list, click a column title to sort by it, and choose how many rows a page shows.",
-        "actionsTitle": "Open, rename, copy or delete",
-        "actionsText": "The three dots on a card, or the buttons at the end of a row, open, rename, copy or delete a template. Each one asks before it does anything.",
-        "searchTitle": "Find a template",
-        "searchText": "Type part of a name here: the list shows only the templates that match."
       },
       "designer": {
         "welcomeTitle": "Welcome to the template designer",
@@ -980,7 +960,9 @@
         "previewTitle": "See the result",
         "previewText": "Click Preview PDF to see exactly what will print. Your work is saved by itself as you go.",
         "helpTitle": "Need help again?",
-        "helpText": "Click Help any time for this tour, the Quick guide, keyboard and mouse shortcuts and help for every element."
+        "helpText": "Click Help any time for this tour, the Quick guide, keyboard and mouse shortcuts and help for every element.",
+        "accountTitle": "Your Default Settings",
+        "accountText": "Your picture at the top right opens Default Settings: the paper, margins, font and sections every new template starts with. To change only this template, use the Settings tab on the right."
       }
     },
     "guide": {
@@ -1015,8 +997,8 @@
         "nudge": "Hold Shift and press the arrow keys to move a selected item a little.",
         "dragScroll": "To move an item to another page, drag it and roll the mouse wheel, or hold it near the top or bottom edge: the pages scroll and the item comes with you.",
         "undo": "Made a mistake? Press Ctrl+Z (⌘+Z on a Mac) to undo it.",
-        "saved": "Your work is saved by itself in this browser as you go.",
-        "open": "Templates and Reports are in the menu on the left. In the designer, File → Open (Ctrl+O) opens a template saved in this browser or a .jrxml file from your computer.",
+        "saved": "Your changes to the open template are kept in this browser as you go, until templates can be saved on the report server.",
+        "open": "Templates and Reports are in the menu on the left. In the designer, File → Open (Ctrl+O) opens a template from the report server or a .jrxml file from your computer.",
         "keys": "More keys that save you clicks are in the Keyboard shortcuts tab above."
       },
       "tourHint": "New here? A one-minute tour shows you where everything is.",
@@ -1075,8 +1057,8 @@
       "zoomOut": "Zoom out",
       "zoomWheel": "Zoom in or out",
       "resetZoom": "Go back to the normal zoom",
-      "toggleBottomPanel": "Show or hide Default Settings",
-      "panelDown": "Bring the full-height Default Settings back down",
+      "toggleBottomPanel": "Show or hide the developer panel (JRXML Content, Report Bands, settings JSON)",
+      "panelDown": "Bring the full-height developer panel back down",
       "newTemplate": "Start a new template",
       "openTemplate": "Open a template (yours or a file from your computer)",
       "save": "Save now (it also saves by itself)",
@@ -1111,7 +1093,7 @@
       "pageNumber": "Page numbers that fill in by themselves. Choose how they look and which pages get a number.",
       "dateTime": "A date that fills itself in, such as the day the report is printed. Choose which date and how it looks.",
       "pageBorder": "A border around every page. Change its line, colour and corners here.",
-      "watermark": "Faint text or a faded picture behind every page. Choose what it shows and how strong it prints. To come back to it later, click an empty spot of the page: it is in Template Settings.",
+      "watermark": "Faint text or a faded picture behind every page. Choose what it shows and how strong it prints. To come back to it later, open the ⋯ menu above any page and choose Change watermark.",
       "sectionHeading": "A heading that starts a section. Its number counts itself, and it shows in the table of contents.",
       "subHeading": "A smaller heading inside a section. It shows, indented, in the table of contents.",
       "location": "A map with a pin and the address. Type the place below, copy it from a project, or click the small map to put the pin there.",
@@ -1135,7 +1117,7 @@
       "locationTitle": "A map and an address",
       "locationText": "Type the place on the right, or drag Location from Report Data onto it. Or click the small map on the right to put the pin there.",
       "watermarkTitle": "Behind every page",
-      "watermarkText": "The watermark can't be clicked on the page, so it never gets in the way. To change it later, click an empty spot of the page and use the Watermark card in Template Settings."
+      "watermarkText": "The watermark can't be clicked on the page, so it never gets in the way. To change it later, open the ⋯ menu above any page and choose Change watermark."
     },
     "guides": {
       "title": "Step-by-step guides",
@@ -1402,9 +1384,9 @@
         "aiPrompt": "Add a light grey DRAFT watermark across every page.",
         "steps": {
           "addTitle": "Add a watermark",
-          "addText": "Click Watermark in the Element Library. It goes behind every page.",
+          "addText": "Click Watermark in the Element Library, or Add watermark in the ⋯ menu above a page. It goes behind every page.",
           "settingsTitle": "Choose what it shows",
-          "settingsText": "Click an empty spot of the page. In Template Settings on the right, click Change in the Watermark card, then type its words or choose a picture and set how strong it prints.",
+          "settingsText": "Open the ⋯ menu above any page and choose Change watermark, then type its words or choose a picture and set how strong it prints.",
           "previewTitle": "Check it",
           "previewText": "Click Preview PDF at the top to see exactly what will print."
         }
@@ -3397,7 +3379,7 @@
       },
       "file": {
         "title": "File",
-        "text": "New starts a template. Open opens one of your templates, or a .jrxml file from your computer."
+        "text": "New makes a new template on the report server. Open opens a template from the report server, or a .jrxml file from your computer."
       },
       "undo": {
         "title": "Undo",
@@ -3428,8 +3410,8 @@
         "text": "Makes the page bigger or smaller on your screen; the printed size never changes. Use − and +, type a size, or pick one from the list."
       },
       "bottomPanel": {
-        "title": "Default Settings",
-        "text": "Opens Default Settings at the bottom: the paper, margins, font and page sections every new template starts with."
+        "title": "Developer panel",
+        "text": "Opens the developer panel at the bottom: JRXML Content, Report Bands and the settings JSON. Shown only on development servers."
       },
       "snap": {
         "title": "Snap & grid",
@@ -3472,14 +3454,14 @@
       },
       "pageSettings": {
         "title": "Default Settings",
-        "what": "What every new template starts with: its paper, margins, font, page sections and section heights. Open them with the Default Settings button at the top (Ctrl+B).",
+        "what": "What every new template starts with: its paper, margins, font, page sections and section heights. Open them from your account menu (your picture at the top right) → Default Settings.",
         "work": [
           "Paper, Page Margins, Font, Page Sections and Section Heights work as in Template Settings, but only for templates you create from now on.",
-          "Apply to this template copies one of them into the template you have open (one undo step).",
-          "Original on a card (or Reset all to original at the top) puts back what the app came with: A4 portrait, 20 px margins and the usual sections."
+          "Original on a card (or Reset all to original at the top) puts back what the app came with: A4 portrait, 20 px margins and the usual sections.",
+          "To use them in a template you already have, open it and click Use default on a card in Template Settings."
         ],
         "good": [
-          "They are kept in this browser: another computer starts with the original settings.",
+          "They are saved with your account, so every computer you sign in on starts with them.",
           "To change only the template you have open, use Template Settings."
         ]
       },
@@ -3732,14 +3714,14 @@
         "title": "Watermark",
         "what": "Faint words such as DRAFT or CONFIDENTIAL, or a faded picture such as a logo, printed behind the content of every page.",
         "when": "To mark a report as a draft or confidential, or to put your organisation's logo faintly behind every page.",
-        "add": "Click Watermark under Composite Elements, or drag it onto a page. A template has one watermark; the tile is turned off once there is one.",
+        "add": "Click Watermark under Composite Elements, drag it onto a page, or choose Add watermark in the ⋯ menu above any page. A template has one watermark; the tile is turned off once there is one.",
         "work": [
           "What it shows: type its words (or pick DRAFT, CONFIDENTIAL…), or choose a picture.",
           "How it looks: colour, bold and size for words; size and grey for a picture; and how strong it prints.",
           "Angle: rising, level, falling or upright, or any angle with the slider.",
           "Where on the page: once (in the middle, a corner or a side) or repeated across the whole page.",
           "Which pages: with a cover or contents pages, choose whether they get it too.",
-          "It can't be clicked on the page: click an empty spot of the page, then Change in the Watermark card of Template Settings."
+          "It can't be clicked on the page: open the ⋯ menu above any page and choose Change watermark."
         ],
         "good": [
           "It prints behind everything: filled boxes and table rows cover it, as on paper.",
@@ -4068,9 +4050,9 @@
         "title": "Which pages",
         "text": "Every page, every page except the cover, or only the normal pages (not the cover and contents pages)."
       },
-      "templateWatermark": {
+      "watermarkPageMenu": {
         "title": "Watermark",
-        "text": "Faint text or a faded logo printed behind every page of this template. Add it here, or click Change to edit its words, picture, strength and angle. It can't be clicked on the page, so this card is the way back to it."
+        "text": "Faint text or a faded logo printed behind every page of this template. It can't be clicked on the page: open the ⋯ menu above any page and choose Change watermark to come back to these settings."
       }
     }
   },
@@ -4087,21 +4069,22 @@
     "scopeHint": "These settings change only the template you have open. New templates start from Default Settings."
   },
   "defaultSettings": {
-    "intro": "New templates start with these settings. To change the template you have open, use Template Settings on the right (click an empty part of the page).",
+    "intro": "New templates start with these settings. To change one template only, open it and use Template Settings (click an empty part of the page).",
     "reset": "Reset to the app's defaults",
     "resetDone": "Default Settings are back to the original settings.",
-    "apply": "Apply to this template",
-    "applied": "Applied to this template.",
     "bandsHint": "The sections every new template starts with. Detail, where your content goes, is always there.",
     "original": "Original",
     "originalDone": "Back to the original.",
-    "resetAll": "Reset all to original"
+    "resetAll": "Reset all to original",
+    "page": {
+      "eyebrow": "Account",
+      "title": "Default Settings",
+      "subtitle": "The paper, margins, font, page sections and section heights every new template starts with. Saved with your account."
+    }
   },
   "myTemplates": {
-    "count": "No templates | 1 template | {count} templates",
     "noMatch": "No template is called \"{query}\"",
     "noMatchHint": "Check the spelling, or try fewer words.",
-    "resultsFor": "Templates matching \"{query}\"",
     "clearSearch": "Clear",
     "columns": {
       "name": "Name",
@@ -4110,23 +4093,12 @@
       "owner": "Owner",
       "actions": "Actions"
     },
-    "sortBy": "Sort by",
-    "sort": {
-      "lastModified": "Last edited",
-      "createdAt": "Newest first",
-      "nameAsc": "Name A to Z",
-      "nameDesc": "Name Z to A"
-    },
     "view": "Show templates as",
     "views": {
       "grid": "Grid",
       "list": "List"
     },
-    "loadFailed": "Your templates couldn't be loaded.",
-    "tryAgain": "Try again",
-    "empty": "You have no templates yet.",
-    "showing": "Showing {shown} of {total}",
-    "loadMore": "Load more"
+    "tryAgain": "Try again"
   },
   "reportCatalog": {
     "errors": {
@@ -4135,59 +4107,45 @@
     },
     "templates": {
       "subtitle": "Start from a default template, open one of yours, or create a new one.",
-      "create": "Create template",
-      "yours": "Templates"
+      "create": "Create template"
     },
     "defaultTemplates": {
       "title": "Default templates",
-      "hint": "Ready-made templates from the report server. Open one to look at it, or clone it to make your own copy to change and use. The default itself stays as it is.",
+      "hint": "Ready-made templates from the report server. Open one to look at it and preview it, or duplicate it to get a copy you can change.",
       "badge": "Default",
       "loadFailed": "The default templates couldn't be loaded from the report server.",
       "showMore": "Show more ({shown} of {total})",
-      "opening": "Opening the default template…",
-      "opened": "Default template opened\nClone it to keep your own copy. Any change also saves one; the default stays as it is.",
+      "opening": "Opening the template…",
+      "opened": "Default template opened\nYou can look at it and preview it. Duplicate it to change it.",
       "openFailed": "Couldn't open the default template\n{reason}",
       "errors": {
-        "noFile": "It has no report file on the server.",
-        "notZip": "Its report file isn't a Jmix report export (zip).",
-        "damaged": "Its report file is damaged.",
-        "zipMethod": "Its report file is packed in a way the designer can't read.",
-        "noJrxml": "Its report file has no JRXML template.",
         "unknown": "The report server didn't say why."
+      },
+      "contentProblems": {
+        "noContent": "Opened as an empty layout\n\"{name}\" has no template content on the report server.",
+        "notJrxml": "Opened as an empty layout\nThe content of \"{name}\" on the report server isn't a JRXML template (it may be an HTML template).",
+        "badJrxml": "Opened as an empty layout\nThe JRXML of \"{name}\" isn't in a format the designer can open."
       },
       "openAction": "Open",
       "openHint": "Look at this template in the designer",
-      "cloneAction": "Clone",
-      "cloneHint": "Make your own copy of this template to change and use",
       "barTitle": "Default template: {name}.",
-      "barText": "It stays as it is. Clone it to make your own copy; any change you make also saves one.",
-      "savedAsOwn": "Saved as your own template\n\"{name}\" is now in Your templates. The default stays as it is.",
-      "owner": "Report server"
+      "barText": "You can look at it and preview it. To change it, duplicate it to get your own copy.",
+      "owner": "Report server",
+      "readOnly": "This default template can't be changed\nDuplicate it to get your own copy to work on."
+    },
+    "serverTemplates": {
+      "title": "Templates",
+      "hint": "Your organisation's templates on the report server. Open one to work on it, or duplicate it to get a copy.",
+      "loadFailed": "The templates couldn't be loaded from the report server."
     },
     "create": {
-      "title": "Create template",
-      "intro": "Choose the project and name the template. It opens in the designer, ready to design.",
-      "project": "Project",
-      "templateName": "Template name",
-      "templateNamePlaceholder": "e.g. Monthly progress report",
-      "templateCode": "Template code",
-      "templateCodeHint": "Letters, numbers, - and _ only.",
-      "submit": "Create",
-      "creating": "Creating…",
-      "failed": "Couldn't create the report\n{reason}"
-    },
-    "clone": {
-      "title": "Clone template",
-      "intro": "Makes your own copy of \"{name}\" to change and use. Choose its project and name; the default stays as it is.",
-      "defaultName": "{name} (copy)",
-      "submit": "Clone",
-      "cloning": "Cloning…",
-      "failed": "Couldn't clone the template\n{reason}",
-      "done": "Template cloned\n\"{name}\" is your own now: change it as you like."
+      "failed": "Couldn't create the template on the server\n{reason}",
+      "creating": "Creating the template…",
+      "notFound": "Template created, but not found\n\"{name}\" was made on the server but couldn't be opened. Open it from Templates."
     },
     "reports": {
       "title": "Reports",
-      "subtitle": "Reports created from your templates (kept in this browser for now). Preview opens its template.",
+      "subtitle": "Reports created from your templates. Preview opens its template.",
       "count": "No reports | 1 report | {count} reports",
       "resultsFor": "Reports matching \"{query}\"",
       "refresh": "Load the list again",
@@ -4222,21 +4180,36 @@
       "failed": "Couldn't run the report\n{reason}",
       "loadFailed": "This report couldn't be read from the report server.",
       "requiredMissing": "Fill in {name}\nThe report needs it to run."
-    }
+    },
+    "serverDelete": {
+      "done": "Template deleted\n\"{name}\" was removed from Templates.",
+      "failed": "Couldn't delete the template\n{reason}"
+    },
+    "copy": {
+      "title": "Duplicate template",
+      "message": "Make a copy of \"{name}\"? The copy is added to Templates.",
+      "done": "Template duplicated\nThe copy of \"{name}\" is in Templates.",
+      "failed": "Couldn't duplicate the template\n{reason}",
+      "hint": "Make a copy of this template in Templates",
+      "openTitle": "Open the copy?",
+      "openMessage": "\"{name}\" is in Templates. Open it now to start working on it?",
+      "openConfirm": "Open copy",
+      "openCancel": "Not now"
+    },
+    "keptChanges": "Your changes are back\n\"{name}\" opened with the changes kept in this browser (templates can't be saved on the server yet)."
   },
   "openTemplate": {
     "title": "Open a template",
     "tabs": {
-      "mine": "My templates",
+      "mine": "Templates",
       "computer": "From my computer"
     },
     "openNow": "Open now",
-    "none": "You have no saved templates yet.",
+    "none": "There are no templates on the report server yet.",
     "dropTitle": "Drop a .jrxml file here, or click to choose one",
     "dropHint": "A template downloaded from here or made in Jaspersoft Studio",
-    "addedNote": "It opens as a new template and is added to My templates.",
-    "seeAll": "See all in My Templates",
-    "notFound": "Template not found\nIt may have been deleted."
+    "addedNote": "It becomes a new template on the report server, named after the file. Its layout is kept in this browser until templates can be saved on the server.",
+    "seeAll": "See all on the Templates page"
   },
   "pictureChooser": {
     "title": "Choose a picture",
@@ -4374,8 +4347,8 @@
     "addressPlaceholder": "Address"
   },
   "watermark": {
-    "exists": "This template has a watermark\nIt is selected: change it on the right.",
-    "tileExists": "This template already has a watermark. Change it in Template Settings: click an empty spot of the page.",
+    "exists": "This template already has a watermark\nIt is selected: change it on the right. Later, use Change watermark in the ⋯ menu above any page.",
+    "tileExists": "It can't be clicked on the page: open the ⋯ menu above any page and choose Change watermark.",
     "canvasTag": "Watermark",
     "canvasNoPicture": "Choose a picture for the watermark on the right",
     "canvasPictureFailed": "The watermark picture couldn't be loaded",
@@ -4459,13 +4432,9 @@
       "remove": "Remove the watermark",
       "focusNote": "While these settings are open, the page is faded so you can see the watermark clearly. In the PDF it prints behind the content."
     },
-    "card": {
-      "title": "Watermark",
-      "none": "Faint text such as DRAFT, or a faded logo, behind every page.",
+    "pageMenu": {
       "add": "Add watermark",
-      "change": "Change",
-      "remove": "Remove",
-      "noWords": "No words yet"
+      "change": "Change watermark"
     }
   },
   "colorPicker": {
@@ -4614,5 +4583,21 @@
     "noSetup": "Rows from the project's {list}\nThis table lists every item the template's project has. Change its look and headings in its properties.",
     "rowsFrom": "{project} · {list} (from the project)",
     "hint": "Every item of this list in the template's project. Pick another project at the top and it shows that one's."
+  },
+  "templateSettingsJson": {
+    "templateId": "Template id",
+    "templateIdHint": "The template's id: for a template from the report server its own id (the same one Duplicate and Delete use), else the open template's id.",
+    "copied": "Copied",
+    "hint": "The template's paper size and orientation, page size, margins, font, page sections and section heights (kept in the template for now)."
+  },
+  "defaultSettingsJson": {
+    "user": {
+      "badge": "Set by the user",
+      "hint": "The user's Default Settings and Snap & grid, kept in this browser for now. Changed only in Default Settings."
+    },
+    "developer": {
+      "badge": "Set in code",
+      "hint": "What the app comes with (Original in Default Settings). Read only: changed only in the code."
+    }
   }
 }

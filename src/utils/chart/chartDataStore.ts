@@ -33,7 +33,7 @@ export const chartDataQuery = (binding: ChartBinding) => {
   const requests = chartRequests(binding);
   return queryOptions({
     queryKey: chartKeys.data(requests),
-    queryFn: ({ signal }) => Promise.all(requests.map((request) => reportDataApi.postChartAggregate(request, signal))),
+    queryFn: () => Promise.all(requests.map((request) => reportDataApi.postChartAggregate(request))),
     staleTime: DATA_STALE_TIME,
   });
 };

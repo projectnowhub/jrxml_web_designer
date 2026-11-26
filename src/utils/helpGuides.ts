@@ -242,7 +242,7 @@ const ELEMENT_GUIDES: Guide[] = [
       PREVIEW_STEP,
     ],
   },
-  // Watermark: selected from Template Settings' Watermark card (it can't be clicked on the page)
+  // Watermark: reached from any page's ⋯ menu (it can't be clicked on the page)
   {
     id: "watermark",
     steps: [
@@ -251,7 +251,7 @@ const ELEMENT_GUIDES: Guide[] = [
         key: "settings",
         sticky: true,
         done: (ctx) => !!ctx.selected && isWatermark(ctx.selected),
-        target: () => ['[data-help="watermark-card"]'],
+        target: () => ['[data-help="page-menu-watermark"]', '[data-help="page-menu"]'],
       },
       PREVIEW_STEP,
     ],

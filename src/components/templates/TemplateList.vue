@@ -1,9 +1,9 @@
 <template>
-  <!-- Templates as a table (My Templates' list view): a row click opens the
-       template; the Name / Last edited / Created headings sort; Actions =
-       Open, Rename, Duplicate, Delete as icon buttons (TemplateMenu runs them).
-       kind "default": the report server's default templates, a "Default"
-       badge by the name, Actions = Open and Clone icon buttons (Clone emitted as `clone`) -->
+  <!-- The report server's templates as a table (Templates page, List): a row
+       click opens the template; the Name / Last edited / Created headings
+       sort; Actions = icon buttons run by TemplateMenu. kind "default": a
+       "Default" badge by the name, Open and Duplicate; "server" (the tenant's
+       own): Open, Duplicate and Delete -->
   <div class="template-table-wrap">
     <table class="template-table">
       <thead>
@@ -25,7 +25,7 @@
       </thead>
       <tbody>
         <tr
-          v-for="(template, index) in templates"
+          v-for="template in templates"
           :key="template.id"
           class="template-row"
           tabindex="0"
@@ -35,7 +35,7 @@
           <td class="col-name">
             <span class="name-cell">
               <span class="file-icon">
-                <component :is="isDefault ? LayoutTemplate : FileText" :size="16" :stroke-width="2.25" aria-hidden="true" />
+                <component :is="LayoutTemplate" :size="16" :stroke-width="2.25" aria-hidden="true" />
               </span>
               <strong>{{ template.name }}</strong>
               <span v-if="isDefault" class="default-badge">
@@ -50,9 +50,9 @@
             <span class="owner-cell"><i>{{ ownerOf(template).charAt(0) }}</i>{{ ownerOf(template) }}</span>
           </td>
           <td class="col-actions">
-            <div class="row-actions" :data-help="index === 0 && !isDefault ? 'template-actions' : undefined">
+            <div class="row-actions">
               <button
-                v-for="action in isDefault ? DEFAULT_ACTIONS : OWN_ACTIONS"
+                v-for="action in kind === 'server' ? SERVER_ACTIONS : DEFAULT_ACTIONS"
                 :key="action.key"
                 type="button"
                 class="action-button"
@@ -76,14 +76,14 @@
         </tr>
       </tbody>
     </table>
-    <TemplateMenu ref="menuRef" :kind="kind" @clone="(template) => emit('clone', template as TemplateCard)" />
+    <TemplateMenu ref="menuRef" :kind="kind" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { ArrowDown, ArrowUp, ArrowUpDown, Copy, ExternalLink, FileText, LayoutTemplate, Lock, Pencil, Trash2 } from "@lucide/vue";
+import { ArrowDown, ArrowUp, ArrowUpDown, Copy, ExternalLink, LayoutTemplate, Lock, Trash2 } from "@lucide/vue";
 import { useTemplates } from "@/composables/useTemplates";
 import type { TemplateCard, TemplateSortDirection, TemplateSort } from "@/types/template";
 import TemplateMenu from "./TemplateMenu.vue";
@@ -96,33 +96,28 @@ const props = withDefaults(
     sort: TemplateSort;
     dir: TemplateSortDirection;
     skeletons?: number;
-    kind?: "own" | "default";
+    kind?: "default" | "server";
   }>(),
-  { skeletons: 0, kind: "own" },
+  { skeletons: 0, kind: "server" },
 );
-const emit = defineEmits<{ (e: "sort", column: TemplateSort): void; (e: "clone", template: TemplateCard): void }>();
+const emit = defineEmits<{ (e: "sort", column: TemplateSort): void }>();
 
 const { t } = useI18n();
-const { dateText, openTemplate, openDefaultTemplate } = useTemplates();
+const { dateText, openDefaultTemplate } = useTemplates();
 
 const isDefault = computed(() => props.kind === "default");
 const ownerOf = (template: TemplateCard) => template.owner || props.owner;
-const actionLabel = (key: string) =>
-  key === "clone" ? t("reportCatalog.defaultTemplates.cloneAction") : t(`home.menu.${key}`);
-const open = (template: TemplateCard) => (isDefault.value ? openDefaultTemplate(template) : openTemplate(template));
+const actionLabel = (key: string) => t(`home.menu.${key}`);
+const open = (template: TemplateCard) => openDefaultTemplate(template);
 
 const COLUMNS: TemplateSort[] = ["name", "lastModified", "createdAt"];
-const OWN_ACTIONS = [
-  { key: "open", icon: ExternalLink },
-  { key: "rename", icon: Pencil },
-  { key: "duplicate", icon: Copy },
-  { key: "delete", icon: Trash2 },
-] as const;
-// Default templates: Open and Clone (run by TemplateMenu kind "default")
+// Default templates: Open and Duplicate; the tenant's own server templates
+// also Delete (all run by TemplateMenu)
 const DEFAULT_ACTIONS = [
   { key: "open", icon: ExternalLink },
-  { key: "clone", icon: Copy },
+  { key: "duplicate", icon: Copy },
 ] as const;
+const SERVER_ACTIONS = [...DEFAULT_ACTIONS, { key: "delete", icon: Trash2 }] as const;
 const menuRef = ref<InstanceType<typeof TemplateMenu> | null>(null);
 
 const ariaSort = (column: TemplateSort) =>
@@ -170,7 +165,7 @@ tbody tr:last-child td {
 }
 .col-actions {
   width: 1%;
-  text-align: right;
+  text-align: center;
 }
 .sort-head {
   display: inline-flex;
@@ -277,8 +272,7 @@ tbody tr:last-child td {
   --action: #2f6fdf;
   --action-tint: rgba(47, 111, 223, 0.1);
 }
-.action-button.is-duplicate,
-.action-button.is-clone {
+.action-button.is-duplicate {
   --action: #16936a;
   --action-tint: rgba(22, 147, 106, 0.1);
 }

@@ -1,10 +1,12 @@
 <template>
-  <!-- A template's ⋯ menu (cards and list rows): Open, Rename, Duplicate,
-       Delete (red, like Sign out), with its rename / delete questions.
+  <!-- A server template's ⋯ menu (cards and list rows).
        Opened with toggle(event, template); `openId` lights up its button;
        run(action, template) does an action without the menu (list view).
-       kind "default" (the report server's default templates): Open and
-       Clone only (Clone emitted as `clone`), no questions asked.
+       kind "default" / "server" (the report server's templates): Open and
+       Duplicate; Duplicate asks first, then the server makes the copy
+       (POST /v2/reports/copy with the template's id), which shows up in
+       Templates. "server" (the tenant's own) also Delete, asked first
+       (DELETE /rest/entities/rptadn_TenantReport/{id}); defaults are read only.
        On the body so a card's rounded edge doesn't cut it off. -->
     <Teleport to="body">
       <Transition name="menu-pop">
@@ -20,80 +22,61 @@
             <span>{{ t("home.menu.open") }}</span>
           </button>
           <button
-            v-if="kind === 'default'"
             type="button"
             role="menuitem"
             class="card-menu-item is-duplicate"
-            @click="onMenu('clone')"
+            @click="onMenu('duplicate')"
           >
-            <Copy :size="16" :stroke-width="2.25" aria-hidden="true" />
-            <span>{{ t("reportCatalog.defaultTemplates.cloneAction") }}</span>
-          </button>
-          <template v-else>
-          <button type="button" role="menuitem" class="card-menu-item is-rename" @click="onMenu('rename')">
-            <Pencil :size="16" :stroke-width="2.25" aria-hidden="true" />
-            <span>{{ t("home.menu.rename") }}</span>
-          </button>
-          <button type="button" role="menuitem" class="card-menu-item is-duplicate" @click="onMenu('duplicate')">
             <Copy :size="16" :stroke-width="2.25" aria-hidden="true" />
             <span>{{ t("home.menu.duplicate") }}</span>
           </button>
-          <div class="card-menu-divider" />
-          <button type="button" role="menuitem" class="card-menu-item is-delete" @click="onMenu('delete')">
-            <Trash2 :size="16" :stroke-width="2.25" aria-hidden="true" />
-            <span>{{ t("home.menu.delete") }}</span>
-          </button>
+          <template v-if="kind === 'server'">
+            <div class="card-menu-divider" />
+            <button type="button" role="menuitem" class="card-menu-item is-delete" @click="onMenu('delete')">
+              <Trash2 :size="16" :stroke-width="2.25" aria-hidden="true" />
+              <span>{{ t("home.menu.delete") }}</span>
+            </button>
           </template>
         </div>
       </Transition>
     </Teleport>
 
-    <InputModal
-      v-model:visible="showRename"
-      :title="t('home.renameTitle')"
-      :message="t('home.renameMessage')"
-      :default-value="pending?.name || ''"
-      @confirm="(name: string) => pending && rename(pending, name)"
-    />
     <ConfirmModal
-      v-model:visible="showOpen"
-      :title="t('home.openTitle')"
-      :message="t('home.openMessage', { name: pending?.name })"
-      :confirm-text="t('home.menu.open')"
-      @confirm="pending && openTemplate(pending)"
-    />
-    <ConfirmModal
-      v-model:visible="showDuplicate"
-      :title="t('home.duplicateTitle')"
-      :message="t('home.duplicateMessage', { name: pending?.name })"
+      v-model:visible="showServerCopy"
+      :title="t('reportCatalog.copy.title')"
+      :message="t('reportCatalog.copy.message', { name: pending?.name })"
       :confirm-text="t('home.menu.duplicate')"
-      @confirm="pending && duplicate(pending)"
+      @confirm="pending && copyOnServer(pending)"
     />
     <ConfirmModal
-      v-model:visible="showDelete"
+      v-model:visible="showServerDelete"
       :title="t('home.deleteTitle')"
       :message="t('home.deleteMessage', { name: pending?.name })"
       :confirm-text="t('home.menu.delete')"
       danger
-      @confirm="pending && remove(pending)"
+      @confirm="pending && deleteOnServer(pending)"
     />
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { Copy, ExternalLink, Pencil, Trash2 } from "@lucide/vue";
+import { Copy, ExternalLink, Trash2 } from "@lucide/vue";
 import { useTemplates } from "@/composables/useTemplates";
-import InputModal from "@/components/modals/InputModal.vue";
 import ConfirmModal from "@/components/modals/ConfirmModal.vue";
+import { useCopyTemplate, useDeleteServerTemplate } from "@/queries/reportCatalogQueries";
+import { reportServerErrorText } from "@/services/helpers/reportCatalogMappers";
+import notification from "@/utils/notification";
 
 type Named = { id: string; name: string };
+// The report server's templates: Open and Duplicate; server (the tenant's
+// own) also Delete
+type TemplateKind = "default" | "server";
 
 const { t } = useI18n();
-const props = withDefaults(defineProps<{ kind?: "own" | "default" }>(), { kind: "own" });
-const emit = defineEmits<{ clone: [template: Named] }>();
+const props = withDefaults(defineProps<{ kind?: TemplateKind }>(), { kind: "server" });
 
-const { openTemplate, openDefaultTemplate, rename, duplicate, remove } = useTemplates();
+const { openDefaultTemplate } = useTemplates();
 
 const MENU_WIDTH = 200;
 
@@ -136,12 +119,38 @@ onBeforeUnmount(() => {
 });
 
 const pending = ref<Named | null>(null);
-const showRename = ref(false);
-const showDelete = ref(false);
-const showOpen = ref(false);
-const showDuplicate = ref(false);
+const showServerCopy = ref(false);
+const showServerDelete = ref(false);
 
-export type TemplateAction = "open" | "rename" | "duplicate" | "delete" | "clone";
+// A server template duplicated: the copy appears in Templates (the lists fetch again)
+const copyTemplate = useCopyTemplate();
+function copyOnServer(template: Named) {
+  copyTemplate.mutate(template.id, {
+    onSuccess: () => notification.success(t("reportCatalog.copy.done", { name: template.name })),
+    onError: async (error) =>
+      notification.error(
+        t("reportCatalog.copy.failed", {
+          reason: await reportServerErrorText(error, t("reportCatalog.defaultTemplates.errors.unknown")),
+        }),
+      ),
+  });
+}
+
+// One of the tenant's own server templates deleted: the lists fetch again
+const deleteTemplate = useDeleteServerTemplate();
+function deleteOnServer(template: Named) {
+  deleteTemplate.mutate(template.id, {
+    onSuccess: () => notification.success(t("reportCatalog.serverDelete.done", { name: template.name })),
+    onError: async (error) =>
+      notification.error(
+        t("reportCatalog.serverDelete.failed", {
+          reason: await reportServerErrorText(error, t("reportCatalog.defaultTemplates.errors.unknown")),
+        }),
+      ),
+  });
+}
+
+export type TemplateAction = "open" | "duplicate" | "delete";
 
 function onMenu(key: TemplateAction) {
   const template = menu.value?.file;
@@ -151,17 +160,14 @@ function onMenu(key: TemplateAction) {
 
 // An action for a template; the list view's icon buttons call it straight
 function run(key: TemplateAction, template: Named) {
-  if (props.kind === "default") {
-    if (key === "clone") emit("clone", template);
-    else openDefaultTemplate(template);
+  if (key === "delete" && props.kind === "server") {
+    pending.value = template;
+    showServerDelete.value = true;
     return;
   }
+  if (key !== "duplicate") return openDefaultTemplate(template);
   pending.value = template;
-  // Each asks first (rename asks for the name)
-  if (key === "open") showOpen.value = true;
-  else if (key === "rename") showRename.value = true;
-  else if (key === "duplicate") showDuplicate.value = true;
-  else showDelete.value = true;
+  showServerCopy.value = true;
 }
 
 const openId = computed(() => menu.value?.file.id ?? null);
@@ -207,9 +213,6 @@ defineExpose({ toggle, openId, run });
 /* Each action's icon in its colour (as in the list view); Delete all red */
 .card-menu-item.is-open svg {
   color: #6440f4;
-}
-.card-menu-item.is-rename svg {
-  color: #2f6fdf;
 }
 .card-menu-item.is-duplicate svg {
   color: #16936a;

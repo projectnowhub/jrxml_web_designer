@@ -32,6 +32,15 @@
         <span>{{ t("language.label") }}</span>
         <LanguageSwitcher :show-icon="false" />
       </div>
+      <button
+        class="account-action"
+        type="button"
+        role="menuitem"
+        @click="openDefaultSettings"
+      >
+        <SlidersHorizontal :size="17" :stroke-width="2.25" aria-hidden="true" />
+        <span>{{ t("defaultSettings.page.title") }}</span>
+      </button>
       <div class="account-popover-divider" />
       <button
         class="account-action sign-out"
@@ -49,7 +58,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { Languages, LogOut } from "@lucide/vue";
+import { useRouter } from "vue-router";
+import { Languages, LogOut, SlidersHorizontal } from "@lucide/vue";
 import { useAuthStore } from "../../stores/auth";
 import { useFileUrl } from "../../queries/fileQueries";
 import { logout } from "../../services/authService";
@@ -66,6 +76,13 @@ const userName = computed(() => auth.fullName);
 // The picture, as the CDP app's header; the letters while there is none
 const avatarUrl = useFileUrl(() => auth.avatar);
 const userInitial = computed(() => auth.initials || t("home.defaultUserName").charAt(0).toUpperCase());
+
+// Default Settings: their own page in the home page's layout
+const router = useRouter();
+function openDefaultSettings() {
+  isOpen.value = false;
+  void router.push({ name: "defaultSettings" });
+}
 
 function signOut() {
   isOpen.value = false;

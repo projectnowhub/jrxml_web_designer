@@ -286,7 +286,8 @@ function setPreviewUrl(url: string) {
 }
 
 async function generatePreview() {
-  // Cancel an in-flight request so a slower, older response can't overwrite a newer one
+  // A newer preview replaces an older one: the older answer is ignored when it
+  // arrives (requests are never cancelled, see apiClient)
   previewController?.abort();
   const controller = new AbortController();
   previewController = controller;
@@ -301,7 +302,7 @@ async function generatePreview() {
     // TEMPORARY: each data table's first rows, so the PDF shows real data until the server loads the report bands
     const subDataSources = await previewSubDataSources(props.bands);
     if (controller.signal.aborted) return;
-    const pdf = await generatePdf({ jrxml, subDataSources }, controller.signal);
+    const pdf = await generatePdf({ jrxml, subDataSources });
     if (controller.signal.aborted) return;
     setPreviewUrl(URL.createObjectURL(pdf));
     pdfState.value = "ready";
