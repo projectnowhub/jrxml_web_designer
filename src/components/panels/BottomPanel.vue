@@ -259,11 +259,6 @@
       <ReportBandsView :active="activeTab === 'bands'" />
     </div>
 
-    <!-- Template Settings JSON (developers): the open template's settings row, to hand to the backend -->
-    <div v-if="SHOW_JRXML_TAB" class="tab-content jrxml-tab" v-show="activeTab === 'templateSettings'">
-      <TemplateSettingsJsonView :active="activeTab === 'templateSettings'" />
-    </div>
-
     <!-- User Defaults JSON (developers): the user's Default Settings as saved with their account, read only -->
     <div v-if="SHOW_JRXML_TAB" class="tab-content jrxml-tab" v-show="activeTab === 'userDefaults'">
       <DefaultSettingsJsonView source="user" :active="activeTab === 'userDefaults'" />
@@ -287,7 +282,6 @@ import {
   ChevronUp,
   FileCode2,
   Layers,
-  Braces,
   Code,
   UserCog,
   Maximize2,
@@ -309,7 +303,6 @@ import ResizablePanel from "./ResizablePanel.vue";
 import Collapse from "../common/Collapse.vue";
 import CodeMirrorEditor from "../editor/CodeMirrorEditor.vue";
 import ReportBandsView from "./ReportBandsView.vue";
-import TemplateSettingsJsonView from "./TemplateSettingsJsonView.vue";
 import DefaultSettingsJsonView from "./DefaultSettingsJsonView.vue";
 
 import {
@@ -373,7 +366,6 @@ const tabs = computed(() => [
     ? [
         { id: "jrxml", name: t("bottomPanel.jrxmlContent"), icon: FileCode2 },
         { id: "bands", name: t("bottomPanel.reportBands"), icon: Layers },
-        { id: "templateSettings", name: t("bottomPanel.templateSettingsJson"), icon: Braces },
         { id: "userDefaults", name: t("bottomPanel.userDefaultsJson"), icon: UserCog },
         { id: "developerDefaults", name: t("bottomPanel.developerDefaultsJson"), icon: Code },
       ]

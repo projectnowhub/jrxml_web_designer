@@ -43,7 +43,7 @@ const shownJson = computed(() => (value.value ? JSON.stringify(value.value, null
 async function copyJson() {
   try {
     await navigator.clipboard.writeText(shownJson.value);
-    notification.success(t("templateSettingsJson.copied"));
+    notification.success(t("defaultSettingsJson.copied"));
   } catch {
     notification.error(t("bottomPanel.copyFailed"));
   }

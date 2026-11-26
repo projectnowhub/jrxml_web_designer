@@ -347,11 +347,6 @@
                         :is-dragging="isDraggingOrResizing"
                         :report-font-family="reportProperties.defaultFont?.name"
                         :report-font-size="reportProperties.defaultFont?.size"
-                        :report-is-bold="reportProperties.defaultFont?.isBold"
-                        :report-is-italic="reportProperties.defaultFont?.isItalic"
-                        :report-is-underline="
-                          reportProperties.defaultFont?.isUnderline
-                        "
                         :is-out-of-bounds="
                           isElementOutOfBounds(bItem.bandIndex, originalIndex)
                         "
@@ -412,11 +407,6 @@
                         :is-dragging="isDraggingOrResizing"
                         :report-font-family="reportProperties.defaultFont?.name"
                         :report-font-size="reportProperties.defaultFont?.size"
-                        :report-is-bold="reportProperties.defaultFont?.isBold"
-                        :report-is-italic="reportProperties.defaultFont?.isItalic"
-                        :report-is-underline="
-                          reportProperties.defaultFont?.isUnderline
-                        "
                         :is-out-of-bounds="
                           isElementOutOfBounds(bItem.bandIndex, index)
                         "
@@ -474,9 +464,6 @@
                     :is-dragging="false"
                     :report-font-family="reportProperties.defaultFont?.name"
                     :report-font-size="reportProperties.defaultFont?.size"
-                    :report-is-bold="reportProperties.defaultFont?.isBold"
-                    :report-is-italic="reportProperties.defaultFont?.isItalic"
-                    :report-is-underline="reportProperties.defaultFont?.isUnderline"
                     :is-out-of-bounds="false"
                     :zoom-level="zoomLevel"
                     :page-number="pIndex"

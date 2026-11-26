@@ -553,7 +553,6 @@
     "maximize": "Full height (up to the header). Tip: double-click the panel's top edge.",
     "restore": "Back to the height before",
     "reportBands": "Report Bands",
-    "templateSettingsJson": "Template Settings JSON",
     "userDefaultsJson": "User Defaults JSON",
     "developerDefaultsJson": "Developer Defaults JSON",
     "copyFailed": "Couldn't copy\nSelect the text and copy it yourself."
@@ -3982,7 +3981,7 @@
       },
       "templateFont": {
         "title": "Font",
-        "text": "The font and size new text starts with in this template, and whether it starts bold, italic or underlined."
+        "text": "The font and size new text starts with in this template. Make a text bold, italic or underlined with its own buttons when you type in it."
       },
       "templateBands": {
         "title": "Page Sections",
@@ -4584,13 +4583,8 @@
     "rowsFrom": "{project} · {list} (from the project)",
     "hint": "Every item of this list in the template's project. Pick another project at the top and it shows that one's."
   },
-  "templateSettingsJson": {
-    "templateId": "Template id",
-    "templateIdHint": "The template's id: for a template from the report server its own id (the same one Duplicate and Delete use), else the open template's id.",
-    "copied": "Copied",
-    "hint": "The template's paper size and orientation, page size, margins, font, page sections and section heights (kept in the template for now)."
-  },
   "defaultSettingsJson": {
+    "copied": "Copied",
     "user": {
       "badge": "Set by the user",
       "hint": "The user's Default Settings and Snap & grid, kept in this browser for now. Changed only in Default Settings."

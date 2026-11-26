@@ -553,7 +553,6 @@
     "maximize": "Ketinggian penuh (hingga ke pengepala). Petua: klik dua kali pada tepi atas panel.",
     "restore": "Kembali ke ketinggian sebelumnya",
     "reportBands": "Jalur Laporan",
-    "templateSettingsJson": "JSON Tetapan Templat",
     "userDefaultsJson": "JSON Tetapan Lalai Pengguna",
     "developerDefaultsJson": "JSON Tetapan Lalai Pembangun",
     "copyFailed": "Tidak dapat menyalin\nPilih teks dan salin sendiri."
@@ -3982,7 +3981,7 @@
       },
       "templateFont": {
         "title": "Fon",
-        "text": "Fon dan saiz yang digunakan oleh teks baharu dalam templat ini, dan sama ada ia bermula tebal, condong atau bergaris bawah."
+        "text": "Fon dan saiz yang digunakan oleh teks baharu dalam templat ini. Jadikan teks tebal, condong atau bergaris bawah dengan butangnya sendiri semasa anda menaip di dalamnya."
       },
       "templateBands": {
         "title": "Bahagian Halaman",
@@ -4584,13 +4583,8 @@
     "rowsFrom": "{project} · {list} (daripada projek)",
     "hint": "Setiap item senarai ini dalam projek templat. Pilih projek lain di atas dan ia menunjukkan item projek itu."
   },
-  "templateSettingsJson": {
-    "templateId": "ID templat",
-    "templateIdHint": "ID templat: bagi templat dari pelayan laporan, ID templat itu sendiri (yang sama digunakan oleh Pendua dan Padam), atau ID templat yang dibuka.",
-    "copied": "Disalin",
-    "hint": "Saiz dan orientasi kertas, saiz halaman, margin, fon, bahagian halaman dan ketinggian bahagian templat (disimpan dalam templat buat masa ini)."
-  },
   "defaultSettingsJson": {
+    "copied": "Disalin",
     "user": {
       "badge": "Ditetapkan oleh pengguna",
       "hint": "Tetapan Lalai dan Snap & grid pengguna, disimpan dalam pelayar ini buat masa ini. Diubah hanya dalam Tetapan Lalai."

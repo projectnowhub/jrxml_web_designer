@@ -197,12 +197,11 @@ export interface ReportStyle {
 }
 
 // Font settings interface
+// The font new text starts with (Template Settings / Default Settings): only
+// the font and its size; bold, italic and underline are set on each text
 export interface FontSettings {
   name: string;
   size: number;
-  isBold: boolean;
-  isItalic: boolean;
-  isUnderline: boolean;
 }
 
 // Report properties interface

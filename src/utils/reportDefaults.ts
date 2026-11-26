@@ -11,7 +11,7 @@ import {
   REPORT_DEFAULTS_STORAGE_KEY as STORAGE_KEY,
 } from "@/constants/constants";
 import { useUserSettingsStore } from "@/stores/userSettings";
-import type { BandType } from "@/types";
+import type { BandType, FontSettings } from "@/types";
 
 export interface ReportDefaults {
   pageWidth: number;
@@ -20,7 +20,7 @@ export interface ReportDefaults {
   rightMargin: number;
   topMargin: number;
   bottomMargin: number;
-  font: { name: string; size: number; isBold: boolean; isItalic: boolean; isUnderline: boolean };
+  font: FontSettings;
   // The parts every page has (Detail always)
   bandTypes: BandType[];
 }
@@ -48,9 +48,6 @@ export function builtInReportDefaults(): ReportDefaults {
     font: {
       name: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
       size: REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
-      isBold: false,
-      isItalic: false,
-      isUnderline: false,
     },
     bandTypes: [
       BAND_TYPE_CONSTANTS.PAGE_HEADER,
@@ -89,9 +86,6 @@ export function loadReportDefaults(): ReportDefaults {
     font: {
       name: typeof saved.font?.name === "string" ? saved.font.name : base.font.name,
       size: positive(saved.font?.size, base.font.size),
-      isBold: !!saved.font?.isBold,
-      isItalic: !!saved.font?.isItalic,
-      isUnderline: !!saved.font?.isUnderline,
     },
     // Detail is always there
     bandTypes: bandTypes.includes(BAND_TYPE_CONSTANTS.DETAIL as BandType)

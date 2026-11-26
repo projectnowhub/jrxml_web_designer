@@ -8,9 +8,6 @@
     :is-out-of-bounds="isOutOfBounds"
     :report-font-family="reportFontFamily"
     :report-font-size="reportFontSize"
-    :report-is-bold="reportIsBold"
-    :report-is-italic="reportIsItalic"
-    :report-is-underline="reportIsUnderline"
     :parent-frame-index="parentFrameIndex"
     :zoom-level="zoomLevel"
     @select="handleSelect"
@@ -41,9 +38,6 @@
           :is-dragging="false" 
           :report-font-family="reportFontFamily"
           :report-font-size="reportFontSize"
-          :report-is-bold="reportIsBold"
-          :report-is-italic="reportIsItalic"
-          :report-is-underline="reportIsUnderline"
           :is-out-of-bounds="false"
           :parent-frame-index="elementIndex"
           :zoom-level="zoomLevel"
@@ -94,9 +88,6 @@ const props = defineProps<{
   isOutOfBounds?: boolean;
   reportFontFamily?: string;
   reportFontSize?: number;
-  reportIsBold?: boolean;
-  reportIsItalic?: boolean;
-  reportIsUnderline?: boolean;
   parentFrameIndex?: number; // Add the parentFrameIndex prop
   zoomLevel?: number;
   // Canvas page the box is drawn on (page numbers inside it show it)

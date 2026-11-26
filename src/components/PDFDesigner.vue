@@ -851,6 +851,7 @@ import SkeletonBlock from "@/components/common/SkeletonBlock.vue";
 import { isProjectListSource } from "@/queries/dataSourceQueries";
 import { useQueries } from "@tanstack/vue-query";
 import { forgetLastProject, lastProject, rememberLastProject } from "@/utils/lastProject";
+import { loadReportDefaults } from "@/utils/reportDefaults";
 import {
   endDataSourceDrag,
   isDataSourceDrag,
@@ -4151,9 +4152,9 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
     fontSize:
       reportProperties.value?.defaultFont?.size ||
       REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
-    isBold: reportProperties.value?.defaultFont?.isBold || false,
-    isItalic: reportProperties.value?.defaultFont?.isItalic || false,
-    isUnderline: reportProperties.value?.defaultFont?.isUnderline || false,
+    isBold: false,
+    isItalic: false,
+    isUnderline: false,
   };
 
   // Calculate the available width of the report page
@@ -6488,17 +6489,23 @@ const applyJrxml = (
           : null;
     } else {
       // The edited JRXML replaces the whole report: one undo step. Every part
-      // is set from it (what it lacks is emptied); the default font and band
-      // limits aren't in JRXML and stay
+      // is set from it (what it lacks is emptied)
       saveStateToHistory();
     }
+    // The font and section limits come from the JRXML (com.cdp.font /
+    // com.cdp.sectionLimits); one without them (another tool's) takes, when
+    // opened, the Default Settings (loadReport), and when edited, keeps what
+    // the template had
+    const before = openedFileName === undefined ? reportProperties.value : undefined;
+    const parsedFont = parsedData.properties?.defaultFont;
+    const fontBase = before?.defaultFont ?? { ...loadReportDefaults().font };
     reportStore.loadReport(
       {
         reportProperties: {
           ...parsedData.properties,
           orientation: parsedData.properties?.orientation === "landscape" ? "landscape" : "portrait",
-          defaultFont: reportProperties.value?.defaultFont,
-          bandLimits: reportProperties.value?.bandLimits,
+          defaultFont: parsedFont ? { ...fontBase, ...parsedFont } : fontBase,
+          bandLimits: { ...(before?.bandLimits ?? {}), ...(parsedData.properties?.bandLimits ?? {}) },
         } as any,
         bands: parsedData.bands,
         reportFields: parsedData.fields,

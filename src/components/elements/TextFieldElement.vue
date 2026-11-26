@@ -10,9 +10,6 @@
     :is-out-of-bounds="isOutOfBounds"
     :report-font-family="reportFontFamily"
     :report-font-size="reportFontSize"
-    :report-is-bold="reportIsBold"
-    :report-is-italic="reportIsItalic"
-    :report-is-underline="reportIsUnderline"
     :parent-frame-index="parentFrameIndex"
     :zoom-level="zoomLevel"
     @select="handleSelect"
@@ -243,9 +240,6 @@ const props = defineProps<{
   isOutOfBounds?: boolean;
   reportFontFamily?: string;
   reportFontSize?: number;
-  reportIsBold?: boolean;
-  reportIsItalic?: boolean;
-  reportIsUnderline?: boolean;
   parentFrameIndex?: number;
   pageNumber?: number;
   totalPages?: number;
@@ -506,8 +500,6 @@ watch(
     renderedHtmlContent,
     () => props.reportFontFamily,
     () => props.reportFontSize,
-    () => props.reportIsBold,
-    () => props.reportIsItalic,
     () => props.element.rotation,
     () => props.element.expression,
     () => props.element.width,
@@ -890,18 +882,15 @@ const typographyStyle = computed(() => {
         ? `${props.reportFontSize}px`
         : '10px',
     fontWeight:
-      props.element.isBold === true ||
-      (props.element.isBold === undefined && props.reportIsBold)
+      props.element.isBold === true
         ? 'bold'
         : 'normal',
     fontStyle:
-      props.element.isItalic === true ||
-      (props.element.isItalic === undefined && props.reportIsItalic)
+      props.element.isItalic === true
         ? 'italic'
         : 'normal',
     textDecoration:
-      props.element.isUnderline === true ||
-      (props.element.isUnderline === undefined && props.reportIsUnderline)
+      props.element.isUnderline === true
         ? 'underline'
         : 'none',
     color: props.element.forecolor || 'inherit',

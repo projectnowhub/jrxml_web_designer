@@ -6,7 +6,7 @@
 //   (stores/userSettings.ts collects them)
 import { DEFAULT_SNAP_SETTINGS, DEVELOPER_DEFAULT_BAND_CONFIG } from "@/constants/constants";
 import { builtInReportDefaults, type ReportDefaults } from "@/utils/reportDefaults";
-import { buildSettingsBody } from "@/utils/templateSettingsValue";
+import { paperOf } from "@/utils/pageSetup";
 import type {
   DeveloperDefaultSettings,
   SettingsBody,
@@ -18,6 +18,28 @@ export const DEVELOPER_SETTINGS_NAME = "Developer settings";
 
 type BandConfig = Record<string, { defaultHeight: number; min: number; max: number }>;
 
+// The settings in the one format both JSONs share (user default, developer default)
+function buildSettingsBody(
+  defaults: ReportDefaults,
+  sectionHeights: SettingsBody["sectionHeights"],
+  snapAndGrid: SnapAndGridSetting,
+): SettingsBody {
+  return {
+    paperSize: paperOf(defaults.pageWidth, defaults.pageHeight).paper,
+    orientation: defaults.pageWidth > defaults.pageHeight ? "landscape" : "portrait",
+    pageWidth: defaults.pageWidth,
+    pageHeight: defaults.pageHeight,
+    leftMargin: defaults.leftMargin,
+    rightMargin: defaults.rightMargin,
+    topMargin: defaults.topMargin,
+    bottomMargin: defaults.bottomMargin,
+    font: { name: defaults.font.name, size: defaults.font.size },
+    sections: [...defaults.bandTypes],
+    sectionHeights,
+    snapAndGrid: { ...snapAndGrid },
+  };
+}
+
 // Default Settings (ReportDefaults + the section height setup) in the settings format
 export function defaultsToSettingsBody(
   defaults: ReportDefaults,
@@ -28,7 +50,7 @@ export function defaultsToSettingsBody(
   for (const [type, config] of Object.entries(bands)) {
     sectionHeights[type] = { min: config.min, max: config.max, height: config.defaultHeight };
   }
-  return buildSettingsBody(defaults, defaults.bandTypes, sectionHeights, snapAndGrid);
+  return buildSettingsBody(defaults, sectionHeights, snapAndGrid);
 }
 
 // What the app comes with

@@ -79,9 +79,6 @@ const props = defineProps<{
   isDragging?: boolean;
   reportFontFamily?: string;
   reportFontSize?: number;
-  reportIsBold?: boolean;
-  reportIsItalic?: boolean;
-  reportIsUnderline?: boolean;
   isOutOfBounds?: boolean;
   parentFrameIndex?: number;
   zoomLevel?: number;
@@ -134,9 +131,6 @@ const commonProps = computed(() => ({
   isDragging: props.isDragging,
   reportFontFamily: props.reportFontFamily,
   reportFontSize: props.reportFontSize,
-  reportIsBold: props.reportIsBold,
-  reportIsItalic: props.reportIsItalic,
-  reportIsUnderline: props.reportIsUnderline,
   isOutOfBounds: props.isOutOfBounds,
   parentFrameIndex: props.parentFrameIndex,
   zoomLevel: props.zoomLevel,

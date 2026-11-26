@@ -8,6 +8,12 @@ import type { SavedTableStyle } from "@/types/dataSource";
 import { SAVED_TABLE_STYLES_PROPERTY } from "./table/tableThemes";
 import { REPORT_PROJECTS_PROPERTY } from "./projectFields";
 import { buildJasperReportOpenTag } from "./jrxml/xmlBuilder";
+import {
+  SECTION_LIMITS_PROPERTY,
+  TEMPLATE_FONT_PROPERTY,
+  serializeSectionLimits,
+  serializeTemplateFont,
+} from "./jrxml/templateSettingsXml";
 import { generateUUID } from "./jrxml/uuidGenerator";
 import { generateCustomTableXML } from "./jrxml/customTableXml";
 import { generateContentsListXML } from "./jrxml/contentsListXml";
@@ -221,8 +227,14 @@ export function generateJRXMLContent(
       p?.name !== REPORT_PROJECTS_PROPERTY &&
       p?.name !== SPECIAL_PAGES_PROPERTY &&
       p?.name !== HEADING_NUMBERS_PROPERTY &&
-      p?.name !== CONTENTS_STYLES_PROPERTY,
+      p?.name !== CONTENTS_STYLES_PROPERTY &&
+      p?.name !== TEMPLATE_FONT_PROPERTY &&
+      p?.name !== SECTION_LIMITS_PROPERTY,
   );
+  // Template Settings the attributes can't hold (jrxml/templateSettingsXml.ts)
+  const fontValue = serializeTemplateFont(properties.defaultFont);
+  if (fontValue) allProperties.push({ name: TEMPLATE_FONT_PROPERTY, value: fontValue });
+  allProperties.push({ name: SECTION_LIMITS_PROPERTY, value: serializeSectionLimits(properties.bandLimits) });
   if (tableStyles.length) {
     allProperties.push({ name: SAVED_TABLE_STYLES_PROPERTY, value: JSON.stringify(tableStyles) });
   }

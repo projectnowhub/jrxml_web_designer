@@ -408,7 +408,9 @@ export const useReportStore = defineStore("report", () => {
     reportProperties.value = {
       ...newReportProperties(),
       ...props,
-      bandLimits: props.bandLimits || getEffectiveDefaultBandLimits(),
+      // Every header / footer section has its limits: the template's own,
+      // else the Default Settings'
+      bandLimits: { ...getEffectiveDefaultBandLimits(), ...(props.bandLimits ?? {}) },
       // Each report has its own projects; a new template starts with the one
       // last chosen in this browser
       projects: props.projects ?? (data.reportProperties ? [] : startingProjects()),
