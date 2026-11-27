@@ -757,7 +757,6 @@
   },
   "notifications": {
     "fileSavedSuccess": "Templat disimpan",
-    "fileSaveFailed": "Tidak dapat menyimpan fail\nSila cuba lagi.",
     "jrxmlCopiedSuccess": "Kandungan JRXML disalin ke papan keratan",
     "jrxmlCopyFailed": "Tidak dapat menyalin\nSila pilih teks dan salin sendiri.",
     "jrxmlEditSaved": "Suntingan JRXML disimpan, antara muka dikemas kini",
@@ -884,7 +883,7 @@
     "saveFailed": "Gagal disimpan",
     "saved": "Disimpan",
     "savingTitle": "Menyimpan ke pelayan laporan sejurus selepas anda berhenti menyunting...",
-    "saveFailedTitle": "Tidak dapat menyimpan ke pelayan laporan. Perubahan anda disimpan dalam pelayar ini. Klik untuk cuba lagi.",
+    "saveFailedTitle": "Tidak dapat menyimpan ke pelayan laporan. Klik untuk cuba lagi.",
     "savedTitle": "Semua perubahan disimpan di pelayan laporan",
     "addNewPage": "Tambah Halaman Baharu",
     "bandHeight": "Ketinggian {bandName}: {height}px",
@@ -4148,7 +4147,7 @@
   },
   "reportCatalog": {
     "save": {
-      "failed": "Tidak dapat menyimpan templat\n{reason} Perubahan anda disimpan dalam pelayar ini dan disimpan semula dengan perubahan anda yang seterusnya."
+      "failed": "Tidak dapat menyimpan templat\n{reason} Ia disimpan semula dengan perubahan anda yang seterusnya, atau tekan Ctrl+S untuk mencuba sekarang."
     },
     "errors": {
       "server": "Pelayan laporan tidak memberi sebab.",
@@ -4206,8 +4205,7 @@
       "openMessage": "\"{name}\" ada dalam Templat. Buka sekarang untuk mula mengusahakannya?",
       "openConfirm": "Buka salinan",
       "openCancel": "Bukan sekarang"
-    },
-    "keptChanges": "Perubahan anda dipulihkan\n\"{name}\" dibuka dengan perubahan yang belum diterima oleh pelayan laporan. Ia sedang disimpan sekarang."
+    }
   },
   "openTemplate": {
     "title": "Buka templat",

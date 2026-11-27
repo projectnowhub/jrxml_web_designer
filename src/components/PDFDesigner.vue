@@ -906,7 +906,6 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { clearActiveTemplate, readActiveTemplate, saveActiveTemplate } from "@/utils/activeTemplate";
 import { useServerTemplateSave } from "@/composables/useServerTemplateSave";
 import { storeToRefs } from "pinia";
 import { useReportStore } from "@/stores/report";
@@ -1249,11 +1248,10 @@ const newServerTemplateIds = new Set<string>();
 const { createServerTemplate } = useServerTemplateCreate();
 // The user's Default Settings (a new template takes them, read again first)
 const userSettings = useUserSettingsStore();
-let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 // The open template saved to the report server (PUT /v2/reports/{id}/edit)
-// once the changes pause, and at once when it is left; the browser keeps its
-// changes meanwhile (saveCurrentFileToStorage) and forgets them once saved
+// once the changes pause, and at once when it is left. The server is the only
+// place a template is kept: nothing goes into this browser's storage
 const serverSave = useServerTemplateSave({
   snapshot: () => {
     if (isLoadingFile.value) return null;
@@ -1262,8 +1260,6 @@ const serverSave = useServerTemplateSave({
     return { id, name: currentFileName.value.trim() || openedTemplateName, jrxml: reportStore.jrxmlContent };
   },
   onSaved: (saved) => {
-    const kept = readActiveTemplate();
-    if (kept?.id === saved.id && kept.jrxml === saved.jrxml && kept.name === saved.name) clearActiveTemplate();
     // The server's name is now this one, and it has changes: an undo back to
     // how the template opened is saved too
     if (saved.id === currentFileId.value) {
@@ -1283,19 +1279,13 @@ const saveStatusTitle = computed(() => {
 });
 
 // Leaving the template (another one, a new one, the page closing or hidden):
-// its changes are kept in this browser and sent to the server at once
-function flushAutoSave(): boolean {
-  if (autoSaveTimer) {
-    clearTimeout(autoSaveTimer);
-    autoSaveTimer = null;
-  }
-  const kept = saveCurrentFileToStorage(false);
+// its changes are sent to the server at once
+function flushAutoSave(): void {
   void serverSave.flush();
-  return kept;
 }
 
 // The page closing: saved at once, and the browser asks first while the
-// server doesn't have the changes yet (they stay kept in this browser anyway)
+// server doesn't have the changes yet (they exist nowhere else)
 function handleBeforeUnload(event: BeforeUnloadEvent) {
   flushAutoSave();
   if (serverSave.hasUnsaved()) {
@@ -1309,32 +1299,17 @@ function handleVisibilityChange() {
   if (document.visibilityState === "hidden") flushAutoSave();
 }
 
-// A change: kept in this browser shortly after, saved on the server once the
-// changes pause (`immediate`: both at once, e.g. a rename)
+// A change: saved on the server once the changes pause (`immediate`: at
+// once, e.g. a rename)
 function scheduleAutoSave(immediate = false) {
   if (isLoadingFile.value) return;
-
-  if (autoSaveTimer) {
-    clearTimeout(autoSaveTimer);
-    autoSaveTimer = null;
-  }
-
-  if (immediate) {
-    saveCurrentFileToStorage(false);
-    void serverSave.flush();
-  } else {
-    autoSaveTimer = setTimeout(() => {
-      saveCurrentFileToStorage(false);
-      autoSaveTimer = null;
-    }, 400);
-    serverSave.schedule();
-  }
+  if (immediate) void serverSave.flush();
+  else serverSave.schedule();
 }
 
 // Ctrl+S and the save badge after a failure: saved on the server now
 async function saveNow(): Promise<void> {
   if (readOnlyTemplate.value) return;
-  saveCurrentFileToStorage(false);
   const ok = await serverSave.flush(true);
   if (ok) notification.success(t("notifications.fileSavedSuccess"));
 }
@@ -1372,9 +1347,9 @@ function createNewFile() {
 // Makes a template on the report server and opens it from there at
 // /designer/<id>: a new one under the first free "Untitled Template N" over
 // every template's name, or (`jrxml`) a .jrxml from the computer under its
-// file's name, its JRXML kept as the template's changes in this browser (the
-// server can't take a JRXML yet). When it fails, the open template stays with
-// a message
+// file's name, its JRXML held in memory (`uploadedJrxml`, never in the
+// browser's storage) until it opens and is saved on the server. When it
+// fails, the open template stays with a message
 async function createAndOpenServerTemplate(wanted: string, jrxml?: string): Promise<void> {
   if (creatingTemplate.value) return;
   creatingTemplate.value = true;
@@ -1384,7 +1359,7 @@ async function createAndOpenServerTemplate(wanted: string, jrxml?: string): Prom
       notification.error(t("reportCatalog.create.notFound", { name }));
       return;
     }
-    if (jrxml !== undefined) saveActiveTemplate({ id, name, jrxml, savedAt: new Date().toISOString() });
+    if (jrxml !== undefined) uploadedJrxml = { id, jrxml };
     else newServerTemplateIds.add(id);
     const go = typeof route.params.id === "string" && route.params.id ? router.push : router.replace;
     await go({ name: "designer", params: { id } });
@@ -1396,6 +1371,9 @@ async function createAndOpenServerTemplate(wanted: string, jrxml?: string): Prom
   }
 }
 
+// A .jrxml from the computer for a template just made on the server, opened
+// with it and saved there at once (in memory only)
+let uploadedJrxml: { id: string; jrxml: string } | null = null;
 // The template opened from the server: the name it came with, so a rename
 // counts as a change
 let openedTemplateName = "";
@@ -1411,35 +1389,15 @@ let templateReportId = "";
 let templateReportParameters: TemplatePdfRun["parameters"] = [];
 let openedWithoutJrxml = false;
 
-// Changed since it opened: an undo step past the first, renamed, already kept
-// or saved (its changes stay kept / saved, an undo back included)
+// Changed since it opened: an undo step past the first, renamed, or saved
+// (its changes stay saved, an undo back included)
 function changedSinceOpen(id: string): boolean {
   return (
     reportStore.historyStack.length > 1 ||
     currentFileName.value !== openedTemplateName ||
-    readActiveTemplate()?.id === id ||
     savedTemplateId === id ||
     saveAnywayId === id
   );
-}
-
-// Keeps the open template's changes in this browser (only this one template
-// is kept) until the report server has them (serverSave forgets them once
-// saved): one of the tenant's own on the server, once changed or renamed. A
-// default template (read only), an unchanged template or one not on the
-// server is not kept. The header's badge follows the server's save
-function saveCurrentFileToStorage(showNotification = false): boolean {
-  if (isLoadingFile.value) return false;
-  const id = currentFileId.value;
-  if (!isServerTemplateId(id) || readOnlyTemplate.value || !changedSinceOpen(id)) return true;
-  const ok = saveActiveTemplate({
-    id,
-    name: currentFileName.value,
-    jrxml: reportStore.jrxmlContent,
-    savedAt: new Date().toISOString(),
-  });
-  if (showNotification && !ok) notification.error(t("notifications.fileSaveFailed"));
-  return ok;
 }
 
 // Available elements
@@ -5465,7 +5423,7 @@ const handleBottomPanelSizeChange = (newSize: number) => {
 const updateJRXML = () => reportStore.updateJrxml();
 
 // Auto-save each JRXML the store writes, right away
-// Every new JRXML: the open template's changes are kept (saveCurrentFileToStorage)
+// Every new JRXML: saved on the server once the changes pause
 watch(() => reportStore.jrxmlVersion, () => scheduleAutoSave(false));
 
 // Location maps: a picture drawn when a Location's place, zoom or map size
@@ -6337,10 +6295,10 @@ async function openDefaultTemplate(id: string): Promise<void> {
     }
     // The template that was open keeps its last changes first
     flushAutoSave();
-    // Its changes kept in this browser (the server can't save them yet)
-    // open instead of the server's content; never for a default (read only)
-    const kept = template.isDefault ? null : readActiveTemplate();
-    const keptChanges = kept?.id === id && canParseJrxml(kept.jrxml) ? kept : null;
+    // A .jrxml from the computer just made into this template opens with
+    // its JRXML (held in memory until now) instead of the create's content
+    const uploaded = !template.isDefault && uploadedJrxml?.id === id ? uploadedJrxml.jrxml : null;
+    uploadedJrxml = null;
     openedTemplateName = template.name;
     savedTemplateId = "";
     saveAnywayId = "";
@@ -6348,13 +6306,11 @@ async function openDefaultTemplate(id: string): Promise<void> {
     templateReportParameters = template.reportParameters ?? [];
     openedWithoutJrxml = false;
     serverSave.startTemplate();
-    if (keptChanges) {
-      applyJrxml(keptChanges.jrxml, keptChanges.name || template.name, "server", id, {
-        type: "info",
-        text: t("reportCatalog.keptChanges", { name: keptChanges.name || template.name }),
-      });
-      // Changes the server didn't get (a failed save, the page closed): sent now
-      void serverSave.flush();
+    if (uploaded) {
+      applyJrxml(uploaded, template.name, "server", id);
+      // Saved on the server at once (below), so the server holds the JRXML
+      newServerTemplateIds.delete(id);
+      saveAnywayId = id;
     } else {
       // Content that isn't a JRXML the designer can open (none, an HTML
       // template, a damaged JRXML): an empty layout, with a warning saying why
@@ -6568,7 +6524,6 @@ const prepareReportForPreview = async (): Promise<TemplatePdfRun> => {
     if (!isServerTemplateId(id)) throw new Error(t("pdfPreview.errors.notOnServer"));
     // The server holds no JRXML for it yet: this one is sent even unchanged
     if (openedWithoutJrxml) saveAnywayId = id;
-    saveCurrentFileToStorage(false);
     if (!(await serverSave.flush())) throw new Error(t("pdfPreview.errors.notSaved"));
     openedWithoutJrxml = false;
   }
@@ -6586,8 +6541,8 @@ const saveJRXML = (): void => {
 };
 
 // File → Open, From my computer: the .jrxml becomes a template on the report
-// server under its file's name, its JRXML kept as that template's changes in
-// this browser (the server can't take a JRXML yet), and opens at /designer/<id>
+// server under its file's name, opens at /designer/<id> with that JRXML and is
+// saved there at once
 const openJrxmlFile = (file: { name: string; content: string }): void => {
   if (!canParseJrxml(file.content)) {
     notification.error(t("fileManager.invalidFileFormat"));
@@ -6957,7 +6912,7 @@ const applyJrxml = (
     updateJRXML();
 
     if (openedFileName !== undefined) {
-      // Nothing is kept until it is changed (saveCurrentFileToStorage)
+      // Nothing is saved until it is changed
       saveStatus.value = "saved";
       if (notice) notification[notice.type](notice.text);
       else if (from === "default") notification.info(t("reportCatalog.defaultTemplates.opened"));

@@ -13,7 +13,6 @@ import {
 import { ApiError } from "@/services/apiClient";
 import { readReportTemplatesJrxml } from "@/services/helpers/templateContentHelpers";
 import { toReportDefinitionSummary } from "@/services/helpers/reportCatalogMappers";
-import { clearActiveTemplate, readActiveTemplate } from "@/utils/activeTemplate";
 import type { CreateTemplateRequest, DefaultTemplate, EditTemplateRequest, ReportDefinitionQuery } from "@/types/reportCatalog";
 import {
   DEFAULT_TEMPLATE_STALE_TIME,
@@ -114,8 +113,6 @@ export function useDeleteServerTemplate() {
     mutationFn: (id: string) => deleteTenantReport(id),
     onSuccess: (_answer, id) => {
       queryClient.removeQueries({ queryKey: reportCatalogKeys.defaultTemplate(id) });
-      // Its changes kept in this browser go with it
-      if (readActiveTemplate()?.id === id) clearActiveTemplate();
       return refetchOwnTemplateLists();
     },
   });

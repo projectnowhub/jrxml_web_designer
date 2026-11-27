@@ -4,6 +4,7 @@
 // No API calls here.
 
 import { TemplateContentProblem } from "@/enums/templateContentProblem";
+import { SHOW_DEVELOPER_TOOLS } from "@/config/appEnvironment";
 import type { TenantReportJmixReport, TenantReportTemplateContent } from "@/types/reportCatalog";
 
 const JASPER_REPORT_TAG = /<jasperReport[\s>]/;
@@ -58,6 +59,15 @@ export function readReportTemplatesJrxml(report: TenantReportJmixReport | undefi
     ...templates.filter((template) => template.id !== defaultId),
   ];
   const texts = ordered.map((template) => ({ template, text: templateContentText(template.content!) }));
+  // Developers (localhost and the dev server): each template's content as
+  // the JRXML text it was decoded to (base64 → UTF-8), in the console
+  if (SHOW_DEVELOPER_TOOLS) {
+    texts.forEach(({ template, text }) => {
+      console.groupCollapsed(`[Template content] ${template.name || template.code || template.id} (${text.length} characters)`);
+      console.log(text);
+      console.groupEnd();
+    });
+  }
   const jrxmls = texts.filter(({ text }) => JASPER_REPORT_TAG.test(text));
   if (!jrxmls.length) return { jrxml: "", templateName: "", problem: TemplateContentProblem.notJrxml };
   const good = jrxmls.find(({ text }) => isWellFormedJrxml(text));

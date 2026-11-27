@@ -16,9 +16,8 @@
 // templates on the server: both can be opened and duplicated; only the
 // tenant's own are saved (2e) and deleted (2c). A template's JRXML is its Jmix
 // report's templates' content (base64), read by helpers/templateContentHelpers.ts
-// (queries/reportCatalogQueries.ts defaultTemplateQuery). The open template's
-// unsaved changes are also kept in this browser (utils/activeTemplate.ts)
-// until the server has them.
+// (queries/reportCatalogQueries.ts defaultTemplateQuery). Templates are kept
+// only on the server, never in this browser.
 //
 // 1 and 2 are the backend's /v2/table (faster than Jmix's /rest/entities;
 // the list takes its Jmix filter as the `filter` query parameter, no /search);

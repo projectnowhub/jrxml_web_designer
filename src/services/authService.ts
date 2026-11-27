@@ -13,7 +13,6 @@ import type { AccessTokenClaims, AuthUser, LoginErrorQuery, LoginOptions, TokenR
 import { isDesktopApp } from "@/utils/desktopApp";
 import { queryClient } from "../queries/queryClient";
 import { forgetLastProject } from "../utils/lastProject";
-import { clearActiveTemplate } from "../utils/activeTemplate";
 import { USER_SETTINGS_STORAGE_KEYS } from "@/constants/constants";
 
 export const login = async (options: LoginOptions = {}): Promise<void> => {
@@ -135,7 +134,6 @@ export const logout = async (redirectTo = "/login"): Promise<void> => {
   // The next person to sign in never sees this one's projects or data
   queryClient.clear();
   forgetLastProject();
-  clearActiveTemplate();
   // The user's Default Settings are on the server: the next person gets theirs
   USER_SETTINGS_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
 

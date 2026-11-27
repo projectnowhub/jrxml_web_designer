@@ -9,13 +9,15 @@
 // The header's save badge follows it (files store saveStatus); a failure
 // shows the server's reason once and is tried again with the next change, the
 // badge or Ctrl+S, never by itself (a failing request used to be sent again
-// and again until the tab crashed). The changes stay kept in this browser meanwhile
-// (utils/activeTemplate.ts), and are forgotten once the server has them.
+// and again until the tab crashed). Nothing is kept in this browser: until
+// the server has them, the changes are only in the open designer (closing the
+// page asks first).
 import { useI18n } from "vue-i18n";
 import { useFilesStore } from "@/stores/files";
 import { saveServerTemplate } from "@/queries/reportCatalogQueries";
 import { reportServerErrorText } from "@/services/helpers/reportCatalogMappers";
 import { toTemplateContentBase64 } from "@/services/helpers/templateContentHelpers";
+import { SHOW_DEVELOPER_TOOLS } from "@/config/appEnvironment";
 import { EDIT_TEMPLATE_REGIONS, TEMPLATE_SAVE_DELAY_MS } from "@/constants/reportCatalogConstants";
 import notification from "@/utils/notification";
 
@@ -67,6 +69,13 @@ export function useServerTemplateSave(options: {
   function send(snapshot: TemplateSaveSnapshot): Promise<boolean> {
     filesStore.saveStatus = "saving";
     const key = keyOf(snapshot);
+    // Developers (localhost and the dev server): the JRXML being saved, as
+    // text, before it is sent as base64 (the opening side logs what it read)
+    if (SHOW_DEVELOPER_TOOLS) {
+      console.groupCollapsed(`[Template save] ${snapshot.name} (${snapshot.jrxml.length} characters)`);
+      console.log(snapshot.jrxml);
+      console.groupEnd();
+    }
     const done = (async () => {
       try {
         await saveServerTemplate(snapshot.id, {

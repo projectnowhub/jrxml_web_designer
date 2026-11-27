@@ -757,7 +757,6 @@
   },
   "notifications": {
     "fileSavedSuccess": "Template saved",
-    "fileSaveFailed": "Couldn't save the file\nPlease try again.",
     "jrxmlCopiedSuccess": "JRXML content copied to clipboard",
     "jrxmlCopyFailed": "Couldn't copy\nPlease select the text and copy it yourself.",
     "jrxmlEditSaved": "JRXML edit saved, interface updated",
@@ -884,7 +883,7 @@
     "saveFailed": "Save failed",
     "saved": "Saved",
     "savingTitle": "Saving to the report server a moment after you stop editing...",
-    "saveFailedTitle": "Couldn't save to the report server. Your changes are kept in this browser. Click to try again.",
+    "saveFailedTitle": "Couldn't save to the report server. Click to try again.",
     "savedTitle": "All changes are saved on the report server",
     "addNewPage": "Add New Page",
     "bandHeight": "{bandName} Height: {height}px",
@@ -4148,7 +4147,7 @@
   },
   "reportCatalog": {
     "save": {
-      "failed": "Couldn't save the template\n{reason} Your changes are kept in this browser and saved again with your next change."
+      "failed": "Couldn't save the template\n{reason} It is saved again with your next change, or press Ctrl+S to try now."
     },
     "errors": {
       "server": "The report server didn't say why.",
@@ -4206,8 +4205,7 @@
       "openMessage": "\"{name}\" is in Templates. Open it now to start working on it?",
       "openConfirm": "Open copy",
       "openCancel": "Not now"
-    },
-    "keptChanges": "Your changes are back\n\"{name}\" opened with changes the report server didn't get yet. They are being saved now."
+    }
   },
   "openTemplate": {
     "title": "Open a template",

@@ -1,7 +1,7 @@
 // The open template: its name (the header's), its id (the report server row's)
 // and whether the server has its latest changes (saveStatus, set by
-// composables/useServerTemplateSave.ts). Its unsaved changes are also kept in
-// this browser (utils/activeTemplate.ts).
+// composables/useServerTemplateSave.ts). Templates are kept only on the
+// server, never in this browser.
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
