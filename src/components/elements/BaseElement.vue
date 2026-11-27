@@ -3,10 +3,18 @@
     class="design-element"
     :class="{ 
       'selected': isSelected,
-      'out-of-bounds': isOutOfBounds
+      'out-of-bounds': isOutOfBounds,
+      'is-dragging': isDragging,
+      'is-typing': isBeingTyped,
+      'is-project-drop': projectDrop === 'ok',
+      'is-project-drop-blocked': projectDrop === 'blocked'
     }"
+    :data-element-uuid="element.uuid"
+    @dragover="handleProjectDragOver"
+    @dragleave="handleProjectDragLeave"
+    @drop="projectDrop = null"
     @click.stop="handleSelect"
-    :style="elementStyle"
+    :style="[elementStyle, frameOutsetStyle]"
     @mousedown.stop="handleMouseDown"
     @contextmenu.stop="handleContextMenu"
     @dblclick.stop="handleDoubleClick"
@@ -14,18 +22,90 @@
     <!-- Child components will override this content -->
     <slot></slot>
 
-    <!-- Resize handle -->
-    <div 
-      v-if="isSelected"
-      class="resize-handle resize-handle-se"
-      @mousedown.stop="(event) => handleResize('se', event)"
-    ></div>
+    <!-- 8 Resize handles (box UI used for all elements) -->
+    <!-- A Location's map and address are placed by its layout: no handles -->
+    <!-- The selection frame: 10 px (on screen) outside the element, so its own
+         border and a text cursor at its edge stay in view; the handles sit on it -->
+    <div v-if="isSelected" class="selection-frame" aria-hidden="true"></div>
+    <template v-if="isSelected && !isLocationPart(element)">
+      <!-- 4 Corners -->
+      <div 
+        class="resize-handle resize-handle-nw"
+        :title="$t('resize.topLeft')"
+        @mousedown.stop="(event) => handleResize('nw', event)"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-ne"
+        :title="$t('resize.topRight')"
+        @mousedown.stop="(event) => handleResize('ne', event)"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-sw"
+        :title="$t('resize.bottomLeft')"
+        @mousedown.stop="(event) => handleResize('sw', event)"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-se"
+        :title="$t('resize.bottomRight')"
+        @mousedown.stop="(event) => handleResize('se', event)"
+      ></div>
+
+      <!-- 4 Edges -->
+      <div 
+        class="resize-handle resize-handle-n"
+        :title="$t('resize.topAutoFit')"
+        @mousedown.stop="(event) => handleResize('n', event)"
+        @dblclick.stop="handleAutoFitHeight"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-s"
+        :title="$t('resize.bottomAutoFit')"
+        @mousedown.stop="(event) => handleResize('s', event)"
+        @dblclick.stop="handleAutoFitHeight"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-w"
+        :title="$t('resize.left')"
+        @mousedown.stop="(event) => handleResize('w', event)"
+      ></div>
+      <div 
+        class="resize-handle resize-handle-e"
+        :title="$t('resize.right')"
+        @mousedown.stop="(event) => handleResize('e', event)"
+      ></div>
+    </template>
+
+    <!-- Quick Rotate Handle for rotatable elements (Text, Image, Barcode) -->
+    <template v-if="isSelected && isRotatableElement">
+      <div class="element-rotate-widget">
+        <button
+          type="button"
+          class="element-rotate-btn"
+          :title="$t('resize.rotate')"
+          @click.stop="handleQuickRotate"
+          @mousedown.stop
+        >
+          <RotateCw :size="11" :stroke-width="2.5" />
+        </button>
+        <div class="element-rotate-stem"></div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { useReportStore } from "@/stores/report";
+import { useSelectionStore } from "@/stores/selection";
+import { useEditorStore } from "@/stores/editor";
+import { RotateCw } from '@lucide/vue';
+import { resolveReportFont } from '../../config/fonts.config';
+import { computed, ref } from 'vue';
+import { canTakeProjectField } from '../../utils/projectFields';
+import { isLocationElement, isLocationPart } from '../../utils/location/locationElement';
+import { readDataSourceDrag } from '../../utils/table/dataDrag';
 import type { DesignElement, SelectedElementInfo } from '../../types';
+import { getElementBoxPadding, propertyCornerRadiusCss } from '../../utils/elementUtils';
+import { boxCornerRadiusCss, getLayeredBorder, type BorderSide } from '../../utils/framePresets';
 
 // Props
 const props = defineProps<{
@@ -38,20 +118,57 @@ const props = defineProps<{
   isDragging?: boolean;
   reportFontFamily?: string;
   reportFontSize?: number;
-  reportIsBold?: boolean;
-  reportIsItalic?: boolean;
-  reportIsUnderline?: boolean;
   isOutOfBounds?: boolean;
+  // Extra room (design px) between the element and its selection frame on the
+  // top / left, for things drawn just outside it (an open typed table's
+  // letter and number bars), so the frame and handles don't cover them
+  frameOutset?: { top?: number; left?: number };
 }>();
 
 // Emits
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
 const emit = defineEmits<{
   select: [bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number];
   dragStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   startEditing: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
+
+const isRotatableElement = computed(() =>
+  ['textField', 'image', 'barcode'].includes(props.element.type) && !isLocationPart(props.element)
+);
+
+// Quick 90-degree step rotation
+const handleQuickRotate = () => {
+  const cur = (props.element as any).rotation || 'None';
+  let next: 'None' | 'Right' | 'UpsideDown' | 'Left' = 'Right';
+  if (cur === 'Right') next = 'UpsideDown';
+  else if (cur === 'UpsideDown') next = 'Left';
+  else if (cur === 'Left') next = 'None';
+  else next = 'Right';
+
+  // Undo snapshot must be taken before the element changes
+  report.saveStateToHistory();
+  (props.element as any).rotation = next;
+  emit('rotate', props.bandIndex, props.elementIndex, props.parentFrameIndex);
+};
+
+// Being typed in: drawn above everything, so the typing is never covered
+const selection = useSelectionStore();
+const isBeingTyped = computed(() => {
+  const editing = selection.editingElement;
+  return (
+    !!editing &&
+    editing.bandIndex === props.bandIndex &&
+    editing.elementIndex === props.elementIndex &&
+    editing.parentFrameIndex === props.parentFrameIndex
+  );
+});
 
 // Whether selected
 const isSelected = computed(() => {
@@ -88,6 +205,17 @@ const isSelected = computed(() => {
 });
 
 // Element style - use a more suitable type assertion approach
+// The page is zoomed with CSS: the handles are counter-scaled so they stay
+// the same size on screen (and easy to grab) when zoomed out or in
+const editorStore = useEditorStore();
+const handleScale = computed(() => Math.min(2, Math.max(0.5, 1 / (editorStore.zoomLevel || 1))));
+
+const frameOutsetStyle = computed(() =>
+  props.frameOutset
+    ? { "--frame-top": `${props.frameOutset.top ?? 0}px`, "--frame-left": `${props.frameOutset.left ?? 0}px` }
+    : {},
+);
+
 const elementStyle = computed(() => {
   // Compute values for complex expressions separately and add type assertions
   // Fix the vertical alignment value mapping
@@ -112,7 +240,14 @@ const elementStyle = computed(() => {
   const textAlign = props.element.textAlignment === 'Justified' ? 'justify' : (props.element.textAlignment?.toLowerCase() || 'left');
   
   // Compute the border style
+  // Rounded frame with a partial border: drawn solid in one colour, as in the PDF
+  const layered = props.element.type === 'frame' ? getLayeredBorder(props.element as any) : null;
+
   const calculateBorder = (side: string): string => {
+    if (layered) {
+      const width = layered.widths[side as BorderSide];
+      return width > 0 ? `${width}px solid ${layered.color}` : 'none';
+    }
     // Prefer the getBorderStyle function, which already contains the full border handling logic
     const borderStyle = getBorderStyle(side, props.element.box);
     if (borderStyle && borderStyle !== 'none') {
@@ -125,6 +260,8 @@ const elementStyle = computed(() => {
 
   // Assert the entire object as CSSProperties
   return {
+    // Handles keep their size on screen at any zoom
+    '--handle-scale': String(handleScale.value),
     position: 'absolute' as 'absolute',
     left: `${props.element.x}px`,
     top: `${props.element.y}px`,
@@ -132,20 +269,20 @@ const elementStyle = computed(() => {
     height: `${props.element.height}px`,
     backgroundColor: (props.element.mode === 'Opaque' && props.element.backcolor) ? props.element.backcolor : 'transparent',
     color: props.element.type !== 'table' ? props.element.forecolor : undefined,
-    paddingTop: props.element.box?.topPadding ? `${props.element.box.topPadding}px` : (props.element.box?.padding ? `${props.element.box.padding}px` : undefined),
-    paddingLeft: props.element.box?.leftPadding ? `${props.element.box.leftPadding}px` : (props.element.box?.padding ? `${props.element.box.padding}px` : undefined),
-    paddingBottom: props.element.box?.bottomPadding ? `${props.element.box.bottomPadding}px` : (props.element.box?.padding ? `${props.element.box.padding}px` : undefined),
-    paddingRight: props.element.box?.rightPadding ? `${props.element.box.rightPadding}px` : (props.element.box?.padding ? `${props.element.box.padding}px` : undefined),
+    paddingTop: `${getElementBoxPadding(props.element.box).top}px`,
+    paddingLeft: `${getElementBoxPadding(props.element.box).left}px`,
+    paddingBottom: `${getElementBoxPadding(props.element.box).bottom}px`,
+    paddingRight: `${getElementBoxPadding(props.element.box).right}px`,
     borderTop: calculateBorder('top'),
     borderLeft: calculateBorder('left'),
     borderBottom: calculateBorder('bottom'),
     borderRight: calculateBorder('right'),
-    borderRadius: props.element.type === 'ellipse' ? '50%' : ((props.element.type === 'rectangle' && (props.element as any).radius) ? `${(props.element as any).radius}px` : undefined),
-    fontFamily: props.element.fontFamily || props.reportFontFamily,
+    borderRadius: props.element.type === 'ellipse' ? '50%' : props.element.type === 'frame' ? boxCornerRadiusCss(props.element as any) : ((props.element.type === 'rectangle' && (props.element as any).radius) ? `${(props.element as any).radius}px` : (props.element.type === 'image' || props.element.type === 'textField') ? propertyCornerRadiusCss(props.element) : undefined),
+    fontFamily: resolveReportFont(props.element.fontFamily || props.reportFontFamily),
     fontSize: props.element.fontSize ? `${props.element.fontSize}px` : (props.reportFontSize ? `${props.reportFontSize}px` : '10px'),
-    fontWeight: (props.element.isBold === true || (props.element.isBold === undefined && props.reportIsBold)) ? 'bold' : 'normal',
-    fontStyle: (props.element.isItalic === true || (props.element.isItalic === undefined && props.reportIsItalic)) ? 'italic' : 'normal',
-    textDecoration: (props.element.isUnderline === true || (props.element.isUnderline === undefined && props.reportIsUnderline)) ? 'underline' : 'none',
+    fontWeight: props.element.isBold === true ? 'bold' : 'normal',
+    fontStyle: props.element.isItalic === true ? 'italic' : 'normal',
+    textDecoration: props.element.isUnderline === true ? 'underline' : 'none',
     display: 'flex' as 'flex',
     alignItems: verticalAlign as any,
     justifyContent: justifyContent as any,
@@ -279,6 +416,9 @@ const getBorderStyle = (side: string, box?: any): string | undefined => {
   // If no color is set, use transparent
   const finalColor = color || 'transparent';
 
+  // Browsers draw a double border as a single line below 3px
+  if (style === 'double' && parseFloat(width) < 3) width = '3px';
+
   return `${width} ${style} ${finalColor}`;
 };
 
@@ -293,6 +433,19 @@ const handleSelect = (event: MouseEvent) => {
 const handleMouseDown = (event: MouseEvent) => {
   // Only allow the left button to trigger dragging
   if (event.button !== 0) {
+    return;
+  }
+
+  // Do not initiate element drag if clicking inside an active inline editor, contenteditable, or text input
+  const target = event.target as HTMLElement | null;
+  if (
+    target &&
+    (target.isContentEditable ||
+      target.closest?.('[contenteditable="true"]') ||
+      target.closest?.('.inline-edit-contenteditable') ||
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA')
+  ) {
     return;
   }
 
@@ -311,10 +464,8 @@ const handleMouseDown = (event: MouseEvent) => {
     const deltaX = Math.abs(moveEvent.clientX - startX);
     const deltaY = Math.abs(moveEvent.clientY - startY);
 
-    // Only allow dragging once the mouse has been held down for more than 100ms
-    const elapsed = Date.now() - startTime;
-
-    if (elapsed > 100 && (deltaX > 5 || deltaY > 5)) {
+    // Start dragging smoothly once moved beyond 3px threshold
+    if (deltaX > 3 || deltaY > 3) {
       if (!isDragging) {
         isDragging = true;
         // Emit the drag start event
@@ -342,12 +493,17 @@ const handleMouseDown = (event: MouseEvent) => {
 };
 
 // Handle resize
-const handleResize = (_direction: string, event?: MouseEvent) => {
+const handleResize = (direction: string, event?: MouseEvent) => {
   // Get the current event object
-  const resizeEvent = event || window.event as MouseEvent;
+  const resizeEvent = event || (window.event as MouseEvent);
   if (resizeEvent && resizeEvent.button === 0) {
-    emit('resizeStart', resizeEvent, props.bandIndex, props.elementIndex, props.parentFrameIndex);
+    emit('resizeStart', resizeEvent, props.bandIndex, props.elementIndex, props.parentFrameIndex, direction);
   }
+};
+
+// Handle auto-fit height (from double-clicking the bottom handle)
+const handleAutoFitHeight = () => {
+  emit('autoFitHeight', props.bandIndex, props.elementIndex, props.parentFrameIndex);
 };
 
 // Handle context menu
@@ -359,6 +515,33 @@ const handleContextMenu = (event: MouseEvent) => {
 const handleDoubleClick = () => {
   emit('startEditing', props.bandIndex, props.elementIndex, props.parentFrameIndex);
 };
+
+// ---- Project details (Report Data) ------------------------------------------
+
+// While a project detail is dragged over this item: can it take it? Only text,
+// image and barcode items react; the drop itself is handled by the designer.
+const projectDrop = ref<'ok' | 'blocked' | null>(null);
+
+const handleProjectDragOver = (event: DragEvent) => {
+  const isLocation = isLocationElement(props.element) || isLocationPart(props.element);
+  if (!isLocation && !['textField', 'image', 'barcode'].includes(props.element.type)) return;
+  const drag = readDataSourceDrag(event);
+  if (drag?.kind !== 'projectField') return;
+  // A whole location dropped elsewhere becomes a new Location there
+  if (drag.field.type === 'location' && !isLocation) return;
+  // The innermost item under the pointer decides (an item inside a box)
+  event.stopPropagation();
+  event.preventDefault();
+  const ok = canTakeProjectField(props.element, drag.field, drag.value);
+  projectDrop.value = ok ? 'ok' : 'blocked';
+  // A refused drop still reaches the designer, which says why
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+};
+
+const handleProjectDragLeave = (event: DragEvent) => {
+  const next = event.relatedTarget as Node | null;
+  if (!next || !(event.currentTarget as HTMLElement).contains(next)) projectDrop.value = null;
+};
 </script>
 
 <style scoped>
@@ -367,20 +550,19 @@ const handleDoubleClick = () => {
   cursor: move;
   position: relative;
   box-sizing: border-box;
-  z-index: 1;
+  z-index: 10;
   /* Add a small click-area extension to improve selection accuracy */
   transform-origin: center;
   transition: outline 0.1s ease;
-  /* Add text wrapping style */
-  word-break: break-all;
+  /* Natural typography wrapping */
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
 }
 
-.design-element.selected {
-  outline: 2px solid #1890ff;
-  outline-offset: -1px;
-  /* Raise the z-index of the selected element to ensure correct interaction */
-  z-index: 10;
-}
+/* Hovering and selecting keep the stacking order, so the page shows what
+   prints: raising an item hid what lies on top of it (a cover's title over its
+   colour panel), and an item just sent to back still showed in front. */
 
 .design-element.out-of-bounds {
   /* Highlight style for out-of-bounds elements */
@@ -388,16 +570,216 @@ const handleDoubleClick = () => {
   outline-offset: -1px;
   background-color: rgba(255, 77, 79, 0.1);
   box-shadow: 0 0 5px rgba(255, 77, 79, 0.5);
+  z-index: 40;
+}
+
+/* Selected: the outline is the selection frame outside the element (below) */
+.selection-frame {
+  --hs: var(--handle-scale, 1);
+  position: absolute;
+  inset: calc(-10px * var(--hs));
+  top: calc(-10px * var(--hs) - var(--frame-top, 0px));
+  left: calc(-10px * var(--hs) - var(--frame-left, 0px));
+  border: calc(1.5px * var(--hs)) solid #6440f4;
+  border-radius: calc(2px * var(--hs));
+  pointer-events: none;
+  z-index: 55;
+}
+
+.design-element.is-typing {
+  z-index: 50;
+}
+
+.design-element.is-dragging {
+  z-index: 100;
+}
+
+/* While dragged, an element is always on top so it stays in view (after the
+   rules above, and as specific, so it wins over them) */
+.design-element.design-element.design-element.is-dragging {
+  z-index: 100;
+}
+
+/* A project detail dragged over: blue dotted when it can be dropped here, red
+   when not. After the other states and more specific, so it also shows on a
+   selected element; the tint is an overlay because elements paint their own
+   background colour. */
+.design-element.design-element.is-project-drop,
+.design-element.design-element.is-project-drop-blocked {
+  outline: 2px dashed #6440f4;
+  outline-offset: 1px;
+  z-index: 60;
+}
+
+.design-element.design-element.is-project-drop-blocked {
+  outline-color: #dc2626;
+  cursor: no-drop;
+}
+
+.design-element.is-project-drop::after,
+.design-element.is-project-drop-blocked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: rgba(100, 64, 244, 0.08);
+  pointer-events: none;
+}
+
+.design-element.is-project-drop-blocked::after {
+  background: rgba(220, 38, 38, 0.08);
 }
 
 .resize-handle {
+  --hs: var(--handle-scale, 1);
   position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 10px;
-  height: 10px;
-  background-color: #1890ff;
+  background-color: #6440f4;
+  z-index: 60;
+  box-sizing: border-box;
+  border: 1px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: background-color 0.1s ease;
+}
+
+/* A larger invisible area around each handle catches the mouse */
+.resize-handle::before {
+  content: "";
+  position: absolute;
+  inset: calc(-5px * var(--hs));
+}
+
+.resize-handle:hover {
+  background-color: #7c5cf7;
+}
+
+/* The handles sit on the selection frame, 10 px (on screen) outside the
+   element: --o is that offset, sizes are on-screen pixels times --hs */
+.resize-handle {
+  --o: calc(-10px * var(--hs));
+  /* The top / left sides moved further out by frameOutset */
+  --ot: calc(var(--o) - var(--frame-top, 0px));
+  --ol: calc(var(--o) - var(--frame-left, 0px));
+}
+
+/* Corners: 12 px squares */
+.resize-handle-nw,
+.resize-handle-ne,
+.resize-handle-sw,
+.resize-handle-se {
+  width: calc(12px * var(--hs));
+  height: calc(12px * var(--hs));
+  border-radius: calc(3px * var(--hs));
+}
+.resize-handle-nw {
+  top: calc(var(--ot) - 6px * var(--hs));
+  left: calc(var(--ol) - 6px * var(--hs));
+  cursor: nw-resize;
+}
+.resize-handle-ne {
+  top: calc(var(--ot) - 6px * var(--hs));
+  right: calc(var(--o) - 6px * var(--hs));
+  cursor: ne-resize;
+}
+.resize-handle-sw {
+  bottom: calc(var(--o) - 6px * var(--hs));
+  left: calc(var(--ol) - 6px * var(--hs));
+  cursor: sw-resize;
+}
+.resize-handle-se {
+  bottom: calc(var(--o) - 6px * var(--hs));
+  right: calc(var(--o) - 6px * var(--hs));
   cursor: se-resize;
-  z-index: 20;
+}
+
+/* Edges: 28 x 9 px bars, centred on the frame's edge */
+.resize-handle-n,
+.resize-handle-s {
+  /* Centred on the frame's edge (the frame may reach further out on the left) */
+  left: calc(50% - var(--frame-left, 0px) / 2);
+  width: calc(28px * var(--hs));
+  height: calc(9px * var(--hs));
+  transform: translateX(-50%);
+  border-radius: calc(4px * var(--hs));
+}
+.resize-handle-n {
+  top: calc(var(--ot) - 4.5px * var(--hs));
+  cursor: n-resize;
+}
+.resize-handle-s {
+  bottom: calc(var(--o) - 4.5px * var(--hs));
+  cursor: s-resize;
+}
+.resize-handle-w,
+.resize-handle-e {
+  top: calc(50% - var(--frame-top, 0px) / 2);
+  width: calc(9px * var(--hs));
+  height: calc(28px * var(--hs));
+  transform: translateY(-50%);
+  border-radius: calc(4px * var(--hs));
+}
+.resize-handle-w {
+  left: calc(var(--ol) - 4.5px * var(--hs));
+  cursor: w-resize;
+}
+.resize-handle-e {
+  right: calc(var(--o) - 4.5px * var(--hs));
+  cursor: e-resize;
+}
+
+/* Rotatable element 90° quick rotate widget */
+/* Above the selection frame: its stem reaches down to the top handle (the
+   handle's top is 14.5 px out, the stem 10 px, the button 20 px; on-screen
+   pixels, kept at any zoom like the handles) */
+.element-rotate-widget {
+  --hs: var(--handle-scale, 1);
+  position: absolute;
+  top: calc(-44.5px * var(--hs));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 70;
+  pointer-events: auto;
+}
+
+.element-rotate-stem {
+  width: calc(1px * var(--hs));
+  height: calc(10px * var(--hs));
+  background-color: #6440f4;
+}
+
+.element-rotate-btn {
+  width: calc(20px * var(--hs));
+  height: calc(20px * var(--hs));
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #6440f4;
+  color: #6440f4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: all 0.15s ease;
+}
+
+/* The arrow keeps its share of the circle at any zoom, exactly centred */
+.element-rotate-btn {
+  box-sizing: border-box;
+  line-height: 0;
+}
+.element-rotate-btn svg {
+  flex: none;
+  display: block;
+  width: calc(12px * var(--hs));
+  height: calc(12px * var(--hs));
+}
+
+.element-rotate-btn:hover {
+  background: #6440f4;
+  color: #ffffff;
+  transform: scale(1.15);
 }
 </style>

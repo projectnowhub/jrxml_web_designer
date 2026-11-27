@@ -4,13 +4,11 @@
     :band-index="bandIndex"
     :element-index="elementIndex"
     :selected-element="selectedElement"
+    :selected-elements="selectedElements"
     :is-dragging="isDragging"
     :is-out-of-bounds="isOutOfBounds"
     :report-font-family="reportFontFamily"
     :report-font-size="reportFontSize"
-    :report-is-bold="reportIsBold"
-    :report-is-italic="reportIsItalic"
-    :report-is-underline="reportIsUnderline"
     :parent-frame-index="parentFrameIndex"
     @select="handleSelect"
     @drag-start="handleDragStart"
@@ -35,13 +33,11 @@ const props = defineProps<{
   bandIndex: number;
   elementIndex: number;
   selectedElement: SelectedElementInfo | null;
+  selectedElements?: { bandIndex: number; elementIndex: number; parentFrameIndex?: number }[];
   isDragging?: boolean;
   isOutOfBounds?: boolean;
   reportFontFamily?: string;
   reportFontSize?: number;
-  reportIsBold?: boolean;
-  reportIsItalic?: boolean;
-  reportIsUnderline?: boolean;
   parentFrameIndex?: number;
 }>();
 
@@ -49,7 +45,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number];
   dragStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
@@ -59,16 +55,20 @@ const ellipseStyle = computed(() => {
     borderRadius: '50%' // Ellipse shape
   };
 
-  // Border setting - prefer the pen property
-  if (props.element.pen) {
-    const width = props.element.pen.lineWidth || 0;
-    const color = props.element.pen.lineColor || '#000000';
+  // Border setting - prefer the pen property or direct properties
+  const pen = props.element.pen;
+  const hasPenOrBorder = pen || (props.element as any).lineColor || (props.element as any).lineWidth !== undefined || (props.element as any).lineStyle;
+
+  if (hasPenOrBorder) {
+    const width = pen?.lineWidth !== undefined ? pen.lineWidth : ((props.element as any).lineWidth !== undefined ? (props.element as any).lineWidth : 1);
+    const color = pen?.lineColor || (props.element as any).lineColor || '#000000';
     let lineStyle = 'solid';
 
-    if (props.element.pen.lineStyle) {
-      if (props.element.pen.lineStyle === 'Dashed') lineStyle = 'dashed';
-      else if (props.element.pen.lineStyle === 'Dotted') lineStyle = 'dotted';
-      else if (props.element.pen.lineStyle === 'Double') lineStyle = 'double';
+    const styleVal = pen?.lineStyle || (props.element as any).lineStyle;
+    if (styleVal) {
+      if (styleVal === 'Dashed') lineStyle = 'dashed';
+      else if (styleVal === 'Dotted') lineStyle = 'dotted';
+      else if (styleVal === 'Double') lineStyle = 'double';
     }
 
     // No border if the line width is 0
@@ -103,8 +103,8 @@ const handleDragStart = (event: MouseEvent, bandIndex: number, elementIndex: num
 };
 
 // Handle resize start
-const handleResizeStart = (event: MouseEvent, bandIndex: number, elementIndex: number) => {
-  emit('resizeStart', event, bandIndex, elementIndex, props.parentFrameIndex);
+const handleResizeStart = (event: MouseEvent, bandIndex: number, elementIndex: number, _parentFrameIndex?: number, direction?: string) => {
+  emit('resizeStart', event, bandIndex, elementIndex, props.parentFrameIndex, direction);
 };
 
 // Handle context menu

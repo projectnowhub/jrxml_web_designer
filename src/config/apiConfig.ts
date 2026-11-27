@@ -1,11 +1,47 @@
-// API configuration
-export const API_CONFIG = {
-  // PDF preview endpoint
-  PDF_PREVIEW_API:
-    "https://preview.report.projectnowcdp.com/api/pdf/generateForm",
+// API configuration: one server address (VITE_API_BASE_URL); every API is that
+// address plus its route below.
+export const API_BASE_URL: string = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 
-  // Other API configuration can be added here
-};
+export const API_ROUTES = {
+  authorize: "/oauth2/authorize",
+  token: "/oauth2/token",
+  // The CDP app's route (cdp-contractor App.tsx); /v2/user/me answers the server's web page
+  currentUser: "/v1/user/me",
+  logout: "/logout",
+  files: "/rest/files",
+  analytics: "/v2/analytics/aggregate",
+  table: "/v2/table",
+  projectList: "/v2/table/cdp_Project",
+  entities: "/v2/entities",
+  // A project's photos (the CDP app's Photos page, project.api.ts getProjectImages)
+  projectPhotos: "/v1/image/project/filter",
+  // Every photo tag (getAllTags)
+  photoTags: "/v2/table/cdp_Tag",
+  // The report server's templates (default and the tenant's own, told apart by
+  // isDefault): list = GET with the Jmix filter as the `filter` query
+  // parameter; one template = GET …/{id}
+  tenantReports: "/v2/table/rptadn_TenantReport",
+  // Delete a template: Jmix's own entity API (the backend's /v2/table doesn't delete it)
+  deleteTenantReport: "/rest/entities/rptadn_TenantReport",
+  // Duplicate a template (default or own): the copy is one of the tenant's own (isDefault false)
+  copyTemplate: "/v2/reports/copy",
+  // Create a template (the tenant's own, isDefault false)
+  createTemplate: "/v2/reports/create",
+  // Save a template: PUT …/{id}/edit, {id} = the rptadn_TenantReport row's id
+  editTemplate: "/v2/reports",
+  // The signed-in user's Default Settings (GET), saved with PUT …/{id} on
+  // Jmix's entity API (userTemplateSettingEntity)
+  currentUserTemplateSettings: "/v1/user-report-template-settings/current",
+  userTemplateSettingEntity: "/rest/entities/cdp_UserReportTemplateSetting",
+  runReport: "/rest/reports/run",
+} as const;
 
-// Export the PDF preview API constant separately for convenient direct import
-export const PDF_PREVIEW_API = API_CONFIG.PDF_PREVIEW_API;
+export const apiUrl = (route: string) => `${API_BASE_URL}${route}`;
+
+// Image upload endpoint
+export const IMAGE_UPLOAD_API = apiUrl(API_ROUTES.files);
+
+
+// Address of a point on the map (Location → "Fill the address from the pin"):
+// the reverse geocoder the CDP app's location picker uses, same setting name
+export const REVERSE_GEOCODE_API: string = "https://nominatim.openstreetmap.org/reverse";

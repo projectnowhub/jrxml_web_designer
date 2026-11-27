@@ -4,7 +4,8 @@
  * Supports dynamically configuring AI service parameters and persisting them to localStorage
  */
 
-import { ref, watch } from 'vue';
+import { ref, watch } from "vue";
+import { AI_CONFIG, currentClaudeModel, DEFAULT_MAX_TOKENS, LEGACY_MAX_TOKENS } from "@/config/aiConfig";
 
 // ============================================
 // Type definitions
@@ -31,15 +32,15 @@ export interface AIConfigManagerReturn {
 // ============================================
 
 const DEFAULT_CONFIG: AIConfiguration = {
-  apiEndpoint: 'http://127.0.0.1:1234/v1',
-  apiKey: 'lm-studio',
-  modelName: 'local-model',
-  maxTokens: 4096,
-  temperature: 0.7,
-  requestTimeout: 300000 // 5 minutes
+  apiEndpoint: AI_CONFIG.API_ENDPOINT || "https://api.anthropic.com/v1",
+  apiKey: AI_CONFIG.API_KEY || "",
+  modelName: AI_CONFIG.MODEL_NAME,
+  maxTokens: AI_CONFIG.MAX_TOKENS || DEFAULT_MAX_TOKENS,
+  temperature: AI_CONFIG.TEMPERATURE || 0.7,
+  requestTimeout: AI_CONFIG.REQUEST_TIMEOUT_MS || 300000, // 5 minutes
 };
 
-const STORAGE_KEY = 'jrxml_ai_config';
+const STORAGE_KEY = "jrxml_ai_config";
 
 // ============================================
 // Configuration management implementation
@@ -55,10 +56,33 @@ export function useAIConfigManager(): AIConfigManagerReturn {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        return { ...DEFAULT_CONFIG, ...parsed };
+        const merged = { ...DEFAULT_CONFIG, ...parsed };
+        // Migrate away from old lm-studio / local defaults
+        if (merged.apiEndpoint === "http://127.0.0.1:1234/v1") {
+          merged.apiEndpoint =
+            AI_CONFIG.API_ENDPOINT || "https://api.anthropic.com/v1";
+        }
+        // A retired Claude model (or the old local placeholder) becomes the current default
+        merged.modelName = currentClaudeModel(merged.modelName);
+        // The old default answer length was too short for whole designs
+        if (merged.maxTokens === LEGACY_MAX_TOKENS) merged.maxTokens = DEFAULT_CONFIG.maxTokens;
+        if (
+          merged.apiKey === "lm-studio" ||
+          (!merged.apiKey && AI_CONFIG.API_KEY)
+        ) {
+          merged.apiKey = AI_CONFIG.API_KEY;
+        }
+        // If .env specifies a key, use it if stored key is empty or placeholder
+        if (
+          AI_CONFIG.API_KEY &&
+          (!merged.apiKey || merged.apiKey === "lm-studio")
+        ) {
+          merged.apiKey = AI_CONFIG.API_KEY;
+        }
+        return merged;
       }
     } catch (error) {
-      console.error('Failed to load AI config from storage:', error);
+      console.error("Failed to load AI config from storage:", error);
     }
     return { ...DEFAULT_CONFIG };
   };
@@ -71,7 +95,7 @@ export function useAIConfigManager(): AIConfigManagerReturn {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newConfig));
     } catch (error) {
-      console.error('Failed to save AI config to storage:', error);
+      console.error("Failed to save AI config to storage:", error);
     }
   };
 
@@ -96,7 +120,7 @@ export function useAIConfigManager(): AIConfigManagerReturn {
     config: config.value,
     updateConfig,
     resetConfig,
-    getConfigFromStorage
+    getConfigFromStorage,
   };
 }
 

@@ -12,8 +12,8 @@
         @keyup.esc="handleCancel"
       />
       <div class="input-actions">
-        <n-button type="default" @click="handleCancel">Cancel</n-button>
-        <n-button type="primary" @click="handleConfirm">OK</n-button>
+        <n-button type="default" @click="handleCancel">{{ $t("common.cancel") }}</n-button>
+        <n-button type="primary" @click="handleConfirm">{{ $t("common.ok") }}</n-button>
       </div>
     </div>
   </div>

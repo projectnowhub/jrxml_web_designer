@@ -1,3 +1,6 @@
-// Table utility module index file
-export * from './ColumnFactory';
-export * from './TableModel';
+// Data tables: setup, layout and themes
+export * from './dataBinding';
+export * from './dataTable';
+export * from './tableThemes';
+export * from './tableDocument';
+export * from './summary';

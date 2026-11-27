@@ -1,5965 +1,4359 @@
 <template>
-    <div class="element-properties">
-        <h3>{{ t("properties.title") }}</h3>
+  <div ref="panelRoot" class="element-properties">
+    <!-- Panel header: what the panel is showing (the selected element, or the report) -->
+    <div class="panel-header">
+      <h3>{{ panelTitle }}</h3>
+      <!-- Template Settings: say they change only the open template -->
+      <span
+        v-if="!selectedElement || !currentElement"
+        class="template-scope-pill"
+        :title="t('templateSettings.scopeHint')"
+      >
+        <Info :size="12" :stroke-width="2.25" aria-hidden="true" />
+        {{ t("templateSettings.scope") }}
+      </span>
+    </div>
+    <!-- What it is and what to do with it (Help) -->
+    <PanelTip :kind="panelKind" />
 
-        <!-- Style management button -->
-        <div class="style-management-section">
-            <n-button type="primary" @click="showStyleManagerModal = true">
-                {{ t("properties.styleManagement") }}
-            </n-button>
-        </div>
-
-        <!-- Report properties -->
-        <div
-            v-if="!selectedBandIndex && !selectedElement"
-            class="property-section"
+    <!-- Template Settings: nothing selected, so the settings of this report
+         (paper, margins, font, the parts of each page, their heights).
+         What new reports start with is Default Settings (bottom panel). -->
+    <div v-if="!selectedElement || !currentElement" class="property-section">
+      <!-- Resets only ever take Default Settings, never the original ones -->
+      <div class="template-reset-row">
+        <button type="button" class="template-reset-btn" @click="resetAllToDefault">
+          <RotateCcw :size="12" :stroke-width="2.2" aria-hidden="true" />
+          {{ t("templateSettings.resetAll") }}
+        </button>
+      </div>
+      <div class="template-setup">
+        <PageSetupSection
+          v-for="card in TEMPLATE_CARDS"
+          :key="card.section"
+          :section="card.section"
+          :title="t(card.title)"
+          :help-id="card.help"
+          :value="templateSetup"
+          :bands-hint="t('templateSettings.bandsHint')"
+          @change="changeTemplate"
         >
-            <h4>{{ t("properties.reportProperties") }}</h4>
+          <template #actions>
+            <button type="button" class="template-reset-btn" @click="useDefault(card.section)">
+              <RotateCcw :size="11" :stroke-width="2.2" aria-hidden="true" />
+              {{ t("templateSettings.useDefault") }}
+            </button>
+          </template>
+        </PageSetupSection>
+      </div>
 
-            <!-- Band height settings -->
-            <div class="form-group">
-                <h4>{{ t("properties.bandHeightSettings") }}</h4>
-                <div class="band-heights-grid">
-                    <div
-                        v-for="(band, index) in bands"
-                        :key="index"
-                        class="band-height-item"
-                    >
-                        <label>{{ getBandDisplayName(band.type) }}</label>
-                        <div class="band-height-control">
-                            <input
-                                v-model.number="band.height"
-                                type="number"
-                                min="0"
-                                step="1"
-                                class="band-height-input"
-                                @change="
-                                    ensureIntegerValue(band, 'height');
-                                    updateBandHeight(index);
-                                "
-                                @blur="
-                                    ensureIntegerValue(band, 'height');
-                                    updateBandHeight(index);
-                                "
-                            />
-                            <span class="band-height-unit">px</span>
-                        </div>
-                    </div>
+      <!-- Section Heights: one card, like the others -->
+      <div class="heights-card">
+        <div class="band-settings-header-wrapper">
+          <div class="band-settings-title-group">
+            <h5>{{ t("properties.templateBandSettings") }}<SettingHelpButton id="reportSections" /></h5>
+          </div>
+          <button
+            type="button"
+            class="template-reset-btn"
+            :title="t('templateSettings.useDefaultHeightsTitle')"
+            @click="useDefaultHeights"
+          >
+            <RotateCcw :size="11" :stroke-width="2.2" aria-hidden="true" />
+            {{ t("templateSettings.useDefault") }}
+          </button>
+        </div>
+        <SettingHelpText id="reportSections" />
+        <div class="band-cards-grid">
+          <!-- Background is an underlay sized to the page, not a stacked band -->
+          <div
+            v-for="(band, index) in bands"
+            v-show="band.type !== 'background'"
+            :key="band.type"
+            class="template-band-card"
+          >
+            <!-- Card Header: Band Name + Auto badge for Detail -->
+            <div class="template-band-header">
+              <span class="template-band-title">{{
+                getBandDisplayName(band.type)
+              }}</span>
+              <span
+                v-if="band.type === 'detail'"
+                class="band-badge-auto"
+              >
+                {{ t("properties.detailAutoCalculated") }}
+              </span>
+            </div>
+
+            <!-- Card Inputs: Height, Min Height, Max Height -->
+            <div class="band-limit-inputs">
+              <div class="band-limit-input-group">
+                <label>{{ t("properties.height") }}</label>
+                <div
+                  class="input-unit-wrapper"
+                  :class="{ 'is-disabled': band.type === 'detail' }"
+                >
+                  <input v-live-change
+                    :value="band.height"
+                    type="number"
+                    :min="
+                      band.type !== 'detail' ? getBandLimit(band.type).min : 0
+                    "
+                    :max="
+                      band.type !== 'detail'
+                        ? getMaxPhysicalHeight(band.type)
+                        : undefined
+                    "
+                    step="1"
+                    :disabled="band.type === 'detail'"
+                    :title="
+                      band.type === 'detail'
+                        ? t('properties.detailAutoCalculatedHint')
+                        : ''
+                    "
+                    @change="
+                      setIntegerValue(band, 'height', $event) &&
+                        updateBandHeight(index)
+                    "
+                  />
+                  <span class="unit">px</span>
                 </div>
-            </div>
-        </div>
+              </div>
 
-        <!-- Element properties -->
-        <div
-            v-else-if="selectedElement && currentElement"
-            class="property-section"
-        >
-            <!-- Element properties tabs -->
-            <n-tabs type="segment">
-                <!-- Basic properties tab -->
-                <n-tab-pane name="basic" :tab="t('properties.basicProperties')">
-                    <h4>{{ t("properties.basicProperties") }}</h4>
-                    <div class="basic-properties-grid">
-                        <div class="form-group">
-                            <label>{{ t("properties.x") }}</label>
-                            <input
-                                v-if="currentElement"
-                                v-model.number="currentElement.x"
-                                type="number"
-                                @change="
-                                    ensureIntegerValue(currentElement, 'x')
-                                "
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label>{{ t("properties.y") }}</label>
-                            <input
-                                v-if="currentElement"
-                                v-model.number="currentElement.y"
-                                type="number"
-                                @change="
-                                    ensureIntegerValue(currentElement, 'y')
-                                "
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label>{{ t("properties.width") }}</label>
-                            <input
-                                v-if="currentElement"
-                                v-model.number="currentElement.width"
-                                type="number"
-                                @change="
-                                    ensureIntegerValue(currentElement, 'width')
-                                "
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label>{{ t("properties.height") }}</label>
-                            <input
-                                v-if="currentElement"
-                                v-model.number="currentElement.height"
-                                type="number"
-                                @change="
-                                    ensureIntegerValue(currentElement, 'height')
-                                "
-                            />
-                        </div>
-                    </div>
-
-                    <!-- Common print-when expression (all element types except break and table) -->
-                    <div
-                        class="form-group"
-                        v-if="
-                            currentElement &&
-                            currentElement.type !== 'break' &&
-                            currentElement.type !== 'table'
-                        "
-                    >
-                        <label>{{
-                            t("properties.printWhenExpression") ||
-                            "Print When Expression"
-                        }}</label>
-                        <ExpressionEditor
-                            :model-value="
-                                currentElement.printWhenExpression || ''
-                            "
-                            @update:model-value="
-                                currentElement.printWhenExpression = $event
-                            "
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                        />
-                    </div>
-
-                    <!-- Style reference -->
-                    <div
-                        class="form-group"
-                        v-if="reportStyles && reportStyles.length > 0"
-                    >
-                        <label>{{
-                            t("properties.styleReference") || "Style Reference"
-                        }}</label>
-                        <select
-                            v-model="currentElement.style"
-                            class="form-select"
-                        >
-                            <option value="">
-                                {{ t("properties.noStyle") || "No Style" }}
-                            </option>
-                            <option
-                                v-for="s in reportStyles"
-                                :key="s.name"
-                                :value="s.name"
-                            >
-                                {{ s.name }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <!-- Show specific properties based on element type -->
-                    <template v-if="currentElement.type === 'staticText'">
-                        <div class="form-group">
-                            <label>{{ t("properties.textContent") }}</label>
-                            <textarea
-                                v-if="currentElement"
-                                v-model="currentElement.text"
-                            ></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Text Adjust</label>
-                            <select v-model="currentElement.textAdjust">
-                                <option value="">Default</option>
-                                <option value="StretchHeight">StretchHeight - Stretch Height</option>
-                                <option value="CutText">CutText - Cut Text</option>
-                                <option value="ShrinkToFit">ShrinkToFit - Shrink to Fit</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Rotation</label>
-                            <select v-model="currentElement.rotation">
-                                <option value="">Default</option>
-                                <option value="None">None - No Rotation</option>
-                                <option value="Left">Left - Rotate Left 90°</option>
-                                <option value="Right">Right - Rotate Right 90°</option>
-                                <option value="UpsideDown">UpsideDown - Upside Down</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Markup Type</label>
-                            <select v-model="currentElement.markup">
-                                <option value="none">None</option>
-                                <option value="html">HTML</option>
-                                <option value="rtf">RTF</option>
-                                <option value="styledtext">Styled Text</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>{{ t("properties.fontSize") }}</label>
-                            <input
-                                v-if="currentElement"
-                                v-model.number="currentElement.fontSize"
-                                type="number"
-                            />
-                        </div>
-                        <div class="checkbox-group">
-                            <label>
-                                <input
-                                    v-if="currentElement"
-                                    v-model="currentElement.isBold"
-                                    type="checkbox"
-                                />
-                                {{ t("properties.bold") }}
-                            </label>
-                            <label>
-                                <input
-                                    v-if="currentElement"
-                                    v-model="currentElement.isItalic"
-                                    type="checkbox"
-                                />
-                                {{ t("properties.italic") }}
-                            </label>
-                            <label>
-                                <input
-                                    v-if="currentElement"
-                                    v-model="currentElement.isUnderline"
-                                    type="checkbox"
-                                />
-                                {{ t("properties.underline") }}
-                            </label>
-                        </div>
-                    </template>
-
-                    <!-- Image properties -->
-                    <template
-                        v-if="
-                            currentElement &&
-                            currentElement.type === 'image'
-                        "
-                    >
-                        <div class="form-group">
-                            <label>Image Expression</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.imageExpression || ''"
-                                @update:model-value="currentElement.imageExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder='e.g.: $P{imagePath} or "logo.png"'
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label>Scale Type</label>
-                            <select v-model="currentElement.scaleType">
-                                <option value="">Default</option>
-                                <option value="Clip">Clip - Clip</option>
-                                <option value="FillFrame">FillFrame - Fill Frame</option>
-                                <option value="RetainShape">RetainShape - Retain Shape</option>
-                                <option value="RealHeight">RealHeight - Real Height</option>
-                                <option value="RealSize">RealSize - Real Size</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Rotation</label>
-                            <select v-model="currentElement.rotation">
-                                <option value="">Default</option>
-                                <option value="None">None - No Rotation</option>
-                                <option value="Left">Left - Rotate Left 90°</option>
-                                <option value="Right">Right - Rotate Right 90°</option>
-                                <option value="UpsideDown">UpsideDown - Upside Down</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Horizontal Alignment</label>
-                            <select v-model="currentElement.hAlign">
-                                <option value="">Default</option>
-                                <option value="Left">Left - Align Left</option>
-                                <option value="Center">Center - Center</option>
-                                <option value="Right">Right - Align Right</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Vertical Alignment</label>
-                            <select v-model="currentElement.vAlign">
-                                <option value="">Default</option>
-                                <option value="Top">Top - Align Top</option>
-                                <option value="Middle">Middle - Center</option>
-                                <option value="Bottom">Bottom - Align Bottom</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Error Handling</label>
-                            <select v-model="currentElement.onErrorType">
-                                <option value="">Default</option>
-                                <option value="Error">Error - Throw Error</option>
-                                <option value="Blank">Blank - Blank</option>
-                                <option value="Icon">Icon - Icon</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <SwitchControl
-                                :model-value="currentElement.isUsingCache !== false"
-                                @update:model-value="currentElement.isUsingCache = $event"
-                                label="Use Cache"
-                            />
-                        </div>
-                    </template>
-
-                    <!-- Rectangle properties -->
-                    <template
-                        v-if="
-                            currentElement &&
-                            currentElement.type === 'rectangle'
-                        "
-                    >
-                        <div class="form-group">
-                            <label>Corner Radius</label>
-                            <input
-                                v-model.number="currentElement.radius"
-                                type="number"
-                                min="0"
-                                placeholder="0"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <SwitchControl
-                                :model-value="
-                                    currentElement.isPrintRepeatedValues !==
-                                    false
-                                "
-                                @update:model-value="
-                                    currentElement.isPrintRepeatedValues =
-                                        $event
-                                "
-                                label="Print Repeated Values"
-                            />
-                        </div>
-                    </template>
-
-                    <!-- Ellipse properties -->
-                    <template
-                        v-if="
-                            currentElement && currentElement.type === 'ellipse'
-                        "
-                    >
-                        <div class="form-group">
-                            <SwitchControl
-                                :model-value="
-                                    currentElement.isPrintRepeatedValues !==
-                                    false
-                                "
-                                @update:model-value="
-                                    currentElement.isPrintRepeatedValues =
-                                        $event
-                                "
-                                label="Print Repeated Values"
-                            />
-                        </div>
-                    </template>
-
-                    <!-- Line properties -->
-                    <template
-                        v-if="currentElement && currentElement.type === 'line'"
-                    >
-                        <div class="form-group">
-                            <label>Line Direction</label>
-                            <select v-model="currentElement.lineDirection">
-                                <option value="">Default (TopDown)</option>
-                                <option value="TopDown">TopDown - Top to Bottom</option>
-                                <option value="BottomUp">BottomUp - Bottom to Top</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <SwitchControl
-                                :model-value="
-                                    currentElement.isPrintRepeatedValues !==
-                                    false
-                                "
-                                @update:model-value="
-                                    currentElement.isPrintRepeatedValues =
-                                        $event
-                                "
-                                label="Print Repeated Values"
-                            />
-                        </div>
-                    </template>
-
-                    <!-- Break properties -->
-                    <template
-                        v-if="currentElement && currentElement.type === 'break'"
-                    >
-                        <div class="form-group">
-                            <label>Break Type</label>
-                            <select v-model="currentElement.breakType">
-                                <option value="Page">Page - Page Break</option>
-                                <option value="Column">Column - Column Break</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <SwitchControl
-                                :model-value="
-                                    currentElement.isResetPageNumber || false
-                                "
-                                @update:model-value="
-                                    currentElement.isResetPageNumber = $event
-                                "
-                                label="Reset Page Number"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <SwitchControl
-                                :model-value="
-                                    currentElement.isResetPageOverflow || false
-                                "
-                                @update:model-value="
-                                    currentElement.isResetPageOverflow = $event
-                                "
-                                label="Reset Page Overflow"
-                            />
-                        </div>
-                    </template>
-
-                    <template
-                        v-else-if="
-                            currentElement &&
-                            currentElement.type === 'textField'
-                        "
-                    >
-                        <div
-                            class="form-group"
-                            v-if="
-                                currentElement &&
-                                currentElement.type === 'textField'
-                            "
-                        >
-                            <label>{{ t("properties.expression") }}</label>
-                            <ExpressionEditor
-                                :model-value="getTextFieldExpression(currentElement)"
-                                @update:model-value="updateTextFieldExpression"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                :placeholder="t('properties.expressionHint', { fieldHolder: '$F{fieldName}' })"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label>{{ t("properties.pattern") }}</label>
-                            <input
-                                v-if="currentElement"
-                                v-model="currentElement.pattern"
-                                type="text"
-                            />
-                            <small>{{ t("properties.patternHint") }}</small>
-                        </div>
-
-                        <!-- Added: Evaluation Time -->
-                        <div class="form-group">
-                            <label>Evaluation Time</label>
-                            <select
-                                v-if="currentElement"
-                                v-model="currentElement.evaluationTime"
-                            >
-                                <option value="Now">Now - Evaluate Immediately</option>
-                                <option value="Report">Report - At Report End</option>
-                                <option value="Page">Page - At Page End</option>
-                                <option value="Column">Column - At Column End</option>
-                                <option value="Group">Group - At Group End</option>
-                                <option value="Band">Band - At Band End</option>
-                                <option value="Auto">Auto - Engine Decides</option>
-                                <option value="Master">Master - At Master Report End</option>
-                            </select>
-                        </div>
-
-                        <!-- Added: Hyperlink Type -->
-                        <div class="form-group">
-                            <label>Hyperlink Type</label>
-                            <select
-                                v-if="currentElement"
-                                v-model="currentElement.hyperlinkType"
-                            >
-                                <option value="None">None</option>
-                                <option value="Reference">Reference - URL Reference</option>
-                                <option value="Anchor">Anchor - Anchor</option>
-                                <option value="LocalAnchor">LocalAnchor - Local Anchor</option>
-                                <option value="LocalPage">LocalPage - Local Page</option>
-                                <option value="RemotePage">RemotePage - Remote Page</option>
-                                <option value="RemoteAnchor">RemoteAnchor - Remote Anchor</option>
-                                <option value="mailto">mailto - Email</option>
-                            </select>
-                        </div>
-
-                        <!-- Added: Hyperlink Reference Expression -->
-                        <div class="form-group" v-if="currentElement.hyperlinkType === 'Reference'">
-                            <label>Hyperlink Reference Expression</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.hyperlinkReferenceExpression || ''"
-                                @update:model-value="currentElement.hyperlinkReferenceExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: &quot;https://example.com&quot;"
-                            />
-                        </div>
-
-                        <!-- Added: Hyperlink Tooltip Expression -->
-                        <div class="form-group" v-if="currentElement.hyperlinkType && currentElement.hyperlinkType !== 'None'">
-                            <label>Hyperlink Tooltip</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.hyperlinkTooltipExpression || ''"
-                                @update:model-value="currentElement.hyperlinkTooltipExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: &quot;Click to view&quot;"
-                            />
-                        </div>
-
-                        <!-- Added: Anchor Name Expression -->
-                        <div class="form-group" v-if="currentElement.hyperlinkType === 'Anchor' || currentElement.hyperlinkType === 'LocalAnchor'">
-                            <label>Anchor Name Expression</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.anchorNameExpression || ''"
-                                @update:model-value="currentElement.anchorNameExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: &quot;anchor1&quot;"
-                            />
-                        </div>
-
-                        <!-- Added: Blank When Null -->
-                        <div class="form-group">
-                            <SwitchControl
-                                :model-value="
-                                    currentElement.isBlankWhenNull !== false
-                                "
-                                @update:model-value="
-                                    currentElement.isBlankWhenNull = $event
-                                "
-                                label="Blank When Null"
-                            />
-                        </div>
-
-                        <!-- Added: Bookmark Level -->
-                        <div class="form-group">
-                            <label>Bookmark Level</label>
-                            <input
-                                v-if="currentElement"
-                                v-model.number="currentElement.bookmarkLevel"
-                                type="number"
-                                min="0"
-                            />
-                        </div>
-                    </template>
-                </n-tab-pane>
-
-                <!-- Element general settings tab -->
-                <n-tab-pane
-                    v-if="currentElement && currentElement.type !== 'sort'"
-                    name="elementSettings"
-                    :tab="'Element Settings'"
-                >
-                    <div class="form-group">
-                        <label>Element Key</label>
-                        <input v-model="currentElement.key" type="text" placeholder="Used to identify the element at runtime" />
-                    </div>
-                    <div class="form-group">
-                        <label>Position Type</label>
-                        <select v-model="currentElement.positionType">
-                            <option value="">Default (FixRelativeToTop)</option>
-                            <option value="FixRelativeToTop">FixRelativeToTop - Fixed Relative to Top</option>
-                            <option value="FixRelativeToBottom">FixRelativeToBottom - Fixed Relative to Bottom</option>
-                            <option value="Float">Float - Float</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Stretch Type</label>
-                        <select v-model="currentElement.stretchType">
-                            <option value="">Default (NoStretch)</option>
-                            <option value="NoStretch">NoStretch - No Stretch</option>
-                            <option value="ElementGroupBottom">ElementGroupBottom - Stretch to Group Bottom</option>
-                            <option value="ElementGroupHeight">ElementGroupHeight - Stretch to Group Height</option>
-                            <option value="ContainerBottom">ContainerBottom - Stretch to Container Bottom</option>
-                            <option value="ContainerHeight">ContainerHeight - Stretch to Container Height</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Conditional Style Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.styleExpression || ''"
-                            @update:model-value="currentElement.styleExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                            placeholder="e.g.: $V{rowNumber} % 2 == 0 ? &quot;evenRow&quot; : &quot;&quot;"
-                        />
-                    </div>
-
-                    <!-- Custom properties -->
-                    <div class="form-group">
-                        <label>Custom Properties</label>
-                        <div v-if="currentElement.properties && currentElement.properties.length > 0" style="margin-bottom: 8px;">
-                            <div v-for="(prop, index) in currentElement.properties" :key="index" style="display: flex; gap: 4px; margin-bottom: 4px;">
-                                <input v-model="prop.name" type="text" placeholder="Property Name" style="flex: 1;" />
-                                <input v-model="prop.value" type="text" placeholder="Property Value" style="flex: 1;" />
-                                <button @click="currentElement.properties.splice(index, 1)" type="button" class="prop-btn-danger" style="padding: 2px 6px;">×</button>
-                            </div>
-                        </div>
-                        <button @click="addProperty" type="button" class="prop-btn-primary" style="font-size: 12px;">+ Add Property</button>
-                    </div>
-
-                    <!-- Custom property expressions -->
-                    <div class="form-group">
-                        <label>Custom Property Expressions</label>
-                        <div v-if="currentElement.propertyExpressions && currentElement.propertyExpressions.length > 0" style="margin-bottom: 8px;">
-                            <div v-for="(prop, index) in currentElement.propertyExpressions" :key="index" style="margin-bottom: 4px;">
-                                <div style="display: flex; gap: 4px; margin-bottom: 2px;">
-                                    <input v-model="prop.name" type="text" placeholder="Property Name" style="flex: 1;" />
-                                    <button @click="currentElement.propertyExpressions.splice(index, 1)" type="button" class="prop-btn-danger" style="padding: 2px 6px;">×</button>
-                                </div>
-                                <ExpressionEditor
-                                    :model-value="prop.valueExpression || ''"
-                                    @update:model-value="prop.valueExpression = $event"
-                                    :report-fields="reportFields"
-                                    :report-parameters="reportParameters"
-                                    :report-variables="reportVariables"
-                                    placeholder="Property Value Expression"
-                                />
-                            </div>
-                        </div>
-                        <button @click="addPropertyExpression" type="button" class="prop-btn-primary" style="font-size: 12px;">+ Add Property Expression</button>
-                    </div>
-                </n-tab-pane>
-
-                <!-- Table properties tab -->
-                <n-tab-pane
-                    v-if="currentElement && currentElement.type === 'table'"
-                    name="table"
-                    :tab="t('properties.tableProperties')"
-                >
-                    <!-- Table basic properties -->
-                    <TableProperties
-                        :element="currentElement"
-                        :available-styles="reportStyles.map((s) => s.name)"
-                        :report-fields="reportFields"
-                        :report-parameters="reportParameters"
-                        :report-variables="reportVariables"
-                        @update:element="handleTablePropertyUpdate"
+              <template v-if="band.type !== 'detail'">
+                <div class="band-limit-input-group">
+                  <label>{{ t("properties.minHeight") }}</label>
+                  <div class="input-unit-wrapper">
+                    <input v-live-change
+                      :value="getBandLimit(band.type).min"
+                      type="number"
+                      min="10"
+                      step="1"
+                      @change="
+                        setIntegerValue(getBandLimit(band.type), 'min', $event) &&
+                          onTemplateMinChange(band.type)
+                      "
                     />
-
-                    <!-- Divider -->
-                    <div class="prop-divider"></div>
-
-                    <!-- Column management -->
-                    <div class="form-group">
-                        <h5>Column Management</h5>
-                        <div class="column-tree-toolbar">
-                            <button
-                                class="prop-btn-primary"
-                                @click="handleAddRootColumn"
-                                title="Add Column"
-                            >
-                                + Column
-                            </button>
-                            <button
-                                class="prop-btn-primary"
-                                @click="handleAddRootGroup"
-                                title="Add Group"
-                            >
-                                + Group
-                            </button>
-                            <button
-                                class="prop-btn-default"
-                                @click="addColumnGroup"
-                                title="Select Column Combination"
-                            >
-                                Combine Columns
-                            </button>
-                        </div>
-
-                        <!-- Column tree -->
-                        <div class="column-tree">
-                            <ColumnTreeNode
-                                v-for="(child, index) in tableChildren"
-                                :key="child.uuid || index"
-                                :node="child"
-                                :depth="0"
-                                :is-last="index === tableChildren.length - 1"
-                                :parent-uuid="null"
-                                :parent-length="tableChildren.length"
-                                :sibling-index="index"
-                                @update-node="handleColumnNodeUpdate"
-                                @delete-node="handleColumnNodeDelete"
-                                @add-column-after="handleAddColumnAfter"
-                                @add-column-child="handleAddColumnChild"
-                                @add-column-group-after="
-                                    handleAddColumnGroupAfter
-                                "
-                                @ungroup-node="handleUngroupNode"
-                                @move-node="handleMoveNode"
-                            />
-                            <div
-                                v-if="tableChildren.length === 0"
-                                class="column-tree-empty-hint"
-                            >
-                                Click the button above to add a column
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Row height settings -->
-                    <div
-                        class="form-group"
-                        v-if="currentElement && currentElement.type === 'table'"
-                    >
-                        <h5>Row Height Settings</h5>
-                        <div class="prop-table-column-props">
-                            <div class="form-group">
-                                <label>Header Row Height</label>
-                                <input
-                                    v-model.number="tableRowHeights.tableHeader"
-                                    type="number"
-                                    min="1"
-                                    @change="updateAllColumnRowHeights"
-                                />
-                            </div>
-                            <div class="form-group">
-                                <label>Column Header Row Height</label>
-                                <input
-                                    v-model.number="
-                                        tableRowHeights.columnHeader
-                                    "
-                                    type="number"
-                                    min="1"
-                                    @change="updateAllColumnRowHeights"
-                                />
-                            </div>
-                            <div class="form-group">
-                                <label>Data Row Height</label>
-                                <input
-                                    v-model.number="tableRowHeights.detailCell"
-                                    type="number"
-                                    min="1"
-                                    @change="updateAllColumnRowHeights"
-                                />
-                            </div>
-                            <div class="form-group">
-                                <label>Column Footer Row Height</label>
-                                <input
-                                    v-model.number="
-                                        tableRowHeights.columnFooter
-                                    "
-                                    type="number"
-                                    min="1"
-                                    @change="updateAllColumnRowHeights"
-                                />
-                            </div>
-                            <div class="form-group">
-                                <label>Table Footer Row Height</label>
-                                <input
-                                    v-model.number="tableRowHeights.tableFooter"
-                                    type="number"
-                                    min="1"
-                                    @change="updateAllColumnRowHeights"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </n-tab-pane>
-                <n-tab-pane
-                    v-if="currentElement && currentElement.type === 'frame'"
-                    name="frame"
-                    :tab="'Frame Properties'"
-                >
-                    <FrameProperties
-                        :element="currentElement"
-                        :report-fields="reportFields"
-                        :report-parameters="reportParameters"
-                        :report-variables="reportVariables"
-                        @update:element="handleFramePropertyUpdate"
+                    <span class="unit">px</span>
+                  </div>
+                </div>
+                <div class="band-limit-input-group">
+                  <label>{{ t("properties.maxHeight") }}</label>
+                  <div class="input-unit-wrapper">
+                    <input v-live-change
+                      :value="getBandLimit(band.type).max"
+                      type="number"
+                      :min="getBandLimit(band.type).min || 10"
+                      :max="getMaxAllowedLimit(band.type)"
+                      step="1"
+                      @change="
+                        setIntegerValue(getBandLimit(band.type), 'max', $event) &&
+                          onTemplateMaxChange(band.type)
+                      "
                     />
-                </n-tab-pane>
-
-                <!-- Style settings tab -->
-                <n-tab-pane name="style" :tab="t('properties.styleSettings')">
-                    <template
-                        v-if="currentElement && currentElement.type === 'break'"
-                    >
-                        <div class="box-section">
-                            <p style="font-size: 12px; color: #666">
-                                {{ t("properties.breakNoStyle") }}
-                            </p>
-                        </div>
-                    </template>
-                    <template v-else>
-                        <h4>{{ t("properties.styleSettings") }}</h4>
-
-                        <!-- Border settings (not supported for table elements) -->
-                        <template v-if="currentElement.type !== 'table'">
-                            <!-- Border settings for rectangle/ellipse elements (unified) -->
-                            <template
-                                v-if="
-                                    currentElement &&
-                                    (currentElement.type === 'rectangle' ||
-                                        currentElement.type === 'ellipse')
-                                "
-                            >
-                                <div class="box-section compact">
-                                    <h5>{{ t("properties.unifiedBorder") }}</h5>
-                                    <p
-                                        style="
-                                            font-size: 12px;
-                                            color: #666;
-                                            margin-bottom: 8px;
-                                        "
-                                    >
-                                        {{ t("properties.unifiedBorderHint") }}
-                                    </p>
-
-                                    <div class="border-group-row">
-                                        <div class="border-group-item">
-                                            <label class="side-label">{{
-                                                t("properties.style")
-                                            }}</label>
-                                            <n-radio-group
-                                                v-model:value="
-                                                    rectangleBorderStyle
-                                                "
-                                                @update:value="
-                                                    setRectangleBorderStyle(
-                                                        rectangleBorderStyle,
-                                                    )
-                                                "
-                                                size="small"
-                                            >
-                                                <n-radio-button value="">{{
-                                                    t("properties.none")
-                                                }}</n-radio-button>
-                                                <n-radio-button value="Solid">{{
-                                                    t("properties.solid")
-                                                }}</n-radio-button>
-                                                <n-radio-button
-                                                    value="Dashed"
-                                                    >{{
-                                                        t("properties.dashed")
-                                                    }}</n-radio-button
-                                                >
-                                                <n-radio-button
-                                                    value="Dotted"
-                                                    >{{
-                                                        t("properties.dotted")
-                                                    }}</n-radio-button
-                                                >
-                                                <n-radio-button
-                                                    value="Double"
-                                                    >{{
-                                                        t("properties.double")
-                                                    }}</n-radio-button
-                                                >
-                                            </n-radio-group>
-                                        </div>
-
-                                        <div class="border-group-item">
-                                            <label class="side-label">{{
-                                                t("properties.width")
-                                            }}</label>
-                                            <input
-                                                :value="
-                                                    getRectangleBorderWidth()
-                                                "
-                                                @input="
-                                                    setRectangleBorderWidth(
-                                                        (
-                                                            $event.target as HTMLInputElement
-                                                        ).value,
-                                                    )
-                                                "
-                                                type="number"
-                                                min="0"
-                                                max="10"
-                                                step="0.5"
-                                                class="width-control compact"
-                                                :placeholder="
-                                                    t('properties.width')
-                                                "
-                                            />
-                                        </div>
-
-                                        <div class="border-group-item">
-                                            <label class="side-label">{{
-                                                t("properties.color")
-                                            }}</label>
-                                            <input
-                                                :value="
-                                                    getRectangleBorderColor()
-                                                "
-                                                @input="
-                                                    setRectangleBorderColor(
-                                                        (
-                                                            $event.target as HTMLInputElement
-                                                        ).value,
-                                                    )
-                                                "
-                                                type="color"
-                                                class="color-control compact"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
-
-                            <!-- Border settings for other elements (each side configurable independently) -->
-                            <template v-else>
-                                <!-- Per-side border settings -->
-                                <div class="box-section compact">
-                                    <h5>{{ t("properties.sideBorders") }}</h5>
-
-                                    <div class="border-sides-grid">
-                                        <!-- Unified setting for all four sides -->
-                                        <div class="border-side-item">
-                                            <label class="side-label">{{
-                                                t("properties.all")
-                                            }}</label>
-                                            <div class="border-side-controls">
-                                                <n-radio-group
-                                                    v-if="
-                                                        currentElement &&
-                                                        currentElement.box
-                                                    "
-                                                    :value="
-                                                        getUnifiedBorderStyle()
-                                                    "
-                                                    @update:value="
-                                                        setUnifiedBorderStyle(
-                                                            $event,
-                                                        )
-                                                    "
-                                                    size="small"
-                                                >
-                                                    <n-radio-button value="">{{
-                                                        t("properties.none")
-                                                    }}</n-radio-button>
-                                                    <n-radio-button
-                                                        value="Solid"
-                                                        >{{
-                                                            t(
-                                                                "properties.solid",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                    <n-radio-button
-                                                        value="Dashed"
-                                                        >{{
-                                                            t(
-                                                                "properties.dashed",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                    <n-radio-button
-                                                        value="Dotted"
-                                                        >{{
-                                                            t(
-                                                                "properties.dotted",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                    <n-radio-button
-                                                        value="Double"
-                                                        >{{
-                                                            t(
-                                                                "properties.double",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                </n-radio-group>
-                                                <input
-                                                    v-if="
-                                                        currentElement &&
-                                                        currentElement.box
-                                                    "
-                                                    :value="
-                                                        getUnifiedBorderWidth()
-                                                    "
-                                                    @input="
-                                                        setUnifiedBorderWidth(
-                                                            (
-                                                                $event.target as HTMLInputElement
-                                                            ).value,
-                                                        )
-                                                    "
-                                                    type="number"
-                                                    min="0"
-                                                    max="10"
-                                                    step="0.5"
-                                                    class="width-control compact"
-                                                    :placeholder="
-                                                        t('properties.width')
-                                                    "
-                                                />
-                                                <input
-                                                    v-if="
-                                                        currentElement &&
-                                                        currentElement.box
-                                                    "
-                                                    :value="
-                                                        getUnifiedBorderColor()
-                                                    "
-                                                    @input="
-                                                        setUnifiedBorderColor(
-                                                            (
-                                                                $event.target as HTMLInputElement
-                                                            ).value,
-                                                        )
-                                                    "
-                                                    type="color"
-                                                    class="color-control compact"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <!-- Top -->
-                                        <div class="border-side-item">
-                                            <label class="side-label">{{
-                                                t("properties.topSide")
-                                            }}</label>
-                                            <div class="border-side-controls">
-                                                <n-radio-group
-                                                    v-if="
-                                                        currentElement &&
-                                                        currentElement.box
-                                                    "
-                                                    :value="
-                                                        getSideBorderStyle(
-                                                            'top',
-                                                        )
-                                                    "
-                                                    @update:value="
-                                                        setSideBorderStyle(
-                                                            'top',
-                                                            $event,
-                                                        )
-                                                    "
-                                                    size="small"
-                                                >
-                                                    <n-radio-button value="">{{
-                                                        t("properties.none")
-                                                    }}</n-radio-button>
-                                                    <n-radio-button
-                                                        value="Solid"
-                                                        >{{
-                                                            t(
-                                                                "properties.solid",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                    <n-radio-button
-                                                        value="Dashed"
-                                                        >{{
-                                                            t(
-                                                                "properties.dashed",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                    <n-radio-button
-                                                        value="Dotted"
-                                                        >{{
-                                                            t(
-                                                                "properties.dotted",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                    <n-radio-button
-                                                        value="Double"
-                                                        >{{
-                                                            t(
-                                                                "properties.double",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                </n-radio-group>
-                                                <input
-                                                    v-if="
-                                                        currentElement &&
-                                                        currentElement.box
-                                                    "
-                                                    :value="
-                                                        getSideBorderWidth(
-                                                            'top',
-                                                        )
-                                                    "
-                                                    @input="
-                                                        setSideBorderWidth(
-                                                            'top',
-                                                            (
-                                                                $event.target as HTMLInputElement
-                                                            ).value,
-                                                        )
-                                                    "
-                                                    type="number"
-                                                    min="0"
-                                                    max="10"
-                                                    step="0.5"
-                                                    class="width-control compact"
-                                                    :placeholder="
-                                                        t('properties.width')
-                                                    "
-                                                />
-                                                <input
-                                                    v-if="
-                                                        currentElement &&
-                                                        currentElement.box
-                                                    "
-                                                    :value="
-                                                        getSideBorderColor(
-                                                            'top',
-                                                        )
-                                                    "
-                                                    @input="
-                                                        setSideBorderColor(
-                                                            'top',
-                                                            (
-                                                                $event.target as HTMLInputElement
-                                                            ).value,
-                                                        )
-                                                    "
-                                                    type="color"
-                                                    class="color-control compact"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <!-- Left -->
-                                        <div class="border-side-item">
-                                            <label class="side-label">{{
-                                                t("properties.leftSide")
-                                            }}</label>
-                                            <div class="border-side-controls">
-                                                <n-radio-group
-                                                    v-if="
-                                                        currentElement &&
-                                                        currentElement.box
-                                                    "
-                                                    :value="
-                                                        getSideBorderStyle(
-                                                            'left',
-                                                        )
-                                                    "
-                                                    @update:value="
-                                                        setSideBorderStyle(
-                                                            'left',
-                                                            $event,
-                                                        )
-                                                    "
-                                                    size="small"
-                                                >
-                                                    <n-radio-button value="">{{
-                                                        t("properties.none")
-                                                    }}</n-radio-button>
-                                                    <n-radio-button
-                                                        value="Solid"
-                                                        >{{
-                                                            t(
-                                                                "properties.solid",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                    <n-radio-button
-                                                        value="Dashed"
-                                                        >{{
-                                                            t(
-                                                                "properties.dashed",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                    <n-radio-button
-                                                        value="Dotted"
-                                                        >{{
-                                                            t(
-                                                                "properties.dotted",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                    <n-radio-button
-                                                        value="Double"
-                                                        >{{
-                                                            t(
-                                                                "properties.double",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                </n-radio-group>
-                                                <input
-                                                    v-if="
-                                                        currentElement &&
-                                                        currentElement.box
-                                                    "
-                                                    :value="
-                                                        getSideBorderWidth(
-                                                            'left',
-                                                        )
-                                                    "
-                                                    @input="
-                                                        setSideBorderWidth(
-                                                            'left',
-                                                            (
-                                                                $event.target as HTMLInputElement
-                                                            ).value,
-                                                        )
-                                                    "
-                                                    type="number"
-                                                    min="0"
-                                                    max="10"
-                                                    step="0.5"
-                                                    class="width-control compact"
-                                                    :placeholder="
-                                                        t('properties.width')
-                                                    "
-                                                />
-                                                <input
-                                                    v-if="
-                                                        currentElement &&
-                                                        currentElement.box
-                                                    "
-                                                    :value="
-                                                        getSideBorderColor(
-                                                            'left',
-                                                        )
-                                                    "
-                                                    @input="
-                                                        setSideBorderColor(
-                                                            'left',
-                                                            (
-                                                                $event.target as HTMLInputElement
-                                                            ).value,
-                                                        )
-                                                    "
-                                                    type="color"
-                                                    class="color-control compact"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <!-- Bottom -->
-                                        <div class="border-side-item">
-                                            <label class="side-label">{{
-                                                t("properties.bottomSide")
-                                            }}</label>
-                                            <div class="border-side-controls">
-                                                <n-radio-group
-                                                    v-if="
-                                                        currentElement &&
-                                                        currentElement.box
-                                                    "
-                                                    :value="
-                                                        getSideBorderStyle(
-                                                            'bottom',
-                                                        )
-                                                    "
-                                                    @update:value="
-                                                        setSideBorderStyle(
-                                                            'bottom',
-                                                            $event,
-                                                        )
-                                                    "
-                                                    size="small"
-                                                >
-                                                    <n-radio-button value="">{{
-                                                        t("properties.none")
-                                                    }}</n-radio-button>
-                                                    <n-radio-button
-                                                        value="Solid"
-                                                        >{{
-                                                            t(
-                                                                "properties.solid",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                    <n-radio-button
-                                                        value="Dashed"
-                                                        >{{
-                                                            t(
-                                                                "properties.dashed",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                    <n-radio-button
-                                                        value="Dotted"
-                                                        >{{
-                                                            t(
-                                                                "properties.dotted",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                    <n-radio-button
-                                                        value="Double"
-                                                        >{{
-                                                            t(
-                                                                "properties.double",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                </n-radio-group>
-                                                <input
-                                                    v-if="
-                                                        currentElement &&
-                                                        currentElement.box
-                                                    "
-                                                    :value="
-                                                        getSideBorderWidth(
-                                                            'bottom',
-                                                        )
-                                                    "
-                                                    @input="
-                                                        setSideBorderWidth(
-                                                            'bottom',
-                                                            (
-                                                                $event.target as HTMLInputElement
-                                                            ).value,
-                                                        )
-                                                    "
-                                                    type="number"
-                                                    min="0"
-                                                    max="10"
-                                                    step="0.5"
-                                                    class="width-control compact"
-                                                    :placeholder="
-                                                        t('properties.width')
-                                                    "
-                                                />
-                                                <input
-                                                    v-if="
-                                                        currentElement &&
-                                                        currentElement.box
-                                                    "
-                                                    :value="
-                                                        getSideBorderColor(
-                                                            'bottom',
-                                                        )
-                                                    "
-                                                    @input="
-                                                        setSideBorderColor(
-                                                            'bottom',
-                                                            (
-                                                                $event.target as HTMLInputElement
-                                                            ).value,
-                                                        )
-                                                    "
-                                                    type="color"
-                                                    class="color-control compact"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <!-- Right -->
-                                        <div class="border-side-item">
-                                            <label class="side-label">{{
-                                                t("properties.rightSide")
-                                            }}</label>
-                                            <div class="border-side-controls">
-                                                <n-radio-group
-                                                    v-if="
-                                                        currentElement &&
-                                                        currentElement.box
-                                                    "
-                                                    :value="
-                                                        getSideBorderStyle(
-                                                            'right',
-                                                        )
-                                                    "
-                                                    @update:value="
-                                                        setSideBorderStyle(
-                                                            'right',
-                                                            $event,
-                                                        )
-                                                    "
-                                                    size="small"
-                                                >
-                                                    <n-radio-button value="">{{
-                                                        t("properties.none")
-                                                    }}</n-radio-button>
-                                                    <n-radio-button
-                                                        value="Solid"
-                                                        >{{
-                                                            t(
-                                                                "properties.solid",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                    <n-radio-button
-                                                        value="Dashed"
-                                                        >{{
-                                                            t(
-                                                                "properties.dashed",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                    <n-radio-button
-                                                        value="Dotted"
-                                                        >{{
-                                                            t(
-                                                                "properties.dotted",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                    <n-radio-button
-                                                        value="Double"
-                                                        >{{
-                                                            t(
-                                                                "properties.double",
-                                                            )
-                                                        }}</n-radio-button
-                                                    >
-                                                </n-radio-group>
-                                                <input
-                                                    v-if="
-                                                        currentElement &&
-                                                        currentElement.box
-                                                    "
-                                                    :value="
-                                                        getSideBorderWidth(
-                                                            'right',
-                                                        )
-                                                    "
-                                                    @input="
-                                                        setSideBorderWidth(
-                                                            'right',
-                                                            (
-                                                                $event.target as HTMLInputElement
-                                                            ).value,
-                                                        )
-                                                    "
-                                                    type="number"
-                                                    min="0"
-                                                    max="10"
-                                                    step="0.5"
-                                                    class="width-control compact"
-                                                    :placeholder="
-                                                        t('properties.width')
-                                                    "
-                                                />
-                                                <input
-                                                    v-if="
-                                                        currentElement &&
-                                                        currentElement.box
-                                                    "
-                                                    :value="
-                                                        getSideBorderColor(
-                                                            'right',
-                                                        )
-                                                    "
-                                                    @input="
-                                                        setSideBorderColor(
-                                                            'right',
-                                                            (
-                                                                $event.target as HTMLInputElement
-                                                            ).value,
-                                                        )
-                                                    "
-                                                    type="color"
-                                                    class="color-control compact"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Padding settings -->
-                                <div class="box-section compact">
-                                    <h5>
-                                        {{ t("properties.marginSettings") }}
-                                    </h5>
-                                    <div class="form-group compact">
-                                        <label>{{
-                                            t("properties.globalMargin")
-                                        }}</label>
-                                        <input
-                                            v-if="
-                                                currentElement &&
-                                                currentElement.box
-                                            "
-                                            v-model.number="
-                                                currentElement.box.padding
-                                            "
-                                            type="number"
-                                            :placeholder="
-                                                t('properties.globalMargin')
-                                            "
-                                            class="small-input"
-                                        />
-                                        <small>{{
-                                            t("properties.globalMarginHint")
-                                        }}</small>
-                                    </div>
-
-                                    <div class="padding-grid compact">
-                                        <div class="form-group compact">
-                                            <label>{{
-                                                t("properties.topMargin")
-                                            }}</label>
-                                            <input
-                                                v-if="
-                                                    currentElement &&
-                                                    currentElement.box
-                                                "
-                                                v-model.number="
-                                                    currentElement.box
-                                                        .topPadding
-                                                "
-                                                type="number"
-                                                class="small-input"
-                                            />
-                                        </div>
-                                        <div class="form-group compact">
-                                            <label>{{
-                                                t("properties.leftMargin")
-                                            }}</label>
-                                            <input
-                                                v-if="
-                                                    currentElement &&
-                                                    currentElement.box
-                                                "
-                                                v-model.number="
-                                                    currentElement.box
-                                                        .leftPadding
-                                                "
-                                                type="number"
-                                                class="small-input"
-                                            />
-                                        </div>
-                                        <div class="form-group compact">
-                                            <label>{{
-                                                t("properties.bottomMargin")
-                                            }}</label>
-                                            <input
-                                                v-if="
-                                                    currentElement &&
-                                                    currentElement.box
-                                                "
-                                                v-model.number="
-                                                    currentElement.box
-                                                        .bottomPadding
-                                                "
-                                                type="number"
-                                                class="small-input"
-                                            />
-                                        </div>
-                                        <div class="form-group compact">
-                                            <label>{{
-                                                t("properties.rightMargin")
-                                            }}</label>
-                                            <input
-                                                v-if="
-                                                    currentElement &&
-                                                    currentElement.box
-                                                "
-                                                v-model.number="
-                                                    currentElement.box
-                                                        .rightPadding
-                                                "
-                                                type="number"
-                                                class="small-input"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
-                        </template>
-                        <div class="form-group-row">
-                            <div class="form-group half-width">
-                                <label>{{ t("properties.forecolor") }}</label>
-                                <ColorPickerWithOpacity
-                                    v-model="currentElement.forecolor"
-                                    v-model:mode="currentElement.forecolorMode"
-                                    @update:modelValue="emit('update-jrxml')"
-                                    @update:mode="emit('update-jrxml')"
-                                />
-                            </div>
-
-                            <div class="form-group half-width">
-                                <label>{{
-                                    t("properties.backgroundColor")
-                                }}</label>
-                                <ColorPickerWithOpacity
-                                    v-model="currentElement.backcolor"
-                                    v-model:mode="currentElement.mode"
-                                    @update:modelValue="emit('update-jrxml')"
-                                    @update:mode="emit('update-jrxml')"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>{{ t("properties.backgroundMode") }}</label>
-                            <select
-                                v-if="currentElement"
-                                v-model="currentElement.mode"
-                                @change="emit('update-jrxml')"
-                            >
-                                <option :value="undefined">
-                                    {{ t("properties.defaultTransparent") }}
-                                </option>
-                                <option value="Transparent">
-                                    {{ t("properties.transparent") }}
-                                </option>
-                                <option value="Opaque">
-                                    {{ t("properties.opaque") }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <!-- Table-specific style settings -->
-                        <template
-                            v-if="
-                                currentElement &&
-                                currentElement.type === 'table'
-                            "
-                        >
-                            <div class="form-group">
-                                <h5>
-                                    {{ t("properties.tableStyleSettings") }}
-                                </h5>
-                                <div class="table-style-settings">
-                                    <!-- Table header style selection -->
-                                    <div class="table-style-section">
-                                        <h6>
-                                            {{ t("properties.tableHeader") }}
-                                            {{ t("properties.style") }}
-                                        </h6>
-                                        <div class="box-section compact">
-                                            <div class="form-group">
-                                                <label>{{
-                                                    t("properties.selectStyle")
-                                                }}</label>
-                                                <select
-                                                    v-model="
-                                                        tableStyles.tableHeader
-                                                    "
-                                                    @change="
-                                                        updateTableStyles();
-                                                        emit('update-jrxml');
-                                                    "
-                                                >
-                                                    <option value="Table_TH">
-                                                        Table_TH
-                                                    </option>
-                                                    <option value="Table_CH">
-                                                        Table_CH
-                                                    </option>
-                                                    <option value="Table_TD">
-                                                        Table_TD
-                                                    </option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Column header style selection -->
-                                    <div class="table-style-section">
-                                        <h6>
-                                            {{ t("properties.columnHeader") }}
-                                            {{ t("properties.style") }}
-                                        </h6>
-                                        <div class="box-section compact">
-                                            <div class="form-group">
-                                                <label>{{
-                                                    t("properties.selectStyle")
-                                                }}</label>
-                                                <select
-                                                    v-model="
-                                                        tableStyles.columnHeader
-                                                    "
-                                                    @change="
-                                                        updateTableStyles();
-                                                        emit('update-jrxml');
-                                                    "
-                                                >
-                                                    <option value="Table_TH">
-                                                        Table_TH
-                                                    </option>
-                                                    <option value="Table_CH">
-                                                        Table_CH
-                                                    </option>
-                                                    <option value="Table_TD">
-                                                        Table_TD
-                                                    </option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Column footer style selection -->
-                                    <div class="table-style-section">
-                                        <h6>
-                                            {{ t("properties.columnFooter") }}
-                                            {{ t("properties.style") }}
-                                        </h6>
-                                        <div class="box-section compact">
-                                            <div class="form-group">
-                                                <label>{{
-                                                    t("properties.selectStyle")
-                                                }}</label>
-                                                <select
-                                                    v-model="
-                                                        tableStyles.columnFooter
-                                                    "
-                                                    @change="
-                                                        updateTableStyles();
-                                                        emit('update-jrxml');
-                                                    "
-                                                >
-                                                    <option value="Table_TH">
-                                                        Table_TH
-                                                    </option>
-                                                    <option value="Table_CH">
-                                                        Table_CH
-                                                    </option>
-                                                    <option value="Table_TD">
-                                                        Table_TD
-                                                    </option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Detail cell style selection -->
-                                    <div class="table-style-section">
-                                        <h6>
-                                            {{ t("properties.detailCell") }}
-                                            {{ t("properties.style") }}
-                                        </h6>
-                                        <div class="box-section compact">
-                                            <div class="form-group">
-                                                <label>{{
-                                                    t("properties.selectStyle")
-                                                }}</label>
-                                                <select
-                                                    v-model="
-                                                        tableStyles.detailCell
-                                                    "
-                                                    @change="
-                                                        updateTableStyles();
-                                                        emit('update-jrxml');
-                                                    "
-                                                >
-                                                    <option value="Table_TH">
-                                                        Table_TH
-                                                    </option>
-                                                    <option value="Table_CH">
-                                                        Table_CH
-                                                    </option>
-                                                    <option value="Table_TD">
-                                                        Table_TD
-                                                    </option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
-
-                        <!-- Style settings for other elements -->
-                        <template
-                            v-else-if="
-                                currentElement &&
-                                currentElement.type !== 'line' &&
-                                currentElement.type !== 'image' &&
-                                currentElement.type !== 'frame'
-                            "
-                        >
-                            <div class="form-group">
-                                <label>{{ t("properties.fontName") }}</label>
-                                <select
-                                    v-if="currentElement"
-                                    v-model="currentElement.fontFamily"
-                                    style="
-                                        appearance: none;
-                                        -webkit-appearance: none;
-                                    "
-                                >
-                                    <option value="">
-                                        {{ t("properties.useDefaultFont") }}
-                                    </option>
-                                    <option
-                                        v-for="font in availableFonts"
-                                        :key="font"
-                                        :value="font"
-                                    >
-                                        {{ font }}
-                                    </option>
-                                </select>
-                                <small class="font-hint">{{
-                                    t("properties.fontHint")
-                                }}</small>
-                            </div>
-
-                            <div class="form-group-row">
-                                <div class="form-group half-width">
-                                    <label>{{
-                                        t("properties.textAlignment")
-                                    }}</label>
-                                    <div class="alignment-controls compact">
-                                        <n-button
-                                            v-for="align in [
-                                                'Left',
-                                                'Center',
-                                                'Right',
-                                            ]"
-                                            :key="align"
-                                            @click="
-                                                setHorizontalAlignment(
-                                                    align as
-                                                        | 'Left'
-                                                        | 'Center'
-                                                        | 'Right',
-                                                )
-                                            "
-                                            :type="
-                                                currentElement &&
-                                                currentElement.textAlignment ===
-                                                    align
-                                                    ? 'primary'
-                                                    : 'default'
-                                            "
-                                            :title="
-                                                t(
-                                                    `properties.${align.toLowerCase()}`,
-                                                )
-                                            "
-                                            size="small"
-                                        >
-                                            {{
-                                                t(
-                                                    `properties.${align.toLowerCase()}`,
-                                                )
-                                            }}
-                                        </n-button>
-                                    </div>
-                                </div>
-
-                                <div class="form-group half-width">
-                                    <label>{{
-                                        t("properties.verticalAlignment")
-                                    }}</label>
-                                    <div class="alignment-controls compact">
-                                        <n-button
-                                            v-for="align in [
-                                                'Top',
-                                                'Middle',
-                                                'Bottom',
-                                            ]"
-                                            :key="align"
-                                            @click="
-                                                setVerticalAlignment(
-                                                    align as
-                                                        | 'Top'
-                                                        | 'Middle'
-                                                        | 'Bottom',
-                                                )
-                                            "
-                                            :type="
-                                                currentElement &&
-                                                currentElement.verticalAlignment ===
-                                                    align
-                                                    ? 'primary'
-                                                    : 'default'
-                                            "
-                                            :title="
-                                                t(
-                                                    `properties.${align.toLowerCase()}`,
-                                                )
-                                            "
-                                            size="small"
-                                        >
-                                            {{
-                                                t(
-                                                    `properties.${align.toLowerCase()}`,
-                                                )
-                                            }}
-                                        </n-button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-group" style="margin-bottom: 8px">
-                                <label>{{ t("properties.fontStyle") }}</label>
-                                <div class="checkbox-group compact">
-                                    <label>
-                                        <input
-                                            v-if="currentElement"
-                                            v-model="currentElement.isBold"
-                                            type="checkbox"
-                                        />
-                                        {{ t("properties.bold") }}
-                                    </label>
-                                    <label>
-                                        <input
-                                            v-if="currentElement"
-                                            v-model="currentElement.isItalic"
-                                            type="checkbox"
-                                        />
-                                        {{ t("properties.italic") }}
-                                    </label>
-                                    <label>
-                                        <input
-                                            v-if="currentElement"
-                                            v-model="currentElement.isUnderline"
-                                            type="checkbox"
-                                        />
-                                        {{ t("properties.underline") }}
-                                    </label>
-                                </div>
-                            </div>
-                        </template>
-                    </template>
-                </n-tab-pane>
-
-                <!-- Subreport properties tab -->
-                <n-tab-pane
-                    v-if="currentElement && currentElement.type === 'subreport'"
-                    name="subreport"
-                    :tab="'Subreport Properties'"
-                >
-                    <div class="form-group">
-                        <label>Subreport Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.subreportExpression || ''"
-                            @update:model-value="currentElement.subreportExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                            placeholder="e.g.: $P{SUBREPORT_DIR} + 'subreport.jasper'"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Connection Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.connectionExpression || ''"
-                            @update:model-value="currentElement.connectionExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                            placeholder="e.g.: $P{REPORT_CONNECTION}"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Data Source Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.dataSourceExpression || ''"
-                            @update:model-value="currentElement.dataSourceExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                            placeholder="e.g.: $P{REPORT_DATA_SOURCE}"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Parameters Map Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.parametersMapExpression || ''"
-                            @update:model-value="currentElement.parametersMapExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                            placeholder="e.g.: $P{REPORT_PARAMETERS_MAP}"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Evaluation Time</label>
-                        <select v-model="currentElement.evaluationTime">
-                            <option value="Now">Now - Evaluate Immediately</option>
-                            <option value="Report">Report - At Report End</option>
-                            <option value="Page">Page - At Page End</option>
-                            <option value="Column">Column - At Column End</option>
-                            <option value="Group">Group - At Group End</option>
-                            <option value="Band">Band - At Band End</option>
-                            <option value="Auto">Auto - Engine Decides</option>
-                            <option value="Master">Master - At Master Report End</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <SwitchControl
-                            :model-value="currentElement.isUsingCache || false"
-                            @update:model-value="currentElement.isUsingCache = $event"
-                            label="Use Cache"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <SwitchControl
-                            :model-value="currentElement.isIgnorePagination || false"
-                            @update:model-value="currentElement.isIgnorePagination = $event"
-                            label="Ignore Pagination"
-                        />
-                    </div>
-                </n-tab-pane>
-
-                <!-- Chart properties tab -->
-                <n-tab-pane
-                    v-if="currentElement && currentElement.type === 'chart'"
-                    name="chart"
-                    :tab="'Chart Properties'"
-                >
-                    <div class="form-group">
-                        <label>Chart Type</label>
-                        <select v-model="currentElement.chartType">
-                            <optgroup label="Category Charts">
-                                <option value="pie">Pie Chart</option>
-                                <option value="pie3D">3D Pie Chart</option>
-                                <option value="bar">Bar Chart</option>
-                                <option value="bar3D">3D Bar Chart</option>
-                                <option value="stackedBar">Stacked Bar Chart</option>
-                                <option value="stackedBar3D">3D Stacked Bar Chart</option>
-                                <option value="line">Line Chart</option>
-                                <option value="area">Area Chart</option>
-                                <option value="stackedArea">Stacked Area Chart</option>
-                            </optgroup>
-                            <optgroup label="XY Charts">
-                                <option value="xyBar">XY Bar Chart</option>
-                                <option value="xyLine">XY Line Chart</option>
-                                <option value="xyArea">XY Area Chart</option>
-                                <option value="scatter">Scatter Chart</option>
-                                <option value="bubble">Bubble Chart</option>
-                                <option value="timeSeries">Time Series</option>
-                            </optgroup>
-                            <optgroup label="Financial Charts">
-                                <option value="highLow">High-Low Chart</option>
-                                <option value="candlestick">Candlestick Chart</option>
-                            </optgroup>
-                            <optgroup label="Special Charts">
-                                <option value="meter">Meter</option>
-                                <option value="thermometer">Thermometer</option>
-                                <option value="multiAxis">Multi-Axis Chart</option>
-                                <option value="gantt">Gantt Chart</option>
-                                <option value="spider">Spider Chart</option>
-                            </optgroup>
-                        </select>
-                    </div>
-
-                    <!-- Chart settings -->
-                    <div class="form-group">
-                        <label>Render Type</label>
-                        <select v-model="currentElement.renderType">
-                            <option value="">Default</option>
-                            <option value="svg">SVG</option>
-                            <option value="draw">Draw</option>
-                            <option value="image">Image</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="display: flex; gap: 16px;">
-                        <label style="display: flex; align-items: center; gap: 4px; white-space: nowrap;">
-                            <input type="checkbox" v-model="currentElement.isShowTitle" />
-                            Show Title
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 4px; white-space: nowrap;">
-                            <input type="checkbox" v-model="currentElement.isShowSubtitle" />
-                            Show Subtitle
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 4px; white-space: nowrap;">
-                            <input type="checkbox" v-model="currentElement.isShowLegend" />
-                            Show Legend
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label>Customizer Class</label>
-                        <input v-model="currentElement.customizerClass" type="text" placeholder="com.example.MyChartCustomizer" />
-                    </div>
-
-                    <!-- Title expression -->
-                    <div class="form-group">
-                        <label>Title Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.titleExpression || ''"
-                            @update:model-value="currentElement.titleExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Title Text</label>
-                        <input v-model="currentElement.title" type="text" />
-                    </div>
-                    <div class="form-group">
-                        <label>Subtitle Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.subtitleExpression || ''"
-                            @update:model-value="currentElement.subtitleExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Legend Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.legendExpression || ''"
-                            @update:model-value="currentElement.legendExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                        />
-                    </div>
-
-                    <!-- Dataset settings -->
-                    <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                        <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">Dataset</label>
-                    </div>
-                    <div class="form-group">
-                        <label>Sub-Dataset Name</label>
-                        <input v-model="currentElement.subDataset" type="text" placeholder="e.g.: pieDataset" />
-                    </div>
-                    <div class="form-group">
-                        <label>Data Source Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.dataSourceExpression || ''"
-                            @update:model-value="currentElement.dataSourceExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                            placeholder="e.g.: $P{myDatasource}"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Increment Type</label>
-                        <select v-model="currentElement.incrementType">
-                            <option value="">None</option>
-                            <option value="None">None</option>
-                            <option value="Group">Group</option>
-                            <option value="Page">Page</option>
-                            <option value="Column">Column</option>
-                            <option value="Report">Report</option>
-                        </select>
-                    </div>
-                    <div class="form-group" v-if="currentElement.incrementType === 'Group'">
-                        <label>Increment Group</label>
-                        <input v-model="currentElement.incrementGroup" type="text" />
-                    </div>
-
-                    <!-- Series expression (category charts) -->
-                    <template v-if="['bar','bar3D','stackedBar','stackedBar3D','line','area','stackedArea'].includes(currentElement.chartType)">
-                        <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">Series Expression</label>
-                        </div>
-                        <div class="form-group">
-                            <label>Series</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.seriesExpression || ''"
-                                @update:model-value="currentElement.seriesExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: $F{sales_state}"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label>Category</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.categoryExpression || ''"
-                                @update:model-value="currentElement.categoryExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: $F{full_name}"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label>Value</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.valueExpression || ''"
-                                @update:model-value="currentElement.valueExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: $V{amount}"
-                            />
-                        </div>
-                    </template>
-
-                    <!-- Pie chart expression -->
-                    <template v-if="['pie','pie3D'].includes(currentElement.chartType)">
-                        <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">Pie Chart Expression</label>
-                        </div>
-                        <div class="form-group">
-                            <label>Key</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.keyExpression || ''"
-                                @update:model-value="currentElement.keyExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: $F{category}"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label>Value</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.valueExpression || ''"
-                                @update:model-value="currentElement.valueExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: $V{amount}"
-                            />
-                        </div>
-                    </template>
-
-                    <!-- XY chart expression -->
-                    <template v-if="['scatter','bubble','xyLine','xyArea','xyBar','timeSeries','highLow','candlestick'].includes(currentElement.chartType)">
-                        <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">XY Series Expression</label>
-                        </div>
-                        <div class="form-group">
-                            <label>Series</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.seriesExpression || ''"
-                                @update:model-value="currentElement.seriesExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: $F{series}"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label>X Value</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.xValueExpression || ''"
-                                @update:model-value="currentElement.xValueExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: $F{x_value}"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label>Y Value</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.yValueExpression || ''"
-                                @update:model-value="currentElement.yValueExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: $F{y_value}"
-                            />
-                        </div>
-                    </template>
-
-                    <!-- Meter/thermometer expression -->
-                    <template v-if="['meter','thermometer'].includes(currentElement.chartType)">
-                        <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">Meter Settings</label>
-                        </div>
-                        <div class="form-group">
-                            <label>Data Expression</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.dataExpression || ''"
-                                @update:model-value="currentElement.dataExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: $V{value}"
-                            />
-                        </div>
-                        <div class="form-group" v-if="currentElement.chartType === 'meter'">
-                            <label>Shape</label>
-                            <select v-model="currentElement.shape">
-                                <option value="">Default</option>
-                                <option value="chord">Chord</option>
-                                <option value="pie">Pie</option>
-                                <option value="circle">Circle</option>
-                                <option value="fan">Fan</option>
-                                <option value="dash">Dash</option>
-                                <option value="bullet">Bullet</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Units</label>
-                            <input v-model="currentElement.units" type="text" placeholder="e.g.: %" />
-                        </div>
-                        <div class="form-group">
-                            <label>Low Threshold</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.lowExpression || ''"
-                                @update:model-value="currentElement.lowExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: 0"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label>Medium Threshold</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.mediumExpression || ''"
-                                @update:model-value="currentElement.mediumExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: 50"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label>High Threshold</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.highExpression || ''"
-                                @update:model-value="currentElement.highExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: 100"
-                            />
-                        </div>
-                    </template>
-
-                    <!-- Plot settings (category charts) -->
-                    <template v-if="['bar','bar3D','stackedBar','stackedBar3D','line','area','stackedArea'].includes(currentElement.chartType)">
-                        <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">Plot Settings</label>
-                        </div>
-                        <div class="form-group" v-if="['line'].includes(currentElement.chartType)">
-                            <label style="display: flex; align-items: center; gap: 4px;">
-                                <input type="checkbox" v-model="currentElement.isShowShapes" />
-                                Show Data Point Shapes
-                            </label>
-                        </div>
-                        <div class="form-group">
-                            <label>Label Color</label>
-                            <input v-model="currentElement.itemLabelColor" type="color" style="width: 60px; height: 30px;" />
-                        </div>
-                        <div class="form-group">
-                            <label>Label Background Color</label>
-                            <input v-model="currentElement.itemLabelBackgroundColor" type="color" style="width: 60px; height: 30px;" />
-                        </div>
-                        <div class="form-group">
-                            <label>Category Axis Label</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.categoryAxisLabelExpression || ''"
-                                @update:model-value="currentElement.categoryAxisLabelExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: $F{axis_label}"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label>Value Axis Label</label>
-                            <ExpressionEditor
-                                :model-value="currentElement.valueAxisLabelExpression || ''"
-                                @update:model-value="currentElement.valueAxisLabelExpression = $event"
-                                :report-fields="reportFields"
-                                :report-parameters="reportParameters"
-                                :report-variables="reportVariables"
-                                placeholder="e.g.: Amount"
-                            />
-                        </div>
-                    </template>
-
-                    <!-- Pie chart plot settings -->
-                    <template v-if="['pie','pie3D'].includes(currentElement.chartType)">
-                        <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                            <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">Plot Settings</label>
-                        </div>
-                        <div class="form-group">
-                            <label style="display: flex; align-items: center; gap: 4px;">
-                                <input type="checkbox" v-model="currentElement.isCircular" />
-                                Circular Display
-                            </label>
-                        </div>
-                        <div class="form-group">
-                            <label>Label Color</label>
-                            <input v-model="currentElement.itemLabelColor" type="color" style="width: 60px; height: 30px;" />
-                        </div>
-                        <div class="form-group">
-                            <label>Label Background Color</label>
-                            <input v-model="currentElement.itemLabelBackgroundColor" type="color" style="width: 60px; height: 30px;" />
-                        </div>
-                    </template>
-
-                    <!-- Hyperlink settings -->
-                    <div style="border-top: 1px solid #e8e8e8; margin: 8px 0; padding-top: 8px;">
-                        <label style="font-weight: 600; font-size: 12px; color: #666; margin-bottom: 6px; display: block;">Hyperlink</label>
-                    </div>
-                    <div class="form-group">
-                        <label>Tooltip Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.hyperlinkTooltipExpression || ''"
-                            @update:model-value="currentElement.hyperlinkTooltipExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Hyperlink Type</label>
-                        <select v-model="currentElement.hyperlinkType">
-                            <option value="">None</option>
-                            <option value="Reference">Reference</option>
-                            <option value="LocalAnchor">LocalAnchor</option>
-                            <option value="LocalPage">LocalPage</option>
-                            <option value="RemoteAnchor">RemoteAnchor</option>
-                            <option value="RemotePage">RemotePage</option>
-                            <option value="Tooltip">Tooltip</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Hyperlink Target</label>
-                        <select v-model="currentElement.hyperlinkTarget">
-                            <option value="">Default</option>
-                            <option value="Self">Self</option>
-                            <option value="Blank">Blank</option>
-                            <option value="Top">Top</option>
-                            <option value="Parent">Parent</option>
-                        </select>
-                    </div>
-                    <div class="form-group" v-if="currentElement.hyperlinkType">
-                        <label>Hyperlink Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.hyperlinkExpression || ''"
-                            @update:model-value="currentElement.hyperlinkExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Bookmark Level</label>
-                        <input v-model.number="currentElement.bookmarkLevel" type="number" min="0" max="10" />
-                    </div>
-                </n-tab-pane>
-
-                <!-- Barcode properties tab -->
-                <n-tab-pane
-                    v-if="currentElement && currentElement.type === 'barcode'"
-                    name="barcode"
-                    :tab="'Barcode Properties'"
-                >
-                    <div class="form-group">
-                        <label>Barcode Type</label>
-                        <select v-model="currentElement.barcodeType">
-                            <option value="Code128">Code128</option>
-                            <option value="Code39">Code39</option>
-                            <option value="EAN13">EAN13</option>
-                            <option value="EAN8">EAN8</option>
-                            <option value="UPCA">UPC-A</option>
-                            <option value="UPCE">UPC-E</option>
-                            <option value="QRCode">QR Code</option>
-                            <option value="DataMatrix">Data Matrix</option>
-                            <option value="Interleaved2Of5">Interleaved 2 of 5</option>
-                            <option value="Codabar">Codabar</option>
-                            <option value="EAN128">EAN128</option>
-                            <option value="PDF417">PDF417</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Barcode Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.codeExpression || ''"
-                            @update:model-value="currentElement.codeExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                            placeholder='e.g.: "1234567890"'
-                        />
-                    </div>
-                </n-tab-pane>
-
-                <!-- Map properties tab -->
-                <n-tab-pane
-                    v-if="currentElement && currentElement.type === 'map'"
-                    name="map"
-                    :tab="'Map Properties'"
-                >
-                    <div class="form-group">
-                        <label>Map Type</label>
-                        <select v-model="currentElement.mapType">
-                            <option value="html">HTML</option>
-                            <option value="image">Image</option>
-                            <option value="pdf">PDF</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Latitude Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.latExpression || ''"
-                            @update:model-value="currentElement.latExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Longitude Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.lngExpression || ''"
-                            @update:model-value="currentElement.lngExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Zoom Level Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.zoomExpression || ''"
-                            @update:model-value="currentElement.zoomExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Language Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.languageExpression || ''"
-                            @update:model-value="currentElement.languageExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                        />
-                    </div>
-                </n-tab-pane>
-
-                <!-- Crosstab properties tab -->
-                <n-tab-pane
-                    v-if="currentElement && currentElement.type === 'crosstab'"
-                    name="crosstab"
-                    :tab="'Crosstab Properties'"
-                >
-                    <div class="form-group">
-                        <label>Crosstab Width</label>
-                        <input
-                            v-model.number="currentElement.crosstabWidth"
-                            type="number"
-                            min="0"
-                            placeholder="Pixels"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Crosstab Height</label>
-                        <input
-                            v-model.number="currentElement.crosstabHeight"
-                            type="number"
-                            min="0"
-                            placeholder="Pixels"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>When No Data</label>
-                        <select v-model="currentElement.whenNoDataType">
-                            <option value="AllSectionsNoDetail">All Sections, No Detail</option>
-                            <option value="AllSectionsWithDetail">All Sections With Detail</option>
-                            <option value="NoDataCell">No Data Cell</option>
-                            <option value="Blank">Blank</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Evaluation Time</label>
-                        <select v-model="currentElement.evaluationTime">
-                            <option value="Now">Now - Evaluate Immediately</option>
-                            <option value="Report">Report - At Report End</option>
-                            <option value="Page">Page - At Page End</option>
-                            <option value="Column">Column - At Column End</option>
-                            <option value="Group">Group - At Group End</option>
-                            <option value="Band">Band - At Band End</option>
-                            <option value="Auto">Auto - Engine Decides</option>
-                            <option value="Master">Master - At Master Report End</option>
-                        </select>
-                    </div>
-                </n-tab-pane>
-
-                <!-- Icon label properties tab -->
-                <n-tab-pane
-                    v-if="currentElement && currentElement.type === 'iconLabel'"
-                    name="iconLabel"
-                    :tab="'Icon Label Properties'"
-                >
-                    <div class="form-group">
-                        <label>Icon</label>
-                        <input
-                            v-model="currentElement.icon"
-                            type="text"
-                            placeholder="Enter an icon name or emoji, e.g.: 📊, 📊"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Static Label</label>
-                        <input
-                            v-model="currentElement.label"
-                            type="text"
-                            placeholder="Enter fixed label text"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Label Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.labelExpression || ''"
-                            @update:model-value="currentElement.labelExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Evaluation Time</label>
-                        <select v-model="currentElement.evaluationTime">
-                            <option value="Now">Now - Evaluate Immediately</option>
-                            <option value="Report">Report - At Report End</option>
-                            <option value="Page">Page - At Page End</option>
-                            <option value="Column">Column - At Column End</option>
-                            <option value="Group">Group - At Group End</option>
-                            <option value="Band">Band - At Band End</option>
-                            <option value="Auto">Auto - Engine Decides</option>
-                            <option value="Master">Master - At Master Report End</option>
-                        </select>
-                    </div>
-                </n-tab-pane>
-
-                <!-- Generic element properties tab -->
-                <n-tab-pane
-                    v-if="currentElement && currentElement.type === 'genericElement'"
-                    name="genericElement"
-                    :tab="'Generic Element Properties'"
-                >
-                    <div class="form-group">
-                        <label>Namespace</label>
-                        <input v-model="currentElement.namespace" type="text" placeholder="e.g.: http://example.com/namespace" />
-                    </div>
-                    <div class="form-group">
-                        <label>Evaluation Time</label>
-                        <select v-model="currentElement.evaluationTime">
-                            <option value="Now">Now - Evaluate Immediately</option>
-                            <option value="Report">Report - At Report End</option>
-                            <option value="Page">Page - At Page End</option>
-                            <option value="Column">Column - At Column End</option>
-                            <option value="Group">Group - At Group End</option>
-                            <option value="Band">Band - At Band End</option>
-                            <option value="Auto">Auto - Engine Decides</option>
-                            <option value="Master">Master - At Master Report End</option>
-                        </select>
-                    </div>
-                </n-tab-pane>
-
-                <!-- Sort properties tab -->
-                <n-tab-pane
-                    v-if="currentElement && currentElement.type === 'sort'"
-                    name="sort"
-                    :tab="'Sort Properties'"
-                >
-                    <div class="form-group">
-                        <label>Sort Fields</label>
-                        <div v-if="currentElement.sortFields && currentElement.sortFields.length > 0">
-                            <div v-for="(field, index) in currentElement.sortFields" :key="index" class="sort-field-item">
-                                <input v-model="field.name" type="text" placeholder="Field Name" class="sort-field-name" />
-                                <select v-model="field.order" class="sort-field-order">
-                                    <option value="Ascending">Ascending</option>
-                                    <option value="Descending">Descending</option>
-                                </select>
-                                <button @click="removeSortField(index)" class="sort-field-remove">Delete</button>
-                            </div>
-                        </div>
-                        <button @click="addSortField" class="add-sort-field">Add Sort Field</button>
-                    </div>
-                    <div class="form-group">
-                        <label>Evaluation Time</label>
-                        <select v-model="currentElement.evaluationTime">
-                            <option value="Now">Now - Evaluate Immediately</option>
-                            <option value="Report">Report - At Report End</option>
-                            <option value="Page">Page - At Page End</option>
-                            <option value="Column">Column - At Column End</option>
-                            <option value="Group">Group - At Group End</option>
-                            <option value="Band">Band - At Band End</option>
-                            <option value="Auto">Auto - Engine Decides</option>
-                            <option value="Master">Master - At Master Report End</option>
-                        </select>
-                    </div>
-                </n-tab-pane>
-
-                <!-- List properties tab -->
-                <n-tab-pane
-                    v-if="currentElement && currentElement.type === 'list'"
-                    name="list"
-                    :tab="'List Properties'"
-                >
-                    <div class="form-group">
-                        <label>Print Order</label>
-                        <select v-model="currentElement.printOrder">
-                            <option value="Vertical">Vertical - Vertical</option>
-                            <option value="Horizontal">Horizontal - Horizontal</option>
-                        </select>
-                    </div>
-                    <div class="form-group" v-if="currentElement.printOrder === 'Horizontal'">
-                        <label style="display: flex; align-items: center; gap: 4px;">
-                            <input type="checkbox" v-model="currentElement.ignoreWidth" />
-                            Ignore Width (Continue Rendering)
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label>Sub-Dataset Name</label>
-                        <input v-model="currentElement.subDataset" type="text" placeholder="e.g.: Addresses" />
-                    </div>
-                    <div class="form-group">
-                        <label>Data Source Expression</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.dataSourceExpression || ''"
-                            @update:model-value="currentElement.dataSourceExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                            placeholder='e.g.: $P{myDatasource}'
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Connection Expression (Optional)</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.connectionExpression || ''"
-                            @update:model-value="currentElement.connectionExpression = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                            placeholder='e.g.: $P{connection}'
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>List Contents Height</label>
-                        <input
-                            v-model.number="listContentsHeight"
-                            type="number"
-                            min="0"
-                            placeholder="Pixels"
-                            @change="updateListContentsHeight"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>List Contents Width</label>
-                        <input
-                            v-model.number="listContentsWidth"
-                            type="number"
-                            min="0"
-                            placeholder="Pixels"
-                            @change="updateListContentsWidth"
-                        />
-                    </div>
-                    <div class="form-group">
-                        <label>Split Type</label>
-                        <select v-model="currentElement.splitType">
-                            <option value="Stretch">Stretch - Stretch</option>
-                            <option value="Prevent">Prevent - Prevent Split</option>
-                            <option value="Immediate">Immediate - Split Immediately</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Evaluation Time</label>
-                        <select v-model="currentElement.evaluationTime">
-                            <option value="Now">Now - Evaluate Immediately</option>
-                            <option value="Report">Report - At Report End</option>
-                            <option value="Page">Page - At Page End</option>
-                            <option value="Column">Column - At Column End</option>
-                            <option value="Group">Group - At Group End</option>
-                            <option value="Band">Band - At Band End</option>
-                            <option value="Auto">Auto - Engine Decides</option>
-                        </select>
-                    </div>
-                    <div
-                        class="form-group"
-                        v-if="currentElement.evaluationTime === 'Group'"
-                    >
-                        <label>Evaluation Group</label>
-                        <ExpressionEditor
-                            :model-value="currentElement.evaluationGroup || ''"
-                            @update:model-value="currentElement.evaluationGroup = $event"
-                            :report-fields="reportFields"
-                            :report-parameters="reportParameters"
-                            :report-variables="reportVariables"
-                            placeholder="Enter group name"
-                        />
-                    </div>
-                </n-tab-pane>
-
-            </n-tabs>
-
-            <div class="element-actions">
-                <n-button @click="deleteElement" type="error">{{
-                    t("properties.deleteElement")
-                }}</n-button>
+                    <span class="unit">px</span>
+                  </div>
+                </div>
+              </template>
             </div>
+          </div>
         </div>
+      </div>
     </div>
 
-    <!-- Style management modal -->
-    <BaseModal
-        :visible="showStyleManagerModal"
-        :title="t('properties.styleManagement')"
-        @update:visible="showStyleManagerModal = $event"
-        @confirm="saveStyleChanges"
-        @cancel="cancelStyleChanges"
-    >
-        <div class="style-manager-content">
-            <div
-                v-for="(style, index) in reportStyles"
-                :key="index"
-                class="style-item"
-            >
-                <h4>{{ style.name }}</h4>
-                <div class="style-properties">
-                    <!-- Background mode settings -->
-                    <div class="form-group">
-                        <label>{{ t("properties.backgroundMode") }}</label>
-                        <select
-                            v-model="style.mode"
-                            @change="emit('update-jrxml')"
-                        >
-                            <option :value="undefined">
-                                {{ t("properties.defaultTransparent") }}
-                            </option>
-                            <option value="Transparent">
-                                {{ t("properties.transparent") }}
-                            </option>
-                            <option value="Opaque">
-                                {{ t("properties.opaque") }}
-                            </option>
-                        </select>
-                    </div>
+    <!-- Element properties -->
+    <div v-else-if="selectedElement && currentElement" class="property-section">
+      <!-- Element properties tabs -->
+      <!-- Tabs: the highlight slides to the open tab (positioned by index) -->
+      <div
+        v-if="availableTabs.length > 1"
+        class="prop-tab-bar"
+        role="tablist"
+        :style="{ '--tab-count': availableTabs.length, '--tab-index': availableTabs.indexOf(activeTab) }"
+      >
+        <span class="prop-tab-indicator" aria-hidden="true"></span>
+        <button
+          v-for="tab in availableTabs"
+          :key="tab"
+          type="button"
+          role="tab"
+          class="prop-tab"
+          :class="{ active: activeTab === tab }"
+          :aria-selected="activeTab === tab"
+          @click="activeTab = tab"
+        >
+          {{ t(TAB_LABELS[tab] ?? tab) }}
+        </button>
+      </div>
 
-                    <!-- Foreground color settings -->
-                    <div class="form-group">
-                        <label>{{ t("properties.forecolor") }}</label>
-                        <ColorPickerWithOpacity
-                            v-model="style.forecolor"
-                            v-model:mode="style.forecolorMode"
-                            @update:modelValue="emit('update-jrxml')"
-                            @update:mode="emit('update-jrxml')"
-                        />
-                    </div>
+      <!-- Style Settings: take every style off this element (content, place and size stay) -->
+      <div v-if="activeTab === 'style' && !watermarkElement" class="reset-style-row">
+        <button type="button" class="chip-btn" :title="t('resetStyle.hint')" @click="resetStyle">
+          <RotateCcw :size="13" aria-hidden="true" />
+          {{ t("resetStyle.label") }}
+        </button>
+      </div>
 
-                    <!-- Background color settings -->
-                    <div class="form-group">
-                        <label>{{ t("properties.backgroundColor") }}</label>
-                        <ColorPickerWithOpacity
-                            v-model="style.backcolor"
-                            v-model:mode="style.mode"
-                            @update:modelValue="emit('update-jrxml')"
-                            @update:mode="emit('update-jrxml')"
-                        />
-                    </div>
-
-                    <!-- Horizontal text alignment -->
-                    <div class="form-group">
-                        <label>{{ t("properties.hTextAlign") }}</label>
-                        <select
-                            v-model="style.hTextAlign"
-                            @change="emit('update-jrxml')"
-                        >
-                            <option :value="undefined">
-                                {{ t("properties.default") }}
-                            </option>
-                            <option value="Left">
-                                {{ t("properties.left") }}
-                            </option>
-                            <option value="Center">
-                                {{ t("properties.center") }}
-                            </option>
-                            <option value="Right">
-                                {{ t("properties.right") }}
-                            </option>
-                            <option value="Justified">
-                                {{ t("properties.justified") }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <!-- Horizontal image alignment -->
-                    <div class="form-group">
-                        <label>{{ t("properties.hImageAlign") }}</label>
-                        <select
-                            v-model="style.hImageAlign"
-                            @change="emit('update-jrxml')"
-                        >
-                            <option :value="undefined">
-                                {{ t("properties.default") }}
-                            </option>
-                            <option value="Left">
-                                {{ t("properties.left") }}
-                            </option>
-                            <option value="Center">
-                                {{ t("properties.center") }}
-                            </option>
-                            <option value="Right">
-                                {{ t("properties.right") }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <!-- Vertical text alignment -->
-                    <div class="form-group">
-                        <label>{{ t("properties.vTextAlign") }}</label>
-                        <select
-                            v-model="style.vTextAlign"
-                            @change="emit('update-jrxml')"
-                        >
-                            <option :value="undefined">
-                                {{ t("properties.default") }}
-                            </option>
-                            <option value="Top">
-                                {{ t("properties.top") }}
-                            </option>
-                            <option value="Middle">
-                                {{ t("properties.middle") }}
-                            </option>
-                            <option value="Bottom">
-                                {{ t("properties.bottom") }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <!-- Vertical image alignment -->
-                    <div class="form-group">
-                        <label>{{ t("properties.vImageAlign") }}</label>
-                        <select
-                            v-model="style.vImageAlign"
-                            @change="emit('update-jrxml')"
-                        >
-                            <option :value="undefined">
-                                {{ t("properties.default") }}
-                            </option>
-                            <option value="Top">
-                                {{ t("properties.top") }}
-                            </option>
-                            <option value="Middle">
-                                {{ t("properties.middle") }}
-                            </option>
-                            <option value="Bottom">
-                                {{ t("properties.bottom") }}
-                            </option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+      <Transition name="prop-tab-fade" mode="out-in">
+        <!-- Watermark: its own settings, nothing of an ordinary picture -->
+        <div v-if="watermarkElement" key="watermark" class="prop-tab-pane" role="tabpanel">
+          <WatermarkProperties :key="watermarkElement.uuid" :element="watermarkElement" />
         </div>
-    </BaseModal>
+        <!-- Basic properties tab -->
+        <div v-else-if="activeTab === 'basic'" key="basic" class="prop-tab-pane" role="tabpanel">
+          <!-- Table: where its content comes from (one Table element, two kinds) -->
+          <div v-if="isTableElement" class="box-section compact">
+            <h5>{{ t("customTable.content") }}<SettingHelpButton id="tableContent" /></h5>
+            <SettingHelpText id="tableContent" />
+            <div class="seg" role="radiogroup" :aria-label="t('customTable.content')">
+              <button
+                v-for="kind in TABLE_CONTENT_KINDS"
+                :key="kind.value"
+                type="button"
+                role="radio"
+                class="seg-btn"
+                :class="{ active: tableContentKind === kind.value }"
+                :aria-checked="tableContentKind === kind.value"
+                @click="tableContentKind !== kind.value && emit('table-content', kind.value)"
+              >
+                <component :is="kind.icon" :size="14" aria-hidden="true" />
+                <span>{{ t(kind.labelKey) }}</span>
+              </button>
+            </div>
+            <small class="card-hint">{{ t(tableContentKind === "typed" ? "customTable.typedHint" : "customTable.fromDataHint") }}</small>
+          </div>
+
+          <!-- A Location's map and address are placed by its layout -->
+          <div v-if="!isLocationPart(currentElement)" class="box-section compact">
+            <h5>{{ t("properties.positionSize") }}<SettingHelpButton id="positionSize" /></h5>
+            <SettingHelpText id="positionSize" />
+            <div class="geometry-grid">
+              <label v-for="dim in GEOMETRY_FIELDS" :key="dim" class="field">
+                <span class="field-label">{{ t(`properties.${dim}`) }}</span>
+                <span class="unit-input">
+                  <input v-live-change
+                    :value="currentElement[dim]"
+                    type="number"
+                    @change="setIntegerValue(currentElement, dim, $event)"
+                  />
+                  <span>px</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Custom table: grid size and the look of the chosen cells -->
+          <!-- Contents list: fill from the headings, its rows -->
+          <ContentsListProperties
+            v-if="currentElement.type === 'contentsList'"
+            part="basic"
+            :element="currentElement as ContentsListElement"
+            @fill="emit('fill-contents-list')"
+          />
+
+          <!-- Section Heading (or one of its parts): its number -->
+          <HeadingNumberProperties v-if="sectionHeading" :heading="sectionHeading" />
+
+          <!-- Location (or its map / address): the place, map, layout and lines -->
+          <LocationProperties v-if="locationBox" :key="locationBox.uuid" :box="locationBox" />
+
+          <CustomTableProperties
+            v-if="currentElement.type === 'customTable'"
+            part="basic"
+            :element="currentElement as CustomTableElement"
+          />
+          <!-- Its table style: the same styles as a data table -->
+          <TableDataPanel
+            v-if="currentElement.type === 'customTable'"
+            part="basic"
+            v-bind="tablePanelProps"
+            v-on="tablePanelEvents"
+          />
+
+          <!-- Table: data, style, row sizes -->
+          <TableDataPanel
+            v-if="currentElement.type === 'table'"
+            part="basic"
+            v-bind="tablePanelProps"
+            v-on="tablePanelEvents"
+          />
+
+          <!-- Frame properties: border presets, border lines, layout -->
+          <FrameProperties
+            v-if="currentElement && currentElement.type === 'frame'"
+            :element="currentElement"
+            :is-page-border="isPageBorder"
+            :title-key="locationBox ? 'location.panel.frameTitle' : undefined"
+            @update:element="replaceCurrentElement"
+          />
+
+          <!-- Image properties -->
+          <template v-if="currentElement && currentElement.type === 'image'">
+            <!-- A Location's map is drawn from its place: no picture to upload -->
+            <div v-if="!isLocationPart(currentElement)" class="box-section compact">
+              <h5>{{ t("properties.imageName") }}<SettingHelpButton id="picture" /></h5>
+              <SettingHelpText id="picture" />
+              <div class="image-name-row">
+                <input
+                  type="text"
+                  class="card-input is-readonly"
+                  :value="getImageDisplayName(currentElement)"
+                  readonly
+                  :title="getImageDisplayName(currentElement)"
+                  :aria-label="t('properties.imageName')"
+                />
+                <button
+                  type="button"
+                  class="chip-btn chip-btn-solid"
+                  @click="pictureChooserOpen = true"
+                >
+                  <ImagePlus :size="13" aria-hidden="true" />
+                  {{ t("properties.choosePictureButton") }}
+                </button>
+              </div>
+              <small class="card-hint">{{ t("properties.imageNameHint") }}</small>
+              <PictureChooserModal v-model:visible="pictureChooserOpen" @choose="applyChosenPicture" />
+            </div>
+            <!-- Shape: preset corner looks, cards like the box border presets
+                 (custom corners are in Style Settings) -->
+            <div class="box-section compact">
+              <div class="shape-card-head">
+                <h5>{{ t("properties.imageShape") }}<SettingHelpButton id="imageShape" /></h5>
+                <span v-if="!currentImageShape" class="shape-custom-badge">{{ t("properties.imageShapeCustom") }}</span>
+              </div>
+              <SettingHelpText id="imageShape" />
+              <span class="field-label shape-field-label">{{ t("properties.imageShapePresets") }}</span>
+              <div class="shape-grid" role="radiogroup" :aria-label="t('properties.imageShapePresets')">
+                <button
+                  v-for="shape in IMAGE_SHAPES"
+                  :key="shape.id"
+                  type="button"
+                  role="radio"
+                  class="shape-swatch"
+                  :class="{ active: currentImageShape === shape.id }"
+                  :aria-checked="currentImageShape === shape.id"
+                  :title="t(`properties.imageShapes.${shape.id}Title`)"
+                  @click="applyImageShape(shape.id)"
+                >
+                  <span class="shape-sample-wrap">
+                    <span class="shape-sample" :style="shapePreviewStyle(shape)" aria-hidden="true"></span>
+                  </span>
+                  <span class="shape-name">{{ t(`properties.imageShapes.${shape.id}`) }}</span>
+                </button>
+              </div>
+              <small class="card-hint">{{ t("properties.imageShapeHint") }}</small>
+            </div>
+            <div class="box-section compact">
+              <h5>{{ t("properties.rotation") }}<SettingHelpButton id="rotation" /></h5>
+              <SettingHelpText id="rotation" />
+              <div class="seg" role="radiogroup" :aria-label="t('properties.rotation')">
+                <button
+                  v-for="rot in ROTATIONS"
+                  :key="rot.value"
+                  type="button"
+                  role="radio"
+                  class="seg-btn"
+                  :class="{ active: (currentElement.rotation || 'None') === rot.value }"
+                  :aria-checked="(currentElement.rotation || 'None') === rot.value"
+                  :title="t(rot.titleKey)"
+                  @click="setElementRotation(rot.value)"
+                >
+                  <FileText :size="16" aria-hidden="true" :style="{ transform: `rotate(${rot.deg}deg)` }" />
+                  <span>{{ rot.deg }}°</span>
+                </button>
+              </div>
+            </div>
+          </template>
+
+          <!-- Chart: type, title, legend -->
+          <ChartProperties
+            v-if="currentElement.type === 'chart'"
+            part="basic"
+            :element="currentElement as ChartElement"
+            @configure="emit('configure-chart')"
+          />
+
+          <!-- Barcode: type (with samples) and value -->
+          <BarcodeProperties
+            v-if="currentElement.type === 'barcode'"
+            :element="currentElement as BarcodeElement"
+          />
+
+          <!-- QR codes aren't turned (JasperReports has no orientation for them) -->
+          <template v-if="currentElement.type === 'barcode' && currentElement.barcodeType !== 'QRCode'">
+            <div class="box-section compact">
+              <h5>{{ t("properties.rotation") }}<SettingHelpButton id="rotation" /></h5>
+              <SettingHelpText id="rotation" />
+              <div class="seg" role="radiogroup" :aria-label="t('properties.rotation')">
+                <button
+                  v-for="rot in ROTATIONS"
+                  :key="rot.value"
+                  type="button"
+                  role="radio"
+                  class="seg-btn"
+                  :class="{ active: (currentElement.rotation || 'None') === rot.value }"
+                  :aria-checked="(currentElement.rotation || 'None') === rot.value"
+                  :title="t(rot.titleKey)"
+                  @click="setElementRotation(rot.value)"
+                >
+                  <FileText :size="16" aria-hidden="true" :style="{ transform: `rotate(${rot.deg}deg)` }" />
+                  <span>{{ rot.deg }}°</span>
+                </button>
+              </div>
+            </div>
+          </template>
+
+          <!-- Circle: traffic-light colours for status columns (Low / Moderate / High risk) -->
+          <div v-if="currentElement.type === 'ellipse'" class="box-section compact">
+            <h5>{{ t("reportParts.statusColor") }}<SettingHelpButton id="statusColor" /></h5>
+            <SettingHelpText id="statusColor" />
+            <div class="seg" role="radiogroup" :aria-label="t('reportParts.statusColor')">
+              <button
+                v-for="status in STATUS_COLORS"
+                :key="status.id"
+                type="button"
+                role="radio"
+                class="seg-btn"
+                :class="{ active: isStatusColor(status.color) }"
+                :aria-checked="isStatusColor(status.color)"
+                @click="setStatusColor(status.color)"
+              >
+                <span class="status-swatch" :style="{ background: status.color }" aria-hidden="true" />
+                <span>{{ t(`reportParts.placeholder.${status.id}Risk`) }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Line: which way it runs (its look is in Style Settings) -->
+          <template v-if="currentElement && currentElement.type === 'line'">
+            <div class="box-section compact">
+              <h5>{{ t("properties.lineOrientation") }}<SettingHelpButton id="lineOrientation" /></h5>
+              <SettingHelpText id="lineOrientation" />
+              <div class="seg" role="radiogroup" :aria-label="t('properties.lineOrientation')">
+                <button
+                  v-for="dir in LINE_ORIENTATIONS"
+                  :key="dir.value"
+                  type="button"
+                  role="radio"
+                  class="seg-btn seg-btn-stacked"
+                  :class="{ active: currentLineOrientation === dir.value }"
+                  :aria-checked="currentLineOrientation === dir.value"
+                  :title="t(dir.titleKey)"
+                  @click="setLineOrientation(dir.value)"
+                >
+                  <component :is="dir.icon" :size="18" aria-hidden="true" :style="dir.iconStyle" />
+                  <span>{{ t(dir.labelKey) }}</span>
+                </button>
+              </div>
+              <button
+                type="button"
+                class="ghost-btn"
+                :title="t('properties.crossLineTitle')"
+                @click="addCrossingLine"
+              >
+                <X :size="14" aria-hidden="true" />
+                {{ t("properties.crossLine") }}
+              </button>
+            </div>
+          </template>
+
+          <!-- Text properties -->
+          <template
+            v-else-if="currentElement && currentElement.type === 'textField'"
+          >
+            <!-- Page number: format and page range instead of free text -->
+            <PaginationProperties
+              v-if="isPagination(currentElement)"
+              :element="currentElement"
+            />
+            <!-- Date: which date and how it looks instead of free text -->
+            <DateProperties
+              v-else-if="isDateElement(currentElement)"
+              :element="currentElement"
+            />
+            <!-- A linked project detail: shows the project's value -->
+            <ProjectValueProperties
+              v-else-if="isProjectValue(currentElement)"
+              :element="currentElement"
+            />
+            <!-- A Location's address is written from its place -->
+            <div v-else-if="!isLocationPart(currentElement)" class="box-section compact">
+              <div class="card-head">
+                <h5>{{ t("properties.textContent") }}<SettingHelpButton id="textContent" /></h5>
+                <button
+                  type="button"
+                  class="chip-btn"
+                  :title="t('properties.fitToTextTitle')"
+                  @click="emit('fit-to-text')"
+                >
+                  <Scan :size="13" aria-hidden="true" />
+                  {{ t("properties.fitToText") }}
+                </button>
+              </div>
+              <SettingHelpText id="textContent" />
+              <textarea
+                class="card-textarea"
+                :value="getTextFieldDisplay(currentElement)"
+                @focus="textRecorded = false"
+                @input="updateTextFieldDisplay(($event.target as HTMLTextAreaElement).value)"
+                :placeholder="t('properties.textFieldPlaceholder', { example: '$F{field_name}' })"
+                rows="3"
+              ></textarea>
+              <label v-if="reportFields && reportFields.length > 0" class="field insert-field">
+                <span class="field-label">{{ t("properties.insertFieldLabel") }}</span>
+                <select
+                  class="card-select"
+                  @change="insertFieldIntoTextField(($event.target as HTMLSelectElement).value); ($event.target as HTMLSelectElement).value = ''"
+                >
+                  <option value="">{{ t("properties.insertField") }}</option>
+                  <option v-for="f in reportFields" :key="f.name" :value="`$F{${f.name}}`">{{ f.name }}</option>
+                </select>
+              </label>
+            </div>
+            <div class="box-section compact">
+              <h5>{{ t("properties.rotation") }}<SettingHelpButton id="rotation" /></h5>
+              <SettingHelpText id="rotation" />
+              <div class="seg" role="radiogroup" :aria-label="t('properties.rotation')">
+                <button
+                  v-for="rot in ROTATIONS"
+                  :key="rot.value"
+                  type="button"
+                  role="radio"
+                  class="seg-btn"
+                  :class="{ active: (currentElement.rotation || 'None') === rot.value }"
+                  :aria-checked="(currentElement.rotation || 'None') === rot.value"
+                  :title="t(rot.titleKey)"
+                  @click="setElementRotation(rot.value)"
+                >
+                  <FileText :size="16" aria-hidden="true" :style="{ transform: `rotate(${rot.deg}deg)` }" />
+                  <span>{{ rot.deg }}°</span>
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
+
+
+        <!-- Custom table: lines, text size, space in the cells -->
+        <div
+          v-else-if="activeTab === 'style' && currentElement.type === 'contentsList'"
+          key="contents-list-style"
+          class="prop-tab-pane"
+          role="tabpanel"
+        >
+          <ContentsListProperties part="style" :element="currentElement as ContentsListElement" />
+        </div>
+
+        <div
+          v-else-if="activeTab === 'style' && currentElement.type === 'customTable'"
+          key="custom-table-style"
+          class="prop-tab-pane"
+          role="tabpanel"
+        >
+          <CustomTableProperties part="style" :element="currentElement as CustomTableElement" />
+          <TableDataPanel part="style" v-bind="tablePanelProps" v-on="tablePanelEvents" />
+        </div>
+
+        <!-- Table: Style Settings is where its look is changed -->
+        <div
+          v-else-if="activeTab === 'style' && currentElement.type === 'table'"
+          key="table-style"
+          class="prop-tab-pane"
+          role="tabpanel"
+        >
+          <TableDataPanel part="style" v-bind="tablePanelProps" v-on="tablePanelEvents" />
+        </div>
+
+        <!-- Style settings tab -->
+        <div v-else key="style" class="prop-tab-pane" role="tabpanel">
+
+            <ChartProperties
+              v-if="currentElement.type === 'chart'"
+              part="style"
+              :element="currentElement as ChartElement"
+            />
+
+            <!-- Border settings (not supported for table and line elements) -->
+            <template v-if="currentElement.type !== 'table' && currentElement.type !== 'line'">
+              <!-- Border settings for rectangle/ellipse elements (unified) -->
+              <template
+                v-if="
+                  currentElement &&
+                  (currentElement.type === 'rectangle' ||
+                    currentElement.type === 'ellipse')
+                "
+              >
+                <!-- Outline: line style, then width / colour / corners in one row -->
+                <div class="box-section compact">
+                  <h5>{{ t("properties.outline") }}<SettingHelpButton id="outline" /></h5>
+                  <SettingHelpText id="outline" />
+                  <span class="field-label">{{ t("properties.lineStyle") }}</span>
+                  <div class="style-tiles style-tiles-4" role="radiogroup" :aria-label="t('properties.lineStyle')">
+                    <button
+                      v-for="line in SHAPE_STYLES"
+                      :key="line.value"
+                      type="button"
+                      role="radio"
+                      class="style-tile"
+                      :class="{ active: rectangleBorderStyle === line.value }"
+                      :aria-checked="rectangleBorderStyle === line.value"
+                      @click="setRectangleBorderStyle(line.value)"
+                    >
+                      <span class="pen-swatch" :class="penSwatchClass(line.value)" aria-hidden="true" />
+                      <span>{{ t(line.labelKey) }}</span>
+                    </button>
+                  </div>
+                  <div class="value-row" :class="{ 'has-three': currentElement.type === 'rectangle' }">
+                    <label class="field">
+                      <span class="field-label">{{ t("properties.width") }}</span>
+                      <span class="unit-input">
+                        <input v-live-change
+                          :value="getRectangleBorderWidth()"
+                          @change="setRectangleBorderWidth(($event.target as HTMLInputElement).value)"
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.25"
+                        />
+                        <span>pt</span>
+                      </span>
+                    </label>
+                    <div class="field">
+                      <span class="field-label">{{ t("properties.color") }}</span>
+                      <ColorSwatchPicker
+                        :model-value="getRectangleBorderColor()"
+                        @update:model-value="setRectangleBorderColor($event)"
+                        class="swatch-fill"
+                      />
+                    </div>
+                    <label v-if="currentElement.type === 'rectangle'" class="field">
+                      <span class="field-label">{{ t("properties.cornerRadius") }}</span>
+                      <span class="unit-input">
+                        <input v-live-change
+                          :value="currentElement.radius ?? 0"
+                          @change="setTextProperty('radius', Math.max(0, Math.round(parseFloat(($event.target as HTMLInputElement).value) || 0)))"
+                          type="number"
+                          min="0"
+                        />
+                        <span>px</span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </template>
+
+
+              <!-- Border settings for other elements (each side configurable independently) -->
+              <template v-else>
+                <!-- Borders: every side on its own row (All sets the four at once) -->
+                <div class="box-section compact border-designer">
+                  <h5>{{ t("properties.sideBorders") }}<SettingHelpButton id="sideBorders" /></h5>
+                  <SettingHelpText id="sideBorders" />
+                  <div class="border-table" role="table" :aria-label="t('properties.sideBorders')">
+                    <div class="border-table-head" role="row">
+                      <span role="columnheader">{{ t("properties.side") }}</span>
+                      <!-- One name per icon column, so every line style is labelled -->
+                      <span role="columnheader" class="line-style-names" :aria-label="t('properties.lineStyle')">
+                        <span v-for="line in LINE_STYLES" :key="line.value">{{ t(line.labelKey) }}</span>
+                      </span>
+                      <span role="columnheader">{{ t("properties.width") }}</span>
+                      <span role="columnheader">{{ t("properties.color") }}</span>
+                    </div>
+                    <div
+                      v-for="row in BORDER_ROWS"
+                      :key="row"
+                      class="border-row"
+                      :class="{ 'is-all': row === 'all' }"
+                      role="row"
+                    >
+                      <span class="border-row-label" role="rowheader">{{ borderRowLabel(row) }}</span>
+                      <div class="line-style-picker" role="radiogroup" :aria-label="`${borderRowLabel(row)} ${t('properties.lineStyle')}`">
+                        <button
+                          v-for="line in LINE_STYLES"
+                          :key="line.value"
+                          type="button"
+                          role="radio"
+                          class="line-style-btn"
+                          :class="{ active: getRowBorderStyle(row) === line.value }"
+                          :aria-checked="getRowBorderStyle(row) === line.value"
+                          :title="t(line.labelKey)"
+                          :aria-label="t(line.labelKey)"
+                          @click="setRowBorderStyle(row, line.value)"
+                        >
+                          <Ban v-if="line.value === ''" :size="18" aria-hidden="true" />
+                          <span v-else class="pen-swatch is-short" :class="penSwatchClass(line.value)" aria-hidden="true" />
+                        </button>
+                      </div>
+                      <label class="unit-input">
+                        <input
+                          :value="getRowBorderWidth(row)"
+                          @input="setRowBorderWidth(row, ($event.target as HTMLInputElement).value)"
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.25"
+                          :aria-label="`${borderRowLabel(row)} ${t('properties.width')}`"
+                        />
+                        <span>pt</span>
+                      </label>
+                      <ColorSwatchPicker
+                        :model-value="getRowBorderColor(row)"
+                        @update:model-value="setRowBorderColor(row, $event)"
+                        class="color-control compact"
+                        :aria-label="`${borderRowLabel(row)} ${t('properties.color')}`"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Images, boxes and text: corner radius for all corners at once, or each corner -->
+                  <!-- (not a Location: its square map would stick out of round corners;
+                       the map's own shape is in its panel) -->
+                  <div v-if="cornerRadii && !locationBox" class="corner-designer">
+                    <div class="pad-head">
+                      <span class="pad-title">{{ t("properties.cornerRadius") }}</span>
+                      <label class="pad-all">
+                        <span class="field-label">{{ t("properties.cornerAll") }}</span>
+                        <span class="unit-input">
+                          <input v-live-change
+                            :value="sharedCornerRadius"
+                            @change="setCornerRadius(null, ($event.target as HTMLInputElement).value)"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="1"
+                          />
+                          <span>px</span>
+                        </span>
+                      </label>
+                    </div>
+                    <div class="corner-pad">
+                      <label
+                        v-for="corner in CORNER_GRID"
+                        :key="corner"
+                        class="pad-input"
+                        :class="'corner-input-' + corner"
+                      >
+                        <span class="field-label">{{ t(`properties.corner.${corner}`) }}</span>
+                        <span class="unit-input">
+                          <input v-live-change
+                            :value="cornerRadii?.[corner] ?? 0"
+                            @change="setCornerRadius(corner, ($event.target as HTMLInputElement).value)"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="1"
+                          />
+                          <span>px</span>
+                        </span>
+                      </label>
+                      <div class="corner-preview" :style="cornerPreviewStyle"></div>
+                    </div>
+                    <small
+                      v-if="
+                        currentElement.type === 'frame' &&
+                        (currentElement.radius ?? 0) > 0 &&
+                        !isUniformBorder(currentElement.box)
+                      "
+                      class="corner-radius-hint"
+                    >{{ t("properties.cornerRadiusHint") }}</small>
+                  </div>
+                </div>
+
+                <!-- Margins (space inside the element; a page border has no content to pad) -->
+                <div v-if="!isPageBorder" class="box-section compact">
+                  <div class="pad-head">
+                    <h5 class="pad-title">{{ t("properties.marginSettings") }}<SettingHelpButton id="innerSpace" /></h5>
+                    <label class="pad-all">
+                      <span class="field-label">{{ t("properties.allSides") }}</span>
+                      <span class="unit-input">
+                        <input
+                          :value="currentElement.box?.padding ?? ''"
+                          @input="handleGlobalMarginInput"
+                          type="number"
+                          min="0"
+                        />
+                        <span>px</span>
+                      </span>
+                    </label>
+                  </div>
+                  <SettingHelpText id="innerSpace" />
+                  <div class="margin-pad">
+                    <label
+                      v-for="side in MARGIN_SIDES"
+                      :key="side"
+                      class="pad-input"
+                      :class="'margin-input-' + side"
+                    >
+                      <span class="field-label">{{ t(`properties.${side}Side`) }}</span>
+                      <span class="unit-input">
+                        <input
+                          :value="getMarginValue(side)"
+                          @input="handleSideMarginInput(side, $event)"
+                          type="number"
+                          min="0"
+                        />
+                        <span>px</span>
+                      </span>
+                    </label>
+                    <div class="margin-preview">
+                      <div class="margin-preview-content" :style="marginPreviewStyle"></div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </template>
+            <!-- Line: style, then thickness and colour in one row -->
+            <div v-if="currentElement.type === 'line'" class="box-section compact">
+              <h5>{{ t("properties.lineSettings") }}<SettingHelpButton id="lineSettings" /></h5>
+              <SettingHelpText id="lineSettings" />
+              <span class="field-label">{{ t("properties.lineStyle") }}</span>
+              <div class="style-tiles style-tiles-4" role="radiogroup" :aria-label="t('properties.lineStyle')">
+                <button
+                  v-for="line in LINE_ONLY_STYLES"
+                  :key="line.value"
+                  type="button"
+                  role="radio"
+                  class="style-tile"
+                  :class="{ active: (currentElement.lineStyle || 'Solid') === line.value }"
+                  :aria-checked="(currentElement.lineStyle || 'Solid') === line.value"
+                  @click="setTextProperty('lineStyle', line.value)"
+                >
+                  <span class="pen-swatch" :class="penSwatchClass(line.value)" aria-hidden="true" />
+                  <span>{{ t(line.labelKey) }}</span>
+                </button>
+              </div>
+              <div class="value-row">
+                <label class="field">
+                  <span class="field-label">{{ t("properties.lineThickness") }}</span>
+                  <span class="unit-input">
+                    <input v-live-change
+                      :value="currentElement.lineWidth ?? 1"
+                      @change="setTextProperty('lineWidth', Math.max(0.25, parseFloat(($event.target as HTMLInputElement).value) || 1))"
+                      type="number"
+                      min="0.25"
+                      step="0.25"
+                    />
+                    <span>pt</span>
+                  </span>
+                </label>
+                <div class="field">
+                  <span class="field-label">{{ t("properties.lineColor") }}</span>
+                  <ColorSwatchPicker
+                    :model-value="currentElement.lineColor || '#000000'"
+                    @update:model-value="setColorProperty('lineColor', 'lineColor', $event)"
+                    class="swatch-fill"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Text: font, size, style, alignment and colour together -->
+            <div v-if="showFontName || showTextAlignmentAndStyle || showTextColor" class="box-section compact text-card">
+              <h5>{{ t("properties.textSettings") }}<SettingHelpButton id="textSettings" /></h5>
+              <SettingHelpText id="textSettings" />
+              <div v-if="showFontName" class="field-row">
+                <label class="field grow">
+                  <span class="field-label">{{ t("properties.fontName") }}</span>
+                  <!-- Read-only until the report server supports more fonts -->
+                  <select
+                    :value="resolveReportFont(currentElement.fontFamily)"
+                    :disabled="availableFonts.length <= 1"
+                    @change="setTextProperty('fontFamily', ($event.target as HTMLSelectElement).value)"
+                  >
+                    <option v-for="font in availableFonts" :key="font" :value="font">{{ font }}</option>
+                  </select>
+                </label>
+                <label class="field font-size-field">
+                  <span class="field-label">{{ t("properties.fontSize") }}</span>
+                  <span class="unit-input">
+                    <input v-live-change
+                      :value="currentElement.fontSize ?? ''"
+                      @change="setFontSize(($event.target as HTMLInputElement).value)"
+                      type="number"
+                      min="1"
+                      max="200"
+                    />
+                    <span>pt</span>
+                  </span>
+                </label>
+              </div>
+              <p v-if="showFontName && availableFonts.length <= 1" class="font-info">
+                <Info :size="13" :stroke-width="2" />
+                <span>{{ t("properties.fontLimitedInfo", { font: DEFAULT_REPORT_FONT }) }}</span>
+              </p>
+
+              <div v-if="showTextAlignmentAndStyle" class="field-row">
+                <div class="field">
+                  <span class="field-label">{{ t("properties.fontStyle") }}</span>
+                  <div class="icon-segment">
+                    <button
+                      v-for="fmt in FONT_TOGGLES"
+                      :key="fmt.key"
+                      type="button"
+                      class="icon-btn"
+                      :class="['icon-btn-' + fmt.key, { active: !!currentElement[fmt.key] }]"
+                      :aria-pressed="!!currentElement[fmt.key]"
+                      :title="t(fmt.labelKey)"
+                      :aria-label="t(fmt.labelKey)"
+                      @click="setTextProperty(fmt.key, !currentElement[fmt.key])"
+                    >{{ fmt.glyph }}</button>
+                  </div>
+                </div>
+                <div class="field">
+                  <span class="field-label">{{ t("properties.textAlignment") }}</span>
+                  <div class="icon-segment">
+                    <button
+                      v-for="align in H_ALIGNS"
+                      :key="align.value"
+                      type="button"
+                      class="icon-btn"
+                      :class="{ active: currentElement.textAlignment === align.value }"
+                      :aria-pressed="currentElement.textAlignment === align.value"
+                      :title="t(align.labelKey)"
+                      :aria-label="t(align.labelKey)"
+                      @click="setHorizontalAlignment(align.value)"
+                    >
+                      <component :is="align.icon" :size="16" aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+                <div class="field">
+                  <span class="field-label">{{ t("properties.verticalAlignment") }}</span>
+                  <div class="icon-segment">
+                    <button
+                      v-for="align in V_ALIGNS"
+                      :key="align.value"
+                      type="button"
+                      class="icon-btn"
+                      :class="{ active: currentElement.verticalAlignment === align.value }"
+                      :aria-pressed="currentElement.verticalAlignment === align.value"
+                      :title="t(align.labelKey)"
+                      :aria-label="t(align.labelKey)"
+                      @click="setVerticalAlignment(align.value)"
+                    >
+                      <component :is="align.icon" :size="16" aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="showTextColor" class="field">
+                <span class="field-label">{{ t("properties.forecolor") }}</span>
+                <ColorPickerWithOpacity
+                  :model-value="currentElement.forecolor || '#000000'"
+                  :mode="currentElement.forecolorMode"
+                  @update:model-value="setColorProperty('forecolor', 'forecolor', $event)"
+                  @update:mode="setColorProperty('forecolor', 'forecolorMode', $event)"
+                />
+              </div>
+            </div>
+
+            <!-- Fill -->
+            <div v-if="showBackgroundColor" class="box-section compact">
+              <h5>{{ t("properties.backgroundColor") }}<SettingHelpButton id="background" /></h5>
+              <SettingHelpText id="background" />
+              <ColorPickerWithOpacity
+                :model-value="currentElement.backcolor"
+                :mode="currentElement.mode"
+                @update:model-value="setColorProperty('backcolor', 'backcolor', $event)"
+                @update:mode="setColorProperty('backcolor', 'mode', $event)"
+              />
+            </div>
+
+        </div>
+
+      </Transition>
+
+      <!-- The watermark has its own Remove button in its panel -->
+      <div v-if="!watermarkElement" class="element-actions">
+        <button type="button" class="delete-element-btn" @click="deleteElement">
+          <Trash2 :size="14" aria-hidden="true" />
+          {{ t("properties.deleteElement") }}
+        </button>
+      </div>
+    </div>
+  </div>
+
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, watch, nextTick } from "vue";
-import { useI18n } from "vue-i18n";
-import { NButton, NTabs, NTabPane, NRadioGroup, NRadioButton } from "naive-ui";
-import type { Band, SelectedElementInfo, TableDataset } from "../../../types";
-import { getAvailableFonts } from "../../../utils/fontUtils";
-import BaseModal from "../../modals/BaseModal.vue";
-import ColorPickerWithOpacity from "./ColorPickerWithOpacity.vue";
-import FontStyleSettings from "./FontStyleSettings.vue";
-import BorderStyleSettings from "./BorderStyleSettings.vue";
-import ElementTypeBasedSettings from "./ElementTypeBasedSettings.vue";
-import FrameProperties from "./FrameProperties.vue";
-import TableProperties from "./TableProperties.vue";
-import ColumnTreeNode from "./ColumnTreeNode.vue";
-import ExpressionEditor from "./common/ExpressionEditor.vue";
-import { useLivePreview } from "@/composables/useLivePreview";
+import { storeToRefs } from "pinia";
+import { useSelectionStore } from "@/stores/selection";
+import { useReportStore } from "@/stores/report";
 import {
-    syncTableColumns,
-    createDefaultColumn,
-    createDefaultColumnGroup,
-    findInParentArray,
-    ungroupColumnGroup,
-} from "../../../utils/table/ColumnTreeSync";
-import { TableUtils } from "../../../utils/table/ColumnFactory";
-import type {
-    Column,
-    ColumnGroup,
-    BaseColumn,
-    TableElement,
-} from "../../../types/table";
+  AlignVerticalJustifyCenter,
+  AlignVerticalJustifyEnd,
+  AlignVerticalJustifyStart,
+  Ban,
+  Database,
+  FileText,
+  PencilLine,
+  Minus,
+  Plus,
+  RotateCcw,
+  Scan,
+  Slash,
+  TextAlignCenter,
+  TextAlignEnd,
+  TextAlignStart,
+  Trash2,
+  Info,
+  ImagePlus,
+  X,
+} from "@lucide/vue";
+import { DEFAULT_REPORT_FONT, resolveReportFont } from "../../../config/fonts.config";
+import ColorSwatchPicker from '../../common/ColorSwatchPicker.vue';
+import { computed, ref, onMounted, onUpdated, watch, nextTick } from "vue";
+import { useI18n } from "vue-i18n";
+import { NButton, NRadioGroup, NRadioButton } from "naive-ui";
+import notification from "@/utils/notification";
+import { pageKind } from "@/utils/specialPages";
+import type { Band, BarcodeElement, ChartElement, ContentsListElement, CustomTableElement, DesignElement, FrameElement, ImageElement, SelectedElementInfo, TableElement } from "../../../types";
+import type { SavedTableStyle } from "@/types/dataSource";
+import { getAvailableFonts } from "../../../utils/fontUtils";
+import {
+  CORNER_NAMES,
+  getElementTypeName,
+  getImageDisplayName,
+  getPropertyCornerRadii,
+  getImageShape,
+  IMAGE_SHAPES,
+  type ImageShapeId,
+  setImageShape,
+  shapeSize,
+  setPropertyCornerRadii,
+  type CornerName,
+  type CornerRadii,
+  setImagePicture,
+} from "../../../utils/elementUtils";
+import { toImageExpression } from "../../../services/imageService";
+import PictureChooserModal from "../../modals/PictureChooserModal.vue";
+import type { ChosenPicture } from "@/types/projectPhoto";
+import {
+  getEffectiveDefaultBandLimits,
+  getEffectiveDefaultBandConfig,
+} from "../../../constants/constants";
+import ColorPickerWithOpacity from "./ColorPickerWithOpacity.vue";
+import PaginationProperties from "./PaginationProperties.vue";
+import DateProperties from "./DateProperties.vue";
+import ProjectValueProperties from "./ProjectValueProperties.vue";
+import ChartProperties from "./ChartProperties.vue";
+import CustomTableProperties from "./CustomTableProperties.vue";
+import ContentsListProperties from "./ContentsListProperties.vue";
+import HeadingNumberProperties from "./HeadingNumberProperties.vue";
+import LocationProperties from "./LocationProperties.vue";
+import WatermarkProperties from "./WatermarkProperties.vue";
+import { isWatermark } from "../../../utils/watermark/watermarkElement";
+import { isLocationElement, isLocationPart } from "../../../utils/location/locationElement";
+import PanelTip from "../../help/PanelTip.vue";
+import SettingHelpButton from "../../help/SettingHelpButton.vue";
+import SettingHelpText from "../../help/SettingHelpText.vue";
+import PageSetupSection, { type PageSetupValue } from "../PageSetupSection.vue";
+import { loadReportDefaults } from "@/utils/reportDefaults";
+import { cardsWithoutHelp } from "@/utils/helpCoverage";
+import { cleanLegacyAutoDateElement, resolveLegacyDateSample } from "@/utils/autoDate";
+import { hasProperty, minContentsListWidth, SECTION_HEADING_PROPERTY, SUB_HEADING_PROPERTY } from "@/utils/contentsList";
+import { resetElementStyle } from "../../../utils/resetStyle";
+import BarcodeProperties from "./BarcodeProperties.vue";
+import { isPagination } from "../../../utils/paginationPresets";
+import { isDateElement } from "../../../utils/dateElement";
+import { getProjectValueLink, isProjectDateKey, isProjectValue } from "../../../utils/projectValue";
+
+// A start / finish date linked to the project: shown as a date, like the Date element
+const isProjectDate = (el: any) => isProjectDateKey(getProjectValueLink(el)?.key ?? "");
+import FrameProperties from "./FrameProperties.vue";
+import {
+  getBoxCornerRadii,
+  setBoxCornerRadii,
+  clampRectInBox,
+  fitFrameContent,
+  frameFitReference,
+  frameMinimumSize,
+  isBoxPart,
+  isUniformBorder,
+  type FrameFitReference,
+} from "../../../utils/framePresets";
+import { scaleColumnWidths } from "../../../utils/table/dataTable";
+import { MIN_TABLE_COLUMN_WIDTH } from "../../../utils/table/dataBinding";
+import { STATUS_COLORS } from "../../../utils/reportParts";
+import TableDataPanel from "./TableDataPanel.vue";
+import { useLivePreview } from "@/composables/useLivePreview";
 import SwitchControl from "./common/SwitchControl.vue";
 
 const { t } = useI18n();
 
 interface Props {
-    selectedBandIndex: number | null;
-    selectedElement: SelectedElementInfo | null;
-    bands: Band[];
-    reportProperties: any;
-    subDatasets?: TableDataset[];
-    reportStyles?: any[];
-    reportFields?: Array<{ name: string; class?: string }>;
-    reportParameters?: Array<{ name: string; class?: string }>;
-    reportVariables?: Array<{ name: string; class?: string }>;
+  // Table styles saved in the report
 }
 
 interface Emits {
-    (e: "update:bands", bands: Band[]): void;
-    (e: "delete-element"): void;
-    (e: "update-jrxml"): void;
-    (e: "save-state"): void;
-    (e: "update:reportStyles", styles: any[]): void;
-    (
-        e: "add-columns-to-group",
-        params: {
-            elementIndex: number;
-            columnIndices: number[];
-            bandIndex: number;
-            parentFrameIndex?: number;
-        },
-    ): void;
+  (e: "update:bands", bands: Band[]): void;
+  (e: "delete-element"): void;
+  // Fit the selected text element's box to its text (done by the designer)
+  (e: "fit-to-text"): void;
+  (e: "save-table-style", name: string): void;
+  (e: "update-table-style", id: string): void;
+  (e: "rename-table-style", id: string, name: string): void;
+  (e: "delete-table-style", id: string): void;
+  // Open the Configure popup for the selected table
+  (e: "configure-table"): void;
+  (e: "table-content", kind: "data" | "typed"): void;
+  (e: "fill-contents-list"): void;
+  (e: "configure-chart"): void;
+  // Paper or margins changed: the designer fits the page's content to it
+  (e: "page-setup-change"): void;
+  // Template Settings' Watermark card: add one
 }
 
 const props = defineProps<Props>();
+// Changes: an undo step before, the JRXML rewritten after
+const report = useReportStore();
+
+// Report, selection and editor state come from the stores
+const selectionStore = useSelectionStore();
+const { selectedBandIndex, selectedElement, tableColumn } = storeToRefs(selectionStore);
+const reportStore = useReportStore();
+const { bands, reportProperties, tableStyles, reportFields, reportParameters, reportVariables } = storeToRefs(reportStore);
+
 const emit = defineEmits<Emits>();
+
+function getBandLimit(bandType: string) {
+  if (!reportProperties.value) return { min: 20, max: 70 };
+  if (!reportProperties.value.bandLimits) {
+    reportProperties.value.bandLimits = getEffectiveDefaultBandLimits();
+  }
+  if (!reportProperties.value.bandLimits[bandType]) {
+    reportProperties.value.bandLimits[bandType] = { min: 20, max: 70 };
+  }
+  return reportProperties.value.bandLimits[bandType];
+}
+
+function getMaxPhysicalHeight(bandType: string): number {
+  const pageH = reportProperties.value?.pageHeight || 842;
+  const topM = reportProperties.value?.topMargin || 20;
+  const bottomM = reportProperties.value?.bottomMargin || 20;
+  const printableH = pageH - topM - bottomM;
+  let otherBandsH = 0;
+  if (bands.value && Array.isArray(bands.value)) {
+    bands.value.forEach((b) => {
+      if (b.type !== bandType && b.type !== "detail" && b.type !== "background") {
+        otherBandsH += b.height || 0;
+      }
+    });
+  }
+  // Leave at least 20px for detail band
+  return Math.max(20, printableH - otherBandsH - 20);
+}
+
+function getMaxAllowedLimit(bandType: string): number {
+  const pageH = reportProperties.value?.pageHeight || 842;
+  const topM = reportProperties.value?.topMargin || 20;
+  const bottomM = reportProperties.value?.bottomMargin || 20;
+  const printableH = pageH - topM - bottomM;
+  let otherBandsMin = 0;
+  if (bands.value && Array.isArray(bands.value)) {
+    bands.value.forEach((b) => {
+      if (b.type !== bandType && b.type !== "detail" && b.type !== "background") {
+        const limit = getBandLimit(b.type);
+        otherBandsMin += Math.max(10, limit?.min || 10);
+      }
+    });
+  }
+  const detailMin = 10;
+  return Math.max(10, printableH - otherBandsMin - detailMin);
+}
+
+function onTemplateMinChange(bandType: string) {
+  const limit = getBandLimit(bandType);
+  if (typeof limit.min === "number") {
+    if (limit.min < 10) {
+      limit.min = 10;
+    }
+    if (typeof limit.max === "number" && limit.min > limit.max) {
+      limit.max = limit.min;
+    }
+  }
+  const band = bands.value?.find((b) => b.type === bandType);
+  if (band && typeof band.height === "number" && band.height < limit.min) {
+    band.height = limit.min;
+  }
+  report.updateJrxml();
+}
+
+function onTemplateMaxChange(bandType: string) {
+  const limit = getBandLimit(bandType);
+  const maxCeiling = getMaxAllowedLimit(bandType);
+  if (typeof limit.max === "number") {
+    if (limit.max < 10) {
+      limit.max = 10;
+    }
+    if (limit.max > maxCeiling) {
+      limit.max = maxCeiling;
+    }
+    if (typeof limit.min === "number" && limit.max < limit.min) {
+      limit.min = limit.max;
+    }
+  }
+  const band = bands.value?.find((b) => b.type === bandType);
+  if (band && typeof band.height === "number" && band.height > limit.max) {
+    band.height = limit.max;
+  }
+  report.updateJrxml();
+}
+
+// Section Heights → Use default: the heights and limits of Default Settings
+function useDefaultHeights() {
+  resetTemplateBandLimitsToDefault();
+  notification.success(t("templateSettings.useDefaultDone"));
+}
+
+function resetTemplateBandLimitsToDefault(record = true) {
+  if (!reportProperties.value) return;
+  if (record) report.saveStateToHistory();
+  const config = getEffectiveDefaultBandConfig();
+  const limits: Record<string, { min: number; max: number }> = {};
+  for (const key of Object.keys(config)) {
+    const item = config[key];
+    if (item) {
+      limits[key] = { min: item.min, max: item.max };
+    }
+  }
+  reportProperties.value.bandLimits = limits;
+
+  if (bands.value && Array.isArray(bands.value)) {
+    bands.value.forEach((band, index) => {
+      const bConf = config[band.type];
+      if (band.type !== "detail" && bConf?.defaultHeight) {
+        band.height = bConf.defaultHeight;
+        updateBandHeight(index);
+      }
+    });
+  }
+}
 
 // Live preview (used for transition animation)
 const { previewConfig, startPreview, stopPreview, confirmPreview } =
-    useLivePreview({
-        animated: true,
-        animationDuration: 150,
-    });
+  useLivePreview({
+    animated: true,
+    animationDuration: 150,
+  });
 
 // List of available fonts
 const availableFonts = ref<string[]>([]);
 
 onMounted(async () => {
-    availableFonts.value = await getAvailableFonts();
+  availableFonts.value = await getAvailableFonts();
 });
 
 // Computed properties
 const currentElement = computed(() => {
-    if (props.selectedElement && props.bands && Array.isArray(props.bands)) {
-        const band = props.bands[props.selectedElement.bandIndex];
-        if (band && band.elements && Array.isArray(band.elements)) {
-            // Check whether this is an element nested inside a Frame
-            if (props.selectedElement.parentFrameIndex !== undefined) {
-                const frame =
-                    band.elements[props.selectedElement.parentFrameIndex];
-                if (frame && frame.type === "frame" && frame.elements) {
-                    return frame.elements[props.selectedElement.elementIndex];
-                }
-            } else {
-                return band.elements[props.selectedElement.elementIndex];
-            }
+  if (selectedElement.value && bands.value && Array.isArray(bands.value)) {
+    const band = bands.value[selectedElement.value.bandIndex];
+    if (band && band.elements && Array.isArray(band.elements)) {
+      // Check whether this is an element nested inside a Frame
+      if (selectedElement.value.parentFrameIndex !== undefined) {
+        const frame = band.elements[selectedElement.value.parentFrameIndex];
+        if (frame && frame.type === "frame" && frame.elements) {
+          return frame.elements[selectedElement.value.elementIndex];
         }
+      } else {
+        return band.elements[selectedElement.value.elementIndex];
+      }
     }
-    return null;
+  }
+  return null;
 });
 
 // Compute the current element type
 const elementType = computed(() => {
-    return currentElement.value?.type || "";
+  return currentElement.value?.type || "";
 });
 
-// Table row height settings
-const tableRowHeights = ref({
-    tableHeader: 30,
-    columnHeader: 30,
-    detailCell: 30,
-    columnFooter: 30,
-    tableFooter: 30,
+// Style property visibility computed properties
+const showTextColor = computed(() => {
+  if (!currentElement.value) return false;
+  return !["image", "line", "rectangle", "ellipse", "frame", "barcode", "chart", "customTable", "contentsList"].includes(currentElement.value.type);
 });
 
-// Table style selection
-const tableStyles = ref({
-    tableHeader: "Table_TH",
-    columnHeader: "Table_CH",
-    columnFooter: "Table_CH",
-    detailCell: "Table_TD",
+// Frame in the Background band: a border drawn on every page, with no fill or padding
+// The Section Heading box selected, or the one holding the selected part
+const sectionHeading = computed<FrameElement | null>(() => {
+  const sel = selectedElement.value;
+  if (!sel) return null;
+  const band = bands.value?.[sel.bandIndex];
+  const box = sel.parentFrameIndex !== undefined ? band?.elements[sel.parentFrameIndex] : currentElement.value;
+  return box?.type === "frame" && hasProperty(box, SECTION_HEADING_PROPERTY) ? (box as FrameElement) : null;
+});
+
+// The Location shown when it, its map or its address is selected
+const locationBox = computed<FrameElement | null>(() => {
+  const sel = selectedElement.value;
+  if (!sel) return null;
+  const box = sel.parentFrameIndex !== undefined ? bands.value?.[sel.bandIndex]?.elements[sel.parentFrameIndex] : currentElement.value;
+  return isLocationElement(box) ? (box as FrameElement) : null;
+});
+
+// The watermark (an image in the Background band) has a panel of its own
+const watermarkElement = computed<ImageElement | null>(() => {
+  const sel = selectedElement.value;
+  const el = currentElement.value;
+  return sel && sel.parentFrameIndex === undefined && isWatermark(el) ? (el as ImageElement) : null;
+});
+
+const isPageBorder = computed(
+  () =>
+    currentElement.value?.type === "frame" &&
+    !!selectedElement.value &&
+    selectedElement.value.parentFrameIndex === undefined &&
+    bands.value[selectedElement.value.bandIndex]?.type === "background",
+);
+
+const showBackgroundColor = computed(() => {
+  if (!currentElement.value || isPageBorder.value) return false;
+  return !["line", "barcode", "customTable", "contentsList"].includes(currentElement.value.type);
+});
+
+const showFontName = computed(() => {
+  if (!currentElement.value) return false;
+  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "table", "chart", "customTable", "contentsList"].includes(currentElement.value.type);
+});
+
+const showTextAlignmentAndStyle = computed(() => {
+  if (!currentElement.value) return false;
+  return !["line", "image", "frame", "rectangle", "ellipse", "barcode", "chart", "table", "customTable", "contentsList"].includes(currentElement.value.type);
 });
 
 // Style management modal control
-const showStyleManagerModal = ref(false);
 
 // Frame property update handler
 const handleFramePropertyUpdate = (updatedElement: any) => {
-    if (currentElement.value && props.selectedElement) {
-        const band = props.bands[props.selectedElement.bandIndex];
-        if (band && band.elements) {
-            if (props.selectedElement.parentFrameIndex !== undefined) {
-                const frame =
-                    band.elements[props.selectedElement.parentFrameIndex];
-                if (frame && frame.type === "frame" && frame.elements) {
-                    frame.elements[props.selectedElement.elementIndex] =
-                        updatedElement;
-                }
-            } else {
-                band.elements[props.selectedElement.elementIndex] =
-                    updatedElement;
-            }
-            emit("update:bands", props.bands);
-            emit("update-jrxml");
+  if (currentElement.value && selectedElement.value) {
+    const band = bands.value[selectedElement.value.bandIndex];
+    if (band && band.elements) {
+      if (selectedElement.value.parentFrameIndex !== undefined) {
+        const frame = band.elements[selectedElement.value.parentFrameIndex];
+        if (frame && frame.type === "frame" && frame.elements) {
+          frame.elements[selectedElement.value.elementIndex] = updatedElement;
         }
+      } else {
+        band.elements[selectedElement.value.elementIndex] = updatedElement;
+      }
+      emit("update:bands", bands.value);
+      report.updateJrxml();
     }
+  }
 };
 
-// Table property update handler
-const handleTablePropertyUpdate = (updatedElement: any) => {
-    if (currentElement.value && props.selectedElement) {
-        const band = props.bands[props.selectedElement.bandIndex];
-        if (band && band.elements) {
-            if (props.selectedElement.parentFrameIndex !== undefined) {
-                const frame =
-                    band.elements[props.selectedElement.parentFrameIndex];
-                if (frame && frame.type === "frame" && frame.elements) {
-                    frame.elements[props.selectedElement.elementIndex] =
-                        updatedElement;
-                }
-            } else {
-                band.elements[props.selectedElement.elementIndex] =
-                    updatedElement;
-            }
-            emit("update:bands", props.bands);
-            emit("update-jrxml");
-        }
-    }
+// Replace the selected element with an updated copy (frame panel edits:
+// border presets, layout), recorded for undo first
+const replaceCurrentElement = (updatedElement: any) => {
+  report.saveStateToHistory();
+  handleFramePropertyUpdate(updatedElement);
 };
-
-// Add column
-const addColumn = () => {
-    if (currentElement.value && currentElement.value.type === "table") {
-        if (!currentElement.value.columns) {
-            currentElement.value.columns = [];
-        }
-        const newColumn = {
-            uuid: crypto.randomUUID(),
-            name: `Column ${currentElement.value.columns.length + 1}`,
-            width: 100,
-            columnHeader: {
-                enable: true,
-                element: {
-                    type: "staticText",
-                    x: 0,
-                    y: 0,
-                    width: 100,
-                    height: 30,
-                    text: `Column ${currentElement.value.columns.length + 1}`,
-                    textAlignment: "Center",
-                    verticalAlignment: "Middle",
-                },
-            },
-            detailCell: {
-                enable: true,
-                element: {
-                    type: "textField",
-                    x: 0,
-                    y: 0,
-                    width: 100,
-                    height: 30,
-                    expression: "",
-                    textAlignment: "Center",
-                    verticalAlignment: "Middle",
-                },
-            },
-        };
-        (currentElement.value as any).columns.push(newColumn);
-        emit("update-jrxml");
-    }
-};
-
-// Delete column
-const removeColumn = (index: number) => {
-    if (
-        currentElement.value &&
-        currentElement.value.type === "table" &&
-        currentElement.value.columns
-    ) {
-        currentElement.value.columns.splice(index, 1);
-        emit("update-jrxml");
-    }
-};
-
-// ==================== Column combination tree management ====================
-
-const tableChildren = computed<(Column | ColumnGroup)[]>(() => {
-    if (!currentElement.value || currentElement.value.type !== "table")
-        return [];
-    const el = currentElement.value as TableElement;
-    if (el.children && el.children.length > 0) return el.children;
-    // Initialize from columns when there are no children
-    return el.columns || [];
-});
-
-function syncAndEmit() {
-    if (!currentElement.value || currentElement.value.type !== "table") return;
-    const el = currentElement.value as TableElement;
-    // Ensure children exists
-    if (!el.children) {
-        el.children = [...(el.columns || [])];
-    }
-    syncTableColumns(el);
-    emit("update-jrxml");
-}
-
-function ensureChildren() {
-    if (!currentElement.value || currentElement.value.type !== "table") return;
-    const el = currentElement.value as TableElement;
-    if (!el.children) {
-        el.children = [...(el.columns || [])];
-    }
-}
-
-function handleAddRootColumn() {
-    if (!currentElement.value || currentElement.value.type !== "table") return;
-    emit("save-state");
-    ensureChildren();
-    const el = currentElement.value as TableElement;
-    const count = (el.children || []).length;
-    const newCol = createDefaultColumn(`Column ${count + 1}`);
-    el.children!.push(newCol);
-    syncAndEmit();
-}
-
-function handleAddRootGroup() {
-    if (!currentElement.value || currentElement.value.type !== "table") return;
-    emit("save-state");
-    ensureChildren();
-    const el = currentElement.value as TableElement;
-    const count = (el.children || []).filter((c) => "children" in c).length;
-    const newGroup = createDefaultColumnGroup(`Group ${count + 1}`);
-    el.children!.push(newGroup);
-    syncAndEmit();
-}
-
-function handleColumnNodeUpdate(uuid: string, updates: Partial<BaseColumn>) {
-    emit("save-state");
-    ensureChildren();
-    const el = currentElement.value as TableElement;
-    const result = findInParentArray(el.children!, uuid);
-    if (result) {
-        const node = result.parent[result.index];
-        if (node) {
-            Object.assign(node, updates);
-            // If the width was updated, it needs to be synced
-            if (updates.width !== undefined) {
-                TableUtils.updateAllColumnGroupWidths(el.children!);
-            }
-            // If the name was updated, sync it to the cell
-            if (updates.name !== undefined) {
-                if (node.columnHeader?.element) {
-                    node.columnHeader.element.text = updates.name;
-                }
-            }
-        }
-    }
-    syncAndEmit();
-}
-
-function handleColumnNodeDelete(uuid: string) {
-    emit("save-state");
-    ensureChildren();
-    const el = currentElement.value as TableElement;
-    const result = findInParentArray(el.children!, uuid);
-    if (result) {
-        result.parent.splice(result.index, 1);
-    }
-    syncAndEmit();
-}
-
-function handleAddColumnAfter(afterUuid: string) {
-    emit("save-state");
-    ensureChildren();
-    const el = currentElement.value as TableElement;
-    const result = findInParentArray(el.children!, afterUuid);
-    if (result) {
-        const newCol = createDefaultColumn(`Column ${result.parent.length + 1}`);
-        result.parent.splice(result.index + 1, 0, newCol);
-    }
-    syncAndEmit();
-}
-
-function handleAddColumnChild(groupUuid: string) {
-    emit("save-state");
-    ensureChildren();
-    const el = currentElement.value as TableElement;
-    const result = findInParentArray(el.children!, groupUuid);
-    if (result) {
-        const group = result.parent[result.index] as ColumnGroup;
-        if (group && "children" in group) {
-            const newCol = createDefaultColumn(
-                `Column ${group.children.length + 1}`,
-            );
-            group.children.push(newCol);
-        }
-    }
-    syncAndEmit();
-}
-
-function handleAddColumnGroupAfter(afterUuid: string) {
-    emit("save-state");
-    ensureChildren();
-    const el = currentElement.value as TableElement;
-    const result = findInParentArray(el.children!, afterUuid);
-    if (result) {
-        const newGroup = createDefaultColumnGroup(
-            `Group ${result.parent.length + 1}`,
-        );
-        result.parent.splice(result.index + 1, 0, newGroup);
-    }
-    syncAndEmit();
-}
-
-function handleUngroupNode(groupUuid: string) {
-    emit("save-state");
-    ensureChildren();
-    const el = currentElement.value as TableElement;
-    ungroupColumnGroup(el.children!, groupUuid);
-    syncAndEmit();
-}
-
-function handleMoveNode(uuid: string, direction: "up" | "down") {
-    emit("save-state");
-    ensureChildren();
-    const el = currentElement.value as TableElement;
-    const result = findInParentArray(el.children!, uuid);
-    if (!result) return;
-    const { parent, index } = result;
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= parent.length) return;
-    const temp = parent[index];
-    const target = parent[targetIndex];
-    if (temp && target) {
-        parent[index] = target;
-        parent[targetIndex] = temp;
-    }
-    syncAndEmit();
-}
-
-// Report style management
-const reportStyles = ref<any[]>(
-    props.reportStyles || [
-        {
-            name: "Table_TH",
-            mode: "Opaque",
-            backcolor: "#F0F8FF",
-            forecolor: "#000000",
-            forecolorMode: "Opaque",
-            hTextAlign: "Center",
-            hImageAlign: "Center",
-            vTextAlign: "Middle",
-            vImageAlign: "Middle",
-            box: {
-                pen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                topPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                leftPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                bottomPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                rightPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-            },
-        },
-        {
-            name: "Table_CH",
-            mode: "Opaque",
-            backcolor: "#BFE1FF",
-            forecolor: "#000000",
-            forecolorMode: "Opaque",
-            hTextAlign: "Center",
-            hImageAlign: "Center",
-            vTextAlign: "Middle",
-            vImageAlign: "Middle",
-            box: {
-                pen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                topPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                leftPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                bottomPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                rightPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-            },
-        },
-        {
-            name: "Table_TD",
-            mode: "Opaque",
-            backcolor: "#FFFFFF",
-            forecolor: "#000000",
-            forecolorMode: "Opaque",
-            hTextAlign: "Left",
-            hImageAlign: "Left",
-            vTextAlign: "Middle",
-            vImageAlign: "Middle",
-            box: {
-                pen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                topPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                leftPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                bottomPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                rightPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-            },
-        },
-    ],
-);
-
-// Save style changes
-function saveStyleChanges() {
-    emit("update:reportStyles", reportStyles.value);
-    emit("update-jrxml");
-    showStyleManagerModal.value = false;
-}
-
-// Cancel style changes
-function cancelStyleChanges() {
-    // Reset styles to their original state
-    reportStyles.value = props.reportStyles || [
-        {
-            name: "Table_TH",
-            mode: "Opaque",
-            backcolor: "#F0F8FF",
-            forecolor: "#000000",
-            forecolorMode: "Opaque",
-            hTextAlign: "Center",
-            hImageAlign: "Center",
-            vTextAlign: "Middle",
-            vImageAlign: "Middle",
-            box: {
-                pen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                topPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                leftPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                bottomPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                rightPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-            },
-        },
-        {
-            name: "Table_CH",
-            mode: "Opaque",
-            backcolor: "#BFE1FF",
-            forecolor: "#000000",
-            forecolorMode: "Opaque",
-            hTextAlign: "Center",
-            hImageAlign: "Center",
-            vTextAlign: "Middle",
-            vImageAlign: "Middle",
-            box: {
-                pen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                topPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                leftPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                bottomPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                rightPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-            },
-        },
-        {
-            name: "Table_TD",
-            mode: "Opaque",
-            backcolor: "#FFFFFF",
-            forecolor: "#000000",
-            forecolorMode: "Opaque",
-            hTextAlign: "Left",
-            hImageAlign: "Left",
-            vTextAlign: "Middle",
-            vImageAlign: "Middle",
-            box: {
-                pen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                topPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                leftPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                bottomPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-                rightPen: {
-                    lineWidth: 0.5,
-                    lineColor: "#000000",
-                },
-            },
-        },
-    ];
-    showStyleManagerModal.value = false;
-}
-
-// When the table element changes, update the row height settings and style selection
-watch(
-    () => currentElement.value,
-    (newElement) => {
-        if (newElement && newElement.type === "table") {
-            // Get the current row height value from the column (divide by rowSpan to restore the single-row height)
-            // Prefer reading from the columns array; fall back to the children array if empty
-            let firstColumn: any = null;
-            if (newElement.columns && newElement.columns.length > 0) {
-                firstColumn = newElement.columns[0];
-            } else if (newElement.children && newElement.children.length > 0) {
-                // Find the first plain column within children
-                for (const item of newElement.children) {
-                    if ('detailCell' in item) {
-                        firstColumn = item;
-                        break;
-                    }
-                }
-            }
-
-            if (firstColumn) {
-                console.log("Watch triggered! firstColumn.columnHeader:", {
-                    height: firstColumn.columnHeader?.height,
-                    rowSpan: firstColumn.columnHeader?.rowSpan,
-                    elementHeight: firstColumn.columnHeader?.element?.height,
-                });
-
-                const getBaseHeight = (cell: any) => {
-                    const h = cell?.element?.height ?? cell?.height;
-                    if (h === undefined || h === null || h === 0) {
-                        return undefined;
-                    }
-                    const rs = cell?.rowSpan || 1;
-                    const result = rs > 1 ? Math.round(h / rs) : h;
-                    console.log("getBaseHeight:", { inputHeight: h, rowSpan: rs, result });
-                    return result;
-                };
-                console.log("Watch: firstColumn.columnHeader before updating tableRowHeights:", firstColumn.columnHeader);
-                const headerHeight = getBaseHeight(firstColumn.tableHeader);
-                const colHeaderHeight = getBaseHeight(firstColumn.columnHeader);
-                const detailHeight = getBaseHeight(firstColumn.detailCell);
-                const footerHeight = getBaseHeight(firstColumn.columnFooter);
-                const tableFooterHeight = getBaseHeight(firstColumn.tableFooter);
-
-                console.log("Watch: computed heights:", { headerHeight, colHeaderHeight, detailHeight, footerHeight, tableFooterHeight });
-
-                // Only update when a valid value was obtained, to avoid overwriting user input
-                if (headerHeight !== undefined) {
-                    tableRowHeights.value.tableHeader = headerHeight;
-                }
-                if (colHeaderHeight !== undefined) {
-                    console.log("Watch: updating tableRowHeights.columnHeader:", colHeaderHeight);
-                    tableRowHeights.value.columnHeader = colHeaderHeight;
-                }
-                if (detailHeight !== undefined) {
-                    tableRowHeights.value.detailCell = detailHeight;
-                }
-                if (footerHeight !== undefined) {
-                    tableRowHeights.value.columnFooter = footerHeight;
-                }
-                if (tableFooterHeight !== undefined) {
-                    tableRowHeights.value.tableFooter = tableFooterHeight;
-                }
-
-                // Update the table style selection
-                tableStyles.value.tableHeader =
-                    (firstColumn.tableHeader as any)?.style ?? "Table_TH";
-                tableStyles.value.columnHeader =
-                    (firstColumn.columnHeader as any)?.style ?? "Table_CH";
-                tableStyles.value.columnFooter =
-                    (firstColumn.columnFooter as any)?.style ?? "Table_CH";
-                tableStyles.value.detailCell =
-                    (firstColumn.detailCell as any)?.style ?? "Table_TD";
-            }
-        }
-    },
-    { deep: true, immediate: true },
-);
-
-// Update the row height for all columns
-function updateAllColumnRowHeights() {
-    if (!currentElement.value || currentElement.value.type !== "table") return;
-
-    // Collect all columns to process, avoiding duplicates
-    const processedColumns = new Set<string>();
-
-    console.log("Starting to update row heights for all columns:", {
-        tableRowHeights: tableRowHeights.value,
-        columnCount: currentElement.value.columns
-            ? currentElement.value.columns.length
-            : 0,
-        groupCount: currentElement.value.children
-            ? currentElement.value.children.length
-            : 0,
-    });
-
-    // Process plain columns
-    if (currentElement.value.columns) {
-        currentElement.value.columns.forEach((column) => {
-            if (!processedColumns.has(column.uuid)) {
-                processedColumns.add(column.uuid);
-                updateColumnRowHeights(column);
-            } else {
-                console.log("Skipping duplicate column:", column.name || column.uuid);
-            }
-        });
-        console.log("Plain column row height update complete");
-    }
-
-    // Process grouped columns
-    if (currentElement.value.children) {
-        currentElement.value.children.forEach((item) => {
-            // Check whether this is a group or a plain column
-            if ('children' in item && item.children && item.children.length > 0) {
-                // It's a ColumnGroup, process recursively
-                updateGroupRowHeights(item);
-            } else if ('detailCell' in item) {
-                // It's a TableColumn (plain column), update detailCell directly
-                console.log("Updating top-level plain column detailCell:", item.name || item.uuid);
-                updateColumnRowHeights(item);
-            }
-        });
-        console.log("Grouped column row height update complete");
-    }
-
-    console.log("All column row heights updated, table element:", currentElement.value);
-
-    // Check merged column heights before emitting
-    const tableElement = currentElement.value as any;
-    if (tableElement?.columns) {
-        tableElement.columns.forEach((col: any) => {
-            if (col.columnHeader && col.columnHeader.rowSpan && col.columnHeader.rowSpan > 1) {
-                console.log("Checking merged column before emit:", {
-                    columnName: col.name,
-                    columnHeaderHeight: col.columnHeader.height,
-                    elementHeight: col.columnHeader.element?.height,
-                    rowSpan: col.columnHeader.rowSpan,
-                });
-            }
-        });
-    }
-
-    // Use nextTick to ensure Vue finishes updating before firing the event, avoiding delayed tracking of nested reactive properties
-    nextTick(() => {
-        console.log("nextTick: firing update event");
-
-        // Check the heights again within nextTick
-        if (tableElement?.columns) {
-            tableElement.columns.forEach((col: any) => {
-                if (col.columnHeader && col.columnHeader.rowSpan && col.columnHeader.rowSpan > 1) {
-                    console.log("Checking merged column in nextTick:", {
-                        columnName: col.name,
-                        columnHeaderHeight: col.columnHeader.height,
-                        elementHeight: col.columnHeader.element?.height,
-                        rowSpan: col.columnHeader.rowSpan,
-                    });
-                }
-            });
-        }
-
-        emit("update:bands", props.bands);
-
-        // Check immediately after emit
-        console.log("Checking merged column immediately after emit:");
-        if (tableElement?.columns) {
-            tableElement.columns.forEach((col: any) => {
-                if (col.columnHeader && col.columnHeader.rowSpan && col.columnHeader.rowSpan > 1) {
-                    console.log("Checking merged column after emit:", {
-                        columnName: col.name,
-                        columnHeaderHeight: col.columnHeader.height,
-                        elementHeight: col.columnHeader.element?.height,
-                        rowSpan: col.columnHeader.rowSpan,
-                    });
-                }
-            });
-        }
-
-        // Check whether Vue modified the height on the next tick
-        nextTick(() => {
-            console.log("Checking merged column on the second nextTick:");
-            if (tableElement?.columns) {
-                tableElement.columns.forEach((col: any) => {
-                    if (col.columnHeader && col.columnHeader.rowSpan && col.columnHeader.rowSpan > 1) {
-                        console.log("Second nextTick check:", {
-                            columnName: col.name,
-                            columnHeaderHeight: col.columnHeader.height,
-                            elementHeight: col.columnHeader.element?.height,
-                            rowSpan: col.columnHeader.rowSpan,
-                        });
-                    }
-                });
-            }
-        });
-
-        emit("update-jrxml");
-    });
-}
-
-// Update the row height for a single column
-function updateColumnRowHeights(column: any) {
-    console.log("Starting to update column row height:", column);
-
-    if (column.tableHeader) {
-        // Update the tableHeader's own height
-        const tableHeaderHeight = tableRowHeights.value.tableHeader;
-        column.tableHeader.height = tableHeaderHeight;
-        console.log("Updating tableHeader height:", tableHeaderHeight);
-
-        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
-        // Check and update the reportElement's height
-        if (column.tableHeader.reportElement) {
-            column.tableHeader.reportElement.height = tableHeaderHeight;
-        } else if (column.tableHeader.element) {
-            // Update the inner element's height property to keep the design area rendering in sync
-            column.tableHeader.element.height = tableHeaderHeight;
-        }
-
-        // If this is a merged column, update the height to the row height times the row span
-        if (column.tableHeader.rowSpan && column.tableHeader.rowSpan > 1) {
-            const mergedHeight = tableHeaderHeight * column.tableHeader.rowSpan;
-            column.tableHeader.height = mergedHeight;
-
-            // The inner element's height needs to be adjusted accordingly
-            if (column.tableHeader.reportElement) {
-                column.tableHeader.reportElement.height = mergedHeight;
-            } else if (column.tableHeader.element) {
-                column.tableHeader.element.height = mergedHeight;
-            }
-        }
-    }
-
-    if (column.columnHeader) {
-        // Update the columnHeader's own height
-        const columnHeaderHeight = tableRowHeights.value.columnHeader;
-        console.log("Before updating columnHeader height:", {
-            currentValue: column.columnHeader.height,
-            newValue: columnHeaderHeight,
-            rowSpan: column.columnHeader.rowSpan,
-            elementCurrentValue: column.columnHeader.element?.height,
-        });
-        column.columnHeader.height = columnHeaderHeight;
-        console.log("After updating columnHeader.height:", {
-            newValue: column.columnHeader.height,
-            rowSpan: column.columnHeader.rowSpan,
-        });
-
-        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
-        // Check and update the reportElement's height
-        if (column.columnHeader.reportElement) {
-            column.columnHeader.reportElement.height = columnHeaderHeight;
-        } else if (column.columnHeader.element) {
-            // Update the inner element's height property to keep the design area rendering in sync
-            column.columnHeader.element.height = columnHeaderHeight;
-        }
-
-        // If this is a merged column, update the height to the row height times the row span
-        if (column.columnHeader.rowSpan && column.columnHeader.rowSpan > 1) {
-            const mergedHeight = columnHeaderHeight * column.columnHeader.rowSpan;
-            console.log("Merged column columnHeader height calculation:", {
-                rowHeight: columnHeaderHeight,
-                rowSpan: column.columnHeader.rowSpan,
-                mergedHeight,
-            });
-            column.columnHeader.height = mergedHeight;
-
-            // The inner element's height needs to be adjusted accordingly
-            if (column.columnHeader.reportElement) {
-                column.columnHeader.reportElement.height = mergedHeight;
-            } else if (column.columnHeader.element) {
-                column.columnHeader.element.height = mergedHeight;
-            }
-        }
-    }
-
-    if (column.detailCell) {
-        // Update the detailCell's own height
-        column.detailCell.height = tableRowHeights.value.detailCell;
-        console.log("Updating detailCell height:", tableRowHeights.value.detailCell, "column:", column);
-        // Update the inner element's height directly, since detailCell directly contains a textField or staticText rather than going through an elements array
-        // Check and update the reportElement's height
-        if (column.detailCell.reportElement) {
-            column.detailCell.reportElement.height =
-                tableRowHeights.value.detailCell;
-        } else if (column.detailCell.element) {
-            // Update the inner element's height property to keep the design area rendering in sync
-            column.detailCell.element.height = tableRowHeights.value.detailCell;
-        }
-    }
-
-    // Update columnFooter's height
-    if (column.columnFooter) {
-        // Update the columnFooter's own height
-        const columnFooterHeight = tableRowHeights.value.columnFooter;
-        column.columnFooter.height = columnFooterHeight;
-
-        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
-        // Check and update the reportElement's height
-        if (column.columnFooter.reportElement) {
-            column.columnFooter.reportElement.height = columnFooterHeight;
-        } else if (column.columnFooter.element) {
-            // Update the inner element's height property to keep the design area rendering in sync
-            column.columnFooter.element.height = columnFooterHeight;
-        }
-
-        // If this is a merged column, update the height to the row height times the row span
-        if (column.columnFooter.rowSpan && column.columnFooter.rowSpan > 1) {
-            const mergedHeight =
-                columnFooterHeight * column.columnFooter.rowSpan;
-            column.columnFooter.height = mergedHeight;
-
-            // The inner element's height needs to be adjusted accordingly
-            if (column.columnFooter.reportElement) {
-                column.columnFooter.reportElement.height = mergedHeight;
-            } else if (column.columnFooter.element) {
-                column.columnFooter.element.height = mergedHeight;
-            }
-        }
-    }
-
-    // Update tableFooter's height
-    if (column.tableFooter) {
-        // Update the tableFooter's own height
-        const tableFooterHeight = tableRowHeights.value.tableFooter;
-        column.tableFooter.height = tableFooterHeight;
-
-        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
-        // Check and update the reportElement's height
-        if (column.tableFooter.reportElement) {
-            column.tableFooter.reportElement.height = tableFooterHeight;
-        } else if (column.tableFooter.element) {
-            // Update the inner element's height property to keep the design area rendering in sync
-            column.tableFooter.element.height = tableFooterHeight;
-        }
-
-        // If this is a merged column, update the height to the row height times the row span
-        if (column.tableFooter.rowSpan && column.tableFooter.rowSpan > 1) {
-            const mergedHeight = tableFooterHeight * column.tableFooter.rowSpan;
-            column.tableFooter.height = mergedHeight;
-
-            // The inner element's height needs to be adjusted accordingly
-            if (column.tableFooter.reportElement) {
-                column.tableFooter.reportElement.height = mergedHeight;
-            } else if (column.tableFooter.element) {
-                column.tableFooter.element.height = mergedHeight;
-            }
-        }
-    }
-}
-
-// Update the combined column's header height so it matches the combined column's height
-function updateGroupHeaderHeights(group: any) {
-    // Get the combined column's height
-    const groupHeight = group.height;
-
-    console.log("Starting to update combined column header height:", {
-        groupName: group.name,
-        groupHeight,
-        hasTableHeader: !!group.tableHeader,
-        hasColumnHeader: !!group.columnHeader,
-    });
-
-    // Update the group's tableHeader height
-    if (group.tableHeader) {
-        // Update the tableHeader's own height
-        group.tableHeader.height = groupHeight;
-
-        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
-        // Check and update the reportElement's height
-        if (group.tableHeader.reportElement) {
-            group.tableHeader.reportElement.height = groupHeight;
-        } else if (group.tableHeader.element) {
-            // Update the inner element's height property to keep the design area rendering in sync
-            group.tableHeader.element.height = groupHeight;
-        }
-        console.log("Updated tableHeader:", group.tableHeader);
-    }
-
-    // Update the group's columnHeader height
-    if (group.columnHeader) {
-        // Update the columnHeader's own height
-        group.columnHeader.height = groupHeight;
-
-        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
-        // Check and update the reportElement's height
-        if (group.columnHeader.reportElement) {
-            group.columnHeader.reportElement.height = groupHeight;
-        } else if (group.columnHeader.element) {
-            // Update the inner element's height property to keep the design area rendering in sync
-            group.columnHeader.element.height = groupHeight;
-        }
-        console.log("Updated columnHeader:", group.columnHeader);
-    }
-
-    console.log("Combined column header height update complete, updated combined column:", group);
-}
-
-// Recursively update the row heights of a group
-function updateGroupRowHeights(group: any) {
-    // Update the group's tableHeader height
-    if (group.tableHeader) {
-        // Update the tableHeader's own height
-        const tableHeaderHeight = tableRowHeights.value.tableHeader;
-        group.tableHeader.height = tableHeaderHeight;
-
-        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
-        // Check and update the reportElement's height
-        if (group.tableHeader.reportElement) {
-            group.tableHeader.reportElement.height = tableHeaderHeight;
-        } else if (group.tableHeader.element) {
-            // Update the inner element's height property to keep the design area rendering in sync
-            group.tableHeader.element.height = tableHeaderHeight;
-        }
-        console.log("Updated tableHeader:", group.tableHeader);
-
-        // If this is a merged column, update the height to the row height times the row span
-        if (group.tableHeader.rowSpan && group.tableHeader.rowSpan > 1) {
-            const mergedHeight = tableHeaderHeight * group.tableHeader.rowSpan;
-            group.tableHeader.height = mergedHeight;
-
-            // The inner element's height needs to be adjusted accordingly
-            if (group.tableHeader.reportElement) {
-                group.tableHeader.reportElement.height = mergedHeight;
-            } else if (group.tableHeader.element) {
-                group.tableHeader.element.height = mergedHeight;
-            }
-        }
-    }
-
-    // Update the group's columnHeader height
-    if (group.columnHeader) {
-        // Update the columnHeader's own height
-        const columnHeaderHeight = tableRowHeights.value.columnHeader;
-        group.columnHeader.height = columnHeaderHeight;
-
-        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
-        // Check and update the reportElement's height
-        if (group.columnHeader.reportElement) {
-            group.columnHeader.reportElement.height = columnHeaderHeight;
-        } else if (group.columnHeader.element) {
-            // Update the inner element's height property to keep the design area rendering in sync
-            group.columnHeader.element.height = columnHeaderHeight;
-        }
-
-        // If this is a merged column, update the height to the row height times the row span
-        if (group.columnHeader.rowSpan && group.columnHeader.rowSpan > 1) {
-            const mergedHeight =
-                columnHeaderHeight * group.columnHeader.rowSpan;
-            group.columnHeader.height = mergedHeight;
-
-            // The inner element's height needs to be adjusted accordingly
-            if (group.columnHeader.reportElement) {
-                group.columnHeader.reportElement.height = mergedHeight;
-            } else if (group.columnHeader.element) {
-                group.columnHeader.element.height = mergedHeight;
-            }
-        }
-    }
-
-    // Update the group's columnFooter height
-    if (group.columnFooter) {
-        // Update the columnFooter's own height
-        const columnFooterHeight = tableRowHeights.value.columnFooter;
-        group.columnFooter.height = columnFooterHeight;
-
-        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
-        // Check and update the reportElement's height
-        if (group.columnFooter.reportElement) {
-            group.columnFooter.reportElement.height = columnFooterHeight;
-        } else if (group.columnFooter.element) {
-            // Update the inner element's height property to keep the design area rendering in sync
-            group.columnFooter.element.height = columnFooterHeight;
-        }
-
-        // If this is a merged column, update the height to the row height times the row span
-        if (group.columnFooter.rowSpan && group.columnFooter.rowSpan > 1) {
-            const mergedHeight =
-                columnFooterHeight * group.columnFooter.rowSpan;
-            group.columnFooter.height = mergedHeight;
-
-            // The inner element's height needs to be adjusted accordingly
-            if (group.columnFooter.reportElement) {
-                group.columnFooter.reportElement.height = mergedHeight;
-            } else if (group.columnFooter.element) {
-                group.columnFooter.element.height = mergedHeight;
-            }
-        }
-    }
-
-    // Update the group's tableFooter height
-    if (group.tableFooter) {
-        // Update the tableFooter's own height
-        const tableFooterHeight = tableRowHeights.value.tableFooter;
-        group.tableFooter.height = tableFooterHeight;
-
-        // Update the inner element's height directly, since these elements directly contain a textField or staticText rather than going through an elements array
-        // Check and update the reportElement's height
-        if (group.tableFooter.reportElement) {
-            group.tableFooter.reportElement.height = tableFooterHeight;
-        } else if (group.tableFooter.element) {
-            // Update the inner element's height property to keep the design area rendering in sync
-            group.tableFooter.element.height = tableFooterHeight;
-        }
-
-        // If this is a merged column, update the height to the row height times the row span
-        if (group.tableFooter.rowSpan && group.tableFooter.rowSpan > 1) {
-            const mergedHeight = tableFooterHeight * group.tableFooter.rowSpan;
-            group.tableFooter.height = mergedHeight;
-
-            // The inner element's height needs to be adjusted accordingly
-            if (group.tableFooter.reportElement) {
-                group.tableFooter.reportElement.height = mergedHeight;
-            } else if (group.tableFooter.element) {
-                group.tableFooter.element.height = mergedHeight;
-            }
-        }
-    }
-
-    // Recursively update child groups or columns
-    if (group.children) {
-        console.log("Number of child items in group:", group.children.length);
-        group.children.forEach((child: any, index: number) => {
-            console.log(`Processing child item [${index}]:`, {
-                name: child.name,
-                uuid: child.uuid,
-                hasDetailCell: !!child.detailCell,
-                hasChildren: !!child.children,
-                childType: child.children ? 'group' : 'column'
-            });
-            if (child.children) {
-                // Child group
-                updateGroupRowHeights(child);
-            } else {
-                // Plain column
-                updateColumnRowHeights(child);
-            }
-        });
-    }
-}
 
 // Rectangle border style computed property
 const rectangleBorderStyle = computed({
-    get: () => {
-        return getRectangleBorderStyle();
-    },
-    set: (value) => {
-        setRectangleBorderStyle(value);
-    },
+  get: () => {
+    return getRectangleBorderStyle();
+  },
+  set: (value) => {
+    setRectangleBorderStyle(value);
+  },
 });
 
 // Get the Band's display name
 function getBandDisplayName(bandType: string): string {
-    // Use t() with dynamic key.
-    // Assuming keys exist in bandNames section of locale files.
-    return t(`bandNames.${bandType}`);
+  // Use t() with dynamic key.
+  // Assuming keys exist in bandNames section of locale files.
+  return t(`bandNames.${bandType}`);
 }
 
 // Update Band height
-function updateBandHeight(_index: number) {
-    const updatedBands = [...props.bands];
-    emit("save-state");
-    emit("update:bands", updatedBands);
-    emit("update-jrxml");
+function updateBandHeight(index: number) {
+  const band = bands.value[index];
+  if (band && band.type !== "detail") {
+    const limit = getBandLimit(band.type);
+    const maxAllowed = getMaxPhysicalHeight(band.type);
+    if (typeof band.height === "number") {
+      // Ensure band does not exceed physical page space
+      if (band.height > maxAllowed) {
+        band.height = maxAllowed;
+      }
+      const effectiveMin = Math.max(10, limit.min || 10);
+      if (band.height < effectiveMin) {
+        band.height = effectiveMin;
+      }
+      // If user inputs a height greater than current limit.max, auto-expand limit.max
+      if (typeof limit.max === "number" && band.height > limit.max) {
+        limit.max = band.height;
+      }
+      // If user inputs a height less than current limit.min, auto-adjust limit.min
+      if (typeof limit.min === "number" && band.height < limit.min) {
+        limit.min = Math.max(10, band.height);
+      }
+    }
+  }
+
+  // Recalculate Detail band height so it automatically absorbs the change (A4 page fitting)
+  const detailBand = bands.value.find((b) => b.type === "detail");
+  if (detailBand) {
+    const pageH = reportProperties.value?.pageHeight || 842;
+    const topM = reportProperties.value?.topMargin || 20;
+    const bottomM = reportProperties.value?.bottomMargin || 20;
+    const availableH = pageH - topM - bottomM;
+    let otherBandsH = 0;
+    bands.value.forEach((b) => {
+      if (b.type !== "detail" && b.type !== "background") {
+        otherBandsH += b.height || 0;
+      }
+    });
+    detailBand.height = Math.max(20, availableH - otherBandsH);
+  }
+
+  // Callers take the undo snapshot before changing the height
+  const updatedBands = [...bands.value];
+  emit("update:bands", updatedBands);
+  report.updateJrxml();
 }
 
-// Ensure the coordinate value is an integer
-function ensureIntegerValue(element: any, property: string) {
-    if (element[property] !== undefined) {
-        element[property] = Math.round(element[property]);
-    }
-    emit("save-state");
+// Apply a typed whole-number value (position, size, band height). The undo
+// snapshot is taken before the value changes, and only when it really changes,
+// so one edit is one undo step. Returns whether the value changed.
+function setIntegerValue(target: any, property: string, event: Event): boolean {
+  const input = event.target as HTMLInputElement;
+  const parsed = Math.round(parseFloat(input.value));
+  if (!Number.isFinite(parsed) || parsed === target[property]) {
+    // Show the stored value again (e.g. after an empty or invalid entry)
+    input.value = String(target[property] ?? "");
+    return false;
+  }
+  report.saveStateToHistory();
+  const sizing = property === "width" || property === "height";
+  // A box's items are fitted to a typed size as when it is resized on the page
+  const boxReference = sizing && target.type === "frame" ? frameFitReference(target as FrameElement) : null;
+  const sizeBefore = { width: target.width, height: target.height };
+  target[property] = parsed;
+  const smallest = typedSizeMinimum(target, boxReference, sizeBefore);
+  if (sizing && smallest && target[property] < smallest[property as "width" | "height"]) {
+    target[property] = smallest[property as "width" | "height"];
+    notification.info(t("sectionFit.keptMinimum", { value: target[property] }));
+  }
+  // A ready-made box's own part keeps inside the box when its position or size is typed
+  const parentIndex = selectedElement.value?.parentFrameIndex;
+  if (
+    parentIndex !== undefined &&
+    target === currentElement.value &&
+    isBoxPart(target) &&
+    ["x", "y", "width", "height"].includes(property)
+  ) {
+    const box = bands.value[selectedElement.value!.bandIndex]?.elements[parentIndex];
+    if (box?.type === "frame") Object.assign(target, clampRectInBox(target, box));
+  }
+  if (parentIndex === undefined && target === currentElement.value) keepTypedRectInSection(target, property);
+  if (boxReference) fitFrameContent(target as FrameElement, boxReference);
+  // A project-data table's columns keep their shares of a typed width
+  if (property === "width" && target.type === "table" && (target as TableElement).binding) {
+    const binding = (target as TableElement).binding!;
+    binding.columns = scaleColumnWidths(binding.columns, target.width);
+  }
+  input.value = String(target[property]);
+  report.updateJrxml();
+  return true;
+}
+
+// The smallest size a typed width / height may give: a box what its items
+// need, a project-data table its columns at their narrowest, a contents list
+// its number and page columns (never more than it is now)
+function typedSizeMinimum(
+  target: DesignElement,
+  boxReference: FrameFitReference | null,
+  before: { width: number; height: number },
+): { width: number; height: number } | null {
+  if (boxReference) {
+    const min = frameMinimumSize(boxReference.children, boxReference.from);
+    return { width: Math.min(min.width, before.width), height: Math.min(min.height, before.height) };
+  }
+  if (target.type === "table" && (target as TableElement).binding) {
+    return { width: (target as TableElement).binding!.columns.length * MIN_TABLE_COLUMN_WIDTH, height: 1 };
+  }
+  if (target.type === "contentsList") {
+    return { width: Math.min(before.width, minContentsListWidth((target as ContentsListElement).list)), height: 1 };
+  }
+  return null;
+}
+
+// A position or size typed for an element in a section stays inside it (a
+// header / footer may grow to its maximum, utils/sectionFit.ts). A typed table
+// on a normal page may be made taller: its rows carry on onto the next page.
+// A project-data table may be wider than the page.
+function keepTypedRectInSection(target: DesignElement, property: string) {
+  const selected = selectedElement.value;
+  const band = selected ? bands.value[selected.bandIndex] : undefined;
+  if (!selected || !band || band.type === "background" || !["x", "y", "width", "height"].includes(property)) return;
+  const area = report.sectionArea(selected.bandIndex, target.pageIndex);
+  const continues =
+    target.type === "customTable" && band.type === "detail" && pageKind(report.reportProperties, target.pageIndex) === "normal";
+  const typed = (target as any)[property] as number;
+  const next = { x: target.x, y: target.y, width: target.width, height: target.height };
+  if (property === "x") next.x = Math.min(Math.max(0, next.x), Math.max(0, area.width - next.width));
+  if (property === "width" && target.type !== "table") next.width = Math.max(1, Math.min(next.width, area.width - next.x));
+  if (property === "y") next.y = Math.min(Math.max(0, next.y), Math.max(0, area.maxHeight - next.height));
+  if (property === "height" && !continues) next.height = Math.max(1, Math.min(next.height, area.maxHeight - next.y));
+  if ((next as any)[property] === typed) return;
+  Object.assign(target, next);
+  notification.info(
+    t("sectionFit.keptInside", { band: getBandDisplayName(band.type), value: Math.round((next as any)[property]) }),
+  );
 }
 
 // Set horizontal alignment
 function setHorizontalAlignment(alignment: "Left" | "Center" | "Right") {
-    if (currentElement.value) {
-        emit("save-state");
-        currentElement.value.textAlignment = alignment;
-        emit("update-jrxml");
-    }
+  if (currentElement.value) {
+    report.saveStateToHistory();
+    currentElement.value.textAlignment = alignment;
+    report.updateJrxml();
+  }
 }
 
 // Set vertical alignment
 function setVerticalAlignment(alignment: "Top" | "Middle" | "Bottom") {
-    if (currentElement.value) {
-        emit("save-state");
-        currentElement.value.verticalAlignment = alignment;
-        emit("update-jrxml");
-    }
+  if (currentElement.value) {
+    report.saveStateToHistory();
+    currentElement.value.verticalAlignment = alignment;
+    report.updateJrxml();
+  }
 }
 
 // Get the text field's expression
 function getTextFieldExpression(element: any) {
-    if (element.expression) {
-        return element.expression;
-    } else if (element.fieldName) {
-        return `$F{${element.fieldName}}`;
-    }
-    return "";
+  if (element.expression) {
+    return element.expression;
+  } else if (element.fieldName) {
+    return `$F{${element.fieldName}}`;
+  }
+  return "";
 }
 
 // Update the text field's expression
 function updateTextFieldExpression(newExpression: string) {
-    if (!currentElement.value || currentElement.value.type !== "textField")
-        return;
+  if (!currentElement.value || currentElement.value.type !== "textField")
+    return;
 
-    emit("save-state");
-    currentElement.value.expression = newExpression;
+  report.saveStateToHistory();
+  currentElement.value.expression = newExpression;
 
-    emit("update-jrxml");
+  report.updateJrxml();
+}
+
+// Get clean text field content for display (strips quotes if static text, preserves field expressions)
+function getTextFieldDisplay(element: any) {
+  if (!element) return "";
+  const raw = element.expression || (element.fieldName ? `$F{${element.fieldName}}` : "");
+  const trimmed = String(raw).trim();
+  if (trimmed.includes("SimpleDateFormat") && trimmed.includes("java.util.Date")) {
+    return resolveLegacyDateSample(trimmed);
+  }
+  if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
+    return trimmed.slice(1, -1).replace(/\\n/g, '\n');
+  }
+  return trimmed.replace(/\\n/g, '\n');
+}
+
+// Update text field content (wraps static text in quotes, preserves $F{...} / $V{...} expressions)
+// Typing in the Text box is one undo step per visit to it, not one per key
+const textRecorded = ref(false);
+function updateTextFieldDisplay(val: string) {
+  if (!currentElement.value || currentElement.value.type !== "textField") return;
+  if (!textRecorded.value) {
+    report.saveStateToHistory();
+    textRecorded.value = true;
+  }
+  cleanLegacyAutoDateElement(currentElement.value);
+  const elem = currentElement.value as any;
+  if (!elem.markup) {
+    elem.markup = "html";
+  }
+  const trimmed = val.trim();
+  if (!trimmed) {
+    elem.expression = '""';
+  } else if (trimmed.startsWith("$") || (trimmed.startsWith('"') && trimmed.endsWith('"')) || trimmed.includes("+")) {
+    elem.expression = val;
+  } else {
+    elem.expression = `"${val}"`;
+  }
+  report.updateJrxml();
+}
+
+// Insert a selected field into the text field
+function insertFieldIntoTextField(fieldExpr: string) {
+  if (!fieldExpr || !currentElement.value || currentElement.value.type !== "textField") return;
+  report.saveStateToHistory();
+  currentElement.value.expression = fieldExpr;
+  report.updateJrxml();
+}
+
+// Set rotation for text, image, and barcode elements
+function setElementRotation(rot: "None" | "Right" | "UpsideDown" | "Left") {
+  if (!currentElement.value) return;
+  report.saveStateToHistory();
+  (currentElement.value as any).rotation = rot;
+  report.updateJrxml();
+}
+
+// Image shape: the preset in use, "square" for plain corners, null for custom corners
+const currentImageShape = computed<ImageShapeId | null>(() => {
+  const element = currentElement.value;
+  if (element?.type !== "image") return null;
+  const shape = getImageShape(element);
+  if (shape) return shape;
+  const radii = getPropertyCornerRadii(element);
+  return CORNER_NAMES.every((c) => radii[c] === 0) ? "square" : null;
+});
+
+// One undo step. The image keeps its position and size: only its corners change.
+function applyImageShape(id: ImageShapeId) {
+  const element = currentElement.value as any;
+  if (!element || element.type !== "image") return;
+  if (currentImageShape.value === id) return;
+  report.saveStateToHistory();
+  // Circle makes the picture square, Pill wide (shapeSize), in the same undo
+  // step; a square that would not fit below the picture in its section or box
+  // is made smaller instead
+  const next = shapeSize(id, element.width, element.height);
+  if (next.height > element.height) {
+    const sel = selectedElement.value;
+    const band = sel ? bands.value[sel.bandIndex] : undefined;
+    const box = sel?.parentFrameIndex !== undefined ? band?.elements[sel.parentFrameIndex] : undefined;
+    const room = (box ? box.height : (band?.height ?? next.height)) - element.y;
+    if (room > 0 && next.height > room) {
+      next.width = Math.max(1, Math.round(room));
+      next.height = next.width;
+    }
+  }
+  element.width = next.width;
+  element.height = next.height;
+  setImageShape(element, id);
+  report.updateJrxml();
+}
+
+// Card sample: a small picture cut to the shape (wide for the pill)
+function shapePreviewStyle(shape: (typeof IMAGE_SHAPES)[number]) {
+  const width = shape.id === "pill" ? 46 : 30;
+  const height = shape.id === "pill" ? 22 : 30;
+  const side = Math.min(width, height);
+  return {
+    width: `${width}px`,
+    height: `${height}px`,
+    borderRadius: shape.corners.map((c) => `${Math.round(side * c)}px`).join(" "),
+  };
+}
+
+// Current orientation of selected line element
+const currentLineOrientation = computed(() => {
+  if (!currentElement.value || currentElement.value.type !== "line") return "";
+  const el = currentElement.value as any;
+  if (el.height <= 1) return "horizontal";
+  if (el.width <= 1) return "vertical";
+  return el.lineDirection === "BottomUp" ? "bottomup" : "topdown";
+});
+
+// Set orientation for line element
+function setLineOrientation(type: "horizontal" | "vertical" | "topdown" | "bottomup") {
+  if (!currentElement.value || currentElement.value.type !== "line") return;
+  report.saveStateToHistory();
+  const el = currentElement.value as any;
+  if (type === "horizontal") {
+    el.height = 1;
+    if (el.width <= 1) el.width = 150;
+    el.lineDirection = "TopDown";
+  } else if (type === "vertical") {
+    el.width = 1;
+    if (el.height <= 1) el.height = 100;
+    el.lineDirection = "TopDown";
+  } else if (type === "topdown") {
+    if (el.height <= 1) el.height = 50;
+    if (el.width <= 1) el.width = 100;
+    el.lineDirection = "TopDown";
+  } else if (type === "bottomup") {
+    if (el.height <= 1) el.height = 50;
+    if (el.width <= 1) el.width = 100;
+    el.lineDirection = "BottomUp";
+  }
+  report.updateJrxml();
+}
+
+// Add a crossing line element to form an "X"
+function addCrossingLine() {
+  if (
+    !currentElement.value ||
+    currentElement.value.type !== "line" ||
+    !selectedElement.value ||
+    !bands.value
+  )
+    return;
+  report.saveStateToHistory();
+  const el = currentElement.value as any;
+  if (el.width <= 1) el.width = 100;
+  if (el.height <= 1) el.height = 60;
+
+  const currentDir = el.lineDirection || "TopDown";
+  const oppositeDir = currentDir === "BottomUp" ? "TopDown" : "BottomUp";
+
+  const crossLine: any = {
+    ...JSON.parse(JSON.stringify(el)),
+    uuid: crypto.randomUUID(),
+    lineDirection: oppositeDir,
+  };
+
+  const band = bands.value[selectedElement.value.bandIndex];
+  if (band && band.elements) {
+    if (selectedElement.value.parentFrameIndex !== undefined) {
+      const frame = band.elements[selectedElement.value.parentFrameIndex];
+      if (frame && frame.type === "frame" && frame.elements) {
+        frame.elements.push(crossLine);
+      }
+    } else {
+      band.elements.push(crossLine);
+    }
+  }
+  report.updateJrxml();
+}
+
+// The picture of the selected Image element: the chooser (project photos or a
+// file from the computer). The name shown is read-only, taken from the file.
+const pictureChooserOpen = ref(false);
+// The upload may take a while: the picture goes to the image that opened the
+// chooser, even if the selection changed meanwhile
+let pictureTarget: DesignElement | null = null;
+watch(pictureChooserOpen, (open) => {
+  if (open) pictureTarget = currentElement.value ?? null;
+});
+
+function applyChosenPicture(picture: ChosenPicture) {
+  const element = pictureTarget;
+  if (!element || element.type !== "image") return;
+  report.saveStateToHistory();
+  setImagePicture(element, toImageExpression(picture.source), picture.name);
+  report.updateJrxml();
+}
+
+// Border editors write into element.box; create it for elements that have none yet
+function ensureElementBox(): void {
+  if (currentElement.value && !currentElement.value.box) currentElement.value.box = {};
+}
+
+// Corner radius of the selected image, text or box. Images and text fields
+// store it as a JRXML property (IMAGE_ / TEXT_CORNER_RADIUS_PROPERTY);
+// boxes as radius / cornerRadii (BOX_CORNER_RADIUS_PROPERTY). null = no corner
+// radius for this element.
+const readCornerRadii = (element: any): CornerRadii | null =>
+  element?.type === "image" || element?.type === "textField"
+    ? getPropertyCornerRadii(element)
+    : element?.type === "frame"
+      ? getBoxCornerRadii(element)
+      : null;
+
+const cornerRadii = computed(() => readCornerRadii(currentElement.value));
+
+// Border editor: one row per side, "all" sets the four at once
+type BorderRow = "all" | "top" | "right" | "bottom" | "left";
+const BORDER_ROWS: BorderRow[] = ["all", "top", "right", "bottom", "left"];
+const borderRowLabel = (row: BorderRow) =>
+  row === "all" ? t("properties.all") : t(`properties.${row}Side`);
+
+const LINE_STYLES = [
+  { value: "", labelKey: "properties.none" },
+  { value: "Solid", labelKey: "properties.solid" },
+  { value: "Dashed", labelKey: "properties.dashed" },
+  { value: "Dotted", labelKey: "properties.dotted" },
+  { value: "Double", labelKey: "properties.double" },
+];
+
+// Line-style sample drawn with a CSS border of that style
+const penSwatchClass = (value: string) => `is-${(value || "Solid").toLowerCase()}`;
+
+const getRowBorderStyle = (row: BorderRow) =>
+  row === "all" ? getUnifiedBorderStyle() : getSideBorderStyle(row);
+const getRowBorderWidth = (row: BorderRow) =>
+  row === "all" ? getUnifiedBorderWidth() : getSideBorderWidth(row);
+const getRowBorderColor = (row: BorderRow) =>
+  row === "all" ? getUnifiedBorderColor() : getSideBorderColor(row);
+
+function setRowBorderStyle(row: BorderRow, value: string) {
+  if (row === "all") return setUnifiedBorderStyle(value);
+  ensureElementBox();
+  setSideBorderStyle(row, value);
+}
+function setRowBorderWidth(row: BorderRow, value: string) {
+  if (row === "all") return setUnifiedBorderWidth(value);
+  ensureElementBox();
+  setSideBorderWidth(row, value);
+}
+function setRowBorderColor(row: BorderRow, value: string) {
+  if (row === "all") return setUnifiedBorderColor(value);
+  ensureElementBox();
+  setSideBorderColor(row, value);
+}
+
+// Margins: one field per side around a preview of the inner area
+const MARGIN_SIDES = ["top", "left", "right", "bottom"] as const;
+const getMarginValue = (side: (typeof MARGIN_SIDES)[number]) => {
+  const box = currentElement.value?.box;
+  return box?.[`${side}Padding`] ?? box?.padding ?? "";
+};
+const marginPreviewStyle = computed(() => {
+  const inset = (side: (typeof MARGIN_SIDES)[number]) =>
+    `${Math.min(14, (Number(getMarginValue(side)) || 0) / 2)}px`;
+  return { top: inset("top"), left: inset("left"), right: inset("right"), bottom: inset("bottom") };
+});
+
+const panelTitle = computed(() => {
+  const el = currentElement.value as any;
+  if (!selectedElement.value || !el) return t("properties.reportProperties");
+  if (isPagination(el)) return t("elementNames.pageNumber");
+  if (isDateElement(el)) return t("elementNames.dateTime");
+  if (isProjectValue(el)) return t(isProjectDate(el) ? "elementNames.projectDate" : "elementNames.projectValue");
+  if (isLocationElement(el)) return t("elementNames.location");
+  if (isPageBorder.value) return t("elementNames.framePageBorder");
+  if (isWatermark(el)) return t("elementNames.watermark");
+  // Headings are shown by their own name, not as the box / text they are built of
+  if (hasProperty(el, SECTION_HEADING_PROPERTY)) return t("elementNames.partSectionHeading");
+  if (hasProperty(el, SUB_HEADING_PROPERTY)) return t("elementNames.partSubHeading");
+  return t(getElementTypeName(el.type));
+});
+
+// Development: a settings card without its (i) explanation is named in the console
+const panelRoot = ref<HTMLElement | null>(null);
+if (import.meta.env.DEV) {
+  const warned = new Set<string>();
+  const checkCardHelp = () => {
+    if (!panelRoot.value) return;
+    for (const title of cardsWithoutHelp(panelRoot.value)) {
+      if (warned.has(title)) continue;
+      warned.add(title);
+      console.warn(`[help] The settings card "${title}" has no explanation: add SettingHelpButton / SettingHelpText (utils/helpDocs.ts).`);
+    }
+  };
+  onMounted(checkCardHelp);
+  onUpdated(checkCardHelp);
+}
+
+// Template Settings (nothing selected): this report's page setup, one undo
+// step per change; paper or margins refit the page's content
+const TEMPLATE_CARDS = [
+  { section: "paper", title: "templateSettings.paper", help: "templatePaper" },
+  { section: "margins", title: "bottomPanel.pageMargins", help: "templateMargins" },
+  { section: "font", title: "templateSettings.font", help: "templateFont" },
+  { section: "bands", title: "bottomPanel.bandSelection", help: "templateBands" },
+] as const;
+
+const templateSetup = computed<PageSetupValue>(() => {
+  const page = reportProperties.value;
+  return {
+    pageWidth: page.pageWidth,
+    pageHeight: page.pageHeight,
+    leftMargin: page.leftMargin,
+    rightMargin: page.rightMargin,
+    topMargin: page.topMargin,
+    bottomMargin: page.bottomMargin,
+    font: { ...page.defaultFont },
+    bandTypes: report.bandTypes,
+  };
+});
+
+const PAGE_KEYS = ["pageWidth", "pageHeight", "leftMargin", "rightMargin", "topMargin", "bottomMargin"] as const;
+
+// One card from Default Settings (never the original settings)
+type SetupSection = (typeof TEMPLATE_CARDS)[number]["section"];
+function defaultsFor(section: SetupSection): Partial<PageSetupValue> {
+  const defaults = loadReportDefaults();
+  if (section === "paper") return { pageWidth: defaults.pageWidth, pageHeight: defaults.pageHeight };
+  if (section === "margins") {
+    const { leftMargin, rightMargin, topMargin, bottomMargin } = defaults;
+    return { leftMargin, rightMargin, topMargin, bottomMargin };
+  }
+  if (section === "font") return { font: { ...defaults.font } };
+  return { bandTypes: defaults.bandTypes };
+}
+
+function useDefault(section: SetupSection) {
+  changeTemplate(defaultsFor(section));
+  notification.success(t("templateSettings.useDefaultDone"));
+}
+
+// Every card and the section heights from Default Settings: one undo step
+function resetAllToDefault() {
+  const defaults = loadReportDefaults();
+  report.saveStateToHistory();
+  const page = reportProperties.value;
+  for (const key of PAGE_KEYS) page[key] = defaults[key];
+  page.defaultFont = { ...defaults.font };
+  report.setBandTypes(defaults.bandTypes, { record: false });
+  resetTemplateBandLimitsToDefault(false);
+  emit("page-setup-change");
+  notification.success(t("templateSettings.resetAllDone"));
+}
+function changeTemplate(patch: Partial<PageSetupValue>) {
+  if (patch.bandTypes) {
+    report.setBandTypes(patch.bandTypes);
+    return;
+  }
+  report.saveStateToHistory();
+  const page = reportProperties.value;
+  if (patch.font) page.defaultFont = { ...patch.font };
+  const pageChanged = PAGE_KEYS.some((key) => patch[key] !== undefined);
+  for (const key of PAGE_KEYS) {
+    const value = patch[key];
+    if (value !== undefined) page[key] = value;
+  }
+  if (pageChanged) emit("page-setup-change");
+  else report.updateJrxml();
+}
+
+// The kind of thing shown, for its one-line tip (help.panelTips.<kind>)
+const panelKind = computed(() => {
+  const el = currentElement.value as any;
+  if (!selectedElement.value || !el) return "report";
+  if (isPagination(el)) return "pageNumber";
+  if (isDateElement(el)) return "dateTime";
+  if (isProjectValue(el)) return isProjectDate(el) ? "projectDate" : "projectValue";
+  if (isLocationElement(el) || isLocationPart(el)) return "location";
+  if (isPageBorder.value) return "pageBorder";
+  if (isWatermark(el)) return "watermark";
+  if (hasProperty(el, SECTION_HEADING_PROPERTY)) return "sectionHeading";
+  if (hasProperty(el, SUB_HEADING_PROPERTY)) return "subHeading";
+  return el.type as string;
+});
+
+// Element tabs. The open tab is kept when another element is selected, unless
+// that element doesn't have it (e.g. Table Properties): then Basic opens, instead
+// of an empty panel.
+const activeTab = ref("basic");
+const TAB_LABELS: Record<string, string> = {
+  basic: "properties.basicProperties",
+  style: "properties.styleSettings",
+};
+// A watermark's settings are all in one place: no tabs to choose from
+const availableTabs = computed(() => (watermarkElement.value ? ["basic"] : ["basic", "style"]));
+
+// "Reset style": one undo step
+function resetStyle() {
+  const element = currentElement.value;
+  if (!element) return;
+  report.saveStateToHistory();
+  resetElementStyle(element, {
+    fontSize: reportProperties.value?.defaultFont?.size,
+    isPageBorder: isPageBorder.value,
+  });
+  report.updateJrxml();
+}
+
+// One Table element: its content comes from project data, or is typed by the user
+const TABLE_CONTENT_KINDS = [
+  { value: "data", labelKey: "customTable.fromData", icon: Database },
+  { value: "typed", labelKey: "customTable.typed", icon: PencilLine },
+] as const;
+const isTableElement = computed(() => ["table", "customTable"].includes(currentElement.value?.type ?? ""));
+const tableContentKind = computed(() => (currentElement.value?.type === "customTable" ? "typed" : "data"));
+
+// The table panel appears in both tabs (Basic: data, style, row sizes;
+// Style Settings: changes to its look)
+const tablePanelProps = computed(() => ({ element: currentElement.value as any, tableStyles: tableStyles.value ?? [] }));
+const tablePanelEvents = {
+  configure: () => emit("configure-table"),
+  "save-table-style": (name: string) => emit("save-table-style", name),
+  "update-table-style": (id: string) => emit("update-table-style", id),
+  "rename-table-style": (id: string, name: string) => emit("rename-table-style", id, name),
+  "delete-table-style": (id: string) => emit("delete-table-style", id),
+  "open-style-settings": () => (activeTab.value = "style"),
+};
+watch(availableTabs, (tabs) => {
+  if (!tabs.includes(activeTab.value)) activeTab.value = "basic";
+});
+watch(tableColumn, (col) => {
+  if (col && currentElement.value?.uuid === col.uuid) {
+    activeTab.value = "style";
+  }
+});
+
+// Basic tab
+const GEOMETRY_FIELDS = ["x", "y", "width", "height"] as const;
+const ROTATIONS = [
+  { value: "None", deg: 0, titleKey: "properties.rotationNone" },
+  { value: "Right", deg: 90, titleKey: "properties.rotationRight" },
+  { value: "UpsideDown", deg: 180, titleKey: "properties.rotationUpsideDown" },
+  { value: "Left", deg: 270, titleKey: "properties.rotationLeft" },
+] as const;
+const LINE_ORIENTATIONS = [
+  { value: "horizontal", icon: Minus, iconStyle: undefined, labelKey: "properties.lineHorizontal", titleKey: "properties.lineHorizontalTitle" },
+  { value: "vertical", icon: Minus, iconStyle: { transform: "rotate(90deg)" }, labelKey: "properties.lineVertical", titleKey: "properties.lineVerticalTitle" },
+  { value: "topdown", icon: Slash, iconStyle: { transform: "scaleX(-1)" }, labelKey: "properties.lineTopDown", titleKey: "properties.lineTopDownTitle" },
+  { value: "bottomup", icon: Slash, iconStyle: undefined, labelKey: "properties.lineBottomUp", titleKey: "properties.lineBottomUpTitle" },
+] as const;
+// A line is always drawn: no "None"
+const LINE_ONLY_STYLES = LINE_STYLES.filter((line) => line.value !== "");
+// Rectangle / ellipse outline: no "None" (always drawn)
+const SHAPE_STYLES = LINE_ONLY_STYLES;
+// JasperReports draws a Double pen as two lines a third of the pen width each,
+// so below 3pt it prints (and shows on the canvas) as one solid line
+const MIN_DOUBLE_LINE_WIDTH = 3;
+
+// Text card
+const FONT_TOGGLES = [
+  { key: "isBold", glyph: "B", labelKey: "properties.bold" },
+  { key: "isItalic", glyph: "I", labelKey: "properties.italic" },
+  { key: "isUnderline", glyph: "U", labelKey: "properties.underline" },
+] as const;
+const H_ALIGNS = [
+  { value: "Left", labelKey: "properties.left", icon: TextAlignStart },
+  { value: "Center", labelKey: "properties.center", icon: TextAlignCenter },
+  { value: "Right", labelKey: "properties.right", icon: TextAlignEnd },
+] as const;
+const V_ALIGNS = [
+  { value: "Top", labelKey: "properties.top", icon: AlignVerticalJustifyStart },
+  { value: "Middle", labelKey: "properties.middle", icon: AlignVerticalJustifyCenter },
+  { value: "Bottom", labelKey: "properties.bottom", icon: AlignVerticalJustifyEnd },
+] as const;
+
+// One undo step per change
+function setTextProperty(key: string, value: unknown) {
+  const element = currentElement.value as any;
+  if (!element || element[key] === value) return;
+  report.saveStateToHistory();
+  element[key] = value;
+  report.updateJrxml();
+}
+
+function setFontSize(value: string) {
+  const size = Math.round(parseFloat(value));
+  setTextProperty("fontSize", Number.isFinite(size) && size > 0 ? size : undefined);
+}
+
+// Colour pickers send the colour and then the mode (and repeat while the
+// opacity slider moves): these share one undo step per colour
+// Status dot: fill with one of the traffic-light colours (an outline of width 0
+// follows the fill, so the dot stays one colour)
+const isStatusColor = (color: string) =>
+  currentElement.value?.mode === "Opaque" &&
+  currentElement.value?.backcolor?.toUpperCase() === color;
+function setStatusColor(color: string) {
+  const element = currentElement.value as any;
+  if (!element || isStatusColor(color)) return;
+  report.saveStateToHistory();
+  element.mode = "Opaque";
+  element.backcolor = color;
+  if (element.pen && !element.pen.lineWidth) element.pen = { ...element.pen, lineColor: color };
+  report.updateJrxml();
+}
+
+function setColorProperty(group: string, key: string, value: unknown) {
+  const element = currentElement.value as any;
+  if (!element || element[key] === value) return;
+  recordBorderEdit(`color-${group}`);
+  element[key] = value;
+  report.updateJrxml();
+}
+
+// Corner preview: the radii, scaled down to fit the small box
+const cornerPreviewRadius = computed(() => {
+  const radii = cornerRadii.value;
+  if (!radii) return undefined;
+  return CORNER_NAMES.map((c) => `${Math.min(16, radii[c] / 2)}px`).join(" ");
+});
+const cornerPreviewStyle = computed(() => ({ borderRadius: cornerPreviewRadius.value }));
+
+// Corner fields laid out as they sit on the element: top row, then bottom row
+const CORNER_GRID: CornerName[] = ["topLeft", "topRight", "bottomLeft", "bottomRight"];
+
+// "All" shows the value only when every corner has it
+const sharedCornerRadius = computed(() => {
+  const radii = cornerRadii.value;
+  if (!radii) return "";
+  const first = radii.topLeft;
+  return CORNER_NAMES.every((c) => radii[c] === first) ? first : "";
+});
+
+// corner null = all four corners
+function setCornerRadius(corner: CornerName | null, value: string) {
+  const element = currentElement.value as any;
+  const current = readCornerRadii(element);
+  if (!current) return;
+  const radius = Math.max(0, Math.round(parseFloat(value) || 0));
+  const next = { ...current };
+  for (const c of corner ? [corner] : CORNER_NAMES) next[c] = radius;
+  if (CORNER_NAMES.every((c) => next[c] === current[c])) return;
+  report.saveStateToHistory();
+  if (element.type === "frame") setBoxCornerRadii(element, next);
+  else setPropertyCornerRadii(element, next);
+  report.updateJrxml();
+}
+
+// Undo step for a border edit. Repeated edits of the same control in quick
+// succession (typing a width, dragging the colour picker) share one step.
+let lastBorderEdit = { key: "", time: 0 };
+function recordBorderEdit(key: string) {
+  const now = Date.now();
+  if (key !== lastBorderEdit.key || now - lastBorderEdit.time > 1000) {
+    report.saveStateToHistory();
+  }
+  lastBorderEdit = { key, time: now };
 }
 
 // Per-side border property accessor functions
 function getSideBorderWidth(side: string): number {
-    if (!currentElement.value?.box) return 0;
-    const box = currentElement.value.box;
-    const penKey = `${side}Pen`;
-    const widthKey = `${side}BorderWidth`;
-    if (box[widthKey] !== undefined) return box[widthKey];
-    if (box[penKey]?.lineWidth !== undefined) return box[penKey].lineWidth;
-    // Fallback to global pen
-    if (box.pen?.lineWidth !== undefined) return box.pen.lineWidth;
-    return 0;
+  if (!currentElement.value?.box) return 0;
+  const box = currentElement.value.box;
+  const penKey = `${side}Pen`;
+  const widthKey = `${side}BorderWidth`;
+  if (box[widthKey] !== undefined) return box[widthKey];
+  if (box[penKey]?.lineWidth !== undefined) return box[penKey].lineWidth;
+  // Fallback to global pen
+  if (box.pen?.lineWidth !== undefined) return box.pen.lineWidth;
+  return 0;
 }
 
-function setSideBorderWidth(side: string, value: string) {
-    if (!currentElement.value?.box) return;
-    const numValue = parseFloat(value) || 0;
-    const widthKey = `${side}BorderWidth`;
-    const penKey = `${side}Pen`;
-    emit("save-state");
-    currentElement.value.box[widthKey] = numValue;
-    if (!currentElement.value.box[penKey]) {
-        currentElement.value.box[penKey] = {};
-    }
-    currentElement.value.box[penKey].lineWidth = numValue;
-    emit("update-jrxml");
+function setSideBorderWidth(side: string, value: string, record = true) {
+  ensureElementBox();
+  if (!currentElement.value?.box) return;
+  const numValue = parseFloat(value) || 0;
+  const widthKey = `${side}BorderWidth`;
+  const penKey = `${side}Pen`;
+  if (record) recordBorderEdit(`setSideBorderWidth:${side}`);
+  currentElement.value.box[widthKey] = numValue;
+  if (!currentElement.value.box[penKey]) {
+    currentElement.value.box[penKey] = {};
+  }
+  currentElement.value.box[penKey].lineWidth = numValue;
+  report.updateJrxml();
 }
 
 function getSideBorderStyle(side: string): string {
-    if (!currentElement.value?.box) return "";
-    const box = currentElement.value.box;
-    const penKey = `${side}Pen`;
-    const styleKey = `${side}BorderStyle`;
-    if (box[styleKey] !== undefined) return box[styleKey];
-    if (box[penKey]?.lineStyle !== undefined) return box[penKey].lineStyle;
-    // Fallback to global pen
-    if (box.pen?.lineStyle !== undefined) return box.pen.lineStyle;
-    return "";
+  if (!currentElement.value?.box) return "";
+  const box = currentElement.value.box;
+  const penKey = `${side}Pen`;
+  const styleKey = `${side}BorderStyle`;
+  if (box[styleKey] !== undefined) return box[styleKey];
+  if (box[penKey]?.lineStyle !== undefined) return box[penKey].lineStyle;
+  // Fallback to global pen
+  if (box.pen?.lineStyle !== undefined) return box.pen.lineStyle;
+  // A drawn line without a style is Solid (JasperReports' default)
+  return getSideBorderWidth(side) > 0 ? "Solid" : "";
 }
 
-function setSideBorderStyle(side: string, value: string) {
-    if (!currentElement.value?.box) return;
-    const box = currentElement.value.box;
-    const styleKey = `${side}BorderStyle`;
-    const penKey = `${side}Pen`;
-    emit("save-state");
+function setSideBorderStyle(side: string, value: string, record = true) {
+  ensureElementBox();
+  if (!currentElement.value?.box) return;
+  const box = currentElement.value.box;
+  const styleKey = `${side}BorderStyle`;
+  const penKey = `${side}Pen`;
+  if (record) recordBorderEdit(`setSideBorderStyle:${side}`);
 
-    // Set the border style
-    box[styleKey] = value;
-    if (!box[penKey]) {
-        box[penKey] = {};
+  // Set the border style
+  box[styleKey] = value;
+  if (!box[penKey]) {
+    box[penKey] = {};
+  }
+  box[penKey].lineStyle = value;
+
+  // Automatically adjust the border width based on the style
+  if (value && value !== "") {
+    // Not the "None" style; a side that was off takes the width and colour of
+    // a side that is on (or 1pt black if none is)
+    if (!box[penKey].lineWidth || box[penKey].lineWidth <= 0) {
+      const source = drawnSides().find((s) => s !== side);
+      const width = source ? getSideBorderWidth(source) : 1;
+      const color = source ? getSideBorderColor(source) : getSideBorderColor(side);
+      box[penKey].lineWidth = width;
+      box[`${side}BorderWidth`] = width;
+      box[penKey].lineColor = color;
+      box[`${side}BorderColor`] = color;
     }
-    box[penKey].lineStyle = value;
+  } else {
+    // The "None" style; default the width to 0
+    box[penKey].lineWidth = 0;
+    const widthKey = `${side}BorderWidth`;
+    box[widthKey] = 0;
+  }
 
-    // Automatically adjust the border width based on the style
-    if (value && value !== "") {
-        // Not the "None" style; if the width is 0, default it to 1
-        if (!box[penKey].lineWidth || box[penKey].lineWidth <= 0) {
-            box[penKey].lineWidth = 1;
-            const widthKey = `${side}BorderWidth`;
-            box[widthKey] = 1;
-        }
-    } else {
-        // The "None" style; default the width to 0
-        box[penKey].lineWidth = 0;
-        const widthKey = `${side}BorderWidth`;
-        box[widthKey] = 0;
-    }
-
-    emit("update-jrxml");
+  report.updateJrxml();
 }
 
 function getSideBorderColor(side: string): string {
-    if (!currentElement.value?.box) return "#000000";
-    const box = currentElement.value.box;
-    const penKey = `${side}Pen`;
-    const colorKey = `${side}BorderColor`;
-    if (box[colorKey] !== undefined) return box[colorKey];
-    if (box[penKey]?.lineColor !== undefined) return box[penKey].lineColor;
-    // Fallback to global pen
-    if (box.pen?.lineColor !== undefined) return box.pen.lineColor;
-    return "#000000";
+  if (!currentElement.value?.box) return "#000000";
+  const box = currentElement.value.box;
+  const penKey = `${side}Pen`;
+  const colorKey = `${side}BorderColor`;
+  if (box[colorKey] !== undefined) return box[colorKey];
+  if (box[penKey]?.lineColor !== undefined) return box[penKey].lineColor;
+  // Fallback to global pen
+  if (box.pen?.lineColor !== undefined) return box.pen.lineColor;
+  return "#000000";
 }
 
-function setSideBorderColor(side: string, value: string) {
-    if (!currentElement.value?.box) return;
-    const box = currentElement.value.box;
-    const colorKey = `${side}BorderColor`;
-    const penKey = `${side}Pen`;
-    emit("save-state");
-    box[colorKey] = value;
-    if (!box[penKey]) {
-        box[penKey] = {};
-    }
-    box[penKey].lineColor = value;
-    emit("update-jrxml");
+function setSideBorderColor(side: string, value: string, record = true) {
+  ensureElementBox();
+  if (!currentElement.value?.box) return;
+  const box = currentElement.value.box;
+  const colorKey = `${side}BorderColor`;
+  const penKey = `${side}Pen`;
+  if (record) recordBorderEdit(`setSideBorderColor:${side}`);
+  box[colorKey] = value;
+  if (!box[penKey]) {
+    box[penKey] = {};
+  }
+  box[penKey].lineColor = value;
+  report.updateJrxml();
 }
 
-// Functions related to the unified four-side setting
-function getUnifiedBorderStyle(): string {
-    if (!currentElement.value?.box) return "";
-    // Check whether all sides have the same style
-    const sides = ["top", "left", "bottom", "right"];
-    const styles = sides.map((side) => getSideBorderStyle(side));
-    const firstStyle = styles[0];
-    if (styles.every((style) => style === firstStyle)) {
-        return firstStyle || "";
-    }
-    return "";
+// Functions related to the unified four-side setting ("All" row).
+// Width and colour change only the sides that are on; the style switches every
+// side on or off. Values that differ between the sides that are on show empty.
+const BORDER_SIDE_NAMES = ["top", "left", "bottom", "right"];
+
+function drawnSides(): string[] {
+  return BORDER_SIDE_NAMES.filter((side) => getSideBorderWidth(side) > 0);
+}
+
+// Sides the "All" row edits: the ones that are on, or all four when none is
+function unifiedTargetSides(): string[] {
+  const drawn = drawnSides();
+  return drawn.length > 0 ? drawn : BORDER_SIDE_NAMES;
+}
+
+function sharedValue<T>(values: T[], empty: T): T {
+  return values.length > 0 && values.every((v) => v === values[0]) ? values[0]! : empty;
+}
+
+function getUnifiedBorderStyle(): string | null {
+  if (!currentElement.value?.box) return "";
+  // "None" only when every side is off; nothing selected when the sides differ
+  return sharedValue<string | null>(BORDER_SIDE_NAMES.map((side) => getSideBorderStyle(side)), null);
 }
 
 function setUnifiedBorderStyle(value: string) {
-    if (!currentElement.value?.box) return;
-    emit("save-state");
-    const sides = ["top", "left", "bottom", "right"];
-    sides.forEach((side) => {
-        setSideBorderStyle(side, value);
-    });
-    emit("update-jrxml");
+  ensureElementBox();
+  if (!currentElement.value?.box) return;
+  recordBorderEdit("setUnifiedBorderStyle");
+  BORDER_SIDE_NAMES.forEach((side) => {
+    setSideBorderStyle(side, value, false);
+  });
+  report.updateJrxml();
 }
 
-function getUnifiedBorderWidth(): number {
-    if (!currentElement.value?.box) return 0;
-    // Check whether all sides have the same width
-    const sides = ["top", "left", "bottom", "right"];
-    const widths = sides.map((side) => getSideBorderWidth(side));
-    const firstWidth = widths[0];
-    if (widths.every((width) => width === firstWidth)) {
-        return firstWidth || 0;
-    }
-    return 0;
+function getUnifiedBorderWidth(): number | "" {
+  if (!currentElement.value?.box) return "";
+  return sharedValue<number | "">(drawnSides().map((side) => getSideBorderWidth(side)), "");
 }
 
 function setUnifiedBorderWidth(value: string) {
-    if (!currentElement.value?.box) return;
-    const numValue = parseFloat(value) || 0;
-    emit("save-state");
-    const sides = ["top", "left", "bottom", "right"];
-    sides.forEach((side) => {
-        setSideBorderWidth(side, value);
-    });
-    emit("update-jrxml");
+  ensureElementBox();
+  if (!currentElement.value?.box) return;
+  recordBorderEdit("setUnifiedBorderWidth");
+  const targets = unifiedTargetSides();
+  // Turning on a border from nothing: new sides need a style too
+  const turningOn = drawnSides().length === 0 && (parseFloat(value) || 0) > 0;
+  targets.forEach((side) => {
+    if (turningOn) setSideBorderStyle(side, "Solid", false);
+    setSideBorderWidth(side, value, false);
+  });
+  report.updateJrxml();
 }
 
 function getUnifiedBorderColor(): string {
-    if (!currentElement.value?.box) return "#000000";
-    // Check whether all sides have the same color
-    const sides = ["top", "left", "bottom", "right"];
-    const colors = sides.map((side) => getSideBorderColor(side));
-    const firstColor = colors[0];
-    if (colors.every((color) => color === firstColor)) {
-        return firstColor || "#000000";
-    }
-    return "#000000";
+  if (!currentElement.value?.box) return "#000000";
+  return sharedValue(drawnSides().map((side) => getSideBorderColor(side)), "#000000");
 }
 
 function setUnifiedBorderColor(value: string) {
-    if (!currentElement.value?.box) return;
-    emit("save-state");
-    const sides = ["top", "left", "bottom", "right"];
-    sides.forEach((side) => {
-        setSideBorderColor(side, value);
-    });
-    emit("update-jrxml");
+  ensureElementBox();
+  if (!currentElement.value?.box) return;
+  recordBorderEdit("setUnifiedBorderColor");
+  unifiedTargetSides().forEach((side) => {
+    setSideBorderColor(side, value, false);
+  });
+  report.updateJrxml();
 }
 
-// Initialize the table cell
-function initTableCell(column: any, cellType: "tableFooter" | "columnFooter") {
-    if (!column[cellType]) {
-        column[cellType] = {
-            enable: false,
-            element: {
-                type: "textField",
-                x: 0,
-                y: 0,
-                width: column.width,
-                height: 30,
-                expression: "",
-                backcolor: "",
-                mode: "Transparent",
-            },
-        };
-    }
+// Handle Global Margin input: sets all four sides and global padding
+function handleGlobalMarginInput(event: Event) {
+  if (!currentElement.value) return;
+  if (!currentElement.value.box) {
+    currentElement.value.box = {};
+  }
+  const input = event.target as HTMLInputElement;
+  const rawVal = input.value;
+  report.saveStateToHistory();
+
+  if (rawVal === "" || rawVal === undefined || rawVal === null) {
+    currentElement.value.box.padding = undefined;
+    currentElement.value.box.topPadding = undefined;
+    currentElement.value.box.bottomPadding = undefined;
+    currentElement.value.box.leftPadding = undefined;
+    currentElement.value.box.rightPadding = undefined;
+  } else {
+    const num = Math.max(0, parseFloat(rawVal) || 0);
+    currentElement.value.box.padding = num;
+    currentElement.value.box.topPadding = num;
+    currentElement.value.box.bottomPadding = num;
+    currentElement.value.box.leftPadding = num;
+    currentElement.value.box.rightPadding = num;
+  }
+  report.updateJrxml();
 }
 
-// Update the column width, also updating the width of all related cells, and recalculate the table's total width
-function updateColumnWidth(column: any, index: number) {
-    if (!column || !currentElement) return;
+// Handle individual side margin input: resets global padding and sets specific side
+function handleSideMarginInput(
+  side: "top" | "left" | "bottom" | "right",
+  event: Event,
+) {
+  if (!currentElement.value) return;
+  if (!currentElement.value.box) {
+    currentElement.value.box = {};
+  }
+  const box = currentElement.value.box;
+  const input = event.target as HTMLInputElement;
+  const rawVal = input.value;
+  report.saveStateToHistory();
 
-    const newWidth = column.width;
+  // If individual margins weren't explicitly initialized yet but global padding was set,
+  // seed the other sides with the current global value before diverging.
+  const prevGlobal =
+    box.padding !== undefined && !isNaN(Number(box.padding))
+      ? Number(box.padding)
+      : undefined;
 
-    // Update the width of all related cells
-    if (column.tableHeader) {
-        if (column.tableHeader.element) {
-            column.tableHeader.element.width = newWidth;
-        } else {
-            column.tableHeader.width = newWidth;
-        }
-    }
-    if (column.columnHeader) {
-        if (column.columnHeader.element) {
-            column.columnHeader.element.width = newWidth;
-        } else {
-            column.columnHeader.width = newWidth;
-        }
-    }
-    if (column.detailCell) {
-        if (column.detailCell.element) {
-            column.detailCell.element.width = newWidth;
-        } else {
-            column.detailCell.width = newWidth;
-        }
-    }
-    if (column.columnFooter) {
-        if (column.columnFooter.element) {
-            column.columnFooter.element.width = newWidth;
-        } else {
-            column.columnFooter.width = newWidth;
-        }
-    }
-    if (column.tableFooter) {
-        if (column.tableFooter.element) {
-            column.tableFooter.element.width = newWidth;
-        } else {
-            column.tableFooter.width = newWidth;
-        }
-    }
+  if (prevGlobal !== undefined) {
+    if (box.topPadding === undefined) box.topPadding = prevGlobal;
+    if (box.leftPadding === undefined) box.leftPadding = prevGlobal;
+    if (box.bottomPadding === undefined) box.bottomPadding = prevGlobal;
+    if (box.rightPadding === undefined) box.rightPadding = prevGlobal;
+  }
 
-    // If the table has a children property, also update the corresponding column's width within children
-    if (
-        currentElement.value &&
-        currentElement.value.type === "table" &&
-        currentElement.value.children
-    ) {
-        // Find the corresponding column in children (by uuid or index)
-        const childColumn = findColumnInChildren(
-            currentElement.value.children,
-            column,
-        );
-        if (childColumn) {
-            // Update childColumn's width
-            childColumn.width = newWidth;
+  // Reset global margin value so it doesn't conflict or falsely indicate all sides are equal
+  box.padding = undefined;
 
-            // Also update the width of all related cells within childColumn
-            if (childColumn.tableHeader) {
-                if (childColumn.tableHeader.element) {
-                    childColumn.tableHeader.element.width = newWidth;
-                } else {
-                    childColumn.tableHeader.width = newWidth;
-                }
-            }
-            if (childColumn.columnHeader) {
-                if (childColumn.columnHeader.element) {
-                    childColumn.columnHeader.element.width = newWidth;
-                } else {
-                    childColumn.columnHeader.width = newWidth;
-                }
-            }
-            if (childColumn.detailCell) {
-                if (childColumn.detailCell.element) {
-                    childColumn.detailCell.element.width = newWidth;
-                } else {
-                    childColumn.detailCell.width = newWidth;
-                }
-            }
-            if (childColumn.columnFooter) {
-                if (childColumn.columnFooter.element) {
-                    childColumn.columnFooter.element.width = newWidth;
-                } else {
-                    childColumn.columnFooter.width = newWidth;
-                }
-            }
-            if (childColumn.tableFooter) {
-                if (childColumn.tableFooter.element) {
-                    childColumn.tableFooter.element.width = newWidth;
-                } else {
-                    childColumn.tableFooter.width = newWidth;
-                }
-            }
-        }
-    }
+  const key = `${side}Padding` as "topPadding" | "leftPadding" | "bottomPadding" | "rightPadding";
+  if (rawVal === "" || rawVal === undefined || rawVal === null) {
+    box[key] = undefined;
+  } else {
+    box[key] = Math.max(0, parseFloat(rawVal) || 0);
+  }
 
-    // Recalculate the table's total width: the sum of all column widths
-    if (
-        currentElement.value &&
-        currentElement.value.type === "table" &&
-        currentElement.value.columns
-    ) {
-        const totalWidth = currentElement.value.columns.reduce(
-            (sum: number, col: any) => sum + (col.width || 0),
-            0,
-        );
-        currentElement.value.width = totalWidth;
-    }
-}
+  // If all four sides happen to be defined and equal, synchronize global margin
+  if (
+    box.topPadding !== undefined &&
+    box.topPadding === box.bottomPadding &&
+    box.topPadding === box.leftPadding &&
+    box.topPadding === box.rightPadding
+  ) {
+    box.padding = box.topPadding;
+  }
 
-// Find the corresponding column in the children array (recursive search)
-function findColumnInChildren(children: any[], targetColumn: any): any | null {
-    for (const child of children) {
-        if (child.uuid === targetColumn.uuid) {
-            return child;
-        }
-        if (child.children) {
-            const found = findColumnInChildren(child.children, targetColumn);
-            if (found) {
-                return found;
-            }
-        }
-    }
-    return null;
-}
-
-// Update the column name, also updating the corresponding column's name within children
-function updateColumnName(column: any, index: number) {
-    if (!column || !currentElement) return;
-
-    const newName = column.name;
-
-    // If the table has a children property, also update the corresponding column's name within children
-    if (
-        currentElement.value &&
-        currentElement.value.type === "table" &&
-        currentElement.value.children
-    ) {
-        // Find the corresponding column in children (by uuid or index)
-        const childColumn = findColumnInChildren(
-            currentElement.value.children,
-            column,
-        );
-        if (childColumn) {
-            // Update childColumn's name
-            childColumn.name = newName;
-
-            // If childColumn has a columnHeader and it is of type staticText, also update its text content
-            if (
-                childColumn.columnHeader &&
-                childColumn.columnHeader.type === "staticText"
-            ) {
-                childColumn.columnHeader.text = newName;
-            }
-        }
-    }
-}
-
-// Update the table header text, also updating the corresponding column's table header text within children
-function updateTableHeaderText(column: any, index: number) {
-    if (
-        !column ||
-        !currentElement ||
-        !column.hasTableHeader ||
-        !column.tableHeader
-    )
-        return;
-
-    const newText = column.tableHeader.text;
-
-    // If the table has a children property, also update the corresponding column's table header text within children
-    if (
-        currentElement.value &&
-        currentElement.value.type === "table" &&
-        currentElement.value.children
-    ) {
-        // Find the corresponding column in children (by uuid or index)
-        const childColumn = findColumnInChildren(
-            currentElement.value.children,
-            column,
-        );
-        if (
-            childColumn &&
-            childColumn.hasTableHeader &&
-            childColumn.tableHeader
-        ) {
-            // Update childColumn's table header text
-            childColumn.tableHeader.text = newText;
-        }
-    }
-}
-
-// Update the field expression, also updating the corresponding column's field expression within children
-function updateFieldExpression(column: any, index: number) {
-    if (!column || !currentElement || !column.detailCell) return;
-
-    const newExpression = column.detailCell.expression;
-
-    // If detailCell is of type staticText, convert it to a textField type
-    if (column.detailCell.type === "staticText") {
-        // Preserve the original properties
-        const {
-            x,
-            y,
-            width,
-            height,
-            textAlignment,
-            verticalAlignment,
-            fontSize,
-            isBold,
-            isItalic,
-            isUnderline,
-            fontFamily,
-            backcolor,
-            mode,
-            box,
-        } = column.detailCell;
-        // Convert to a textField type
-        column.detailCell = {
-            type: "textField",
-            x,
-            y,
-            width,
-            height,
-            expression: newExpression,
-            textAlignment,
-            verticalAlignment,
-            fontSize,
-            isBold,
-            isItalic,
-            isUnderline,
-            fontFamily,
-            backcolor,
-            mode,
-            box,
-            textAdjust: "CutText",
-            isBlankWhenNull: true,
-        };
-    }
-
-    // If the table has a children property, also update the corresponding column's field expression within children
-    if (
-        currentElement.value &&
-        currentElement.value.type === "table" &&
-        currentElement.value.children
-    ) {
-        // Find the corresponding column in children (by uuid or index)
-        const childColumn = findColumnInChildren(
-            currentElement.value.children,
-            column,
-        );
-        if (childColumn && childColumn.detailCell) {
-            // If childColumn's detailCell is of type staticText, convert it to a textField type
-            if (childColumn.detailCell.type === "staticText") {
-                // Preserve the original properties
-                const {
-                    x,
-                    y,
-                    width,
-                    height,
-                    textAlignment,
-                    verticalAlignment,
-                    fontSize,
-                    isBold,
-                    isItalic,
-                    isUnderline,
-                    fontFamily,
-                    backcolor,
-                    mode,
-                    box,
-                } = childColumn.detailCell;
-                // Convert to a textField type
-                childColumn.detailCell = {
-                    type: "textField",
-                    x,
-                    y,
-                    width,
-                    height,
-                    expression: newExpression,
-                    textAlignment,
-                    verticalAlignment,
-                    fontSize,
-                    isBold,
-                    isItalic,
-                    isUnderline,
-                    fontFamily,
-                    backcolor,
-                    mode,
-                    box,
-                    textAdjust: "CutText",
-                    isBlankWhenNull: true,
-                };
-            } else {
-                // Update childColumn's field expression
-                childColumn.detailCell.expression = newExpression;
-            }
-        }
-    }
-}
-
-// Toggle whether the Table Header is included
-function toggleTableHeader(column: any, event: Event) {
-    const checkbox = event.target as HTMLInputElement;
-    const hasTableHeader = checkbox.checked;
-
-    if (!hasTableHeader) {
-        // Clear the existing Table Header data
-        delete column.tableHeader;
-    } else {
-        // Generate new default Table Header data
-        if (!column.tableHeader) {
-            column.tableHeader = {
-                type: "staticText",
-                x: 0,
-                y: 0,
-                width: column.width,
-                height: 30,
-                text: column.name,
-                forecolor: "#000000",
-                backcolor: "#FFFFFF",
-                fontFamily: "SansSerif",
-                fontSize: 19,
-                isBold: true,
-                textAlignment: "Center",
-                verticalAlignment: "Middle",
-            };
-        }
-    }
-
-    emit("update-jrxml");
-}
-
-// Field selection modal related
-const showFieldSelectionModal = ref(false);
-const selectedFields = ref<string[]>([]);
-const availableFields = computed(() => {
-    if (
-        !currentElement.value ||
-        currentElement.value.type !== "table" ||
-        !props.subDatasets
-    )
-        return [];
-
-    const tableElement = currentElement.value as any;
-    const datasetName = tableElement.dataset?.name;
-
-    if (!datasetName) return [];
-
-    // Find the matching dataset within subDatasets
-    const matchingDataset = props.subDatasets.find(
-        (dataset) => dataset.name === datasetName,
-    );
-    return matchingDataset?.fields || [];
-});
-
-// Computed property: get all combined columns, including child groups, returned as a flattened list
-const allColumnGroups = computed(() => {
-    if (
-        !currentElement.value ||
-        currentElement.value.type !== "table" ||
-        !currentElement.value.children
-    ) {
-        return [];
-    }
-    return getAllColumnGroups(currentElement.value.children);
-});
-
-// Open the field selection modal
-function openFieldSelectionModal() {
-    if (!currentElement.value || currentElement.value.type !== "table") return;
-
-    // Reset selected fields
-    selectedFields.value = [];
-
-    // Get current table columns
-    const tableElement = currentElement.value as any;
-    if (tableElement.columns) {
-        // Extract field names from existing columns
-        const usedFieldNames = tableElement.columns
-            .map((column: any) => {
-                if (column.detailCell?.expression) {
-                    // Match field expression pattern like $F{fieldName}
-                    const match =
-                        column.detailCell.expression.match(/\$F\{([^}]+)\}/);
-                    return match ? match[1] : null;
-                }
-                return null;
-            })
-            .filter((fieldName: string | null) => fieldName !== null);
-
-        // Set selected fields to used field names
-        selectedFields.value = usedFieldNames as string[];
-    }
-
-    showFieldSelectionModal.value = true;
-}
-
-// Toggle the field selection state
-function toggleFieldSelection(fieldName: string) {
-    const index = selectedFields.value.indexOf(fieldName);
-    if (index === -1) {
-        selectedFields.value.push(fieldName);
-    } else {
-        selectedFields.value.splice(index, 1);
-    }
-}
-
-// Add the selected fields as columns
-function addSelectedFieldsAsColumns() {
-    if (!currentElement.value || currentElement.value.type !== "table") return;
-
-    emit("save-state");
-
-    const columnWidth = 160;
-    const tableElement = currentElement.value as any;
-
-    // Ensure columns array exists
-    if (!tableElement.columns) {
-        tableElement.columns = [];
-    }
-
-    // Get existing columns and their field names
-    const existingColumns = [...tableElement.columns];
-    const existingFieldMap = new Map<string, any>();
-
-    // Populate existing field map
-    existingColumns.forEach((column) => {
-        if (column.detailCell?.element?.expression) {
-            const match =
-                column.detailCell.element.expression.match(/\$F\{([^}]+)\}/);
-            if (match) {
-                const fieldName = match[1];
-                existingFieldMap.set(fieldName, column);
-            }
-        }
-    });
-
-    // Prepare new columns array
-    const newColumns: any[] = [];
-
-    // Add columns for selected fields
-    selectedFields.value.forEach((fieldName) => {
-        // Check if field already has a column
-        if (existingFieldMap.has(fieldName)) {
-            // Keep existing column
-            newColumns.push(existingFieldMap.get(fieldName));
-            // Remove from map to track which fields are still used
-            existingFieldMap.delete(fieldName);
-        } else {
-            // Create new column for new field
-            const newColumn: any = {
-                uuid: crypto.randomUUID(),
-                width: columnWidth,
-                name: fieldName,
-                hasTableHeader: false,
-                tableHeader: {
-                    enable: false,
-                    element: {
-                        type: "staticText",
-                        x: 0,
-                        y: 0,
-                        width: columnWidth,
-                        height: 30,
-                        text: fieldName,
-                        forecolor: "#000000",
-                        backcolor: "#FFFFFF",
-                        fontFamily: "SansSerif",
-                        fontSize: 19,
-                        isBold: true,
-                    },
-                },
-                columnHeader: {
-                    enable: true,
-                    element: {
-                        type: "staticText",
-                        x: 0,
-                        y: 0,
-                        width: columnWidth,
-                        height: 30,
-                        text: fieldName,
-                    },
-                },
-                detailCell: {
-                    enable: true,
-                    element: {
-                        type: "textField",
-                        x: 0,
-                        y: 0,
-                        width: columnWidth,
-                        height: 30,
-                        expression: `$F{${fieldName}}`,
-                    },
-                },
-                columnFooter: {
-                    enable: false,
-                    element: {
-                        type: "textField",
-                        x: 0,
-                        y: 0,
-                        width: columnWidth,
-                        height: 30,
-                        expression: "",
-                    },
-                },
-                tableFooter: {
-                    enable: false,
-                    element: {
-                        type: "textField",
-                        x: 0,
-                        y: 0,
-                        width: columnWidth,
-                        height: 30,
-                        expression: "",
-                    },
-                },
-            };
-
-            newColumns.push(newColumn);
-        }
-    });
-
-    // Update table columns
-    tableElement.columns = newColumns;
-
-    showFieldSelectionModal.value = false;
-    selectedFields.value = [];
-    emit("update-jrxml");
-}
-
-// Table column operation methods
-function addTableColumn() {
-    if (!currentElement.value || currentElement.value.type !== "table") return;
-
-    emit("save-state");
-
-    const columnWidth = 160;
-    const newColumn: any = {
-        uuid: crypto.randomUUID(),
-        width: columnWidth,
-        name: `Column${currentElement.value.columns.length + 1}`,
-        hasTableHeader: false,
-        tableHeader: {
-            enable: false,
-            element: {
-                type: "empty",
-                x: 0,
-                y: 0,
-                width: columnWidth,
-                height: 30,
-            },
-        },
-        columnHeader: {
-            enable: true,
-            element: {
-                type: "empty",
-                x: 0,
-                y: 0,
-                width: columnWidth,
-                height: 30,
-            },
-        },
-        detailCell: {
-            enable: true,
-            element: {
-                type: "empty",
-                x: 0,
-                y: 0,
-                width: columnWidth,
-                height: 30,
-            },
-        },
-        tableFooter: {
-            enable: false,
-            element: {
-                type: "empty",
-                x: 0,
-                y: 0,
-                width: columnWidth,
-                height: 30,
-            },
-        },
-        columnFooter: {
-            enable: false,
-            element: {
-                type: "empty",
-                x: 0,
-                y: 0,
-                width: columnWidth,
-                height: 30,
-            },
-        },
-    };
-
-    if (!currentElement.value.columns) {
-        currentElement.value.columns = [];
-    }
-
-    currentElement.value.columns.push(newColumn);
-
-    // Recalculate the table's total width: the sum of all column widths
-    const totalWidth = currentElement.value.columns.reduce(
-        (sum: number, col: any) => sum + (col.width || 0),
-        0,
-    );
-    currentElement.value.width = totalWidth;
-
-    emit("update-jrxml");
-}
-
-// Add a column group
-function addColumnGroup() {
-    if (
-        !currentElement.value ||
-        currentElement.value.type !== "table" ||
-        !props.selectedElement
-    )
-        return;
-
-    const { elementIndex, bandIndex, parentFrameIndex } = props.selectedElement;
-    // Fix TypeScript error: use the correct argument format
-    emit("add-columns-to-group", {
-        elementIndex,
-        columnIndices: [],
-        bandIndex,
-        parentFrameIndex,
-    });
-}
-
-function removeTableColumn(index: number) {
-    if (
-        !currentElement.value ||
-        currentElement.value.type !== "table" ||
-        !currentElement.value.columns
-    )
-        return;
-
-    if (currentElement.value.columns.length <= 1) {
-        // Keep at least one column
-        return;
-    }
-
-    emit("save-state");
-    currentElement.value.columns.splice(index, 1);
-
-    // Recalculate the table's total width: the sum of all column widths
-    const totalWidth = currentElement.value.columns.reduce(
-        (sum: number, col: any) => sum + (col.width || 0),
-        0,
-    );
-    currentElement.value.width = totalWidth;
-
-    emit("update-jrxml");
-}
-
-// Get all combined columns, including child groups, returned as a flattened list
-function getAllColumnGroups(groups: any[]): any[] {
-    const result: any[] = [];
-
-    function traverse(group: any, path: number[] = []) {
-        // Modify the original object directly, adding a path property
-        group.path = path;
-        result.push(group);
-        if (group.children && group.children.length > 0) {
-            group.children.forEach((child: any, index: number) => {
-                traverse(child, [...path, index]);
-            });
-        }
-    }
-
-    groups.forEach((group) => traverse(group));
-    return result;
-}
-
-// Compute the maximum allowed width for a combined column (the sum of the widths of all child columns and sub-groups)
-function calculateMaxGroupWidth(groupInfo: any): number {
-    // Recursively compute the sum of the widths of all leaf nodes (plain columns)
-    function calculateLeafColumnsWidth(node: any): number {
-        // If the node has children, recursively compute all child nodes
-        if (node.children && node.children.length > 0) {
-            return node.children.reduce((sum: number, child: any) => {
-                return sum + calculateLeafColumnsWidth(child);
-            }, 0);
-        }
-        // If the node has no children, it's a plain column, so return its width
-        return node.width || 0;
-    }
-
-    return calculateLeafColumnsWidth(groupInfo);
+  report.updateJrxml();
 }
 
 // Delete element
 function deleteElement() {
-    emit("delete-element");
+  emit("delete-element");
 }
 
 // Rectangle border related helper functions
 function getRectangleBorderWidth(): number {
-    const el = currentElement.value as any;
-    if (!el?.pen) return 1;
-    return el.pen.lineWidth || 0;
+  const el = currentElement.value as any;
+  if (!el?.pen) return el?.lineWidth !== undefined ? el.lineWidth : 1;
+  return el.pen.lineWidth !== undefined ? el.pen.lineWidth : 1;
 }
 
 function setRectangleBorderWidth(value: string) {
-    if (!currentElement.value) return;
-    const el = currentElement.value as any;
-    const numValue = parseFloat(value) || 0;
-    emit("save-state");
-    if (!el.pen) {
-        el.pen = {};
-    }
-    el.pen.lineWidth = numValue;
-    emit("update-jrxml");
+  if (!currentElement.value) return;
+  const el = currentElement.value as any;
+  const numValue = parseFloat(value) || 0;
+  report.saveStateToHistory();
+  if (!el.pen) {
+    el.pen = {};
+  }
+  el.pen.lineWidth = numValue;
+  el.lineWidth = numValue;
+  report.updateJrxml();
 }
 
 function getRectangleBorderStyle(): string {
-    const el = currentElement.value as any;
-    if (!el?.pen) return "Solid";
-    return el.pen.lineStyle || "Solid";
+  const el = currentElement.value as any;
+  if (!el?.pen) return el?.lineStyle || "Solid";
+  return el.pen.lineStyle || el.lineStyle || "Solid";
 }
 
 function setRectangleBorderStyle(value: string) {
-    if (!currentElement.value) return;
-    const el = currentElement.value as any;
-    emit("save-state");
-    if (!el.pen) {
-        el.pen = {};
-    }
-    el.pen.lineStyle = value;
-    emit("update-jrxml");
+  if (!currentElement.value) return;
+  const el = currentElement.value as any;
+  report.saveStateToHistory();
+  if (!el.pen) {
+    el.pen = {};
+  }
+  el.pen.lineStyle = value;
+  el.lineStyle = value;
+  // Thicken a thin outline so the two lines of a double border are visible
+  if (value === "Double" && getRectangleBorderWidth() < MIN_DOUBLE_LINE_WIDTH) {
+    el.pen.lineWidth = MIN_DOUBLE_LINE_WIDTH;
+    el.lineWidth = MIN_DOUBLE_LINE_WIDTH;
+  }
+  report.updateJrxml();
 }
 
 function getRectangleBorderColor(): string {
-    const el = currentElement.value as any;
-    if (!el?.pen) return "#000000";
-    return el.pen.lineColor || "#000000";
+  const el = currentElement.value as any;
+  if (!el) return "#000000";
+  return el.pen?.lineColor || el.lineColor || "#000000";
 }
 
 function setRectangleBorderColor(value: string) {
-    if (!currentElement.value) return;
-    const el = currentElement.value as any;
-    emit("save-state");
-    if (!el.pen) {
-        el.pen = {};
-    }
-    el.pen.lineColor = value;
-    emit("update-jrxml");
-}
-
-// Get the style of the first cell of the given type found in the table
-function getFirstTableCellStyle(
-    cellType: "tableHeader" | "columnHeader" | "columnFooter" | "detailCell",
-) {
-    const tableElement = currentElement.value;
-    if (!tableElement || tableElement.type !== "table")
-        return {
-            textAlignment: "Center",
-            verticalAlignment: "Middle",
-            fontSize: 12,
-            isBold: false,
-            isItalic: false,
-            isUnderline: false,
-            forecolor: "#000000",
-            forecolorMode: "Opaque",
-            backcolor: "#ffffff",
-            mode: "Opaque",
-        };
-
-    // Recursive search function
-    function findCellStyle(node: any): any {
-        if (node[cellType]) {
-            return node[cellType];
-        }
-        if (node.children) {
-            for (const child of node.children) {
-                const style = findCellStyle(child);
-                if (style) {
-                    return style;
-                }
-            }
-        }
-        return null;
-    }
-
-    // First check the direct child columns
-    if (tableElement.columns) {
-        for (const column of tableElement.columns) {
-            const style = findCellStyle(column);
-            if (style) {
-                return style;
-            }
-        }
-    }
-
-    // Then check the column groups
-    if (tableElement.children) {
-        for (const group of tableElement.children) {
-            const style = findCellStyle(group);
-            if (style) {
-                return style;
-            }
-        }
-    }
-
-    // If no style was found, return the default style
-    return {
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-        fontSize: 12,
-        isBold: false,
-        isItalic: false,
-        isUnderline: false,
-        forecolor: "#000000",
-        forecolorMode: "Opaque",
-        backcolor: "#ffffff",
-        mode: "Opaque",
-    };
-}
-
-// Update the style of all cells of the given type in the table
-function updateAllTableCellStyles(
-    cellType: "tableHeader" | "columnHeader" | "columnFooter" | "detailCell",
-    style: any,
-) {
-    const tableElement = currentElement.value;
-    if (!tableElement || tableElement.type !== "table") return;
-
-    // Recursive update function
-    function updateCellStyle(node: any) {
-        if (node[cellType]) {
-            // Deep-clone the style object to avoid reference issues
-            node[cellType] = { ...style };
-        }
-        if (node.children) {
-            for (const child of node.children) {
-                updateCellStyle(child);
-            }
-        }
-    }
-
-    // Update all direct child columns
-    if (tableElement.columns) {
-        for (const column of tableElement.columns) {
-            updateCellStyle(column);
-        }
-    }
-
-    // Update all column groups
-    if (tableElement.children) {
-        for (const group of tableElement.children) {
-            updateCellStyle(group);
-        }
-    }
-}
-
-// Update the style property of all cells in the table
-function updateTableStyles() {
-    const tableElement = currentElement.value;
-    if (!tableElement || tableElement.type !== "table") return;
-
-    // Recursive update function
-    function updateCellStyle(node: any) {
-        // Update the tableHeader style
-        if (node.tableHeader) {
-            node.tableHeader.style = tableStyles.value.tableHeader;
-        }
-        // Update the columnHeader style
-        if (node.columnHeader) {
-            node.columnHeader.style = tableStyles.value.columnHeader;
-        }
-        // Update the columnFooter style
-        if (node.columnFooter) {
-            node.columnFooter.style = tableStyles.value.columnFooter;
-        }
-        // Update the detailCell style
-        if (node.detailCell) {
-            node.detailCell.style = tableStyles.value.detailCell;
-        }
-        // Recursively update child nodes
-        if (node.children) {
-            for (const child of node.children) {
-                updateCellStyle(child);
-            }
-        }
-    }
-
-    // Update all direct child columns
-    if (tableElement.columns) {
-        for (const column of tableElement.columns) {
-            updateCellStyle(column);
-        }
-    }
-
-    // Update all column groups
-    if (tableElement.children) {
-        for (const group of tableElement.children) {
-            updateCellStyle(group);
-        }
-    }
-}
-
-// Sort field management
-function addSortField() {
-    if (!currentElement.value || currentElement.value.type !== "sort") return;
-    if (!currentElement.value.sortFields) {
-        currentElement.value.sortFields = [];
-    }
-    currentElement.value.sortFields.push({
-        name: "",
-        order: "Ascending",
-    });
-    emit("update-jrxml");
-}
-
-function removeSortField(index: number) {
-    if (!currentElement.value || currentElement.value.type !== "sort") return;
-    if (!currentElement.value.sortFields) return;
-    currentElement.value.sortFields.splice(index, 1);
-    emit("update-jrxml");
-}
-
-// List contents height
-const listContentsHeight = ref(0);
-const listContentsWidth = ref(0);
-
-// Sync the list contents height to currentElement
-watch(
-    () => currentElement.value,
-    (el) => {
-        if (el && el.type === "list" && el.listContents) {
-            listContentsHeight.value = el.listContents.height || 0;
-            listContentsWidth.value = el.listContents.width || 0;
-        }
-    },
-    { immediate: true },
-);
-
-function updateListContentsHeight() {
-    if (!currentElement.value || currentElement.value.type !== "list") return;
-    if (!currentElement.value.listContents) {
-        currentElement.value.listContents = {
-            elements: [],
-            height: 0,
-            width: 0,
-        };
-    }
-    currentElement.value.listContents.height = listContentsHeight.value;
-    emit("update-jrxml");
-}
-
-function updateListContentsWidth() {
-    if (!currentElement.value || currentElement.value.type !== "list") return;
-    if (!currentElement.value.listContents) {
-        currentElement.value.listContents = {
-            elements: [],
-            height: 0,
-            width: 0,
-        };
-    }
-    currentElement.value.listContents.width = listContentsWidth.value;
-    emit("update-jrxml");
+  if (!currentElement.value) return;
+  const el = currentElement.value as any;
+  report.saveStateToHistory();
+  if (!el.pen) {
+    el.pen = {};
+  }
+  el.pen.lineColor = value;
+  el.lineColor = value;
+  if (el.pen.lineWidth === undefined) {
+    el.pen.lineWidth = 1;
+  }
+  el.lineWidth = el.pen.lineWidth;
+  report.updateJrxml();
 }
 
 function addProperty() {
-    if (!currentElement.value) return;
-    if (!currentElement.value.properties) {
-        (currentElement.value as any).properties = [];
-    }
-    (currentElement.value as any).properties.push({ name: '', value: '' });
-    emit("update-jrxml");
+  if (!currentElement.value) return;
+  if (!currentElement.value.properties) {
+    (currentElement.value as any).properties = [];
+  }
+  (currentElement.value as any).properties.push({ name: "", value: "" });
+  report.updateJrxml();
 }
 
 function addPropertyExpression() {
-    if (!currentElement.value) return;
-    if (!currentElement.value.propertyExpressions) {
-        (currentElement.value as any).propertyExpressions = [];
-    }
-    (currentElement.value as any).propertyExpressions.push({ name: '', valueExpression: '' });
-    emit("update-jrxml");
+  if (!currentElement.value) return;
+  if (!currentElement.value.propertyExpressions) {
+    (currentElement.value as any).propertyExpressions = [];
+  }
+  (currentElement.value as any).propertyExpressions.push({
+    name: "",
+    valueExpression: "",
+  });
+  report.updateJrxml();
 }
 </script>
 
 <style scoped>
 .element-properties {
-    padding: var(--prop-spacing-md);
+  padding: 12px;
+  background: #fcfcfe;
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
-.element-properties h3 {
-    margin: 0 0 var(--prop-spacing-md) 0;
-    padding: 0 0 var(--prop-spacing-xs) 0;
-    font-size: var(--prop-font-size-md);
-    font-weight: var(--prop-font-weight-semibold);
-    color: var(--prop-text-primary);
-    border-bottom: 1px solid var(--prop-divider-color);
+.template-reset-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+/* Use default / Reset all to default: a small pill */
+.template-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: 1px solid #e6e5ee;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #45425a;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.template-reset-btn:hover {
+  border-color: rgba(124, 92, 247, 0.55);
+  background: rgba(124, 92, 247, 0.06);
+  color: #6440f4;
+}
+
+.template-setup {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.07);
+}
+
+.element-properties .panel-header h3 {
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-size: 14px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  color: #1c1b26;
+}
+
+.section-title {
+  font-size: 13px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--prop-text-tertiary) !important;
+}
+
+/* Segmented tabs: same look as the controls inside the cards. The white
+   highlight is one element moved by the open tab's index, so it slides. */
+.prop-tab-bar {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--tab-count), minmax(0, 1fr));
+  padding: 3px;
+  border-radius: 9px;
+  background: #f1f0f6;
+  border: 1px solid rgba(28, 27, 38, 0.05);
+}
+
+.prop-tab-indicator {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / var(--tab-count));
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.08);
+  transform: translateX(calc(100% * var(--tab-index)));
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.prop-tab {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 6px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--prop-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.prop-tab:hover {
+  color: var(--prop-text-primary);
+}
+
+.prop-tab.active {
+  font-weight: 650;
+  color: #5b3ee0;
+}
+
+.prop-tab:focus-visible {
+  outline: 2px solid var(--prop-border-focus, #7c5cf7);
+  outline-offset: 1px;
+  border-radius: 7px;
+}
+
+.prop-tab-pane {
+  padding-top: 14px;
+}
+
+/* The new tab's content fades and rises in */
+.prop-tab-fade-enter-active,
+.prop-tab-fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.prop-tab-fade-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.prop-tab-fade-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prop-tab-indicator,
+  .prop-tab-fade-enter-active,
+  .prop-tab-fade-leave-active {
+    transition: none;
+  }
 }
 
 .element-properties h4 {
-    margin: 0 0 var(--prop-spacing-md) 0;
-    padding: 0;
-    font-size: var(--prop-font-size-md);
-    font-weight: var(--prop-font-weight-semibold);
-    color: var(--prop-text-primary);
+  margin: 0 0 var(--prop-spacing-md) 0;
+  padding: 0;
+  font-size: var(--prop-font-size-md);
+  font-weight: var(--prop-font-weight-semibold);
+  color: var(--prop-text-primary);
 }
 
 .element-properties h5 {
-    margin: 0 0 var(--prop-spacing-sm) 0;
-    padding: 0;
-    font-size: var(--prop-font-size-sm);
-    font-weight: var(--prop-font-weight-semibold);
-    color: var(--prop-text-secondary);
+  margin: 0 0 var(--prop-spacing-sm) 0;
+  padding: 0;
+  font-size: var(--prop-font-size-sm);
+  font-weight: 650;
+  color: #1c1b26;
 }
 
 .property-section {
-    margin-bottom: var(--prop-spacing-lg);
+  margin-bottom: var(--prop-spacing-lg);
 }
 
 .form-group {
-    margin-bottom: var(--prop-spacing-sm);
+  margin-bottom: var(--prop-spacing-sm);
 }
 
 .form-group-row {
-    display: flex;
-    gap: var(--prop-spacing-sm);
-    margin-bottom: var(--prop-spacing-sm);
+  display: flex;
+  gap: var(--prop-spacing-sm);
+  margin-bottom: var(--prop-spacing-sm);
 }
 
 .half-width {
-    flex: 1;
+  flex: 1;
 }
 
 .basic-properties-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--prop-spacing-md);
-    margin-bottom: var(--prop-spacing-lg);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--prop-spacing-md);
+  margin-bottom: var(--prop-spacing-lg);
 }
 
 .basic-properties-grid .form-group {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .form-group label {
-    display: block;
-    margin-bottom: var(--prop-spacing-xs);
-    font-size: var(--prop-font-size-sm);
-    font-weight: var(--prop-font-weight-medium);
-    color: var(--prop-text-secondary);
+  display: block;
+  margin-bottom: var(--prop-spacing-xs);
+  font-size: var(--prop-font-size-sm);
+  font-weight: var(--prop-font-weight-medium);
+  color: var(--prop-text-secondary);
 }
 
 .form-group input:not([type="checkbox"]),
 .form-group select,
 .form-group textarea {
-    width: 100%;
-    padding: 6px 8px;
-    border: 1px solid var(--prop-border-color);
-    border-radius: var(--prop-border-radius-md);
-    font-size: var(--prop-font-size-sm);
-    box-sizing: border-box;
-    transition:
-        border-color var(--prop-transition-fast),
-        box-shadow var(--prop-transition-fast);
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--prop-border-color);
+  border-radius: var(--prop-border-radius-md);
+  font-size: var(--prop-font-size-sm);
+  box-sizing: border-box;
+  transition:
+    border-color var(--prop-transition-fast),
+    box-shadow var(--prop-transition-fast);
 }
 
 .form-group input[type="checkbox"] {
-    padding: 6px 8px;
-    border: 1px solid var(--prop-border-color);
-    border-radius: var(--prop-border-radius-md);
-    font-size: var(--prop-font-size-sm);
-    box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid var(--prop-border-color);
+  border-radius: var(--prop-border-radius-md);
+  font-size: var(--prop-font-size-sm);
+  box-sizing: border-box;
 }
 
 .form-group input:hover,
 .form-group select:hover,
 .form-group textarea:hover {
-    border-color: var(--prop-border-hover);
+  border-color: var(--prop-border-hover);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-    outline: none;
-    border-color: var(--prop-border-focus);
-    box-shadow: var(--prop-focus-ring);
+  outline: none;
+  border-color: var(--prop-border-focus);
+  box-shadow: var(--prop-focus-ring);
 }
 
 .form-group textarea {
-    min-height: 80px;
-    resize: vertical;
+  min-height: 80px;
+  resize: vertical;
 }
 
 .form-group small {
-    display: block;
-    margin-top: 4px;
-    font-size: 10px;
-    color: #999;
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: #999;
 }
 
-.band-heights-grid {
-    display: grid;
-    gap: var(--prop-spacing-sm);
+.band-settings-header-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
-.band-height-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.band-settings-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
-.band-height-control {
-    display: flex;
-    align-items: center;
-    gap: var(--prop-spacing-xs);
+.band-settings-title-group h5 {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  color: #1c1b26;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-.band-height-input {
-    width: 80px;
+/* Section Heights: a card like Paper, Margins… with a light block per section */
+.heights-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(28, 27, 38, 0.08);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
 }
 
-.band-height-unit {
-    font-size: var(--prop-font-size-sm);
-    color: var(--prop-text-tertiary);
+.heights-card .band-settings-header-wrapper {
+  margin-bottom: 0;
+}
+
+.heights-card .template-band-card {
+  padding: 9px 10px;
+  border-color: #eeedf4;
+  background: #fafafd;
+  box-shadow: none;
+}
+
+.template-scope-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: help;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  font-size: 10px;
+  font-weight: 700;
+  color: #6366f1;
+  white-space: nowrap;
+}
+
+.reset-template-limits-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid rgba(28, 27, 38, 0.1);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--prop-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.reset-template-limits-btn:hover {
+  border-color: rgba(124, 92, 247, 0.35);
+  background: rgba(124, 92, 247, 0.06);
+  color: #5b3ee0;
+}
+
+.band-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Clean modern card per band matching Home page cards */
+.template-band-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid rgba(28, 27, 38, 0.08);
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.template-band-card:hover {
+  border-color: rgba(124, 92, 247, 0.35);
+  box-shadow: 0 6px 16px rgba(124, 92, 247, 0.08);
+}
+
+.template-band-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.template-band-title {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: #1c1b26;
+}
+
+.band-badge-auto {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  font-size: 10px;
+  font-weight: 650;
+  color: #059669;
+}
+
+.band-limit-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.band-limit-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.band-limit-input-group label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--prop-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.input-unit-wrapper {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid rgba(28, 27, 38, 0.11);
+  border-radius: 7px;
+  background: #fafafc;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.input-unit-wrapper:hover {
+  border-color: rgba(124, 92, 247, 0.35);
+  background: #ffffff;
+}
+
+.input-unit-wrapper:focus-within {
+  border-color: var(--prop-border-focus);
+  background: #ffffff;
+  box-shadow: var(--prop-focus-ring);
+}
+
+.input-unit-wrapper.is-disabled {
+  background: var(--prop-bg-disabled);
+  cursor: not-allowed;
+}
+
+.input-unit-wrapper input,
+.form-group .input-unit-wrapper input {
+  height: auto;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  color: var(--prop-text-primary);
+  outline: none;
+  box-shadow: none;
+}
+
+.input-unit-wrapper input:disabled {
+  cursor: not-allowed;
+  color: var(--prop-text-tertiary);
+}
+
+.input-unit-wrapper .unit {
+  margin-left: 4px;
+  font-size: 11px;
+  color: var(--prop-text-tertiary);
+  user-select: none;
 }
 
 .box-section {
-    margin-bottom: var(--prop-spacing-lg);
-    padding: var(--prop-spacing-md);
-    background-color: var(--prop-bg-secondary);
-    border-radius: var(--prop-border-radius-md);
+  margin-bottom: 12px;
+  padding: 12px;
+  background-color: #ffffff;
+  border: 1px solid rgba(28, 27, 38, 0.08);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.04);
 }
 
 .box-section.compact {
-    margin-bottom: var(--prop-spacing-md);
-    padding: var(--prop-spacing-sm);
+  margin-bottom: 10px;
+  padding: 10px 12px;
 }
 
 .border-quick-actions {
-    display: flex;
-    gap: var(--prop-spacing-sm);
+  display: flex;
+  gap: var(--prop-spacing-sm);
 }
 
 .border-quick-actions.compact {
-    gap: var(--prop-spacing-xs);
+  gap: var(--prop-spacing-xs);
 }
 
 .border-group-row {
-    display: flex;
-    gap: var(--prop-spacing-md);
-    flex-wrap: wrap;
-    align-items: flex-start;
+  display: flex;
+  gap: var(--prop-spacing-md);
+  flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 .border-group-item {
-    flex: 1;
-    min-width: 120px;
+  flex: 1;
+  min-width: 120px;
 }
 
 .border-sides-grid {
-    display: grid;
-    gap: var(--prop-spacing-sm);
+  display: grid;
+  gap: 0;
 }
 
-.border-side-item {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--prop-spacing-sm);
+/* ---------- Style Settings: shared field parts ---------- */
+.field-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--prop-text-secondary, #6b7280);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.border-side-controls {
-    flex: 1;
-    display: flex;
-    gap: var(--prop-spacing-sm);
-    align-items: center;
-    flex-wrap: wrap;
+/* Number field with its unit inside */
+.unit-input {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
 }
 
-.border-side-group {
-    display: flex;
-    align-items: center;
-    gap: var(--prop-spacing-sm);
-    margin-bottom: var(--prop-spacing-sm);
-    flex-wrap: wrap;
+.unit-input input {
+  width: 100%;
+  height: 30px;
+  padding: 0 22px 0 8px;
+  border: 1px solid var(--prop-border-color, #e5e7eb);
+  border-radius: 6px;
+  font-size: 12px;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.unit-input input:focus,
+.text-card select:focus {
+  outline: none;
+  border-color: var(--prop-border-focus, #6440f4);
+  box-shadow: var(--prop-focus-ring);
+}
+
+
+.unit-input > span {
+  position: absolute;
+  right: 8px;
+  font-size: 11px;
+  color: var(--prop-text-tertiary, #9ca3af);
+  pointer-events: none;
+}
+
+.pen-swatch {
+  display: inline-block;
+  width: 28px;
+  height: 0;
+  border-top: 2px solid currentColor;
+}
+
+.pen-swatch.is-short,
+.style-tile .pen-swatch {
+  width: 18px;
+}
+
+.pen-swatch.is-dashed {
+  border-top-style: dashed;
+}
+
+.pen-swatch.is-dotted {
+  border-top-style: dotted;
+}
+
+.pen-swatch.is-double {
+  border-top: 5px double currentColor;
+}
+
+/* ---------- Borders: one row per side ---------- */
+.border-table {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 72px 34px;
+  column-gap: 6px;
+  column-gap: 8px;
+  align-items: center;
+}
+
+.border-table-head,
+.border-row {
+  display: contents;
+}
+
+.border-table-head > span {
+  padding-bottom: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--prop-text-tertiary, #9ca3af);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.border-row > * {
+  margin: 3px 0;
+}
+
+.border-row-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--prop-text-primary, #374151);
+  white-space: nowrap;
+}
+
+/* "All" stands apart from the four sides below it */
+.border-row.is-all > * {
+  margin-bottom: 9px;
+}
+
+.border-row.is-all .border-row-label {
+  font-weight: 700;
+}
+
+.line-style-picker {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--prop-bg-tertiary, #f3f4f6);
+  min-width: 0;
+}
+
+.line-style-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--prop-text-tertiary, #9ca3af);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.line-style-btn:hover {
+  color: var(--prop-text-primary, #111827);
+}
+
+.line-style-btn.active {
+  background: #fff;
+  color: var(--prop-border-focus, #6440f4);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+}
+
+.line-style-btn:focus-visible,
+.icon-btn:focus-visible {
+  outline: 2px solid var(--prop-border-focus, #6440f4);
+  outline-offset: 1px;
+}
+
+.border-table-head > .line-style-names {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  padding: 0 2px 6px;
+  overflow: visible;
+}
+
+.line-style-names > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: 9px;
+  letter-spacing: 0.02em;
+}
+
+.border-table-head > span:last-child {
+  overflow: visible;
+  text-align: center;
+}
+
+.border-table-head > .line-style-names > span {
+  letter-spacing: 0;
+  text-overflow: clip;
+}
+
+.border-table .color-control.compact {
+  width: 34px;
+  height: 30px;
+}
+
+/* ---------- Corner radius and margins: fields around a preview ---------- */
+.corner-designer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--prop-divider-color, #eee);
+}
+
+.pad-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.pad-title {
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-size: var(--prop-font-size-sm);
+  font-weight: 600;
+  color: var(--prop-text-primary, #374151);
+  white-space: nowrap;
+}
+
+/* "All corners" / "All sides": label beside its field */
+.pad-all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pad-all .field-label {
+  margin: 0;
+}
+
+.pad-all .unit-input {
+  width: 84px;
+}
+
+.pad-input {
+  display: block;
+  min-width: 0;
+}
+
+.corner-pad {
+  display: grid;
+  grid-template-columns: 84px 1fr 84px;
+  grid-template-rows: auto auto;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.corner-input-topLeft { grid-column: 1; grid-row: 1; }
+.corner-input-topRight { grid-column: 3; grid-row: 1; }
+.corner-input-bottomLeft { grid-column: 1; grid-row: 2; }
+.corner-input-bottomRight { grid-column: 3; grid-row: 2; }
+
+.corner-preview {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: stretch;
+  min-height: 70px;
+  border: 2px solid var(--prop-border-focus, #6440f4);
+  background: rgba(100, 64, 244, 0.06);
+  transition: border-radius 0.2s ease;
+}
+
+.margin-pad {
+  display: grid;
+  grid-template-columns: 84px 1fr 84px;
+  grid-template-rows: auto auto auto;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.margin-input-top { grid-column: 2; grid-row: 1; justify-self: center; width: 84px; }
+.margin-input-left { grid-column: 1; grid-row: 2; }
+.margin-input-right { grid-column: 3; grid-row: 2; }
+.margin-input-bottom { grid-column: 2; grid-row: 3; justify-self: center; width: 76px; }
+
+.margin-preview {
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+  height: 56px;
+  border: 2px solid var(--prop-border-color, #d1d5db);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.margin-preview-content {
+  position: absolute;
+  border: 1.5px dashed var(--prop-border-focus, #6440f4);
+  border-radius: 3px;
+  background: rgba(100, 64, 244, 0.08);
+  transition: all 0.2s ease;
+}
+
+/* ---------- Basic tab cards ---------- */
+.geometry-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+}
+
+.card-select,
+.card-textarea {
+  width: 100%;
+  border: 1px solid var(--prop-border-color, #e5e7eb);
+  border-radius: 6px;
+  font-size: 12px;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card-select {
+  height: 30px;
+  padding: 0 8px;
+}
+
+.card-textarea {
+  display: block;
+  padding: 8px;
+  resize: vertical;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.card-select:focus,
+.card-textarea:focus {
+  outline: none;
+  border-color: var(--prop-border-focus, #6440f4);
+  box-shadow: var(--prop-focus-ring);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.card-head h5 {
+  margin: 0;
+}
+
+.insert-field {
+  margin-top: 10px;
+}
+
+.card-input {
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--prop-border-color);
+  border-radius: 6px;
+  font-size: 12px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.card-input:focus {
+  outline: none;
+  border-color: var(--prop-border-focus);
+  box-shadow: var(--prop-focus-ring);
+}
+
+.card-input.is-readonly {
+  background: var(--prop-bg-disabled);
+  color: var(--prop-text-secondary);
+}
+
+.card-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: var(--prop-font-size-xs);
+  color: var(--prop-text-tertiary);
+}
+
+.card-gap-sm {
+  margin-top: 10px;
+}
+
+.card-input.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--prop-text-primary);
+  cursor: pointer;
+}
+
+.toggle-row input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--prop-primary-color, #6440f4);
+}
+
+.image-name-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.image-name-row .card-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.box-section .column-tree-toolbar {
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+/* Small pill action in a card header */
+.reset-style-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 8px;
+}
+
+.chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid rgba(100, 64, 244, 0.35);
+  border-radius: 999px;
+  background: rgba(100, 64, 244, 0.06);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--prop-border-focus, #6440f4);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.chip-btn:hover:not(:disabled) {
+  background: var(--prop-border-focus, #6440f4);
+  border-color: var(--prop-border-focus, #6440f4);
+  color: #fff;
+}
+
+.chip-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.chip-btn-solid {
+  background: var(--prop-border-focus, #6440f4);
+  border-color: var(--prop-border-focus, #6440f4);
+  color: #fff;
+}
+
+.chip-btn-solid:hover:not(:disabled) {
+  background: var(--prop-primary-active, #5b3ee0);
+}
+
+.chip-btn-muted {
+  border-color: var(--prop-border-color);
+  background: #fff;
+  color: var(--prop-text-secondary);
+}
+
+/* Full-width segmented control (rotation, line direction) */
+.seg {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--prop-bg-tertiary, #f3f4f6);
+}
+
+.status-swatch {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.seg-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  height: 30px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--prop-text-secondary, #6b7280);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.seg-btn-stacked {
+  flex-direction: column;
+  gap: 2px;
+  height: 46px;
+}
+
+.seg-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seg-btn:hover {
+  color: var(--prop-text-primary, #111827);
+}
+
+.seg-btn.active {
+  background: #fff;
+  color: var(--prop-border-focus, #6440f4);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+  font-weight: 600;
+}
+
+.seg-btn:focus-visible,
+.chip-btn:focus-visible,
+.ghost-btn:focus-visible {
+  outline: 2px solid var(--prop-border-focus, #6440f4);
+  outline-offset: 1px;
+}
+
+.ghost-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 30px;
+  margin-top: 10px;
+  border: 1px dashed var(--prop-border-color, #d1d5db);
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  color: var(--prop-text-secondary, #6b7280);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ghost-btn:hover {
+  border-color: var(--prop-border-focus, #6440f4);
+  border-style: solid;
+  color: var(--prop-border-focus, #6440f4);
+  background: rgba(100, 64, 244, 0.05);
+}
+
+/* Line style names above an icon picker outside the border table */
+.box-section > .line-style-names {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  padding: 0 2px 4px;
+}
+
+.box-section > .line-style-names-4,
+.line-style-picker-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.box-section > .line-style-names > span {
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--prop-text-tertiary, #9ca3af);
+}
+
+/* Image shape cards, styled like the box border presets (FrameProperties.vue) */
+.shape-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.shape-card-head h5 {
+  margin: 0;
+}
+
+.shape-custom-badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(100, 64, 244, 0.1);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--prop-border-focus, #6440f4);
+}
+
+.shape-field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--prop-text-secondary, #6b7280);
+}
+
+.shape-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+
+.shape-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--prop-border-color, #e5e7eb);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.shape-swatch:hover {
+  border-color: var(--prop-border-hover, #9ca3af);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+.shape-swatch.active {
+  border-color: var(--prop-border-focus, #6440f4);
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.2);
+}
+
+.shape-swatch:focus-visible {
+  outline: none;
+  border-color: var(--prop-border-focus, #6440f4);
+  box-shadow: var(--prop-focus-ring);
+}
+
+/* Small "page" the picture sits on */
+.shape-sample-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  border-radius: 5px;
+  background: var(--prop-bg-tertiary, #f3f4f6);
+}
+
+.shape-swatch.active .shape-sample-wrap {
+  background: rgba(100, 64, 244, 0.08);
+}
+
+/* A tiny landscape photo (sun and hills, plain CSS) cut to the shape */
+.shape-sample {
+  display: block;
+  flex-shrink: 0;
+  background:
+    radial-gradient(circle at 72% 30%, #fde68a 0 11%, transparent 12%),
+    radial-gradient(ellipse 70% 50% at 25% 100%, #1e40af 0 98%, transparent 100%),
+    radial-gradient(ellipse 80% 42% at 85% 100%, #6440f4 0 98%, transparent 100%),
+    linear-gradient(160deg, #c4b5fd, #60a5fa);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
+}
+
+.shape-name {
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--prop-text-secondary, #6b7280);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shape-swatch.active .shape-name {
+  color: var(--prop-border-focus, #6440f4);
+  font-weight: 600;
+}
+
+/* Line style tiles: the line drawn above its name */
+.style-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--prop-bg-tertiary, #eef0f4);
+}
+
+.style-tiles-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.style-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  height: 34px;
+  padding: 0 2px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--prop-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.style-tile span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.style-tile:hover {
+  color: var(--prop-text-primary);
+}
+
+.style-tile.active {
+  background: #fff;
+  color: var(--prop-primary-color, #6440f4);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+}
+
+.style-tile:focus-visible {
+  outline: 2px solid var(--prop-border-focus, #6440f4);
+  outline-offset: 1px;
+}
+
+/* Width / colour (/ corner radius): equal columns, labels and fields aligned */
+.value-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.value-row.has-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.swatch-fill {
+  display: block;
+  width: 100%;
+  height: 30px;
+  border: 1px solid var(--prop-border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.card-gap {
+  margin-top: 12px;
+  align-items: flex-end;
+}
+
+.swatch-lg.color-control.compact {
+  width: 44px;
+  height: 30px;
+}
+
+/* ---------- Text card ---------- */
+.text-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.text-card h5 {
+  margin-bottom: 0;
+}
+
+.font-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #6b7280;
+}
+
+.font-info svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.field {
+  display: block;
+  min-width: 0;
+}
+
+.field.grow {
+  flex: 1 1 160px;
+}
+
+.font-size-field {
+  flex: 0 0 84px;
+}
+
+.text-card select {
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--prop-border-color, #e5e7eb);
+  border-radius: 6px;
+  font-size: 12px;
+  background: #fff;
+}
+
+.icon-segment {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--prop-bg-tertiary, #f3f4f6);
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  font-size: 13px;
+  color: var(--prop-text-secondary, #6b7280);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.icon-btn:hover {
+  color: var(--prop-text-primary, #111827);
+}
+
+.icon-btn.active {
+  background: #fff;
+  color: var(--prop-border-focus, #6440f4);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+}
+
+.icon-btn-isBold { font-weight: 800; }
+.icon-btn-isItalic { font-style: italic; font-family: Georgia, serif; }
+.icon-btn-isUnderline { text-decoration: underline; }
+
+.corner-radius-hint {
+  display: block;
+  margin-top: 8px;
+  font-size: var(--prop-font-size-xs);
+  color: var(--prop-text-tertiary);
 }
 
 .side-label {
-    width: 20px;
-    font-size: var(--prop-font-size-sm);
-    font-weight: var(--prop-font-weight-medium);
-    color: var(--prop-text-secondary);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--prop-font-size-sm);
+  font-weight: var(--prop-font-weight-medium);
+  color: var(--prop-text-secondary);
 }
 
 .side-control {
-    flex: 1;
-    min-width: 100px;
+  flex: 1;
+  min-width: 100px;
 }
 
 .side-control.compact {
-    min-width: 80px;
-    height: 24px;
-    padding: 2px 6px;
-    font-size: 11px;
+  min-width: 80px;
+  height: 24px;
+  padding: 2px 6px;
+  font-size: 11px;
 }
 
 .width-control {
-    width: 80px;
+  width: 80px;
 }
 
 .width-control.compact {
-    width: 50px;
-    height: 24px;
-    padding: 2px 6px;
-    font-size: 11px;
+  width: 56px;
+  height: 26px;
+  padding: 2px 6px;
+  font-size: 11px;
 }
 
 .color-control {
-    width: 60px;
-    height: 28px;
-    padding: 0;
-    border: 1px solid var(--prop-border-color);
-    border-radius: var(--prop-border-radius-md);
-    cursor: pointer;
+  width: 60px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--prop-border-color);
+  border-radius: var(--prop-border-radius-md);
+  cursor: pointer;
 }
 
 .color-control.compact {
-    width: 40px;
-    height: 24px;
+  width: 40px;
+  height: 26px;
 }
 
 .form-group.compact {
-    margin-bottom: var(--prop-spacing-sm);
+  margin-bottom: var(--prop-spacing-sm);
 }
 
 .form-group.compact label {
-    font-size: 11px;
-    margin-bottom: 2px;
+  font-size: 11px;
+  margin-bottom: 2px;
 }
 
 .form-group.compact input {
-    height: 24px;
-    padding: 2px 6px;
-    font-size: 11px;
+  height: 24px;
+  padding: 2px 6px;
+  font-size: 11px;
 }
 
 .small-input {
-    width: 100%;
-    height: 24px;
-    padding: 2px 6px;
-    font-size: 11px;
-    box-sizing: border-box;
+  width: 100%;
+  height: 24px;
+  padding: 2px 6px;
+  font-size: 11px;
+  box-sizing: border-box;
 }
 
 .padding-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--prop-spacing-sm);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--prop-spacing-sm);
 }
 
 .padding-grid.compact {
-    gap: var(--prop-spacing-sm);
+  gap: var(--prop-spacing-sm);
 }
 
 .border-quick-styles {
-    margin-top: var(--prop-spacing-md);
-    padding-top: var(--prop-spacing-md);
-    border-top: 1px solid var(--prop-divider-color);
+  margin-top: var(--prop-spacing-md);
+  padding-top: var(--prop-spacing-md);
+  border-top: 1px solid var(--prop-divider-color);
 }
 
 .border-quick-styles h6 {
-    margin: 0 0 var(--prop-spacing-sm) 0;
-    font-size: var(--prop-font-size-xs);
-    font-weight: var(--prop-font-weight-semibold);
-    color: var(--prop-text-secondary);
+  margin: 0 0 var(--prop-spacing-sm) 0;
+  font-size: var(--prop-font-size-xs);
+  font-weight: var(--prop-font-weight-semibold);
+  color: var(--prop-text-secondary);
 }
 
 .quick-style-buttons {
-    display: flex;
-    gap: var(--prop-spacing-sm);
-    flex-wrap: wrap;
+  display: flex;
+  gap: var(--prop-spacing-sm);
+  flex-wrap: wrap;
 }
 
 .quick-style-buttons .n-button {
-    margin: 0;
+  margin: 0;
 }
 
 /* Adjust the radio button group's style to make it more compact */
 :deep(.n-radio-group--button-type) {
-    flex-wrap: wrap;
-    gap: 4px;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 :deep(.n-radio-button) {
-    height: 24px;
-    font-size: 11px;
-    padding: 0 8px;
+  height: 24px;
+  font-size: 11px;
+  padding: 0 8px;
 }
 
 :deep(.n-radio-button__input) {
-    margin: 0;
+  margin: 0;
 }
 
 .checkbox-group {
-    display: flex;
-    gap: var(--prop-spacing-lg);
-    margin-bottom: var(--prop-spacing-lg);
+  display: flex;
+  gap: var(--prop-spacing-lg);
+  margin-bottom: var(--prop-spacing-lg);
 }
 
 .checkbox-group.compact {
-    gap: var(--prop-spacing-sm);
-    margin-bottom: var(--prop-spacing-sm);
-    flex-wrap: wrap;
+  gap: var(--prop-spacing-sm);
+  margin-bottom: var(--prop-spacing-sm);
+  flex-wrap: wrap;
 }
 
 .checkbox-group label {
-    display: flex;
-    align-items: center;
-    gap: var(--prop-spacing-xs);
-    font-size: var(--prop-font-size-sm);
-    cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--prop-spacing-xs);
+  font-size: var(--prop-font-size-sm);
+  cursor: pointer;
 }
 
 .alignment-controls.compact {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .checkbox-group input[type="checkbox"] {
-    width: auto;
+  width: auto;
 }
 
 .alignment-controls {
-    display: flex;
-    gap: var(--prop-spacing-xs);
-    margin-bottom: var(--prop-spacing-sm);
+  display: flex;
+  gap: var(--prop-spacing-xs);
+  margin-bottom: var(--prop-spacing-sm);
 }
 
 .element-actions {
-    margin-top: var(--prop-spacing-xl);
-    padding-top: var(--prop-spacing-lg);
-    border-top: 1px solid var(--prop-divider-color);
+  margin-top: var(--prop-spacing-lg);
+  padding-top: var(--prop-spacing-md);
+  border-top: 1px solid var(--prop-divider-color);
+}
+
+.delete-element-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 34px;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  color: #dc2626;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.delete-element-btn:hover {
+  border-color: #dc2626;
+  background: #dc2626;
+  color: #fff;
+}
+
+.delete-element-btn:focus-visible {
+  outline: 2px solid #dc2626;
+  outline-offset: 2px;
 }
 
 .font-hint {
-    display: block;
-    margin-top: var(--prop-spacing-xs);
-    font-size: var(--prop-font-size-xs);
-    color: var(--prop-text-tertiary);
+  display: block;
+  margin-top: var(--prop-spacing-xs);
+  font-size: var(--prop-font-size-xs);
+  color: var(--prop-text-tertiary);
 }
 
 /* Table properties styles */
 .table-column-actions {
-    display: flex;
-    gap: var(--prop-spacing-xs);
-    margin-bottom: var(--prop-spacing-sm);
+  display: flex;
+  gap: var(--prop-spacing-xs);
+  margin-bottom: var(--prop-spacing-sm);
 }
 
 .form-group.small {
-    flex: 1;
-    min-width: 80px;
-    margin-bottom: var(--prop-spacing-xs);
+  flex: 1;
+  min-width: 80px;
+  margin-bottom: var(--prop-spacing-xs);
 }
 
 .form-group.small.full-width {
-    width: 100%;
-    flex-basis: 100%;
-    margin-top: 2px;
+  width: 100%;
+  flex-basis: 100%;
+  margin-top: 2px;
 }
 
 .form-group.small label {
-    margin-bottom: 1px;
-    font-size: var(--prop-font-size-xs);
+  margin-bottom: 1px;
+  font-size: var(--prop-font-size-xs);
 }
 
 .small-input {
-    width: 100%;
-    padding: 2px 6px;
-    font-size: var(--prop-font-size-xs);
-    border: 1px solid var(--prop-border-color);
-    border-radius: var(--prop-border-radius-sm);
-    transition:
-        border-color var(--prop-transition-fast),
-        box-shadow var(--prop-transition-fast);
+  width: 100%;
+  padding: 2px 6px;
+  font-size: var(--prop-font-size-xs);
+  border: 1px solid var(--prop-border-color);
+  border-radius: var(--prop-border-radius-sm);
+  transition:
+    border-color var(--prop-transition-fast),
+    box-shadow var(--prop-transition-fast);
 }
 
 .small-input:hover {
-    border-color: var(--prop-border-hover);
+  border-color: var(--prop-border-hover);
 }
 
 .small-input:focus {
-    outline: none;
-    border-color: var(--prop-border-focus);
-    box-shadow: var(--prop-focus-ring);
+  outline: none;
+  border-color: var(--prop-border-focus);
+  box-shadow: var(--prop-focus-ring);
 }
 
 .text-style-controls,
 .border-controls {
-    display: flex;
-    gap: var(--prop-spacing-xs);
-    flex-wrap: wrap;
+  display: flex;
+  gap: var(--prop-spacing-xs);
+  flex-wrap: wrap;
 }
 
 .color-picker {
-    height: 18px;
-    padding: 0;
-    border: 1px solid var(--prop-border-color);
-    border-radius: var(--prop-border-radius-sm);
-    cursor: pointer;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--prop-border-color);
+  border-radius: var(--prop-border-radius-sm);
+  cursor: pointer;
 }
 
 .field-selection-content {
-    display: flex;
-    gap: var(--prop-spacing-xl);
-    height: 400px;
+  display: flex;
+  gap: var(--prop-spacing-xl);
+  height: 400px;
 }
 
 .available-fields,
 .selected-fields {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .inline-checkbox {
-    display: flex;
-    align-items: center;
-    margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
 }
 
 .inline-checkbox input {
-    margin-right: 5px;
+  margin-right: 5px;
 }
 
 .inline-input {
-    display: flex;
-    align-items: center;
-    margin-top: 5px;
+  display: flex;
+  align-items: center;
+  margin-top: 5px;
 }
 
 .inline-input label {
-    margin-right: 5px;
-    min-width: 70px;
+  margin-right: 5px;
+  min-width: 70px;
 }
 
 .available-fields h4,
 .selected-fields h4 {
-    margin-top: 0;
-    margin-bottom: var(--prop-spacing-md);
-    font-size: var(--prop-font-size-md);
-    font-weight: var(--prop-font-weight-semibold);
-    color: var(--prop-text-secondary);
+  margin-top: 0;
+  margin-bottom: var(--prop-spacing-md);
+  font-size: var(--prop-font-size-md);
+  font-weight: var(--prop-font-weight-semibold);
+  color: var(--prop-text-secondary);
 }
 
 .fields-list {
-    flex: 1;
-    overflow-y: auto;
-    border: 1px solid var(--prop-border-color);
-    border-radius: var(--prop-border-radius-md);
-    background-color: var(--prop-bg-secondary);
-    padding: var(--prop-spacing-sm);
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--prop-border-color);
+  border-radius: var(--prop-border-radius-md);
+  background-color: var(--prop-bg-secondary);
+  padding: var(--prop-spacing-sm);
 }
 
 .field-item {
-    display: flex;
-    align-items: center;
-    padding: var(--prop-spacing-sm) var(--prop-spacing-md);
-    margin-bottom: var(--prop-spacing-xs);
-    background-color: var(--prop-bg-primary);
-    border: 1px solid var(--prop-border-color);
-    border-radius: var(--prop-border-radius-md);
-    cursor: pointer;
-    transition: all var(--prop-transition-fast);
+  display: flex;
+  align-items: center;
+  padding: var(--prop-spacing-sm) var(--prop-spacing-md);
+  margin-bottom: var(--prop-spacing-xs);
+  background-color: var(--prop-bg-primary);
+  border: 1px solid var(--prop-border-color);
+  border-radius: var(--prop-border-radius-md);
+  cursor: pointer;
+  transition: all var(--prop-transition-fast);
 }
 
 .field-item:hover {
-    background-color: var(--prop-bg-tertiary);
-    border-color: var(--prop-primary-color);
+  background-color: var(--prop-bg-tertiary);
+  border-color: var(--prop-primary-color);
 }
 
 .field-item.selected {
-    background-color: #e6f7ff;
-    border-color: #91d5ff;
+  background-color: #f1edff;
+  border-color: #91d5ff;
 }
 
 .field-item input[type="checkbox"] {
-    margin-right: var(--prop-spacing-sm);
+  margin-right: var(--prop-spacing-sm);
 }
 
 /* Invalid width style */
 .invalid-width {
-    border-color: var(--prop-danger-color) !important;
-    background-color: #fff0f0;
+  border-color: var(--prop-danger-color) !important;
+  background-color: #fff0f0;
 }
 
 /* Read-only input style */
 .readonly-input {
-    display: block;
-    padding: 2px 6px;
-    font-size: var(--prop-font-size-xs);
-    border: 1px solid var(--prop-border-color);
-    border-radius: var(--prop-border-radius-sm);
-    background-color: var(--prop-bg-disabled);
-    color: var(--prop-text-secondary);
-    cursor: default;
+  display: block;
+  padding: 2px 6px;
+  font-size: var(--prop-font-size-xs);
+  border: 1px solid var(--prop-border-color);
+  border-radius: var(--prop-border-radius-sm);
+  background-color: var(--prop-bg-disabled);
+  color: var(--prop-text-secondary);
+  cursor: default;
+}
+
+/* Read-only inputs placed inside a .form-group (e.g. the image name) need to win
+   over the default .form-group input styling */
+.form-group input.readonly-input {
+  background-color: var(--prop-bg-disabled);
+  color: var(--prop-text-secondary);
+  cursor: default;
+}
+
+.form-group input.readonly-input:focus,
+.form-group input.readonly-input:hover {
+  border-color: var(--prop-border-color);
+  background-color: var(--prop-bg-disabled);
+  box-shadow: none;
 }
 
 /* Width hint style */
 .width-hint {
-    font-size: var(--prop-font-size-xs);
-    color: var(--prop-text-tertiary);
-    margin-top: 2px;
+  font-size: var(--prop-font-size-xs);
+  color: var(--prop-text-tertiary);
+  margin-top: 2px;
 }
 
 .field-name {
-    flex: 1;
-    font-size: var(--prop-font-size-sm);
-    font-weight: var(--prop-font-weight-medium);
+  flex: 1;
+  font-size: var(--prop-font-size-sm);
+  font-weight: var(--prop-font-weight-medium);
 }
 
 .field-type {
-    font-size: 11px;
-    color: var(--prop-text-tertiary);
-    margin-left: var(--prop-spacing-sm);
+  font-size: 11px;
+  color: var(--prop-text-tertiary);
+  margin-left: var(--prop-spacing-sm);
 }
 
 /* Combined column style */
 .table-column-groups {
-    margin-top: var(--prop-spacing-md);
-    background-color: var(--prop-bg-secondary);
-    border-radius: var(--prop-border-radius-md);
-    padding: var(--prop-spacing-md);
-    border: 1px solid var(--prop-border-color);
+  margin-top: var(--prop-spacing-md);
+  background-color: var(--prop-bg-secondary);
+  border-radius: var(--prop-border-radius-md);
+  padding: var(--prop-spacing-md);
+  border: 1px solid var(--prop-border-color);
 }
 
 .column-group-item {
-    margin-bottom: 15px;
-    background-color: var(--prop-bg-primary);
-    border: 1px solid var(--prop-border-color);
-    border-radius: var(--prop-border-radius-md);
-    overflow: hidden;
-    box-shadow: var(--prop-shadow-sm);
+  margin-bottom: 15px;
+  background-color: var(--prop-bg-primary);
+  border: 1px solid var(--prop-border-color);
+  border-radius: var(--prop-border-radius-md);
+  overflow: hidden;
+  box-shadow: var(--prop-shadow-sm);
 }
 
 .column-group-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--prop-spacing-md);
-    background-color: var(--prop-bg-tertiary);
-    border-bottom: 1px solid var(--prop-border-color);
-    font-weight: var(--prop-font-weight-semibold);
-    color: var(--prop-text-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--prop-spacing-md);
+  background-color: var(--prop-bg-tertiary);
+  border-bottom: 1px solid var(--prop-border-color);
+  font-weight: var(--prop-font-weight-semibold);
+  color: var(--prop-text-primary);
 }
 
 .column-group-name {
-    font-size: var(--prop-font-size-md);
-    display: flex;
-    align-items: center;
-    gap: var(--prop-spacing-sm);
+  font-size: var(--prop-font-size-md);
+  display: flex;
+  align-items: center;
+  gap: var(--prop-spacing-sm);
 }
 
 .group-path {
-    font-size: var(--prop-font-size-sm);
-    color: var(--prop-text-secondary);
-    font-weight: normal;
-    background-color: #e6f0fa;
-    padding: 2px 6px;
-    border-radius: 10px;
+  font-size: var(--prop-font-size-sm);
+  color: var(--prop-text-secondary);
+  font-weight: normal;
+  background-color: #e6f0fa;
+  padding: 2px 6px;
+  border-radius: 10px;
 }
 
 .column-group-properties {
-    padding: var(--prop-spacing-md);
+  padding: var(--prop-spacing-md);
 }
 
 .group-action-buttons {
-    display: flex;
-    gap: var(--prop-spacing-xs);
+  display: flex;
+  gap: var(--prop-spacing-xs);
 }
 
 .table-style-settings {
-    display: flex;
-    flex-direction: column;
-    gap: var(--prop-spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--prop-spacing-lg);
 }
 
 .table-style-section {
-    margin-bottom: var(--prop-spacing-md);
+  margin-bottom: var(--prop-spacing-md);
 }
 
 .table-style-section h6 {
-    margin-bottom: var(--prop-spacing-sm);
-    font-size: var(--prop-font-size-sm);
-    font-weight: var(--prop-font-weight-medium);
-    color: var(--prop-text-primary);
+  margin-bottom: var(--prop-spacing-sm);
+  font-size: var(--prop-font-size-sm);
+  font-weight: var(--prop-font-weight-medium);
+  color: var(--prop-text-primary);
 }
 
-/* Style management section */
-.style-management-section {
-    margin-bottom: var(--prop-spacing-lg);
+.btn-autofit-height {
+  padding: 2px 7px;
+  font-size: 11px;
+  background-color: #f0f7ff;
+  color: #6440f4;
+  border: 1px solid #91d5ff;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
-.style-manager-content {
-    max-height: 500px;
-    overflow-y: auto;
+.btn-autofit-height:hover {
+  background-color: #6440f4;
+  color: #ffffff;
+  border-color: #6440f4;
 }
 
-.style-item {
-    margin-bottom: var(--prop-spacing-xl);
-    padding: var(--prop-spacing-lg);
-    border: 1px solid var(--prop-border-color);
-    border-radius: var(--prop-border-radius-md);
-    background-color: var(--prop-bg-secondary);
+.rotation-segmented-group,
+.line-orientation-group {
+  display: flex;
+  gap: 4px;
+  background-color: var(--prop-bg-secondary, #f5f5f5);
+  padding: 3px;
+  border-radius: 4px;
+  border: 1px solid var(--prop-border-color, #e8e8e8);
 }
 
-.style-item h4 {
-    margin-top: 0;
-    margin-bottom: var(--prop-spacing-md);
-    font-size: var(--prop-font-size-md);
-    font-weight: var(--prop-font-weight-semibold);
-    color: var(--prop-text-primary);
-    border-bottom: 1px solid var(--prop-border-color);
-    padding-bottom: var(--prop-spacing-sm);
+.rotation-btn,
+.line-orientation-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--prop-text-secondary, #595959);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
-.style-properties {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--prop-spacing-lg);
+.rotation-btn:hover,
+.line-orientation-btn:hover {
+  color: var(--prop-text-primary, #262626);
+  background-color: rgba(255, 255, 255, 0.6);
 }
 
-@media (max-width: 768px) {
-    .style-properties {
-        grid-template-columns: 1fr;
-    }
+.rotation-btn.active,
+.line-orientation-btn.active {
+  background-color: #ffffff;
+  color: #6440f4;
+  border-color: #6440f4;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  font-weight: 600;
+}
+
+.btn-cross-line {
+  margin-top: 6px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 4px;
+  border: 1px dashed #6440f4;
+  background-color: #f0f7ff;
+  color: #6440f4;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cross-line:hover {
+  background-color: #6440f4;
+  color: #ffffff;
 }
 </style>

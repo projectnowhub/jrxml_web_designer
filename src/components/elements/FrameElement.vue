@@ -8,17 +8,20 @@
     :is-out-of-bounds="isOutOfBounds"
     :report-font-family="reportFontFamily"
     :report-font-size="reportFontSize"
-    :report-is-bold="reportIsBold"
-    :report-is-italic="reportIsItalic"
-    :report-is-underline="reportIsUnderline"
     :parent-frame-index="parentFrameIndex"
+    :zoom-level="zoomLevel"
     @select="handleSelect"
     @drag-start="handleDragStart"
     @resize-start="handleResizeStart"
     @contextmenu="handleContextMenu"
   >
     <!-- Frame element content -->
-    <div class="frame-content" :class="{ 'frame-empty': !element.elements || element.elements.length === 0 }">
+    <div
+      ref="contentRef"
+      class="frame-content"
+      :style="locationContentStyle"
+      @mousedown.capture="rememberSelectionAtPress"
+    >
       <!-- Render child elements -->
       <template v-if="element.elements && element.elements.length > 0">
         <!-- Dynamically load ElementFactory to avoid circular reference -->
@@ -35,11 +38,11 @@
           :is-dragging="false" 
           :report-font-family="reportFontFamily"
           :report-font-size="reportFontSize"
-          :report-is-bold="reportIsBold"
-          :report-is-italic="reportIsItalic"
-          :report-is-underline="reportIsUnderline"
           :is-out-of-bounds="false"
           :parent-frame-index="elementIndex"
+          :zoom-level="zoomLevel"
+          :page-number="pageNumber"
+          :total-pages="totalPages"
           @select="handleChildSelect"
           @drag-start="handleChildDragStart"
           @resize-start="handleChildResizeStart"
@@ -48,21 +51,27 @@
           @finish-editing="handleChildFinishEditing"
           @cancel-editing="handleChildCancelEditing"
           @check-fields="handleChildCheckFields"
+          @auto-fit-height="(b: number, e: number, p?: number) => emit('autoFitHeight', b, e, p)"
+          @rotate="(b: number, e: number, p?: number) => emit('rotate', b, e, p)"
         />
       </template>
       
       <!-- Currently empty; nested elements may be supported in the future -->
       <div v-else class="frame-placeholder">
-        <span class="frame-label">Frame</span>
+        <span class="frame-label"></span>
       </div>
     </div>
   </BaseElement>
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent } from 'vue';
+import { computed, defineAsyncComponent, onMounted, onUpdated, ref } from 'vue';
 import BaseElement from './BaseElement.vue';
 import type { FrameElement, SelectedElementInfo, EditingElementInfo } from '../../types';
+import { isBoxPart } from '../../utils/framePresets';
+import { hasProperty, SECTION_HEADING_PROPERTY } from '../../utils/contentsList';
+import { isLocationElement } from '../../utils/location/locationElement';
+import { getElementBoxPadding } from '../../utils/elementUtils';
 
 // Asynchronously import ElementFactory to avoid circular dependencies
 const ElementFactory = defineAsyncComponent(() => import('./ElementFactory.vue'));
@@ -79,22 +88,56 @@ const props = defineProps<{
   isOutOfBounds?: boolean;
   reportFontFamily?: string;
   reportFontSize?: number;
-  reportIsBold?: boolean;
-  reportIsItalic?: boolean;
-  reportIsUnderline?: boolean;
   parentFrameIndex?: number; // Add the parentFrameIndex prop
+  zoomLevel?: number;
+  // Canvas page the box is drawn on (page numbers inside it show it)
+  pageNumber?: number;
+  totalPages?: number;
 }>();
+
+
+const padding = computed(() => getElementBoxPadding(props.element.box));
+
+// A Location's items are placed from the box's edge, as JasperReports places
+// a frame's items (inside its padding only; its border line is drawn over the
+// edge), so the canvas shows exactly what prints. Other boxes keep the canvas'
+// usual place inside the border.
+const contentRef = ref<HTMLElement | null>(null);
+const borderOffset = ref({ top: 0, left: 0 });
+const measureBorder = () => {
+  const host = contentRef.value?.parentElement;
+  if (!host || !isLocationElement(props.element)) return;
+  const cs = getComputedStyle(host);
+  const next = { top: parseFloat(cs.borderTopWidth) || 0, left: parseFloat(cs.borderLeftWidth) || 0 };
+  if (next.top !== borderOffset.value.top || next.left !== borderOffset.value.left) borderOffset.value = next;
+};
+onMounted(measureBorder);
+onUpdated(measureBorder);
+const locationContentStyle = computed(() => {
+  if (!isLocationElement(props.element)) return undefined;
+  const pad = padding.value;
+  return {
+    position: 'absolute' as const,
+    left: `${pad.left - borderOffset.value.left}px`,
+    top: `${pad.top - borderOffset.value.top}px`,
+    width: `${Math.max(0, props.element.width - pad.left - pad.right)}px`,
+    height: `${Math.max(0, props.element.height - pad.top - pad.bottom)}px`,
+  };
+});
 
 // Emits
 const emit = defineEmits<{
   select: [bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number];
   dragStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   startEditing: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
   finishEditing: [];
   cancelEditing: [];
   checkFields: [fields: string[]];
+  // From items in the box: passed on to the designer
+  autoFitHeight: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  rotate: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
 // Handle selection
@@ -108,8 +151,8 @@ const handleDragStart = (event: MouseEvent, bandIndex: number, elementIndex: num
 };
 
 // Handle resize start
-const handleResizeStart = (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number) => {
-  emit('resizeStart', event, bandIndex, elementIndex, parentFrameIndex);
+const handleResizeStart = (event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string) => {
+  emit('resizeStart', event, bandIndex, elementIndex, parentFrameIndex, direction);
 };
 
 // Handle context menu
@@ -117,24 +160,79 @@ const handleContextMenu = (event: MouseEvent, bandIndex: number, elementIndex: n
   emit('contextmenu', event, bandIndex, elementIndex, parentFrameIndex);
 };
 
+// A ready-made box's own parts (label, number, photo...) cover most of the box,
+// so they behave like a group in PowerPoint:
+// - dragging a part moves the whole box, unless that part is already selected
+// - clicking a part selects the box first; clicking again selects the part
+// - right-clicking a part opens the box's menu unless that part is selected
+// Decided from the selection at mouse press, before this press changes it.
+let boxWasActive = false;
+let selectedPartAtPress: number | null = null;
+let boxDraggedThisPress = false;
+
+const rememberSelectionAtPress = () => {
+  const selected = props.selectedElement;
+  const inThisBand = !!selected && selected.bandIndex === props.bandIndex;
+  selectedPartAtPress =
+    inThisBand && selected!.parentFrameIndex === props.elementIndex ? selected!.elementIndex : null;
+  boxWasActive =
+    selectedPartAtPress !== null ||
+    (inThisBand &&
+      selected!.parentFrameIndex === undefined &&
+      selected!.elementIndex === props.elementIndex);
+  boxDraggedThisPress = false;
+};
+
+// A Section Heading's number and title always behave as its parts, marked or
+// not (a heading is one line tall, so every click lands on one of them)
+const isHeading = computed(() => hasProperty(props.element, SECTION_HEADING_PROPERTY));
+const isPart = (childIndex: number) => isHeading.value || isBoxPart(props.element.elements?.[childIndex]);
+
+const selectBox = (isMultiSelect?: boolean) =>
+  emit('select', props.bandIndex, props.elementIndex, isMultiSelect, props.parentFrameIndex);
+
 // Handle child element events
 const handleChildSelect = (bIndex: number, childIndex: number, isMultiSelect?: boolean) => {
+  if (isPart(childIndex) && (boxDraggedThisPress || !boxWasActive)) {
+    // The click that ends a box drag, or the first click on a box: keep the box selected
+    selectBox(isMultiSelect);
+    return;
+  }
   // When a child element inside the Frame is selected, pass the Frame's elementIndex as parentFrameIndex
   emit('select', props.bandIndex, childIndex, isMultiSelect, props.elementIndex);
 };
 
 const handleChildDragStart = (event: MouseEvent, bIndex: number, childIndex: number) => {
   event.stopPropagation(); // Prevent the event from bubbling up to the Frame
+  // (A Location's map or address always moves the whole Location: its layout places them)
+  if (isPart(childIndex) && (selectedPartAtPress !== childIndex || isLocationElement(props.element))) {
+    boxDraggedThisPress = true;
+    emit('dragStart', event, props.bandIndex, props.elementIndex, props.parentFrameIndex);
+    return;
+  }
   emit('dragStart', event, props.bandIndex, childIndex, props.elementIndex);
 };
 
-const handleChildResizeStart = (event: MouseEvent, bIndex: number, childIndex: number) => {
+const handleChildResizeStart = (event: MouseEvent, bIndex: number, childIndex: number, _parentFrameIndex?: number, direction?: string) => {
   event.stopPropagation(); // Prevent the event from bubbling up to the Frame
-  emit('resizeStart', event, props.bandIndex, childIndex, props.elementIndex);
+  if (isLocationElement(props.element)) return;
+  emit('resizeStart', event, props.bandIndex, childIndex, props.elementIndex, direction);
 };
 
 const handleChildContextMenu = (event: MouseEvent, bIndex: number, childIndex: number) => {
   event.stopPropagation(); // Prevent the event from bubbling up to the Frame
+  // Right-click opens the box's menu (copy, paste, delete...) unless this part is
+  // itself the selected item, like right-clicking inside a group in PowerPoint
+  const selected = props.selectedElement;
+  const partIsSelected =
+    !!selected &&
+    selected.bandIndex === props.bandIndex &&
+    selected.parentFrameIndex === props.elementIndex &&
+    selected.elementIndex === childIndex;
+  if (isPart(childIndex) && !partIsSelected) {
+    emit('contextmenu', event, props.bandIndex, props.elementIndex, props.parentFrameIndex);
+    return;
+  }
   emit('contextmenu', event, props.bandIndex, childIndex, props.elementIndex);
 };
 
@@ -161,17 +259,5 @@ const handleChildCheckFields = (fields: string[]) => {
   height: 100%;
   position: relative;
 }
-
-.frame-empty {
-  /* When empty, show a light gray background and dashed border to make it easier to design */
-  border: 1px dashed #e0e0e0;
-  background-color: rgba(240, 240, 240, 0.2);
-}
-
-/* Deepen the border color when selected */
-:deep(.design-element.selected) .frame-empty {
-  border-color: #a0a0a0;
-}
-
 
 </style>

@@ -1,5 +1,6 @@
 import type { ReportProperties, Band, DesignElement } from '../types';
 import { BAND_CONSTANTS } from '@/constants/constants';
+import { specialPageArea } from './specialPages';
 
 /**
  * Validate whether an element exceeds the page boundaries
@@ -144,6 +145,39 @@ export function getOutOfBoundsElements(
 
   bands.forEach((band, bandIndex) => {
     band.elements.forEach((element, elementIndex) => {
+      // A cover or contents page: its items fit in the whole printable page.
+      // The Background band (page border, watermark) lies behind the whole
+      // printable area of every page, not stacked after the other sections
+      const area =
+        band.type === 'detail'
+          ? specialPageArea(reportProperties, element.pageIndex)
+          : band.type === 'background'
+            ? {
+                width: reportProperties.pageWidth - reportProperties.leftMargin - reportProperties.rightMargin,
+                height: reportProperties.pageHeight - reportProperties.topMargin - reportProperties.bottomMargin,
+              }
+            : null;
+      if (area) {
+        const exceedsLeft = element.x < 0;
+        const exceedsRight = element.x + element.width > area.width;
+        const exceedsTop = element.y < 0;
+        const exceedsBottom = element.y + element.height > area.height;
+        if (exceedsLeft || exceedsRight || exceedsTop || exceedsBottom) {
+          outOfBoundsElements.push({
+            bandIndex,
+            elementIndex,
+            element,
+            exceedsLeft,
+            exceedsRight,
+            exceedsBottom,
+            exceedsTop,
+            exceedsBandTop: exceedsTop,
+            exceedsBandBottom: exceedsBottom,
+            exceedsBand: exceedsTop || exceedsBottom,
+          });
+        }
+        return;
+      }
       const validation = validateElementBounds(element, band, bandIndex, bands, reportProperties);
 
       if (validation.isOutOfBounds) {

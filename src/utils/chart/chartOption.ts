@@ -1,0 +1,535 @@
+// A chart's setup and numbers as ECharts settings, laid out for print: no
+// animation, no tooltips, sizes in report points. The canvas and the JRXML
+// image both draw from this, so they always match.
+
+import type { EChartsCoreOption } from "echarts/core";
+import { chartT } from "./chartText";
+import type { ChartBinding } from "@/types/dataSource";
+import { resolveReportFont } from "@/config/fonts.config";
+import type { ChartData } from "./chartData";
+import { chartColors, chartTypeInfo } from "./chartTypes";
+
+// The report font, then any sans-serif font where it isn't installed
+export const chartFontFamily = (name?: string | null) => `'${resolveReportFont(name)}', sans-serif`;
+
+export interface ChartOptionContext {
+  width: number;
+  height: number;
+  fontFamily: string;
+}
+
+const TEXT_COLOR = "#1f2937";
+const MUTED_COLOR = "#6b7280";
+const AXIS_COLOR = "#d1d5db";
+const GRID_COLOR = "#eef0f3";
+const TITLE_SIZE = 12;
+const LABEL_SIZE = 9;
+const PAD = 8;
+const LEGEND_ROW = 16;
+// Gauge bands, as in the CDP app: fine up to half, warning to 80%, then danger
+const GAUGE_BANDS: Array<[number, string]> = [
+  [0.5, "#22c55e"],
+  [0.8, "#f59e0b"],
+  [1, "#ef4444"],
+];
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const fullNumber = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+const shortNumber = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
+export const formatChartNumber = (value: number | null | undefined): string =>
+  value === null || value === undefined || !Number.isFinite(value) ? "-" : fullNumber.format(value);
+const formatAxisNumber = (value: number) => shortNumber.format(value);
+
+// A gauge's Auto range, as the CDP app's computeAutoGaugeRange: 0 to the
+// value rounded up to 1 / 2 / 5 / 10 × its order of magnitude (68 -> 100)
+export function autoGaugeRange(value: number | null | undefined): { min: number; max: number } {
+  const v = value ?? 0;
+  if (!(v > 0)) return { min: 0, max: 100 };
+  const magnitude = 10 ** Math.floor(Math.log10(v));
+  const step = [1, 2, 5, 10].find((s) => v <= s * magnitude) ?? 10;
+  return { min: 0, max: step * magnitude };
+}
+
+// A colour mixed with white (0 = unchanged, 1 = white)
+function lighten(hex: string, amount: number): string {
+  const value = parseInt(hex.slice(1), 16);
+  const mix = (channel: number) => Math.round(channel + (255 - channel) * amount);
+  const rgb = [(value >> 16) & 255, (value >> 8) & 255, value & 255].map(mix);
+  return `#${rgb.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+}
+
+function isEmpty(data: ChartData): boolean {
+  switch (data.kind) {
+    case "value":
+      return false;
+    case "parts":
+      return !data.values.some((v) => (v ?? 0) > 0);
+    case "series":
+      return !data.categories.length;
+    case "tree":
+      return !data.nodes.length;
+  }
+}
+
+// Lines and bars take one colour per series, as the CDP app's charts (a single
+// series of bars is all one colour, its legend the number's name)
+const legendNames = (_binding: ChartBinding, data: ChartData): string[] => {
+  return data.kind === "series" ? data.series.map((s) => s.name) : data.kind === "parts" ? data.categories : [];
+};
+
+// How many different colours the chart draws
+function colorCount(binding: ChartBinding, data: ChartData): number {
+  switch (data.kind) {
+    case "value":
+      return 1;
+    case "parts":
+      return data.categories.length;
+    case "tree":
+      return data.nodes.length;
+    case "series":
+      return data.series.length;
+  }
+}
+
+// The colour key of each colour the chart draws, in colorCount's order
+// (none for sample numbers: their colours can't be changed)
+export const KPI_COLOR_KEY = "__single";
+function chartColorKeys(binding: ChartBinding, data: ChartData): (string | undefined)[] {
+  switch (data.kind) {
+    case "value":
+      return [KPI_COLOR_KEY];
+    case "parts":
+      return data.categories.map((_, i) => data.keys?.[i]);
+    case "tree":
+      return data.nodes.map((n) => n.key);
+    case "series":
+      return data.series.map((s) => s.key);
+  }
+}
+
+// The colour the CDP app gives a value ("PASS" green), from the chart's
+// groupings; a split's key may carry its series ("series2:PASS")
+function valueColor(binding: ChartBinding, key: string): string | undefined {
+  const value = (key.includes(":") ? key.slice(key.indexOf(":") + 1) : key).toUpperCase();
+  for (const grouping of [binding.dimension, binding.level2, ...(binding.series ?? []).map((s) => s.splitBy)]) {
+    const color = grouping?.choices?.find((c) => c.value.toUpperCase() === value)?.color;
+    if (color) return color;
+  }
+  return undefined;
+}
+
+// The colours drawn: the colour set's, the CDP values' own over them, the user's own over those
+function chartPaint(binding: ChartBinding, data: ChartData): string[] {
+  const keys = chartColorKeys(binding, data);
+  const base = chartColors(binding.palette, Math.max(1, colorCount(binding, data)));
+  return base.map((color, i) => {
+    const key = keys[i];
+    return (key !== undefined && (binding.colors?.[key] || valueColor(binding, key))) || color;
+  });
+}
+
+// What can get a colour of its own (Style Settings): each value's name, key,
+// the colour it is drawn in and whether that is the user's own. Empty for
+// sample numbers and for a gauge (its bands are fixed)
+export function chartColorItems(
+  binding: ChartBinding,
+  data: ChartData,
+): { key: string; name: string; color: string; own: boolean }[] {
+  if (binding.chartType === "gauge") return [];
+  const keys = chartColorKeys(binding, data);
+  const paint = chartPaint(binding, data);
+  const names =
+    data.kind === "value"
+      ? [data.label]
+      : data.kind === "parts"
+        ? data.categories
+        : data.kind === "tree"
+          ? data.nodes.map((n) => n.name)
+          : data.series.map((s) => s.name);
+  return keys.flatMap((key, i) =>
+    key === undefined ? [] : [{ key, name: names[i] ?? key, color: paint[i]!, own: !!binding.colors?.[key] }],
+  );
+}
+
+// Lines the description takes at this width (at most 3)
+const NOTE_LINE = LABEL_SIZE + 3;
+function noteLines(note: string, width: number): number {
+  const perLine = Math.max(10, Math.floor((width - 2 * PAD) / (LABEL_SIZE * 0.55)));
+  return Math.min(3, Math.max(1, Math.ceil(note.length / perLine)));
+}
+
+// Rows a legend needs at this width (each entry: marker, text, gap)
+function legendRows(names: string[], width: number): number {
+  const entryWidths = names.map((name) => 24 + name.length * LABEL_SIZE * 0.6);
+  let rows = 1;
+  let used = 0;
+  for (const w of entryWidths) {
+    if (used > 0 && used + w > width - 2 * PAD) {
+      rows += 1;
+      used = 0;
+    }
+    used += w;
+  }
+  return rows;
+}
+
+export function buildChartOption(
+  binding: ChartBinding,
+  data: ChartData,
+  ctx: ChartOptionContext,
+): EChartsCoreOption {
+  const { width, height } = ctx;
+  const colors = chartPaint(binding, data);
+  const title = binding.title.trim();
+  const note = (binding.note ?? "").trim();
+  const noteHeight = note ? noteLines(note, width) * NOTE_LINE + 4 : 0;
+  const names = legendNames(binding, data);
+  const showLegend = chartTypeInfo(binding.chartType).hasLegend && binding.showLegend && names.length > 0;
+
+  // Plot area between the title (with the description under it) and the legend
+  const titleHeight = title ? TITLE_SIZE + 4 : 0;
+  const plotTop = PAD + titleHeight + noteHeight + (title || note ? 4 : 0);
+  const legendHeight = showLegend ? legendRows(names, width) * LEGEND_ROW : 0;
+  const plotBottom = PAD + legendHeight;
+  const plotHeight = Math.max(10, height - plotTop - plotBottom);
+  const plotWidth = Math.max(10, width - 2 * PAD);
+  const centerX = width / 2;
+  const centerY = plotTop + plotHeight / 2;
+
+  const titles: Record<string, unknown>[] = [];
+  if (title) {
+    titles.push({
+      text: title,
+      left: "center",
+      top: PAD,
+      textStyle: { fontSize: TITLE_SIZE, fontWeight: 600, color: TEXT_COLOR },
+    });
+  }
+  // The description: small grey words under the title, as the CDP app shows a widget's
+  if (note) {
+    titles.push({
+      text: note,
+      left: "center",
+      top: PAD + titleHeight,
+      textStyle: {
+        fontSize: LABEL_SIZE,
+        fontWeight: 400,
+        color: MUTED_COLOR,
+        lineHeight: NOTE_LINE,
+        width: width - 2 * PAD,
+        overflow: "break",
+      },
+    });
+  }
+
+  const option: EChartsCoreOption = {
+    animation: false,
+    color: colors,
+    textStyle: { fontFamily: ctx.fontFamily },
+    title: titles,
+    legend: {
+      show: showLegend,
+      bottom: PAD,
+      left: "center",
+      itemWidth: 10,
+      itemHeight: 8,
+      itemGap: 10,
+      icon: "roundRect",
+      textStyle: { fontSize: LABEL_SIZE, color: TEXT_COLOR },
+    },
+  };
+
+  // Category labels (dates and text alike): side by side when they fit;
+  // slanted when they don't, as the CDP app's charts; and only when even
+  // slanted they would touch is every second (third…) one left out. Long text
+  // labels are shortened with "…" (to fit side by side, or to a slanted
+  // length that leaves the plot its room). 41 item names each squeezed into
+  // 11 px used to print on top of each other.
+  const LABEL_SLANT = 40;
+  // A slanted label needs about this much room across, so labels never touch
+  const SLANTED_ACROSS = LABEL_SIZE * 1.8;
+  const isTextAxis = binding.dimension?.type === "text";
+  // The longest a slanted text label may be (it takes room below the plot)
+  const slantedTextMax = Math.max(40, Math.min(110, plotHeight * 0.4));
+  const labelSpacing = (categories: string[]) => plotWidth / Math.max(1, categories.length);
+  const longestLabel = (categories: string[]) => Math.max(0, ...categories.map((c) => c.length)) * LABEL_SIZE * 0.58;
+  // How far a slanted label reaches (text ones are cut at slantedTextMax)
+  const labelReach = (categories: string[]) =>
+    isTextAxis ? Math.min(longestLabel(categories), slantedTextMax) : longestLabel(categories);
+  const slantsLabels = (categories: string[]) =>
+    (binding.dimension?.type === "date" || isTextAxis) && longestLabel(categories) > labelSpacing(categories) - 4;
+  const columnLabels = (categories: string[]) => {
+    if (slantsLabels(categories)) {
+      const spacing = labelSpacing(categories);
+      return {
+        interval: spacing >= SLANTED_ACROSS ? 0 : Math.ceil(SLANTED_ACROSS / spacing) - 1,
+        rotate: LABEL_SLANT,
+        ...(isTextAxis ? { overflow: "truncate", width: slantedTextMax } : {}),
+      };
+    }
+    return isTextAxis
+      ? { interval: 0, overflow: "truncate", width: Math.max(16, labelSpacing(categories) - 6) }
+      : { interval: 0, alignMinLabel: "left", alignMaxLabel: "right" };
+  };
+  // Horizontal bars: text names in a left column, cut to fit; dates skip what would overlap
+  const rowLabels = () =>
+    isTextAxis ? { interval: 0, overflow: "truncate", width: Math.max(30, width * 0.28) } : { hideOverlap: true };
+  const categoryAxis = (categories: string[], boundaryGap: boolean, horizontal = false) => ({
+    type: "category",
+    data: categories,
+    boundaryGap,
+    axisLine: { lineStyle: { color: AXIS_COLOR } },
+    axisTick: { show: false },
+    axisLabel: {
+      fontSize: LABEL_SIZE,
+      color: MUTED_COLOR,
+      ...(horizontal ? rowLabels() : columnLabels(categories)),
+    },
+  });
+  const valueAxis = {
+    type: "value",
+    axisLine: { show: false },
+    splitLine: { lineStyle: { color: GRID_COLOR } },
+    axisLabel: { fontSize: LABEL_SIZE, color: MUTED_COLOR, formatter: formatAxisNumber },
+  };
+  // A second scale (right, or top for horizontal bars) when a series needs one
+  const valueAxes = (series: { axis?: 0 | 1 }[]) =>
+    series.some((s) => s.axis === 1) ? [valueAxis, { ...valueAxis, splitLine: { show: false } }] : valueAxis;
+  const grid = {
+    top: plotTop + 4,
+    bottom: plotBottom + 2,
+    left: PAD,
+    right: PAD + 4,
+    containLabel: true,
+  };
+  // Slanted labels reach left of the first category: room for the first one
+  const gridFor = (categories: string[]) =>
+    slantsLabels(categories)
+      ? { ...grid, left: PAD + Math.max(0, labelReach(categories) * Math.cos((LABEL_SLANT * Math.PI) / 180) - labelSpacing(categories) / 2) }
+      : grid;
+
+  // Nothing matched the filters: say so instead of drawing empty axes
+  if (isEmpty(data)) {
+    titles.push({
+      text: chartT("chart.noData"),
+      left: "center",
+      top: centerY,
+      textVerticalAlign: "middle",
+      textStyle: { fontSize: LABEL_SIZE + 2, fontWeight: 400, color: MUTED_COLOR },
+    });
+    option.legend = { show: false };
+    return option;
+  }
+
+  switch (binding.chartType) {
+    case "kpi": {
+      if (data.kind !== "value") break;
+      const text = formatChartNumber(data.value);
+      // As large as fits: the plot's height, and roughly the text's width
+      const valueSize = Math.round(
+        clamp(Math.min(plotHeight * 0.5, plotWidth / Math.max(3, text.length * 0.62)), 12, 56),
+      );
+      const blockHeight = valueSize + 4 + LABEL_SIZE + 2;
+      const valueTop = plotTop + (plotHeight - blockHeight) / 2;
+      titles.push(
+        {
+          text,
+          left: "center",
+          top: valueTop,
+          textStyle: { fontSize: valueSize, fontWeight: 700, color: colors[0] },
+        },
+        {
+          text: data.label,
+          left: "center",
+          top: valueTop + valueSize + 4,
+          textStyle: { fontSize: LABEL_SIZE + 1, fontWeight: 400, color: MUTED_COLOR },
+        },
+      );
+      break;
+    }
+
+    case "gauge": {
+      if (data.kind !== "value") break;
+      const value = data.value ?? 0;
+      // The 240° arc reaches about 0.6 r below its centre with the value under it
+      const radius = Math.max(10, Math.min((plotWidth / 2) * 0.92, plotHeight / 1.65));
+      const gaugeCenterY = plotTop + (plotHeight - radius * 1.6) / 2 + radius;
+      const lineWidth = Math.round(clamp(radius * 0.12, 4, 16));
+      option.series = [
+        {
+          type: "gauge",
+          min: binding.gaugeMin ?? autoGaugeRange(value).min,
+          max: binding.gaugeMax ?? autoGaugeRange(value).max,
+          center: [centerX, gaugeCenterY],
+          radius,
+          startAngle: 210,
+          endAngle: -30,
+          splitNumber: 4,
+          axisLine: { lineStyle: { width: lineWidth, color: GAUGE_BANDS } },
+          axisTick: { show: false },
+          splitLine: { length: lineWidth, lineStyle: { color: "#ffffff", width: 2 } },
+          axisLabel: {
+            distance: lineWidth + 4,
+            fontSize: LABEL_SIZE,
+            color: MUTED_COLOR,
+            formatter: formatAxisNumber,
+          },
+          pointer: { length: "62%", width: Math.max(2, lineWidth / 3), itemStyle: { color: TEXT_COLOR } },
+          anchor: { show: true, size: Math.max(4, lineWidth * 0.8), itemStyle: { color: TEXT_COLOR } },
+          title: { show: false },
+          detail: {
+            offsetCenter: [0, "42%"],
+            fontSize: Math.round(clamp(radius * 0.26, 10, 26)),
+            fontWeight: 700,
+            color: TEXT_COLOR,
+            formatter: (v: number) => formatChartNumber(v),
+          },
+          data: [{ value, name: data.label }],
+        },
+      ];
+      break;
+    }
+
+    case "line":
+    case "area": {
+      if (data.kind !== "series") break;
+      const isArea = binding.chartType === "area";
+      option.grid = gridFor(data.categories);
+      option.xAxis = categoryAxis(data.categories, false);
+      option.yAxis = valueAxes(data.series);
+      option.series = data.series.map((s) => ({
+        type: "line",
+        name: s.name,
+        data: s.values,
+        yAxisIndex: s.axis ?? 0,
+        // Smooth lines with their points, as the CDP app's line charts
+        smooth: true,
+        symbol: "circle",
+        symbolSize: 4,
+        lineStyle: { width: 2 },
+        ...(isArea ? { areaStyle: { opacity: 0.18 } } : {}),
+        ...(isArea && binding.stacked ? { stack: `total${s.axis ?? 0}` } : {}),
+      }));
+      break;
+    }
+
+    case "bar":
+    case "barH": {
+      if (data.kind !== "series") break;
+      const horizontal = binding.chartType === "barH";
+      option.grid = horizontal ? grid : gridFor(data.categories);
+      // Horizontal bars list the first category at the top
+      option.xAxis = horizontal ? valueAxes(data.series) : categoryAxis(data.categories, true);
+      option.yAxis = horizontal ? { ...categoryAxis(data.categories, true, true), inverse: true } : valueAxes(data.series);
+      option.series = data.series.map((s) =>
+        // Horizontal bars shown as a line (the CDP app's "Show as")
+        s.line
+          ? {
+              type: "line",
+              name: s.name,
+              data: s.values,
+              xAxisIndex: s.axis ?? 0,
+              smooth: true,
+              symbol: "circle",
+              symbolSize: 4,
+              lineStyle: { width: 2 },
+            }
+          : {
+              type: "bar",
+              name: s.name,
+              data: s.values,
+              [horizontal ? "xAxisIndex" : "yAxisIndex"]: s.axis ?? 0,
+              barMaxWidth: 48,
+              barGap: "20%",
+              ...(binding.stacked ? { stack: `total${s.axis ?? 0}` } : {}),
+              itemStyle: { borderRadius: binding.stacked ? 0 : horizontal ? [0, 2, 2, 0] : [2, 2, 0, 0] },
+            },
+      );
+      break;
+    }
+
+    case "pie":
+    case "donut": {
+      if (data.kind !== "parts") break;
+      const isDonut = binding.chartType === "donut";
+      // Room around the pie for the percentage labels
+      const radius = Math.max(8, (Math.min(plotWidth, plotHeight) / 2) * 0.72);
+      option.series = [
+        {
+          type: "pie",
+          center: [centerX, centerY],
+          radius: isDonut ? [radius * 0.58, radius] : radius,
+          data: data.categories.map((name, i) => ({ name, value: data.values[i] ?? 0 })),
+          avoidLabelOverlap: true,
+          label: {
+            show: true,
+            formatter: showLegend ? "{d}%" : "{b}: {d}%",
+            fontSize: LABEL_SIZE,
+            color: TEXT_COLOR,
+          },
+          labelLine: { length: 6, length2: 6 },
+          itemStyle: { borderColor: "#ffffff", borderWidth: 1 },
+        },
+      ];
+      // The donut's total in its middle
+      if (isDonut) {
+        const total = data.values.reduce<number>((sum, v) => sum + (v ?? 0), 0);
+        const full = formatChartNumber(total);
+        titles.push({
+          text: full.length > 7 ? formatAxisNumber(total) : full,
+          left: centerX,
+          top: centerY,
+          textAlign: "center",
+          textVerticalAlign: "middle",
+          textStyle: {
+            fontSize: Math.round(clamp(radius * 0.3, 9, 22)),
+            fontWeight: 700,
+            color: TEXT_COLOR,
+          },
+        });
+      }
+      break;
+    }
+
+    case "treemap": {
+      if (data.kind !== "tree") break;
+      option.series = [
+        {
+          type: "treemap",
+          roam: false,
+          nodeClick: false,
+          breadcrumb: { show: false },
+          left: PAD,
+          right: PAD,
+          top: plotTop,
+          bottom: PAD,
+          // A group's name sits in its top border, drawn in the group's colour;
+          // its items get lighter shades of it
+          data: data.nodes.map((node, i) => {
+            const color = colors[i]!;
+            return {
+              ...node,
+              itemStyle: { color, borderColor: color },
+              children: node.children?.map((child, j) => ({
+                ...child,
+                itemStyle: { color: lighten(color, Math.min(0.5, j * 0.16)) },
+              })),
+            };
+          }),
+          label: { show: true, fontSize: LABEL_SIZE, color: "#ffffff", formatter: "{b}" },
+          upperLabel: { show: true, height: 16, fontSize: LABEL_SIZE, fontWeight: 600, color: "#ffffff" },
+          // Level 0 is the hidden root, then the groups, then their items
+          levels: [
+            { itemStyle: { borderWidth: 0, gapWidth: 3 } },
+            { itemStyle: { borderWidth: 2, gapWidth: 0 } },
+            { itemStyle: { borderWidth: 1, borderColor: "#ffffff" } },
+          ],
+        },
+      ];
+      break;
+    }
+  }
+
+  return option;
+}

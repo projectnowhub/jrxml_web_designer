@@ -1,173 +1,374 @@
 <template>
+  <!-- Quick guide (Help menu): making a report step by step, from the home
+       page to the PDF, and the keyboard shortcuts -->
   <BaseModal
-    :visible="visible"
-    :title="'PDF Template Designer User Guide'"
+    :visible="help.guideOpen"
+    :title="t('help.guide.title')"
     :showFooter="false"
-    @update:visible="$emit('update:visible', $event)"
-    @cancel="closeModal"
-    :contentClass="'help-modal-content'"
+    contentClass="help-modal-content"
+    @cancel="help.closeGuide()"
   >
-    <div class="help-content-scroll">
-      <h4>1. Template Design Basics</h4>
-      <p>This tool is used to visually design PDF report templates for JasperReports, letting you quickly build professional PDF reports via drag and drop.</p>
+    <div class="help-tabs" role="tablist">
+      <button
+        v-for="tab in TABS"
+        :key="tab"
+        type="button"
+        role="tab"
+        class="help-tab"
+        :class="{ active: help.guideTab === tab }"
+        :aria-selected="help.guideTab === tab"
+        @click="help.guideTab = tab"
+      >
+        {{ t(`help.guide.tabs.${tab}`) }}
+      </button>
+    </div>
 
-      <h4>2. Steps</h4>
-      <ol>
-        <li><strong>Modify an existing JRXML</strong>: open the bottom panel, copy the current JRXML into the code area, then click Apply</li>
-        <li><strong>Add elements</strong>: drag elements from the element library on the left into the design area</li>
-        <li><strong>Adjust the layout</strong>: drag elements to reposition them, drag the bottom-right corner to resize</li>
-        <li><strong>Set properties</strong>: after selecting an element, set its properties in the right-hand panel</li>
-        <li><strong>Configure data</strong>: add report parameters and data fields in the left-hand panel</li>
-        <li><strong>Generate JRXML</strong>: click the "Generate JRXML" button to export the report template</li>
+    <div v-if="help.guideTab === 'guide'" class="help-scroll">
+      <p class="help-intro">{{ t("help.guide.intro") }}</p>
+
+      <h4 class="help-heading">{{ t("help.guide.stepsTitle") }}</h4>
+      <ol class="help-steps">
+        <li v-for="(step, index) in STEPS" :key="step.id" class="help-step">
+          <span class="help-step-icon">
+            <component :is="step.icon" :size="18" :stroke-width="2.25" aria-hidden="true" />
+          </span>
+          <span class="help-step-text">
+            <strong>{{ index + 1 }}. {{ t(`help.guide.steps.${step.id}Title`) }}</strong>
+            <span>{{ t(`help.guide.steps.${step.id}Text`) }}</span>
+          </span>
+        </li>
       </ol>
 
-      <h4>3. Supported Element Types</h4>
-      <ul>
-        <li>Static text: displays fixed text content</li>
-        <li>Text field: displays a dynamic data field</li>
-        <li>Image: inserts an image element</li>
-        <li>Line: adds a divider line</li>
-        <li>Rectangle: adds a border or background block</li>
+      <h4 class="help-heading">{{ t("help.guide.tipsTitle") }}</h4>
+      <ul class="help-tips">
+        <li v-for="tip in TIPS" :key="tip.id">
+          <component :is="tip.icon" :size="16" :stroke-width="2.25" aria-hidden="true" />
+          <span>{{ t(`help.guide.tips.${tip.id}`) }}</span>
+        </li>
       </ul>
 
-      <h4>4. Keyboard Shortcuts</h4>
-      <table class="shortcuts-table">
-        <thead>
-          <tr><th>Shortcut</th><th>Action</th></tr>
-        </thead>
-        <tbody>
-          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>S</kbd></td><td>Save the current file</td></tr>
-          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>Z</kbd></td><td>Undo</td></tr>
-          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>Y</kbd></td><td>Redo</td></tr>
-          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>C</kbd></td><td>Copy the selected element</td></tr>
-          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>V</kbd></td><td>Paste an element</td></tr>
-          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>B</kbd></td><td>Toggle the bottom JRXML panel</td></tr>
-          <tr><td><kbd>Delete</kbd> / <kbd>Backspace</kbd></td><td>Delete the selected element</td></tr>
-          <tr><td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td><td>Select a neighboring element</td></tr>
-          <tr><td><kbd>Shift</kbd> + <kbd>Arrow key</kbd></td><td>Nudge the element's position (1px)</td></tr>
-          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>0</kbd></td><td>Reset zoom</td></tr>
-        </tbody>
-      </table>
+      <div class="help-tour-cta">
+        <span>{{ t("help.guide.tourHint") }}</span>
+        <n-button type="primary" @click="help.startTour(help.guideTour)">
+          <template #icon><Compass :size="16" :stroke-width="2.25" /></template>
+          {{ t("help.guide.takeTour") }}
+        </n-button>
+      </div>
 
-      <h4>5. Advanced Features</h4>
-      <ul>
-        <li><strong>Automatic data field creation</strong>: when a dynamic text element's expression references a field that doesn't exist yet (e.g. $F{abc}), the system automatically creates that data field</li>
-        <li><strong>Report element deletion</strong>: in the report element list on the left, each element has a delete button on the right; click it to delete that element</li>
-        <li><strong>Cross-platform shortcuts</strong>: on macOS, the Command key can be used in place of Ctrl on Windows for keyboard shortcuts</li>
-      </ul>
+      <!-- In the designer: the step-by-step guides (Help window → Guides) -->
+      <div v-if="help.guideTour === 'designer'" class="help-tour-cta">
+        <span>{{ t("help.guide.guidesHint") }}</span>
+        <n-button @click="openGuides">
+          <template #icon><ListChecks :size="16" :stroke-width="2.25" /></template>
+          {{ t("help.guide.guidesButton") }}
+        </n-button>
+      </div>
+    </div>
 
-      <h4>6. Notes</h4>
-      <ul>
-        <li>Elements cannot extend beyond the page boundary</li>
-        <li>While editing text, press Enter to confirm or Esc to cancel</li>
-        <li>Double-click a static text box to open an input box for editing its text content</li>
-        <li>Double-click a dynamic text box to open an input box for editing its expression</li>
-        <li>Dragging an element does not update the JRXML in real time; it updates once you release the mouse</li>
-        <li>All changes are automatically saved to local storage</li>
-      </ul>
+    <!-- Keyboard and mouse: every shortcut of the designer (utils/helpShortcuts.ts),
+         listed under headings; keys drawn as key caps, mouse actions as tags -->
+    <div v-else class="help-scroll">
+      <p class="help-intro">{{ t("help.shortcutsIntro") }}</p>
+      <section v-for="group in SHORTCUT_GROUPS" :key="group.id" class="shortcut-group">
+        <h4 class="shortcut-heading">{{ t(`help.shortcutGroups.${group.id}`) }}</h4>
+        <div v-for="row in group.rows" :key="row.id" class="shortcut-row">
+          <span class="shortcut-what">{{ t(`help.shortcuts.${row.id}`) }}</span>
+          <span class="shortcut-keys">
+            <template v-for="(combo, ci) in row.combos" :key="ci">
+              <span v-if="ci > 0" class="shortcut-or">{{ t("help.shortcutOr") }}</span>
+              <template v-for="(token, ki) in combo" :key="ki">
+                <span v-if="ki > 0" class="shortcut-plus">+</span>
+                <span v-if="isMouseAction(token)" class="mouse-tag">
+                  <MousePointer2 :size="12" :stroke-width="2.25" aria-hidden="true" />
+                  {{ t(`help.mouse.${mouseAction(token)}`) }}
+                </span>
+                <kbd v-else class="keycap">{{ keyLabel(token) }}</kbd>
+              </template>
+            </template>
+          </span>
+        </div>
+      </section>
     </div>
   </BaseModal>
 </template>
 
 <script setup lang="ts">
-import BaseModal from './BaseModal.vue';
+import { useI18n } from "vue-i18n";
+import { SHOW_AI_ASSISTANT } from "@/config/appEnvironment";
+import { NButton } from "naive-ui";
+import {
+  ArrowDownUp,
+  Compass,
+  Eye,
+  FilePlus,
+  Files,
+  FolderOpen,
+  FolderKanban,
+  Keyboard,
+  ListChecks,
+  MousePointer2,
+  MousePointerClick,
+  Move,
+  Scaling,
+  SlidersHorizontal,
+  Sparkles,
+  TextCursorInput,
+  Undo2,
+  Save,
+} from "@lucide/vue";
+import BaseModal from "./BaseModal.vue";
+import { useHelpStore, type GuideTab } from "@/stores/help";
+import { keyLabel } from "@/utils/helpDocs";
+import { isMouseAction, mouseAction, SHORTCUT_GROUPS } from "@/utils/helpShortcuts";
 
-// Define props
-const props = defineProps({
-  visible: {
-    type: Boolean,
-    default: false
-  }
-});
+const { t } = useI18n();
+const help = useHelpStore();
 
-// Define emits
-const emit = defineEmits(['update:visible']);
+const TABS: GuideTab[] = ["guide", "shortcuts"];
 
-// Close the modal
-const closeModal = () => {
-  emit('update:visible', false);
-};
+function openGuides() {
+  help.closeGuide();
+  help.openPanel("guides");
+}
+
+// From the home page to the PDF, in the order a report is made
+const STEPS = [
+  { id: "start", icon: FilePlus },
+  { id: "project", icon: FolderKanban },
+  { id: "add", icon: MousePointerClick },
+  { id: "change", icon: SlidersHorizontal },
+  { id: "pages", icon: Files },
+  // The AI Assistant is hidden on staging and production for now
+  ...(SHOW_AI_ASSISTANT ? [{ id: "ai", icon: Sparkles }] : []),
+  { id: "preview", icon: Eye },
+];
+
+const TIPS = [
+  { id: "type", icon: TextCursorInput },
+  { id: "rightClick", icon: MousePointerClick },
+  { id: "resize", icon: Scaling },
+  { id: "nudge", icon: Move },
+  { id: "dragScroll", icon: ArrowDownUp },
+  { id: "undo", icon: Undo2 },
+  { id: "saved", icon: Save },
+  { id: "open", icon: FolderOpen },
+  { id: "keys", icon: Keyboard },
+];
+
 </script>
 
 <style scoped>
-/* Help Modal Specific Styles */
-.help-modal-content {
-  max-width: 800px;
-  width: 90%;
-  max-height: 80vh;
+:deep(.modal-content.help-modal-content) {
+  width: min(720px, calc(100vw - 32px));
+  max-height: 84vh;
 }
 
-:deep(.modal-body) {
-  padding: 20px;
-  overflow-y: auto;
+:deep(.help-modal-content .modal-body) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 20px 20px;
+  overflow: hidden;
 }
 
-.help-content-scroll {
+.help-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 4px 0 14px;
+  border-bottom: 1px solid #e6e5ee;
+}
+.help-tab {
+  padding: 10px 12px;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #6f6a7e;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.help-tab:hover {
+  color: #1c1b26;
+}
+.help-tab.active {
+  border-bottom-color: #6440f4;
+  color: #6440f4;
+}
+
+.help-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding-right: 10px;
+  padding-right: 4px;
 }
-
-.help-content-scroll h4 {
-  margin-top: 20px;
-  margin-bottom: 10px;
-  color: #444;
-}
-
-.help-content-scroll p {
-  color: #666;
-  margin-bottom: 10px;
+.help-intro {
+  margin: 0 0 16px;
+  color: #45425a;
+  font-size: 14px;
   line-height: 1.6;
 }
-
-.help-content-scroll ol,
-.help-content-scroll ul {
-  color: #666;
-  margin-bottom: 15px;
-  padding-left: 25px;
+.help-heading {
+  margin: 18px 0 10px;
+  color: #1c1b26;
+  font-size: 14px;
+  font-weight: 700;
 }
 
-.help-content-scroll li {
-  margin-bottom: 8px;
+.help-steps {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.help-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e6e5ee;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(23, 20, 44, 0.04);
+}
+.help-step-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(124, 92, 247, 0.1);
+  color: #6440f4;
+}
+.help-step-text {
+  display: grid;
+  gap: 3px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #45425a;
+}
+.help-step-text strong {
+  color: #1c1b26;
+  font-size: 14px;
+}
+
+.help-tips {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.help-tips li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #45425a;
+  font-size: 13.5px;
   line-height: 1.5;
 }
-
-.help-content-scroll strong {
-  color: #333;
+.help-tips li > :first-child {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #6440f4;
 }
 
-.shortcuts-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 16px;
-  font-size: 13px;
+.help-tour-cta + .help-tour-cta {
+  margin-top: 8px;
+}
+.help-tour-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgba(124, 92, 247, 0.07);
+  color: #45425a;
+  font-size: 13.5px;
 }
 
-.shortcuts-table th,
-.shortcuts-table td {
-  border: 1px solid #e0e0e0;
-  padding: 6px 12px;
-  text-align: left;
+.shortcut-group {
+  margin-bottom: 18px;
 }
-
-.shortcuts-table th {
-  background: #f5f5f5;
-  font-weight: 600;
-  color: #444;
-}
-
-.shortcuts-table td {
-  color: #555;
-}
-
-.shortcuts-table kbd {
-  display: inline-block;
-  padding: 2px 6px;
-  font-family: monospace;
+.shortcut-heading {
+  margin: 0 0 4px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid rgba(124, 92, 247, 0.18);
+  color: #6440f4;
   font-size: 12px;
-  background: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.1);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 4px;
+  border-bottom: 1px solid #f0eff5;
+}
+.shortcut-row:hover {
+  background: #faf9fd;
+}
+.shortcut-what {
+  color: #1c1b26;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.shortcut-keys {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  max-width: 60%;
+}
+.shortcut-plus,
+.shortcut-or {
+  color: #9a94ab;
+  font-size: 12px;
+}
+.shortcut-or {
+  margin: 0 3px;
+}
+/* A key cap: raised, with a darker bottom edge */
+.keycap {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid #d9d7e3;
+  border-bottom-width: 3px;
+  border-radius: 6px;
+  background: linear-gradient(#ffffff, #f7f7fa);
+  color: #1c1b26;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+/* A mouse action: a soft purple tag with a pointer */
+.mouse-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: rgba(124, 92, 247, 0.1);
+  color: #5b3ee0;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 </style>

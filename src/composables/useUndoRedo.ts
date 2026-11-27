@@ -22,20 +22,51 @@ export function useUndoRedo<State>(options: {
     redoStack.value = [];
   }
 
-  function undo() {
-    if (historyStack.value.length === 0) return;
-    redoStack.value.push(deepClone(options.getState()));
+  // Steps recorded for an action that then changed nothing (a click on a
+  // handle without moving, the report's first state) are skipped, so every
+  // undo / redo changes something
+  function dropUnchanged(stack: State[], current: string) {
+    while (stack.length && JSON.stringify(stack[stack.length - 1]) === current) stack.pop();
+  }
+
+  // Whether there was a step to undo
+  function undo(): boolean {
+    const current = JSON.stringify(options.getState());
+    dropUnchanged(historyStack.value, current);
+    if (historyStack.value.length === 0) return false;
+    redoStack.value.push(JSON.parse(current) as State);
     const previousState = historyStack.value.pop() as State;
     options.applyState(previousState);
     options.onAfterRestore?.();
+    return true;
   }
 
-  function redo() {
-    if (redoStack.value.length === 0) return;
-    historyStack.value.push(deepClone(options.getState()));
+  // Whether there was a step to redo
+  function redo(): boolean {
+    const current = JSON.stringify(options.getState());
+    dropUnchanged(redoStack.value, current);
+    if (redoStack.value.length === 0) return false;
+    historyStack.value.push(JSON.parse(current) as State);
     const nextState = redoStack.value.pop() as State;
     options.applyState(nextState);
     options.onAfterRestore?.();
+    return true;
+  }
+
+  // The state as a step would record it, and putting one back without a
+  // step (the report store's read-only safety net)
+  function snapshot(): State {
+    return deepClone(options.getState());
+  }
+  function restore(state: State) {
+    options.applyState(state);
+    options.onAfterRestore?.();
+  }
+
+  // Forget every step (a fresh designer)
+  function clear() {
+    historyStack.value = [];
+    redoStack.value = [];
   }
 
   return {
@@ -43,6 +74,9 @@ export function useUndoRedo<State>(options: {
     redoStack,
     saveStateToHistory,
     undo,
-    redo
+    redo,
+    snapshot,
+    restore,
+    clear
   };
 }

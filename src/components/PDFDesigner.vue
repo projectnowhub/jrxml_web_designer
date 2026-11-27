@@ -1,197 +1,252 @@
 <template>
-  <div class="pdf-designer">
-    <div class="designer-header">
-      <div class="header-left">
-        <h1>{{ t("app.title") }}</h1>
-        <div class="header-undo-redo">
-          <n-button
-            @click="undo"
-            type="default"
-            quaternary
-            circle
-            :title="t('actions.undo')"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              width="16"
-              height="16"
-            >
-              <path d="M3 10h10a5 5 0 0 1 0 10H9" />
-              <polyline points="7 14 3 10 7 6" />
-            </svg>
-          </n-button>
-          <n-button
-            @click="redo"
-            type="default"
-            quaternary
-            circle
-            :title="t('actions.redo')"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              width="16"
-              height="16"
-            >
-              <path d="M21 10H11a5 5 0 0 0 0 10h4" />
-              <polyline points="17 14 21 10 17 6" />
-            </svg>
-          </n-button>
-        </div>
-        <div class="header-toolbar-ops">
-          <span class="toolbar-divider"></span>
-          <button class="toolbar-btn" @click="deleteElement" title="Delete">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              width="16"
-              height="16"
-            >
-              <path
-                d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-              />
-            </svg>
-          </button>
-          <button class="toolbar-btn" @click="copyElement" title="Copy">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              width="16"
-              height="16"
-            >
-              <rect x="9" y="9" width="13" height="13" rx="2" />
-              <path
-                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-              />
-            </svg>
-          </button>
-          <button class="toolbar-btn" @click="pasteElement" title="Paste">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              width="16"
-              height="16"
-            >
-              <path
-                d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
-              />
-              <rect x="8" y="2" width="8" height="4" rx="1" />
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div class="header-actions">
-        <!-- Zoom controls -->
-        <ZoomControls
+  <div class="pdf-designer" :class="{ 'is-read-only': readOnlyTemplate }">
+    <!-- Header: as the window narrows, labels turn into icons, then the less
+         used tools move into the More menu (headerTier) -->
+    <div ref="headerRef" class="designer-header" :class="`tier-${headerTier}`">
+      <div class="header-left header-workflow">
+        <!-- 1. Logo & App Name (Option C) -->
+        <RouterLink
+          v-if="headerTier < 6"
+          :to="{ name: 'home' }"
+          class="brand-wrap"
+          :title="t('header.reportsHome')"
+          :aria-label="t('header.reportsHome')"
+        >
+          <div class="brand-img">
+            <img src="/assets/cdp-logo.png" alt="ProjectNow CDP" />
+          </div>
+          <div v-if="headerTier < 1" class="brand-name">
+            <span class="brand-text">ProjectNow CDP</span>
+            <span class="brand-badge">REPORT STUDIO</span>
+          </div>
+        </RouterLink>
+
+        <!-- ☰: only when the window is too narrow for every tool; it holds
+             just the hidden ones, grouped (Edit, Pages, View, Export) -->
+        <HeaderMoreMenu
+          v-if="headerTier >= 3"
+          :sections="{
+            undoRedo: headerTier >= 5,
+            edit: headerTier >= 4,
+            view: true,
+            download: SHOW_DEVELOPER_TOOLS && headerTier >= 4,
+          }"
           :zoom-level="zoomLevel"
           :paper-width="reportProperties.pageWidth"
-          @update:zoomLevel="setZoomLevel($event)"
+          :paper-height="reportProperties.pageHeight"
+          :show-bottom-panel="showBottomPanel"
+          :has-cover="!!reportProperties.coverPage"
+          @undo="undo"
+          @redo="redo"
+          @add-page="addNewPage()"
+          @add-cover="handlePageAction('addCover', 0)"
+          @add-contents="handlePageAction('addContents', 0)"
+          @delete="deleteElement"
+          @copy="copyElement"
+          @paste="pasteElement()"
+          @toggle-bottom-panel="toggleBottomPanel"
+          @download="downloadJRXML"
+          @update:zoom-level="setZoomLevel($event)"
         />
 
-        <!-- File manager component -->
-        <FileManager
-          :current-file-name="currentFileName"
-          :current-file-id="currentFileId"
-          @create-new-file="createNewFile"
-          @load-file="loadFile"
-          @save-current-file="saveCurrentFileToStorage"
-          @save-as-file="saveAsLocalFile"
-          @update:currentFileName="currentFileName = $event"
-          @update:currentFileId="currentFileId = $event"
-        />
-
-        <n-button @click="toggleBottomPanel" type="default">
-          {{
-            showBottomPanel
-              ? t("actions.hideBottomPanel")
-              : t("actions.showBottomPanel")
-          }}
-        </n-button>
-
-        <!-- Snap controls -->
-        <div class="snap-controls-header">
-          <n-checkbox
-            :checked="enableSnapToGrid"
-            size="small"
-            @update:checked="enableSnapToGrid = $event"
-          >
-            {{ t("actions.snapToGrid") }}
-          </n-checkbox>
-          <n-checkbox
-            :checked="enableSnapToAlignment"
-            size="small"
-            @update:checked="enableSnapToAlignment = $event"
-          >
-            {{ t("actions.snapToAlignment") }}
-          </n-checkbox>
-          <n-checkbox
-            :checked="showGrid"
-            size="small"
-            @update:checked="showGrid = $event"
-          >
-            {{ t("actions.showGrid") }}
-          </n-checkbox>
-        </div>
-
-        <SplitButton
-          :actions="[
-            {
-              label: t('actions.previewPDF'),
-              handler: openPdfPreview,
-              class: 'btn-primary',
-            },
-            {
-              label: t('actions.downloadJRXML'),
-              handler: downloadJRXML,
-              class: 'btn-primary',
-            },
-            {
-              label: t('actions.setPreviewServer'),
-              handler: openPreviewServerSettings,
-              class: 'btn-primary',
-            },
-          ]"
-        />
-        <!-- <n-button @click="showHelp = true" type="default">{{ t('actions.help') }}</n-button> -->
-        <LanguageSwitcher />
-
-        <div class="my-act-menu">
-          <n-button type="default" @click="showMyActMenu = !showMyActMenu">
-            My Act
-            <span class="dropdown-arrow">▾</span>
-          </n-button>
-
-          <div v-if="showMyActMenu" class="my-act-dropdown">
+        <!-- 2. File Name (Inline Editable Google Docs Style) & Auto-save Status -->
+        <div class="document-title-wrap">
+          <!-- As wide as the name (Google Docs style): a hidden copy of it
+               sizes the field, which gives way first when the header is full -->
+          <div class="document-title-field" :data-value="headerFileName || t('editorHeader.untitledReport')">
+            <input
+              v-model="headerFileName"
+              class="document-title-input"
+              :readonly="readOnlyTemplate"
+              @input="limitHeaderTitle"
+              data-hint="reportName"
+              size="1"
+              @focus="isTitleEditing = true"
+              @blur="handleHeaderTitleCommit"
+              @keydown.enter.prevent="onTitleEnter"
+              :placeholder="t('editorHeader.untitledReport')"
+              :title="t('editorHeader.renameReport')"
+            />
+          </div>
+          <!-- Narrow screens: the icon only (the words are in its tooltip) -->
+          <div class="auto-save-badge" :title="saveStatusTitle">
+            <!-- Hidden copies of every state: the badge keeps the room of the
+                 widest one, so "Saving…" / "Save failed" never push the header
+                 tools around or slide under the project picker -->
+            <template v-if="headerTier < 6">
+              <span v-for="label in saveStatusLabels" :key="label" class="save-status-text save-sizer" aria-hidden="true">
+                <span class="save-sizer-icon"></span>
+                <span v-if="headerTier < 4">{{ label }}</span>
+              </span>
+            </template>
+            <span v-if="saveStatus === 'saving'" class="save-status-text saving">
+              <span class="save-spinner"></span>
+              <span v-if="headerTier < 4">{{ t("editorHeader.saving") }}</span>
+            </span>
+            <!-- A failed save: a click tries again -->
             <button
+              v-else-if="saveStatus === 'error'"
               type="button"
-              class="my-act-dropdown-item"
-              @click="handleSignOut"
+              class="save-status-text error save-retry"
+              @click="saveNow"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <path d="M16 17l5-5-5-5" />
-                <path d="M21 12H9" />
-              </svg>
-              <span>Sign out</span>
+              <CircleAlert class="saved-icon" :size="13" :stroke-width="2.5" />
+              <span v-if="headerTier < 4">{{ t("editorHeader.saveFailed") }}</span>
             </button>
+            <span v-else-if="headerTier < 6" class="save-status-text saved">
+              <Check class="saved-icon" :size="13" :stroke-width="2.5" />
+              <span v-if="headerTier < 4">{{ t("editorHeader.saved") }}</span>
+            </span>
           </div>
         </div>
+
+        <!-- 3. The report's projects (their details and tables are in Report Data) -->
+        <HeaderProjectPicker
+          class="header-project-picker"
+          :inert="readOnlyTemplate"
+          :projects="reportProjects"
+          :compact="headerTier >= 2"
+          @update-projects="setReportProjects"
+        />
+
+        <span v-if="SHOW_DEVELOPER_TOOLS && headerTier < 3" class="toolbar-divider"></span>
+
+        <!-- 4. File Manager (developers only: New / Open, a .jrxml from the computer) -->
+        <FileManager
+          v-if="SHOW_DEVELOPER_TOOLS"
+          ref="fileManagerRef"
+          data-hint="file"
+          :compact="headerTier >= 3"
+          @create-new-file="createNewFile"
+          @open-jrxml="openJrxmlFile"
+        />
+
+        <!-- 5. Undo / Redo -->
+        <template v-if="headerTier < 5">
+          <span class="toolbar-divider"></span>
+          <div class="header-undo-redo" :inert="readOnlyTemplate">
+            <n-button
+              data-hint="undo"
+              @click="undo"
+              type="default"
+              quaternary
+              circle
+              :title="t('actions.undo') + ' (Ctrl+Z)'"
+            >
+              <Undo2 :size="16" :stroke-width="2" aria-hidden="true" />
+            </n-button>
+            <n-button
+              data-hint="redo"
+              @click="redo"
+              type="default"
+              quaternary
+              circle
+              :title="t('actions.redo') + ' (Ctrl+Y)'"
+            >
+              <Redo2 :size="16" :stroke-width="2" aria-hidden="true" />
+            </n-button>
+          </div>
+        </template>
+
+        <!-- 6. Delete, Copy, Paste, Add Page -->
+        <template v-if="headerTier < 4">
+          <span class="toolbar-divider"></span>
+          <div class="header-toolbar-ops" :inert="readOnlyTemplate">
+            <AddPageMenu
+              data-help="add-page"
+              data-hint="addPage"
+              :has-cover="!!reportProperties.coverPage"
+              :has-contents="!!reportProperties.contentsPages"
+              :show-label="headerTier < 2"
+              @add-page="addNewPage()"
+              @add-cover="handlePageAction('addCover', 0)"
+              @add-contents="handlePageAction('addContents', 0)"
+            />
+            <span v-if="headerTier < 3" class="toolbar-divider"></span>
+
+            <button class="toolbar-btn" data-hint="copy" @click="copyElement" :title="t('actions.copy')">
+              <Copy :size="16" :stroke-width="2" aria-hidden="true" />
+            </button>
+            <button class="toolbar-btn" data-hint="paste" @click="pasteElement()" :title="t('actions.paste')">
+              <ClipboardPaste :size="16" :stroke-width="2" aria-hidden="true" />
+            </button>
+            <button class="toolbar-btn" data-hint="delete" @click="deleteElement" :title="t('actions.delete')">
+              <Trash2 :size="16" :stroke-width="2" aria-hidden="true" />
+            </button>
+          </div>
+        </template>
+
+        <template v-if="headerTier < 3">
+          <span class="toolbar-divider"></span>
+
+          <!-- 7. Zoom controls -->
+          <ZoomControls
+            data-hint="zoom"
+            :zoom-level="zoomLevel"
+            :paper-width="reportProperties.pageWidth"
+            :paper-height="reportProperties.pageHeight"
+            @update:zoomLevel="setZoomLevel($event)"
+          />
+
+          <span class="toolbar-divider"></span>
+
+          <!-- 8. The bottom panel (developers only: JRXML Content, Report Bands,
+               the settings JSONs). Default Settings have their own page (account menu) -->
+          <button
+            v-if="SHOW_DEVELOPER_TOOLS"
+            type="button"
+            class="toolbar-btn developer-panel-btn"
+            :class="{ 'is-open': showBottomPanel }"
+            data-hint="bottomPanel"
+            :aria-pressed="showBottomPanel"
+            :aria-label="showBottomPanel ? t('actions.hideBottomPanel') : t('actions.showBottomPanel')"
+            :title="showBottomPanel ? t('actions.hideBottomPanel') : t('actions.showBottomPanel')"
+            @click="toggleBottomPanel"
+          >
+            <component :is="showBottomPanel ? PanelBottomClose : PanelBottom" :size="16" :stroke-width="2" aria-hidden="true" />
+          </button>
+
+          <span v-if="SHOW_DEVELOPER_TOOLS" class="toolbar-divider"></span>
+
+          <!-- 9. Snap & grid (dropdown) -->
+          <SnapMenu data-hint="snap" :compact="headerTier >= 2" />
+        </template>
+      </div>
+
+      <div class="header-actions">
+        <!-- 10. Help: the tour, the Quick guide, shortcuts, the AI assistant -->
+        <HelpMenu context="designer" :show-label="headerTier < 2" />
+
+        <!-- 11. Download JRXML (developers only) / Preview PDF -->
+        <button
+          v-if="SHOW_DEVELOPER_TOOLS && headerTier < 4"
+          type="button"
+          class="header-btn header-btn-secondary"
+          data-hint="download"
+          :class="{ 'is-icon': headerTier >= 1 }"
+          :title="t('actions.downloadJRXML')"
+          :aria-label="t('actions.downloadJRXML')"
+          @click="downloadJRXML"
+        >
+          <Download :size="16" :stroke-width="2" aria-hidden="true" />
+          <span v-if="headerTier < 1">{{ t("actions.downloadJRXML") }}</span>
+        </button>
+        <button
+          type="button"
+          class="header-btn header-btn-primary"
+          data-help="preview"
+          data-hint="preview"
+          :class="{ 'is-icon': headerTier >= 5 }"
+          :title="t('actions.previewPDF')"
+          :aria-label="t('actions.previewPDF')"
+          @click="openPdfPreview"
+        >
+          <Eye :size="16" :stroke-width="2" aria-hidden="true" />
+          <span v-if="headerTier < 5">{{ t("actions.previewPDF") }}</span>
+        </button>
+
+        <!-- 12. Account menu (language, sign out; the profile is edited in the CDP app) -->
+        <AccountMenu data-help="account" />
       </div>
     </div>
 
@@ -208,33 +263,44 @@
 
     <!-- Band height adjustment tooltip -->
     <div v-if="resizingBandInfo.visible" class="band-height-display">
-      {{ resizingBandInfo.bandName }} Height: {{ resizingBandInfo.height }}px
+      {{
+        t("editorHeader.bandHeight", {
+          bandName: resizingBandInfo.bandName,
+          height: resizingBandInfo.height,
+        })
+      }}
     </div>
 
     <div class="designer-layout">
       <!-- Left-side element library -->
+      <Transition name="side-panel-left">
       <ResizablePanel
         v-show="showLeftPanel"
         position="left"
+        data-help="library"
         :initial-size="leftPanelWidth"
         :min-size="PANEL_CONSTANTS.LEFT_PANEL_MIN_WIDTH"
         :max-size="PANEL_CONSTANTS.LEFT_PANEL_MAX_WIDTH"
+        :max-window-share="PANEL_CONSTANTS.LEFT_PANEL_WINDOW_SHARE"
         :collapsible="true"
         @size-change="handleLeftPanelSizeChange"
-        @collapse-change="leftPanelCollapsed = $event"
+        @collapse-change="leftPanelCollapsed = $event; glideCanvas()"
+        :title="t('elementLibrary.title')"
       >
+        <template #default="{ toggleCollapse }">
         <ElementLibrary
+          class="read-only-lockable"
+          :inert="readOnlyTemplate"
           :elements="elements"
-          :report-fields="reportFields"
-          :report-parameters="reportParameters"
-          :report-variables="reportVariables"
-          :report-styles="reportStyles"
-          :bands="bands"
-          :selected-element="selectedElement"
-          :sub-datasets="subDatasets"
+          :projects="reportProjects"
           @drag-start="handleDragStart"
-          @element-double-click="handleElementDoubleClick"
-          @select-element="selectElement"
+          @add-element="handleElementDoubleClick"
+          @insert-page-number="addPageNumber"
+          @insert-chart="addChart"
+          @add-chart-from-source="addChartFromSource"
+          @insert-barcode="addBarcode"
+          @insert-table="addTable"
+          @insert-image="openImageTileChooser"
           @add-field="handleAddField"
           @edit-field="handleEditField"
           @delete-field="handleDeleteField"
@@ -244,21 +310,74 @@
           @add-variable="handleAddVariable"
           @edit-variable="handleEditVariable"
           @delete-variable="handleDeleteVariable"
-          @add-style="handleAddStyle"
-          @edit-style="handleEditStyle"
-          @delete-style="handleDeleteStyle"
-          @delete-element="deleteElement"
-          @add-sub-dataset="handleAddSubDataset"
-          @edit-sub-dataset="handleEditSubDataset"
-          @delete-sub-dataset="handleDeleteSubDataset"
-        />
+        >
+          <template #header-actions>
+            <PanelToggleButton side="left" :collapsed="false" @toggle="toggleCollapse" />
+          </template>
+        </ElementLibrary>
+        </template>
       </ResizablePanel>
+      </Transition>
 
       <!-- Center design area -->
       <div
+        ref="designAreaRef"
         class="design-area-wrapper"
-        style="position: relative; flex: 1; overflow: auto"
+        style="position: relative; flex: 1; overflow: hidden; min-width: 0; display: flex; flex-direction: column;"
       >
+        <!-- A server template is being fetched (/designer/<id>) or made (Create template) -->
+        <div v-if="openingDefaultTemplate || creatingTemplate" class="opening-template" role="status" aria-live="polite">
+          <div class="opening-template-page" aria-hidden="true">
+            <SkeletonBlock width="55%" height="14px" />
+            <SkeletonBlock width="35%" height="9px" />
+            <SkeletonBlock height="70px" radius="8px" />
+            <SkeletonBlock width="80%" height="9px" />
+            <SkeletonBlock width="65%" height="9px" />
+          </div>
+          <span>{{ t(creatingTemplate ? "reportCatalog.create.creating" : "reportCatalog.defaultTemplates.opening") }}</span>
+        </div>
+        <!-- A server template being looked at: it stays as it is; Duplicate
+             (asked first) has the server copy it into Templates -->
+        <div v-if="viewingDefaultTemplate" class="default-template-bar" role="status">
+          <Lock :size="15" :stroke-width="2.25" aria-hidden="true" />
+          <span>
+            <strong>{{ t(`${openedTemplateTexts}.barTitle`, { name: openedDefaultTemplate?.name }) }}</strong>
+            {{ t(`${openedTemplateTexts}.barText`) }}
+          </span>
+          <button type="button" :title="t('reportCatalog.copy.hint')" @click="copyDialogOpen = true">
+            <Copy :size="14" :stroke-width="2.25" aria-hidden="true" />
+            {{ t("home.menu.duplicate") }}
+          </button>
+        </div>
+        <!-- On the body (the canvas area moves with a transform); keys typed in
+             it never reach the designer's shortcuts -->
+        <Teleport to="body">
+          <div @keydown.stop>
+            <ConfirmModal
+              v-model:visible="copyDialogOpen"
+              :title="t('reportCatalog.copy.title')"
+              :message="t('reportCatalog.copy.message', { name: openedDefaultTemplate?.name })"
+              :confirm-text="t('home.menu.duplicate')"
+              @confirm="duplicateOpenedTemplate"
+            />
+            <!-- The copy is made: open it now, or stay on the default -->
+            <ConfirmModal
+              v-model:visible="openCopyDialog"
+              :title="t('reportCatalog.copy.openTitle')"
+              :message="t('reportCatalog.copy.openMessage', { name: madeCopy?.name })"
+              :confirm-text="t('reportCatalog.copy.openConfirm')"
+              :cancel-text="t('reportCatalog.copy.openCancel')"
+              @confirm="madeCopy && router.push({ name: 'designer', params: { id: madeCopy.id } })"
+            />
+          </div>
+        </Teleport>
+        <!-- The first time something is selected: how to work with it (Help) -->
+        <FirstTimeTip />
+        <!-- Help window (a popup the user drags anywhere): help for the selected
+             item, the step-by-step guides, every element. Minimized, its tab
+             sits on the Properties panel's edge (or in its collapsed rail). -->
+        <HelpPanel @ask-ai="openAIAssistant" />
+        <HelpDockTab v-if="!rightPanelCollapsed || !showRightPanel" />
         <MultiSelectToolbar
           :visible="selectedElements.length > 1"
           :count="selectedElements.length"
@@ -280,35 +399,23 @@
         />
         <DesignerCanvas
           ref="designerCanvasRef"
-          :paper-width="paperWidth"
-          :paper-height="paperHeight"
-          :zoom-level="zoomLevel"
-          :report-properties="reportProperties"
-          :bands="bands"
-          :selected-band-index="selectedBandIndex"
           :highlighted-band-index="highlightedBandIndex"
-          :selected-element="selectedElement"
-          :selected-elements="selectedElements"
-          :editing-element="editingElement"
+          :drop-target-blocked="dropTargetBlocked"
+          :background-drop-target="backgroundDropTarget"
           :is-dragging-or-resizing="isDraggingOrResizing"
-          :alignment-lines="alignmentLines"
+          :drag-source-page="draggingInfo?.sourcePageIndex ?? null"
           :horizontal-ruler-ticks="horizontalRulerTicks"
           :horizontal-ruler-labels="horizontalRulerLabels"
           :vertical-ruler-ticks="verticalRulerTicks"
           :vertical-ruler-labels="verticalRulerLabels"
-          :is-design-area-focused="isDesignAreaFocused"
           :out-of-bounds-elements="outOfBoundsElements"
           :ui-constants="UI_CONSTANTS"
-          :enable-snap-to-grid="enableSnapToGrid"
-          :enable-snap-to-alignment="enableSnapToAlignment"
-          :show-grid="showGrid"
-          :report-styles="reportStyles"
-          :table-styles="tableStyles"
           @set-design-area-focused="setDesignAreaFocused"
           @select-band="selectBand"
           @select-element="selectElement"
           @start-dragging="startDragging"
           @start-resizing-element="startResizingElement"
+          @auto-fit-height="autoFitElementHeight"
           @start-editing="startEditing"
           @finish-editing="finishEditing"
           @cancel-editing="cancelEditing"
@@ -316,129 +423,154 @@
           @handle-drag-over="handleDragOver"
           @handle-drag-leave="handleDragLeave"
           @start-resizing-band="startResizingBand"
-          @zoom-change="(newZoom) => (zoomLevel = newZoom)"
-          @select-elements-in-rect="selectElementsInRect"
-          @clear-selection="clearSelection"
+          @zoom-change="handleZoomChange"
           @check-fields="handleCheckFields"
           @contextmenu="handleElementContextMenu"
           @canvas-contextmenu="handleCanvasContextMenu"
           @reset-zoom="resetZoom"
-          @move-column="handleMoveColumn"
-          @add-columns-to-group="handleAddColumnsToGroup"
-          @join-columns-to-existing-group="handleJoinColumnsToExistingGroup"
           @update:enable-snap-to-grid="enableSnapToGrid = $event"
           @update:enable-snap-to-alignment="enableSnapToAlignment = $event"
           @update:show-grid="showGrid = $event"
-          @update:table-styles="tableStyles = $event"
+          @add-page="addNewPage"
+          @delete-page="deletePage"
+          @page-action="handlePageAction"
+          @rotate="handleElementRotate"
         />
       </div>
 
       <!-- Right-side properties panel -->
+      <Transition name="side-panel-right">
       <ResizablePanel
         v-show="showRightPanel"
+        ref="rightPanelRef"
         position="right"
+        data-help="side-panel"
         :initial-size="propertyPanelWidth"
-        :min-size="200"
-        :max-size="500"
+        :min-size="PANEL_CONSTANTS.PROPERTY_PANEL_MIN_WIDTH"
+        :max-size="PANEL_CONSTANTS.PROPERTY_PANEL_MAX_WIDTH"
+        :max-window-share="PANEL_CONSTANTS.PROPERTY_PANEL_WINDOW_SHARE"
         :collapsible="true"
-        :auto-width="true"
         @size-change="handlePropertyPanelSizeChange"
-        @collapse-change="rightPanelCollapsed = $event"
+        @collapse-change="rightPanelCollapsed = $event; glideCanvas()"
+        :title="rightPanelTab === 'ai' ? t('ai.title') : t('properties.title')"
       >
+        <template #rail>
+          <HelpDockTab in-rail />
+        </template>
+        <template #default="{ toggleCollapse }">
         <!-- Right panel tabs -->
         <div class="right-panel-tabs">
-          <button
-            class="right-panel-tab"
-            :class="{ active: rightPanelTab === 'properties' }"
-            @click="rightPanelTab = 'properties'"
+          <div
+            class="right-panel-seg"
+            :class="{ 'is-single': !SHOW_AI_ASSISTANT }"
+            role="tablist"
+            :style="{ '--tab-index': rightPanelTab === 'ai' ? 1 : 0 }"
           >
-            Properties
-          </button>
-          <button
-            class="right-panel-tab"
-            :class="{ active: rightPanelTab === 'ai' }"
-            @click="rightPanelTab = 'ai'"
-          >
-            🤖 AI Assistant
-          </button>
+            <span class="right-panel-indicator" aria-hidden="true"></span>
+            <button
+              type="button"
+              role="tab"
+              class="right-panel-tab"
+              :class="{ active: rightPanelTab === 'properties' }"
+              :aria-selected="rightPanelTab === 'properties'"
+              @click="rightPanelTab = 'properties'"
+            >
+              <SlidersHorizontal :size="14" :stroke-width="2" aria-hidden="true" />
+              {{ t("properties.title") }}
+            </button>
+            <!-- The AI Assistant: hidden on staging and production for now -->
+            <button
+              v-if="SHOW_AI_ASSISTANT"
+              type="button"
+              role="tab"
+              class="right-panel-tab"
+              :class="{ active: rightPanelTab === 'ai' }"
+              :aria-selected="rightPanelTab === 'ai'"
+              @click="rightPanelTab = 'ai'"
+            >
+              <Sparkles :size="14" :stroke-width="2" aria-hidden="true" />
+              {{ t("ai.title") }}
+            </button>
+          </div>
           <button
             v-if="rightPanelTab === 'ai'"
+            type="button"
             class="right-panel-settings-btn"
+            :title="t('ai.configure')"
+            :aria-label="t('ai.configure')"
             @click="toggleAISettings"
-            title="Configure AI service"
           >
-            ⚙️
+            <Settings :size="15" :stroke-width="2" aria-hidden="true" />
           </button>
+          <PanelToggleButton side="right" :collapsed="false" @toggle="toggleCollapse" />
         </div>
 
         <!-- Element properties component -->
+        <Transition name="right-panel-fade">
         <div v-show="rightPanelTab === 'properties'">
+          <!-- A default template: its settings shown, nothing can be changed -->
+          <fieldset class="read-only-fieldset" :disabled="readOnlyTemplate">
           <ElementProperties
-            :selected-band-index="selectedBandIndex"
-            :selected-element="selectedElement"
-            :bands="bands"
-            :report-properties="reportProperties"
-            :sub-datasets="subDatasets"
-            :report-styles="reportStyles"
-            :report-fields="reportFields"
-            :report-parameters="reportParameters"
-            :report-variables="reportVariables"
             @update:bands="bands = $event"
             @delete-element="deleteElement"
-            @update-jrxml="updateJRXML"
-            @save-state="saveStateToHistory"
-            @update:reportStyles="reportStyles = $event"
-            @add-columns-to-group="handleAddColumnsToGroup"
+            @fit-to-text="
+              selectedElement &&
+                autoFitElementHeight(
+                  selectedElement.bandIndex,
+                  selectedElement.elementIndex,
+                  selectedElement.parentFrameIndex,
+                )
+            "
+            @save-table-style="saveTableStyle"
+            @update-table-style="updateTableStyle"
+            @rename-table-style="renameTableStyle"
+            @delete-table-style="deleteTableStyle"
+            @configure-table="openTableConfigForSelection"
+            @table-content="setTableContent"
+            @fill-contents-list="fillContentsList"
+            @configure-chart="openChartConfigForSelection"
           />
+          </fieldset>
         </div>
 
+        </Transition>
+
         <!-- AI Assistant panel -->
-        <div v-show="rightPanelTab === 'ai'" class="ai-panel-container">
+        <Transition name="right-panel-fade">
+        <div v-if="SHOW_AI_ASSISTANT" v-show="rightPanelTab === 'ai'" class="ai-panel-container read-only-lockable" :inert="readOnlyTemplate">
           <AIChatPanel
             :visible="rightPanelTab === 'ai'"
             :initial-height="aiChatPanelHeight"
             :mcp-context="mcpContext"
-            :on-update="forceUpdateUI"
             :embedded="true"
             :show-settings="showAISettings"
             @update:show-settings="showAISettings = $event"
           />
         </div>
+        </Transition>
+        </template>
       </ResizablePanel>
+      </Transition>
     </div>
 
     <!-- Bottom tab area -->
     <BottomPanel
+      v-if="SHOW_DEVELOPER_TOOLS"
       :visible="showBottomPanel"
       :initial-height="bottomPanelHeight"
-      :report-properties="reportProperties"
-      :bands="bands"
-      :all-band-types="allBandTypes"
-      :selected-band-types="selectedBandTypes"
-      :jrxml-content="jrxmlContent"
-      :preview-server-url="previewServerUrl"
       @update:visible="showBottomPanel = $event"
       @size-change="handleBottomPanelSizeChange"
-      @update:report-properties="reportProperties = $event"
-      @update:selected-band-types="selectedBandTypes = $event"
+      @page-setup-change="handlePageSetupChange"
       @update:jrxml-content="jrxmlContent = $event"
       @copy-jrxml="copyJRXML"
       @save-jrxml="saveJRXML"
       @regenerate-jrxml="regenerateJRXML"
       @download-jrxml="downloadJRXML"
-      @band-selection-change="handleBandSelectionChange"
+      @open-preview="openPdfPreview"
     />
 
     <!-- Drag feedback layer -->
     <DragFeedbackLayer :feedback="dragFeedback" />
-
-    <!-- Donation modal -->
-    <RewardModal v-if="locale === 'zh'" v-model:visible="showReward" />
-    <RewardModalEn v-else v-model:visible="showReward" />
-
-    <!-- Help modal -->
-    <HelpModal v-if="locale === 'zh'" v-model:visible="showHelp" />
-    <HelpModalEn v-else v-model:visible="showHelp" />
 
     <!-- Field management modal -->
     <FieldManagementModal
@@ -458,82 +590,79 @@
       @save="handleVariableSave"
     />
 
-    <!-- Style management modal -->
-    <StyleManagementModal
-      v-model:visible="showStyleModal"
-      :style="editingStyle"
-      :all-styles="reportStyles"
-      @save="handleStyleSave"
+    <!-- In-app confirmation (never the browser's confirm()) -->
+    <!-- Cover / contents page designs, when adding such a page or choosing a design -->
+    <DesignChooserModal
+      v-model:visible="designChooser.visible"
+      :kind="designChooser.kind"
+      v-model:sheet="designChooser.sheet"
+      :designs="chooserDesigns"
+      :all-pages-note="designChooser.kind === 'contents' && designChooser.mode === 'replace'"
+      :page-width="designContext(designChooser.kind === 'cover' && designChooser.sheet).availableWidth"
+      :page-height="designContext(designChooser.kind === 'cover' && designChooser.sheet).availableHeight"
+      @choose="applyChosenDesign"
+    />
+
+    <FillContentsModal
+      :visible="fillDialog.visible"
+      :row-count="fillDialog.rowCount"
+      :heading-count="fillDialog.headingCount"
+      :new-count="fillDialog.newCount"
+      @choose="settleFill"
+    />
+
+    <ConfirmModal
+      v-model:visible="confirmDialog.visible"
+      :title="confirmDialog.title"
+      :message="confirmDialog.message"
+      @confirm="settleConfirm(true)"
+      @cancel="settleConfirm(false)"
     />
 
     <!-- PDF preview modal -->
     <PdfPreviewModal
       :visible="showPdfPreview"
-      :jrxml-content="jrxmlContent"
-      :report-parameters="reportParameters"
-      :report-fields="reportFields"
-      :sub-datasets="subDatasets"
-      :preview-server-url="previewServerUrl"
+      :prepare="prepareReportForPreview"
+      :bands="bands"
       @update:visible="showPdfPreview = $event"
+      @edit-table="openTableConfigByUuid"
+      @edit-chart="openChartConfigByUuid"
     />
 
-    <!-- Preview server settings modal -->
-    <PreviewServerSettingsModal
-      :visible="showPreviewServerSettings"
-      :current-url="previewServerUrl"
-      @update:visible="showPreviewServerSettings = $event"
-      @update:url="updatePreviewServerUrl"
+    <!-- Data table setup: source, columns, filters, sort, totals, theme -->
+    <TableConfigModal
+      v-model:visible="tableConfig.visible"
+      :table="tableConfigTable"
+      :table-width="tableConfigWidth"
+      :projects="reportProjects"
+      :initial-project-id="tableConfig.projectId"
+      :initial-source-id="tableConfig.sourceId"
+      :initial-column-key="tableConfig.columnKey"
+      :existing-table-names="usedTableNames(bands)"
+      :existing-dataset-names="usedDatasetNames(bands)"
+      @apply="applyTableConfig"
     />
 
-    <!-- Sub-dataset management modal -->
-    <SubDatasetManagementModal
-      :visible="showSubDatasetModal"
-      :dataset="editingSubDataset"
-      @update:visible="showSubDatasetModal = $event"
-      @save="handleSubDatasetSave"
+    <!-- Chart setup: type, source, what to show, filters -->
+    <!-- A project table dropped on empty space: as a table or as a chart -->
+    <DataDropChoice
+      v-if="dataDropChoice"
+      :x="dataDropChoice.x"
+      :y="dataDropChoice.y"
+      :source-name="dataDropChoice.drag.sourceName"
+      :table-problem="dataDropChoice.tableProblem"
+      @choose="chooseDataDropKind"
+      @close="dataDropChoice = null"
     />
-
-    <!-- Group name input dialog -->
-    <BaseModal
-      v-model:visible="showGroupDialog"
-      title="Add columns to group"
-      :contentClass="'group-dialog'"
-      :useVShow="true"
-      @confirm="confirmJoinColumnsToGroup"
-    >
-      <div class="group-dialog-content">
-        <div class="form-group">
-          <label>Select an existing group or enter a new group name:</label>
-          <n-select
-            v-model:value="groupDialogState.selectedGroupName"
-            :options="
-              groupDialogState.existingGroups.map((group) => ({
-                label: group.name,
-                value: group.name,
-              }))
-            "
-            placeholder="Select an existing group or enter a new name"
-            filterable
-            tag
-            style="width: 100%; margin-top: 8px"
-          />
-        </div>
-      </div>
-    </BaseModal>
-
-    <!-- Column selection dialog -->
-    <ColumnSelectionModal
-      v-model:visible="showColumnSelectionModal"
-      :columns="columnSelectionState.columns"
-      :children="columnSelectionState.children"
-      @confirm="
-        (selectedColumnIndices, selectedRegion, groupText) =>
-          handleColumnSelectionConfirm(
-            selectedColumnIndices,
-            selectedRegion,
-            groupText,
-          )
-      "
+    <ChartConfigModal
+      v-model:visible="chartConfig.visible"
+      :binding="chartConfigElement?.binding"
+      :chart-size="{ width: chartConfigElement?.width ?? 320, height: chartConfigElement?.height ?? 200 }"
+      :projects="reportProjects"
+      :initial-project-id="chartConfig.projectId"
+      :initial-source-id="chartConfig.sourceId"
+      :initial-column-key="chartConfig.columnKey"
+      @apply="applyChartConfig"
     />
 
     <!-- Right-click context menu -->
@@ -548,147 +677,225 @@
         :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
       >
         <div v-if="contextMenu.type === 'element'" class="context-menu-items">
-          <div
-            class="context-menu-item"
-            @click="handleContextMenuAction('copy')"
-          >
-            <svg
-              class="menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+          <!-- Copy and paste take one item: not offered for several -->
+          <template v-if="!severalSelected">
+            <div
+              class="context-menu-item"
+              @click="handleContextMenuAction('copy')"
             >
-              <rect x="9" y="9" width="13" height="13" rx="2" />
-              <path
-                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-              />
-            </svg>
-            Copy
-          </div>
-          <div
-            class="context-menu-item"
-            @click="handleContextMenuAction('paste')"
-          >
-            <svg
-              class="menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+              <Copy class="menu-icon" :size="16" />
+              {{ t("actions.copy") }}
+            </div>
+            <div
+              class="context-menu-item"
+              @click="handleContextMenuAction('paste')"
             >
-              <path
-                d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
-              />
-              <rect x="8" y="2" width="8" height="4" rx="1" />
-            </svg>
-            Paste
-          </div>
-          <div class="context-menu-divider"></div>
+              <ClipboardPaste class="menu-icon" :size="16" />
+              {{ t("actions.paste") }}
+            </div>
+            <div class="context-menu-divider"></div>
+          </template>
           <div
             class="context-menu-item"
             @click="handleContextMenuAction('delete')"
           >
-            <svg
-              class="menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-              />
-            </svg>
-            Delete
+            <Trash2 class="menu-icon" :size="16" />
+            {{ t("actions.delete") }}
           </div>
           <div class="context-menu-divider"></div>
           <div
             class="context-menu-item"
             @click="handleContextMenuAction('bringToFront')"
           >
-            <svg
-              class="menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M12 19V5M5 12l7-7 7 7" />
-            </svg>
-            Bring to Front
+            <BringToFront class="menu-icon" :size="16" />
+            {{ t("editor.contextMenu.bringToFront") }}
           </div>
           <div
             class="context-menu-item"
             @click="handleContextMenuAction('sendToBack')"
           >
-            <svg
-              class="menu-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M12 5v14M19 12l-7 7-7-7" />
-            </svg>
-            Send to Back
+            <SendToBack class="menu-icon" :size="16" />
+            {{ t("editor.contextMenu.sendToBack") }}
           </div>
+          <div class="context-menu-divider"></div>
+          <div
+            class="context-menu-item"
+            :title="t('resetStyle.hint')"
+            @click="handleContextMenuAction('resetStyle')"
+          >
+            <RotateCcw class="menu-icon" :size="16" />
+            {{ t("resetStyle.label") }}
+          </div>
+          <!-- Item inside a box or frame: one of the two, never both -->
+          <template v-if="selectedBoxItem">
+            <div class="context-menu-divider"></div>
+            <div
+              v-if="selectedBoxItem.isPart"
+              class="context-menu-item"
+              @click="handleContextMenuAction('moveOutOfBox')"
+            >
+              <SquareArrowOutDownRight class="menu-icon" :size="16" />
+              {{ t("framePresets.moveOutOfBox") }}
+            </div>
+            <div
+              v-else
+              class="context-menu-item"
+              @click="handleContextMenuAction('addToBox')"
+            >
+              <SquarePlus class="menu-icon" :size="16" />
+              {{ t("framePresets.addToBox") }}
+            </div>
+          </template>
         </div>
         <div v-else class="context-menu-items">
           <div
             class="context-menu-item"
             @click="handleContextMenuAction('paste')"
           >
-            <span class="menu-icon">📎</span> Paste
+            <ClipboardPaste class="menu-icon" :size="16" /> {{ t("actions.paste") }}
           </div>
         </div>
       </div>
     </div>
+
+    <!-- The Image tile's picture chooser: the picture comes first, then the image is added -->
+    <PictureChooserModal
+      v-model:visible="tilePicture.open"
+      :initial-tab="tilePicture.tab"
+      @choose="addImageWithPicture"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import AddPageMenu from "./designer/AddPageMenu.vue";
+import { SHOW_AI_ASSISTANT, SHOW_DEVELOPER_TOOLS } from "@/config/appEnvironment";
 import ResizablePanel from "./panels/ResizablePanel.vue";
 import DesignerCanvas from "./designer/DesignerCanvas.vue";
-import RewardModal from "./modals/RewardModal.vue";
-import RewardModalEn from "./modals/RewardModalEn.vue";
-import HelpModal from "./modals/HelpModal.vue";
-import HelpModalEn from "./modals/HelpModalEn.vue";
+import HelpMenu from "./help/HelpMenu.vue";
+import FirstTimeTip from "./help/FirstTimeTip.vue";
+import HelpPanel from "./help/HelpPanel.vue";
+import HelpDockTab from "./help/HelpDockTab.vue";
 import FieldManagementModal from "./modals/FieldManagementModal.vue";
 import PdfPreviewModal from "./modals/PdfPreviewModal.vue";
-import PreviewServerSettingsModal from "./modals/PreviewServerSettingsModal.vue";
-import SubDatasetManagementModal from "./modals/SubDatasetManagementModal.vue";
+import ConfirmModal from "./modals/ConfirmModal.vue";
+import FillContentsModal, { type FillMode } from "./modals/FillContentsModal.vue";
+import TableConfigModal from "./modals/TableConfigModal.vue";
+import ChartConfigModal from "./modals/ChartConfigModal.vue";
+import { chartDataVersion, ensureChartData } from "../utils/chart/chartDataStore";
+import { barcodeLibraryLoaded, ensureBarcodeLibrary } from "../utils/barcode/barcodeImage";
+import { buildBarcodeElement, tableColumnBarcode, type BarcodeType } from "../utils/barcode/barcodeTypes";
 import VariableManagementModal from "./modals/VariableManagementModal.vue";
-import StyleManagementModal from "./modals/StyleManagementModal.vue";
 import BaseModal from "./modals/BaseModal.vue";
-import ColumnSelectionModal from "./modals/ColumnSelectionModal.vue";
 import BottomPanel from "./panels/BottomPanel.vue";
+import PanelToggleButton from "./panels/PanelToggleButton.vue";
 import AIChatPanel from "./ai/AIChatPanel.vue";
 import ElementLibrary from "./ElementLibrary.vue";
+import DataDropChoice, { type DataDropKind } from "./designer/DataDropChoice.vue";
 import FileManager from "./designer/controls/FileManager.vue";
 import ZoomControls from "./designer/controls/ZoomControls.vue";
 import ElementProperties from "./designer/properties/ElementProperties.vue";
-import LanguageSwitcher from "./common/LanguageSwitcher.vue";
-import SplitButton from "./common/SplitButton.vue";
+import AccountMenu from "./common/AccountMenu.vue";
+import SnapMenu from "./designer/SnapMenu.vue";
+import HeaderProjectPicker from "./designer/HeaderProjectPicker.vue";
+import HeaderMoreMenu from "./designer/HeaderMoreMenu.vue";
 import MultiSelectToolbar from "./designer/MultiSelectToolbar.vue";
 import AlignmentGuides from "./designer/AlignmentGuides.vue";
 import DragFeedbackLayer from "./designer/DragFeedbackLayer.vue";
-import { NButton, NSelect, NCheckbox } from "naive-ui";
+import { NButton } from "naive-ui";
+import {
+  BringToFront,
+  Check,
+  ClipboardPaste,
+  CircleAlert,
+  Copy,
+  Download,
+  Eye,
+  FilePlus,
+  Lock,
+  Redo2,
+  SendToBack,
+  RotateCcw,
+  Settings,
+  SlidersHorizontal,
+  PanelBottom,
+  PanelBottomClose,
+  Sparkles,
+  SquareArrowOutDownRight,
+  SquarePlus,
+  Trash2,
+  Undo2,
+} from "@lucide/vue";
 import type {
   Band,
   BandType,
+  ChartElement,
+  ContentsListElement,
+  CustomTableElement,
   DesignElement,
   DraggingInfo,
-  EditingElementInfo,
   FrameElement,
   ReportField,
   ReportParameter,
   ReportVariable,
-  SelectedElementInfo,
-  TableDataset,
+  TableElement,
+  TextFieldElement,
 } from "../types";
-import type { DesignerFile } from "@/types/designerFile";
-import type { MCPContext } from "@/mcp";
+import type {
+  ChartBinding,
+  ChartType,
+  DataColumn,
+  DataRow,
+  ProjectField,
+  ReportProject,
+  ReportSourceRef,
+  SavedTableStyle,
+  TableDataBinding,
+  TableLook,
+} from "@/types/dataSource";
+import {
+  applyProjectValue,
+  canTakeProjectField,
+  projectValueProblem,
+  countProjectUsage,
+  moveReportToProject,
+  projectFieldSize,
+} from "@/utils/projectFields";
+import { buildProjectListTable } from "@/utils/projectTables";
+import { prefetchProjects, projectQuery } from "@/queries/projectQueries";
+import { fetchDefaultTemplate, fetchNewestCopyId, useCopyTemplate } from "@/queries/reportCatalogQueries";
+import { ApiError } from "@/services/apiClient";
+import { reportServerErrorText } from "@/services/helpers/reportCatalogMappers";
+import SkeletonBlock from "@/components/common/SkeletonBlock.vue";
+import { isProjectListSource } from "@/queries/dataSourceQueries";
+import { useQueries } from "@tanstack/vue-query";
+import { loadReportDefaults } from "@/utils/reportDefaults";
+import {
+  endDataSourceDrag,
+  isDataSourceDrag,
+  readDataSourceDrag,
+  type DataSourceDragPayload,
+} from "@/utils/table/dataDrag";
+import { MIN_TABLE_COLUMN_WIDTH, tableWidthFor } from "@/utils/table/dataBinding";
+import {
+  PLACEHOLDER_COLUMN_COUNT,
+  TABLE_BARCODE_ROW_HEIGHT,
+  TABLE_ROW_HEIGHT,
+  evenColumnWidths,
+  scaleColumnWidths,
+  scaleTableRows,
+  snapTableHeight,
+  tableHeight,
+  toColumnBinding,
+} from "@/utils/table/dataTable";
+import { createTableStyleId, parseSavedTableStyles, resolveLook } from "@/utils/table/tableThemes";
+import {
+  collectBoundTables,
+  ensureUniqueTableDatasets,
+  usedDatasetNames,
+  usedTableNames,
+} from "@/utils/table/tableDocument";
+import type { MCPContext, PageToolRequest } from "@/mcp";
 import { checkWebMCPSupport } from "@/utils/browserCompatibility";
 import {
   computed,
@@ -698,38 +905,144 @@ import {
   reactive,
   ref,
   watch,
-  getCurrentInstance,
 } from "vue";
 import { useI18n } from "vue-i18n";
-import { useDesignerFiles } from "@/composables/useDesignerFiles";
-import { useUndoRedo } from "@/composables/useUndoRedo";
-import { useZoom } from "@/composables/useZoom";
-import { useSnapAlignment } from "@/composables/useSnapAlignment";
+import { useRoute, useRouter } from "vue-router";
+import { useServerTemplateSave } from "@/composables/useServerTemplateSave";
+import { storeToRefs } from "pinia";
+import { useReportStore } from "@/stores/report";
+import { useSelectionStore } from "@/stores/selection";
+import { useEditorStore } from "@/stores/editor";
+import { useFilesStore } from "@/stores/files";
+import { useHelpStore } from "@/stores/help";
+import { useUserSettingsStore } from "@/stores/userSettings";
+import { fitContentToPage, scaleElementsToArea } from "@/utils/pageFit";
+import { cleanLegacyAutoDateElement } from "@/utils/autoDate";
+import { headingNumberText, headingNumbering, listChain, sectionHeadings, syncFollowingLists } from "@/utils/headingSync";
+import { planBandFit, type BandFitPlan } from "@/utils/bandFit";
+import { planTextFit, type TextFitElement } from "@/utils/textFit";
 import {
+  nextGridLine,
+  snapEdge,
+  snapMove,
+  snapToGrid,
+  type GridStep,
+  type SnapGuides,
+  type SnapOptions,
+  type SnapRect,
+  type SnapTargets,
+} from "@/utils/snapping";
+import {
+  ALL_CONFIGURABLE_BANDS,
   BAND_CONSTANTS,
-  BAND_HEIGHT_CONSTANTS,
   BAND_TYPE_CONSTANTS,
+  getEffectiveDefaultBandLimits,
   ELEMENT_CONSTANTS,
   FONT_CONSTANTS,
-  HISTORY_CONSTANTS,
+  getDefaultElementSize,
   KEYBOARD_CONSTANTS,
   PANEL_CONSTANTS,
+  PANEL_MOTION,
+  prefersReducedMotion,
   REPORT_CONSTANTS,
-  RULER_CONSTANTS,
   UI_CONSTANTS,
-  ZOOM_CONSTANTS,
+  TEMPLATE_NAME_MAX_LENGTH,
+  getEffectiveDefaultBandConfig,
 } from "../constants/constants";
 
 // Import newly created utility functions and constants
 import { getBandDisplayName } from "../utils/bandUtils";
+import {
+  buildRulerMarks,
+  sectionGridStep,
+  type RulerLabel,
+  type RulerTick,
+} from "../utils/rulerUtils";
 
-import { loadFromLocalStorage, saveToLocalStorage } from "../utils/fileUtils";
 
 // Import element bounds validation utility
 import { getOutOfBoundsElements } from "../utils/elementBoundsValidator";
+import {
+  calculateTextElementHeight,
+  getImageShape,
+  measureTextElementWidth,
+  refreshUuids,
+  setImagePicture,
+} from "../utils/elementUtils";
+import { toImageExpression } from "../services/imageService";
+import type { ChosenPicture } from "../types/projectPhoto";
+import {
+  applyBorderPreset,
+  buildFrameTemplate,
+  clampPositionInBox,
+  clampRectInBox,
+  findPageBorder,
+  isBoxPart,
+  markBoxPart,
+  releaseBoxPart,
+  fitFrameContent,
+  frameFitReference,
+  frameMinimumSize,
+  isFrameTemplateType,
+  PAGE_BORDER_TYPE,
+  PRESET_SIDE_INSET,
+  type FrameTemplateContext,
+} from "../utils/framePresets";
+import { emptyDataTable, emptyTypedTable, typedTableFromData } from "../utils/table/tableConversion";
+import { resetElementStyle } from "../utils/resetStyle";
+import {
+  collectHeadings,
+  entriesFor,
+  hasProperty,
+  minContentsListWidth,
+  minContentsRowHeight,
+  rowsThatFit,
+  SECTION_HEADING_PROPERTY,
+  shownCount,
+  SUB_HEADING_PROPERTY,
+  syncContentsListSize,
+} from "../utils/contentsList";
+import {
+  buildContentsDesign,
+  buildCoverDesign,
+  CONTENTS_DESIGN_TYPES,
+  COVER_DESIGN_TYPES,
+  isContentsDesignType,
+  isCoverDesignType,
+  unwrapLegacyCoverFrames,
+  type ContentsDesignType,
+} from "../utils/pageDesigns";
+import DesignChooserModal from "./modals/DesignChooserModal.vue";
+import PictureChooserModal from "./modals/PictureChooserModal.vue";
+import {
+  isSpecialPage,
+  pageKind,
+  specialPageArea,
+  shiftPages,
+  specialPageProblem,
+  specialPages,
+  type SpecialPageProblem,
+} from "../utils/specialPages";
+import { fetchTableRows } from "../composables/useTableRows";
+import {
+  buildCustomTable,
+  MIN_COLUMN_WIDTH,
+  MIN_ROW_HEIGHT,
+  scaleSizes,
+  syncTableSize,
+} from "../utils/customTable";
+import {
+  buildReportPart,
+  isFullWidthPart,
+  isReportPartType,
+  reportPartBand,
+  type ReportPartType,
+} from "../utils/reportParts";
 import { useBoundaryDetection } from "@/composables/useBoundaryDetection";
 import { useAlignmentSystem } from "@/composables/useAlignmentSystem";
 import { useDragFeedback } from "@/composables/useDragFeedback";
+import { useServerTemplateCreate } from "@/composables/useServerTemplateCreate";
+import { isServerTemplateId, newLocalTemplateId } from "@/utils/templateIds";
 
 // Ensure DOMParser is available in the browser environment
 // Removed the unused getDOMParser function
@@ -741,119 +1054,271 @@ import {
 // Import the notification manager
 import notification from "../utils/notification";
 import {
+  buildPaginationElement,
+  findPaginationTargetBand,
+  isPagination,
+  PAGE_NUMBER_TYPE,
+  placePaginationInBand,
+  type PaginationPosition,
+} from "../utils/paginationPresets";
+import { buildDateElement, DATE_ELEMENT_TYPE, isDateElement } from "../utils/dateElement";
+import { isProjectValue } from "../utils/projectValue";
+import { canvasShowsHtml, formatCanvasText } from "../utils/canvasText";
+import { ensureTemplateProject, runTemplatePdf } from "../utils/reportRun";
+import type { TemplatePdfRun } from "@/types/reportCatalog";
+import {
+  buildLocationElement,
+  getLocationSetup,
+  setLocationSetup,
+  isLocationAddress,
+  isLocationElement,
+  isLocationPart,
+  LOCATION_ELEMENT_TYPE,
+  toPlace,
+  updateLocation,
+  type Place,
+  type PlaceField,
+} from "../utils/location/locationElement";
+import { ensureLocationMaps, refreshLocationMaps } from "../utils/location/locationMaps";
+import { buildWatermarkElement, findWatermark, isWatermark, WATERMARK_TYPE } from "../utils/watermark/watermarkElement";
+import { ensureWatermarks, refreshWatermarks } from "../utils/watermark/watermarkPictures";
+import { buildChartElement } from "../utils/chart/chartElement";
+import { startDragScrolling, type DragScrollSession } from "../utils/dragAutoScroll";
+import {
   createElement,
   getAllElements as getAllElementConfigs,
 } from "@/components/elements/ElementRegistry";
-import { syncTableColumns } from "../utils/table/ColumnTreeSync";
+import { TemplateContentProblem } from "@/enums/templateContentProblem";
 
 // Import the default JRXML example file
-import defaultJrxmlContent from "../../tests/build_by_jasper_studio_jrxml/grouped_header_column_table_example.jrxml?raw";
-import { logout } from "../services/authService";
 
-const { t, locale } = useI18n();
+const { t, te, locale } = useI18n();
 
-// Tab-related state
-const activeTab = ref("pageSettings");
-const showMyActMenu = ref(false);
+// Designer state lives in Pinia stores (src/stores): the report model and
+// undo/redo, what is selected, and how the designer is shown (zoom, snapping,
+// panels). Each starts fresh when the designer opens.
+const reportStore = useReportStore();
+const selectionStore = useSelectionStore();
+const editorStore = useEditorStore();
+const filesStore = useFilesStore();
+const helpStore = useHelpStore();
+reportStore.reset();
+selectionStore.reset();
+editorStore.reset();
+filesStore.resetCurrentFile(t("fileManager.untitledReport"));
 
-// Panel visibility state
-const showLeftPanel = ref(true);
-const showRightPanel = ref(true);
-const showBottomPanel = ref(false);
-const showAIChat = ref(false);
-const aiChatPanelHeight = ref(300);
-const rightPanelTab = ref("properties"); // 'properties' or 'ai'
+// Panels: which are open, their sizes and tabs
+const {
+  activeTab,
+  showLeftPanel,
+  showRightPanel,
+  showBottomPanel,
+  showAIChat,
+  aiChatPanelHeight,
+  rightPanelTab,
+  propertyPanelWidth,
+  rightPanelCollapsed,
+  leftPanelWidth,
+  leftPanelCollapsed,
+  bottomPanelHeight,
+} = storeToRefs(editorStore);
 
 // Browser compatibility check
 const browserSupport = ref(checkWebMCPSupport());
 const isAIAssistantSupported = computed(() => browserSupport.value.isSupported);
 
-// MCP context, used by the AI dialog to execute tool calls
+// MCP context: what the AI tools borrow from the designer (they read and
+// change the report through the stores)
 const mcpContext = computed<MCPContext>(() => ({
-  bands: bands.value,
-  reportProperties: reportProperties.value,
-  fields: reportFields.value,
-  parameters: reportParameters.value,
-  variables: reportVariables.value,
-  saveStateToHistory,
-  updateJRXML,
   selectElement,
-  selectedElement: selectedElement.value,
-  selectedElements: selectedElements.value,
+  undo: () => undo(),
+  redo: () => redo(),
+  onPageSetupChange: () => handlePageSetupChange(),
+  // check_pdf: the same as Preview PDF (saved, then run on the report server)
+  buildPdf: async () => {
+    return runTemplatePdf(await prepareReportForPreview());
+  },
+  pageTool: (request) => runPageTool(request),
 }));
-
-// Force-update function, used to trigger a UI refresh after a tool executes
-function forceUpdateUI() {
-  console.log("forceUpdateUI called");
-  console.log("bands.value before update:", bands.value);
-
-  // Create a new array via deep clone so Vue detects the change
-  const newBands = JSON.parse(JSON.stringify(bands.value));
-  bands.value = newBands;
-
-  console.log("bands.value after update:", bands.value);
-
-  // Use Vue's force-update mechanism
-  const instance = getCurrentInstance();
-  if (instance) {
-    console.log("Forcing component update");
-    instance.proxy?.$forceUpdate();
-  }
-
-  // Call nextTick to ensure the DOM has updated
-  nextTick(() => {
-    console.log("Calling updateJRXML");
-    updateJRXML();
-  });
-}
-
-// Properties panel width
-const propertyPanelWidth = ref(PANEL_CONSTANTS.DEFAULT_PROPERTY_PANEL_WIDTH); // Default width 300px
-const rightPanelCollapsed = ref(false); // Right panel collapsed state
-
-// Left panel width
-const leftPanelWidth = ref(PANEL_CONSTANTS.DEFAULT_LEFT_PANEL_WIDTH);
-const leftPanelCollapsed = ref(false); // Left panel collapsed state
 
 // DesignerCanvas component reference
 const designerCanvasRef = ref<any>(null);
 
-// Bottom panel height
-const bottomPanelHeight = ref(PANEL_CONSTANTS.DEFAULT_BOTTOM_PANEL_HEIGHT); // Default height 400px
+// The report model, its JRXML and undo/redo (report store)
+const {
+  jrxmlContent,
+  reportProperties,
+  bands,
+  pageCount,
+  reportFields,
+  reportParameters,
+  subDatasets,
+  tableStyles,
+  reportVariables,
+  reportGroups,
+  paperWidth,
+  paperHeight,
+  totalPages,
+  historyStack,
+  redoStack,
+} = storeToRefs(reportStore);
+const { saveStateToHistory } = reportStore;
 
-// JRXML content display
-const jrxmlContent = ref("");
+// The open template: its name (the header's) and id (the server row's once
+// it is on the report server)
+const { currentFileName, currentFileId } = storeToRefs(filesStore);
 
-// Report properties
-const reportProperties = ref({
-  name: "NewReport",
-  pageWidth: REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH,
-  pageHeight: REPORT_CONSTANTS.DEFAULT_PAGE_HEIGHT,
-  leftMargin: REPORT_CONSTANTS.DEFAULT_MARGIN,
-  rightMargin: REPORT_CONSTANTS.DEFAULT_MARGIN,
-  topMargin: REPORT_CONSTANTS.DEFAULT_MARGIN,
-  bottomMargin: REPORT_CONSTANTS.DEFAULT_MARGIN,
-  defaultFont: {
-    name: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
-    size: REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
-    isBold: false,
-    isItalic: false,
-    isUnderline: false,
+// Editable document title in header (Google Docs style)
+const headerFileName = ref(currentFileName.value);
+const isTitleEditing = ref(false);
+
+watch(currentFileName, (newVal) => {
+  if (newVal !== headerFileName.value) {
+    headerFileName.value = newVal;
+  }
+});
+
+// The header's name keeps at most TEMPLATE_NAME_MAX_LENGTH letters, typed or
+// pasted: the rest is cut off and a warning says so (once per few seconds,
+// not on every key held down)
+let titleLimitWarnedAt = 0;
+function limitHeaderTitle() {
+  if (headerFileName.value.length <= TEMPLATE_NAME_MAX_LENGTH) return;
+  headerFileName.value = headerFileName.value.slice(0, TEMPLATE_NAME_MAX_LENGTH);
+  if (Date.now() - titleLimitWarnedAt < 3000) return;
+  titleLimitWarnedAt = Date.now();
+  notification.warning(t("editorHeader.nameTooLong", { max: TEMPLATE_NAME_MAX_LENGTH }));
+}
+
+function handleHeaderTitleCommit() {
+  isTitleEditing.value = false;
+  if (!renameReport(headerFileName.value)) {
+    headerFileName.value = currentFileName.value || t("fileManager.untitledReport");
+  }
+}
+
+// The report's one name (header, Template Settings, the saved file, the name
+// inside the report file); an empty name is refused
+function renameReport(name: string): boolean {
+  const trimmed = name.trim().slice(0, TEMPLATE_NAME_MAX_LENGTH).trim();
+  if (!trimmed) return false;
+  if (trimmed === currentFileName.value) return true;
+  currentFileName.value = trimmed;
+  reportStore.updateJrxml();
+  scheduleAutoSave(true);
+  return true;
+}
+
+// Auto-save state and helpers
+// Whether the latest changes are saved (files store)
+const { saveStatus } = storeToRefs(filesStore);
+const isLoadingFile = ref(false);
+// A default template (the report server's, read only) being looked at: the
+// browser id it is shown under, its name and its server id (sourceId)
+const openedDefaultTemplate = ref<{ fileId: string; name: string; isDefault: boolean; sourceId?: string } | null>(null);
+// Its file is still being fetched
+const openingDefaultTemplate = ref(false);
+// The open template is a default being looked at (not saved as the user's yet)
+const viewingDefaultTemplate = computed(() => {
+  const opened = openedDefaultTemplate.value;
+  return !!opened && opened.fileId === currentFileId.value;
+});
+// A default template can only be looked at, previewed and duplicated: every
+// editing tool is off (header tools, library, page, settings, AI, keys,
+// right-click, drops) and the report store puts back anything that slips through
+const readOnlyTemplate = computed(() => viewingDefaultTemplate.value);
+watch(readOnlyTemplate, (locked) => (reportStore.readOnly = locked), { immediate: true });
+let blockedToastAt = 0;
+watch(
+  () => reportStore.blockedChanges,
+  () => {
+    if (Date.now() - blockedToastAt < 3000) return;
+    blockedToastAt = Date.now();
+    notification.info(t("reportCatalog.defaultTemplates.readOnly"));
+  },
+);
+// The bar's texts: a default template's, or one of the tenant's own on the server
+const openedTemplateTexts = computed(() => "reportCatalog.defaultTemplates");
+const copyDialogOpen = ref(false);
+// A new template (Create template, File → New, /designer) is made on the
+// report server at once under a free "Untitled Template N" and opened from
+// there at /designer/<id> (useServerTemplateCreate)
+const creatingTemplate = ref(false);
+// Templates just made here: their server content is the create's own HTML
+// template, so opening them as an empty layout needs no warning
+const newServerTemplateIds = new Set<string>();
+const { createServerTemplate } = useServerTemplateCreate();
+// The user's Default Settings (a new template takes them, read again first)
+const userSettings = useUserSettingsStore();
+
+// The open template saved to the report server (PUT /v2/reports/{id}/edit)
+// once the changes pause, and at once when it is left. The server is the only
+// place a template is kept: nothing goes into this browser's storage
+const serverSave = useServerTemplateSave({
+  snapshot: () => {
+    if (isLoadingFile.value) return null;
+    const id = currentFileId.value;
+    if (!isServerTemplateId(id) || readOnlyTemplate.value || !changedSinceOpen(id)) return null;
+    return { id, name: currentFileName.value.trim() || openedTemplateName, jrxml: reportStore.jrxmlContent };
+  },
+  onSaved: (saved) => {
+    // The server's name is now this one, and it has changes: an undo back to
+    // how the template opened is saved too
+    if (saved.id === currentFileId.value) {
+      openedTemplateName = saved.name;
+      savedTemplateId = saved.id;
+    }
   },
 });
 
-// File management related state
-const {
-  currentFileName,
-  currentFileId,
-  loadFilesFromStorage,
-  loadLastFile,
-  findFileById,
-  saveCurrentFileContent,
-  setLastFile,
-} = useDesignerFiles({
-  defaultFileName: t("fileManager.untitledReport"),
+// Every label the save badge can show (it keeps the widest one's room)
+const saveStatusLabels = computed(() => [t("editorHeader.saving"), t("editorHeader.saved"), t("editorHeader.saveFailed")]);
+
+const saveStatusTitle = computed(() => {
+  if (saveStatus.value === "saving") return t("editorHeader.savingTitle");
+  if (saveStatus.value === "error") return t("editorHeader.saveFailedTitle");
+  return t("editorHeader.savedTitle");
 });
+
+// Leaving the template (another one, a new one, the page closing or hidden):
+// its changes are sent to the server at once
+function flushAutoSave(): void {
+  void serverSave.flush();
+}
+
+// The page closing: saved at once, and the browser asks first while the
+// server doesn't have the changes yet (they exist nowhere else)
+function handleBeforeUnload(event: BeforeUnloadEvent) {
+  flushAutoSave();
+  if (serverSave.hasUnsaved()) {
+    event.preventDefault();
+    event.returnValue = "";
+  }
+}
+
+// The tab hidden (switched away, minimised, closed on a phone): saved at once
+function handleVisibilityChange() {
+  if (document.visibilityState === "hidden") flushAutoSave();
+}
+
+// A change: saved on the server once the changes pause (`immediate`: at
+// once, e.g. a rename)
+function scheduleAutoSave(immediate = false) {
+  if (isLoadingFile.value) return;
+  if (immediate) void serverSave.flush();
+  else serverSave.schedule();
+}
+
+// Ctrl+S and the save badge after a failure: saved on the server now
+async function saveNow(): Promise<void> {
+  if (readOnlyTemplate.value) return;
+  const ok = await serverSave.flush(true);
+  if (ok) notification.success(t("notifications.fileSavedSuccess"));
+}
+
+function onTitleEnter(e: Event) {
+  (e.target as HTMLInputElement)?.blur();
+}
 
 // Update the page title
 watch(
@@ -875,227 +1340,71 @@ watch(
   },
 );
 
-const handleSignOut = () => {
-  showMyActMenu.value = false;
-  void logout();
-};
-
+// File → New, Alt+N: a new template made on the report server and opened
 function createNewFile() {
-  // Logic for creating a new file
-  const timestamp = new Date().getTime();
-  currentFileName.value = `${t("fileManager.untitledReport")}${timestamp}`;
-  currentFileId.value = `file_${timestamp}`;
-
-  // Reset the report data
-  reportProperties.value = {
-    name: "NewReport",
-    pageWidth: 595,
-    pageHeight: 842,
-    leftMargin: 20,
-    rightMargin: 20,
-    topMargin: 20,
-    bottomMargin: 20,
-    defaultFont: {
-      name: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
-      size: 12,
-      isBold: false,
-      isItalic: false,
-      isUnderline: false,
-    },
-  };
-
-  bands.value = [
-    {
-      type: BAND_TYPE_CONSTANTS.TITLE as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 50,
-      elements: [],
-    },
-    {
-      type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
-      elements: [],
-    },
-    {
-      type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30,
-      elements: [],
-    },
-    {
-      type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100,
-      elements: [],
-    },
-    {
-      type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30,
-      elements: [],
-    },
-    {
-      type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
-      elements: [],
-    },
-    {
-      type: BAND_TYPE_CONSTANTS.SUMMARY as BandType,
-      height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60,
-      elements: [],
-    },
-  ];
-
-  // Update selectedBandTypes to match the new bands
-  selectedBandTypes.value = bands.value.map((band) => band.type);
-
-  reportFields.value = [];
-  reportParameters.value = [];
-  subDatasets.value = [];
-  jrxmlContent.value = "";
-
-  // Clear the currently selected element
-  selectedElement.value = null;
-  selectedBandIndex.value = null;
+  flushAutoSave();
+  void createAndOpenServerTemplate(t("fileManager.untitledReport"));
 }
 
-function saveCurrentFileToStorage() {
-  const fileData = saveCurrentFile();
-
-  const ok = saveCurrentFileContent(fileData);
-  if (ok) {
-    notification.success(t("notifications.fileSavedSuccess"));
-  } else {
-    notification.error(t("notifications.fileSaveFailed"));
-  }
-}
-
-function loadFile(fileData: DesignerFile | any) {
+// Makes a template on the report server and opens it from there at
+// /designer/<id>: a new one under the first free "Untitled Template N" over
+// every template's name, or (`jrxml`) a .jrxml from the computer under its
+// file's name, its JRXML held in memory (`uploadedJrxml`, never in the
+// browser's storage) until it opens and is saved on the server. When it
+// fails, the open template stays with a message
+async function createAndOpenServerTemplate(wanted: string, jrxml?: string): Promise<void> {
+  if (creatingTemplate.value) return;
+  creatingTemplate.value = true;
   try {
-    // Parse the file content
-    const fileContent =
-      typeof fileData.content === "string"
-        ? JSON.parse(fileData.content)
-        : fileData;
-
-    // Load the file data into the current report
-    if (fileContent.reportProperties) {
-      reportProperties.value = {
-        ...reportProperties.value,
-        ...fileContent.reportProperties,
-      };
+    const { name, id } = await createServerTemplate(wanted, { exactName: jrxml !== undefined });
+    if (!id) {
+      notification.error(t("reportCatalog.create.notFound", { name }));
+      return;
     }
-
-    if (fileContent.bands) {
-      bands.value = fileContent.bands;
-      // Update selectedBandTypes to match the loaded bands
-      selectedBandTypes.value = fileContent.bands.map(
-        (band: Band) => band.type,
-      );
-    }
-
-    if (fileContent.reportFields) {
-      reportFields.value = fileContent.reportFields;
-    }
-
-    if (fileContent.reportParameters) {
-      reportParameters.value = fileContent.reportParameters;
-    }
-
-    if (fileContent.subDatasets) {
-      subDatasets.value = fileContent.subDatasets;
-    }
-
-    if (fileContent.jrxmlContent) {
-      jrxmlContent.value = fileContent.jrxmlContent;
-    }
-
-    // Update the current file info
-    currentFileName.value = fileData.name || t("fileManager.untitledReport");
-    currentFileId.value = fileData.id || null;
-    if (fileData.id) {
-      setLastFile({ id: fileData.id, name: fileData.name });
-    }
-
-    // Clear the currently selected element
-    selectedElement.value = null;
-    selectedBandIndex.value = null;
+    if (jrxml !== undefined) uploadedJrxml = { id, jrxml };
+    else newServerTemplateIds.add(id);
+    const go = typeof route.params.id === "string" && route.params.id ? router.push : router.replace;
+    await go({ name: "designer", params: { id } });
   } catch (error) {
-    console.error("Failed to load file:", error);
-    notification.error(t("fileManager.invalidFileFormat"));
+    const reason = await reportServerErrorText(error, t("reportCatalog.errors.server"));
+    notification.error(t("reportCatalog.create.failed", { reason }));
+  } finally {
+    creatingTemplate.value = false;
   }
 }
 
-function saveAsLocalFile() {
-  const newName = prompt(
-    t("fileManager.enterNewFileName"),
-    currentFileName.value,
+// A .jrxml from the computer for a template just made on the server, opened
+// with it and saved there at once (in memory only)
+let uploadedJrxml: { id: string; jrxml: string } | null = null;
+// The template opened from the server: the name it came with, so a rename
+// counts as a change
+let openedTemplateName = "";
+// The open template has been saved on the server since it opened
+let savedTemplateId = "";
+// The open template is to be saved on the server even unchanged: it was just
+// made and took the user's Default Settings (so it keeps them), or Preview PDF
+// runs it while the server holds no JRXML for it (opened as an empty layout)
+let saveAnywayId = "";
+// The open server template's Jmix report (what Preview PDF runs), and whether
+// its server content couldn't be opened (no JRXML there yet)
+let templateReportId = "";
+let templateReportParameters: TemplatePdfRun["parameters"] = [];
+let openedWithoutJrxml = false;
+
+// Changed since it opened: an undo step past the first, renamed, or saved
+// (its changes stay saved, an undo back included)
+function changedSinceOpen(id: string): boolean {
+  return (
+    reportStore.historyStack.length > 1 ||
+    currentFileName.value !== openedTemplateName ||
+    savedTemplateId === id ||
+    saveAnywayId === id
   );
-  if (!newName) return;
-  const timestamp = Date.now();
-  currentFileName.value = newName;
-  currentFileId.value = `file_${timestamp}`;
-  saveCurrentFileToStorage();
 }
-
-function saveCurrentFile() {
-  // Create a deep clone of bands so border properties can be processed
-  const processedBands = JSON.parse(JSON.stringify(bands.value));
-
-  // Process elements in each band, filtering out border properties with a width of 0
-  processedBands.forEach((band: any) => {
-    if (band.elements && Array.isArray(band.elements)) {
-      band.elements.forEach((element: any) => {
-        if (element.box) {
-          // Handle the new border model
-          if (element.box.pen && element.box.pen.lineWidth <= 0) {
-            delete element.box.pen;
-          }
-
-          // Handle borders on each side
-          ["topPen", "leftPen", "bottomPen", "rightPen"].forEach((penType) => {
-            if (element.box[penType] && element.box[penType].lineWidth <= 0) {
-              delete element.box[penType];
-            }
-          });
-
-          // If the box object is empty, remove the entire box property
-          if (Object.keys(element.box).length === 0) {
-            delete element.box;
-          }
-        }
-      });
-    }
-  });
-
-  // Prepare the data to save
-  const fileData = {
-    id: currentFileId.value,
-    name: currentFileName.value,
-    reportProperties: reportProperties.value,
-    bands: processedBands,
-    reportFields: reportFields.value,
-    reportParameters: reportParameters.value,
-    subDatasets: subDatasets.value,
-    jrxmlContent: jrxmlContent.value,
-    lastModified: new Date().toISOString(),
-  };
-
-  // Return the file data
-  return fileData;
-}
-
-// Incomplete elements, only visible on localhost
-const INCOMPLETE_ELEMENTS = [
-  "map",
-  "crosstab",
-  "iconLabel",
-  "genericElement",
-  "list",
-  "subreport",
-];
-const isDev = location.hostname === "localhost";
 
 // Available elements
 const elements = computed(() =>
   getAllElementConfigs()
-    .filter((config) => isDev || !INCOMPLETE_ELEMENTS.includes(config.type))
     .map((config) => ({ type: config.type, name: config.name })),
 );
 
@@ -1104,206 +1413,698 @@ const elements = computed(() =>
 
 // Using the interfaces imported from types/index.ts
 
-// Report bands
-const bands = ref<Band[]>([
-  {
-    type: BAND_TYPE_CONSTANTS.TITLE as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 50,
-    elements: [],
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
-    elements: [],
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30,
-    elements: [],
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100,
-    elements: [],
-  }, // Default the detail band to a height of 100
-  {
-    type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30,
-    elements: [],
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
-    elements: [],
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.SUMMARY as BandType,
-    height: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60,
-    elements: [],
-  },
-]);
+// Multi-page state and methods
+
+
+// afterPage: 1-based page the new one follows (default: at the end). Detail
+// content of later pages moves down one page.
+const addNewPage = (afterPage?: number) => {
+  saveStateToHistory();
+  // Normal pages always come after the cover and contents pages
+  const insertAt = Math.max(
+    specialPages(reportProperties.value).count,
+    typeof afterPage === "number" ? Math.min(afterPage, totalPages.value) : totalPages.value,
+  );
+  const detailBand = bands.value.find(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+  detailBand?.elements?.forEach((el: any) => {
+    if ((el.pageIndex ?? 0) >= insertAt) el.pageIndex = (el.pageIndex ?? 0) + 1;
+  });
+  pageCount.value = totalPages.value + 1;
+  notification.success(t("editor.pageAdded", { page: insertAt + 1 }));
+  updateJRXML();
+};
+
+// The AI assistant runs the page actions too (runPageTool): its whole message
+// is one undo step, recorded before, and it asks the user itself before
+// replacing a page's content
+let aiDriven = false;
+const recordPageStep = () => {
+  if (!aiDriven) saveStateToHistory();
+};
+
+const deletePage = (pageIndex: number) => {
+  const special = specialPages(reportProperties.value);
+  const kind = pageKind(reportProperties.value, pageIndex);
+  // One normal page always stays
+  if (kind === "normal" && totalPages.value - special.count <= 1) {
+    notification.warning(t("specialPages.lastNormalPage"));
+    return;
+  }
+  recordPageStep();
+  const newTotal = totalPages.value - 1;
+  const detailBand = bands.value.find(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+  if (detailBand && detailBand.elements) {
+    detailBand.elements = detailBand.elements.filter(
+      (el: any) => (el.pageIndex ?? 0) !== pageIndex,
+    );
+    detailBand.elements.forEach((el: any) => {
+      if ((el.pageIndex ?? 0) > pageIndex) {
+        el.pageIndex = (el.pageIndex ?? 0) - 1;
+      }
+    });
+  }
+  selectedElement.value = null;
+  if (kind === "cover") {
+    reportProperties.value.coverPage = false;
+    delete reportProperties.value.fullPageCover;
+  }
+  if (kind === "contents") reportProperties.value.contentsPages = special.contents - 1;
+  pageCount.value = Math.max(1, newTotal);
+  notification.info(
+    kind === "normal"
+      ? t("editor.pageDeleted", { page: pageIndex + 1 })
+      : t(kind === "cover" ? "specialPages.coverDeleted" : "specialPages.contentsDeleted"),
+  );
+  updateJRXML();
+};
+
+// ---- Cover and contents pages (utils/specialPages.ts) ----
+
+// The Table of Contents already on the contents pages, when `element` would be
+// a second one there (its own parts, a second column or a later page, don't count)
+let existingContentsToc: ContentsListElement | null = null;
+const otherContentsToc = (element: DesignElement, pageIndex: number): ContentsListElement | null => {
+  const props = reportProperties.value;
+  if (element.type !== "contentsList" || pageKind(props, pageIndex) !== "contents") return null;
+  const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+  const own = new Set(
+    detail ? listChain(detail.elements, element as ContentsListElement).map((l) => l.uuid) : [element.uuid],
+  );
+  return (
+    (detail?.elements ?? []).find(
+      (e): e is ContentsListElement =>
+        e.type === "contentsList" && !own.has(e.uuid) && pageKind(props, e.pageIndex) === "contents",
+    ) ?? null
+  );
+};
+
+// What stops an element from going on a Detail page (cover / contents rules,
+// one Table of Contents on the contents pages)
+const pageProblem = (element: DesignElement, pageIndex: number): SpecialPageProblem | null => {
+  const problem = specialPageProblem(element, pageKind(reportProperties.value, pageIndex));
+  if (problem) return problem;
+  existingContentsToc = otherContentsToc(element, pageIndex);
+  return existingContentsToc ? "secondContents" : null;
+};
+
+const warnSpecialPageProblem = (problem: SpecialPageProblem) => {
+  notification.warning(t(`specialPages.notAllowed.${problem}`));
+  // Show the Table of Contents that is already there
+  if (problem === "secondContents" && existingContentsToc?.uuid) selectionStore.revealUuid = existingContentsToc.uuid;
+};
+
+// The first item on a page that can't be on a cover or contents page
+const specialProblemOnPage = (pageIndex: number, kind: "cover" | "contents"): SpecialPageProblem | null => {
+  const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+  for (const el of detail?.elements ?? []) {
+    if ((el.pageIndex ?? 0) !== pageIndex) continue;
+    const problem = specialPageProblem(el, kind);
+    if (problem) return problem;
+  }
+  return null;
+};
+
+// A new empty page at `at` (later pages move down one)
+const insertEmptyPage = (at: number) => {
+  const total = totalPages.value;
+  const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+  shiftPages(detail?.elements ?? [], at, 1);
+  pageCount.value = total + 1;
+};
+
+// Another contents page with the last one's design: its items copied, and its
+// Table of Contents carrying on the first one (rows that don't fit flow onto it)
+const addContentsPageLikeLast = () => {
+  const props = reportProperties.value;
+  const { contents, count } = specialPages(props);
+  const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+  if (!detail || !contents) return;
+  recordPageStep();
+  const source = detail.elements.filter((el) => (el.pageIndex ?? 0) === count - 1);
+  insertEmptyPage(count);
+  props.contentsPages = contents + 1;
+  for (const el of source) {
+    const copy = JSON.parse(JSON.stringify(el)) as DesignElement;
+    refreshUuids(copy);
+    copy.pageIndex = count;
+    if (copy.type === "contentsList" && el.type === "contentsList") {
+      copy.list.continues = listChain(detail.elements, el)[0]!.uuid;
+      copy.list.entries = [];
+      syncContentsListSize(copy);
+    }
+    detail.elements.push(copy);
+  }
+  notification.success(t("specialPages.contentsAddedSameDesign"));
+  updateJRXML();
+};
+
+type PageAction =
+  | "addCover"
+  | "makeCover"
+  | "coverToNormal"
+  | "addContents"
+  | "makeContents"
+  | "contentsToNormal"
+  | "chooseDesign"
+  | "addToc"
+  | "wholeSheet"
+  | "keepMargins"
+  | "watermark";
+
+// ---- Designs for the cover / contents pages (utils/pageDesigns.ts) ----
+
+const designChooser = reactive<{
+  visible: boolean;
+  kind: "cover" | "contents";
+  mode: "add" | "replace";
+  pageIndex: number;
+  // Cover: use the whole sheet, edge to edge
+  sheet: boolean;
+}>({ visible: false, kind: "cover", mode: "add", pageIndex: 0, sheet: true });
+
+const openDesignChooser = (kind: "cover" | "contents", mode: "add" | "replace", pageIndex: number) => {
+  // A new cover fills the sheet by default; a cover's design keeps its setting
+  const sheet = mode === "add" ? true : !!reportProperties.value.fullPageCover;
+  Object.assign(designChooser, { visible: true, kind, mode, pageIndex, sheet });
+};
+
+// The area designs are made for: the whole sheet, or the printable page
+const designContext = (sheet: boolean): FrameTemplateContext =>
+  sheet
+    ? {
+        ...getFrameTemplateContext(),
+        availableWidth: paperWidth.value,
+        availableHeight: paperHeight.value,
+        // Text and logos keep clear of the paper's edge
+        inset: Math.max(24, reportProperties.value.leftMargin || 0, reportProperties.value.topMargin || 0),
+      }
+    : getFrameTemplateContext();
+
+// The designs, drawn for this report's page
+const chooserDesigns = computed(() => {
+  if (!designChooser.visible) return [];
+  const ctx = designContext(designChooser.kind === "cover" && designChooser.sheet);
+  return designChooser.kind === "cover"
+    ? COVER_DESIGN_TYPES.map((id) => ({ id, elements: buildCoverDesign(id, ctx) }))
+    : CONTENTS_DESIGN_TYPES.map((id) => ({ id, elements: buildContentsDesign(id, ctx) }));
+});
+
+const designElements = (id: string, sheet: boolean): DesignElement[] => {
+  const ctx = designContext(sheet);
+  if (isCoverDesignType(id)) return buildCoverDesign(id, ctx);
+  if ((CONTENTS_DESIGN_TYPES as readonly string[]).includes(id)) {
+    return buildContentsDesign(id as ContentsDesignType, ctx);
+  }
+  return [];
+};
+
+// A design tile from the library: the cover design goes on the cover page, a
+// contents design on the contents page it was dropped on (else the first one);
+// the page is added when there is none, and its content replaced after asking
+const applyDesignFromLibrary = (id: string, pageIndex?: number) => {
+  const props = reportProperties.value;
+  const { cover, contents } = specialPages(props);
+  if (isCoverDesignType(id)) {
+    Object.assign(designChooser, {
+      kind: "cover",
+      mode: cover ? "replace" : "add",
+      pageIndex: 0,
+      sheet: cover ? !!props.fullPageCover : true,
+    });
+  } else {
+    const onContents = pageIndex !== undefined && pageKind(props, pageIndex) === "contents";
+    const firstContents = cover ? 1 : 0;
+    Object.assign(designChooser, {
+      kind: "contents",
+      mode: contents ? "replace" : "add",
+      pageIndex: onContents ? pageIndex : firstContents,
+      sheet: false,
+    });
+  }
+  applyChosenDesign(id);
+};
+
+// A design (or "blank") chosen: the page is added with it, or its content is
+// replaced by it (after asking, when it has content). One undo step.
+const applyChosenDesign = async (id: string) => {
+  const { kind, mode, pageIndex } = designChooser;
+  const sheet = kind === "cover" && designChooser.sheet;
+  designChooser.visible = false;
+  const props = reportProperties.value;
+  const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+  if (!detail) return;
+  // Contents pages all share one design: a new one goes on every contents page
+  const allContents = kind === "contents" && mode === "replace";
+  const { cover: hasCover, count: specialCount } = specialPages(props);
+  const contentsIndexes = allContents
+    ? Array.from({ length: specialCount - (hasCover ? 1 : 0) }, (_, i) => i + (hasCover ? 1 : 0))
+    : [pageIndex];
+  const onPage = detail.elements.filter((el) => contentsIndexes.includes(el.pageIndex ?? 0));
+  if (mode === "replace" && onPage.length && !aiDriven) {
+    const ok = await askConfirm(
+      t(allContents ? "pageDesigns.replaceContentsTitle" : "pageDesigns.replaceTitle"),
+      t(allContents ? "pageDesigns.replaceContentsMessage" : "pageDesigns.replaceMessage"),
+    );
+    if (!ok) return;
+  }
+  recordPageStep();
+  let page = pageIndex;
+  if (mode === "add") {
+    const { contents, count } = specialPages(props);
+    if (kind === "cover") {
+      insertEmptyPage(0);
+      props.coverPage = true;
+      page = 0;
+    } else {
+      insertEmptyPage(count);
+      props.contentsPages = contents + 1;
+      page = count;
+    }
+  }
+  // The rows of the Table of Contents being replaced, kept in the new design
+  const oldLists = onPage.filter((el): el is ContentsListElement => el.type === "contentsList");
+  const oldFirst = oldLists.find((l) => !l.list.continues || !oldLists.some((o) => o.uuid === l.list.continues));
+  const keptRows = oldFirst && allContents ? listChain(detail.elements, oldFirst).flatMap((l) => l.list.entries) : [];
+  const keptFollow = !!oldFirst?.list.follow;
+  if (mode === "replace") {
+    detail.elements = detail.elements.filter((el) => !contentsIndexes.includes(el.pageIndex ?? 0));
+  }
+  if (kind === "cover") {
+    if (sheet) props.fullPageCover = true;
+    else delete props.fullPageCover;
+  }
+  const design = designElements(id, sheet);
+  const designFirst = design.find((el): el is ContentsListElement => el.type === "contentsList" && !el.list.continues);
+  if (allContents && designFirst) {
+    if (keptFollow) designFirst.list.follow = true;
+    else delete designFirst.list.follow;
+    if (oldFirst) designFirst.list.entries = keptRows.map((e) => ({ ...e }));
+  }
+  // The design's numbering becomes the report's: section numbers (shared with
+  // the Section Headings), no text before / after beyond the design's word;
+  // sub-sections come with the design's list
+  let numbersChanged = false;
+  if (kind === "contents" && designFirst) {
+    const l = designFirst.list;
+    const before = JSON.stringify(headingNumbering(props));
+    props.headingNumbers =
+      l.sectionStyle === "word"
+        ? { style: "word", word: l.sectionWord ?? "SECTION" }
+        : { style: l.sectionStyle ?? "1." };
+    numbersChanged = JSON.stringify(headingNumbering(props)) !== before && sectionHeadings(bands.value, props).length > 0;
+  }
+  contentsIndexes.forEach((p, n) => {
+    for (const element of design) {
+      // Later contents pages: a copy, its lists carrying on the first page's list
+      const placed = n === 0 ? element : (JSON.parse(JSON.stringify(element)) as DesignElement);
+      if (n > 0) {
+        refreshUuids(placed);
+        if (placed.type === "contentsList" && designFirst) {
+          placed.list.continues = designFirst.uuid;
+          placed.list.entries = [];
+        }
+      }
+      placed.pageIndex = mode === "add" ? page : p;
+      detail.elements.push(placed);
+    }
+  });
+  selectedElement.value = null;
+  selectedElements.value = [];
+  notification.success(
+    mode === "replace"
+      ? t(allContents && contentsIndexes.length > 1 ? "pageDesigns.appliedAllContents" : "pageDesigns.applied")
+      : t(kind === "cover" ? "specialPages.coverAdded" : "specialPages.contentsAdded"),
+  );
+  // The Section Headings on the pages now number like the design: say so
+  if (numbersChanged) {
+    const n = headingNumbering(props);
+    notification.info(
+      t("pageDesigns.numbersNow", { sample: [1, 2, 3].map((i) => headingNumberText(n, i)).join(", ") }),
+    );
+  }
+  updateJRXML();
+};
+
+// ---- Contents list: "Fill from my section headings" ----
+
+// Fills the selected list (and the lists carrying it on) with every Section
+// Heading and Sub-heading; when they don't fit, new contents pages carry the
+// list on. One undo step.
+const fillContentsList = async () => {
+  const sel = selectedElement.value;
+  const detailIndex = bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+  const detail = bands.value[detailIndex];
+  if (!sel || !detail || sel.bandIndex !== detailIndex || sel.parentFrameIndex !== undefined) {
+    notification.warning(t("contentsList.onlyOnPages"));
+    return;
+  }
+  const picked = detail.elements[sel.elementIndex];
+  if (picked?.type !== "contentsList") return;
+  const props = reportProperties.value;
+  const entries = collectHeadings(bands.value, props);
+  if (!entries.length) {
+    notification.warning(t("contentsList.noHeadings"));
+    return;
+  }
+  const lists = () => detail.elements.filter((e): e is ContentsListElement => e.type === "contentsList");
+  const first =
+    (picked.list.continues && lists().find((l) => l.uuid === picked.list.continues)) || picked;
+  const chain = [
+    first,
+    ...lists()
+      .filter((l) => l.list.continues === first.uuid)
+      .sort((a, b) => (a.pageIndex ?? 0) - (b.pageIndex ?? 0) || a.x - b.x),
+  ];
+  // Rows already there are kept unless the user chooses to replace them; new
+  // rows always go at the end (the user drags them into place)
+  const existing = chain.flatMap((l) => l.list.entries.map((e) => ({ ...e })));
+  const rowKey = (e: { level: number; title: string }) => `${e.level}|${e.title.trim().toLowerCase()}`;
+  const known = new Set(existing.map(rowKey));
+  const fresh = entries.filter((e) => !known.has(rowKey(e)));
+  let mode: FillMode = "replace";
+  if (existing.length) {
+    const chosen = await askFillMode(existing.length, entries.length, fresh.length);
+    if (!chosen) return;
+    mode = chosen;
+  }
+  const added = entriesFor(first.list, mode === "new" ? fresh : entries);
+  if (mode === "new" && !added.length) return;
+  saveStateToHistory();
+  const capacity = (l: ContentsListElement) =>
+    rowsThatFit(l.list, bandAreaHeight(detailIndex, l.pageIndex) - l.y);
+  const rest = mode === "replace" ? added : [...existing, ...added];
+  for (const l of chain) {
+    l.list.entries = rest.splice(0, Math.min(capacity(l), rest.length));
+    syncContentsListSize(l);
+  }
+  // More than fits: new contents pages, each with a copy of the list
+  let addedPages = 0;
+  while (rest.length && pageKind(props, first.pageIndex) === "contents") {
+    const { contents, count } = specialPages(props);
+    insertEmptyPage(count);
+    props.contentsPages = contents + 1;
+    addedPages++;
+    const copy: ContentsListElement = {
+      ...JSON.parse(JSON.stringify(first)),
+      uuid: crypto.randomUUID(),
+      pageIndex: count,
+    };
+    copy.list.continues = first.uuid;
+    copy.list.entries = rest.splice(0, Math.min(capacity(copy), rest.length));
+    syncContentsListSize(copy);
+    detail.elements.push(copy);
+  }
+  // Lists on later pages left empty are removed (a second column stays)
+  detail.elements = detail.elements.filter(
+    (e) =>
+      !(
+        e.type === "contentsList" &&
+        e.list.continues === first.uuid &&
+        !e.list.entries.length &&
+        e.pageIndex !== first.pageIndex
+      ),
+  );
+  const index = detail.elements.findIndex((e) => e.uuid === picked.uuid);
+  if (index !== -1) selectElement(detailIndex, index);
+  if (rest.length) notification.warning(t("contentsList.notAllFit", { n: rest.length }, rest.length));
+  else
+    notification.success(
+      addedPages
+        ? t("contentsList.filledMore", { n: added.length, pages: addedPages }, addedPages)
+        : t(mode === "replace" ? "contentsList.filled" : "contentsList.filledAdded", { n: added.length }, added.length),
+    );
+  updateJRXML();
+};
+
+// One undo step each; normal pages always follow the cover and contents pages
+const handlePageAction = (action: PageAction, pageIndex: number) => {
+  const props = reportProperties.value;
+  const { cover, contents, count } = specialPages(props);
+  const normalPages = totalPages.value - count;
+  // Turning the only normal page into a cover / contents page adds one after it
+  const keepANormalPage = () => {
+    if (normalPages <= 1) pageCount.value = totalPages.value + 1;
+  };
+  switch (action) {
+    // The template's watermark (any page's ⋯ menu): selected (its settings
+    // open), or added when there is none
+    case "watermark": {
+      const existing = findWatermark(bands.value);
+      if (existing) selectElement(existing.bandIndex, existing.elementIndex);
+      else addWatermark();
+      return;
+    }
+    case "addCover":
+      if (cover) return;
+      openDesignChooser("cover", "add", 0);
+      return;
+    case "makeCover": {
+      if (cover || contents || pageIndex !== 0) return;
+      const problem = specialProblemOnPage(0, "cover");
+      if (problem) return warnSpecialPageProblem(problem);
+      recordPageStep();
+      keepANormalPage();
+      props.coverPage = true;
+      notification.success(t("specialPages.coverMade"));
+      break;
+    }
+    case "coverToNormal":
+      if (!cover || contents) return;
+      recordPageStep();
+      // A whole-sheet cover's content is fitted inside the margins
+      if (props.fullPageCover) {
+        const from = specialPageArea(props, 0)!;
+        delete props.fullPageCover;
+        const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+        scaleElementsToArea(
+          (detail?.elements ?? []).filter((el) => (el.pageIndex ?? 0) === 0),
+          from,
+          specialPageArea(props, 0)!,
+        );
+      }
+      props.coverPage = false;
+      notification.info(t("specialPages.madeNormal"));
+      break;
+    case "addContents":
+      // More contents pages take the last one's design; the first one asks
+      if (contents) addContentsPageLikeLast();
+      else openDesignChooser("contents", "add", count);
+      return;
+    case "wholeSheet":
+    case "keepMargins": {
+      // The cover's items stay where they are on the sheet
+      const sheet = action === "wholeSheet";
+      if (!cover || !!props.fullPageCover === sheet) return;
+      recordPageStep();
+      // The cover's content is fitted to its new area: the design keeps its
+      // layout, nothing has to be resized by hand
+      const from = specialPageArea(props, 0)!;
+      if (sheet) props.fullPageCover = true;
+      else delete props.fullPageCover;
+      const to = specialPageArea(props, 0)!;
+      const detail = bands.value.find((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+      scaleElementsToArea(
+        (detail?.elements ?? []).filter((el) => (el.pageIndex ?? 0) === 0),
+        from,
+        to,
+      );
+      notification.info(t(sheet ? "specialPages.wholeSheetOn" : "specialPages.wholeSheetOff"));
+      break;
+    }
+    case "addToc": {
+      // A Table of Contents on this contents page (the canvas offers it when the page has none)
+      const detailIndex = bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+      if (detailIndex === -1) return;
+      lastClickedBandIndex.value = detailIndex;
+      lastClickedPageIndex.value = pageIndex;
+      addReportPart("partContentsList");
+      return;
+    }
+    case "chooseDesign": {
+      const kind = pageKind(props, pageIndex);
+      if (kind === "normal") return;
+      openDesignChooser(kind, "replace", pageIndex);
+      return;
+    }
+    case "makeContents": {
+      if (pageIndex !== count) return;
+      const problem = specialProblemOnPage(pageIndex, "contents");
+      if (problem) return warnSpecialPageProblem(problem);
+      recordPageStep();
+      keepANormalPage();
+      props.contentsPages = contents + 1;
+      notification.success(t("specialPages.contentsMade"));
+      break;
+    }
+    case "contentsToNormal":
+      if (!contents || pageIndex !== count - 1) return;
+      recordPageStep();
+      props.contentsPages = contents - 1;
+      notification.info(t("specialPages.madeNormal"));
+      break;
+  }
+  updateJRXML();
+};
+
+// The AI assistant's page tools (mcp/handlers.ts): the same page actions, as
+// part of the AI's undo step, without the confirm (the AI asks the user first).
+// Returns why it can't be done, or null.
+const runPageTool = async (request: PageToolRequest): Promise<string | null> => {
+  const props = reportProperties.value;
+  const { cover, contents, count } = specialPages(props);
+  const problemText = (problem: SpecialPageProblem) => t(`specialPages.notAllowed.${problem}`);
+  aiDriven = true;
+  try {
+    switch (request.action) {
+      case "addCover":
+        if (cover) return "The report already has a cover page (page 1); give it another design with change_page_design";
+        Object.assign(designChooser, { kind: "cover", mode: "add", pageIndex: 0, sheet: request.wholeSheet });
+        await applyChosenDesign(request.design);
+        return null;
+      case "addContents":
+        // More contents pages take the last one's design (one Table of Contents over them)
+        if (contents) {
+          addContentsPageLikeLast();
+          return null;
+        }
+        Object.assign(designChooser, { kind: "contents", mode: "add", pageIndex: count, sheet: false });
+        await applyChosenDesign(request.design);
+        return null;
+      case "changeDesign": {
+        const kind = pageKind(props, request.page);
+        if (request.page >= totalPages.value) return `The report has ${totalPages.value} page(s)`;
+        if (kind === "normal") return `Page ${request.page + 1} is a normal page; designs are for the cover and contents pages`;
+        const sheet = kind === "cover" && (request.wholeSheet ?? !!props.fullPageCover);
+        Object.assign(designChooser, { kind, mode: "replace", pageIndex: request.page, sheet });
+        await applyChosenDesign(request.design);
+        return null;
+      }
+      case "setKind": {
+        const { page, kind } = request;
+        const now = pageKind(props, page);
+        if (page >= totalPages.value) return `The report has ${totalPages.value} page(s)`;
+        if (now === kind) return `Page ${page + 1} is already a ${kind} page`;
+        if (kind === "cover") {
+          if (page !== 0 || cover || contents) return "Only page 1 of a report without a cover or contents pages can become the cover (add_cover_page adds one in front)";
+          const problem = specialProblemOnPage(0, "cover");
+          if (problem) return problemText(problem);
+          handlePageAction("makeCover", 0);
+        } else if (kind === "contents") {
+          if (page !== count) return `Only the first normal page (page ${count + 1}) can become a contents page (add_contents_page adds one)`;
+          const problem = specialProblemOnPage(page, "contents");
+          if (problem) return problemText(problem);
+          handlePageAction("makeContents", page);
+        } else if (now === "cover") {
+          if (contents) return "Turn the contents pages into normal pages first (the last one first)";
+          handlePageAction("coverToNormal", 0);
+        } else {
+          if (page !== count - 1) return `Only the last contents page (page ${count}) can become a normal page`;
+          handlePageAction("contentsToNormal", page);
+        }
+        return null;
+      }
+      case "wholeSheet":
+        if (!cover) return "The report has no cover page";
+        handlePageAction(request.on ? "wholeSheet" : "keepMargins", 0);
+        return null;
+      case "deletePage": {
+        const kind = pageKind(props, request.page);
+        if (request.page >= totalPages.value) return `The report has ${totalPages.value} page(s)`;
+        if (kind === "normal" && totalPages.value - count <= 1) return t("specialPages.lastNormalPage");
+        deletePage(request.page);
+        return null;
+      }
+    }
+  } finally {
+    aiDriven = false;
+  }
+};
 
 // All possible band types
-const allBandTypes = [
-  {
-    type: BAND_TYPE_CONSTANTS.TITLE as BandType,
-    name: "Title",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.TITLE] || 80,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.PAGE_HEADER as BandType,
-    name: "Page Header",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_HEADER] || 50,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.COLUMN_HEADER as BandType,
-    name: "Column Header",
-    defaultHeight:
-      BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_HEADER] || 30,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.DETAIL as BandType,
-    name: "Detail",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.DETAIL] || 100,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.COLUMN_FOOTER as BandType,
-    name: "Column Footer",
-    defaultHeight:
-      BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.COLUMN_FOOTER] || 30,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.PAGE_FOOTER as BandType,
-    name: "Page Footer",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.PAGE_FOOTER] || 40,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.SUMMARY as BandType,
-    name: "Summary",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.SUMMARY] || 60,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.BACKGROUND as BandType,
-    name: "Background",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.BACKGROUND] || 0,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER as BandType,
-    name: "Last Page Footer",
-    defaultHeight:
-      BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.LAST_PAGE_FOOTER] || 40,
-  },
-  {
-    type: BAND_TYPE_CONSTANTS.NO_DATA as BandType,
-    name: "No Data",
-    defaultHeight: BAND_HEIGHT_CONSTANTS[BAND_TYPE_CONSTANTS.NO_DATA] || 50,
-  },
-];
+const allBandTypes = ALL_CONFIGURABLE_BANDS;
 
-// The currently selected band type
-const selectedBandTypes = ref<BandType[]>(bands.value.map((band) => band.type));
 
-// Data fields
-const reportFields = ref<ReportField[]>([]);
 
-// Report parameters
-const reportParameters = ref<ReportParameter[]>([]);
 
-// Sub-datasets
-const subDatasets = ref<TableDataset[]>([]);
-const showSubDatasetModal = ref(false);
-const editingSubDataset = ref<TableDataset | undefined>(undefined);
 
-// Report styles
-const reportStyles = ref<any[]>([
-  {
-    name: "Table_TH",
-    mode: "Opaque",
-    backcolor: "#F0F8FF",
-    box: {
-      pen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      topPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      leftPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      bottomPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      rightPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-    },
-  },
-  {
-    name: "Table_CH",
-    mode: "Opaque",
-    backcolor: "#BFE1FF",
-    box: {
-      pen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      topPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      leftPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      bottomPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      rightPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-    },
-  },
-  {
-    name: "Table_TD",
-    mode: "Opaque",
-    backcolor: "#FFFFFF",
-    box: {
-      pen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      topPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      leftPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      bottomPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-      rightPen: {
-        lineWidth: 0.5,
-        lineColor: "#000000",
-      },
-    },
-  },
-]);
 
-// Report variables
-const reportVariables = ref<any[]>([]);
+// How much of the header fits the window: 0 = everything with labels; each
+// step turns labels into icons or moves tools into the More menu
+// (1: brand name, Download label · 2: Page / Snap / bottom panel labels ·
+// 3: zoom, bottom panel, snap → More · 4: edit tools, Download → More, save
+// status as an icon, projects as an icon · 5: undo/redo → More, File /
+// Preview as icons ·
+// 6: logo and "Saved" hidden). Works down to a 300px wide window. The widths
+// are a first guess; if the header still overflows (longer Malay labels, a
+// long project code, a long report name…), the next step is taken until it fits.
+const HEADER_TIER_WIDTHS = [1500, 1320, 1140, 900, 680, 440];
+const MAX_HEADER_TIER = HEADER_TIER_WIDTHS.length;
+const headerRef = ref<HTMLElement | null>(null);
+const headerTier = ref(0);
+// The header, or one of its two groups (the left tools can slide under the
+// buttons on the right without the header itself getting wider)
+const headerOverflows = () => {
+  const header = headerRef.value;
+  if (!header) return false;
+  return [header, ...Array.from(header.children)].some(
+    (el) => el.scrollWidth > el.clientWidth + 1,
+  );
+};
+let fittingHeader = false;
+const fitHeader = async () => {
+  if (fittingHeader) return;
+  fittingHeader = true;
+  try {
+    headerTier.value = HEADER_TIER_WIDTHS.filter((width) => window.innerWidth < width).length;
+    await nextTick();
+    while (headerOverflows() && headerTier.value < MAX_HEADER_TIER) {
+      headerTier.value++;
+      await nextTick();
+    }
+  } finally {
+    fittingHeader = false;
+  }
+};
+window.addEventListener("resize", fitHeader);
+onUnmounted(() => window.removeEventListener("resize", fitHeader));
+onMounted(fitHeader);
+watch(locale, () => nextTick(fitHeader));
+// A longer name can need a more compact header (a shorter one, a roomier one)
+watch(headerFileName, () => nextTick(fitHeader));
 
-// Report groups
-const reportGroups = ref<any[]>([]);
+// Projects chosen in the header (kept with the report properties,
+// so undo and saving cover them)
+const reportProjects = computed<ReportProject[]>(() => reportProperties.value?.projects ?? []);
+
+// The template's project. A new one is the whole template's: its tables,
+// lists and charts read it from now on, and its linked details and places
+// follow it (one undo step). One project per template for now.
+const setReportProjects = (projects: ReportProject[]) => {
+  // Cleared while tables or charts read it: they would have nothing to show
+  const current = reportProjects.value[0];
+  if (!projects.length && current) {
+    const usage = countProjectUsage(bands.value, current.id);
+    if (usage > 0) {
+      notification.warning(t("reportData.projectInUse", { project: current.name, count: usage }));
+      return;
+    }
+  }
+  saveStateToHistory();
+  reportProperties.value = { ...reportProperties.value, projects };
+  const project = projects[0];
+  if (project && moveReportToProject(bands.value, project) > 0) {
+    notification.info(t("reportData.projectSwitched", { project: project.name }));
+  }
+  updateJRXML();
+};
+
+
+
+
 
 // Context menu state
 const contextMenu = ref({
@@ -1313,94 +2114,6 @@ const contextMenu = ref({
   type: "element" as "element" | "canvas",
 });
 
-// Table styles
-const tableStyles = ref({
-  tableHeader: "Table_TH",
-  columnHeader: "Table_CH",
-  columnFooter: "Table_CH",
-  detailCell: "Table_TD",
-});
-
-// Handle adding a sub-dataset
-const handleAddSubDataset = () => {
-  editingSubDataset.value = undefined;
-  showSubDatasetModal.value = true;
-};
-
-// Handle editing a sub-dataset
-const handleEditSubDataset = (dataset: TableDataset, index: number) => {
-  editingSubDataset.value = dataset;
-  showSubDatasetModal.value = true;
-};
-
-// Handle deleting a sub-dataset
-const handleDeleteSubDataset = (index: number) => {
-  // Save state to history
-  saveStateToHistory();
-
-  // Remove the sub-dataset
-  subDatasets.value.splice(index, 1);
-
-  // Update JRXML
-  updateJRXML();
-};
-
-// Handle saving a sub-dataset
-const handleSubDatasetSave = (dataset: TableDataset) => {
-  // Save state to history
-  saveStateToHistory();
-
-  const existingIndex = subDatasets.value.findIndex(
-    (d: TableDataset) => d.uuid === dataset.uuid,
-  );
-
-  if (existingIndex >= 0) {
-    // Update the existing sub-dataset
-    subDatasets.value[existingIndex] = dataset;
-  } else {
-    // Add the new sub-dataset
-    subDatasets.value.push(dataset);
-  }
-
-  // Update JRXML
-  updateJRXML();
-
-  // Close the modal
-  showSubDatasetModal.value = false;
-};
-
-// Check for and create a default table dataset
-const checkAndCreateDefaultTableDataset = (
-  datasetName: string = "tableDataset",
-) => {
-  // Check whether a dataset with the same name already exists
-  const existingDataset = subDatasets.value.find(
-    (d: TableDataset) => d.name === datasetName,
-  );
-  if (existingDataset) {
-    return;
-  }
-
-  // Save state to history
-  saveStateToHistory();
-
-  // Create the default dataset
-  const defaultDataset: TableDataset = {
-    uuid: crypto.randomUUID(),
-    name: datasetName,
-    fields: [
-      { name: "FIELD_NAME", class: "java.lang.String" },
-      { name: "FIELD_NAME2", class: "java.lang.String" },
-      { name: "FIELD_NAME3", class: "java.lang.String" },
-    ],
-  };
-
-  // Add it to the sub-dataset list
-  subDatasets.value.push(defaultDataset);
-
-  // Update JRXML
-  updateJRXML();
-};
 
 // Element-created event handler
 const handleElementCreated = (
@@ -1433,14 +2146,6 @@ const handleElementCreated = (
   }
 };
 
-// History stack - used for the undo feature
-type HistoryState = {
-  reportProperties: typeof reportProperties.value;
-  bands: typeof bands.value;
-  reportFields: typeof reportFields.value;
-  reportParameters: typeof reportParameters.value;
-  subDatasets: typeof subDatasets.value;
-};
 
 // Out-of-bounds elements
 const outOfBoundsElements = ref<
@@ -1605,63 +2310,42 @@ function handleMultiResize(type: "sameWidth" | "sameHeight" | "sameSize") {
   updateJRXML();
 }
 
-const { historyStack, redoStack, saveStateToHistory, undo, redo } =
-  useUndoRedo<HistoryState>({
-    maxHistorySize: HISTORY_CONSTANTS.MAX_HISTORY_SIZE,
-    getState: () => ({
-      reportProperties: reportProperties.value,
-      bands: bands.value,
-      reportFields: reportFields.value,
-      reportParameters: reportParameters.value,
-      subDatasets: subDatasets.value,
-    }),
-    applyState: (state) => {
-      reportProperties.value = state.reportProperties;
-      bands.value = state.bands;
-      reportFields.value = state.reportFields;
-      reportParameters.value = state.reportParameters;
-      subDatasets.value = state.subDatasets;
-    },
-    onAfterRestore: () => {
-      updateJRXML();
-    },
-  });
+// Undo/redo restore the model; the JRXML is rewritten after each
+const undo = () => restoreKeepingSelection(reportStore.undo);
+const redo = () => restoreKeepingSelection(reportStore.redo);
 
-const isDraggingOrResizing = ref(false); // Flags whether a drag or resize is in progress
-const isUpdatingJRXML = ref(false); // Guards against re-entrant calls to updateJRXML
+// The selection is kept by place (band, index), and a restored report can
+// have other elements there (Bring to front undone): it follows the selected
+// elements by uuid, and drops those that are gone, so the panel and Delete
+// never act on another element
+function restoreKeepingSelection(restore: () => boolean) {
+  const editingUuid = editingElement.value ? elementAtLocation(editingElement.value)?.uuid : undefined;
+  if (!restore()) return;
+  const follow = (sel: { uuid?: string }) => {
+    const loc = sel.uuid ? findElementByUuid(sel.uuid) : null;
+    return loc ? { ...loc, uuid: sel.uuid } : null;
+  };
+  const many = selectedElements.value.map(follow).filter((s) => s !== null);
+  const one = selectedElement.value ? follow(selectedElement.value) : null;
+  selectedElements.value = many;
+  selectedElement.value = one ?? many[many.length - 1] ?? null;
+  editingElement.value = editingUuid ? findElementByUuid(editingUuid) : null;
+  updateJRXML();
+}
+
+// A drag or resize is in progress (editor store)
+const { isDraggingOrResizing } = storeToRefs(editorStore);
 
 // Add a new parameter
 // Removed the unused parameter management function
 
-// Selection state
-const selectedBandIndex = ref<number | null>(null);
-const selectedElement = ref<SelectedElementInfo | null>(null);
-const selectedElements = ref<SelectedElementInfo[]>([]); // Element editing state
-const editingElement = ref<EditingElementInfo | null>(null);
+// Selection state (selection store)
+const { selectedBandIndex, selectedElement, selectedElements, editingElement } = storeToRefs(selectionStore);
 
-// Group name input dialog state
-const showGroupDialog = ref(false);
-const groupDialogState = ref({
-  elementIndex: 0,
-  columnIndices: [] as number[],
-  bandIndex: 0,
-  parentFrameIndex: undefined as number | undefined,
-  existingGroups: [] as any[],
-  selectedGroupName: "",
-});
-
-// Column selection dialog state
-const showColumnSelectionModal = ref(false);
-const columnSelectionState = ref({
-  elementIndex: 0,
-  bandIndex: 0,
-  parentFrameIndex: undefined as number | undefined,
-  columns: [] as any[],
-  children: [] as any[],
-});
 
 // Report design area focus state
-const isDesignAreaFocused = ref(true); // Focus the design area by default
+// The page area has the keyboard (editor store)
+const { isDesignAreaFocused } = storeToRefs(editorStore);
 
 // Set focus on the design area
 const setDesignAreaFocused = () => {
@@ -1674,142 +2358,297 @@ const removeDesignAreaFocused = () => {
 };
 
 // Computed properties
-const paperWidth = computed(
-  () =>
-    reportProperties.value?.pageWidth || REPORT_CONSTANTS.DEFAULT_PAGE_WIDTH,
-);
-const paperHeight = computed(
-  () =>
-    reportProperties.value?.pageHeight || REPORT_CONSTANTS.DEFAULT_PAGE_HEIGHT,
-);
-const { zoomLevel, resetZoom, calculateOptimalZoom, handleZoomChange } =
-  useZoom({
-    paperWidth,
-    zoomConstants: ZOOM_CONSTANTS,
-  });
+
+// Detail takes the page height the other bands leave (report store, which
+// also refits it when the page size, margins or band heights change)
+const ensureBandsFitPage = () => reportStore.fitBandsToPage();
+// Zoom (editor store)
+const { zoomLevel } = storeToRefs(editorStore);
+const { resetZoom, calculateOptimalZoom, handleZoomChange, zoomIn, zoomOut } = editorStore;
 
 // Function to set the zoom level
 const setZoomLevel = (newZoom: number) => {
   zoomLevel.value = newZoom;
 };
+// The selected element; an item inside a box is looked up inside that box
 const currentElement = computed(() => {
-  if (selectedElement.value && bands.value && Array.isArray(bands.value)) {
-    const band = bands.value[selectedElement.value.bandIndex];
+  const selection = selectedElement.value;
+  if (selection && bands.value && Array.isArray(bands.value)) {
+    const band = bands.value[selection.bandIndex];
     if (band && band.elements && Array.isArray(band.elements)) {
-      return band.elements[selectedElement.value.elementIndex];
+      if (selection.parentFrameIndex !== undefined) {
+        const box = band.elements[selection.parentFrameIndex] as FrameElement | undefined;
+        return box?.type === "frame" ? (box.elements?.[selection.elementIndex] ?? null) : null;
+      }
+      return band.elements[selection.elementIndex];
     }
   }
   return null;
 });
 
-// Get all report elements
+// Ruler marks: numbered from the margins, so they read the same as element X/Y
+const horizontalRulerMarks = computed(() =>
+  buildRulerMarks(
+    paperWidth.value,
+    reportProperties.value.leftMargin,
+    reportProperties.value.rightMargin,
+  ),
+);
+const horizontalRulerTicks = computed(() => horizontalRulerMarks.value.ticks);
+const horizontalRulerLabels = computed(() => horizontalRulerMarks.value.labels);
 
-// Report elements grouped by band - temporarily commented out since it's unused
-/*
-const groupedReportElements = computed(() => {
-  const groups: Record<string, Array<{ element: DesignElement, bandIndex: number, elementIndex: number }>> = {};
-
-  if (!filteredReportElements.value || !bands.value || !Array.isArray(bands.value)) {
-    return groups;
-  }
-
-  filteredReportElements.value.forEach(item => {
-    if (!bands.value || item.bandIndex >= bands.value.length) return;
-    const band = bands.value[item.bandIndex];
-    if (!band) return;
-    const bandType = band.type;
-    const bandName = getBandDisplayName(bandType);
-
-    if (!groups[bandName]) {
-      groups[bandName] = [];
-    }
-
-    groups[bandName].push(item);
-  });
-
-  return groups;
-});
-*/
-
-// Ruler-related computed properties
-const horizontalRulerTicks = computed(() => {
-  const ticks = [];
-  const width = paperWidth.value;
-  const unit = RULER_CONSTANTS.UNIT_SIZE; // Reduced base unit, from 10px to 5px, to increase tick density
-
-  for (let i = 0; i <= width; i += unit) {
-    ticks.push({
-      position: i, // Do not apply the zoom scale, keep the actual position
-      major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0, // One major tick every 25px, changed from 50px to 25px
-    });
-  }
-
-  return ticks;
-});
-
-const horizontalRulerLabels = computed(() => {
-  const labels = [];
-  const width = paperWidth.value;
-
-  for (let i = 0; i <= width; i += RULER_CONSTANTS.LABEL_INTERVAL) {
-    // Show a label every 25px, changed from 50px to 25px
-    labels.push({
-      position: i, // Do not apply the zoom scale, keep the actual position
-      value: i.toString(),
-    });
-  }
-
-  return labels;
-});
-
-const verticalRulerTicks = computed(() => {
-  const ticks = [];
+// One set of marks per page sheet; sheets are 32px apart on the canvas
+const verticalRulerMarks = computed(() => {
   const height = paperHeight.value;
-  const unit = RULER_CONSTANTS.UNIT_SIZE; // Reduced base unit, from 10px to 5px, to increase tick density
-
-  for (let i = 0; i <= height; i += unit) {
-    ticks.push({
-      position: i, // Do not apply the zoom scale, keep the actual position
-      major: i % RULER_CONSTANTS.MAJOR_TICK_INTERVAL === 0, // One major tick every 25px, changed from 50px to 25px
-    });
+  const pageGap = 32;
+  const ticks: RulerTick[] = [];
+  const labels: RulerLabel[] = [];
+  for (let p = 0; p < totalPages.value; p++) {
+    const marks = buildRulerMarks(
+      height,
+      reportProperties.value.topMargin,
+      reportProperties.value.bottomMargin,
+      p * (height + pageGap),
+    );
+    ticks.push(...marks.ticks);
+    labels.push(...marks.labels);
   }
-
-  return ticks;
+  return { ticks, labels };
 });
-
-const verticalRulerLabels = computed(() => {
-  const labels = [];
-  const height = paperHeight.value;
-
-  for (let i = 0; i <= height; i += RULER_CONSTANTS.LABEL_INTERVAL) {
-    // Show a label every 25px, changed from 50px to 25px
-    labels.push({
-      position: i, // Do not apply the zoom scale, keep the actual position
-      value: i.toString(),
-    });
-  }
-
-  return labels;
-});
+const verticalRulerTicks = computed(() => verticalRulerMarks.value.ticks);
+const verticalRulerLabels = computed(() => verticalRulerMarks.value.labels);
 
 // Drag-related state
 const draggingInfo = ref<DraggingInfo | null>(null);
 const highlightedBandIndex = ref<number | null>(null); // Index of the highlighted target band
-const {
-  enableSnapToGrid,
-  enableSnapToAlignment,
-  alignmentLines,
-  detectAlignmentLines,
-  clearAlignmentLines,
-} = useSnapAlignment({
-  bands,
-  reportProperties,
-  highlightedBandIndex,
-  bandSpacing: BAND_CONSTANTS.SPACING,
-});
+// Snapping, grid and alignment guides (editor store)
+const { enableSnapToGrid, enableSnapToAlignment, showGrid, alignmentLines } = storeToRefs(editorStore);
+const { setAlignmentLines, clearAlignmentLines } = editorStore;
 
-// Controls whether the grid is shown or hidden
-const showGrid = ref(true);
+// How close (in screen pixels) an edge must come to another to align with it;
+// in screen pixels so it feels the same at every zoom
+const ALIGN_SNAP_SCREEN_PX = 6;
+
+const printableWidth = computed(
+  () =>
+    paperWidth.value -
+    (reportProperties.value?.leftMargin || 0) -
+    (reportProperties.value?.rightMargin || 0),
+);
+
+// What a moving element can snap to, in its container's coordinates (its band,
+// or its box for an item in a box: `offset` is then the box's position)
+interface SnapContext {
+  bandIndex: number;
+  pageIndex: number;
+  offset: { x: number; y: number };
+  targets: SnapTargets;
+  // The grid of the band on that page, as the canvas draws it
+  grid: GridStep;
+}
+
+// The grid step of a band on a page: whole squares of about GRID_SIZE across
+// its width and height (the sheet or printable page on a cover / contents page)
+const gridStepFor = (bandIndex: number, pageIndex?: number): GridStep => {
+  const band = bands.value[bandIndex];
+  const area = band?.type === BAND_TYPE_CONSTANTS.DETAIL ? specialPageArea(reportProperties.value, pageIndex) : null;
+  return sectionGridStep(area ? area.width : printableWidth.value, bandAreaHeight(bandIndex, pageIndex));
+};
+
+const buildSnapContext = (
+  bandIndex: number,
+  pageIndex: number,
+  parentFrameIndex: number | undefined,
+  moving: DesignElement,
+): SnapContext => {
+  const band = bands.value[bandIndex];
+  const box =
+    parentFrameIndex !== undefined
+      ? (band?.elements[parentFrameIndex] as FrameElement | undefined)
+      : undefined;
+  const offset = box ? { x: box.x, y: box.y } : { x: 0, y: 0 };
+  const width = printableWidth.value;
+  const height = band?.height ?? 0;
+
+  // Band coordinates; other bands share X but not Y (each band has its own top)
+  const xs = [0, width / 2, width];
+  const ys = [0, height / 2, height];
+  const add = (r: SnapRect, sameBand: boolean) => {
+    xs.push(r.x, r.x + r.width / 2, r.x + r.width);
+    if (sameBand) ys.push(r.y, r.y + r.height / 2, r.y + r.height);
+  };
+  bands.value.forEach((b, i) => {
+    if (b.type === BAND_TYPE_CONSTANTS.BACKGROUND) return;
+    for (const el of b.elements ?? []) {
+      // Moving element (and a moving box's own items) are not targets; nor is
+      // the detail content of other pages
+      if (el === moving) continue;
+      if (b.type === BAND_TYPE_CONSTANTS.DETAIL && (el.pageIndex ?? 0) !== pageIndex) continue;
+      add(el, i === bandIndex);
+      if (el.type === "frame") {
+        for (const child of (el as FrameElement).elements ?? []) {
+          if (child === moving) continue;
+          add({ ...child, x: el.x + child.x, y: el.y + child.y }, i === bandIndex);
+        }
+      }
+    }
+  });
+
+  return {
+    bandIndex,
+    pageIndex,
+    offset,
+    grid: gridStepFor(bandIndex, pageIndex),
+    targets: {
+      x: [...new Set(xs)].map((v) => v - offset.x),
+      y: [...new Set(ys)].map((v) => v - offset.y),
+    },
+  };
+};
+
+// Snap settings for one mouse move or drop; holding Ctrl/Cmd skips snapping
+const getSnapOptions = (
+  event: { ctrlKey?: boolean; metaKey?: boolean } | null,
+  context: Pick<SnapContext, "grid" | "offset">,
+): SnapOptions => {
+  const bypass = !!(event?.ctrlKey || event?.metaKey);
+  const offset = context.offset;
+  return {
+    grid: enableSnapToGrid.value && !bypass ? context.grid : null,
+    threshold:
+      enableSnapToAlignment.value && !bypass
+        ? ALIGN_SNAP_SCREEN_PX / zoomLevel.value
+        : null,
+    gridOffsetX: offset.x,
+    gridOffsetY: offset.y,
+  };
+};
+
+// The most a band may grow to when something is dropped in it (its maximum
+// setting and the room left on the page); Detail fills what is left
+const getBandMaxHeight = (bandIndex: number): number => reportStore.bandMaxHeight(bandIndex);
+
+// Height of a band's area on a page: a cover or contents page is the whole
+// printable page; anything else is the band's own height
+const bandAreaHeight = (bandIndex: number, pageIndex?: number): number => {
+  const band = bands.value[bandIndex];
+  if (!band) return 0;
+  const area = band.type === BAND_TYPE_CONSTANTS.DETAIL ? specialPageArea(reportProperties.value, pageIndex) : null;
+  return area ? area.height : band.height;
+};
+
+// Where an element would end up if dropped in a band (see planBandFit)
+const planDropInBand = (
+  bandIndex: number,
+  element: { y: number; height: number; pageIndex?: number },
+): BandFitPlan => {
+  const band = bands.value[bandIndex];
+  const area = band?.type === BAND_TYPE_CONSTANTS.DETAIL ? specialPageArea(reportProperties.value, element.pageIndex) : null;
+  if (area) return planBandFit(element, area.height, area.height);
+  return planBandFit(
+    element,
+    bands.value[bandIndex]?.height ?? 0,
+    getBandMaxHeight(bandIndex),
+  );
+};
+
+// Put a dropped element in place, growing the band if the plan says so
+const applyDropInBand = (
+  bandIndex: number,
+  element: DesignElement,
+  plan: Exclude<BandFitPlan, { kind: "tooTall" }>,
+) => {
+  element.y = plan.y;
+  const band = bands.value[bandIndex];
+  if (plan.kind === "grow" && band) {
+    band.height = plan.bandHeight;
+    notification.info(
+      t("editor.bandLimits.grewToFit", {
+        band: getBandDisplayName(band.type),
+        height: plan.bandHeight,
+      }),
+    );
+  }
+};
+
+const warnTooTallForBand = (bandIndex: number, height: number, maxHeight: number) => {
+  const band = bands.value[bandIndex];
+  notification.warning(
+    t("editor.bandLimits.tooTallForBand", {
+      height: Math.round(height),
+      band: band ? getBandDisplayName(band.type) : "",
+      max: Math.round(maxHeight),
+    }),
+  );
+};
+
+// While dragging: the target band turns red when the element can't fit in it
+const dropTargetBlocked = ref(false);
+
+// Tiles whose item goes to the Background band wherever it is dropped
+const isBackgroundTile = (type: string | undefined) => type === PAGE_BORDER_TYPE || type === WATERMARK_TYPE;
+
+// While dragging the Page Border or Watermark tile over the page: the Background band is the target
+const backgroundDropTarget = computed(
+  () =>
+    highlightedBandIndex.value !== null &&
+    isBackgroundTile(draggedLibraryElement.value?.type),
+);
+
+// Whether an element at (x, y) in a band would land in one of its boxes
+// What can be put in a box: not a box, a table or a typed table; a Table of
+// Contents only on a normal page (on contents pages it carries on over the
+// pages, which needs it on the page itself)
+const canGoInBox = (element: { type: string }, pageIndex?: number): boolean => {
+  if (["frame", "table", "customTable"].includes(element.type)) return false;
+  if (element.type === "contentsList") {
+    return pageIndex === undefined || pageKind(reportProperties.value, pageIndex) === "normal";
+  }
+  return true;
+};
+
+// (same rule as the drop: its centre is inside the box; boxes don't nest)
+const isOverBox = (
+  bandIndex: number,
+  element: { type: string; width: number; height: number },
+  x: number,
+  y: number,
+  pageIndex?: number,
+) => {
+  if (!canGoInBox(element, pageIndex)) return false;
+  const cx = x + element.width / 2;
+  const cy = y + element.height / 2;
+  const band = bands.value[bandIndex];
+  return (band?.elements ?? []).some(
+    (el) =>
+      el.type === "frame" &&
+      // A Location holds only its map and address
+      !isLocationElement(el) &&
+      (band?.type !== BAND_TYPE_CONSTANTS.DETAIL || pageIndex === undefined || (el.pageIndex ?? 0) === pageIndex) &&
+      cx >= el.x &&
+      cx <= el.x + el.width &&
+      cy >= el.y &&
+      cy <= el.y + el.height,
+  );
+};
+
+// Show the lines an element has snapped to (in band coordinates)
+const showSnapGuides = (
+  context: SnapContext,
+  guides: SnapGuides,
+  options: SnapOptions,
+) => {
+  if (options.threshold === null) {
+    clearAlignmentLines();
+    return;
+  }
+  setAlignmentLines({
+    bandIndex: context.bandIndex,
+    pageIndex: context.pageIndex,
+    x: guides.x.map((v) => v + context.offset.x),
+    y: guides.y.map((v) => v + context.offset.y),
+  });
+};
 // Coordinate info shown while dragging
 const dragCoordinates = ref<{
   x: number;
@@ -1825,83 +2664,57 @@ const resizingBandInfoRef = ref(resizingBandInfo);
 const resizingInfo = ref<{
   bandIndex: number;
   elementIndex: number;
+  direction?: string;
   startX: number;
   startY: number;
+  startElementX: number;
+  startElementY: number;
   startWidth: number;
   startHeight: number;
   parentFrameIndex?: number;
+  targetSheet?: HTMLElement;
+  startLineDirection?: "TopDown" | "BottomUp";
 } | null>(null);
 
 // Tracks the last-clicked band
-const lastClickedBandIndex = ref<number>(3); // Defaults to the DETAIL band (index 3)
+// The band last clicked (selection store); none yet: Detail
+const { lastClickedBandIndex, lastClickedPageIndex } = storeToRefs(selectionStore);
+// Where elements added from the library go: the last clicked band, or Detail
+const insertBandIndex = (): number => {
+  const last = lastClickedBandIndex.value;
+  return last !== null && bands.value[last] ? last : bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+};
+
+// The page an element added by clicking a library tile goes on: the page last
+// clicked or worked on, else the first normal page. A contents list prefers a
+// contents page. Refused (with a message) when it can't go on that page.
+const placeOnPage = (bandIndex: number, element: DesignElement): boolean => {
+  if (bands.value[bandIndex]?.type !== BAND_TYPE_CONSTANTS.DETAIL) return true;
+  const props = reportProperties.value;
+  const { cover, contents, count } = specialPages(props);
+  let page = lastClickedPageIndex.value;
+  if (page === null || page >= totalPages.value) page = count;
+  // A Table of Contents goes on the page last clicked (a contents or normal
+  // page); from the cover, on the first contents page, else the first normal page
+  if (element.type === "contentsList" && pageKind(props, page) === "cover") {
+    page = contents ? 1 : count;
+  }
+  // Section Headings and Sub-headings belong on normal pages (the contents only
+  // count them there): from a cover or contents page, on the first normal page
+  const isHeading =
+    hasProperty(element, SECTION_HEADING_PROPERTY) || hasProperty(element, SUB_HEADING_PROPERTY);
+  if (isHeading && pageKind(props, page) !== "normal") page = count;
+  element.pageIndex = page;
+  const problem = pageProblem(element, page);
+  if (problem) {
+    warnSpecialPageProblem(problem);
+    return false;
+  }
+  return true;
+};
 
 // Tracks the element being dragged from the component library (works around dataTransfer sometimes failing in the Mac Tauri environment)
 const draggedLibraryElement = ref<any>(null);
-
-// Helper function: generate table columns from a dataset
-function generateTableColumnsFromDataset(defaultTableWidth: number = 555) {
-  // Prefer the sub-dataset if one exists
-  if (subDatasets.value.length > 0) {
-    const dataset = subDatasets.value[0];
-    if (dataset && dataset.fields && dataset.fields.length > 0) {
-      const fieldCount = dataset.fields.length;
-      const columnWidth = Math.round(defaultTableWidth / fieldCount); // Distribute column width evenly across the table width
-      return dataset.fields.map((field) => {
-        return {
-          uuid: crypto.randomUUID(),
-          width: columnWidth,
-          name: field.name,
-          tableHeader: {
-            enable: false,
-            element: {
-              type: "staticText",
-              x: 0,
-              y: 0,
-              width: columnWidth,
-              height: 30,
-              text: field.name,
-              forecolor: "#000000",
-              backcolor: "#FFFFFF",
-              fontFamily: "SansSerif",
-              fontSize: 19,
-              isBold: true,
-              textAlignment: "Center",
-              verticalAlignment: "Middle",
-            },
-          },
-          columnHeader: {
-            enable: true,
-            element: {
-              type: "staticText",
-              x: 0,
-              y: 0,
-              width: columnWidth,
-              height: 30,
-              text: field.name,
-              textAlignment: "Center",
-              verticalAlignment: "Middle",
-            },
-          },
-          detailCell: {
-            enable: true,
-            element: {
-              type: "textField",
-              x: 0,
-              y: 0,
-              width: columnWidth,
-              height: 30,
-              expression: `$F{${field.name}}`,
-              textAlignment: "Center",
-              verticalAlignment: "Middle",
-            },
-          },
-        };
-      });
-    }
-  }
-  // Default to returning an empty array, using the default columns from ElementRegistry
-  return [];
-}
 
 // Handle drag-and-drop
 const handleDragStart = (event: DragEvent, element: any) => {
@@ -1912,15 +2725,461 @@ const handleDragStart = (event: DragEvent, element: any) => {
   }
 };
 
-// Handle element double-click events
-const handleElementDoubleClick = (element: any) => {
-  // Ensure there is a last-clicked band
+// Printable page area (inside the margins) and translator, used to size frame templates
+// A data table's (and a project list's) width: the printable width less 50px
+// on each side, centred
+const dataTableWidth = () => Math.max(100, Math.round(getFrameTemplateContext().availableWidth) - 100);
+
+const getFrameTemplateContext = (): FrameTemplateContext => ({
+  availableWidth: Math.round(
+    paperWidth.value -
+      (reportProperties.value?.leftMargin || 0) -
+      (reportProperties.value?.rightMargin || 0),
+  ),
+  availableHeight: Math.round(
+    paperHeight.value -
+      (reportProperties.value?.topMargin || 0) -
+      (reportProperties.value?.bottomMargin || 0),
+  ),
+  t,
+});
+
+// Element Presets are made a little narrower than the page and placed inside
+// it, so their selection handles stay on the page (the Page Border is the
+// whole printable area)
+const isLibraryPreset = (type: string) =>
+  (isFrameTemplateType(type) && type !== PAGE_BORDER_TYPE) || isReportPartType(type);
+const getPresetContext = (): FrameTemplateContext => {
+  const ctx = getFrameTemplateContext();
+  return { ...ctx, availableWidth: Math.max(100, ctx.availableWidth - 2 * PRESET_SIDE_INSET) };
+};
+// A preset's x kept at least the inset from both edges, when it is narrow enough
+const keepPresetInset = (x: number, width: number): number => {
+  const available = getFrameTemplateContext().availableWidth;
+  if (width > available - 2 * PRESET_SIDE_INSET) return Math.max(0, Math.min(x, available - width));
+  return Math.min(Math.max(PRESET_SIDE_INSET, x), available - PRESET_SIDE_INSET - width);
+};
+
+// Base element for a library item: frame templates are built with their content,
+// everything else comes from the registry defaults
+const createLibraryElement = (type: string): DesignElement =>
+  isFrameTemplateType(type)
+    ? buildFrameTemplate(type, isLibraryPreset(type) ? getPresetContext() : getFrameTemplateContext())
+    : isReportPartType(type)
+    ? buildReportPart(type, getPresetContext())
+    : type === PAGE_NUMBER_TYPE
+    ? buildPaginationElement(undefined, {
+        fontFamily: reportProperties.value?.defaultFont?.name,
+        fontSize: reportProperties.value?.defaultFont?.size,
+      })
+    : type === DATE_ELEMENT_TYPE
+    ? buildDateElement({
+        fontFamily: reportProperties.value?.defaultFont?.name,
+        fontSize: reportProperties.value?.defaultFont?.size,
+      })
+    : type === LOCATION_ELEMENT_TYPE
+    ? buildLocation()
+    : type === "chart"
+    ? buildChartElement()
+    : type === "customTable"
+    ? buildNewCustomTable()
+    : ({
+        ...createElement(type),
+        ...getDefaultElementProperties(type),
+      } as DesignElement);
+
+// A new Location (map and address), empty or with a project's place
+// A new Location; from Report Data, its place is the project's and follows it
+const buildLocation = (place?: Partial<Place>, fromProject = false): DesignElement => {
+  const box = buildLocationElement(place, {
+    font: { fontFamily: reportProperties.value?.defaultFont?.name, fontSize: reportProperties.value?.defaultFont?.size },
+    maxWidth: getFrameTemplateContext().availableWidth,
+  });
+  if (fromProject) setLocationSetup(box, { ...getLocationSetup(box), fromProject: true });
+  return box;
+};
+
+// A new custom table: a dark header row and two empty rows, across most of the page
+const buildNewCustomTable = (): DesignElement => {
+  const width = Math.min(480, Math.round(getFrameTemplateContext().availableWidth));
+  const headers = [1, 2, 3].map((n) => t("customTable.placeholderHeader", { n }));
+  const element = {
+    ...createElement("customTable"),
+    table: buildCustomTable(width, headers),
+  } as CustomTableElement;
+  syncTableSize(element);
+  return element;
+};
+
+// Tell the user a page border already exists and select it for editing
+const rejectSecondPageBorder = (): boolean => {
+  const existing = findPageBorder(bands.value);
+  if (!existing) return false;
+  notification.warning(t("framePresets.pageBorderExists"));
+  selectElement(existing.bandIndex, existing.elementIndex);
+  return true;
+};
+
+// Add a border around the printable area of every page. It lives in the Background
+// band, which JasperReports prints behind all other content on each page.
+// `droppedOnPage`: the Detail page it was dropped on (a click adds it too)
+const addPageBorder = (droppedOnPage?: number) => {
+  // Dropped on a whole-sheet cover: meant for the cover, which can't have one
   if (
-    lastClickedBandIndex.value === null ||
-    lastClickedBandIndex.value === undefined
+    droppedOnPage !== undefined &&
+    specialPages(reportProperties.value).fullPageCover &&
+    pageKind(reportProperties.value, droppedOnPage) === "cover"
   ) {
-    console.warn("No band selected, falling back to the default band");
-    lastClickedBandIndex.value = 3; // Default to the DETAIL band
+    notification.warning(t("specialPages.borderRefusedOnCover"));
+    return;
+  }
+  if (rejectSecondPageBorder()) return;
+  saveStateToHistory();
+
+  const ctx = getFrameTemplateContext();
+  let bandIndex = bands.value.findIndex(
+    (b) => b.type === BAND_TYPE_CONSTANTS.BACKGROUND,
+  );
+  if (bandIndex === -1) {
+    bands.value.push({
+      type: BAND_TYPE_CONSTANTS.BACKGROUND as BandType,
+      height: ctx.availableHeight,
+      elements: [],
+    });
+    bandIndex = bands.value.length - 1;
+  }
+
+  const backgroundBand = bands.value[bandIndex]!;
+  backgroundBand.height = ctx.availableHeight;
+  if (!backgroundBand.elements) backgroundBand.elements = [];
+
+  const border = {
+    ...buildFrameTemplate(PAGE_BORDER_TYPE, ctx),
+    uuid: crypto.randomUUID(),
+    x: 0,
+    y: 0,
+  } as DesignElement;
+  backgroundBand.elements.push(border);
+  // A whole-sheet cover never shows the page border: say so
+  if (specialPages(reportProperties.value).fullPageCover) {
+    notification.warning(t("specialPages.borderNotOnCover"));
+  }
+
+  const elementIndex = backgroundBand.elements.length - 1;
+  selectElement(bandIndex, elementIndex);
+  handleElementCreated(border, bandIndex, elementIndex);
+  updateJRXML();
+};
+
+// Tell the user the template already has a watermark and select it
+const rejectSecondWatermark = (): boolean => {
+  const existing = findWatermark(bands.value);
+  if (!existing) return false;
+  notification.info(t("watermark.exists"));
+  selectElement(existing.bandIndex, existing.elementIndex);
+  return true;
+};
+
+// The Background band (made when missing), as tall as the printable area
+const ensureBackgroundBand = (): number => {
+  const ctx = getFrameTemplateContext();
+  let bandIndex = bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.BACKGROUND);
+  if (bandIndex === -1) {
+    bands.value.push({ type: BAND_TYPE_CONSTANTS.BACKGROUND as BandType, height: ctx.availableHeight, elements: [] });
+    bandIndex = bands.value.length - 1;
+  }
+  const band = bands.value[bandIndex]!;
+  band.height = Math.max(band.height, ctx.availableHeight);
+  if (!band.elements) band.elements = [];
+  return bandIndex;
+};
+
+// Add a watermark behind the content of every page (the Background band).
+// One per template: a second click or drop selects the one there is.
+// It prints on every page (the cover too), wherever it was dropped
+const addWatermark = () => {
+  if (rejectSecondWatermark()) return;
+  saveStateToHistory();
+  const bandIndex = ensureBackgroundBand();
+  const ctx = getFrameTemplateContext();
+  const watermark = buildWatermarkElement(
+    { width: ctx.availableWidth, height: ctx.availableHeight },
+    { text: te("watermark.words.DRAFT") ? t("watermark.words.DRAFT") : "DRAFT" },
+  );
+  // First in the band: it prints behind the page border
+  const band = bands.value[bandIndex]!;
+  band.elements.unshift(watermark);
+  selectElement(bandIndex, 0);
+  handleElementCreated(watermark, bandIndex, 0);
+  updateJRXML();
+};
+
+// Page Number tile, position picked: the page header (top) or footer (bottom),
+// aligned the way the position says. Dragging the tile drops it in any band.
+const addPageNumber = (position: PaginationPosition) => {
+  const bandIndex = findPaginationTargetBand(bands.value, position);
+  const band = bands.value[bandIndex];
+  if (!band) {
+    notification.warning(t("pagination.noBand"));
+    return;
+  }
+
+  const element = buildPaginationElement(position, {
+    fontFamily: reportProperties.value?.defaultFont?.name,
+    fontSize: reportProperties.value?.defaultFont?.size,
+  });
+  Object.assign(
+    element,
+    placePaginationInBand(
+      element,
+      position,
+      getFrameTemplateContext().availableWidth,
+      band.height,
+    ),
+  );
+
+  // Fits the band, growing it when it is too short; too tall is refused
+  if (!placeOnPage(bandIndex, element)) return;
+  const plan = planDropInBand(bandIndex, element);
+  if (plan.kind === "tooTall") {
+    warnTooTallForBand(bandIndex, element.height, plan.maxHeight);
+    return;
+  }
+
+  saveStateToHistory();
+  applyDropInBand(bandIndex, element, plan);
+  if (!band.elements) band.elements = [];
+  band.elements.push(element);
+
+  const elementIndex = band.elements.length - 1;
+  selectElement(bandIndex, elementIndex);
+  handleElementCreated(element, bandIndex, elementIndex);
+  updateJRXML();
+};
+
+// Report part tile clicked: the header banner goes to the Page Header, the footer
+// to the Page Footer, everything else to the last clicked band. Full-width parts
+// start at the left margin. Dragging the tile drops it in any band.
+const addReportPart = (type: ReportPartType) => {
+  const wantedBand = reportPartBand(type);
+  const bandIndex = wantedBand
+    ? bands.value.findIndex((b) => b.type === wantedBand)
+    : insertBandIndex();
+  const band = bands.value[bandIndex];
+  if (!band) {
+    if (wantedBand) {
+      notification.warning(t("reportParts.noBand", { band: getBandDisplayName(wantedBand) }));
+    }
+    return;
+  }
+
+  const element: DesignElement = {
+    ...buildReportPart(type, getPresetContext()),
+    uuid: crypto.randomUUID(),
+  };
+  element.x = isFullWidthPart(type) ? PRESET_SIDE_INSET : 50;
+  element.y = wantedBand ? 0 : 20;
+  // A Table of Contents is centred across the page
+  if (element.type === "contentsList") element.x = Math.round((getFrameTemplateContext().availableWidth - element.width) / 2);
+
+  // Fits the band, growing it when it is too short; too tall is refused
+  if (!placeOnPage(bandIndex, element)) return;
+  const plan = planDropInBand(bandIndex, element);
+  if (plan.kind === "tooTall") {
+    warnTooTallForBand(bandIndex, element.height, plan.maxHeight);
+    return;
+  }
+
+  saveStateToHistory();
+  applyDropInBand(bandIndex, element, plan);
+  if (!band.elements) band.elements = [];
+  band.elements.push(element);
+
+  const elementIndex = band.elements.length - 1;
+  selectElement(bandIndex, elementIndex);
+  handleElementCreated(element, bandIndex, elementIndex);
+  updateJRXML();
+};
+
+// Chart tile, type picked: goes in the last clicked band, centred across the
+// page. Dragging the tile drops a bar chart wherever it is released.
+const addChart = (chartType: ChartType) => {
+  const bandIndex = insertBandIndex();
+  const band = bands.value[bandIndex];
+  if (!band) return;
+
+  const element: DesignElement = { ...buildChartElement(chartType), uuid: crypto.randomUUID() };
+  const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+  element.width = Math.min(element.width, availableWidth);
+  element.x = Math.round((availableWidth - element.width) / 2);
+  element.y = 20;
+
+  // Fits the band, growing it when it is too short; too tall is refused
+  if (!placeOnPage(bandIndex, element)) return;
+  const plan = planDropInBand(bandIndex, element);
+  if (plan.kind === "tooTall") {
+    warnTooTallForBand(bandIndex, element.height, plan.maxHeight);
+    return;
+  }
+
+  saveStateToHistory();
+  applyDropInBand(bandIndex, element, plan);
+  if (!band.elements) band.elements = [];
+  band.elements.push(element);
+
+  const elementIndex = band.elements.length - 1;
+  selectElement(bandIndex, elementIndex);
+  handleElementCreated(element, bandIndex, elementIndex);
+  updateJRXML();
+};
+
+// A Report Data table's chart icon clicked: a bar chart added like the Chart
+// tile's, its setup popup opened on that table
+const addChartFromSource = (source: ReportSourceRef) => {
+  const before = selectedElement.value;
+  addChart("bar");
+  const placed = selectedElement.value;
+  if (!placed || placed === before) return;
+  const location = { bandIndex: placed.bandIndex, elementIndex: placed.elementIndex, parentFrameIndex: placed.parentFrameIndex };
+  if (chartAt(location)) openChartConfig(location, { projectId: source.projectId, sourceId: source.sourceId });
+};
+
+// Table tile, kind picked. "Type my own": a typed table in the last clicked band,
+// centred, open for typing. "Use project data": the setup popup, which makes the
+// table in Detail on Apply (nothing is added when it is closed). Dragging the
+// tile drops an empty project-data table.
+// Image tile: the project's photos or a file from the computer first; the
+// picture spot is added only once a picture is chosen (like a project-data table)
+const tilePicture = ref<{ open: boolean; tab: "photos" | "computer" }>({ open: false, tab: "photos" });
+const openImageTileChooser = (from: "photos" | "computer") => {
+  tilePicture.value = { open: true, tab: from };
+};
+// Added like a click on the tile, with the picture in it: one undo step
+const addImageWithPicture = (picture: ChosenPicture) => {
+  const image = handleElementDoubleClick({ type: "image" });
+  if (image?.type !== "image") return;
+  setImagePicture(image, toImageExpression(picture.source), picture.name);
+  updateJRXML();
+};
+
+const addTable = (kind: "typed" | "data") => {
+  if (kind === "data") {
+    const detailIndex = bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+    if (detailIndex === -1) return;
+    openTableConfig(null, {
+      newAt: { bandIndex: detailIndex, y: 20, pageIndex: specialPages(reportProperties.value).count },
+    });
+    return;
+  }
+  const bandIndex = insertBandIndex();
+  const band = bands.value[bandIndex];
+  if (!band) return;
+
+  const element: DesignElement = { ...buildNewCustomTable(), uuid: crypto.randomUUID() };
+  const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+  element.x = Math.max(0, Math.round((availableWidth - element.width) / 2));
+  element.y = 20;
+
+  // Fits the band, growing it when it is too short; too tall is refused
+  if (!placeOnPage(bandIndex, element)) return;
+  const plan = planDropInBand(bandIndex, element);
+  if (plan.kind === "tooTall") {
+    warnTooTallForBand(bandIndex, element.height, plan.maxHeight);
+    return;
+  }
+
+  saveStateToHistory();
+  applyDropInBand(bandIndex, element, plan);
+  if (!band.elements) band.elements = [];
+  band.elements.push(element);
+
+  const elementIndex = band.elements.length - 1;
+  selectElement(bandIndex, elementIndex);
+  handleElementCreated(element, bandIndex, elementIndex);
+  editingElement.value = { bandIndex, elementIndex };
+  updateJRXML();
+};
+
+// Barcode tile, type picked: goes in the last clicked band, centred across
+// the page, with the type's sample value. Dragging the tile drops a Code 128.
+const addBarcode = (barcodeType: BarcodeType) => {
+  const bandIndex = insertBandIndex();
+  const band = bands.value[bandIndex];
+  if (!band) return;
+
+  const element = { ...buildBarcodeElement(barcodeType), uuid: crypto.randomUUID() } as DesignElement;
+  const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+  element.width = Math.min(element.width, availableWidth);
+  element.x = Math.round((availableWidth - element.width) / 2);
+  element.y = 20;
+
+  // Fits the band, growing it when it is too short; too tall is refused
+  if (!placeOnPage(bandIndex, element)) return;
+  const plan = planDropInBand(bandIndex, element);
+  if (plan.kind === "tooTall") {
+    warnTooTallForBand(bandIndex, element.height, plan.maxHeight);
+    return;
+  }
+
+  saveStateToHistory();
+  applyDropInBand(bandIndex, element, plan);
+  if (!band.elements) band.elements = [];
+  band.elements.push(element);
+
+  const elementIndex = band.elements.length - 1;
+  selectElement(bandIndex, elementIndex);
+  handleElementCreated(element, bandIndex, elementIndex);
+  updateJRXML();
+};
+
+// After the paper size or margins change (already one undo step): resize the
+// page border to the new printable area and move elements that no longer fit
+const handlePageSetupChange = () => {
+  ensureBandsFitPage();
+  const ctx = getFrameTemplateContext();
+  const { borderResized, moved } = fitContentToPage(
+    bands.value,
+    { width: ctx.availableWidth, height: ctx.availableHeight },
+    (pageIndex) => specialPageArea(reportProperties.value, pageIndex),
+  );
+  const messages = [
+    borderResized ? t("canvas.pageBorderResized") : "",
+    moved > 0 ? t("canvas.elementsMovedToFit", moved) : "",
+  ].filter(Boolean);
+  if (messages.length) notification.info(messages.join(" "));
+  updateJRXML();
+};
+
+// A library tile clicked: add its item (where it goes depends on the kind)
+// Returns the element added (none: refused or not added here)
+const handleElementDoubleClick = (element: any): DesignElement | undefined => {
+  if (element.type === PAGE_BORDER_TYPE) {
+    addPageBorder();
+    return;
+  }
+  if (element.type === WATERMARK_TYPE) {
+    addWatermark();
+    return;
+  }
+  // A cover / contents design sets that page's design
+  if (isCoverDesignType(element.type) || isContentsDesignType(element.type)) {
+    applyDesignFromLibrary(element.type);
+    return;
+  }
+  // The library asks for a position or a chart type first
+  if (element.type === PAGE_NUMBER_TYPE || element.type === "chart") return;
+  if (isReportPartType(element.type)) {
+    addReportPart(element.type);
+    return;
+  }
+
+  // No band clicked yet (or it no longer exists): Detail
+  lastClickedBandIndex.value = insertBandIndex();
+
+  // Tables always go in the Detail section (the one that grows onto new pages)
+  if (element.type === "table") {
+    const detailIndex = bands.value.findIndex((b) => b.type === BAND_TYPE_CONSTANTS.DETAIL);
+    if (detailIndex !== -1) lastClickedBandIndex.value = detailIndex;
   }
 
   // Get the target band
@@ -1935,39 +3194,32 @@ const handleElementDoubleClick = (element: any) => {
 
   // Create the new element
   let newElement: DesignElement = {
-    ...createElement(element.type),
+    ...createLibraryElement(element.type),
     uuid: crypto.randomUUID(), // Generate a UUID
     x: 50, // Default position
     y: 20, // Default position
-    ...getDefaultElementProperties(element.type),
   } as DesignElement;
+  // A preset keeps its space from the page's left and right edges
+  if (isLibraryPreset(element.type)) newElement.x = keepPresetInset(newElement.x, newElement.width);
 
-  // For table elements, check for/create the default dataset, then generate the corresponding columns
+  // A table is horizontally centered with equal space on left and right sides
   if (element.type === "table") {
-    // Get the default table width
-    const defaultTableWidth = (newElement as any).width || 555;
-
-    // Check for and create the default dataset
-    const datasetName = (newElement as any).dataset?.name || "tableDataset";
-    checkAndCreateDefaultTableDataset(datasetName);
-
-    // Generate table columns from the dataset
-    const columns = generateTableColumnsFromDataset(defaultTableWidth);
-    if (columns.length > 0) {
-      (newElement as any).columns = columns;
-      // Calculate the total table width
-      const totalWidth = columns.reduce(
-        (sum, column) => sum + (column.width || 150),
-        0,
-      );
-      newElement.width = totalWidth;
-    }
+    const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+    const sideMargin = 50;
+    newElement.width = Math.max(100, availableWidth - sideMargin * 2);
+    newElement.x = Math.round((availableWidth - newElement.width) / 2);
+    newElement.y = 20;
   }
 
-  // For rectangles, ellipses, frames, and images, default the height to half the band's height
+  // For rectangles, ellipses, frames, and images, use a compact default size
+  // instead of stretching the element across the whole band
   if (["rectangle", "ellipse", "frame", "image"].includes(element.type)) {
-    newElement.height = Math.round(targetBand.height / 2);
+    const defaultSize = getDefaultElementSize(element.type, targetBand.height);
+    newElement.width = defaultSize.width;
+    newElement.height = defaultSize.height;
   }
+
+  if (!placeOnPage(lastClickedBandIndex.value, newElement)) return;
 
   // Ensure the band has an elements array
   if (!targetBand.elements) {
@@ -1986,17 +3238,60 @@ const handleElementDoubleClick = (element: any) => {
 
   // Update JRXML
   updateJRXML();
-
-  console.log("Element added to band:", newElement);
+  return newElement;
 };
 
-const handleDrop = (event: DragEvent) => {
+// `place`: an element to put where the drop happened (a chart chosen for a
+// dropped project table), instead of what is being dragged
+const handleDrop = (event: DragEvent, pageIndex?: number, place?: { type: string }) => {
   event.preventDefault();
+  if (readOnlyTemplate.value) return;
 
-  let elementData = null;
+  // A source, column or project detail from the "Report Data" list
+  const dataDrag = place ? null : readDataSourceDrag(event);
+  let elementData: any = place ?? null;
+  if (dataDrag?.kind === "projectField") {
+    endDataSourceDrag();
+    highlightedBandIndex.value = null;
+    dropTargetBlocked.value = false;
+    // A detail without a value has nothing to copy
+    if (!dataDrag.value) {
+      notification.info(t("reportData.noValue", { project: dataDrag.projectName, label: dataDrag.field.label }));
+      return;
+    }
+    // Onto an existing text or image element: its content becomes the value
+    if (fillDroppedProjectValue(event, dataDrag)) return;
+    // Elsewhere: a new Text element (or an Image for the logo, a Location for
+    // the location) placed like a library element, holding the value
+    elementData = dataDrag.field.type === "location" ? { type: LOCATION_ELEMENT_TYPE, place: readPlace(dataDrag.value), fromProject: true } : {
+      type: dataDrag.field.type === "image" ? "image" : "textField",
+      projectValue: {
+        project: { id: dataDrag.projectId, name: dataDrag.projectName },
+        field: dataDrag.field,
+        value: dataDrag.value,
+      },
+    };
+  } else if (dataDrag?.kind === "projectTable") {
+    endDataSourceDrag();
+    highlightedBandIndex.value = null;
+    dropTargetBlocked.value = false;
+    // A list (manager, team, companies, contracts): a table of the project's
+    // rows (Detail only, like a data table) that follows the template's
+    // project; a list without rows here may have some for another
+    const project = { id: dataDrag.projectId, name: dataDrag.projectName };
+    elementData = { type: "table", projectTable: dataDrag.table, project };
+  } else if (dataDrag) {
+    endDataSourceDrag();
+    highlightedBandIndex.value = null;
+    dropTargetBlocked.value = false;
+    handleDataSourceDrop(event, dataDrag, pageIndex);
+    return;
+  }
 
   // Prefer reading from internal state (works around dataTransfer sometimes being unavailable in the Mac Tauri environment)
-  if (draggedLibraryElement.value) {
+  if (elementData) {
+    // Already known (a project detail)
+  } else if (draggedLibraryElement.value) {
     elementData = draggedLibraryElement.value;
     draggedLibraryElement.value = null; // Reset the state
   } else if (event.dataTransfer) {
@@ -2011,88 +3306,183 @@ const handleDrop = (event: DragEvent) => {
   }
 
   if (elementData) {
-    // Get the paper element as a reference point
-    const paper = document.querySelector(".paper") as HTMLElement;
-    if (!paper) return;
+    // Get the target page sheet
+    const targetSheet =
+      ((event.target as HTMLElement)?.closest(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".paper") as HTMLElement);
+    if (!targetSheet) return;
 
-    const paperRect = paper.getBoundingClientRect();
-    // Calculate coordinates relative to the paper
-    const x = event.clientX - paperRect.left;
-    const y = event.clientY - paperRect.top;
+    let targetPageIndex = pageIndex ?? 0;
+    if (targetSheet.dataset.pageIndex !== undefined) {
+      targetPageIndex = parseInt(targetSheet.dataset.pageIndex, 10);
+    }
 
-    // Account for the zoom scale
     const currentZoom = zoomLevel.value;
-    const scaledX = x / currentZoom;
-    const scaledY = y / currentZoom;
+    const targetBandEl = (event.target as HTMLElement)?.closest(
+      ".band",
+    ) as HTMLElement;
 
-    // Find the corresponding band
     let bandIndex = 0;
-    let currentY = 0;
-    if (bands.value && Array.isArray(bands.value)) {
-      for (let i = 0; i < bands.value.length; i++) {
-        const band = bands.value[i];
-        if (band && scaledY >= currentY && scaledY <= currentY + band.height) {
-          bandIndex = i;
-          break;
-        }
-        if (band) {
-          currentY += band.height;
-        }
-      }
+    let scaledX = 0;
+    let scaledY = 0;
+
+    if (targetBandEl && targetBandEl.dataset.bandIndex !== undefined) {
+      bandIndex = parseInt(targetBandEl.dataset.bandIndex, 10);
+      const bandRect = targetBandEl.getBoundingClientRect();
+      scaledX = (event.clientX - bandRect.left) / currentZoom;
+      scaledY = (event.clientY - bandRect.top) / currentZoom;
+    } else {
+      // Fallback: Find detail band
+      const dIndex = bands.value.findIndex(
+        (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+      );
+      bandIndex = dIndex !== -1 ? dIndex : 0;
+      const sheetRect = targetSheet.getBoundingClientRect();
+      scaledX = (event.clientX - sheetRect.left) / currentZoom;
+      scaledY = (event.clientY - sheetRect.top) / currentZoom;
+    }
+
+    // A cover / contents design sets the design of the page it is dropped on
+    // (or of the cover / first contents page; added when missing)
+    if (isCoverDesignType(elementData.type) || isContentsDesignType(elementData.type)) {
+      applyDesignFromLibrary(elementData.type, targetPageIndex);
+      highlightedBandIndex.value = null;
+      return;
+    }
+
+    // A page border always goes to the Background band, wherever it is dropped
+    if (elementData.type === PAGE_BORDER_TYPE) {
+      addPageBorder(targetPageIndex);
+      highlightedBandIndex.value = null;
+      return;
+    }
+    // So does a watermark (it prints behind every page)
+    if (elementData.type === WATERMARK_TYPE) {
+      addWatermark();
+      highlightedBandIndex.value = null;
+      return;
     }
 
     // Create the new element
+    // Center it on the cursor using its own compact default size
+    const baseElement = elementData.place
+      ? buildLocation(elementData.place, elementData.fromProject)
+      : elementData.projectTable
+      ? buildProjectListTable(elementData.projectTable, dataTableWidth(), elementData.project, {
+          datasets: usedDatasetNames(bands.value),
+          names: usedTableNames(bands.value),
+        })
+      : createLibraryElement(elementData.type);
+    const droppedSize =
+      isFrameTemplateType(elementData.type) ||
+      isReportPartType(elementData.type) ||
+      [PAGE_NUMBER_TYPE, DATE_ELEMENT_TYPE, LOCATION_ELEMENT_TYPE, "table", "chart", "customTable"].includes(elementData.type)
+      ? { width: baseElement.width, height: baseElement.height }
+      : getDefaultElementSize(elementData.type);
     let newElement: DesignElement = {
-      ...createElement(elementData.type),
+      ...baseElement,
       uuid: crypto.randomUUID(), // Generate a UUID
-      x: Math.round(Math.max(0, scaledX - 50)), // Subtract half the element width to center it, and ensure an integer
-      y: Math.round(Math.max(0, scaledY - currentY)), // Position relative to the band, and ensure an integer
-      ...getDefaultElementProperties(elementData.type),
+      x: Math.round(Math.max(0, scaledX - droppedSize.width / 2)), // Center horizontally on the cursor
+      y: Math.round(Math.max(0, scaledY - droppedSize.height / 2)), // Center vertically on the cursor
     } as DesignElement;
 
-    // For table elements, check for/create the default dataset, then generate the corresponding columns
-    if (elementData.type === "table") {
-      // Get the default table width
-      const defaultTableWidth = (newElement as any).width || 555;
-
-      // Check for and create the default dataset
-      const datasetName = (newElement as any).dataset?.name || "tableDataset";
-      checkAndCreateDefaultTableDataset(datasetName);
-
-      // Generate table columns from the dataset
-      const columns = generateTableColumnsFromDataset(defaultTableWidth);
-      if (columns.length > 0) {
-        (newElement as any).columns = columns;
-        // Calculate the total table width
-        const totalWidth = columns.reduce(
-          (sum, column) => sum + (column.width || 150),
-          0,
-        );
-        newElement.width = totalWidth;
-        // Update the x coordinate to center it
-        newElement.x = Math.round(Math.max(0, scaledX - totalWidth / 2));
+    // For detail band elements, assign pageIndex
+    if (bands.value[bandIndex]?.type === BAND_TYPE_CONSTANTS.DETAIL) {
+      newElement.pageIndex = targetPageIndex;
+      // A page number or project-data table can't go on a cover or contents page
+      const problem = pageProblem(newElement, targetPageIndex);
+      if (problem) {
+        warnSpecialPageProblem(problem);
+        highlightedBandIndex.value = null;
+        return;
       }
+    }
+
+    // Tables live in the Detail section, the only one that grows onto new
+    // pages, and are centered with equal space on left and right sides
+    if (elementData.type === "table") {
+      if (bands.value[bandIndex]?.type !== BAND_TYPE_CONSTANTS.DETAIL) {
+        notification.warning(t("dataTable.onlyInDetail"));
+        highlightedBandIndex.value = null;
+        return;
+      }
+      const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+      newElement.width = dataTableWidth();
+      newElement.x = Math.round((availableWidth - newElement.width) / 2);
     }
 
     const targetBand = bands.value[bandIndex];
     if (targetBand && targetBand.elements) {
-      // For rectangles, ellipses, frames, and images, default the height to half the band's height
+      // For rectangles, ellipses, frames, and images, apply a compact default
+      // size instead of stretching the element across the whole band
       if (
         ["rectangle", "ellipse", "frame", "image"].includes(elementData.type)
       ) {
-        newElement.height = Math.round(targetBand.height / 2);
+        const defaultSize = getDefaultElementSize(
+          elementData.type,
+          targetBand.height,
+        );
+        newElement.width = defaultSize.width;
+        newElement.height = defaultSize.height;
       }
-      // Save state to history
-      saveStateToHistory();
+
+      // A project detail: its value as the content, sized for what it shows,
+      // centred on the cursor
+      if (elementData.projectValue) {
+        const { project, field, value } = elementData.projectValue as {
+          project: ReportProject;
+          field: ProjectField;
+          value: string;
+        };
+        applyProjectValue(newElement, project, field, value);
+        const size = projectFieldSize(field);
+        newElement.width = Math.min(size.width, Math.round(printableWidth.value));
+        newElement.height = size.height;
+        // Already fitted to the words it shows (as Fit to text would), so it
+        // arrives with no Fit badge: a short value gets the width of its words,
+        // a long text keeps its width and gets the height it needs
+        if (newElement.type === "textField") {
+          const font = reportProperties.value?.defaultFont;
+          const measured = { ...(newElement as any), shownText: formatCanvasText(newElement as TextFieldElement) };
+          if (field.type !== "longText") {
+            // 1px spare so rounding in the browser never wraps the last word
+            const natural = measureTextElementWidth(measured, font) + 1;
+            newElement.width = Math.round(Math.min(Math.max(natural, 40), printableWidth.value));
+          }
+          newElement.height = calculateTextElementHeight({ ...measured, width: newElement.width }, font);
+        }
+        newElement.x = Math.round(Math.max(0, scaledX - newElement.width / 2));
+        newElement.y = Math.round(Math.max(0, scaledY - newElement.height / 2));
+      }
+
+      // Land on the grid, or in line with a nearby element, like a dragged one
+      const dropSnap = buildSnapContext(bandIndex, targetPageIndex, undefined, newElement);
+      const snappedDrop = snapMove(newElement, dropSnap.targets, getSnapOptions(event, dropSnap));
+      newElement.x = Math.max(0, snappedDrop.x);
+      newElement.y = Math.max(0, snappedDrop.y);
+
+      // Keep table horizontally centered with equal space on left and right
+      if (newElement.type === "table") {
+        const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+        newElement.x = Math.round((availableWidth - newElement.width) / 2);
+      }
+      // A preset keeps its space from the page's left and right edges
+      if (isLibraryPreset(elementData.type)) newElement.x = keepPresetInset(newElement.x, newElement.width);
 
       // Detect whether it is being dropped on a Frame
       let targetFrameIndex = -1;
 
-      // Iterate over the Frames in the Band to check whether the new element lands on one
-      for (let i = targetBand.elements.length - 1; i >= 0; i--) {
+      // Iterate over the Frames in the Band to check whether the new element lands on one.
+      // Frames themselves are never nested: selection only supports one frame level.
+      const canNest = canGoInBox(newElement, newElement.pageIndex);
+      for (let i = targetBand.elements.length - 1; canNest && i >= 0; i--) {
         const el = targetBand.elements[i];
         if (!el) continue;
-        if (el.type === "frame") {
+        // Only the boxes on the page it is dropped on
+        if (targetBand.type === BAND_TYPE_CONSTANTS.DETAIL && (el.pageIndex ?? 0) !== (newElement.pageIndex ?? 0)) continue;
+        // (not a Location: it holds only its map and address)
+        if (el.type === "frame" && !isLocationElement(el)) {
           // Check whether the new element's center point is inside the Frame
           const centerX = newElement.x + newElement.width / 2;
           const centerY = newElement.y + newElement.height / 2;
@@ -2108,6 +3498,20 @@ const handleDrop = (event: DragEvent) => {
           }
         }
       }
+
+      // Dropped in the band itself: it must fit, growing the band up to its
+      // maximum if needed; too tall is refused before anything changes
+      const bandPlan =
+        targetFrameIndex === -1 ? planDropInBand(bandIndex, newElement) : null;
+      if (bandPlan?.kind === "tooTall") {
+        warnTooTallForBand(bandIndex, newElement.height, bandPlan.maxHeight);
+        highlightedBandIndex.value = null;
+        dropTargetBlocked.value = false;
+        return;
+      }
+
+      // Save state to history
+      saveStateToHistory();
 
       if (targetFrameIndex !== -1) {
         // Add it to the Frame
@@ -2156,10 +3560,8 @@ const handleDrop = (event: DragEvent) => {
           newElement.width = Math.round(availableWidth);
         }
 
-        // Ensure the element doesn't exceed the band's height
-        if (newElement.y + newElement.height > targetBand.height) {
-          newElement.y = Math.round(targetBand.height - newElement.height);
-        }
+        // Inside the band: moved up, or the band grows (checked above)
+        if (bandPlan) applyDropInBand(bandIndex, newElement, bandPlan);
 
         targetBand.elements.push(newElement);
 
@@ -2178,6 +3580,7 @@ const handleDrop = (event: DragEvent) => {
 
   // Clear the highlight state
   highlightedBandIndex.value = null;
+  dropTargetBlocked.value = false;
 };
 
 // Handle visual feedback while dragging
@@ -2187,34 +3590,590 @@ const handleDragOver = (event: DragEvent) => {
     event.dataTransfer.dropEffect = "copy";
   }
 
-  // Get the paper element as a reference point
-  const paper = document.querySelector(".paper") as HTMLElement;
-  if (!paper) return;
+  // A page border goes to the Background band wherever it is dropped: the whole
+  // printable area lights up instead of the band under the pointer
+  if (isBackgroundTile(draggedLibraryElement.value?.type) && !isDataSourceDrag(event)) {
+    highlightedBandIndex.value = -1;
+    dropTargetBlocked.value = false;
+    return;
+  }
 
-  const paperRect = paper.getBoundingClientRect();
-  // Calculate coordinates relative to the paper
-  const y = event.clientY - paperRect.top;
+  // The band under the pointer (same lookup as moving an element)
+  const { bandUnderMouse } = getTargetBandAndSheetUnderPoint(event.clientX, event.clientY);
+  const bandIndex =
+    bandUnderMouse?.dataset.bandIndex !== undefined
+      ? parseInt(bandUnderMouse.dataset.bandIndex, 10)
+      : -1;
+  highlightedBandIndex.value = bandIndex;
 
-  // Account for the zoom scale
-  const currentZoom = zoomLevel.value;
-  const scaledY = y / currentZoom;
+  // Red when the new element is too tall for that band (the drop is refused)
+  const type: string | undefined = draggedLibraryElement.value?.type;
+  const band = bands.value[bandIndex];
+  // A table (or data dropped beside one) can only go in the Detail section
+  const needsDetail =
+    type === "table" ||
+    (isDataSourceDrag(event) &&
+      !(event.target as HTMLElement)?.closest?.("[data-table-uuid], [data-chart-uuid]"));
+  dropTargetBlocked.value =
+    (needsDetail && !!band && band.type !== BAND_TYPE_CONSTANTS.DETAIL) ||
+    (!!type &&
+      !!band &&
+      !isBackgroundTile(type) &&
+      getLibraryDropHeight(type, band.height) > getBandMaxHeight(bandIndex));
+};
 
-  // Find the corresponding band
-  let bandIndex = -1;
-  let currentY = 0;
-  for (let i = 0; i < bands.value.length; i++) {
-    const band = bands.value[i];
-    if (band && scaledY >= currentY && scaledY <= currentY + band.height) {
-      bandIndex = i;
-      break;
+// Height a library item gets when dropped in a band of the given height
+// (same sizes as handleDrop); built items are cached for the drag
+const libraryHeightCache = new Map<string, number>();
+const getLibraryDropHeight = (type: string, bandHeight: number): number => {
+  if (["rectangle", "ellipse", "frame", "image"].includes(type)) {
+    return getDefaultElementSize(type, bandHeight).height;
+  }
+  let height = libraryHeightCache.get(type);
+  if (height === undefined) {
+    height = createLibraryElement(type).height;
+    libraryHeightCache.set(type, height);
+  }
+  return height;
+};
+
+// ==================== Data tables ====================
+
+// Where a table sits in the model
+interface TableLocation {
+  bandIndex: number;
+  elementIndex: number;
+  parentFrameIndex?: number;
+}
+
+// Any element (boxes' contents included) by its uuid
+const findElementByUuid = (uuid: string): TableLocation | null => {
+  for (let b = 0; b < bands.value.length; b++) {
+    const elements = bands.value[b]?.elements ?? [];
+    for (let i = 0; i < elements.length; i++) {
+      const el = elements[i];
+      if (el?.uuid === uuid) return { bandIndex: b, elementIndex: i };
+      if (el?.type === "frame") {
+        const j = ((el as FrameElement).elements ?? []).findIndex((child) => child.uuid === uuid);
+        if (j !== -1) return { bandIndex: b, elementIndex: j, parentFrameIndex: i };
+      }
     }
-    if (band) {
-      currentY += band.height;
+  }
+  return null;
+};
+
+const elementAtLocation = (location: TableLocation): DesignElement | undefined => {
+  const band = bands.value[location.bandIndex];
+  return location.parentFrameIndex !== undefined
+    ? (band?.elements[location.parentFrameIndex] as FrameElement | undefined)?.elements?.[location.elementIndex]
+    : band?.elements[location.elementIndex];
+};
+
+// The place a dragged location carries (a ProjectLocation as JSON)
+const readPlace = (value: string | null): Place => {
+  try {
+    return toPlace(value ? JSON.parse(value) : null);
+  } catch {
+    return toPlace(null);
+  }
+};
+
+// A project's location (or one of its fields) dropped onto a Location (its
+// box or a part): its place changes, its look, layout and zoom stay. Other
+// details are refused with a message. One undo step.
+const fillDroppedLocation = (
+  location: TableLocation,
+  drag: Extract<DataSourceDragPayload, { kind: "projectField" }>,
+) => {
+  const boxLocation =
+    location.parentFrameIndex !== undefined
+      ? { bandIndex: location.bandIndex, elementIndex: location.parentFrameIndex }
+      : location;
+  const box = elementAtLocation(boxLocation);
+  if (!box || !isLocationElement(box)) return;
+  const field = drag.field;
+  if (field.type !== "location" && !field.key.startsWith("location.")) {
+    notification.warning(t("reportData.dropNotOnLocation"));
+    return;
+  }
+  saveStateToHistory();
+  // The whole place follows the project from now on; one field is typed in
+  const patch =
+    field.type === "location"
+      ? { ...readPlace(drag.value), fromProject: true }
+      : { [field.key.slice("location.".length) as PlaceField]: drag.value ?? "", fromProject: false };
+  updateLocation(box as FrameElement, patch, { fontFamily: reportProperties.value?.defaultFont?.name, fontSize: reportProperties.value?.defaultFont?.size });
+  selectElement(boxLocation.bandIndex, boxLocation.elementIndex);
+  updateJRXML();
+};
+
+// A project detail dropped onto a text, image or barcode element: its content
+// becomes the value, keeping its place, size and look (one undo step). Text
+// details go in text elements and barcodes (when the type can hold the value),
+// the logo in image elements; anything else is refused with a message. Returns false when the drop wasn't on such an element.
+const fillDroppedProjectValue = (
+  event: DragEvent,
+  drag: Extract<DataSourceDragPayload, { kind: "projectField" }>,
+): boolean => {
+  const target = (event.target as HTMLElement)?.closest?.("[data-element-uuid]") as HTMLElement | null;
+  const location = target?.dataset.elementUuid ? findElementByUuid(target.dataset.elementUuid) : null;
+  const element = location ? elementAtLocation(location) : undefined;
+  if (location && element && (isLocationElement(element) || isLocationPart(element))) {
+    fillDroppedLocation(location, drag);
+    return true;
+  }
+  // The whole location dropped elsewhere: a new Location there
+  if (drag.field.type === "location") return false;
+  if (!location || !element || !["textField", "image", "barcode"].includes(element.type)) return false;
+
+  // A barcode takes a text detail whose value its type can hold
+  if (element.type === "barcode" && drag.field.type !== "image") {
+    const problem = projectValueProblem(element, drag.value ?? "");
+    if (problem) {
+      notification.warning(
+        t("reportData.dropNotForBarcode", {
+          value: drag.value ?? "",
+          type: t(`barcode.types.${element.barcodeType}`),
+          problem: t(`barcode.problems.${problem.key}`, problem.params ?? {}),
+        }),
+      );
+      return true;
     }
   }
 
-  // Update the highlight state
-  highlightedBandIndex.value = bandIndex;
+  if (!canTakeProjectField(element, drag.field, drag.value)) {
+    notification.warning(
+      t(
+        drag.field.type === "image"
+          ? "reportData.dropImageOnImage"
+          : isPagination(element)
+            ? "reportData.dropNotOnPageNumber"
+            : isDateElement(element)
+            ? "reportData.dropNotOnDate"
+            : "reportData.dropTextOnText",
+      ),
+    );
+    return true;
+  }
+  saveStateToHistory();
+  applyProjectValue(element, { id: drag.projectId, name: drag.projectName }, drag.field, drag.value ?? "");
+  selectElement(location.bandIndex, location.elementIndex, false, location.parentFrameIndex);
+  updateJRXML();
+  return true;
+};
+
+const findTableByUuid = (uuid: string): TableLocation | null => {
+  for (let b = 0; b < bands.value.length; b++) {
+    const elements = bands.value[b]?.elements ?? [];
+    for (let i = 0; i < elements.length; i++) {
+      const el = elements[i];
+      if (el?.type === "table" && el.uuid === uuid) return { bandIndex: b, elementIndex: i };
+      if (el?.type === "frame") {
+        const j = ((el as FrameElement).elements ?? []).findIndex(
+          (child) => child.type === "table" && child.uuid === uuid,
+        );
+        if (j !== -1) return { bandIndex: b, elementIndex: j, parentFrameIndex: i };
+      }
+    }
+  }
+  return null;
+};
+
+const tableAt = (loc: TableLocation | null): TableElement | null => {
+  if (!loc) return null;
+  const band = bands.value[loc.bandIndex];
+  const el =
+    loc.parentFrameIndex !== undefined
+      ? (band?.elements?.[loc.parentFrameIndex] as FrameElement | undefined)?.elements?.[loc.elementIndex]
+      : band?.elements?.[loc.elementIndex];
+  return el?.type === "table" ? (el as TableElement) : null;
+};
+
+// ---- One Table, two kinds of content: "From project data" / "Typed by me" ----
+
+// A table in a section (tables never sit inside a box)
+const topLevelElementAt = (loc: TableLocation) =>
+  loc.parentFrameIndex === undefined ? bands.value[loc.bandIndex]?.elements?.[loc.elementIndex] : undefined;
+
+// Put the converted table in place of the old one (the caller recorded the undo
+// step) and select it; the section grows when the new table is taller
+const replaceTableAt = (loc: TableLocation, element: DesignElement) => {
+  const band = bands.value[loc.bandIndex];
+  if (!band?.elements) return;
+  band.elements[loc.elementIndex] = element;
+  const bottom = Math.ceil(element.y + element.height);
+  if (bottom > band.height) band.height = bottom;
+  selectElement(loc.bandIndex, loc.elementIndex);
+};
+
+// "Typed by me": an empty table becomes an empty typed table; a table with data
+// keeps what it shows now (headings, rows that fit on the page, totals, colours)
+const convertTableToTyped = async (loc: TableLocation) => {
+  const source = topLevelElementAt(loc);
+  if (source?.type !== "table") return;
+  const table = source as TableElement;
+  let converted: CustomTableElement;
+  if (!table.binding) {
+    converted = emptyTypedTable(table, [1, 2, 3].map((n) => t("customTable.placeholderHeader", { n })));
+  } else {
+    let rows: DataRow[];
+    try {
+      rows = (await fetchTableRows(table.binding)).rows;
+    } catch {
+      notification.error(t("customTable.convertFailed"));
+      return;
+    }
+    // The table may have changed while its rows were loading
+    if (topLevelElementAt(loc) !== source) return;
+    const result = typedTableFromData(table, rows, {
+      maxHeight: getBandMaxHeight(loc.bandIndex) - table.y,
+      totalLabel: t("dataTable.totals.label"),
+      locale: locale.value,
+    });
+    converted = result.element;
+    if (result.leftOut > 0) notification.warning(t("customTable.rowsLeftOut", result.leftOut));
+  }
+  saveStateToHistory();
+  replaceTableAt(loc, converted);
+  updateJRXML();
+};
+
+// "From project data": the typed cells are replaced (after asking), then the
+// Configure popup picks the data. Data tables live in the Detail section only.
+const convertTableToData = async (loc: TableLocation) => {
+  const source = topLevelElementAt(loc);
+  if (source?.type !== "customTable") return;
+  if (bands.value[loc.bandIndex]?.type !== BAND_TYPE_CONSTANTS.DETAIL) {
+    notification.warning(t("dataTable.onlyInDetail"));
+    return;
+  }
+  const ok = await askConfirm(t("customTable.toDataTitle"), t("customTable.toDataMessage"));
+  if (!ok || topLevelElementAt(loc) !== source) return;
+  saveStateToHistory();
+  editingElement.value = null;
+  replaceTableAt(loc, emptyDataTable(source as CustomTableElement));
+  updateJRXML();
+  openTableConfig(loc);
+};
+
+// The switch in the table's properties
+const setTableContent = (kind: "data" | "typed") => {
+  if (!selectedElement.value) return;
+  const { bandIndex, elementIndex, parentFrameIndex } = selectedElement.value;
+  const loc = { bandIndex, elementIndex, parentFrameIndex };
+  if (kind === "typed") convertTableToTyped(loc);
+  else convertTableToData(loc);
+};
+
+// The Configure popup: for an existing table, or for a new one created on Apply
+const tableConfig = ref<{
+  visible: boolean;
+  target: TableLocation | null;
+  newAt: { bandIndex: number; y: number; pageIndex?: number } | null;
+  // Project and source dragged onto the table, if it was opened by a drop
+  projectId?: string;
+  sourceId?: string;
+  columnKey?: string;
+}>({ visible: false, target: null, newAt: null });
+
+const tableConfigTable = computed(() => tableAt(tableConfig.value.target));
+const tableConfigWidth = computed(() => {
+  if (tableConfigTable.value?.width) return tableConfigTable.value.width;
+  const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+  const sideMargin = 50;
+  return Math.max(100, availableWidth - sideMargin * 2);
+});
+
+const openTableConfig = (
+  target: TableLocation | null,
+  options: {
+    newAt?: { bandIndex: number; y: number; pageIndex?: number };
+    projectId?: string;
+    sourceId?: string;
+    columnKey?: string;
+  } = {},
+) => {
+  // A project list's rows come from the project: nothing to set up (a source
+  // dropped on it still replaces its data)
+  const list = tableAt(target)?.binding?.list;
+  if (list && !options.sourceId) {
+    notification.info(t("projectList.noSetup", { list: t(`reportData.projectTables.${list}`) }));
+    return;
+  }
+  tableConfig.value = {
+    visible: true,
+    target,
+    newAt: options.newAt ?? null,
+    projectId: options.projectId,
+    sourceId: options.sourceId,
+    columnKey: options.columnKey,
+  };
+};
+
+const openTableConfigByUuid = (uuid: string) => {
+  const location = findTableByUuid(uuid);
+  if (!location) return;
+  selectElement(location.bandIndex, location.elementIndex, false, location.parentFrameIndex);
+  openTableConfig(location);
+};
+
+const openTableConfigForSelection = () => {
+  if (!selectedElement.value) return;
+  const { bandIndex, elementIndex, parentFrameIndex } = selectedElement.value;
+  if (tableAt({ bandIndex, elementIndex, parentFrameIndex })) {
+    openTableConfig({ bandIndex, elementIndex, parentFrameIndex });
+  }
+};
+
+// Apply the popup: one undo step, whether the table is new or not
+const applyTableConfig = (binding: TableDataBinding, rowCount: number) => {
+  const { target, newAt } = tableConfig.value;
+  let table = tableAt(target);
+  let location = target;
+  if (!table && !newAt) return;
+  // A project list given a backend source is an ordinary data table from now on
+  if (binding.list && !isProjectListSource(binding.sourceId)) delete binding.list;
+
+  saveStateToHistory();
+
+  if (!table && newAt) {
+    const band = bands.value[newAt.bandIndex];
+    if (!band) return;
+    const availableWidth = Math.round(getFrameTemplateContext().availableWidth);
+    const width = tableConfigWidth.value;
+    table = {
+      ...(createLibraryElement("table") as TableElement),
+      uuid: crypto.randomUUID(),
+      x: Math.round((availableWidth - width) / 2),
+      y: newAt.y,
+      width,
+    };
+    if (newAt.pageIndex !== undefined) table.pageIndex = newAt.pageIndex;
+    band.elements.push(table);
+    location = { bandIndex: newAt.bandIndex, elementIndex: band.elements.length - 1 };
+  }
+  if (!table || !location) return;
+
+  // Columns narrower than the smallest column width: the table gets wider
+  // (it may then reach past the page; the user decides what to show)
+  const fitted = tableWidthFor(binding.columns.length, table.width);
+  if (fitted > table.width) {
+    table.width = fitted;
+    binding.columns = evenColumnWidths(binding.columns, fitted);
+  }
+  table.binding = binding;
+  // Barcodes need taller rows than text
+  if (binding.columns.some((c) => tableColumnBarcode(c)) && (table.rowHeight ?? TABLE_ROW_HEIGHT) < TABLE_BARCODE_ROW_HEIGHT) {
+    table.rowHeight = TABLE_BARCODE_ROW_HEIGHT;
+  }
+  table.height = tableHeight(binding, rowCount, table.headerHeight, table.rowHeight);
+
+  // The table must still fit its section: moved up, or the section grows
+  if (location.parentFrameIndex === undefined) {
+    const plan = planDropInBand(location.bandIndex, table);
+    if (plan.kind !== "tooTall") applyDropInBand(location.bandIndex, table, plan);
+  }
+
+  selectElement(location.bandIndex, location.elementIndex, false, location.parentFrameIndex);
+  updateJRXML();
+};
+
+// ---- Charts: the Configure popup ----
+const chartAt = (location: TableLocation | null): ChartElement | null => {
+  const el = location ? elementAtLocation(location) : undefined;
+  return el?.type === "chart" ? (el as ChartElement) : null;
+};
+
+const chartConfig = ref<{
+  visible: boolean;
+  target: TableLocation | null;
+  // Project and source dragged onto the chart, if it was opened by a drop
+  projectId?: string;
+  sourceId?: string;
+  columnKey?: string;
+}>({ visible: false, target: null });
+
+const chartConfigElement = computed(() => chartAt(chartConfig.value.target));
+
+const openChartConfig = (
+  target: TableLocation,
+  options: { projectId?: string; sourceId?: string; columnKey?: string } = {},
+) => {
+  chartConfig.value = { visible: true, target, ...options };
+};
+
+// From the PDF preview's side panel: select the chart and open its popup
+const openChartConfigByUuid = (uuid: string) => {
+  const location = findElementByUuid(uuid);
+  if (!location || !chartAt(location)) return;
+  selectElement(location.bandIndex, location.elementIndex, false, location.parentFrameIndex);
+  openChartConfig(location);
+};
+
+const openChartConfigForSelection = () => {
+  if (!selectedElement.value) return;
+  const { bandIndex, elementIndex, parentFrameIndex } = selectedElement.value;
+  const location = { bandIndex, elementIndex, parentFrameIndex };
+  if (chartAt(location)) openChartConfig(location);
+};
+
+// Apply the popup: one undo step
+const applyChartConfig = (binding: ChartBinding) => {
+  const location = chartConfig.value.target;
+  const chart = chartAt(location);
+  if (!chart || !location) return;
+  saveStateToHistory();
+  chart.binding = binding;
+  selectElement(location.bandIndex, location.elementIndex, false, location.parentFrameIndex);
+  updateJRXML();
+};
+
+// A chart's numbers arrived: its picture in the JRXML is redrawn
+watch(chartDataVersion, () => updateJRXML());
+// The template's project arrived (or changed): its name comes from the API
+// (the JRXML keeps only its id), and its linked details, lists and place show
+// its values (written with the JRXML, no undo step of its own)
+const templateProjectQueries = useQueries({
+  queries: computed(() => reportProjects.value.slice(0, 1).map((p) => projectQuery(p.id))),
+});
+watch(
+  () => templateProjectQueries.value[0]?.data,
+  (project) => {
+    const chosen = reportProjects.value[0];
+    if (chosen && project?.projectTitle && chosen.name !== project.projectTitle) chosen.name = project.projectTitle;
+    updateJRXML();
+  },
+);
+// Barcodes are sized once their drawing library is in
+watch(barcodeLibraryLoaded, () => updateJRXML());
+
+// A source or column dropped from the "Report Data" list
+const handleDataSourceDrop = (
+  event: DragEvent,
+  drag: Exclude<DataSourceDragPayload, { kind: "projectField" | "projectTable" }>,
+  pageIndex?: number,
+) => {
+  const columnKey = drag.kind === "column" ? drag.column.key : undefined;
+
+  // Onto a chart: its Configure popup opens with that source (and column)
+  const chartEl = (event.target as HTMLElement)?.closest?.("[data-chart-uuid]") as HTMLElement | null;
+  const chartLocation = chartEl ? findElementByUuid(chartEl.dataset.chartUuid || "") : null;
+  if (chartLocation && chartAt(chartLocation)) {
+    selectElement(chartLocation.bandIndex, chartLocation.elementIndex, false, chartLocation.parentFrameIndex);
+    openChartConfig(chartLocation, { projectId: drag.projectId, sourceId: drag.sourceId, columnKey });
+    return;
+  }
+
+  // Dragged by its chart icon: a chart where it is dropped
+  if (drag.kind === "source" && drag.asChart) {
+    placeChartFromSource(event, pageIndex, drag);
+    return;
+  }
+
+  const tableEl = (event.target as HTMLElement)?.closest?.("[data-table-uuid]") as HTMLElement | null;
+  const location = tableEl ? findTableByUuid(tableEl.dataset.tableUuid || "") : null;
+  const table = tableAt(location);
+
+  if (table && location) {
+    // One more column of the source the table already shows: added directly
+    if (
+      drag.kind === "column" &&
+      table.binding?.projectId === drag.projectId &&
+      table.binding?.sourceId === drag.sourceId
+    ) {
+      addColumnToTable(table, drag.column);
+      return;
+    }
+    openTableConfig(location, { projectId: drag.projectId, sourceId: drag.sourceId, columnKey });
+    return;
+  }
+
+  // Dropped on empty space: shown as a table or as a chart, the user picks
+  // (a table only in the Detail section of a normal page; a chart anywhere)
+  const bandEl = (event.target as HTMLElement)?.closest?.(".band") as HTMLElement | null;
+  const bandIndex = bandEl?.dataset.bandIndex !== undefined ? parseInt(bandEl.dataset.bandIndex, 10) : -1;
+  const band = bands.value[bandIndex];
+  const sheet = (event.target as HTMLElement)?.closest?.(".page-sheet") as HTMLElement | null;
+  const sheetPage = sheet?.dataset.pageIndex !== undefined ? parseInt(sheet.dataset.pageIndex, 10) : undefined;
+  const tableProblem =
+    !band || band.type !== BAND_TYPE_CONSTANTS.DETAIL || !bandEl
+      ? t("reportData.dropChoice.tableOnlyInDetail")
+      : isSpecialPage(reportProperties.value, sheetPage ?? pageIndex)
+        ? t("reportData.dropChoice.tableNotOnSpecialPage")
+        : null;
+  const y = bandEl ? Math.max(0, Math.round((event.clientY - bandEl.getBoundingClientRect().top) / zoomLevel.value)) : 0;
+  // A table is what a dropped source usually becomes: no question when it can go here
+  if (!tableProblem) {
+    openTableConfig(null, { newAt: { bandIndex, y, pageIndex: sheetPage ?? pageIndex }, projectId: drag.projectId, sourceId: drag.sourceId, columnKey });
+    return;
+  }
+  // Where a table can't go: the choice says why, and offers a chart instead
+  dataDropChoice.value = {
+    x: event.clientX,
+    y: event.clientY,
+    event,
+    pageIndex: sheetPage ?? pageIndex,
+    drag,
+    tableProblem,
+    tableAt: tableProblem ? null : { bandIndex, y, pageIndex: sheetPage ?? pageIndex },
+  };
+};
+
+// The Table / Chart choice for a project table dropped on empty space
+const dataDropChoice = ref<{
+  x: number;
+  y: number;
+  event: DragEvent;
+  pageIndex?: number;
+  drag: Exclude<DataSourceDragPayload, { kind: "projectField" | "projectTable" }>;
+  tableProblem: string | null;
+  tableAt: { bandIndex: number; y: number; pageIndex?: number } | null;
+} | null>(null);
+
+const chooseDataDropKind = (kind: DataDropKind) => {
+  const choice = dataDropChoice.value;
+  dataDropChoice.value = null;
+  if (!choice) return;
+  const { drag } = choice;
+  const columnKey = drag.kind === "column" ? drag.column.key : undefined;
+  if (kind === "table") {
+    // The table is made when its setup popup is applied
+    if (!choice.tableAt) return;
+    openTableConfig(null, { newAt: choice.tableAt, projectId: drag.projectId, sourceId: drag.sourceId, columnKey });
+    return;
+  }
+  placeChartFromSource(choice.event, choice.pageIndex, drag);
+};
+
+// A chart placed where a source was dropped (as the Chart tile would be),
+// then its setup popup opens with that source
+const placeChartFromSource = (
+  event: DragEvent,
+  pageIndex: number | undefined,
+  drag: Exclude<DataSourceDragPayload, { kind: "projectField" | "projectTable" }>,
+) => {
+  const columnKey = drag.kind === "column" ? drag.column.key : undefined;
+  const before = selectedElement.value;
+  handleDrop(event, pageIndex, { type: "chart" });
+  const placed = selectedElement.value;
+  if (!placed || placed === before) return;
+  const location = { bandIndex: placed.bandIndex, elementIndex: placed.elementIndex, parentFrameIndex: placed.parentFrameIndex };
+  if (chartAt(location)) openChartConfig(location, { projectId: drag.projectId, sourceId: drag.sourceId, columnKey });
+};
+
+const addColumnToTable = (table: TableElement, column: DataColumn) => {
+  const binding = table.binding;
+  if (!binding) return;
+  if (binding.columns.some((c) => c.key === column.key)) {
+    notification.info(t("dataTable.columnAlreadyShown", { column: column.label }));
+    return;
+  }
+  saveStateToHistory();
+  // No limit: a column narrower than the smallest width makes the table wider
+  const columns = [...binding.columns, toColumnBinding(column, 0)];
+  table.width = tableWidthFor(columns.length, table.width);
+  binding.columns = evenColumnWidths(columns, table.width);
+  updateJRXML();
 };
 
 // Handle the drag-leave event
@@ -2223,6 +4182,7 @@ const handleDragLeave = (event: DragEvent) => {
   const paper = document.querySelector(".paper") as HTMLElement;
   if (paper && !paper.contains(event.relatedTarget as Node)) {
     highlightedBandIndex.value = null;
+    dropTargetBlocked.value = false;
   }
 };
 
@@ -2235,9 +4195,9 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
     fontSize:
       reportProperties.value?.defaultFont?.size ||
       REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
-    isBold: reportProperties.value?.defaultFont?.isBold || false,
-    isItalic: reportProperties.value?.defaultFont?.isItalic || false,
-    isUnderline: reportProperties.value?.defaultFont?.isUnderline || false,
+    isBold: false,
+    isItalic: false,
+    isUnderline: false,
   };
 
   // Calculate the available width of the report page
@@ -2252,15 +4212,9 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
   };
 
   switch (type) {
-    case "staticText":
-      return {
-        text: t("properties.defaultStaticText"),
-        ...defaultFontProps,
-      };
     case "textField":
       return {
         expression: `"${t("properties.defaultTextFieldExpression")}"`,
-        isStretchWithOverflow: false,
         evaluationTime: "Now",
         pattern: "",
         isBlankWhenNull: false,
@@ -2270,16 +4224,19 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
       };
     case "image":
       return {
-        imageExpression:
-          '"https://raw.githubusercontent.com/fengyunhe/jrxml_web_designer/refs/heads/master/src/assets/FIREGOD_CN.jpg"',
+        imageExpression: "",
       };
     case "line":
-      return { lineDirection: "TopDown", lineWidth: 1 };
+      return { lineDirection: "TopDown", lineWidth: 1, height: 1 };
     case "rectangle":
       return {
         mode: "Transparent",
         border: "1px solid #ccc", // Add a default border for rectangle elements
       };
+    case "frame":
+      // A new Box starts with a thin light border so it can be seen (and is
+      // printed); a fresh object each time, since border edits change it in place
+      return { box: applyBorderPreset(undefined, "light") };
     case "table":
       return {
         width: calculateAvailableWidth(),
@@ -2289,15 +4246,22 @@ const getDefaultElementProperties = (type: string): Partial<DesignElement> => {
   }
 };
 
+// Guard flag to prevent drag/resize release from inadvertently unselecting the active element
+const isJustDraggedOrResized = ref(false);
+
 // Select a band
 const selectBand = (index: number) => {
+  if (isJustDraggedOrResized.value) {
+    return;
+  }
+  setDesignAreaFocused();
   selectedBandIndex.value = index;
   selectedElement.value = null;
   selectedElements.value = []; // Clear the multi-selection
   // Update the last-clicked band index
   lastClickedBandIndex.value = index;
-  // Automatically hide the bottom panel
-  showBottomPanel.value = false;
+  // Automatically switch to the properties tab
+  rightPanelTab.value = "properties";
 };
 
 // Select an element
@@ -2307,6 +4271,13 @@ const selectElement = (
   isMultiSelect = false,
   parentFrameIndex?: number,
 ) => {
+  // A Location's map or address: the whole Location is selected (it is one
+  // element; its panel styles the map and the address)
+  if (parentFrameIndex !== undefined && isLocationElement(bands.value[bandIndex]?.elements[parentFrameIndex])) {
+    elementIndex = parentFrameIndex;
+    parentFrameIndex = undefined;
+  }
+
   // Get the element reference in order to obtain its UUID
   const band = bands.value[bandIndex];
   let element;
@@ -2321,6 +4292,13 @@ const selectElement = (
   }
 
   const uuid = element?.uuid;
+  // The watermark is edited only in its panel: show it (even from the AI tab)
+  if (isWatermark(element)) rightPanelTab.value = "properties";
+  // Library tiles clicked next add to this element's page
+  if (band?.type === BAND_TYPE_CONSTANTS.DETAIL) {
+    const onPage = parentFrameIndex !== undefined ? band.elements[parentFrameIndex] : element;
+    lastClickedPageIndex.value = onPage?.pageIndex ?? 0;
+  }
 
   // Quickly update the selection state, avoiding unnecessary DOM operations
   if (isMultiSelect) {
@@ -2371,12 +4349,8 @@ const selectElement = (
 
   selectedBandIndex.value = null;
 
-  // Automatically hide the bottom panel
-  showBottomPanel.value = false;
-
-  if (element && !element.box) {
-    // Use initBox to initialize the box property
-    initBox();
+  if (element && !element.box && !isWatermark(element)) {
+    initBox(element);
   }
 
   // Removed the expensive DOM queries and animation effects; selection state is now managed via Vue's reactivity system and CSS classes
@@ -2390,85 +4364,187 @@ const clearSelection = () => {
 };
 
 // Select elements within a marquee (rubber-band) rectangle
-const selectElementsInRect = (rect: {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-}) => {
-  // Clear the current selection
-  selectedElements.value = [];
-  selectedElement.value = null;
-
-  // Calculate the cumulative height of the bands, used to convert absolute coordinates to coordinates relative to a band
-  // The initial offset must account for the top margin
-  let bandOffsetY = reportProperties.value?.topMargin || 0;
-
-  // Iterate over all bands and elements, checking whether each falls within the marquee area
-  bands.value.forEach((band, bandIndex) => {
-    // Check whether the current band overlaps the marquee area
-    const bandTop = bandOffsetY;
-    const bandBottom = bandOffsetY + band.height;
-
-    // If the band does not overlap the marquee area, skip it
-    if (bandBottom < rect.top || bandTop > rect.bottom) {
-      bandOffsetY += band.height;
-      return;
-    }
-
-    // Iterate over all elements in the current band
-    band.elements.forEach((element, elementIndex) => {
-      // Calculate the element's absolute position on the canvas
-      // The element's X coordinate must account for the left margin
-      const elementLeft = (reportProperties.value?.leftMargin || 0) + element.x;
-      const elementTop = bandOffsetY + element.y;
-      const elementRight = elementLeft + element.width;
-      const elementBottom = elementTop + element.height;
-
-      // Check whether the element overlaps the marquee area
-      const isOverlapping = !(
-        elementRight < rect.left ||
-        elementLeft > rect.right ||
-        elementBottom < rect.top ||
-        elementTop > rect.bottom
-      );
-
-      // If it overlaps, add it to the selection list
-      if (isOverlapping) {
-        selectedElements.value.push({
-          bandIndex,
-          elementIndex,
-          uuid: element.uuid,
-        });
+// Select an element asked for by uuid (a contents row's heading) and bring it into view
+watch(
+  () => selectionStore.revealUuid,
+  (uuid) => {
+    if (!uuid) return;
+    selectionStore.revealUuid = null;
+    for (const [bandIndex, band] of bands.value.entries()) {
+      for (const [elementIndex, el] of (band.elements ?? []).entries()) {
+        if (el.uuid === uuid) {
+          selectElement(bandIndex, elementIndex);
+        } else if (el.type === "frame") {
+          const inner = (el.elements ?? []).findIndex((c) => c.uuid === uuid);
+          if (inner === -1) continue;
+          selectElement(bandIndex, inner, false, elementIndex);
+        } else continue;
+        nextTick(() =>
+          document
+            .querySelector(`[data-element-uuid="${CSS.escape(uuid)}"]`)
+            ?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "center", inline: "nearest" }),
+        );
+        return;
       }
-    });
-
-    // Update the band's Y offset
-    bandOffsetY += band.height;
-  });
-
-  // If any elements are selected, use the last-selected one as the current selection
-  if (selectedElements.value.length > 0) {
-    const lastSelected =
-      selectedElements.value[selectedElements.value.length - 1];
-    if (lastSelected) {
-      selectedElement.value = {
-        bandIndex: lastSelected.bandIndex,
-        elementIndex: lastSelected.elementIndex,
-        uuid: lastSelected.uuid,
-      };
     }
-  }
-
-  // Automatically hide the bottom panel
-  showBottomPanel.value = false;
-};
+  },
+);
 
 // Cache the event handler functions to avoid recreating them
 let cachedMouseMoveHandler: ((e: MouseEvent) => void) | null = null;
 let cachedMouseUpHandler: ((e: MouseEvent) => void) | null = null;
+// The pages scrolling under the element being moved (wheel or edge auto-scroll)
+let elementDragScroll: DragScrollSession | null = null;
+
+// Detect target band and sheet under coordinates (combines elementFromPoint with geometric fallback)
+// The page sheet and band at a screen point, found from their positions on screen.
+// Not from what is drawn there: while dragging, that is usually the dragged
+// element itself, which still sits in its old band.
+const getTargetBandAndSheetUnderPoint = (clientX: number, clientY: number) => {
+  const sheets = Array.from(document.querySelectorAll<HTMLElement>(".page-sheet"));
+  const sheetUnderMouse =
+    sheets.find((sheet) => {
+      const rect = sheet.getBoundingClientRect();
+      return (
+        clientX >= rect.left &&
+        clientX < rect.right &&
+        clientY >= rect.top &&
+        clientY < rect.bottom
+      );
+    }) ??
+    sheets.find((sheet) => {
+      const rect = sheet.getBoundingClientRect();
+      return clientY >= rect.top && clientY < rect.bottom;
+    }) ??
+    sheets[0] ??
+    null;
+
+  let bandUnderMouse: HTMLElement | null = null;
+  if (sheetUnderMouse) {
+    const bandEls = Array.from(sheetUnderMouse.querySelectorAll<HTMLElement>(".band"));
+    // Bands are stacked; a point on the line between two belongs to the lower
+    // one, so an element snapped to a band's bottom edge moves into the next band
+    bandUnderMouse =
+      bandEls.find((bandEl) => {
+        const rect = bandEl.getBoundingClientRect();
+        return clientY >= rect.top && clientY < rect.bottom;
+      }) ?? null;
+    if (!bandUnderMouse && bandEls.length > 0) {
+      // Above the first band or below the last (in the margins): the nearest one
+      const first = bandEls[0]!;
+      bandUnderMouse =
+        clientY < first.getBoundingClientRect().top ? first : bandEls[bandEls.length - 1]!;
+    }
+  }
+
+  return { bandUnderMouse, sheetUnderMouse };
+};
 
 // Start dragging an element
+// Drag an item inside its box, kept within the box's edges
+const startDraggingInsideBox = (
+  event: MouseEvent,
+  element: DesignElement,
+  bandIndex: number,
+  boxIndex: number,
+) => {
+  const box = bands.value[bandIndex]!.elements[boxIndex] as FrameElement;
+  const zoom = zoomLevel.value;
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const origX = element.x;
+  const origY = element.y;
+  const snapContext = buildSnapContext(
+    bandIndex,
+    getEventPageIndex(event, element),
+    boxIndex,
+    element,
+  );
+
+  // Undo snapshot before the item moves (a drag only starts after the mouse moved)
+  saveStateToHistory();
+  isDraggingOrResizing.value = true;
+
+  let lastMove: MouseEvent = event;
+  // The pages may scroll under the item (wheel, or the pointer at an edge)
+  const scroll = startDragScrolling({ onScroll: () => frameMove(lastMove) });
+
+  const onMove = (e: MouseEvent) => {
+    const options = getSnapOptions(e, snapContext);
+    const scrolled = scroll.offset();
+    const snapped = snapMove(
+      {
+        x: origX + (e.clientX - startX + scrolled.x) / zoom,
+        y: origY + (e.clientY - startY + scrolled.y) / zoom,
+        width: element.width,
+        height: element.height,
+      },
+      snapContext.targets,
+      options,
+    );
+    const position = clampPositionInBox({ ...element, ...snapped }, box);
+    element.x = position.x;
+    element.y = position.y;
+    showSnapGuides(snapContext, snapped.guides, options);
+  };
+  const frameMove = throttleToAnimationFrame(onMove);
+  const onMouseMove = (e: MouseEvent) => {
+    lastMove = e;
+    scroll.pointer(e.clientX, e.clientY);
+    frameMove(e);
+  };
+
+  const onUp = () => {
+    frameMove.flush();
+    scroll.stop();
+    clearAlignmentLines();
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onUp);
+    isDraggingOrResizing.value = false;
+    isJustDraggedOrResized.value = true;
+    setTimeout(() => {
+      isJustDraggedOrResized.value = false;
+    }, 150);
+    updateJRXML();
+  };
+
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onUp);
+};
+
+// The page sheet a mouse event happened on (detail content is per page)
+const getEventPageIndex = (event: Event, element?: DesignElement): number => {
+  const sheet = (event.target as HTMLElement | null)?.closest?.(
+    ".page-sheet",
+  ) as HTMLElement | null;
+  if (sheet?.dataset.pageIndex !== undefined) {
+    return parseInt(sheet.dataset.pageIndex, 10);
+  }
+  return element?.pageIndex ?? 0;
+};
+
+// Run a mouse-move handler at most once per screen frame, with the latest event:
+// the canvas never does more work than it can draw. `flush` applies a pending
+// move at once (call it on mouse-up so the final position is the last one).
+const throttleToAnimationFrame = (handler: (e: MouseEvent) => void) => {
+  let pending: MouseEvent | null = null;
+  let frame = 0;
+  const flush = () => {
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+    if (pending) {
+      const e = pending;
+      pending = null;
+      handler(e);
+    }
+  };
+  const onMove = (e: MouseEvent) => {
+    pending = e;
+    if (!frame) frame = requestAnimationFrame(flush);
+  };
+  return Object.assign(onMove, { flush });
+};
+
 const startDragging = (
   event: MouseEvent,
   bandIndex: number,
@@ -2478,11 +4554,8 @@ const startDragging = (
   event.stopPropagation();
   selectElement(bandIndex, elementIndex, false, parentFrameIndex);
 
-  // Automatically hide the bottom panel
-  showBottomPanel.value = false;
-
   const band = bands.value[bandIndex];
-  let draggedElement;
+  let draggedElement: DesignElement | undefined;
 
   if (parentFrameIndex !== undefined) {
     const frame = band?.elements[parentFrameIndex] as FrameElement;
@@ -2493,393 +4566,255 @@ const startDragging = (
     draggedElement = band?.elements[elementIndex];
   }
 
+  // A ready-made box's own parts move only within the box; a drag never pulls
+  // them out. Other items in a box can be dragged anywhere.
+  if (draggedElement && parentFrameIndex !== undefined && isBoxPart(draggedElement)) {
+    startDraggingInsideBox(event, draggedElement, bandIndex, parentFrameIndex);
+    return;
+  }
+
   if (draggedElement) {
-    // Get the current zoom scale
     const currentZoom = zoomLevel.value;
 
-    // Get the paper element's position info, for more accurate coordinate calculations
-    const paperEl = document.querySelector(".paper") as HTMLElement;
-    let paperOffsetX = 0;
-    let paperOffsetY = 0;
-
-    if (paperEl) {
-      const paperRect = paperEl.getBoundingClientRect();
-      // Offset accounting for the zoom scale
-      paperOffsetX = paperRect.left;
-      paperOffsetY = paperRect.top;
+    const targetSheet =
+      ((event.target as HTMLElement)?.closest(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".paper") as HTMLElement);
+    let sourcePageIndex = 0;
+    if (targetSheet && targetSheet.dataset.pageIndex !== undefined) {
+      sourcePageIndex = parseInt(targetSheet.dataset.pageIndex, 10);
+    } else if ((draggedElement as any).pageIndex !== undefined) {
+      sourcePageIndex = (draggedElement as any).pageIndex;
     }
 
-    // Store the drag info, accounting for the zoom scale
     draggingInfo.value = {
       bandIndex,
       elementIndex,
       parentFrameIndex,
-      startX: (event.clientX - paperOffsetX) / currentZoom - draggedElement.x,
-      startY: (event.clientY - paperOffsetY) / currentZoom - draggedElement.y,
-      lastTargetBandIndex: bandIndex, // Initialize to the current band index
+      startX: event.clientX,
+      startY: event.clientY,
+      origElementX: draggedElement.x,
+      origElementY: draggedElement.y,
+      lastTargetBandIndex: bandIndex,
+      sourcePageIndex,
+      lastTargetPageIndex: sourcePageIndex,
     };
+
+    // Undo snapshot before the element moves (a drag only starts after the
+    // mouse has moved, so plain clicks add no undo step)
+    saveStateToHistory();
 
     isDraggingOrResizing.value = true;
 
-    // Use the cached event handler functions to avoid creating new ones on every drag
-    if (!cachedMouseMoveHandler) {
-      cachedMouseMoveHandler = (e: MouseEvent) => {
+    // Drop handlers left over from a drag whose mouse-up was missed
+    if (cachedMouseMoveHandler) {
+      document.removeEventListener("mousemove", cachedMouseMoveHandler);
+      cachedMouseMoveHandler = null;
+    }
+    if (cachedMouseUpHandler) {
+      document.removeEventListener("mouseup", cachedMouseUpHandler);
+      cachedMouseUpHandler = null;
+    }
+    elementDragScroll?.stop();
+
+    // What the element can snap to; the other elements stay put during the drag
+    const snapContext = buildSnapContext(
+      bandIndex,
+      sourcePageIndex,
+      parentFrameIndex,
+      draggedElement,
+    );
+
+    {
+      const applyDragMove = (e: MouseEvent) => {
         if (draggingInfo.value) {
           const currentBand = bands.value[draggingInfo.value.bandIndex];
-          let currentElement;
-          let containerWidth =
-            paperWidth.value -
-            (reportProperties.value?.leftMargin || 0) -
-            (reportProperties.value?.rightMargin || 0);
-          let containerHeight = null; // Frame height limit
+          let currentElement: DesignElement | undefined;
 
           if (draggingInfo.value.parentFrameIndex !== undefined) {
             const frame =
               currentBand?.elements[draggingInfo.value.parentFrameIndex];
             if (frame && frame.type === "frame" && frame.elements) {
               currentElement = frame.elements[draggingInfo.value.elementIndex];
-              containerWidth = frame.width;
-              containerHeight = frame.height;
             }
           } else {
             currentElement =
               currentBand?.elements[draggingInfo.value.elementIndex];
           }
 
+          const pageIndex = draggingInfo.value.sourcePageIndex ?? currentElement?.pageIndex ?? 0;
+          const special = draggingInfo.value.parentFrameIndex === undefined
+            ? specialPageArea(reportProperties.value, pageIndex)
+            : null;
+          let containerWidth = special
+            ? special.width
+            : draggingInfo.value.parentFrameIndex !== undefined
+            ? (currentBand?.elements[draggingInfo.value.parentFrameIndex] as FrameElement)?.width ?? paperWidth.value
+            : paperWidth.value -
+              (reportProperties.value?.leftMargin || 0) -
+              (reportProperties.value?.rightMargin || 0);
+
           if (currentBand && currentElement) {
-            // Get the current zoom scale
             const currentZoom = zoomLevel.value;
 
-            // Calculate the element's position relative to the paper, accounting for the zoom scale
-            // Note: since padding is now used, element coordinates are relative to the content area
-            // Calculate the available width; no need to divide by currentZoom since the newX calculation already accounts for zoom
-            // const availableWidth = ... (already calculated above as containerWidth)
+            // Direct delta from starting mouse position (1:1 cursor following,
+            // zero jitter), plus how far the pages scrolled under it meanwhile
+            const scrolled = elementDragScroll?.offset() ?? { x: 0, y: 0 };
+            const deltaX =
+              (e.clientX - draggingInfo.value.startX + scrolled.x) / currentZoom;
+            const deltaY =
+              (e.clientY - draggingInfo.value.startY + scrolled.y) / currentZoom;
 
-            // Get the paper element's position info, for more accurate coordinate calculations
-            let paperOffsetX = 0;
-            let paperOffsetY = 0;
-            const paperEl = document.querySelector(".paper") as HTMLElement;
+            // Snap: line up with other elements first, else the grid
+            const snapOptions = getSnapOptions(e, snapContext);
+            const snapped = snapMove(
+              {
+                x: (draggingInfo.value.origElementX ?? 0) + deltaX,
+                y: (draggingInfo.value.origElementY ?? 0) + deltaY,
+                width: currentElement.width,
+                height: currentElement.height,
+              },
+              snapContext.targets,
+              snapOptions,
+            );
+            let newX = snapped.x;
+            const newY = snapped.y;
 
-            if (paperEl) {
-              const paperRect = paperEl.getBoundingClientRect();
-              // Offset accounting for the zoom scale
-              paperOffsetX = paperRect.left;
-              paperOffsetY = paperRect.top;
-            }
-
-            // Calculate the new X and Y coordinates, accounting for zoom and offset
-            let newX =
-              (e.clientX - paperOffsetX) / currentZoom -
-              draggingInfo.value.startX;
-            let newY =
-              (e.clientY - paperOffsetY) / currentZoom -
-              draggingInfo.value.startY; // Remove the lower bound on the Y coordinate
-
-            // If inside a Frame, don't constrain the coordinates, allowing the element to move outside the Frame
-            if (draggingInfo.value.parentFrameIndex !== undefined) {
-              // No constraint applied
-            } else {
-              // Inside a Band, constrain the X coordinate
+            // Inside band, constrain X coordinate to container width
+            if (draggingInfo.value.parentFrameIndex === undefined) {
               newX = Math.max(
                 0,
                 Math.min(newX, containerWidth - currentElement.width),
               );
-
-              // Original Band Y-constraint logic
-              // Get the position info of the first and last bands
-              const firstBandElement = document.querySelectorAll(
-                ".band",
-              )[0] as HTMLElement;
-              const lastBandElement = document.querySelectorAll(".band")[
-                bands.value.length - 1
-              ] as HTMLElement;
-
-              // Calculate the position of the current band on the page
-              const currentBandElement = document.querySelectorAll(".band")[
-                draggingInfo.value.bandIndex
-              ] as HTMLElement;
-              let currentBandTopInPage = 0;
-
-              if (
-                firstBandElement &&
-                lastBandElement &&
-                currentBandElement &&
-                paperEl
-              ) {
-                const firstBandRect = firstBandElement.getBoundingClientRect();
-                const lastBandRect = lastBandElement.getBoundingClientRect();
-                const currentBandRect =
-                  currentBandElement.getBoundingClientRect();
-                const paperRect = paperEl.getBoundingClientRect();
-
-                // Calculate the positions of the first and last bands relative to the page
-                const firstBandTopInPage =
-                  (firstBandRect.top - paperRect.top) / currentZoom;
-                const lastBandBottomInPage =
-                  (lastBandRect.bottom - paperRect.top) / currentZoom;
-                currentBandTopInPage =
-                  (currentBandRect.top - paperRect.top) / currentZoom;
-
-                // Calculate the element's absolute position on the page (relative to the entire page)
-                const elementTopInPage = currentBandTopInPage + newY;
-
-                // Constrain the element's top so it doesn't exceed the first band's top boundary
-                if (elementTopInPage < firstBandTopInPage) {
-                  const adjustment = firstBandTopInPage - elementTopInPage;
-                  newY += adjustment;
-                }
-
-                // For elements in the last band, constrain their bottom so it doesn't exceed the last band's bottom boundary
-                if (draggingInfo.value.bandIndex === bands.value.length - 1) {
-                  // Calculate the element's maximum Y coordinate within the last band
-                  const maxRelativeY =
-                    lastBandBottomInPage -
-                    currentBandTopInPage -
-                    currentElement.height;
-                  newY = Math.min(newY, maxRelativeY);
-                }
-              }
             }
 
-            // Apply auto-snap functionality
-            if (enableSnapToGrid.value) {
-              // Define the grid size as 3 pixels, reducing the snap distance
-              const gridSize = 3;
-
-              // Snap the X coordinate
-              const remainderX = newX % gridSize;
-              if (remainderX < gridSize / 2) {
-                newX = newX - remainderX;
-              } else {
-                newX = newX + (gridSize - remainderX);
-              }
-
-              // Snap the Y coordinate
-              const remainderY = newY % gridSize;
-              if (remainderY < gridSize / 2) {
-                newY = newY - remainderY;
-              } else {
-                newY = newY + (gridSize - remainderY);
-              }
-            }
-
-            // Apply alignment-line snapping
-            if (enableSnapToAlignment.value) {
-              // Create a temporary element object for alignment-line detection
-              const tempElement = { ...currentElement, x: newX, y: newY };
-              const snapInfo = detectAlignmentLines(
-                tempElement,
-                draggingInfo.value.bandIndex,
-                false,
-              );
-
-              // Apply horizontal snapping
-              if (snapInfo.horizontal) {
-                newX += snapInfo.horizontal.offset;
-              }
-
-              // Apply vertical snapping
-              if (snapInfo.vertical) {
-                newY += snapInfo.vertical.offset;
-              }
-            }
-
-            // Ensure the coordinate values are integers
             currentElement.x = Math.round(newX);
             currentElement.y = Math.round(newY);
+            showSnapGuides(snapContext, snapped.guides, snapOptions);
 
-            // If the element moves into a different band, constrain the Y coordinate so it doesn't exceed the band's height
-            if (
-              highlightedBandIndex.value !== null &&
-              highlightedBandIndex.value !== draggingInfo.value.bandIndex
-            ) {
-              const targetBand = bands.value[highlightedBandIndex.value];
-              if (targetBand) {
-                const maxY = targetBand.height - currentElement.height;
-                // Calculate the element's Y coordinate relative to the target band
-                const bandElements = document.querySelectorAll(".band");
-                const currentBandElement = bandElements[
-                  draggingInfo.value.bandIndex
-                ] as HTMLElement;
-                const targetBandElement = bandElements[
-                  highlightedBandIndex.value
-                ] as HTMLElement;
+            // Target band and sheet detection:
+            // Use the visual position of the element's top to prevent accidental reparenting
+            // when grabbing the lower portion of a tall or overflowing element
+            const sourceSheet =
+              document.querySelector(
+                `.page-sheet[data-page-index="${draggingInfo.value.sourcePageIndex}"]`,
+              ) ||
+              document.querySelector(".page-sheet") ||
+              document.querySelector(".paper");
+            const sourceBandEl = sourceSheet?.querySelector(
+              `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
+            ) as HTMLElement | null;
 
-                if (currentBandElement && targetBandElement) {
-                  const currentBandRect =
-                    currentBandElement.getBoundingClientRect();
-                  const targetBandRect =
-                    targetBandElement.getBoundingClientRect();
-                  const relativeY =
-                    newY +
-                    (currentBandRect.top - targetBandRect.top) / currentZoom;
-
-                  // Constrain the relative Y coordinate
-                  if (relativeY > maxY) {
-                    // Adjust the element's actual Y coordinate
-                    currentElement.y = newY - (relativeY - maxY);
-                  }
-                }
-              }
+            let checkY = e.clientY;
+            if (sourceBandEl) {
+              const sRect = sourceBandEl.getBoundingClientRect();
+              checkY = sRect.top + newY * currentZoom;
             }
 
-            // Detect alignment lines (using the final position)
-            // Use the band index the element currently belongs to, ensuring consistent alignment-line detection
-            detectAlignmentLines(currentElement, draggingInfo.value.bandIndex);
+            const { bandUnderMouse, sheetUnderMouse } =
+              getTargetBandAndSheetUnderPoint(e.clientX, checkY);
 
-            // Update and display the coordinate info
-            // Show the element's relative coordinate values
-            let relativeX = Math.round(newX);
+            let targetBandIndex = draggingInfo.value.bandIndex;
+            if (
+              bandUnderMouse &&
+              bandUnderMouse.dataset.bandIndex !== undefined
+            ) {
+              targetBandIndex = parseInt(bandUnderMouse.dataset.bandIndex, 10);
+              highlightedBandIndex.value = targetBandIndex;
+              draggingInfo.value.lastTargetBandIndex = targetBandIndex;
+            }
+
+            if (
+              sheetUnderMouse &&
+              sheetUnderMouse.dataset.pageIndex !== undefined
+            ) {
+              draggingInfo.value.lastTargetPageIndex = parseInt(
+                sheetUnderMouse.dataset.pageIndex,
+                10,
+              );
+            }
+
+            // Display coordinates relative to target band
+            let relativeX = Math.max(0, Math.round(newX));
             let relativeY = Math.round(newY);
 
-            // Reuse the already-retrieved paperElement variable
-            if (paperEl) {
-              const bandElements = document.querySelectorAll(".band");
-
-              // Calculate the element's coordinates relative to the target band while dragging
-              if (
-                highlightedBandIndex.value !== null &&
-                bandElements[highlightedBandIndex.value]
-              ) {
-                // If there's a highlighted band (the band the mouse is currently over), calculate the element's coordinates relative to it
-                const targetBandElement = bandElements[
-                  highlightedBandIndex.value
-                ] as HTMLElement;
-                const targetBandRect =
-                  targetBandElement.getBoundingClientRect();
-
-                // Fix: use the element's actual Y coordinate (newY) rather than the mouse position to calculate the relative Y coordinate
-                // Get the top position of the band the current element belongs to
-                const currentBandElement = bandElements[
-                  draggingInfo.value.bandIndex
-                ] as HTMLElement;
-                const currentBandRect =
-                  currentBandElement.getBoundingClientRect();
-
-                // If the element is in a different band, the calculation must be adjusted
-                if (
-                  highlightedBandIndex.value !== draggingInfo.value.bandIndex
-                ) {
-                  // The element moved to a different band; calculate the Y coordinate relative to the new band
-                  relativeY = Math.round(
-                    newY +
-                      (currentBandRect.top - targetBandRect.top) / currentZoom,
-                  );
-                } else {
-                  // The element is within the same band; use the element's Y coordinate
-                  relativeY = Math.round(newY);
-                }
-
-                // Ensure the Y coordinate is relative to the target band
-                if (relativeY < 0) {
-                  relativeY = 0;
-                }
-
-                // Constrain the moved element's relative Y value so it doesn't exceed the target band's height minus the element's height
-                const targetBand = bands.value[highlightedBandIndex.value];
-                if (targetBand && currentElement) {
-                  const maxY = targetBand.height - currentElement.height;
-                  if (relativeY > maxY) {
-                    relativeY = maxY;
-                  }
-                }
+            if (
+              bandUnderMouse &&
+              targetBandIndex !== draggingInfo.value.bandIndex
+            ) {
+              const sourceSheet =
+                document.querySelector(
+                  `.page-sheet[data-page-index="${draggingInfo.value.sourcePageIndex}"]`,
+                ) ||
+                document.querySelector(".page-sheet") ||
+                document.querySelector(".paper");
+              const sourceBandEl = sourceSheet?.querySelector(
+                `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
+              ) as HTMLElement | null;
+              if (sourceBandEl) {
+                const sourceRect = sourceBandEl.getBoundingClientRect();
+                const targetRect = bandUnderMouse.getBoundingClientRect();
+                relativeY = Math.round(
+                  newY + (sourceRect.top - targetRect.top) / currentZoom,
+                );
               }
             }
+            if (relativeY < 0) relativeY = 0;
+
+            // Red target band when the element is too tall for it (the drop
+            // would be refused); not when it lands in a box in that band
+            dropTargetBlocked.value =
+              targetBandIndex !== draggingInfo.value.bandIndex &&
+              !isOverBox(targetBandIndex, currentElement, relativeX, relativeY, draggingInfo.value.lastTargetPageIndex) &&
+              planDropInBand(targetBandIndex, {
+                y: relativeY,
+                height: currentElement.height,
+              }).kind === "tooTall";
+
+            const targetBand = bands.value[targetBandIndex];
+            const bandName = targetBand
+              ? getBandDisplayName(targetBand.type) + " - "
+              : "";
 
             dragCoordinates.value = {
               x: relativeX,
               y: relativeY,
               visible: true,
-              bandName: "",
+              bandName,
             };
 
-            // Use the DOM elements' actual positions to calculate the target band, for greater accuracy
-            // Reuse the already-retrieved paperElement variable
-            if (paperEl) {
-              let targetBandIndex = draggingInfo.value.bandIndex;
-              let isOverBand = false;
-
-              // Get all band elements
-              const bandElements = document.querySelectorAll(".band");
-              for (let i = 0; i < bandElements.length; i++) {
-                const bandElement = bandElements[i] as HTMLElement;
-                const bandRect = bandElement.getBoundingClientRect();
-
-                // Check whether the mouse position falls within the current band's bounds
-                if (e.clientY >= bandRect.top && e.clientY <= bandRect.bottom) {
-                  targetBandIndex = i;
-                  isOverBand = true;
-                  break;
-                }
-              }
-
-              // Only update the highlighted band when the mouse is over some band
-              if (isOverBand) {
-                highlightedBandIndex.value = targetBandIndex;
-              }
-
-              // Log once the dragged element has moved into the target band
-              if (
-                isOverBand &&
-                targetBandIndex !== draggingInfo.value.bandIndex &&
-                targetBandIndex !== draggingInfo.value.lastTargetBandIndex
-              ) {
-                const sourceBand = bands.value[draggingInfo.value.bandIndex];
-                const targetBand = bands.value[targetBandIndex];
-                if (sourceBand && targetBand) {
-                  console.log(
-                    `Element moved from ${getBandDisplayName(sourceBand.type)} to ${getBandDisplayName(targetBand.type)}`,
-                  );
-                  // Update the last target band index
-                  draggingInfo.value.lastTargetBandIndex = targetBandIndex;
-
-                  // TODO: also constrain the moved element's relative Y value so it doesn't exceed the target band's height minus the element's height
-                }
-              }
-            }
-
-            // Update the position of the coordinate-display element so it follows the mouse
             const coordinatesElement = document.querySelector(
               ".coordinates-display",
             ) as HTMLElement;
             if (coordinatesElement) {
-              // Get the name of the band the mouse is currently over
-              let bandName = "";
-              if (
-                highlightedBandIndex.value !== null &&
-                bands.value[highlightedBandIndex.value] !== undefined
-              ) {
-                const currentBand = bands.value[highlightedBandIndex.value];
-                if (currentBand) {
-                  bandName = getBandDisplayName(currentBand.type) + " - ";
-                }
-              }
-
-              // Coordinate display accounting for the zoom scale
               coordinatesElement.style.left = e.clientX + 10 + "px";
               coordinatesElement.style.top = e.clientY - 30 + "px";
-
-              // Update dragCoordinates so the template shows the correct coordinates and band name
-              dragCoordinates.value.x = relativeX;
-              dragCoordinates.value.y = relativeY;
-              dragCoordinates.value.bandName = bandName;
             }
           }
         }
       };
-    }
+      const frameMove = throttleToAnimationFrame(applyDragMove);
+      // The wheel or the pointer at an edge scrolls the pages; the element
+      // follows the pointer over the pages that come into view
+      let lastMove: MouseEvent = event;
+      const dragScroll = startDragScrolling({ onScroll: () => frameMove(lastMove) });
+      elementDragScroll = dragScroll;
+      cachedMouseMoveHandler = (e: MouseEvent) => {
+        lastMove = e;
+        dragScroll.pointer(e.clientX, e.clientY);
+        frameMove(e);
+      };
 
-    if (!cachedMouseUpHandler) {
       cachedMouseUpHandler = (e: MouseEvent) => {
-        // Save state to history
-        saveStateToHistory();
-
+        // Apply the last mouse move before reading the final position
+        frameMove.flush();
+        dragScroll.stop();
+        if (elementDragScroll === dragScroll) elementDragScroll = null;
         if (draggingInfo.value) {
           const currentBand = bands.value[draggingInfo.value.bandIndex];
-          let currentElement;
+          let currentElement: DesignElement | undefined;
 
           if (draggingInfo.value.parentFrameIndex !== undefined) {
-            // Add a safety check
             if (
               currentBand &&
               currentBand.elements &&
@@ -2900,39 +4835,60 @@ const startDragging = (
           }
 
           if (currentBand && currentElement) {
-            // 1. Get the target Band
-            let targetBandIndex = draggingInfo.value.bandIndex;
+            const currentZoom = zoomLevel.value;
+            const sourcePageIndex = draggingInfo.value.sourcePageIndex ?? 0;
 
-            // If there is a last-highlighted band index and it's valid, use it
+            const sourceSheet =
+              document.querySelector(
+                `.page-sheet[data-page-index="${draggingInfo.value.sourcePageIndex}"]`,
+              ) ||
+              document.querySelector(".page-sheet") ||
+              document.querySelector(".paper");
+            const sourceBandEl =
+              (sourceSheet?.querySelector(
+                `.band[data-band-index="${draggingInfo.value.bandIndex}"]`,
+              ) as HTMLElement | null) ||
+              (document.querySelectorAll(".band")[
+                draggingInfo.value.bandIndex
+              ] as HTMLElement | undefined);
+
+            let checkY = e.clientY;
+            if (sourceBandEl) {
+              const sRect = sourceBandEl.getBoundingClientRect();
+              checkY = sRect.top + currentElement.y * currentZoom;
+            }
+
+            // Target band and sheet identification
+            const { bandUnderMouse, sheetUnderMouse } =
+              getTargetBandAndSheetUnderPoint(e.clientX, checkY);
+
+            let targetBandIndex =
+              draggingInfo.value.lastTargetBandIndex ??
+              draggingInfo.value.bandIndex;
             if (
-              draggingInfo.value.lastTargetBandIndex !== undefined &&
-              draggingInfo.value.lastTargetBandIndex >= 0 &&
-              draggingInfo.value.lastTargetBandIndex < bands.value.length
+              bandUnderMouse &&
+              bandUnderMouse.dataset.bandIndex !== undefined
             ) {
-              targetBandIndex = draggingInfo.value.lastTargetBandIndex;
-            } else {
-              // Otherwise, use the mouse position to determine the target band
-              const paperEl = document.querySelector(".paper") as HTMLElement;
-              if (paperEl) {
-                const bandElements = document.querySelectorAll(".band");
-                for (let i = 0; i < bandElements.length; i++) {
-                  const bandElement = bandElements[i] as HTMLElement;
-                  const bandRect = bandElement.getBoundingClientRect();
-                  if (
-                    e.clientY >= bandRect.top &&
-                    e.clientY <= bandRect.bottom
-                  ) {
-                    targetBandIndex = i;
-                    break;
-                  }
-                }
-              }
+              targetBandIndex = parseInt(bandUnderMouse.dataset.bandIndex, 10);
+            }
+
+            let targetSheetPageIndex =
+              draggingInfo.value.lastTargetPageIndex ??
+              draggingInfo.value.sourcePageIndex ??
+              0;
+            if (
+              sheetUnderMouse &&
+              sheetUnderMouse.dataset.pageIndex !== undefined
+            ) {
+              targetSheetPageIndex = parseInt(
+                sheetUnderMouse.dataset.pageIndex,
+                10,
+              );
             }
 
             const targetBand = bands.value[targetBandIndex];
 
-            // 2. Calculate the element's absolute coordinates on the page (or its coordinates relative to the target Band)
-            // Calculate the Source Parent's coordinates relative to the Source Band
+            // Source parent coordinates if inside a frame
             let sourceParentRelX = 0;
             let sourceParentRelY = 0;
             if (draggingInfo.value.parentFrameIndex !== undefined) {
@@ -2946,33 +4902,48 @@ const startDragging = (
               }
             }
 
-            // Calculate the element's coordinates relative to the Source Band
             const elementRelSourceBandX = sourceParentRelX + currentElement.x;
             const elementRelSourceBandY = sourceParentRelY + currentElement.y;
 
-            // Calculate the Source Band's offset relative to the Target Band
-            const sourceBandEl =
-              document.querySelectorAll(".band")[draggingInfo.value.bandIndex];
+            const targetSheetEl =
+              document.querySelector(
+                `.page-sheet[data-page-index="${targetSheetPageIndex}"]`,
+              ) ||
+              document.querySelector(".page-sheet") ||
+              document.querySelector(".paper");
+
             const targetBandEl =
+              (targetSheetEl?.querySelector(
+                `.band[data-band-index="${targetBandIndex}"]`,
+              ) as HTMLElement) ||
               document.querySelectorAll(".band")[targetBandIndex];
 
-            if (!sourceBandEl || !targetBandEl) return;
+            let elementRelTargetBandX = elementRelSourceBandX;
+            let elementRelTargetBandY = elementRelSourceBandY;
 
-            const sourceBandElement = sourceBandEl.getBoundingClientRect();
-            const targetBandElement = targetBandEl.getBoundingClientRect();
-            const currentZoom = zoomLevel.value;
-            const bandOffsetY =
-              (sourceBandElement.top - targetBandElement.top) / currentZoom;
+            if (
+              sourceBandEl &&
+              targetBandEl &&
+              (draggingInfo.value.bandIndex !== targetBandIndex ||
+                sourcePageIndex !== targetSheetPageIndex)
+            ) {
+              const sourceBandRect = sourceBandEl.getBoundingClientRect();
+              const targetBandRect = targetBandEl.getBoundingClientRect();
+              const bandOffsetY =
+                (sourceBandRect.top - targetBandRect.top) / currentZoom;
+              elementRelTargetBandY = elementRelSourceBandY + bandOffsetY;
+            }
 
-            const elementRelTargetBandX = elementRelSourceBandX;
-            const elementRelTargetBandY = elementRelSourceBandY + bandOffsetY;
-
-            // 3. Look for a target Frame within the Target Band
+            // Find target frame within target band (if dropped inside a frame).
+            // Frames themselves are never nested: selection only supports one frame level.
             let targetFrameIndex = -1;
-            if (targetBand && targetBand.elements) {
-              // Iterate over the Frames in the Target Band
+            if (
+              canGoInBox(currentElement, targetBand?.type === BAND_TYPE_CONSTANTS.DETAIL ? targetSheetPageIndex : undefined) &&
+              !(currentElement.type === "contentsList" && currentElement.list.continues) &&
+              targetBand &&
+              targetBand.elements
+            ) {
               for (let i = targetBand.elements.length - 1; i >= 0; i--) {
-                // Avoid dropping a Frame into itself: if we're in the same Band and the Frame being iterated is the one being dragged, skip it
                 if (
                   targetBandIndex === draggingInfo.value.bandIndex &&
                   draggingInfo.value.parentFrameIndex === undefined &&
@@ -2983,8 +4954,11 @@ const startDragging = (
 
                 const el = targetBand.elements[i];
                 if (!el) continue;
-                if (el.type === "frame") {
-                  // Check intersection using element center
+                // Only the boxes on the page it is dropped on (a cover's design
+                // box must not catch what is dropped on another page)
+                if (targetBand.type === BAND_TYPE_CONSTANTS.DETAIL && (el.pageIndex ?? 0) !== targetSheetPageIndex) continue;
+                // (not a Location: it holds only its map and address)
+                if (el.type === "frame" && !isLocationElement(el)) {
                   const centerX =
                     elementRelTargetBandX + currentElement.width / 2;
                   const centerY =
@@ -3003,16 +4977,53 @@ const startDragging = (
               }
             }
 
-            // 4. Determine whether the container changed
             const isSameBand = draggingInfo.value.bandIndex === targetBandIndex;
             const isSameFrame =
               draggingInfo.value.parentFrameIndex ===
               (targetFrameIndex === -1 ? undefined : targetFrameIndex);
+            const isSamePage = sourcePageIndex === targetSheetPageIndex;
 
-            if ((!isSameBand || !isSameFrame) && targetBand) {
+            // Y was snapped in the source band; snap it again to the grid of the
+            // band it lands in (bands start at different heights; X is shared)
+            const landingGrid = getSnapOptions(e, {
+              grid: gridStepFor(targetBandIndex, targetSheetPageIndex),
+              offset: { x: 0, y: 0 },
+            }).grid;
+            if (landingGrid && !isSameBand) {
+              elementRelTargetBandY = snapToGrid(elementRelTargetBandY, landingGrid.y);
+            }
+
+            // Landing in a band (not in a box): it must fit, growing the band up
+            // to its maximum if needed. Too tall for another band: refused.
+            const bandPlan =
+              targetFrameIndex === -1 && targetBand
+                ? planDropInBand(targetBandIndex, {
+                    y: elementRelTargetBandY,
+                    height: currentElement.height,
+                    pageIndex: targetSheetPageIndex,
+                  })
+                : null;
+            // A page number or project-data table can't go on a cover or contents page
+            const specialRefusal =
+              targetBand?.type === BAND_TYPE_CONSTANTS.DETAIL &&
+              targetFrameIndex === -1 &&
+              targetSheetPageIndex !== (currentElement.pageIndex ?? 0)
+                ? pageProblem(currentElement, targetSheetPageIndex)
+                : null;
+
+            if (specialRefusal || (bandPlan?.kind === "tooTall" && !isSameBand)) {
+              currentElement.x = draggingInfo.value.origElementX ?? currentElement.x;
+              currentElement.y = draggingInfo.value.origElementY ?? currentElement.y;
+              if (specialRefusal) warnSpecialPageProblem(specialRefusal);
+              else if (bandPlan?.kind === "tooTall") warnTooTallForBand(targetBandIndex, currentElement.height, bandPlan.maxHeight);
+              selectElement(
+                draggingInfo.value.bandIndex,
+                draggingInfo.value.elementIndex,
+                false,
+                draggingInfo.value.parentFrameIndex,
+              );
+            } else if ((!isSameBand || !isSameFrame) && targetBand) {
               // Reparenting
-
-              // Grab the target Frame reference up front (splice would otherwise shift the indices)
               let targetFrame: FrameElement | null = null;
               if (targetFrameIndex !== -1) {
                 targetFrame = targetBand.elements[
@@ -3020,8 +5031,8 @@ const startDragging = (
                 ] as FrameElement;
               }
 
-              // Remove from Source
-              let element;
+              // Remove from source
+              let element: DesignElement | undefined;
               if (draggingInfo.value.parentFrameIndex !== undefined) {
                 const frame = bands.value[draggingInfo.value.bandIndex]
                   ?.elements[
@@ -3040,15 +5051,10 @@ const startDragging = (
               }
 
               if (element) {
-                // Add to Target
                 if (targetFrame) {
                   if (!targetFrame.elements) targetFrame.elements = [];
-
-                  // Convert to Frame Rel Coords
                   element.x = Math.round(elementRelTargetBandX - targetFrame.x);
                   element.y = Math.round(elementRelTargetBandY - targetFrame.y);
-
-                  // Limit
                   element.x = Math.max(0, element.x);
                   element.y = Math.max(0, element.y);
                   if (element.x + element.width > targetFrame.width)
@@ -3058,6 +5064,7 @@ const startDragging = (
                       0,
                       targetFrame.height - element.height,
                     );
+                  delete (element as any).pageIndex;
 
                   targetFrame.elements.push(element);
                   selectElement(
@@ -3067,12 +5074,18 @@ const startDragging = (
                     targetFrameIndex,
                   );
                 } else {
-                  // Add to Band
-                  element.x = Math.round(elementRelTargetBandX);
-                  element.y = Math.round(elementRelTargetBandY);
+                  element.x = Math.max(0, Math.round(elementRelTargetBandX));
+                  if (bandPlan && bandPlan.kind !== "tooTall") {
+                    applyDropInBand(targetBandIndex, element, bandPlan);
+                  } else {
+                    element.y = Math.max(0, Math.round(elementRelTargetBandY));
+                  }
 
-                  // Limit Y >= 0
-                  element.y = Math.max(0, element.y);
+                  if (targetBand.type === BAND_TYPE_CONSTANTS.DETAIL) {
+                    (element as any).pageIndex = targetSheetPageIndex;
+                  } else {
+                    delete (element as any).pageIndex;
+                  }
 
                   targetBand.elements.push(element);
                   selectElement(
@@ -3082,37 +5095,64 @@ const startDragging = (
                 }
               }
             } else {
-              // Moved within the same container; use the coordinate values shown while dragging
-              // Note: dragCoordinates may only have updated the displayed value — the actual value was already updated in mousemove via the currentElement reference
-              // This mainly just ensures integers and bounds
-              currentElement.x = Math.round(currentElement.x);
-              currentElement.y = Math.round(currentElement.y);
-              if (currentElement.y < 0) currentElement.y = 0;
+              // Within the same container
+              const movedAcrossPages =
+                isSameBand &&
+                !isSamePage &&
+                currentBand.type === BAND_TYPE_CONSTANTS.DETAIL;
+              if (movedAcrossPages) {
+                (currentElement as any).pageIndex = targetSheetPageIndex;
+              }
+              currentElement.x = Math.max(0, Math.round(currentElement.x));
+              if (bandPlan && bandPlan.kind !== "tooTall") {
+                // Kept inside its band (moved up, or the band grows)
+                applyDropInBand(targetBandIndex, currentElement, bandPlan);
+              } else {
+                currentElement.y = Math.max(
+                  0,
+                  Math.round(movedAcrossPages ? elementRelTargetBandY : currentElement.y),
+                );
+              }
+
+              // Ensure the element remains selected after moving within the same container
+              selectElement(
+                draggingInfo.value.bandIndex,
+                draggingInfo.value.elementIndex,
+                false,
+                draggingInfo.value.parentFrameIndex,
+              );
+            }
+
+            if (targetSheetPageIndex >= pageCount.value) {
+              pageCount.value = targetSheetPageIndex + 1;
             }
           }
         }
 
-        // Clear the highlight and coordinate display
+        // Clear highlight and coordinate display
         highlightedBandIndex.value = null;
+        dropTargetBlocked.value = false;
         dragCoordinates.value.visible = false;
-
-        // Clear the alignment lines
         clearAlignmentLines();
-
         draggingInfo.value = null;
         isDraggingOrResizing.value = false;
+        isJustDraggedOrResized.value = true;
+        setTimeout(() => {
+          isJustDraggedOrResized.value = false;
+        }, 150);
 
-        // Update JRXML
-        updateJRXML();
-
-        // Remove the event listeners
+        // Remove event listeners
         if (cachedMouseMoveHandler) {
           document.removeEventListener("mousemove", cachedMouseMoveHandler);
+          cachedMouseMoveHandler = null;
         }
         if (cachedMouseUpHandler) {
           document.removeEventListener("mouseup", cachedMouseUpHandler);
           cachedMouseUpHandler = null;
         }
+
+        // Update JRXML
+        updateJRXML();
       };
     }
 
@@ -3121,7 +5161,6 @@ const startDragging = (
     document.addEventListener("mouseup", cachedMouseUpHandler);
 
     // Immediately fire a mousemove event once, so the element follows the mouse right away
-    // This fixes the issue where moving the mouse within 100ms of pressing the mouse button left the element lagging behind the mouse position
     setTimeout(() => {
       if (cachedMouseMoveHandler) {
         cachedMouseMoveHandler(event);
@@ -3137,11 +5176,15 @@ const deleteElement = () => {
     // Delete multiple selected elements
     saveStateToHistory();
 
-    // Delete from last to first to avoid index-shift issues
+    // Delete from last to first to avoid index-shift issues; items inside
+    // boxes first, since removing an item of the band moves the boxes after it
     const sortedElements = [...selectedElements.value].sort((a, b) => {
       if (a.bandIndex !== b.bandIndex) {
         return b.bandIndex - a.bandIndex; // Descending by band index
       }
+      const inBox = (s: typeof a) => (s.parentFrameIndex !== undefined ? 1 : 0);
+      if (inBox(a) !== inBox(b)) return inBox(b) - inBox(a);
+      if (a.parentFrameIndex !== b.parentFrameIndex) return (b.parentFrameIndex ?? 0) - (a.parentFrameIndex ?? 0);
       return b.elementIndex - a.elementIndex; // Descending by element index
     });
 
@@ -3191,19 +5234,62 @@ const startEditing = (
   elementIndex: number,
   parentFrameIndex?: number,
 ) => {
+  // Page numbers are generated by the report: only their format, range and
+  // style can change, from the property panel
+  const band = bands.value[bandIndex];
+  const target =
+    parentFrameIndex !== undefined
+      ? (band?.elements?.[parentFrameIndex] as FrameElement | undefined)
+          ?.elements?.[elementIndex]
+      : band?.elements?.[elementIndex];
+  if (target?.type === "table") {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    openTableConfig({ bandIndex, elementIndex, parentFrameIndex });
+    return;
+  }
+  // A contents list is edited in its properties
+  if (target?.type === "contentsList") {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    return;
+  }
+  if (target?.type === "chart") {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    openChartConfig({ bandIndex, elementIndex, parentFrameIndex });
+    return;
+  }
+  if (isPagination(target)) {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    notification.warning(t("pagination.cannotEdit"));
+    return;
+  }
+  // A Location's map and address come from its place, changed in its properties
+  if (isLocationElement(target) || isLocationPart(target)) {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    notification.info(t("location.cannotType"));
+    return;
+  }
+  // A date fills itself in: it is changed in its properties (which can turn it into plain text)
+  if (isDateElement(target)) {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    notification.info(t("dateElement.cannotType"));
+    return;
+  }
+  // A linked project detail shows the project's value (its properties can turn it into plain text)
+  if (isProjectValue(target)) {
+    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    notification.info(t("projectValue.cannotType"));
+    return;
+  }
+  cleanLegacyAutoDateElement(target);
+
   editingElement.value = { bandIndex, elementIndex, parentFrameIndex };
   // Select the element
   selectElement(bandIndex, elementIndex, false, parentFrameIndex);
-
-  // Automatically hide the bottom panel
-  showBottomPanel.value = false;
 };
 
 // Finish editing
 const finishEditing = () => {
   editingElement.value = null;
-  // Save the data
-  saveToLocalStorageWrapper();
   updateJRXML();
 };
 
@@ -3212,101 +5298,32 @@ const cancelEditing = () => {
   editingElement.value = null;
 };
 
-// Wrapper function for the fileUtils functions
-const saveToLocalStorageWrapper = () => {
-  // Safety check to ensure reportProperties.value exists
-  if (!reportProperties.value) {
-    console.error(
-      "reportProperties.value is undefined, cannot save to local storage",
-    );
-    return;
-  }
-
-  saveToLocalStorage(
-    {
-      reportProperties: reportProperties.value,
-      bands: bands.value,
-      reportFields: reportFields.value,
-      jrxmlContent: jrxmlContent.value,
-    },
-    reportProperties.value?.name || "report",
-  );
+// Initialize an element's Box property: padding only. Borders are pens, written
+// by the border presets and Style Settings when the user sets one.
+const initBox = (element: DesignElement) => {
+  element.box = {
+    padding: 0,
+    topPadding: 0,
+    leftPadding: 0,
+    bottomPadding: 0,
+    rightPadding: 0,
+  };
 };
 
-const loadFromLocalStorageWrapper = () => {
-  const loadedData = loadFromLocalStorage();
-  if (loadedData && loadedData.reportData) {
-    reportProperties.value = loadedData.reportData.reportProperties;
-    bands.value = loadedData.reportData.bands;
-    reportFields.value = loadedData.reportData.reportFields;
-    jrxmlContent.value = loadedData.reportData.jrxmlContent;
-    // Update selectedBandTypes to match the loaded bands
-    if (
-      loadedData.reportData.bands &&
-      Array.isArray(loadedData.reportData.bands)
-    ) {
-      selectedBandTypes.value = loadedData.reportData.bands.map(
-        (band: Band) => band.type,
-      );
-    } else {
-      selectedBandTypes.value = [];
-    }
-    return true;
-  }
-  return false;
-};
-
-// Initialize an element's Box property
-const initBox = () => {
-  if (currentElement.value) {
-    // Create a default box object
-    currentElement.value.box = {
-      // Global border
-      border: "",
-      borderColor: "#000000",
-      borderWidth: 0,
-      borderStyle: "",
-
-      // Per-side borders - style defaults to an empty string, meaning "use the global setting"
-      topBorder: "",
-      topBorderColor: "#000000",
-      topBorderWidth: 0,
-      topBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
-      leftBorder: "",
-      leftBorderColor: "#000000",
-      leftBorderWidth: 0,
-      leftBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
-      bottomBorder: "",
-      bottomBorderColor: "#000000",
-      bottomBorderWidth: 0,
-      bottomBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
-      rightBorder: "",
-      rightBorderColor: "#000000",
-      rightBorderWidth: 0,
-      rightBorderStyle: "", // Defaults to an empty string, meaning "use the global setting"
-
-      // Margins
-      padding: 0,
-      topPadding: 0,
-      leftPadding: 0,
-      bottomPadding: 0,
-      rightPadding: 0,
-    };
-  }
-};
-
-// Download the JRXML file
-const downloadJRXML = () => {
+// Download the JRXML file (charts drawn with their numbers, barcodes sized, first)
+const downloadJRXML = async () => {
+  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureWatermark(), ensureTemplateProject(reportProjects.value[0]?.id)]);
   const content = generateJRXMLContent(
-    reportProperties.value,
+    reportStore.propertiesForJrxml(),
     bands.value,
     reportFields.value,
     reportParameters.value,
     subDatasets.value,
-    [],
+    tableStyles.value,
     reportVariables.value,
     [],
     reportGroups.value,
+    totalPages.value,
   );
   jrxmlContent.value = content;
 
@@ -3318,14 +5335,33 @@ const downloadJRXML = () => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${reportProperties.value?.name || "report"}.jrxml`;
+  link.download = `${currentFileName.value.trim() || "report"}.jrxml`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 
   // Save the data
-  saveToLocalStorageWrapper();
+  flushAutoSave();
+};
+
+// A side panel opened or closed: the canvas moves to its new place in one
+// layout, then glides there from where it was (a transform, so the page isn't
+// laid out again on every frame)
+const designAreaRef = ref<HTMLElement | null>(null);
+const glideCanvas = () => {
+  const area = designAreaRef.value;
+  if (!area || prefersReducedMotion() || typeof area.animate !== "function") return;
+  const anchor = () => (area.querySelector(".page-sheet-wrapper") as HTMLElement | null) ?? area;
+  const before = anchor().getBoundingClientRect().left;
+  nextTick(() => {
+    const dx = before - anchor().getBoundingClientRect().left;
+    if (Math.abs(dx) < 1) return;
+    area.animate([{ transform: `translateX(${dx}px)` }, { transform: "none" }], {
+      duration: PANEL_MOTION.duration,
+      easing: PANEL_MOTION.easing,
+    });
+  });
 };
 
 // Panel visibility control functions
@@ -3362,8 +5398,6 @@ defineExpose({
   bands,
   reportProperties,
   createNewFile,
-  loadFile,
-  loadFromLocalStorageWrapper,
   lastClickedBandIndex,
   handleElementDoubleClick,
   selectElement,
@@ -3383,53 +5417,22 @@ const handleBottomPanelSizeChange = (newSize: number) => {
 };
 
 // Automatically update the JRXML content
-const updateJRXML = () => {
-  // Guard against re-entrancy: if updateJRXML is already running, skip this call
-  if (isUpdatingJRXML.value) {
-    return;
-  }
-  isUpdatingJRXML.value = true;
-  try {
-    // Ensure all data has been initialized
-    if (
-      !reportProperties.value ||
-      !bands.value ||
-      !reportFields.value ||
-      !reportParameters.value
-    ) {
-      return;
-    }
+// The JRXML is written by the report store (it fits the bands to the page first)
+const updateJRXML = () => reportStore.updateJrxml();
 
-    const content = generateJRXMLContent(
-      reportProperties.value,
-      bands.value,
-      reportFields.value,
-      reportParameters.value,
-      subDatasets.value,
-      reportStyles.value,
-      reportVariables.value,
-      [],
-      reportGroups.value,
-    );
+// Auto-save each JRXML the store writes, right away
+// Every new JRXML: saved on the server once the changes pause
+watch(() => reportStore.jrxmlVersion, () => scheduleAutoSave(false));
 
-    // If the content changed, save it to history
-    if (content !== jrxmlContent.value) {
-      // Only save history while not dragging/resizing
-      if (!isDraggingOrResizing.value && historyStack.value.length === 0) {
-        // Save the initial state on first run
-        saveStateToHistory();
-      }
-      jrxmlContent.value = content;
-
-      // Save to local storage immediately, ensuring the JRXML content gets persisted
-      saveToLocalStorageWrapper();
-    }
-  } catch (error) {
-    console.error("Failed to update JRXML:", error);
-  } finally {
-    isUpdatingJRXML.value = false;
-  }
-};
+// Location maps: a picture drawn when a Location's place, zoom or map size
+// changed; it goes into the same undo step as that change
+const drawMaps = () => refreshLocationMaps(() => bands.value, updateJRXML);
+watch(() => reportStore.jrxmlVersion, drawMaps);
+const ensureMaps = () => ensureLocationMaps(() => bands.value, updateJRXML);
+// The watermark's printed picture: drawn again when its setup or the page size
+// changed, in the same undo step as that change
+watch(() => reportStore.jrxmlVersion, () => refreshWatermarks(() => bands.value, updateJRXML));
+const ensureWatermark = () => ensureWatermarks(() => bands.value, updateJRXML);
 
 // Copy an element to the clipboard
 const copyElement = async () => {
@@ -3474,6 +5477,8 @@ const copyElement = async () => {
           type: "PDF_DESIGNER_ELEMENT",
           version: "1.0",
           elementData: elementData,
+          // Ctrl+V pastes back into the section it was copied from
+          sourceBandType: band.type,
         };
         // Convert the data to a JSON string and write it to the clipboard
         await navigator.clipboard.writeText(JSON.stringify(clipboardData));
@@ -3515,6 +5520,7 @@ const copyElement = async () => {
             type: "PDF_DESIGNER_ELEMENT",
             version: "1.0",
             elementData: elementData,
+            sourceBandType: band.type,
           }),
         );
       }
@@ -3522,88 +5528,259 @@ const copyElement = async () => {
   }
 };
 
-// Paste an element from the clipboard
-const pasteElement = async () => {
+// Paste an element from the clipboard. With a screen point (right-click → Paste)
+// it lands there; otherwise (Ctrl+V, toolbar) next to the original.
+const pasteElement = async (at?: { clientX: number; clientY: number }) => {
+  const isOurs = (data: any) =>
+    data?.type === "PDF_DESIGNER_ELEMENT" && data.elementData;
   try {
     // First try reading from the clipboard
-    const clipboardText = await navigator.clipboard.readText();
-    const clipboardData = JSON.parse(clipboardText);
-
-    // Verify this is our own PDF Designer element data
-    if (
-      clipboardData.type === "PDF_DESIGNER_ELEMENT" &&
-      clipboardData.elementData
-    ) {
-      processPastedElement(clipboardData.elementData);
-    }
+    const clipboardData = JSON.parse(await navigator.clipboard.readText());
+    if (isOurs(clipboardData)) processPastedElement(clipboardData, at);
   } catch (err) {
     console.error("Failed to read from clipboard:", err);
     // Fallback: try reading from sessionStorage
     try {
       const savedData = sessionStorage.getItem("pdfDesignerCopiedElement");
-      if (savedData) {
-        const clipboardData = JSON.parse(savedData);
-        if (
-          clipboardData.type === "PDF_DESIGNER_ELEMENT" &&
-          clipboardData.elementData
-        ) {
-          processPastedElement(clipboardData.elementData);
-        }
-      }
+      const clipboardData = savedData ? JSON.parse(savedData) : null;
+      if (isOurs(clipboardData)) processPastedElement(clipboardData, at);
     } catch (sessionErr) {
       console.error("Failed to read from sessionStorage:", sessionErr);
     }
   }
 };
 
-// Handle the pasted element data (extracted into a separate function for reuse)
-const processPastedElement = (elementData: any) => {
-  saveStateToHistory();
+// Screen rectangles of a band on the canvas: one per page sheet it shows on
+// (a Detail band only on its own page)
+const getBandScreenRects = (bandIndex: number, pageIndex?: number): DOMRect[] => {
+  const sheetSelector =
+    pageIndex === undefined ? ".page-sheet" : `.page-sheet[data-page-index="${pageIndex}"]`;
+  return Array.from(
+    document.querySelectorAll<HTMLElement>(
+      `${sheetSelector} .band[data-band-index="${bandIndex}"]`,
+    ),
+  ).map((el) => el.getBoundingClientRect());
+};
 
-  // Determine the paste location (use the currently selected band, or default to the first editable band)
-  let targetBandIndex =
-    selectedBandIndex.value !== null ? selectedBandIndex.value : 0;
+// The part of the canvas the user can see right now
+const getCanvasViewportRect = (): DOMRect | null =>
+  document.querySelector<HTMLElement>(".paper-container")?.getBoundingClientRect() ?? null;
 
-  // Find the first band that has an elements array
-  if (targetBandIndex === null) {
-    targetBandIndex = bands.value.findIndex(
-      (band) => band.elements && Array.isArray(band.elements),
+// Whether the middle of an element at (x, y) in a band is on screen
+const isBandSpotOnScreen = (
+  bandIndex: number,
+  pageIndex: number | undefined,
+  element: { x: number; y: number; width: number; height: number },
+): boolean => {
+  const view = getCanvasViewportRect();
+  if (!view) return true;
+  const zoom = zoomLevel.value;
+  return getBandScreenRects(bandIndex, pageIndex).some((rect) => {
+    const cx = rect.left + (element.x + element.width / 2) * zoom;
+    const cy = rect.top + (element.y + element.height / 2) * zoom;
+    return cx >= view.left && cx <= view.right && cy >= view.top && cy <= view.bottom;
+  });
+};
+
+// The middle of the visible part of the Detail section: the page showing the
+// most of it, in that band's coordinates
+const getVisibleDetailCentre = (
+  detailIndex: number,
+): { pageIndex: number; x: number; y: number } | null => {
+  const view = getCanvasViewportRect();
+  if (!view) return null;
+  let best: { pageIndex: number; x: number; y: number; area: number } | null = null;
+  document.querySelectorAll<HTMLElement>(".page-sheet").forEach((sheet) => {
+    const bandEl = sheet.querySelector<HTMLElement>(
+      `.band[data-band-index="${detailIndex}"]`,
     );
-    // If none is found, use the detail band (usually index 3)
-    if (targetBandIndex === -1) {
-      targetBandIndex = 3;
+    if (!bandEl || sheet.dataset.pageIndex === undefined) return;
+    const rect = bandEl.getBoundingClientRect();
+    const left = Math.max(rect.left, view.left);
+    const right = Math.min(rect.right, view.right);
+    const top = Math.max(rect.top, view.top);
+    const bottom = Math.min(rect.bottom, view.bottom);
+    const area = Math.max(0, right - left) * Math.max(0, bottom - top);
+    if (area > 0 && (!best || area > best.area)) {
+      best = {
+        pageIndex: parseInt(sheet.dataset.pageIndex, 10),
+        x: ((left + right) / 2 - rect.left) / zoomLevel.value,
+        y: ((top + bottom) / 2 - rect.top) / zoomLevel.value,
+        area,
+      };
+    }
+  });
+  return best;
+};
+
+// Keep an element inside the printable width (and below the band's top)
+const fitInPrintableWidth = (element: DesignElement) => {
+  const maxX = Math.max(0, printableWidth.value - (element.width || 0));
+  element.x = Math.min(Math.max(0, element.x), Math.round(maxX));
+  element.y = Math.max(0, element.y);
+};
+
+// Step a pasted element down and right past copies already at its spot, so
+// repeated pastes fan out instead of stacking exactly on top of each other
+const stepPastCopies = (element: DesignElement, bandIndex: number, pageIndex: number) => {
+  const band = bands.value[bandIndex];
+  if (!band) return;
+  const isDetail = band.type === BAND_TYPE_CONSTANTS.DETAIL;
+  const offset = KEYBOARD_CONSTANTS.ELEMENT_PASTE_OFFSET;
+  const isTaken = () =>
+    band.elements.some(
+      (el) =>
+        (!isDetail || (el.pageIndex ?? 0) === pageIndex) &&
+        Math.abs(el.x - element.x) < 1 &&
+        Math.abs(el.y - element.y) < 1,
+    );
+  for (let i = 0; i < 100 && isTaken(); i++) {
+    const before = { x: element.x, y: element.y };
+    element.x += offset;
+    element.y += offset;
+    fitInPrintableWidth(element);
+    if (element.x === before.x && element.y === before.y) break;
+  }
+};
+
+// Handle the pasted clipboard data (extracted into a separate function for reuse)
+const processPastedElement = (
+  clipboardData: { elementData: any; sourceBandType?: string },
+  at?: { clientX: number; clientY: number },
+) => {
+  const detailIndex = bands.value.findIndex(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+
+  // Create the new element (deep clone)
+  const newElement = JSON.parse(JSON.stringify(clipboardData.elementData));
+  // A copy is a separate element: new IDs for it and everything inside it
+  refreshUuids(newElement);
+  // A pasted Table of Contents is a list of its own, never part of the one it
+  // was copied from (a copied second column would share its rows)
+  if (newElement.type === "contentsList") delete newElement.list?.continues;
+  if (newElement.id) {
+    newElement.id = `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+  // Ensure the element's position and size are integers
+  newElement.x = Math.round(newElement.x || 0);
+  newElement.y = Math.round(newElement.y || 0);
+  if (newElement.width) newElement.width = Math.round(newElement.width);
+  if (newElement.height) newElement.height = Math.round(newElement.height);
+
+  // A page border or watermark goes back to the Background band, where only
+  // one of each is allowed
+  if (clipboardData.sourceBandType === BAND_TYPE_CONSTANTS.BACKGROUND) {
+    const watermark = isWatermark(newElement);
+    if (watermark ? rejectSecondWatermark() : rejectSecondPageBorder()) return;
+    saveStateToHistory();
+    const backgroundIndex = ensureBackgroundBand();
+    const background = bands.value[backgroundIndex]!;
+    // The watermark first: it prints behind the page border
+    if (watermark) background.elements.unshift(newElement);
+    else background.elements.push(newElement);
+    selectElement(backgroundIndex, watermark ? 0 : background.elements.length - 1);
+    updateJRXML();
+    return;
+  }
+
+  // Right-click → Paste on a page: the element's top-left corner at the
+  // clicked point. A click in the grey area around the pages pastes like Ctrl+V.
+  let target: { bandIndex: number; pageIndex: number } | null = null;
+  if (at) {
+    const { bandUnderMouse, sheetUnderMouse } = getTargetBandAndSheetUnderPoint(
+      at.clientX,
+      at.clientY,
+    );
+    const sheetRect = sheetUnderMouse?.getBoundingClientRect();
+    const onPage =
+      !!sheetRect &&
+      at.clientX >= sheetRect.left &&
+      at.clientX < sheetRect.right &&
+      at.clientY >= sheetRect.top &&
+      at.clientY < sheetRect.bottom;
+    if (onPage && bandUnderMouse?.dataset.bandIndex !== undefined) {
+      const bandRect = bandUnderMouse.getBoundingClientRect();
+      target = {
+        bandIndex: parseInt(bandUnderMouse.dataset.bandIndex, 10),
+        pageIndex: parseInt(sheetUnderMouse?.dataset.pageIndex ?? "0", 10),
+      };
+      newElement.x = Math.round((at.clientX - bandRect.left) / zoomLevel.value);
+      newElement.y = Math.round((at.clientY - bandRect.top) / zoomLevel.value);
+      fitInPrintableWidth(newElement);
     }
   }
 
+  if (!target) {
+    // Ctrl+V / toolbar: back into the section it was copied from, next to the
+    // original. Tables only live in Detail; an unknown section (an older copy,
+    // or one from another report) means Detail as well.
+    let bandIndex =
+      newElement.type === "table"
+        ? detailIndex
+        : bands.value.findIndex(
+            (b) =>
+              b.type === clipboardData.sourceBandType &&
+              b.type !== BAND_TYPE_CONSTANTS.BACKGROUND,
+          );
+    if (bandIndex === -1) bandIndex = detailIndex;
+    target = {
+      bandIndex,
+      pageIndex: Math.min(newElement.pageIndex ?? 0, Math.max(0, totalPages.value - 1)),
+    };
+    fitInPrintableWidth(newElement);
+    stepPastCopies(newElement, target.bandIndex, target.pageIndex);
+
+    // Out of sight (scrolled away, or on another page): the middle of the
+    // visible part of Detail instead, so the user sees what was pasted
+    const isDetail = bands.value[bandIndex]?.type === BAND_TYPE_CONSTANTS.DETAIL;
+    if (
+      detailIndex !== -1 &&
+      !isBandSpotOnScreen(bandIndex, isDetail ? target.pageIndex : undefined, newElement)
+    ) {
+      const centre = getVisibleDetailCentre(detailIndex);
+      if (centre) {
+        target = { bandIndex: detailIndex, pageIndex: centre.pageIndex };
+        newElement.x = Math.round(centre.x - (newElement.width || 0) / 2);
+        newElement.y = Math.round(centre.y - (newElement.height || 0) / 2);
+        fitInPrintableWidth(newElement);
+        stepPastCopies(newElement, target.bandIndex, target.pageIndex);
+      }
+    }
+  }
+
+  const targetBandIndex = target.bandIndex;
   const targetBand = bands.value[targetBandIndex];
   if (!targetBand) {
     console.error("Target band does not exist");
     return;
   }
-
-  // Create the new element (deep clone)
-  const newElement = JSON.parse(JSON.stringify(elementData));
-
-  // Offset the position slightly so it doesn't overlap the original element (shift down and to the right)
-  newElement.x = Math.round(
-    newElement.x + KEYBOARD_CONSTANTS.ELEMENT_PASTE_OFFSET,
-  );
-  newElement.y = Math.round(
-    newElement.y + KEYBOARD_CONSTANTS.ELEMENT_PASTE_OFFSET,
-  );
-
-  // Ensure the element's width and height are also integers
-  if (newElement.width) {
-    newElement.width = Math.round(newElement.width);
+  // Tables only live in the Detail section
+  if (newElement.type === "table" && targetBand.type !== BAND_TYPE_CONSTANTS.DETAIL) {
+    notification.warning(t("dataTable.onlyInDetail"));
+    return;
   }
-  if (newElement.height) {
-    newElement.height = Math.round(newElement.height);
+  // Detail elements belong to a page; other sections repeat on every page
+  if (targetBand.type === BAND_TYPE_CONSTANTS.DETAIL) {
+    newElement.pageIndex = target.pageIndex;
+    const problem = pageProblem(newElement, target.pageIndex);
+    if (problem) {
+      warnSpecialPageProblem(problem);
+      return;
+    }
+  } else {
+    delete newElement.pageIndex;
   }
 
-  // Ensure the element's ID is unique
-  if (newElement.id) {
-    newElement.id = `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  // It must fit in the band, growing it up to its maximum if needed; too tall
+  // is refused before anything changes
+  const bandPlan = planDropInBand(targetBandIndex, newElement);
+  if (bandPlan.kind === "tooTall") {
+    warnTooTallForBand(targetBandIndex, newElement.height, bandPlan.maxHeight);
+    return;
   }
+  saveStateToHistory();
+  applyDropInBand(targetBandIndex, newElement, bandPlan);
 
   // Add it to the target band
   if (!targetBand.elements) {
@@ -3611,6 +5788,8 @@ const processPastedElement = (elementData: any) => {
   }
 
   targetBand.elements.push(newElement);
+  // A pasted table gets its own dataset and name
+  ensureUniqueTableDatasets(bands.value);
 
   // Select the newly added element
   const newElementIndex = targetBand.elements.length - 1;
@@ -3618,9 +5797,10 @@ const processPastedElement = (elementData: any) => {
 
   // Update JRXML
   updateJRXML();
-
-  console.log("Element pasted:", newElement);
 };
+
+// The File menu, for the Open shortcut
+const fileManagerRef = ref<InstanceType<typeof FileManager> | null>(null);
 
 // Define the handleKeyDown function at the top level of the component
 const handleKeyDown = (event: KeyboardEvent) => {
@@ -3647,29 +5827,69 @@ const handleKeyDown = (event: KeyboardEvent) => {
     return;
   }
 
-  // CTRL/CMD+S saves the current file
-  if (isCtrlOrMetaPressed && event.key === "s") {
+  // CTRL/CMD+Plus/Equal zooms in
+  if (isCtrlOrMetaPressed && (event.key === "=" || event.key === "+")) {
     event.preventDefault();
-    saveCurrentFileToStorage();
+    zoomIn();
     return;
   }
 
-  // CTRL/CMD+B toggles the bottom panel's visibility
-  if (isCtrlOrMetaPressed && event.key === "b") {
+  // CTRL/CMD+Minus zooms out
+  if (isCtrlOrMetaPressed && (event.key === "-" || event.key === "_")) {
+    event.preventDefault();
+    zoomOut();
+    return;
+  }
+
+  // Alt+N starts a new template (the browser keeps Ctrl+N for a new window)
+  // Not while typing: on a Mac, Option+N types accents (ñ)
+  const isTyping = isInputFocused || (activeEl as HTMLElement | null)?.isContentEditable;
+  // (developers only, with the File menu)
+  if (SHOW_DEVELOPER_TOOLS && event.altKey && !isCtrlOrMetaPressed && event.code === "KeyN" && !isTyping) {
+    event.preventDefault();
+    createNewFile();
+    return;
+  }
+
+  // CTRL/CMD+O opens the Open window (My templates / From my computer)
+  // (developers only, with the File menu)
+  if (SHOW_DEVELOPER_TOOLS && isCtrlOrMetaPressed && !event.altKey && event.key.toLowerCase() === "o") {
+    event.preventDefault();
+    fileManagerRef.value?.showOpenWindow();
+    return;
+  }
+
+  // A default template can only be looked at: no other shortcut acts on it
+  if (readOnlyTemplate.value) return;
+
+  // CTRL/CMD+S saves the template on the report server now
+  if (isCtrlOrMetaPressed && event.key === "s") {
+    event.preventDefault();
+    void saveNow();
+    return;
+  }
+
+  // CTRL/CMD+B toggles the bottom panel (developers only)
+  if (SHOW_DEVELOPER_TOOLS && isCtrlOrMetaPressed && event.key === "b") {
     event.preventDefault();
     toggleBottomPanel();
     return;
   }
 
-  // CTRL/CMD+Z undoes an action
-  if (isCtrlOrMetaPressed && event.key === "z") {
+  // CTRL/CMD+Z undoes an action. While typing in a box (AI chat, a panel
+  // field, a popup's search) the browser undoes the typing instead
+  const isTypingText =
+    activeEl?.tagName === "TEXTAREA" ||
+    (activeEl as HTMLElement | null)?.isContentEditable ||
+    (activeEl instanceof HTMLInputElement && ["text", "search", "email", "url", "tel", "password"].includes(activeEl.type));
+  if (isCtrlOrMetaPressed && event.key === "z" && !isTypingText) {
     event.preventDefault();
     undo();
     return;
   }
 
   // CTRL/CMD+Y redoes an action
-  if (isCtrlOrMetaPressed && event.key === "y") {
+  if (isCtrlOrMetaPressed && event.key === "y" && !isTypingText) {
     event.preventDefault();
     redo();
     return;
@@ -3744,7 +5964,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
     // If Shift is held and an element is selected, nudge its position
     if (event.shiftKey && selectedElement.value) {
-      moveElementByKeyboard(event.key);
+      moveElementByKeyboard(event.key, event.repeat);
     } else {
       // Otherwise, perform the original navigation behavior
       navigateElements(event.key);
@@ -3851,19 +6071,39 @@ const navigateElements = (direction: string) => {
   }
 };
 
-// Nudge an element's position using the keyboard
-const moveElementByKeyboard = (direction: string) => {
+// Nudge an element's position using the keyboard: to the next grid line with
+// Snap to Grid on, else 1px. Holding the key down is one undo step.
+const moveElementByKeyboard = (direction: string, repeat = false) => {
   if (!selectedElement.value) return;
 
-  const { bandIndex: currentBandIndex, elementIndex: currentElementIndex } =
-    selectedElement.value;
+  const { bandIndex: currentBandIndex } = selectedElement.value;
+  let { elementIndex: currentElementIndex, parentFrameIndex } = selectedElement.value;
   const currentBand = bands.value[currentBandIndex];
-  const currentElement = currentBand?.elements[currentElementIndex];
+  // A Location's map or address: the whole Location moves (its layout places them)
+  if (parentFrameIndex !== undefined && isLocationElement(currentBand?.elements[parentFrameIndex])) {
+    currentElementIndex = parentFrameIndex;
+    parentFrameIndex = undefined;
+  }
+  // An item in a box is found inside the box, and moves only within it
+  const parentBox =
+    parentFrameIndex !== undefined
+      ? (currentBand?.elements[parentFrameIndex] as FrameElement | undefined)
+      : undefined;
+  const currentElement =
+    parentFrameIndex !== undefined
+      ? parentBox?.elements?.[currentElementIndex]
+      : currentBand?.elements[currentElementIndex];
 
   if (!currentBand || !currentElement) return;
+  // The watermark covers the printable area; its place is set in its panel
+  if (isWatermark(currentElement)) return;
 
-  // Define the nudge step size (in pixels)
-  const MOVE_STEP = 1;
+  // The grid is drawn per band, so an item in a box steps to band grid lines
+  const grid = enableSnapToGrid.value ? gridStepFor(currentBandIndex, currentElement.pageIndex) : null;
+  const offsetX = parentBox?.x ?? 0;
+  const offsetY = parentBox?.y ?? 0;
+  const step = (value: number, dir: 1 | -1, offset: number, axis: "x" | "y") =>
+    grid ? nextGridLine(value, grid[axis], dir, offset) : value + dir;
 
   // Calculate the new position
   let newX = currentElement.x;
@@ -3871,27 +6111,40 @@ const moveElementByKeyboard = (direction: string) => {
 
   switch (direction) {
     case "ArrowUp":
-      newY = Math.max(0, currentElement.y - MOVE_STEP);
+      newY = Math.max(0, step(currentElement.y, -1, offsetY, "y"));
       break;
-    case "ArrowDown":
-      newY = Math.min(
-        currentBand.height - currentElement.height,
-        currentElement.y + MOVE_STEP,
-      );
+    case "ArrowDown": {
+      const next = step(currentElement.y, 1, offsetY, "y");
+      // Elements in a band stay within it (box parts are kept in their box below)
+      const maxDown = parentBox
+        ? Infinity
+        : bandAreaHeight(currentBandIndex, currentElement.pageIndex) - currentElement.height;
+      newY = maxDown > 0 ? Math.min(maxDown, next) : next;
       break;
+    }
     case "ArrowLeft":
-      newX = Math.max(0, currentElement.x - MOVE_STEP);
+      newX = Math.max(0, step(currentElement.x, -1, offsetX, "x"));
       break;
-    case "ArrowRight":
-      newX = Math.min(
-        reportProperties.value.pageWidth - currentElement.width,
-        currentElement.x + MOVE_STEP,
-      );
+    case "ArrowRight": {
+      const next = step(currentElement.x, 1, offsetX, "x");
+      newX = parentBox
+        ? next
+        : Math.min(Math.max(0, printableWidth.value - currentElement.width), next);
       break;
+    }
   }
 
-  // Save the pre-move state to history (for undo)
-  saveStateToHistory();
+  if (parentBox && isBoxPart(currentElement)) {
+    ({ x: newX, y: newY } = clampPositionInBox(
+      { ...currentElement, x: newX, y: newY },
+      parentBox,
+    ));
+  }
+
+  if (newX === currentElement.x && newY === currentElement.y) return;
+
+  // Save the pre-move state to history (for undo), once per key press
+  if (!repeat) saveStateToHistory();
 
   // Update the element's position
   currentElement.x = newX;
@@ -3899,41 +6152,231 @@ const moveElementByKeyboard = (direction: string) => {
 
   // Trigger an update
   updateJRXML();
-  saveToLocalStorageWrapper();
 
   // Check whether it's now out of bounds
   updateOutOfBoundsElements();
 };
 
-// Handle click events on the report area, clearing the selection
-const handlePaperClick = () => {
-  // Only clear the selection if no other element was clicked
-  selectedElement.value = null;
-  selectedBandIndex.value = null;
-};
+// The address names the open template (/designer/<id>), so a reload or a link
+// opens it again; going back / forward to another template's address opens it
+const route = useRoute();
+const router = useRouter();
+// One address shape: /designer/<server id> for every template on the report
+// server (default or the tenant's own), /designer for one not there yet (a
+// fresh template before its create, a .jrxml opened from the computer). A
+// browser-only id is never shown. A default template being looked at shows its
+// own id; a new template being made on the server keeps the address until its
+// id arrives
+watch(
+  [currentFileId, creatingTemplate, openedDefaultTemplate, openingDefaultTemplate],
+  ([id]) => {
+    if (creatingTemplate.value || openingDefaultTemplate.value) return;
+    const viewed = viewingDefaultTemplate.value ? openedDefaultTemplate.value?.sourceId : undefined;
+    const wanted = viewed ?? (isServerTemplateId(id) ? id : "");
+    const shown = typeof route.params.id === "string" ? route.params.id : "";
+    if (wanted && shown !== wanted) router.replace({ name: "designer", params: { id: wanted } });
+    else if (!wanted && (shown || Object.keys(route.query).length)) router.replace({ name: "designer" });
+  },
+  { deep: true },
+);
+
+// Whether the designer's parser reads this JRXML without failing
+function canParseJrxml(text: string): boolean {
+  try {
+    parseJRXMLContent(text);
+    return true;
+  } catch (error) {
+    console.error("The server template's JRXML can't be read:", error);
+    return false;
+  }
+}
+
+// A template just made (Create template, File → New) takes the user's
+// Default Settings as they are now (read again from the server first,
+// refreshFromServer): paper, margins, font, page sections, section heights and
+// their limits. Whatever the server's create put in it is kept; its content
+// is refitted to the page. No undo step (the template has just opened)
+function giveTemplateUserDefaults(): void {
+  const defaults = loadReportDefaults();
+  const page = reportProperties.value;
+  page.pageWidth = defaults.pageWidth;
+  page.pageHeight = defaults.pageHeight;
+  page.orientation = defaults.pageWidth > defaults.pageHeight ? "landscape" : "portrait";
+  page.leftMargin = defaults.leftMargin;
+  page.rightMargin = defaults.rightMargin;
+  page.topMargin = defaults.topMargin;
+  page.bottomMargin = defaults.bottomMargin;
+  page.defaultFont = { ...defaults.font };
+  page.bandLimits = getEffectiveDefaultBandLimits();
+  reportStore.setBandTypes(defaults.bandTypes, { record: false });
+  const config = getEffectiveDefaultBandConfig();
+  for (const band of bands.value) {
+    if (band.type === BAND_TYPE_CONSTANTS.DETAIL || band.type === BAND_TYPE_CONSTANTS.BACKGROUND) continue;
+    const height = config[band.type]?.defaultHeight;
+    if (typeof height === "number") band.height = height;
+  }
+  // Detail takes the rest of the page; the content is refitted (JRXML written)
+  handlePageSetupChange();
+}
+
+// The JRXML of an empty template with the user's default settings
+function emptyTemplateJrxml(): string {
+  reportStore.loadReport({});
+  reportStore.updateJrxml();
+  return reportStore.jrxmlContent;
+}
+
+// Duplicate in the designer's bar: the server copies the template being
+// looked at (POST /v2/reports/copy); the copy shows up in Templates
+const copyTemplate = useCopyTemplate();
+// The copy just made: asked whether to open it (OpenCopy popup)
+const madeCopy = ref<{ id: string; name: string } | null>(null);
+const openCopyDialog = ref(false);
+function duplicateOpenedTemplate(): void {
+  const opened = openedDefaultTemplate.value;
+  if (!opened?.sourceId) return;
+  copyTemplate.mutate(opened.sourceId, {
+    onSuccess: async (answer) => {
+      const id = answer?.id ?? (await fetchNewestCopyId(opened.name).catch(() => null));
+      if (!id) {
+        notification.success(t("reportCatalog.copy.done", { name: opened.name }));
+        return;
+      }
+      madeCopy.value = { id, name: answer?.report?.name || opened.name };
+      openCopyDialog.value = true;
+    },
+    onError: async (error) =>
+      notification.error(
+        t("reportCatalog.copy.failed", {
+          reason: await reportServerErrorText(error, t("reportCatalog.defaultTemplates.errors.unknown")),
+        }),
+      ),
+  });
+}
+
+// Opens a server template (default or the tenant's own) from the report
+// server, always (GET …/rptadn_TenantReport/{id}?fetchPlan=…): its content's
+// JRXML, else an empty layout with a warning. A default stays read only; one of
+// the tenant's own keeps the server's id. Fails with a message, leaving the
+// template that was open
+let openingTemplateId = "";
+async function openDefaultTemplate(id: string): Promise<void> {
+  // Asked twice for the same template (mount and address): opened once
+  if (openingDefaultTemplate.value && openingTemplateId === id) return;
+  openingTemplateId = id;
+  openingDefaultTemplate.value = true;
+  try {
+    // A template just made here takes the user's newest Default Settings
+    const madeHere = newServerTemplateIds.has(id);
+    const [template] = await Promise.all([
+      fetchDefaultTemplate(id),
+      madeHere ? userSettings.refreshFromServer() : Promise.resolve(),
+    ]);
+    // The user went elsewhere meanwhile
+    if (route.params.id !== id) return;
+    // Opened only once the designer's own start is done
+    if (isLoadingFile.value) {
+      await new Promise<void>((resolve) => {
+        const stop = watch(isLoadingFile, (loading) => {
+          if (loading) return;
+          stop();
+          resolve();
+        });
+      });
+    }
+    // The template that was open keeps its last changes first
+    flushAutoSave();
+    // A .jrxml from the computer just made into this template opens with
+    // its JRXML (held in memory until now) instead of the create's content
+    const uploaded = !template.isDefault && uploadedJrxml?.id === id ? uploadedJrxml.jrxml : null;
+    uploadedJrxml = null;
+    openedTemplateName = template.name;
+    savedTemplateId = "";
+    saveAnywayId = "";
+    templateReportId = template.reportId ?? "";
+    templateReportParameters = template.reportParameters ?? [];
+    openedWithoutJrxml = false;
+    serverSave.startTemplate();
+    if (uploaded) {
+      applyJrxml(uploaded, template.name, "server", id);
+      // Saved on the server at once (below), so the server holds the JRXML
+      newServerTemplateIds.delete(id);
+      saveAnywayId = id;
+    } else {
+      // Content that isn't a JRXML the designer can open (none, an HTML
+      // template, a damaged JRXML): an empty layout, with a warning saying why
+      const problem = template.problem ?? (canParseJrxml(template.jrxml) ? undefined : TemplateContentProblem.badJrxml);
+      openedWithoutJrxml = !!problem;
+      // A template just made here holds the create's own template, not a JRXML
+      const isNew = madeHere && problem !== TemplateContentProblem.badJrxml;
+      const warning = problem && !isNew
+        ? { type: "warning" as const, text: t(`reportCatalog.defaultTemplates.contentProblems.${problem}`, { name: template.name }) }
+        : undefined;
+      applyJrxml(
+        problem ? emptyTemplateJrxml() : template.jrxml,
+        template.name,
+        template.isDefault ? "default" : "server",
+        id,
+        warning,
+      );
+      // Its Template Settings = the user's Default Settings now (only once:
+      // opened again, it keeps what it was saved with)
+      if (madeHere && !template.isDefault) {
+        newServerTemplateIds.delete(id);
+        giveTemplateUserDefaults();
+        saveAnywayId = id;
+      }
+    }
+    // Saved on the server at once, so the template holds those settings
+    if (saveAnywayId === id) void serverSave.flush();
+  } catch (error) {
+    console.error("Failed to open the default template:", error);
+    const unknown = t("reportCatalog.defaultTemplates.errors.unknown");
+    const reason =
+      error instanceof ApiError ? await reportServerErrorText(error, error.response?.statusText || unknown) : unknown;
+    // The address keeps the template's id, so a refresh tries again
+    notification.error(t("reportCatalog.defaultTemplates.openFailed", { reason }));
+  } finally {
+    openingDefaultTemplate.value = false;
+  }
+}
+watch(
+  () => route.params.id,
+  (id) => {
+    if (typeof id !== "string" || !id || id === currentFileId.value) return;
+    if (id === openedDefaultTemplate.value?.sourceId) return;
+    // Always read from the server, so its latest content is what opens
+    if (isServerTemplateId(id)) void openDefaultTemplate(id);
+  },
+);
 
 // Load data when the component mounts
 onMounted(() => {
-  console.log("Component mount started...");
-  const hasLocalData = loadFromLocalStorageWrapper();
-  console.log("Local data load complete");
-
-  // Try loading the last-edited file
-  loadFilesFromStorage();
-  const lastFile = loadLastFile();
-  let hasFileData = false;
-  if (lastFile) {
-    const lastFileInList = findFileById(lastFile.id);
-    if (lastFileInList) {
-      loadFile(lastFileInList);
-      hasFileData = true;
-    }
+  // The project list, so the header's picker has it before it is opened
+  prefetchProjects();
+  isLoadingFile.value = true;
+  // /designer/<id>: that template, always read from the report server
+  // (default or the tenant's own; its changes kept in this browser come back);
+  // /designer: a new template made on the server at once (Create template),
+  // then opened at /designer/<id>
+  const routeId = typeof route.params.id === "string" ? route.params.id : "";
+  currentFileId.value = newLocalTemplateId();
+  currentFileName.value = t("fileManager.untitledReport");
+  reportStore.loadReport({});
+  if (isServerTemplateId(routeId)) void openDefaultTemplate(routeId);
+  else {
+    if (routeId) notification.warning(t("fileManager.templateNotFound"));
+    void createAndOpenServerTemplate(t("fileManager.untitledReport"));
   }
 
   // Update JRXML after the initial load; use setTimeout to ensure all data has finished loading
   setTimeout(() => {
+    isLoadingFile.value = false;
+    ensureBandsFitPage();
+    unwrapLegacyCoverFrames(bands.value, reportProperties.value);
     console.log("Starting initial JRXML generation...");
     updateJRXML();
+    saveStatus.value = "saved";
   }, 100);
 
   // Initial zoom setup - automatically fit the window
@@ -3954,7 +6397,7 @@ onMounted(() => {
       wheelEvent.preventDefault();
 
       // Zoom according to the wheel direction
-      const delta = wheelEvent.deltaY < 0 ? 0.1 : -0.1;
+      const delta = wheelEvent.deltaY < 0 ? 1 : -1;
       handleZoomChange(delta);
     }
   };
@@ -3962,24 +6405,21 @@ onMounted(() => {
   document.addEventListener("wheel", handleWheel, { passive: false });
   (window as any).pdfDesignerWheelListener = handleWheel;
 
-  // Get the paper element and add a click event listener
-  const paperElement = document.querySelector(".paper");
-  if (paperElement) {
-    paperElement.addEventListener("click", () => {
-      handlePaperClick();
-      setDesignAreaFocused();
-    });
-  }
-
   // Store listener references so they can be removed when the component unmounts
   (window as any).pdfDesignerKeydownListener = handleKeyDown;
-  (window as any).pdfDesignerPaperClickListener = handlePaperClick;
   (window as any).pdfDesignerSetFocused = setDesignAreaFocused;
   (window as any).pdfDesignerRemoveFocused = removeDesignAreaFocused;
+
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  document.addEventListener("visibilitychange", handleVisibilityChange);
 });
 
 // Clean up event listeners when the component unmounts
 onUnmounted(() => {
+  flushAutoSave();
+  window.removeEventListener("beforeunload", handleBeforeUnload);
+  document.removeEventListener("visibilitychange", handleVisibilityChange);
+
   // Remove the keyboard event listener
   const keydownListener = (window as any).pdfDesignerKeydownListener;
   if (keydownListener) {
@@ -3991,35 +6431,38 @@ onUnmounted(() => {
   if (wheelListener) {
     document.removeEventListener("wheel", wheelListener);
   }
-
-  // Remove the paper click event listener
-  const handlePaperClick = (window as any).pdfDesignerPaperClickListener;
-  const paperElement = document.querySelector(".paper");
-  if (handlePaperClick && paperElement) {
-    paperElement.removeEventListener("click", handlePaperClick);
-  }
 });
 
 // Watch for changes to key data, auto-saving and updating JRXML
 watch(
-  [reportProperties, bands, reportFields, reportParameters],
+  [
+    reportProperties,
+    bands,
+    reportFields,
+    reportParameters,
+    subDatasets,
+    reportVariables,
+    reportGroups,
+    tableStyles,
+  ],
   () => {
-    // Only update while not dragging/resizing and not already in the middle of a JRXML update
-    if (!isDraggingOrResizing.value && !isUpdatingJRXML.value) {
-      saveToLocalStorageWrapper();
+    // Only update while not dragging/resizing, not already in JRXML update, and not loading a file
+    if (!isDraggingOrResizing.value && !reportStore.isWritingJrxml() && !isLoadingFile.value) {
       updateJRXML();
       // Update the out-of-bounds elements
       updateOutOfBoundsElements();
+      scheduleAutoSave(false);
     }
   },
   { deep: true },
 );
 
-// Watch for drag-state changes, updating out-of-bounds elements once dragging ends
+// Watch for drag-state changes, updating out-of-bounds elements and auto-saving once dragging ends
 watch(isDraggingOrResizing, (newValue, oldValue) => {
-  // Update the out-of-bounds elements when transitioning from dragging to not dragging
-  if (oldValue === true && newValue === false) {
+  if (oldValue === true && newValue === false && !isLoadingFile.value) {
+    updateJRXML();
     updateOutOfBoundsElements();
+    scheduleAutoSave(true);
   }
 });
 
@@ -4038,113 +6481,131 @@ const copyJRXML = async (): Promise<void> => {
 const regenerateJRXML = (): void => {
   updateJRXML();
   // Show a notification message
-  notification.info("JRXML has been regenerated");
+  notification.info(t("editor.jrxmlRegenerated"));
 };
 
-// Open the PDF preview
+// Open the PDF preview at once; the popup waits for the report (prepareReportForPreview)
+// while it shows that the PDF is being made
 const openPdfPreview = (): void => {
-  try {
-    if (!jrxmlContent.value) {
-      // Generate the JRXML content directly, without downloading it
-      const content = generateJRXMLContent(
-        reportProperties.value,
-        bands.value,
-        reportFields.value,
-        reportParameters.value,
-        subDatasets.value,
-        [],
-        reportVariables.value,
-        [],
-        reportGroups.value,
-      );
-      jrxmlContent.value = content;
-    }
-    // If subDatasets is empty, extract it from the table elements
-    if (subDatasets.value.length === 0) {
-      const extracted: TableDataset[] = [];
-      for (const band of bands.value) {
-        for (const el of band.elements || []) {
-          if (el.type === "table" && (el as any).dataset?.fields?.length > 0) {
-            const ds = (el as any).dataset;
-            if (!extracted.find((d) => d.name === ds.name)) {
-              extracted.push({
-                uuid: ds.uuid || crypto.randomUUID(),
-                name: ds.name,
-                fields: ds.fields,
-                query: ds.query,
-              });
-            }
-          }
-        }
-      }
-      if (extracted.length > 0) {
-        subDatasets.value = extracted;
-      }
-    }
-    showPdfPreview.value = false;
-    nextTick(() => {
-      showPdfPreview.value = true;
-    });
-  } catch (error) {
-    console.error("Failed to preview PDF:", error);
-    alert("Failed to preview PDF, please check the console for error details");
+  helpStore.noteGuideAction("preview");
+  flushAutoSave();
+  showPdfPreview.value = false;
+  nextTick(() => {
+    showPdfPreview.value = true;
+  });
+};
+
+// What Preview PDF (and the AI's check_pdf) runs: the template made ready
+// (charts drawn with their numbers, barcodes sized, maps drawn, the project
+// read), saved on the report server (the run uses the saved template), and
+// its Jmix report. A default template is only run (read only). A failure is
+// shown in the popup
+const prepareReportForPreview = async (): Promise<TemplatePdfRun> => {
+  await Promise.all([ensureChartData(bands.value), ensureBarcodeLibrary(bands.value), ensureMaps(), ensureWatermark(), ensureTemplateProject(reportProjects.value[0]?.id)]);
+  updateJRXML();
+  const reportId = templateReportId;
+  if (!reportId) throw new Error(t("pdfPreview.errors.notOnServer"));
+  if (!readOnlyTemplate.value) {
+    const id = currentFileId.value;
+    if (!isServerTemplateId(id)) throw new Error(t("pdfPreview.errors.notOnServer"));
+    // The server holds no JRXML for it yet: this one is sent even unchanged
+    if (openedWithoutJrxml) saveAnywayId = id;
+    if (!(await serverSave.flush())) throw new Error(t("pdfPreview.errors.notSaved"));
+    openedWithoutJrxml = false;
   }
+  return { reportId, parameters: templateReportParameters, projectId: reportProjects.value[0]?.id };
 };
 
 // Save the edited JRXML content
+// Edited JRXML applied (developer panel); never onto a default template
 const saveJRXML = (): void => {
+  if (readOnlyTemplate.value) {
+    notification.info(t("reportCatalog.defaultTemplates.readOnly"));
+    return;
+  }
+  applyJrxml(jrxmlContent.value);
+};
+
+// File → Open, From my computer: the .jrxml becomes a template on the report
+// server under its file's name, opens at /designer/<id> with that JRXML and is
+// saved there at once
+const openJrxmlFile = (file: { name: string; content: string }): void => {
+  if (!canParseJrxml(file.content)) {
+    notification.error(t("fileManager.invalidFileFormat"));
+    return;
+  }
+  const name = file.name.replace(/\.jrxml$/i, "").trim().slice(0, TEMPLATE_NAME_MAX_LENGTH).trim();
+  flushAutoSave();
+  void createAndOpenServerTemplate(name || t("fileManager.untitledReport"), file.content);
+};
+
+// Turn JRXML text into the report. Without a file name it is the edited JRXML
+// of this report (one undo step); with one it opens as a new report
+// `from`: a default template looked at (kept off the list until changed) or cloned (saved at once)
+// from: "default" / "server" = a report server template (default or the tenant's own) looked at
+// `notice`: shown instead of the "opened" message (a server template opened
+// as an empty layout, or with its changes kept in this browser)
+const applyJrxml = (
+  text: string,
+  openedFileName?: string,
+  from?: "default" | "server",
+  serverId?: string,
+  notice?: { type: "warning" | "info"; text: string },
+): void => {
   try {
     // Use our parseJRXMLContent function to parse the JRXML content
-    const parsedData = parseJRXMLContent(jrxmlContent.value);
+    const parsedData = parseJRXMLContent(text);
 
-    // Update the report properties
-    reportProperties.value = {
-      ...parsedData.properties,
-      defaultFont: reportProperties.value?.defaultFont || {
-        name: FONT_CONSTANTS.DEFAULT_FONT_FAMILY,
-        size: REPORT_CONSTANTS.DEFAULT_FONT_SIZE,
-        isBold: false,
-        isItalic: false,
-        isUnderline: false,
+    if (openedFileName !== undefined) {
+      // Keep the report that was open, then start a new one: no undo history
+      // (an opened file or server template: never made on the server as new)
+      flushAutoSave();
+      currentFileName.value =
+        openedFileName.trim() || t("fileManager.untitledReport");
+      // One of the tenant's own server templates is the user's: it keeps the
+      // server's id (saved in this browser at its first change). A default
+      // template is only looked at under a browser id until it is changed
+      currentFileId.value = from === "server" && serverId ? serverId : newLocalTemplateId();
+      openedDefaultTemplate.value =
+        from === "default"
+          ? { fileId: currentFileId.value, name: currentFileName.value, isDefault: true, sourceId: serverId }
+          : null;
+    } else {
+      // The edited JRXML replaces the whole report: one undo step. Every part
+      // is set from it (what it lacks is emptied)
+      saveStateToHistory();
+    }
+    // The font and section limits come from the JRXML (com.cdp.font /
+    // com.cdp.sectionLimits); one without them (another tool's) takes, when
+    // opened, the Default Settings (loadReport), and when edited, keeps what
+    // the template had
+    const before = openedFileName === undefined ? reportProperties.value : undefined;
+    const parsedFont = parsedData.properties?.defaultFont;
+    const fontBase = before?.defaultFont ?? { ...loadReportDefaults().font };
+    reportStore.loadReport(
+      {
+        reportProperties: {
+          ...parsedData.properties,
+          orientation: parsedData.properties?.orientation === "landscape" ? "landscape" : "portrait",
+          defaultFont: parsedFont ? { ...fontBase, ...parsedFont } : fontBase,
+          bandLimits: { ...(before?.bandLimits ?? {}), ...(parsedData.properties?.bandLimits ?? {}) },
+        } as any,
+        bands: parsedData.bands,
+        reportFields: parsedData.fields,
+        reportParameters: parsedData.parameters,
+        reportVariables: parsedData.variables,
+        reportGroups: parsedData.groups,
+        tableStyles: parsedData.tableStyles,
+        subDatasets: (parsedData.datasets ?? []).map((dataset) => ({
+          uuid: crypto.randomUUID(),
+          name: dataset.name,
+          fields: dataset.fields,
+          query: dataset.query,
+        })) as any,
+        jrxmlContent: text,
       },
-    };
-
-    // Update the field definitions
-    reportFields.value = parsedData.fields;
-
-    // Update the parameter definitions
-    reportParameters.value = parsedData.parameters || [];
-
-    // Update the variable definitions
-    if (parsedData.variables) {
-      reportVariables.value = parsedData.variables;
-    }
-
-    // Update the group definitions
-    if (parsedData.groups) {
-      reportGroups.value = parsedData.groups;
-    }
-
-    // Update the style definitions
-    if (parsedData.styles) {
-      reportStyles.value = parsedData.styles;
-    }
-
-    // Update the sub-datasets
-    if (parsedData.datasets) {
-      subDatasets.value = parsedData.datasets.map((dataset) => ({
-        uuid: crypto.randomUUID(),
-        name: dataset.name,
-        fields: dataset.fields,
-        query: dataset.query,
-      })) as any;
-    }
-
-    // Update the bands
-    bands.value = parsedData.bands;
-
-    // Update the selected band types
-    selectedBandTypes.value = parsedData.bands.map((band) => band.type);
+      { keepHistory: openedFileName === undefined },
+    );
 
     // Add a default border to rectangle elements to ensure they render correctly
     bands.value.forEach((band) => {
@@ -4436,16 +6897,26 @@ const saveJRXML = (): void => {
     // Regenerate the JRXML content, ensuring parameters are included
     updateJRXML();
 
-    // Save to local storage
-    saveToLocalStorageWrapper();
+    if (openedFileName !== undefined) {
+      // Nothing is saved until it is changed
+      saveStatus.value = "saved";
+      if (notice) notification[notice.type](notice.text);
+      else if (from === "default") notification.info(t("reportCatalog.defaultTemplates.opened"));
+      else notification.success(t("fileManager.jrxmlOpened", { name: currentFileName.value }));
+      return;
+    }
 
     // Show a success notification
     notification.success(t("notifications.jrxmlEditSaved"));
   } catch (error: unknown) {
     console.error("Failed to save JRXML:", error);
+    if (openedFileName !== undefined) {
+      notification.error(t("fileManager.invalidFileFormat"));
+      return;
+    }
     notification.error(
       t("notifications.jrxmlEditSaveFailed", {
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : t("common.unknownError"),
       }),
     );
   }
@@ -4456,6 +6927,10 @@ watch(
   () => currentElement.value?.box?.border,
   (newBorderStyle) => {
     if (!currentElement.value || !currentElement.value.box) return;
+    // The field was removed (border presets and Style Settings write pens and
+    // drop these legacy fields); there is nothing to sync, and syncing would
+    // wipe the pen they just wrote
+    if (!("border" in currentElement.value.box)) return;
 
     const box = currentElement.value.box;
 
@@ -4503,6 +6978,10 @@ watch(
   () => currentElement.value?.box?.borderWidth,
   (newBorderWidth) => {
     if (!currentElement.value || !currentElement.value.box) return;
+    // The field was removed (border presets and Style Settings write pens and
+    // drop these legacy fields); there is nothing to sync, and syncing would
+    // wipe the pen they just wrote
+    if (!("borderWidth" in currentElement.value.box)) return;
 
     const box = currentElement.value.box;
 
@@ -4546,6 +7025,10 @@ watch(
   () => currentElement.value?.box?.borderStyle,
   (newBorderStyle, oldBorderStyle) => {
     if (!currentElement.value || !currentElement.value.box) return;
+    // The field was removed (border presets and Style Settings write pens and
+    // drop these legacy fields); there is nothing to sync, and syncing would
+    // wipe the pen they just wrote
+    if (!("borderStyle" in currentElement.value.box)) return;
 
     const box = currentElement.value.box;
 
@@ -4599,6 +7082,10 @@ watch(
   () => currentElement.value?.box?.borderColor,
   (newBorderColor) => {
     if (!currentElement.value || !currentElement.value.box) return;
+    // The field was removed (border presets and Style Settings write pens and
+    // drop these legacy fields); there is nothing to sync, and syncing would
+    // wipe the pen they just wrote
+    if (!("borderColor" in currentElement.value.box)) return;
 
     const box = currentElement.value.box;
 
@@ -4825,56 +7312,147 @@ watch(
 const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
   event.preventDefault();
 
-  // Automatically hide the bottom panel
-  showBottomPanel.value = false;
-
   const startY = event.clientY;
   if (!bands.value || !bands.value[bandIndex]) return;
 
-  // Get the current zoom scale
   const currentZoom = zoomLevel.value;
-  const startHeight = bands.value[bandIndex].height;
+  const targetBand = bands.value[bandIndex];
+  const currentBandType = targetBand.type;
 
-  // Get the paper element's position info, for more accurate coordinate calculations
-  const paperElement = document.querySelector(".paper") as HTMLElement;
-  let paperOffsetY = 0;
+  // Detail band does not have its own resize handle; it occupies whatever space remains
+  const detailIndex = bands.value.findIndex(
+    (b) => b.type === BAND_TYPE_CONSTANTS.DETAIL,
+  );
+  if (bandIndex === detailIndex) return;
 
-  if (paperElement) {
-    const paperRect = paperElement.getBoundingClientRect();
-    // Offset accounting for the zoom scale
-    paperOffsetY = paperRect.top;
-  }
+  // Retrieve configurable min and max constraints (default 20px min, 70px max)
+  const bandLimitsConfig = reportProperties.value?.bandLimits?.[
+    currentBandType
+  ] ||
+    getEffectiveDefaultBandLimits()[currentBandType] || { min: 20, max: 70 };
+  const minHeight =
+    typeof bandLimitsConfig.min === "number" ? bandLimitsConfig.min : 20;
+  const maxHeight =
+    typeof bandLimitsConfig.max === "number" ? bandLimitsConfig.max : 70;
+
+  // Bottom bands (Column Footer, Summary, Page Footer, Last Page Footer) have handle at TOP edge:
+  // Dragging UP (deltaY < 0) increases height; dragging DOWN (deltaY > 0) decreases height.
+  // Top bands (Page Header, Column Header) have handle at BOTTOM edge:
+  // Dragging DOWN (deltaY > 0) increases height; dragging UP (deltaY < 0) decreases height.
+  const isBottomBand =
+    currentBandType === BAND_TYPE_CONSTANTS.COLUMN_FOOTER ||
+    currentBandType === BAND_TYPE_CONSTANTS.PAGE_FOOTER;
+
+  // Available height in the A4 printable area
+  const topMargin = reportProperties.value?.topMargin || 0;
+  const bottomMargin = reportProperties.value?.bottomMargin || 0;
+  const availableHeight = paperHeight.value - topMargin - bottomMargin;
+
+  // Snapshot starting heights of all bands
+  const startHeights: number[] = bands.value.map((b) => b.height || 0);
+  const startTargetHeight: number = startHeights[bandIndex] ?? minHeight;
+
+  // Total height of all other fixed bands (excluding target band, Detail and the Background underlay)
+  let otherBandsHeight = 0;
+  bands.value.forEach((b, i) => {
+    if (
+      i !== bandIndex &&
+      i !== detailIndex &&
+      b.type !== BAND_TYPE_CONSTANTS.BACKGROUND
+    ) {
+      otherBandsHeight += startHeights[i] || 0;
+    }
+  });
+
+  // Detail band minimum height
+  const detailMinHeight = BAND_CONSTANTS.MIN_HEIGHT || 20;
+  // Detail-constrained upper limit for this band
+  const maxPossibleHeight = Math.max(
+    minHeight,
+    availableHeight - otherBandsHeight - detailMinHeight,
+  );
+  const effectiveMax = Math.min(maxHeight, maxPossibleHeight);
 
   // Show the band height adjustment tooltip
-  const band = bands.value[bandIndex];
+  const bandDisplayName = getBandDisplayName(currentBandType);
   resizingBandInfo.visible = true;
-  resizingBandInfo.bandName = getBandDisplayName(band.type);
-  resizingBandInfo.height = startHeight;
+  resizingBandInfo.bandName = bandDisplayName;
+  resizingBandInfo.height = startTargetHeight;
 
+  // Toast notification throttling state
+  let lastToastType: "min" | "max" | null = null;
+  let lastToastTime = 0;
+
+  const showLimitToast = (
+    type: "min" | "max",
+    reason?: "page_full" | "template_limit",
+  ) => {
+    const now = Date.now();
+    if (lastToastType === type && now - lastToastTime < 2000) {
+      return;
+    }
+    lastToastType = type;
+    lastToastTime = now;
+
+    if (type === "max") {
+      if (reason === "page_full") {
+        notification.info(
+          t("editor.bandLimits.noSpace", { band: bandDisplayName, height: detailMinHeight }),
+        );
+      } else {
+        notification.info(t("editor.bandLimits.maxReached", { band: bandDisplayName }));
+      }
+    } else {
+      notification.info(t("editor.bandLimits.minReached", { band: bandDisplayName }));
+    }
+  };
+
+  // Undo step before the first move (taken on mouse-up it held the new height,
+  // so undo didn't bring the old one back); a click that moves nothing adds none
+  let historySaved = false;
   const handleMouseMove = (e: MouseEvent): void => {
     if (!bands.value || !bands.value[bandIndex]) return;
-    // Calculate the height change accounting for the zoom scale, using paperOffsetY for more accuracy
-    const deltaY =
-      (e.clientY - paperOffsetY) / currentZoom -
-      (startY - paperOffsetY) / currentZoom;
-    const newHeight = Math.max(
-      BAND_CONSTANTS.MIN_HEIGHT,
-      Math.round(startHeight + deltaY),
+    if (!historySaved) {
+      saveStateToHistory();
+      historySaved = true;
+    }
+    const deltaY = (e.clientY - startY) / currentZoom;
+
+    // For bottom bands (handle at top edge): dragging UP (-deltaY) expands
+    // For top bands (handle at bottom edge): dragging DOWN (+deltaY) expands
+    const effectiveDelta = isBottomBand ? -deltaY : deltaY;
+    const requestedHeight = Math.round(startTargetHeight + effectiveDelta);
+
+    if (requestedHeight > effectiveMax) {
+      const reason =
+        effectiveMax === maxPossibleHeight && maxPossibleHeight < maxHeight
+          ? "page_full"
+          : "template_limit";
+      showLimitToast("max", reason);
+    } else if (requestedHeight < minHeight) {
+      showLimitToast("min");
+    } else {
+      lastToastType = null;
+    }
+
+    const newTargetHeight = Math.max(
+      minHeight,
+      Math.min(effectiveMax, requestedHeight),
     );
 
-    // Update the band height
+    const newDetailHeight = Math.max(
+      detailMinHeight,
+      availableHeight - otherBandsHeight - newTargetHeight,
+    );
+
     bands.value = bands.value.map((b, i) => {
-      if (i === bandIndex) {
-        return { ...b, height: newHeight };
-      }
+      if (i === bandIndex) return { ...b, height: newTargetHeight };
+      if (i === detailIndex) return { ...b, height: newDetailHeight };
       return b;
     });
 
-    // Update the band height adjustment tooltip
-    resizingBandInfo.bandName = bands.value[bandIndex]
-      ? getBandDisplayName(bands.value[bandIndex].type)
-      : "";
-    resizingBandInfo.height = newHeight;
+    resizingBandInfo.height = newTargetHeight;
+    resizingBandInfo.bandName = bandDisplayName;
 
     // Position the band-height display element so it follows the mouse
     const bandHeightElement = document.querySelector(
@@ -4885,13 +7463,12 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
       bandHeightElement.style.top = e.clientY - 30 + "px";
     }
 
-    // Adjust the positions of elements within this band so they don't exceed the band's bounds
-    const band = bands.value[bandIndex];
-    if (band && band.elements) {
-      band.elements.forEach((element) => {
-        // Adjust the element's position accounting for the zoom scale
-        if (element.y + element.height > newHeight) {
-          element.y = Math.max(0, newHeight - element.height);
+    // Adjust elements within resized band so they don't exceed the band's bounds
+    const currentResizedBand = bands.value[bandIndex];
+    if (currentResizedBand && currentResizedBand.elements) {
+      currentResizedBand.elements.forEach((element) => {
+        if (element.y + element.height > newTargetHeight) {
+          element.y = Math.max(0, newTargetHeight - element.height);
         }
       });
     }
@@ -4904,6 +7481,9 @@ const startResizingBand = (event: MouseEvent, bandIndex: number): void => {
     resizingBandInfo.height = 0;
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("mouseup", handleMouseUp);
+    ensureBandsFitPage();
+    updateOutOfBoundsElements();
+    updateJRXML();
   };
 
   document.addEventListener("mousemove", handleMouseMove);
@@ -4919,6 +7499,16 @@ const getBandOffsetY = (bandIndex: number): number => {
   return offset;
 };
 
+// Handle element rotation
+const handleElementRotate = (
+  _bandIndex: number,
+  _elementIndex: number,
+  _parentFrameIndex?: number,
+): void => {
+  // The element took the undo snapshot (report store) before it rotated
+  updateJRXML();
+};
+
 // Start resizing an element
 const startResizingElement = (
   event: MouseEvent,
@@ -4928,9 +7518,6 @@ const startResizingElement = (
   parentFrameIndex?: number,
 ): void => {
   event.preventDefault();
-
-  // Automatically hide the bottom panel
-  showBottomPanel.value = false;
 
   const band = bands.value[bandIndex];
   let element;
@@ -4947,14 +7534,19 @@ const startResizingElement = (
   if (element) {
     // Get the current zoom scale
     const currentZoom = zoomLevel.value;
+    // A picture shaped as a Circle stays square while resized (as with Alt)
+    const keepsSquare = element.type === "image" && getImageShape(element) === "circle";
 
-    // Get the paper element's position info, for more accurate coordinate calculations
-    const paperElement = document.querySelector(".paper") as HTMLElement;
+    // Get the page sheet element's position info, for more accurate coordinate calculations
+    const targetSheet =
+      ((event.target as HTMLElement)?.closest(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".page-sheet") as HTMLElement) ||
+      (document.querySelector(".paper") as HTMLElement);
     let paperOffsetX = 0;
     let paperOffsetY = 0;
 
-    if (paperElement) {
-      const paperRect = paperElement.getBoundingClientRect();
+    if (targetSheet) {
+      const paperRect = targetSheet.getBoundingClientRect();
       // Offset accounting for the zoom scale
       paperOffsetX = paperRect.left;
       paperOffsetY = paperRect.top;
@@ -4963,20 +7555,81 @@ const startResizingElement = (
     resizingInfo.value = {
       bandIndex,
       elementIndex,
+      direction: direction || "se",
       startX: (event.clientX - paperOffsetX) / currentZoom,
       startY: (event.clientY - paperOffsetY) / currentZoom,
+      startElementX: element.x,
+      startElementY: element.y,
       startWidth: element.width,
       startHeight: element.height,
       parentFrameIndex,
+      targetSheet,
+      startLineDirection: (element as any).lineDirection || "TopDown",
     };
+
+    // A frame's children are re-laid out from these start positions while
+    // resizing (kept from the resizes before, so they never get squeezed for
+    // good), and the frame can't get smaller than its items need
+    const frameFitStart = element.type === "frame" ? frameFitReference(element as FrameElement) : null;
+    const frameMinSize = frameFitStart
+      ? (() => {
+          const min = frameMinimumSize(frameFitStart.children, frameFitStart.from);
+          // Never above the size it has now (a tight box doesn't jump)
+          return { width: Math.min(min.width, element.width), height: Math.min(min.height, element.height) };
+        })()
+      : null;
+    // A custom table's columns and rows keep their shares while it is resized
+    // A project-data table's heading and rows grow from their start sizes
+    const dataTableStart =
+      element.type === "table" && (element as TableElement).binding
+        ? ({ ...(element as TableElement) } as TableElement)
+        : null;
+    // Its columns as the drag began (copied: the binding object is shared)
+    const dataColumnsStart = dataTableStart?.binding
+      ? dataTableStart.binding.columns.map((c) => ({ ...c }))
+      : null;
+    const customTableStart =
+      element.type === "customTable"
+        ? {
+            columns: [...(element as CustomTableElement).table.columns],
+            rows: (element as CustomTableElement).table.rows.map((r) => r.height),
+          }
+        : null;
+
+    // What the moving edges can snap to; the other elements stay put
+    const snapContext = buildSnapContext(
+      bandIndex,
+      getEventPageIndex(event, element),
+      parentFrameIndex,
+      element,
+    );
 
     isDraggingOrResizing.value = true;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    // Undo snapshot of the size before the resize, taken on the first move so a
+    // click on a handle without dragging adds no undo step
+    let historySaved = false;
+
+    // A ready-made box's own part is resized only up to the box's edges
+    const parentBox =
+      parentFrameIndex !== undefined
+        ? (band?.elements[parentFrameIndex] as FrameElement | undefined)
+        : undefined;
+    const keepInParentBox = (item: DesignElement) => {
+      if (!parentBox || !isBoxPart(item)) return;
+      Object.assign(item, clampRectInBox(item, parentBox));
+    };
+
+    const applyResizeMove = (e: MouseEvent) => {
       if (!resizingInfo.value) return;
 
       const currentBand = bands.value[resizingInfo.value.bandIndex];
       if (!currentBand) return;
+
+      if (!historySaved) {
+        saveStateToHistory();
+        historySaved = true;
+      }
 
       let element: DesignElement | undefined;
       let containerWidth =
@@ -4994,6 +7647,22 @@ const startResizingElement = (
         }
       } else {
         element = currentBand.elements[resizingInfo.value.elementIndex];
+        // On a cover or contents page the whole printable page
+        if (element) {
+          const special = specialPageArea(reportProperties.value, element.pageIndex);
+          if (special) {
+            containerWidth = special.width;
+            containerHeight = special.height;
+          } else if (
+            currentBand.type !== BAND_TYPE_CONSTANTS.DETAIL &&
+            currentBand.type !== BAND_TYPE_CONSTANTS.BACKGROUND
+          ) {
+            // A header / footer section grows with the element, up to its maximum
+            containerHeight = Math.max(currentBand.height, getBandMaxHeight(resizingInfo.value.bandIndex));
+          } else {
+            containerHeight = bandAreaHeight(resizingInfo.value.bandIndex, element.pageIndex);
+          }
+        }
       }
 
       if (!element) return;
@@ -5002,7 +7671,10 @@ const startResizingElement = (
       const currentZoom = zoomLevel.value;
 
       // Get the paper element's current position info, for more accurate coordinate calculations
-      const paperEl = document.querySelector(".paper") as HTMLElement;
+      const paperEl =
+        resizingInfo.value.targetSheet ||
+        (document.querySelector(".page-sheet") as HTMLElement) ||
+        (document.querySelector(".paper") as HTMLElement);
       let currentPaperOffsetX = 0;
       let currentPaperOffsetY = 0;
 
@@ -5013,221 +7685,356 @@ const startResizingElement = (
         currentPaperOffsetY = paperRect.top;
       }
 
-      // Calculate the new width and height, accounting for the zoom scale
-      let newWidth =
-        resizingInfo.value.startWidth +
-        ((e.clientX - currentPaperOffsetX) / currentZoom -
-          resizingInfo.value.startX);
-      let newHeight =
-        resizingInfo.value.startHeight +
-        ((e.clientY - currentPaperOffsetY) / currentZoom -
-          resizingInfo.value.startY);
+      // Calculate the new width, height, and position, accounting for zoom scale and 8-way direction
+      const dir = resizingInfo.value.direction || "se";
+      const startElementX = resizingInfo.value.startElementX ?? element.x;
+      const startElementY = resizingInfo.value.startElementY ?? element.y;
+      const startWidth = resizingInfo.value.startWidth;
+      const startHeight = resizingInfo.value.startHeight;
 
-      // Constrain the minimum size
-      const minSize = 1;
-      newWidth = Math.max(minSize, newWidth);
-      newHeight = Math.max(minSize, newHeight);
+      const currentMouseX = (e.clientX - currentPaperOffsetX) / currentZoom;
+      const currentMouseY = (e.clientY - currentPaperOffsetY) / currentZoom;
+      const deltaX = currentMouseX - resizingInfo.value.startX;
+      const deltaY = currentMouseY - resizingInfo.value.startY;
 
-      // Get the report's margin settings
-      const { leftMargin = 0, rightMargin = 0 } = reportProperties.value;
-      // Constrain the size so it doesn't exceed the paper's right boundary or the band's bottom boundary
-      let maxElementWidth;
-      if (resizingInfo.value.parentFrameIndex !== undefined) {
-        maxElementWidth = containerWidth - element.x;
-      } else {
-        maxElementWidth =
-          paperWidth.value - leftMargin - rightMargin - element.x;
+      // Moving edges snap to other elements, else the grid. Aspect-locked
+      // resizes (Shift, Alt) follow the mouse instead.
+      const snapOptions = getSnapOptions(e, snapContext);
+      const snapGuides: SnapGuides = { x: [], y: [] };
+      const snapResizeEdge = (value: number, axis: "x" | "y") => {
+        if (e.shiftKey || e.altKey) return value;
+        const result = snapEdge(value, snapContext.targets[axis], snapOptions, axis);
+        snapGuides[axis].push(...result.lines);
+        return result.value;
+      };
+
+      // 2-point endpoint resizing for line elements
+      if (dir === "line-start" || dir === "line-end") {
+        const startLineDir = (resizingInfo.value as any).startLineDirection || "TopDown";
+        let p1x = startElementX;
+        let p1y = startElementY;
+        let p2x = startElementX + startWidth;
+        let p2y = startElementY + startHeight;
+
+        if (startLineDir === "BottomUp") {
+          p1x = startElementX;
+          p1y = startElementY + startHeight;
+          p2x = startElementX + startWidth;
+          p2y = startElementY;
+        }
+
+        const fixedX = dir === "line-start" ? p2x : p1x;
+        const fixedY = dir === "line-start" ? p2y : p1y;
+        // The dragged end follows the mouse from where it started (band
+        // coordinates, like the fixed end), snapped like an edge
+        const endX = snapEdge(
+          (dir === "line-start" ? p1x : p2x) + deltaX,
+          snapContext.targets.x,
+          snapOptions,
+          "x",
+        );
+        const endY = snapEdge(
+          (dir === "line-start" ? p1y : p2y) + deltaY,
+          snapContext.targets.y,
+          snapOptions,
+          "y",
+        );
+        let movingX = Math.max(0, Math.min(containerWidth, endX.value));
+        let movingY = Math.max(0, Math.min(containerHeight, endY.value));
+
+        let dx = movingX - fixedX;
+        let dy = movingY - fixedY;
+
+        if (e.shiftKey) {
+          const absDx = Math.abs(dx);
+          const absDy = Math.abs(dy);
+          if (absDy < absDx * 0.4) {
+            dy = 0;
+            movingY = fixedY;
+          } else if (absDx < absDy * 0.4) {
+            dx = 0;
+            movingX = fixedX;
+          } else {
+            const dist = Math.max(absDx, absDy);
+            dx = Math.sign(dx) * dist;
+            dy = Math.sign(dy) * dist;
+            movingX = fixedX + dx;
+            movingY = fixedY + dy;
+          }
+        } else {
+          if (Math.abs(dy) <= 8) {
+            dy = 0;
+            movingY = fixedY;
+          } else if (Math.abs(dx) <= 8) {
+            dx = 0;
+            movingX = fixedX;
+          }
+        }
+
+        const newCalculatedX = Math.round(Math.min(fixedX, movingX));
+        const newCalculatedY = Math.round(Math.min(fixedY, movingY));
+        const newCalculatedWidth = Math.max(1, Math.round(Math.abs(dx)));
+        const newCalculatedHeight = Math.max(1, Math.round(Math.abs(dy)));
+        const computedDir = dx * dy >= 0 ? "TopDown" : "BottomUp";
+
+        element.x = newCalculatedX;
+        element.y = newCalculatedY;
+        element.width = newCalculatedWidth;
+        element.height = newCalculatedHeight;
+        (element as any).lineDirection = computedDir;
+        keepInParentBox(element);
+
+        showSnapGuides(
+          snapContext,
+          {
+            x: movingX === endX.value ? endX.lines : [],
+            y: movingY === endY.value ? endY.lines : [],
+          },
+          snapOptions,
+        );
+        return;
       }
 
-      const availableHeight = containerHeight - element.y;
-      newWidth = Math.min(newWidth, maxElementWidth);
-      newHeight = Math.min(newHeight, availableHeight);
+      const minSize = element.type === "line" ? 1 : 5;
+      // Smallest width / height: a box what its items need, a contents list
+      // its number and page columns (narrower, its titles vanish)
+      const minWidth = Math.max(
+        minSize,
+        frameMinSize?.width ?? 0,
+        element.type === "contentsList"
+          ? Math.min(startWidth, minContentsListWidth((element as ContentsListElement).list))
+          : 0,
+      );
+      const minHeight = Math.max(minSize, frameMinSize?.height ?? 0);
+
+      let newX = startElementX;
+      let newY = startElementY;
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+
+      // Horizontal resize
+      if (dir.includes("e")) {
+        // Dragging right edge: left edge (newX) is fixed at startElementX
+        const maxRight = containerWidth;
+        const candidateRight = snapResizeEdge(startElementX + startWidth + deltaX, "x");
+        const clampedRight = Math.min(maxRight, Math.max(startElementX + minWidth, candidateRight));
+        newWidth = clampedRight - startElementX;
+        newX = startElementX;
+      } else if (dir.includes("w")) {
+        // Dragging left edge: right edge is fixed at (startElementX + startWidth)
+        const rightEdge = startElementX + startWidth;
+        const candidateLeft = snapResizeEdge(startElementX + deltaX, "x");
+        const clampedLeft = Math.max(0, Math.min(rightEdge - minWidth, candidateLeft));
+        newX = clampedLeft;
+        newWidth = rightEdge - clampedLeft;
+      }
+
+      // Vertical resize
+      if (dir.includes("s")) {
+        // Dragging bottom edge: top edge (newY) is fixed at startElementY
+        const maxBottom = containerHeight;
+        const candidateBottom = snapResizeEdge(startElementY + startHeight + deltaY, "y");
+        const clampedBottom = Math.min(maxBottom, Math.max(startElementY + minHeight, candidateBottom));
+        newHeight = clampedBottom - startElementY;
+        newY = startElementY;
+      } else if (dir.includes("n")) {
+        // Dragging top edge: bottom edge is fixed at (startElementY + startHeight)
+        const bottomEdge = startElementY + startHeight;
+        const candidateTop = snapResizeEdge(startElementY + deltaY, "y");
+        const clampedTop = Math.max(0, Math.min(bottomEdge - minHeight, candidateTop));
+        newY = clampedTop;
+        newHeight = bottomEdge - clampedTop;
+      }
 
       // If the SHIFT key is held, preserve the original aspect ratio
       if (e.shiftKey) {
-        // Calculate the original aspect ratio
-        const aspectRatio =
-          resizingInfo.value.startWidth / resizingInfo.value.startHeight;
-
-        // Calculate the height derived from the width, and the width derived from the height
+        const aspectRatio = startWidth / startHeight;
         const heightBasedOnWidth = newWidth / aspectRatio;
         const widthBasedOnHeight = newHeight * aspectRatio;
 
-        // Choose whichever dimension is closer to the original ratio
         if (
           Math.abs(newHeight - heightBasedOnWidth) <
           Math.abs(newWidth - widthBasedOnHeight)
         ) {
-          // Use the width as the basis, and adjust the height
-          newHeight = heightBasedOnWidth;
+          newHeight = Math.max(minSize, heightBasedOnWidth);
+          if (dir.includes("n")) {
+            newY = startElementY + startHeight - newHeight;
+            if (newY < 0) {
+              newY = 0;
+              newHeight = startElementY + startHeight;
+              newWidth = newHeight * aspectRatio;
+              if (dir.includes("w")) {
+                newX = startElementX + startWidth - newWidth;
+              }
+            }
+          }
         } else {
-          // Use the height as the basis, and adjust the width
-          newWidth = widthBasedOnHeight;
+          newWidth = Math.max(minSize, widthBasedOnHeight);
+          if (dir.includes("w")) {
+            newX = startElementX + startWidth - newWidth;
+            if (newX < 0) {
+              newX = 0;
+              newWidth = startElementX + startWidth;
+              newHeight = newWidth / aspectRatio;
+              if (dir.includes("n")) {
+                newY = startElementY + startHeight - newHeight;
+              }
+            }
+          }
         }
-
-        // Constrain the size again to ensure it doesn't exceed the bounds
-        newWidth = Math.max(minSize, Math.min(newWidth, maxElementWidth));
-        newHeight = Math.max(minSize, Math.min(newHeight, availableHeight));
-      } else if (e.altKey) {
-        // If the ALT key is held, lock the aspect ratio to 1:1
-        // Calculate the 1:1 height derived from the width, and the 1:1 width derived from the height
-        const size1x1FromWidth = newWidth;
-        const size1x1FromHeight = newHeight;
-
-        // Use whichever dimension changed more as the basis
-        const widthChange = Math.abs(newWidth - resizingInfo.value.startWidth);
-        const heightChange = Math.abs(
-          newHeight - resizingInfo.value.startHeight,
-        );
+      } else if (e.altKey || keepsSquare) {
+        // If ALT key is held (or the picture is a Circle), lock aspect ratio to 1:1
+        const widthChange = Math.abs(newWidth - startWidth);
+        const heightChange = Math.abs(newHeight - startHeight);
 
         if (widthChange >= heightChange) {
-          // Use the width as the basis; height equals width
-          newHeight = size1x1FromWidth;
+          newHeight = newWidth;
+          if (dir.includes("n")) {
+            newY = startElementY + startHeight - newHeight;
+            if (newY < 0) {
+              newY = 0;
+              newHeight = startElementY + startHeight;
+              newWidth = newHeight;
+              if (dir.includes("w")) {
+                newX = startElementX + startWidth - newWidth;
+              }
+            }
+          }
         } else {
-          // Use the height as the basis; width equals height
-          newWidth = size1x1FromHeight;
+          newWidth = newHeight;
+          if (dir.includes("w")) {
+            newX = startElementX + startWidth - newWidth;
+            if (newX < 0) {
+              newX = 0;
+              newWidth = startElementX + startWidth;
+              newHeight = newWidth;
+              if (dir.includes("n")) {
+                newY = startElementY + startHeight - newHeight;
+              }
+            }
+          }
         }
-
-        // Constrain the size again to ensure it doesn't exceed the bounds
-        newWidth = Math.max(minSize, Math.min(newWidth, maxElementWidth));
-        newHeight = Math.max(minSize, Math.min(newHeight, availableHeight));
       }
 
-      // First, store the temporary size
+      // Shift / Alt may have made it smaller than its content allows
+      if (newWidth < minWidth) {
+        if (dir.includes("w")) newX = startElementX + startWidth - minWidth;
+        newWidth = minWidth;
+      }
+      if (newHeight < minHeight) {
+        if (dir.includes("n")) newY = startElementY + startHeight - minHeight;
+        newHeight = minHeight;
+      }
+
+      // First, store the temporary size and position
       const tempWidth = Math.round(newWidth);
       const tempHeight = Math.round(newHeight);
+      const tempX = Math.round(newX);
+      const tempY = Math.round(newY);
 
-      // Special handling for table elements: automatically adjust column widths when the table width changes
+      // A table keeps its columns' shares of the width (each at least the
+      // minimum column width) and its height in whole rows
       if (element.type === "table") {
-        // Look up the corresponding column within the children array (recursive search)
-        const findColumnInChildren = (
-          children: any[],
-          targetColumn: any,
-        ): any | null => {
-          for (const child of children) {
-            if (child.uuid === targetColumn.uuid) {
-              return child;
-            }
-            if (child.children) {
-              const found = findColumnInChildren(child.children, targetColumn);
-              if (found) {
-                return found;
-              }
-            }
-          }
-          return null;
-        };
-
-        if (element.columns && element.columns.length > 0) {
-          // Get the current width of each column
-          const columnWidths = element.columns.map((col) => col.width || 0);
-          const totalColumnWidth = columnWidths.reduce(
-            (sum, width) => sum + width,
-            0,
-          );
-
-          if (totalColumnWidth > 0) {
-            // Calculate the width ratio each column should receive
-            const ratios = columnWidths.map(
-              (width) => width / totalColumnWidth,
-            );
-
-            // Distribute column widths proportionally based on the new table width
-            const newColumnWidths = ratios.map((ratio) => {
-              // Distribute the new width proportionally
-              const newColWidth = tempWidth * ratio;
-              // Ensure every column has at least a minimum width
-              return Math.max(10, Math.round(newColWidth));
-            });
-
-            // Adjust the last column's width so the total matches the table width
-            const sumNewWidths = newColumnWidths.reduce(
-              (sum, width) => sum + width,
-              0,
-            );
-            if (sumNewWidths !== tempWidth && newColumnWidths.length > 0) {
-              const diff = tempWidth - sumNewWidths;
-              const lastIndex = newColumnWidths.length - 1;
-              // Ensure newColumnWidths[lastIndex] isn't undefined
-              newColumnWidths[lastIndex] =
-                (newColumnWidths[lastIndex] || 0) + diff;
-            }
-
-            // Update the width of every column
-            element.columns.forEach((col, index) => {
-              const newColWidth = newColumnWidths[index]!;
-              col.width = newColWidth;
-
-              // Also update the width of every cell within the column
-              if (col.tableHeader && col.tableHeader.element) {
-                col.tableHeader.element.width = newColWidth;
-              }
-              if (col.columnHeader && col.columnHeader.element) {
-                col.columnHeader.element.width = newColWidth;
-              }
-              if (col.detailCell && col.detailCell.element) {
-                col.detailCell.element.width = newColWidth;
-              }
-              if (col.columnFooter && col.columnFooter.element) {
-                col.columnFooter.element.width = newColWidth;
-              }
-              if (col.tableFooter && col.tableFooter.element) {
-                col.tableFooter.element.width = newColWidth;
-              }
-
-              // If the table has a children property, also update the width of the corresponding column within it
-              if (element.children) {
-                const childColumn = findColumnInChildren(element.children, col);
-                if (childColumn) {
-                  childColumn.width = newColWidth;
-
-                  // Also update the width of every related cell within childColumn
-                  if (childColumn.tableHeader) {
-                    childColumn.tableHeader.width = newColWidth;
-                  }
-                  if (childColumn.columnHeader) {
-                    childColumn.columnHeader.width = newColWidth;
-                  }
-                  if (childColumn.detailCell) {
-                    childColumn.detailCell.width = newColWidth;
-                  }
-                  if (childColumn.columnFooter) {
-                    childColumn.columnFooter.width = newColWidth;
-                  }
-                  if (childColumn.tableFooter) {
-                    childColumn.tableFooter.width = newColWidth;
-                  }
-                }
-              }
-            });
-          }
+        const table = element as TableElement;
+        const minWidth = (table.binding?.columns.length ?? PLACEHOLDER_COLUMN_COUNT) * MIN_TABLE_COLUMN_WIDTH;
+        const width = Math.max(tempWidth, minWidth);
+        // Taller or shorter makes the heading and every row taller or shorter
+        // (a project-data table is always exactly as tall as its rows)
+        const sizes = dataTableStart && dir !== "e" && dir !== "w" ? scaleTableRows(dataTableStart, tempHeight) : null;
+        if (sizes) {
+          table.headerHeight = sizes.headerHeight;
+          table.rowHeight = sizes.rowHeight;
         }
-
-        // Set the table's final width and height
-        element.width = tempWidth;
+        const height = sizes ? sizes.height : snapTableHeight(table, tempHeight);
+        // Always from the columns as the drag began, so their shares stay exact
+        if (table.binding && dataColumnsStart) {
+          table.binding.columns = scaleColumnWidths(dataColumnsStart, width);
+        }
+        element.width = width;
+        element.x = dir.includes("w") ? startElementX + startWidth - width : tempX;
+        element.y = dir.includes("n") ? startElementY + startHeight - height : tempY;
+        element.height = height;
+      } else if (element.type === "contentsList") {
+        const list = (element as ContentsListElement).list;
+        element.width = Math.max(80, tempWidth);
+        element.x = dir.includes("w") ? startElementX + startWidth - element.width : tempX;
+        const onContents = pageKind(reportProperties.value, element.pageIndex) === "contents";
+        if (onContents) {
+          // On a contents page the box keeps the size it is given: rows that
+          // don't fit go on to the next contents page (they reflow while dragging)
+          const top = dir.includes("n") ? Math.max(0, Math.min(tempY, startElementY + startHeight - list.rowHeight)) : startElementY;
+          const bottom = dir.includes("n") ? startElementY + startHeight : top + tempHeight;
+          const pageBottom = bandAreaHeight(bandIndex, element.pageIndex);
+          element.y = Math.round(top);
+          element.height = Math.round(Math.max(list.rowHeight, Math.min(pageBottom, bottom) - top));
+          syncFollowingLists(bands.value, reportProperties.value);
+        } else {
+          // Elsewhere taller or shorter spreads or tightens the rows shown (a
+          // row never shorter than one line of its text)
+          list.rowHeight = Math.min(
+            80,
+            Math.max(12, minContentsRowHeight(list), Math.round(tempHeight / Math.max(1, shownCount(list)))),
+          );
+          syncContentsListSize(element as ContentsListElement);
+          element.y = dir.includes("n") ? startElementY + startHeight - element.height : tempY;
+        }
+      } else if (customTableStart && element.type === "customTable") {
+        const table = (element as CustomTableElement).table;
+        table.columns = scaleSizes(customTableStart.columns, tempWidth, MIN_COLUMN_WIDTH);
+        scaleSizes(customTableStart.rows, tempHeight, MIN_ROW_HEIGHT).forEach((h, i) => {
+          table.rows[i]!.height = h;
+        });
+        syncTableSize(element as CustomTableElement);
+        element.x = dir.includes("w") ? startElementX + startWidth - element.width : tempX;
+        element.y = dir.includes("n") ? startElementY + startHeight - element.height : tempY;
       } else {
-        // Non-table element; apply the size adjustment directly
         element.width = tempWidth;
+        element.x = tempX;
+        element.y = tempY;
+        element.height = tempHeight;
+      }
+      keepInParentBox(element);
+
+      // The header / footer section grows to hold what was made taller (same undo step)
+      if (
+        resizingInfo.value.parentFrameIndex === undefined &&
+        currentBand.type !== BAND_TYPE_CONSTANTS.DETAIL &&
+        currentBand.type !== BAND_TYPE_CONSTANTS.BACKGROUND &&
+        element.y + element.height > currentBand.height
+      ) {
+        currentBand.height = Math.ceil(element.y + element.height);
       }
 
-      // Apply the height adjustment
-      element.height = tempHeight;
-
-      // Re-run alignment-line detection using the final size (to ensure alignment lines display correctly)
-      if (enableSnapToAlignment.value) {
-        detectAlignmentLines(element, resizingInfo.value.bandIndex);
+      // Keep a frame's content in step with the frame (stretch wide items, pin edge items)
+      if (frameFitStart && element.type === "frame") {
+        fitFrameContent(element as FrameElement, frameFitStart);
       }
+
+      showSnapGuides(snapContext, snapGuides, snapOptions);
+    };
+    const frameResize = throttleToAnimationFrame(applyResizeMove);
+    // The wheel or the pointer at an edge scrolls the pages; the moving edge
+    // follows the pointer (applyResizeMove reads the page's place every time)
+    let lastMove: MouseEvent = event;
+    const resizeScroll = startDragScrolling({ onScroll: () => frameResize(lastMove) });
+    const handleMouseMove = (e: MouseEvent) => {
+      lastMove = e;
+      resizeScroll.pointer(e.clientX, e.clientY);
+      frameResize(e);
     };
 
     const handleMouseUp = () => {
-      // Clear the alignment lines
+      // Apply the last mouse move, then clear the alignment lines
+      frameResize.flush();
+      resizeScroll.stop();
       clearAlignmentLines();
-
-      // Save state to history
-      saveStateToHistory();
 
       resizingInfo.value = null;
       isDraggingOrResizing.value = false;
+      isJustDraggedOrResized.value = true;
+      setTimeout(() => {
+        isJustDraggedOrResized.value = false;
+      }, 150);
 
       // Update JRXML
       updateJRXML();
@@ -5241,6 +8048,132 @@ const startResizingElement = (
   }
 };
 
+// "Fit to text" (the Fit badge, double-clicking the bottom handle, and the
+// Properties button): static one-line text gets the width of its text, keeping
+// its alignment edge and staying within its band or box; everything gets the
+// height its text needs. The band grows to fit, up to its maximum.
+const autoFitElementHeight = (
+  bandIndex: number,
+  elementIndex: number,
+  parentFrameIndex?: number,
+) => {
+  const band = bands.value[bandIndex];
+  if (!band) return;
+
+  const box =
+    parentFrameIndex !== undefined
+      ? (band.elements[parentFrameIndex] as FrameElement | undefined)
+      : undefined;
+  const element =
+    parentFrameIndex !== undefined
+      ? box?.elements?.[elementIndex]
+      : band.elements[elementIndex];
+  if (!element || element.type !== "textField") return;
+  // A Location's address is sized by its layout (to its words already)
+  if (isLocationAddress(element)) return;
+
+  const font = reportProperties.value?.defaultFont;
+  // Measure the words the canvas shows (a linked value, a date, a page number
+  // on the last page), not the expression; formatted text as its HTML
+  const numberPageCount = Math.max(
+    1,
+    totalPages.value - (reportStore.special.countPages ? 0 : reportStore.special.count),
+  );
+  const measured = {
+    ...(element as any),
+    ...(canvasShowsHtml(element as TextFieldElement)
+      ? {}
+      : {
+          shownText: formatCanvasText(element as TextFieldElement, {
+            numberPage: numberPageCount,
+            numberPageCount,
+          }),
+        }),
+  };
+  const sideways = (element as any).rotation === "Left" || (element as any).rotation === "Right";
+  if (sideways) {
+    // Sideways text runs along the height: the lines stack across the width
+    const across = calculateTextElementHeight({ ...measured, width: element.height }, font);
+    const containerWidth = box ? box.width : printableWidth.value;
+    const fitWidthSideways = Math.min(across, Math.max(10, containerWidth - element.x));
+    if (fitWidthSideways === element.width) return;
+    saveStateToHistory();
+    element.width = fitWidthSideways;
+    updateJRXML();
+    updateOutOfBoundsElements();
+    return;
+  }
+  const { x, width } = planTextFit(
+    element as TextFitElement,
+    // 1px spare so rounding in the browser never wraps the last word
+    measureTextElementWidth(measured, font) + 1,
+    box ? box.width : printableWidth.value,
+  );
+  let fitX = x;
+  let fitWidth = width;
+  let height = calculateTextElementHeight({ ...measured, width }, font);
+
+  // Too tall for the room left (section, page or box): wider first, keeping the
+  // alignment edge, up to the container's edge; the narrowest width that fits
+  const onSpecialArea = !box && band.type === BAND_TYPE_CONSTANTS.DETAIL && isSpecialPage(reportProperties.value, element.pageIndex);
+  const roomBottom = box
+    ? box.height
+    : onSpecialArea || band.type === BAND_TYPE_CONSTANTS.DETAIL || band.type === BAND_TYPE_CONSTANTS.BACKGROUND
+      ? bandAreaHeight(bandIndex, element.pageIndex)
+      : getBandMaxHeight(bandIndex);
+  const room = roomBottom - element.y;
+  if (height > room && room > 0) {
+    const containerWidth = box ? box.width : printableWidth.value;
+    const align = (element as any).textAlignment;
+    const right = fitX + fitWidth;
+    const centre = fitX + fitWidth / 2;
+    const maxWidth = Math.floor(
+      align === "Right" ? right : align === "Center" ? 2 * Math.min(centre, containerWidth - centre) : containerWidth - fitX,
+    );
+    const heightAt = (w: number) => calculateTextElementHeight({ ...measured, width: w }, font);
+    if (maxWidth > fitWidth) {
+      let low = fitWidth;
+      let high = maxWidth;
+      if (heightAt(high) <= room) {
+        while (high - low > 2) {
+          const mid = Math.floor((low + high) / 2);
+          if (heightAt(mid) <= room) high = mid;
+          else low = mid;
+        }
+      }
+      fitWidth = high;
+      fitX = align === "Right" ? right - fitWidth : align === "Center" ? Math.round(centre - fitWidth / 2) : fitX;
+      height = heightAt(fitWidth);
+    }
+  }
+  if (fitX === element.x && fitWidth === element.width && height === element.height) return;
+
+  saveStateToHistory();
+  element.x = fitX;
+  element.width = fitWidth;
+  element.height = height;
+
+  // A band grows to fit the text, up to its maximum; past that, warn (a cover
+  // or contents page is already the whole page)
+  const onSpecialPage =
+    band.type === BAND_TYPE_CONSTANTS.DETAIL && isSpecialPage(reportProperties.value, element.pageIndex);
+  if (!box && !onSpecialPage && element.y + height > band.height) {
+    const maxBandHeight = getBandMaxHeight(bandIndex);
+    band.height = Math.max(band.height, Math.min(maxBandHeight, element.y + height));
+    if (element.y + height > maxBandHeight) {
+      notification.warning(
+        t("editor.bandLimits.textOverflow", {
+          band: getBandDisplayName(band.type),
+          height: maxBandHeight,
+        }),
+      );
+    }
+  }
+  updateJRXML();
+  ensureBandsFitPage();
+  updateOutOfBoundsElements();
+};
+
 // Clean up event listeners when the component unmounts
 onUnmounted(() => {
   if ((window as any).pdfDesignerKeydownListener) {
@@ -5252,21 +8185,29 @@ onUnmounted(() => {
   }
 });
 
-// Donation-related state
-const showReward = ref(false);
+// The right panel, opened on the AI tab (a guide's "Or let the AI assistant do it")
+const rightPanelRef = ref<{ toggleCollapse: () => void } | null>(null);
+function openAIAssistant() {
+  if (!SHOW_AI_ASSISTANT) return;
+  showRightPanel.value = true;
+  if (rightPanelCollapsed.value) rightPanelRef.value?.toggleCollapse();
+  rightPanelTab.value = "ai";
+}
 
-// Help-related state
-const showHelp = ref(false);
+// First visit: a short tour of the designer (once per browser), once the
+// page has settled. The step-by-step guides start afresh with the report.
+let tourTimer: ReturnType<typeof setTimeout> | undefined;
+onMounted(() => {
+  tourTimer = setTimeout(() => helpStore.startTourOnce("designer"), 900);
+});
+onUnmounted(() => {
+  clearTimeout(tourTimer);
+  if (helpStore.tourId === "designer") helpStore.endTour();
+  helpStore.resetGuides();
+});
 
 // PDF preview related state
 const showPdfPreview = ref(false);
-
-// Preview server settings related state
-const showPreviewServerSettings = ref(false);
-const previewServerUrl = ref(
-  localStorage.getItem("previewServerUrl") ||
-    "https://preview.report.projectnowcdp.com/api/pdf/generateForm",
-);
 
 // Field management related state
 const showFieldModal = ref(false);
@@ -5277,16 +8218,7 @@ const editingParameter = ref<ReportParameter | undefined>(undefined);
 const showVariableModal = ref(false);
 const editingVariable = ref<ReportVariable | undefined>(undefined);
 
-// Open the preview server settings
-const openPreviewServerSettings = (): void => {
-  showPreviewServerSettings.value = true;
-};
-
-// Update the preview server address
-const updatePreviewServerUrl = (url: string): void => {
-  previewServerUrl.value = url;
-  localStorage.setItem("previewServerUrl", url);
-};
+// Handle updating element value from report elements list
 const isEditingParameter = ref(false);
 
 // Handle adding a field
@@ -5303,9 +8235,46 @@ const handleEditField = (field: ReportField): void => {
   showFieldModal.value = true;
 };
 
+// "Fill from my headings" on a list with rows: add the new ones, add all, or
+// replace (null: cancelled)
+const fillDialog = reactive({ visible: false, rowCount: 0, headingCount: 0, newCount: 0 });
+let fillResolve: ((mode: FillMode | null) => void) | null = null;
+const askFillMode = (rowCount: number, headingCount: number, newCount: number): Promise<FillMode | null> => {
+  fillResolve?.(null);
+  Object.assign(fillDialog, { visible: true, rowCount, headingCount, newCount });
+  return new Promise((resolve) => {
+    fillResolve = resolve;
+  });
+};
+const settleFill = (mode: FillMode | null): void => {
+  fillDialog.visible = false;
+  fillResolve?.(mode);
+  fillResolve = null;
+};
+
+// In-app confirmation dialog: resolves true on Confirm, false on Cancel
+const confirmDialog = reactive({ visible: false, title: "", message: "" });
+let confirmResolve: ((ok: boolean) => void) | null = null;
+const askConfirm = (title: string, message: string): Promise<boolean> => {
+  confirmResolve?.(false);
+  Object.assign(confirmDialog, { visible: true, title, message });
+  return new Promise((resolve) => {
+    confirmResolve = resolve;
+  });
+};
+const settleConfirm = (ok: boolean): void => {
+  confirmResolve?.(ok);
+  confirmResolve = null;
+};
+
 // Handle deleting a field
-const handleDeleteField = (fieldName: string): void => {
-  if (confirm(`Are you sure you want to delete field "${fieldName}"?`)) {
+const handleDeleteField = async (fieldName: string): Promise<void> => {
+  if (
+    await askConfirm(
+      t("editor.confirmDelete.title"),
+      t("editor.confirmDelete.field", { name: fieldName }),
+    )
+  ) {
     const fieldIndex = reportFields.value.findIndex(
       (field) => field.name === fieldName,
     );
@@ -5333,9 +8302,12 @@ const handleEditParameter = (parameter: ReportParameter): void => {
 };
 
 // Handle deleting a report parameter
-const handleDeleteParameter = (parameterName: string): void => {
+const handleDeleteParameter = async (parameterName: string): Promise<void> => {
   if (
-    confirm(`Are you sure you want to delete parameter "${parameterName}"?`)
+    await askConfirm(
+      t("editor.confirmDelete.title"),
+      t("editor.confirmDelete.parameter", { name: parameterName }),
+    )
   ) {
     const parameterIndex = reportParameters.value.findIndex(
       (param) => param.name === parameterName,
@@ -5361,8 +8333,13 @@ const handleEditVariable = (variable: ReportVariable): void => {
 };
 
 // Handle deleting a variable
-const handleDeleteVariable = (variableName: string): void => {
-  if (confirm(`Are you sure you want to delete variable "${variableName}"?`)) {
+const handleDeleteVariable = async (variableName: string): Promise<void> => {
+  if (
+    await askConfirm(
+      t("editor.confirmDelete.title"),
+      t("editor.confirmDelete.variable", { name: variableName }),
+    )
+  ) {
     const variableIndex = reportVariables.value.findIndex(
       (v) => v.name === variableName,
     );
@@ -5380,9 +8357,7 @@ const handleVariableSave = (variable: ReportVariable): void => {
     (v) => v.name === variable.name,
   );
   if (existingIndex !== -1 && editingVariable.value?.name !== variable.name) {
-    alert(
-      "A variable with this name already exists, please use a different name",
-    );
+    notification.error(t("editor.duplicateName.variable"));
     return;
   }
   if (existingIndex !== -1) {
@@ -5394,54 +8369,84 @@ const handleVariableSave = (variable: ReportVariable): void => {
   updateJRXML();
 };
 
-// Style management related state
-const showStyleModal = ref(false);
-const editingStyle = ref<any | undefined>(undefined);
+// ── Table styles ──
+// Every table carries its own look; a saved style is a named look other
+// tables can use. Each action below is one undo step.
 
-// Handle adding a style
-const handleAddStyle = (): void => {
-  editingStyle.value = undefined;
-  showStyleModal.value = true;
+const copyLook = (look: TableLook): TableLook => ({ ...look, rowColors: [...look.rowColors] });
+
+// What carries a table's style: a data table's binding, a typed table's setup
+type StyleHolder = { theme: string; look?: TableLook; customized?: boolean };
+
+// Every table's style holder (data tables and typed tables)
+const allStyleHolders = (): StyleHolder[] => [
+  ...collectBoundTables(bands.value).map((t) => t.binding),
+  ...bands.value.flatMap((b) =>
+    (b.elements ?? []).filter((e): e is CustomTableElement => e.type === "customTable").map((e) => e.table),
+  ),
+];
+
+// Tables currently using a saved style unchanged
+const tablesUsingStyle = (id: string) => allStyleHolders().filter((h) => h.theme === id && !h.customized);
+
+const selectedTable = () => {
+  const sel = selectedElement.value;
+  return sel ? tableAt({ bandIndex: sel.bandIndex, elementIndex: sel.elementIndex, parentFrameIndex: sel.parentFrameIndex }) : null;
 };
 
-// Handle editing a style
-const handleEditStyle = (style: any): void => {
-  editingStyle.value = {
-    ...style,
-    box: style.box ? { ...style.box } : undefined,
-  };
-  showStyleModal.value = true;
+// The selected table's style holder
+const selectedStyleHolder = (): StyleHolder | undefined => {
+  const sel = selectedElement.value;
+  const el = sel && sel.parentFrameIndex === undefined ? bands.value[sel.bandIndex]?.elements?.[sel.elementIndex] : undefined;
+  if (el?.type === "customTable") return (el as CustomTableElement).table;
+  return selectedTable()?.binding;
 };
 
-// Handle deleting a style
-const handleDeleteStyle = (styleName: string): void => {
-  if (confirm(`Are you sure you want to delete style "${styleName}"?`)) {
-    const styleIndex = reportStyles.value.findIndex(
-      (s) => s.name === styleName,
-    );
-    if (styleIndex !== -1) {
-      reportStyles.value.splice(styleIndex, 1);
-      saveStateToHistory();
-      updateJRXML();
-    }
-  }
-};
-
-// Handle saving a style
-const handleStyleSave = (style: any): void => {
-  const existingIndex = reportStyles.value.findIndex(
-    (s) => s.name === style.name,
-  );
-  if (existingIndex !== -1 && editingStyle.value?.name !== style.name) {
-    alert("A style with this name already exists, please use a different name");
-    return;
-  }
-  if (existingIndex !== -1) {
-    reportStyles.value[existingIndex] = style;
-  } else {
-    reportStyles.value.push(style);
-  }
+// The selected table's look becomes a new saved style, used by that table
+const saveTableStyle = (name: string): void => {
+  const binding = selectedStyleHolder();
+  if (!binding) return;
   saveStateToHistory();
+  const style: SavedTableStyle = {
+    id: createTableStyleId(tableStyles.value),
+    name,
+    look: copyLook(resolveLook(binding)),
+  };
+  tableStyles.value = [...tableStyles.value, style];
+  binding.theme = style.id;
+  binding.look = copyLook(style.look);
+  binding.customized = undefined;
+  notification.success(t("dataTable.style.saved", { name }));
+  updateJRXML();
+};
+
+// A saved style takes the selected table's look; every table using it follows
+const updateTableStyle = (id: string): void => {
+  const binding = selectedStyleHolder();
+  const style = tableStyles.value.find((s) => s.id === id);
+  if (!binding || !style) return;
+  saveStateToHistory();
+  const look = copyLook(resolveLook(binding));
+  tableStyles.value = tableStyles.value.map((s) => (s.id === id ? { ...s, look } : s));
+  for (const holder of tablesUsingStyle(id)) holder.look = copyLook(look);
+  binding.theme = id;
+  binding.look = copyLook(look);
+  binding.customized = undefined;
+  notification.success(t("dataTable.style.updated", { name: style.name }));
+  updateJRXML();
+};
+
+const renameTableStyle = (id: string, name: string): void => {
+  saveStateToHistory();
+  tableStyles.value = tableStyles.value.map((s) => (s.id === id ? { ...s, name } : s));
+  updateJRXML();
+};
+
+// Tables using a deleted style keep their look, as changes of their own
+const deleteTableStyle = (id: string): void => {
+  saveStateToHistory();
+  for (const holder of tablesUsingStyle(id)) holder.customized = true;
+  tableStyles.value = tableStyles.value.filter((s) => s.id !== id);
   updateJRXML();
 };
 
@@ -5477,9 +8482,7 @@ const handleFieldSave = (fieldOrParam: ReportField | ReportParameter): void => {
       editingParameter.value?.name !== fieldOrParam.name
     ) {
       // If editing and a parameter with this name already exists, show an error
-      alert(
-        "A parameter with this name already exists, please use a different name",
-      );
+      notification.error(t("editor.duplicateName.parameter"));
       return;
     }
 
@@ -5502,9 +8505,7 @@ const handleFieldSave = (fieldOrParam: ReportField | ReportParameter): void => {
       editingField.value?.name !== fieldOrParam.name
     ) {
       // If editing and a field with this name already exists, show an error
-      alert(
-        "A field with this name already exists, please use a different name",
-      );
+      notification.error(t("editor.duplicateName.field"));
       return;
     }
 
@@ -5542,529 +8543,10 @@ const handleCheckFields = (fields: string[]): void => {
   });
 
   if (fieldsAdded) {
-    // Save state to history
-    saveStateToHistory();
-    // Update JRXML
+    // Part of the text edit that named them (its undo step is already taken;
+    // one taken here held the added fields, an undo step that did nothing)
     updateJRXML();
   }
-};
-
-// Handle moving a table column
-const handleMoveColumn = (
-  elementIndex: number,
-  fromIndex: number,
-  toIndex: number,
-  bandIndex: number,
-  parentFrameIndex?: number,
-): void => {
-  // Get the current band
-  const band = bands.value[bandIndex];
-  if (!band) return;
-
-  // Get the element to operate on
-  let element;
-  if (parentFrameIndex !== undefined) {
-    // Handle an element inside a Frame
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    // Handle an element directly within a Band
-    element = band.elements[elementIndex];
-  }
-
-  // Ensure it is a table element
-  if (!element || element.type !== "table") return;
-
-  const tableElement = element as any;
-  if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
-
-  // Save state to history
-  saveStateToHistory();
-
-  // Perform the column move
-  const columns = [...tableElement.columns];
-  const [movedColumn] = columns.splice(fromIndex, 1);
-  columns.splice(toIndex, 0, movedColumn);
-
-  // Update the table's columns
-  tableElement.columns = columns;
-
-  // Update JRXML
-  updateJRXML();
-};
-
-// Handle adding the selected columns to a group
-const handleAddColumnsToGroup = (params: {
-  elementIndex: number;
-  columnIndices: number[];
-  bandIndex: number;
-  parentFrameIndex?: number;
-}): void => {
-  const { elementIndex, columnIndices, bandIndex, parentFrameIndex } = params;
-
-  // Get the current band
-  const band = bands.value[bandIndex];
-  if (!band) return;
-
-  // Get the element to operate on
-  let element;
-  if (parentFrameIndex !== undefined) {
-    // Handle an element inside a Frame
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    // Handle an element directly within a Band
-    element = band.elements[elementIndex];
-  }
-
-  // Ensure it is a table element
-  if (!element || element.type !== "table") return;
-
-  const tableElement = element as any;
-  if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
-
-  // Collect all existing column groups
-  const existingGroups: any[] = [];
-
-  // Recursively collect all groups
-  const collectGroups = (items: any[]): void => {
-    items.forEach((item) => {
-      if (item.children) {
-        existingGroups.push(item);
-        collectGroups(item.children);
-      }
-    });
-  };
-
-  // Initialize the children property if it doesn't exist
-  if (!tableElement.children) {
-    tableElement.children = [...tableElement.columns];
-  }
-
-  // Collect the existing groups
-  collectGroups(tableElement.children);
-
-  // Update the column selection dialog state
-  columnSelectionState.value = {
-    elementIndex,
-    bandIndex,
-    parentFrameIndex,
-    columns: tableElement.columns,
-    children: tableElement.children || tableElement.columns,
-  };
-
-  // Show the column selection dialog
-  showColumnSelectionModal.value = true;
-};
-
-// Handle confirmation of the column selection
-const handleColumnSelectionConfirm = (
-  selectedColumnIndices: number[],
-  selectedRegion: string,
-  groupText: string,
-): void => {
-  const { elementIndex, bandIndex, parentFrameIndex } =
-    columnSelectionState.value;
-
-  // Get the current band
-  const band = bands.value[bandIndex];
-  if (!band) return;
-
-  // Get the element to operate on
-  let element;
-  if (parentFrameIndex !== undefined) {
-    // Handle an element inside a Frame
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    // Handle an element directly within a Band
-    element = band.elements[elementIndex];
-  }
-
-  // Ensure it is a table element
-  if (!element || element.type !== "table") return;
-
-  const tableElement = element as any;
-  if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
-
-  // Ensure at least 2 columns are selected
-  if (selectedColumnIndices.length < 2) return;
-
-  // Save state to history
-  saveStateToHistory();
-
-  // Sort the selected column indices to process them left to right
-  const sortedIndices = [...selectedColumnIndices].sort((a, b) => a - b);
-
-  // Ensure sortedIndices isn't empty
-  if (sortedIndices.length === 0) return;
-
-  // Get the selected columns or groups (from the children array, since it includes combined columns)
-  const selectedColumns = sortedIndices.map(
-    (index) => tableElement.children[index],
-  );
-
-  // Calculate the group's width (recursively, to handle combined columns)
-  function calculateWidth(item: any): number {
-    if (item.children) {
-      // A combined column; recursively sum the widths of all child columns
-      return item.children.reduce(
-        (sum: number, child: any) => sum + calculateWidth(child),
-        0,
-      );
-    } else {
-      // A regular column; use its width directly
-      return item.width || 0;
-    }
-  }
-
-  const groupWidth = selectedColumns.reduce(
-    (sum: number, column: any) => sum + calculateWidth(column),
-    0,
-  );
-
-  // Create the new column group (preserving the original combined-column structure)
-  const newGroup: any = {
-    uuid: crypto.randomUUID(),
-    name: `Group_${Date.now()}`,
-    width: groupWidth,
-    children: selectedColumns, // Use the selected items directly (including combined columns), rather than flattening the child columns
-  };
-
-  // Set the corresponding property based on the selected region
-  const textContent = groupText || newGroup.name;
-  if (selectedRegion === "tableHeader") {
-    newGroup.hasTableHeader = true;
-    newGroup.tableHeader = {
-      enable: true,
-      element: {
-        type: "staticText",
-        text: textContent,
-        x: 0,
-        y: 0,
-        width: groupWidth,
-        height: 30,
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-    };
-  } else if (selectedRegion === "columnHeader") {
-    newGroup.columnHeader = {
-      enable: true,
-      element: {
-        type: "staticText",
-        text: textContent,
-        x: 0,
-        y: 0,
-        width: groupWidth,
-        height: 30,
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-    };
-  } else if (selectedRegion === "columnFooter") {
-    newGroup.columnFooter = {
-      enable: true,
-      element: {
-        type: "staticText",
-        text: textContent,
-        x: 0,
-        y: 0,
-        width: groupWidth,
-        height: 30,
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-    };
-  } else if (selectedRegion === "tableFooter") {
-    newGroup.tableFooter = {
-      enable: true,
-      element: {
-        type: "staticText",
-        text: textContent,
-        x: 0,
-        y: 0,
-        width: groupWidth,
-        height: 30,
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-    };
-  }
-
-  // Initialize the children property if it doesn't exist
-  if (!tableElement.children) {
-    tableElement.children = [...tableElement.columns];
-  }
-
-  // Update the children array, removing the selected columns and adding the new group
-  const newChildren = [...tableElement.children];
-
-  // Remove the selected columns from last to first to avoid index shifting
-  for (let i = sortedIndices.length - 1; i >= 0; i--) {
-    const index = sortedIndices[i] as number;
-    newChildren.splice(index, 1);
-  }
-
-  // Insert the new group at the position of the first selected column
-  const firstIndex = sortedIndices[0] as number;
-  newChildren.splice(firstIndex, 0, newGroup);
-
-  // Update the table element
-  tableElement.children = newChildren;
-
-  // Calculate the maximum nesting depth of combined columns in the table
-  function calculateMaxDepth(node: any, depth: number = 0): number {
-    if (!node.children || node.children.length === 0) {
-      return depth;
-    }
-    let maxDepth = depth;
-    for (const child of node.children) {
-      const childDepth = calculateMaxDepth(child, depth + 1);
-      if (childDepth > maxDepth) {
-        maxDepth = childDepth;
-      }
-    }
-    return maxDepth;
-  }
-
-  // Calculate the maximum nesting depth
-  const maxDepth = calculateMaxDepth({ children: tableElement.children });
-  const requiredRowSpan = maxDepth;
-
-  // Update the rowSpan value of ungrouped columns
-  tableElement.children.forEach((child: any) => {
-    if (!child.children) {
-      // This is an ungrouped column
-      if (child.tableHeader) {
-        child.tableHeader.rowSpan = requiredRowSpan;
-      }
-      if (child.columnHeader) {
-        child.columnHeader.rowSpan = requiredRowSpan;
-      }
-    }
-  });
-
-  // Sync columns, rebuilding it from children
-  syncTableColumns(tableElement);
-
-  // Update JRXML
-  updateJRXML();
-};
-
-// Handle adding the selected columns to an existing group
-const handleJoinColumnsToExistingGroup = (
-  elementIndex: number,
-  columnIndices: number[],
-  bandIndex: number,
-  parentFrameIndex?: number,
-): void => {
-  // Get the current band
-  const band = bands.value[bandIndex];
-  if (!band) return;
-
-  // Get the element to operate on
-  let element;
-  if (parentFrameIndex !== undefined) {
-    // Handle an element inside a Frame
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    // Handle an element directly within a Band
-    element = band.elements[elementIndex];
-  }
-
-  // Ensure it is a table element
-  if (!element || element.type !== "table") return;
-
-  const tableElement = element as any;
-  if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
-
-  // Ensure at least 1 column is selected
-  if (columnIndices.length < 1) return;
-
-  // Collect all existing column groups
-  const existingGroups: any[] = [];
-
-  // Recursively collect all groups
-  const collectGroups = (items: any[]): void => {
-    items.forEach((item) => {
-      if (item.children) {
-        existingGroups.push(item);
-        collectGroups(item.children);
-      }
-    });
-  };
-
-  // Initialize the children property if it doesn't exist
-  if (!tableElement.children) {
-    tableElement.children = [...tableElement.columns];
-  }
-
-  // Collect the existing groups
-  collectGroups(tableElement.children);
-
-  // Update the dialog state
-  groupDialogState.value = {
-    elementIndex,
-    columnIndices,
-    bandIndex,
-    parentFrameIndex,
-    existingGroups,
-    selectedGroupName: "",
-  };
-
-  // Show the dialog
-  showGroupDialog.value = true;
-};
-
-// Confirm adding the columns to a group
-const confirmJoinColumnsToGroup = (): void => {
-  const {
-    elementIndex,
-    columnIndices,
-    bandIndex,
-    parentFrameIndex,
-    existingGroups,
-    selectedGroupName,
-  } = groupDialogState.value;
-
-  if (!selectedGroupName) {
-    // If the user didn't enter a group name, return immediately
-    return;
-  }
-
-  // Get the current band
-  const band = bands.value[bandIndex];
-  if (!band) return;
-
-  // Get the element to operate on
-  let element;
-  if (parentFrameIndex !== undefined) {
-    // Handle an element inside a Frame
-    const frame = band.elements[parentFrameIndex];
-    if (frame && frame.type === "frame" && frame.elements) {
-      element = frame.elements[elementIndex];
-    }
-  } else {
-    // Handle an element directly within a Band
-    element = band.elements[elementIndex];
-  }
-
-  // Ensure it is a table element
-  if (!element || element.type !== "table") return;
-
-  const tableElement = element as any;
-  if (!tableElement.columns || !Array.isArray(tableElement.columns)) return;
-
-  // Save state to history
-  saveStateToHistory();
-
-  // Initialize the children array if it doesn't exist
-  if (!tableElement.children) {
-    tableElement.children = [...tableElement.columns];
-  }
-
-  // Sort the selected column indices to process them left to right
-  const sortedIndices = [...columnIndices].sort((a, b) => a - b);
-
-  // Get the selected columns from the children array (indices are derived from the children array)
-  const selectedColumns = sortedIndices.map(
-    (index) => tableElement.children[index],
-  );
-
-  // Look up the group specified by the user
-  let targetGroup = existingGroups.find(
-    (group) => group.name === selectedGroupName,
-  );
-
-  // Build the new children array first, to avoid index-shift issues
-  const newChildren = [...tableElement.children];
-
-  // Remove the selected columns from last to first to avoid index shifting
-  for (let i = sortedIndices.length - 1; i >= 0; i--) {
-    const index = sortedIndices[i] as number;
-    newChildren.splice(index, 1);
-  }
-
-  if (!targetGroup) {
-    // If the group doesn't exist, create a new one
-    const groupWidth = selectedColumns.reduce(
-      (sum: number, column: any) => sum + column.width,
-      0,
-    );
-
-    let defaultTableHeaderHeight = 30;
-    let defaultColumnHeaderHeight = 30;
-    if (selectedColumns.length > 0 && selectedColumns[0]) {
-      const firstColumn = selectedColumns[0];
-      defaultTableHeaderHeight = firstColumn.tableHeader?.element?.height || 30;
-      defaultColumnHeaderHeight =
-        firstColumn.columnHeader?.element?.height || 30;
-    }
-
-    targetGroup = {
-      uuid: crypto.randomUUID(),
-      name: selectedGroupName,
-      width: groupWidth,
-      hasTableHeader: true,
-      tableHeader: {
-        enable: true,
-        element: {
-          type: "staticText",
-          text: selectedGroupName,
-          x: 0,
-          y: 0,
-          width: groupWidth,
-          height: defaultTableHeaderHeight,
-          textAlignment: "Center",
-          verticalAlignment: "Middle",
-        },
-      },
-      children: [],
-    };
-
-    // Insert the new group at the position of the first selected column
-    const firstIndex = sortedIndices[0] as number;
-    newChildren.splice(firstIndex, 0, targetGroup);
-  }
-
-  // Add the selected columns to the target group
-  targetGroup.children.push(...selectedColumns);
-
-  // Recalculate the target group's width
-  targetGroup.width = targetGroup.children.reduce(
-    (sum: number, item: any) => sum + item.width,
-    0,
-  );
-
-  // Update the target group's header width
-  if (targetGroup.tableHeader && targetGroup.tableHeader.element) {
-    targetGroup.tableHeader.element.width = targetGroup.width;
-  }
-  if (targetGroup.columnHeader && targetGroup.columnHeader.element) {
-    targetGroup.columnHeader.element.width = targetGroup.width;
-  }
-
-  // Update the table element
-  tableElement.children = newChildren;
-
-  // Sync columns, rebuilding it from children (including rowSpan calculation)
-  syncTableColumns(tableElement);
-
-  // Update JRXML
-  updateJRXML();
-
-  // Close the dialog
-  showGroupDialog.value = false;
 };
 
 // Handle the element context menu
@@ -6076,7 +8558,14 @@ const handleElementContextMenu = (
 ): void => {
   event.preventDefault();
   event.stopPropagation();
-  selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+  if (readOnlyTemplate.value) return;
+  // Right-clicking one of several selected items keeps them all selected, so
+  // the menu's Delete, Bring to Front, Send to Back and Reset style act on all
+  const inSelection = selectedElements.value.some(
+    (sel) =>
+      sel.bandIndex === bandIndex && sel.elementIndex === elementIndex && sel.parentFrameIndex === parentFrameIndex,
+  );
+  if (!(severalSelected.value && inSelection)) selectElement(bandIndex, elementIndex, false, parentFrameIndex);
   contextMenu.value = {
     visible: true,
     x: event.clientX,
@@ -6084,6 +8573,8 @@ const handleElementContextMenu = (
     type: "element",
   };
 };
+
+const severalSelected = computed(() => selectedElements.value.length > 1);
 
 // Handle the canvas context menu
 const handleCanvasContextMenu = (event: MouseEvent): void => {
@@ -6104,7 +8595,7 @@ const handleContextMenuAction = (action: string) => {
       copyElement();
       break;
     case "paste":
-      pasteElement();
+      pasteElement({ clientX: contextMenu.value.x, clientY: contextMenu.value.y });
       break;
     case "delete":
       deleteElement();
@@ -6115,150 +8606,196 @@ const handleContextMenuAction = (action: string) => {
     case "sendToBack":
       moveElementZOrder("back");
       break;
+    case "moveOutOfBox":
+      moveElementOutOfBox();
+      break;
+    case "addToBox":
+      addElementToBox();
+      break;
+    case "resetStyle":
+      resetSelectedStyles();
+      break;
   }
 };
 
-// Move an element's Z-order
+// "Reset style" on the selected element(s): one undo step for all of them
+const resetSelectedStyles = () => {
+  const selection = selectedElements.value.length ? selectedElements.value : selectedElement.value ? [selectedElement.value] : [];
+  const targets = selection
+    .map((sel) => {
+      const band = bands.value[sel.bandIndex];
+      const element =
+        sel.parentFrameIndex !== undefined
+          ? (band?.elements?.[sel.parentFrameIndex] as FrameElement | undefined)?.elements?.[sel.elementIndex]
+          : band?.elements?.[sel.elementIndex];
+      const isPageBorder =
+        element?.type === "frame" && sel.parentFrameIndex === undefined && band?.type === BAND_TYPE_CONSTANTS.BACKGROUND;
+      return element ? { element, isPageBorder } : null;
+    })
+    .filter((x): x is { element: DesignElement; isPageBorder: boolean } => x !== null);
+  if (!targets.length) return;
+  saveStateToHistory();
+  for (const { element, isPageBorder } of targets) {
+    resetElementStyle(element, { fontSize: reportProperties.value?.defaultFont?.size, isPageBorder });
+  }
+  updateJRXML();
+};
+
+// The selected item when it sits inside a box or frame, with whether it is one
+// of the box's parts (kept inside) or an item that was dropped in (moves freely)
+const selectedBoxItem = computed(() => {
+  const selection = selectedElement.value;
+  if (!selection || selection.parentFrameIndex === undefined || severalSelected.value) return null;
+  const box = bands.value[selection.bandIndex]?.elements[selection.parentFrameIndex] as
+    | FrameElement
+    | undefined;
+  const item = box?.elements?.[selection.elementIndex];
+  // A Location's map and address belong to it
+  if (!box || !item || isLocationPart(item)) return null;
+  return { box, item, isPart: isBoxPart(item) };
+});
+
+// Make an item that was dropped into a box one of its parts: it stays inside
+// the box and moves with it as one piece
+const addElementToBox = () => {
+  const target = selectedBoxItem.value;
+  if (!target || target.isPart) return;
+  const { box, item } = target;
+  saveStateToHistory();
+  markBoxPart(item);
+  Object.assign(item, clampPositionInBox(item, box));
+  Object.assign(item, clampRectInBox(item, box));
+  updateJRXML();
+};
+
+// Take the selected item out of its box and put it in the band at the same spot
+const moveElementOutOfBox = () => {
+  const selection = selectedElement.value;
+  if (!selection || selection.parentFrameIndex === undefined) return;
+  const band = bands.value[selection.bandIndex];
+  const box = band?.elements[selection.parentFrameIndex] as FrameElement | undefined;
+  const item = box?.elements?.[selection.elementIndex];
+  if (!band || !box || !item) return;
+
+  saveStateToHistory();
+  box.elements!.splice(selection.elementIndex, 1);
+  releaseBoxPart(item);
+  item.x = box.x + item.x;
+  item.y = box.y + item.y;
+  // Detail content is split into pages; the item stays on the box's page
+  if ((box as any).pageIndex !== undefined) (item as any).pageIndex = (box as any).pageIndex;
+  band.elements.push(item);
+  selectElement(selection.bandIndex, band.elements.length - 1);
+  updateJRXML();
+};
+
+// Bring to Front / Send to Back: the selected items go on top of (or under)
+// everything else in their section or box, keeping their own order. The order
+// is the drawing order in the PDF (later items print over earlier ones). One
+// undo step, none when nothing would change (already at the front / back of
+// their page)
 const moveElementZOrder = (direction: "front" | "back") => {
-  if (!selectedElement.value) return;
+  const picked = selectedElements.value.length
+    ? selectedElements.value
+    : selectedElement.value
+      ? [selectedElement.value]
+      : [];
+  const moving = new Set(picked.map((sel) => elementAtLocation(sel)).filter((el) => el !== undefined));
+  if (!moving.size) return;
+
+  // Each list holding a selected item (a section, or a box's items), reordered
+  const containers = new Set<DesignElement[]>();
+  for (const sel of picked) {
+    const band = bands.value[sel.bandIndex];
+    const list =
+      sel.parentFrameIndex !== undefined
+        ? (band?.elements[sel.parentFrameIndex] as FrameElement | undefined)?.elements
+        : band?.elements;
+    if (list) containers.add(list);
+  }
+  const page = (el: DesignElement) => el.pageIndex ?? 0;
+  const pageOrder = (list: DesignElement[]) => list.map((el) => `${page(el)}:${el.uuid}`).join("|");
+  const changes = [...containers]
+    .map((list) => {
+      const mine = list.filter((el) => moving.has(el));
+      const rest = list.filter((el) => !moving.has(el));
+      const next = direction === "front" ? [...rest, ...mine] : [...mine, ...rest];
+      // Detail pages share one list: what counts is the order on each page
+      const byPage = (items: DesignElement[]) =>
+        [...new Set(items.map(page))].map((p) => pageOrder(items.filter((el) => page(el) === p))).join("#");
+      return byPage(next) === byPage(list) ? null : { list, next };
+    })
+    .filter((change) => change !== null);
+  if (!changes.length) return;
+
   saveStateToHistory();
-  const { bandIndex, elementIndex, parentFrameIndex } = selectedElement.value;
-  const band = bands.value[bandIndex];
-  if (!band) return;
-  const elements =
-    parentFrameIndex !== undefined
-      ? (band.elements[parentFrameIndex] as any).elements
-      : band.elements;
-  if (!elements) return;
-  const [element] = elements.splice(elementIndex, 1);
-  if (direction === "front") elements.push(element);
-  else elements.unshift(element);
-  const newIndex = direction === "front" ? elements.length - 1 : 0;
-  selectElement(bandIndex, newIndex, false, parentFrameIndex);
+  for (const { list, next } of changes) list.splice(0, list.length, ...next);
+  // The selection follows the items to their new places
+  const follow = (sel: { uuid?: string }) => {
+    const loc = sel.uuid ? findElementByUuid(sel.uuid) : null;
+    return loc ? { ...loc, uuid: sel.uuid } : null;
+  };
+  selectedElements.value = picked.map(follow).filter((sel) => sel !== null);
+  selectedElement.value = selectedElement.value ? follow(selectedElement.value) : null;
   updateJRXML();
 };
 
-// Handle Band selection changes
-const handleBandSelectionChange = (): void => {
-  // Get the currently selected band types
-  const currentSelectedTypes = [...selectedBandTypes.value] as BandType[];
-
-  // Get the types currently present in bands
-  const currentBandTypes = bands.value.map((band) => band.type);
-
-  // Determine which bands need to be added (present in selectedBandTypes but not in currentBandTypes)
-  const bandsToAdd = currentSelectedTypes.filter(
-    (type) => !currentBandTypes.includes(type),
-  );
-
-  // Determine which bands need to be removed (present in currentBandTypes but not in selectedBandTypes)
-  const bandsToRemove = currentBandTypes.filter(
-    (type) => !currentSelectedTypes.includes(type),
-  );
-
-  // Remove the bands that are no longer needed
-  if (bandsToRemove.length > 0) {
-    bands.value = bands.value.filter(
-      (band) => !bandsToRemove.includes(band.type),
-    );
-  }
-
-  // Add the new bands
-  if (bandsToAdd.length > 0) {
-    const newBands = bandsToAdd.map((type) => {
-      const bandTypeConfig = allBandTypes.find((bt) => bt.type === type);
-      return {
-        type: type as BandType,
-        height: bandTypeConfig ? bandTypeConfig.defaultHeight : 50,
-        elements: [],
-      };
-    });
-
-    // Insert the new bands in the order defined by allBandTypes
-    allBandTypes.forEach((bandType) => {
-      if (bandsToAdd.includes(bandType.type as BandType)) {
-        const newBand = newBands.find((b) => b.type === bandType.type);
-        if (newBand) {
-          // Ensure the height property isn't undefined
-          if (newBand.height === undefined) {
-            newBand.height = BAND_HEIGHT_CONSTANTS[bandType.type] || 50;
-          }
-          // Find the appropriate insertion position
-          let insertIndex = bands.value.length;
-          for (let i = 0; i < bands.value.length; i++) {
-            const currentBandTypeIndex = allBandTypes.findIndex(
-              (bt) => bt.type === bands.value[i]?.type,
-            );
-            const newBandTypeIndex = allBandTypes.findIndex(
-              (bt) => bt.type === bandType.type,
-            );
-            if (newBandTypeIndex < currentBandTypeIndex) {
-              insertIndex = i;
-              break;
-            }
-          }
-          // Use a type assertion to ensure newBand satisfies the Band interface
-          bands.value.splice(insertIndex, 0, newBand as Band);
-        }
-      }
-    });
-  }
-
-  // Save state to history
-  saveStateToHistory();
-
-  // Update JRXML
-  updateJRXML();
-};
 </script>
 
 <style scoped>
-.my-act-menu {
-  position: relative;
-  display: inline-block;
-}
-
-.dropdown-arrow {
-  margin-left: 6px;
-  font-size: 12px;
-}
-
-.my-act-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  min-width: 150px;
-  padding: 6px;
-  background: rgba(18, 19, 28, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
-  z-index: 1000;
-}
-
-.my-act-dropdown-item {
-  width: 100%;
+.brand-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
-  border: none;
-  border-radius: 7px;
-  background: transparent;
-  color: rgba(244, 244, 245, 0.9);
-  cursor: pointer;
-  text-align: left;
-  font-size: 13px;
-}
-
-.my-act-dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.my-act-dropdown-item svg {
-  width: 16px;
-  height: 16px;
+  gap: 8px;
+  padding: 3px 6px;
   flex-shrink: 0;
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.brand-wrap:hover {
+  background-color: rgba(15, 23, 42, 0.06);
+}
+
+.brand-wrap:focus-visible {
+  outline: 2px solid #6440f4;
+  outline-offset: 1px;
+}
+
+.brand-img img {
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 2px 8px rgba(124, 92, 247, 0.2));
+  border-radius: 4px;
+}
+.brand-name {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  line-height: 1;
+  min-width: 0;
+}
+.brand-text {
+  color: #1c1b26;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.brand-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 1.5px 5px;
+  border: 1px solid rgba(124, 92, 247, 0.28);
+  border-radius: 4px;
+  color: #6440f4;
+  background: rgba(124, 92, 247, 0.14);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
 /* Group name input dialog styles */
@@ -6285,18 +8822,18 @@ const handleBandSelectionChange = (): void => {
 }
 
 .existing-group-tag:hover {
-  background-color: #e6f7ff;
+  background-color: #f1edff;
   border-color: #91d5ff;
-  color: #1890ff;
+  color: #6440f4;
 }
 
 /* CSS variable definitions */
 :root {
-  --primary-color: #1890ff;
-  --primary-hover: #40a9ff;
-  --text-color: #333;
-  --border-color: #ddd;
-  --hover-color: #f0f0f0;
+  --primary-color: #6366f1;
+  --primary-hover: #7c5cf7;
+  --text-color: #1c1b26;
+  --border-color: #e6e5ee;
+  --hover-color: #f3f1fa;
   --font-size-medium: 14px;
 }
 
@@ -6304,54 +8841,130 @@ const handleBandSelectionChange = (): void => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  font-family: Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  color: #1c1b26;
 }
 
 /* Right panel tab styles */
+/* Properties / AI Assistant: a segmented switch whose white highlight slides
+   to the open tab, then the settings (AI only) and collapse buttons */
 .right-panel-tabs {
   display: flex;
-  border-bottom: 1px solid var(--border-color);
-  background-color: #fafafa;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.07);
+  background: #ffffff;
+}
+
+.right-panel-seg {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border-radius: 9px;
+  background: #f1f0f6;
+  border: 1px solid rgba(28, 27, 38, 0.05);
+}
+
+/* Only the Settings tab (the AI Assistant hidden on staging / production) */
+.right-panel-seg.is-single {
+  grid-template-columns: 1fr;
+}
+
+.right-panel-seg.is-single .right-panel-indicator {
+  width: calc(100% - 6px);
+}
+
+.right-panel-indicator {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / 2);
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.08);
+  transform: translateX(calc(100% * var(--tab-index)));
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .right-panel-tab {
-  flex: 1;
-  padding: 10px;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
   border: none;
+  border-radius: 7px;
   background: transparent;
-  cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: #666;
-  transition: all 0.2s;
-  border-bottom: 2px solid transparent;
+  color: #6f6a7e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+/* The tab being opened fades and rises in */
+.right-panel-fade-enter-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.right-panel-fade-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .right-panel-indicator,
+  .right-panel-fade-enter-active {
+    transition: none;
+  }
 }
 
 .right-panel-tab:hover {
-  background-color: #f0f0f0;
-  color: var(--primary-color);
+  color: #1c1b26;
 }
 
 .right-panel-tab.active {
-  color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
-  background-color: #fff;
+  color: #5b3ee0;
+  font-weight: 650;
+}
+
+.right-panel-tab:focus-visible,
+.right-panel-settings-btn:focus-visible {
+  outline: 2px solid #7c5cf7;
+  outline-offset: 1px;
 }
 
 .right-panel-settings-btn {
-  padding: 8px 12px;
-  border: none;
-  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(28, 27, 38, 0.1);
+  border-radius: 8px;
+  background: #fff;
+  color: #6f6a7e;
   cursor: pointer;
-  font-size: 16px;
-  color: #666;
-  transition: all 0.2s;
-  border-left: 1px solid #e0e0e0;
+  transition: all 0.15s ease;
 }
 
 .right-panel-settings-btn:hover {
-  background-color: #f0f0f0;
-  color: var(--primary-color);
+  border-color: rgba(124, 92, 247, 0.35);
+  background: rgba(124, 92, 247, 0.06);
+  color: #5b3ee0;
 }
 
 .ai-panel-container {
@@ -6365,50 +8978,381 @@ const handleBandSelectionChange = (): void => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 1rem;
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #ddd;
-  height: 60px;
+  padding: 0 16px;
+  background-color: #ffffff;
+  border-bottom: 1px solid rgba(28, 27, 38, 0.08);
+  box-shadow:
+    0 1px 0 rgba(28, 27, 38, 0.03),
+    0 10px 24px -18px rgba(23, 20, 44, 0.12);
+  height: 56px;
   flex-shrink: 0;
+  gap: 12px;
+  position: relative;
+  z-index: 1000;
 }
 
 .designer-header h1 {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
 }
 
-.header-left {
+.header-left.header-workflow {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+/* Google Docs style editable document title: the field is as wide as the
+   name. It may shrink to --title-keep (or the name, if shorter; then "…");
+   needing more than the header has, it makes the header take its next, more
+   compact step (fitHeader), so the name gets room as tools turn into icons */
+.document-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 1 auto;
+}
+
+.document-title-field {
+  --title-floor: 64px;
+  --title-keep: 360px;
+  --title-pad: 8px;
+  display: grid;
+  grid-template-columns: 1fr;
+  flex: 0 1 auto;
+}
+
+/* The input and two hidden copies of the name share one cell and one font.
+   ::before gives the field its wanted width (the whole name, at least
+   --title-floor) and can wrap, so it never stops the field shrinking;
+   ::after can't wrap and is at most --title-keep wide: the field's least width */
+.document-title-field::before,
+.document-title-field::after,
+.document-title-input {
+  grid-area: 1 / 1;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  padding: 5px var(--title-pad);
+  border: 1px solid transparent;
+}
+
+.document-title-field::before,
+.document-title-field::after {
+  content: attr(data-value);
+  /* Room for the caret at the end */
+  padding-right: calc(var(--title-pad) + 2px);
+  padding-block: 0;
+  border-block-width: 0;
+  height: 0;
+  /* clip, not hidden: a scroll container's least width counts as 0 */
+  overflow: clip;
+  visibility: hidden;
+}
+
+.document-title-field::before {
+  min-width: var(--title-floor);
+  white-space: break-spaces;
+  word-break: break-all;
+}
+
+.document-title-field::after {
+  max-width: var(--title-keep);
+  white-space: pre;
+}
+
+.document-title-input {
+  width: 100%;
+  min-width: 0;
+  color: #1c1b26;
+  border-color: rgba(28, 27, 38, 0.09);
+  border-radius: 7px;
+  background-color: #fafafc;
+  outline: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.16s ease;
+}
+
+.document-title-input:hover {
+  border-color: rgba(124, 92, 247, 0.35);
+  background-color: #ffffff;
+}
+
+.document-title-input:focus {
+  border-color: #7c5cf7;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(124, 92, 247, 0.14);
+}
+
+/* Every state in one grid cell: the badge is as wide as the widest (the
+   hidden .save-sizer copies), the shown one sits at its start */
+.auto-save-badge {
+  display: inline-grid;
+  flex-shrink: 0;
+  align-items: center;
+  justify-items: start;
+  margin-left: 4px;
+  font-size: 11px;
+  user-select: none;
+}
+
+.auto-save-badge > * {
+  grid-area: 1 / 1;
+}
+
+.save-sizer {
+  visibility: hidden;
+  pointer-events: none;
+  border: 1px solid transparent;
+}
+
+.save-sizer-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.save-status-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.save-status-text.saved {
+  color: #15803d;
+  background-color: rgba(22, 163, 74, 0.09);
+  border: 1px solid rgba(22, 163, 74, 0.18);
+}
+
+.save-status-text.saving {
+  color: #d97706;
+  background-color: rgba(217, 119, 6, 0.1);
+}
+
+.save-status-text.error {
+  color: #dc2626;
+  background-color: rgba(220, 38, 38, 0.1);
+}
+.save-retry {
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+.save-retry:hover {
+  background-color: rgba(220, 38, 38, 0.16);
+}
+.save-retry:focus-visible {
+  outline: 2px solid #dc2626;
+  outline-offset: 1px;
+}
+
+.saved-icon {
+  flex-shrink: 0;
+}
+
+.save-spinner {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid rgba(217, 119, 6, 0.3);
+  border-top-color: #d97706;
+  border-radius: 50%;
+  animation: save-spin 0.8s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@keyframes save-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .header-undo-redo {
   display: flex;
-  gap: 6px;
+  gap: 2px;
   align-items: center;
+  flex-shrink: 0;
+}
+
+/* Default Settings open: tinted purple */
+.developer-panel-btn.is-open {
+  background: rgba(124, 92, 247, 0.12);
+  color: #6440f4;
 }
 
 .header-actions {
   display: flex;
-  gap: 6px;
+  gap: 10px;
   align-items: center;
+  flex: 1 1 auto;
+  justify-content: flex-end;
 }
 
-.snap-controls-header {
-  display: flex;
-  gap: 12px;
+/* Download JRXML (outlined) and Preview PDF (main action) */
+.header-btn {
+  display: inline-flex;
   align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.header-btn:focus-visible {
+  outline: 2px solid #7c5cf7;
+  outline-offset: 2px;
+}
+
+.header-btn-secondary {
+  border-color: rgba(28, 27, 38, 0.12);
+  background: #ffffff;
+  color: #45425a;
+}
+
+.header-btn-secondary:hover {
+  border-color: rgba(124, 92, 247, 0.35);
+  background: rgba(124, 92, 247, 0.06);
+  color: #5b3ee0;
+}
+
+.header-btn-primary {
+  background: linear-gradient(135deg, #7c5cf7, #6366f1);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.22);
+}
+
+.header-btn-primary:hover {
+  background: linear-gradient(135deg, #6e4de8, #5558ea);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.3);
+  transform: translateY(-1px);
+}
+
+.header-btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.18);
+}
+
+.header-btn.is-icon {
+  width: 34px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* Narrow headers (headerTier): the report name takes the room that is left,
+   spacing tightens, and nothing is allowed to push the header wider */
+.designer-header .header-left {
+  min-width: 0;
+}
+
+/* The room a long report name keeps on narrower headers */
+.designer-header.tier-3 .document-title-field,
+.designer-header.tier-4 .document-title-field {
+  --title-keep: 200px;
+}
+
+.designer-header.tier-5 .document-title-field {
+  --title-floor: 48px;
+  --title-keep: 140px;
+}
+
+.designer-header.tier-6 .document-title-field {
+  --title-floor: 48px;
+  --title-keep: 80px;
+}
+
+.designer-header.tier-3 .header-left.header-workflow,
+.designer-header.tier-4 .header-left.header-workflow,
+.designer-header.tier-5 .header-left.header-workflow,
+.designer-header.tier-6 .header-left.header-workflow {
+  flex: 1 1 auto;
+}
+
+.designer-header.tier-3 .header-actions,
+.designer-header.tier-4 .header-actions,
+.designer-header.tier-5 .header-actions,
+.designer-header.tier-6 .header-actions {
+  flex: 0 0 auto;
+}
+
+.designer-header.tier-4 .save-status-text,
+.designer-header.tier-5 .save-status-text,
+.designer-header.tier-6 .save-status-text {
+  padding: 4px;
+}
+
+.designer-header.tier-5,
+.designer-header.tier-6 {
   padding: 0 8px;
-  border-left: 1px solid #ddd;
-  border-right: 1px solid #ddd;
-  margin: 0 4px;
+  gap: 6px;
+}
+
+.designer-header.tier-5 .header-left.header-workflow,
+.designer-header.tier-5 .header-actions,
+.designer-header.tier-6 .header-left.header-workflow,
+.designer-header.tier-6 .header-actions {
+  gap: 6px;
+}
+
+.designer-header.tier-5 .brand-wrap {
+  padding: 0;
+}
+
+.designer-header.tier-5 .brand-img img {
+  width: 28px;
+  height: 28px;
+}
+
+.designer-header.tier-6 .header-left.header-workflow,
+.designer-header.tier-6 .header-actions {
+  gap: 4px;
+}
+
+.designer-header.tier-6 .document-title-field {
+  --title-pad: 6px;
+}
+
+.designer-header.tier-6 .document-title-input {
+  padding-block: 4px;
+}
+
+.designer-header.tier-6 .auto-save-badge {
+  margin-left: 0;
 }
 
 .designer-layout {
   display: flex;
+  /* The canvas's colour, seen at its edge while it glides after a side panel */
+  background: #f1f0f7;
   flex: 1;
+  /* May shrink to nothing when the bottom panel is full height */
+  min-height: 0;
   overflow: hidden;
   transition: all 0.3s ease;
   position: relative;
@@ -6416,14 +9360,14 @@ const handleBandSelectionChange = (): void => {
 
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 v-bind('UI_CONSTANTS.BORDER_MEDIUM + "px"') #1890ff;
+    box-shadow: 0 0 0 v-bind('UI_CONSTANTS.BORDER_MEDIUM + "px"') #6440f4;
   }
   50% {
     box-shadow: 0 0 0 v-bind('UI_CONSTANTS.BORDER_THICK + "px"')
-      rgba(24, 144, 255, 0.5);
+      rgba(100, 64, 244, 0.5);
   }
   100% {
-    box-shadow: 0 0 0 v-bind('UI_CONSTANTS.BORDER_MEDIUM + "px"') #1890ff;
+    box-shadow: 0 0 0 v-bind('UI_CONSTANTS.BORDER_MEDIUM + "px"') #6440f4;
   }
 }
 
@@ -6431,8 +9375,12 @@ const handleBandSelectionChange = (): void => {
 .coordinates-display,
 .band-height-display {
   position: absolute;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
+  background-color: #ffffff;
+  color: #1c1b26;
+  font-weight: 600;
+  box-shadow:
+    0 0 0 1px rgba(28, 27, 38, 0.08),
+    0 8px 24px rgba(23, 20, 44, 0.14);
   padding: v-bind('UI_CONSTANTS.SMALL_MARGIN + "px"')
     v-bind('UI_CONSTANTS.MEDIUM_MARGIN + "px"');
   border-radius: v-bind('UI_CONSTANTS.BORDER_RADIUS_SMALL + "px"');
@@ -6447,6 +9395,98 @@ const handleBandSelectionChange = (): void => {
 }
 
 /* Right-click context menu */
+/* A default template being looked at: a slim bar above the pages */
+/* A default template: only looked at. The page can't be clicked (the wheel
+   still scrolls it), editing tools are faded and off, settings are shown but
+   can't be changed (the fieldset turns its native fields off; the rest takes
+   no clicks), the panel still scrolls */
+.read-only-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.is-read-only :deep(.page-sheet-wrapper) {
+  pointer-events: none;
+}
+.is-read-only .read-only-lockable,
+.is-read-only .header-project-picker,
+.is-read-only .header-undo-redo,
+.is-read-only .header-toolbar-ops {
+  opacity: 0.45;
+}
+.is-read-only .read-only-fieldset :deep(:is(input, select, textarea, button, label, [role="button"], [role="switch"], [role="radio"], [role="checkbox"], .n-color-picker, .n-base-selection, .n-input, .n-slider, .n-switch, .n-button)) {
+  pointer-events: none;
+}
+.is-read-only .read-only-fieldset :deep(:is(input, select, textarea)) {
+  opacity: 0.7;
+}
+
+.default-template-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid #e6e5ee;
+  background: #f6f4ff;
+  color: #45425a;
+  font-size: 12px;
+}
+.default-template-bar > svg {
+  flex: none;
+  color: #6440f4;
+}
+.default-template-bar span {
+  flex: 1;
+  min-width: 0;
+}
+.default-template-bar strong {
+  color: #1c1b26;
+  margin-right: 4px;
+}
+.default-template-bar button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: #6440f4;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.default-template-bar button:hover {
+  background: #5530e0;
+}
+/* A default template's file is being fetched: a skeleton page over the canvas */
+.opening-template {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(246, 245, 250, 0.86);
+  color: #6e6a80;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.opening-template-page {
+  display: grid;
+  gap: 12px;
+  width: min(320px, 70%);
+  padding: 26px 24px;
+  border: 1px solid #e6e5ee;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(23, 20, 44, 0.08);
+}
 .context-menu-overlay {
   position: fixed;
   top: 0;
@@ -6508,31 +9548,44 @@ const handleBandSelectionChange = (): void => {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-left: 12px;
+  flex-shrink: 0;
 }
 
 .toolbar-divider {
   width: 1px;
-  height: 20px;
-  background: var(--prop-divider-color, #f0f0f0);
-  margin: 0 4px;
+  height: 18px;
+  background: rgba(28, 27, 38, 0.09);
+  margin: 0 3px;
+  flex-shrink: 0;
 }
 
 .toolbar-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
+  width: 30px;
+  height: 30px;
+  border: 1px solid transparent;
   background: transparent;
-  border-radius: 4px;
+  border-radius: 7px;
   cursor: pointer;
   font-size: 14px;
-  transition: background-color 0.1s;
+  color: #45425a;
+  transition: all 0.15s ease;
 }
 
 .toolbar-btn:hover {
-  background-color: var(--prop-bg-hover, #f0f0f0);
+  background-color: rgba(124, 92, 247, 0.08);
+  border-color: rgba(124, 92, 247, 0.2);
+  color: #5b3ee0;
 }
+
+.toolbar-btn.add-page-btn {
+  width: auto;
+  padding: 0 9px;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 </style>

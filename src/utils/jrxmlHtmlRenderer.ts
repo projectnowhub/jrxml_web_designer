@@ -7,7 +7,6 @@ import type {
   Band,
   DesignElement,
   ReportProperties,
-  StaticTextElement,
   TextFieldElement,
   ImageElement,
   LineElement,
@@ -19,6 +18,7 @@ import type {
   TableElement,
 } from "@/types";
 import { parseJRXMLContent } from "./jrxmlGenerator";
+import { resolveReportFont } from "@/config/fonts.config";
 
 export interface HtmlRendererOptions {
   scale?: number;
@@ -28,26 +28,22 @@ export interface HtmlRendererOptions {
 }
 
 const BAND_DISPLAY_NAMES: Record<string, string> = {
-  title: "Title",
   pageHeader: "Page Header",
   columnHeader: "Column Header",
   detail: "Detail",
   columnFooter: "Column Footer",
   pageFooter: "Page Footer",
-  summary: "Summary",
   background: "Background",
   lastPageFooter: "Last Page Footer",
   noData: "No Data",
 };
 
 const BAND_ORDER = [
-  "title",
   "pageHeader",
   "columnHeader",
   "detail",
   "columnFooter",
   "pageFooter",
-  "summary",
   "background",
 ];
 
@@ -63,9 +59,7 @@ function escapeHtml(text: string): string {
 
 function buildFontStyle(element: DesignElement, scale: number): string {
   let style = "";
-  if (element.fontFamily) {
-    style += `font-family: '${element.fontFamily}', Arial, sans-serif;`;
-  }
+  style += `font-family: '${resolveReportFont(element.fontFamily)}', Arial, sans-serif;`;
   if (element.fontSize) {
     style += `font-size: ${element.fontSize * scale}px;`;
   }
@@ -170,20 +164,6 @@ function buildTextStyle(element: DesignElement): string {
     style += `display: flex; align-items: ${valignMap[element.verticalAlignment] || "flex-start"};`;
   }
 
-  if (element.textAdjust) {
-    switch (element.textAdjust) {
-      case "StretchHeight":
-        style += "overflow: visible;";
-        break;
-      case "CutText":
-        style += "overflow: hidden;";
-        break;
-      case "ShrinkToFit":
-        style += "overflow: hidden; white-space: nowrap;";
-        break;
-    }
-  }
-
   if ("rotation" in element && element.rotation) {
     switch (element.rotation) {
       case "Left":
@@ -196,16 +176,6 @@ function buildTextStyle(element: DesignElement): string {
   }
 
   return style;
-}
-
-function renderStaticText(
-  element: StaticTextElement,
-  baseStyle: string,
-  scale: number,
-): string {
-  const fontStyle = buildFontStyle(element, scale);
-  const textStyle = buildTextStyle(element);
-  return `<div class="element static-text" style="${baseStyle}${textStyle}"><span style="${fontStyle}">${escapeHtml(element.text || "")}</span></div>`;
 }
 
 function renderTextField(
@@ -264,13 +234,50 @@ function renderImage(
 }
 
 function renderLine(element: LineElement, scale: number): string {
-  const lineWidth = (element.lineWidth || 1) * scale;
-  const isHorizontal = element.width > element.height;
-  const innerStyle = isHorizontal
-    ? `width:100%;height:${lineWidth}px;border-top:${lineWidth}px solid ${element.forecolor || "#000"};margin-top:${-lineWidth / 2}px;`
-    : `height:100%;width:${lineWidth}px;border-left:${lineWidth}px solid ${element.forecolor || "#000"};margin-left:${-lineWidth / 2}px;`;
+  const strokeWidth = (element.lineWidth || 1) * scale;
+  const strokeColor = element.lineColor || (element as any).forecolor || "#000000";
+  const w = Math.max(1, element.width * scale);
+  const h = Math.max(1, element.height * scale);
+  const dir = element.lineDirection || "TopDown";
 
-  return `<div class="element line" style="position:absolute;left:${element.x * scale}px;top:${element.y * scale}px;width:${element.width * scale}px;height:${element.height * scale}px;overflow:visible;"><div style="${innerStyle}"></div></div>`;
+  let x1 = 0, y1 = 0, x2 = w, y2 = h;
+  if (dir === "BottomUp") {
+    x1 = 0; y1 = h;
+    x2 = w; y2 = 0;
+  } else if (h <= 1) {
+    x1 = 0; y1 = h / 2;
+    x2 = w; y2 = h / 2;
+  } else if (w <= 1) {
+    x1 = w / 2; y1 = 0;
+    x2 = w / 2; y2 = h;
+  }
+
+  if (element.lineStyle === "Double") {
+    const dWidth = Math.max(0.75, strokeWidth / 3);
+    const offset = Math.max(1.5 * scale, strokeWidth / 2);
+    let l1x1 = x1, l1y1 = y1, l1x2 = x2, l1y2 = y2;
+    let l2x1 = x1, l2y1 = y1, l2x2 = x2, l2y2 = y2;
+    if (h <= 1) {
+      l1y1 = y1 - offset; l1y2 = y2 - offset;
+      l2y1 = y1 + offset; l2y2 = y2 + offset;
+    } else if (w <= 1) {
+      l1x1 = x1 - offset; l1x2 = x2 - offset;
+      l2x1 = x1 + offset; l2x2 = x2 + offset;
+    } else {
+      const len = Math.hypot(x2 - x1, y2 - y1);
+      const nx = (-(y2 - y1) / len) * offset;
+      const ny = ((x2 - x1) / len) * offset;
+      l1x1 = x1 + nx; l1y1 = y1 + ny; l1x2 = x2 + nx; l1y2 = y2 + ny;
+      l2x1 = x1 - nx; l2y1 = y1 - ny; l2x2 = x2 - nx; l2y2 = y2 - ny;
+    }
+    return `<div class="element line" style="position:absolute;left:${element.x * scale}px;top:${element.y * scale}px;width:${w}px;height:${h}px;overflow:visible;"><svg width="${w}" height="${h}" style="overflow:visible;display:block;"><line x1="${l1x1}" y1="${l1y1}" x2="${l1x2}" y2="${l1y2}" stroke="${strokeColor}" stroke-width="${dWidth}" stroke-linecap="square"/><line x1="${l2x1}" y1="${l2y1}" x2="${l2x2}" y2="${l2y2}" stroke="${strokeColor}" stroke-width="${dWidth}" stroke-linecap="square"/></svg></div>`;
+  }
+
+  let dashAttr = "";
+  if (element.lineStyle === "Dashed") dashAttr = ` stroke-dasharray="${6 * scale},${4 * scale}"`;
+  else if (element.lineStyle === "Dotted") dashAttr = ` stroke-dasharray="${2 * scale},${2 * scale}"`;
+
+  return `<div class="element line" style="position:absolute;left:${element.x * scale}px;top:${element.y * scale}px;width:${w}px;height:${h}px;overflow:visible;"><svg width="${w}" height="${h}" style="overflow:visible;display:block;"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${strokeColor}" stroke-width="${strokeWidth}"${dashAttr} stroke-linecap="square"/></svg></div>`;
 }
 
 function renderRectangle(
@@ -283,11 +290,34 @@ function renderRectangle(
   if (radius > 0) extra += `border-radius:${radius}px;`;
   if (element.fill === "Solid" && element.backcolor)
     extra += `background-color:${element.backcolor};`;
+  const penColor = element.pen?.lineColor || (element as any).lineColor;
+  const penWidth = element.pen?.lineWidth ?? (element as any).lineWidth;
+  const penStyle = element.pen?.lineStyle || (element as any).lineStyle;
+  if (penWidth !== undefined || penColor || penStyle) {
+    const w = (penWidth !== undefined ? penWidth : 1) * scale;
+    let s = "solid";
+    if (penStyle === "Dashed") s = "dashed";
+    else if (penStyle === "Dotted") s = "dotted";
+    else if (penStyle === "Double") s = "double";
+    extra += `border:${w}px ${s} ${penColor || "#000000"};`;
+  }
   return `<div class="element rectangle" style="${baseStyle}${extra}"></div>`;
 }
 
-function renderEllipse(_element: EllipseElement, baseStyle: string): string {
-  return `<div class="element ellipse" style="${baseStyle}border-radius:50%;"></div>`;
+function renderEllipse(element: EllipseElement, baseStyle: string): string {
+  let extra = "border-radius:50%;";
+  const penColor = element.pen?.lineColor || (element as any).lineColor;
+  const penWidth = element.pen?.lineWidth ?? (element as any).lineWidth;
+  const penStyle = element.pen?.lineStyle || (element as any).lineStyle;
+  if (penWidth !== undefined || penColor || penStyle) {
+    const w = penWidth !== undefined ? penWidth : 1;
+    let s = "solid";
+    if (penStyle === "Dashed") s = "dashed";
+    else if (penStyle === "Dotted") s = "dotted";
+    else if (penStyle === "Double") s = "double";
+    extra += `border:${w}px ${s} ${penColor || "#000000"};`;
+  }
+  return `<div class="element ellipse" style="${baseStyle}${extra}"></div>`;
 }
 
 function renderFrame(
@@ -313,8 +343,6 @@ function renderElement(
   const baseStyle = buildElementBaseStyle(element, scale, showElementBorders);
 
   switch (element.type) {
-    case "staticText":
-      return renderStaticText(element, baseStyle, scale);
     case "textField":
       return renderTextField(element, baseStyle, scale);
     case "image":
@@ -472,12 +500,10 @@ export function renderToMultiPageHtml(
 
   // Calculate fixed band heights
   const fixedBandTypes = [
-    "title",
     "pageHeader",
     "columnHeader",
     "columnFooter",
     "pageFooter",
-    "summary",
   ];
   let fixedHeight = 0;
   for (const bt of fixedBandTypes) {
@@ -513,17 +539,6 @@ export function renderToMultiPageHtml(
   for (let page = 0; page < totalPages; page++) {
     let bandsHtml = "";
 
-    // Title only on first page
-    if (page === 0 && bandsMap["title"]) {
-      bandsHtml += renderBand(
-        "title",
-        bandsMap["title"],
-        opts.scale,
-        opts.showBorders,
-        opts.showElementBorders,
-        opts.showBandLabels,
-      );
-    }
 
     // Page header on every page
     if (bandsMap["pageHeader"]) {
@@ -595,17 +610,6 @@ export function renderToMultiPageHtml(
       );
     }
 
-    // Summary only on last page
-    if (page === totalPages - 1 && bandsMap["summary"]) {
-      bandsHtml += renderBand(
-        "summary",
-        bandsMap["summary"],
-        opts.scale,
-        opts.showBorders,
-        opts.showElementBorders,
-        opts.showBandLabels,
-      );
-    }
 
     const pageHtml = `<!DOCTYPE html>
 <html>
@@ -678,12 +682,11 @@ function extractFieldsFromBands(
   for (const band of bands) {
     if (!band.elements) continue;
     for (const el of band.elements) {
-      if (el.type === "table" && (el as TableElement).columns) {
-        for (const col of (el as TableElement).columns) {
-          if (!seen.has(col.name)) {
-            seen.add(col.name);
-            fields.push({ name: col.name, label: col.name });
-          }
+      const binding = el.type === "table" ? (el as TableElement).binding : undefined;
+      for (const col of binding?.columns ?? []) {
+        if (!seen.has(col.key)) {
+          seen.add(col.key);
+          fields.push({ name: col.key, label: col.label });
         }
       }
     }
@@ -728,27 +731,27 @@ function generateMockRows(
     const row: string[] = [];
     for (const field of fields) {
       const lower = field.name.toLowerCase();
-      if (/^id$|编号|序号/.test(lower)) row.push(String(i + 1));
-      else if (/name|姓名|名称|员工|用户|客户/.test(lower))
+      if (/^id$|^no$|number/.test(lower)) row.push(String(i + 1));
+      else if (/name|customer|employee|user/.test(lower))
         row.push(names[i % names.length]!);
-      else if (/phone|电话|手机/.test(lower))
+      else if (/phone|tel|mobile/.test(lower))
         row.push(
-          `138${String(Math.floor(Math.random() * 100000000)).padStart(8, "0")}`,
+          `555-${String(Math.floor(Math.random() * 10000000)).padStart(7, "0").replace(/^(\d{3})/, "$1-")}`,
         );
-      else if (/date|日期|时间/.test(lower)) {
+      else if (/date|time/.test(lower)) {
         const d = new Date(Date.now() - Math.random() * 86400000 * 365);
         row.push(
           `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
         );
-      } else if (/amount|金额|价格|费用|工资/.test(lower))
+      } else if (/amount|price|cost|salary/.test(lower))
         row.push((Math.floor(Math.random() * 99999) + 1).toLocaleString());
-      else if (/status|状态/.test(lower))
+      else if (/status/.test(lower))
         row.push(statuses[i % statuses.length]!);
-      else if (/city|城市/.test(lower))
+      else if (/city/.test(lower))
         row.push(["New York", "Los Angeles", "Chicago", "Houston", "Phoenix"][i % 5]!);
-      else if (/sex|gender|性别/.test(lower))
+      else if (/sex|gender/.test(lower))
         row.push(i % 2 === 0 ? "Male" : "Female");
-      else if (/age|年龄/.test(lower))
+      else if (/age/.test(lower))
         row.push(String(20 + Math.floor(Math.random() * 40)));
       else row.push(`Data${i + 1}`);
     }

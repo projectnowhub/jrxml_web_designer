@@ -1,57 +1,18 @@
+import type { ChartBinding, ReportProject, TableDataBinding, TableLook } from "./dataSource";
+
 // Element type enum
 export type ElementType =
-  | "staticText"
   | "textField"
   | "image"
   | "line"
   | "rectangle"
   | "ellipse"
-  | "break"
   | "frame"
   | "table"
-  | "subreport"
-  | "list"
   | "chart"
   | "barcode"
-  | "map"
-  | "crosstab"
-  | "iconLabel"
-  | "genericElement"
-  | "sort";
-
-// Column group interface
-export interface ColumnGroup {
-  uuid: string;
-  name: string;
-  width: number;
-  hasTableHeader?: boolean;
-  tableHeader?: TableCell;
-  columnHeader?: TableCell;
-  columnFooter?: TableCell;
-  tableFooter?: TableCell;
-  // Sub-groups or columns
-  children: (ColumnGroup | TableColumn)[];
-}
-
-// Table cell interface
-export interface TableCell {
-  enable: boolean;
-  element?: DesignElement;
-}
-
-// Table column interface
-export interface TableColumn {
-  uuid: string;
-  width: number;
-  name: string;
-  hasTableHeader?: boolean;
-  tableHeader?: TableCell;
-  columnHeader?: TableCell;
-  detailCell?: TableCell;
-  columnFooter?: TableCell;
-  tableFooter?: TableCell;
-  children?: (ColumnGroup | TableColumn)[];
-}
+  | "customTable"
+  | "contentsList";
 
 // Query interface
 export interface Query {
@@ -88,16 +49,12 @@ export interface ReportProperty {
 
 // Band type enum
 export type BandType =
-  | "detail"
   | "pageHeader"
-  | "pageFooter"
-  | "title"
-  | "summary"
   | "columnHeader"
+  | "detail"
   | "columnFooter"
-  | "background"
-  | "lastPageFooter"
-  | "noData";
+  | "pageFooter"
+  | "background";
 
 // Pen style interface
 export interface Pen {
@@ -224,7 +181,6 @@ export interface ConditionalStyle {
 // Report style interface
 export interface ReportStyle {
   name: string;
-  parentStyle?: string;
   mode?: string;
   backcolor?: string;
   forecolor?: string;
@@ -241,12 +197,11 @@ export interface ReportStyle {
 }
 
 // Font settings interface
+// The font new text starts with (Template Settings / Default Settings): only
+// the font and its size; bold, italic and underline are set on each text
 export interface FontSettings {
   name: string;
   size: number;
-  isBold: boolean;
-  isItalic: boolean;
-  isUnderline: boolean;
 }
 
 // Report properties interface
@@ -260,6 +215,39 @@ export interface ReportProperties {
   bottomMargin: number;
   defaultFont: FontSettings;
   orientation?: "portrait" | "landscape";
+  pageCount?: number;
+  bandLimits?: Record<string, { min: number; max: number }>;
+  // Projects whose data the report uses (the "Report Data" list)
+  projects?: ReportProject[];
+  // Pages at the front with no shared sections (utils/specialPages.ts): a
+  // cover (designer page 0) and contents pages after it
+  coverPage?: boolean;
+  contentsPages?: number;
+  // false: page numbers don't count the cover and contents pages
+  countSpecialPages?: boolean;
+  // The cover uses the whole sheet (written with a 0 bottom margin, see specialPages.ts)
+  fullPageCover?: boolean;
+  // How Section Headings number themselves (utils/headingSync.ts); unset: "SECTION 1."
+  headingNumbers?: HeadingNumbering;
+  // Table of Contents looks the user saved (utils/contentsList.ts)
+  contentsStyles?: SavedContentsStyle[];
+}
+
+// A Table of Contents look saved by the user, offered next to the ready-made ones
+export interface SavedContentsStyle {
+  id: string;
+  name: string;
+  look: Partial<ContentsListData>;
+}
+
+// Section Headings counted 1, 2… in page order, shown in this style
+export interface HeadingNumbering {
+  style: ContentsSectionStyle;
+  // "word" style: the word before the number ("SECTION 1.")
+  word?: string;
+  // Any other style: text before and after the number ("Chapter 1:")
+  before?: string;
+  after?: string;
 }
 
 // Base design element interface
@@ -288,36 +276,30 @@ export interface DesignElementBase {
   textAdjust?: string;
   isStyledText?: boolean;
   isStretchWithOverflow?: boolean;
-  style?: string;
   // Common reportElement attributes
   key?: string;
   positionType?: "Float" | "FixRelativeToTop" | "FixRelativeToBottom";
-  stretchType?: "NoStretch" | "ElementGroupBottom" | "ElementGroupHeight" | "ContainerBottom" | "ContainerHeight";
+  stretchType?:
+    | "NoStretch"
+    | "ElementGroupBottom"
+    | "ElementGroupHeight"
+    | "ContainerBottom"
+    | "ContainerHeight";
   isPrintRepeatedValues?: boolean;
   isRemoveLineWhenBlank?: boolean;
   printWhenExpression?: string;
   styleExpression?: string;
+  pageIndex?: number;
   // Custom properties
   properties?: Array<{ name: string; value: string }>;
   propertyExpressions?: Array<{ name: string; valueExpression: string }>;
-}
-
-// Static text element interface
-export interface StaticTextElement extends DesignElementBase {
-  type: "staticText";
-  text?: string;
-  markup?: "none" | "html" | "rtf" | "styledtext";
-  textAdjust?: "StretchHeight" | "CutText" | "ShrinkToFit";
-  rotation?: "None" | "Left" | "Right";
-  pattern?: string;
-  xml_lang?: string;
-  printWhenExpression?: string;
 }
 
 // Text field element interface
 export interface TextFieldElement extends DesignElementBase {
   type: "textField";
   expression?: string;
+  rotation?: "None" | "Left" | "Right" | "UpsideDown";
   evaluationTime?:
     | "Now"
     | "Report"
@@ -325,7 +307,8 @@ export interface TextFieldElement extends DesignElementBase {
     | "Column"
     | "Group"
     | "Band"
-    | "Auto";
+    | "Auto"
+    | "Master";
   evaluationGroup?: string;
   pattern?: string;
   patternExpression?: string;
@@ -361,6 +344,9 @@ export interface TextFieldElement extends DesignElementBase {
 export interface ImageElement extends DesignElementBase {
   type: "image";
   imageExpression?: string;
+  // A Location's map: the place it shows, worked out from the Location's setup
+  // with every change (never written to the JRXML)
+  locationView?: { latitude: number; longitude: number; zoom: number } | null;
   scaleType?: "Clip" | "FillFrame" | "RealHeight" | "RealSize" | "RetainShape";
   hAlign?: "Left" | "Center" | "Right";
   vAlign?: "Top" | "Middle" | "Bottom";
@@ -418,15 +404,6 @@ export interface EllipseElement extends DesignElementBase {
   printWhenExpression?: string;
 }
 
-// Break element interface
-export interface BreakElement extends DesignElementBase {
-  type: "break";
-  breakType?: "Page" | "Column";
-  // Newly added properties
-  isResetPageNumber?: boolean;
-  isResetPageOverflow?: boolean;
-}
-
 // Frame (container) element interface
 export interface FrameElement extends DesignElementBase {
   type: "frame";
@@ -450,233 +427,210 @@ export interface FrameElement extends DesignElementBase {
   // Frame-specific properties
   isRemoveLineWhenBlank?: boolean;
   isPrintRepeatedValues?: boolean;
+  // Corner radius when all four corners match
+  radius?: number;
+  // Corner radii when they differ (see BOX_CORNER_RADIUS_PROPERTY)
+  cornerRadii?: { topLeft: number; topRight: number; bottomRight: number; bottomLeft: number };
 }
 
-// Row group interface
-export interface RowGroup {
-  uuid: string;
-  name: string;
-  height: number;
-  header?: TableCell;
-  footer?: TableCell;
-  isStartNewPage?: boolean;
-  isRepeatHeader?: boolean;
-  expression?: string;
-}
-
-// Table element interface
+// Table element: shows rows of a backend source (see types/dataSource.ts).
+// Without a binding it is an empty table waiting for data to be dropped on it.
 export interface TableElement extends DesignElementBase {
   type: "table";
-  dataset: TableDataset;
-  // Supports a mixed structure of groups and columns
-  children?: (ColumnGroup | TableColumn)[];
-  // Kept for backward compatibility, supports the legacy columns array
-  columns: TableColumn[];
-  // Row groups
-  rowGroups?: RowGroup[];
-  styles?: {
-    tableHeader?: string;
-    columnHeader?: string;
-    detail?: string;
-    columnFooter?: string;
-    tableFooter?: string;
-  };
-  whenNoDataType?:
-    | "Blank"
-    | "NoDataCell"
-    | "AllSectionsNoDetail"
-    | "AllSectionsWithDetail";
-  // Table-level properties
-  printHeaders?: boolean;
-  ignoreWidth?: boolean;
-  isIgnorePagination?: boolean;
-  // Style inheritance
-  style?: string;
-  parentStyle?: string;
-  // Pagination control
-  splitType?: "Stretch" | "Prevent" | "Immediate";
+  binding?: TableDataBinding;
+  headerHeight?: number;
+  rowHeight?: number;
 }
 
-// Subreport element interface
-export interface SubreportElement extends DesignElementBase {
-  type: "subreport";
-  subreportExpression?: string;
-  parametersMapExpression?: string;
-  connectionExpression?: string;
-  dataSourceExpression?: string;
-  returnValue?: {
-    subreportVariable: string;
-    toVariable: string;
-    calculationType?: string;
-  }[];
-  printWhenExpression?: string;
-  isUsingCache?: boolean;
-  runToBottom?: boolean;
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto" | "Master";
-  evaluationGroup?: string;
-  isIgnorePagination?: boolean;
-}
-
-// List element interface
-export interface ListElement extends DesignElementBase {
-  type: "list";
-  listContents?: {
-    elements: DesignElement[];
-    height?: number;
-    width?: number;
-  };
-  // Sub-dataset run configuration
-  subDataset?: string;
-  dataSourceExpression?: string;
-  connectionExpression?: string;
-  // List settings
-  printOrder?: "Vertical" | "Horizontal";
-  ignoreWidth?: boolean;
-  // Conditional display
-  printWhenExpression?: string;
-  // Evaluation settings
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
-  evaluationGroup?: string;
-  // Pagination settings
-  splitType?: "Stretch" | "Prevent" | "Immediate";
-  isIgnorePagination?: boolean;
-}
-
-// Chart element interface
+// Chart element: one of nine chart types (utils/chart). Written to the JRXML
+// as an image of the chart with its setup (com.cdp.chart.binding), which the
+// parser reads back.
 export interface ChartElement extends DesignElementBase {
   type: "chart";
-  chartType: "pie" | "pie3D" | "bar" | "bar3D" | "xyBar" | "stackedBar" | "stackedBar3D" | "line" | "xyLine" | "area" | "xyArea" | "scatter" | "bubble" | "timeSeries" | "highLow" | "candlestick" | "meter" | "thermometer" | "multiAxis" | "stackedArea" | "gantt" | "spider";
-  // Chart title
-  title?: string;
-  titleExpression?: string;
-  subtitleExpression?: string;
-  legendExpression?: string;
-  // Chart settings
-  isShowLegend?: boolean;
-  isShowTitle?: boolean;
-  isShowSubtitle?: boolean;
-  renderType?: "svg" | "draw" | "image";
-  customizerClass?: string;
-  // Hyperlink
-  hyperlinkTooltipExpression?: string;
-  hyperlinkTarget?: "Self" | "Blank" | "Top" | "Parent";
-  hyperlinkType?: "None" | "Reference" | "LocalAnchor" | "LocalPage" | "RemoteAnchor" | "RemotePage" | "Tooltip";
-  hyperlinkExpression?: string;
-  bookmarkLevel?: number;
-  // Evaluation settings
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto" | "Master";
-  evaluationGroup?: string;
-  printWhenExpression?: string;
-  // Dataset
-  subDataset?: string;
-  dataSourceExpression?: string;
-  incrementType?: "None" | "Group" | "Page" | "Column" | "Report";
-  incrementGroup?: string;
-  // Series expressions (categorical charts: bar, line, area, stackedBar, etc.)
-  seriesExpression?: string;
-  categoryExpression?: string;
-  valueExpression?: string;
-  // Pie chart expression
-  keyExpression?: string;
-  // XY chart expressions (scatter, bubble, xyLine, xyArea, timeSeries, etc.)
-  xValueExpression?: string;
-  yValueExpression?: string;
-  // Rendering settings
-  isCircular?: boolean;
-  isShowShapes?: boolean;
-  itemLabelColor?: string;
-  itemLabelBackgroundColor?: string;
-  categoryAxisLabelExpression?: string;
-  valueAxisLabelExpression?: string;
-  // Specific to gauge/thermometer charts
-  dataExpression?: string;
-  shape?: "chord" | "pie" | "circle" | "fan" | "dash" | "bullet";
-  lowExpression?: string;
-  mediumExpression?: string;
-  highExpression?: string;
-  units?: string;
+  binding: ChartBinding;
 }
 
 // Barcode element interface
 export interface BarcodeElement extends DesignElementBase {
   type: "barcode";
-  barcodeType: "Code128" | "Code39" | "EAN13" | "EAN8" | "UPCA" | "UPCE" | "QRCode" | "DataMatrix" | "Interleaved2Of5" | "Codabar" | "EAN128" | "PDF417" | "POSTNET" | "RoyalMailCustomer" | "USPSIntelligentMail";
+  barcodeType:
+    | "Code128"
+    | "Code39"
+    | "EAN13"
+    | "EAN8"
+    | "UPCA"
+    | "UPCE"
+    | "QRCode"
+    | "DataMatrix"
+    | "Interleaved2Of5"
+    | "Codabar"
+    | "EAN128"
+    | "PDF417"
+    | "POSTNET"
+    | "RoyalMailCustomer"
+    | "USPSIntelligentMail";
   codeExpression?: string;
+  // Values typed for the other types (their code expressions): switching
+  // back to a type brings its own value back (com.cdp.barcode.values)
+  valuesByType?: Partial<Record<string, string>>;
   printWhenExpression?: string;
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
+  rotation?: "None" | "Left" | "Right" | "UpsideDown";
+  evaluationTime?:
+    | "Now"
+    | "Report"
+    | "Page"
+    | "Column"
+    | "Group"
+    | "Band"
+    | "Auto";
 }
 
-// Map element interface
-export interface MapElement extends DesignElementBase {
-  type: "map";
-  mapType?: "html" | "image" | "pdf";
-  latExpression?: string;
-  lngExpression?: string;
-  zoomExpression?: string;
-  languageExpression?: string;
-  printWhenExpression?: string;
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
+// Custom table: a grid the user types into (not project data). A merged cell is
+// the top-left cell of the block with colSpan / rowSpan; the cells it covers stay
+// in the grid but are not shown or written.
+export interface CustomTableCell {
+  // Plain text ("\n" for new lines), or HTML when `rich` (bold words, colours,
+  // bullet points, superscript...: what JasperReports' html markup reads)
+  text: string;
+  rich?: boolean;
+  // A total-row cell showing its column's sum, kept up to date (syncTableTotals)
+  // until the user types their own text in it
+  sum?: boolean;
+  colSpan?: number;
+  rowSpan?: number;
+  fill?: string;
+  color?: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  align?: "Left" | "Center" | "Right" | "Justified";
+  vAlign?: "Top" | "Middle" | "Bottom";
+  fontSize?: number;
 }
 
-// Crosstab element interface
-export interface CrosstabElement extends DesignElementBase {
-  type: "crosstab";
-  crosstabWidth?: number;
-  crosstabHeight?: number;
-  printWhenExpression?: string;
-  whenNoDataType?: "AllSectionsNoDetail" | "AllSectionsWithDetail" | "NoDataCell" | "Blank";
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto" | "Master";
+export interface CustomTableRow {
+  // Design height; in the PDF a row grows to its tallest text
+  height: number;
+  cells: CustomTableCell[];
 }
 
-// Icon label element interface
-export interface IconLabelElement extends DesignElementBase {
-  type: "iconLabel";
-  icon?: string;
-  label?: string;
-  labelExpression?: string;
-  printWhenExpression?: string;
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
+// Its look is a table style, like a data table's: `theme` is the built-in or saved
+// style it started from, `look` its actual look (none for an unchanged built-in),
+// `customized` = changed for this table only. Colours set on cells are exceptions
+// on top of the style.
+export interface CustomTableData {
+  columns: number[];
+  rows: CustomTableRow[];
+  theme: string;
+  look?: TableLook;
+  customized?: boolean;
+  // Top rows drawn as headings (0 to 3)
+  headerRows: number;
+  // The last row drawn as a totals row
+  totalRow: boolean;
+  padding: number;
 }
 
-// Generic element interface
-export interface GenericElement extends DesignElementBase {
-  type: "genericElement";
-  namespace?: string;
-  printWhenExpression?: string;
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
+export interface CustomTableElement extends DesignElementBase {
+  type: "customTable";
+  table: CustomTableData;
 }
 
-// Sort element interface
-export interface SortElement extends DesignElementBase {
-  type: "sort";
-  sortFields?: Array<{
-    name: string;
-    order?: "Ascending" | "Descending";
-  }>;
-  printWhenExpression?: string;
-  evaluationTime?: "Now" | "Report" | "Page" | "Column" | "Group" | "Band" | "Auto";
+// Contents list (table of contents): one row per entry, written as plain text
+// fields (utils/contentsList.ts)
+export interface ContentsEntry {
+  number: string;
+  title: string;
+  page: string;
+  // 0: a section, 1: a sub-section (indented, not bold)
+  level: 0 | 1;
+  // Which heading (its uuid) the row stands for, in a list that follows the
+  // headings
+  key?: string;
+}
+
+// Automatic mode: the user's choices for the heading rows (kept on the first
+// part, keyed by the heading's uuid): headings left out, and the numbers typed
+// in when "Number automatically" is off (`ContentsListData.ownNumbers`)
+export interface ContentsAdjust {
+  hidden?: string[];
+  numbers?: Record<string, string>;
+}
+
+export interface ContentsListData {
+  entries: ContentsEntry[];
+  rowHeight: number;
+  fontSize: number;
+  // Width of the number column (0: no numbers) and of the page column
+  numberWidth: number;
+  pageWidth: number;
+  // Dots between each title and its page
+  leader: boolean;
+  boldSections: boolean;
+  color: string;
+  // A filled box behind each number ("Numbered blocks"), and its text colour
+  numberFill?: string;
+  numberColor?: string;
+  // The list this one carries on (a second column or a later contents page)
+  continues?: string;
+  // Numbers counted automatically (sections 1, 2…; sub-sections i, ii…); off:
+  // the numbers typed in the rows
+  autoNumber?: boolean;
+  sectionStyle?: ContentsSectionStyle;
+  // "word" style: the word before the number ("SECTION 1.")
+  sectionWord?: string;
+  // Any style: text before and after the number ("Chapter 1:")
+  sectionBefore?: string;
+  sectionAfter?: string;
+  subStyle?: ContentsSubStyle;
+  // On a contents page: the box keeps the size the user gives it (rows that
+  // don't fit go on to the next contents page) instead of growing with its rows
+  fixedBox?: boolean;
+  // On a contents page added by itself for rows that didn't fit (removed again
+  // by itself once it is empty and unchanged)
+  autoPage?: boolean;
+  // Kept in step with the Section Headings and Sub-headings on the pages: its
+  // rows are rebuilt from them after every change (utils/headingSync.ts)
+  follow?: boolean;
+  // Automatic mode with "Number automatically" off: numbers typed per row
+  ownNumbers?: boolean;
+  // Show sections only: sub-sections are left out (Automatic) or hidden, not
+  // deleted (Manual)
+  sectionsOnly?: boolean;
+  adjust?: ContentsAdjust;
+}
+
+export type ContentsSectionStyle = "1" | "1." | "01" | "I" | "A" | "a" | "i" | "1)" | "(1)" | "word";
+export type ContentsSubStyle =
+  | "roman"
+  | "letters"
+  | "decimal"
+  | "romanUpper"
+  | "lettersUpper"
+  | "lettersParen"
+  | "romanParen"
+  | "lettersBracket"
+  | "sectionLetter"
+  | "none";
+
+export interface ContentsListElement extends DesignElementBase {
+  type: "contentsList";
+  list: ContentsListData;
 }
 
 // Design element union type
 export type DesignElement =
-  | StaticTextElement
   | TextFieldElement
   | ImageElement
   | LineElement
   | RectangleElement
   | EllipseElement
-  | BreakElement
   | FrameElement
   | TableElement
-  | SubreportElement
-  | ListElement
   | ChartElement
   | BarcodeElement
-  | MapElement
-  | CrosstabElement
-  | IconLabelElement
-  | GenericElement
-  | SortElement;
+  | CustomTableElement
+  | ContentsListElement;
 
 // Report band interface
 export interface Band {
@@ -719,16 +673,12 @@ export interface DraggingInfo {
   parentFrameIndex?: number;
   startX: number;
   startY: number;
+  origElementX?: number;
+  origElementY?: number;
   lastTargetBandIndex?: number;
   lastTargetFrameIndex?: number; // records the index of the most recent target Frame
-}
-
-// Selection box interface
-export interface SelectionBox {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  sourcePageIndex?: number;
+  lastTargetPageIndex?: number;
 }
 
 // Element library item interface

@@ -16,541 +16,344 @@
     :bodyStyle="{ padding: '0', overflow: 'hidden', display: 'flex' }"
   >
     <div class="pdf-preview-body">
-      <!-- Editor Panel -->
-      <div class="editor-panel" v-show="showEditor">
-        <div class="editor-header">
-          <n-button size="small" quaternary @click="regenerateAll">
-            {{ t("pdfPreview.dataSource.regenerate") }}
-          </n-button>
+      <!-- The report's tables and charts, in page order, and the data each one
+           prints (read-only) -->
+      <div class="tables-panel" v-show="showTables">
+        <div class="tables-head">
+          <h4>{{ t("pdfPreview.data.title") }}</h4>
+          <span class="muted">{{ t("pdfPreview.tables.readOnly") }}</span>
         </div>
-        <n-tabs type="line" animated class="editor-tabs">
-          <!-- Parameters Tab -->
-          <n-tab-pane :tab="t('pdfPreview.parameters.title')" name="params">
-            <div class="tab-content">
-              <div v-if="!props.reportParameters?.length" class="empty-hint">
-                {{ t("pdfPreview.parameters.noParameters") }}
+        <div class="tables-list">
+          <div v-if="!dataItems.length" class="empty-hint">{{ t("pdfPreview.data.none") }}</div>
+          <p v-else class="server-note">
+            <Info :size="12" aria-hidden="true" />
+            {{ t("pdfPreview.data.serverNote") }}
+          </p>
+          <template v-for="entry in dataItems" :key="entry.element.uuid">
+          <PreviewChartCard
+            v-if="entry.kind === 'chart'"
+            :chart="entry.element"
+            :number="entry.number"
+            @edit="editChart(entry.element.uuid ?? '')"
+          />
+          <section v-else-if="entry.kind === 'table'" class="table-card">
+            <div class="card-head">
+              <div class="card-title">
+                <Table2 :size="14" aria-hidden="true" />
+                <strong>{{ entry.binding.tableName }}</strong>
               </div>
-              <div v-else class="param-list">
-                <div
-                  v-for="param in props.reportParameters"
-                  :key="param.name"
-                  class="param-row"
-                >
-                  <div class="param-label">
-                    <span class="param-name">{{ param.name }}</span>
-                    <n-tag size="tiny" :bordered="false" type="info">{{
-                      shortType(param.class)
-                    }}</n-tag>
-                  </div>
-                  <input
-                    v-if="param.class === 'java.lang.Boolean'"
-                    type="checkbox"
-                    :checked="editableParams[param.name]"
-                    @change="
-                      editableParams[param.name] = (
-                        $event.target as HTMLInputElement
-                      ).checked
-                    "
-                    class="param-checkbox"
-                  />
-                  <input
-                    v-else
-                    class="param-input"
-                    :value="editableParams[param.name]"
-                    @input="
-                      editableParams[param.name] = (
-                        $event.target as HTMLInputElement
-                      ).value
-                    "
-                    :placeholder="param.defaultValue || ''"
-                  />
-                </div>
-              </div>
+              <n-button size="tiny" quaternary @click="editTable(entry.table.uuid ?? '')">
+                <template #icon><SquarePen :size="13" /></template>
+                {{ t("pdfPreview.tables.edit") }}
+              </n-button>
             </div>
-          </n-tab-pane>
-
-          <!-- DataSource Tab -->
-          <n-tab-pane :tab="t('pdfPreview.dataSource.title')" name="dataSource">
-            <div class="tab-content">
-              <div v-if="!props.reportFields?.length" class="empty-hint">
-                {{ t("pdfPreview.dataSource.noFields") }}
-              </div>
-              <div v-else>
-                <div class="ds-toolbar">
-                  <label class="row-count-label">
-                    {{ t("pdfPreview.dataSource.rowCount") }}
-                    <input
-                      type="number"
-                      class="row-count-input"
-                      :value="editableDataSource.length"
-                      min="1"
-                      max="100"
-                      @change="onRowCountChange($event)"
-                    />
-                  </label>
-                  <n-button size="small" quaternary @click="addRow">
-                    {{ t("pdfPreview.dataSource.addRow") }}
-                  </n-button>
-                </div>
-                <div class="ds-table-wrapper">
-                  <table class="ds-table">
-                    <thead>
-                      <tr>
-                        <th
-                          v-for="field in props.reportFields"
-                          :key="field.name"
-                          class="ds-th"
-                        >
-                          <div class="th-inner">
-                            <span>{{ field.name }}</span>
-                            <n-tag size="tiny" :bordered="false">{{
-                              shortType(field.class)
-                            }}</n-tag>
-                          </div>
-                        </th>
-                        <th class="ds-th ds-th-actions"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr
-                        v-for="(row, rowIdx) in editableDataSource"
-                        :key="rowIdx"
-                      >
-                        <td
-                          v-for="field in props.reportFields"
-                          :key="field.name"
-                          class="ds-td"
-                        >
-                          <input
-                            class="ds-cell-input"
-                            :value="row[field.name]"
-                            @input="
-                              row[field.name] = (
-                                $event.target as HTMLInputElement
-                              ).value
-                            "
-                          />
-                        </td>
-                        <td class="ds-td ds-td-actions">
-                          <button
-                            class="remove-row-btn"
-                            @click="removeRow(rowIdx)"
-                            title="×"
-                          >
-                            ×
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+            <div class="card-source">
+              <Database :size="12" aria-hidden="true" />
+              {{ t("reportData.projectSource", { project: entry.binding.projectName, source: entry.binding.sourceName }) }}
+              <span class="muted">· {{ rowCountText(entry.binding.datasetName) }}</span>
             </div>
-          </n-tab-pane>
-
-          <!-- Sub Dataset Tabs -->
-          <n-tab-pane
-            v-for="ds in visibleSubDatasets"
-            :key="ds.name"
-            :tab="ds.name"
-            :name="'sub_' + ds.name"
-          >
-            <div class="tab-content">
-              <div class="ds-toolbar">
-                <label class="row-count-label">
-                  {{ t("pdfPreview.dataSource.rowCount") }}
-                  <input
-                    type="number"
-                    class="row-count-input"
-                    :value="(editableSubDataSources[ds.name] || []).length"
-                    min="1"
-                    max="100"
-                    @change="onSubRowCountChange(ds.name, $event)"
-                  />
-                </label>
-                <n-button size="small" quaternary @click="addSubRow(ds.name)">
-                  {{ t("pdfPreview.dataSource.addRow") }}
-                </n-button>
-              </div>
-              <div class="ds-table-wrapper">
-                <table class="ds-table">
-                  <thead>
-                    <tr>
-                      <th
-                        v-for="field in ds.fields"
-                        :key="field.name"
-                        class="ds-th"
-                      >
-                        <div class="th-inner">
-                          <span>{{ field.name }}</span>
-                          <n-tag size="tiny" :bordered="false">{{
-                            shortType(field.class)
-                          }}</n-tag>
-                        </div>
-                      </th>
-                      <th class="ds-th ds-th-actions"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr
-                      v-for="(row, rowIdx) in editableSubDataSources[ds.name] ||
-                      []"
-                      :key="rowIdx"
-                    >
-                      <td
-                        v-for="field in ds.fields"
-                        :key="field.name"
-                        class="ds-td"
-                      >
-                        <input
-                          class="ds-cell-input"
-                          :value="row[field.name]"
-                          @input="
-                            row[field.name] = (
-                              $event.target as HTMLInputElement
-                            ).value
-                          "
-                        />
-                      </td>
-                      <td class="ds-td ds-td-actions">
-                        <button
-                          class="remove-row-btn"
-                          @click="removeSubRow(ds.name, rowIdx)"
-                          title="×"
-                        >
-                          ×
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+            <div class="chips">
+              <span class="chip">{{ t("dataTable.panel.columnCount", entry.binding.columns.length) }}</span>
+              <span v-for="(f, i) in activeFilters(entry.binding)" :key="`f${i}`" class="chip is-applied">
+                <Funnel :size="10" aria-hidden="true" />{{ describeFilter(entry.binding, f, t, locale) }}
+              </span>
+              <span v-for="(s, i) in describeSorts(entry.binding, t)" :key="`s${i}`" class="chip is-applied">
+                <ArrowDownUp :size="10" aria-hidden="true" />{{ s }}
+              </span>
             </div>
-          </n-tab-pane>
-        </n-tabs>
+            <div v-if="tableRows[entry.binding.datasetName]?.failed" class="table-error" role="alert">
+              <CircleAlert :size="14" aria-hidden="true" />
+              <div>
+                <strong>{{ t("pdfPreview.tables.loadFailed") }}</strong>
+                <span v-if="tableRows[entry.binding.datasetName]?.error" class="table-error-details" :title="tableRows[entry.binding.datasetName]?.error">
+                  {{ tableRows[entry.binding.datasetName]?.error }}
+                </span>
+              </div>
+              <n-button size="tiny" secondary @click="loadRows(entry.binding)">
+                <template #icon><RefreshCw :size="12" /></template>
+                {{ t("pdfPreview.tryAgain") }}
+              </n-button>
+            </div>
+            <div class="card-grid">
+              <DataGrid
+                :columns="entry.binding.columns"
+                :rows="tableRows[entry.binding.datasetName]?.rows ?? []"
+                :look="resolveLook(entry.binding)"
+                :highlights="entry.binding.highlights"
+                :show-totals="entry.binding.showTotals"
+                :totals="tableRows[entry.binding.datasetName]?.totals"
+                :loading="tableRows[entry.binding.datasetName]?.loading"
+                :failed="tableRows[entry.binding.datasetName]?.failed"
+              />
+            </div>
+          </section>
+          </template>
+        </div>
       </div>
 
       <!-- Toggle Button -->
       <button
         class="panel-toggle"
-        @click="showEditor = !showEditor"
-        :title="
-          showEditor
-            ? t('pdfPreview.editor.hidePanel')
-            : t('pdfPreview.editor.showPanel')
-        "
+        @click="showTables = !showTables"
+        :title="showTables ? t('pdfPreview.editor.hidePanel') : t('pdfPreview.editor.showPanel')"
       >
-        {{ showEditor ? "◀" : "▶" }}
+        <component :is="showTables ? ChevronLeft : ChevronRight" :size="14" />
       </button>
 
       <!-- PDF Preview -->
       <div class="pdf-panel">
         <div class="pdf-toolbar">
-          <n-button
-            type="primary"
-            size="small"
-            @click="generatePreview"
-            :loading="isGenerating"
-          >
+          <n-button type="primary" size="small" @click="generatePreview" :loading="isGenerating">
+            <template #icon><RefreshCw :size="13" /></template>
             {{ t("pdfPreview.generateBtn") }}
           </n-button>
         </div>
-        <iframe
-          ref="iframeRef"
-          class="pdf-iframe"
-          :src="previewUrl"
-          @load="handleIframeLoad"
-        ></iframe>
+        <div class="pdf-stage">
+          <iframe v-show="pdfState === 'ready'" ref="iframeRef" class="pdf-iframe" :src="previewUrl"></iframe>
+          <!-- Being made: a page drawn as skeletons -->
+          <div v-if="pdfState === 'building'" class="pdf-status" role="status">
+            <div class="pdf-skeleton-page" aria-hidden="true">
+              <SkeletonBlock width="55%" height="16px" />
+              <SkeletonBlock width="35%" height="10px" />
+              <SkeletonBlock width="100%" height="90px" radius="8px" />
+              <SkeletonBlock v-for="w in SKELETON_LINES" :key="w" :width="`${w}%`" height="9px" radius="4px" />
+            </div>
+            <strong>{{ t("pdfPreview.building") }}</strong>
+            <span>{{ t("pdfPreview.buildingHint") }}</span>
+          </div>
+          <!-- Couldn't be made: what the server said, and Try again -->
+          <div v-else-if="pdfState === 'failed'" class="pdf-status is-error" role="alert">
+            <span class="status-icon"><CircleAlert :size="22" aria-hidden="true" /></span>
+            <strong>{{ t("pdfPreview.failedTitle") }}</strong>
+            <span>{{ pdfError ? t("pdfPreview.failedServerSaid") : t("pdfPreview.failedHint") }}</span>
+            <code v-if="pdfError" class="error-details">{{ pdfError }}</code>
+            <n-button type="primary" size="small" @click="generatePreview">
+              <template #icon><RefreshCw :size="13" /></template>
+              {{ t("pdfPreview.tryAgain") }}
+            </n-button>
+          </div>
+        </div>
       </div>
     </div>
   </BaseModal>
 </template>
 
 <script setup lang="ts">
-import BaseModal from "./BaseModal.vue";
-import { ref, computed, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { NButton, NTabs, NTabPane, NTag } from "naive-ui";
-import type { ReportParameter, ReportField, TableDataset } from "../../types";
 import {
-  generateMockValue,
-  generateMockParameters,
-  generateMockDataSource,
-} from "../../utils/mockDataGenerator";
+  ArrowDownUp,
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  Database,
+  Funnel,
+  Info,
+  RefreshCw,
+  SquarePen,
+  Table2,
+} from "@lucide/vue";
+import BaseModal from "./BaseModal.vue";
+import DataGrid from "../common/DataGrid.vue";
+import PreviewChartCard from "./PreviewChartCard.vue";
+import SkeletonBlock from "../common/SkeletonBlock.vue";
+import { ref, computed, watch, onUnmounted, reactive } from "vue";
+import { useI18n } from "vue-i18n";
+import { NButton } from "naive-ui";
+import type { Band, ChartElement, DesignElement, FrameElement } from "../../types";
+import type { TableDataBinding } from "@/types/dataSource";
+import type { DataRow, TableTotals } from "@/types/dataSource";
+import { fetchTableTotals } from "@/queries/dataSourceQueries";
+import { ApiError } from "@/services/apiClient";
+import { runTemplatePdf } from "../../utils/reportRun";
+import type { TemplatePdfRun } from "@/types/reportCatalog";
+import { fetchTableRows } from "@/composables/useTableRows";
+import { TABLE_ROWS_LIMIT } from "@/constants/reportDataConstants";
+import { collectBoundTables } from "@/utils/table/tableDocument";
+import { activeFilters, describeFilter, describeSorts } from "@/utils/table/summary";
+import { resolveLook } from "@/utils/table/tableThemes";
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const props = defineProps<{
   visible: boolean;
-  jrxmlContent: string;
-  reportParameters?: ReportParameter[];
-  reportFields?: ReportField[];
-  subDatasets?: TableDataset[];
-  previewServerUrl?: string;
+  // Gets the template ready (charts, barcodes, maps, project), saves it on the
+  // report server and gives the Jmix report to run
+  prepare: () => Promise<TemplatePdfRun>;
+  bands: Band[];
 }>();
 
-const emit = defineEmits(["update:visible"]);
+const emit = defineEmits<{
+  "update:visible": [visible: boolean];
+  // Close the preview and open this table's Configure popup
+  "edit-table": [uuid: string];
+  // Close the preview and open this chart's Set up data popup
+  "edit-chart": [uuid: string];
+}>();
 
-const editableParams = ref<Record<string, any>>({});
-const editableDataSource = ref<Record<string, any>[]>([]);
-const editableSubDataSources = ref<Record<string, Record<string, any>[]>>({});
-const resolvedSubDatasets = ref<TableDataset[]>([]);
-const showEditor = ref(true);
+const showTables = ref(true);
 const isGenerating = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 const previewUrl = ref<string>("about:blank");
+// The PDF: being made, shown, or couldn't be made (with what went wrong)
+const pdfState = ref<"building" | "ready" | "failed">("building");
+const pdfError = ref("");
+// The skeleton page's text lines (their widths, in %)
+const SKELETON_LINES = [92, 86, 95, 70, 88, 60];
+let previewController: AbortController | null = null;
 
-const API_URL_DEFAULT =
-  "https://preview.report.projectnowcdp.com/api/pdf/generateForm";
+const tables = computed(() =>
+  collectBoundTables(props.bands).map((table) => ({ table, binding: table.binding })),
+);
 
-function shortType(className: string): string {
-  const parts = className.split(".");
-  return parts[parts.length - 1] || className;
-}
+// Tables (with data) and charts as they come in the report: band by band,
+// then page, top to bottom, left to right (items in boxes at their place)
+type DataItem =
+  | { kind: "table"; element: DesignElement; table: (typeof tables.value)[number]["table"]; binding: TableDataBinding }
+  | { kind: "chart"; element: ChartElement; number: number };
 
-function initializeEditor() {
-  previewUrl.value = "about:blank";
-  isGenerating.value = false;
-
-  const params = props.reportParameters || [];
-  let fields = props.reportFields || [];
-  let subDatasets = props.subDatasets || [];
-
-  // If subDatasets is empty, parse it from the JRXML
-  if (subDatasets.length === 0 && props.jrxmlContent) {
-    try {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(props.jrxmlContent, "text/xml");
-      // JRXML uses the subDataset tag to define sub-datasets
-      const subDatasetEls = doc.querySelectorAll("subDataset");
-      for (const dsEl of subDatasetEls) {
-        const dsName = dsEl.getAttribute("name") || "unknown";
-        const fieldEls = dsEl.querySelectorAll("field");
-        if (fieldEls.length > 0) {
-          const dsFields = [...fieldEls].map((f) => ({
-            name: f.getAttribute("name") || "",
-            class: f.getAttribute("class") || "java.lang.String",
-          }));
-          subDatasets.push({
-            uuid: crypto.randomUUID(),
-            name: dsName,
-            fields: dsFields,
-          });
-        }
+const dataItems = computed<DataItem[]>(() => {
+  const items: DataItem[] = [];
+  let charts = 0;
+  for (const band of props.bands) {
+    const found: { element: DesignElement; page: number; y: number; x: number }[] = [];
+    const visit = (elements: DesignElement[] | undefined, dx: number, dy: number, page?: number) => {
+      for (const el of elements ?? []) {
+        const at = { page: (el as any).pageIndex ?? page ?? 0, y: dy + el.y, x: dx + el.x };
+        if (el.type === "chart" || (el.type === "table" && (el as any).binding)) found.push({ element: el, ...at });
+        if (el.type === "frame") visit((el as FrameElement).elements, at.x, at.y, at.page);
       }
-    } catch (e) {
-      console.warn("Failed to parse JRXML for sub-datasets:", e);
+    };
+    visit(band.elements, 0, 0);
+    found.sort((a, b) => a.page - b.page || a.y - b.y || a.x - b.x);
+    for (const { element } of found) {
+      if (element.type === "chart") items.push({ kind: "chart", element: element as ChartElement, number: ++charts });
+      else {
+        const table = tables.value.find((t) => t.table === element);
+        if (table) items.push({ kind: "table", element, table: table.table, binding: table.binding });
+      }
     }
   }
-
-  // If fields is empty, parse it from the JRXML
-  if (fields.length === 0 && props.jrxmlContent) {
-    try {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(props.jrxmlContent, "text/xml");
-      const fieldEls = doc.querySelectorAll("jasperReport > field");
-      if (fieldEls.length > 0) {
-        fields = [...fieldEls].map((f) => ({
-          name: f.getAttribute("name") || "",
-          class: f.getAttribute("class") || "java.lang.String",
-        }));
-      }
-    } catch (e) {
-      // ignore
-    }
-  }
-
-  editableParams.value = generateMockParameters(params);
-  editableDataSource.value = generateMockDataSource(fields, 1);
-
-  // Generate mock data for each table dataset
-  const subDataSources: Record<string, Record<string, any>[]> = {};
-  for (const ds of subDatasets) {
-    if (ds.fields && ds.fields.length > 0) {
-      const rows: Record<string, any>[] = [];
-      for (let i = 0; i < 5; i++) {
-        const row: Record<string, any> = {};
-        for (const f of ds.fields) {
-          row[f.name] = generateMockValue(f.name, f.class);
-        }
-        rows.push(row);
-      }
-      subDataSources[ds.name] = rows;
-    }
-  }
-  editableSubDataSources.value = subDataSources;
-  resolvedSubDatasets.value = subDatasets;
-}
-
-function regenerateAll() {
-  initializeEditor();
-}
-
-function addRow() {
-  const fields = props.reportFields || [];
-  const newRow: Record<string, any> = {};
-  for (const field of fields) {
-    newRow[field.name] = generateMockValue(field.name, field.class);
-  }
-  editableDataSource.value.push(newRow);
-}
-
-function removeRow(index: number) {
-  if (editableDataSource.value.length > 1) {
-    editableDataSource.value.splice(index, 1);
-  }
-}
-
-function onRowCountChange(event: Event) {
-  const input = event.target as HTMLInputElement;
-  let count = parseInt(input.value, 10);
-  if (isNaN(count) || count < 1) count = 1;
-  if (count > 100) count = 100;
-
-  const fields = props.reportFields || [];
-  const current = editableDataSource.value;
-
-  if (count > current.length) {
-    for (let i = current.length; i < count; i++) {
-      const row: Record<string, any> = {};
-      for (const field of fields) {
-        row[field.name] = generateMockValue(field.name, field.class);
-      }
-      current.push(row);
-    }
-  } else if (count < current.length) {
-    editableDataSource.value = current.slice(0, count);
-  }
-}
-
-const visibleSubDatasets = computed(() => {
-  return resolvedSubDatasets.value.filter(
-    (ds) => ds.fields && ds.fields.length > 0,
-  );
+  return items;
 });
 
-function addSubRow(dsName: string) {
-  const ds = resolvedSubDatasets.value.find((d) => d.name === dsName);
-  if (!ds?.fields) return;
-  const rows = editableSubDataSources.value[dsName] || [];
-  const newRow: Record<string, any> = {};
-  for (const field of ds.fields) {
-    newRow[field.name] = generateMockValue(field.name, field.class);
+// Rows per table, by dataset name (the report reads them by that name)
+interface TableRowsState {
+  rows: DataRow[];
+  totalCount: number;
+  totals: TableTotals;
+  loading: boolean;
+  failed: boolean;
+  // What went wrong, as the server said it
+  error?: string;
+}
+const tableRows = reactive<Record<string, TableRowsState>>({});
+
+function rowCountText(datasetName: string): string {
+  const state = tableRows[datasetName];
+  if (!state || state.loading) return t("dataTable.loading");
+  if (state.failed) return t("dataTable.loadFailed");
+  if (state.totalCount > state.rows.length) {
+    return t("pdfPreview.tables.rowsCapped", { shown: state.rows.length, count: state.totalCount });
   }
-  rows.push(newRow);
-  editableSubDataSources.value[dsName] = rows;
+  return t("dataTable.config.rowCount", state.rows.length);
 }
 
-function removeSubRow(dsName: string, index: number) {
-  const rows = editableSubDataSources.value[dsName] || [];
-  if (rows.length > 1) {
-    rows.splice(index, 1);
-    editableSubDataSources.value[dsName] = rows;
-  }
+// The message to show for a failure: the server's own words when it sent some
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message.trim() : "";
 }
 
-function onSubRowCountChange(dsName: string, event: Event) {
-  const input = event.target as HTMLInputElement;
-  let count = parseInt(input.value, 10);
-  if (isNaN(count) || count < 1) count = 1;
-  if (count > 100) count = 100;
-
-  const ds = resolvedSubDatasets.value.find((d) => d.name === dsName);
-  if (!ds?.fields) return;
-  const current = editableSubDataSources.value[dsName] || [];
-
-  if (count > current.length) {
-    for (let i = current.length; i < count; i++) {
-      const row: Record<string, any> = {};
-      for (const field of ds.fields) {
-        row[field.name] = generateMockValue(field.name, field.class);
-      }
-      current.push(row);
-    }
-  } else if (count < current.length) {
-    editableSubDataSources.value[dsName] = current.slice(0, count);
+// One table's rows and totals (also its Try again)
+async function loadRows(binding: TableDataBinding): Promise<void> {
+  const state: TableRowsState = { rows: [], totalCount: 0, totals: {}, loading: true, failed: false };
+  tableRows[binding.datasetName] = state;
+  try {
+    const [result, totals] = await Promise.all([fetchTableRows(binding, TABLE_ROWS_LIMIT), fetchTableTotals(binding)]);
+    tableRows[binding.datasetName] = { ...state, rows: result.rows, totalCount: result.totalCount, totals, loading: false };
+  } catch (error) {
+    tableRows[binding.datasetName] = { ...state, loading: false, failed: true, error: errorText(error) };
   }
 }
 
-function convertSubDataSourcesTypes(): Record<string, Record<string, any>[]> {
-  const result: Record<string, Record<string, any>[]> = {};
-  for (const [dsName, rows] of Object.entries(editableSubDataSources.value)) {
-    const ds = resolvedSubDatasets.value.find((d) => d.name === dsName);
-    if (!ds?.fields) {
-      result[dsName] = rows;
-      continue;
-    }
-    const fieldMap = new Map(ds.fields.map((f) => [f.name, f.class || ""]));
-    result[dsName] = rows.map((row) => {
-      const converted: Record<string, any> = {};
-      for (const [key, val] of Object.entries(row)) {
-        const cls = fieldMap.get(key) || "";
-        if (
-          cls === "java.lang.Integer" ||
-          cls === "java.lang.Short" ||
-          cls === "java.lang.Byte"
-        ) {
-          converted[key] = parseInt(String(val), 10);
-        } else if (
-          cls === "java.lang.Double" ||
-          cls === "java.lang.Float" ||
-          cls === "java.lang.BigDecimal"
-        ) {
-          converted[key] = parseFloat(String(val));
-        } else if (cls === "java.lang.Boolean") {
-          converted[key] = String(val) === "true";
-        } else {
-          converted[key] = val;
-        }
-      }
-      return converted;
-    });
-  }
-  return result;
+// Every table's rows, fetched side by side; one failing doesn't stop the others
+async function loadAllRows(): Promise<void> {
+  Object.keys(tableRows).forEach((k) => delete tableRows[k]);
+  await Promise.all(tables.value.map(({ binding }) => loadRows(binding)));
 }
 
-function generatePreview() {
-  const apiUrl = props.previewServerUrl || API_URL_DEFAULT;
+function setPreviewUrl(url: string) {
+  if (previewUrl.value.startsWith("blob:")) {
+    URL.revokeObjectURL(previewUrl.value);
+  }
+  previewUrl.value = url;
+}
+
+async function generatePreview() {
+  // A newer preview replaces an older one: the older answer is ignored when it
+  // arrives (requests are never cancelled, see apiClient)
+  previewController?.abort();
+  const controller = new AbortController();
+  previewController = controller;
   isGenerating.value = true;
+  pdfState.value = "building";
+  pdfError.value = "";
 
-  const escapeHtml = (str: string) =>
-    str
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+  try {
+    // The template made ready and saved, then its Jmix report run on the server
+    const run = await props.prepare();
+    if (controller.signal.aborted) return;
+    const pdf = await runTemplatePdf(run);
+    if (controller.signal.aborted) return;
+    setPreviewUrl(URL.createObjectURL(pdf));
+    pdfState.value = "ready";
+  } catch (error) {
+    if ((error as Error).name === "AbortError" || controller.signal.aborted) return;
+    // 401 is already handled by apiClient (redirect to login)
+    if (error instanceof ApiError && error.status === 401) return;
+    // Shown in the PDF area, with the server's own words when it sent some
+    console.error("Failed to preview PDF:", error);
+    pdfError.value = errorText(error);
+    pdfState.value = "failed";
+  } finally {
+    if (previewController === controller) {
+      previewController = null;
+      isGenerating.value = false;
+    }
+  }
+}
 
-  const typedSubDataSources = convertSubDataSourcesTypes();
-  const formHtml = `<!DOCTYPE html><html><body onload="document.getElementById('pdfForm').submit()">
-    <form id="pdfForm" action="${escapeHtml(apiUrl)}" method="POST" target="_self">
-      <input type="hidden" name="jrxml" value="${escapeHtml(props.jrxmlContent)}">
-      <input type="hidden" name="parameters" value="${escapeHtml(JSON.stringify(editableParams.value))}">
-      <input type="hidden" name="dataSource" value="${escapeHtml(JSON.stringify(editableDataSource.value))}">
-      ${
-        Object.keys(typedSubDataSources).length > 0
-          ? `<input type="hidden" name="subDataSources" value="${escapeHtml(JSON.stringify(typedSubDataSources))}">`
-          : ""
-      }
-    </form></body></html>`;
+function editTable(uuid: string) {
+  emit("update:visible", false);
+  emit("edit-table", uuid);
+}
 
-  previewUrl.value = `data:text/html;charset=utf-8,${encodeURIComponent(formHtml)}`;
+function editChart(uuid: string) {
+  emit("update:visible", false);
+  emit("edit-chart", uuid);
 }
 
 const closeModal = () => {
   emit("update:visible", false);
 };
 
-const handleIframeLoad = () => {
-  isGenerating.value = false;
-};
+onUnmounted(() => {
+  previewController?.abort();
+  setPreviewUrl("about:blank");
+});
 
+// Opening the preview builds the PDF and, side by side, fetches every
+// table's rows for the panel (they are shown here, not sent)
 watch(
   () => props.visible,
-  (newVisible) => {
-    if (newVisible) {
-      initializeEditor();
+  (open) => {
+    if (!open) {
+      previewController?.abort();
+      return;
     }
+    setPreviewUrl("about:blank");
+    generatePreview();
+    loadAllRows();
   },
+  { immediate: true },
 );
 </script>
 
@@ -570,48 +373,117 @@ watch(
   height: 100%;
 }
 
-/* Editor Panel */
-.editor-panel {
-  width: 420px;
-  min-width: 420px;
+.tables-panel {
+  width: 440px;
+  min-width: 440px;
   border-right: 1px solid var(--border-color, #e0e0e0);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: #fafbfc;
 }
 
-.editor-header {
-  padding: 8px 12px;
+.tables-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--border-color, #e0e0e0);
-  display: flex;
-  justify-content: flex-end;
 }
 
-.editor-tabs {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-:deep(.editor-tabs .n-tabs-tab) {
+.tables-head h4 {
+  margin: 0;
   font-size: 13px;
 }
 
-:deep(.editor-tabs .n-tab-pane) {
+.tables-list {
   flex: 1;
-  overflow: hidden;
-}
-
-:deep(.editor-tabs .n-tabs-content) {
-  flex: 1;
-  overflow: hidden;
-}
-
-.tab-content {
-  height: 100%;
   overflow-y: auto;
-  padding: 8px 12px;
+  padding: 12px;
+}
+
+.server-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #6b7280;
+}
+
+.server-note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.table-card {
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.card-source {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 0 8px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #374151;
+  background: #fff;
+}
+
+.chip.is-applied {
+  background: #f4f1ff;
+  border-color: #ddd6fe;
+  color: #5b3ee0;
+}
+
+.card-grid {
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid #eef0f4;
+  border-radius: 6px;
+}
+
+.muted {
+  font-size: 11px;
+  color: #9ca3af;
 }
 
 .empty-hint {
@@ -621,159 +493,6 @@ watch(
   font-size: 13px;
 }
 
-/* Parameters */
-.param-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.param-row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.param-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.param-name {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-color-2, #666);
-}
-
-.param-input {
-  width: 100%;
-  padding: 6px 8px;
-  border: 1px solid var(--border-color, #d9d9d9);
-  border-radius: 4px;
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.2s;
-  box-sizing: border-box;
-}
-
-.param-input:focus {
-  border-color: var(--primary-color, #1890ff);
-}
-
-.param-checkbox {
-  margin: 4px 0;
-}
-
-/* DataSource */
-.ds-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-  gap: 8px;
-}
-
-.row-count-label {
-  font-size: 12px;
-  color: var(--text-color-2, #666);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.row-count-input {
-  width: 60px;
-  padding: 4px 6px;
-  border: 1px solid var(--border-color, #d9d9d9);
-  border-radius: 4px;
-  font-size: 13px;
-  text-align: center;
-}
-
-.ds-table-wrapper {
-  overflow: auto;
-  max-height: calc(90vh - 120px);
-  border: 1px solid var(--border-color, #e0e0e0);
-  border-radius: 4px;
-}
-
-.ds-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  min-width: max-content;
-}
-
-.ds-th {
-  position: sticky;
-  top: 0;
-  background: var(--bg-color, #fafafa);
-  padding: 6px 4px;
-  border-bottom: 2px solid var(--border-color, #e0e0e0);
-  text-align: left;
-  white-space: nowrap;
-  z-index: 1;
-}
-
-.th-inner {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.ds-th-actions {
-  width: 32px;
-  min-width: 32px;
-}
-
-.ds-td {
-  padding: 2px;
-  border-bottom: 1px solid var(--border-color, #f0f0f0);
-}
-
-.ds-td-actions {
-  text-align: center;
-  width: 32px;
-  min-width: 32px;
-}
-
-.ds-cell-input {
-  width: 100%;
-  padding: 4px 6px;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  font-size: 12px;
-  outline: none;
-  box-sizing: border-box;
-  transition: border-color 0.2s;
-}
-
-.ds-cell-input:hover {
-  border-color: var(--border-color, #d9d9d9);
-}
-
-.ds-cell-input:focus {
-  border-color: var(--primary-color, #1890ff);
-}
-
-.remove-row-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-color-3, #999);
-  font-size: 16px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  line-height: 1;
-}
-
-.remove-row-btn:hover {
-  color: var(--error-color, #ff4d4f);
-  background: rgba(255, 77, 79, 0.06);
-}
-
-/* Panel Toggle */
 .panel-toggle {
   width: 18px;
   min-width: 18px;
@@ -786,7 +505,6 @@ watch(
   border-left: 1px solid var(--border-color, #e0e0e0);
   border-right: 1px solid var(--border-color, #e0e0e0);
   color: var(--text-color-3, #999);
-  font-size: 10px;
   transition: background 0.2s;
 }
 
@@ -794,7 +512,6 @@ watch(
   background: var(--hover-color, #f0f0f0);
 }
 
-/* PDF Panel */
 .pdf-panel {
   flex: 1;
   display: flex;
@@ -809,9 +526,118 @@ watch(
   justify-content: flex-end;
 }
 
+.pdf-stage {
+  position: relative;
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  background: #f6f5fa;
+}
+
 .pdf-iframe {
   flex: 1;
   width: 100%;
   border: none;
+  background: #fff;
+}
+
+.pdf-status {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px;
+  text-align: center;
+  color: #6e6a80;
+  font-size: 12.5px;
+}
+
+.pdf-status strong {
+  color: #1c1b26;
+  font-size: 15px;
+}
+
+.pdf-skeleton-page {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(300px, 70%);
+  aspect-ratio: 1 / 1.414;
+  margin-bottom: 14px;
+  padding: 26px 24px;
+  border: 1px solid rgba(28, 27, 38, 0.09);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(23, 20, 44, 0.06);
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.status-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: rgba(229, 72, 77, 0.1);
+  color: #e5484d;
+}
+
+.error-details {
+  max-width: min(560px, 90%);
+  max-height: 140px;
+  margin: 6px 0 10px;
+  padding: 8px 12px;
+  overflow: auto;
+  border: 1px solid rgba(229, 72, 77, 0.25);
+  border-radius: 8px;
+  background: #fff;
+  color: #b4232a;
+  font-size: 11.5px;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.table-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(229, 72, 77, 0.25);
+  border-radius: 8px;
+  background: rgba(229, 72, 77, 0.06);
+  color: #e5484d;
+  font-size: 12px;
+}
+
+.table-error > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.table-error > div {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.table-error strong {
+  color: #b4232a;
+}
+
+.table-error-details {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #77718a;
+  font-size: 11px;
+  word-break: break-word;
 }
 </style>

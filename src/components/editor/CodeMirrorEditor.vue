@@ -14,7 +14,7 @@ import { xml } from '@codemirror/lang-xml';
 import { foldGutter, indentOnInput } from '@codemirror/language';
 import type { EditorStateConfig } from '@codemirror/state';
 import { defaultKeymap } from '@codemirror/commands';
-import { html_beautify } from 'js-beautify';
+import { formatXml } from '@/utils/jrxml/formatXml';
 
 // Define component props
 interface Props {
@@ -369,23 +369,11 @@ const performSearchWith = (query: string): number => {
   return searchResults.length;
 };
 
-// Formatting: use js-beautify's html_beautify to format XML
-const BEAUTIFY_OPTS = {
-  indent_size: 2,
-  wrap_attributes: 'auto',
-  wrap_line_length: 120,
-  content_unformatted: [
-    'text', 'textFieldExpression', 'parameterExpression', 'queryString',
-    'sortField', 'groupExpression', 'reportFont', 'property',
-    'propertyExpression', 'font'
-  ],
-  extra_liners: ['text', 'textFieldExpression', 'parameterExpression', 'queryString']
-};
-
+// Formatting: indentation only; tags, CDATA and text stay exactly as they are
 const formatDocument = () => {
   if (!editorView) return;
   const content = editorView.state.doc.toString();
-  const formatted = html_beautify(content, BEAUTIFY_OPTS);
+  const formatted = formatXml(content);
   editorView.dispatch({
     changes: { from: 0, to: editorView.state.doc.length, insert: formatted },
     selection: EditorSelection.cursor(0)

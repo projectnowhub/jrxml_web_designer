@@ -1,15 +1,12 @@
 // Element-related utility functions
 
-import type { DesignElement } from '@/types';
-import { getElementConfig, createElement } from '@/components/elements/ElementRegistry';
-
-// Get the unique key for an element
-export function getElementKey(element: { element: DesignElement, bandIndex: number, elementIndex: number, parentFrameIndex?: number }): string {
-  if (element.parentFrameIndex !== undefined) {
-    return `${element.element.type}-${element.bandIndex}-${element.parentFrameIndex}-${element.elementIndex}`;
-  }
-  return `${element.element.type}-${element.bandIndex}-${element.elementIndex}`;
-}
+import type { Component } from "vue";
+import type { DesignElement, ImageElement } from "@/types";
+import { resolveReportFont } from "@/config/fonts.config";
+import {
+  getElementConfig,
+  createElement,
+} from "@/components/elements/ElementRegistry";
 
 // Get the element type name
 export function getElementTypeName(type: string): string {
@@ -20,57 +17,692 @@ export function getElementTypeName(type: string): string {
 // Get the element icon
 export function getElementIcon(type: string): string {
   const config = getElementConfig(type);
-  return config?.icon || '?';
+  return config?.icon || "?";
 }
 
-// Get the element SVG icon
-export function getElementIconSvg(type: string): string | undefined {
+// Get the element's Lucide icon component
+export function getElementIconComponent(type: string): Component | undefined {
   const config = getElementConfig(type);
-  return config?.iconSvg;
+  return config?.iconComponent;
 }
 
-// Get element display info (excluding Band)
-export function getElementDisplayInfoWithoutBand(element: DesignElement): string {
-  let info = '';
+// Strip the surrounding double quotes of a literal expression so the UI can show
+// clean text (e.g. `"Hello"` -> `Hello`). Field/variable expressions are returned trimmed.
+export function stripExpressionQuotes(expression: string): string {
+  const trimmed = (expression || "").trim();
+  if (trimmed.length >= 2 && trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
 
-  // Add type-specific info based on the element type
-  if (element.type === 'staticText' && (element as any).text) {
-    info = `${(element as any).text.substring(0, 15)}${(element as any).text.length > 15 ? '...' : ''}`;
-  } else if (element.type === 'textField') {
-    if ((element as any).expression) {
-      info = `${(element as any).expression.substring(0, 15)}${(element as any).expression.length > 15 ? '...' : ''}`;
-    } else if ((element as any).fieldName) {
-      info = `$F{${(element as any).fieldName}}`;
+// Keep the stored JRXML expression valid: plain text typed by the user is wrapped in
+// quotes, while field/variable expressions, concatenations and values the user quoted
+// manually are preserved exactly as typed.
+export function quoteExpressionValue(value: string): string {
+  const trimmed = (value || "").trim();
+  if (!trimmed) return '""';
+  if (trimmed.startsWith("$") || trimmed.includes("+")) return value;
+  if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
+    return value;
+  }
+  return `"${value}"`;
+}
+
+// Property name used to persist the user-defined image name inside <reportElement>,
+// so the image label survives a JRXML save/reload round-trip.
+export const IMAGE_NAME_PROPERTY = "com.cdp.image.name";
+
+// Image corner radius, kept as a <reportElement> property: JasperReports has no
+// radius on images, so the canvas draws it and the report server reads it
+export const IMAGE_CORNER_RADIUS_PROPERTY = "com.cdp.image.cornerRadius";
+
+// Text field corner radius, kept the same way: JasperReports
+// can't round a text field, so the canvas draws it and the report server reads it
+export const TEXT_CORNER_RADIUS_PROPERTY = "com.cdp.text.cornerRadius";
+
+// Label shown for images that are embedded as base64 data URLs and have no user-defined name
+export const EMBEDDED_IMAGE_LABEL = "[Embedded Image]";
+
+// Get a reportElement level property value (used by the image name persistence)
+function getElementPropertyValue(element: any, propertyName: string): string {
+  const properties = element?.properties;
+  if (!Array.isArray(properties)) return "";
+  const match = properties.find((prop: any) => prop?.name === propertyName);
+  return match && typeof match.value === "string" ? match.value.trim() : "";
+}
+
+// Create, update or remove a reportElement level property
+function setElementPropertyValue(
+  element: any,
+  propertyName: string,
+  value: string,
+): void {
+  if (!element) return;
+
+  if (!Array.isArray(element.properties)) {
+    if (!value) return;
+    element.properties = [];
+  }
+
+  const index = element.properties.findIndex(
+    (prop: any) => prop?.name === propertyName,
+  );
+
+  if (!value) {
+    if (index !== -1) {
+      element.properties.splice(index, 1);
     }
-  } else if (element.type === 'image' && (element as any).imagePath) {
-    info = (element as any).imagePath;
+    if (element.properties.length === 0) {
+      delete element.properties;
+    }
+    return;
   }
 
-  return info;
+  if (index === -1) {
+    element.properties.push({ name: propertyName, value });
+  } else {
+    element.properties[index].value = value;
+  }
 }
 
-// Check whether an element is selected
-export function isElementSelected(element: { element: DesignElement, bandIndex: number, elementIndex: number, parentFrameIndex?: number }, selectedElement: { bandIndex: number, elementIndex: number, parentFrameIndex?: number } | null | undefined): boolean {
-  if (!selectedElement) return false;
+// Label derived from the image expression, used when the element has no image name
+// (e.g. `"logo.png"` -> `logo.png`, `$P{imagePath}` -> `$P{imagePath}`,
+//  embedded base64 data -> `[Embedded Image]`).
+export function getImageExpressionLabel(element: DesignElement): string {
+  const expression = stripExpressionQuotes(
+    String((element as any)?.imageExpression || ""),
+  ).trim();
+  if (!expression) return "";
+  if (expression.startsWith("data:image/")) return EMBEDDED_IMAGE_LABEL;
+  return expression;
+}
 
-  // If both elements have a UUID, prefer comparing by UUID
-  if (element.element.uuid && (selectedElement as any).uuid) {
-    return element.element.uuid === (selectedElement as any).uuid;
+// Get the user-defined name of an image element (empty when the image has no name)
+export function getImageName(element: DesignElement): string {
+  if (!element || element.type !== "image") return "";
+  const image = element as any;
+  const imagePath =
+    typeof image.imagePath === "string" ? image.imagePath.trim() : "";
+  if (imagePath) return imagePath;
+  return getElementPropertyValue(image, IMAGE_NAME_PROPERTY);
+}
+
+// Get the name displayed for an image element: the user-defined name when it exists,
+// otherwise a label derived from the image expression
+export function getImageDisplayName(element: DesignElement): string {
+  return getImageName(element) || getImageExpressionLabel(element);
+}
+
+// Set (or clear) the user-defined name of an image element. The name is a design-time
+// label only: the image expression is never modified, so `$F{}`/`$P{}` expressions and
+// embedded base64 data are preserved. A name that is identical to the label derived from
+// the expression is not stored, because it would not add any information.
+export type CornerName = "topLeft" | "topRight" | "bottomRight" | "bottomLeft";
+// CSS border-radius order, also the order of the stored values
+export const CORNER_NAMES: CornerName[] = ["topLeft", "topRight", "bottomRight", "bottomLeft"];
+export type CornerRadii = Record<CornerName, number>;
+
+const NO_RADII: CornerRadii = { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 };
+
+// Elements whose corner radius is a reportElement property
+const CORNER_RADIUS_PROPERTIES: Record<string, string> = {
+  image: IMAGE_CORNER_RADIUS_PROPERTY,
+  textField: TEXT_CORNER_RADIUS_PROPERTY,
+};
+
+// Stored as one value when all corners match ("12"), else four in CSS order
+// ("12 0 12 0"). An image with a preset shape works its radii out from its
+// current size instead (see IMAGE_SHAPES).
+export function getPropertyCornerRadii(element: DesignElement): CornerRadii {
+  const property = element && CORNER_RADIUS_PROPERTIES[element.type];
+  if (!property) return { ...NO_RADII };
+  const shape = getImageShape(element);
+  if (shape) return shapeRadii(shape, element);
+  const values = getElementPropertyValue(element, property)
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((v) => Math.max(0, parseFloat(v) || 0));
+  if (values.length === 0) return { ...NO_RADII };
+  const at = (i: number) => (values.length === 4 ? values[i]! : values[0]!);
+  return Object.fromEntries(CORNER_NAMES.map((c, i) => [c, at(i)])) as CornerRadii;
+}
+
+// All zero removes the property. Typed radii replace an image's preset shape
+// (it becomes "Custom")
+export function setPropertyCornerRadii(element: DesignElement, radii: CornerRadii): void {
+  const property = element && CORNER_RADIUS_PROPERTIES[element.type];
+  if (!property) return;
+  if (element.type === "image") setElementPropertyValue(element, IMAGE_SHAPE_PROPERTY, "");
+  const values = CORNER_NAMES.map((c) => Math.max(0, Math.round(radii[c] || 0)));
+  const value = values.every((v) => v === 0)
+    ? ""
+    : values.every((v) => v === values[0])
+      ? String(values[0])
+      : values.join(" ");
+  setElementPropertyValue(element, property, value);
+}
+
+// CSS border-radius for the canvas, or undefined for square corners
+export function propertyCornerRadiusCss(element: DesignElement): string | undefined {
+  const radii = getPropertyCornerRadii(element);
+  if (CORNER_NAMES.every((c) => radii[c] === 0)) return undefined;
+  return CORNER_NAMES.map((c) => `${radii[c]}px`).join(" ");
+}
+
+// Image shapes
+// ---------------------------------------------------------------------------
+// Preset looks for images (Basic tab → Shape). The shape is kept as
+// IMAGE_SHAPE_PROPERTY and its corner radii are worked out from the image's
+// size, so a circle stays round when the image is resized. The report server
+// still gets plain pixels: the generator writes the radii for the current
+// size into IMAGE_CORNER_RADIUS_PROPERTY (reportElementProperties).
+
+export const IMAGE_SHAPE_PROPERTY = "com.cdp.image.shape";
+
+export type ImageShapeId =
+  | "square"
+  | "rounded"
+  | "soft"
+  | "circle"
+  | "pill"
+  | "leaf"
+  | "tab"
+  | "drop"
+  | "cornerTopLeft"
+  | "cornerTopRight"
+  | "cornerBottomRight"
+  | "cornerBottomLeft";
+
+// Each corner as a share of the image's short side (0.5 = fully round),
+// in CSS order: top-left, top-right, bottom-right, bottom-left.
+// Circle and Pill set the proportions they need (shapeSize); the others never
+// change the image's size. The four corner shapes round one corner only.
+export const IMAGE_SHAPES: { id: ImageShapeId; corners: [number, number, number, number] }[] = [
+  { id: "square", corners: [0, 0, 0, 0] },
+  { id: "rounded", corners: [0.08, 0.08, 0.08, 0.08] },
+  { id: "soft", corners: [0.22, 0.22, 0.22, 0.22] },
+  { id: "circle", corners: [0.5, 0.5, 0.5, 0.5] },
+  { id: "pill", corners: [0.5, 0.5, 0.5, 0.5] },
+  { id: "leaf", corners: [0.4, 0, 0.4, 0] },
+  { id: "tab", corners: [0.16, 0.16, 0, 0] },
+  { id: "drop", corners: [0.5, 0.5, 0, 0.5] },
+  { id: "cornerTopLeft", corners: [0.4, 0, 0, 0] },
+  { id: "cornerTopRight", corners: [0, 0.4, 0, 0] },
+  { id: "cornerBottomRight", corners: [0, 0, 0.4, 0] },
+  { id: "cornerBottomLeft", corners: [0, 0, 0, 0.4] },
+];
+
+const findImageShape = (id: string) => IMAGE_SHAPES.find((s) => s.id === id);
+
+// The image's preset shape, or undefined for square / custom corners
+export function getImageShape(element: DesignElement): ImageShapeId | undefined {
+  if (element?.type !== "image") return undefined;
+  const shape = findImageShape(getElementPropertyValue(element, IMAGE_SHAPE_PROPERTY));
+  return shape && shape.id !== "square" ? shape.id : undefined;
+}
+
+// Corner radii (px) of a shape at the element's size
+function shapeRadii(id: ImageShapeId, element: DesignElement): CornerRadii {
+  const shape = findImageShape(id)!;
+  const side = Math.max(0, Math.min(Number(element.width) || 0, Number(element.height) || 0));
+  return Object.fromEntries(
+    CORNER_NAMES.map((c, i) => [c, Math.round(side * shape.corners[i]!)]),
+  ) as CornerRadii;
+}
+
+// Gives the image a preset shape. "square" removes the corners.
+// The size a shape needs to look like itself: a Circle is square (its width
+// kept), a Pill at least twice as wide as tall (a square or tall picture
+// keeps its width and gets half as tall). Other shapes keep any size
+export function shapeSize(id: ImageShapeId | null | undefined, width: number, height: number): { width: number; height: number } {
+  if (id === "circle") return { width, height: width };
+  if (id === "pill" && height > width / 2) return { width, height: Math.max(1, Math.round(width / 2)) };
+  return { width, height };
+}
+
+export function setImageShape(element: DesignElement, id: ImageShapeId): void {
+  if (element?.type !== "image" || !findImageShape(id)) return;
+  setPropertyCornerRadii(element, shapeRadii(id, element));
+  if (id !== "square") setElementPropertyValue(element, IMAGE_SHAPE_PROPERTY, id);
+}
+
+// The <reportElement> properties to write: an image with a preset shape gets
+// the corner radii for its current size
+export function reportElementProperties(element: any): { name: string; value?: string }[] {
+  const properties: { name: string; value?: string }[] = Array.isArray(element?.properties)
+    ? element.properties
+    : [];
+  const shape = getImageShape(element);
+  if (!shape) return properties;
+  const radii = shapeRadii(shape, element);
+  const values = CORNER_NAMES.map((c) => radii[c]);
+  const value = values.every((v) => v === values[0]) ? String(values[0]) : values.join(" ");
+  const rest = properties.filter((p) => p?.name !== IMAGE_CORNER_RADIUS_PROPERTY);
+  return values.every((v) => v === 0)
+    ? rest
+    : [...rest, { name: IMAGE_CORNER_RADIUS_PROPERTY, value }];
+}
+
+// Images
+export const getImageCornerRadii = getPropertyCornerRadii;
+export const setImageCornerRadii = setPropertyCornerRadii;
+export const imageCornerRadiusCss = propertyCornerRadiusCss;
+
+export function setImageName(element: DesignElement, name: string): void {
+  if (!element || element.type !== "image") return;
+  const image = element as any;
+  const trimmed = (name || "").trim();
+  const value = trimmed === getImageExpressionLabel(element) ? "" : trimmed;
+  image.imagePath = value;
+  setElementPropertyValue(image, IMAGE_NAME_PROPERTY, value);
+}
+
+// Property used to persist a non-destructive image crop inside <reportElement>. The original
+// image is kept; only the visible part is stored, as "left,top,right,bottom" insets that are
+// fractions (0..1) of the original image, e.g. "0.1,0,0.25,0.05".
+export const IMAGE_CROP_PROPERTY = "com.cdp.image.crop";
+
+export interface ImageCrop {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+const CROP_EPSILON = 0.0005;
+
+// Get the crop of an image element, or null when the whole image is shown
+export function getImageCrop(element: DesignElement): ImageCrop | null {
+  if (!element || element.type !== "image") return null;
+  const raw = getElementPropertyValue(element, IMAGE_CROP_PROPERTY);
+  if (!raw) return null;
+  const parts = raw.split(",").map((part) => Number(part.trim()));
+  if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n) || n < 0 || n >= 1)) {
+    return null;
+  }
+  const [left = 0, top = 0, right = 0, bottom = 0] = parts;
+  if (left + right >= 1 || top + bottom >= 1) return null;
+  if (parts.every((n) => n < CROP_EPSILON)) return null;
+  return { left, top, right, bottom };
+}
+
+// Set (or clear, with null / an empty crop) the crop of an image element
+export function setImageCrop(element: DesignElement, crop: ImageCrop | null): void {
+  if (!element || element.type !== "image") return;
+  const values = crop ? [crop.left, crop.top, crop.right, crop.bottom] : [];
+  const isEmpty = values.length === 0 || values.every((n) => n < CROP_EPSILON);
+  setElementPropertyValue(
+    element,
+    IMAGE_CROP_PROPERTY,
+    isEmpty ? "" : values.map((n) => Math.max(0, n).toFixed(4)).join(","),
+  );
+}
+
+// A new picture in an image element (uploaded, or chosen from the project's
+// photos): its expression and file name; a crop belonged to the old picture.
+// The caller records the undo step and rewrites the JRXML.
+export function setImagePicture(element: DesignElement, expression: string, name: string): void {
+  if (!element || element.type !== "image") return;
+  (element as ImageElement).imageExpression = expression;
+  setImageName(element, name);
+  setImageCrop(element, null);
+}
+
+// Helper to parse box padding or border dimension safely
+function parseBoxDimension(val: any): number | undefined {
+  if (val === undefined || val === null || val === '') return undefined;
+  const num = Number(val);
+  return isNaN(num) ? undefined : Math.max(0, num);
+}
+
+// Get the resolved padding (margin) for all four sides of a box
+export function getElementBoxPadding(box?: any): {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+} {
+  if (!box) {
+    return { top: 0, right: 0, bottom: 0, left: 0 };
+  }
+  const globalPad = parseBoxDimension(box.padding) ?? 0;
+  const top = parseBoxDimension(box.topPadding) ?? globalPad;
+  const right = parseBoxDimension(box.rightPadding) ?? globalPad;
+  const bottom = parseBoxDimension(box.bottomPadding) ?? globalPad;
+  const left = parseBoxDimension(box.leftPadding) ?? globalPad;
+
+  return { top, right, bottom, left };
+}
+
+// Get the resolved border widths for all four sides of a box
+export function getElementBoxBorderWidths(box?: any): {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+} {
+  if (!box) {
+    return { top: 0, right: 0, bottom: 0, left: 0 };
   }
 
-  // Otherwise fall back to position-based comparison
-  return selectedElement.bandIndex === element.bandIndex &&
-         selectedElement.elementIndex === element.elementIndex &&
-         selectedElement.parentFrameIndex === element.parentFrameIndex;
+  const getSideBorderWidth = (side: 'top' | 'right' | 'bottom' | 'left'): number => {
+    const penProperty = side === 'top' ? box.topPen :
+                        side === 'left' ? box.leftPen :
+                        side === 'bottom' ? box.bottomPen :
+                        box.rightPen;
+
+    const sideBorderStyle = side === 'top' ? box.topBorderStyle :
+                            side === 'left' ? box.leftBorderStyle :
+                            side === 'bottom' ? box.bottomBorderStyle :
+                            box.rightBorderStyle;
+
+    const sideBorderWidth = side === 'top' ? box.topBorderWidth :
+                            side === 'left' ? box.leftBorderWidth :
+                            side === 'bottom' ? box.bottomBorderWidth :
+                            box.rightBorderWidth;
+
+    const borderProperty = side === 'top' ? box.topBorder :
+                           side === 'left' ? box.leftBorder :
+                           side === 'bottom' ? box.bottomBorder :
+                           box.rightBorder;
+
+    if (sideBorderStyle === 'None' || sideBorderStyle === 'none' || borderProperty === 'None' || borderProperty === 'none') {
+      return 0;
+    }
+
+    if (penProperty?.lineWidth !== undefined && penProperty.lineWidth !== '') {
+      return Math.max(0, Number(penProperty.lineWidth) || 0);
+    }
+    if (sideBorderWidth !== undefined && sideBorderWidth !== '') {
+      return Math.max(0, Number(sideBorderWidth) || 0);
+    }
+    if (box.borderWidth !== undefined && box.borderWidth !== '') {
+      return Math.max(0, Number(box.borderWidth) || 0);
+    }
+    if (box.pen?.lineWidth !== undefined && box.pen.lineWidth !== '') {
+      return Math.max(0, Number(box.pen.lineWidth) || 0);
+    }
+    if (borderProperty === 'Thin' || borderProperty === '1Point') return 1;
+    if (borderProperty === '2Point' || borderProperty === 'Medium') return 2;
+    if (borderProperty === '4Point' || borderProperty === 'Thick') return 4;
+
+    const hasGlobal = (box.pen?.lineStyle && box.pen.lineStyle !== 'None') ||
+                      (box.borderStyle && box.borderStyle !== 'None') ||
+                      (box.border && box.border !== 'None' && box.border !== '');
+    if (hasGlobal) return 1;
+
+    return 0;
+  };
+
+  return {
+    top: getSideBorderWidth('top'),
+    right: getSideBorderWidth('right'),
+    bottom: getSideBorderWidth('bottom'),
+    left: getSideBorderWidth('left'),
+  };
 }
 
-// Select an element from the list
-export function selectElementFromList(element: { element: DesignElement, bandIndex: number, elementIndex: number, parentFrameIndex?: number }, selectElement: (bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number) => void): void {
-  selectElement(element.bandIndex, element.elementIndex, false, element.parentFrameIndex);
+// Get combined padding and border insets of a box
+export function getElementBoxInsets(box?: any): {
+  padding: { top: number; right: number; bottom: number; left: number };
+  borders: { top: number; right: number; bottom: number; left: number };
+  vertical: number;
+  horizontal: number;
+} {
+  const padding = getElementBoxPadding(box);
+  const borders = getElementBoxBorderWidths(box);
+  return {
+    padding,
+    borders,
+    vertical: padding.top + padding.bottom + borders.top + borders.bottom,
+    horizontal: padding.left + padding.right + borders.left + borders.right,
+  };
+}
+
+// Calculate the required rendered height for a text field based on its text, width, font, padding, and borders
+export interface TextFontDefaults {
+  name?: string;
+  size?: number;
+  isBold?: boolean;
+  isItalic?: boolean;
+}
+
+// Formatting tags the rich text editor writes into a text expression
+export const hasHtmlTags = (str: string): boolean =>
+  /<\/?(b|strong|i|em|u|s|strike|del|font|a|span|p|div|br|ul|ol|li|sup|sub)\b[^>]*>/i.test(str);
+
+export const isRichTextElement = (element: { markup?: string; expression?: string }): boolean =>
+  element.markup === 'html' || hasHtmlTags(element.expression || '');
+
+// Removes scripts, embedded content and event handlers from text HTML
+export const sanitizeHtml = (html: string): string =>
+  html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+    .replace(/\s*on\w+\s*=\s*(['"]).*?\1/gi, '')
+    .replace(/\s*on\w+\s*=\s*[^>\s]+/gi, '')
+    .replace(/javascript:/gi, '');
+
+// rgb(r, g, b) colours (what the browser's editor writes) as #rrggbb, which JasperReports reads
+export const rgbToHex = (str: string): string =>
+  str.replace(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*[\d.]+)?\s*\)/gi, (_, r, g, b) => {
+    const toH = (n: string) => parseInt(n, 10).toString(16).padStart(2, '0');
+    return `#${toH(r)}${toH(g)}${toH(b)}`;
+  });
+
+// HTML from the browser's editor made into what JasperReports' html markup reads
+// (colour spans as <font>, no web-only attributes, no empty spans)
+export function cleanEditorHtml(html: string): string {
+  let clean = rgbToHex(html);
+  clean = clean.replace(/<span\s+style="color:\s*([^";]+);?">([\s\S]*?)<\/span>/gi, '<font color="$1">$2</font>');
+  clean = clean.replace(/\s*class="[^"]*"/gi, '');
+  clean = clean.replace(/\s*rel="[^"]*"/gi, '');
+  clean = clean.replace(/\s*target="[^"]*"/gi, '');
+  clean = clean.replace(/(<a\s+[^>]*?)\s+style="color:\s*[^";]+;?"/gi, '$1');
+  clean = clean.replace(/<span>([\s\S]*?)<\/span>/gi, '$1');
+  return clean;
+}
+
+// Pasting into a text or a typed-table cell: only text goes in (with its
+// formatting). Pictures, video, frames and embedded objects are left out; a
+// clipboard holding nothing but a picture pastes nothing. Returns false when
+// nothing was pasted because only a picture was there.
+const NON_TEXT_TAGS = /<(img|picture|video|audio|svg|canvas|iframe|object|embed|source)\b[^>]*>(?:[\s\S]*?<\/\1>)?/gi;
+export function pasteTextOnly(event: ClipboardEvent): boolean {
+  const data = event.clipboardData;
+  if (!data) return true;
+  event.preventDefault();
+  const html = data.getData("text/html");
+  const text = data.getData("text/plain");
+  if (html) {
+    const cleaned = html
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<(style|script|meta|link|head)\b[\s\S]*?<\/\1>|<(meta|link)\b[^>]*>/gi, "")
+      .replace(NON_TEXT_TAGS, "");
+    if (cleaned.replace(/<[^>]*>/g, "").trim()) {
+      document.execCommand("insertHTML", false, cleaned);
+      return true;
+    }
+  }
+  if (text.trim()) {
+    document.execCommand("insertText", false, text);
+    return true;
+  }
+  // Only a picture (or nothing that is text)
+  return !Array.from(data.items).some((item) => item.type.startsWith("image/"));
+}
+
+// Something dragged into a text: files (pictures) are refused, text still drops in
+export function refuseFileDrop(event: DragEvent): boolean {
+  if (!event.dataTransfer?.types.includes("Files")) return true;
+  event.preventDefault();
+  return false;
+}
+
+// Strip inline text color overrides so a cell or element style can take effect
+export function stripInlineColors(html: string): string {
+  return html
+    .replace(/<font\s+color="[^"]*">([\s\S]*?)<\/font>/gi, '$1')
+    .replace(/<span\s+style="color:\s*[^";]+;?">([\s\S]*?)<\/span>/gi, '$1')
+    .replace(/<span\s+style="([^"]*?)color:\s*[^";]+;?([^"]*)">([\s\S]*?)<\/span>/gi, '<span style="$1$2">$3</span>')
+    .replace(/<span\s*>\s*<\/span>/gi, '')
+    .replace(/<span>([\s\S]*?)<\/span>/gi, '$1');
+}
+
+// Formatting beyond line breaks (bold, colour, lists, superscript...)
+export const hasFormatting = (html: string): boolean =>
+  /<\/?(b|strong|i|em|u|s|strike|del|font|a|span|ul|ol|li|sup|sub)\b[^>]*>/i.test(html);
+
+export const escapeHtml = (text: string): string =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// HTML the canvas shows for a formatted text expression
+export function textExpressionToHtml(expression: string): string {
+  let expr = expression || '';
+  const trimmed = expr.trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
+    expr = trimmed.slice(1, -1);
+  }
+  expr = expr.replace(/\\"/g, '"').replace(/\\n/g, '<br>');
+  return sanitizeHtml(expr);
+}
+
+export interface MeasurableTextElement {
+  expression?: string;
+  fieldName?: string;
+  markup?: string;
+  width: number;
+  fontSize?: number;
+  fontFamily?: string;
+  isBold?: boolean;
+  isItalic?: boolean;
+  box?: any;
+  // The words the canvas shows (formatCanvasText in utils/canvasText.ts): a
+  // linked value, a date or a page number, measured instead of the expression
+  shownText?: string;
+}
+
+// An off-screen box holding the element's text, styled the way the canvas
+// draws it (font, line height, padding, borders), for measuring
+function createTextMeasureBox(
+  element: MeasurableTextElement,
+  reportFont: TextFontDefaults,
+): { div: HTMLDivElement; displayText: string } {
+  const insets = getElementBoxInsets(element.box);
+
+  const div = document.createElement('div');
+  div.style.visibility = 'hidden';
+  div.style.position = 'absolute';
+  div.style.left = '-9999px';
+  div.style.top = '-9999px';
+  // Same font as the canvas draws (TextFieldElement typographyStyle)
+  div.style.fontSize = `${element.fontSize || reportFont.size || 10}px`;
+  // (the font the canvas really uses: only the report server's fonts)
+  div.style.fontFamily = resolveReportFont(element.fontFamily || reportFont.name);
+  div.style.fontWeight =
+    element.isBold === true || (element.isBold === undefined && reportFont.isBold) ? 'bold' : 'normal';
+  div.style.fontStyle =
+    element.isItalic === true || (element.isItalic === undefined && reportFont.isItalic) ? 'italic' : 'normal';
+  div.style.whiteSpace = 'pre-wrap';
+  div.style.wordBreak = 'break-word';
+  div.style.overflowWrap = 'break-word';
+  div.style.lineHeight = '1.3';
+  div.style.boxSizing = 'border-box';
+
+  div.style.paddingTop = `${insets.padding.top}px`;
+  div.style.paddingBottom = `${insets.padding.bottom}px`;
+  div.style.paddingLeft = `${insets.padding.left}px`;
+  div.style.paddingRight = `${insets.padding.right}px`;
+
+  if (insets.borders.top > 0) div.style.borderTop = `${insets.borders.top}px solid transparent`;
+  if (insets.borders.bottom > 0) div.style.borderBottom = `${insets.borders.bottom}px solid transparent`;
+  if (insets.borders.left > 0) div.style.borderLeft = `${insets.borders.left}px solid transparent`;
+  if (insets.borders.right > 0) div.style.borderRight = `${insets.borders.right}px solid transparent`;
+
+  let raw = element.expression || (element.fieldName ? `$F{${element.fieldName}}` : '');
+  const displayText = element.shownText ?? stripExpressionQuotes(raw).replace(/\\n/g, '\n');
+  // Formatted text is measured as the canvas shows it (tags as formatting,
+  // not as characters), otherwise it measures too long and too tall
+  if (element.shownText === undefined && isRichTextElement(element)) {
+    div.innerHTML = textExpressionToHtml(raw) || ' ';
+    // Lists as the canvas draws them (TextFieldElement.vue): no margins, each
+    // level indented 50px like JasperReports, not the browser's own spacing
+    div.querySelectorAll<HTMLElement>('ul, ol').forEach((list) => {
+      list.style.margin = '0';
+      list.style.paddingLeft = '50px';
+    });
+    div.querySelectorAll<HTMLElement>('li').forEach((item) => {
+      item.style.margin = '0';
+    });
+  } else {
+    div.textContent = displayText || ' ';
+  }
+  return { div, displayText };
+}
+
+export function calculateTextElementHeight(
+  element: MeasurableTextElement,
+  // Report default font, used by the canvas when the element sets none
+  reportFont: TextFontDefaults = {},
+): number {
+  if (typeof document === 'undefined') return 20;
+
+  const insets = getElementBoxInsets(element.box);
+  const { div, displayText } = createTextMeasureBox(element, reportFont);
+  div.style.width = `${Math.max(element.width || 100, 10)}px`;
+
+  document.body.appendChild(div);
+  const domHeight = Math.ceil(div.getBoundingClientRect().height);
+  document.body.removeChild(div);
+
+  if (domHeight > 0) {
+    return Math.max(domHeight, 15);
+  }
+
+  // Fallback for environments without CSS layout engine (e.g. JSDOM in tests)
+  const lineCount = Math.max((displayText || ' ').split('\n').length, 1);
+  const approxLineHeight = (element.fontSize || 10) * 1.35;
+  const estimated = Math.ceil(lineCount * approxLineHeight + insets.vertical);
+  return Math.max(estimated, 15);
+}
+
+// Width the element needs to show its text on one line without wrapping,
+// including its padding and borders
+export function measureTextElementWidth(
+  element: MeasurableTextElement,
+  reportFont: TextFontDefaults = {},
+): number {
+  if (typeof document === 'undefined') return element.width;
+
+  const insets = getElementBoxInsets(element.box);
+  const { div, displayText } = createTextMeasureBox(element, reportFont);
+  div.style.display = 'inline-block';
+  div.style.whiteSpace = 'pre';
+
+  document.body.appendChild(div);
+  const domWidth = Math.ceil(div.getBoundingClientRect().width);
+  document.body.removeChild(div);
+
+  if (domWidth > 0) return domWidth;
+
+  // Fallback for environments without CSS layout engine (e.g. JSDOM in tests)
+  const longestLine = Math.max(...(displayText || ' ').split('\n').map((l) => l.length), 1);
+  return Math.ceil(longestLine * (element.fontSize || reportFont.size || 10) * 0.6 + insets.horizontal);
 }
 
 // Recursively find elements
-function findElementsByPredicate(bands: any[], predicate: (element: DesignElement) => boolean, callback: (bandIndex: number, elementIndex: number, parentFrameIndex?: number) => void): boolean {
+function findElementsByPredicate(
+  bands: any[],
+  predicate: (element: DesignElement) => boolean,
+  callback: (
+    bandIndex: number,
+    elementIndex: number,
+    parentFrameIndex?: number,
+  ) => void,
+): boolean {
   let found = false;
 
   bands.forEach((band, bandIndex) => {
@@ -84,13 +716,15 @@ function findElementsByPredicate(bands: any[], predicate: (element: DesignElemen
         }
 
         // If it's a Frame, recursively check child elements
-        if (element.type === 'frame' && (element as any).elements) {
-          (element as any).elements.forEach((childElement: DesignElement, childIndex: number) => {
-            if (predicate(childElement)) {
-              callback(bandIndex, childIndex, elementIndex);
-              found = true;
-            }
-          });
+        if (element.type === "frame" && (element as any).elements) {
+          (element as any).elements.forEach(
+            (childElement: DesignElement, childIndex: number) => {
+              if (predicate(childElement)) {
+                callback(bandIndex, childIndex, elementIndex);
+                found = true;
+              }
+            },
+          );
         }
       });
     }
@@ -100,14 +734,31 @@ function findElementsByPredicate(bands: any[], predicate: (element: DesignElemen
 }
 
 // Select elements by parameter
-export function selectElementsByParameter(bands: any[], paramName: string, selectElement: (bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number) => void): void {
+export function selectElementsByParameter(
+  bands: any[],
+  paramName: string,
+  selectElement: (
+    bandIndex: number,
+    elementIndex: number,
+    isMultiSelect?: boolean,
+    parentFrameIndex?: number,
+  ) => void,
+): void {
   const predicate = (element: DesignElement) => {
-    return element.type === 'textField' && (element as any).expression && (element as any).expression.includes(`$P{${paramName}}`);
+    return (
+      element.type === "textField" &&
+      (element as any).expression &&
+      (element as any).expression.includes(`$P{${paramName}}`)
+    );
   };
 
-  const found = findElementsByPredicate(bands, predicate, (bandIndex, elementIndex, parentFrameIndex) => {
-    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
-  });
+  const found = findElementsByPredicate(
+    bands,
+    predicate,
+    (bandIndex, elementIndex, parentFrameIndex) => {
+      selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    },
+  );
 
   // If no element using this parameter was found, a hint could be shown
   if (!found) {
@@ -116,14 +767,31 @@ export function selectElementsByParameter(bands: any[], paramName: string, selec
 }
 
 // Select elements by field
-export function selectElementsByField(bands: any[], fieldName: string, selectElement: (bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number) => void): void {
+export function selectElementsByField(
+  bands: any[],
+  fieldName: string,
+  selectElement: (
+    bandIndex: number,
+    elementIndex: number,
+    isMultiSelect?: boolean,
+    parentFrameIndex?: number,
+  ) => void,
+): void {
   const predicate = (element: DesignElement) => {
-    return element.type === 'textField' && (element as any).expression && (element as any).expression.includes(`$F{${fieldName}}`);
+    return (
+      element.type === "textField" &&
+      (element as any).expression &&
+      (element as any).expression.includes(`$F{${fieldName}}`)
+    );
   };
 
-  const found = findElementsByPredicate(bands, predicate, (bandIndex, elementIndex, parentFrameIndex) => {
-    selectElement(bandIndex, elementIndex, false, parentFrameIndex);
-  });
+  const found = findElementsByPredicate(
+    bands,
+    predicate,
+    (bandIndex, elementIndex, parentFrameIndex) => {
+      selectElement(bandIndex, elementIndex, false, parentFrameIndex);
+    },
+  );
 
   // If no element using this field was found, a hint could be shown
   if (!found) {
@@ -132,7 +800,11 @@ export function selectElementsByField(bands: any[], fieldName: string, selectEle
 }
 
 // Create a new element
-export function createNewElement(type: string, x: number, y: number): DesignElement {
+export function createNewElement(
+  type: string,
+  x: number,
+  y: number,
+): DesignElement {
   let element: DesignElement;
   try {
     element = createElement(type, { x, y });
@@ -142,7 +814,7 @@ export function createNewElement(type: string, x: number, y: number): DesignElem
       x,
       y,
       width: 100,
-      height: 30
+      height: 30,
     } as DesignElement;
   }
 
@@ -155,7 +827,11 @@ export function createNewElement(type: string, x: number, y: number): DesignElem
 }
 
 // Duplicate an element
-export function duplicateElement(element: DesignElement, offsetX: number = 10, offsetY: number = 10): DesignElement {
+export function duplicateElement(
+  element: DesignElement,
+  offsetX: number = 10,
+  offsetY: number = 10,
+): DesignElement {
   // Deep clone the element
   const duplicatedElement = JSON.parse(JSON.stringify(element));
 
@@ -170,8 +846,11 @@ export function duplicateElement(element: DesignElement, offsetX: number = 10, o
     }
 
     // Process each side's border
-    ['topPen', 'leftPen', 'bottomPen', 'rightPen'].forEach(penType => {
-      if (duplicatedElement.box[penType] && duplicatedElement.box[penType].lineWidth <= 0) {
+    ["topPen", "leftPen", "bottomPen", "rightPen"].forEach((penType) => {
+      if (
+        duplicatedElement.box[penType] &&
+        duplicatedElement.box[penType].lineWidth <= 0
+      ) {
         delete duplicatedElement.box[penType];
       }
     });
@@ -190,15 +869,26 @@ export function duplicateElement(element: DesignElement, offsetX: number = 10, o
 }
 
 // Check whether a point is inside an element
-export function isPointInElement(x: number, y: number, element: DesignElement): boolean {
-  return x >= element.x &&
-         x <= element.x + element.width &&
-         y >= element.y &&
-         y <= element.y + element.height;
+export function isPointInElement(
+  x: number,
+  y: number,
+  element: DesignElement,
+): boolean {
+  return (
+    x >= element.x &&
+    x <= element.x + element.width &&
+    y >= element.y &&
+    y <= element.y + element.height
+  );
 }
 
 // Get the bounding box of an element
-export function getElementBounds(element: DesignElement): { x: number, y: number, width: number, height: number } {
+export function getElementBounds(element: DesignElement): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
   return {
     x: element.x,
     y: element.y,
@@ -208,13 +898,15 @@ export function getElementBounds(element: DesignElement): { x: number, y: number
 }
 
 // Get the bounding box of multiple elements
-export function getElementsBounds(elements: DesignElement[]): { x: number, y: number, width: number, height: number } | null {
+export function getElementsBounds(
+  elements: DesignElement[],
+): { x: number; y: number; width: number; height: number } | null {
   if (elements.length === 0) return null;
 
-  const minX = Math.min(...elements.map(el => el.x));
-  const minY = Math.min(...elements.map(el => el.y));
-  const maxX = Math.max(...elements.map(el => el.x + el.width));
-  const maxY = Math.max(...elements.map(el => el.y + el.height));
+  const minX = Math.min(...elements.map((el) => el.x));
+  const minY = Math.min(...elements.map((el) => el.y));
+  const maxX = Math.max(...elements.map((el) => el.x + el.width));
+  const maxY = Math.max(...elements.map((el) => el.y + el.height));
 
   return {
     x: minX,
@@ -222,4 +914,92 @@ export function getElementsBounds(elements: DesignElement[]): { x: number, y: nu
     width: maxX - minX,
     height: maxY - minY,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Unique element IDs
+// ---------------------------------------------------------------------------
+// The canvas tells elements apart by UUID (selection, keys), and JasperReports
+// requires them to be unique. A copy needs new ones, including every item
+// inside a box and every column, group and cell of a table. A table's dataset
+// keeps its ID: a copied table reads the same data.
+
+type WithUuid = { uuid?: string; type?: string; elements?: WithUuid[]; [key: string]: any };
+
+const TABLE_CELLS = ["tableHeader", "columnHeader", "detailCell", "columnFooter", "tableFooter"];
+
+// Calls `visit` for every object with an ID inside a table: columns and column
+// groups (in `children` and the older `columns` list), row groups, and the
+// elements in its cells (with anything nested in them)
+function forEachTableInnerId(table: WithUuid, visit: (holder: WithUuid) => void): void {
+  const visitElement = (el: WithUuid) => {
+    if (el.uuid) visit(el);
+    el.elements?.forEach(visitElement);
+  };
+  const visitColumn = (col: WithUuid) => {
+    if (!col || typeof col !== "object") return;
+    if (col.uuid) visit(col);
+    for (const key of TABLE_CELLS) {
+      const cellElement = col[key]?.element;
+      if (cellElement) visitElement(cellElement);
+    }
+    col.children?.forEach(visitColumn);
+  };
+  [...(table.children ?? []), ...(table.columns ?? [])].forEach(visitColumn);
+  table.rowGroups?.forEach((group: WithUuid) => group?.uuid && visit(group));
+}
+
+// Replaces old IDs with new ones; the same old ID always gets the same new one,
+// so a column listed in both `children` and `columns` stays one column
+function idRenamer(): (old: string | undefined) => string {
+  const renamed = new Map<string, string>();
+  return (old) => {
+    if (!old) return crypto.randomUUID();
+    if (!renamed.has(old)) renamed.set(old, crypto.randomUUID());
+    return renamed.get(old)!;
+  };
+}
+
+export function refreshUuids(element: WithUuid): void {
+  const fresh = idRenamer();
+  const visit = (el: WithUuid) => {
+    el.uuid = fresh(el.uuid);
+    el.elements?.forEach(visit);
+    if (el.type === "table") forEachTableInnerId(el, (holder) => (holder.uuid = fresh(holder.uuid)));
+  };
+  visit(element);
+}
+
+// Gives new IDs where an element (or a table's inner part) reuses an ID that
+// another element already has, e.g. copies pasted before copies got their own.
+// The first one keeps its ID. Returns whether anything changed.
+export function ensureUniqueUuids(bands: { elements?: WithUuid[] }[] | undefined): boolean {
+  const seen = new Set<string>();
+  let changed = false;
+  const visit = (element: WithUuid) => {
+    if (element.uuid) {
+      if (seen.has(element.uuid)) {
+        element.uuid = crypto.randomUUID();
+        changed = true;
+      }
+      seen.add(element.uuid);
+    }
+    element.elements?.forEach(visit);
+    if (element.type === "table") {
+      // Inside one table the same column ID appears twice on purpose
+      // (children + columns); only a clash with another element counts
+      const inner = new Set<string>();
+      forEachTableInnerId(element, (holder) => inner.add(holder.uuid!));
+      if ([...inner].some((id) => seen.has(id))) {
+        const fresh = idRenamer();
+        forEachTableInnerId(element, (holder) => (holder.uuid = fresh(holder.uuid)));
+        inner.clear();
+        forEachTableInnerId(element, (holder) => inner.add(holder.uuid!));
+        changed = true;
+      }
+      inner.forEach((id) => seen.add(id));
+    }
+  };
+  bands?.forEach((band) => band.elements?.forEach(visit));
+  return changed;
 }

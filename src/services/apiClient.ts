@@ -1,22 +1,13 @@
 import router from "@/router";
+import { API_BASE_URL } from "@/config/apiConfig";
+import type { ApiEnvelope, ApiRequestOptions, ApiResponse, ApiResponseType, ApiStatusDetail } from "@/types/api";
+import { isDesktopApp } from "@/utils/desktopApp";
 
 export const AUTH_TOKEN_KEY = "jrxml_auth_token";
 export const AUTH_USER_KEY = "jrxml_auth_user";
 export const TENANT_URL_KEY = "cdp_tenant_url";
 
-const baseURL = import.meta.env.VITE_OAUTH_BASE_URL;
-
-export type ApiResponseType = "json" | "text" | "blob" | "arrayBuffer";
-
-export interface ApiRequestOptions extends Omit<
-  RequestInit,
-  "body" | "headers"
-> {
-  body?: BodyInit | null;
-  headers?: HeadersInit;
-  responseType?: ApiResponseType;
-  baseURL?: string;
-}
+const baseURL = API_BASE_URL;
 
 export class ApiError extends Error {
   readonly status?: number;
@@ -30,7 +21,7 @@ export class ApiError extends Error {
   }
 }
 
-const getAccessToken = (): string | null => {
+export const getAccessToken = (): string | null => {
   const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
 
   if (!storedToken) {
@@ -48,16 +39,8 @@ const getAccessToken = (): string | null => {
   }
 };
 
-const getTenantId = (): string => {
-  const isTauri = Boolean(
-    (
-      window as Window & {
-        __TAURI_INTERNALS__?: unknown;
-      }
-    ).__TAURI_INTERNALS__,
-  );
-
-  if (isTauri) {
+export const getTenantId = (): string => {
+  if (isDesktopApp()) {
     try {
       const tenantUrl = localStorage.getItem(TENANT_URL_KEY);
 
@@ -82,7 +65,9 @@ const resolveUrl = (path: string, requestBaseURL?: string): string => {
   const apiBaseURL = requestBaseURL || baseURL;
 
   if (!apiBaseURL) {
-    throw new ApiError("VITE_BASE_API_URL is not configured");
+    throw new ApiError(
+      `Unable to resolve API URL. Base URL is not configured. Path: ${path}`
+    );
   }
 
   return `${apiBaseURL.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
@@ -90,7 +75,7 @@ const resolveUrl = (path: string, requestBaseURL?: string): string => {
 
 const notifyStatus = (status: number): void => {
   window.dispatchEvent(
-    new CustomEvent("api:status", {
+    new CustomEvent<ApiStatusDetail>("api:status", {
       detail: { status },
     }),
   );
@@ -113,6 +98,7 @@ const redirectToLogin = async (): Promise<void> => {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_USER_KEY);
 
+    // Also empties the TanStack Query cache (queries/queryClient.ts listens)
     notifyStatus(401);
 
     if (router.currentRoute.value.name !== "login") {
@@ -160,17 +146,21 @@ const parseResponse = async <T>(
   return (await response.json()) as T;
 };
 
-const request = async <T>(
+// Sends the request with the login; throws ApiError when it fails
+const send = async (
   path: string,
   options: ApiRequestOptions = {},
-): Promise<T> => {
+): Promise<Response> => {
+  // responseType is for reading the answer, not part of the request
   const {
-    responseType = "json",
+    responseType: _responseType,
     baseURL: requestBaseURL,
     headers,
     body,
     ...requestInit
   } = options;
+  // Never cancelled: even a caller that slips a signal through doesn't abort it
+  delete (requestInit as RequestInit).signal;
 
   const requestHeaders = new Headers(headers);
 
@@ -220,11 +210,44 @@ const request = async <T>(
     throw new ApiError(message, response.status, response);
   }
 
-  return parseResponse<T>(response, responseType);
+  return response;
 };
+
+const request = async <T>(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<T> =>
+  parseResponse<T>(await send(path, options), options.responseType ?? "json");
+
+// The answer and its headers (e.g. a list's x-total-count)
+const requestWithHeaders = async <T>(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<{ data: T; headers: Headers }> => {
+  const response = await send(path, options);
+  return {
+    data: await parseResponse<T>(response, options.responseType ?? "json"),
+    headers: response.headers,
+  };
+};
+
+// The CDP backend answers either with the data itself or wrapped as
+// { data, message, status } (ApiEnvelope); this returns the data either way
+// (cdp-fe-app's unwrap)
+const isEnvelope = <T>(body: ApiResponse<T>): body is ApiEnvelope<T> =>
+  !!body &&
+  typeof body === "object" &&
+  !Array.isArray(body) &&
+  "data" in body &&
+  ("message" in body || "status" in body);
+
+export function unwrap<T>(body: ApiResponse<T>): T {
+  return isEnvelope(body) ? body.data : body;
+}
 
 export const apiClient = {
   request,
+  requestWithHeaders,
 
   get: <T>(path: string, options?: ApiRequestOptions): Promise<T> =>
     request<T>(path, {

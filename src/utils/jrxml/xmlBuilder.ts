@@ -1,3 +1,4 @@
+import { xmlAttr } from "./xmlEscape";
 import type { ReportProperties } from './types';
 
 export function buildJasperReportOpenTag(properties: ReportProperties): string {
@@ -9,42 +10,42 @@ export function buildJasperReportOpenTag(properties: ReportProperties): string {
     bottomMargin: properties.bottomMargin || 0
   };
 
-  let attrs = `    name="${safeProperties.name}"
-    pageWidth="${safeProperties.pageWidth}"
-    pageHeight="${safeProperties.pageHeight}"
-    columnWidth="${safeProperties.pageWidth - safeProperties.leftMargin - safeProperties.rightMargin}"
-    leftMargin="${safeProperties.leftMargin}"
-    rightMargin="${safeProperties.rightMargin}"
-    topMargin="${safeProperties.topMargin}"
-    bottomMargin="${safeProperties.bottomMargin}"`;
+  let attrs = `    name="${xmlAttr(safeProperties.name)}"
+    pageWidth="${xmlAttr(safeProperties.pageWidth)}"
+    pageHeight="${xmlAttr(safeProperties.pageHeight)}"
+    columnWidth="${xmlAttr(safeProperties.pageWidth - safeProperties.leftMargin - safeProperties.rightMargin)}"
+    leftMargin="${xmlAttr(safeProperties.leftMargin)}"
+    rightMargin="${xmlAttr(safeProperties.rightMargin)}"
+    topMargin="${xmlAttr(safeProperties.topMargin)}"
+    bottomMargin="${xmlAttr(safeProperties.bottomMargin)}"`;
 
   // Add optional attributes (if not the default value)
   if (safeProperties.language && safeProperties.language !== "java") {
-    attrs += `\n    language="${safeProperties.language}"`;
+    attrs += `\n    language="${xmlAttr(safeProperties.language)}"`;
   }
   if (safeProperties.columnCount && safeProperties.columnCount !== 1) {
-    attrs += `\n    columnCount="${safeProperties.columnCount}"`;
+    attrs += `\n    columnCount="${xmlAttr(safeProperties.columnCount)}"`;
   }
   if (safeProperties.printOrder && safeProperties.printOrder !== "Vertical") {
-    attrs += `\n    printOrder="${safeProperties.printOrder}"`;
+    attrs += `\n    printOrder="${xmlAttr(safeProperties.printOrder)}"`;
   }
   if (safeProperties.columnDirection && safeProperties.columnDirection !== "LTR") {
-    attrs += `\n    columnDirection="${safeProperties.columnDirection}"`;
+    attrs += `\n    columnDirection="${xmlAttr(safeProperties.columnDirection)}"`;
   }
   if (safeProperties.orientation && safeProperties.orientation !== "Portrait") {
-    attrs += `\n    orientation="${safeProperties.orientation}"`;
+    attrs += `\n    orientation="${xmlAttr(safeProperties.orientation)}"`;
   }
   if (safeProperties.whenNoDataType && safeProperties.whenNoDataType !== "AllSectionsNoDetail") {
-    attrs += `\n    whenNoDataType="${safeProperties.whenNoDataType}"`;
+    attrs += `\n    whenNoDataType="${xmlAttr(safeProperties.whenNoDataType)}"`;
   }
   if (safeProperties.sectionType && safeProperties.sectionType !== "Band") {
-    attrs += `\n    sectionType="${safeProperties.sectionType}"`;
+    attrs += `\n    sectionType="${xmlAttr(safeProperties.sectionType)}"`;
   }
   if (safeProperties.columnWidth && safeProperties.columnWidth !== 555) {
-    attrs += `\n    columnWidth="${safeProperties.columnWidth}"`;
+    attrs += `\n    columnWidth="${xmlAttr(safeProperties.columnWidth)}"`;
   }
   if (safeProperties.columnSpacing && safeProperties.columnSpacing !== 0) {
-    attrs += `\n    columnSpacing="${safeProperties.columnSpacing}"`;
+    attrs += `\n    columnSpacing="${xmlAttr(safeProperties.columnSpacing)}"`;
   }
   if (safeProperties.isTitleNewPage) {
     attrs += `\n    isTitleNewPage="true"`;

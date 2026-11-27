@@ -30,7 +30,7 @@ label routes to the same app; wildcard TLS covers it.
 There is **one** workflow, `deploy.yml`, and **nothing runs automatically** — no PR
 check, no push trigger, no test job. Type errors are still caught: the image build runs
 `pnpm build` (`vue-tsc -b && vite build`) and fails the deploy if types don't compile.
-`vitest` is not run in CI — run `pnpm test` locally.
+There are no unit tests; JRXML is checked in the app (Validate XSD, Preview PDF) and with the validation tools in `tools/` and `validator/`.
 
 ### `deploy.yml` — `workflow_dispatch` only
 
@@ -63,7 +63,7 @@ is a floating human alias. `production` waits for the Environment reviewer.
 ## Required GitHub configuration
 
 One cluster and one preview server serve all three environments, so everything lives at
-**repo level** — GitHub resolves repo-level secrets inside environment jobs
+**repo level** (sign-in uses per-environment secrets, see below) — GitHub resolves repo-level secrets inside environment jobs
 automatically, no per-environment copies needed.
 
 ### Repository secrets  (Settings → Secrets and variables → Actions → Secrets)
@@ -75,10 +75,25 @@ Reuses the same names as the `projectnowcdp` reference repo:
 | `DOCKER_REGISTRY_USERNAME` | registry login                                   |
 | `DOCKER_REGISTRY_PASSWORD` | registry password / token                        |
 | `KUBE_CONFIG`              | the Rancher kubeconfig as **raw YAML** (written straight to `~/.kube/config`, same as the reference) |
-| `VITE_PDF_PREVIEW_API`     | `https://preview.report.projectnowcdp.com` — **optional**; add later, only read after the 2-line source change. Absent ⇒ empty build arg ⇒ app uses its in-code default |
 
-> `VITE_PDF_PREVIEW_API` is a build-time value compiled into the JS bundle (shipped to
-> browsers) — kept as a secret only for parity, the URL is not confidential.
+**Sign-in (OAuth), one set per environment.** The workflow picks the `_DEV` secret for
+dev, `_STAGING` for staging, and the unsuffixed one for production:
+
+| Secret (production) | dev / staging variants | Value |
+| ------------------- | ---------------------- | ----- |
+| `VITE_OAUTH_CLIENT_ID`  | `…_DEV`, `…_STAGING` | OAuth client ID of the report studio app |
+| `VITE_API_BASE_URL`     | `…_DEV`, `…_STAGING` | CDP server. Every API is this address plus its route (`API_ROUTES` in `src/config/apiConfig.ts`: `/oauth2/authorize`, `/oauth2/token`, `/v1/user/me`, `/logout`, `/rest/files`, `/v2`, `/v2/analytics/aggregate`) |
+
+No other URL secrets are read (the old `VITE_OAUTH_BASE_URL`, `_AUTH_URL`, `_TOKEN_URL`, `_USER_URL`, `_LOGOUT_URI` and `VITE_PDF_PREVIEW_API` are gone).
+
+> All `VITE_*` values are build-time: they are compiled into the JS bundle shipped to
+> browsers, so none of them is truly secret (they are stored as secrets for convenience).
+
+**Not passed yet:** the `VITE_AI_*` settings are not build args in
+`deploy.yml`/`deploy/Dockerfile`, so deployed builds have no AI endpoint. Add them as
+build args when that backend exists; the AI key must go through a backend proxy rather
+than a `VITE_` value. (Projects, tables, rows and filter choices all come from
+`VITE_API_BASE_URL`; there is no separate table-data setting any more.)
 
 ### Environments — create `dev`, `staging`, `production`
 Needed only for the **production reviewer gate** and per-environment deploy history —

@@ -1,227 +1,64 @@
 <template>
-  <div class="file-menu-container" ref="fileMenuContainer">
-    <n-button @click="toggleFileMenu" type="default">{{ t('fileManager.title') }}</n-button>
+  <div class="file-menu-container" :class="{ 'is-compact': compact }" ref="fileMenuContainer">
+    <n-button
+      v-if="compact"
+      @click="toggleFileMenu"
+      type="default"
+      :title="showFileMenu ? undefined : t('fileManager.title')"
+      :aria-label="t('fileManager.title')"
+      aria-haspopup="menu"
+      :aria-expanded="showFileMenu"
+    >
+      <FolderOpen :size="16" />
+    </n-button>
+    <n-button v-else @click="toggleFileMenu" type="default" aria-haspopup="menu" :aria-expanded="showFileMenu">
+      <template #icon><FolderOpen :size="16" :stroke-width="2" aria-hidden="true" /></template>
+      {{ t('fileManager.title') }}
+    </n-button>
     <div v-if="showFileMenu" class="file-menu-dropdown">
       <div class="menu-item" @click="createNewFile">
-        <span class="menu-icon">📄</span>
+        <FilePlus class="menu-icon" :size="17" :stroke-width="2.25" aria-hidden="true" />
         <span>{{ t('fileManager.newFile') }}</span>
+        <span class="menu-keys"><kbd>Alt</kbd><kbd>N</kbd></span>
       </div>
       <div class="menu-item" @click="openLocalFile">
-        <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <FolderOpen class="menu-icon" :size="17" :stroke-width="2.25" aria-hidden="true" />
         <span>{{ t('fileManager.openLocalFile') }}</span>
-      </div>
-      <div class="menu-item" @click="saveCurrentFileToStorage" :disabled="!currentFileName || currentFileName === t('fileManager.untitledReport')">
-        <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        <span>{{ t('fileManager.save') }}</span>
-      </div>
-      <div class="menu-item" @click="saveAsLocalFile">
-        <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        <span>{{ t('fileManager.saveAs') }}</span>
-      </div>
-      <div class="menu-divider"></div>
-      <div class="menu-item file-submenu-container" @click="toggleFileSubmenu">
-        <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        <span>{{ t('fileManager.fileList') }}</span>
-        <span class="submenu-arrow">▶</span>
-        <div v-if="showFileSubmenu" class="file-submenu" @click.stop>
-          <div class="submenu-header">
-            <h4>{{ t('fileManager.fileList') }}</h4>
-            <div class="file-filter">
-              <input 
-                v-model="fileFilterText" 
-                type="text" 
-                :placeholder="t('fileManager.searchFile')" 
-                class="filter-input"
-                @click.stop
-              />
-              <n-button 
-                v-if="fileFilterText" 
-                @click.stop="fileFilterText = ''" 
-                type="default"
-                quaternary
-                circle
-                size="small"
-                :title="t('fileManager.searchFile')"
-              >
-                ✕
-              </n-button>
-            </div>
-          </div>
-          <div class="submenu-file-list">
-            <div 
-              v-for="file in filteredFiles" 
-              :key="file.id"
-              class="submenu-file-item"
-              :class="{ 'active': currentFileName === file.name }"
-              @click.stop="selectFileFromSubmenu(file)"
-            >
-              <div class="file-info">
-                <span class="file-name">{{ file.name }}</span>
-                <span class="file-date">{{ formatDate(file.lastModified) }}</span>
-              </div>
-              <div class="file-item-actions">
-                <n-button @click.stop="renameFileFromSubmenu(file)" type="default" quaternary circle size="small" :title="t('fileManager.rename')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </n-button>
-                <n-button @click.stop="deleteFileFromSubmenu(file)" type="error" quaternary circle size="small" :title="t('fileManager.delete')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </n-button>
-              </div>
-            </div>
-            <div v-if="filteredFiles.length === 0" class="empty-state">
-              <p>{{ t('fileManager.noFilesFound') }}</p>
-              <n-button @click.stop="createNewFile" type="primary">{{ t('fileManager.createNewFile') }}</n-button>
-            </div>
-          </div>
-          <div class="submenu-footer">
-            <n-button @click.stop="createNewFile" type="primary" size="small">{{ t('fileManager.newFile') }}</n-button>
-            <n-button @click.stop="openLocalFile" type="default" size="small">{{ t('fileManager.openLocalFile') }}</n-button>
-          </div>
-        </div>
+        <span class="menu-keys"><kbd>{{ keyLabel('Mod') }}</kbd><kbd>O</kbd></span>
       </div>
     </div>
 
-    <!-- Rename dialog -->
-    <InputModal
-      v-model:visible="showRenameModal"
-      :title="t('fileManager.renameFile')"
-      :message="t('fileManager.enterNewFileName')"
-      :default-value="pendingFile?.name || ''"
-      @confirm="handleConfirmRename"
-    />
-
-    <!-- Delete confirmation dialog -->
-    <ConfirmModal
-      v-model:visible="showDeleteModal"
-      :title="t('fileManager.deleteFile')"
-      :message="t('fileManager.deleteFileConfirm', { name: pendingFile?.name })"
-      @confirm="handleConfirmDelete"
-    />
+    <OpenTemplateModal v-model:visible="showOpen" @open-jrxml="emit('open-jrxml', $event)" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { FilePlus, FolderOpen } from '@lucide/vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { NButton } from 'naive-ui';
-import notification from '../../../utils/notification';
-import { useDesignerFiles } from '@/composables/useDesignerFiles';
-import type { DesignerFile } from '@/types/designerFile';
-import ConfirmModal from '../../modals/ConfirmModal.vue';
-import InputModal from '../../modals/InputModal.vue';
+import OpenTemplateModal from '../../modals/OpenTemplateModal.vue';
+import { keyLabel } from '@/utils/helpDocs';
 
 const { t } = useI18n();
 
-interface Props {
-  currentFileName: string;
-  currentFileId: string | null;
-}
-
 interface Emits {
   (e: 'create-new-file'): void;
-  (e: 'load-file', file: DesignerFile): void;
-  (e: 'save-current-file'): void;
-  (e: 'save-as-file'): void;
-  (e: 'update:currentFileName', name: string): void;
-  (e: 'update:currentFileId', id: string | null): void;
+  (e: 'open-jrxml', file: { name: string; content: string }): void;
 }
 
-const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-const currentFileNameRef = computed({
-  get: () => props.currentFileName,
-  set: (value: string) => emit('update:currentFileName', value)
-});
-
-const currentFileIdRef = computed({
-  get: () => props.currentFileId,
-  set: (value: string | null) => emit('update:currentFileId', value)
-});
+// `compact`: an icon button, and the menu spans the screen (narrow screens)
+defineProps<{ compact?: boolean }>();
 
 // File management related state
 const showFileMenu = ref(false);
-const showFileSubmenu = ref(false);
 const fileMenuContainer = ref<HTMLElement | null>(null);
-const fileFilterText = ref('');
-const showRenameModal = ref(false);
-const showDeleteModal = ref(false);
-const pendingFile = ref<DesignerFile | null>(null);
-
-const {
-  files,
-  loadFilesFromStorage,
-  renameFile,
-  deleteFile
-} = useDesignerFiles({
-  currentFileName: currentFileNameRef,
-  currentFileId: currentFileIdRef
-});
-
-// Computed property: filtered file list
-const filteredFiles = computed(() => {
-  if (!fileFilterText.value) {
-    return files.value;
-  }
-  return files.value.filter((file: DesignerFile) => 
-    file.name.toLowerCase().includes(fileFilterText.value.toLowerCase())
-  );
-});
-
-// Format the date
-function formatDate(date: Date | string | undefined) {
-  if (!date) return '';
-  const d = new Date(date);
-  return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-}
 
 // Toggle the file menu
 function toggleFileMenu() {
   showFileMenu.value = !showFileMenu.value;
-  showFileSubmenu.value = false;
-}
-
-// Toggle the file list submenu
-function toggleFileSubmenu() {
-  showFileSubmenu.value = !showFileSubmenu.value;
-  if (showFileSubmenu.value) {
-    loadFilesFromStorage();
-  }
-}
-
-// Select a file from the submenu
-function selectFileFromSubmenu(file: DesignerFile) {
-  showFileSubmenu.value = false;
-  showFileMenu.value = false;
-  emit('load-file', file);
-}
-
-// Rename a file from the submenu
-function renameFileFromSubmenu(file: DesignerFile) {
-  pendingFile.value = file;
-  showRenameModal.value = true;
-}
-
-// Confirm rename
-function handleConfirmRename(newName: string) {
-  if (pendingFile.value && newName && newName !== pendingFile.value.name) {
-    renameFile(pendingFile.value.id, newName);
-  }
-  pendingFile.value = null;
-}
-
-// Delete a file from the submenu
-function deleteFileFromSubmenu(file: DesignerFile) {
-  pendingFile.value = file;
-  showDeleteModal.value = true;
-}
-
-// Confirm delete
-function handleConfirmDelete() {
-  if (pendingFile.value) {
-    deleteFile(pendingFile.value.id);
-  }
-  pendingFile.value = null;
 }
 
 // Create a new file
@@ -230,65 +67,25 @@ function createNewFile() {
   emit('create-new-file');
 }
 
-// Open a local file
+// Open: a template on the report server or a .jrxml file from the computer (OpenTemplateModal)
+const showOpen = ref(false);
 function openLocalFile() {
   showFileMenu.value = false;
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.json';
-  input.onchange = (e) => {
-    const file = (e.target as HTMLInputElement).files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const content = e.target?.result as string;
-          JSON.parse(content); // Validate JSON format
-          loadFile({
-            id: null,
-            name: file.name,
-            content: content
-          });
-        } catch (error) {
-          console.error('Failed to load file:', error);
-          notification.error(t('fileManager.invalidFileFormat'));
-        }
-      };
-      reader.readAsText(file);
-    }
-  };
-  input.click();
+  showOpen.value = true;
 }
-
-// Save the current file to storage
-function saveCurrentFileToStorage() {
-  showFileMenu.value = false;
-  emit('save-current-file');
-}
-
-// Save as a local file
-function saveAsLocalFile() {
-  showFileMenu.value = false;
-  emit('save-as-file');
-}
-
-// Load a file
-function loadFile(fileData: any) {
-  emit('load-file', fileData);
-}
+// Ctrl/⌘+O in the designer
+defineExpose({ showOpenWindow: openLocalFile });
 
 // Close the menu when clicking outside
 function handleClickOutside(event: MouseEvent) {
   if (fileMenuContainer.value && !fileMenuContainer.value.contains(event.target as Node)) {
     showFileMenu.value = false;
-    showFileSubmenu.value = false;
-  }
+    }
 }
 
 // Listen for click events
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
-  loadFilesFromStorage();
 });
 
 onUnmounted(() => {
@@ -302,32 +99,68 @@ onUnmounted(() => {
   display: inline-block;
 }
 
+/* Narrow screens: the menu sits under the header across the screen, and the
+   file list opens below its item instead of beside it */
+.is-compact .file-menu-dropdown {
+  position: fixed;
+  top: 52px;
+  left: 8px;
+  right: 8px;
+  max-width: 360px;
+  min-width: 0;
+  max-height: calc(100vh - 64px);
+  margin-top: 0;
+  overflow-y: auto;
+}
 
 
+
+
+/* Same look as the account menu */
 .file-menu-dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 8px);
   left: 0;
-  margin-top: 4px;
-  background-color: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 1000;
-  min-width: 200px;
+  min-width: 232px;
+  padding: 8px;
+  border: 1px solid rgba(28, 27, 38, 0.1);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow:
+    0 18px 38px rgba(23, 20, 44, 0.16),
+    0 2px 6px rgba(23, 20, 44, 0.08);
+  box-sizing: border-box;
+  animation: file-menu-in 0.16s ease;
+}
+
+@keyframes file-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  padding: 8px 16px;
+  gap: 10px;
+  padding: 9px 8px;
+  border-radius: 6px;
+  color: #45425a;
+  font-size: 12.5px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background 0.14s ease;
   position: relative;
 }
 
 .menu-item:hover {
-  background-color: #f5f5f5;
+  background: rgba(124, 92, 247, 0.08);
 }
 
 .menu-item:disabled {
@@ -336,124 +169,26 @@ onUnmounted(() => {
 }
 
 .menu-icon {
-  margin-right: 8px;
-  font-size: 16px;
+  flex-shrink: 0;
 }
 
-.menu-divider {
-  height: 1px;
-  background-color: #e0e0e0;
-  margin: 4px 0;
-}
-
-.submenu-arrow {
+/* The item's shortcut, at its right edge */
+.menu-keys {
+  display: inline-flex;
+  gap: 3px;
   margin-left: auto;
-  font-size: 12px;
-  transition: transform 0.2s ease;
+  padding-left: 16px;
 }
 
-.file-submenu-container:hover .submenu-arrow {
-  transform: rotate(90deg);
-}
-
-.file-submenu {
-  position: absolute;
-  top: 0;
-  left: 100%;
-  margin-left: 4px;
-  background-color: white;
-  border: 1px solid #ddd;
+.menu-keys kbd {
+  padding: 1px 5px;
+  border: 1px solid #e6e5ee;
+  border-bottom-width: 2px;
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  z-index: 1001;
-  min-width: 300px;
-  max-height: 400px;
-}
-
-.submenu-header {
-  padding: 12px;
-  border-bottom: 1px solid #e0e0e0;
-  background-color: #f9f9f9;
-}
-
-.submenu-header h4 {
-  margin: 0 0 8px 0;
-  font-size: 14px;
+  background: #fafafc;
+  color: #6e6a80;
+  font-family: inherit;
+  font-size: 10.5px;
   font-weight: 600;
-}
-
-.file-filter {
-  position: relative;
-}
-
-.filter-input {
-  width: 100%;
-  padding: 6px 30px 6px 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 12px;
-  box-sizing: border-box;
-}
-
-
-
-.submenu-file-list {
-  max-height: 250px;
-  overflow-y: auto;
-  padding: 8px;
-}
-
-.submenu-file-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px;
-  margin-bottom: 4px;
-  background-color: #f9f9f9;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  font-size: 12px;
-}
-
-.submenu-file-item.active {
-  background-color: #e6f7ff;
-  border-color: #1890ff;
-}
-
-.file-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.file-name {
-  display: block;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 2px;
-}
-
-.file-date {
-  display: block;
-  font-size: 10px;
-  color: #999;
-}
-
-.file-item-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.submenu-footer {
-  padding: 12px;
-  border-top: 1px solid #e0e0e0;
-  display: flex;
-  gap: 8px;
-  background-color: #f9f9f9;
-}
-
-.empty-state :deep(.n-button) {
-  margin-top: 8px;
 }
 </style>

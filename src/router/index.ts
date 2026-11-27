@@ -2,11 +2,10 @@ import { createRouter, createWebHistory } from "vue-router";
 import {
   HomeView,
   LoginView,
-  MyProfileView,
   CallbackView,
   DesktopLoginView,
-  MyTemplatesView,
   ActivityView,
+  DefaultSettingsView,
 } from "../views";
 import { PDFDesigner, AppLayout } from "../components";
 
@@ -26,19 +25,14 @@ const router = createRouter({
           component: HomeView,
         },
         {
-          path: "myprofile",
-          name: "myprofile",
-          component: MyProfileView,
-        },
-        {
-          path: "mytemplates",
-          name: "mytemplates",
-          component: MyTemplatesView,
-        },
-        {
           path: "activity",
           name: "activity",
           component: ActivityView,
+        },
+        {
+          path: "default-settings",
+          name: "defaultSettings",
+          component: DefaultSettingsView,
         },
 
       ],
@@ -59,7 +53,7 @@ const router = createRouter({
       component: DesktopLoginView,
     },
     {
-      path: "/designer",
+      path: "/designer/:id?",
       name: "designer",
       component: PDFDesigner,
       meta: { requiresAuth: true },

@@ -102,8 +102,8 @@ function updateBandHeight(_index: number) {
 
 .band-height-input:focus {
   outline: none;
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  border-color: #6440f4;
+  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.2);
 }
 
 .band-height-unit {

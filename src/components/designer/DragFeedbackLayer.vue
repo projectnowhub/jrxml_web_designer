@@ -48,7 +48,7 @@
     >
       <div class="zone-border" />
       <div class="zone-label" v-if="zone.highlighted">
-        Drop here
+        {{ t("canvas.dropHere") }}
       </div>
     </div>
 
@@ -94,22 +94,24 @@
       v-if="feedback.snapLines.length > 0"
     >
       <div class="info-badge">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z" />
-        </svg>
-        <span>Aligned</span>
+        <Magnet :size="16" />
+        <span>{{ t("canvas.aligned") }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Magnet } from '@lucide/vue';
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { DragFeedback } from '@/composables/useDragFeedback';
 
 const props = defineProps<{
   feedback: DragFeedback;
 }>();
+
+const { t } = useI18n();
 
 // Get the dragged element's icon
 const getDraggedElementIcon = () => {
@@ -123,13 +125,11 @@ const getDraggedElementType = () => {
   if (!props.feedback.draggedElementInfo) return '';
 
   const typeMap: Record<string, string> = {
-    'staticText': 'Static Text',
     'textField': 'Text Field',
     'image': 'Image',
     'line': 'Line',
     'rectangle': 'Rectangle',
     'ellipse': 'Ellipse',
-    'break': 'Page Break',
     'frame': 'Frame',
     'table': 'Table',
   };
@@ -171,8 +171,8 @@ const getLineStyle = (line: DragFeedback['snapLines'][0]) => {
 }
 
 .drag-preview {
-  background: rgba(24, 144, 255, 0.1);
-  border: 2px dashed #1890ff;
+  background: rgba(100, 64, 244, 0.1);
+  border: 2px dashed #6440f4;
   border-radius: 4px;
   animation: drag-pulse 1.5s ease-in-out infinite;
   display: flex;
@@ -191,7 +191,7 @@ const getLineStyle = (line: DragFeedback['snapLines'][0]) => {
 .preview-icon {
   width: 32px;
   height: 32px;
-  background: #1890ff;
+  background: #6440f4;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -213,7 +213,7 @@ const getLineStyle = (line: DragFeedback['snapLines'][0]) => {
 }
 
 .element-type {
-  color: #1890ff;
+  color: #6440f4;
   font-weight: 500;
 }
 
@@ -229,12 +229,12 @@ const getLineStyle = (line: DragFeedback['snapLines'][0]) => {
 }
 
 .droppable-zone.highlighted {
-  border-color: #1890ff;
-  background: rgba(24, 144, 255, 0.05);
+  border-color: #6440f4;
+  background: rgba(100, 64, 244, 0.05);
 }
 
 .droppable-zone.active {
-  border-color: rgba(24, 144, 255, 0.3);
+  border-color: rgba(100, 64, 244, 0.3);
 }
 
 .zone-border {
@@ -243,7 +243,7 @@ const getLineStyle = (line: DragFeedback['snapLines'][0]) => {
   left: 0;
   right: 0;
   bottom: 0;
-  border: 1px dashed rgba(24, 144, 255, 0.2);
+  border: 1px dashed rgba(100, 64, 244, 0.2);
   pointer-events: none;
 }
 
@@ -252,7 +252,7 @@ const getLineStyle = (line: DragFeedback['snapLines'][0]) => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: #1890ff;
+  background: #6440f4;
   color: white;
   padding: 6px 12px;
   border-radius: 4px;
@@ -352,10 +352,10 @@ const getLineStyle = (line: DragFeedback['snapLines'][0]) => {
 
 @keyframes drag-pulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.4);
+    box-shadow: 0 0 0 0 rgba(100, 64, 244, 0.4);
   }
   50% {
-    box-shadow: 0 0 0 10px rgba(24, 144, 255, 0);
+    box-shadow: 0 0 0 10px rgba(100, 64, 244, 0);
   }
 }
 

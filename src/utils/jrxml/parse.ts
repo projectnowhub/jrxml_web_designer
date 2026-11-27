@@ -1,12 +1,48 @@
-import type { DesignElement, BandType, Band, ReportGroup } from "@/types";
+import { HEADING_NUMBERS_PROPERTY, parseHeadingNumbers } from "../headingSync";
+import type { DesignElement, BandType, Band, ReportGroup, TableElement, CustomTableData, CustomTableElement, ContentsListData, ContentsListElement } from "@/types";
+import { CONTENTS_LIST_PROPERTY, CONTENTS_STYLES_PROPERTY, parseContentsList, parseContentsStyles, syncContentsListSize } from "../contentsList";
+import { CUSTOM_TABLE_PART_PROPERTY, CUSTOM_TABLE_PROPERTY, parseCustomTable, syncTableSize } from "../customTable";
+import { TABLE_BINDING_PROPERTY, parseBinding } from "../table/dataBinding";
+import { TABLE_HEADER_HEIGHT, TABLE_ROW_HEIGHT } from "../table/dataTable";
+import { collectBoundTables } from "./tableXml";
+import {
+  BOX_CORNER_RADIUS_PROPERTY,
+  decodeCornerRadii,
+  decodeSidePens,
+  orUndefined,
+  ROUNDED_BORDER_PENS_PROPERTY,
+  ROUNDED_BORDER_PROPERTY,
+  ROUNDED_MARKER,
+  withoutLines,
+} from "../framePresets";
+import { detectPagination } from "../paginationPresets";
+import { restoreDateElement } from "../dateElement";
+import { PROJECT_PARAM_PREFIX, restoreProjectValue, restoreProjectValueDefaults } from "../projectValue";
+import {
+  CONTENTS_PAGE_PROPERTY,
+  parseSpecialPages,
+  SPECIAL_PAGES_PROPERTY,
+  unguardPrintWhen,
+} from "../specialPages";
+import { CHART_BINDING_PROPERTY, parseChartBinding } from "../chart/chartTypes";
+import { isWatermark } from "../watermark/watermarkElement";
+import { SAVED_TABLE_STYLES_PROPERTY, parseSavedTableStyles } from "../table/tableThemes";
+import { REPORT_PROJECTS_PROPERTY, parseReportProjects } from "../projectFields";
+import { BARCODE_TYPE_IDS, BARCODE_VALUES_PROPERTY, parseBarcodeValues } from "../barcode/barcodeTypes";
+import { joinSplitReferences } from "./javaString";
+import {
+  SECTION_LIMITS_PROPERTY,
+  TEMPLATE_FONT_PROPERTY,
+  parseSectionLimits,
+  parseTemplateFont,
+} from "./templateSettingsXml";
+import type { SavedTableStyle } from "@/types/dataSource";
 import type {
   ReportProperties,
   Field,
   Parameter,
   SubDataset,
   Variable,
-  ReportStyle,
-  ConditionalStyle,
 } from "./types";
 
 export function parseJRXMLContent(jrxmlContent: string): {
@@ -17,7 +53,7 @@ export function parseJRXMLContent(jrxmlContent: string): {
   datasets: SubDataset[];
   variables: Variable[];
   groups: ReportGroup[];
-  styles: ReportStyle[];
+  tableStyles: SavedTableStyle[];
   reportProperties: Array<{ name: string; value: string }>;
 } {
   const parser = new DOMParser();
@@ -94,13 +130,22 @@ export function parseJRXMLContent(jrxmlContent: string): {
     whenNoDataType:
       jasperReportElem.getAttribute("whenNoDataType") || "AllSectionsNoDetail",
     sectionType: jasperReportElem.getAttribute("sectionType") || "Band",
-    columnWidth: parseInt(jasperReportElem.getAttribute("columnWidth") || "555"),
-    columnSpacing: parseInt(jasperReportElem.getAttribute("columnSpacing") || "0"),
+    columnWidth: parseInt(
+      jasperReportElem.getAttribute("columnWidth") || "555",
+    ),
+    columnSpacing: parseInt(
+      jasperReportElem.getAttribute("columnSpacing") || "0",
+    ),
     isTitleNewPage: jasperReportElem.getAttribute("isTitleNewPage") === "true",
-    isSummaryNewPage: jasperReportElem.getAttribute("isSummaryNewPage") === "true",
-    isSummaryWithPageHeaderAndFooter: jasperReportElem.getAttribute("isSummaryWithPageHeaderAndFooter") === "true",
-    isFloatColumnFooter: jasperReportElem.getAttribute("isFloatColumnFooter") === "true",
-    isIgnorePagination: jasperReportElem.getAttribute("isIgnorePagination") === "true",
+    isSummaryNewPage:
+      jasperReportElem.getAttribute("isSummaryNewPage") === "true",
+    isSummaryWithPageHeaderAndFooter:
+      jasperReportElem.getAttribute("isSummaryWithPageHeaderAndFooter") ===
+      "true",
+    isFloatColumnFooter:
+      jasperReportElem.getAttribute("isFloatColumnFooter") === "true",
+    isIgnorePagination:
+      jasperReportElem.getAttribute("isIgnorePagination") === "true",
     query,
   };
 
@@ -134,19 +179,27 @@ export function parseJRXMLContent(jrxmlContent: string): {
   });
 
   const parameters: Parameter[] = [];
+  // The project details' parameters' defaults: the linked texts' values
+  const projectValueDefaults = new Map<string, string>();
   // Only collect parameter elements that are direct children of the root element, excluding parameters inside datasets
   Array.from(jasperReportElem.children).forEach((child) => {
     if (child.tagName === "parameter" || child.localName === "parameter") {
       const name = child.getAttribute("name");
       const className = child.getAttribute("class") || "java.lang.String";
-      if (name) {
+      // The project details' parameters are written again from the linked texts
+      if (name?.startsWith(PROJECT_PARAM_PREFIX)) {
+        const defaultValue = child.querySelector("defaultValueExpression")?.textContent;
+        if (defaultValue) projectValueDefaults.set(name, defaultValue);
+      }
+      if (name && !name.startsWith(PROJECT_PARAM_PREFIX)) {
         const param: Parameter = { name, class: className };
         // Extract the UUID (if present)
         const uuid = child.getAttribute("uuid");
         if (uuid) param.uuid = uuid;
         // Extract isForPrompting (if present; defaults to true)
         if (child.hasAttribute("isForPrompting")) {
-          param.isForPrompting = child.getAttribute("isForPrompting") === "true";
+          param.isForPrompting =
+            child.getAttribute("isForPrompting") === "true";
         }
         // Extract nested (if present; defaults to false)
         if (child.hasAttribute("nested")) {
@@ -167,16 +220,24 @@ export function parseJRXMLContent(jrxmlContent: string): {
   });
 
   const bands: Band[] = [];
+  // Cover and contents pages (utils/specialPages.ts): their elements join the
+  // Detail band as pages 0, 1… once every band is read
+  const coverElements: DesignElement[] = [];
+  const contentsPageElements: DesignElement[][] = [];
+  const titleBand = findBandElement(xmlDoc, "title");
+  if (titleBand) {
+    coverElements.push(...parseBandElements(titleBand).filter((el) => el.type !== "break"));
+    properties.coverPage = true;
+  }
+
   const bandTypes = [
     "background",
-    "title",
     "pageHeader",
     "columnHeader",
     "detail",
     "columnFooter",
     "pageFooter",
     "lastPageFooter",
-    "summary",
     "noData",
   ];
 
@@ -220,13 +281,93 @@ export function parseJRXMLContent(jrxmlContent: string): {
     }
     if (!bandElem) return;
 
-    const height = parseInt(bandElem.getAttribute("height") || "0");
-    const elements = parseBandElements(bandElem);
+    if (type === "detail") {
+      const containerChildren = Array.from(bandContainer.children);
+      const bandElems = containerChildren.filter(
+        (child) => child.localName === "band" || child.tagName === "band",
+      );
+      if (bandElems.length > 1) {
+        const allDetailElements: DesignElement[] = [];
+        let firstHeight = 100;
+        let splitTypeVal: string | undefined;
 
+        bandElems.forEach((bElem, pIdx) => {
+          const h = parseInt(bElem.getAttribute("height") || "100");
+          if (pIdx === 0) {
+            firstHeight = h;
+            splitTypeVal = bElem.getAttribute("splitType") || undefined;
+          }
+          const pageElems = parseBandElements(bElem);
+          pageElems.forEach((el) => {
+            // Each <band> is a designer page; its breaks aren't elements
+            if (el.type === "break") {
+              return;
+            }
+            (el as any).pageIndex = pIdx;
+            allDetailElements.push(el);
+          });
+        });
+
+        properties.pageCount = bandElems.length;
+        const detailBand: any = {
+          type: "detail",
+          height: firstHeight,
+          elements: allDetailElements,
+          splitType: splitTypeVal || "Stretch",
+        };
+        bands.push(detailBand);
+        return;
+      }
+    }
+
+    const height = parseInt(bandElem.getAttribute("height") || "0");
+    let elements = parseBandElements(bandElem);
+
+    // Background: the contents pages' frames become pages; the other items
+    // lose the rule that kept them off the special pages
+    if (type === "background") {
+      Array.from(bandElem.children).forEach((child) => {
+        const n = contentsPageOf(child);
+        if (n) contentsPageElements[n - 1] = parseBandElements(child);
+      });
+      elements = elements
+        .filter((el) => !el.properties?.some((p: any) => p.name === CONTENTS_PAGE_PROPERTY))
+        .map((el) => {
+          // A watermark's pages come from its setup when it is written
+          if (isWatermark(el)) {
+            delete el.printWhenExpression;
+            return el;
+          }
+          const own = unguardPrintWhen(el.printWhenExpression);
+          if (own !== el.printWhenExpression) el.printWhenExpression = own;
+          return el;
+        });
+    }
+
+    // If detail has a single band with page breaks, split elements across pages
+    if (
+      type === "detail" &&
+      elements.some(
+        (el) => el.type === "break" && (el as any).breakType === "Page",
+      )
+    ) {
+      const breaks = elements
+        .filter((el) => el.type === "break" && (el as any).breakType === "Page")
+        .sort((a, b) => a.y - b.y);
+
+      elements.forEach((el) => {
+        if (el.type === "break" && (el as any).breakType === "Page") return;
+        const pageIdx = breaks.filter((brk) => el.y >= brk.y).length;
+        (el as any).pageIndex = pageIdx;
+      });
+      properties.pageCount = breaks.length + 1;
+    }
+
+    // Breaks only mark page starts (used above); they aren't elements
     const band: any = {
       type: type as BandType,
       height,
-      elements,
+      elements: elements.filter((el) => el.type !== "break"),
     };
 
     if (bandElem.hasAttribute("splitType")) {
@@ -239,12 +380,88 @@ export function parseJRXMLContent(jrxmlContent: string): {
     bands.push(band);
   });
 
-  // Parse sub-datasets
+  // The special pages at the front: cover (page 0), contents pages, then the
+  // Detail pages (their first bands hold the contents pages' places)
+  const special = parseSpecialPages(
+    Array.from(jasperReportElem.children)
+      .find((c) => c.localName === "property" && c.getAttribute("name") === SPECIAL_PAGES_PROPERTY)
+      ?.getAttribute("value"),
+  );
+  const contentsCount = Math.max(special.contentsPages ?? 0, contentsPageElements.length);
+  // How Section Headings number themselves
+  const headingNumbers = parseHeadingNumbers(
+    Array.from(jasperReportElem.children)
+      .find((c) => c.localName === "property" && c.getAttribute("name") === HEADING_NUMBERS_PROPERTY)
+      ?.getAttribute("value"),
+  );
+  if (headingNumbers) properties.headingNumbers = headingNumbers;
+  // Table of Contents looks the user saved
+  const contentsStyles = parseContentsStyles(
+    Array.from(jasperReportElem.children)
+      .find((c) => c.localName === "property" && c.getAttribute("name") === CONTENTS_STYLES_PROPERTY)
+      ?.getAttribute("value"),
+  );
+  if (contentsStyles) properties.contentsStyles = contentsStyles;
+  if (special.countSpecialPages === false) properties.countSpecialPages = false;
+  // A whole-sheet cover: the real bottom margin is back, the page footer loses
+  // the space that stood in for it, the cover's elements count from the sheet's corner
+  if (special.fullPageCover && properties.coverPage) {
+    const extra = Math.max(0, special.bottomMargin ?? 0);
+    properties.fullPageCover = true;
+    properties.bottomMargin = extra;
+    for (const band of bands) {
+      if (["pageFooter", "lastPageFooter"].includes(band.type)) band.height = Math.max(0, band.height - extra);
+    }
+    const emptyFooter = bands.findIndex((b) => b.type === "pageFooter" && b.height === 0 && !b.elements.length);
+    if (emptyFooter !== -1) bands.splice(emptyFooter, 1);
+    // Their written positions start in the margins (negative), which the
+    // element reader would turn into 0: read them from the band
+    const written = new Map<string, { x: number; y: number }>();
+    for (const child of Array.from(titleBand?.children ?? [])) {
+      const re = findChildElement(child, "reportElement");
+      const uuid = re?.getAttribute("uuid");
+      if (re && uuid) written.set(uuid, { x: parseInt(re.getAttribute("x") || "0"), y: parseInt(re.getAttribute("y") || "0") });
+    }
+    for (const el of coverElements) {
+      const pos = (el.uuid && written.get(el.uuid)) || { x: el.x, y: el.y };
+      el.x = pos.x + (properties.leftMargin || 0);
+      el.y = pos.y + (properties.topMargin || 0);
+    }
+  }
+  if (properties.coverPage || contentsCount) {
+    const coverOffset = properties.coverPage ? 1 : 0;
+    if (contentsCount) properties.contentsPages = contentsCount;
+    let detail = bands.find((b) => b.type === "detail");
+    if (!detail) {
+      detail = { type: "detail" as BandType, height: 100, elements: [] };
+      bands.push(detail);
+    }
+    for (const el of detail.elements) el.pageIndex = (el.pageIndex ?? 0) + coverOffset;
+    for (const el of coverElements) el.pageIndex = 0;
+    contentsPageElements.forEach((pageElements, i) =>
+      (pageElements ?? []).forEach((el) => (el.pageIndex = coverOffset + i)),
+    );
+    detail.elements = [
+      ...coverElements,
+      ...contentsPageElements.flatMap((pageElements) => pageElements ?? []),
+      ...detail.elements,
+    ];
+    properties.pageCount = Math.max(
+      coverOffset + contentsCount + 1,
+      coverOffset + (properties.pageCount ?? 1),
+    );
+  }
+
+  // Parse sub-datasets. A data table's own dataset is rebuilt from the
+  // table's setup when the report is written, so it isn't kept here.
+  const tableDatasetNames = new Set(
+    collectBoundTables(bands).map((table) => table.binding.datasetName),
+  );
   const datasets: SubDataset[] = [];
   Array.from(jasperReportElem.children).forEach((child) => {
     if (child.tagName === "subDataset" || child.localName === "subDataset") {
       const dataset = parseSubDataset(child);
-      datasets.push(dataset);
+      if (!tableDatasetNames.has(dataset.name)) datasets.push(dataset);
     }
   });
 
@@ -263,15 +480,18 @@ export function parseJRXMLContent(jrxmlContent: string): {
         if (calcType) variable.calculationType = calcType;
         // Extract incrementType (if present; defaults to "None")
         if (child.hasAttribute("incrementType")) {
-          variable.incrementType = child.getAttribute("incrementType") || "None";
+          variable.incrementType =
+            child.getAttribute("incrementType") || "None";
         }
         // Extract incrementGroup (if present)
         if (child.hasAttribute("incrementGroup")) {
-          variable.incrementGroup = child.getAttribute("incrementGroup") || undefined;
+          variable.incrementGroup =
+            child.getAttribute("incrementGroup") || undefined;
         }
         // Extract calculationGroup (if present)
         if (child.hasAttribute("calculationGroup")) {
-          variable.calculationGroup = child.getAttribute("calculationGroup") || undefined;
+          variable.calculationGroup =
+            child.getAttribute("calculationGroup") || undefined;
         }
         const resetType = child.getAttribute("resetType");
         if (resetType) variable.resetType = resetType;
@@ -279,7 +499,8 @@ export function parseJRXMLContent(jrxmlContent: string): {
         if (resetGroup) variable.resetGroup = resetGroup;
         // Extract isInitialized (if present; defaults to false)
         if (child.hasAttribute("isInitialized")) {
-          variable.isInitialized = child.getAttribute("isInitialized") === "true";
+          variable.isInitialized =
+            child.getAttribute("isInitialized") === "true";
         }
         const exprElem = child.querySelector("variableExpression");
         if (exprElem && exprElem.textContent)
@@ -320,14 +541,16 @@ export function parseJRXMLContent(jrxmlContent: string): {
       }
       // Extract isStartNewColumn (if present; defaults to false)
       if (child.hasAttribute("isStartNewColumn")) {
-        group.isStartNewColumn = child.getAttribute("isStartNewColumn") === "true";
+        group.isStartNewColumn =
+          child.getAttribute("isStartNewColumn") === "true";
       }
       if (child.hasAttribute("isRepeatHeader")) {
         group.isRepeatHeader = child.getAttribute("isRepeatHeader") === "true";
       }
       // Extract isReprintHeaderOnEachPage (if present; defaults to false)
       if (child.hasAttribute("isReprintHeaderOnEachPage")) {
-        group.isReprintHeaderOnEachPage = child.getAttribute("isReprintHeaderOnEachPage") === "true";
+        group.isReprintHeaderOnEachPage =
+          child.getAttribute("isReprintHeaderOnEachPage") === "true";
       }
       if (child.hasAttribute("isResetPageNumber")) {
         group.isResetPageNumber =
@@ -335,7 +558,8 @@ export function parseJRXMLContent(jrxmlContent: string): {
       }
       // Extract isHideColumnHeader (if present; defaults to false)
       if (child.hasAttribute("isHideColumnHeader")) {
-        group.isHideColumnHeader = child.getAttribute("isHideColumnHeader") === "true";
+        group.isHideColumnHeader =
+          child.getAttribute("isHideColumnHeader") === "true";
       }
       // Extract isKeepTogether (if present; defaults to false)
       if (child.hasAttribute("isKeepTogether")) {
@@ -343,11 +567,14 @@ export function parseJRXMLContent(jrxmlContent: string): {
       }
       // Extract isKeepFooterTogether (if present; defaults to false)
       if (child.hasAttribute("isKeepFooterTogether")) {
-        group.isKeepFooterTogether = child.getAttribute("isKeepFooterTogether") === "true";
+        group.isKeepFooterTogether =
+          child.getAttribute("isKeepFooterTogether") === "true";
       }
       // Extract minHeightToStartNewPage (if present; defaults to 0)
       if (child.hasAttribute("minHeightToStartNewPage")) {
-        group.minHeightToStartNewPage = parseInt(child.getAttribute("minHeightToStartNewPage") || "0");
+        group.minHeightToStartNewPage = parseInt(
+          child.getAttribute("minHeightToStartNewPage") || "0",
+        );
       }
 
       // Parse the group header (groupHeader)
@@ -384,98 +611,6 @@ export function parseJRXMLContent(jrxmlContent: string): {
     }
   });
 
-  // Parse report styles
-  const styles: ReportStyle[] = [];
-  Array.from(jasperReportElem.children).forEach((child) => {
-    if (child.tagName === "style" || child.localName === "style") {
-      const name = child.getAttribute("name");
-      if (!name) return;
-      const style: ReportStyle = { name };
-      if (child.hasAttribute("parentStyle"))
-        style.parentStyle = child.getAttribute("parentStyle") || undefined;
-      if (child.hasAttribute("mode"))
-        style.mode = child.getAttribute("mode") || undefined;
-      if (child.hasAttribute("backcolor"))
-        style.backcolor = child.getAttribute("backcolor") || undefined;
-      if (child.hasAttribute("forecolor"))
-        style.forecolor = child.getAttribute("forecolor") || undefined;
-      const condExpr = child.querySelector("conditionExpression");
-      if (condExpr && condExpr.textContent)
-        style.conditionExpression = condExpr.textContent.trim();
-      const boxElem = child.querySelector("box");
-      if (boxElem) style.box = parseBoxElement(boxElem);
-      const textElem = child.querySelector("textElement");
-      if (textElem) {
-        if (textElem.hasAttribute("textAlignment"))
-          style.textAlignment =
-            textElem.getAttribute("textAlignment") || undefined;
-        if (textElem.hasAttribute("verticalAlignment"))
-          style.verticalAlignment =
-            textElem.getAttribute("verticalAlignment") || undefined;
-        const fontElem = textElem.querySelector("font");
-        if (fontElem) {
-          if (fontElem.hasAttribute("fontName"))
-            style.fontFamily = fontElem.getAttribute("fontName") || undefined;
-          if (fontElem.hasAttribute("size"))
-            style.fontSize = parseInt(fontElem.getAttribute("size") || "12");
-          style.isBold = fontElem.getAttribute("isBold") === "true";
-          style.isItalic = fontElem.getAttribute("isItalic") === "true";
-          style.isUnderline = fontElem.getAttribute("isUnderline") === "true";
-        }
-      }
-      const conditionalStyleElems = child.querySelectorAll("conditionalStyle");
-      if (conditionalStyleElems.length > 0) {
-        style.conditionalStyles = [];
-        conditionalStyleElems.forEach((csElem) => {
-          const cs: ConditionalStyle = {
-            conditionExpression: "",
-            properties: {},
-          };
-          const csCondExpr = csElem.querySelector("conditionExpression");
-          if (csCondExpr && csCondExpr.textContent)
-            cs.conditionExpression = csCondExpr.textContent.trim();
-          if (csElem.hasAttribute("forecolor"))
-            cs.properties.forecolor =
-              csElem.getAttribute("forecolor") || undefined;
-          if (csElem.hasAttribute("backcolor"))
-            cs.properties.backcolor =
-              csElem.getAttribute("backcolor") || undefined;
-          if (csElem.hasAttribute("mode"))
-            cs.properties.mode = csElem.getAttribute("mode") || undefined;
-          const csBox = csElem.querySelector("box");
-          if (csBox) cs.properties.box = parseBoxElement(csBox);
-          const csTextElem = csElem.querySelector("textElement");
-          if (csTextElem) {
-            if (csTextElem.hasAttribute("textAlignment"))
-              cs.properties.textAlignment =
-                csTextElem.getAttribute("textAlignment") || undefined;
-            if (csTextElem.hasAttribute("verticalAlignment"))
-              cs.properties.verticalAlignment =
-                csTextElem.getAttribute("verticalAlignment") || undefined;
-            const csFont = csTextElem.querySelector("font");
-            if (csFont) {
-              if (csFont.hasAttribute("fontName"))
-                cs.properties.fontFamily =
-                  csFont.getAttribute("fontName") || undefined;
-              if (csFont.hasAttribute("size"))
-                cs.properties.fontSize = parseInt(
-                  csFont.getAttribute("size") || "12",
-                );
-              cs.properties.isBold = csFont.getAttribute("isBold") === "true";
-              cs.properties.isItalic =
-                csFont.getAttribute("isItalic") === "true";
-              cs.properties.isUnderline =
-                csFont.getAttribute("isUnderline") === "true";
-            }
-          }
-          if (!style.conditionalStyles) style.conditionalStyles = [];
-          style.conditionalStyles.push(cs);
-        });
-      }
-      styles.push(style);
-    }
-  });
-
   // Parse report-level <property> elements
   const reportProperties: Array<{ name: string; value: string }> = [];
   Array.from(jasperReportElem.children).forEach((child) => {
@@ -488,6 +623,20 @@ export function parseJRXMLContent(jrxmlContent: string): {
     }
   });
 
+  // The projects chosen in the Report Data list
+  const projects = parseReportProjects(
+    reportProperties.find((p) => p.name === REPORT_PROJECTS_PROPERTY)?.value,
+  );
+  if (projects.length) properties.projects = projects;
+  // The font new text starts with and the sections' limits (Template Settings)
+  const templateFont = parseTemplateFont(reportProperties.find((p) => p.name === TEMPLATE_FONT_PROPERTY)?.value);
+  if (templateFont) properties.defaultFont = templateFont;
+  const sectionLimits = parseSectionLimits(reportProperties.find((p) => p.name === SECTION_LIMITS_PROPERTY)?.value);
+  if (sectionLimits) properties.bandLimits = sectionLimits;
+
+  // Linked project details take their values from their parameters' defaults
+  restoreProjectValueDefaults(bands, projectValueDefaults);
+
   return {
     properties,
     bands,
@@ -496,8 +645,21 @@ export function parseJRXMLContent(jrxmlContent: string): {
     datasets,
     variables,
     groups,
-    styles,
-    reportProperties,
+    // Report styles are not kept: tables rebuild theirs from their own look,
+    // and saved table styles come from their report property
+    tableStyles: parseSavedTableStyles(
+      reportProperties.find((p) => p.name === SAVED_TABLE_STYLES_PROPERTY)?.value,
+    ),
+    reportProperties: reportProperties.filter(
+      (p) =>
+        p.name !== SAVED_TABLE_STYLES_PROPERTY &&
+        p.name !== REPORT_PROJECTS_PROPERTY &&
+        p.name !== SPECIAL_PAGES_PROPERTY &&
+        p.name !== HEADING_NUMBERS_PROPERTY &&
+        p.name !== CONTENTS_STYLES_PROPERTY &&
+        p.name !== TEMPLATE_FONT_PROPERTY &&
+        p.name !== SECTION_LIMITS_PROPERTY,
+    ),
   };
 }
 
@@ -617,6 +779,8 @@ function parseSubDataset(subDatasetElem: Element): SubDataset {
 
 function parseBandElements(bandElem: Element): any[] {
   const elements: any[] = [];
+  // Static text is read as a Text element; a page break only marks where the
+  // next designer page starts (see parseBands) and is never kept as an element
   const validElementTypes = [
     "staticText",
     "textField",
@@ -626,19 +790,6 @@ function parseBandElements(bandElem: Element): any[] {
     "ellipse",
     "break",
     "frame",
-    "subreport",
-    "list",
-    "chart",
-    "crosstab",
-  ];
-  
-  // Mapping of chart tag names to chart types
-  const chartTagNames = [
-    'pieChart', 'pie3DChart', 'barChart', 'bar3DChart', 'xyBarChart',
-    'stackedBarChart', 'stackedBar3DChart', 'lineChart', 'xyLineChart',
-    'areaChart', 'xyAreaChart', 'stackedAreaChart', 'scatterChart', 'bubbleChart',
-    'timeSeriesChart', 'highLowChart', 'candlestickChart',
-    'meterChart', 'thermometerChart', 'multiAxisChart', 'ganttChart', 'spiderChart'
   ];
 
   // Iterate direct children rather than using querySelectorAll (avoids recursively finding nested elements)
@@ -646,12 +797,15 @@ function parseBandElements(bandElem: Element): any[] {
   Array.from(bandElem.children).forEach((child) => {
     const elementType = child.localName || child.tagName;
 
-    // Check whether this is a chart-type tag
-    if (chartTagNames.includes(elementType)) {
-      const parsedElement = parseElement(child, 'chart');
-      if (parsedElement) {
-        elements.push(parsedElement);
-      }
+    if (elementType === "frame" && isEmptyTableFrame(child)) {
+      const table = parseEmptyTable(child);
+      if (table) elements.push(table);
+    } else if (elementType === "frame" && readContentsList(child)) {
+      elements.push(parseContentsListFrame(child));
+    } else if (elementType === "frame" && readCustomTable(child)) {
+      elements.push(parseCustomTableFrame(child));
+    } else if (elementType === "frame" && isCustomTablePart(child)) {
+      // A row of a custom table: the table is rebuilt from its first frame
     } else if (validElementTypes.includes(elementType)) {
       const parsedElement = parseElement(child, elementType);
       if (parsedElement) {
@@ -710,24 +864,47 @@ function parseComponentElement(componentElem: Element): any {
   }
 
   if (tableElem) {
-    // Parse the table
-    return parseTableElement(tableElem, reportElement);
+    return parseDataTable(tableElem, reportElement);
   }
 
   // Find a barcode4j element - supports with or without a namespace prefix
-  const barcodeTypes = ['Code128', 'Code39', 'EAN13', 'EAN8', 'UPCA', 'UPCE', 'QRCode', 'DataMatrix', 'Interleaved2Of5', 'Codabar', 'EAN128', 'PDF417', 'POSTNET', 'RoyalMailCustomer', 'USPSIntelligentMail'];
+  const barcodeTypes = BARCODE_TYPE_IDS;
 
   for (const child of Array.from(componentElem.children)) {
     const childLocalName = child.localName || child.tagName;
     // Check whether this is a barcode4j element (with or without a namespace prefix)
     for (const barcodeType of barcodeTypes) {
-      if (childLocalName === barcodeType || child.tagName === `c:${barcodeType}`) {
+      if (
+        childLocalName === barcodeType ||
+        child.tagName === `c:${barcodeType}`
+      ) {
         // Parse the barcode element
-        const codeExprElem = child.querySelector("codeExpression");
-        const codeExpression = codeExprElem ? codeExprElem.textContent?.trim() || '' : '';
-        
+        const codeExprElem = directChildren(child, "codeExpression")[0] ?? child.querySelector("codeExpression");
+        const codeExpression = codeExprElem
+          ? codeExprElem.textContent?.trim() || ""
+          : "";
+
+        const orientation = child.getAttribute("orientation");
+        let rotation: "None" | "Left" | "Right" | "UpsideDown" = "None";
+        // JasperReports' barcode orientation: 90 = left, 270 = right
+        if (orientation === "90" || orientation === "left") rotation = "Left";
+        else if (orientation === "180" || orientation === "down") rotation = "UpsideDown";
+        else if (orientation === "270" || orientation === "right") rotation = "Right";
+
+        // Values typed for the other types
+        const keptValues = Array.from(reportElement.children).find(
+          (c) => c.localName === "property" && c.getAttribute("name") === BARCODE_VALUES_PROPERTY,
+        );
+        const valuesByType = parseBarcodeValues(keptValues?.getAttribute("value"));
+        // Its other properties (e.g. being part of a box)
+        const others = Array.from(reportElement.children)
+          .filter((c) => c.localName === "property" && c !== keptValues && c.getAttribute("name"))
+          .map((c) => ({ name: c.getAttribute("name")!, value: c.getAttribute("value") ?? "" }));
+
         return {
-          type: 'barcode',
+          ...(valuesByType ? { valuesByType } : {}),
+          ...(others.length ? { properties: others } : {}),
+          type: "barcode",
           uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
           x: parseInt(reportElement.getAttribute("x") || "0"),
           y: parseInt(reportElement.getAttribute("y") || "0"),
@@ -735,580 +912,157 @@ function parseComponentElement(componentElem: Element): any {
           height: parseInt(reportElement.getAttribute("height") || "30"),
           barcodeType: barcodeType,
           codeExpression: codeExpression,
-          printWhenExpression: ''
+          rotation: rotation,
+          printWhenExpression: "",
         };
       }
-    }
-  }
-
-  // Find a map element
-  for (const child of Array.from(componentElem.children)) {
-    const childLocalName = child.localName || child.tagName;
-    if (childLocalName === 'map' || child.tagName === 'm:map') {
-      const latExprElem = child.querySelector("latExpression");
-      const lngExprElem = child.querySelector("lngExpression");
-      const zoomExprElem = child.querySelector("zoomExpression");
-      const langExprElem = child.querySelector("languageExpression");
-      
-      return {
-        type: 'map',
-        uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
-        x: parseInt(reportElement.getAttribute("x") || "0"),
-        y: parseInt(reportElement.getAttribute("y") || "0"),
-        width: parseInt(reportElement.getAttribute("width") || "100"),
-        height: parseInt(reportElement.getAttribute("height") || "100"),
-        mapType: 'html',
-        latExpression: latExprElem ? latExprElem.textContent?.trim() || '' : '',
-        lngExpression: lngExprElem ? lngExprElem.textContent?.trim() || '' : '',
-        zoomExpression: zoomExprElem ? zoomExprElem.textContent?.trim() || '' : '',
-        languageExpression: langExprElem ? langExprElem.textContent?.trim() || '' : '',
-        printWhenExpression: ''
-      };
-    }
-  }
-
-  // Find an iconLabel element
-  for (const child of Array.from(componentElem.children)) {
-    const childLocalName = child.localName || child.tagName;
-    if (childLocalName === 'iconLabel' || child.tagName === 'c:iconLabel') {
-      const labelExprElem = child.querySelector("labelExpression");
-      
-      return {
-        type: 'iconLabel',
-        uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
-        x: parseInt(reportElement.getAttribute("x") || "0"),
-        y: parseInt(reportElement.getAttribute("y") || "0"),
-        width: parseInt(reportElement.getAttribute("width") || "100"),
-        height: parseInt(reportElement.getAttribute("height") || "30"),
-        labelExpression: labelExprElem ? labelExprElem.textContent?.trim() || '' : '',
-        printWhenExpression: ''
-      };
-    }
-  }
-
-  // Find a sort element
-  for (const child of Array.from(componentElem.children)) {
-    const childLocalName = child.localName || child.tagName;
-    if (childLocalName === 'sort' || child.tagName === 'c:sort') {
-      const sortFields: Array<{name: string; order?: string}> = [];
-      const sortFieldElems = child.querySelectorAll("sortField");
-      sortFieldElems.forEach(fieldElem => {
-        const name = fieldElem.getAttribute("name") || "";
-        const order = fieldElem.getAttribute("order") || "Ascending";
-        sortFields.push({ name, order });
-      });
-      
-      return {
-        type: 'sort',
-        uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
-        x: parseInt(reportElement.getAttribute("x") || "0"),
-        y: parseInt(reportElement.getAttribute("y") || "0"),
-        width: parseInt(reportElement.getAttribute("width") || "100"),
-        height: parseInt(reportElement.getAttribute("height") || "30"),
-        sortFields: sortFields,
-        printWhenExpression: ''
-      };
     }
   }
 
   return null;
 }
 
-// Parse the contents of a table cell
-function parseCellContent(cellElem: Element): any {
-  // Parse the cell height
-  const height = parseInt(cellElem.getAttribute("height") || "30");
-
-  // Parse the elements inside the cell
-  const elements: any[] = [];
-  const validElementTypes = [
-    "staticText",
-    "textField",
-    "image",
-    "line",
-    "rectangle",
-    "ellipse",
-    "break",
-    "frame",
-    "subreport",
-    "list",
-    "chart",
-    "crosstab",
-  ];
-
-  Array.from(cellElem.children).forEach((child) => {
-    const elementType = child.localName || child.tagName;
-    if (validElementTypes.includes(elementType)) {
-      const parsedElement = parseElement(child, elementType);
-      if (parsedElement) {
-        elements.push(parsedElement);
-      }
-    }
-  });
-
-  // Return wrapped in the { enable, element } format, matching what the generator expects
-  if (elements.length > 0) {
-    return {
-      enable: true,
-      element: {
-        ...elements[0],
-        height,
-      },
-    };
-  }
-
-  // Default static text element
-  return {
-    enable: true,
-    element: {
-      type: "staticText",
-      x: 0,
-      y: 0,
-      width: 100,
-      height,
-      text: "",
-      textAlignment: "Left",
-      verticalAlignment: "Middle",
-    },
-  };
-}
-
-// Parse a table column element
-function parseColumnElement(columnElem: Element, index: number): any {
-  const columnWidth = parseInt(columnElem.getAttribute("width") || "100");
-  const columnUuid = columnElem.getAttribute("uuid") || crypto.randomUUID();
-
-  // Parse the table header, column header, and detail cells - supports cell elements with or without a namespace
-  const tableHeaderElem = Array.from(columnElem.children).find(
-    (cell) => cell.localName === "tableHeader",
-  );
-  const columnHeaderElem = Array.from(columnElem.children).find(
-    (cell) => cell.localName === "columnHeader",
-  );
-  const tableFooterElem = Array.from(columnElem.children).find(
-    (cell) => cell.localName === "tableFooter",
-  );
-  const columnFooterElem = Array.from(columnElem.children).find(
-    (cell) => cell.localName === "columnFooter",
-  );
-  const detailCellElem = Array.from(columnElem.children).find(
-    (cell) => cell.localName === "detailCell",
-  );
-
-  // Parse the rowSpan attribute
-  const parseCellWithRowSpan = (cellElem: Element | undefined) => {
-    if (!cellElem) return null;
-    const cellContent = parseCellContent(cellElem);
-    // Capture the rowSpan attribute, defaulting to 1
-    cellContent.rowSpan = parseInt(cellElem.getAttribute("rowSpan") || "1");
-    return cellContent;
-  };
-
-  const tableHeader = tableHeaderElem
-    ? parseCellWithRowSpan(tableHeaderElem)
-    : null;
-  const columnHeader = columnHeaderElem
-    ? parseCellWithRowSpan(columnHeaderElem)
-    : null;
-  const tableFooter = tableFooterElem
-    ? parseCellWithRowSpan(tableFooterElem)
-    : null;
-  const columnFooter = columnFooterElem
-    ? parseCellWithRowSpan(columnFooterElem)
-    : null;
-  const detailCell = detailCellElem
-    ? parseCellWithRowSpan(detailCellElem)
-    : null;
-
-  // Get the column name - from a text element inside columnHeader
-  let columnName = "";
-
-  // First try to get the column name from columnHeader (accessed via the .element sub-object)
-  if (columnHeader) {
-    const elem = columnHeader.element || columnHeader;
-    if (elem.type === "staticText") {
-      columnName = elem.text || "";
-    } else if (elem.type === "textField") {
-      // Strip the surrounding quotes from the expression value
-      columnName = (elem.expression || "").replace(/^"|"$/g, "");
-    }
-  }
-
-  // If no column name was found in columnHeader, fall back to the property element
-  if (!columnName) {
-    const columnNameProp = columnElem.querySelector(
-      'property[name="com.jaspersoft.studio.components.table.model.column.name"]',
-    );
-    columnName = columnNameProp?.getAttribute("value") || "";
-  }
-
-  // If still no column name was found, use a default column name
-  if (!columnName) {
-    columnName = `Column${index + 1}`;
-  }
-
-  // Set default values for cells with no content (using the { enable, element } wrapper format)
-  let tableHeaderWithDefaults = tableHeader;
-  if (!tableHeaderWithDefaults) {
-    tableHeaderWithDefaults = {
-      enable: true,
-      element: {
-        type: "staticText",
-        x: 0,
-        y: 0,
-        width: columnWidth,
-        height: 30,
-        text: "",
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-      rowSpan: 1,
-    };
-  }
-
-  let columnHeaderWithDefaults = columnHeader;
-  if (!columnHeaderWithDefaults) {
-    columnHeaderWithDefaults = {
-      enable: true,
-      element: {
-        type: "staticText",
-        x: 0,
-        y: 0,
-        width: columnWidth,
-        height: 30,
-        text: columnName,
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-      rowSpan: 1,
-    };
-  }
-
-  let tableFooterWithDefaults = tableFooter;
-  if (!tableFooterWithDefaults) {
-    tableFooterWithDefaults = {
-      enable: true,
-      element: {
-        type: "textField",
-        x: 0,
-        y: 0,
-        width: columnWidth,
-        height: 30,
-        expression: "",
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-      rowSpan: 1,
-    };
-  }
-
-  let columnFooterWithDefaults = columnFooter;
-  if (!columnFooterWithDefaults) {
-    columnFooterWithDefaults = {
-      enable: true,
-      element: {
-        type: "textField",
-        x: 0,
-        y: 0,
-        width: columnWidth,
-        height: 30,
-        expression: "",
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-      rowSpan: 1,
-    };
-  }
-
-  let detailCellWithDefaults = detailCell;
-  if (!detailCellWithDefaults) {
-    detailCellWithDefaults = {
-      enable: true,
-      element: {
-        type: "textField",
-        x: 0,
-        y: 0,
-        width: columnWidth,
-        height: 30,
-        expression: "",
-        textAlignment: "Center",
-        verticalAlignment: "Middle",
-      },
-      rowSpan: 1,
-    };
-  }
-
-  return {
-    type: "column",
-    uuid: columnUuid || crypto.randomUUID(),
-    width: columnWidth,
-    name: columnName,
-    hasTableHeader: !!tableHeaderElem,
-    hasColumnHeader: !!columnHeaderElem,
-    hasTableFooter: !!tableFooterElem,
-    hasColumnFooter: !!columnFooterElem,
-    hasDetailCell: !!detailCellElem,
-    tableHeader: tableHeaderWithDefaults,
-    columnHeader: columnHeaderWithDefaults,
-    tableFooter: tableFooterWithDefaults,
-    columnFooter: columnFooterWithDefaults,
-    detailCell: detailCellWithDefaults,
-  };
-}
-
-// Parse a column group element
-function parseColumnGroupElement(groupElem: Element, index: number): any {
-  const groupUuid = groupElem.getAttribute("uuid") || crypto.randomUUID();
-  const groupWidth = parseInt(groupElem.getAttribute("width") || "0");
-
-  // First parse the columnHeader element
-  const columnHeaderElem = Array.from(groupElem.children).find(
-    (cell) => cell.localName === "columnHeader",
-  );
-
-  // Helper function to parse the rowSpan attribute
-  const parseCellWithRowSpan = (cellElem: Element | undefined) => {
-    if (!cellElem) return undefined;
-    const cellContent = parseCellContent(cellElem);
-    // Capture the rowSpan attribute, defaulting to 1
-    cellContent.rowSpan = parseInt(cellElem.getAttribute("rowSpan") || "1");
-    return cellContent;
-  };
-
-  // Get the column name - from a text element inside columnHeader
-  let groupName = "";
-  const columnHeader = columnHeaderElem
-    ? parseCellWithRowSpan(columnHeaderElem)
-    : undefined;
-
-  // First try to get the column name from columnHeader (accessed via the .element sub-object)
-  if (columnHeader) {
-    const elem = columnHeader.element || columnHeader;
-    if (elem.type === "staticText") {
-      groupName = elem.text || "";
-    } else if (elem.type === "textField") {
-      groupName = elem.expression || "";
-    }
-  }
-
-  // If no column name was found in columnHeader, fall back to the property element
-  if (!groupName) {
-    const groupNameProp = groupElem.querySelector(
-      'property[name="com.jaspersoft.studio.components.table.model.column.name"]',
-    );
-    groupName = groupNameProp?.getAttribute("value") || "";
-  }
-
-  // If still no column name was found, use a default column name
-  if (!groupName) {
-    groupName = `Group${index + 1}`;
-  }
-
-  const group: any = {
-    type: "columnGroup",
-    uuid: groupUuid,
-    width: groupWidth,
-    name: groupName,
-    children: [],
-  };
-
-  // Parse tableHeader
-  const tableHeaderElem = Array.from(groupElem.children).find(
-    (cell) => cell.localName === "tableHeader",
-  );
-  group.hasTableHeader = !!tableHeaderElem;
-  if (tableHeaderElem) {
-    group.tableHeader = parseCellWithRowSpan(tableHeaderElem);
-  }
-
-  // Parse tableFooter
-  const tableFooterElem = Array.from(groupElem.children).find(
-    (cell) => cell.localName === "tableFooter",
-  );
-  group.hasTableFooter = !!tableFooterElem;
-  if (tableFooterElem) {
-    group.tableFooter = parseCellWithRowSpan(tableFooterElem);
-  }
-
-  // Parse columnHeader
-  group.hasColumnHeader = !!columnHeaderElem;
-  if (columnHeader) {
-    group.columnHeader = columnHeader;
-  }
-
-  // Parse columnFooter
-  const columnFooterElem = Array.from(groupElem.children).find(
-    (cell) => cell.localName === "columnFooter",
-  );
-  group.hasColumnFooter = !!columnFooterElem;
-  if (columnFooterElem) {
-    group.columnFooter = parseCellWithRowSpan(columnFooterElem);
-  }
-
-  // Parse child groups and child columns
-  let childIndex = 0;
-  Array.from(groupElem.children).forEach((child) => {
-    // Check whether this is a column element
-    if (
-      child.tagName === "jr:column" ||
-      child.localName === "column" ||
-      child.tagName === "column"
-    ) {
-      group.children.push(parseColumnElement(child, childIndex++));
-    }
-    // Check whether this is a column group element
-    else if (
-      child.tagName === "jr:columnGroup" ||
-      child.localName === "columnGroup" ||
-      child.tagName === "columnGroup"
-    ) {
-      group.children.push(parseColumnGroupElement(child, childIndex++));
-    }
-  });
-
-  return group;
-}
-
-// Parse a table element
-function parseTableElement(tableElem: Element, reportElement: Element): any {
-  // Get the basic attributes
-  const x = parseInt(reportElement.getAttribute("x") || "0");
-  const y = parseInt(reportElement.getAttribute("y") || "0");
-  const width = parseInt(reportElement.getAttribute("width") || "555");
-  const height = parseInt(reportElement.getAttribute("height") || "200");
-  const uuid = reportElement.getAttribute("uuid") || crypto.randomUUID();
-
-  // Parse the color and mode attributes
-  const forecolor = reportElement.hasAttribute("forecolor")
-    ? reportElement.getAttribute("forecolor")
-    : undefined;
-  const backcolor = reportElement.hasAttribute("backcolor")
-    ? reportElement.getAttribute("backcolor")
-    : undefined;
-  const mode = reportElement.hasAttribute("mode")
-    ? reportElement.getAttribute("mode")
-    : undefined;
-
-  // Parse the table styles
-  const styles: any = {};
-  const tableHeaderStyle = reportElement.getAttribute(
-    "com.jaspersoft.studio.table.style.table_header",
-  );
-  const columnHeaderStyle = reportElement.getAttribute(
-    "com.jaspersoft.studio.table.style.column_header",
-  );
-  const detailStyle = reportElement.getAttribute(
-    "com.jaspersoft.studio.table.style.detail",
-  );
-
-  if (tableHeaderStyle) styles.tableHeader = tableHeaderStyle;
-  if (columnHeaderStyle) styles.columnHeader = columnHeaderStyle;
-  if (detailStyle) styles.detail = detailStyle;
-
-  // Parse the dataset
-  const datasetRunElem = tableElem.querySelector("datasetRun");
-  const subDataset =
-    datasetRunElem?.getAttribute("subDataset") || "tableDataset";
-
-  // Parse the table attributes - capture every attribute allowed by the XSD
-  const tableAttributes: any = {};
-  for (let i = 0; i < tableElem.attributes.length; i++) {
-    const attr = tableElem.attributes[i];
-    // Make sure attr isn't undefined
-    if (attr) {
-      // Skip namespace and schemaLocation attributes, since they're hardcoded during generation
-      if (attr.name.startsWith("xmlns") || attr.name === "xsi:schemaLocation") {
-        continue;
-      }
-      // Add the attribute to the table element object
-      tableAttributes[attr.name] = attr.value;
-    }
-  }
-
-  // Parse the table's connection expression
-  const connectionExprElem = datasetRunElem?.querySelector(
-    "connectionExpression",
-  );
-  const connectionExpression =
-    connectionExprElem?.textContent?.trim() || "$P{REPORT_CONNECTION}";
-
-  // Parse the table's columns and column groups - supports column elements with or without a namespace
-  const children: any[] = [];
-  const columns: any[] = [];
-  let childIndex = 0;
-
-  Array.from(tableElem.children).forEach((child) => {
-    // Check whether this is a column element
-    if (
-      child.tagName === "jr:column" ||
-      child.localName === "column" ||
-      child.tagName === "column"
-    ) {
-      const column = parseColumnElement(child, childIndex++);
-      children.push(column);
-      columns.push(column);
-    }
-    // Check whether this is a column group element
-    else if (
-      child.tagName === "jr:columnGroup" ||
-      child.localName === "columnGroup" ||
-      child.tagName === "columnGroup"
-    ) {
-      const group = parseColumnGroupElement(child, childIndex++);
-      children.push(group);
-      // Also collect every regular column into the columns array, for backward compatibility
-      const collectColumns = (group: any) => {
-        group.children.forEach((child: any) => {
-          if (child.detailCell) {
-            // Regular column
-            columns.push(child);
-          } else {
-            // Child group
-            collectColumns(child);
-          }
-        });
-      };
-      collectColumns(group);
-    }
-  });
-
-  // Build the table element
-  const tableElement: any = {
-    type: "table",
-    uuid,
-    x,
-    y,
-    width,
-    height,
-    styles,
-    dataset: {
-      uuid: datasetRunElem?.getAttribute("uuid") || crypto.randomUUID(),
-      name: subDataset,
-      type: "table",
-      connectionExpression,
-    },
-    children, // Supports a mixed structure of groups and columns
-    columns, // Kept for backward compatibility, supporting the legacy columns array
-    ...tableAttributes, // Includes every table attribute
-    forecolor,
-    backcolor,
-    mode,
-  };
-
-  return tableElement;
-}
-
-// Parse a table cell element
-function parseCellElement(cellElem: Element): any {
-  // Get the first element inside the cell
-  const childElement = cellElem.firstElementChild;
-  if (!childElement) return undefined;
-
-  // Parse the element inside the cell
-  return parseElement(childElement, childElement.tagName);
-}
-
 // Helper function: find a direct child element by name, accounting for namespaces
+function directChildren(parent: Element, localName: string): Element[] {
+  return Array.from(parent.children).filter((c) => (c.localName || c.tagName) === localName);
+}
+
+// Position and size every element shares
+function readBounds(reportElement: Element) {
+  return {
+    uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(),
+    x: parseInt(reportElement.getAttribute("x") || "0"),
+    y: parseInt(reportElement.getAttribute("y") || "0"),
+    width: parseInt(reportElement.getAttribute("width") || "100"),
+    height: parseInt(reportElement.getAttribute("height") || "40"),
+  };
+}
+
+function readTableBinding(reportElement: Element) {
+  const property = Array.from(reportElement.children).find(
+    (c) => c.localName === "property" && c.getAttribute("name") === TABLE_BINDING_PROPERTY,
+  );
+  return property ? parseBinding(property.getAttribute("value")) : null;
+}
+
+// A data table: everything comes from its saved setup. Tables made elsewhere
+// (no setup) become empty tables at the same place, ready for data.
+function parseDataTable(tableElem: Element, reportElement: Element): TableElement {
+  const binding = readTableBinding(reportElement);
+  const firstColumn = Array.from(tableElem.children).find((c) => c.localName === "column");
+  const cellHeight = (name: string) => {
+    const cell = firstColumn
+      ? Array.from(firstColumn.children).find((c) => c.localName === name)
+      : undefined;
+    const h = parseInt(cell?.getAttribute("height") || "");
+    return Number.isNaN(h) ? undefined : h;
+  };
+  return {
+    type: "table",
+    ...readBounds(reportElement),
+    ...(binding ? { binding } : {}),
+    headerHeight: cellHeight("columnHeader") ?? TABLE_HEADER_HEIGHT,
+    rowHeight: cellHeight("detailCell") ?? TABLE_ROW_HEIGHT,
+  } as TableElement;
+}
+
+// An empty table is written as a marked, empty frame
+function isEmptyTableFrame(frame: Element): boolean {
+  const reportElement = findChildElement(frame, "reportElement");
+  return !!reportElement && Array.from(reportElement.children).some(
+    (c) => c.localName === "property" && c.getAttribute("name") === TABLE_BINDING_PROPERTY,
+  );
+}
+
+function parseEmptyTable(frame: Element): TableElement | null {
+  const reportElement = findChildElement(frame, "reportElement");
+  if (!reportElement) return null;
+  const bounds = readBounds(reportElement);
+  return {
+    type: "table",
+    ...bounds,
+    headerHeight: TABLE_HEADER_HEIGHT,
+    rowHeight: TABLE_ROW_HEIGHT,
+  } as TableElement;
+}
+
+// A custom table is a frame carrying its setup in CUSTOM_TABLE_PROPERTY: it is
+// rebuilt from that alone (its rows and cells are written from the setup)
+function readCustomTable(frame: Element): CustomTableData | null {
+  const reportElement = findChildElement(frame, "reportElement");
+  const property = reportElement
+    ? Array.from(reportElement.children).find(
+        (c) => c.localName === "property" && c.getAttribute("name") === CUSTOM_TABLE_PROPERTY,
+      )
+    : undefined;
+  return property ? parseCustomTable(property.getAttribute("value")) : null;
+}
+
+// A contents list: a frame carrying its setup; rebuilt from that alone
+function readContentsList(frame: Element): ContentsListData | null {
+  const reportElement = findChildElement(frame, "reportElement");
+  const property = reportElement
+    ? Array.from(reportElement.children).find(
+        (c) => c.localName === "property" && c.getAttribute("name") === CONTENTS_LIST_PROPERTY,
+      )
+    : undefined;
+  return property ? parseContentsList(property.getAttribute("value")) : null;
+}
+
+function parseContentsListFrame(frame: Element): ContentsListElement {
+  const reportElement = findChildElement(frame, "reportElement")!;
+  const element: ContentsListElement = {
+    type: "contentsList",
+    ...readBounds(reportElement),
+    list: readContentsList(frame)!,
+  };
+  // Its other properties (e.g. being part of a box)
+  const others = Array.from(reportElement.children)
+    .filter((c) => c.localName === "property" && c.getAttribute("name") !== CONTENTS_LIST_PROPERTY)
+    .map((c) => ({ name: c.getAttribute("name") ?? "", value: c.getAttribute("value") ?? "" }))
+    .filter((p) => p.name);
+  if (others.length) element.properties = others;
+  syncContentsListSize(element);
+  return element;
+}
+
+function isCustomTablePart(frame: Element): boolean {
+  const reportElement = findChildElement(frame, "reportElement");
+  return !!reportElement && Array.from(reportElement.children).some(
+    (c) => c.localName === "property" && c.getAttribute("name") === CUSTOM_TABLE_PART_PROPERTY,
+  );
+}
+
+function parseCustomTableFrame(frame: Element): CustomTableElement {
+  const reportElement = findChildElement(frame, "reportElement")!;
+  const element: CustomTableElement = {
+    type: "customTable",
+    ...readBounds(reportElement),
+    table: readCustomTable(frame)!,
+  };
+  syncTableSize(element);
+  return element;
+}
+
+// The <band> of a section (e.g. "title"), or null
+function findBandElement(xmlDoc: Document, section: string): Element | null {
+  const container = Array.from(xmlDoc.documentElement.children).find((c) => c.localName === section);
+  return container ? findChildElement(container, "band") : null;
+}
+
+// A background frame holding a contents page: its number (1, 2…), else 0
+function contentsPageOf(frame: Element): number {
+  if (frame.localName !== "frame") return 0;
+  const reportElement = findChildElement(frame, "reportElement");
+  const property = reportElement
+    ? Array.from(reportElement.children).find(
+        (c) => c.localName === "property" && c.getAttribute("name") === CONTENTS_PAGE_PROPERTY,
+      )
+    : undefined;
+  const n = parseInt(property?.getAttribute("value") ?? "", 10);
+  return Number.isInteger(n) && n > 0 && n <= 50 ? n : 0;
+}
+
 function findChildElement(parent: Element, localName: string): Element | null {
   return (
     Array.from(parent.children).find(
@@ -1318,42 +1072,12 @@ function findChildElement(parent: Element, localName: string): Element | null {
 }
 
 function parseElement(element: Element, type: string): any {
-  // Mapping of chart tag names to chart types
-  const chartTagNames = [
-    'pieChart', 'pie3DChart', 'barChart', 'bar3DChart', 'xyBarChart',
-    'stackedBarChart', 'stackedBar3DChart', 'lineChart', 'xyLineChart',
-    'areaChart', 'xyAreaChart', 'stackedAreaChart', 'scatterChart', 'bubbleChart',
-    'timeSeriesChart', 'highLowChart', 'candlestickChart',
-    'meterChart', 'thermometerChart', 'multiAxisChart', 'ganttChart', 'spiderChart'
-  ];
-  
   // Find reportElement, accounting for namespaces
-  // For chart types, reportElement lives inside the <chart> child element
-  let reportElement = findChildElement(element, "reportElement");
-  if (!reportElement && (type === 'chart' || chartTagNames.includes(element.localName || element.tagName))) {
-    // Chart type: reportElement lives inside the <chart> child element
-    const chartElem = findChildElement(element, "chart");
-    if (chartElem) {
-      reportElement = findChildElement(chartElem, "reportElement");
-    }
-  }
+  const reportElement = findChildElement(element, "reportElement");
   if (!reportElement) return null;
 
-  const validElementTypes: Array<
-    | "staticText"
-    | "textField"
-    | "image"
-    | "line"
-    | "rectangle"
-    | "ellipse"
-    | "break"
-    | "frame"
-    | "table"
-    | "subreport"
-    | "list"
-    | "chart"
-    | "crosstab"
-  > = [
+  // "break" is read only so the band can split pages at it (it is not kept)
+  const validElementTypes = [
     "staticText",
     "textField",
     "image",
@@ -1363,10 +1087,6 @@ function parseElement(element: Element, type: string): any {
     "break",
     "frame",
     "table",
-    "subreport",
-    "list",
-    "chart",
-    "crosstab",
   ];
   const elementType = validElementTypes.includes(type as any)
     ? (type as any)
@@ -1376,10 +1096,16 @@ function parseElement(element: Element, type: string): any {
   const result: Partial<DesignElement> = {
     uuid: reportElement.getAttribute("uuid") || crypto.randomUUID(), // Read the UUID; auto-generate one if it doesn't exist
     type: elementType,
-    x: parseInt(reportElement.getAttribute("x") || "0"),
-    y: parseInt(reportElement.getAttribute("y") || "0"),
-    width: parseInt(reportElement.getAttribute("width") || "100"),
-    height: parseInt(reportElement.getAttribute("height") || "30"),
+    x: Math.max(0, parseInt(reportElement.getAttribute("x") || "0")),
+    y: Math.max(0, parseInt(reportElement.getAttribute("y") || "0")),
+    width: Math.max(
+      1,
+      Math.abs(parseInt(reportElement.getAttribute("width") || "100")),
+    ),
+    height: Math.max(
+      1,
+      Math.abs(parseInt(reportElement.getAttribute("height") || "30")),
+    ),
   };
 
   if (reportElement.hasAttribute("forecolor")) {
@@ -1434,13 +1160,15 @@ function parseElement(element: Element, type: string): any {
     }
   }
 
-  // Read the printWhenExpression and style attributes
-  if (reportElement.hasAttribute("printWhenExpression")) {
+  // Read the printWhenExpression (a reportElement child; older files may use an
+  // attribute) and the style attribute
+  const printWhenElem = findChildElement(reportElement, "printWhenExpression");
+  if (printWhenElem) {
+    (result as any).printWhenExpression =
+      printWhenElem.textContent?.trim() || undefined;
+  } else if (reportElement.hasAttribute("printWhenExpression")) {
     (result as any).printWhenExpression =
       reportElement.getAttribute("printWhenExpression") || undefined;
-  }
-  if (reportElement.hasAttribute("style")) {
-    result.style = reportElement.getAttribute("style") || undefined;
   }
   if (reportElement.hasAttribute("isPrintRepeatedValues")) {
     (result as any).isPrintRepeatedValues =
@@ -1464,27 +1192,29 @@ function parseElement(element: Element, type: string): any {
     (result as any).key = reportElement.getAttribute("key") || undefined;
   }
   if (reportElement.hasAttribute("positionType")) {
-    (result as any).positionType = reportElement.getAttribute("positionType") || undefined;
+    (result as any).positionType =
+      reportElement.getAttribute("positionType") || undefined;
   }
   if (reportElement.hasAttribute("stretchType")) {
-    (result as any).stretchType = reportElement.getAttribute("stretchType") || undefined;
+    (result as any).stretchType =
+      reportElement.getAttribute("stretchType") || undefined;
   }
 
   // Parse styleExpression
   const styleExprElem = findChildElement(element, "styleExpression");
   if (styleExprElem) {
-    (result as any).styleExpression = styleExprElem.textContent?.trim() || '';
+    (result as any).styleExpression = styleExprElem.textContent?.trim() || "";
   }
 
   // Parse property elements
   const propertyElems = reportElement.querySelectorAll("property");
   if (propertyElems.length > 0) {
     const properties: Array<{ name: string; value: string }> = [];
-    propertyElems.forEach(prop => {
+    propertyElems.forEach((prop) => {
       const name = prop.getAttribute("name");
       const value = prop.getAttribute("value");
       if (name) {
-        properties.push({ name, value: value || '' });
+        properties.push({ name, value: value || "" });
       }
     });
     if (properties.length > 0) {
@@ -1495,10 +1225,13 @@ function parseElement(element: Element, type: string): any {
   // Parse propertyExpression elements
   const propExprElems = reportElement.querySelectorAll("propertyExpression");
   if (propExprElems.length > 0) {
-    const propertyExpressions: Array<{ name: string; valueExpression: string }> = [];
-    propExprElems.forEach(prop => {
+    const propertyExpressions: Array<{
+      name: string;
+      valueExpression: string;
+    }> = [];
+    propExprElems.forEach((prop) => {
       const name = prop.getAttribute("name");
-      const valueExpression = prop.textContent?.trim() || '';
+      const valueExpression = prop.textContent?.trim() || "";
       if (name) {
         propertyExpressions.push({ name, valueExpression });
       }
@@ -1511,12 +1244,18 @@ function parseElement(element: Element, type: string): any {
   switch (type) {
     case "staticText":
       parseStaticTextElement(element, result);
+      staticTextToTextField(result);
       break;
     case "textField":
       parseTextFieldElement(element, result);
+      // A page number written by another tool becomes a page number here too
+      // A date's expression is rebuilt from its setup
+      // A linked project detail's expression is rebuilt from its link
+      if (!restoreDateElement(result as any) && !restoreProjectValue(result as any)) detectPagination(result as any);
       break;
     case "image":
-      parseImageElement(element, result);
+      // A chart is written as an image carrying its setup
+      if (!restoreChart(result)) parseImageElement(element, result);
       break;
     case "line":
       parseLineElement(element, result);
@@ -1528,22 +1267,10 @@ function parseElement(element: Element, type: string): any {
       parseEllipseElement(element, result);
       break;
     case "break":
-      parseBreakElement(element, result);
+      (result as any).breakType = element.getAttribute("type") || "Page";
       break;
     case "frame":
       parseFrameElement(element, result);
-      break;
-    case "subreport":
-      parseSubreportElement(element, result);
-      break;
-    case "list":
-      parseListElement(element, result);
-      break;
-    case "chart":
-      parseChartElement(element, result);
-      break;
-    case "crosstab":
-      parseCrosstabElement(element, result);
       break;
   }
 
@@ -1551,7 +1278,67 @@ function parseElement(element: Element, type: string): any {
     (result as any).radius = parseInt(element.getAttribute("radius") || "0");
   }
 
+  if (elementType === "frame") {
+    restoreRoundedFrameBorder(result);
+    restoreBoxCornerRadii(result);
+  }
+
   return result;
+}
+
+// Different corner radii are stored as a frame property; move them back to the model
+function restoreBoxCornerRadii(frame: any): void {
+  const property = frame.properties?.find((p: any) => p.name === BOX_CORNER_RADIUS_PROPERTY);
+  if (!property) return;
+  frame.properties = frame.properties.filter((p: any) => p !== property);
+  if (frame.properties.length === 0) delete frame.properties;
+  const radii = decodeCornerRadii(property.value || "");
+  if (radii) frame.cornerRadii = radii;
+}
+
+// A frame with rounded corners is written as a frame whose first children are
+// marked rounded rectangles; turn them back into a frame with a radius
+function restoreRoundedFrameBorder(frame: any): void {
+  const markerOf = (el: any): string | undefined =>
+    el?.type === "rectangle"
+      ? el.properties?.find((p: any) => p.name === ROUNDED_BORDER_PROPERTY)?.value
+      : undefined;
+  const first = frame.elements?.[0];
+  const marker = markerOf(first);
+  if (!marker) return;
+
+  const box = withoutLines(frame.box);
+  let fill: any = null;
+
+  if (marker === ROUNDED_MARKER.layeredBack) {
+    // Back shape (border colour) + front shape (inside)
+    const front = frame.elements[1];
+    const frontMarker = markerOf(front);
+    const pens =
+      first.properties.find((p: any) => p.name === ROUNDED_BORDER_PENS_PROPERTY)?.value ?? "";
+    Object.assign(box, decodeSidePens(pens));
+    frame.elements.splice(0, frontMarker ? 2 : 1);
+    if (frontMarker === ROUNDED_MARKER.layeredFrontFill) fill = front;
+  } else {
+    // One rounded rectangle carrying the pen and fill
+    frame.elements.shift();
+    if ((first.pen?.lineWidth ?? 0) > 0) {
+      box.pen = {
+        lineWidth: first.pen.lineWidth,
+        lineStyle: first.pen.lineStyle || "Solid",
+        lineColor: first.pen.lineColor || "#000000",
+      };
+    }
+    fill = first;
+  }
+
+  if (frame.elements.length === 0) delete frame.elements;
+  frame.radius = first.radius;
+  frame.box = orUndefined(box);
+  if (fill?.mode === "Opaque" && fill.backcolor) {
+    frame.mode = "Opaque";
+    frame.backcolor = fill.backcolor;
+  }
 }
 
 function parseBoxElement(boxElement: Element): any {
@@ -1713,6 +1500,21 @@ function parseStaticTextElement(element: Element, result: any): void {
   }
 }
 
+// Static text is shown and edited as a Text element: its text becomes a
+// string literal expression, so it prints the same
+function staticTextToTextField(result: any): void {
+  const text = String(result.text ?? "");
+  delete result.text;
+  result.type = "textField";
+  result.expression = `"${text
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\r?\n/g, "\\n")}"`;
+  result.evaluationTime = "Now";
+  result.isBlankWhenNull = false;
+  if (!result.markup) result.markup = "none";
+}
+
 function parseTextFieldElement(element: Element, result: any): void {
   if (element.hasAttribute("isStretchWithOverflow")) {
     const isStretchWithOverflow =
@@ -1755,6 +1557,19 @@ function parseTextFieldElement(element: Element, result: any): void {
       result.verticalAlignment = textElement.getAttribute("verticalAlignment");
     }
 
+    if (textElement.hasAttribute("isStyledText")) {
+      const isStyledText = textElement.getAttribute("isStyledText") === "true";
+      result.markup = isStyledText ? "styled" : "none";
+    }
+
+    if (textElement.hasAttribute("markup")) {
+      result.markup = textElement.getAttribute("markup");
+    }
+
+    if (textElement.hasAttribute("rotation")) {
+      result.rotation = textElement.getAttribute("rotation");
+    }
+
     const fontElement = findChildElement(textElement, "font");
     if (fontElement) {
       if (fontElement.hasAttribute("size"))
@@ -1769,8 +1584,11 @@ function parseTextFieldElement(element: Element, result: any): void {
 
   const expressionElem = findChildElement(element, "textFieldExpression");
   if (expressionElem) {
-    result.expression = expressionElem.textContent || "";
-    const fieldMatch = result.expression.match(/\$F\{([^}]+)\}/);
+    // Text the generator split so "$F{…}" stays text is one literal again
+    result.expression = joinSplitReferences(expressionElem.textContent || "");
+    // A field it shows (never "$F{…}" typed inside one quoted text)
+    const isOneLiteral = /^"(?:[^"\\]|\\.)*"$/.test(result.expression.trim());
+    const fieldMatch = isOneLiteral ? null : result.expression.match(/\$F\{([^}]+)\}/);
     if (fieldMatch) {
       result.fieldName = fieldMatch[1];
     }
@@ -1800,11 +1618,17 @@ function parseTextFieldElement(element: Element, result: any): void {
   }
 
   // Parse the newly added hyperlink expressions
-  const hyperlinkTooltipExpr = findChildElement(element, "hyperlinkTooltipExpression");
+  const hyperlinkTooltipExpr = findChildElement(
+    element,
+    "hyperlinkTooltipExpression",
+  );
   if (hyperlinkTooltipExpr) {
     result.hyperlinkTooltipExpression = hyperlinkTooltipExpr.textContent || "";
   }
-  const hyperlinkWhenExpr = findChildElement(element, "hyperlinkWhenExpression");
+  const hyperlinkWhenExpr = findChildElement(
+    element,
+    "hyperlinkWhenExpression",
+  );
   if (hyperlinkWhenExpr) {
     result.hyperlinkWhenExpression = hyperlinkWhenExpr.textContent || "";
   }
@@ -1812,7 +1636,10 @@ function parseTextFieldElement(element: Element, result: any): void {
   if (anchorNameExpr) {
     result.anchorNameExpression = anchorNameExpr.textContent || "";
   }
-  const bookmarkLevelExpr = findChildElement(element, "bookmarkLevelExpression");
+  const bookmarkLevelExpr = findChildElement(
+    element,
+    "bookmarkLevelExpression",
+  );
   if (bookmarkLevelExpr) {
     result.bookmarkLevelExpression = bookmarkLevelExpr.textContent || "";
   }
@@ -1842,7 +1669,9 @@ function parseImageElement(element: Element, result: any): void {
   if (element.hasAttribute("rotation"))
     result.rotation = element.getAttribute("rotation");
   if (element.hasAttribute("bookmarkLevel"))
-    result.bookmarkLevel = parseInt(element.getAttribute("bookmarkLevel") || "0");
+    result.bookmarkLevel = parseInt(
+      element.getAttribute("bookmarkLevel") || "0",
+    );
 
   const graphicElement = parseGraphicElement(element);
   if (Object.keys(graphicElement).length > 0) {
@@ -1876,11 +1705,17 @@ function parseImageElement(element: Element, result: any): void {
   if (hyperlinkPageExpr) {
     result.hyperlinkPageExpression = hyperlinkPageExpr.textContent || "";
   }
-  const hyperlinkTooltipExpr = findChildElement(element, "hyperlinkTooltipExpression");
+  const hyperlinkTooltipExpr = findChildElement(
+    element,
+    "hyperlinkTooltipExpression",
+  );
   if (hyperlinkTooltipExpr) {
     result.hyperlinkTooltipExpression = hyperlinkTooltipExpr.textContent || "";
   }
-  const hyperlinkWhenExpr = findChildElement(element, "hyperlinkWhenExpression");
+  const hyperlinkWhenExpr = findChildElement(
+    element,
+    "hyperlinkWhenExpression",
+  );
   if (hyperlinkWhenExpr) {
     result.hyperlinkWhenExpression = hyperlinkWhenExpr.textContent || "";
   }
@@ -1888,7 +1723,10 @@ function parseImageElement(element: Element, result: any): void {
   if (anchorNameExpr) {
     result.anchorNameExpression = anchorNameExpr.textContent || "";
   }
-  const bookmarkLevelExpr = findChildElement(element, "bookmarkLevelExpression");
+  const bookmarkLevelExpr = findChildElement(
+    element,
+    "bookmarkLevelExpression",
+  );
   if (bookmarkLevelExpr) {
     result.bookmarkLevelExpression = bookmarkLevelExpr.textContent || "";
   }
@@ -1912,9 +1750,16 @@ function parseLineElement(element: Element, result: any): void {
     result.lineStyle = element.getAttribute("lineStyle");
   }
 
-  const graphicElement = parseGraphicElement(element);
+  // The pen becomes the line's own width / style / colour, which the canvas
+  // and the Line panel edit (a kept pen would win over them when written)
+  const { pen, ...graphicElement } = parseGraphicElement(element);
   if (Object.keys(graphicElement).length > 0) {
     Object.assign(result, graphicElement);
+  }
+  if (pen) {
+    if (pen.lineWidth !== undefined && result.lineWidth === undefined) result.lineWidth = pen.lineWidth;
+    if (pen.lineStyle && result.lineStyle === undefined) result.lineStyle = pen.lineStyle;
+    if (pen.lineColor && result.lineColor === undefined) result.lineColor = pen.lineColor;
   }
 }
 
@@ -1935,7 +1780,7 @@ function parseGraphicElement(element: Element): any {
     if (penElement) {
       const pen: any = {};
       if (penElement.hasAttribute("lineWidth")) {
-        pen.lineWidth = parseInt(penElement.getAttribute("lineWidth") || "0");
+        pen.lineWidth = parseFloat(penElement.getAttribute("lineWidth") || "0");
       }
       if (penElement.hasAttribute("lineStyle")) {
         pen.lineStyle = penElement.getAttribute("lineStyle");
@@ -1962,15 +1807,6 @@ function parseEllipseElement(element: Element, result: any): void {
   if (Object.keys(graphicElement).length > 0) {
     Object.assign(result, graphicElement);
   }
-}
-
-function parseBreakElement(element: Element, result: any): void {
-  if (element.hasAttribute("type")) {
-    result.breakType = element.getAttribute("type");
-  } else {
-    result.breakType = "Page";
-  }
-  // BreakElement-specific reportElement attributes are handled by the shared code in parseElement
 }
 
 function parseFrameElement(element: Element, result: any): void {
@@ -2003,21 +1839,27 @@ function parseFrameElement(element: Element, result: any): void {
     "line",
     "rectangle",
     "ellipse",
-    "break",
     "frame",
-    "subreport",
-    "list",
-    "chart",
-    "crosstab",
   ];
 
   // Iterate direct child elements
   Array.from(element.children).forEach((child) => {
     const childType = child.localName || child.tagName;
+    // A Table of Contents inside a box (normal pages)
+    if (childType === "frame" && readContentsList(child)) {
+      elements.push(parseContentsListFrame(child));
+      return;
+    }
     if (validElementTypes.includes(childType)) {
       const parsedElement = parseElement(child, childType);
       if (parsedElement) {
         elements.push(parsedElement);
+      }
+    } else if (childType === "componentElement") {
+      // A barcode in a box (tables never go in boxes)
+      const parsedComponent = parseComponentElement(child);
+      if (parsedComponent) {
+        elements.push(parsedComponent);
       }
     }
   });
@@ -2043,442 +1885,17 @@ function parseFrameElement(element: Element, result: any): void {
   });
 }
 
-// Parse a subreport element
-function parseSubreportElement(element: Element, result: any): void {
-  // Parse subreportExpression
-  const subreportExprElem = element.querySelector("subreportExpression");
-  if (subreportExprElem) {
-    result.subreportExpression = subreportExprElem.textContent?.trim() || '';
-  }
-
-  // Parse parametersMapExpression
-  const paramsMapExprElem = element.querySelector("parametersMapExpression");
-  if (paramsMapExprElem) {
-    result.parametersMapExpression = paramsMapExprElem.textContent?.trim() || '';
-  }
-
-  // Parse connectionExpression
-  const connExprElem = element.querySelector("connectionExpression");
-  if (connExprElem) {
-    result.connectionExpression = connExprElem.textContent?.trim() || '';
-  }
-
-  // Parse dataSourceExpression
-  const dsExprElem = element.querySelector("dataSourceExpression");
-  if (dsExprElem) {
-    result.dataSourceExpression = dsExprElem.textContent?.trim() || '';
-  }
-
-  // Parse evaluationTime
-  if (element.hasAttribute("evaluationTime")) {
-    result.evaluationTime = element.getAttribute("evaluationTime");
-  }
-
-  // Parse isUsingCache
-  if (element.hasAttribute("isUsingCache")) {
-    result.isUsingCache = element.getAttribute("isUsingCache") === "true";
-  }
-
-  // Parse runToBottom
-  if (element.hasAttribute("runToBottom")) {
-    result.runToBottom = element.getAttribute("runToBottom") === "true";
-  }
-}
-
-// Parse a list element
-function parseListElement(element: Element, result: any): void {
-  // Parse printOrder
-  if (element.hasAttribute("printOrder")) {
-    result.printOrder = element.getAttribute("printOrder");
-  }
-
-  // Parse ignoreWidth
-  if (element.hasAttribute("ignoreWidth")) {
-    result.ignoreWidth = element.getAttribute("ignoreWidth") === "true";
-  }
-  
-  // Parse evaluationTime
-  if (element.hasAttribute("evaluationTime")) {
-    result.evaluationTime = element.getAttribute("evaluationTime");
-  }
-
-  // Parse splitType
-  if (element.hasAttribute("splitType")) {
-    result.splitType = element.getAttribute("splitType");
-  }
-
-  // Parse isIgnorePagination
-  if (element.hasAttribute("isIgnorePagination")) {
-    result.isIgnorePagination = element.getAttribute("isIgnorePagination") === "true";
-  }
-
-  // Parse datasetRun (dataset run configuration)
-  const datasetRunElem = element.querySelector("datasetRun");
-  if (datasetRunElem) {
-    // Parse subDataset
-    if (datasetRunElem.hasAttribute("subDataset")) {
-      result.subDataset = datasetRunElem.getAttribute("subDataset");
-    }
-
-    // Parse dataSourceExpression
-    const dsExprElem = datasetRunElem.querySelector("dataSourceExpression");
-    if (dsExprElem) {
-      result.dataSourceExpression = dsExprElem.textContent?.trim() || '';
-    }
-
-    // Parse connectionExpression
-    const connExprElem = datasetRunElem.querySelector("connectionExpression");
-    if (connExprElem) {
-      result.connectionExpression = connExprElem.textContent?.trim() || '';
-    }
-  }
-
-  // Backward compatibility with the old format: dataSourceExpression directly under the list element
-  if (!result.dataSourceExpression) {
-    const dsExprElem = element.querySelector("dataSourceExpression");
-    if (dsExprElem) {
-      result.dataSourceExpression = dsExprElem.textContent?.trim() || '';
-    }
-  }
-
-  // Parse listContents
-  const listContentsElem = element.querySelector("listContents");
-  if (listContentsElem) {
-    const contentsHeight = parseInt(listContentsElem.getAttribute("height") || "0");
-    const contentsWidth = parseInt(listContentsElem.getAttribute("width") || "0");
-    const elements: any[] = [];
-
-    // Parse the child elements inside the list contents
-    Array.from(listContentsElem.children).forEach(child => {
-      const childType = child.localName || child.tagName;
-      const validElementTypes = [
-        "staticText", "textField", "image", "line", "rectangle", "ellipse",
-        "break", "frame", "subreport", "list", "chart", "crosstab"
-      ];
-      if (validElementTypes.includes(childType)) {
-        const parsedElement = parseElement(child, childType);
-        if (parsedElement) {
-          elements.push(parsedElement);
-        }
-      }
-    });
-    
-    result.listContents = {
-      elements: elements,
-      height: contentsHeight
-    };
-  }
-}
-
-// Parse a chart element
-function parseChartElement(element: Element, result: any): void {
-  // Determine the chart type from the element's tag name
-  const tagName = element.tagName || element.localName || '';
-  const chartTypeMap: Record<string, string> = {
-    'pieChart': 'pie', 'pie3DChart': 'pie3D',
-    'barChart': 'bar', 'bar3DChart': 'bar3D', 'xyBarChart': 'xyBar',
-    'stackedBarChart': 'stackedBar', 'stackedBar3DChart': 'stackedBar3D',
-    'lineChart': 'line', 'xyLineChart': 'xyLine',
-    'areaChart': 'area', 'xyAreaChart': 'xyArea', 'stackedAreaChart': 'stackedArea',
-    'scatterChart': 'scatter', 'bubbleChart': 'bubble',
-    'timeSeriesChart': 'timeSeries', 'highLowChart': 'highLow', 'candlestickChart': 'candlestick',
-    'meterChart': 'meter', 'thermometerChart': 'thermometer',
-    'multiAxisChart': 'multiAxis', 'ganttChart': 'gantt', 'spiderChart': 'spider'
-  };
-  
-  // Try matching tag names with or without a namespace
-  for (const [key, value] of Object.entries(chartTypeMap)) {
-    if (tagName === key || tagName === `jr:${key}` || tagName.includes(key)) {
-      result.chartType = value;
-      break;
-    }
-  }
-
-  // Parse the chart child element
-  const chartElem = element.querySelector("chart") ||
-    (element.localName === 'chart' ? element : null);
-
-  if (chartElem) {
-    // chart element attributes
-    if (chartElem.hasAttribute("evaluationTime")) {
-      result.evaluationTime = chartElem.getAttribute("evaluationTime");
-    }
-    if (chartElem.hasAttribute("evaluationGroup")) {
-      result.evaluationGroup = chartElem.getAttribute("evaluationGroup");
-    }
-    if (chartElem.hasAttribute("renderType")) {
-      result.renderType = chartElem.getAttribute("renderType");
-    }
-    if (chartElem.hasAttribute("customizerClass")) {
-      result.customizerClass = chartElem.getAttribute("customizerClass");
-    }
-    
-    // chartTitle
-    const chartTitleElem = chartElem.querySelector("chartTitle");
-    if (chartTitleElem) {
-      const titleExprElem = chartTitleElem.querySelector("titleExpression");
-      if (titleExprElem) {
-        result.titleExpression = titleExprElem.textContent?.trim() || '';
-      }
-    }
-    // Backward compatibility with the old format: titleExpression directly under chart
-    if (!result.titleExpression) {
-      const titleExprElem = chartElem.querySelector("titleExpression");
-      if (titleExprElem) {
-        result.titleExpression = titleExprElem.textContent?.trim() || '';
-      }
-    }
-    
-    // chartSubtitle
-    const chartSubtitleElem = chartElem.querySelector("chartSubtitle");
-    if (chartSubtitleElem) {
-      const subtitleExprElem = chartSubtitleElem.querySelector("subtitleExpression");
-      if (subtitleExprElem) {
-        result.subtitleExpression = subtitleExprElem.textContent?.trim() || '';
-      }
-    }
-    if (!result.subtitleExpression) {
-      const subtitleExprElem = chartElem.querySelector("subtitleExpression");
-      if (subtitleExprElem) {
-        result.subtitleExpression = subtitleExprElem.textContent?.trim() || '';
-      }
-    }
-    
-    // chartLegend
-    const chartLegendElem = chartElem.querySelector("chartLegend");
-    if (chartLegendElem) {
-      result.isShowLegend = true;
-      const labelExprElem = chartLegendElem.querySelector("labelExpression");
-      if (labelExprElem) {
-        result.legendExpression = labelExprElem.textContent?.trim() || '';
-      }
-    }
-    // Backward compatibility with the old format
-    if (!result.legendExpression) {
-      const legendExprElem = chartElem.querySelector("legendExpression");
-      if (legendExprElem) {
-        result.legendExpression = legendExprElem.textContent?.trim() || '';
-      }
-    }
-    
-    // hyperlinkTooltipExpression
-    const tooltipElem = chartElem.querySelector("hyperlinkTooltipExpression");
-    if (tooltipElem) {
-      result.hyperlinkTooltipExpression = tooltipElem.textContent?.trim() || '';
-    }
-    
-    // hyperlinkReferenceExpression
-    const hyperlinkElem = chartElem.querySelector("hyperlinkReferenceExpression");
-    if (hyperlinkElem) {
-      result.hyperlinkExpression = hyperlinkElem.textContent?.trim() || '';
-      if (hyperlinkElem.hasAttribute("type")) {
-        result.hyperlinkType = hyperlinkElem.getAttribute("type");
-      }
-      if (hyperlinkElem.hasAttribute("target")) {
-        result.hyperlinkTarget = hyperlinkElem.getAttribute("target");
-      }
-      if (hyperlinkElem.hasAttribute("bookmarkLevel")) {
-        result.bookmarkLevel = parseInt(hyperlinkElem.getAttribute("bookmarkLevel") || "0");
-      }
-    }
-  }
-  
-  // Parse reportElement attributes
-  const reportElem = element.querySelector("reportElement");
-  if (reportElem) {
-    if (reportElem.hasAttribute("uuid")) {
-      result.uuid = reportElem.getAttribute("uuid");
-    }
-  }
-
-  // Parse the outer chart element's attributes (supports evaluationTime living on the outermost element)
-  if (!result.evaluationTime && element.hasAttribute("evaluationTime")) {
-    result.evaluationTime = element.getAttribute("evaluationTime");
-  }
-
-  // Parse the dataset
-  parseChartDataset(element, result);
-
-  // Parse the Plot
-  parseChartPlot(element, result);
-}
-
-// Parse the chart dataset
-function parseChartDataset(element: Element, result: any): void {
-  const chartType = result.chartType || 'bar';
-
-  // Pie chart dataset
-  const pieDataset = element.querySelector("pieDataset");
-  if (pieDataset) {
-    parseDatasetAttributes(pieDataset, result);
-    
-    const keyExpr = pieDataset.querySelector("keyExpression");
-    if (keyExpr) {
-      result.keyExpression = keyExpr.textContent?.trim() || '';
-    }
-    const valueExpr = pieDataset.querySelector("valueExpression");
-    if (valueExpr) {
-      result.valueExpression = valueExpr.textContent?.trim() || '';
-    }
-    return;
-  }
-  
-  // Category dataset
-  const categoryDataset = element.querySelector("categoryDataset");
-  if (categoryDataset) {
-    parseDatasetAttributes(categoryDataset, result);
-    
-    const categorySeries = categoryDataset.querySelector("categorySeries");
-    if (categorySeries) {
-      const seriesExpr = categorySeries.querySelector("seriesExpression");
-      if (seriesExpr) {
-        result.seriesExpression = seriesExpr.textContent?.trim() || '';
-      }
-      const categoryExpr = categorySeries.querySelector("categoryExpression");
-      if (categoryExpr) {
-        result.categoryExpression = categoryExpr.textContent?.trim() || '';
-      }
-      const valueExpr = categorySeries.querySelector("valueExpression");
-      if (valueExpr) {
-        result.valueExpression = valueExpr.textContent?.trim() || '';
-      }
-    }
-    return;
-  }
-  
-  // XY dataset
-  const xyDataset = element.querySelector("xyDataset");
-  if (xyDataset) {
-    parseDatasetAttributes(xyDataset, result);
-    
-    const xySeries = xyDataset.querySelector("xySeries");
-    if (xySeries) {
-      const seriesExpr = xySeries.querySelector("seriesExpression");
-      if (seriesExpr) {
-        result.seriesExpression = seriesExpr.textContent?.trim() || '';
-      }
-      const xValueExpr = xySeries.querySelector("xValueExpression");
-      if (xValueExpr) {
-        result.xValueExpression = xValueExpr.textContent?.trim() || '';
-      }
-      const yValueExpr = xySeries.querySelector("yValueExpression");
-      if (yValueExpr) {
-        result.yValueExpression = yValueExpr.textContent?.trim() || '';
-      }
-    }
-    return;
-  }
-  
-  // HighLow dataset
-  const highLowDataset = element.querySelector("highLowDataset");
-  if (highLowDataset) {
-    parseDatasetAttributes(highLowDataset, result);
-    
-    const highLowSeries = highLowDataset.querySelector("highLowSeries");
-    if (highLowSeries) {
-      const seriesExpr = highLowSeries.querySelector("seriesExpression");
-      if (seriesExpr) {
-        result.seriesExpression = seriesExpr.textContent?.trim() || '';
-      }
-      const xValueExpr = highLowSeries.querySelector("xValueExpression");
-      if (xValueExpr) {
-        result.xValueExpression = xValueExpr.textContent?.trim() || '';
-      }
-      const yValueExpr = highLowSeries.querySelector("yValueExpression");
-      if (yValueExpr) {
-        result.yValueExpression = yValueExpr.textContent?.trim() || '';
-      }
-    }
-    return;
-  }
-}
-
-// Parse the dataset's common attributes
-function parseDatasetAttributes(datasetElem: Element, result: any): void {
-  const dataset = datasetElem.querySelector("dataset");
-  if (dataset) {
-    if (dataset.hasAttribute("incrementType")) {
-      result.incrementType = dataset.getAttribute("incrementType");
-    }
-    if (dataset.hasAttribute("incrementGroup")) {
-      result.incrementGroup = dataset.getAttribute("incrementGroup");
-    }
-    
-    const datasetRun = dataset.querySelector("datasetRun");
-    if (datasetRun) {
-      if (datasetRun.hasAttribute("subDataset")) {
-        result.subDataset = datasetRun.getAttribute("subDataset");
-      }
-      const dsExpr = datasetRun.querySelector("dataSourceExpression");
-      if (dsExpr) {
-        result.dataSourceExpression = dsExpr.textContent?.trim() || '';
-      }
-    }
-  }
-}
-
-// Parse the chart Plot
-function parseChartPlot(element: Element, result: any): void {
-  const plotTags = [
-    'piePlot', 'pie3DPlot', 'barPlot', 'bar3DPlot', 'linePlot', 'areaPlot',
-    'scatterPlot', 'bubblePlot', 'highLowPlot', 'meterPlot', 'thermometerPlot'
-  ];
-  
-  for (const tag of plotTags) {
-    const plotElem = element.querySelector(tag);
-    if (plotElem) {
-      // Pie chart attributes
-      if (plotElem.hasAttribute("isCircular")) {
-        result.isCircular = plotElem.getAttribute("isCircular") === "true";
-      }
-
-      // Line chart attributes
-      if (plotElem.hasAttribute("isShowShapes")) {
-        result.isShowShapes = plotElem.getAttribute("isShowShapes") === "true";
-      }
-      
-      // itemLabel
-      const itemLabel = plotElem.querySelector("itemLabel");
-      if (itemLabel) {
-        if (itemLabel.hasAttribute("color")) {
-          result.itemLabelColor = itemLabel.getAttribute("color");
-        }
-        if (itemLabel.hasAttribute("backgroundColor")) {
-          result.itemLabelBackgroundColor = itemLabel.getAttribute("backgroundColor");
-        }
-      }
-      
-      // Axis labels
-      const categoryAxisLabel = plotElem.querySelector("categoryAxisLabelExpression");
-      if (categoryAxisLabel) {
-        result.categoryAxisLabelExpression = categoryAxisLabel.textContent?.trim() || '';
-      }
-      
-      const valueAxisLabel = plotElem.querySelector("valueAxisLabelExpression");
-      if (valueAxisLabel) {
-        result.valueAxisLabelExpression = valueAxisLabel.textContent?.trim() || '';
-      }
-      
-      break;
-    }
-  }
-}
-
-// Parse a crosstab element
-function parseCrosstabElement(element: Element, result: any): void {
-  // Parse crosstabDataset
-  const datasetElem = element.querySelector("crosstabDataset");
-  if (datasetElem) {
-    result.whenNoDataType = datasetElem.getAttribute("whenNoDataType") || 'AllSectionsNoDetail';
-  }
-
-  // Parse crosstabWidth and crosstabHeight
-  if (element.hasAttribute("crosstabWidth")) {
-    result.crosstabWidth = parseInt(element.getAttribute("crosstabWidth") || "0");
-  }
-  if (element.hasAttribute("crosstabHeight")) {
-    result.crosstabHeight = parseInt(element.getAttribute("crosstabHeight") || "0");
-  }
+// A chart is an image whose setup is in CHART_BINDING_PROPERTY: it becomes the
+// chart again (the picture itself is redrawn from the setup)
+function restoreChart(result: any): boolean {
+  const property = result.properties?.find((p: any) => p.name === CHART_BINDING_PROPERTY);
+  const binding = parseChartBinding(property?.value);
+  if (!binding) return false;
+  result.type = "chart";
+  result.binding = binding;
+  result.properties = result.properties.filter((p: any) => p !== property);
+  if (result.properties.length === 0) delete result.properties;
+  return true;
 }
 
 if (typeof window === "undefined" && typeof DOMParser === "undefined") {

@@ -1,3 +1,5 @@
+import { API_ROUTES, apiUrl } from "./apiConfig";
+
 const isDesktop =
   typeof window !== "undefined" &&
   Boolean(
@@ -20,10 +22,10 @@ export interface AuthClientConfig {
 
 export const AUTH_CONFIG: AuthClientConfig = {
   clientId: import.meta.env.VITE_OAUTH_CLIENT_ID || "vim-18",
-  authUrl: import.meta.env.VITE_OAUTH_AUTH_URL,
-  tokenUrl: import.meta.env.VITE_OAUTH_TOKEN_URL,
-  userUrl: import.meta.env.VITE_OAUTH_USER_URL,
+  authUrl: apiUrl(API_ROUTES.authorize),
+  tokenUrl: apiUrl(API_ROUTES.token),
+  userUrl: apiUrl(API_ROUTES.currentUser),
   redirectUri: `${window.location.origin}/callback`,
-  logoutUri: import.meta.env.VITE_OAUTH_LOGOUT_URI,
+  logoutUri: apiUrl(API_ROUTES.logout),
   state: isDesktop ? "DESKTOP" : "WEB",
 };

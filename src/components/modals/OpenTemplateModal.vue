@@ -1,0 +1,411 @@
+<template>
+  <!-- File → Open: one of the report server's templates (default and the
+       tenant's own, searched by name), or a .jrxml file from the computer,
+       which becomes a template on the server -->
+  <BaseModal
+    :visible="visible"
+    :title="t('openTemplate.title')"
+    :show-footer="false"
+    :content-style="{ width: 'min(1120px, 96vw)', maxWidth: '96vw' }"
+    @update:visible="emit('update:visible', $event)"
+  >
+    <!-- The table setup popup's size -->
+    <div class="open-modal">
+    <div class="open-tabs" role="tablist">
+      <button
+        v-for="item in TABS"
+        :key="item"
+        type="button"
+        role="tab"
+        class="open-tab"
+        :class="{ active: tab === item }"
+        :aria-selected="tab === item"
+        @click="tab = item"
+      >
+        <component :is="item === 'mine' ? LayoutTemplate : HardDrive" :size="15" aria-hidden="true" />
+        {{ t(`openTemplate.tabs.${item}`) }}
+      </button>
+    </div>
+
+    <div v-if="tab === 'mine'" class="tab-body">
+      <label class="open-search">
+        <Search :size="15" :stroke-width="2.25" aria-hidden="true" />
+        <input ref="searchRef" v-model="query" type="search" :placeholder="t('layout.searchTemplates')" />
+      </label>
+      <ul v-if="loading" class="template-rows" aria-hidden="true">
+        <li v-for="n in 6" :key="n" class="template-row skeleton-row">
+          <SkeletonBlock width="18px" height="18px" radius="5px" />
+          <span class="row-text">
+            <SkeletonBlock width="45%" height="11px" />
+            <SkeletonBlock width="25%" height="9px" />
+          </span>
+        </li>
+      </ul>
+      <ul v-else-if="shown.length" class="template-rows">
+        <li v-for="template in shown" :key="template.id">
+          <button
+            type="button"
+            class="template-row"
+            :class="{ current: template.id === currentFileId }"
+            :disabled="template.id === currentFileId"
+            @click="choose(template)"
+          >
+            <LayoutTemplate :size="18" class="row-icon" aria-hidden="true" />
+            <span class="row-text">
+              <strong>{{ template.name }}</strong>
+              <small>{{ editedText(template) }}</small>
+            </span>
+            <span v-if="template.isDefault" class="row-tag">{{ t("reportCatalog.defaultTemplates.badge") }}</span>
+            <span v-if="template.id === currentFileId" class="row-tag">{{ t("openTemplate.openNow") }}</span>
+          </button>
+        </li>
+      </ul>
+      <p v-else class="empty">
+        {{
+          shownQuery.isError.value
+            ? t("reportCatalog.defaultTemplates.loadFailed")
+            : searched
+              ? t("myTemplates.noMatch", { query: searched })
+              : t("openTemplate.none")
+        }}
+      </p>
+      <button type="button" class="see-all" @click="openFullPage">
+        <Maximize2 :size="14" :stroke-width="2.25" aria-hidden="true" />
+        {{ t("openTemplate.seeAll") }}
+      </button>
+    </div>
+
+    <div v-else class="tab-body">
+      <div
+        class="drop-zone"
+        :class="{ over: dragOver }"
+        role="button"
+        tabindex="0"
+        @click="pickFile"
+        @keydown.enter="pickFile"
+        @dragover.prevent="dragOver = true"
+        @dragleave="dragOver = false"
+        @drop.prevent="onDrop"
+      >
+        <Upload :size="26" :stroke-width="2" aria-hidden="true" />
+        <strong>{{ t("openTemplate.dropTitle") }}</strong>
+        <span>{{ t("openTemplate.dropHint") }}</span>
+      </div>
+      <p class="note">{{ t("openTemplate.addedNote") }}</p>
+    </div>
+    </div>
+  </BaseModal>
+</template>
+
+<script setup lang="ts">
+import { computed, nextTick, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { storeToRefs } from "pinia";
+import { useQuery } from "@tanstack/vue-query";
+import { HardDrive, LayoutTemplate, Maximize2, Search, Upload } from "@lucide/vue";
+import { useRouter } from "vue-router";
+import BaseModal from "./BaseModal.vue";
+import SkeletonBlock from "@/components/common/SkeletonBlock.vue";
+import notification from "@/utils/notification";
+import { useTemplates } from "@/composables/useTemplates";
+import { useFilesStore } from "@/stores/files";
+import { defaultTemplatePageQuery } from "@/queries/reportCatalogQueries";
+import type { ReportDefinitionSummary } from "@/types/reportCatalog";
+
+// Templates listed (last edited first), and the pause after typing before it asks
+const OPEN_LIST_SIZE = 25;
+const OPEN_SEARCH_DELAY_MS = 400;
+
+const props = defineProps<{ visible: boolean }>();
+const emit = defineEmits<{
+  (e: "update:visible", value: boolean): void;
+  (e: "open-jrxml", file: { name: string; content: string }): void;
+}>();
+
+const { t } = useI18n();
+const { editedText, openDefaultTemplate } = useTemplates();
+const { currentFileId } = storeToRefs(useFilesStore());
+
+const TABS = ["mine", "computer"] as const;
+const tab = ref<(typeof TABS)[number]>("mine");
+const query = ref("");
+const dragOver = ref(false);
+const searchRef = ref<HTMLInputElement | null>(null);
+
+// The words asked for, once typing pauses
+const searched = ref("");
+let searchTimer: ReturnType<typeof setTimeout> | undefined;
+watch(query, (words) => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => (searched.value = words.trim()), OPEN_SEARCH_DELAY_MS);
+});
+
+// The report server's templates (default and the tenant's own) whose name
+// holds the words, last edited first; See all opens the Templates page
+const shownQuery = useQuery(
+  computed(() => ({
+    ...defaultTemplatePageQuery({
+      nameContains: searched.value || undefined,
+      page: 1,
+      size: OPEN_LIST_SIZE,
+      sort: "lastModifiedDate",
+      dir: "desc",
+    }),
+    enabled: props.visible,
+  })),
+);
+const shown = computed<ReportDefinitionSummary[]>(() => shownQuery.data.value?.items ?? []);
+const loading = computed(() => shownQuery.isPending.value || query.value.trim() !== searched.value);
+
+watch(
+  () => props.visible,
+  (open) => {
+    if (!open) return;
+    query.value = "";
+    searched.value = "";
+    dragOver.value = false;
+    tab.value = "mine";
+    nextTick(() => searchRef.value?.focus());
+  },
+);
+
+const close = () => emit("update:visible", false);
+
+// Every template, on the Templates page; the designer keeps its changes on leaving
+const router = useRouter();
+function openFullPage() {
+  close();
+  router.push({ name: "home" });
+}
+
+function choose(template: ReportDefinitionSummary) {
+  close();
+  void openDefaultTemplate(template);
+}
+
+// Only JRXML templates (what Download saves)
+function readFile(file: File | undefined) {
+  if (!file) return;
+  if (!/\.jrxml$/i.test(file.name)) {
+    notification.error(t("fileManager.onlyJrxml"));
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    close();
+    emit("open-jrxml", { name: file.name, content: String(reader.result ?? "") });
+  };
+  reader.readAsText(file);
+}
+
+function pickFile() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".jrxml";
+  input.onchange = () => readFile(input.files?.[0]);
+  input.click();
+}
+
+function onDrop(event: DragEvent) {
+  dragOver.value = false;
+  readFile(event.dataTransfer?.files?.[0]);
+}
+</script>
+
+<style scoped>
+.open-modal {
+  display: flex;
+  flex-direction: column;
+  height: min(68vh, 640px);
+}
+.open-tabs {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+  max-width: 520px;
+  padding: 4px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  background: #f4f3f8;
+}
+.open-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #6e6a80;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.open-tab.active {
+  background: #ffffff;
+  color: #6440f4;
+  box-shadow: 0 1px 3px rgba(23, 20, 44, 0.1);
+}
+.tab-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.open-search {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  margin-bottom: 10px;
+  border: 1px solid #e6e5ee;
+  border-radius: 8px;
+  color: #8a84a3;
+}
+.open-search:focus-within {
+  border-color: #6440f4;
+  box-shadow: 0 0 0 3px rgba(100, 64, 244, 0.12);
+}
+.open-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: #1c1b26;
+  font-size: 13px;
+}
+/* Cards in columns: the popup is wide */
+.template-rows {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  align-content: start;
+  gap: 8px;
+  margin: 0;
+  padding: 2px;
+  overflow-y: auto;
+  list-style: none;
+}
+.template-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e6e5ee;
+  border-radius: 10px;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+.template-row:hover:not(:disabled),
+.template-row:focus-visible {
+  border-color: #6440f4;
+  background: rgba(124, 92, 247, 0.06);
+  outline: none;
+}
+.template-row.current {
+  cursor: default;
+}
+.row-icon {
+  flex-shrink: 0;
+  color: #6440f4;
+}
+.row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.row-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #1c1b26;
+  font-size: 13px;
+  font-weight: 600;
+}
+.row-text small {
+  color: #8a84a3;
+  font-size: 11px;
+}
+.row-tag {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(100, 64, 244, 0.1);
+  color: #6440f4;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.see-all {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px;
+  border: 1px solid #e6e5ee;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #6440f4;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.see-all:hover {
+  border-color: #6440f4;
+  background: rgba(124, 92, 247, 0.06);
+}
+.empty {
+  flex: 1;
+  padding: 40px 0;
+  color: #8a84a3;
+  font-size: 12.5px;
+  text-align: center;
+}
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 1;
+  min-height: 220px;
+  padding: 20px;
+  border: 1.5px dashed #cfc8f5;
+  border-radius: 10px;
+  background: rgba(124, 92, 247, 0.04);
+  color: #6440f4;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.drop-zone:hover,
+.drop-zone.over,
+.drop-zone:focus-visible {
+  border-color: #6440f4;
+  background: rgba(124, 92, 247, 0.09);
+  outline: none;
+}
+.drop-zone strong {
+  color: #1c1b26;
+  font-size: 13px;
+}
+.drop-zone span,
+.note {
+  color: #8a84a3;
+  font-size: 11.5px;
+}
+.note {
+  margin: 12px 0 0;
+}
+</style>

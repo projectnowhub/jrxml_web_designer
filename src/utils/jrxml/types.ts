@@ -1,3 +1,6 @@
+import type { ReportProject } from "../../types/dataSource";
+import type { FontSettings, HeadingNumbering, SavedContentsStyle } from "../../types";
+
 export interface ReportProperties {
   name: string;
   pageWidth: number;
@@ -21,6 +24,24 @@ export interface ReportProperties {
   isFloatColumnFooter?: boolean;
   isIgnorePagination?: boolean;
   query?: { language: string; text: string };
+  pageCount?: number;
+  // Projects whose data the report uses (written as `com.cdp.projects`)
+  projects?: ReportProject[];
+  // Cover and contents pages (utils/specialPages.ts, `com.cdp.specialPages`)
+  coverPage?: boolean;
+  contentsPages?: number;
+  countSpecialPages?: boolean;
+  // The cover uses the whole sheet (written with a 0 bottom margin, see specialPages.ts)
+  fullPageCover?: boolean;
+  // How Section Headings number themselves (utils/headingSync.ts)
+  headingNumbers?: HeadingNumbering;
+  // Table of Contents looks the user saved (utils/contentsList.ts)
+  contentsStyles?: SavedContentsStyle[];
+  // Template Settings kept as report properties (jrxml/templateSettingsXml.ts):
+  // the font new text starts with (`com.cdp.font`; a parsed one may lack its
+  // name) and each header / footer section's limits (`com.cdp.sectionLimits`)
+  defaultFont?: Partial<FontSettings>;
+  bandLimits?: Record<string, { min: number; max: number }>;
 }
 
 export interface Field {
@@ -65,7 +86,6 @@ export interface Variable {
 
 export interface ReportStyle {
   name: string;
-  parentStyle?: string;
   mode?: string;
   backcolor?: string;
   forecolor?: string;
@@ -85,5 +105,3 @@ export interface ConditionalStyle {
   conditionExpression: string;
   properties: Partial<ReportStyle>;
 }
-
-

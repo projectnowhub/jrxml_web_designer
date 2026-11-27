@@ -21,15 +21,22 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
 COPY . .
 
 # Build-time config — baked into the JS bundle by Vite.
-#   VITE_PDF_PREVIEW_API : JasperReports preview server for this environment.
-#                          Optional — the app falls back to its in-code default
-#                          and the in-app "Preview Server" setting still overrides
-#                          it at runtime.
+#   VITE_API_BASE_URL    : CDP server; sign-in, images, charts and the PDF
+#                          report server (<base>/v2) are its routes.
 #   VITE_APP_VERSION     : short git SHA, for display / cache-busting.
-ARG VITE_PDF_PREVIEW_API=""
+#   VITE_APP_ENV         : dev / staging / production (as the CDP app); the
+#                          developer tabs (JRXML Content, Details JSON) show
+#                          only on dev. Empty = hidden.
 ARG VITE_APP_VERSION="dev"
-ENV VITE_PDF_PREVIEW_API=${VITE_PDF_PREVIEW_API} \
-    VITE_APP_VERSION=${VITE_APP_VERSION}
+ARG VITE_APP_ENV=""
+
+ARG VITE_OAUTH_CLIENT_ID=""
+ARG VITE_API_BASE_URL=""
+
+ENV VITE_APP_VERSION=${VITE_APP_VERSION} \
+    VITE_APP_ENV=${VITE_APP_ENV} \
+    VITE_OAUTH_CLIENT_ID=${VITE_OAUTH_CLIENT_ID} \
+    VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
 # "pnpm build" runs "vue-tsc -b && vite build" — a type error fails the image.
 # If that ever becomes a CI bottleneck, swap to "pnpm exec vite build" here and

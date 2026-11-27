@@ -1,0 +1,277 @@
+<template>
+  <div ref="menuRef" class="account-menu">
+    <button
+      class="account-button"
+      type="button"
+      :aria-label="t('layout.accountMenu')"
+      aria-haspopup="menu"
+      :aria-expanded="isOpen"
+      @click="isOpen = !isOpen"
+    >
+      <span class="avatar">
+        <img v-if="avatarUrl" :src="avatarUrl" :alt="auth.firstName" />
+        <template v-else>{{ userInitial }}</template>
+      </span>
+    </button>
+    <Transition name="menu-pop"><div v-if="isOpen" class="account-popover" role="menu">
+      <div class="account-popover-header">
+        <span class="avatar avatar-large">
+          <img v-if="avatarUrl" :src="avatarUrl" :alt="auth.firstName" />
+          <template v-else>{{ userInitial }}</template>
+          <i class="online-dot" aria-hidden="true" />
+        </span>
+        <div>
+          <strong :title="userName">{{ userName || t("home.defaultUserName") }}</strong>
+          <span :title="auth.email">{{ auth.email || t("layout.defaultWorkspace") }}</span>
+          <span v-if="auth.roleLine" class="account-role" :title="auth.roleLine">{{ auth.roleLine }}</span>
+        </div>
+      </div>
+      <div class="account-popover-divider" />
+      <div class="account-language">
+        <Languages :size="17" :stroke-width="2.25" aria-hidden="true" />
+        <span>{{ t("language.label") }}</span>
+        <LanguageSwitcher :show-icon="false" />
+      </div>
+      <button
+        class="account-action"
+        type="button"
+        role="menuitem"
+        @click="openDefaultSettings"
+      >
+        <SlidersHorizontal :size="17" :stroke-width="2.25" aria-hidden="true" />
+        <span>{{ t("defaultSettings.page.title") }}</span>
+      </button>
+      <div class="account-popover-divider" />
+      <button
+        class="account-action sign-out"
+        type="button"
+        role="menuitem"
+        @click="signOut"
+      >
+        <LogOut :size="17" :stroke-width="2.25" aria-hidden="true" />
+        <span>{{ t("layout.signOut") }}</span>
+      </button>
+    </div></Transition>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import { Languages, LogOut, SlidersHorizontal } from "@lucide/vue";
+import { useAuthStore } from "../../stores/auth";
+import { useFileUrl } from "../../queries/fileQueries";
+import { logout } from "../../services/authService";
+import LanguageSwitcher from "./LanguageSwitcher.vue";
+
+const { t } = useI18n();
+
+const isOpen = ref(false);
+const menuRef = ref<HTMLElement | null>(null);
+
+// The signed-in user's name, email and job title · company
+const auth = useAuthStore();
+const userName = computed(() => auth.fullName);
+// The picture, as the CDP app's header; the letters while there is none
+const avatarUrl = useFileUrl(() => auth.avatar);
+const userInitial = computed(() => auth.initials || t("home.defaultUserName").charAt(0).toUpperCase());
+
+// Default Settings: their own page in the home page's layout
+const router = useRouter();
+function openDefaultSettings() {
+  isOpen.value = false;
+  void router.push({ name: "defaultSettings" });
+}
+
+function signOut() {
+  isOpen.value = false;
+  void logout();
+}
+
+const handleClickOutside = (event: MouseEvent): void => {
+  if (menuRef.value && !menuRef.value.contains(event.target as Node)) {
+    isOpen.value = false;
+  }
+};
+
+const handleKeydown = (event: KeyboardEvent): void => {
+  if (event.key === "Escape" && isOpen.value) {
+    isOpen.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener("click", handleClickOutside);
+  document.addEventListener("keydown", handleKeydown);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("click", handleClickOutside);
+  document.removeEventListener("keydown", handleKeydown);
+});
+</script>
+
+<style scoped>
+.account-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.account-button {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.account-button:focus-visible {
+  outline: 2px solid #7c5cf7;
+  outline-offset: 2px;
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: 2px solid #7c5cf7;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c5cf7, #6440f4);
+  color: white;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 3px 12px rgba(100, 64, 244, 0.32);
+  box-sizing: border-box;
+}
+.avatar {
+  position: relative;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #ffffff;
+}
+.avatar-large {
+  width: 40px;
+  height: 40px;
+  font-size: 15px;
+}
+/* Signed in: the green dot on the menu's picture, as in the CDP app */
+.online-dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #22c55e;
+  box-sizing: border-box;
+}
+.account-popover {
+  position: absolute;
+  z-index: 1100;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 256px;
+  padding: 8px;
+  border: 1px solid rgba(28, 27, 38, 0.1);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow:
+    0 18px 38px rgba(23, 20, 44, 0.16),
+    0 2px 6px rgba(23, 20, 44, 0.08);
+  box-sizing: border-box;
+  animation: popover-in 0.16s ease;
+}
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.account-popover-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+}
+.account-popover-header > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.account-popover-header strong,
+.account-popover-header span:not(.avatar) {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-popover-header strong {
+  color: #1c1b26;
+  font-size: 13px;
+  font-weight: 700;
+}
+.account-popover-header span:not(.avatar) {
+  color: #77718a;
+}
+.account-popover-header .account-role {
+  color: #9a95ab;
+  font-size: 10.5px;
+}
+.account-popover-divider {
+  height: 1px;
+  margin: 4px 0;
+  background: rgba(28, 27, 38, 0.08);
+}
+.account-language {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  color: #45425a;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.account-language > span {
+  flex: 1;
+}
+.account-action {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #45425a;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s ease;
+}
+.account-action:hover {
+  background: rgba(124, 92, 247, 0.08);
+}
+.account-action.sign-out {
+  color: #e5484d;
+}
+.account-action.sign-out:hover {
+  background: rgba(229, 72, 77, 0.09);
+  color: #d0342e;
+}
+</style>

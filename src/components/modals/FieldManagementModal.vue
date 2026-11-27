@@ -94,17 +94,16 @@ const modalTitle = computed(() => {
     : (props.isParameter ? t('elementLibrary.addReportParameter') : t('fieldManagement.addField'));
 });
 
-// Allowed field types based on JRXML Schema
-const allowedFieldTypes = ref([
-  { label: t('fieldManagement.fieldTypes.string'), value: 'java.lang.String' },
-  { label: t('fieldManagement.fieldTypes.integer'), value: 'java.lang.Integer' },
-  { label: t('fieldManagement.fieldTypes.long'), value: 'java.lang.Long' },
-  { label: t('fieldManagement.fieldTypes.float'), value: 'java.lang.Float' },
-  { label: t('fieldManagement.fieldTypes.double'), value: 'java.lang.Double' },
-  { label: t('fieldManagement.fieldTypes.boolean'), value: 'java.lang.Boolean' },
-  { label: t('fieldManagement.fieldTypes.date'), value: 'java.util.Date' },
-  { label: t('fieldManagement.fieldTypes.timestamp'), value: 'java.sql.Timestamp' },
-  { label: t('fieldManagement.fieldTypes.byteArray'), value: 'byte[]' }
+// Allowed field types based on JRXML Schema with friendly manager labels
+const allowedFieldTypes = computed(() => [
+  { label: t('dataTypes.text'), value: 'java.lang.String' },
+  { label: t('dataTypes.integer'), value: 'java.lang.Integer' },
+  { label: t('dataTypes.long'), value: 'java.lang.Long' },
+  { label: t('dataTypes.currency'), value: 'java.math.BigDecimal' },
+  { label: t('dataTypes.decimal'), value: 'java.lang.Double' },
+  { label: t('dataTypes.boolean'), value: 'java.lang.Boolean' },
+  { label: t('dataTypes.date'), value: 'java.util.Date' },
+  { label: t('dataTypes.dateTime'), value: 'java.sql.Timestamp' }
 ]);
 
 // Watch for field prop changes

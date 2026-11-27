@@ -1,8 +1,8 @@
 <template>
   <section class="activity-view">
-    <span class="eyebrow">Workspace</span>
-    <h1>Activity</h1>
-    <p>View recent activity and changes across your workspace.</p>
+    <span class="eyebrow">{{ $t("pages.workspace") }}</span>
+    <h1>{{ $t("pages.activity") }}</h1>
+    <p>{{ $t("pages.activityDescription") }}</p>
   </section>
 </template>
 

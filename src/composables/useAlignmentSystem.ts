@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue';
+import i18n from '@/i18n';
 
 export interface AlignmentGuide {
   id: string;
@@ -122,9 +123,9 @@ export function useAlignmentSystem() {
 
       // Horizontal alignment checks (left/right edges, center)
       const horizontalChecks = [
-        { value: leftEdge, target: elLeft, label: 'Align left' },
-        { value: rightEdge, target: elRight, label: 'Align right' },
-        { value: centerX, target: elCenterX, label: 'Center horizontally' },
+        { value: leftEdge, target: elLeft, label: i18n.global.t('alignment.left') },
+        { value: rightEdge, target: elRight, label: i18n.global.t('alignment.right') },
+        { value: centerX, target: elCenterX, label: i18n.global.t('alignment.centerH') },
       ];
 
       horizontalChecks.forEach(check => {
@@ -150,9 +151,9 @@ export function useAlignmentSystem() {
 
       // Vertical alignment checks (top/bottom edges, center)
       const verticalChecks = [
-        { value: topEdge, target: elTop, label: 'Align top' },
-        { value: bottomEdge, target: elBottom, label: 'Align bottom' },
-        { value: centerY, target: elCenterY, label: 'Center vertically' },
+        { value: topEdge, target: elTop, label: i18n.global.t('alignment.top') },
+        { value: bottomEdge, target: elBottom, label: i18n.global.t('alignment.bottom') },
+        { value: centerY, target: elCenterY, label: i18n.global.t('alignment.middle') },
       ];
 
       verticalChecks.forEach(check => {

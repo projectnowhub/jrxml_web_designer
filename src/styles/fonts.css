@@ -1,0 +1,102 @@
+/*
+ * DejaVu fonts, the same files JasperReports ships in jasperreports-fonts and embeds in PDFs,
+ * so the canvas measures and wraps text the way the generated PDF does.
+ * Files and license: public/fonts/dejavu/ (Bitstream Vera license, free to redistribute).
+ * The browser downloads a file only when an element actually uses that family and style.
+ */
+
+@font-face {
+  font-family: "DejaVu Sans";
+  src: url("/fonts/dejavu/DejaVuSans.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DejaVu Sans";
+  src: url("/fonts/dejavu/DejaVuSans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DejaVu Sans";
+  src: url("/fonts/dejavu/DejaVuSans-Oblique.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DejaVu Sans";
+  src: url("/fonts/dejavu/DejaVuSans-BoldOblique.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DejaVu Serif";
+  src: url("/fonts/dejavu/DejaVuSerif.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DejaVu Serif";
+  src: url("/fonts/dejavu/DejaVuSerif-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DejaVu Serif";
+  src: url("/fonts/dejavu/DejaVuSerif-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DejaVu Serif";
+  src: url("/fonts/dejavu/DejaVuSerif-BoldItalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DejaVu Sans Mono";
+  src: url("/fonts/dejavu/DejaVuSansMono.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DejaVu Sans Mono";
+  src: url("/fonts/dejavu/DejaVuSansMono-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DejaVu Sans Mono";
+  src: url("/fonts/dejavu/DejaVuSansMono-Oblique.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DejaVu Sans Mono";
+  src: url("/fonts/dejavu/DejaVuSansMono-BoldOblique.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}

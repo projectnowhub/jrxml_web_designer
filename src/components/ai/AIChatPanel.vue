@@ -1,10 +1,207 @@
+<template>
+  <div ref="panelRef" class="ai-chat-panel" :class="{ 'ai-chat-panel--embedded': embedded }" :style="panelStyle" v-show="visible">
+    <!-- Header (shown when not in embedded mode) -->
+    <div v-if="!embedded" class="panel-header" @click="toggleExpand">
+      <div class="header-left">
+        <Bot class="panel-icon" :size="18" />
+        <span class="panel-title">{{ t("ai.title") }}</span>
+        <span class="config-status" :title="`API: ${config.apiEndpoint}`">
+          <Settings :size="14" />
+        </span>
+      </div>
+
+      <div class="header-actions">
+        <button class="action-btn" @click.stop="toggleSettings" :title="t('ai.configure')">
+          <Settings :size="16" />
+        </button>
+        <button class="action-btn" @click.stop="clearHistory" :title="t('ai.clearHistory')">
+          <Trash2 :size="16" />
+        </button>
+        <button class="action-btn close-btn" @click.stop="close" :title="t('properties.close')">
+          <X :size="16" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Settings panel -->
+    <div v-if="showSettings" class="settings-panel">
+      <div class="settings-header">
+        <h4>{{ t("ai.settings.title") }}</h4>
+        <button class="close-settings-btn" @click="showSettings = false"><X :size="16" /></button>
+      </div>
+
+      <div class="settings-form">
+        <!-- API endpoint address -->
+        <div class="form-group">
+          <label for="apiEndpoint">{{ t("ai.settings.apiEndpoint") }}</label>
+          <input
+            id="apiEndpoint"
+            v-model="configForm.apiEndpoint"
+            type="url"
+            placeholder="https://api.anthropic.com/v1"
+            class="form-input"
+          />
+          <span class="form-hint">{{ t("ai.settings.defaultValue", { value: "https://api.anthropic.com/v1" }) }}</span>
+        </div>
+
+        <!-- API key -->
+        <div class="form-group">
+          <label for="apiKey">{{ t("ai.settings.apiKey") }}</label>
+          <input
+            id="apiKey"
+            v-model="configForm.apiKey"
+            type="password"
+            placeholder="sk-ant-api03-..."
+            class="form-input"
+          />
+          <span class="form-hint">{{ t("ai.settings.apiKeyHint") }}</span>
+        </div>
+
+        <!-- Model name -->
+        <div class="form-group">
+          <label for="modelName">{{ t("ai.settings.modelName") }}</label>
+          <input
+            id="modelName"
+            v-model="configForm.modelName"
+            type="text"
+            list="ai-model-options"
+            :placeholder="DEFAULT_CLAUDE_MODEL"
+            class="form-input"
+          />
+          <!-- Suggestions; any other model name can be typed -->
+          <datalist id="ai-model-options">
+            <option v-for="m in MODEL_OPTIONS" :key="m.id" :value="m.id">{{ t(`ai.settings.models.${m.label}`) }}</option>
+          </datalist>
+          <span class="form-hint">{{ t("ai.settings.modelHint", { value: DEFAULT_CLAUDE_MODEL }) }}</span>
+        </div>
+
+        <!-- Token limit -->
+        <div class="form-group">
+          <label for="maxTokens">{{ t("ai.settings.maxTokens") }}</label>
+          <input
+            id="maxTokens"
+            v-model.number="configForm.maxTokens"
+            type="number"
+            min="100"
+            max="100000"
+            class="form-input"
+          />
+          <span class="form-hint">{{ t("ai.settings.maxTokensHint", { value: DEFAULT_MAX_TOKENS }) }}</span>
+        </div>
+
+        <!-- Temperature parameter -->
+        <div class="form-group">
+          <label for="temperature">{{ t("ai.settings.temperature") }}</label>
+          <input
+            id="temperature"
+            v-model.number="configForm.temperature"
+            type="number"
+            min="0"
+            max="2"
+            step="0.1"
+            class="form-input"
+          />
+          <span class="form-hint">{{ t("ai.settings.temperatureHint") }}</span>
+        </div>
+
+        <!-- Request timeout -->
+        <div class="form-group">
+          <label for="requestTimeout">{{ t("ai.settings.requestTimeout") }}</label>
+          <input
+            id="requestTimeout"
+            v-model.number="(configForm as any).requestTimeoutSeconds"
+            type="number"
+            min="30"
+            max="600"
+            step="30"
+            class="form-input"
+          />
+          <span class="form-hint">{{ t("ai.settings.requestTimeoutHint") }}</span>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="form-actions">
+          <button class="btn btn-secondary" @click="handleResetConfig">
+            {{ t("ai.settings.reset") }}
+          </button>
+          <button class="btn btn-primary" @click="saveConfig">
+            {{ t("ai.settings.save") }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message list -->
+    <div class="messages-container" ref="messagesContainer">
+      <ChatMessage
+        v-for="message in messages"
+        :key="message.id"
+        :message="message"
+      />
+
+      <!-- Empty state hint -->
+      <div v-if="messages.length === 0 && isSupported" class="empty-state">
+        <MessageSquare class="empty-icon" :size="40" :stroke-width="1.5" />
+        <div class="empty-text">{{ t("ai.empty.title") }}</div>
+        <div class="empty-hint">{{ t("ai.empty.example") }}</div>
+        <div class="empty-hint">{{ t("ai.empty.currentApi", { url: config.apiEndpoint }) }}</div>
+      </div>
+
+      <!-- Browser unsupported notice -->
+      <div v-if="!isSupported" class="unsupported-warning">
+        <TriangleAlert class="warning-icon" :size="40" :stroke-width="1.5" />
+        <div class="warning-title">{{ t("ai.unsupported.title") }}</div>
+        <div class="warning-message">{{ t("ai.unsupported.message") }}</div>
+        <div class="warning-requirements">
+          <div class="requirement-title">{{ t("ai.unsupported.requirements") }}</div>
+          <ul class="requirement-list">
+            <li :class="{ supported: browserSupport?.features.webassembly }">
+              <component :is="browserSupport?.features.webassembly ? Check : X" :size="14" class="requirement-icon" /> WebAssembly
+            </li>
+            <li :class="{ supported: browserSupport?.features.webWorkers }">
+              <component :is="browserSupport?.features.webWorkers ? Check : X" :size="14" class="requirement-icon" /> Web Workers
+            </li>
+            <li :class="{ supported: browserSupport?.features.fetch }">
+              <component :is="browserSupport?.features.fetch ? Check : X" :size="14" class="requirement-icon" /> Fetch API
+            </li>
+            <li :class="{ supported: browserSupport?.features.bigUint64Array }">
+              <component :is="browserSupport?.features.bigUint64Array ? Check : X" :size="14" class="requirement-icon" /> BigUint64Array
+            </li>
+          </ul>
+        </div>
+        <div class="suggestion">
+          {{ t("ai.unsupported.suggestion") }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Input box -->
+    <ChatInput
+      :disabled="isLoading || !isSupported"
+      :placeholder="isSupported ? t('ai.input.placeholder') : t('ai.input.unsupported')"
+      @submit="handleSendMessage"
+    />
+  </div>
+</template>
+
 <script setup lang="ts">
-import { ref, computed, nextTick, watch, onMounted } from 'vue';
+import {
+  Bot,
+  Check,
+  MessageSquare,
+  Settings,
+  Trash2,
+  TriangleAlert,
+  X,
+} from '@lucide/vue';
+import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAIChat } from '@/composables/useAIChat';
 import { useAIConfigManager, type AIConfiguration } from '@/composables/useAIConfigManager';
 import { checkWebMCPSupport, type BrowserSupportResult } from '@/utils/browserCompatibility';
 import type { MCPContext } from '@/mcp';
+import { DEFAULT_CLAUDE_MODEL, DEFAULT_MAX_TOKENS, MODEL_OPTIONS } from '@/config/aiConfig';
+import type { ChatAttachment } from '@/mcp/attachments';
 import ChatMessage from './ChatMessage.vue';
 import ChatInput from './ChatInput.vue';
 
@@ -115,8 +312,8 @@ function handleResetConfig() {
 }
 
 // Send message
-async function handleSendMessage(content: string) {
-  await sendMessage(content);
+async function handleSendMessage({ text, attachments }: { text: string; attachments: ChatAttachment[] }) {
+  await sendMessage(text, attachments);
 }
 
 // Scroll to bottom
@@ -147,200 +344,22 @@ onMounted(() => {
   document.addEventListener('keydown', handleKeyDown);
 });
 
-// Keyboard shortcut handling
+onBeforeUnmount(() => document.removeEventListener('keydown', handleKeyDown));
+
+// Ctrl+K / Cmd+K clears the conversation, only while the AI Assistant tab is
+// open and on screen (not when the right panel is hidden or collapsed)
+const panelRef = ref<HTMLElement | null>(null);
 function handleKeyDown(event: KeyboardEvent) {
-  // Ctrl+K or Cmd+K (Mac)
-  if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
-    event.preventDefault();
-    clearHistory();
-  }
+  if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return;
+  if (!props.visible || !panelRef.value?.offsetParent) return;
+  event.preventDefault();
+  clearHistory();
 }
 
 // Browser compatibility check
 const browserSupport = ref<BrowserSupportResult | null>(null);
 const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
 </script>
-
-<template>
-  <div class="ai-chat-panel" :class="{ 'ai-chat-panel--embedded': embedded }" :style="panelStyle" v-show="visible">
-    <!-- Header (shown when not in embedded mode) -->
-    <div v-if="!embedded" class="panel-header" @click="toggleExpand">
-      <div class="header-left">
-        <span class="panel-icon">🤖</span>
-        <span class="panel-title">AI Assistant</span>
-        <span class="config-status" :title="`API: ${config.apiEndpoint}`">
-          ⚙️
-        </span>
-      </div>
-
-      <div class="header-actions">
-        <button class="action-btn" @click.stop="toggleSettings" title="Configure AI service">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </button>
-        <button class="action-btn" @click.stop="clearHistory" title="Clear history">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        </button>
-        <button class="action-btn close-btn" @click.stop="close" title="Close">
-          ✕
-        </button>
-      </div>
-    </div>
-
-    <!-- Settings panel -->
-    <div v-if="showSettings" class="settings-panel">
-      <div class="settings-header">
-        <h4>AI Service Configuration</h4>
-        <button class="close-settings-btn" @click="showSettings = false">✕</button>
-      </div>
-
-      <div class="settings-form">
-        <!-- API endpoint address -->
-        <div class="form-group">
-          <label for="apiEndpoint">API Endpoint Address</label>
-          <input
-            id="apiEndpoint"
-            v-model="configForm.apiEndpoint"
-            type="url"
-            placeholder="http://127.0.0.1:1234/v1"
-            class="form-input"
-          />
-          <span class="form-hint">LMStudio default: http://127.0.0.1:1234/v1</span>
-        </div>
-
-        <!-- API key -->
-        <div class="form-group">
-          <label for="apiKey">API Key</label>
-          <input
-            id="apiKey"
-            v-model="configForm.apiKey"
-            type="password"
-            placeholder="lm-studio"
-            class="form-input"
-          />
-          <span class="form-hint">Local models can use the default value: lm-studio</span>
-        </div>
-
-        <!-- Model name -->
-        <div class="form-group">
-          <label for="modelName">Model Name</label>
-          <input
-            id="modelName"
-            v-model="configForm.modelName"
-            type="text"
-            placeholder="local-model"
-            class="form-input"
-          />
-          <span class="form-hint">LMStudio detects the model automatically</span>
-        </div>
-
-        <!-- Token limit -->
-        <div class="form-group">
-          <label for="maxTokens">Max Tokens</label>
-          <input
-            id="maxTokens"
-            v-model.number="configForm.maxTokens"
-            type="number"
-            min="100"
-            max="100000"
-            class="form-input"
-          />
-          <span class="form-hint">Default: 4096</span>
-        </div>
-
-        <!-- Temperature parameter -->
-        <div class="form-group">
-          <label for="temperature">Temperature</label>
-          <input
-            id="temperature"
-            v-model.number="configForm.temperature"
-            type="number"
-            min="0"
-            max="2"
-            step="0.1"
-            class="form-input"
-          />
-          <span class="form-hint">0.0-1.0, higher is more random (default: 0.7)</span>
-        </div>
-
-        <!-- Request timeout -->
-        <div class="form-group">
-          <label for="requestTimeout">Request Timeout (seconds)</label>
-          <input
-            id="requestTimeout"
-            v-model.number="(configForm as any).requestTimeoutSeconds"
-            type="number"
-            min="30"
-            max="600"
-            step="30"
-            class="form-input"
-          />
-          <span class="form-hint">Unit: seconds, default: 300 seconds (5 minutes)</span>
-        </div>
-
-        <!-- Action buttons -->
-        <div class="form-actions">
-          <button class="btn btn-secondary" @click="handleResetConfig">
-            Reset to Default
-          </button>
-          <button class="btn btn-primary" @click="saveConfig">
-            Save Configuration
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Message list -->
-    <div class="messages-container" ref="messagesContainer">
-      <ChatMessage
-        v-for="message in messages"
-        :key="message.id"
-        :message="message"
-      />
-
-      <!-- Empty state hint -->
-      <div v-if="messages.length === 0 && isSupported" class="empty-state">
-        <div class="empty-icon">💬</div>
-        <div class="empty-text">Start a conversation with the AI assistant</div>
-        <div class="empty-hint">e.g.: create a title in the detail band</div>
-        <div class="empty-hint">Current API: {{ config.apiEndpoint }}</div>
-      </div>
-
-      <!-- Browser unsupported notice -->
-      <div v-if="!isSupported" class="unsupported-warning">
-        <div class="warning-icon">⚠️</div>
-        <div class="warning-title">Browser Does Not Support AI Assistant</div>
-        <div class="warning-message">{{ browserSupport?.message }}</div>
-        <div class="warning-requirements">
-          <div class="requirement-title">The following browser features are required:</div>
-          <ul class="requirement-list">
-            <li :class="{ supported: browserSupport?.features.webassembly }">
-              {{ browserSupport?.features.webassembly ? '✓' : '✗' }} WebAssembly
-            </li>
-            <li :class="{ supported: browserSupport?.features.webWorkers }">
-              {{ browserSupport?.features.webWorkers ? '✓' : '✗' }} Web Workers
-            </li>
-            <li :class="{ supported: browserSupport?.features.fetch }">
-              {{ browserSupport?.features.fetch ? '✓' : '✗' }} Fetch API
-            </li>
-            <li :class="{ supported: browserSupport?.features.bigUint64Array }">
-              {{ browserSupport?.features.bigUint64Array ? '✓' : '✗' }} BigUint64Array
-            </li>
-          </ul>
-        </div>
-        <div class="suggestion">
-          We recommend using the latest version of Chrome, Firefox, or Safari
-        </div>
-      </div>
-    </div>
-
-    <!-- Input box -->
-    <ChatInput
-      :disabled="isLoading || !isSupported"
-      :placeholder="isSupported ? 'Enter a command, e.g.: create a text field in the detail band to display the customer name' : 'Browser not supported, please upgrade your browser'"
-      @submit="handleSendMessage"
-    />
-  </div>
-</template>
 
 <style scoped>
 .ai-chat-panel {
@@ -542,8 +561,8 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
 }
 
 .empty-icon {
-  font-size: 3em;
-  margin-bottom: 12px;
+  display: block;
+  margin: 0 auto 12px;
 }
 
 .empty-text {
@@ -572,8 +591,8 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
 }
 
 .warning-icon {
-  font-size: 3em;
-  margin-bottom: 12px;
+  display: block;
+  margin: 0 auto 12px;
 }
 
 .warning-title {
@@ -613,6 +632,9 @@ const isSupported = computed(() => browserSupport.value?.isSupported ?? false);
 }
 
 .requirement-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 0.85em;
   color: #666;
   padding: 4px 0;

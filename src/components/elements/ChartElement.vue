@@ -12,64 +12,46 @@
     :zoom-level="zoomLevel"
     @select="(b, e, m, p) => emit('select', b, e, m, p)"
     @drag-start="(ev, b, e, p) => emit('dragStart', ev, b, e, p)"
-    @resize-start="(ev, b, e, p) => emit('resizeStart', ev, b, e, p)"
+    @resize-start="(ev, b, e, p, d) => emit('resizeStart', ev, b, e, p, d)"
     @contextmenu="(ev, b, e, p) => emit('contextmenu', ev, b, e, p)"
+    @start-editing="(b, e) => emit('startEditing', b, e, parentFrameIndex)"
   >
-    <div class="chart-element">
-      <div class="chart-content">
-        <svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <!-- Pie chart -->
-          <template v-if="element.chartType === 'pie' || element.chartType === 'pie3D'">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 2 A10 10 0 0 1 22 12 L12 12 Z" fill="currentColor" opacity="0.3" />
-          </template>
-          <!-- Bar chart -->
-          <template v-else-if="element.chartType === 'bar' || element.chartType === 'bar3D' || element.chartType === 'stackedBar' || element.chartType === 'stackedBar3D'">
-            <rect x="2" y="14" width="4" height="8" />
-            <rect x="7" y="8" width="4" height="14" />
-            <rect x="12" y="11" width="4" height="11" />
-            <rect x="17" y="5" width="4" height="17" />
-          </template>
-          <!-- Line chart -->
-          <template v-else-if="element.chartType === 'line' || element.chartType === 'xyLine' || element.chartType === 'timeSeries'">
-            <polyline points="2,20 6,14 10,16 14,8 18,10 22,4" />
-          </template>
-          <!-- Area chart -->
-          <template v-else-if="element.chartType === 'area' || element.chartType === 'xyArea' || element.chartType === 'stackedArea'">
-            <polygon points="2,20 6,14 10,16 14,8 18,10 22,4 22,20" fill="currentColor" opacity="0.2" />
-            <polyline points="2,20 6,14 10,16 14,8 18,10 22,4" />
-          </template>
-          <!-- Scatter chart -->
-          <template v-else-if="element.chartType === 'scatter' || element.chartType === 'bubble'">
-            <circle cx="5" cy="15" r="2" fill="currentColor" />
-            <circle cx="10" cy="8" r="2" fill="currentColor" />
-            <circle cx="15" cy="12" r="2" fill="currentColor" />
-            <circle cx="19" cy="6" r="2" fill="currentColor" />
-          </template>
-          <!-- Meter/Gauge -->
-          <template v-else-if="element.chartType === 'meter' || element.chartType === 'thermometer'">
-            <path d="M12 22 A10 10 0 0 1 2 12" stroke-width="3" />
-            <circle cx="12" cy="12" r="2" fill="currentColor" />
-          </template>
-          <!-- Default -->
-          <template v-else>
-            <rect x="2" y="2" width="20" height="20" rx="2" />
-            <line x1="2" y1="18" x2="22" y2="18" />
-            <line x1="6" y1="18" x2="6" y2="10" />
-            <line x1="10" y1="18" x2="10" y2="6" />
-            <line x1="14" y1="18" x2="14" y2="8" />
-            <line x1="18" y1="18" x2="18" y2="4" />
-          </template>
-        </svg>
-        <span class="chart-label">{{ getChartLabel() }}</span>
-      </div>
+    <!-- A source or column dropped here sets up this chart's data -->
+    <div
+      class="chart-element"
+      :class="{ 'is-drop-target': isDropTarget, 'is-placeholder': view.state !== 'ready' }"
+      :data-chart-uuid="element.uuid"
+      @dragenter="onDragOver"
+      @dragover="onDragOver"
+      @dragleave="onDragLeave"
+      @drop="isDropTarget = false"
+    >
+      <!-- Drawn from the same settings as the chart's image in the JRXML -->
+      <ChartCanvas :option="shownOption" :width="size.width" :height="size.height" />
+      <span
+        v-if="view.state !== 'ready'"
+        class="chart-badge"
+        :class="`is-${view.state}`"
+        :title="t(`chart.states.${view.state}Hint`)"
+      >
+        {{ t(`chart.states.${view.state}`) }}
+      </span>
     </div>
   </BaseElement>
 </template>
 
 <script setup lang="ts">
+import { computed, ref, shallowRef, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+import type { EChartsCoreOption } from 'echarts/core';
 import BaseElement from './BaseElement.vue';
+import ChartCanvas from '../common/ChartCanvas.vue';
+import { chartElementOption, chartView } from '../../utils/chart/chartImage';
+import { useChartData } from '../../utils/chart/chartDataStore';
+import { isDataSourceDrag } from '../../utils/table/dataDrag';
 import type { ChartElement, SelectedElementInfo, EditingElementInfo } from '../../types';
+
+const { t, locale } = useI18n();
 
 const props = defineProps<{
   element: ChartElement;
@@ -87,52 +69,102 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [bandIndex: number, elementIndex: number, isMultiSelect?: boolean, parentFrameIndex?: number];
   dragStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
-  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  resizeStart: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number, direction?: string];
   contextmenu: [event: MouseEvent, bandIndex: number, elementIndex: number, parentFrameIndex?: number];
+  startEditing: [bandIndex: number, elementIndex: number, parentFrameIndex?: number];
 }>();
 
-function getChartLabel(): string {
-  const chartTypeLabels: Record<string, string> = {
-    pie: 'Pie', pie3D: 'Pie3D',
-    bar: 'Bar', bar3D: 'Bar3D', xyBar: 'XYBar', stackedBar: 'StackedBar', stackedBar3D: 'StackedBar3D',
-    line: 'Line', xyLine: 'XYLine',
-    area: 'Area', xyArea: 'XYArea', stackedArea: 'StackedArea',
-    scatter: 'Scatter', bubble: 'Bubble',
-    timeSeries: 'TimeSeries', highLow: 'HighLow', candlestick: 'Candlestick',
-    meter: 'Meter', thermometer: 'Thermometer',
-    multiAxis: 'MultiAxis', gantt: 'Gantt', spider: 'Spider'
-  };
-  return chartTypeLabels[props.element.chartType] || 'Chart';
+const size = computed(() => ({
+  width: Math.max(1, Math.round(props.element.width)),
+  height: Math.max(1, Math.round(props.element.height)),
+}));
+
+// Real numbers, or sample numbers while there are none (labels follow the app language)
+const view = computed(() => {
+  void locale.value;
+  return chartView(props.element.binding);
+});
+
+// The numbers stay loaded while the chart is shown, and are fetched again
+// whenever what the chart asks for changes (or they go stale)
+useChartData(() => props.element.binding);
+
+// While new numbers load, the chart keeps showing the last real ones
+const shownOption = shallowRef<EChartsCoreOption>(chartElementOption(props.element, view.value));
+let showingReal = view.value.state === 'ready';
+watch(
+  () => [view.value, size.value] as const,
+  ([current]) => {
+    if (current.state === 'loading' && showingReal) return;
+    shownOption.value = chartElementOption(props.element, current);
+    showingReal = current.state === 'ready';
+  },
+);
+
+// Highlight while a source or column is dragged over this chart
+const isDropTarget = ref(false);
+function onDragOver(event: DragEvent) {
+  if (!isDataSourceDrag(event)) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+  isDropTarget.value = true;
+}
+function onDragLeave(event: DragEvent) {
+  const next = event.relatedTarget as Node | null;
+  if (!next || !(event.currentTarget as HTMLElement).contains(next)) isDropTarget.value = false;
 }
 </script>
 
 <style scoped>
 .chart-element {
+  position: relative;
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fff7e6;
-  border: 1px dashed #ffc53d;
-  border-radius: 2px;
+  overflow: hidden;
 }
 
-.chart-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  color: #fa8c16;
+/* Sample numbers are drawn faded: they never print */
+.chart-element.is-placeholder :deep(.chart-canvas) {
+  opacity: 0.45;
 }
 
-.chart-icon {
-  width: 24px;
-  height: 24px;
+.chart-element.is-drop-target {
+  outline: 2px dashed #6440f4;
+  outline-offset: 2px;
 }
 
-.chart-label {
-  font-size: 10px;
-  font-weight: 500;
+.chart-element.is-drop-target::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(100, 64, 244, 0.08);
+  pointer-events: none;
+}
+
+.chart-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  max-width: calc(100% - 6px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 1px 6px;
+  font-size: 9px;
+  line-height: 14px;
+  color: #4b5563;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px dashed #c7cbd1;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+
+.chart-badge.is-failed {
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
+.chart-badge.is-incomplete {
+  color: #92400e;
+  border-color: #fcd34d;
 }
 </style>
