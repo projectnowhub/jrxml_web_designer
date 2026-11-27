@@ -302,7 +302,7 @@ export function mergeChartData(binding: ChartBinding, results: AggregateResult[]
     }
 
     case "series": {
-      const columns: { name: string; key: string; map: ValueMap; axis: 0 | 1 }[] = [];
+      const columns: { name: string; key: string; map: ValueMap; axis: 0 | 1; line?: boolean }[] = [];
       // One series: its split values are its keys; several: "series2", "series2:PENDING"
       const several = binding.series!.length > 1;
       const seriesKey = (i: number, part?: string) =>
@@ -314,8 +314,10 @@ export function mergeChartData(binding: ChartBinding, results: AggregateResult[]
         const result = results[i];
         if (!result) return;
         const axis = sameAs(s.measure, first) ? 0 : 1;
+        // Horizontal bars drawn as a line (Show as)
+        const line = binding.chartType === "barH" && s.renderAs === "line" ? true : undefined;
         if (!s.splitBy || !result.series) {
-          columns.push({ name: measureLabel(s.measure), key: seriesKey(i), map: toMap(result.rows), axis });
+          columns.push({ name: measureLabel(s.measure), key: seriesKey(i), map: toMap(result.rows), axis, line });
           return;
         }
         // One line or set of bars per split value, in the order the backend
@@ -330,13 +332,14 @@ export function mergeChartData(binding: ChartBinding, results: AggregateResult[]
             key: seriesKey(i, colorKeyOf(part.key)),
             map: toMap(part.rows),
             axis,
+            line,
           }),
         );
         const rest = parts.slice(MAX_SPLIT_VALUES);
         if (rest.length && isAdditive(s.measure)) {
           const other: ValueMap = new Map();
           rest.forEach((part) => part.rows.forEach((r) => other.set(r.key, (other.get(r.key) ?? 0) + (r.value ?? 0))));
-          columns.push({ name: t("chart.other"), key: seriesKey(i, OTHER_COLOR_KEY), map: other, axis });
+          columns.push({ name: t("chart.other"), key: seriesKey(i, OTHER_COLOR_KEY), map: other, axis, line });
         }
       });
       const additive = binding.series!.every((s) => isAdditive(s.measure));
@@ -351,7 +354,13 @@ export function mergeChartData(binding: ChartBinding, results: AggregateResult[]
       return {
         kind: "series",
         categories: labels,
-        series: columns.map((c, i) => ({ name: c.name, key: c.key, values: values[i] ?? [], axis: c.axis })),
+        series: columns.map((c, i) => ({
+          name: c.name,
+          key: c.key,
+          values: values[i] ?? [],
+          axis: c.axis,
+          ...(c.line ? { line: true } : {}),
+        })),
       };
     }
 

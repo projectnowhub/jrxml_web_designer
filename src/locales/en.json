@@ -2267,7 +2267,7 @@
     },
     "data": "Data",
     "dataFrom": "{source} · {project}",
-    "dataHint": "Drag a source from Report Data onto the chart, or set it up here. Until then the chart shows sample numbers and prints nothing.",
+    "dataHint": "Drag a table from Report Data onto the chart, or set it up here. Until then the chart shows sample numbers and prints nothing.",
     "setUpData": "Set up data",
     "editData": "Edit data",
     "noData": "No data",
@@ -2292,29 +2292,28 @@
       }
     },
     "measures": {
-      "countOf": "Count",
-      "sumOf": "Total {column}",
-      "avgOf": "Average {column}",
-      "minOf": "Lowest {column}",
-      "maxOf": "Highest {column}"
+      "countOf": "Records",
+      "sumOf": "Sum {column}",
+      "avgOf": "Avg {column}",
+      "minOf": "Min {column}",
+      "maxOf": "Max {column}"
     },
     "aggregations": {
-      "count": "Count rows",
-      "sum": "Total of",
-      "avg": "Average of",
-      "min": "Lowest of",
-      "max": "Highest of"
+      "sum": "Sum",
+      "avg": "Avg",
+      "min": "Min",
+      "max": "Max"
     },
     "granularities": {
-      "day": "By day",
-      "week": "By week",
-      "month": "By month",
-      "quarter": "By quarter",
-      "year": "By year"
+      "day": "Day",
+      "week": "Week",
+      "month": "Month",
+      "quarter": "Quarter",
+      "year": "Year"
     },
     "states": {
       "sample": "Sample data",
-      "sampleHint": "Sample numbers: drag a source from Report Data onto the chart, or double-click it to set up its data. Prints nothing until then.",
+      "sampleHint": "Sample numbers: drag a table from Report Data onto the chart, or double-click it to set up its data. Prints nothing until then.",
       "incomplete": "Finish the setup",
       "incompleteHint": "Choose what the chart shows (double-click it). Prints nothing until then.",
       "loading": "Loading…",
@@ -2325,33 +2324,54 @@
     "config": {
       "title": "Chart data",
       "replacesData": "Replaces the chart's data from {source}.",
-      "whatToShow": "What to show",
-      "categories": "Categories",
-      "overTime": "Over time",
-      "groups": "Groups",
-      "items": "Items in each group",
-      "chooseColumn": "Choose a column",
       "otherColumns": "Other columns (many different values)",
       "cantGroup": "{name} (can't group by)",
-      "groupDatesBy": "Group dates",
-      "noTextColumns": "This source has no columns to group by.",
-      "noDateColumns": "This source has no date column. Bar charts can compare other columns.",
-      "value": "Number shown",
-      "series": "Lines or bars",
+      "noTextColumns": "This table has no columns to group by.",
+      "noDateColumns": "This table has no date column. Bar charts can compare other columns.",
       "calculation": "Calculation",
-      "ofColumn": "Column",
-      "splitBy": "One per",
-      "noSplit": "(none)",
-      "addSeries": "Add another",
-      "removeSeries": "Remove",
-      "gaugeMax": "Scale up to",
-      "automatic": "Automatic",
-      "stackBars": "Stack the bars",
-      "stackAreas": "Stack the areas",
-      "filters": "Which rows count",
       "basedOn": "Based on 1 row | Based on {count} rows",
       "incomplete": "Choose what the chart shows.",
       "manyCategories": "{count} categories: every one prints, so the chart may be crowded on paper. A filter, a coarser date grouping (by month or year) or a wider chart helps."
+    },
+    "panel": {
+      "slots": {
+        "xAxis": "X-Axis",
+        "categoryAxis": "Category Axis",
+        "category": "Category",
+        "value": "Value",
+        "level1": "Level 1",
+        "level2": "Level 2"
+      },
+      "granularity": "Time granularity",
+      "numberOfRecords": "Number of records",
+      "blockTerms": {
+        "bar": "Bar",
+        "line": "Line",
+        "area": "Area"
+      },
+      "addBlock": "Add {term}",
+      "splitBy": "Split By",
+      "optional": "optional",
+      "noSplit": "— None —",
+      "layout": "Layout",
+      "stacked": "Stacked",
+      "grouped": "Grouped",
+      "showAs": "Show as",
+      "bar": "Bar",
+      "line": "Line",
+      "customizeColors": "Customize colors",
+      "hideColors": "Hide colors",
+      "resetColors": "Reset to default colors",
+      "numberColor": "Number color",
+      "gaugeRange": "Gauge range",
+      "rangeAuto": "Auto",
+      "rangeManual": "Manual",
+      "rangeMin": "Minimum",
+      "rangeMax": "Maximum",
+      "showLegend": "Show legend",
+      "widgetTitle": "Widget title",
+      "widgetDescription": "Description",
+      "widgetDescriptionPlaceholder": "Add a short note about this widget"
     }
   },
   "dataTable": {
@@ -2396,7 +2416,7 @@
       "tableName": "Table name",
       "columnCount": "1 column | {count} columns",
       "editData": "Edit data",
-      "emptyHint": "Drag a source from Table Data onto this table, or choose one here.",
+      "emptyHint": "Drag a table from Report Data onto this table, or choose one here.",
       "chooseData": "Choose data",
       "look": "Look",
       "headerHeight": "Header height",
@@ -2409,8 +2429,8 @@
       "project": "Project",
       "chooseProject": "Choose a project",
       "noProjects": "Choose a project at the top of the page first.",
-      "source": "Source",
-      "chooseSource": "Choose a source",
+      "source": "Table",
+      "chooseSource": "Choose a table",
       "replacesData": "Apply replaces this table's current data ({source}).",
       "sourceOption": "{name} ({count} rows)",
       "columns": "Columns",
@@ -2427,7 +2447,7 @@
       "rowsNote": "These apply to the table on the page and in the printed report, not just this preview.",
       "showTotals": "Add a totals row",
       "preview": "Preview",
-      "pickSourceFirst": "Choose a source to see its data",
+      "pickSourceFirst": "Choose a table to see its data",
       "rowCount": "1 row | {count} rows",
       "needColumn": "Choose at least one column",
       "apply": "Apply",
@@ -2436,11 +2456,9 @@
     "filter": {
       "containsChip": "contains “{words}”",
       "remove": "Remove",
-      "search": "Search {column}",
+      "search": "Search {column}…",
       "selectAll": "Select all",
-      "clear": "Clear",
       "clearAll": "Clear all",
-      "noMatchingValues": "No value matches your search",
       "min": "Min",
       "max": "Max",
       "from": "From",
@@ -2451,8 +2469,6 @@
       "onOrAfter": "From {value}",
       "onOrBefore": "Until {value}",
       "moreValues": "{values} +{count}",
-      "matchCount": "1 row matches | {count} rows match",
-      "movingRangeHint": "Today that is {from} to {to}.",
       "periods": {
         "thisMonth": "This month",
         "lastMonth": "Last month",
@@ -2461,13 +2477,14 @@
         "last30Days": "Last 30 days"
       },
       "filtersTitle": "Filters",
-      "fieldsShown": "Fields shown in this filter",
       "searchFields": "Search fields…",
       "noFieldsMatch": "No fields match “{words}”.",
-      "noFields": "No fields shown. Choose the fields to filter by with the button above.",
       "typeToSearch": "Type to search {column}…",
       "all": "All",
-      "clearAllHint": "Remove every filter"
+      "optional": "optional",
+      "addFilter": "Add filter",
+      "removeFilter": "Remove filter",
+      "noOptions": "No options found"
     },
     "sort": {
       "text": {
@@ -2767,7 +2784,42 @@
       "tableNotOnSpecialPage": "Tables can't go on a cover or contents page."
     },
     "dragDate": "Drag onto the page: shows this project's date in the look you pick, and follows the template's project",
-    "chartFromSource": "Chart from this table: drag this icon onto the page, or click to add one"
+    "chartFromSource": "Chart from this table: drag this icon onto the page, or click to add one",
+    "tableGroups": {
+      "projectInformation": "PROJECT INFORMATION",
+      "contractManagement": "CONTRACT MANAGEMENT",
+      "procurementManagement": "PROCUREMENT MANAGEMENT",
+      "complianceManagement": "COMPLIANCE MANAGEMENT",
+      "sheManagement": "SHE MANAGEMENT",
+      "riskManagement": "RISK MANAGEMENT",
+      "qsheManagement": "QSHE MANAGEMENT",
+      "qualityManagement": "QUALITY MANAGEMENT",
+      "issueManagement": "ISSUE MANAGEMENT",
+      "otherTables": "OTHER TABLES"
+    },
+    "tableSections": {
+      "contractMonitoring": "Contract Monitoring",
+      "qsheAudit": "QSHE Audit/Assessment"
+    },
+    "tableNames": {
+      "project": "Project",
+      "progressFiles": "Project Progress File",
+      "contract": "Contract",
+      "payment": "Payment",
+      "variationOrder": "Variation Order",
+      "finalAccount": "Final Account",
+      "lad": "LAD",
+      "eot": "Extension of Time",
+      "procurementRegister": "Procurement Register",
+      "complianceRegister": "Compliance Register",
+      "incidentRegister": "Incident Register",
+      "riskRegister": "Project Risk Register",
+      "projectAudit": "Project Audit",
+      "qualityStandard": "Quality Standard",
+      "safetyHealth": "Safety & Health",
+      "qaqcRegister": "QA/QC Register",
+      "issueRegister": "Issue Register"
+    }
   },
   "barcode": {
     "chooseType": "Choose a barcode type",
@@ -3604,7 +3656,7 @@
         "good": [
           "Only charts with their data set up print.",
           "The numbers are fetched fresh every time the report runs.",
-          "For a register with a dashboard in ProjectNow CDP, the chart offers exactly that dashboard's fields: e.g. a QA/QC line chart starts on Planned Inspection Date by month, and One per can split it by Inspection Type.",
+          "For a register with a dashboard in ProjectNow CDP, the chart offers exactly that dashboard's fields: e.g. a QA/QC line chart starts on Planned Inspection Date by month, and Split By can split it by Inspection Type. The setup window is laid out like the dashboard's widget panel, with the same words.",
           "Columns with a fixed list of values (like Status), yes / no columns and dates make the best categories. Bar, line and area charts show a list's values in its own order; pie, donut and tree map put the largest first.",
           "Columns where almost every row is different (like Description) are listed under Other columns. Columns that link to another record (like Contract) can't be used as categories."
         ]
@@ -3891,7 +3943,7 @@
       },
       "chartData": {
         "title": "Data",
-        "text": "Where the numbers come from. Set up data (or Edit data) opens a window to choose the project, the data, what to count or add up, the categories and the filters. The filters open with the columns the chart groups by and its dates; the fields button adds others. For a register that has a dashboard in ProjectNow CDP (QA/QC, Procurement, Risk, Issue, EOT, LAD, Compliance, Incident and the audits), the chart offers the same fields as the dashboard there, with the same names, and starts the same way."
+        "text": "Where the numbers come from. Set up data (or Edit data) opens a window to choose the project, the data, what to count or add up, the categories and the filters. Filters work as on a CDP dashboard: Add filter, choose the field, then its values. For a register that has a dashboard in ProjectNow CDP (QA/QC, Procurement, Risk, Issue, EOT, LAD, Compliance, Incident and the audits), the chart offers the same fields as the dashboard there, with the same names, and starts the same way."
       },
       "chartTitle": {
         "title": "Chart",

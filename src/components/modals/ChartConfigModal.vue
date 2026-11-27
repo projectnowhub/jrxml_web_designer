@@ -6,191 +6,279 @@
     @update:visible="emit('update:visible', $event)"
   >
     <div class="ccm">
-      <!-- Settings -->
+      <!-- Settings: the CDP app's dashboard widget panel (WidgetPropertiesPanel),
+           same words and controls, in boxes so each part is easy to find:
+           where the numbers come from (Project and Source, which the CDP app
+           takes from its page), the chart (type, then its fields), the
+           filters, the title -->
       <div class="ccm-settings">
-        <section class="ccm-section">
-          <h4><ChartColumn :size="14" aria-hidden="true" />{{ t("chart.type") }}</h4>
-          <div class="ccm-select-wrap">
-            <select class="ccm-select" :value="draft.chartType" @change="setType(($event.target as HTMLSelectElement).value as ChartType)">
-              <optgroup v-for="group in CHART_GROUPS" :key="group" :label="t(`chart.groups.${group}`)">
-                <option v-for="c in chartTypesInGroup(group)" :key="c.type" :value="c.type">{{ t(`chart.types.${c.type}`) }}</option>
-              </optgroup>
-            </select>
-            <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
-          </div>
-        </section>
-
-        <!-- Project, then one of its sources -->
-        <section class="ccm-section">
-          <h4><FolderKanban :size="14" aria-hidden="true" />{{ t("dataTable.config.project") }}</h4>
-          <p v-if="!projectOptions.length" class="ccm-hint">{{ t("dataTable.config.noProjects") }}</p>
-          <div v-else class="ccm-select-wrap">
-            <select class="ccm-select" :value="projectId" @change="changeProject(($event.target as HTMLSelectElement).value)">
-              <option value="" disabled>{{ t("dataTable.config.chooseProject") }}</option>
-              <option v-for="p in projectOptions" :key="p.id" :value="p.id">{{ p.name }}</option>
-            </select>
-            <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
-          </div>
-          <template v-if="projectId">
-            <span class="ccm-label">{{ t("dataTable.config.source") }}</span>
-            <SkeletonBlock v-if="sourcesLoading" height="34px" radius="8px" />
+        <section class="ccm-box">
+          <!-- Project, then one of its sources -->
+          <div class="ccm-field">
+            <label class="ccm-label">{{ t("dataTable.config.project") }}</label>
+            <p v-if="!projectOptions.length" class="ccm-hint">{{ t("dataTable.config.noProjects") }}</p>
             <div v-else class="ccm-select-wrap">
-              <select class="ccm-select" :value="sourceId" @change="changeSource(($event.target as HTMLSelectElement).value)">
-                <option value="" disabled>{{ t("dataTable.config.chooseSource") }}</option>
-                <option v-for="s in sources" :key="s.id" :value="s.id">
-                  {{ s.rowCount !== undefined ? t("dataTable.config.sourceOption", { name: s.name, count: s.rowCount }) : s.name }}
-                </option>
+              <select class="ccm-select" :value="projectId" @change="changeProject(($event.target as HTMLSelectElement).value)">
+                <option value="" disabled>{{ t("dataTable.config.chooseProject") }}</option>
+                <option v-for="p in projectOptions" :key="p.id" :value="p.id">{{ p.name }}</option>
               </select>
               <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
             </div>
-          </template>
+          </div>
+          <div v-if="projectId" class="ccm-field">
+            <label class="ccm-label">{{ t("dataTable.config.source") }}</label>
+            <SkeletonBlock v-if="sourcesLoading" height="36px" radius="6px" />
+            <div v-else class="ccm-select-wrap">
+              <select class="ccm-select" :value="sourceId" @change="changeSource(($event.target as HTMLSelectElement).value)">
+                <option value="" disabled>{{ t("dataTable.config.chooseSource") }}</option>
+                <!-- Under the CDP app's sidebar headings, with its names -->
+                <optgroup v-for="group in groupTablesLikeCdp(sources)" :key="group.key" :label="group.title">
+                  <option v-for="s in group.sections.flatMap((section) => section.tables)" :key="s.id" :value="s.id">
+                    {{ s.rowCount !== undefined ? t("dataTable.config.sourceOption", { name: s.label, count: s.rowCount }) : s.label }}
+                  </option>
+                </optgroup>
+              </select>
+              <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
+            </div>
+          </div>
           <p v-if="loadError" class="ccm-error">{{ t("dataTable.loadFailed") }}</p>
           <p v-else-if="replacedSource" class="ccm-note">
             <Replace :size="13" aria-hidden="true" />
             {{ t("chart.config.replacesData", { source: replacedSource }) }}
           </p>
+
         </section>
 
-        <!-- The chosen table's fields on their way -->
-        <section v-if="schemaLoading" class="ccm-section ccm-skeleton">
-          <SkeletonBlock width="40%" height="14px" />
-          <SkeletonBlock v-for="i in 3" :key="i" height="30px" radius="8px" />
-        </section>
-        <template v-if="schema">
-          <!-- What the chart shows -->
-          <section class="ccm-section">
-            <h4><Sigma :size="14" aria-hidden="true" />{{ t("chart.config.whatToShow") }}</h4>
+        <section class="ccm-box">
+          <!-- Chart type: one dropdown, the types by group (the CDP app's
+               ChartTypeList groups), the chosen type's icon in the field -->
+          <div class="ccm-field">
+            <label class="ccm-label" for="ccm-chart-type">{{ t("chart.type") }}</label>
+            <div class="ccm-select-wrap has-icon">
+              <component :is="CHART_TYPE_ICONS[draft.chartType]" class="ccm-select-icon" :size="15" aria-hidden="true" />
+              <select id="ccm-chart-type" class="ccm-select" :value="draft.chartType" @change="pickType(($event.target as HTMLSelectElement).value as ChartType)">
+                <optgroup v-for="group in CHART_GROUPS" :key="group" :label="t(`chart.groups.${group}`)">
+                  <option v-for="c in chartTypesInGroup(group)" :key="c.type" :value="c.type">{{ t(`chart.types.${c.type}`) }}</option>
+                </optgroup>
+              </select>
+              <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
+            </div>
+          </div>
 
-            <!-- Categories (bars, slices, points over time) or the tree map's groups -->
-            <template v-if="info.shape !== 'value'">
-              <span class="ccm-label">{{ t(info.shape === "tree" ? "chart.config.groups" : info.dimensionTypes.length === 1 && info.dimensionTypes[0] === "date" ? "chart.config.overTime" : "chart.config.categories") }}</span>
-              <div class="ccm-row">
+            <!-- The chosen table's fields on their way -->
+            <div v-if="schemaLoading" class="ccm-skeleton">
+              <SkeletonBlock width="40%" height="12px" />
+              <SkeletonBlock v-for="i in 3" :key="i" height="36px" radius="6px" />
+            </div>
+
+            <template v-if="schema">
+              <!-- Categories (DimensionSlotField) and its time granularity -->
+              <div v-if="info.shape === 'series' || info.shape === 'parts'" class="ccm-field">
+                <label class="ccm-label">{{ t(`chart.panel.slots.${dimensionSlot}`) }}</label>
                 <div class="ccm-select-wrap">
                   <select class="ccm-select" :value="draft.dimension?.column ?? ''" @change="setDimension('dimension', ($event.target as HTMLSelectElement).value)">
-                    <option value="" disabled>{{ t("chart.config.chooseColumn") }}</option>
+                    <option v-if="!draft.dimension" value="" disabled></option>
                     <ChartColumnOptions :columns="dimensionColumns" :as-listed="!!cdpFields" />
                   </select>
                   <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
                 </div>
-                <div v-if="draft.dimension?.type === 'date'" class="ccm-select-wrap is-small">
-                  <select
-                    class="ccm-select"
-                    :value="draft.dimension.granularity"
-                    :aria-label="t('chart.config.groupDatesBy')"
-                    @change="setGranularity(($event.target as HTMLSelectElement).value as DateGranularity)"
-                  >
-                    <option v-for="g in DATE_GRANULARITIES" :key="g" :value="g">{{ t(`chart.granularities.${g}`) }}</option>
-                  </select>
-                  <ChevronDown class="ccm-chevron" :size="12" aria-hidden="true" />
+                <p v-if="!dimensionColumns.length" class="ccm-hint">
+                  {{ t(info.dimensionTypes.includes("text") ? "chart.config.noTextColumns" : "chart.config.noDateColumns") }}
+                </p>
+                <template v-if="draft.dimension?.type === 'date'">
+                  <label class="ccm-label is-next">{{ t("chart.panel.granularity") }}</label>
+                  <ChartSegmented
+                    :options="DATE_GRANULARITIES.map((g) => ({ value: g, label: t(`chart.granularities.${g}`) }))"
+                    :model-value="draft.dimension.granularity"
+                    @update:model-value="setGranularity($event as DateGranularity)"
+                  />
+                </template>
+              </div>
+
+              <!-- Tree map: Level 1 and Level 2 (LevelSlotField) -->
+              <template v-if="info.shape === 'tree'">
+                <div class="ccm-field">
+                  <label class="ccm-label">{{ t("chart.panel.slots.level1") }}</label>
+                  <div class="ccm-select-wrap">
+                    <select class="ccm-select" :value="draft.dimension?.column ?? ''" @change="setDimension('dimension', ($event.target as HTMLSelectElement).value)">
+                      <option v-if="!draft.dimension" value="" disabled></option>
+                      <ChartColumnOptions :columns="dimensionColumns" :as-listed="!!cdpFields" />
+                    </select>
+                    <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
+                  </div>
+                </div>
+                <div class="ccm-field">
+                  <label class="ccm-label">{{ t("chart.panel.slots.level2") }}</label>
+                  <div class="ccm-select-wrap">
+                    <select class="ccm-select" :value="draft.level2?.column ?? ''" @change="setDimension('level2', ($event.target as HTMLSelectElement).value)">
+                      <option v-if="!draft.level2" value="" disabled></option>
+                      <ChartColumnOptions
+                        :columns="dimensionColumns.filter((c) => c.key !== draft.dimension?.column)"
+                        :as-listed="!!cdpFields"
+                      />
+                    </select>
+                    <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
+                  </div>
+                </div>
+              </template>
+
+              <!-- One number: KPI, gauge, pie, donut, tree map (MeasureSlotField) -->
+              <ChartMeasurePicker
+                v-if="info.shape !== 'series' && draft.measure"
+                :label="t('chart.panel.slots.value')"
+                :measure="draft.measure"
+                :columns="numberColumns"
+                @change="draft.measure = $event"
+              />
+
+              <!-- Gauge range: Auto / Manual (GaugeRangeField) -->
+              <div v-if="draft.chartType === 'gauge'" class="ccm-field">
+                <label class="ccm-label">{{ t("chart.panel.gaugeRange") }}</label>
+                <ChartSegmented
+                  :options="[
+                    { value: 'auto', label: t('chart.panel.rangeAuto') },
+                    { value: 'manual', label: t('chart.panel.rangeManual') },
+                  ]"
+                  :model-value="gaugeManual ? 'manual' : 'auto'"
+                  @update:model-value="setGaugeMode($event === 'manual')"
+                />
+                <div v-if="!gaugeManual" class="ccm-range-auto">
+                  <span>{{ t("chart.panel.rangeMin") }}: {{ formatChartNumber(autoRange.min) }}</span>
+                  <span>{{ t("chart.panel.rangeMax") }}: {{ formatChartNumber(autoRange.max) }}</span>
+                </div>
+                <div v-else class="ccm-range-manual">
+                  <label>
+                    <span>{{ t("chart.panel.rangeMin") }}</span>
+                    <input class="ccm-input" type="number" :value="draft.gaugeMin ?? ''" @input="setGaugeEnd('gaugeMin', ($event.target as HTMLInputElement).value)" />
+                  </label>
+                  <label>
+                    <span>{{ t("chart.panel.rangeMax") }}</span>
+                    <input class="ccm-input" type="number" :value="draft.gaugeMax ?? ''" @input="setGaugeEnd('gaugeMax', ($event.target as HTMLInputElement).value)" />
+                  </label>
                 </div>
               </div>
-              <p v-if="!dimensionColumns.length" class="ccm-hint">
-                {{ t(info.dimensionTypes.includes("text") ? "chart.config.noTextColumns" : "chart.config.noDateColumns") }}
-              </p>
-            </template>
 
-            <!-- Tree map: the items inside each group -->
-            <template v-if="info.shape === 'tree'">
-              <span class="ccm-label">{{ t("chart.config.items") }}</span>
-              <div class="ccm-select-wrap">
-                <select class="ccm-select" :value="draft.level2?.column ?? ''" @change="setDimension('level2', ($event.target as HTMLSelectElement).value)">
-                  <option value="" disabled>{{ t("chart.config.chooseColumn") }}</option>
-                  <ChartColumnOptions :columns="textColumns" :disabled-key="draft.dimension?.column" :as-listed="!!cdpFields" />
-                </select>
-                <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
-              </div>
-            </template>
+              <!-- Lines / bars / areas, one card each (BlockList / BlockCard) -->
+              <div v-if="info.shape === 'series'" class="ccm-field">
+                <div v-for="(s, i) in draft.series ?? []" :key="i" class="ccm-block">
+                  <div class="ccm-block-head">
+                    <span>{{ t(`chart.panel.blockTerms.${blockTerm}`) }} {{ i + 1 }}</span>
+                    <button
+                      v-if="(draft.series?.length ?? 0) > 1"
+                      type="button"
+                      class="ccm-icon-box"
+                      :aria-label="t('common.delete')"
+                      @click="removeSeries(i)"
+                    >
+                      <Trash2 :size="14" aria-hidden="true" />
+                    </button>
+                  </div>
 
-            <!-- The number: one, or one per line / set of bars -->
-            <span class="ccm-label">{{ t(info.shape === "series" ? "chart.config.series" : "chart.config.value") }}</span>
-            <div v-for="row in measureRows" :key="row.id" class="ccm-measure">
-              <div class="ccm-row">
-                <div class="ccm-select-wrap">
-                  <select
-                    class="ccm-select"
-                    :value="row.measure.aggregation"
-                    :aria-label="t('chart.config.calculation')"
-                    @change="setAggregation(row, ($event.target as HTMLSelectElement).value as ChartAggregation)"
-                  >
-                    <option v-for="a in CHART_AGGREGATIONS" :key="a" :value="a" :disabled="a !== 'count' && !numberColumns.length">
-                      {{ t(`chart.aggregations.${a}`) }}
-                    </option>
-                  </select>
-                  <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
+                  <ChartMeasurePicker
+                    :label="measureLabel(s.measure)"
+                    :measure="s.measure"
+                    :columns="numberColumns"
+                    @change="setSeriesMeasure(i, $event)"
+                  />
+
+                  <label class="ccm-label">
+                    {{ t("chart.panel.splitBy") }} <span class="ccm-optional">{{ t("chart.panel.optional") }}</span>
+                  </label>
+                  <div class="ccm-select-wrap">
+                    <select class="ccm-select" :value="s.splitBy?.column ?? ''" @change="setSplit(i, ($event.target as HTMLSelectElement).value)">
+                      <option value="">{{ t("chart.panel.noSplit") }}</option>
+                      <ChartColumnOptions :columns="splitColumns" :as-listed="!!cdpFields" />
+                    </select>
+                    <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
+                  </div>
+
+                  <template v-if="isBarType && s.splitBy">
+                    <label class="ccm-label is-next">{{ t("chart.panel.layout") }}</label>
+                    <ChartSegmented
+                      :options="[
+                        { value: 'stacked', label: t('chart.panel.stacked') },
+                        { value: 'grouped', label: t('chart.panel.grouped') },
+                      ]"
+                      :model-value="draft.stacked ? 'stacked' : 'grouped'"
+                      @update:model-value="draft.stacked = $event === 'stacked' || undefined"
+                    />
+                  </template>
+
+                  <template v-if="draft.chartType === 'barH'">
+                    <label class="ccm-label is-next">{{ t("chart.panel.showAs") }}</label>
+                    <ChartSegmented
+                      :options="[
+                        { value: 'bar', label: t('chart.panel.bar') },
+                        { value: 'line', label: t('chart.panel.line') },
+                      ]"
+                      :model-value="s.renderAs ?? 'bar'"
+                      @update:model-value="setRenderAs(i, $event)"
+                    />
+                  </template>
+
+                  <div class="ccm-colors">
+                    <button type="button" class="ccm-link" @click="toggleColors(`b${i}`)">
+                      {{ t(openColors.has(`b${i}`) ? "chart.panel.hideColors" : "chart.panel.customizeColors") }}
+                    </button>
+                    <ChartColorSwatches
+                      v-if="openColors.has(`b${i}`)"
+                      :rows="blockColorRows(i)"
+                      @set="setColor"
+                      @reset="resetColors(blockColorRows(i))"
+                    />
+                  </div>
                 </div>
-                <div v-if="row.measure.aggregation !== 'count'" class="ccm-select-wrap">
-                  <select
-                    class="ccm-select"
-                    :value="row.measure.column ?? ''"
-                    :aria-label="t('chart.config.ofColumn')"
-                    @change="setMeasureColumn(row, ($event.target as HTMLSelectElement).value)"
-                  >
-                    <option v-for="c in numberColumns" :key="c.key" :value="c.key">{{ c.label }}</option>
-                  </select>
-                  <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
-                </div>
-                <button
-                  v-if="row.removable"
-                  type="button"
-                  class="ccm-icon-btn danger"
-                  :title="t('chart.config.removeSeries')"
-                  @click="removeSeries(row.index)"
-                >
-                  <X :size="14" />
+                <button v-if="(draft.series?.length ?? 0) < MAX_CHART_SERIES" type="button" class="ccm-dashed" @click="addSeries">
+                  <Plus :size="14" aria-hidden="true" />
+                  {{ t("chart.panel.addBlock", { term: t(`chart.panel.blockTerms.${blockTerm}`).toLowerCase() }) }}
                 </button>
               </div>
-              <!-- A line or set of bars per value of a column -->
-              <div v-if="info.shape === 'series'" class="ccm-row ccm-split">
-                <span class="ccm-muted">{{ t("chart.config.splitBy") }}</span>
-                <div class="ccm-select-wrap">
-                  <select class="ccm-select" :value="row.splitBy?.column ?? ''" @change="setSplit(row.index, ($event.target as HTMLSelectElement).value)">
-                    <option value="">{{ t("chart.config.noSplit") }}</option>
-                    <ChartColumnOptions :columns="textColumns" :disabled-key="draft.dimension?.column" :as-listed="!!cdpFields" />
-                  </select>
-                  <ChevronDown class="ccm-chevron" :size="14" aria-hidden="true" />
-                </div>
+
+              <!-- KPI, pie, donut: their colours (WidgetColorField) -->
+              <div v-if="['kpi', 'pie', 'donut'].includes(draft.chartType)" class="ccm-field">
+                <button type="button" class="ccm-link" @click="toggleColors('top')">
+                  {{ t(openColors.has("top") ? "chart.panel.hideColors" : "chart.panel.customizeColors") }}
+                </button>
+                <ChartColorSwatches v-if="openColors.has('top')" :rows="topColorRows" @set="setColor" @reset="resetColors(topColorRows)" />
               </div>
-            </div>
-            <button
-              v-if="info.shape === 'series' && (draft.series?.length ?? 0) < MAX_CHART_SERIES"
-              type="button"
-              class="ccm-add"
-              @click="addSeries"
-            >
-              <Plus :size="13" aria-hidden="true" />{{ t("chart.config.addSeries") }}
-            </button>
 
-            <!-- Gauge scale -->
-            <label v-if="draft.chartType === 'gauge'" class="ccm-inline">
-              <span class="ccm-label">{{ t("chart.config.gaugeMax") }}</span>
-              <input
-                class="ccm-input is-narrow"
-                type="number"
-                min="0"
-                :value="draft.gaugeMax ?? ''"
-                :placeholder="t('chart.config.automatic')"
-                @change="setGaugeMax(($event.target as HTMLInputElement).value)"
-              />
-            </label>
+              <label v-if="info.hasLegend" class="ccm-check">
+                <input type="checkbox" :checked="draft.showLegend" @change="draft.showLegend = ($event.target as HTMLInputElement).checked" />
+                {{ t("chart.panel.showLegend") }}
+              </label>
 
-            <label v-if="canStack" class="ccm-check">
-              <input type="checkbox" :checked="!!draft.stacked" @change="draft.stacked = ($event.target as HTMLInputElement).checked || undefined" />
-              {{ t(draft.chartType === "area" ? "chart.config.stackAreas" : "chart.config.stackBars") }}
-            </label>
+            </template>
+        </section>
 
-          </section>
-
-          <!-- Which rows count -->
-          <section class="ccm-section">
-            <h4><SlidersHorizontal :size="14" aria-hidden="true" />{{ t("chart.config.filters") }}</h4>
+        <template v-if="schema">
+          <section class="ccm-box">
+            <!-- Filters, exactly as the CDP app's dashboard widgets -->
             <TableFilterPanel
               :columns="filterColumns"
               :facets="filterFacets"
               :filters="draft.filters ?? []"
-              :suggested-fields="filterSuggestions"
-              :match-count="matchCount"
               @update:filters="draft.filters = $event"
             />
+
+          </section>
+
+          <section class="ccm-box">
+            <div class="ccm-field">
+              <label class="ccm-label">{{ t("chart.panel.widgetTitle") }}</label>
+              <input v-model="draft.title" class="ccm-input" type="text" :placeholder="draftBinding.title" />
+            </div>
+            <div class="ccm-field">
+              <label class="ccm-label">
+                {{ t("chart.panel.widgetDescription") }} <span class="ccm-optional">({{ t("chart.panel.optional") }})</span>
+              </label>
+              <textarea
+                v-model="draft.note"
+                class="ccm-textarea"
+                rows="3"
+                :maxlength="MAX_CHART_NOTE"
+                :placeholder="t('chart.panel.widgetDescriptionPlaceholder')"
+              ></textarea>
+            </div>
           </section>
         </template>
       </div>
@@ -209,6 +297,10 @@
           {{ t("chart.config.manyCategories", { count: categoryCount }) }}
         </p>
         <div class="ccm-stage">
+          <!-- New numbers on their way over the last chart -->
+          <div v-if="shownPreview && fetching" class="ccm-fetching" role="status">
+            <LoaderCircle :size="14" aria-hidden="true" />{{ t("dataTable.loading") }}
+          </div>
           <div
             v-if="shownPreview"
             class="ccm-paper"
@@ -235,7 +327,7 @@
     <template #footer>
       <span v-if="applyBlockedReason" class="ccm-footer-hint">{{ applyBlockedReason }}</span>
       <n-button @click="emit('update:visible', false)">{{ t("common.cancel") }}</n-button>
-      <n-button type="primary" :disabled="!!applyBlockedReason" @click="apply">
+      <n-button type="primary" :disabled="!!applyBlockedReason" :loading="fetching" @click="apply">
         {{ t("dataTable.config.apply") }}
       </n-button>
     </template>
@@ -244,25 +336,30 @@
 
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from "vue";
+import { cdpTableName, groupTablesLikeCdp } from "@/utils/table/tableGroups";
 import type { EChartsCoreOption } from "echarts/core";
 import { useI18n } from "vue-i18n";
 import { NButton } from "naive-ui";
-import { ChartColumn, ChevronDown, FolderKanban, Info, Plus, Replace, Sigma, SlidersHorizontal, X } from "@lucide/vue";
+import { ChevronDown, Info, LoaderCircle, Plus, Replace, Trash2 } from "@lucide/vue";
 import BaseModal from "./BaseModal.vue";
 import ChartCanvas from "../common/ChartCanvas.vue";
 import SkeletonBlock from "../common/SkeletonBlock.vue";
 import TableFilterPanel from "../designer/TableFilterPanel.vue";
 import ChartColumnOptions from "../designer/ChartColumnOptions.vue";
+import ChartSegmented from "../designer/ChartSegmented.vue";
+import ChartMeasurePicker from "../designer/ChartMeasurePicker.vue";
+import ChartColorSwatches from "../designer/ChartColorSwatches.vue";
+import { CHART_TYPE_ICONS } from "../elements/chartIcons";
 import { chartFieldLists } from "@/utils/chart/chartFields";
-import { suggestChartTitle } from "@/utils/chart/chartQuery";
+import { measureLabel, suggestChartTitle } from "@/utils/chart/chartQuery";
 import { fetchFacets, fetchSchema, fetchSources } from "@/queries/dataSourceQueries";
 import {
-  CHART_AGGREGATIONS,
   CHART_GROUPS,
   DATE_GRANULARITIES,
   DEFAULT_GRANULARITY,
+  MAX_CHART_NOTE,
   MAX_CHART_SERIES,
-  changeChartType,
+  chartColors,
   chartTypeInfo,
   chartTypesInGroup,
   groupingColumns,
@@ -270,14 +367,20 @@ import {
   normalizeChartBinding,
 } from "@/utils/chart/chartTypes";
 import { chartView } from "@/utils/chart/chartImage";
-import { buildChartOption, chartFontFamily } from "@/utils/chart/chartOption";
+import {
+  KPI_COLOR_KEY,
+  autoGaugeRange,
+  buildChartOption,
+  chartColorItems,
+  chartFontFamily,
+  formatChartNumber,
+} from "@/utils/chart/chartOption";
 import { chartDataEntry, useChartData } from "@/utils/chart/chartDataStore";
 import type {
   ChartAggregation,
   ChartBinding,
   ChartDimension,
   ChartMeasure,
-  ChartSeriesBinding,
   ChartType,
   DataColumn,
   DataSourceSchema,
@@ -370,6 +473,9 @@ const numberColumns = computed(() =>
 const groupColumns = computed(() => cdpFields.value?.groupable ?? columns.value);
 const textColumns = computed(() => groupColumns.value.filter((c) => c.type === "text"));
 const dimensionColumns = computed(() => groupColumns.value.filter((c) => info.value.dimensionTypes.includes(c.type)));
+// Split By: the CDP list's groupable fields (other sources: text columns), never the categories' own field
+const splitAllowed = computed(() => (cdpFields.value ? cdpFields.value.groupable : textColumns.value));
+const splitColumns = computed(() => splitAllowed.value.filter((c) => c.key !== draft.value.dimension?.column));
 // The chart's filters: the CDP list's fields (a path into a linked record is typed words)
 const filterColumns = computed(() => cdpFields.value?.filterable ?? columns.value);
 const filterFacets = computed<SourceFacets | null>(() => {
@@ -440,7 +546,7 @@ function fillMissing() {
   d.series = d.series?.map((s) => ({
     ...s,
     measure: usable(s.measure)!,
-    ...(s.splitBy && !textColumns.value.some((c) => c.key === s.splitBy!.column) ? { splitBy: undefined } : {}),
+    ...(s.splitBy && !splitAllowed.value.some((c) => c.key === s.splitBy!.column) ? { splitBy: undefined } : {}),
   }));
   d.filters = (d.filters ?? []).filter((f) => filterColumns.value.some((c) => c.key === f.column));
   const usableDropped = dropped && isNumber(dropped) && numberColumns.value.includes(dropped) ? dropped : undefined;
@@ -451,15 +557,45 @@ function fillMissing() {
     d.measure = measure;
   }
   if (info.value.shape === "tree" && (!d.level2 || d.level2.column === d.dimension?.column)) {
-    const pick = byGroupingFit(textColumns.value).find((c) => c.key !== d.dimension?.column);
+    const pick = byGroupingFit(dimensionColumns.value).find((c) => c.key !== d.dimension?.column);
     d.level2 = pick ? toDimension(pick) : undefined;
   }
 }
 
-function setType(type: ChartType) {
-  draft.value = changeChartType(draft.value, type);
+// ── Chart type (the dropdown) ──
+
+// Another type starts afresh with the type's defaults, as the CDP app's
+// changeWidgetType (buildDefaultQuery): the first field of the list, Number
+// of records, one line / bar, Auto gauge range, no filters or own colours;
+// the title and description stay
+function pickType(type: ChartType) {
+  if (type === draft.value.chartType) return;
+  draft.value = {
+    ...draft.value,
+    chartType: type,
+    measure: undefined,
+    dimension: undefined,
+    level2: undefined,
+    series: undefined,
+    stacked: undefined,
+    gaugeMin: undefined,
+    gaugeMax: undefined,
+    filters: [],
+    colors: undefined,
+  };
+  gaugeManual.value = false;
+  openColors.value = new Set();
   if (schema.value) fillMissing();
 }
+
+// The categories' label (the CDP app's slot labels)
+const dimensionSlot = computed(() => {
+  const type = draft.value.chartType;
+  return type === "bar" || type === "line" || type === "area" ? "xAxis" : type === "barH" ? "categoryAxis" : "category";
+});
+// What one card of a series chart is called ("Bar 1", "Add line")
+const blockTerm = computed(() => (draft.value.chartType === "line" ? "line" : draft.value.chartType === "area" ? "area" : "bar"));
+const isBarType = computed(() => draft.value.chartType === "bar" || draft.value.chartType === "barH");
 
 function setDimension(slot: "dimension" | "level2", key: string) {
   const c = columns.value.find((col) => col.key === key);
@@ -470,74 +606,121 @@ function setGranularity(granularity: DateGranularity) {
   if (draft.value.dimension) draft.value.dimension = { ...draft.value.dimension, granularity };
 }
 
-// ── The number(s) ──
-interface MeasureRow {
-  id: string;
-  index: number;
-  measure: ChartMeasure;
-  splitBy?: ChartDimension;
-  removable: boolean;
-}
-const measureRows = computed<MeasureRow[]>(() => {
-  const d = draft.value;
-  if (info.value.shape === "series") {
-    return (d.series ?? []).map((s, i) => ({
-      id: `s${i}`,
-      index: i,
-      measure: s.measure,
-      splitBy: s.splitBy,
-      removable: (d.series?.length ?? 0) > 1,
-    }));
-  }
-  return d.measure ? [{ id: "m", index: -1, measure: d.measure, removable: false }] : [];
-});
-
-function putMeasure(row: MeasureRow, measure: ChartMeasure) {
-  if (row.index < 0) draft.value.measure = measure;
-  else draft.value.series![row.index] = { ...draft.value.series![row.index]!, measure };
-}
-
-function setAggregation(row: MeasureRow, aggregation: ChartAggregation) {
-  const column = numberColumns.value.find((c) => c.key === row.measure.column) ?? numberColumns.value[0];
-  putMeasure(row, toMeasure(aggregation, column));
-}
-
-function setMeasureColumn(row: MeasureRow, key: string) {
-  putMeasure(row, toMeasure(row.measure.aggregation, numberColumns.value.find((c) => c.key === key)));
+// ── Lines / bars / areas (BlockList) ──
+function setSeriesMeasure(index: number, measure: ChartMeasure) {
+  draft.value.series![index] = { ...draft.value.series![index]!, measure };
 }
 
 function setSplit(index: number, key: string) {
   const series = draft.value.series![index]!;
   const c = columns.value.find((col) => col.key === key);
-  const next: ChartSeriesBinding = { measure: series.measure };
-  if (c) next.splitBy = toDimension(c);
-  // Split bars are stacked at first, as the CDP app's (Stacked can be unticked)
-  const isBars = draft.value.chartType === "bar" || draft.value.chartType === "barH";
-  if (c && !series.splitBy && isBars && !draft.value.series!.some((s) => s.splitBy)) draft.value.stacked = true;
-  draft.value.series![index] = next;
+  const { splitBy: _old, ...rest } = series;
+  // Split bars are Stacked at first, as the CDP app's (its Layout default)
+  if (c && !series.splitBy && isBarType.value && !draft.value.series!.some((s) => s.splitBy)) draft.value.stacked = true;
+  draft.value.series![index] = c ? { ...rest, splitBy: toDimension(c) } : rest;
 }
 
+function setRenderAs(index: number, value: string) {
+  const { renderAs: _old, ...rest } = draft.value.series![index]!;
+  draft.value.series![index] = value === "line" ? { ...rest, renderAs: "line" } : rest;
+}
+
+// A new card counts records; on horizontal bars it is shown as a line (as the CDP app)
 function addSeries() {
   const series = draft.value.series ?? [];
-  const used = new Set(series.map((s) => s.measure.column));
-  const column = numberColumns.value.find((c) => !used.has(c.key));
-  draft.value.series = [...series, { measure: toMeasure(column ? "sum" : "count", column) }];
+  draft.value.series = [
+    ...series,
+    { measure: { aggregation: "count" }, ...(draft.value.chartType === "barH" ? { renderAs: "line" as const } : {}) },
+  ];
 }
 
 function removeSeries(index: number) {
   draft.value.series = draft.value.series?.filter((_s, i) => i !== index);
+  openColors.value = new Set();
 }
 
-function setGaugeMax(value: string) {
-  const n = Number(value);
-  draft.value.gaugeMax = value !== "" && n > 0 ? n : undefined;
-}
-
-// Stacking needs more than one line or set of bars
-const canStack = computed(() => {
-  const series = draft.value.series ?? [];
-  return ["bar", "barH", "area"].includes(draft.value.chartType) && (series.length > 1 || series.some((s) => s.splitBy));
+// ── Gauge range (GaugeRangeField) ──
+const gaugeManual = ref(false);
+const autoRange = computed(() => {
+  const view = previewView.value;
+  return autoGaugeRange(view.state === "ready" && view.data.kind === "value" ? view.data.value : null);
 });
+
+// Manual starts from the Auto range; Auto clears it
+function setGaugeMode(manual: boolean) {
+  gaugeManual.value = manual;
+  if (manual) {
+    draft.value.gaugeMin ??= autoRange.value.min;
+    draft.value.gaugeMax ??= autoRange.value.max;
+  } else {
+    draft.value.gaugeMin = undefined;
+    draft.value.gaugeMax = undefined;
+  }
+}
+
+function setGaugeEnd(end: "gaugeMin" | "gaugeMax", value: string) {
+  const n = value === "" ? NaN : Number(value);
+  draft.value[end] = Number.isFinite(n) ? n : undefined;
+}
+
+// ── Customize colors (ColorSwatchPanel) ──
+interface ColorRow {
+  key: string;
+  label: string;
+  color: string;
+}
+const openColors = ref<Set<string>>(new Set());
+function toggleColors(id: string) {
+  const next = new Set(openColors.value);
+  if (!next.delete(id)) next.add(id);
+  openColors.value = next;
+}
+
+// What the preview draws now, by colour key (the user's own colours included)
+const liveColors = computed(() => {
+  const view = previewView.value;
+  return view.state === "ready" ? chartColorItems(view.binding, view.data) : [];
+});
+const colorRow = (key: string, label: string, start?: string): ColorRow => ({
+  key,
+  label,
+  color: draft.value.colors?.[key] ?? liveColors.value.find((c) => c.key === key)?.color ?? start ?? chartColors(draft.value.palette, 1)[0]!,
+});
+// A field's values with their CDP colours, else the values the chart draws now
+function valueRows(dimension: ChartDimension | undefined, keyOf: (value: string) => string, belongs: (key: string) => boolean): ColorRow[] {
+  if (dimension?.choices?.length) return dimension.choices.map((c) => colorRow(keyOf(c.value), c.label || c.value, c.color));
+  return liveColors.value.filter((c) => belongs(c.key)).map((c) => colorRow(c.key, c.name));
+}
+
+// One card's colours: its split's values, else its one colour (keys as chartQuery's seriesKey)
+function blockColorRows(index: number): ColorRow[] {
+  const series = draft.value.series?.[index];
+  if (!series) return [];
+  const several = (draft.value.series?.length ?? 0) > 1;
+  const own = `series${index + 1}`;
+  if (!series.splitBy) return [colorRow(own, measureLabel(series.measure))];
+  return valueRows(
+    series.splitBy,
+    (value) => (several ? `${own}:${value}` : value),
+    (key) => (several ? key.startsWith(`${own}:`) : true),
+  );
+}
+
+// KPI: its number; pie / donut: the categories' values
+const topColorRows = computed<ColorRow[]>(() => {
+  if (draft.value.chartType === "kpi") return [colorRow(KPI_COLOR_KEY, t("chart.panel.numberColor"))];
+  return valueRows(draft.value.dimension, (value) => value, () => true);
+});
+
+function setColor(key: string, color: string) {
+  draft.value.colors = { ...draft.value.colors, [key]: color };
+}
+
+function resetColors(rows: ColorRow[]) {
+  const colors = { ...draft.value.colors };
+  rows.forEach((row) => delete colors[row.key]);
+  draft.value.colors = Object.keys(colors).length ? colors : undefined;
+}
 
 // ── Loading the project's sources and the chosen source ──
 function loadSources(project: string) {
@@ -612,6 +795,8 @@ watch(
     if (!open) return;
     const current = normalizeChartBinding(props.binding ? copy(props.binding) : undefined);
     draft.value = current;
+    openColors.value = new Set();
+    gaugeManual.value = current.gaugeMin !== undefined || current.gaugeMax !== undefined;
     shownPreview.value = null;
     schema.value = null;
     loadError.value = false;
@@ -636,7 +821,7 @@ const draftBinding = computed<ChartBinding>(() => {
     projectId: projectId.value || undefined,
     projectName: projectName.value || undefined,
     sourceId: schema.value ? sourceId.value : undefined,
-    sourceName: schema.value?.name,
+    sourceName: schema.value ? cdpTableName(schema.value.entityName ?? sourceId.value, schema.value.name) : undefined,
     entityName: schema.value?.entityName,
   });
   // A chart set up for the first time without a title gets the CDP app's
@@ -651,12 +836,19 @@ const draftBinding = computed<ChartBinding>(() => {
 // copy, so editing the draft doesn't skip the pause)
 const previewBinding = shallowRef<ChartBinding | undefined>();
 let previewTimer: ReturnType<typeof setTimeout> | undefined;
+// The pause before asking is part of the wait (the loaders show through it)
+const previewPending = ref(false);
 watch(
   () => (props.visible && isChartComplete(draftBinding.value) ? JSON.stringify(draftBinding.value) : ""),
   (key) => {
     clearTimeout(previewTimer);
+    previewPending.value = !!key;
     if (!key) previewBinding.value = undefined;
-    else previewTimer = setTimeout(() => (previewBinding.value = JSON.parse(key) as ChartBinding), 250);
+    else
+      previewTimer = setTimeout(() => {
+        previewPending.value = false;
+        previewBinding.value = JSON.parse(key) as ChartBinding;
+      }, 250);
   },
   { immediate: true },
 );
@@ -698,24 +890,15 @@ const previewScale = computed(() =>
   Math.min(MAX_PREVIEW_SCALE, STAGE.width / chartSize.value.width, STAGE.height / chartSize.value.height),
 );
 
-// Fields the filters open with (more are added with the fields button)
-const MAX_SUGGESTED_FILTERS = 4;
-// Filters shown at first: the columns the chart groups and splits by, then its
-// date columns (the panel keeps the source's column order)
-const filterSuggestions = computed(() => {
-  const d = draft.value;
-  const own = [d.dimension, d.level2, ...(d.series ?? []).map((s) => s.splitBy)]
-    .filter((g): g is ChartDimension => !!g)
-    .map((g) => g.column);
-  const dates = filterColumns.value.filter((c) => c.type === "date").map((c) => c.key);
-  return [...new Set([...own, ...dates])].slice(0, Math.max(own.length, MAX_SUGGESTED_FILTERS));
-});
-
 // Rows the filters keep, from the chart's numbers
 const matchCount = computed(() => {
   const entry = chartDataEntry(draftBinding.value);
   return entry?.status === "ready" ? (entry.results?.[0]?.totalCount ?? null) : null;
 });
+
+// Fields or numbers on their way: Apply shows its loader and the preview a
+// "Loading data…" pill over the last chart
+const fetching = computed(() => schemaLoading.value || previewPending.value || previewView.value.state === "loading");
 
 const applyBlockedReason = computed(() => {
   if (!schema.value) return t("dataTable.config.pickSourceFirst");
@@ -724,7 +907,7 @@ const applyBlockedReason = computed(() => {
 });
 
 function apply() {
-  if (applyBlockedReason.value) return;
+  if (applyBlockedReason.value || fetching.value) return;
   emit("apply", draftBinding.value);
   emit("update:visible", false);
 }
@@ -734,6 +917,7 @@ function apply() {
 .ccm-skeleton {
   display: grid;
   gap: 8px;
+  margin-bottom: 16px;
 }
 
 .ccm-chart-skeleton {
@@ -759,173 +943,258 @@ function apply() {
 
 .ccm {
   display: grid;
-  grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+  gap: 20px;
   height: min(68vh, 640px);
 }
 
+/* The CDP app's widget panel: labels in small capitals, 16px between fields */
 .ccm-settings {
   overflow-y: auto;
-  padding-right: 6px;
+  padding: 2px 8px 2px 2px;
 }
 
-.ccm-section {
-  padding: 12px;
-  margin-bottom: 10px;
-  border: 1px solid #eef0f4;
-  border-radius: 8px;
-  background: #fafbfc;
+/* The chosen chart type's icon inside its dropdown */
+.ccm-select-wrap.has-icon .ccm-select {
+  padding-left: 34px;
 }
 
-.ccm-section h4,
-.ccm-preview h4 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 10px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #1f2937;
+.ccm-select-icon {
+  position: absolute;
+  top: 50%;
+  left: 11px;
+  transform: translateY(-50%);
+  color: #6440f4;
+  pointer-events: none;
+}
+
+.ccm-field {
+  margin-bottom: 16px;
 }
 
 .ccm-label {
   display: block;
-  margin: 10px 0 4px;
-  font-size: 11px;
-  font-weight: 500;
-  color: #6b7280;
+  margin-bottom: 8px;
+  color: #6f6a7e;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
-.ccm-section h4 + .ccm-label,
-.ccm-section h4 + .ccm-select-wrap {
-  margin-top: 0;
+.ccm-label.is-next {
+  margin-top: 14px;
 }
 
-.ccm-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.ccm-measure + .ccm-measure {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed #e5e7eb;
-}
-
-.ccm-split {
-  margin-top: 6px;
+.ccm-optional {
+  font-weight: 600;
+  text-transform: none;
 }
 
 .ccm-input,
-.ccm-select {
+.ccm-select,
+.ccm-textarea {
   width: 100%;
   min-width: 0;
-  height: 30px;
-  padding: 0 8px;
-  border: 1px solid #e5e7eb;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #e6e5ee;
   border-radius: 6px;
-  font-size: 12px;
-  background: #fff;
+  background: #ffffff;
+  color: #1c1b26;
+  font-size: 13px;
   box-sizing: border-box;
-  color: #1f2937;
+}
+
+.ccm-textarea {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.ccm-input::placeholder,
+.ccm-textarea::placeholder {
+  color: #8a84a3;
 }
 
 .ccm-input:focus,
-.ccm-select:focus {
+.ccm-select:focus,
+.ccm-textarea:focus {
   outline: none;
   border-color: #6440f4;
-  box-shadow: 0 0 0 2px rgba(100, 64, 244, 0.15);
-}
-
-.ccm-input.is-narrow {
-  width: 110px;
+  box-shadow: 0 0 0 1px #6440f4;
 }
 
 .ccm-select {
   appearance: none;
   -webkit-appearance: none;
-  padding-right: 26px;
+  padding-right: 32px;
   cursor: pointer;
 }
 
 .ccm-select-wrap {
   position: relative;
-  flex: 1;
   min-width: 0;
-}
-
-.ccm-select-wrap.is-small {
-  flex: 0 0 120px;
 }
 
 .ccm-chevron {
   position: absolute;
   top: 50%;
-  right: 8px;
+  right: 10px;
   transform: translateY(-50%);
-  color: #6b7280;
+  color: #8a84a3;
   pointer-events: none;
 }
 
-.ccm-icon-btn {
-  display: inline-flex;
+.ccm-range-auto {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid #e6e5ee;
+  border-radius: 8px;
+  background: #f8f7fc;
+  color: #6f6a7e;
+  font-size: 12.5px;
+}
+
+.ccm-range-manual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.ccm-range-manual span {
+  display: block;
+  margin-bottom: 6px;
+  color: #6f6a7e;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* One line / bar / area (BlockCard) */
+.ccm-block {
+  margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid #e6e5ee;
+  border-radius: 12px;
+  background: #f8f7fc;
+}
+
+.ccm-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  margin-bottom: 10px;
+  color: #6f6a7e;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.ccm-icon-box {
+  display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: #6b7280;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #e6e5ee;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #45425a;
   cursor: pointer;
 }
 
-.ccm-icon-btn.danger:hover {
-  background: #fef2f2;
+.ccm-icon-box:hover {
+  border-color: #fca5a5;
   color: #dc2626;
 }
 
-.ccm-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 8px;
-  padding: 4px 8px;
-  border: 1px dashed #c7cbd1;
-  border-radius: 6px;
-  background: #fff;
-  font-size: 12px;
-  color: #374151;
+.ccm-colors {
+  margin-top: 12px;
+}
+
+.ccm-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #6440f4;
+  font-size: 12.5px;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.ccm-add:hover {
-  border-color: #6440f4;
-  color: #6440f4;
+.ccm-colors .ccm-link + *,
+.ccm-field > .ccm-link + * {
+  margin-top: 8px;
 }
 
-.ccm-inline {
+.ccm-dashed {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 10px;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px dashed #d8d5e3;
+  border-radius: 12px;
+  background: none;
+  color: #6f6a7e;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.ccm-inline .ccm-label {
-  margin: 0;
+.ccm-dashed:hover {
+  border-color: #6440f4;
+  color: #6440f4;
 }
 
 .ccm-check {
   display: flex;
   align-items: center;
-  gap: 6px;
-  min-height: 30px;
-  margin-top: 6px;
-  font-size: 12px;
-  color: #374151;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: #45425a;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ccm-check input {
+  accent-color: #6440f4;
+}
+
+/* One box per part: data, chart, filters, title */
+.ccm-box {
+  margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid #e6e5ee;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(28, 27, 38, 0.04);
+}
+
+.ccm-box:last-child {
+  margin-bottom: 2px;
+}
+
+/* The box's padding ends it, not its last field's gap */
+.ccm-box > :last-child {
+  margin-bottom: 0;
+}
+
+.ccm-preview h4 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
 }
 
 .ccm-muted {
@@ -951,13 +1220,17 @@ function apply() {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  margin: 8px 0 0;
+  margin: 0 0 16px;
   padding: 6px 8px;
   border-radius: 6px;
   background: #fffbeb;
   color: #92400e;
   font-size: 12px;
   line-height: 1.4;
+}
+
+.ccm-preview .ccm-note {
+  margin: 8px 0 0;
 }
 
 .ccm-note svg {
@@ -980,6 +1253,7 @@ function apply() {
 }
 
 .ccm-stage {
+  position: relative;
   flex: 1;
   display: flex;
   align-items: center;
@@ -1010,5 +1284,43 @@ function apply() {
   margin-right: auto;
   font-size: 12px;
   color: #6b7280;
+}
+
+/* Fetching while the last result is still shown: a pill over it */
+.ccm-fetching {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid #e6e5ee;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(28, 27, 38, 0.12);
+  color: #45425a;
+  font-size: 12px;
+  font-weight: 500;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.ccm-fetching svg {
+  color: #6440f4;
+  animation: ccm-spin 0.9s linear infinite;
+}
+
+@keyframes ccm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ccm-fetching svg {
+    animation: none;
+  }
 }
 </style>

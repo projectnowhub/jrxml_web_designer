@@ -117,7 +117,8 @@ export interface CreateTemplateRegion {
 }
 
 // The body of PUT /v2/reports/{id}/edit: the template's name (its code is
-// sent the same), its data regions and its JRXML
+// sent the same), its data regions and its JRXML as base64 (of its UTF-8
+// bytes, toTemplateContentBase64)
 export interface EditTemplateRequest {
   name: string;
   code: string;

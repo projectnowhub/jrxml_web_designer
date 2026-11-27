@@ -2267,7 +2267,7 @@
     },
     "data": "Data",
     "dataFrom": "{source} · {project}",
-    "dataHint": "Seret sumber dari Data Laporan ke carta, atau sediakannya di sini. Sehingga itu carta menunjukkan nombor contoh dan tidak dicetak.",
+    "dataHint": "Seret jadual dari Data Laporan ke carta, atau sediakannya di sini. Sehingga itu carta menunjukkan nombor contoh dan tidak dicetak.",
     "setUpData": "Sediakan data",
     "editData": "Edit data",
     "noData": "Tiada data",
@@ -2292,29 +2292,28 @@
       }
     },
     "measures": {
-      "countOf": "Bilangan",
+      "countOf": "Rekod",
       "sumOf": "Jumlah {column}",
       "avgOf": "Purata {column}",
-      "minOf": "{column} terendah",
-      "maxOf": "{column} tertinggi"
+      "minOf": "Min {column}",
+      "maxOf": "Maks {column}"
     },
     "aggregations": {
-      "count": "Kira baris",
       "sum": "Jumlah",
       "avg": "Purata",
-      "min": "Terendah",
-      "max": "Tertinggi"
+      "min": "Min",
+      "max": "Maks"
     },
     "granularities": {
-      "day": "Mengikut hari",
-      "week": "Mengikut minggu",
-      "month": "Mengikut bulan",
-      "quarter": "Mengikut suku tahun",
-      "year": "Mengikut tahun"
+      "day": "Hari",
+      "week": "Minggu",
+      "month": "Bulan",
+      "quarter": "Suku Tahun",
+      "year": "Tahun"
     },
     "states": {
       "sample": "Data contoh",
-      "sampleHint": "Nombor contoh: seret sumber dari Data Laporan ke carta, atau klik dua kali untuk menyediakan datanya. Tidak dicetak sehingga itu.",
+      "sampleHint": "Nombor contoh: seret jadual dari Data Laporan ke carta, atau klik dua kali untuk menyediakan datanya. Tidak dicetak sehingga itu.",
       "incomplete": "Lengkapkan tetapan",
       "incompleteHint": "Pilih apa yang ditunjukkan oleh carta (klik dua kali). Tidak dicetak sehingga itu.",
       "loading": "Memuatkan…",
@@ -2325,33 +2324,54 @@
     "config": {
       "title": "Data carta",
       "replacesData": "Menggantikan data carta daripada {source}.",
-      "whatToShow": "Apa yang ditunjukkan",
-      "categories": "Kategori",
-      "overTime": "Mengikut masa",
-      "groups": "Kumpulan",
-      "items": "Item dalam setiap kumpulan",
-      "chooseColumn": "Pilih lajur",
       "otherColumns": "Lajur lain (banyak nilai berbeza)",
       "cantGroup": "{name} (tidak boleh dikumpulkan)",
-      "groupDatesBy": "Kumpulkan tarikh",
-      "noTextColumns": "Sumber ini tiada lajur untuk dikumpulkan.",
-      "noDateColumns": "Sumber ini tiada lajur tarikh. Carta bar boleh membandingkan lajur lain.",
-      "value": "Nombor yang ditunjukkan",
-      "series": "Garis atau bar",
+      "noTextColumns": "Jadual ini tiada lajur untuk dikumpulkan.",
+      "noDateColumns": "Jadual ini tiada lajur tarikh. Carta bar boleh membandingkan lajur lain.",
       "calculation": "Pengiraan",
-      "ofColumn": "Lajur",
-      "splitBy": "Satu bagi setiap",
-      "noSplit": "(tiada)",
-      "addSeries": "Tambah lagi",
-      "removeSeries": "Buang",
-      "gaugeMax": "Skala sehingga",
-      "automatic": "Automatik",
-      "stackBars": "Tindankan bar",
-      "stackAreas": "Tindankan kawasan",
-      "filters": "Baris yang dikira",
       "basedOn": "Berdasarkan 1 baris | Berdasarkan {count} baris",
       "incomplete": "Pilih apa yang ditunjukkan oleh carta.",
       "manyCategories": "{count} kategori: setiap satu dicetak, jadi carta mungkin sesak di atas kertas. Penapis, kumpulan tarikh yang lebih besar (mengikut bulan atau tahun) atau carta yang lebih lebar membantu."
+    },
+    "panel": {
+      "slots": {
+        "xAxis": "Paksi-X",
+        "categoryAxis": "Paksi Kategori",
+        "category": "Kategori",
+        "value": "Nilai",
+        "level1": "Tahap 1",
+        "level2": "Tahap 2"
+      },
+      "granularity": "Ketepatan masa",
+      "numberOfRecords": "Bilangan rekod",
+      "blockTerms": {
+        "bar": "Bar",
+        "line": "Garis",
+        "area": "Kawasan"
+      },
+      "addBlock": "Tambah {term}",
+      "splitBy": "Pisahkan Mengikut",
+      "optional": "pilihan",
+      "noSplit": "— Tiada —",
+      "layout": "Susun Atur",
+      "stacked": "Bertindan",
+      "grouped": "Berkumpulan",
+      "showAs": "Papar sebagai",
+      "bar": "Bar",
+      "line": "Garis",
+      "customizeColors": "Sesuaikan warna",
+      "hideColors": "Sembunyikan warna",
+      "resetColors": "Set semula ke warna asal",
+      "numberColor": "Warna nombor",
+      "gaugeRange": "Julat tolok",
+      "rangeAuto": "Automatik",
+      "rangeManual": "Manual",
+      "rangeMin": "Minimum",
+      "rangeMax": "Maksimum",
+      "showLegend": "Tunjukkan legenda",
+      "widgetTitle": "Tajuk widget",
+      "widgetDescription": "Penerangan widget",
+      "widgetDescriptionPlaceholder": "Tambah nota ringkas tentang widget ini"
     }
   },
   "dataTable": {
@@ -2396,7 +2416,7 @@
       "tableName": "Nama jadual",
       "columnCount": "1 lajur | {count} lajur",
       "editData": "Edit data",
-      "emptyHint": "Seret sumber dari Data Jadual ke jadual ini, atau pilih satu di sini.",
+      "emptyHint": "Seret jadual dari Data Laporan ke jadual ini, atau pilih satu di sini.",
       "chooseData": "Pilih data",
       "look": "Rupa",
       "headerHeight": "Tinggi pengepala",
@@ -2409,8 +2429,8 @@
       "project": "Projek",
       "chooseProject": "Pilih projek",
       "noProjects": "Pilih projek di bahagian atas halaman dahulu.",
-      "source": "Sumber",
-      "chooseSource": "Pilih sumber",
+      "source": "Jadual",
+      "chooseSource": "Pilih jadual",
       "replacesData": "Guna akan menggantikan data semasa jadual ini ({source}).",
       "sourceOption": "{name} ({count} baris)",
       "columns": "Lajur",
@@ -2427,7 +2447,7 @@
       "rowsNote": "Tetapan ini digunakan pada jadual di halaman dan dalam laporan yang dicetak, bukan hanya pratonton ini.",
       "showTotals": "Tambah baris jumlah",
       "preview": "Pratonton",
-      "pickSourceFirst": "Pilih sumber untuk melihat datanya",
+      "pickSourceFirst": "Pilih jadual untuk melihat datanya",
       "rowCount": "1 baris | {count} baris",
       "needColumn": "Pilih sekurang-kurangnya satu lajur",
       "apply": "Guna",
@@ -2436,11 +2456,9 @@
     "filter": {
       "containsChip": "mengandungi “{words}”",
       "remove": "Buang",
-      "search": "Cari {column}",
+      "search": "Cari {column}…",
       "selectAll": "Pilih semua",
-      "clear": "Kosongkan",
       "clearAll": "Kosongkan semua",
-      "noMatchingValues": "Tiada nilai sepadan dengan carian anda",
       "min": "Min",
       "max": "Maks",
       "from": "Dari",
@@ -2451,8 +2469,6 @@
       "onOrAfter": "Dari {value}",
       "onOrBefore": "Sehingga {value}",
       "moreValues": "{values} +{count}",
-      "matchCount": "1 baris sepadan | {count} baris sepadan",
-      "movingRangeHint": "Hari ini iaitu {from} hingga {to}.",
       "periods": {
         "thisMonth": "Bulan ini",
         "lastMonth": "Bulan lepas",
@@ -2460,14 +2476,15 @@
         "thisYear": "Tahun ini",
         "last30Days": "30 hari lepas"
       },
-      "filtersTitle": "Tapis",
-      "fieldsShown": "Medan yang ditunjukkan dalam penapis ini",
+      "filtersTitle": "Penapis",
       "searchFields": "Cari medan…",
       "noFieldsMatch": "Tiada medan sepadan dengan “{words}”.",
-      "noFields": "Tiada medan ditunjukkan. Pilih medan untuk ditapis dengan butang di atas.",
       "typeToSearch": "Taip untuk mencari {column}…",
       "all": "Semua",
-      "clearAllHint": "Buang semua penapis"
+      "optional": "pilihan",
+      "addFilter": "Tambah penapis",
+      "removeFilter": "Buang penapis",
+      "noOptions": "Tiada pilihan dijumpai"
     },
     "sort": {
       "text": {
@@ -2767,7 +2784,42 @@
       "tableNotOnSpecialPage": "Jadual tidak boleh diletakkan pada halaman kulit atau kandungan."
     },
     "dragDate": "Seret ke halaman: menunjukkan tarikh projek ini dalam rupa yang anda pilih, dan mengikut projek templat",
-    "chartFromSource": "Carta daripada jadual ini: seret ikon ini ke halaman, atau klik untuk menambahnya"
+    "chartFromSource": "Carta daripada jadual ini: seret ikon ini ke halaman, atau klik untuk menambahnya",
+    "tableGroups": {
+      "projectInformation": "MAKLUMAT PROJEK",
+      "contractManagement": "PENGURUSAN KONTRAK",
+      "procurementManagement": "PENGURUSAN PEROLEHAN",
+      "complianceManagement": "PENGURUSAN PEMATUHAN",
+      "sheManagement": "PENGURUSAN SHE",
+      "riskManagement": "PENGURUSAN RISIKO",
+      "qsheManagement": "PENGURUSAN QSHE",
+      "qualityManagement": "PENGURUSAN KUALITI",
+      "issueManagement": "PENGURUSAN ISU",
+      "otherTables": "JADUAL LAIN"
+    },
+    "tableSections": {
+      "contractMonitoring": "Pemantauan Kontrak",
+      "qsheAudit": "Audit/Penilaian QSHE"
+    },
+    "tableNames": {
+      "project": "Projek",
+      "progressFiles": "Fail Kemajuan Projek",
+      "contract": "Kontrak",
+      "payment": "Bayaran",
+      "variationOrder": "Perintah Variasi",
+      "finalAccount": "Akaun Akhir",
+      "lad": "LAD",
+      "eot": "Lanjutan Masa",
+      "procurementRegister": "Daftar Perolehan",
+      "complianceRegister": "Daftar Pematuhan",
+      "incidentRegister": "Daftar Insiden",
+      "riskRegister": "Daftar Risiko Projek",
+      "projectAudit": "Audit Projek",
+      "qualityStandard": "Piawaian Kualiti",
+      "safetyHealth": "Keselamatan & Kesihatan",
+      "qaqcRegister": "Daftar QA/QC",
+      "issueRegister": "Daftar Isu"
+    }
   },
   "barcode": {
     "chooseType": "Pilih jenis kod bar",
@@ -3604,7 +3656,7 @@
         "good": [
           "Hanya carta yang datanya telah disediakan akan dicetak.",
           "Angkanya diambil semula setiap kali laporan dijalankan.",
-          "Bagi daftar yang mempunyai papan pemuka dalam ProjectNow CDP, carta menawarkan medan papan pemuka itu sahaja: cth. carta garis QA/QC bermula dengan Tarikh Pemeriksaan Dirancang mengikut bulan, dan Satu bagi setiap boleh memisahkannya mengikut Jenis Pemeriksaan.",
+          "Bagi daftar yang mempunyai papan pemuka dalam ProjectNow CDP, carta menawarkan medan papan pemuka itu sahaja: cth. carta garis QA/QC bermula dengan Tarikh Pemeriksaan Dirancang mengikut bulan, dan Pisahkan Mengikut boleh memisahkannya mengikut Jenis Pemeriksaan. Tetingkap tetapan disusun seperti panel widget papan pemuka, dengan perkataan yang sama.",
           "Lajur dengan senarai nilai tetap (seperti Status), lajur ya / tidak dan tarikh paling sesuai sebagai kategori. Carta bar, garis dan kawasan menunjukkan nilai senarai mengikut susunannya sendiri; pai, donat dan peta pokok meletakkan yang terbesar dahulu.",
           "Lajur yang hampir setiap barisnya berbeza (seperti Penerangan) disenaraikan di bawah Lajur lain. Lajur yang memaut kepada rekod lain (seperti Kontrak) tidak boleh digunakan sebagai kategori."
         ]
@@ -3891,7 +3943,7 @@
       },
       "chartData": {
         "title": "Data",
-        "text": "Dari mana angka datang. Sediakan data (atau Edit data) membuka tetingkap untuk memilih projek, data, apa yang hendak dikira atau dijumlahkan, kategori dan penapis. Penapis dibuka dengan lajur yang dikumpulkan oleh carta dan tarikhnya; butang medan menambah yang lain. Bagi daftar yang mempunyai papan pemuka dalam ProjectNow CDP (QA/QC, Perolehan, Risiko, Isu, EOT, LAD, Pematuhan, Insiden dan audit), carta menawarkan medan yang sama seperti papan pemuka di sana, dengan nama yang sama, dan bermula dengan cara yang sama."
+        "text": "Dari mana angka datang. Sediakan data (atau Edit data) membuka tetingkap untuk memilih projek, data, apa yang hendak dikira atau dijumlahkan, kategori dan penapis. Penapis berfungsi seperti pada papan pemuka CDP: Tambah penapis, pilih medan, kemudian nilainya. Bagi daftar yang mempunyai papan pemuka dalam ProjectNow CDP (QA/QC, Perolehan, Risiko, Isu, EOT, LAD, Pematuhan, Insiden dan audit), carta menawarkan medan yang sama seperti papan pemuka di sana, dengan nama yang sama, dan bermula dengan cara yang sama."
       },
       "chartTitle": {
         "title": "Carta",

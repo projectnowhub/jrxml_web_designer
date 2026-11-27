@@ -233,7 +233,8 @@ function readSeries(value: unknown): ChartSeriesBinding[] | undefined {
     .map((item) => {
       const measure = readMeasure(asObject(item)?.measure);
       const splitBy = readDimension(asObject(item)?.splitBy);
-      return measure ? { measure, ...(splitBy ? { splitBy } : {}) } : null;
+      const renderAs = asObject(item)?.renderAs === "line" ? ("line" as const) : undefined;
+      return measure ? { measure, ...(splitBy ? { splitBy } : {}), ...(renderAs ? { renderAs } : {}) } : null;
     })
     .filter((item): item is ChartSeriesBinding => item !== null)
     .slice(0, MAX_CHART_SERIES);
@@ -290,7 +291,8 @@ export function normalizeChartBinding(value: unknown): ChartBinding {
     level2: readDimension(b.level2),
     series: readSeries(b.series),
     stacked: b.stacked === true || undefined,
-    gaugeMax: typeof b.gaugeMax === "number" && b.gaugeMax > 0 ? b.gaugeMax : undefined,
+    gaugeMin: typeof b.gaugeMin === "number" && Number.isFinite(b.gaugeMin) ? b.gaugeMin : undefined,
+    gaugeMax: typeof b.gaugeMax === "number" && Number.isFinite(b.gaugeMax) ? b.gaugeMax : undefined,
     filters: readFilters(b.filters),
   };
   for (const [key, v] of Object.entries(optional)) {

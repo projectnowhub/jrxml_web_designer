@@ -1,6 +1,7 @@
 // A server template's JRXML, read from its Jmix report's templates (their
 // content: a Java byte[], so base64 in the REST answer; plain XML is read as
-// it is). No API calls here.
+// it is), and written back the same way for a save (base64 of its UTF-8).
+// No API calls here.
 
 import { TemplateContentProblem } from "@/enums/templateContentProblem";
 import type { TenantReportJmixReport, TenantReportTemplateContent } from "@/types/reportCatalog";
@@ -9,6 +10,9 @@ const JASPER_REPORT_TAG = /<jasperReport[\s>]/;
 const JASPER_REPORT_ROOT = "jasperReport";
 
 const utf8 = new TextDecoder("utf-8");
+const utf8Encoder = new TextEncoder();
+// Bytes turned into characters per step (a whole JRXML at once would overflow the call stack)
+const BASE64_CHUNK = 0x8000;
 
 // A template's content as text: plain XML as it is, else base64 (UTF-8)
 function templateContentText(content: string): string {
@@ -20,6 +24,18 @@ function templateContentText(content: string): string {
   } catch {
     return "";
   }
+}
+
+// A JRXML as the save sends it (PUT /v2/reports/{id}/edit templateContent):
+// the base64 of its UTF-8 bytes, as the server stores the template's byte[]
+// ("Invalid Base64 template content" otherwise); any language's letters kept
+export function toTemplateContentBase64(jrxml: string): string {
+  const bytes = utf8Encoder.encode(jrxml);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += BASE64_CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + BASE64_CHUNK));
+  }
+  return btoa(binary);
 }
 
 // Well-formed XML whose root is <jasperReport>

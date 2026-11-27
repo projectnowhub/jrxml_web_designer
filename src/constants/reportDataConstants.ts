@@ -56,3 +56,6 @@ export const PROJECT_LIST_KEYS: readonly string[] = ["manager", "team", "compani
 // The most rows one table prints (its report band's maxRows)
 export const REPORT_ROWS_LIMIT = 5000;
 
+// Tables not offered in this version (Report Data, the setup popups, the AI):
+// the project record itself (cdp_Project), not needed for now
+export const HIDDEN_TABLE_ENTITIES: readonly string[] = [Entity.PROJECT];

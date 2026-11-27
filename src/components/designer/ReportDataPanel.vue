@@ -157,10 +157,15 @@
             </ul>
           </template>
 
-          <!-- Tables: drag onto a table or the Detail section -->
+          <!-- Tables: drag onto a table or the Detail section; under the CDP
+               app's sidebar headings, in its order and with its names -->
           <div v-if="visibleSources(project.id).length" class="rdp-group">{{ t("reportData.tables") }}</div>
-          <ul class="rdp-list">
-            <li v-for="source in visibleSources(project.id)" :key="source.id">
+          <template v-for="group in tableGroups(project.id)" :key="group.key">
+          <div class="rdp-table-group">{{ group.title }}</div>
+          <template v-for="section in group.sections" :key="section.key">
+          <div v-if="section.title" class="rdp-table-section">{{ section.title }}</div>
+          <ul class="rdp-list" :class="{ 'is-in-section': section.title }">
+            <li v-for="source in section.tables" :key="source.id">
               <div
                 class="rdp-item is-source"
                 draggable="true"
@@ -230,6 +235,8 @@
               </Collapse>
             </li>
           </ul>
+          </template>
+          </template>
 
           <div
             v-if="query.trim() && !visibleFields(project.id).length && !locationRows(project.id).length && !listTables(project.id).length && !moreDetailFields(project.id).length && !visibleSources(project.id).length"
@@ -245,6 +252,7 @@
 
 <script setup lang="ts">
 import Collapse from "../common/Collapse.vue";
+import { cdpTableName, groupTablesLikeCdp, type TableListGroup } from "@/utils/table/tableGroups";
 import { computed, nextTick, reactive, ref, watch, type Component } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -266,8 +274,8 @@ import {
   Zap,
 } from "@lucide/vue";
 import { useQueries, useQuery } from "@tanstack/vue-query";
-import { entitiesQuery, refreshReportData } from "@/queries/dataSourceQueries";
-import { toSourceSchema, toSourceSummary } from "@/services/helpers/entityMappers";
+import { entitiesQuery, offeredTables, refreshReportData } from "@/queries/dataSourceQueries";
+import { toSourceSchema } from "@/services/helpers/entityMappers";
 import { projectQuery } from "@/queries/projectQueries";
 import { toProjectDetails } from "@/services/helpers/projectMappers";
 import { endDataSourceDrag, startDataSourceDrag } from "@/utils/table/dataDrag";
@@ -335,7 +343,7 @@ const details = computed(() => {
 });
 const sources = computed(() => {
   const byId: Record<string, DataSourceSummary[]> = {};
-  const tables = (entities.data.value ?? []).map(toSourceSummary);
+  const tables = offeredTables(entities.data.value ?? []);
   props.projects.forEach((p) => (byId[p.id] = tables));
   return byId;
 });
@@ -519,8 +527,12 @@ const visibleSources = (projectId: string): DataSourceSummary[] =>
     (s) =>
       !query.value.trim() ||
       matches(s.name) ||
+      matches(cdpTableName(s.id, s.name)) ||
       !!schemas.value[sourceKey(projectId, s.id)]?.columns.some((c) => matches(c.label)),
   );
+
+// The tables shown, under the CDP app's sidebar headings (named as it names them)
+const tableGroups = (projectId: string): TableListGroup[] => groupTablesLikeCdp(visibleSources(projectId));
 
 // Tables and charts on the report that show each source (a chart by its
 // title, or its type when it has none)
@@ -642,6 +654,38 @@ function dragColumn(
 
 .rdp-group {
   margin: 8px 0 2px 2px;
+}
+
+/* The CDP sidebar's headings over the tables ("CONTRACT MANAGEMENT"), and
+   its sub-headings ("Contract Monitoring") with their tables set in */
+.rdp-table-group {
+  margin: 12px 0 4px 2px;
+  padding-top: 8px;
+  border-top: 1px solid #f0eff5;
+  color: #45425a;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.rdp-group + .rdp-table-group {
+  margin-top: 4px;
+  padding-top: 0;
+  border-top: none;
+}
+
+.rdp-table-section {
+  margin: 4px 0 2px 8px;
+  color: #6f6a7e;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.rdp-list.is-in-section {
+  margin-left: 12px;
+  padding-left: 6px;
+  border-left: 1px solid #ebe9f3;
 }
 
 .rdp-search {

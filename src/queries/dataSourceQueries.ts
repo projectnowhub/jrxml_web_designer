@@ -8,6 +8,7 @@
 import { queryOptions } from "@tanstack/vue-query";
 import { reportDataApi } from "@/services/reportDataService";
 import { toSourceFacets, toSourceSchema, toSourceSummary } from "@/services/helpers/entityMappers";
+import { HIDDEN_TABLE_ENTITIES } from "@/constants/reportDataConstants";
 import { buildTableTotalRequests, totalColumns } from "@/services/helpers/tableTotalHelpers";
 import type {
   AggregateRequest,
@@ -15,6 +16,7 @@ import type {
   DataQueryResult,
   DataRow,
   DataSourceSchema,
+  DataSourceSummary,
   SourceFacets,
   TableDataBinding,
   TableTotals,
@@ -121,12 +123,16 @@ export function tableTotalRequests(binding: TableDataBinding) {
   return totalColumns(binding).map((column, i) => ({ column, request: requests[i]! }));
 }
 
+// The tables offered to the user (Report Data, the setup popups, the AI):
+// every entity but the ones hidden in this version (HIDDEN_TABLE_ENTITIES)
+export const offeredTables = (entities: EntityMetadata[]): DataSourceSummary[] =>
+  entities.filter((e) => !HIDDEN_TABLE_ENTITIES.includes(e.entityName)).map(toSourceSummary);
+
 // ---- Outside components (same cache) ---------------------------------------
 
 // A project's tables (every project has the same ones; the project only
 // decides which rows they hold), and one table's columns
-export const fetchSources = async (_projectId: string) =>
-  (await queryClient.fetchQuery(entitiesQuery())).map(toSourceSummary);
+export const fetchSources = async (_projectId: string) => offeredTables(await queryClient.fetchQuery(entitiesQuery()));
 export async function fetchSchema(_projectId: string, sourceId: string): Promise<DataSourceSchema> {
   const schema = schemaFrom(await queryClient.fetchQuery(entitiesQuery()), sourceId);
   if (!schema) throw new Error(`Unknown data source: ${sourceId}`);

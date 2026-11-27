@@ -1,201 +1,164 @@
 <template>
-  <!-- Filters, laid out like the CDP app's Filters panel (ModuleFilters /
-       FilterField / FieldsListPopover): the fields shown, chosen with the
-       "3/34" button (user-defined fields marked with a bolt), each with its own
-       control: tick values, type words, Min / Max, From / To, All / Yes / No.
-       Applied as they change (the popup's own Apply keeps the table as it was
-       until then). -->
+  <!-- Filters exactly as the CDP app's dashboard widget panel (cdp-fe-app
+       dashboard-builder WidgetFilterList / WidgetFilterRow and the shared
+       FilterField): "FILTERS · optional", one card per filter (the field
+       chosen + a bin, then its control), "+ Add filter" for the next field.
+       Same words, same controls, nothing more. Applied as they change (the
+       popup's own Apply keeps the table / chart as it was until then). -->
   <div class="tfp">
-    <div class="tfp-bar">
-      <span class="tfp-match">
-        {{ matchCount === null ? t("dataTable.loading") : t("dataTable.filter.matchCount", matchCount) }}
-      </span>
-      <button v-if="filters.length" type="button" class="tfp-action" :title="t('dataTable.filter.clearAllHint')" @click="emit('update:filters', [])">
-        <X :size="12" aria-hidden="true" />{{ t("dataTable.filter.clearAll") }}
-      </button>
-      <!-- Which fields are shown here -->
-      <div ref="pickerRoot" class="tfp-picker">
-        <button
-          type="button"
-          class="tfp-picker-btn"
-          :class="{ 'is-open': pickerOpen }"
-          :title="t('dataTable.filter.fieldsShown')"
-          :aria-expanded="pickerOpen"
-          @click="pickerOpen = !pickerOpen"
-        >
-          <ListChecks :size="12" aria-hidden="true" />
-          {{ shownKeys.length }}/{{ filterableColumns.length }}
-        </button>
-        <div v-if="pickerOpen" class="tfp-picker-menu" role="dialog" :aria-label="t('dataTable.filter.fieldsShown')">
-          <div class="tfp-search">
-            <Search :size="12" aria-hidden="true" />
-            <input v-model="fieldSearch" :placeholder="t('dataTable.filter.searchFields')" />
-          </div>
-          <div class="tfp-picker-actions">
-            <button type="button" class="tfp-link" @click="showFields(filterableColumns.map((c) => c.key))">
-              {{ t("dataTable.filter.selectAll") }}
-            </button>
-            <button type="button" class="tfp-link" @click="showFields([])">{{ t("dataTable.filter.clearAll") }}</button>
-          </div>
-          <div class="tfp-picker-list">
-            <label v-for="col in pickerColumns" :key="col.key" class="tfp-picker-row">
-              <input type="checkbox" :checked="shownKeys.includes(col.key)" @change="toggleField(col.key)" />
-              <Zap v-if="col.userDefined" :size="11" class="tfp-bolt" aria-hidden="true" />
-              <span>{{ col.label }}</span>
-            </label>
-            <p v-if="!pickerColumns.length" class="tfp-empty">{{ t("dataTable.filter.noFieldsMatch", { words: fieldSearch }) }}</p>
-          </div>
+    <label class="tfp-title">
+      {{ t("dataTable.filter.filtersTitle") }}
+      <span>{{ t("dataTable.filter.optional") }}</span>
+    </label>
+
+    <div v-for="(key, index) in rowKeys" :key="key" class="tfp-row">
+      <div class="tfp-row-head">
+        <div class="tfp-select-wrap">
+          <select class="tfp-select" :value="key" :aria-label="t('dataTable.filter.filtersTitle')" @change="changeField(index, ($event.target as HTMLSelectElement).value)">
+            <option
+              v-for="col in filterableColumns"
+              :key="col.key"
+              :value="col.key"
+              :disabled="col.key !== key && rowKeys.includes(col.key)"
+            >
+              {{ col.label }}
+            </option>
+          </select>
+          <ChevronDown class="tfp-chevron" :size="14" aria-hidden="true" />
         </div>
-      </div>
-    </div>
-
-    <p v-if="!shownColumns.length" class="tfp-empty">{{ t("dataTable.filter.noFields") }}</p>
-
-    <!-- One block per field shown -->
-    <div v-for="col in shownColumns" :key="col.key" class="tfp-field">
-      <div class="tfp-field-head">
-        <span class="tfp-label">
-          <Zap v-if="col.userDefined" :size="11" class="tfp-bolt" aria-hidden="true" />{{ col.label }}
-        </span>
-        <button v-if="filterOf(col.key)" type="button" class="tfp-clear" @click="putFilter(col.key, null)">
-          {{ t("dataTable.filter.clear") }}
+        <button type="button" class="tfp-remove" :aria-label="t('dataTable.filter.removeFilter')" @click="removeRow(index)">
+          <Trash2 :size="14" aria-hidden="true" />
         </button>
       </div>
 
-      <!-- Values to tick: search, chips of the ticked ones, the list -->
-      <template v-if="kindOf(col) === 'values'">
-        <div class="tfp-search">
-          <Search :size="13" aria-hidden="true" />
+      <template v-if="columnOf(key)">
+        <!-- The field's control (FilterField) -->
+        <div class="tfp-field">
+          <span class="tfp-label">{{ columnOf(key)!.label }}</span>
+
+          <!-- Values to tick: search, chips of the ticked ones, the list -->
+          <template v-if="kindOf(columnOf(key)!) === 'values'">
+            <div class="tfp-search">
+              <Search :size="14" aria-hidden="true" />
+              <input
+                class="tfp-input"
+                :value="valueSearch[key] ?? ''"
+                :placeholder="t('dataTable.filter.typeToSearch', { column: columnOf(key)!.label.toLowerCase() })"
+                @input="valueSearch[key] = ($event.target as HTMLInputElement).value"
+              />
+            </div>
+            <div v-if="tickedOf(key).length" class="tfp-chips">
+              <span v-for="value in tickedOf(key)" :key="value" class="tfp-chip">
+                {{ labelOf(columnOf(key)!, value) }}
+                <button type="button" :aria-label="t('dataTable.filter.remove')" @click="toggleValue(columnOf(key)!, value)">
+                  <X :size="10" aria-hidden="true" />
+                </button>
+              </span>
+            </div>
+            <div class="tfp-options">
+              <button
+                v-for="option in visibleOptions(columnOf(key)!)"
+                :key="option.value"
+                type="button"
+                class="tfp-option"
+                :class="{ 'is-on': tickedOf(key).includes(option.value) }"
+                @click="toggleValue(columnOf(key)!, option.value)"
+              >
+                <span>{{ option.label ?? option.value }}</span>
+                <Check v-if="tickedOf(key).includes(option.value)" :size="13" aria-hidden="true" />
+              </button>
+              <div v-if="!visibleOptions(columnOf(key)!).length" class="tfp-empty">{{ t("dataTable.filter.noOptions") }}</div>
+            </div>
+          </template>
+
+          <!-- Words in the cell -->
           <input
-            :value="valueSearch[col.key] ?? ''"
-            :placeholder="t('dataTable.filter.typeToSearch', { column: col.label.toLowerCase() })"
-            @input="valueSearch[col.key] = ($event.target as HTMLInputElement).value"
-          />
-        </div>
-        <div v-if="tickedOf(col.key).length" class="tfp-chips">
-          <span v-for="value in tickedOf(col.key)" :key="value" class="tfp-chip">
-            {{ labelOf(col, value) }}
-            <button type="button" :aria-label="t('dataTable.filter.remove')" @click="toggleValue(col, value)">
-              <X :size="10" aria-hidden="true" />
-            </button>
-          </span>
-        </div>
-        <div class="tfp-options">
-          <button
-            v-for="option in visibleOptions(col)"
-            :key="option.value"
-            type="button"
-            class="tfp-option"
-            :class="{ 'is-on': tickedOf(col.key).includes(option.value) }"
-            @click="toggleValue(col, option.value)"
-          >
-            <span>{{ option.label ?? option.value }}</span>
-            <small v-if="option.count !== undefined">{{ option.count }}</small>
-            <Check v-if="tickedOf(col.key).includes(option.value)" :size="13" aria-hidden="true" />
-          </button>
-          <p v-if="!visibleOptions(col).length" class="tfp-empty">{{ t("dataTable.filter.noMatchingValues") }}</p>
-        </div>
-      </template>
-
-      <!-- Words in the cell -->
-      <input
-        v-else-if="kindOf(col) === 'text'"
-        class="tfp-input"
-        :value="containsOf(col.key)"
-        :placeholder="t('dataTable.filter.search', { column: col.label.toLowerCase() })"
-        @input="setContains(col, ($event.target as HTMLInputElement).value)"
-      />
-
-      <!-- All / Yes / No -->
-      <div v-else-if="kindOf(col) === 'boolean'" class="tfp-seg" role="radiogroup" :aria-label="col.label">
-        <button
-          v-for="choice in BOOLEAN_CHOICES"
-          :key="choice ?? 'all'"
-          type="button"
-          role="radio"
-          class="tfp-seg-btn"
-          :class="{ 'is-on': equalsOf(col.key) === choice }"
-          :aria-checked="equalsOf(col.key) === choice"
-          @click="setEquals(col, choice)"
-        >
-          {{ choice === null ? t("dataTable.filter.all") : t(choice === "true" ? "dataTable.yes" : "dataTable.no") }}
-        </button>
-      </div>
-
-      <!-- Min / Max, From / To (dates also move with today's date) -->
-      <template v-else>
-        <div class="tfp-range">
-          <input
+            v-else-if="kindOf(columnOf(key)!) === 'text'"
             class="tfp-input"
-            :type="col.type === 'date' ? 'date' : 'number'"
-            :value="rangeOf(col.key).from"
-            :placeholder="t('dataTable.filter.min')"
-            @input="setRange(col, ($event.target as HTMLInputElement).value, rangeOf(col.key).to)"
+            :value="containsOf(key)"
+            :placeholder="t('dataTable.filter.search', { column: columnOf(key)!.label.toLowerCase() })"
+            @input="setContains(columnOf(key)!, ($event.target as HTMLInputElement).value)"
           />
-          <input
-            class="tfp-input"
-            :type="col.type === 'date' ? 'date' : 'number'"
-            :value="rangeOf(col.key).to"
-            :placeholder="t('dataTable.filter.max')"
-            @input="setRange(col, rangeOf(col.key).from, ($event.target as HTMLInputElement).value)"
-          />
-        </div>
-        <div class="tfp-range-labels">
-          <span>{{ t(col.type === "date" ? "dataTable.filter.from" : "dataTable.filter.min") }}</span>
-          <span>{{ t(col.type === "date" ? "dataTable.filter.to" : "dataTable.filter.max") }}</span>
-        </div>
-        <div v-if="col.type === 'date'" class="tfp-periods">
-          <button
-            v-for="period in RELATIVE_PERIODS"
-            :key="period"
-            type="button"
-            class="tfp-period"
-            :class="{ 'is-on': periodOf(col.key) === period }"
-            :title="t('dataTable.filter.movingRangeHint', periodDates(period))"
-            @click="periodOf(col.key) === period ? putFilter(col.key, null) : setPeriod(col, period)"
-          >
-            {{ t(`dataTable.filter.periods.${period}`) }}
-          </button>
+
+          <!-- All / Yes / No -->
+          <div v-else-if="kindOf(columnOf(key)!) === 'boolean'" class="tfp-seg" role="radiogroup" :aria-label="columnOf(key)!.label">
+            <button
+              v-for="choice in BOOLEAN_CHOICES"
+              :key="choice ?? 'all'"
+              type="button"
+              role="radio"
+              class="tfp-seg-btn"
+              :class="{ 'is-on': equalsOf(key) === choice }"
+              :aria-checked="equalsOf(key) === choice"
+              @click="setEquals(columnOf(key)!, choice)"
+            >
+              {{ choice === null ? t("dataTable.filter.all") : t(choice === "true" ? "dataTable.yes" : "dataTable.no") }}
+            </button>
+          </div>
+
+          <!-- Min / Max (numbers), From / To (dates) -->
+          <template v-else>
+            <div class="tfp-range">
+              <input
+                class="tfp-input"
+                :class="{ 'is-date': columnOf(key)!.type === 'date' }"
+                :type="columnOf(key)!.type === 'date' ? 'date' : 'number'"
+                :value="rangeOf(key).from"
+                :placeholder="columnOf(key)!.type === 'date' ? undefined : t('dataTable.filter.min')"
+                @input="setRange(columnOf(key)!, ($event.target as HTMLInputElement).value, rangeOf(key).to)"
+              />
+              <input
+                class="tfp-input"
+                :class="{ 'is-date': columnOf(key)!.type === 'date' }"
+                :type="columnOf(key)!.type === 'date' ? 'date' : 'number'"
+                :value="rangeOf(key).to"
+                :placeholder="columnOf(key)!.type === 'date' ? undefined : t('dataTable.filter.max')"
+                @input="setRange(columnOf(key)!, rangeOf(key).from, ($event.target as HTMLInputElement).value)"
+              />
+            </div>
+            <div class="tfp-range-labels">
+              <span>{{ t(columnOf(key)!.type === "date" ? "dataTable.filter.from" : "dataTable.filter.min") }}</span>
+              <span>{{ t(columnOf(key)!.type === "date" ? "dataTable.filter.to" : "dataTable.filter.max") }}</span>
+            </div>
+          </template>
         </div>
       </template>
     </div>
+
+    <button v-if="nextField" type="button" class="tfp-add" @click="addRow">
+      <Plus :size="14" aria-hidden="true" />
+      {{ t("dataTable.filter.addFilter") }}
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { Check, ListChecks, Search, X, Zap } from "@lucide/vue";
-import type { DataColumn, RelativePeriod, SourceFacets, TableFilter } from "@/types/dataSource";
-import { RELATIVE_PERIODS, periodRange } from "@/utils/table/dataBinding";
-import { formatCellValue } from "@/utils/table/dataTable";
+import { Check, ChevronDown, Plus, Search, Trash2, X } from "@lucide/vue";
+import type { DataColumn, SourceFacets, TableFilter } from "@/types/dataSource";
+import { periodRange } from "@/utils/table/dataBinding";
 
 const props = defineProps<{
-  // Every column of the source (filters may use columns the table doesn't show)
+  // The fields that can be filtered (filters may use columns the table doesn't show)
   columns: DataColumn[];
   facets: SourceFacets | null;
   filters: TableFilter[];
-  // Rows the current choices keep; null while unknown
-  matchCount: number | null;
-  // Fields shown at first besides the filtered ones (the table's columns)
-  suggestedFields?: string[];
 }>();
 
 const emit = defineEmits<{
   "update:filters": [filters: TableFilter[]];
 }>();
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 
 // Only this many values are listed at once; typing narrows the list (as the CDP app)
 const MAX_VISIBLE_OPTIONS = 20;
-// Fields shown when nothing suggests any
-const FIRST_FIELDS = 3;
 const BOOLEAN_CHOICES = [null, "true", "false"] as const;
 
 type FieldKind = "values" | "text" | "boolean" | "range";
 
-// Columns that can be filtered: a list of values to tick, words to type, yes / no, or a range
+// Fields that can be filtered: a list of values to tick, words to type, yes / no, or a range
 const filterableColumns = computed(() =>
   props.columns.filter((c) => {
     const facet = props.facets?.[c.key];
@@ -204,69 +167,70 @@ const filterableColumns = computed(() =>
   }),
 );
 
+const columnOf = (key: string) => filterableColumns.value.find((c) => c.key === key);
+
 const kindOf = (col: DataColumn): FieldKind => {
   const facet = props.facets?.[col.key];
   if (facet) return facet.kind;
   return col.type === "text" ? "text" : "range";
 };
 
-// ── Fields shown ──
-// Which fields: the user's choice; until then the filtered fields and the suggested ones
-const chosenKeys = ref<string[] | null>(null);
-const shownKeys = computed(() => {
-  if (chosenKeys.value) return chosenKeys.value;
-  const known = new Set(filterableColumns.value.map((c) => c.key));
-  const start = [...props.filters.map((f) => f.column), ...(props.suggestedFields ?? [])].filter((k) => known.has(k));
-  const keys = [...new Set(start)];
-  return keys.length ? keys : filterableColumns.value.slice(0, FIRST_FIELDS).map((c) => c.key);
-});
-// Always in the columns' order, so a field never moves when it gets a filter
-const shownColumns = computed(() => {
-  const shown = new Set(shownKeys.value);
-  return filterableColumns.value.filter((c) => shown.has(c.key));
-});
+// ── Filter rows ──
+// One row per filter, in the order they were added; a row just added (or
+// emptied) has no filter yet and only lives here, as the CDP app keeps an
+// empty filter value that adds no condition
+const rowKeys = ref<string[]>(props.filters.map((f) => f.column));
 
-// Another source: its own fields
+// Filters set from outside (another source, the AI…) get their rows
+watch(
+  () => props.filters.map((f) => f.column).join(","),
+  () => {
+    const missing = props.filters.map((f) => f.column).filter((k) => !rowKeys.value.includes(k));
+    if (missing.length) rowKeys.value = [...rowKeys.value, ...missing];
+  },
+);
+
+// Another source: only its own filters
 watch(
   () => props.columns.map((c) => c.key).join(","),
   () => {
-    chosenKeys.value = null;
+    rowKeys.value = props.filters.map((f) => f.column);
     Object.keys(valueSearch).forEach((k) => delete valueSearch[k]);
   },
 );
 
-// A field taken away loses its filter (as the CDP app)
-function showFields(keys: string[]) {
-  const dropped = props.filters.filter((f) => !keys.includes(f.column));
-  chosenKeys.value = keys;
-  if (dropped.length) emit("update:filters", props.filters.filter((f) => keys.includes(f.column)));
+// "Add filter": the first field without a filter row (the button hides when none is left)
+const nextField = computed(() => filterableColumns.value.find((c) => !rowKeys.value.includes(c.key)));
+
+function addRow() {
+  if (nextField.value) rowKeys.value = [...rowKeys.value, nextField.value.key];
 }
 
-function toggleField(key: string) {
-  showFields(shownKeys.value.includes(key) ? shownKeys.value.filter((k) => k !== key) : [...shownKeys.value, key]);
+// Another field in a row: its filter starts empty
+function changeField(index: number, key: string) {
+  const old = rowKeys.value[index];
+  if (!old || old === key) return;
+  rowKeys.value = rowKeys.value.map((k, i) => (i === index ? key : k));
+  delete valueSearch[old];
+  putFilter(old, null);
 }
 
-const pickerOpen = ref(false);
-const fieldSearch = ref("");
-const pickerRoot = ref<HTMLElement | null>(null);
-const pickerColumns = computed(() => {
-  const q = fieldSearch.value.trim().toLowerCase();
-  return q ? filterableColumns.value.filter((c) => c.label.toLowerCase().includes(q)) : filterableColumns.value;
-});
-
-// The list closes on a click elsewhere
-function closePicker(event: PointerEvent) {
-  if (pickerOpen.value && !pickerRoot.value?.contains(event.target as Node)) pickerOpen.value = false;
+function removeRow(index: number) {
+  const key = rowKeys.value[index];
+  rowKeys.value = rowKeys.value.filter((_, i) => i !== index);
+  if (key) {
+    delete valueSearch[key];
+    putFilter(key, null);
+  }
 }
-onMounted(() => document.addEventListener("pointerdown", closePicker, true));
-onBeforeUnmount(() => document.removeEventListener("pointerdown", closePicker, true));
 
 // ── Filters ──
 const filterOf = (key: string) => props.filters.find((f) => f.column === key);
 
-// Replace (or drop) one column's filter
+// Replace (or drop) one field's filter
 function putFilter(key: string, filter: TableFilter | null) {
   const others = props.filters.filter((f) => f.column !== key);
+  if (!filter && others.length === props.filters.length) return;
   emit("update:filters", filter ? [...others, filter] : others);
 }
 
@@ -320,11 +284,13 @@ function setContains(col: DataColumn, words: string) {
   putFilter(col.key, words.trim() ? { ...base(col), operator: "contains", value: words } : null);
 }
 
-// Ranges (a typed date ends a moving range)
+// Ranges (a moving date range set earlier, e.g. by the AI, shows today's
+// dates; typing a date makes it a fixed range)
 const rangeOf = (key: string) => {
   const f = filterOf(key);
-  const typed = f?.operator === "between" && !f.period;
-  return { from: typed ? (f.value ?? "") : "", to: typed ? (f.value2 ?? "") : "" };
+  if (f?.operator !== "between") return { from: "", to: "" };
+  if (f.period) return periodRange(f.period);
+  return { from: f.value ?? "", to: f.value2 ?? "" };
 };
 
 function setRange(col: DataColumn, from: string, to: string) {
@@ -333,210 +299,137 @@ function setRange(col: DataColumn, from: string, to: string) {
     !from && !to ? null : { ...base(col), operator: "between", value: from || undefined, value2: to || undefined },
   );
 }
-
-// Moving date ranges
-const periodOf = (key: string): RelativePeriod | undefined => {
-  const f = filterOf(key);
-  return f?.operator === "between" ? f.period : undefined;
-};
-
-function setPeriod(col: DataColumn, period: RelativePeriod) {
-  putFilter(col.key, { ...base(col), operator: "between", period });
-}
-
-// Today's dates for a moving range, for its tooltip
-const periodDates = (period: RelativePeriod) => {
-  const { from, to } = periodRange(period);
-  return { from: formatCellValue(from, "date", locale.value), to: formatCellValue(to, "date", locale.value) };
-};
 </script>
 
 <style scoped>
+/* Sizes and colours of the CDP app's widget filters, in the app's white theme */
 .tfp {
   display: flex;
   flex-direction: column;
-  gap: 14px;
 }
 
-.tfp-bar {
+.tfp-title {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.tfp-match {
-  margin-right: auto;
+  justify-content: space-between;
+  margin-bottom: 8px;
   color: #6f6a7e;
-  font-size: 11.5px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
-.tfp-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border: 1px solid #e6e5ee;
-  border-radius: 6px;
-  background: #f6f5fa;
-  color: #45425a;
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.tfp-action:hover {
-  border-color: #c9bdfb;
-  color: #6440f4;
-}
-
-.tfp-link,
-.tfp-clear {
-  padding: 0;
-  border: none;
-  background: none;
-  color: #6f6a7e;
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.tfp-link:hover,
-.tfp-clear:hover {
-  color: #1c1b26;
-}
-
-.tfp-picker {
-  position: relative;
-}
-
-.tfp-picker-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border: 1px solid #e6e5ee;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #6f6a7e;
-  font-size: 11px;
+.tfp-title span {
   font-weight: 600;
-  cursor: pointer;
+  text-transform: none;
 }
 
-.tfp-picker-btn:hover,
-.tfp-picker-btn.is-open {
-  border-color: #c9bdfb;
-  background: #f4f1ff;
-  color: #6440f4;
-}
-
-.tfp-picker-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 256px;
+.tfp-row {
+  margin-bottom: 8px;
   padding: 10px;
   border: 1px solid #e6e5ee;
   border-radius: 10px;
-  background: #ffffff;
-  box-shadow: 0 10px 30px rgba(28, 27, 38, 0.14);
+  background: #f3f2f8;
 }
 
-.tfp-picker-actions {
+.tfp-row-head {
   display: flex;
-  justify-content: space-between;
-  padding: 0 2px;
-}
-
-.tfp-picker-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  max-height: 256px;
-  overflow-y: auto;
-}
-
-.tfp-picker-row {
-  display: flex;
-  align-items: center;
   gap: 8px;
-  padding: 4px 6px;
+  margin-bottom: 8px;
+}
+
+.tfp-select-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.tfp-select {
+  width: 100%;
+  height: 36px;
+  padding: 0 32px 0 10px;
+  border: 1px solid #e6e5ee;
   border-radius: 6px;
-  color: #45425a;
-  font-size: 12px;
+  background: #ffffff;
+  color: #1c1b26;
+  font-size: 13px;
+  appearance: none;
   cursor: pointer;
 }
 
-.tfp-picker-row:hover {
-  background: #f6f5fa;
+.tfp-select:focus {
+  outline: none;
+  border-color: #6440f4;
+  box-shadow: 0 0 0 1px #6440f4;
 }
 
-.tfp-picker-row input {
+.tfp-chevron {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  color: #8a84a3;
+  pointer-events: none;
+}
+
+.tfp-remove {
+  display: flex;
   flex: none;
-  accent-color: #6440f4;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e6e5ee;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #45425a;
+  cursor: pointer;
 }
 
-.tfp-picker-row span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tfp-bolt {
-  flex: none;
-  margin-right: 3px;
-  color: #f59e0b;
+.tfp-remove:hover {
+  border-color: #fca5a5;
+  color: #dc2626;
 }
 
 .tfp-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-.tfp-field-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 4px;
 }
 
 .tfp-label {
-  display: inline-flex;
-  align-items: center;
-  color: #6f6a7e;
-  font-size: 11px;
-  font-weight: 600;
+  color: #45425a;
+  font-size: 12px;
+  font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
-.tfp-clear {
-  font-size: 10px;
-  color: #8a84a3;
-}
-
-.tfp-input,
-.tfp-search input {
+.tfp-input {
   width: 100%;
   height: 32px;
-  padding: 0 10px;
+  padding: 0 12px;
   border: 1px solid #e6e5ee;
   border-radius: 6px;
   background: #ffffff;
   color: #1c1b26;
-  font-size: 12.5px;
+  font-size: 14px;
+  transition: border-color 0.15s ease;
 }
 
-.tfp-input:focus,
-.tfp-search input:focus {
+.tfp-input::placeholder {
+  color: #8a84a3;
+}
+
+.tfp-input:focus {
   outline: none;
   border-color: #6440f4;
   box-shadow: 0 0 0 1px #6440f4;
+}
+
+.tfp-input.is-date {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .tfp-search {
@@ -552,8 +445,14 @@ const periodDates = (period: RelativePeriod) => {
   pointer-events: none;
 }
 
-.tfp-search input {
-  padding-left: 30px;
+.tfp-search .tfp-input {
+  padding-left: 32px;
+}
+
+.tfp-field > .tfp-search + .tfp-chips,
+.tfp-field > .tfp-search + .tfp-options,
+.tfp-chips + .tfp-options {
+  margin-top: 4px;
 }
 
 .tfp-chips {
@@ -566,11 +465,11 @@ const periodDates = (period: RelativePeriod) => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 4px 3px 10px;
+  padding: 4px 4px 4px 10px;
   border-radius: 999px;
   background: #6440f4;
   color: #ffffff;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -595,31 +494,28 @@ const periodDates = (period: RelativePeriod) => {
   overflow-y: auto;
   border: 1px solid #e6e5ee;
   border-radius: 6px;
-  background: #fbfbfd;
+  background: #ffffff;
 }
 
 .tfp-option {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
   padding: 6px 12px;
   border: none;
   background: none;
-  color: #45425a;
+  color: #1c1b26;
   font-size: 12px;
   text-align: left;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 .tfp-option span {
-  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.tfp-option small {
-  color: #8a84a3;
 }
 
 .tfp-option:hover {
@@ -631,6 +527,12 @@ const periodDates = (period: RelativePeriod) => {
   font-weight: 600;
 }
 
+.tfp-empty {
+  padding: 8px 12px;
+  color: #8a84a3;
+  font-size: 12px;
+}
+
 .tfp-range {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -640,7 +542,6 @@ const periodDates = (period: RelativePeriod) => {
 .tfp-range-labels {
   display: flex;
   justify-content: space-between;
-  margin-top: -2px;
   padding: 0 2px;
   color: #8a84a3;
   font-size: 10px;
@@ -651,43 +552,43 @@ const periodDates = (period: RelativePeriod) => {
   gap: 6px;
 }
 
-.tfp-seg-btn,
-.tfp-period {
+.tfp-seg-btn {
   flex: 1;
   padding: 6px 0;
   border: 1px solid #e6e5ee;
   border-radius: 6px;
-  background: #f6f5fa;
-  color: #6f6a7e;
+  background: #f1eff7;
+  color: #45425a;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.tfp-seg-btn.is-on,
-.tfp-period.is-on {
+.tfp-seg-btn.is-on {
   border-color: #6440f4;
   background: #6440f4;
   color: #ffffff;
 }
 
-.tfp-periods {
+.tfp-add {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
   gap: 6px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px dashed #d8d5e3;
+  border-radius: 12px;
+  background: none;
+  color: #6f6a7e;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.tfp-period {
-  flex: none;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-}
-
-.tfp-empty {
-  margin: 0;
-  padding: 8px 12px;
-  color: #8a84a3;
-  font-size: 11.5px;
+.tfp-add:hover {
+  border-color: #6440f4;
+  color: #6440f4;
 }
 </style>

@@ -10,7 +10,7 @@
 //
 //   2d. Create          POST /v2/reports/create  { name, code, entityName, templateFileType, reportTypeGenerate, outputFileType }  postCreateTemplate
 //   2c. Delete           DELETE /rest/entities/rptadn_TenantReport/{id}  (the tenant's own only, isDefault false)        deleteTenantReport
-//   2e. Save             PUT  /v2/reports/{id}/edit  { name, code, regions, templateContent (the JRXML) }  ({id} = the row's id)  putEditTemplate
+//   2e. Save             PUT  /v2/reports/{id}/edit  { name, code, regions, templateContent (the JRXML, base64) }  ({id} = the row's id)  putEditTemplate
 //
 // isDefault true = the **default templates**, false = the tenant's own
 // templates on the server: both can be opened and duplicated; only the
