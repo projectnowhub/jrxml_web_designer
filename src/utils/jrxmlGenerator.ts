@@ -244,11 +244,11 @@ export function generateJRXMLContent(
   if (headingNumbersValue) allProperties.push({ name: HEADING_NUMBERS_PROPERTY, value: headingNumbersValue });
   const contentsStylesValue = serializeContentsStyles(properties.contentsStyles);
   if (contentsStylesValue) allProperties.push({ name: CONTENTS_STYLES_PROPERTY, value: contentsStylesValue });
-  // The projects chosen in the Report Data list
+  // The template's project: only its id (its name always comes from the projects API)
   if (properties.projects?.length) {
     allProperties.push({
       name: REPORT_PROJECTS_PROPERTY,
-      value: JSON.stringify(properties.projects.map(({ id, name }) => ({ id, name }))),
+      value: JSON.stringify(properties.projects.map(({ id }) => ({ id }))),
     });
   }
   if (allProperties.length > 0) {

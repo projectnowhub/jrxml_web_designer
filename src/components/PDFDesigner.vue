@@ -859,14 +859,13 @@ import {
   projectFieldSize,
 } from "@/utils/projectFields";
 import { buildProjectListTable } from "@/utils/projectTables";
-import { fetchProject, prefetchProjects, projectQuery } from "@/queries/projectQueries";
+import { prefetchProjects, projectQuery } from "@/queries/projectQueries";
 import { fetchDefaultTemplate, fetchNewestCopyId, useCopyTemplate } from "@/queries/reportCatalogQueries";
 import { ApiError } from "@/services/apiClient";
 import { reportServerErrorText } from "@/services/helpers/reportCatalogMappers";
 import SkeletonBlock from "@/components/common/SkeletonBlock.vue";
 import { isProjectListSource } from "@/queries/dataSourceQueries";
 import { useQueries } from "@tanstack/vue-query";
-import { forgetLastProject, lastProject, rememberLastProject } from "@/utils/lastProject";
 import { loadReportDefaults } from "@/utils/reportDefaults";
 import {
   endDataSourceDrag,
@@ -2098,20 +2097,8 @@ const setReportProjects = (projects: ReportProject[]) => {
     notification.info(t("reportData.projectSwitched", { project: project.name }));
   }
   updateJRXML();
-  // New templates start with the project chosen last (utils/lastProject.ts)
-  if (projects.length) rememberLastProject(projects[projects.length - 1]);
 };
 
-// The remembered project no longer exists (deleted, or another tenant's): it
-// is forgotten, so the next new template starts without it. A template's own
-// projects are never changed here (Report Data says when one can't be read)
-const checkRememberedProject = async () => {
-  const remembered = lastProject();
-  if (!remembered) return;
-  const found = await fetchProject(remembered.id).catch(() => undefined);
-  if (found === null && lastProject()?.id === remembered.id) forgetLastProject();
-};
-onMounted(checkRememberedProject);
 
 
 
@@ -4040,12 +4027,20 @@ const applyChartConfig = (binding: ChartBinding) => {
 
 // A chart's numbers arrived: its picture in the JRXML is redrawn
 watch(chartDataVersion, () => updateJRXML());
-// The template's project arrived (or changed): its linked details, lists and
-// place show its values (written with the JRXML, no undo step of its own)
+// The template's project arrived (or changed): its name comes from the API
+// (the JRXML keeps only its id), and its linked details, lists and place show
+// its values (written with the JRXML, no undo step of its own)
 const templateProjectQueries = useQueries({
   queries: computed(() => reportProjects.value.slice(0, 1).map((p) => projectQuery(p.id))),
 });
-watch(() => templateProjectQueries.value[0]?.data, () => updateJRXML());
+watch(
+  () => templateProjectQueries.value[0]?.data,
+  (project) => {
+    const chosen = reportProjects.value[0];
+    if (chosen && project?.projectTitle && chosen.name !== project.projectTitle) chosen.name = project.projectTitle;
+    updateJRXML();
+  },
+);
 // Barcodes are sized once their drawing library is in
 watch(barcodeLibraryLoaded, () => updateJRXML());
 
@@ -6182,13 +6177,6 @@ watch(
   { deep: true },
 );
 
-// A server template naming no project takes this project: its
-// tables, lists and charts read it, its linked details follow it
-function giveTemplateProject(project: ReportProject): void {
-  reportProperties.value = { ...reportProperties.value, projects: [project] };
-  moveReportToProject(bands.value, project);
-}
-
 // Whether the designer's parser reads this JRXML without failing
 function canParseJrxml(text: string): boolean {
   try {
@@ -6335,11 +6323,6 @@ async function openDefaultTemplate(id: string): Promise<void> {
         giveTemplateUserDefaults();
         saveAnywayId = id;
       }
-    }
-    const project = lastProject();
-    if (project && !reportProjects.value.length) {
-      giveTemplateProject(project);
-      updateJRXML();
     }
     // Saved on the server at once, so the template holds those settings
     if (saveAnywayId === id) void serverSave.flush();
