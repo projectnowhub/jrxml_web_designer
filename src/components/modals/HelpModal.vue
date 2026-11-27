@@ -94,6 +94,7 @@
 
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
+import { SHOW_AI_ASSISTANT } from "@/config/appEnvironment";
 import { NButton } from "naive-ui";
 import {
   ArrowDownUp,
@@ -137,7 +138,8 @@ const STEPS = [
   { id: "add", icon: MousePointerClick },
   { id: "change", icon: SlidersHorizontal },
   { id: "pages", icon: Files },
-  { id: "ai", icon: Sparkles },
+  // The AI Assistant is hidden on staging and production for now
+  ...(SHOW_AI_ASSISTANT ? [{ id: "ai", icon: Sparkles }] : []),
   { id: "preview", icon: Eye },
 ];
 

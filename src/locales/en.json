@@ -946,7 +946,7 @@
         "pageTitle": "Your page",
         "pageText": "This is what will print. Click something to select it, drag it to move it, and double-click text to type in it.",
         "panelTitle": "Change how it looks",
-        "panelText": "When something is selected, its size, colours and text are here; with nothing selected, the settings of the whole template. The AI Assistant tab can design for you.",
+        "panelText": "When something is selected, its size, colours and text are here; with nothing selected, the settings of the whole template.",
         "pagesTitle": "Add pages",
         "pagesText": "Click Page to add another page, a cover page or a table of contents.",
         "previewTitle": "See the result",

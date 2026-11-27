@@ -9,7 +9,7 @@
 // Ctrl, or ⌘ on a Mac: keyLabel in helpDocs.ts); "mouse:<action>" is a mouse
 // action (help.mouse.<action>).
 
-import { SHOW_DEVELOPER_TOOLS } from "@/config/appEnvironment";
+import { SHOW_AI_ASSISTANT, SHOW_DEVELOPER_TOOLS } from "@/config/appEnvironment";
 
 export type ShortcutGroupId =
   | "history"
@@ -158,14 +158,19 @@ export const SHORTCUT_GROUPS: { id: ShortcutGroupId; rows: ShortcutRow[] }[] = [
       { id: "save", combos: [["Mod", "S"]] },
     ],
   },
-  {
-    id: "ai",
-    rows: [
-      { id: "aiSend", combos: [["Enter"]] },
-      { id: "aiNewLine", combos: [["Shift", "Enter"]] },
-      { id: "aiClear", combos: [["Mod", "K"]] },
-    ],
-  },
+  // The AI Assistant's keys, only where it is shown (not on staging / production for now)
+  ...(SHOW_AI_ASSISTANT
+    ? [
+        {
+          id: "ai" as const,
+          rows: [
+            { id: "aiSend" as const, combos: [["Enter"]] },
+            { id: "aiNewLine" as const, combos: [["Shift", "Enter"]] },
+            { id: "aiClear" as const, combos: [["Mod", "K"]] },
+          ],
+        },
+      ]
+    : []),
 ];
 
 export const isMouseAction = (token: string) => token.startsWith("mouse:");

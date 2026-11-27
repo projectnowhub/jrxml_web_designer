@@ -462,6 +462,7 @@
         <div class="right-panel-tabs">
           <div
             class="right-panel-seg"
+            :class="{ 'is-single': !SHOW_AI_ASSISTANT }"
             role="tablist"
             :style="{ '--tab-index': rightPanelTab === 'ai' ? 1 : 0 }"
           >
@@ -477,7 +478,9 @@
               <SlidersHorizontal :size="14" :stroke-width="2" aria-hidden="true" />
               {{ t("properties.title") }}
             </button>
+            <!-- The AI Assistant: hidden on staging and production for now -->
             <button
+              v-if="SHOW_AI_ASSISTANT"
               type="button"
               role="tab"
               class="right-panel-tab"
@@ -534,7 +537,7 @@
 
         <!-- AI Assistant panel -->
         <Transition name="right-panel-fade">
-        <div v-show="rightPanelTab === 'ai'" class="ai-panel-container read-only-lockable" :inert="readOnlyTemplate">
+        <div v-if="SHOW_AI_ASSISTANT" v-show="rightPanelTab === 'ai'" class="ai-panel-container read-only-lockable" :inert="readOnlyTemplate">
           <AIChatPanel
             :visible="rightPanelTab === 'ai'"
             :initial-height="aiChatPanelHeight"
@@ -766,7 +769,7 @@
 
 <script setup lang="ts">
 import AddPageMenu from "./designer/AddPageMenu.vue";
-import { SHOW_DEVELOPER_TOOLS } from "@/config/appEnvironment";
+import { SHOW_AI_ASSISTANT, SHOW_DEVELOPER_TOOLS } from "@/config/appEnvironment";
 import ResizablePanel from "./panels/ResizablePanel.vue";
 import DesignerCanvas from "./designer/DesignerCanvas.vue";
 import HelpMenu from "./help/HelpMenu.vue";
@@ -8185,6 +8188,7 @@ onUnmounted(() => {
 // The right panel, opened on the AI tab (a guide's "Or let the AI assistant do it")
 const rightPanelRef = ref<{ toggleCollapse: () => void } | null>(null);
 function openAIAssistant() {
+  if (!SHOW_AI_ASSISTANT) return;
   showRightPanel.value = true;
   if (rightPanelCollapsed.value) rightPanelRef.value?.toggleCollapse();
   rightPanelTab.value = "ai";
@@ -8863,6 +8867,15 @@ const moveElementZOrder = (direction: "front" | "back") => {
   border-radius: 9px;
   background: #f1f0f6;
   border: 1px solid rgba(28, 27, 38, 0.05);
+}
+
+/* Only the Settings tab (the AI Assistant hidden on staging / production) */
+.right-panel-seg.is-single {
+  grid-template-columns: 1fr;
+}
+
+.right-panel-seg.is-single .right-panel-indicator {
+  width: calc(100% - 6px);
 }
 
 .right-panel-indicator {
